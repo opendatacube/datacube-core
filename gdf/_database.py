@@ -152,7 +152,7 @@ class Database(object):
         self._password = password
         
         self._default_connection = self.create_connection()
-        self._default_cursor = self.default_connection.cursor()
+        self._default_cursor = self._default_connection.cursor()
         
         log_multiline(logger.debug, self.__dict__, 'Database.__dict__', '\t')
         
@@ -168,7 +168,7 @@ class Database(object):
             self._default_connection.close()
             self._host = host
             self._default_connection = self.create_connection()
-            self._default_cursor = self.default_connection.cursor()
+            self._default_cursor = self._default_connection.cursor()
         
     @property
     def port(self):
@@ -180,7 +180,7 @@ class Database(object):
             self._default_connection.close()
             self._port = port
             self._default_connection = self.create_connection()
-            self._default_cursor = self.default_connection.cursor()
+            self._default_cursor = self._default_connection.cursor()
         
     @property
     def dbname(self):
@@ -192,7 +192,7 @@ class Database(object):
             self._default_connection.close()
             self._dbname = dbname
             self._default_connection = self.create_connection()
-            self._default_cursor = self.default_connection.cursor()
+            self._default_cursor = self._default_connection.cursor()
         
     @property
     def user(self):
@@ -204,7 +204,7 @@ class Database(object):
             self._default_connection.close()
             self._user = user
             self._default_connection = self.create_connection()
-            self._default_cursor = self.default_connection.cursor()
+            self._default_cursor = self._default_connection.cursor()
         
     @property
     def password(self):
@@ -216,6 +216,6 @@ class Database(object):
             self._default_connection.close()
             self._password = password
             self._default_connection = self.create_connection()
-            self._default_cursor = self.default_connection.cursor()
+            self._default_cursor = self._default_connection.cursor()
             
         

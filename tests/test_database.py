@@ -59,7 +59,7 @@ class TestDatabase(unittest.TestCase):
     # Test DB connection parameters
     TEST_HOST = '130.56.244.228' 
     TEST_PORT = 6432
-    TEST_DBNAME = 'GDF'
+    TEST_DBNAME = 'gdf'
     TEST_USER = 'cube_user'
     TEST_PASSWORD = 'GAcube0'
     TEST_QUERY = 'select 1 as test_field'
@@ -73,8 +73,8 @@ class TestDatabase(unittest.TestCase):
                            self.TEST_PASSWORD
                            )
         
-        test_db.default_cursor.execute(self.TEST_QUERY)      
-        assert(test_db.default_cursor.description is not None, 'No rows returned')
+        test_db._default_cursor.execute(self.TEST_QUERY)      
+        assert test_db._default_cursor.description is not None, 'No rows returned'
 
     def test_execSQL(self):
         "Test execSQL function"
@@ -86,7 +86,7 @@ class TestDatabase(unittest.TestCase):
                            )
         
         cursor = test_db.execSQL(self.TEST_QUERY)
-        assert(cursor.description is not None, 'No rows returned')
+        assert cursor.description is not None, 'No rows returned'
 
     def test_cache_result_set(self):
         "Test cache_result_set function"
@@ -99,10 +99,10 @@ class TestDatabase(unittest.TestCase):
         
         cached_result_set = test_db.cache_result_set(self.TEST_QUERY)
         
-        assert(cached_result_set.record_count == 1, 'Query should return exactly one row')
-        assert(len(cached_result_set.field_names) == 1, 'Query should return exactly one field')
-        assert(cached_result_set.field_names[0] == 'test_field', 'Field name should be "test_field"')
-        assert(cached_result_set.record_list[0]['test_field'] == 1, 'Field value should be 1')
+        assert cached_result_set.record_count == 1, 'Query should return exactly one row'
+        assert len(cached_result_set.field_names) == 1, 'Query should return exactly one field'
+        assert cached_result_set.field_names[0] == 'test_field', 'Field name should be "test_field"'
+        assert list(cached_result_set.record_list())[0]['test_field'] == 1, 'Field value should be 1'
 
 #
 # Define test suites
