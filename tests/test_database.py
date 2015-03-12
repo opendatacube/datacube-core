@@ -37,7 +37,7 @@ Tests for the gdf._database.py module.
 
 
 import unittest
-from gdf import Database
+from gdf import Database, CachedResultSet
 
 
 #
@@ -74,7 +74,7 @@ class TestDatabase(unittest.TestCase):
                            )
         
         test_db.default_cursor.execute(self.TEST_QUERY)      
-        assert(test_db.default_cursor.description, 'No rows returned')
+        assert(test_db.default_cursor.description is not None, 'No rows returned')
 
     def test_execSQL(self):
         "Test execSQL function"
@@ -86,7 +86,7 @@ class TestDatabase(unittest.TestCase):
                            )
         
         cursor = test_db.execSQL(self.TEST_QUERY)
-        assert(cursor.description, 'No rows returned')
+        assert(cursor.description is not None, 'No rows returned')
 
     def test_cache_result_set(self):
         "Test cache_result_set function"
