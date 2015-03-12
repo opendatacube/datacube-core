@@ -85,6 +85,10 @@ class CachedResultSet(object):
     def record_count(self):
         return len(self._result_dict[self._field_names[0]])
 
+    @property
+    def field_values(self):
+        return dict(self._result_dict)
+
 
 class Database(object):
     '''

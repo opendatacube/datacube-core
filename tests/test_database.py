@@ -103,6 +103,7 @@ class TestDatabase(unittest.TestCase):
         assert len(cached_result_set.field_names) == 1, 'Query should return exactly one field'
         assert cached_result_set.field_names[0] == 'test_field', 'Field name should be "test_field"'
         assert list(cached_result_set.record_generator())[0]['test_field'] == 1, 'Field value should be 1'
+        assert len(cached_result_set.field_values) == 1, 'field_values dict property should have only one item'
 
 #
 # Define test suites
