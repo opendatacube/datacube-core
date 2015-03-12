@@ -71,8 +71,8 @@ class CachedResultSet(object):
                 for field_index in range(len(record)):
                     self._result_dict[self._field_names[field_index]].append(record[field_index])
      
-    def record_list(self): 
-        '''Generator function to create an iterable returning a dict for each record
+    def record_generator(self): 
+        '''Generator function to return a complete dict for each record
         '''
         for record_index in range(self.record_count):
             yield {field_name: self._result_dict[field_name][record_index] for field_name in self._field_names}           
