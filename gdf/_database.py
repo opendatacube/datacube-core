@@ -102,7 +102,8 @@ class Database(object):
                                               user=self._user, 
                                               password=self._password)
         
-        autocommit = self._autocommit if autocommit is None
+        if autocommit is None:
+            autocommit = self._autocommit
         
         if autocommit:
             db_connection.autocommit = True
@@ -153,7 +154,7 @@ class Database(object):
     def _setup_default_cursor(self):
         '''Function to setup default connection and cursor if required
         '''
-        self.close_default_connection()
+        self._close_default_connection()
         
         if self._keep_connection:
             self._default_connection = self.create_connection()
@@ -256,4 +257,10 @@ class Database(object):
             self._autocommit = autocommit            
             self._setup_default_cursor()
             
-        
+    @property
+    def default_connection(self):
+        return self._default_connection
+
+    @property
+    def default_cursor(self):
+        return self._default_cursor
