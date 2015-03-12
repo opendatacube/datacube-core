@@ -95,12 +95,15 @@ class Database(object):
     Class Database
     '''
 
-    def create_connection(self, autocommit=True):
+    def create_connection(self, autocommit=None):
         db_connection = psycopg2.connect(host=self._host, 
                                               port=self._port, 
                                               dbname=self._dbname, 
                                               user=self._user, 
                                               password=self._password)
+        
+        autocommit = self._autocommit if autocommit is None
+        
         if autocommit:
             db_connection.autocommit = True
             db_connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
@@ -116,7 +119,7 @@ class Database(object):
             params: Dict containing query parameters (optional)
             cursor: cursor to return results. Defaults to self._default_cursor
         '''
-        cursor = cursor or self._default_cursor
+        cursor = cursor or self._default_cursor or self.create_connection().cursor()
         
         log_multiline(logger.debug, cursor.mogrify(SQL, params), 'SQL', '\t')
         cursor.execute(SQL, params)
@@ -132,13 +135,31 @@ class Database(object):
             params: Dict containing query parameters (optional)
             connection: DB connection to query. Defaults to self._default_connection
         '''
-        connection = connection or self._default_connection
+        connection = connection or self._default_connection or self.create_connection()
         
         # Use local cursor to return results
         return CachedResultSet(self.execSQL(SQL, params=None, cursor=connection.cursor()))
         
     
-    def __init__(self, host, port, dbname, user, password):
+    def _close_default_connection(self):
+        '''Function to close default connection if required
+        '''
+        if self._default_connection:
+            self._default_connection.close()
+            
+        self._default_connection = None
+        self._default_cursor = None
+
+    def _setup_default_cursor(self):
+        '''Function to setup default connection and cursor if required
+        '''
+        self.close_default_connection()
+        
+        if self._keep_connection:
+            self._default_connection = self.create_connection()
+            self._default_cursor = self._default_connection.cursor()
+    
+    def __init__(self, host, port, dbname, user, password, keep_connection=True, autocommit=True):
         '''
         Constructor for class Database.
         
@@ -154,9 +175,12 @@ class Database(object):
         self._dbname = dbname
         self._user = user
         self._password = password
+        self._keep_connection = keep_connection
+        self._autocommit = autocommit
+        self._default_connection = None
+        self._default_cursor = None
         
-        self._default_connection = self.create_connection()
-        self._default_cursor = self._default_connection.cursor()
+        self._setup_default_cursor()
         
         log_multiline(logger.debug, self.__dict__, 'Database.__dict__', '\t')
         
@@ -169,10 +193,8 @@ class Database(object):
     @host.setter
     def host(self, host):
         if self._host != host:
-            self._default_connection.close()
             self._host = host
-            self._default_connection = self.create_connection()
-            self._default_cursor = self._default_connection.cursor()
+            self._setup_default_cursor()
         
     @property
     def port(self):
@@ -181,10 +203,8 @@ class Database(object):
     @port.setter
     def port(self, port):
         if self._port != port:
-            self._default_connection.close()
             self._port = port
-            self._default_connection = self.create_connection()
-            self._default_cursor = self._default_connection.cursor()
+            self._setup_default_cursor()
         
     @property
     def dbname(self):
@@ -193,10 +213,8 @@ class Database(object):
     @dbname.setter
     def dbname(self, dbname):
         if self._dbname != dbname:
-            self._default_connection.close()
             self._dbname = dbname
-            self._default_connection = self.create_connection()
-            self._default_cursor = self._default_connection.cursor()
+            self._setup_default_cursor()
         
     @property
     def user(self):
@@ -205,10 +223,8 @@ class Database(object):
     @user.setter
     def user(self, user):
         if self._user != user:
-            self._default_connection.close()
             self._user = user
-            self._default_connection = self.create_connection()
-            self._default_cursor = self._default_connection.cursor()
+            self._setup_default_cursor()
         
     @property
     def password(self):
@@ -217,9 +233,27 @@ class Database(object):
     @password.setter
     def password(self, password):
         if self._password != password:
-            self._default_connection.close()
             self._password = password
-            self._default_connection = self.create_connection()
-            self._default_cursor = self._default_connection.cursor()
+            self._setup_default_cursor()
+            
+    @property
+    def keep_connection(self):
+        return self._keep_connection
+
+    @keep_connection.setter
+    def keep_connection(self, keep_connection):
+        if self._keep_connection != keep_connection:
+            self._keep_connection = keep_connection            
+            self._setup_default_cursor()
+            
+    @property
+    def autocommit(self):
+        return self._autocommit
+
+    @autocommit.setter
+    def autocommit(self, autocommit):
+        if self._autocommit != autocommit:
+            self._autocommit = autocommit            
+            self._setup_default_cursor()
             
         
