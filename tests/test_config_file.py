@@ -34,10 +34,10 @@ Created on 12/03/2015
 
 Tests for the gdf._ConfigFile.py module.
 '''
-
+import os
 import unittest
-from gdf import ConfigFile
 
+from gdf import ConfigFile
 
 #
 # Test cases
@@ -57,9 +57,13 @@ class TestConfigFile(unittest.TestCase):
 
     def test_ConfigFile(self):
         "Test ConfigFile constructor"
-        #TODO: Create test
-        pass
-#        config_file = ConfigFile('')
+        
+        # Default config file should be ../gdf/gdf_default.conf
+        default_config_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'gdf', 'gdf_default.conf')
+        
+        config_file_object = ConfigFile(default_config_file)
+        
+        assert config_file_object.path == os.path.abspath(default_config_file), 'path property is not set correctly'
 
 #
 # Define test suites
