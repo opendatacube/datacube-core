@@ -43,14 +43,14 @@ from EOtools.utils import log_multiline
 
 # Set top level standard output 
 console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(logging.DEBUG)
+console_handler.setLevel(logging.INFO)
 console_formatter = logging.Formatter('%(message)s')
 console_handler.setFormatter(console_formatter)
 
 logger = logging.getLogger(__name__)
 if not logger.level:
     logger.setLevel(logging.DEBUG) # Default logging level for all modules
-#    logger.addHandler(console_handler)
+    logger.addHandler(console_handler)
 
 class CommandLineArgs(object):
     DEFAULT_ARG_DESCRIPTORS = {'debug': {'short_flag': '-d', 
@@ -91,7 +91,7 @@ class CommandLineArgs(object):
         
         for arg_dest in sorted(arg_descriptors.keys()):
             arg_descriptor = arg_descriptors[arg_dest]
-            log_multiline(logger.debug, arg_descriptor, 'arg_descriptor', '\t')
+            log_multiline(logger.debug, arg_descriptor, 'arg_descriptor for %s' % arg_dest, '\t')
 
             _arg_parser.add_argument(arg_descriptor['short_flag'],
                                      arg_descriptor['long_flag'],
@@ -118,11 +118,15 @@ class CommandLineArgs(object):
                 'const': <Boolean>,
                 'help': <help string>
         '''
+        log_multiline(logger.debug, arg_descriptors, 'arg_descriptors', '\t')
 #        # Replace defaults with supplied dict
 #        arg_descriptors = arg_descriptors or CommandLineArgs.DEFAULT_ARG_DESCRIPTORS     
    
         # Merge defaults with supplied dict (overwriting defaults) 
-        arg_descriptors = dict(CommandLineArgs.DEFAULT_ARG_DESCRIPTORS).update(arg_descriptors)
+        temp_arg_descriptors = CommandLineArgs.DEFAULT_ARG_DESCRIPTORS.copy()
+        temp_arg_descriptors.update(arg_descriptors)
+        arg_descriptors = temp_arg_descriptors
+        log_multiline(logger.debug, arg_descriptors, 'arg_descriptors', '\t')
         
         self._args = self.parse_args(arg_descriptors)
         
