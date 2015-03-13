@@ -10,7 +10,7 @@ from EOtools.utils import log_multiline
 
 # Set top level standard output 
 console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(logging.INFO)
+console_handler.setLevel(logging.DEBUG)
 console_formatter = logging.Formatter('%(message)s')
 console_handler.setFormatter(console_formatter)
 
@@ -34,11 +34,14 @@ class GDF(object):
         
         try:
             self._config_file = command_line_args_object.arguments['config_file']
+            assert self._config_file, 'No config file provided in command line arguments'
         except:
+            # Use default configuration file
             self._config_file = os.path.join(self._code_root, GDF.DEFAULT_CONFIG_FILE)
 
             
         config_file_object = ConfigFile(self._config_file)
+        self._config_file = config_file_object.path # Remember absolute pathname
         
         # Copy all configuration sections from config file to config dict
         config_dict['config_file'] = config_file_object.configuration
@@ -73,7 +76,10 @@ class GDF(object):
                 database_dict[section_name] = database
             except Exception, e:
                 logger.info('Unable to connect to database for %s: %s', section_name, e.message)
+
+        return database_dict
         
+
     def __init__(self):
         '''Constructor for class GDF
         '''
