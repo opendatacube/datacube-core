@@ -32,12 +32,11 @@ Created on 12/03/2015
 
 @author: Alex Ip
 
-Tests for the gdf._CommandLineArgs.py module.
+Tests for the gdf._ConfigFile.py module.
 '''
 
-import sys
 import unittest
-from gdf import CommandLineArgs
+from gdf import ConfigFile
 
 
 #
@@ -50,43 +49,17 @@ from gdf import CommandLineArgs
 #
 
 
-class TestCommandLineArgs(unittest.TestCase):
+class TestConfigFile(unittest.TestCase):
     """Unit tests for utility functions."""
 
-    MODULE = 'gdf._arguments'
-    SUITE = 'TestCommandLineArgs'
-    
-    TEST_ARG_DESCRIPTOR = {'test': {'short_flag': '-t', 
-                                    'long_flag': '--test', 
-                                    'default': False, 
-                                    'action': 'store_const', 
-                                    'const': True,
-                                    'help': 'Test mode flag'
-                                    },
-                           'test_value': {'short_flag': '-v', 
-                                    'long_flag': '--value', 
-                                    'default': 'default_test_value', 
-                                    'action': 'store_const', 
-                                    'const': None,
-                                    'help': 'Test mode flag'
-                                    }
-                           }
+    MODULE = 'gdf._config_file'
+    SUITE = 'TestConfigFile'
 
-    def test_CommandLineArgs(self):
-        "Test CommandLineArgs constructor"
-        
-        # Simulate command line arguments
-        sys.argv.append("--config=config_file.conf")
-        sys.argv.append("--debug")
-        sys.argv.append("--test")
-        sys.argv.append("unnkown")
-        
-        command_line_args = CommandLineArgs(TestCommandLineArgs.TEST_ARG_DESCRIPTOR)
-        
-        assert command_line_args.arguments['config_file'] == 'config_file.conf', 'Default --config argument not parsed'
-        assert command_line_args.arguments['debug'], 'Default --debug argument not parsed'
-        assert command_line_args.arguments['test'], 'Custom --test argument not parsed'
-        assert command_line_args.arguments['test_value'] == 'default_test_value', 'Default value for custom test_value argument not set'
+    def test_ConfigFile(self):
+        "Test ConfigFile constructor"
+        #TODO: Create test
+        pass
+#        config_file = ConfigFile('')
 
 #
 # Define test suites
@@ -94,7 +67,7 @@ class TestCommandLineArgs(unittest.TestCase):
 def test_suite():
     """Returns a test suite of all the tests in this module."""
 
-    test_classes = [TestCommandLineArgs
+    test_classes = [TestConfigFile
                     ]
 
     suite_list = map(unittest.defaultTestLoader.loadTestsFromTestCase,

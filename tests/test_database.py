@@ -88,8 +88,8 @@ class TestDatabase(unittest.TestCase):
         cursor = test_db.execSQL(self.TEST_QUERY)
         assert cursor.description is not None, 'No rows returned'
 
-    def test_cache_result_set(self):
-        "Test cache_result_set function"
+    def test_query(self):
+        "Test query function"
         test_db = Database(self.TEST_HOST, 
                            self.TEST_PORT, 
                            self.TEST_DBNAME, 
@@ -97,7 +97,7 @@ class TestDatabase(unittest.TestCase):
                            self.TEST_PASSWORD
                            )
         
-        cached_result_set = test_db.cache_result_set(self.TEST_QUERY)
+        cached_result_set = test_db.submit_query(self.TEST_QUERY)
         
         assert cached_result_set.record_count == 1, 'Query should return exactly one row'
         assert len(cached_result_set.field_names) == 1, 'Query should return exactly one field'

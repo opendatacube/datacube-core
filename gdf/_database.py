@@ -127,7 +127,7 @@ class Database(object):
         
         return cursor
     
-    def cache_result_set(self, SQL, params=None, connection=None):
+    def submit_query(self, SQL, params=None, connection=None):
         '''
         Function to return CachedResultSet object to manage an in-memory cache of query results for specified SQL and parameters
         

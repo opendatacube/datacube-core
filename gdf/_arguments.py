@@ -103,8 +103,8 @@ class CommandLineArgs(object):
                                      )
     
         args, _unknown_args = _arg_parser.parse_known_args()
-        
-        return args
+                
+        return args.__dict__
     
     def __init__(self, arg_descriptors={}):
         '''Constructor for class CommandLineArgs
@@ -128,11 +128,11 @@ class CommandLineArgs(object):
         arg_descriptors = temp_arg_descriptors
         log_multiline(logger.debug, arg_descriptors, 'arg_descriptors', '\t')
         
-        self._args = self.parse_args(arg_descriptors)
+        self._arguments = self.parse_args(arg_descriptors)
         
         log_multiline(logger.debug, self.__dict__, 'CommandLineArgs.__dict__', '\t')
         
     @property
-    def args(self):
-        return self._args
+    def arguments(self):
+        return self._arguments.copy()
     
