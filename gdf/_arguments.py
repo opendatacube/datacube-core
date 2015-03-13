@@ -58,7 +58,8 @@ class CommandLineArgs(object):
                                         'default': False, 
                                         'action': 'store_const', 
                                         'const': True,
-                                        'help': 'Debug mode flag'},
+                                        'help': 'Debug mode flag'
+                                        },
                               'config_file': {'short_flag': '-C', 
                                               'long_flag': '--config',
                                               'default': None,
@@ -105,7 +106,7 @@ class CommandLineArgs(object):
         
         return args
     
-    def __init__(self, arg_descriptors=None):
+    def __init__(self, arg_descriptors={}):
         '''Constructor for class CommandLineArgs
         
         Parameters:
@@ -117,7 +118,12 @@ class CommandLineArgs(object):
                 'const': <Boolean>,
                 'help': <help string>
         '''
-        arg_descriptors = arg_descriptors or CommandLineArgs.DEFAULT_ARG_DESCRIPTORS
+#        # Replace defaults with supplied dict
+#        arg_descriptors = arg_descriptors or CommandLineArgs.DEFAULT_ARG_DESCRIPTORS     
+   
+        # Merge defaults with supplied dict (overwriting defaults) 
+        arg_descriptors = dict(CommandLineArgs.DEFAULT_ARG_DESCRIPTORS).update(arg_descriptors)
+        
         self._args = self.parse_args(arg_descriptors)
         
         log_multiline(logger.debug, self.__dict__, 'CommandLineArgs.__dict__', '\t')
