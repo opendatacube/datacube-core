@@ -43,17 +43,17 @@ from EOtools.utils import log_multiline
 
 # Set top level standard output 
 console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(logging.INFO)
+console_handler.setLevel(logging.DEBUG)
 console_formatter = logging.Formatter('%(message)s')
 console_handler.setFormatter(console_formatter)
 
 logger = logging.getLogger(__name__)
 if not logger.level:
     logger.setLevel(logging.DEBUG) # Default logging level for all modules
-    logger.addHandler(console_handler)
+#    logger.addHandler(console_handler)
 
 class CommandLineArgs(object):
-    DEFAULT_ARG_DESCRIPTOR = {'debug': {'short_flag': '-d', 
+    DEFAULT_ARG_DESCRIPTORS = {'debug': {'short_flag': '-d', 
                                         'long_flag': '--debug', 
                                         'default': False, 
                                         'action': 'store_const', 
@@ -62,17 +62,17 @@ class CommandLineArgs(object):
                               'config_file': {'short_flag': '-C', 
                                               'long_flag': '--config',
                                               'default': None,
-                                              'action': None,
-                                              'store_const': False,
+                                              'action': 'store',
+                                              'const': None,
                                               'help': 'Configuration file'
                                     }
                     }
     
-    def parse_args(self, arg_descriptor_dict):
+    def parse_args(self, arg_descriptors):
         """Virtual function to parse command line arguments.
     
         Parameters:
-            arg_descriptor_dict: dict keyed by dest variable name containing sub-dicts as follows:
+            arg_descriptors: dict keyed by dest variable name containing sub-dicts as follows:
                 'short_flag': '-d', 
                 'long_flag': '--debug', 
                 'default': <Boolean>, 
@@ -84,28 +84,32 @@ class CommandLineArgs(object):
             argparse namespace object
         """
         logger.debug('Calling parse_args()')
+        log_multiline(logger.debug, arg_descriptors, 'arg_descriptors', '\t')
             
         _arg_parser = argparse.ArgumentParser(description=os.path.basename(sys.argv[0]))
         
-        for dest in sorted(arg_descriptor_dict.keys()):
-            _arg_parser.add_argument(arg_descriptor_dict['short_flag'],
-                                     arg_descriptor_dict['long_flag'],
-                                     dest=dest,
-                                     default=arg_descriptor_dict['default'],
-                                     action=arg_descriptor_dict['action'],
-                                     const=arg_descriptor_dict['const'],
-                                     help=arg_descriptor_dict['help']
+        for arg_dest in sorted(arg_descriptors.keys()):
+            arg_descriptor = arg_descriptors[arg_dest]
+            log_multiline(logger.debug, arg_descriptor, 'arg_descriptor', '\t')
+
+            _arg_parser.add_argument(arg_descriptor['short_flag'],
+                                     arg_descriptor['long_flag'],
+                                     dest=arg_dest,
+                                     default=arg_descriptor['default'],
+                                     action=arg_descriptor['action'],
+                                     const=arg_descriptor['const'],
+                                     help=arg_descriptor['help']
                                      )
     
         args, _unknown_args = _arg_parser.parse_known_args()
         
         return args
     
-    def __init__(self, arg_descriptor_dict=None):
+    def __init__(self, arg_descriptors=None):
         '''Constructor for class CommandLineArgs
         
         Parameters:
-            arg_descriptor_dict: dict keyed by dest variable name containing sub-dicts as follows:
+            arg_descriptors: dict keyed by dest variable name containing sub-dicts as follows:
                 'short_flag': '-d', 
                 'long_flag': '--debug', 
                 'default': <Boolean>, 
@@ -113,8 +117,8 @@ class CommandLineArgs(object):
                 'const': <Boolean>,
                 'help': <help string>
         '''
-        arg_descriptor_dict = arg_descriptor_dict or CommandLineArgs.DEFAULT_ARG_DESCRIPTOR
-        self._args = self.parse_args(arg_descriptor_dict)
+        arg_descriptors = arg_descriptors or CommandLineArgs.DEFAULT_ARG_DESCRIPTORS
+        self._args = self.parse_args(arg_descriptors)
         
         log_multiline(logger.debug, self.__dict__, 'CommandLineArgs.__dict__', '\t')
         
