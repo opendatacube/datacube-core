@@ -104,7 +104,7 @@ class GDF(object):
         
            <db_name>
                'ndarray_types'
-                    <nd_array_type_tag>
+                    <ndarray_type_tag>
                         'measurement_types'
                            <measurement_type_tag>
                         'domains'
@@ -133,14 +133,14 @@ join reference_system using (reference_system_id)
 order by ndarray_type_tag, measurement_type_index, creation_order;
 ''')
             for record_dict in ndarray_types.record_generator():
-                ndarray_type_dict = db_dict['ndarray_types'].get(record_dict['nd_array_type_tag'])
+                ndarray_type_dict = db_dict['ndarray_types'].get(record_dict['ndarray_type_tag'])
                 if ndarray_type_dict is None:
-                    ndarray_type_dict = {record_dict['nd_array_type_tag']: {'ndarray_type_name': record_dict['ndarray_type_name'],
+                    ndarray_type_dict = {record_dict['ndarray_type_tag']: {'ndarray_type_name': record_dict['ndarray_type_name'],
                                                                             'measurement_types': {},
                                                                             'domains': {}
                                                                             }
                                          }
-                    db_dict['ndarray_types'][record_dict['nd_array_type_tag']] = ndarray_type_dict
+                    db_dict['ndarray_types'][record_dict['ndarray_type_tag']] = ndarray_type_dict
                     
                 measurement_type_dict = ndarray_type_dict['measurement_types'].get(record_dict['measurement_type_tag'])
                 if measurement_type_dict is None:
@@ -177,7 +177,7 @@ order by ndarray_type_tag, measurement_type_index, creation_order;
         
         databases = databases or self._databases
         
-        result_dict = {} # Nested dict containing nd_array_type details for all databases
+        result_dict = {} # Nested dict containing ndarray_type details for all databases
 
         #TODO: Multi-thread this section
         for db_name in sorted(databases.keys()):
