@@ -35,7 +35,7 @@ class GDF(object):
                        }
         
         # Use default config file if none provided
-        config_files_string = command_line_args_object.arguments['config_files'] or os.path.join(self.code_root, GDF.DEFAULT_CONFIG_FILE)
+        config_files_string = command_line_args_object.arguments['config_files'] or os.path.join(self._code_root, GDF.DEFAULT_CONFIG_FILE)
         
         # Set list of absolute config file paths from comma-delimited list
         self._config_files = [os.path.abspath(config_file) for config_file in config_files_string.split(',')] 

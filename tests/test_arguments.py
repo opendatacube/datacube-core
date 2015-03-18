@@ -88,6 +88,7 @@ class TestCommandLineArgs(unittest.TestCase):
         assert command_line_args.arguments['test'], 'Custom --test argument not parsed'
         assert command_line_args.arguments['test_value'] == 'default_test_value', 'Default value for custom test_value argument not set'
 
+        sys.argv.remove("--config=config_file.conf") # Remove the test value to avoid breaking anything downstream
 #
 # Define test suites
 #
