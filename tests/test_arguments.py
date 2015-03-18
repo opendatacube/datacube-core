@@ -83,7 +83,7 @@ class TestCommandLineArgs(unittest.TestCase):
         
         command_line_args = CommandLineArgs(TestCommandLineArgs.TEST_ARG_DESCRIPTOR)
         
-        assert command_line_args.arguments['config_file'] == 'config_file.conf', 'Default --config argument not parsed'
+        assert command_line_args.arguments['config_files'] == 'config_file.conf', 'Default --config argument not parsed'
         assert command_line_args.arguments['debug'], 'Default --debug argument not parsed'
         assert command_line_args.arguments['test'], 'Custom --test argument not parsed'
         assert command_line_args.arguments['test_value'] == 'default_test_value', 'Default value for custom test_value argument not set'
