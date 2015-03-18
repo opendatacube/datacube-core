@@ -61,11 +61,11 @@ class ConfigFile(object):
         config_dict = {}
         for section_name in config_parser.sections():
             section_dict = {}
-            config_dict[section_name] = section_dict
+            config_dict[section_name.lower()] = section_dict
             
             for attribute_name in config_parser.options(section_name):
                 attribute_value = config_parser.get(section_name, attribute_name)
-                section_dict[attribute_name] = attribute_value
+                section_dict[attribute_name.lower()] = attribute_value
                 
         log_multiline(logger.debug, config_dict, 'config_dict', '\t')
         return config_dict

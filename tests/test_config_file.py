@@ -37,7 +37,7 @@ Tests for the gdf._ConfigFile.py module.
 import os
 import unittest
 
-from gdf import ConfigFile
+from gdf._config_file import ConfigFile
 
 #
 # Test cases

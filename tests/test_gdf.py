@@ -32,12 +32,13 @@ Created on 12/03/2015
 
 @author: Alex Ip
 
-Tests for the gdf._CommandLineArgs.py module.
+Tests for the gdf._GDF.py module.
 '''
 
-import sys
+
 import unittest
-from gdf._arguments import CommandLineArgs
+import os
+from gdf import GDF
 
 
 #
@@ -50,51 +51,27 @@ from gdf._arguments import CommandLineArgs
 #
 
 
-class TestCommandLineArgs(unittest.TestCase):
+class TestGDF(unittest.TestCase):
     """Unit tests for utility functions."""
 
-    MODULE = 'gdf._arguments'
-    SUITE = 'TestCommandLineArgs'
-    
-    TEST_ARG_DESCRIPTOR = {'test': {'short_flag': '-t', 
-                                    'long_flag': '--test', 
-                                    'default': False, 
-                                    'action': 'store_const', 
-                                    'const': True,
-                                    'help': 'Test mode flag'
-                                    },
-                           'test_value': {'short_flag': '-v', 
-                                    'long_flag': '--value', 
-                                    'default': 'default_test_value', 
-                                    'action': 'store_const', 
-                                    'const': None,
-                                    'help': 'Test mode flag'
-                                    }
-                           }
-
-    def test_CommandLineArgs(self):
-        "Test CommandLineArgs constructor"
+    def test_GDF(self):
+        "Test GDF constructor"
+        test_gdf = GDF() # Test default configuration
         
-        # Simulate command line arguments
-        sys.argv.append("--config=config_file.conf")
-        sys.argv.append("--debug")
-        sys.argv.append("--test")
-        sys.argv.append("unnkown")
-        
-        command_line_args = CommandLineArgs(TestCommandLineArgs.TEST_ARG_DESCRIPTOR)
-        
-        assert command_line_args.arguments['config_file'] == 'config_file.conf', 'Default --config argument not parsed'
-        assert command_line_args.arguments['debug'], 'Default --debug argument not parsed'
-        assert command_line_args.arguments['test'], 'Custom --test argument not parsed'
-        assert command_line_args.arguments['test_value'] == 'default_test_value', 'Default value for custom test_value argument not set'
-
+        assert test_gdf.code_root == os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'gdf')), 'Code root is incorrect'
+        assert len(test_gdf.config_files) == 1, 'Default config path list should have one entry'
+        assert test_gdf.config_files[0] == os.path.abspath(GDF.DEFAULT_CONFIG_FILE), 'Default config path is incorrect'
+        assert test_gdf.configuration.get('command_line') is not None, 'Command line parameter dict not set'
+        assert test_gdf.configuration.get('config_files') is not None, 'Config files parameter dict not set'
+        assert len(test_gdf.configuration['config_files']) > 0, 'Config files must define at least one setup'
+        assert len(test_gdf.databases) > 0, 'At least one database must be set up'
 #
 # Define test suites
 #
 def test_suite():
     """Returns a test suite of all the tests in this module."""
 
-    test_classes = [TestCommandLineArgs
+    test_classes = [TestGDF
                     ]
 
     suite_list = map(unittest.defaultTestLoader.loadTestsFromTestCase,

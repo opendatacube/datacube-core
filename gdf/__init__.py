@@ -32,24 +32,25 @@ class GDF(object):
         # Copy command line values to config dict
         config_dict = {'command_line': command_line_args_object.arguments}
         
-        try:
-            self._config_file = command_line_args_object.arguments['config_file']
-            assert self._config_file, 'No config file provided in command line arguments'
-        except:
-            # Use default configuration file
-            self._config_file = os.path.join(self._code_root, GDF.DEFAULT_CONFIG_FILE)
-
-            
-        config_file_object = ConfigFile(self._config_file)
-        self._config_file = config_file_object.path # Remember absolute pathname
+        # Use default config file if none provided
+        config_files_string = command_line_args_object.arguments['config_files'] or os.path.join(self._code_root, GDF.DEFAULT_CONFIG_FILE)
         
-        # Copy all configuration sections from config file to config dict
-        config_dict['config_file'] = config_file_object.configuration
+        # Extract list of config files from comma-delimited list
+        self._config_files = config_files_string.split(',')
+
+        # Convert config file paths to absolute
+        self._config_files = [os.path.abspath(config_file) for config_file in self._config_files] 
+           
+        for config_file in self._config_files:
+            config_file_object = ConfigFile(config_file)
+        
+            # Merge all configuration sections from individual config files to config dict
+            config_dict['config_files'].update(config_file_object.configuration)
         
         return config_dict
     
     def get_dbs(self):
-        config_dict = self._configuration['config_file']
+        config_dict = self._configuration['config_files']
         
         database_dict = {}
         
@@ -83,7 +84,9 @@ class GDF(object):
     def __init__(self):
         '''Constructor for class GDF
         '''
-        self._code_root = os.path.dirname(__file__)
+        self._config_files = [] # List of config files read
+        
+        self._code_root = os.path.abspath(os.path.dirname(__file__)) # Directory containing module code
         
         # Create master configuration dict
         self._configuration = self.get_config()
@@ -98,8 +101,8 @@ class GDF(object):
         return self._code_root
     
     @property
-    def config_file(self):
-        return self._config_file
+    def config_files(self):
+        return self._config_files
     
     @property
     def configuration(self):

@@ -37,7 +37,7 @@ Tests for the gdf._database.py module.
 
 
 import unittest
-from gdf import Database, CachedResultSet
+from gdf._database import Database
 
 
 #
