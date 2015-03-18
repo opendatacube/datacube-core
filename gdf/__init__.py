@@ -46,7 +46,7 @@ class GDF(object):
             # Merge all configuration sections from individual config files to config dict
             config_dict['configurations'].update(config_file_object.configuration)
         
-        logger.multiline(logger.debug, config_dict, 'config_dict', '\t')
+        log_multiline(logger.debug, config_dict, 'config_dict', '\t')
         return config_dict
     
     def get_dbs(self):
@@ -78,7 +78,7 @@ class GDF(object):
             except Exception, e:
                 logger.info('Unable to connect to database for %s: %s', section_name, e.message)
 
-        logger.multiline(logger.debug, database_dict, 'database_dict', '\t')
+        log_multiline(logger.debug, database_dict, 'database_dict', '\t')
         return database_dict
         
 
