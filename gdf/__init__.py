@@ -1,5 +1,7 @@
 import os
 import sys
+import threading
+import traceback
 
 from _database import Database, CachedResultSet
 from _arguments import CommandLineArgs
@@ -19,6 +21,8 @@ if not logger.level:
     logger.setLevel(logging.DEBUG) # Default logging level for all modules
     logger.addHandler(console_handler)
 
+thread_exception = None
+
 class GDF(object):
     '''
     Class definition for GDF (General Data Framework).
@@ -26,16 +30,16 @@ class GDF(object):
     '''
     DEFAULT_CONFIG_FILE = 'gdf_default.conf' # N.B: Assumed to reside in code root directory
     
-    def get_config(self):
+    def get_command_line_params(self):
         command_line_args_object = CommandLineArgs()
         
-        # Copy command line values to config dict
-        config_dict = {'command_line': command_line_args_object.arguments,
-                       'configurations' : {}
-                       }
+        return command_line_args_object.arguments
+        
+    def get_config(self):
+        config_dict = {}
         
         # Use default config file if none provided
-        config_files_string = command_line_args_object.arguments['config_files'] or os.path.join(self._code_root, GDF.DEFAULT_CONFIG_FILE)
+        config_files_string = self._command_line_params['config_files'] or os.path.join(self._code_root, GDF.DEFAULT_CONFIG_FILE)
         
         # Set list of absolute config file paths from comma-delimited list
         self._config_files = [os.path.abspath(config_file) for config_file in config_files_string.split(',')] 
@@ -45,19 +49,17 @@ class GDF(object):
             config_file_object = ConfigFile(config_file)
         
             # Merge all configuration sections from individual config files to config dict
-            config_dict['configurations'].update(config_file_object.configuration)
+            config_dict.update(config_file_object.configuration)
         
         log_multiline(logger.debug, config_dict, 'config_dict', '\t')
         return config_dict
     
     def get_dbs(self):
-        config_dict = self._configuration['configurations']
-        
         database_dict = {}
         
         # Create a database connection for every valid configuration
-        for section_name in sorted(config_dict.keys()):
-            section_dict = config_dict[section_name]
+        for section_name in sorted(self._configuration.keys()):
+            section_dict = self._configuration[section_name]
             try:
                 host = section_dict['host']
                 port = section_dict['port']
@@ -91,15 +93,21 @@ class GDF(object):
         self._code_root = os.path.abspath(os.path.dirname(__file__)) # Directory containing module code
         
         # Create master configuration dict containing both command line and config_file parameters
+        self._command_line_params = self.get_command_line_params()
+                
+        # Create master configuration dict containing both command line and config_file parameters
         self._configuration = self.get_config()
                 
         # Create master database dict
         self._databases = self.get_dbs()
         
+        # Read configuration from databases
+        self._db_configuration = self.get_db_config()
+        
         log_multiline(logger.debug, self.__dict__, 'GDF.__dict__', '\t')
         
         
-    def get_ndarray_types(self, databases={}):
+    def get_db_config(self, databases={}):
         '''Function to return a dict with details of all dimensions managed in databases keyed as follows:
         
            <db_name>
@@ -112,12 +120,40 @@ class GDF(object):
                                 'dimensions'
                                     <dimension_tag>
                    
+           This is currently a bit ugly because it retrieves the de-normalised data in a single query and then has to
+           build the tree from the flat result set. It could be done in a prettier (but slower) way with multiple queries
         '''
         
+        def check_thread_exception():
+            """"Check for exception raised by previous thread and raise it if found.
+            Note that any other threads already underway will be allowed to finish normally.
+            """
+            global thread_exception
+            logger.debug('thread_exception: %s', thread_exception)
+            # Check for exception raised by previous thread and raise it if found
+            if thread_exception:
+                logger.error('Thread error: ' + thread_exception.message)
+                raise thread_exception # Raise the exception in the main thread
+    
+        def thread_execute(db_function, db_name, databases, result_dict):
+            """Helper function to capture exception within the thread and set a global
+            variable to be checked in the main thread
+            N.B: THIS FUNCTION RUNS WITHIN THE SPAWNED THREAD
+            """
+            global thread_exception
+            try:
+                db_function(db_name, databases)
+            except Exception, e:
+                thread_exception = e
+                log_multiline(logger.error, traceback.format_exc(), 'Error in thread: ' + e.message, '\t')
+                raise thread_exception # Re-raise the exception within the thread
+            finally:
+                logger.debug('Thread finished')
+
         def get_db_data(db_name, databases):
             db_dict = {'ndarray_types': {}}
             database = databases[db_name]
-            db_config_dict = self._configuration['configurations'][db_name]
+            db_config_dict = self._configuration[db_name]
             
             ndarray_types = database.submit_query('''-- Query to return all ndarray_type configuration info
 select * from ndarray_type 
@@ -173,28 +209,39 @@ order by ndarray_type_tag, measurement_type_index, creation_order;
 
                     domain_dict['dimensions'][record_dict['dimension_tag']] = dimension_dict
                     
-            return db_dict
+            result_dict[db_name] = db_dict
         
         databases = databases or self._databases
         
         result_dict = {} # Nested dict containing ndarray_type details for all databases
 
-        #TODO: Multi-thread this section
-        for db_name in sorted(databases.keys()):
-            result_dict[db_name] = get_db_data(db_name, databases)
+#        #TODO: Multi-thread this section
+#        for db_name in sorted(databases.keys()):
+#            result_dict[db_name] = get_db_data(db_name, databases)
             
+        thread_list = []
+        for db_name in sorted(databases.keys()):
+#            check_thread_exception()
+            process_thread = threading.Thread(
+            target=thread_execute,
+                    args=(get_db_data, db_name, databases, result_dict)
+                    )
+            thread_list.append(process_thread)
+            process_thread.setDaemon(False)
+            process_thread.start()
+            logger.debug('Started thread for get_db_data(%s, %s, %s)', db_name, databases, result_dict)
+
+        # Wait for all threads to finish
+        for process_thread in thread_list:
+            check_thread_exception()
+            process_thread.join()
+
+        check_thread_exception()
+        logger.debug('All threads finished')
+
         return result_dict
                     
                 
-    
-    def get_dimensions(self, databases={}):
-        '''Function to return a dict with details of all dimensions managed in databases
-        '''
-        databases = databases or self._databases
-        
-        for db_name in sorted(databases.keys()):
-            database = databases[db_name]
-            db_config_dict = self._configuration['configurations'][db_name]
 
             
         
@@ -209,10 +256,19 @@ order by ndarray_type_tag, measurement_type_index, creation_order;
         return self._config_files
     
     @property
+    def command_line_params(self):
+        return self._command_line_params
+    
+    @property
     def configuration(self):
         return self._configuration
     
     @property
     def databases(self):
         return self._databases
+
+    @property
+    def db_configuration(self):
+        return self._db_configuration
+    
         
