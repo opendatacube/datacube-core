@@ -37,11 +37,8 @@ class GDF(object):
         # Use default config file if none provided
         config_files_string = command_line_args_object.arguments['config_files'] or os.path.join(self._code_root, GDF.DEFAULT_CONFIG_FILE)
         
-        # Extract list of config files from comma-delimited list
-        self._config_files = config_files_string.split(',')
-
-        # Convert config file paths to absolute
-        self._config_files = [os.path.abspath(config_file) for config_file in self._config_files] 
+        # Set list of absolute config file paths from comma-delimited list
+        self._config_files = [os.path.abspath(config_file) for config_file in config_files_string.split(',')] 
            
         for config_file in self._config_files:
             config_file_object = ConfigFile(config_file)
@@ -49,6 +46,7 @@ class GDF(object):
             # Merge all configuration sections from individual config files to config dict
             config_dict['configurations'].update(config_file_object.configuration)
         
+        logger.multiline(logger.debug, config_dict, 'config_dict', '\t')
         return config_dict
     
     def get_dbs(self):
@@ -80,6 +78,7 @@ class GDF(object):
             except Exception, e:
                 logger.info('Unable to connect to database for %s: %s', section_name, e.message)
 
+        logger.multiline(logger.debug, database_dict, 'database_dict', '\t')
         return database_dict
         
 
@@ -95,6 +94,8 @@ class GDF(object):
                 
         # Create master database dict
         self._databases = self.get_dbs()
+        
+        log_multiline(logger.debug, self.__dict__, 'GDF.__dict__', '\t')
         
     
     # Define properties for GDF class
