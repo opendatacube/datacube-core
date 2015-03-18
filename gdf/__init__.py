@@ -39,6 +39,7 @@ class GDF(object):
         
         # Set list of absolute config file paths from comma-delimited list
         self._config_files = [os.path.abspath(config_file) for config_file in config_files_string.split(',')] 
+        log_multiline(logger.debug, self._config_files, 'self._config_files', '\t')
            
         for config_file in self._config_files:
             config_file_object = ConfigFile(config_file)
