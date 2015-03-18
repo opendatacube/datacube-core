@@ -60,12 +60,12 @@ class CommandLineArgs(object):
                                         'const': True,
                                         'help': 'Debug mode flag'
                                         },
-                              'config_file': {'short_flag': '-C', 
+                              'config_files': {'short_flag': '-C', 
                                               'long_flag': '--config',
                                               'default': None,
                                               'action': 'store',
                                               'const': None,
-                                              'help': 'Configuration file'
+                                              'help': 'Comma-delimited list of configuration files'
                                     }
                     }
     
