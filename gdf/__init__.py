@@ -181,7 +181,7 @@ order by ndarray_type_tag, measurement_type_index, creation_order;
 
         #TODO: Multi-thread this section
         for db_name in sorted(databases.keys()):
-            result_dict.update(get_db_data(db_name, databases))
+            result_dict[db_name] = get_db_data(db_name, databases)
             
         return result_dict
                     
