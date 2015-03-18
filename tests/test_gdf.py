@@ -60,7 +60,7 @@ class TestGDF(unittest.TestCase):
         
         assert test_gdf.code_root == os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'gdf')), 'Code root is incorrect'
         assert len(test_gdf.config_files) == 1, 'Default config path list should have one entry'
-        assert test_gdf.config_files[0] == os.path.abspath(GDF.DEFAULT_CONFIG_FILE), 'Default config path is incorrect'
+        assert test_gdf.config_files[0] == os.path.abspath(os.path.join(test_gdf.code_root, GDF.DEFAULT_CONFIG_FILE)), 'Default config path is incorrect'
         assert test_gdf.configuration.get('command_line') is not None, 'Command line parameter dict not set'
         assert test_gdf.configuration.get('configurations') is not None, 'Configurations dict not set'
         assert len(test_gdf.configuration['configurations']) > 0, 'Config files must define at least one setup'
