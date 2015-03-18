@@ -30,7 +30,9 @@ class GDF(object):
         command_line_args_object = CommandLineArgs()
         
         # Copy command line values to config dict
-        config_dict = {'command_line': command_line_args_object.arguments}
+        config_dict = {'command_line': command_line_args_object.arguments,
+                       'configurations' : {}
+                       }
         
         # Use default config file if none provided
         config_files_string = command_line_args_object.arguments['config_files'] or os.path.join(self._code_root, GDF.DEFAULT_CONFIG_FILE)
@@ -45,12 +47,12 @@ class GDF(object):
             config_file_object = ConfigFile(config_file)
         
             # Merge all configuration sections from individual config files to config dict
-            config_dict['config_files'].update(config_file_object.configuration)
+            config_dict['configurations'].update(config_file_object.configuration)
         
         return config_dict
     
     def get_dbs(self):
-        config_dict = self._configuration['config_files']
+        config_dict = self._configuration['configurations']
         
         database_dict = {}
         
@@ -88,7 +90,7 @@ class GDF(object):
         
         self._code_root = os.path.abspath(os.path.dirname(__file__)) # Directory containing module code
         
-        # Create master configuration dict
+        # Create master configuration dict containing both command line and config_file parameters
         self._configuration = self.get_config()
                 
         # Create master database dict

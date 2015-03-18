@@ -62,8 +62,8 @@ class TestGDF(unittest.TestCase):
         assert len(test_gdf.config_files) == 1, 'Default config path list should have one entry'
         assert test_gdf.config_files[0] == os.path.abspath(GDF.DEFAULT_CONFIG_FILE), 'Default config path is incorrect'
         assert test_gdf.configuration.get('command_line') is not None, 'Command line parameter dict not set'
-        assert test_gdf.configuration.get('config_files') is not None, 'Config files parameter dict not set'
-        assert len(test_gdf.configuration['config_files']) > 0, 'Config files must define at least one setup'
+        assert test_gdf.configuration.get('configurations') is not None, 'Configurations dict not set'
+        assert len(test_gdf.configuration['configurations']) > 0, 'Config files must define at least one setup'
         assert len(test_gdf.databases) > 0, 'At least one database must be set up'
 #
 # Define test suites
