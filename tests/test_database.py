@@ -121,8 +121,12 @@ def test_suite():
 
     return suite
 
+# Define main function
+def main():
+    unittest.TextTestRunner(verbosity=2).run(test_suite())
+    
 #
 # Run unit tests if in __main__
 #
 if __name__ == '__main__':
-    unittest.TextTestRunner(verbosity=2).run(test_suite())
+    main()
