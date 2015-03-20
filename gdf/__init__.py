@@ -10,16 +10,16 @@ import logging
 
 from EOtools.utils import log_multiline
 
-# Set top level standard output 
+# Set handler for root logger to standard output 
 console_handler = logging.StreamHandler(sys.stdout)
+#console_handler.setLevel(logging.INFO)
 console_handler.setLevel(logging.DEBUG)
 console_formatter = logging.Formatter('%(message)s')
 console_handler.setFormatter(console_formatter)
+logging.root.addHandler(console_handler)
 
 logger = logging.getLogger(__name__)
-if not logger.level:
-    logger.setLevel(logging.DEBUG) # Default logging level for all modules
-    logger.addHandler(console_handler)
+logger.setLevel(logging.DEBUG) # Logging level for this module
 
 thread_exception = None
 
@@ -114,7 +114,7 @@ class GDF(object):
                'ndarray_types'
                     <ndarray_type_tag>
                         'measurement_types'
-                           <measurement_type_tag>
+                            <measurement_type_tag>
                         'domains'
                             <domain_name>
                                 'dimensions'
@@ -142,7 +142,7 @@ class GDF(object):
             """
             global thread_exception
             try:
-                db_function(db_name, databases)
+                db_function(db_name, databases, result_dict)
             except Exception, e:
                 thread_exception = e
                 log_multiline(logger.error, traceback.format_exc(), 'Error in thread: ' + e.message, '\t')
@@ -150,7 +150,7 @@ class GDF(object):
             finally:
                 logger.debug('Thread finished')
 
-        def get_db_data(db_name, databases):
+        def get_db_data(db_name, databases, result_dict):
             db_dict = {'ndarray_types': {}}
             database = databases[db_name]
             db_config_dict = self._configuration[db_name]

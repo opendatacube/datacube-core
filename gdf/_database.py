@@ -39,16 +39,8 @@ import psycopg2
 
 from EOtools.utils import log_multiline
 
-# Set top level standard output 
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(logging.INFO)
-console_formatter = logging.Formatter('%(message)s')
-console_handler.setFormatter(console_formatter)
-
 logger = logging.getLogger(__name__)
-if not logger.level:
-    logger.setLevel(logging.DEBUG) # Default logging level for all modules
-    logger.addHandler(console_handler)
+logger.setLevel(logging.DEBUG) # Logging level for this module
 
 class CachedResultSet(object):
     '''Class CachedResultSet to manage an in-memory cache of query results
