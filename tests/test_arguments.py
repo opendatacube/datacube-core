@@ -75,6 +75,9 @@ class TestCommandLineArgs(unittest.TestCase):
     def test_CommandLineArgs(self):
         "Test CommandLineArgs constructor"
         
+        # Remember actual arguments in order to avoid side-effects
+        original_sys_argv = list(sys.argv)
+        
         # Simulate command line arguments
         sys.argv.append("--config=config_file.conf")
         sys.argv.append("--debug")
@@ -88,7 +91,8 @@ class TestCommandLineArgs(unittest.TestCase):
         assert command_line_args.arguments['test'], 'Custom --test argument not parsed'
         assert command_line_args.arguments['test_value'] == 'default_test_value', 'Default value for custom test_value argument not set'
 
-        sys.argv.remove("--config=config_file.conf") # Remove the test value to avoid breaking anything downstream
+        # Remove simulated test arguments
+        sys.argv = original_sys_argv
 #
 # Define test suites
 #

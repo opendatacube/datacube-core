@@ -40,7 +40,7 @@ import psycopg2
 from EOtools.utils import log_multiline
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG) # Logging level for this module
+#logger.setLevel(logging.DEBUG) # Logging level for this module
 
 class CachedResultSet(object):
     '''Class CachedResultSet to manage an in-memory cache of query results

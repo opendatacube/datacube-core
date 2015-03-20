@@ -19,7 +19,7 @@ console_handler.setFormatter(console_formatter)
 logging.root.addHandler(console_handler)
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG) # Logging level for this module
+#logger.setLevel(logging.DEBUG) # Logging level for this module
 
 thread_exception = None
 
@@ -94,6 +94,12 @@ class GDF(object):
         
         # Create master configuration dict containing both command line and config_file parameters
         self._command_line_params = self.get_command_line_params()
+        
+        if self._command_line_params['debug']:
+            logger.setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.INFO)
+
                 
         # Create master configuration dict containing both command line and config_file parameters
         self._configuration = self.get_config()
