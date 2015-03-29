@@ -113,6 +113,32 @@ class GDF(object):
         log_multiline(logger.debug, self.__dict__, 'GDF.__dict__', '\t')
         
         
+    def check_thread_exception(self):
+        """"Check for exception raised by previous thread and raise it if found.
+        Note that any other threads already underway will be allowed to finish normally.
+        """
+        global thread_exception
+        logger.debug('thread_exception: %s', thread_exception)
+        # Check for exception raised by previous thread and raise it if found
+        if thread_exception:
+            logger.error('Thread error: ' + thread_exception.message)
+            raise thread_exception # Raise the exception in the main thread
+
+    def thread_execute(self, db_function, db_name, databases, result_dict):
+        """Helper function to capture exception within the thread and set a global
+        variable to be checked in the main thread
+        N.B: THIS FUNCTION RUNS WITHIN THE SPAWNED THREAD
+        """
+        global thread_exception
+        try:
+            db_function(db_name, databases, result_dict)
+        except Exception, e:
+            thread_exception = e
+            log_multiline(logger.error, traceback.format_exc(), 'Error in thread: ' + e.message, '\t')
+            raise thread_exception # Re-raise the exception within the thread
+        finally:
+            logger.debug('Thread finished')
+
     def get_db_config(self, databases={}):
         '''Function to return a dict with details of all dimensions managed in databases keyed as follows:
         
@@ -130,32 +156,6 @@ class GDF(object):
            build the tree from the flat result set. It could be done in a prettier (but slower) way with multiple queries
         '''
         
-        def check_thread_exception():
-            """"Check for exception raised by previous thread and raise it if found.
-            Note that any other threads already underway will be allowed to finish normally.
-            """
-            global thread_exception
-            logger.debug('thread_exception: %s', thread_exception)
-            # Check for exception raised by previous thread and raise it if found
-            if thread_exception:
-                logger.error('Thread error: ' + thread_exception.message)
-                raise thread_exception # Raise the exception in the main thread
-    
-        def thread_execute(db_function, db_name, databases, result_dict):
-            """Helper function to capture exception within the thread and set a global
-            variable to be checked in the main thread
-            N.B: THIS FUNCTION RUNS WITHIN THE SPAWNED THREAD
-            """
-            global thread_exception
-            try:
-                db_function(db_name, databases, result_dict)
-            except Exception, e:
-                thread_exception = e
-                log_multiline(logger.error, traceback.format_exc(), 'Error in thread: ' + e.message, '\t')
-                raise thread_exception # Re-raise the exception within the thread
-            finally:
-                logger.debug('Thread finished')
-
         def get_db_data(db_name, databases, result_dict):
             db_dict = {'ndarray_types': {}}
             database = databases[db_name]
@@ -229,7 +229,7 @@ order by ndarray_type_tag, measurement_type_index, creation_order;
         for db_name in sorted(databases.keys()):
 #            check_thread_exception()
             process_thread = threading.Thread(
-            target=thread_execute,
+            target=self.thread_execute,
                     args=(get_db_data, db_name, databases, result_dict)
                     )
             thread_list.append(process_thread)
@@ -239,10 +239,10 @@ order by ndarray_type_tag, measurement_type_index, creation_order;
 
         # Wait for all threads to finish
         for process_thread in thread_list:
-            check_thread_exception()
+            self.check_thread_exception()
             process_thread.join()
 
-        check_thread_exception()
+        self.check_thread_exception()
         logger.debug('All threads finished')
 
         return result_dict
