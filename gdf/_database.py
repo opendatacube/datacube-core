@@ -49,7 +49,7 @@ class CachedResultSet(object):
         '''Constructor for class CachedResultSet
         
         Parameter:
-            cursor: psycopg2 cursor object through which the result setfrom a previously executed query will be retrieved 
+            cursor: psycopg2 cursor object through which the result set from a previously executed query will be retrieved 
         '''
         if cursor.description is None: # No fields returned            
             self._field_names = []
