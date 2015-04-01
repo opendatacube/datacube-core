@@ -57,6 +57,7 @@ class TestSQLAlchemyDB(unittest.TestCase):
     SUITE = 'TestSQLAlchemyDB'
 
     # Test DB connection parameters
+    TEST_DBREF = 'test'
 #    TEST_HOST = '130.56.244.228' 
 #    TEST_PORT = 6432
     TEST_HOST = 'localhost' 
@@ -68,12 +69,13 @@ class TestSQLAlchemyDB(unittest.TestCase):
 
     def test_SQLAlchemyDB(self):
         "Test SQLAlchemyDB constructor"
-        test_db = SQLAlchemyDB(self.TEST_HOST, 
-                           self.TEST_PORT, 
-                           self.TEST_DBNAME, 
-                           self.TEST_USER, 
-                           self.TEST_PASSWORD
-                           )
+        test_db = SQLAlchemyDB(self.TEST_DBREF, 
+                               self.TEST_HOST, 
+                               self.TEST_PORT, 
+                               self.TEST_DBNAME, 
+                               self.TEST_USER, 
+                               self.TEST_PASSWORD
+                               )
         
         assert len(test_db.ndarray_types) > 0, 'No NDArrayType objects created'
         

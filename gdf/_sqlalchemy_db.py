@@ -53,11 +53,36 @@ class SQLAlchemyDB(object):
     '''
 
     def get_ndarray_types(self):
-        '''Return a dict containing all defined (<ndarray_type_tag>: <ndarray_type>) pairs
+        '''
+        Return a dict containing all defined (<ndarray_type_tag>: <ndarray_type>) pairs in DB
         '''
         return {ndarray_type.ndarray_type_tag: ndarray_type for ndarray_type in self.session.query(NDarrayType)}
         
-    def __init__(self, host, port, dbname, user, password):
+    def get_dimensions(self):
+        '''
+        Return a dict containing all defined (<dimension_tag>: <dimension>) pairs in DB
+        Requires self.ndarray_types
+        '''
+        dimension_set = set([])
+        for ndarray_type in self.ndarray_types.values():
+            dimension_set |= set(ndarray_type.dimensions)
+            
+        return {dimension.dimension_tag: dimension for dimension in dimension_set}
+            
+    def get_domains(self):
+        '''
+        Return a dict containing all defined (<domain_tag>: <domain>) pairs in DB
+        Requires self.ndarray_types
+        '''
+        domain_set = set([])
+        for ndarray_type in self.ndarray_types.values():
+            domain_set |= set(ndarray_type.domains)
+            
+        return {domain.domain_tag: domain for domain in domain_set}
+            
+        
+
+    def __init__(self, dbref, host, port, dbname, user, password):
         '''
         Constructor for class Database.
         
@@ -68,6 +93,7 @@ class SQLAlchemyDB(object):
             user: PostgreSQL database user
             password: PostgreSQL database password for user
         '''
+        self._dbref = dbref
         self._host = host
         self._port = port
         self._dbname = dbname
@@ -86,7 +112,109 @@ class SQLAlchemyDB(object):
         
         self.session = Session()
         
-        self.ndarray_types = self.get_ndarray_types()
+        # Create dicts containing relevant configuration objects
+        self._ndarray_types = self.get_ndarray_types()
+        self._dimensions = self.get_dimensions()
+        self._domains = self.get_domains()
+
+        def get_ndarrays(self, dimension_range_dict): 
+            '''
+            Parameter:
+                dimension_range_dict: dict defined as {<dimension_tag>: (<min_value>, <max_value>), 
+                                                       <dimension_tag>: (<min_value>, <max_value>)...}
+            '''
+            ndarray_dict = {}
+            
+            for ndarray_type in self._ndarray_types:
+                # Skip ndarray_type if  dimensionality of query is greater than dimensionality of ndarray_type
+                if set(dimension_range_dict.keys()) > set([dimension.dimension_tag for dimension in ndarray_type.dimensions]):
+                    continue
+                
+                ndarray_dict[ndarray_type] = {}
+                
+                # Obtain list of dimension tags ordered by creation order
+                dimension_tag_list = [dimension.dimension_tag for dimension in ndarray_type.dimensions if dimension.dimension_tag in dimension_range_dict.keys()]
+                
+                #===============================================================
+                # for dimension_tag in dimension_tag_list:
+                #     min_index, min_ordinate = ndarray_type.get_index_and_ordinate(dimension_tag, dimension_range_dict[dimension_tag][0])
+                #     max_index, max_ordinate = ndarray_type.get_index_and_ordinate(dimension_tag, dimension_range_dict[dimension_tag][1])
+                #     
+                #===============================================================
+                SQL = ''' --Find ndarrays which fall in range
+select distinct'''
+                for dimension_tag in dimension_tag_list:
+                    SQL +='''
+    %s.ndarray_dimension_index as %s_index,
+    %s.ndarray_dimension_min as %s_min,
+    %s.ndarray_dimension_max as %s_max,''' % (dimension_tag, dimension_tag)
+                SQL +='''
+    ndarray.*
+from ndarray'''                    
+                for dimension_tag in dimension_tag_list:
+                    SQL +='''
+    join (
+    select *
+    from dimension 
+        join dimension_domain using(dimension_id)
+        join ndarray_dimension using(dimension_id, domain_id)
+        where ndarray_type_id = %d
+        and ndarray_version = 0
+        and dimension.dimension_tag = %s
+        and (ndarray_dimension_min between %f and %f 
+            or ndarray_dimension_max between %f and %f)
+        ) %s using(ndarray_type_id, ndarray_id, ndarray_version)
+''' % (ndarray_type.ndarray_type_id, 
+       dimension_tag, 
+       dimension_range_dict[dimension_tag][0],
+       dimension_range_dict[dimension_tag][1],
+       dimension_range_dict[dimension_tag][0],
+       dimension_range_dict[dimension_tag][1],
+       dimension_tag
+       )
+                SQL +='''
+order by'''
+                for dimension_tag in dimension_tag_list:
+                    SQL +='''
+    %s.index,'''
+                SQL +=''';'''
+                    
+                    
+    @property
+    def dbref(self):
+        return self._dbref
+
+    @property
+    def host(self):
+        return self._host
+
+    @property
+    def port(self):
+        return self._port
+        
+    @property
+    def dbname(self):
+        return self._dbname
+
+    @property
+    def user(self):
+        return self._user
+
+    @property
+    def password(self):
+        return self._password
+        
+    @property
+    def ndarray_types(self):
+        return self._ndarray_types
+
+    @property
+    def dimensions(self):
+        return self._dimensions
+
+    @property
+    def domains(self):
+        return self._domains
         
 class _DimensionDomain(Base):
     __tablename__ = 'dimension_domain'
@@ -159,6 +287,7 @@ class _NDarrayTypeDimension(Base):
                                     primaryjoin="and_(_DimensionDomain.domain_id==_NDarrayTypeDimension.domain_id, "
                                                 "_DimensionDomain.dimension_id==_NDarrayTypeDimension.dimension_id)"
                                     )
+    
     def __repr__(self):
         return "<_NDarrayTypeDimension(ndarray_type_id='%d', dimension_id='%d', domain_id='%d')>" % (
                             self.ndarray_type_id, self.dimension_id, self.domain_id)
@@ -192,7 +321,24 @@ class NDarrayType(Base):
     def _domains(self):
         '''Return set of domain objects
         '''
-        return set([ndarray_type_dimension.dimension_domain.domain for ndarray_type_dimension in self.ndarray_type_dimensions])
+        return set([ndarray_type_dimension._dimension_domain.domain for ndarray_type_dimension in self._ndarray_type_dimensions])
+    
+    def get_index_and_ordinate(self, dimension_tag, dimension_value):
+        '''
+        Returns a index value and offset within ndarray for given dimension_tag and dimension_value
+        '''
+        dimension = [dimension for dimension in self.dimensions if dimension.dimension_tag == dimension_tag][0]
+        
+        ndarray_type_dimension = [ndarray_type_dimension for ndarray_type_dimension in self._ndarray_type_dimensions if ndarray_type_dimension.dimension_id == dimension.dimension_id][0]
+        
+        domain = [domain for domain in self.domains if domain.domain_id == ndarray_type_dimension.domain_id][0]
+        
+        # if ndarray_type_dimension.indexing_type == 'regular':
+        ndarray_index = (dimension_value - ndarray_type_dimension.dimension_origin) // ndarray_type_dimension.dimension_extent
+        
+        ndarray_ordinate = ((dimension_value - ndarray_type_dimension.dimension_origin) % ndarray_type_dimension.dimension_extent) * ndarray_type_dimension.dimension_elements
+
+        return ndarray_index, ndarray_ordinate
 
     @property
     def dimensions(self):
@@ -202,4 +348,5 @@ class NDarrayType(Base):
     def domains(self):
         return self._domains()
     
-    
+
+   
