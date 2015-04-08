@@ -32,7 +32,7 @@ Created on 12/03/2015
 
 @author: Alex Ip
 '''
-
+from datetime import datetime
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
@@ -263,6 +263,30 @@ class Domain(Base):
         return "<Domain(domain_id='%d', domain_name='%s', domain_tag='%s')>" % (
                             self.domain_id, self.domain_name, self.domain_tag)
        
+class ReferenceSystem(Base):
+    __tablename__ = 'reference_system'
+
+    reference_system_id = Column(BIGINT, primary_key=True)
+    reference_system_name = Column(String(32))
+    reference_system_unit = Column(String(32))
+    reference_system_definition = Column(String(254))
+    reference_system_tag = Column(String(32))
+
+    def __repr__(self):
+        return "<ReferenceSystem(reference_system_id='%d', reference_system_name='%s', reference_system_tag='%s')>" % (
+                            self.reference_system_id, self.reference_system_name, self.reference_system_tag)
+       
+       
+class IndexingType(Base):
+    __tablename__ = 'indexing_type'
+
+    indexing_type_id = Column(SMALLINT, primary_key=True)
+    indexing_type_name = Column(String(128))
+
+    def __repr__(self):
+        return "<IndexingType(indexing_type_id='%d', indexing_type_name='%s')>" % (
+                            self.indexing_type_id, self.indexing_type_name)
+       
        
 class _NDarrayTypeDimension(Base):
     __tablename__ = 'ndarray_type_dimension'
@@ -277,7 +301,7 @@ class _NDarrayTypeDimension(Base):
     dimension_origin = Column(NUMERIC)
     indexing_type_id = Column(SMALLINT, ForeignKey('indexing_type.indexing_type_id'))
     reference_system_id = Column(BIGINT, ForeignKey('reference_system.reference_system_id'))
-    dimension_extent_unit = Column(String(32))
+    index_reference_system_id = Column(BIGINT, ForeignKey('reference_system.reference_system_id'))
     
     _dimension_domain = relationship('_DimensionDomain', 
                                     foreign_keys=[domain_id, dimension_id], 
@@ -286,6 +310,30 @@ class _NDarrayTypeDimension(Base):
                                     innerjoin=True,
                                     primaryjoin="and_(_DimensionDomain.domain_id==_NDarrayTypeDimension.domain_id, "
                                                 "_DimensionDomain.dimension_id==_NDarrayTypeDimension.dimension_id)"
+                                    )
+    
+    indexing_type = relationship('IndexingType', 
+                                    foreign_keys=[indexing_type_id], 
+                                    uselist=False, 
+                                    backref='ndarray_type_dimension', 
+                                    innerjoin=True,
+                                    primaryjoin="IndexingType.indexing_type_id==_NDarrayTypeDimension.indexing_type_id"
+                                    )
+    
+    reference_system = relationship('ReferenceSystem', 
+                                    foreign_keys=[reference_system_id], 
+                                    uselist=False, 
+                                    backref='ndarray_type_dimension', 
+                                    innerjoin=True,
+                                    primaryjoin="ReferenceSystem.reference_system_id==_NDarrayTypeDimension.reference_system_id"
+                                    )
+    
+    index_reference_system = relationship('ReferenceSystem', 
+                                    foreign_keys=[index_reference_system_id], 
+                                    uselist=False, 
+                                    backref='index_ndarray_type_dimension', 
+                                    innerjoin=True,
+                                    primaryjoin="ReferenceSystem.reference_system_id==_NDarrayTypeDimension.index_reference_system_id",
                                     )
     
     def __repr__(self):
@@ -333,11 +381,24 @@ class NDarrayType(Base):
         
         domain = [domain for domain in self.domains if domain.domain_id == ndarray_type_dimension.domain_id][0]
         
-        # if ndarray_type_dimension.indexing_type == 'regular':
-        ndarray_index = (dimension_value - ndarray_type_dimension.dimension_origin) // ndarray_type_dimension.dimension_extent
-        
-        ndarray_ordinate = ((dimension_value - ndarray_type_dimension.dimension_origin) % ndarray_type_dimension.dimension_extent) * ndarray_type_dimension.dimension_elements
-
+        #TODO: Re-examine conditions for exceptional indexing - not sure if this is the best way
+        if (ndarray_type_dimension.indexing_type.indexing_type_name == 'regular' and 
+            ndarray_type_dimension.index_reference_system_id == ndarray_type_dimension.reference_system_id):
+            # Regular index calculated from origin and extent values
+            ndarray_index = (dimension_value - ndarray_type_dimension.dimension_origin) // ndarray_type_dimension.dimension_extent
+            ndarray_ordinate = ((dimension_value - ndarray_type_dimension.dimension_origin) % ndarray_type_dimension.dimension_extent) * ndarray_type_dimension.dimension_elements
+        else:
+            # Special case for year-indexed time (irregular intervals)
+            if (dimension.dimension_tag == 'T' and
+                ndarray_type_dimension.index_reference_system.reference_system_tag == 'YEAR' and 
+                ndarray_type_dimension.reference_system.reference_system_tag == 'SSE'):
+                #Set year index value form seconds-since-epoch value
+                ndarray_index = datetime.fromtimestamp(dimension_value).year
+                # Keep seconds-since-epoch value?
+                ndarray_ordinate = dimension_value
+            else:
+                raise Exception('Unhandled indexing type')    
+            
         return ndarray_index, ndarray_ordinate
 
     @property

@@ -1,10 +1,10 @@
---
+﻿--
 -- PostgreSQL database dump
 --
 
 -- Dumped from database version 9.3.6
 -- Dumped by pg_dump version 9.3.6
--- Started on 2015-04-01 18:36:06 AEDT
+-- Started on 2015-04-05 17:09:42 AEST
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -14,16 +14,7 @@ SET check_function_bodies = false;
 SET client_min_messages = warning;
 
 --
--- TOC entry 3869 (class 1262 OID 986027)
--- Dependencies: 3868
--- Name: gdf; Type: COMMENT; Schema: -; Owner: cube_admin
---
-
-COMMENT ON DATABASE gdf IS 'Draft General Data Framework Development Database';
-
-
---
--- TOC entry 6 (class 2615 OID 986028)
+-- TOC entry 8 (class 2615 OID 1955144)
 -- Name: earth_observation; Type: SCHEMA; Schema: -; Owner: cube_admin
 --
 
@@ -33,7 +24,7 @@ CREATE SCHEMA earth_observation;
 ALTER SCHEMA earth_observation OWNER TO cube_admin;
 
 --
--- TOC entry 7 (class 2615 OID 986029)
+-- TOC entry 6 (class 2615 OID 994234)
 -- Name: topology; Type: SCHEMA; Schema: -; Owner: cube_admin
 --
 
@@ -43,7 +34,7 @@ CREATE SCHEMA topology;
 ALTER SCHEMA topology OWNER TO cube_admin;
 
 --
--- TOC entry 9 (class 2615 OID 986030)
+-- TOC entry 10 (class 2615 OID 1955145)
 -- Name: ztmp; Type: SCHEMA; Schema: -; Owner: postgres
 --
 
@@ -53,86 +44,30 @@ CREATE SCHEMA ztmp;
 ALTER SCHEMA ztmp OWNER TO postgres;
 
 --
--- TOC entry 3872 (class 0 OID 0)
--- Dependencies: 9
+-- TOC entry 3931 (class 0 OID 0)
+-- Dependencies: 10
 -- Name: SCHEMA ztmp; Type: COMMENT; Schema: -; Owner: postgres
 --
 
 COMMENT ON SCHEMA ztmp IS 'Temporary schema';
 
 
---
--- TOC entry 232 (class 3079 OID 11929)
--- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
---
-
-CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
-
-
---
--- TOC entry 3874 (class 0 OID 0)
--- Dependencies: 232
--- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: 
---
-
-COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
-
-
---
--- TOC entry 231 (class 3079 OID 986031)
--- Name: adminpack; Type: EXTENSION; Schema: -; Owner: 
---
-
-CREATE EXTENSION IF NOT EXISTS adminpack WITH SCHEMA pg_catalog;
-
-
---
--- TOC entry 3875 (class 0 OID 0)
--- Dependencies: 231
--- Name: EXTENSION adminpack; Type: COMMENT; Schema: -; Owner: 
---
-
-COMMENT ON EXTENSION adminpack IS 'administrative functions for PostgreSQL';
-
-
---
--- TOC entry 234 (class 3079 OID 986040)
--- Name: postgis; Type: EXTENSION; Schema: -; Owner: 
---
-
-CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public;
-
-
---
--- TOC entry 3876 (class 0 OID 0)
--- Dependencies: 234
--- Name: EXTENSION postgis; Type: COMMENT; Schema: -; Owner: 
---
-
-COMMENT ON EXTENSION postgis IS 'PostGIS geometry, geography, and raster spatial types and functions';
-
-
---
--- TOC entry 233 (class 3079 OID 987326)
--- Name: postgis_topology; Type: EXTENSION; Schema: -; Owner: 
---
-
-CREATE EXTENSION IF NOT EXISTS postgis_topology WITH SCHEMA topology;
-
-
---
--- TOC entry 3877 (class 0 OID 0)
--- Dependencies: 233
--- Name: EXTENSION postgis_topology; Type: COMMENT; Schema: -; Owner: 
---
-
-COMMENT ON EXTENSION postgis_topology IS 'PostGIS topology spatial types and functions';
-
-
 SET search_path = public, pg_catalog;
 
+CREATE EXTENSION adminpack
+  SCHEMA pg_catalog
+  VERSION "1.0";
+
+CREATE EXTENSION postgis
+  SCHEMA public
+  VERSION "2.1.3";
+
+CREATE EXTENSION postgis_topology
+  SCHEMA topology
+  VERSION "2.1.3";
+
 --
--- TOC entry 1815 (class 1247 OID 987478)
+-- TOC entry 1746 (class 1247 OID 1955148)
 -- Name: attribute_value_type; Type: TYPE; Schema: public; Owner: cube_admin
 --
 
@@ -146,7 +81,7 @@ CREATE TYPE attribute_value_type AS (
 ALTER TYPE public.attribute_value_type OWNER TO cube_admin;
 
 --
--- TOC entry 1818 (class 1247 OID 987481)
+-- TOC entry 1749 (class 1247 OID 1955151)
 -- Name: category_id_level_type; Type: TYPE; Schema: public; Owner: cube_admin
 --
 
@@ -160,7 +95,7 @@ CREATE TYPE category_id_level_type AS (
 ALTER TYPE public.category_id_level_type OWNER TO cube_admin;
 
 --
--- TOC entry 1821 (class 1247 OID 987484)
+-- TOC entry 1752 (class 1247 OID 1955154)
 -- Name: category_id_type; Type: TYPE; Schema: public; Owner: cube_admin
 --
 
@@ -179,7 +114,7 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
--- TOC entry 195 (class 1259 OID 987485)
+-- TOC entry 205 (class 1259 OID 1955155)
 -- Name: spectral_parameters; Type: TABLE; Schema: earth_observation; Owner: cube_admin; Tablespace: 
 --
 
@@ -192,8 +127,8 @@ CREATE TABLE spectral_parameters (
 ALTER TABLE earth_observation.spectral_parameters OWNER TO cube_admin;
 
 --
--- TOC entry 3878 (class 0 OID 0)
--- Dependencies: 195
+-- TOC entry 3933 (class 0 OID 0)
+-- Dependencies: 205
 -- Name: TABLE spectral_parameters; Type: COMMENT; Schema: earth_observation; Owner: cube_admin
 --
 
@@ -203,7 +138,7 @@ COMMENT ON TABLE spectral_parameters IS 'Configuration: Spectral band parameters
 SET search_path = public, pg_catalog;
 
 --
--- TOC entry 196 (class 1259 OID 987488)
+-- TOC entry 206 (class 1259 OID 1955158)
 -- Name: dataset; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -219,8 +154,8 @@ CREATE TABLE dataset (
 ALTER TABLE public.dataset OWNER TO cube_admin;
 
 --
--- TOC entry 3880 (class 0 OID 0)
--- Dependencies: 196
+-- TOC entry 3935 (class 0 OID 0)
+-- Dependencies: 206
 -- Name: TABLE dataset; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -229,7 +164,7 @@ An example would be a dataset for a particular NBAR Landsat scene.';
 
 
 --
--- TOC entry 197 (class 1259 OID 987491)
+-- TOC entry 207 (class 1259 OID 1955161)
 -- Name: dataset_dimension; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -247,8 +182,8 @@ CREATE TABLE dataset_dimension (
 ALTER TABLE public.dataset_dimension OWNER TO cube_admin;
 
 --
--- TOC entry 3882 (class 0 OID 0)
--- Dependencies: 197
+-- TOC entry 3937 (class 0 OID 0)
+-- Dependencies: 207
 -- Name: TABLE dataset_dimension; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -257,7 +192,7 @@ Each dataset/dimension will have specific max/min/indexing values showing the ra
 
 
 --
--- TOC entry 198 (class 1259 OID 987494)
+-- TOC entry 208 (class 1259 OID 1955164)
 -- Name: dataset_metadata; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -271,8 +206,8 @@ CREATE TABLE dataset_metadata (
 ALTER TABLE public.dataset_metadata OWNER TO cube_admin;
 
 --
--- TOC entry 3884 (class 0 OID 0)
--- Dependencies: 198
+-- TOC entry 3939 (class 0 OID 0)
+-- Dependencies: 208
 -- Name: TABLE dataset_metadata; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -280,7 +215,7 @@ COMMENT ON TABLE dataset_metadata IS 'Data: Lookup table for dataset-level metad
 
 
 --
--- TOC entry 199 (class 1259 OID 987500)
+-- TOC entry 209 (class 1259 OID 1955170)
 -- Name: dataset_type; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -293,8 +228,8 @@ CREATE TABLE dataset_type (
 ALTER TABLE public.dataset_type OWNER TO cube_admin;
 
 --
--- TOC entry 3886 (class 0 OID 0)
--- Dependencies: 199
+-- TOC entry 3941 (class 0 OID 0)
+-- Dependencies: 209
 -- Name: TABLE dataset_type; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -302,7 +237,7 @@ COMMENT ON TABLE dataset_type IS 'Configuration: Type of source dataset (process
 
 
 --
--- TOC entry 200 (class 1259 OID 987503)
+-- TOC entry 210 (class 1259 OID 1955173)
 -- Name: dataset_type_dimension; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -316,8 +251,8 @@ CREATE TABLE dataset_type_dimension (
 ALTER TABLE public.dataset_type_dimension OWNER TO cube_admin;
 
 --
--- TOC entry 3888 (class 0 OID 0)
--- Dependencies: 200
+-- TOC entry 3943 (class 0 OID 0)
+-- Dependencies: 210
 -- Name: TABLE dataset_type_dimension; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -325,7 +260,7 @@ COMMENT ON TABLE dataset_type_dimension IS 'Configuration: Association between d
 
 
 --
--- TOC entry 201 (class 1259 OID 987506)
+-- TOC entry 211 (class 1259 OID 1955176)
 -- Name: dataset_type_domain; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -339,8 +274,8 @@ CREATE TABLE dataset_type_domain (
 ALTER TABLE public.dataset_type_domain OWNER TO cube_admin;
 
 --
--- TOC entry 3890 (class 0 OID 0)
--- Dependencies: 201
+-- TOC entry 3945 (class 0 OID 0)
+-- Dependencies: 211
 -- Name: TABLE dataset_type_domain; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -349,7 +284,7 @@ Used to define which domains cover a given dataset type';
 
 
 --
--- TOC entry 202 (class 1259 OID 987509)
+-- TOC entry 212 (class 1259 OID 1955179)
 -- Name: dataset_type_measurement_type; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -365,8 +300,8 @@ CREATE TABLE dataset_type_measurement_type (
 ALTER TABLE public.dataset_type_measurement_type OWNER TO cube_admin;
 
 --
--- TOC entry 3892 (class 0 OID 0)
--- Dependencies: 202
+-- TOC entry 3947 (class 0 OID 0)
+-- Dependencies: 212
 -- Name: TABLE dataset_type_measurement_type; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -375,7 +310,7 @@ e.g. associations between Landsat 7 NBAR and specific surface-reflectance correc
 
 
 --
--- TOC entry 203 (class 1259 OID 987512)
+-- TOC entry 213 (class 1259 OID 1955182)
 -- Name: datatype; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -391,8 +326,8 @@ CREATE TABLE datatype (
 ALTER TABLE public.datatype OWNER TO cube_admin;
 
 --
--- TOC entry 3894 (class 0 OID 0)
--- Dependencies: 203
+-- TOC entry 3949 (class 0 OID 0)
+-- Dependencies: 213
 -- Name: TABLE datatype; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -400,7 +335,7 @@ COMMENT ON TABLE datatype IS 'Configuration: Lookup table for measurement_type d
 
 
 --
--- TOC entry 204 (class 1259 OID 987515)
+-- TOC entry 214 (class 1259 OID 1955185)
 -- Name: dimension; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -414,8 +349,8 @@ CREATE TABLE dimension (
 ALTER TABLE public.dimension OWNER TO cube_admin;
 
 --
--- TOC entry 3896 (class 0 OID 0)
--- Dependencies: 204
+-- TOC entry 3951 (class 0 OID 0)
+-- Dependencies: 214
 -- Name: TABLE dimension; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -423,7 +358,7 @@ COMMENT ON TABLE dimension IS 'Configuration: Dimensions for n-dimensional data 
 
 
 --
--- TOC entry 205 (class 1259 OID 987518)
+-- TOC entry 215 (class 1259 OID 1955188)
 -- Name: dimension_domain; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -436,8 +371,8 @@ CREATE TABLE dimension_domain (
 ALTER TABLE public.dimension_domain OWNER TO cube_admin;
 
 --
--- TOC entry 3898 (class 0 OID 0)
--- Dependencies: 205
+-- TOC entry 3953 (class 0 OID 0)
+-- Dependencies: 215
 -- Name: TABLE dimension_domain; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -446,7 +381,7 @@ For example, the z dimension could be managed in a Z-spatial domain, or in an XY
 
 
 --
--- TOC entry 206 (class 1259 OID 987521)
+-- TOC entry 216 (class 1259 OID 1955191)
 -- Name: domain; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -460,8 +395,8 @@ CREATE TABLE domain (
 ALTER TABLE public.domain OWNER TO cube_admin;
 
 --
--- TOC entry 3900 (class 0 OID 0)
--- Dependencies: 206
+-- TOC entry 3955 (class 0 OID 0)
+-- Dependencies: 216
 -- Name: TABLE domain; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -469,7 +404,7 @@ COMMENT ON TABLE domain IS 'Configuration: Domain groupings of dimensions (e.g. 
 
 
 --
--- TOC entry 207 (class 1259 OID 987524)
+-- TOC entry 217 (class 1259 OID 1955194)
 -- Name: indexing_type; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -482,8 +417,8 @@ CREATE TABLE indexing_type (
 ALTER TABLE public.indexing_type OWNER TO cube_admin;
 
 --
--- TOC entry 3902 (class 0 OID 0)
--- Dependencies: 207
+-- TOC entry 3957 (class 0 OID 0)
+-- Dependencies: 217
 -- Name: TABLE indexing_type; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -491,7 +426,7 @@ COMMENT ON TABLE indexing_type IS 'Configuration: Lookup table to manage what ki
 
 
 --
--- TOC entry 208 (class 1259 OID 987527)
+-- TOC entry 218 (class 1259 OID 1955197)
 -- Name: ndarray_type; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -505,8 +440,8 @@ CREATE TABLE ndarray_type (
 ALTER TABLE public.ndarray_type OWNER TO cube_admin;
 
 --
--- TOC entry 3904 (class 0 OID 0)
--- Dependencies: 208
+-- TOC entry 3959 (class 0 OID 0)
+-- Dependencies: 218
 -- Name: TABLE ndarray_type; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -514,7 +449,7 @@ COMMENT ON TABLE ndarray_type IS 'Configuration: ndarray parameter lookup table.
 
 
 --
--- TOC entry 209 (class 1259 OID 987530)
+-- TOC entry 219 (class 1259 OID 1955200)
 -- Name: ndarray_type_dimension; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -523,21 +458,21 @@ CREATE TABLE ndarray_type_dimension (
     domain_id bigint NOT NULL,
     dimension_id bigint NOT NULL,
     creation_order smallint,
-    dimension_extent numeric,
+    dimension_extent double precision,
     dimension_elements bigint,
     dimension_cache bigint,
-    dimension_origin numeric,
+    dimension_origin double precision,
     indexing_type_id smallint,
     reference_system_id bigint,
-    dimension_extent_unit character varying(32)
+    index_reference_system_id bigint
 );
 
 
 ALTER TABLE public.ndarray_type_dimension OWNER TO cube_admin;
 
 --
--- TOC entry 3906 (class 0 OID 0)
--- Dependencies: 209
+-- TOC entry 3961 (class 0 OID 0)
+-- Dependencies: 219
 -- Name: TABLE ndarray_type_dimension; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -545,7 +480,7 @@ COMMENT ON TABLE ndarray_type_dimension IS 'Configuration: Association between a
 
 
 --
--- TOC entry 210 (class 1259 OID 987536)
+-- TOC entry 220 (class 1259 OID 1955206)
 -- Name: reference_system; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -561,8 +496,8 @@ CREATE TABLE reference_system (
 ALTER TABLE public.reference_system OWNER TO cube_admin;
 
 --
--- TOC entry 3908 (class 0 OID 0)
--- Dependencies: 210
+-- TOC entry 3963 (class 0 OID 0)
+-- Dependencies: 220
 -- Name: TABLE reference_system; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -571,7 +506,7 @@ e.g. EPSG:4326, seconds since 1/1/1970 0:00, etc.';
 
 
 --
--- TOC entry 211 (class 1259 OID 987539)
+-- TOC entry 258 (class 1259 OID 1960875)
 -- Name: ndarray_type_dimension_view; Type: MATERIALIZED VIEW; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -590,16 +525,17 @@ CREATE MATERIALIZED VIEW ndarray_type_dimension_view AS
     indexing_type.indexing_type_name,
     ndarray_type_dimension.dimension_origin,
     ndarray_type_dimension.dimension_extent,
-    COALESCE(ndarray_type_dimension.dimension_extent_unit, reference_system.reference_system_unit) AS dimension_extent_unit,
+    index_reference_system.reference_system_unit AS index_unit,
     ndarray_type_dimension.dimension_elements,
     reference_system.reference_system_unit,
     ndarray_type_dimension.dimension_cache
-   FROM ((((((ndarray_type
+   FROM (((((((ndarray_type
      JOIN ndarray_type_dimension USING (ndarray_type_id))
      JOIN dimension_domain USING (domain_id, dimension_id))
      JOIN domain USING (domain_id))
      JOIN dimension USING (dimension_id))
      JOIN reference_system USING (reference_system_id))
+     JOIN reference_system index_reference_system ON ((ndarray_type_dimension.index_reference_system_id = index_reference_system.reference_system_id)))
      JOIN indexing_type USING (indexing_type_id))
   ORDER BY ndarray_type.ndarray_type_id, ndarray_type_dimension.creation_order
   WITH NO DATA;
@@ -608,7 +544,7 @@ CREATE MATERIALIZED VIEW ndarray_type_dimension_view AS
 ALTER TABLE public.ndarray_type_dimension_view OWNER TO cube_admin;
 
 --
--- TOC entry 212 (class 1259 OID 987547)
+-- TOC entry 221 (class 1259 OID 1955217)
 -- Name: reference_system_indexing; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -624,8 +560,8 @@ CREATE TABLE reference_system_indexing (
 ALTER TABLE public.reference_system_indexing OWNER TO cube_admin;
 
 --
--- TOC entry 3911 (class 0 OID 0)
--- Dependencies: 212
+-- TOC entry 3966 (class 0 OID 0)
+-- Dependencies: 221
 -- Name: TABLE reference_system_indexing; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -634,7 +570,7 @@ e.g. A spectral dimension containing multple bands needs to be indexed by band n
 
 
 --
--- TOC entry 213 (class 1259 OID 987550)
+-- TOC entry 259 (class 1259 OID 1960883)
 -- Name: dimension_indices_view; Type: MATERIALIZED VIEW; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -656,7 +592,7 @@ CREATE MATERIALIZED VIEW dimension_indices_view AS
 ALTER TABLE public.dimension_indices_view OWNER TO cube_admin;
 
 --
--- TOC entry 214 (class 1259 OID 987554)
+-- TOC entry 222 (class 1259 OID 1955224)
 -- Name: ndarray_type_dimension_property; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -672,7 +608,7 @@ CREATE TABLE ndarray_type_dimension_property (
 ALTER TABLE public.ndarray_type_dimension_property OWNER TO cube_admin;
 
 --
--- TOC entry 215 (class 1259 OID 987557)
+-- TOC entry 223 (class 1259 OID 1955227)
 -- Name: property; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -686,7 +622,7 @@ CREATE TABLE property (
 ALTER TABLE public.property OWNER TO cube_admin;
 
 --
--- TOC entry 216 (class 1259 OID 987560)
+-- TOC entry 260 (class 1259 OID 1960887)
 -- Name: dimension_properties_view; Type: MATERIALIZED VIEW; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -709,7 +645,7 @@ CREATE MATERIALIZED VIEW dimension_properties_view AS
 ALTER TABLE public.dimension_properties_view OWNER TO cube_admin;
 
 --
--- TOC entry 217 (class 1259 OID 987565)
+-- TOC entry 224 (class 1259 OID 1955235)
 -- Name: instrument; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -725,8 +661,8 @@ CREATE TABLE instrument (
 ALTER TABLE public.instrument OWNER TO cube_admin;
 
 --
--- TOC entry 3917 (class 0 OID 0)
--- Dependencies: 217
+-- TOC entry 3972 (class 0 OID 0)
+-- Dependencies: 224
 -- Name: TABLE instrument; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -735,7 +671,7 @@ An example would be the ETM+ sensor on the Landsat 7 platform';
 
 
 --
--- TOC entry 218 (class 1259 OID 987568)
+-- TOC entry 225 (class 1259 OID 1955238)
 -- Name: instrument_type; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -748,8 +684,8 @@ CREATE TABLE instrument_type (
 ALTER TABLE public.instrument_type OWNER TO cube_admin;
 
 --
--- TOC entry 3919 (class 0 OID 0)
--- Dependencies: 218
+-- TOC entry 3974 (class 0 OID 0)
+-- Dependencies: 225
 -- Name: TABLE instrument_type; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -757,7 +693,7 @@ COMMENT ON TABLE instrument_type IS 'Configuration: Lookup table for instrument 
 
 
 --
--- TOC entry 219 (class 1259 OID 987571)
+-- TOC entry 226 (class 1259 OID 1955241)
 -- Name: measurement_metatype; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -770,8 +706,8 @@ CREATE TABLE measurement_metatype (
 ALTER TABLE public.measurement_metatype OWNER TO cube_admin;
 
 --
--- TOC entry 3921 (class 0 OID 0)
--- Dependencies: 219
+-- TOC entry 3976 (class 0 OID 0)
+-- Dependencies: 226
 -- Name: TABLE measurement_metatype; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -779,7 +715,7 @@ COMMENT ON TABLE measurement_metatype IS 'Configuration: General type of measure
 
 
 --
--- TOC entry 220 (class 1259 OID 987574)
+-- TOC entry 227 (class 1259 OID 1955244)
 -- Name: measurement_type; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -794,8 +730,8 @@ CREATE TABLE measurement_type (
 ALTER TABLE public.measurement_type OWNER TO cube_admin;
 
 --
--- TOC entry 3923 (class 0 OID 0)
--- Dependencies: 220
+-- TOC entry 3978 (class 0 OID 0)
+-- Dependencies: 227
 -- Name: TABLE measurement_type; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -803,7 +739,7 @@ COMMENT ON TABLE measurement_type IS 'Configuration: Description of measurement(
 
 
 --
--- TOC entry 221 (class 1259 OID 987577)
+-- TOC entry 228 (class 1259 OID 1955247)
 -- Name: ndarray; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -820,8 +756,8 @@ CREATE TABLE ndarray (
 ALTER TABLE public.ndarray OWNER TO cube_admin;
 
 --
--- TOC entry 3925 (class 0 OID 0)
--- Dependencies: 221
+-- TOC entry 3980 (class 0 OID 0)
+-- Dependencies: 228
 -- Name: TABLE ndarray; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -829,7 +765,7 @@ COMMENT ON TABLE ndarray IS 'Data: n-dimensional data structure instances';
 
 
 --
--- TOC entry 222 (class 1259 OID 987580)
+-- TOC entry 229 (class 1259 OID 1955250)
 -- Name: ndarray_dataset; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -845,8 +781,8 @@ CREATE TABLE ndarray_dataset (
 ALTER TABLE public.ndarray_dataset OWNER TO cube_admin;
 
 --
--- TOC entry 3927 (class 0 OID 0)
--- Dependencies: 222
+-- TOC entry 3982 (class 0 OID 0)
+-- Dependencies: 229
 -- Name: TABLE ndarray_dataset; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -854,7 +790,7 @@ COMMENT ON TABLE ndarray_dataset IS 'Data: Association between ndarray and datas
 
 
 --
--- TOC entry 223 (class 1259 OID 987583)
+-- TOC entry 230 (class 1259 OID 1955253)
 -- Name: ndarray_dimension; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -873,8 +809,8 @@ CREATE TABLE ndarray_dimension (
 ALTER TABLE public.ndarray_dimension OWNER TO cube_admin;
 
 --
--- TOC entry 3929 (class 0 OID 0)
--- Dependencies: 223
+-- TOC entry 3984 (class 0 OID 0)
+-- Dependencies: 230
 -- Name: TABLE ndarray_dimension; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -882,7 +818,7 @@ COMMENT ON TABLE ndarray_dimension IS 'Data: Association between ndarray and dim
 
 
 --
--- TOC entry 224 (class 1259 OID 987586)
+-- TOC entry 231 (class 1259 OID 1955256)
 -- Name: ndarray_footprint; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -896,8 +832,8 @@ CREATE TABLE ndarray_footprint (
 ALTER TABLE public.ndarray_footprint OWNER TO cube_admin;
 
 --
--- TOC entry 3931 (class 0 OID 0)
--- Dependencies: 224
+-- TOC entry 3986 (class 0 OID 0)
+-- Dependencies: 231
 -- Name: TABLE ndarray_footprint; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -905,7 +841,7 @@ COMMENT ON TABLE ndarray_footprint IS 'Data: Spatial footprint for tiles with a 
 
 
 --
--- TOC entry 225 (class 1259 OID 987592)
+-- TOC entry 232 (class 1259 OID 1955259)
 -- Name: ndarray_footprint_dimension; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -921,8 +857,8 @@ CREATE TABLE ndarray_footprint_dimension (
 ALTER TABLE public.ndarray_footprint_dimension OWNER TO cube_admin;
 
 --
--- TOC entry 3933 (class 0 OID 0)
--- Dependencies: 225
+-- TOC entry 3988 (class 0 OID 0)
+-- Dependencies: 232
 -- Name: TABLE ndarray_footprint_dimension; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -930,7 +866,22 @@ COMMENT ON TABLE ndarray_footprint_dimension IS 'Data: Association between ndarr
 
 
 --
--- TOC entry 226 (class 1259 OID 987595)
+-- TOC entry 257 (class 1259 OID 1957097)
+-- Name: ndarray_id_seq; Type: SEQUENCE; Schema: public; Owner: cube_admin
+--
+
+CREATE SEQUENCE ndarray_id_seq
+    START WITH 100
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.ndarray_id_seq OWNER TO cube_admin;
+
+--
+-- TOC entry 233 (class 1259 OID 1955262)
 -- Name: ndarray_type_measurement_type; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -946,8 +897,8 @@ CREATE TABLE ndarray_type_measurement_type (
 ALTER TABLE public.ndarray_type_measurement_type OWNER TO cube_admin;
 
 --
--- TOC entry 3935 (class 0 OID 0)
--- Dependencies: 226
+-- TOC entry 3990 (class 0 OID 0)
+-- Dependencies: 233
 -- Name: TABLE ndarray_type_measurement_type; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -956,7 +907,7 @@ e.g. associations between Landsat 7 arrays and Landsat 7 bands if they are store
 
 
 --
--- TOC entry 227 (class 1259 OID 987598)
+-- TOC entry 234 (class 1259 OID 1955265)
 -- Name: observation; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -973,8 +924,8 @@ CREATE TABLE observation (
 ALTER TABLE public.observation OWNER TO cube_admin;
 
 --
--- TOC entry 3937 (class 0 OID 0)
--- Dependencies: 227
+-- TOC entry 3992 (class 0 OID 0)
+-- Dependencies: 234
 -- Name: TABLE observation; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -983,7 +934,7 @@ Analagous to old "acquisition" table in AGDC version 0 DB';
 
 
 --
--- TOC entry 228 (class 1259 OID 987601)
+-- TOC entry 235 (class 1259 OID 1955268)
 -- Name: observation_type; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -996,8 +947,8 @@ CREATE TABLE observation_type (
 ALTER TABLE public.observation_type OWNER TO cube_admin;
 
 --
--- TOC entry 3939 (class 0 OID 0)
--- Dependencies: 228
+-- TOC entry 3994 (class 0 OID 0)
+-- Dependencies: 235
 -- Name: TABLE observation_type; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -1005,7 +956,7 @@ COMMENT ON TABLE observation_type IS 'Configuration: Type of source observation'
 
 
 --
--- TOC entry 229 (class 1259 OID 987604)
+-- TOC entry 236 (class 1259 OID 1955271)
 -- Name: platform; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1019,8 +970,8 @@ CREATE TABLE platform (
 ALTER TABLE public.platform OWNER TO cube_admin;
 
 --
--- TOC entry 3941 (class 0 OID 0)
--- Dependencies: 229
+-- TOC entry 3996 (class 0 OID 0)
+-- Dependencies: 236
 -- Name: TABLE platform; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -1029,7 +980,7 @@ An example would be a specific satellite such as Landsat 7';
 
 
 --
--- TOC entry 230 (class 1259 OID 987607)
+-- TOC entry 237 (class 1259 OID 1955274)
 -- Name: platform_type; Type: TABLE; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1042,8 +993,8 @@ CREATE TABLE platform_type (
 ALTER TABLE public.platform_type OWNER TO cube_admin;
 
 --
--- TOC entry 3943 (class 0 OID 0)
--- Dependencies: 230
+-- TOC entry 3998 (class 0 OID 0)
+-- Dependencies: 237
 -- Name: TABLE platform_type; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -1054,427 +1005,7 @@ e.g. Satellite or Ship';
 SET search_path = earth_observation, pg_catalog;
 
 --
--- TOC entry 3828 (class 0 OID 987485)
--- Dependencies: 195
--- Data for Name: spectral_parameters; Type: TABLE DATA; Schema: earth_observation; Owner: cube_admin
---
-
-
-
-SET search_path = public, pg_catalog;
-
---
--- TOC entry 3829 (class 0 OID 987488)
--- Dependencies: 196
--- Data for Name: dataset; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-
-
---
--- TOC entry 3830 (class 0 OID 987491)
--- Dependencies: 197
--- Data for Name: dataset_dimension; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-
-
---
--- TOC entry 3831 (class 0 OID 987494)
--- Dependencies: 198
--- Data for Name: dataset_metadata; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-
-
---
--- TOC entry 3832 (class 0 OID 987500)
--- Dependencies: 199
--- Data for Name: dataset_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO dataset_type VALUES (1, 'L1T');
-INSERT INTO dataset_type VALUES (2, 'NBAR');
-INSERT INTO dataset_type VALUES (3, 'PQ');
-INSERT INTO dataset_type VALUES (4, 'FC');
-
-
---
--- TOC entry 3833 (class 0 OID 987503)
--- Dependencies: 200
--- Data for Name: dataset_type_dimension; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-
-
---
--- TOC entry 3834 (class 0 OID 987506)
--- Dependencies: 201
--- Data for Name: dataset_type_domain; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-
-
---
--- TOC entry 3835 (class 0 OID 987509)
--- Dependencies: 202
--- Data for Name: dataset_type_measurement_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-
-
---
--- TOC entry 3836 (class 0 OID 987512)
--- Dependencies: 203
--- Data for Name: datatype; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO datatype VALUES (3, 'string', NULL, NULL, NULL);
-INSERT INTO datatype VALUES (1, 'int16', 'int16', 'int16', 'i2');
-INSERT INTO datatype VALUES (2, 'float32', 'float32', 'float32', 'f4');
-
-
---
--- TOC entry 3837 (class 0 OID 987515)
--- Dependencies: 204
--- Data for Name: dimension; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO dimension VALUES (1, 'longitude', 'X');
-INSERT INTO dimension VALUES (2, 'latitude', 'Y');
-INSERT INTO dimension VALUES (3, 'height/depth', 'Z');
-INSERT INTO dimension VALUES (5, 'spectral', 'LAMBDA');
-INSERT INTO dimension VALUES (4, 'time', 'T');
-
-
---
--- TOC entry 3838 (class 0 OID 987518)
--- Dependencies: 205
--- Data for Name: dimension_domain; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO dimension_domain VALUES (1, 1);
-INSERT INTO dimension_domain VALUES (1, 2);
-INSERT INTO dimension_domain VALUES (2, 3);
-INSERT INTO dimension_domain VALUES (3, 4);
-INSERT INTO dimension_domain VALUES (4, 5);
-INSERT INTO dimension_domain VALUES (5, 1);
-INSERT INTO dimension_domain VALUES (5, 2);
-INSERT INTO dimension_domain VALUES (5, 3);
-
-
---
--- TOC entry 3839 (class 0 OID 987521)
--- Dependencies: 206
--- Data for Name: domain; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO domain VALUES (1, 'Spatial XY', 'XY');
-INSERT INTO domain VALUES (2, 'Spatial Z', 'Z');
-INSERT INTO domain VALUES (3, 'Temporal', 'T');
-INSERT INTO domain VALUES (4, 'Spectral', 'B');
-INSERT INTO domain VALUES (5, 'Spatial XYZ', 'XYZ');
-
-
---
--- TOC entry 3840 (class 0 OID 987524)
--- Dependencies: 207
--- Data for Name: indexing_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO indexing_type VALUES (1, 'regular');
-INSERT INTO indexing_type VALUES (2, 'irregular');
-INSERT INTO indexing_type VALUES (3, 'fixed');
-
-
---
--- TOC entry 3850 (class 0 OID 987565)
--- Dependencies: 217
--- Data for Name: instrument; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-
-
---
--- TOC entry 3851 (class 0 OID 987568)
--- Dependencies: 218
--- Data for Name: instrument_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-
-
---
--- TOC entry 3852 (class 0 OID 987571)
--- Dependencies: 219
--- Data for Name: measurement_metatype; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO measurement_metatype VALUES (10, 'Multi-band Spectral Radiance');
-INSERT INTO measurement_metatype VALUES (1, 'Spectral Radiance (Single Band)');
-
-
---
--- TOC entry 3853 (class 0 OID 987574)
--- Dependencies: 220
--- Data for Name: measurement_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO measurement_type VALUES (1, 56, 'Band 6 - Thermal Infrared', 'B60');
-INSERT INTO measurement_type VALUES (1, 58, 'Band 8 - Panchromatic', 'B80');
-INSERT INTO measurement_type VALUES (1, 78, 'Band 8 - Panchromatic', 'B80');
-INSERT INTO measurement_type VALUES (1, 51, 'Band 1 - Visible Blue', 'B10');
-INSERT INTO measurement_type VALUES (1, 52, 'Band 2 - Visible Green', 'B20');
-INSERT INTO measurement_type VALUES (1, 72, 'Band 2 - Visible Green', 'B20');
-INSERT INTO measurement_type VALUES (1, 71, 'Band 1 - Visible Blue', 'B10');
-INSERT INTO measurement_type VALUES (1, 81, 'Band 1 - Coastal Aerosol', 'B1');
-INSERT INTO measurement_type VALUES (1, 82, 'Band 2 - Visible Blue', 'B2');
-INSERT INTO measurement_type VALUES (1, 53, 'Band 3 - Visible Red', 'B30');
-INSERT INTO measurement_type VALUES (1, 73, 'Band 3 - Visible Red', 'B30');
-INSERT INTO measurement_type VALUES (1, 84, 'Band 4 - Visible Red', 'B4');
-INSERT INTO measurement_type VALUES (1, 83, 'Band 3 - Visible Green', 'B3');
-INSERT INTO measurement_type VALUES (1, 54, 'Band 4 - Near Infrared', 'B40');
-INSERT INTO measurement_type VALUES (1, 74, 'Band 4 - Near Infrared', 'B40');
-INSERT INTO measurement_type VALUES (1, 85, 'Band 5 - Near Infrared', 'B5');
-INSERT INTO measurement_type VALUES (1, 55, 'Band 5 - Middle Infrared 1', 'B50');
-INSERT INTO measurement_type VALUES (1, 75, 'Band 5 - Middle Infrared 1', 'B50');
-INSERT INTO measurement_type VALUES (1, 77, 'Band 7 - Middle Infrared 2', 'B70');
-INSERT INTO measurement_type VALUES (1, 57, 'Band 7 - Middle Infrared 2', 'B70');
-INSERT INTO measurement_type VALUES (1, 86, 'Band 6 - Short-wave Infrared 1', 'B6');
-INSERT INTO measurement_type VALUES (1, 87, 'Band 7 - Short-wave Infrared 2', 'B7');
-INSERT INTO measurement_type VALUES (1, 88, 'Band 8 - Panchromatic', 'B8');
-INSERT INTO measurement_type VALUES (1, 89, 'Band 9 - Cirrus', 'B9');
-INSERT INTO measurement_type VALUES (1, 761, 'Band 61 - Thermal Infrared Low Gain', 'B61');
-INSERT INTO measurement_type VALUES (1, 762, 'Band 62 - Thermal Infrared High Gain', 'B62');
-INSERT INTO measurement_type VALUES (1, 810, 'Band 10 - Thermal Infrared 1', 'B10');
-INSERT INTO measurement_type VALUES (1, 811, 'Band 11 - Thermal Infrared 2', 'B11');
-INSERT INTO measurement_type VALUES (1, 101, 'Photosynthetic Vegetation', 'PV');
-INSERT INTO measurement_type VALUES (1, 102, 'Non-Photosynthetic Vegetation', 'NPV');
-INSERT INTO measurement_type VALUES (1, 103, 'Bare Soil', 'BS');
-INSERT INTO measurement_type VALUES (1, 104, 'Unmixing Error', 'UE');
-INSERT INTO measurement_type VALUES (10, 1000, 'Multi-Band Spectral Radiance', 'SPECTRAL');
-
-
---
--- TOC entry 3854 (class 0 OID 987577)
--- Dependencies: 221
--- Data for Name: ndarray; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO ndarray VALUES (5, 1, 0, 'test_location', NULL, NULL);
-
-
---
--- TOC entry 3855 (class 0 OID 987580)
--- Dependencies: 222
--- Data for Name: ndarray_dataset; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-
-
---
--- TOC entry 3856 (class 0 OID 987583)
--- Dependencies: 223
--- Data for Name: ndarray_dimension; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO ndarray_dimension VALUES (5, 1, 0, 1, 1, 140, 140, 141);
-INSERT INTO ndarray_dimension VALUES (5, 1, 0, 1, 2, -35, -36, -35);
-INSERT INTO ndarray_dimension VALUES (5, 1, 0, 3, 4, 2010, 63387360000, 63418896000);
-
-
---
--- TOC entry 3857 (class 0 OID 987586)
--- Dependencies: 224
--- Data for Name: ndarray_footprint; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-
-
---
--- TOC entry 3858 (class 0 OID 987592)
--- Dependencies: 225
--- Data for Name: ndarray_footprint_dimension; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-
-
---
--- TOC entry 3841 (class 0 OID 987527)
--- Dependencies: 208
--- Data for Name: ndarray_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO ndarray_type VALUES (5, 'Landsat 5 TM ARG-25', 'LS5TM');
-INSERT INTO ndarray_type VALUES (7, 'Landsat 7 ETM ARG-25', 'LS7ETM');
-INSERT INTO ndarray_type VALUES (8, 'Landsat 8 OLI ARG-25', 'LS8OLI');
-INSERT INTO ndarray_type VALUES (82, 'Landsat 8 TIRS', 'LS8TIRS');
-INSERT INTO ndarray_type VALUES (50, 'Landsat 5 TM ARG-25 with spectral dimension', 'LS5TM-SD');
-
-
---
--- TOC entry 3842 (class 0 OID 987530)
--- Dependencies: 209
--- Data for Name: ndarray_type_dimension; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO ndarray_type_dimension VALUES (5, 1, 1, 2, 1.0, 4000, 128, 0.0, 1, 4326, NULL);
-INSERT INTO ndarray_type_dimension VALUES (5, 1, 2, 3, 1.0, 4000, 128, 0.0, 1, 4326, NULL);
-INSERT INTO ndarray_type_dimension VALUES (50, 1, 1, 3, 1.0, 4000, 128, 0.0, 1, 4326, NULL);
-INSERT INTO ndarray_type_dimension VALUES (50, 1, 2, 4, 1.0, 4000, 128, 0.0, 1, 4326, NULL);
-INSERT INTO ndarray_type_dimension VALUES (50, 4, 5, 1, NULL, NULL, NULL, NULL, 3, 50, NULL);
-INSERT INTO ndarray_type_dimension VALUES (5, 3, 4, 1, 1.0, 31622400, 128, 0.0, 2, 4, 'year');
-INSERT INTO ndarray_type_dimension VALUES (50, 3, 4, 2, 1.0, 31622400, 128, 0.0, 2, 4, 'year');
-
-
---
--- TOC entry 3847 (class 0 OID 987554)
--- Dependencies: 214
--- Data for Name: ndarray_type_dimension_property; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO ndarray_type_dimension_property VALUES (5, 1, 1, 1, 'longitude');
-INSERT INTO ndarray_type_dimension_property VALUES (5, 1, 1, 2, 'longitude');
-INSERT INTO ndarray_type_dimension_property VALUES (5, 1, 1, 3, 'degrees_east');
-INSERT INTO ndarray_type_dimension_property VALUES (5, 1, 1, 4, 'X');
-INSERT INTO ndarray_type_dimension_property VALUES (5, 3, 4, 5, 'gregorian');
-INSERT INTO ndarray_type_dimension_property VALUES (5, 1, 2, 1, 'latitude');
-INSERT INTO ndarray_type_dimension_property VALUES (5, 1, 2, 2, 'latitude');
-INSERT INTO ndarray_type_dimension_property VALUES (5, 1, 2, 3, 'degrees_north');
-INSERT INTO ndarray_type_dimension_property VALUES (5, 1, 2, 4, 'Y');
-INSERT INTO ndarray_type_dimension_property VALUES (5, 3, 4, 1, 'time');
-INSERT INTO ndarray_type_dimension_property VALUES (5, 3, 4, 2, 'time');
-INSERT INTO ndarray_type_dimension_property VALUES (5, 3, 4, 3, 'seconds since 1970-01-01 ');
-INSERT INTO ndarray_type_dimension_property VALUES (5, 3, 4, 4, 'T');
-
-
---
--- TOC entry 3859 (class 0 OID 987595)
--- Dependencies: 226
--- Data for Name: ndarray_type_measurement_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO ndarray_type_measurement_type VALUES (5, 1, 51, 1, 1);
-INSERT INTO ndarray_type_measurement_type VALUES (5, 1, 52, 1, 2);
-INSERT INTO ndarray_type_measurement_type VALUES (5, 1, 53, 1, 3);
-INSERT INTO ndarray_type_measurement_type VALUES (5, 1, 54, 1, 4);
-INSERT INTO ndarray_type_measurement_type VALUES (5, 1, 55, 1, 5);
-INSERT INTO ndarray_type_measurement_type VALUES (5, 1, 57, 1, 6);
-INSERT INTO ndarray_type_measurement_type VALUES (7, 1, 71, 1, 1);
-INSERT INTO ndarray_type_measurement_type VALUES (7, 1, 72, 1, 2);
-INSERT INTO ndarray_type_measurement_type VALUES (7, 1, 73, 1, 3);
-INSERT INTO ndarray_type_measurement_type VALUES (7, 1, 74, 1, 4);
-INSERT INTO ndarray_type_measurement_type VALUES (7, 1, 75, 1, 5);
-INSERT INTO ndarray_type_measurement_type VALUES (7, 1, 77, 1, 6);
-INSERT INTO ndarray_type_measurement_type VALUES (50, 10, 1000, 1, 1);
-
-
---
--- TOC entry 3860 (class 0 OID 987598)
--- Dependencies: 227
--- Data for Name: observation; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-
-
---
--- TOC entry 3861 (class 0 OID 987601)
--- Dependencies: 228
--- Data for Name: observation_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-
-
---
--- TOC entry 3862 (class 0 OID 987604)
--- Dependencies: 229
--- Data for Name: platform; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO platform VALUES (1, 5, 'Landsat 5');
-INSERT INTO platform VALUES (1, 7, 'Landsat 7');
-INSERT INTO platform VALUES (1, 8, 'Landsat 8');
-
-
---
--- TOC entry 3863 (class 0 OID 987607)
--- Dependencies: 230
--- Data for Name: platform_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO platform_type VALUES (1, 'Satellite');
-
-
---
--- TOC entry 3848 (class 0 OID 987557)
--- Dependencies: 215
--- Data for Name: property; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO property VALUES (4, 'axis', 3);
-INSERT INTO property VALUES (2, 'standard_name', 3);
-INSERT INTO property VALUES (1, 'long_name', 3);
-INSERT INTO property VALUES (3, 'units', 3);
-INSERT INTO property VALUES (5, 'calendar', 3);
-
-
---
--- TOC entry 3843 (class 0 OID 987536)
--- Dependencies: 210
--- Data for Name: reference_system; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO reference_system VALUES (4326, 'Unprojected WGS84 (Lat-long)', 'degrees', 'EPSG:4326', NULL);
-INSERT INTO reference_system VALUES (3, 'Australian Height Datum (AHD)', 'metres', 'AHD', NULL);
-INSERT INTO reference_system VALUES (4, 'Seconds since 1/1/1970 0:00', 'seconds', 'SSE', NULL);
-INSERT INTO reference_system VALUES (70, 'Landsat 7 Spectral Bands', 'band', 'LS7', NULL);
-INSERT INTO reference_system VALUES (80, 'Landsat 8 Band', 'band', 'LS8', NULL);
-INSERT INTO reference_system VALUES (50, 'Landsat 5 Reflectance Bands', 'band', 'LS5', NULL);
-
-
---
--- TOC entry 3845 (class 0 OID 987547)
--- Dependencies: 212
--- Data for Name: reference_system_indexing; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO reference_system_indexing VALUES (50, 0, 'Band 1 - Visible Blue', 1, 51);
-INSERT INTO reference_system_indexing VALUES (50, 1, 'Band 2 - Visible Green', 1, 52);
-INSERT INTO reference_system_indexing VALUES (50, 2, 'Band 3 - Visible Red', 1, 53);
-INSERT INTO reference_system_indexing VALUES (50, 3, 'Band 4 - Near Infrared', 1, 54);
-INSERT INTO reference_system_indexing VALUES (50, 4, 'Band 5 - Middle Infrared 1', 1, 55);
-INSERT INTO reference_system_indexing VALUES (50, 5, 'Band 7 - Middle Infrared 2', 1, 57);
-
-
---
--- TOC entry 3518 (class 0 OID 986308)
--- Dependencies: 174
--- Data for Name: spatial_ref_sys; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-
-
-SET search_path = topology, pg_catalog;
-
---
--- TOC entry 3517 (class 0 OID 987342)
--- Dependencies: 188
--- Data for Name: layer; Type: TABLE DATA; Schema: topology; Owner: cube_admin
---
-
-
-
---
--- TOC entry 3516 (class 0 OID 987329)
--- Dependencies: 187
--- Data for Name: topology; Type: TABLE DATA; Schema: topology; Owner: cube_admin
---
-
-
-
-SET search_path = earth_observation, pg_catalog;
-
---
--- TOC entry 3525 (class 2606 OID 987611)
+-- TOC entry 3621 (class 2606 OID 1955278)
 -- Name: pk_spectral_parameters; Type: CONSTRAINT; Schema: earth_observation; Owner: cube_admin; Tablespace: 
 --
 
@@ -1485,7 +1016,7 @@ ALTER TABLE ONLY spectral_parameters
 SET search_path = public, pg_catalog;
 
 --
--- TOC entry 3529 (class 2606 OID 987613)
+-- TOC entry 3625 (class 2606 OID 1955280)
 -- Name: pk_dataset; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1494,7 +1025,7 @@ ALTER TABLE ONLY dataset
 
 
 --
--- TOC entry 3533 (class 2606 OID 987615)
+-- TOC entry 3629 (class 2606 OID 1955282)
 -- Name: pk_dataset_dimension; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1503,7 +1034,7 @@ ALTER TABLE ONLY dataset_dimension
 
 
 --
--- TOC entry 3536 (class 2606 OID 987617)
+-- TOC entry 3632 (class 2606 OID 1955284)
 -- Name: pk_dataset_metadata; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1512,7 +1043,7 @@ ALTER TABLE ONLY dataset_metadata
 
 
 --
--- TOC entry 3538 (class 2606 OID 987619)
+-- TOC entry 3634 (class 2606 OID 1955286)
 -- Name: pk_dataset_type; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1521,7 +1052,7 @@ ALTER TABLE ONLY dataset_type
 
 
 --
--- TOC entry 3544 (class 2606 OID 987621)
+-- TOC entry 3640 (class 2606 OID 1955288)
 -- Name: pk_dataset_type_dimension; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1530,7 +1061,7 @@ ALTER TABLE ONLY dataset_type_dimension
 
 
 --
--- TOC entry 3549 (class 2606 OID 987623)
+-- TOC entry 3645 (class 2606 OID 1955290)
 -- Name: pk_dataset_type_domain; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1539,7 +1070,7 @@ ALTER TABLE ONLY dataset_type_domain
 
 
 --
--- TOC entry 3554 (class 2606 OID 987625)
+-- TOC entry 3650 (class 2606 OID 1955292)
 -- Name: pk_dataset_type_measurement_type; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1548,7 +1079,7 @@ ALTER TABLE ONLY dataset_type_measurement_type
 
 
 --
--- TOC entry 3558 (class 2606 OID 987627)
+-- TOC entry 3654 (class 2606 OID 1955294)
 -- Name: pk_datatype; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1557,7 +1088,7 @@ ALTER TABLE ONLY datatype
 
 
 --
--- TOC entry 3562 (class 2606 OID 987629)
+-- TOC entry 3658 (class 2606 OID 1955296)
 -- Name: pk_dimension; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1566,7 +1097,7 @@ ALTER TABLE ONLY dimension
 
 
 --
--- TOC entry 3570 (class 2606 OID 987631)
+-- TOC entry 3666 (class 2606 OID 1955298)
 -- Name: pk_dimension_domain; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1575,7 +1106,7 @@ ALTER TABLE ONLY dimension_domain
 
 
 --
--- TOC entry 3572 (class 2606 OID 987633)
+-- TOC entry 3668 (class 2606 OID 1955300)
 -- Name: pk_domain; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1584,7 +1115,7 @@ ALTER TABLE ONLY domain
 
 
 --
--- TOC entry 3576 (class 2606 OID 987635)
+-- TOC entry 3672 (class 2606 OID 1955302)
 -- Name: pk_indexing_type; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1593,7 +1124,7 @@ ALTER TABLE ONLY indexing_type
 
 
 --
--- TOC entry 3609 (class 2606 OID 987637)
+-- TOC entry 3705 (class 2606 OID 1955304)
 -- Name: pk_instrument; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1602,7 +1133,7 @@ ALTER TABLE ONLY instrument
 
 
 --
--- TOC entry 3613 (class 2606 OID 987639)
+-- TOC entry 3709 (class 2606 OID 1955306)
 -- Name: pk_instrument_type; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1611,7 +1142,7 @@ ALTER TABLE ONLY instrument_type
 
 
 --
--- TOC entry 3617 (class 2606 OID 987641)
+-- TOC entry 3713 (class 2606 OID 1955308)
 -- Name: pk_measurement_metatype; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1620,7 +1151,7 @@ ALTER TABLE ONLY measurement_metatype
 
 
 --
--- TOC entry 3622 (class 2606 OID 987643)
+-- TOC entry 3718 (class 2606 OID 1955310)
 -- Name: pk_measurement_type; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1629,7 +1160,7 @@ ALTER TABLE ONLY measurement_type
 
 
 --
--- TOC entry 3626 (class 2606 OID 987645)
+-- TOC entry 3722 (class 2606 OID 1955312)
 -- Name: pk_ndarray; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1638,7 +1169,7 @@ ALTER TABLE ONLY ndarray
 
 
 --
--- TOC entry 3632 (class 2606 OID 987647)
+-- TOC entry 3728 (class 2606 OID 1955314)
 -- Name: pk_ndarray_dataset; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1647,7 +1178,7 @@ ALTER TABLE ONLY ndarray_dataset
 
 
 --
--- TOC entry 3639 (class 2606 OID 987649)
+-- TOC entry 3735 (class 2606 OID 1955316)
 -- Name: pk_ndarray_dimension; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1656,7 +1187,7 @@ ALTER TABLE ONLY ndarray_dimension
 
 
 --
--- TOC entry 3641 (class 2606 OID 987651)
+-- TOC entry 3737 (class 2606 OID 1955318)
 -- Name: pk_ndarray_footprint; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1665,7 +1196,7 @@ ALTER TABLE ONLY ndarray_footprint
 
 
 --
--- TOC entry 3645 (class 2606 OID 987653)
+-- TOC entry 3741 (class 2606 OID 1955320)
 -- Name: pk_ndarray_footprint_dimension; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1674,7 +1205,7 @@ ALTER TABLE ONLY ndarray_footprint_dimension
 
 
 --
--- TOC entry 3580 (class 2606 OID 987655)
+-- TOC entry 3676 (class 2606 OID 1955322)
 -- Name: pk_ndarray_type; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1683,7 +1214,7 @@ ALTER TABLE ONLY ndarray_type
 
 
 --
--- TOC entry 3587 (class 2606 OID 987657)
+-- TOC entry 3683 (class 2606 OID 1955324)
 -- Name: pk_ndarray_type_dimension; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1692,7 +1223,7 @@ ALTER TABLE ONLY ndarray_type_dimension
 
 
 --
--- TOC entry 3601 (class 2606 OID 987659)
+-- TOC entry 3697 (class 2606 OID 1955326)
 -- Name: pk_ndarray_type_dimension_property; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1701,7 +1232,7 @@ ALTER TABLE ONLY ndarray_type_dimension_property
 
 
 --
--- TOC entry 3650 (class 2606 OID 987661)
+-- TOC entry 3746 (class 2606 OID 1955328)
 -- Name: pk_ndarray_type_measurement_type; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1710,7 +1241,7 @@ ALTER TABLE ONLY ndarray_type_measurement_type
 
 
 --
--- TOC entry 3656 (class 2606 OID 987663)
+-- TOC entry 3752 (class 2606 OID 1955330)
 -- Name: pk_observation; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1719,7 +1250,7 @@ ALTER TABLE ONLY observation
 
 
 --
--- TOC entry 3658 (class 2606 OID 987665)
+-- TOC entry 3754 (class 2606 OID 1955332)
 -- Name: pk_observation_type; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1728,7 +1259,7 @@ ALTER TABLE ONLY observation_type
 
 
 --
--- TOC entry 3663 (class 2606 OID 987667)
+-- TOC entry 3759 (class 2606 OID 1955334)
 -- Name: pk_platform; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1737,7 +1268,7 @@ ALTER TABLE ONLY platform
 
 
 --
--- TOC entry 3667 (class 2606 OID 987669)
+-- TOC entry 3763 (class 2606 OID 1955336)
 -- Name: pk_platform_type; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1746,7 +1277,7 @@ ALTER TABLE ONLY platform_type
 
 
 --
--- TOC entry 3591 (class 2606 OID 987671)
+-- TOC entry 3687 (class 2606 OID 1955338)
 -- Name: pk_reference_system; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1755,7 +1286,7 @@ ALTER TABLE ONLY reference_system
 
 
 --
--- TOC entry 3597 (class 2606 OID 987673)
+-- TOC entry 3693 (class 2606 OID 1955340)
 -- Name: pk_reference_system_indexing; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1764,7 +1295,7 @@ ALTER TABLE ONLY reference_system_indexing
 
 
 --
--- TOC entry 3603 (class 2606 OID 987675)
+-- TOC entry 3699 (class 2606 OID 1955342)
 -- Name: property_pkey; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1773,7 +1304,7 @@ ALTER TABLE ONLY property
 
 
 --
--- TOC entry 3540 (class 2606 OID 987677)
+-- TOC entry 3636 (class 2606 OID 1955344)
 -- Name: uq_dataset_type_dataset_type_name; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1782,7 +1313,7 @@ ALTER TABLE ONLY dataset_type
 
 
 --
--- TOC entry 3556 (class 2606 OID 987679)
+-- TOC entry 3652 (class 2606 OID 1955346)
 -- Name: uq_dataset_type_measurement_type_ndarray_type_id_measurement_ty; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1791,7 +1322,7 @@ ALTER TABLE ONLY dataset_type_measurement_type
 
 
 --
--- TOC entry 3560 (class 2606 OID 987681)
+-- TOC entry 3656 (class 2606 OID 1955348)
 -- Name: uq_datatype_datatype_name; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1800,7 +1331,7 @@ ALTER TABLE ONLY datatype
 
 
 --
--- TOC entry 3564 (class 2606 OID 987683)
+-- TOC entry 3660 (class 2606 OID 1955350)
 -- Name: uq_dimension_dimension_name; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1809,7 +1340,7 @@ ALTER TABLE ONLY dimension
 
 
 --
--- TOC entry 3566 (class 2606 OID 987685)
+-- TOC entry 3662 (class 2606 OID 1955352)
 -- Name: uq_dimension_dimension_tag; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1818,7 +1349,7 @@ ALTER TABLE ONLY dimension
 
 
 --
--- TOC entry 3574 (class 2606 OID 987687)
+-- TOC entry 3670 (class 2606 OID 1955354)
 -- Name: uq_domain_domain_name; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1827,7 +1358,7 @@ ALTER TABLE ONLY domain
 
 
 --
--- TOC entry 3578 (class 2606 OID 987689)
+-- TOC entry 3674 (class 2606 OID 1955356)
 -- Name: uq_indexing_type_indexing_type_name; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1836,7 +1367,7 @@ ALTER TABLE ONLY indexing_type
 
 
 --
--- TOC entry 3611 (class 2606 OID 987691)
+-- TOC entry 3707 (class 2606 OID 1955358)
 -- Name: uq_instrument_instrument_name; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1845,7 +1376,7 @@ ALTER TABLE ONLY instrument
 
 
 --
--- TOC entry 3615 (class 2606 OID 987693)
+-- TOC entry 3711 (class 2606 OID 1955360)
 -- Name: uq_instrument_type_instrument_type_name; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1854,7 +1385,7 @@ ALTER TABLE ONLY instrument_type
 
 
 --
--- TOC entry 3619 (class 2606 OID 987695)
+-- TOC entry 3715 (class 2606 OID 1955362)
 -- Name: uq_measurement_metatype_measurement_metatype_name; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1863,7 +1394,7 @@ ALTER TABLE ONLY measurement_metatype
 
 
 --
--- TOC entry 3628 (class 2606 OID 987697)
+-- TOC entry 3724 (class 2606 OID 1955364)
 -- Name: uq_ndarray_ndarray_location; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1872,7 +1403,7 @@ ALTER TABLE ONLY ndarray
 
 
 --
--- TOC entry 3589 (class 2606 OID 987699)
+-- TOC entry 3685 (class 2606 OID 1955366)
 -- Name: uq_ndarray_type_dimension_ndarray_type_dimension; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1881,8 +1412,8 @@ ALTER TABLE ONLY ndarray_type_dimension
 
 
 --
--- TOC entry 3945 (class 0 OID 0)
--- Dependencies: 3589
+-- TOC entry 4000 (class 0 OID 0)
+-- Dependencies: 3685
 -- Name: CONSTRAINT uq_ndarray_type_dimension_ndarray_type_dimension ON ndarray_type_dimension; Type: COMMENT; Schema: public; Owner: cube_admin
 --
 
@@ -1890,7 +1421,7 @@ COMMENT ON CONSTRAINT uq_ndarray_type_dimension_ndarray_type_dimension ON ndarra
 
 
 --
--- TOC entry 3652 (class 2606 OID 987701)
+-- TOC entry 3748 (class 2606 OID 1955368)
 -- Name: uq_ndarray_type_measurement_type_ndarray_type_id_measurement_ty; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1899,7 +1430,7 @@ ALTER TABLE ONLY ndarray_type_measurement_type
 
 
 --
--- TOC entry 3582 (class 2606 OID 987703)
+-- TOC entry 3678 (class 2606 OID 1955370)
 -- Name: uq_ndarray_type_ndarray_type_name; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1908,7 +1439,7 @@ ALTER TABLE ONLY ndarray_type
 
 
 --
--- TOC entry 3660 (class 2606 OID 987705)
+-- TOC entry 3756 (class 2606 OID 1955372)
 -- Name: uq_observation_type_observation_type_name; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1917,7 +1448,7 @@ ALTER TABLE ONLY observation_type
 
 
 --
--- TOC entry 3665 (class 2606 OID 987707)
+-- TOC entry 3761 (class 2606 OID 1955374)
 -- Name: uq_platform_platform_name; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1926,7 +1457,7 @@ ALTER TABLE ONLY platform
 
 
 --
--- TOC entry 3669 (class 2606 OID 987709)
+-- TOC entry 3765 (class 2606 OID 1955376)
 -- Name: uq_platform_type_platform_type_name; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1935,7 +1466,7 @@ ALTER TABLE ONLY platform_type
 
 
 --
--- TOC entry 3605 (class 2606 OID 987711)
+-- TOC entry 3701 (class 2606 OID 1955378)
 -- Name: uq_property_property_name; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1944,7 +1475,7 @@ ALTER TABLE ONLY property
 
 
 --
--- TOC entry 3593 (class 2606 OID 987713)
+-- TOC entry 3689 (class 2606 OID 1955380)
 -- Name: uq_reference_system_reference_system_name; Type: CONSTRAINT; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1955,7 +1486,7 @@ ALTER TABLE ONLY reference_system
 SET search_path = earth_observation, pg_catalog;
 
 --
--- TOC entry 3523 (class 1259 OID 987714)
+-- TOC entry 3619 (class 1259 OID 1955381)
 -- Name: fki_spectral_parameters_measurement_type; Type: INDEX; Schema: earth_observation; Owner: cube_admin; Tablespace: 
 --
 
@@ -1965,7 +1496,7 @@ CREATE INDEX fki_spectral_parameters_measurement_type ON spectral_parameters USI
 SET search_path = public, pg_catalog;
 
 --
--- TOC entry 3526 (class 1259 OID 987715)
+-- TOC entry 3622 (class 1259 OID 1955382)
 -- Name: fki_dataset_dataset_type; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1973,7 +1504,7 @@ CREATE INDEX fki_dataset_dataset_type ON dataset USING btree (dataset_type_id);
 
 
 --
--- TOC entry 3530 (class 1259 OID 987716)
+-- TOC entry 3626 (class 1259 OID 1955383)
 -- Name: fki_dataset_dimension_dataset; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1981,7 +1512,7 @@ CREATE INDEX fki_dataset_dimension_dataset ON dataset_dimension USING btree (dat
 
 
 --
--- TOC entry 3531 (class 1259 OID 987717)
+-- TOC entry 3627 (class 1259 OID 1955384)
 -- Name: fki_dataset_dimension_dataset_type_dimension; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1989,7 +1520,7 @@ CREATE INDEX fki_dataset_dimension_dataset_type_dimension ON dataset_dimension U
 
 
 --
--- TOC entry 3534 (class 1259 OID 987718)
+-- TOC entry 3630 (class 1259 OID 1955385)
 -- Name: fki_dataset_metadata_dataset; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -1997,7 +1528,7 @@ CREATE INDEX fki_dataset_metadata_dataset ON dataset_metadata USING btree (datas
 
 
 --
--- TOC entry 3527 (class 1259 OID 987719)
+-- TOC entry 3623 (class 1259 OID 1955386)
 -- Name: fki_dataset_observation; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2005,7 +1536,7 @@ CREATE INDEX fki_dataset_observation ON dataset USING btree (observation_type_id
 
 
 --
--- TOC entry 3541 (class 1259 OID 987720)
+-- TOC entry 3637 (class 1259 OID 1955387)
 -- Name: fki_dataset_type_dimension_dataset_type_domain; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2013,7 +1544,7 @@ CREATE INDEX fki_dataset_type_dimension_dataset_type_domain ON dataset_type_dime
 
 
 --
--- TOC entry 3542 (class 1259 OID 987721)
+-- TOC entry 3638 (class 1259 OID 1955388)
 -- Name: fki_dataset_type_dimension_dimension_domain; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2021,7 +1552,7 @@ CREATE INDEX fki_dataset_type_dimension_dimension_domain ON dataset_type_dimensi
 
 
 --
--- TOC entry 3545 (class 1259 OID 987722)
+-- TOC entry 3641 (class 1259 OID 1955389)
 -- Name: fki_dataset_type_domain_dataset_type; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2029,7 +1560,7 @@ CREATE INDEX fki_dataset_type_domain_dataset_type ON dataset_type_domain USING b
 
 
 --
--- TOC entry 3546 (class 1259 OID 987723)
+-- TOC entry 3642 (class 1259 OID 1955390)
 -- Name: fki_dataset_type_domain_domain; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2037,7 +1568,7 @@ CREATE INDEX fki_dataset_type_domain_domain ON dataset_type_domain USING btree (
 
 
 --
--- TOC entry 3547 (class 1259 OID 987724)
+-- TOC entry 3643 (class 1259 OID 1955391)
 -- Name: fki_dataset_type_domain_reference_system; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2045,7 +1576,7 @@ CREATE INDEX fki_dataset_type_domain_reference_system ON dataset_type_domain USI
 
 
 --
--- TOC entry 3550 (class 1259 OID 987725)
+-- TOC entry 3646 (class 1259 OID 1955392)
 -- Name: fki_dataset_type_measurement_metatype_datatype; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2053,7 +1584,7 @@ CREATE INDEX fki_dataset_type_measurement_metatype_datatype ON dataset_type_meas
 
 
 --
--- TOC entry 3551 (class 1259 OID 987726)
+-- TOC entry 3647 (class 1259 OID 1955393)
 -- Name: fki_dataset_type_measurement_type_dataset_type; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2061,7 +1592,7 @@ CREATE INDEX fki_dataset_type_measurement_type_dataset_type ON dataset_type_meas
 
 
 --
--- TOC entry 3552 (class 1259 OID 987727)
+-- TOC entry 3648 (class 1259 OID 1955394)
 -- Name: fki_dataset_type_measurement_type_measurement_type; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2069,7 +1600,7 @@ CREATE INDEX fki_dataset_type_measurement_type_measurement_type ON dataset_type_
 
 
 --
--- TOC entry 3567 (class 1259 OID 987728)
+-- TOC entry 3663 (class 1259 OID 1955395)
 -- Name: fki_dimension_domain_dimension; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2077,7 +1608,7 @@ CREATE INDEX fki_dimension_domain_dimension ON dimension_domain USING btree (dim
 
 
 --
--- TOC entry 3568 (class 1259 OID 987729)
+-- TOC entry 3664 (class 1259 OID 1955396)
 -- Name: fki_dimension_domain_domain; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2085,7 +1616,7 @@ CREATE INDEX fki_dimension_domain_domain ON dimension_domain USING btree (domain
 
 
 --
--- TOC entry 3606 (class 1259 OID 987730)
+-- TOC entry 3702 (class 1259 OID 1955397)
 -- Name: fki_instrument_instrument_type; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2093,7 +1624,7 @@ CREATE INDEX fki_instrument_instrument_type ON instrument USING btree (instrumen
 
 
 --
--- TOC entry 3607 (class 1259 OID 987731)
+-- TOC entry 3703 (class 1259 OID 1955398)
 -- Name: fki_instrument_platform; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2101,7 +1632,7 @@ CREATE INDEX fki_instrument_platform ON instrument USING btree (platform_type_id
 
 
 --
--- TOC entry 3620 (class 1259 OID 987732)
+-- TOC entry 3716 (class 1259 OID 1955399)
 -- Name: fki_measurement_type_measurement_metatype; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2109,7 +1640,7 @@ CREATE INDEX fki_measurement_type_measurement_metatype ON measurement_type USING
 
 
 --
--- TOC entry 3629 (class 1259 OID 987733)
+-- TOC entry 3725 (class 1259 OID 1955400)
 -- Name: fki_ndarray_dataset_dataset; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2117,7 +1648,7 @@ CREATE INDEX fki_ndarray_dataset_dataset ON ndarray_dataset USING btree (dataset
 
 
 --
--- TOC entry 3630 (class 1259 OID 987734)
+-- TOC entry 3726 (class 1259 OID 1955401)
 -- Name: fki_ndarray_dataset_ndarray; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2125,7 +1656,7 @@ CREATE INDEX fki_ndarray_dataset_ndarray ON ndarray_dataset USING btree (ndarray
 
 
 --
--- TOC entry 3633 (class 1259 OID 987735)
+-- TOC entry 3729 (class 1259 OID 1955402)
 -- Name: fki_ndarray_dimension_ndarray; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2133,7 +1664,7 @@ CREATE INDEX fki_ndarray_dimension_ndarray ON ndarray_dimension USING btree (nda
 
 
 --
--- TOC entry 3634 (class 1259 OID 987736)
+-- TOC entry 3730 (class 1259 OID 1955403)
 -- Name: fki_ndarray_dimension_ndarray_type_dimension; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2141,7 +1672,7 @@ CREATE INDEX fki_ndarray_dimension_ndarray_type_dimension ON ndarray_dimension U
 
 
 --
--- TOC entry 3642 (class 1259 OID 987737)
+-- TOC entry 3738 (class 1259 OID 1955404)
 -- Name: fki_ndarray_footprint_dimension_ndarray; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2149,7 +1680,7 @@ CREATE INDEX fki_ndarray_footprint_dimension_ndarray ON ndarray_footprint_dimens
 
 
 --
--- TOC entry 3643 (class 1259 OID 987738)
+-- TOC entry 3739 (class 1259 OID 1955405)
 -- Name: fki_ndarray_footprint_dimension_ndarray_type_dimension; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2157,7 +1688,7 @@ CREATE INDEX fki_ndarray_footprint_dimension_ndarray_type_dimension ON ndarray_f
 
 
 --
--- TOC entry 3623 (class 1259 OID 987739)
+-- TOC entry 3719 (class 1259 OID 1955406)
 -- Name: fki_ndarray_footprint_ndarray_type; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2165,7 +1696,7 @@ CREATE INDEX fki_ndarray_footprint_ndarray_type ON ndarray USING btree (ndarray_
 
 
 --
--- TOC entry 3624 (class 1259 OID 987740)
+-- TOC entry 3720 (class 1259 OID 1955407)
 -- Name: fki_ndarray_ndarray_type; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2173,7 +1704,7 @@ CREATE INDEX fki_ndarray_ndarray_type ON ndarray USING btree (ndarray_type_id, n
 
 
 --
--- TOC entry 3598 (class 1259 OID 987741)
+-- TOC entry 3694 (class 1259 OID 1955408)
 -- Name: fki_ndarray_type_dimension_attribute_ndarray_type_dimension; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2181,7 +1712,7 @@ CREATE INDEX fki_ndarray_type_dimension_attribute_ndarray_type_dimension ON ndar
 
 
 --
--- TOC entry 3599 (class 1259 OID 987742)
+-- TOC entry 3695 (class 1259 OID 1955409)
 -- Name: fki_ndarray_type_dimension_attribute_property; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2189,7 +1720,7 @@ CREATE INDEX fki_ndarray_type_dimension_attribute_property ON ndarray_type_dimen
 
 
 --
--- TOC entry 3583 (class 1259 OID 987743)
+-- TOC entry 3679 (class 1259 OID 1955410)
 -- Name: fki_ndarray_type_dimension_dimension_domain; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2197,7 +1728,7 @@ CREATE INDEX fki_ndarray_type_dimension_dimension_domain ON ndarray_type_dimensi
 
 
 --
--- TOC entry 3584 (class 1259 OID 987744)
+-- TOC entry 3680 (class 1259 OID 1955411)
 -- Name: fki_ndarray_type_dimension_indexing_type; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2205,7 +1736,7 @@ CREATE INDEX fki_ndarray_type_dimension_indexing_type ON ndarray_type_dimension 
 
 
 --
--- TOC entry 3585 (class 1259 OID 987745)
+-- TOC entry 3681 (class 1259 OID 1955412)
 -- Name: fki_ndarray_type_dimension_ndarray_type_id_fkey; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2213,7 +1744,7 @@ CREATE INDEX fki_ndarray_type_dimension_ndarray_type_id_fkey ON ndarray_type_dim
 
 
 --
--- TOC entry 3646 (class 1259 OID 987746)
+-- TOC entry 3742 (class 1259 OID 1955413)
 -- Name: fki_ndarray_type_masurement_type_datatype; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2221,7 +1752,7 @@ CREATE INDEX fki_ndarray_type_masurement_type_datatype ON ndarray_type_measureme
 
 
 --
--- TOC entry 3647 (class 1259 OID 987747)
+-- TOC entry 3743 (class 1259 OID 1955414)
 -- Name: fki_ndarray_type_measurement_type_measurement_type; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2229,7 +1760,7 @@ CREATE INDEX fki_ndarray_type_measurement_type_measurement_type ON ndarray_type_
 
 
 --
--- TOC entry 3648 (class 1259 OID 987748)
+-- TOC entry 3744 (class 1259 OID 1955415)
 -- Name: fki_ndarray_type_measurement_type_ndarray_type; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2237,7 +1768,7 @@ CREATE INDEX fki_ndarray_type_measurement_type_ndarray_type ON ndarray_type_meas
 
 
 --
--- TOC entry 3653 (class 1259 OID 987749)
+-- TOC entry 3749 (class 1259 OID 1955416)
 -- Name: fki_observation_instrument; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2245,7 +1776,7 @@ CREATE INDEX fki_observation_instrument ON observation USING btree (instrument_t
 
 
 --
--- TOC entry 3654 (class 1259 OID 987750)
+-- TOC entry 3750 (class 1259 OID 1955417)
 -- Name: fki_observation_observation_type; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2253,7 +1784,7 @@ CREATE INDEX fki_observation_observation_type ON observation USING btree (observ
 
 
 --
--- TOC entry 3661 (class 1259 OID 987751)
+-- TOC entry 3757 (class 1259 OID 1955418)
 -- Name: fki_platform_platform_type; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2261,7 +1792,7 @@ CREATE INDEX fki_platform_platform_type ON platform USING btree (platform_type_i
 
 
 --
--- TOC entry 3594 (class 1259 OID 987752)
+-- TOC entry 3690 (class 1259 OID 1955419)
 -- Name: fki_reference_system_indexing_measurement_type; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2269,7 +1800,7 @@ CREATE INDEX fki_reference_system_indexing_measurement_type ON reference_system_
 
 
 --
--- TOC entry 3595 (class 1259 OID 987753)
+-- TOC entry 3691 (class 1259 OID 1955420)
 -- Name: fki_reference_system_indexing_reference_system; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2277,7 +1808,7 @@ CREATE INDEX fki_reference_system_indexing_reference_system ON reference_system_
 
 
 --
--- TOC entry 3635 (class 1259 OID 994230)
+-- TOC entry 3731 (class 1259 OID 1955421)
 -- Name: idx_ndarray_dimension_ndarray_dimension_index; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2285,7 +1816,7 @@ CREATE INDEX idx_ndarray_dimension_ndarray_dimension_index ON ndarray_dimension 
 
 
 --
--- TOC entry 3636 (class 1259 OID 994232)
+-- TOC entry 3732 (class 1259 OID 1955422)
 -- Name: idx_ndarray_dimension_ndarray_dimension_max; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2293,7 +1824,7 @@ CREATE INDEX idx_ndarray_dimension_ndarray_dimension_max ON ndarray_dimension US
 
 
 --
--- TOC entry 3637 (class 1259 OID 994231)
+-- TOC entry 3733 (class 1259 OID 1955423)
 -- Name: idx_ndarray_dimension_ndarray_dimension_min; Type: INDEX; Schema: public; Owner: cube_admin; Tablespace: 
 --
 
@@ -2303,7 +1834,7 @@ CREATE INDEX idx_ndarray_dimension_ndarray_dimension_min ON ndarray_dimension US
 SET search_path = earth_observation, pg_catalog;
 
 --
--- TOC entry 3670 (class 2606 OID 987754)
+-- TOC entry 3766 (class 2606 OID 1955424)
 -- Name: fk_spectral_parameters_measurement_metatype; Type: FK CONSTRAINT; Schema: earth_observation; Owner: cube_admin
 --
 
@@ -2314,7 +1845,7 @@ ALTER TABLE ONLY spectral_parameters
 SET search_path = public, pg_catalog;
 
 --
--- TOC entry 3671 (class 2606 OID 987759)
+-- TOC entry 3767 (class 2606 OID 1955429)
 -- Name: fk_dataset_dataset_type; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2323,7 +1854,7 @@ ALTER TABLE ONLY dataset
 
 
 --
--- TOC entry 3673 (class 2606 OID 987764)
+-- TOC entry 3769 (class 2606 OID 1955434)
 -- Name: fk_dataset_dimension_dataset; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2332,7 +1863,7 @@ ALTER TABLE ONLY dataset_dimension
 
 
 --
--- TOC entry 3674 (class 2606 OID 987769)
+-- TOC entry 3770 (class 2606 OID 1955439)
 -- Name: fk_dataset_dimension_dataset_type_dimension; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2341,7 +1872,7 @@ ALTER TABLE ONLY dataset_dimension
 
 
 --
--- TOC entry 3675 (class 2606 OID 987774)
+-- TOC entry 3771 (class 2606 OID 1955444)
 -- Name: fk_dataset_metadata_dataset; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2350,7 +1881,7 @@ ALTER TABLE ONLY dataset_metadata
 
 
 --
--- TOC entry 3672 (class 2606 OID 987779)
+-- TOC entry 3768 (class 2606 OID 1955449)
 -- Name: fk_dataset_observation; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2359,7 +1890,7 @@ ALTER TABLE ONLY dataset
 
 
 --
--- TOC entry 3676 (class 2606 OID 987784)
+-- TOC entry 3772 (class 2606 OID 1955454)
 -- Name: fk_dataset_type_dimension_dataset_type_domain; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2368,7 +1899,7 @@ ALTER TABLE ONLY dataset_type_dimension
 
 
 --
--- TOC entry 3677 (class 2606 OID 987789)
+-- TOC entry 3773 (class 2606 OID 1955459)
 -- Name: fk_dataset_type_dimension_dimension_domain; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2377,7 +1908,7 @@ ALTER TABLE ONLY dataset_type_dimension
 
 
 --
--- TOC entry 3678 (class 2606 OID 987794)
+-- TOC entry 3774 (class 2606 OID 1955464)
 -- Name: fk_dataset_type_domain_dataset_type; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2386,7 +1917,7 @@ ALTER TABLE ONLY dataset_type_domain
 
 
 --
--- TOC entry 3679 (class 2606 OID 987799)
+-- TOC entry 3775 (class 2606 OID 1955469)
 -- Name: fk_dataset_type_domain_domain; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2395,7 +1926,7 @@ ALTER TABLE ONLY dataset_type_domain
 
 
 --
--- TOC entry 3680 (class 2606 OID 987804)
+-- TOC entry 3776 (class 2606 OID 1955474)
 -- Name: fk_dataset_type_domain_reference_system; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2404,7 +1935,7 @@ ALTER TABLE ONLY dataset_type_domain
 
 
 --
--- TOC entry 3681 (class 2606 OID 987809)
+-- TOC entry 3777 (class 2606 OID 1955479)
 -- Name: fk_dataset_type_measurement_type_dataset_type; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2413,7 +1944,7 @@ ALTER TABLE ONLY dataset_type_measurement_type
 
 
 --
--- TOC entry 3682 (class 2606 OID 987814)
+-- TOC entry 3778 (class 2606 OID 1955484)
 -- Name: fk_dataset_type_measurement_type_datatype; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2422,7 +1953,7 @@ ALTER TABLE ONLY dataset_type_measurement_type
 
 
 --
--- TOC entry 3683 (class 2606 OID 987819)
+-- TOC entry 3779 (class 2606 OID 1955489)
 -- Name: fk_dataset_type_measurement_type_measurement_type; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2431,7 +1962,7 @@ ALTER TABLE ONLY dataset_type_measurement_type
 
 
 --
--- TOC entry 3684 (class 2606 OID 987824)
+-- TOC entry 3780 (class 2606 OID 1955494)
 -- Name: fk_dimension_domain_dimension; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2440,7 +1971,7 @@ ALTER TABLE ONLY dimension_domain
 
 
 --
--- TOC entry 3685 (class 2606 OID 987829)
+-- TOC entry 3781 (class 2606 OID 1955499)
 -- Name: fk_dimension_domain_domain; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2449,7 +1980,7 @@ ALTER TABLE ONLY dimension_domain
 
 
 --
--- TOC entry 3694 (class 2606 OID 987834)
+-- TOC entry 3790 (class 2606 OID 1955504)
 -- Name: fk_instrument_instrument_type; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2458,7 +1989,7 @@ ALTER TABLE ONLY instrument
 
 
 --
--- TOC entry 3695 (class 2606 OID 987839)
+-- TOC entry 3791 (class 2606 OID 1955509)
 -- Name: fk_instrument_platform; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2467,7 +1998,7 @@ ALTER TABLE ONLY instrument
 
 
 --
--- TOC entry 3696 (class 2606 OID 987844)
+-- TOC entry 3792 (class 2606 OID 1955514)
 -- Name: fk_measurement_type_measurement_metatype; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2476,7 +2007,7 @@ ALTER TABLE ONLY measurement_type
 
 
 --
--- TOC entry 3698 (class 2606 OID 987849)
+-- TOC entry 3794 (class 2606 OID 1955519)
 -- Name: fk_ndarray_dataset_dataset; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2485,7 +2016,7 @@ ALTER TABLE ONLY ndarray_dataset
 
 
 --
--- TOC entry 3699 (class 2606 OID 987854)
+-- TOC entry 3795 (class 2606 OID 1955524)
 -- Name: fk_ndarray_dataset_ndarray; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2494,7 +2025,7 @@ ALTER TABLE ONLY ndarray_dataset
 
 
 --
--- TOC entry 3700 (class 2606 OID 987859)
+-- TOC entry 3796 (class 2606 OID 1955529)
 -- Name: fk_ndarray_dimension_ndarray; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2503,7 +2034,7 @@ ALTER TABLE ONLY ndarray_dimension
 
 
 --
--- TOC entry 3701 (class 2606 OID 987864)
+-- TOC entry 3797 (class 2606 OID 1955534)
 -- Name: fk_ndarray_dimension_ndarray_type_dimension; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2512,7 +2043,7 @@ ALTER TABLE ONLY ndarray_dimension
 
 
 --
--- TOC entry 3703 (class 2606 OID 987869)
+-- TOC entry 3799 (class 2606 OID 1955539)
 -- Name: fk_ndarray_footprint_dimension_ndarray_type; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2521,7 +2052,7 @@ ALTER TABLE ONLY ndarray_footprint_dimension
 
 
 --
--- TOC entry 3704 (class 2606 OID 987874)
+-- TOC entry 3800 (class 2606 OID 1955544)
 -- Name: fk_ndarray_footprint_dimension_ndarray_type_dimension; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2530,7 +2061,7 @@ ALTER TABLE ONLY ndarray_footprint_dimension
 
 
 --
--- TOC entry 3702 (class 2606 OID 987879)
+-- TOC entry 3798 (class 2606 OID 1955549)
 -- Name: fk_ndarray_footprint_ndarray_type; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2539,7 +2070,7 @@ ALTER TABLE ONLY ndarray_footprint
 
 
 --
--- TOC entry 3697 (class 2606 OID 987884)
+-- TOC entry 3793 (class 2606 OID 1955554)
 -- Name: fk_ndarray_ndarray_type; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2548,7 +2079,7 @@ ALTER TABLE ONLY ndarray
 
 
 --
--- TOC entry 3692 (class 2606 OID 987889)
+-- TOC entry 3788 (class 2606 OID 1955559)
 -- Name: fk_ndarray_type_dimension_attribute_ndarray_type_dimension; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2557,7 +2088,7 @@ ALTER TABLE ONLY ndarray_type_dimension_property
 
 
 --
--- TOC entry 3686 (class 2606 OID 987894)
+-- TOC entry 3782 (class 2606 OID 1955564)
 -- Name: fk_ndarray_type_dimension_dimension_domain; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2566,7 +2097,7 @@ ALTER TABLE ONLY ndarray_type_dimension
 
 
 --
--- TOC entry 3688 (class 2606 OID 994219)
+-- TOC entry 3783 (class 2606 OID 1955569)
 -- Name: fk_ndarray_type_dimension_indexing_type; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2575,7 +2106,7 @@ ALTER TABLE ONLY ndarray_type_dimension
 
 
 --
--- TOC entry 3689 (class 2606 OID 994224)
+-- TOC entry 3784 (class 2606 OID 1955574)
 -- Name: fk_ndarray_type_dimension_ndarray_type; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2584,7 +2115,7 @@ ALTER TABLE ONLY ndarray_type_dimension
 
 
 --
--- TOC entry 3693 (class 2606 OID 987904)
+-- TOC entry 3789 (class 2606 OID 1955579)
 -- Name: fk_ndarray_type_dimension_property_property; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2593,7 +2124,7 @@ ALTER TABLE ONLY ndarray_type_dimension_property
 
 
 --
--- TOC entry 3687 (class 2606 OID 987909)
+-- TOC entry 3785 (class 2606 OID 1955584)
 -- Name: fk_ndarray_type_dimension_reference_system; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2602,7 +2133,7 @@ ALTER TABLE ONLY ndarray_type_dimension
 
 
 --
--- TOC entry 3705 (class 2606 OID 987914)
+-- TOC entry 3801 (class 2606 OID 1955589)
 -- Name: fk_ndarray_type_measurement_type_datatype; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2611,7 +2142,7 @@ ALTER TABLE ONLY ndarray_type_measurement_type
 
 
 --
--- TOC entry 3706 (class 2606 OID 987919)
+-- TOC entry 3802 (class 2606 OID 1955594)
 -- Name: fk_ndarray_type_measurement_type_measurement_type; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2620,7 +2151,7 @@ ALTER TABLE ONLY ndarray_type_measurement_type
 
 
 --
--- TOC entry 3707 (class 2606 OID 987924)
+-- TOC entry 3803 (class 2606 OID 1955599)
 -- Name: fk_ndarray_type_measurement_type_ndarray_type; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2629,7 +2160,7 @@ ALTER TABLE ONLY ndarray_type_measurement_type
 
 
 --
--- TOC entry 3708 (class 2606 OID 987929)
+-- TOC entry 3804 (class 2606 OID 1955604)
 -- Name: fk_observation_instrument; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2638,7 +2169,7 @@ ALTER TABLE ONLY observation
 
 
 --
--- TOC entry 3709 (class 2606 OID 987934)
+-- TOC entry 3805 (class 2606 OID 1955609)
 -- Name: fk_observation_observation_type; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2647,7 +2178,7 @@ ALTER TABLE ONLY observation
 
 
 --
--- TOC entry 3710 (class 2606 OID 987939)
+-- TOC entry 3806 (class 2606 OID 1955614)
 -- Name: fk_platform_platform_type; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2656,7 +2187,7 @@ ALTER TABLE ONLY platform
 
 
 --
--- TOC entry 3690 (class 2606 OID 987944)
+-- TOC entry 3786 (class 2606 OID 1955619)
 -- Name: fk_reference_system_indexing_measurement_type; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2665,7 +2196,7 @@ ALTER TABLE ONLY reference_system_indexing
 
 
 --
--- TOC entry 3691 (class 2606 OID 987949)
+-- TOC entry 3787 (class 2606 OID 1955624)
 -- Name: fk_reference_system_indexing_reference_system; Type: FK CONSTRAINT; Schema: public; Owner: cube_admin
 --
 
@@ -2674,35 +2205,8 @@ ALTER TABLE ONLY reference_system_indexing
 
 
 --
--- TOC entry 3844 (class 0 OID 987539)
--- Dependencies: 211 3865
--- Name: ndarray_type_dimension_view; Type: MATERIALIZED VIEW DATA; Schema: public; Owner: cube_admin
---
-
-REFRESH MATERIALIZED VIEW ndarray_type_dimension_view;
-
-
---
--- TOC entry 3846 (class 0 OID 987550)
--- Dependencies: 213 3844 3865
--- Name: dimension_indices_view; Type: MATERIALIZED VIEW DATA; Schema: public; Owner: cube_admin
---
-
-REFRESH MATERIALIZED VIEW dimension_indices_view;
-
-
---
--- TOC entry 3849 (class 0 OID 987560)
--- Dependencies: 216 3844 3865
--- Name: dimension_properties_view; Type: MATERIALIZED VIEW DATA; Schema: public; Owner: cube_admin
---
-
-REFRESH MATERIALIZED VIEW dimension_properties_view;
-
-
---
--- TOC entry 3871 (class 0 OID 0)
--- Dependencies: 8
+-- TOC entry 3930 (class 0 OID 0)
+-- Dependencies: 9
 -- Name: public; Type: ACL; Schema: -; Owner: postgres
 --
 
@@ -2714,8 +2218,8 @@ GRANT ALL ON SCHEMA public TO PUBLIC;
 
 
 --
--- TOC entry 3873 (class 0 OID 0)
--- Dependencies: 9
+-- TOC entry 3932 (class 0 OID 0)
+-- Dependencies: 10
 -- Name: ztmp; Type: ACL; Schema: -; Owner: postgres
 --
 
@@ -2728,8 +2232,8 @@ GRANT ALL ON SCHEMA ztmp TO PUBLIC;
 SET search_path = earth_observation, pg_catalog;
 
 --
--- TOC entry 3879 (class 0 OID 0)
--- Dependencies: 195
+-- TOC entry 3934 (class 0 OID 0)
+-- Dependencies: 205
 -- Name: spectral_parameters; Type: ACL; Schema: earth_observation; Owner: cube_admin
 --
 
@@ -2743,8 +2247,8 @@ GRANT SELECT ON TABLE spectral_parameters TO cube_user_group;
 SET search_path = public, pg_catalog;
 
 --
--- TOC entry 3881 (class 0 OID 0)
--- Dependencies: 196
+-- TOC entry 3936 (class 0 OID 0)
+-- Dependencies: 206
 -- Name: dataset; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -2756,8 +2260,8 @@ GRANT SELECT ON TABLE dataset TO cube_user_group;
 
 
 --
--- TOC entry 3883 (class 0 OID 0)
--- Dependencies: 197
+-- TOC entry 3938 (class 0 OID 0)
+-- Dependencies: 207
 -- Name: dataset_dimension; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -2769,8 +2273,8 @@ GRANT SELECT ON TABLE dataset_dimension TO cube_user_group;
 
 
 --
--- TOC entry 3885 (class 0 OID 0)
--- Dependencies: 198
+-- TOC entry 3940 (class 0 OID 0)
+-- Dependencies: 208
 -- Name: dataset_metadata; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -2782,8 +2286,8 @@ GRANT SELECT ON TABLE dataset_metadata TO cube_user_group;
 
 
 --
--- TOC entry 3887 (class 0 OID 0)
--- Dependencies: 199
+-- TOC entry 3942 (class 0 OID 0)
+-- Dependencies: 209
 -- Name: dataset_type; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -2795,8 +2299,8 @@ GRANT SELECT ON TABLE dataset_type TO cube_user_group;
 
 
 --
--- TOC entry 3889 (class 0 OID 0)
--- Dependencies: 200
+-- TOC entry 3944 (class 0 OID 0)
+-- Dependencies: 210
 -- Name: dataset_type_dimension; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -2808,8 +2312,8 @@ GRANT SELECT ON TABLE dataset_type_dimension TO cube_user_group;
 
 
 --
--- TOC entry 3891 (class 0 OID 0)
--- Dependencies: 201
+-- TOC entry 3946 (class 0 OID 0)
+-- Dependencies: 211
 -- Name: dataset_type_domain; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -2821,8 +2325,8 @@ GRANT SELECT ON TABLE dataset_type_domain TO cube_user_group;
 
 
 --
--- TOC entry 3893 (class 0 OID 0)
--- Dependencies: 202
+-- TOC entry 3948 (class 0 OID 0)
+-- Dependencies: 212
 -- Name: dataset_type_measurement_type; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -2834,8 +2338,8 @@ GRANT SELECT ON TABLE dataset_type_measurement_type TO cube_user_group;
 
 
 --
--- TOC entry 3895 (class 0 OID 0)
--- Dependencies: 203
+-- TOC entry 3950 (class 0 OID 0)
+-- Dependencies: 213
 -- Name: datatype; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -2847,8 +2351,8 @@ GRANT SELECT ON TABLE datatype TO cube_user_group;
 
 
 --
--- TOC entry 3897 (class 0 OID 0)
--- Dependencies: 204
+-- TOC entry 3952 (class 0 OID 0)
+-- Dependencies: 214
 -- Name: dimension; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -2860,8 +2364,8 @@ GRANT SELECT ON TABLE dimension TO cube_user_group;
 
 
 --
--- TOC entry 3899 (class 0 OID 0)
--- Dependencies: 205
+-- TOC entry 3954 (class 0 OID 0)
+-- Dependencies: 215
 -- Name: dimension_domain; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -2873,8 +2377,8 @@ GRANT SELECT ON TABLE dimension_domain TO cube_user_group;
 
 
 --
--- TOC entry 3901 (class 0 OID 0)
--- Dependencies: 206
+-- TOC entry 3956 (class 0 OID 0)
+-- Dependencies: 216
 -- Name: domain; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -2886,8 +2390,8 @@ GRANT SELECT ON TABLE domain TO cube_user_group;
 
 
 --
--- TOC entry 3903 (class 0 OID 0)
--- Dependencies: 207
+-- TOC entry 3958 (class 0 OID 0)
+-- Dependencies: 217
 -- Name: indexing_type; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -2899,8 +2403,8 @@ GRANT SELECT ON TABLE indexing_type TO cube_user_group;
 
 
 --
--- TOC entry 3905 (class 0 OID 0)
--- Dependencies: 208
+-- TOC entry 3960 (class 0 OID 0)
+-- Dependencies: 218
 -- Name: ndarray_type; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -2912,8 +2416,8 @@ GRANT SELECT ON TABLE ndarray_type TO cube_user_group;
 
 
 --
--- TOC entry 3907 (class 0 OID 0)
--- Dependencies: 209
+-- TOC entry 3962 (class 0 OID 0)
+-- Dependencies: 219
 -- Name: ndarray_type_dimension; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -2925,8 +2429,8 @@ GRANT SELECT ON TABLE ndarray_type_dimension TO cube_user_group;
 
 
 --
--- TOC entry 3909 (class 0 OID 0)
--- Dependencies: 210
+-- TOC entry 3964 (class 0 OID 0)
+-- Dependencies: 220
 -- Name: reference_system; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -2938,8 +2442,8 @@ GRANT SELECT ON TABLE reference_system TO cube_user_group;
 
 
 --
--- TOC entry 3910 (class 0 OID 0)
--- Dependencies: 211
+-- TOC entry 3965 (class 0 OID 0)
+-- Dependencies: 258
 -- Name: ndarray_type_dimension_view; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -2951,8 +2455,8 @@ GRANT SELECT ON TABLE ndarray_type_dimension_view TO cube_user_group;
 
 
 --
--- TOC entry 3912 (class 0 OID 0)
--- Dependencies: 212
+-- TOC entry 3967 (class 0 OID 0)
+-- Dependencies: 221
 -- Name: reference_system_indexing; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -2964,8 +2468,8 @@ GRANT SELECT ON TABLE reference_system_indexing TO cube_user_group;
 
 
 --
--- TOC entry 3913 (class 0 OID 0)
--- Dependencies: 213
+-- TOC entry 3968 (class 0 OID 0)
+-- Dependencies: 259
 -- Name: dimension_indices_view; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -2977,8 +2481,8 @@ GRANT SELECT ON TABLE dimension_indices_view TO cube_user_group;
 
 
 --
--- TOC entry 3914 (class 0 OID 0)
--- Dependencies: 214
+-- TOC entry 3969 (class 0 OID 0)
+-- Dependencies: 222
 -- Name: ndarray_type_dimension_property; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -2990,8 +2494,8 @@ GRANT SELECT ON TABLE ndarray_type_dimension_property TO cube_user_group;
 
 
 --
--- TOC entry 3915 (class 0 OID 0)
--- Dependencies: 215
+-- TOC entry 3970 (class 0 OID 0)
+-- Dependencies: 223
 -- Name: property; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -3003,8 +2507,8 @@ GRANT SELECT ON TABLE property TO cube_user_group;
 
 
 --
--- TOC entry 3916 (class 0 OID 0)
--- Dependencies: 216
+-- TOC entry 3971 (class 0 OID 0)
+-- Dependencies: 260
 -- Name: dimension_properties_view; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -3016,8 +2520,8 @@ GRANT SELECT ON TABLE dimension_properties_view TO cube_user_group;
 
 
 --
--- TOC entry 3918 (class 0 OID 0)
--- Dependencies: 217
+-- TOC entry 3973 (class 0 OID 0)
+-- Dependencies: 224
 -- Name: instrument; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -3029,8 +2533,8 @@ GRANT SELECT ON TABLE instrument TO cube_user_group;
 
 
 --
--- TOC entry 3920 (class 0 OID 0)
--- Dependencies: 218
+-- TOC entry 3975 (class 0 OID 0)
+-- Dependencies: 225
 -- Name: instrument_type; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -3042,8 +2546,8 @@ GRANT SELECT ON TABLE instrument_type TO cube_user_group;
 
 
 --
--- TOC entry 3922 (class 0 OID 0)
--- Dependencies: 219
+-- TOC entry 3977 (class 0 OID 0)
+-- Dependencies: 226
 -- Name: measurement_metatype; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -3055,8 +2559,8 @@ GRANT SELECT ON TABLE measurement_metatype TO cube_user_group;
 
 
 --
--- TOC entry 3924 (class 0 OID 0)
--- Dependencies: 220
+-- TOC entry 3979 (class 0 OID 0)
+-- Dependencies: 227
 -- Name: measurement_type; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -3068,8 +2572,8 @@ GRANT SELECT ON TABLE measurement_type TO cube_user_group;
 
 
 --
--- TOC entry 3926 (class 0 OID 0)
--- Dependencies: 221
+-- TOC entry 3981 (class 0 OID 0)
+-- Dependencies: 228
 -- Name: ndarray; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -3081,8 +2585,8 @@ GRANT SELECT ON TABLE ndarray TO cube_user_group;
 
 
 --
--- TOC entry 3928 (class 0 OID 0)
--- Dependencies: 222
+-- TOC entry 3983 (class 0 OID 0)
+-- Dependencies: 229
 -- Name: ndarray_dataset; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -3094,8 +2598,8 @@ GRANT SELECT ON TABLE ndarray_dataset TO cube_user_group;
 
 
 --
--- TOC entry 3930 (class 0 OID 0)
--- Dependencies: 223
+-- TOC entry 3985 (class 0 OID 0)
+-- Dependencies: 230
 -- Name: ndarray_dimension; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -3107,8 +2611,8 @@ GRANT SELECT ON TABLE ndarray_dimension TO cube_user_group;
 
 
 --
--- TOC entry 3932 (class 0 OID 0)
--- Dependencies: 224
+-- TOC entry 3987 (class 0 OID 0)
+-- Dependencies: 231
 -- Name: ndarray_footprint; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -3120,8 +2624,8 @@ GRANT SELECT ON TABLE ndarray_footprint TO cube_user_group;
 
 
 --
--- TOC entry 3934 (class 0 OID 0)
--- Dependencies: 225
+-- TOC entry 3989 (class 0 OID 0)
+-- Dependencies: 232
 -- Name: ndarray_footprint_dimension; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -3133,8 +2637,8 @@ GRANT SELECT ON TABLE ndarray_footprint_dimension TO cube_user_group;
 
 
 --
--- TOC entry 3936 (class 0 OID 0)
--- Dependencies: 226
+-- TOC entry 3991 (class 0 OID 0)
+-- Dependencies: 233
 -- Name: ndarray_type_measurement_type; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -3146,8 +2650,8 @@ GRANT SELECT ON TABLE ndarray_type_measurement_type TO cube_user_group;
 
 
 --
--- TOC entry 3938 (class 0 OID 0)
--- Dependencies: 227
+-- TOC entry 3993 (class 0 OID 0)
+-- Dependencies: 234
 -- Name: observation; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -3159,8 +2663,8 @@ GRANT SELECT ON TABLE observation TO cube_user_group;
 
 
 --
--- TOC entry 3940 (class 0 OID 0)
--- Dependencies: 228
+-- TOC entry 3995 (class 0 OID 0)
+-- Dependencies: 235
 -- Name: observation_type; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -3172,8 +2676,8 @@ GRANT SELECT ON TABLE observation_type TO cube_user_group;
 
 
 --
--- TOC entry 3942 (class 0 OID 0)
--- Dependencies: 229
+-- TOC entry 3997 (class 0 OID 0)
+-- Dependencies: 236
 -- Name: platform; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -3185,8 +2689,8 @@ GRANT SELECT ON TABLE platform TO cube_user_group;
 
 
 --
--- TOC entry 3944 (class 0 OID 0)
--- Dependencies: 230
+-- TOC entry 3999 (class 0 OID 0)
+-- Dependencies: 237
 -- Name: platform_type; Type: ACL; Schema: public; Owner: cube_admin
 --
 
@@ -3197,7 +2701,7 @@ GRANT ALL ON TABLE platform_type TO cube_admin_group;
 GRANT SELECT ON TABLE platform_type TO cube_user_group;
 
 
--- Completed on 2015-04-01 18:36:06 AEDT
+-- Completed on 2015-04-05 17:09:42 AEST
 
 --
 -- PostgreSQL database dump complete
