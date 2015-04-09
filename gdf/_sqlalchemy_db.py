@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from EOtools.utils import log_multiline
 
 #===============================================================================
 # Copyright (c)  2014 Geoscience Australia
@@ -43,7 +44,12 @@ from sqlalchemy.dialects.postgresql import \
     TIME, TIMESTAMP, UUID, VARCHAR, INT4RANGE, INT8RANGE, NUMRANGE, \
     DATERANGE, TSRANGE, TSTZRANGE
 #    JSON, JSONB, OID, TSVECTOR
+import logging
+
+from EOtools.utils import log_multiline
+
     
+logger = logging.getLogger(__name__)
     
 Base = declarative_base()
 
@@ -117,69 +123,73 @@ class SQLAlchemyDB(object):
         self._dimensions = self.get_dimensions()
         self._domains = self.get_domains()
 
-        def get_ndarrays(self, dimension_range_dict): 
-            '''
-            Parameter:
-                dimension_range_dict: dict defined as {<dimension_tag>: (<min_value>, <max_value>), 
-                                                       <dimension_tag>: (<min_value>, <max_value>)...}
-            '''
-            ndarray_dict = {}
+    def get_ndarrays(self, dimension_range_dict): 
+        '''
+        Parameter:
+            dimension_range_dict: dict defined as {<dimension_tag>: (<min_value>, <max_value>), 
+                                                   <dimension_tag>: (<min_value>, <max_value>)...}
+        '''
+        ndarray_dict = {}
+        
+        for ndarray_type in self._ndarray_types.values():
+            logger.debug('ndarray_type = %s', ndarray_type)
             
-            for ndarray_type in self._ndarray_types:
-                # Skip ndarray_type if  dimensionality of query is greater than dimensionality of ndarray_type
-                if set(dimension_range_dict.keys()) > set([dimension.dimension_tag for dimension in ndarray_type.dimensions]):
-                    continue
-                
-                ndarray_dict[ndarray_type] = {}
-                
-                # Obtain list of dimension tags ordered by creation order
-                dimension_tag_list = [dimension.dimension_tag for dimension in ndarray_type.dimensions if dimension.dimension_tag in dimension_range_dict.keys()]
-                
-                #===============================================================
-                # for dimension_tag in dimension_tag_list:
-                #     min_index, min_ordinate = ndarray_type.get_index_and_ordinate(dimension_tag, dimension_range_dict[dimension_tag][0])
-                #     max_index, max_ordinate = ndarray_type.get_index_and_ordinate(dimension_tag, dimension_range_dict[dimension_tag][1])
-                #     
-                #===============================================================
-                SQL = ''' --Find ndarrays which fall in range
+            # Skip ndarray_type if  dimensionality of query is greater than dimensionality of ndarray_type - may do this differently
+            if set(dimension_range_dict.keys()) > set([dimension.dimension_tag for dimension in ndarray_type.dimensions]):
+                continue
+            
+            # Create a dict of lists containing ndarrays for each ndarray_type
+            ndarray_dict[ndarray_type] = {}
+            
+            # Obtain list of dimension tags ordered by creation order
+            dimension_tag_list = [dimension.dimension_tag for dimension in ndarray_type.dimensions if dimension.dimension_tag in dimension_range_dict.keys()]
+            logger.debug('dimension_tag_list = %s', dimension_tag_list)
+            #===============================================================
+            # for dimension_tag in dimension_tag_list:
+            #     min_index, min_ordinate = ndarray_type.get_index_and_ordinate(dimension_tag, dimension_range_dict[dimension_tag][0])
+            #     max_index, max_ordinate = ndarray_type.get_index_and_ordinate(dimension_tag, dimension_range_dict[dimension_tag][1])
+            #     
+            #===============================================================
+            SQL = '''-- Find ndarrays which fall in range
 select distinct'''
-                for dimension_tag in dimension_tag_list:
-                    SQL +='''
-    %s.ndarray_dimension_index as %s_index,
-    %s.ndarray_dimension_min as %s_min,
-    %s.ndarray_dimension_max as %s_max,''' % (dimension_tag, dimension_tag)
+            for dimension_tag in dimension_tag_list:
                 SQL +='''
-    ndarray.*
-from ndarray'''                    
-                for dimension_tag in dimension_tag_list:
-                    SQL +='''
-    join (
-    select *
-    from dimension 
-        join dimension_domain using(dimension_id)
-        join ndarray_dimension using(dimension_id, domain_id)
-        where ndarray_type_id = %d
-        and ndarray_version = 0
-        and dimension.dimension_tag = %s
-        and (ndarray_dimension_min between %f and %f 
-            or ndarray_dimension_max between %f and %f)
-        ) %s using(ndarray_type_id, ndarray_id, ndarray_version)
+%s.ndarray_dimension_index as %s_index,
+%s.ndarray_dimension_min as %s_min,
+%s.ndarray_dimension_max as %s_max,''' % (dimension_tag, dimension_tag, dimension_tag, dimension_tag, dimension_tag, dimension_tag)
+            SQL +='''
+ndarray.*
+from ndarray
+'''                    
+            for dimension_tag in dimension_tag_list:
+                SQL +='''join (
+select *
+from dimension 
+    join dimension_domain using(dimension_id)
+    join ndarray_dimension using(dimension_id, domain_id)
+    where ndarray_type_id = %d
+    and ndarray_version = 0
+    and dimension.dimension_tag = '%s'
+    and (ndarray_dimension_min between %f and %f 
+        or ndarray_dimension_max between %f and %f)
+    ) %s using(ndarray_type_id, ndarray_id, ndarray_version)
 ''' % (ndarray_type.ndarray_type_id, 
-       dimension_tag, 
-       dimension_range_dict[dimension_tag][0],
-       dimension_range_dict[dimension_tag][1],
-       dimension_range_dict[dimension_tag][0],
-       dimension_range_dict[dimension_tag][1],
-       dimension_tag
-       )
-                SQL +='''
-order by'''
-                for dimension_tag in dimension_tag_list:
-                    SQL +='''
-    %s.index,'''
-                SQL +=''';'''
-                    
-                    
+   dimension_tag, 
+   dimension_range_dict[dimension_tag][0],
+   dimension_range_dict[dimension_tag][1],
+   dimension_range_dict[dimension_tag][0],
+   dimension_range_dict[dimension_tag][1],
+   dimension_tag
+   )
+            SQL +='''
+order by ''' + '_index, '.join(dimension_tag_list) + '''_index;
+'''
+            
+            #TODO: Evaluate the SQL query to obtain a list of ndarray objects
+            log_multiline(logger.debug, SQL , 'SQL', '\t')
+            print SQL
+                
+                
     @property
     def dbref(self):
         return self._dbref
