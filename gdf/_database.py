@@ -40,7 +40,7 @@ import psycopg2
 from EOtools.utils import log_multiline
 
 logger = logging.getLogger(__name__)
-#logger.setLevel(logging.DEBUG) # Logging level for this module
+logger.setLevel(logging.DEBUG) # Logging level for this module
 
 class CachedResultSet(object):
     '''Class CachedResultSet to manage an in-memory cache of query results
@@ -129,6 +129,9 @@ class Database(object):
             connection: DB connection to query. Defaults to self._default_connection
         '''
         connection = connection or self._default_connection or self.create_connection()
+        
+        log_multiline(logger.debug, SQL, 'SQL', '\t')
+        log_multiline(logger.debug, params, 'params', '\t')
         
         # Use local cursor to return results
         return CachedResultSet(self.execSQL(SQL, params=None, cursor=connection.cursor()))

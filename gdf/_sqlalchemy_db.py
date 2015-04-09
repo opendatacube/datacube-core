@@ -125,6 +125,8 @@ class SQLAlchemyDB(object):
 
     def get_ndarrays(self, dimension_range_dict): 
         '''
+        Function to return all ndarrays which fall in the specified dimensional ranges
+        
         Parameter:
             dimension_range_dict: dict defined as {<dimension_tag>: (<min_value>, <max_value>), 
                                                    <dimension_tag>: (<min_value>, <max_value>)...}
