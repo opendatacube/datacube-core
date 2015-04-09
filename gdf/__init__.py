@@ -142,7 +142,7 @@ class GDF(object):
     def get_db_config(self, databases={}):
         '''Function to return a dict with details of all dimensions managed in databases keyed as follows:
         
-           <db_name>
+           <db_ref>
                'ndarray_types'
                     <ndarray_type_tag>
                         'measurement_types'
@@ -158,9 +158,9 @@ class GDF(object):
            build the tree from the flat result set. It could be done in a prettier (but slower) way with multiple queries
         '''
         
-        def get_db_data(db_name, databases, result_dict):
+        def get_db_data(db_ref, databases, result_dict):
             db_dict = {'ndarray_types': {}}
-            database = databases[db_name]
+            database = databases[db_ref]
             
             ndarray_types = database.submit_query('''-- Query to return all ndarray_type configuration info
 select distinct
@@ -266,7 +266,7 @@ order by ndarray_type_tag, measurement_type_index, creation_order;
                     
                     
 #            log_multiline(logger.info, db_dict, 'db_dict', '\t')
-            result_dict[db_name] = db_dict
+            result_dict[db_ref] = db_dict
             # End of per-DB function
         
         databases = databases or self._databases
@@ -274,11 +274,11 @@ order by ndarray_type_tag, measurement_type_index, creation_order;
         result_dict = {} # Nested dict containing ndarray_type details for all databases
 
         thread_list = []
-        for db_name in sorted(databases.keys()):
+        for db_ref in sorted(databases.keys()):
 #            check_thread_exception()
             process_thread = threading.Thread(target=self.thread_execute,                    
                                               args=(get_db_data, 
-                                                    db_name, 
+                                                    db_ref, 
                                                     databases, 
                                                     result_dict
                                                     )
@@ -286,7 +286,7 @@ order by ndarray_type_tag, measurement_type_index, creation_order;
             thread_list.append(process_thread)
             process_thread.setDaemon(False)
             process_thread.start()
-            logger.debug('Started thread for get_db_data(%s, %s, %s)', db_name, databases, result_dict)
+            logger.debug('Started thread for get_db_data(%s, %s, %s)', db_ref, databases, result_dict)
 
         # Wait for all threads to finish
         for process_thread in thread_list:
@@ -307,11 +307,32 @@ order by ndarray_type_tag, measurement_type_index, creation_order;
         Parameter:
             dimension_range_dict: dict defined as {<dimension_tag>: (<min_value>, <max_value>), 
                                                    <dimension_tag>: (<min_value>, <max_value>)...}
+                                                   
+        Return Value:
+            {<db_ref>: {<ndarray_type_tag>: {(<index1>, <index2>...<indexn>): <ndarray_info_dict>}}}
+            
+            Sample <ndarray_info_dict> is as follows:
+                {'md5_checksum': None,
+                 'ndarray_bytes': None,
+                 'ndarray_id': 1409962010L,
+                 'ndarray_location': '/ndarrays/MODIS-Terra/MOD09/MODIS-Terra_MOD09_14_-4_2010.nc',
+                 'ndarray_type_id': 100L,
+                 'ndarray_version': 0,
+                 't_index': 2010,
+                 't_max': 1293840000.0,
+                 't_min': 1262304000.0,
+                 'x_index': 14,
+                 'x_max': 150.0,
+                 'x_min': 140.0,
+                 'y_index': -4,
+                 'y_max': -30.0,
+                 'y_min': -40.0
+                 }
         '''
-        def get_db_ndarrays(db_name, dimension_range_dict, result_dict, ndarray_type_tags, databases):
+        def get_db_ndarrays(db_ref, dimension_range_dict, result_dict, ndarray_type_tags, databases):
             db_ndarray_dict = {}
-            database = databases[db_name]
-            db_config_dict = self._db_configuration[db_name]
+            database = databases[db_ref]
+            db_config_dict = self._db_configuration[db_ref]
             
             for ndarray_type in db_config_dict['ndarray_types'].values():
                 
@@ -357,19 +378,10 @@ from dimension
        )
                     # Apply range filters
                     if dimension_tag in range_dimension_tags:
-#===============================================================================
-#                         SQL += '''and (ndarray_dimension_min between %f and %f 
-#         or ndarray_dimension_max between %f and %f)
-# ''' % (dimension_range_dict[dimension_tag][0],
-#        dimension_range_dict[dimension_tag][1],
-#        dimension_range_dict[dimension_tag][0],
-#        dimension_range_dict[dimension_tag][1]
-#        )
-#===============================================================================
                         SQL += '''and (ndarray_dimension_min < %f 
         and ndarray_dimension_max > %f)
-''' % (dimension_range_dict[dimension_tag][1],
-       dimension_range_dict[dimension_tag][0]
+''' % (dimension_range_dict[dimension_tag][1], # Max
+       dimension_range_dict[dimension_tag][0] # Min
        )
 
                     SQL += ''') %s using(ndarray_type_id, ndarray_id, ndarray_version)
@@ -393,19 +405,19 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index;
                     db_ndarray_dict[ndarray_type_tag] = ndarray_dict
                                 
 #            log_multiline(logger.info, db_dict, 'db_dict', '\t')
-            result_dict[db_name] = db_ndarray_dict
+            result_dict[db_ref] = db_ndarray_dict
         
         databases = databases or self._databases
         
         result_dict = {} # Nested dict containing ndarray_type details for all databases
 
         thread_list = []
-        for db_name in sorted(databases.keys()):
-            logger.debug('db_name = %s', db_name)
+        for db_ref in sorted(databases.keys()):
+            logger.debug('db_ref = %s', db_ref)
 #            check_thread_exception()
             process_thread = threading.Thread(target=self.thread_execute,
                                               args=(get_db_ndarrays, 
-                                                    db_name, 
+                                                    db_ref, 
                                                     dimension_range_dict, 
                                                     result_dict, 
                                                     ndarray_type_tags, 
@@ -415,7 +427,7 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index;
             thread_list.append(process_thread)
             process_thread.setDaemon(False)
             process_thread.start()
-            logger.debug('Started thread for get_db_ndarrays(%s, %s, %s, %s, %s)', db_name, dimension_range_dict, result_dict, ndarray_type_tags, databases)
+            logger.debug('Started thread for get_db_ndarrays(%s, %s, %s, %s, %s)', db_ref, dimension_range_dict, result_dict, ndarray_type_tags, databases)
 
         # Wait for all threads to finish
         for process_thread in thread_list:

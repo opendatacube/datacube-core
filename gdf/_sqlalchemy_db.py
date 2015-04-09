@@ -124,6 +124,7 @@ class SQLAlchemyDB(object):
         self._domains = self.get_domains()
 
     def get_ndarrays(self, dimension_range_dict): 
+        #TODO: Complete this function to return a list of SQLAlchemy NDArray objects
         '''
         Function to return all ndarrays which fall in the specified dimensional ranges
         
@@ -146,12 +147,7 @@ class SQLAlchemyDB(object):
             # Obtain list of dimension tags ordered by creation order
             dimension_tag_list = [dimension.dimension_tag for dimension in ndarray_type.dimensions if dimension.dimension_tag in dimension_range_dict.keys()]
             logger.debug('dimension_tag_list = %s', dimension_tag_list)
-            #===============================================================
-            # for dimension_tag in dimension_tag_list:
-            #     min_index, min_ordinate = ndarray_type.get_index_and_ordinate(dimension_tag, dimension_range_dict[dimension_tag][0])
-            #     max_index, max_ordinate = ndarray_type.get_index_and_ordinate(dimension_tag, dimension_range_dict[dimension_tag][1])
-            #     
-            #===============================================================
+
             SQL = '''-- Find ndarrays which fall in range
 select distinct'''
             for dimension_tag in dimension_tag_list:
@@ -172,15 +168,13 @@ from dimension
     where ndarray_type_id = %d
     and ndarray_version = 0
     and dimension.dimension_tag = '%s'
-    and (ndarray_dimension_min between %f and %f 
-        or ndarray_dimension_max between %f and %f)
+    and (ndarray_dimension_min < %f 
+      and ndarray_dimension_max > %f)
     ) %s using(ndarray_type_id, ndarray_id, ndarray_version)
 ''' % (ndarray_type.ndarray_type_id, 
    dimension_tag, 
-   dimension_range_dict[dimension_tag][0],
-   dimension_range_dict[dimension_tag][1],
-   dimension_range_dict[dimension_tag][0],
-   dimension_range_dict[dimension_tag][1],
+   dimension_range_dict[dimension_tag][1], # Max
+   dimension_range_dict[dimension_tag][0], # Min
    dimension_tag
    )
             SQL +='''
