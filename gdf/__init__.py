@@ -378,7 +378,6 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index;
                 
                 for record_dict in ndarrays.record_generator():
                     log_multiline(logger.debug, record_dict, 'record_dict', '\t')
-                    print(record_dict)
                     indices = tuple([record_dict[dimension_tag.lower() + '_index'] for dimension_tag in ndarray_type_dimension_tags])
     
                     ndarray_dict[indices] = record_dict
