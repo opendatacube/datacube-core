@@ -204,6 +204,8 @@ left join reference_system index_reference_system on index_reference_system.refe
 order by ndarray_type_tag, measurement_type_index, creation_order;
 ''')
             for record_dict in ndarray_types.record_generator():
+                log_multiline(logger.debug, record_dict, 'record_dict', '\t')
+                
                 ndarray_type_dict = db_dict['ndarray_types'].get(record_dict['ndarray_type_tag'])
                 if ndarray_type_dict is None:
                     ndarray_type_dict = {'ndarray_type_id': record_dict['ndarray_type_id'],
@@ -225,7 +227,6 @@ order by ndarray_type_tag, measurement_type_index, creation_order;
 
                     ndarray_type_dict['measurement_types'][record_dict['measurement_type_tag']] = measurement_type_dict
                     
-                #TODO: Should have a domain_tag field
                 domain_dict = ndarray_type_dict['domains'].get(record_dict['domain_tag'])
                 if domain_dict is None:
                     domain_dict = {'domain_id': record_dict['domain_id'],
@@ -237,7 +238,7 @@ order by ndarray_type_tag, measurement_type_index, creation_order;
                                    'dimensions': {}
                                    }
 
-                    ndarray_type_dict['domains'][record_dict['domain_name']] = domain_dict
+                    ndarray_type_dict['domains'][record_dict['domain_tag']] = domain_dict
                     
                 dimension_dict = domain_dict['dimensions'].get(record_dict['dimension_tag'])
                 if dimension_dict is None:
@@ -255,16 +256,13 @@ order by ndarray_type_tag, measurement_type_index, creation_order;
 
                     domain_dict['dimensions'][record_dict['dimension_tag']] = dimension_dict
                     
+#            log_multiline(logger.info, db_dict, 'db_dict', '\t')
             result_dict[db_name] = db_dict
         
         databases = databases or self._databases
         
         result_dict = {} # Nested dict containing ndarray_type details for all databases
 
-#        #TODO: Multi-thread this section
-#        for db_name in sorted(databases.keys()):
-#            result_dict[db_name] = get_db_data(db_name, databases)
-            
         thread_list = []
         for db_name in sorted(databases.keys()):
 #            check_thread_exception()
@@ -285,12 +283,9 @@ order by ndarray_type_tag, measurement_type_index, creation_order;
         self.check_thread_exception()
         logger.debug('All threads finished')
 
+        log_multiline(logger.debug, result_dict, 'result_dict', '\t')
         return result_dict
-                    
-                
-
             
-        
     
     # Define properties for GDF class
     @property
