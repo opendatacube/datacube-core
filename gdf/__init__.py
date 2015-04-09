@@ -162,7 +162,35 @@ class GDF(object):
             db_config_dict = self._configuration[db_name]
             
             ndarray_types = database.submit_query('''-- Query to return all ndarray_type configuration info
-select * from ndarray_type 
+select distinct
+  ndarray_type_tag,
+  ndarray_type_id,
+  ndarray_type_name,
+  measurement_type_tag,
+  measurement_metatype_id,
+  measurement_type_id,
+  measurement_type_index, 
+  measurement_metatype_name,
+  measurement_type_name,
+  domain_tag,
+  domain_id,
+  domain_name,
+  reference_system.reference_system_id,
+  reference_system.reference_system_name,
+  reference_system.reference_system_definition,
+  reference_system.reference_system_unit,
+  dimension_tag,
+  dimension_id,
+  creation_order,
+  dimension_extent,
+  dimension_elements,
+  dimension_cache,
+  dimension_origin,
+  index_reference_system.reference_system_id as index_reference_system_id,
+  index_reference_system.reference_system_name as index_reference_system_name,
+  index_reference_system.reference_system_definition as index_reference_system_definition,
+  index_reference_system.reference_system_unit as index_reference_system_unit  
+from ndarray_type 
 join ndarray_type_measurement_type using(ndarray_type_id)
 join measurement_type using(measurement_metatype_id, measurement_type_id)
 join measurement_metatype using(measurement_metatype_id)
@@ -172,12 +200,14 @@ join domain using(domain_id)
 join dimension using(dimension_id)
 join indexing_type using(indexing_type_id)
 join reference_system using (reference_system_id)
+left join reference_system index_reference_system on index_reference_system.reference_system_id = ndarray_type_dimension.index_reference_system_id
 order by ndarray_type_tag, measurement_type_index, creation_order;
 ''')
             for record_dict in ndarray_types.record_generator():
                 ndarray_type_dict = db_dict['ndarray_types'].get(record_dict['ndarray_type_tag'])
                 if ndarray_type_dict is None:
-                    ndarray_type_dict = {'ndarray_type_name': record_dict['ndarray_type_name'],
+                    ndarray_type_dict = {'ndarray_type_id': record_dict['ndarray_type_id'],
+                                         'ndarray_type_name': record_dict['ndarray_type_name'],
                                          'measurement_types': {},
                                          'domains': {}
                                          }
@@ -186,16 +216,22 @@ order by ndarray_type_tag, measurement_type_index, creation_order;
                     
                 measurement_type_dict = ndarray_type_dict['measurement_types'].get(record_dict['measurement_type_tag'])
                 if measurement_type_dict is None:
-                    measurement_type_dict = {'measurement_metatype': record_dict['measurement_metatype_name'],
+                    measurement_type_dict = {'measurement_metatype_id': record_dict['measurement_metatype_id'],
+                                             'measurement_type_id': record_dict['measurement_type_id'],
+                                             'measurement_type_index': record_dict['measurement_type_index'],
+                                             'measurement_metatype_name': record_dict['measurement_metatype_name'],
                                              'measurement_type_name': record_dict['measurement_type_name']
                                              }
 
                     ndarray_type_dict['measurement_types'][record_dict['measurement_type_tag']] = measurement_type_dict
                     
                 #TODO: Should have a domain_tag field
-                domain_dict = ndarray_type_dict['domains'].get(record_dict['domain_name'])
+                domain_dict = ndarray_type_dict['domains'].get(record_dict['domain_tag'])
                 if domain_dict is None:
-                    domain_dict = {'reference_system_name': record_dict['reference_system_name'],
+                    domain_dict = {'domain_id': record_dict['domain_id'],
+                                   'domain_name': record_dict['domain_name'],
+                                   'reference_system_id': record_dict['reference_system_id'],
+                                   'reference_system_name': record_dict['reference_system_name'],
                                    'reference_system_definition': record_dict['reference_system_definition'],
                                    'reference_system_unit': record_dict['reference_system_unit'], 
                                    'dimensions': {}
@@ -205,12 +241,16 @@ order by ndarray_type_tag, measurement_type_index, creation_order;
                     
                 dimension_dict = domain_dict['dimensions'].get(record_dict['dimension_tag'])
                 if dimension_dict is None:
-                    dimension_dict = {'creation_order': record_dict['creation_order'],
+                    dimension_dict = {'dimension_id': record_dict['dimension_id'],
+                                      'creation_order': record_dict['creation_order'],
                                       'dimension_extent': record_dict['dimension_extent'],
                                       'dimension_elements': record_dict['dimension_elements'],
                                       'dimension_cache': record_dict['dimension_cache'],
                                       'dimension_origin': record_dict['dimension_origin'],
-                                      'dimension_extent_unit': record_dict['dimension_extent_unit'] or record_dict['reference_system_unit']
+                                      'index_reference_system_id': record_dict['index_reference_system_id'],
+                                      'index_reference_system_name': record_dict['index_reference_system_name'],
+                                      'index_reference_system_definition': record_dict['index_reference_system_definition'],
+                                      'index_reference_system_unit': record_dict['index_reference_system_unit']
                                       }
 
                     domain_dict['dimensions'][record_dict['dimension_tag']] = dimension_dict
