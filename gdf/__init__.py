@@ -357,12 +357,19 @@ from dimension
        )
                     # Apply range filters
                     if dimension_tag in range_dimension_tags:
-                        SQL += '''and (ndarray_dimension_min between %f and %f 
-        or ndarray_dimension_max between %f and %f)
-''' % (dimension_range_dict[dimension_tag][0],
-       dimension_range_dict[dimension_tag][1],
-       dimension_range_dict[dimension_tag][0],
-       dimension_range_dict[dimension_tag][1]
+#===============================================================================
+#                         SQL += '''and (ndarray_dimension_min between %f and %f 
+#         or ndarray_dimension_max between %f and %f)
+# ''' % (dimension_range_dict[dimension_tag][0],
+#        dimension_range_dict[dimension_tag][1],
+#        dimension_range_dict[dimension_tag][0],
+#        dimension_range_dict[dimension_tag][1]
+#        )
+#===============================================================================
+                        SQL += '''and (ndarray_dimension_min < %f 
+        and ndarray_dimension_max > %f)
+''' % (dimension_range_dict[dimension_tag][1],
+       dimension_range_dict[dimension_tag][0]
        )
 
                     SQL += ''') %s using(ndarray_type_id, ndarray_id, ndarray_version)
