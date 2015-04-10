@@ -59,6 +59,7 @@ class TestDatabase(unittest.TestCase):
     # Test DB connection parameters
 #    TEST_HOST = '130.56.244.228' 
 #    TEST_PORT = 6432
+    TEST_DB_REF = 'test_db' 
     TEST_HOST = 'localhost' 
     TEST_PORT = 5432
     TEST_DBNAME = 'gdf'
@@ -68,7 +69,8 @@ class TestDatabase(unittest.TestCase):
 
     def test_database(self):
         "Test Database constructor"
-        test_db = Database(self.TEST_HOST, 
+        test_db = Database(self.TEST_DB_REF,
+                           self.TEST_HOST, 
                            self.TEST_PORT, 
                            self.TEST_DBNAME, 
                            self.TEST_USER, 
@@ -80,7 +82,8 @@ class TestDatabase(unittest.TestCase):
 
     def test_execSQL(self):
         "Test execSQL function"
-        test_db = Database(self.TEST_HOST, 
+        test_db = Database(self.TEST_DB_REF,
+                           self.TEST_HOST, 
                            self.TEST_PORT, 
                            self.TEST_DBNAME, 
                            self.TEST_USER, 
@@ -92,7 +95,8 @@ class TestDatabase(unittest.TestCase):
 
     def test_query(self):
         "Test query function"
-        test_db = Database(self.TEST_HOST, 
+        test_db = Database(self.TEST_DB_REF,
+                           self.TEST_HOST, 
                            self.TEST_PORT, 
                            self.TEST_DBNAME, 
                            self.TEST_USER, 

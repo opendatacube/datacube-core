@@ -155,7 +155,7 @@ class Database(object):
             self._default_connection = self.create_connection()
             self._default_cursor = self._default_connection.cursor()
     
-    def __init__(self, host, port, dbname, user, password, keep_connection=True, autocommit=True):
+    def __init__(self, db_ref, host, port, dbname, user, password, keep_connection=True, autocommit=True):
         '''
         Constructor for class Database.
         
@@ -166,6 +166,7 @@ class Database(object):
             user: PostgreSQL database user
             password: PostgreSQL database password for user
         '''
+        self._db_ref = db_ref
         self._host = host
         self._port = port
         self._dbname = dbname
@@ -182,6 +183,10 @@ class Database(object):
         
         
     # Define class properties
+    @property
+    def db_ref(self):
+        return self._db_ref
+
     @property
     def host(self):
         return self._host

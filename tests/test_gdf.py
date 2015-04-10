@@ -65,8 +65,8 @@ class TestGDF(unittest.TestCase):
         assert test_gdf.configuration is not None, 'Configurations dict not set'
         assert len(test_gdf.configuration) > 0, 'Config files must define at least one setup'
         assert len(test_gdf.databases) > 0, 'At least one database must be set up'
-        assert test_gdf.db_configuration is not None, 'DB Configurations dict not set'
-        assert len(test_gdf.db_configuration) > 0, 'DBs must contain at least one ndarray_type definition'
+        assert test_gdf.ndarray_config is not None, 'NDArray configuration dict not set'
+        assert len(test_gdf.ndarray_config) > 0, 'NDArray configuration dict must contain at least one ndarray_type definition'
 #
 # Define test suites
 #
