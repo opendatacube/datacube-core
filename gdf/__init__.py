@@ -224,8 +224,14 @@ class GDF(object):
             build the tree from the flat result set. It could be done in a prettier (but slower) way with multiple queries
             '''
             db_dict = {'ndarray_types': {}}
+            
+            try:
+                ndarray_type_filter_list = self._configuration[database.db_ref]['ndarray_types'].split(',')
+            except:
+                ndarray_type_filter_list = None
+            logger.debug('ndarray_type_filter_list = %s', ndarray_type_filter_list)
               
-            ndarray_types = database.submit_query('''-- Query to return all ndarray_type configuration info for database %s
+            SQL = '''-- Query to return all ndarray_type configuration info for database %s
 select distinct
 ndarray_type_tag,
 ndarray_type_id,
@@ -265,8 +271,17 @@ join dimension using(dimension_id)
 join indexing_type using(indexing_type_id)
 join reference_system using (reference_system_id)
 left join reference_system index_reference_system on index_reference_system.reference_system_id = ndarray_type_dimension.index_reference_system_id
-order by ndarray_type_tag, measurement_type_index, creation_order;
-''' % database.db_ref)
+''' % database.db_ref
+
+            # Apply ndarray_type filter if configured
+            if ndarray_type_filter_list:
+                SQL += "where ndarray_type_tag in ('" + "', '".join(ndarray_type_filter_list) + "')"
+                
+            SQL += '''order by ndarray_type_tag, measurement_type_index, creation_order;
+'''
+
+            ndarray_types = database.submit_query(SQL)
+            
             for record_dict in ndarray_types.record_generator():
                 log_multiline(logger.debug, record_dict, 'record_dict', '\t')
                   

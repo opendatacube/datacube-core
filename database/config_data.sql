@@ -4,7 +4,7 @@
 
 -- Dumped from database version 9.3.6
 -- Dumped by pg_dump version 9.3.6
--- Started on 2015-04-09 10:29:20 AEST
+-- Started on 2015-04-12 17:33:31 AEST
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -198,6 +198,8 @@ INSERT INTO measurement_type VALUES (1, 102, 'Non-Photosynthetic Vegetation', 'N
 INSERT INTO measurement_type VALUES (1, 103, 'Bare Soil', 'BS');
 INSERT INTO measurement_type VALUES (1, 104, 'Unmixing Error', 'UE');
 INSERT INTO measurement_type VALUES (10, 1000, 'Multi-Band Spectral Radiance', 'SPECTRAL');
+INSERT INTO measurement_type VALUES (1, 10101, 'MODIS RBQ', 'RBQ');
+INSERT INTO measurement_type VALUES (1, 10001, 'MODIS band 1', 'B1');
 
 
 --
@@ -358,6 +360,8 @@ INSERT INTO ndarray_type_measurement_type VALUES (7, 1, 74, 1, 4);
 INSERT INTO ndarray_type_measurement_type VALUES (7, 1, 75, 1, 5);
 INSERT INTO ndarray_type_measurement_type VALUES (7, 1, 77, 1, 6);
 INSERT INTO ndarray_type_measurement_type VALUES (50, 10, 1000, 1, 1);
+INSERT INTO ndarray_type_measurement_type VALUES (100, 1, 10001, 1, 1);
+INSERT INTO ndarray_type_measurement_type VALUES (101, 1, 10101, 1, 1);
 
 
 --
@@ -391,7 +395,7 @@ INSERT INTO reference_system_indexing VALUES (50, 5, 'Band 7 - Middle Infrared 2
 
 
 
--- Completed on 2015-04-09 10:29:49 AEST
+-- Completed on 2015-04-12 17:35:47 AEST
 
 --
 -- PostgreSQL database dump complete
