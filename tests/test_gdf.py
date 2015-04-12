@@ -42,7 +42,7 @@ from gdf import GDF
 
 
 #
-# Test cases
+# Test cases for GDF class
 #
 
 # pylint: disable=too-many-public-methods
@@ -53,6 +53,10 @@ from gdf import GDF
 
 class TestGDF(unittest.TestCase):
     """Unit tests for utility functions."""
+    
+    # Test ranges for get_ndarrays function
+    TEST_2D_DIMENSION_RANGE_DICT = {'X': (140, 142), 'Y': (-36, -34)}
+    TEST_3D_DIMENSION_RANGE_DICT = {'X': (140, 142), 'Y': (-36, -34), 'T': (1293840000, 1325376000)}
 
     def test_GDF(self):
         "Test GDF constructor"
@@ -67,6 +71,23 @@ class TestGDF(unittest.TestCase):
         assert len(test_gdf.databases) > 0, 'At least one database must be set up'
         assert test_gdf.ndarray_config is not None, 'NDArray configuration dict not set'
         assert len(test_gdf.ndarray_config) > 0, 'NDArray configuration dict must contain at least one ndarray_type definition'
+        
+    def test_GDF_get_ndarrays(self):
+        "Test GDF get_ndarrays function"
+        #TODO: Define tests which check DB contents
+        test_gdf = GDF() # Test default configuration
+        
+        ndarray_dict = test_gdf.get_ndarrays(self.TEST_2D_DIMENSION_RANGE_DICT)
+        ndarray_dict = test_gdf.get_ndarrays(self.TEST_2D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'])
+        ndarray_dict = test_gdf.get_ndarrays(self.TEST_2D_DIMENSION_RANGE_DICT, exclusive=True)
+        ndarray_dict = test_gdf.get_ndarrays(self.TEST_2D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'], exclusive=True)
+        
+        ndarray_dict = test_gdf.get_ndarrays(self.TEST_3D_DIMENSION_RANGE_DICT)
+        ndarray_dict = test_gdf.get_ndarrays(self.TEST_3D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'])
+        ndarray_dict = test_gdf.get_ndarrays(self.TEST_3D_DIMENSION_RANGE_DICT, exclusive=True)
+        ndarray_dict = test_gdf.get_ndarrays(self.TEST_3D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'], exclusive=True)
+        
+        
 #
 # Define test suites
 #

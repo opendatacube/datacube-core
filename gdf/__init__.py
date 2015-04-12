@@ -381,9 +381,9 @@ order by ndarray_type_tag, measurement_type_index, creation_order;
                      }
             '''
             db_ndarray_dict = {}
-            db_config_dict = self._configuration[database.db_ref]
+            ndarray_type_dict = self._ndarray_config[database.db_ref]
             
-            for ndarray_type in db_config_dict['ndarray_types'].values():
+            for ndarray_type in ndarray_type_dict['ndarray_types'].values():
                 
                 ndarray_type_tag = ndarray_type['ndarray_type_tag']
                 logger.debug('ndarray_type_tag = %s', ndarray_type_tag)
