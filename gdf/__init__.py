@@ -479,6 +479,53 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index;
             # End of per-DB function
         return self.do_db_query(self.databases, [get_db_ndarrays, dimension_range_dict, ndarray_type_tags, exclusive])
     
+    def solar_date(self, record_dict):
+        '''
+        Function which takes a record_dict containing all values from a query in the get_db_slices function 
+        and returns the solar date of the observation
+        '''
+        # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
+        #TODO: Make more general (if possible)
+        # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
+        return datetime.fromtimestamp(record_dict['slice_index_value'] + (record_dict['x_min'] + record_dict['x_max']) * 120).date()
+            
+            
+    def solar_year_month(self, record_dict):
+        '''
+        Function which takes a record_dict containing all values from a query in the get_db_slices function 
+        and returns a (year, month) tuple from the solar date of the observation
+        '''
+        # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
+        #TODO: Make more general (if possible)
+        # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
+        solar_date = self.solar_date(record_dict)
+        return (solar_date.year, solar_date.month)
+    
+            
+    def solar_year(self, record_dict):
+        '''
+        Function which takes a record_dict containing all values from a query in the get_db_slices function 
+        and returns the solar year of the observation
+        '''
+        # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
+        #TODO: Make more general (if possible)
+        # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
+        solar_date = self.solar_date(record_dict)
+        return solar_date.year
+            
+            
+    def solar_month(self, record_dict):
+        '''
+        Function which takes a record_dict containing all values from a query in the get_db_slices function 
+        and returns the solar year of the observation
+        '''
+        # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
+        #TODO: Make more general (if possible)
+        # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
+        solar_date = self.solar_date(record_dict)
+        return solar_date.month
+            
+            
     def get_slices(self, 
                    dimension_range_dict, 
                    ndarray_type_tags=[], 
@@ -501,17 +548,6 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index;
             {<db_ref>: {<ndarray_type_tag>: {(<index1>, <index2>...<indexn>): <ndarray_info_dict>}}}
         '''
         
-        def solar_date(record_dict):
-            '''
-            Function which takes a record_dict containing all values from a query in the get_db_slices function 
-            and returns the solar date of the observation
-            '''
-            # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
-            # #TODO: Make more general (if possible)
-            # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
-            return datetime.fromtimestamp(record_dict['slice_index_value'] + (record_dict['x_min'] + record_dict['x_max']) * 120).date()
-            
-            
         def get_db_slices(dimension_range_dict, 
                           slice_dimension,
                           slice_grouping_function, 
@@ -667,11 +703,9 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index, slice_i
             result_dict[database.db_ref] = db_slice_dict
             # End of per-DB function
             
-        slice_grouping_function = slice_grouping_function or solar_date
+        slice_grouping_function = slice_grouping_function or self.solar_date
         
-#        result_dict = {}
-        
-        interim_dict = self.do_db_query(self.databases, [get_db_slices, 
+        return self.do_db_query(self.databases, [get_db_slices, 
                                                          dimension_range_dict, 
                                                          slice_dimension, 
                                                          slice_grouping_function, 
@@ -680,6 +714,10 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index, slice_i
                                                          ]
                                         )
         
+    def get_grouped_slices_from_dict(self, interim_dict):
+        '''
+        Function to take output dict from get_slices function and re-arrange it into a dict keyed by slice_group
+        '''
         result_dict = {}
         for db_ref in interim_dict.keys():
             for ndarray_type_tag in interim_dict[db_ref].keys():
@@ -698,6 +736,25 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index, slice_i
                     slice_list.append(slice_dict)
                     
         return result_dict
+    
+    def get_grouped_slices(self, 
+                   dimension_range_dict, 
+                   ndarray_type_tags=[], 
+                   exclusive=False,
+                   slice_dimension='T',
+                   slice_grouping_function=None):
+        '''
+        Function to return a dict keyed by slice_group containing lists of slice info dicts
+        '''
+        
+        interim_dict = self.get_slices(dimension_range_dict, 
+                   ndarray_type_tags, 
+                   exclusive,
+                   slice_dimension,
+                   slice_grouping_function)
+        
+        return self.get_grouped_slices_from_dict(interim_dict)
+
         
     
     # Define properties for GDF class
