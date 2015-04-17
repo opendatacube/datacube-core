@@ -2,6 +2,7 @@ import os
 import sys
 import threading
 import traceback
+from datetime import datetime
 
 from _database import Database, CachedResultSet
 from _arguments import CommandLineArgs
@@ -19,7 +20,7 @@ console_handler.setFormatter(console_formatter)
 logging.root.addHandler(console_handler)
 
 logger = logging.getLogger(__name__)
-#logger.setLevel(logging.DEBUG) # Logging level for this module
+logger.setLevel(logging.DEBUG) # Logging level for this module
 
 thread_exception = None
 
@@ -91,7 +92,7 @@ class GDF(object):
                 
                 database_dict[section_name] = database
             except Exception, e:
-                logger.info('Unable to connect to database for %s: %s', section_name, e.message)
+                logger.warning('Unable to connect to database for %s: %s', section_name, e.message)
 
         log_multiline(logger.debug, database_dict, 'database_dict', '\t')
         return database_dict
@@ -107,10 +108,12 @@ class GDF(object):
         # Create master configuration dict containing both command line and config_file parameters
         self._command_line_params = self.get_command_line_params()
         
-        if self._command_line_params['debug']:
-            logger.setLevel(logging.DEBUG)
-        else:
-            logger.setLevel(logging.INFO)
+        #=======================================================================
+        # if self._command_line_params['debug']:
+        #     logger.setLevel(logging.DEBUG)
+        # else:
+        #     logger.setLevel(logging.INFO)
+        #=======================================================================
 
                 
         # Create master configuration dict containing both command line and config_file parameters
@@ -396,9 +399,9 @@ left join reference_system index_reference_system on index_reference_system.refe
                      }
             '''
             db_ndarray_dict = {}
-            ndarray_type_dict = self._ndarray_config[database.db_ref]
+            ndarray_type_dict = self._ndarray_config[database.db_ref]['ndarray_types']
             
-            for ndarray_type in ndarray_type_dict['ndarray_types'].values():
+            for ndarray_type in ndarray_type_dict.values():
                 
                 ndarray_type_tag = ndarray_type['ndarray_type_tag']
                 logger.debug('ndarray_type_tag = %s', ndarray_type_tag)
@@ -465,9 +468,9 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index;
                 
                 for record_dict in ndarrays.record_generator():
                     log_multiline(logger.debug, record_dict, 'record_dict', '\t')
-                    indices = tuple([record_dict[dimension_tag.lower() + '_index'] for dimension_tag in ndarray_type_dimension_tags])
+                    ndarray_indices = tuple([record_dict[dimension_tag.lower() + '_index'] for dimension_tag in ndarray_type_dimension_tags])
     
-                    ndarray_dict[indices] = record_dict
+                    ndarray_dict[ndarray_indices] = record_dict
                     
                 if ndarray_dict:
                     db_ndarray_dict[ndarray_type_tag] = ndarray_dict
@@ -476,6 +479,229 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index;
             result_dict[database.db_ref] = db_ndarray_dict
             # End of per-DB function
         return self.do_db_query(self.databases, [get_db_ndarrays, dimension_range_dict, ndarray_type_tags, exclusive])
+    
+    def get_slices(self, 
+                   dimension_range_dict, 
+                   ndarray_type_tags=[], 
+                   exclusive=False,
+                   slice_dimension='T',
+                   slice_grouping_function=None):
+        '''
+        Function to return all ndarrays which fall in the specified dimensional ranges
+        
+        Parameter:
+            dimension_range_dict: dict defined as {<dimension_tag>: (<min_value>, <max_value>), 
+                                                   <dimension_tag>: (<min_value>, <max_value>)...}
+            slice_dimension: Dimension along which to group results
+            slice_locality: Range (in slice_dimension units) in which to group slices
+            ndarray_type_tags: list of ndarray_type_tags to include in query
+            exclusive: Boolean flag to indicate whether query should exclude ndarrays with lower dimensionality than the specified range
+                                                   
+        Return Value:
+            TODO: Make this correct
+            {<db_ref>: {<ndarray_type_tag>: {(<index1>, <index2>...<indexn>): <ndarray_info_dict>}}}
+        '''
+        
+        def solar_date(record_dict):
+            '''
+            Function which takes a record_dict containing all values from a query in the get_db_slices function 
+            and returns the solar date of the observation
+            '''
+            # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
+            # #TODO: Make more general (if possible)
+            # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
+            return datetime.fromtimestamp(record_dict['slice_index_value'] + (record_dict['x_min'] + record_dict['x_max']) * 120).date()
+            
+            
+        def get_db_slices(dimension_range_dict, 
+                          slice_dimension,
+                          slice_grouping_function, 
+                          exclusive, 
+                          ndarray_type_tags, 
+                          database, 
+                          result_dict):
+            '''
+            Function to return all slices in ndarrays which fall in the specified dimensional ranges
+            
+            Parameters:
+                dimension_range_dict: dict defined as {<dimension_tag>: (<min_value>, <max_value>), 
+                                                       <dimension_tag>: (<min_value>, <max_value>)...}
+                slice_dimension: Dimension along which to group results
+                slice_locality: Range (in slice_dimension units) in which to group slices
+                ndarray_type_tags: list of ndarray_type_tags to include in query
+                exclusive: Boolean flag to indicate whether query should exclude ndarrays with lower dimensionality than the specified range
+                database: gdf.database object against which to run the query
+                result_dict: dict to contain the result
+                                                                              
+            Return Value:
+                {<ndarray_type_tag>: {(<index1>, <index2>...<indexn>): <ndarray_info_dict>}}
+                
+                Sample <ndarray_info_dict> is as follows:
+                    {'md5_checksum': None,
+                     'ndarray_bytes': None,
+                     'ndarray_id': 1409962010L,
+                     'ndarray_location': '/ndarrays/MODIS-Terra/MOD09/MODIS-Terra_MOD09_14_-4_2010.nc',
+                     'ndarray_type_id': 100L,
+                     'ndarray_version': 0,
+                     't_index': 2010,
+                     't_max': 1293840000.0,
+                     't_min': 1262304000.0,
+                     'x_index': 14,
+                     'x_max': 150.0,
+                     'x_min': 140.0,
+                     'y_index': -4,
+                     'y_max': -30.0,
+                     'y_min': -40.0
+                     }
+            '''
+            db_slice_dict = {}
+            ndarray_type_dict = self._ndarray_config[database.db_ref]['ndarray_types']
+            
+            for ndarray_type in ndarray_type_dict.values():
+                
+                ndarray_type_tag = ndarray_type['ndarray_type_tag']
+                logger.debug('ndarray_type_tag = %s', ndarray_type_tag)
+            
+                
+                # Skip any ndarray_types if they are not in a specified list
+                if ndarray_type_tags and (ndarray_type_tag not in ndarray_type_tags):
+                    continue
+                
+                # list of dimension_tags for ndarray_type sorted by creation order
+                ndarray_type_dimension_tags = [dimension['dimension_tag'] for dimension in sorted(ndarray_type['dimensions'].values(), key=lambda dimension: dimension['creation_order'])]
+                logger.debug('ndarray_type_dimension_tags = %s', ndarray_type_dimension_tags)
+                # list of dimension_tags for range query sorted by creation order
+                range_dimension_tags = [dimension_tag for dimension_tag in ndarray_type_dimension_tags if dimension_tag in dimension_range_dict.keys()]
+                logger.debug('range_dimension_tags = %s', range_dimension_tags)
+                
+                # Skip this ndarray_type if exclusive flag set and dimensionality is less than query range dimnsionality
+                if exclusive and (set(ndarray_type_dimension_tags) < set(range_dimension_tags)):
+                    continue
+                
+                # Create a dict of ndarrays keyed by indices for each ndarray_type
+                ndarray_dict = {}
+                
+                SQL = '''-- Find ndarrays which fall in range
+select distinct'''
+                for dimension_tag in ndarray_type_dimension_tags:
+                    SQL +='''
+%s.ndarray_dimension_index as %s_index,
+%s.ndarray_dimension_min as %s_min,
+%s.ndarray_dimension_max as %s_max,'''.replace('%s', dimension_tag)
+                SQL +='''
+ndarray.*,
+dataset_index.*
+from ndarray
+'''                    
+                for dimension_tag in ndarray_type_dimension_tags:
+                    SQL += '''join (
+select *
+from dimension 
+join dimension_domain using(dimension_id)
+join ndarray_dimension using(dimension_id, domain_id)
+where ndarray_type_id = %d
+and ndarray_version = 0
+and dimension.dimension_tag = '%s'
+''' % (ndarray_type['ndarray_type_id'], 
+   dimension_tag
+   )
+                    # Apply range filters
+                    if dimension_tag in range_dimension_tags:
+                        SQL += '''and (ndarray_dimension_min < %f 
+    and ndarray_dimension_max > %f)
+''' % (dimension_range_dict[dimension_tag][1], # Max
+   dimension_range_dict[dimension_tag][0] # Min
+   )
+
+                    SQL += ''') %s using(ndarray_type_id, ndarray_id, ndarray_version)
+''' % (dimension_tag)
+
+                SQL +='''
+    join ndarray_dataset using (ndarray_type_id, ndarray_id, ndarray_version)
+    join (
+      select coalesce(indexing_value, (min_value+max_value)/2) as slice_index_value,
+      *
+      from dataset 
+      join dataset_dimension using(dataset_type_id, dataset_id)
+      join dimension using(dimension_id)
+      where dimension_tag = '%s'
+    ) dataset_index using(dataset_type_id, dataset_id)
+''' % (slice_dimension)
+
+                SQL +='''
+order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index, slice_index_value;
+'''
+            
+                print(SQL)
+                log_multiline(logger.debug, SQL , 'SQL', '\t')
+    
+                ndarrays = database.submit_query(SQL)
+                
+                last_ndarray_id = -1 # Initial impossible value
+                ndarray_slice_index = 0
+                for record_dict in ndarrays.record_generator():
+                    
+                    # Determine position of slice in ndarray
+                    if record_dict['ndarray_id'] == last_ndarray_id:
+                        ndarray_slice_index += 1
+                    else:
+                        ndarray_slice_index = 0
+                        last_ndarray_id = record_dict['ndarray_id']
+                        
+                    # Don't add this slice to the result dict if a range is set for the slicing dimension and it's outside that range
+                    if (slice_dimension in dimension_range_dict.keys() and
+                        (record_dict['slice_index_value'] < dimension_range_dict[slice_dimension][0] or
+                         record_dict['slice_index_value'] > dimension_range_dict[slice_dimension][1]
+                         )
+                        ):
+                        continue
+                    
+                    record_dict.update({'slice_index': ndarray_slice_index})
+                    record_dict.update({'slice_group': slice_grouping_function(record_dict)})
+                                        
+#                    log_multiline(logger.debug, record_dict, 'record_dict', '\t')
+                    ndarray_indices = tuple([record_dict[dimension_tag.lower() + '_index'] for dimension_tag in ndarray_type_dimension_tags])
+                    ndarray_dict[(tuple(ndarray_indices), ndarray_slice_index)] = record_dict
+                    
+                if ndarray_dict:
+                    db_slice_dict[ndarray_type_tag] = ndarray_dict
+                                
+                #log_multiline(logger.info, db_dict, 'db_dict', '\t')
+            result_dict[database.db_ref] = db_slice_dict
+            # End of per-DB function
+            
+        slice_grouping_function = slice_grouping_function or solar_date
+        
+#        result_dict = {}
+        
+        interim_dict = self.do_db_query(self.databases, [get_db_slices, 
+                                                         dimension_range_dict, 
+                                                         slice_dimension, 
+                                                         slice_grouping_function, 
+                                                         ndarray_type_tags, 
+                                                         exclusive
+                                                         ]
+                                        )
+        
+        result_dict = {}
+        for db_ref in interim_dict.keys():
+            for ndarray_type_tag in interim_dict[db_ref].keys():
+                for slice_ref in interim_dict[db_ref][ndarray_type_tag].keys():
+                    slice_dict = interim_dict[db_ref][ndarray_type_tag][slice_ref]
+                    
+                    # Add extra information 
+                    slice_dict['db_ref'] = db_ref
+                    slice_dict['ndarray_type_tag'] = ndarray_type_tag
+                    
+                    slice_group = slice_dict['slice_group']
+                    slice_list = result_dict.get(slice_group)
+                    if not slice_list:
+                        slice_list = []
+                        result_dict[slice_group] = slice_list
+                    slice_list.append(slice_dict)
+                    
+        return result_dict
+        
     
     # Define properties for GDF class
     @property
