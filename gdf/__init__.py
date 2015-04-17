@@ -13,8 +13,8 @@ from EOtools.utils import log_multiline
 
 # Set handler for root logger to standard output 
 console_handler = logging.StreamHandler(sys.stdout)
-#console_handler.setLevel(logging.INFO)
-console_handler.setLevel(logging.DEBUG)
+console_handler.setLevel(logging.INFO)
+#console_handler.setLevel(logging.DEBUG)
 console_formatter = logging.Formatter('%(message)s')
 console_handler.setFormatter(console_formatter)
 logging.root.addHandler(console_handler)
@@ -629,9 +629,7 @@ and dimension.dimension_tag = '%s'
 
                 SQL +='''
 order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index, slice_index_value;
-'''
-            
-                print(SQL)
+'''            
                 log_multiline(logger.debug, SQL , 'SQL', '\t')
     
                 ndarrays = database.submit_query(SQL)
