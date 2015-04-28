@@ -500,10 +500,10 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index;
         # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
         #TODO: Make more general (if possible)
         # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
-        solar_date = self.solar_date(record_dict)
-        return (solar_date.year, 
-                solar_date.month,
-                record_dict['ndarray_type_tag'])
+        solar_date_tuple = self.solar_date(record_dict)
+        return (solar_date_tuple[0].year, 
+                solar_date_tuple[0].month,
+                solar_date_tuple[1])
     
             
     def solar_year(self, record_dict):
@@ -514,9 +514,9 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index;
         # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
         #TODO: Make more general (if possible)
         # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
-        solar_date = self.solar_date(record_dict)
-        return (solar_date.year,
-                record_dict['ndarray_type_tag'])
+        solar_date_tuple = self.solar_date(record_dict)
+        return (solar_date_tuple[0].year,
+                solar_date_tuple[1])
             
             
     def solar_month(self, record_dict):
@@ -527,9 +527,9 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index;
         # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
         #TODO: Make more general (if possible)
         # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
-        solar_date = self.solar_date(record_dict)
-        return (solar_date.month,
-                record_dict['ndarray_type_tag'])
+        solar_date_tuple = self.solar_date(record_dict)
+        return (solar_date_tuple[0].month,
+                solar_date_tuple[1])
             
             
     def get_slices(self, 
