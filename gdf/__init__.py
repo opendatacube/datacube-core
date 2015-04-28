@@ -479,51 +479,57 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index;
             # End of per-DB function
         return self.do_db_query(self.databases, [get_db_ndarrays, dimension_range_dict, ndarray_type_tags, exclusive])
     
+    
     def solar_date(self, record_dict):
         '''
         Function which takes a record_dict containing all values from a query in the get_db_slices function 
-        and returns the solar date of the observation
+        and returns a tuple containing the solar date of the observation and the ndarray_type_tag value
         '''
         # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
         #TODO: Make more general (if possible)
         # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
-        return datetime.fromtimestamp(record_dict['slice_index_value'] + (record_dict['x_min'] + record_dict['x_max']) * 120).date()
+        return (datetime.fromtimestamp(record_dict['slice_index_value'] + (record_dict['x_min'] + record_dict['x_max']) * 120).date(),
+                record_dict['ndarray_type_tag'])
             
             
     def solar_year_month(self, record_dict):
         '''
         Function which takes a record_dict containing all values from a query in the get_db_slices function 
-        and returns a (year, month) tuple from the solar date of the observation
+        and returns a (year, month, ndarray_type_tag) tuple from the solar date of the observation
         '''
         # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
         #TODO: Make more general (if possible)
         # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
         solar_date = self.solar_date(record_dict)
-        return (solar_date.year, solar_date.month)
+        return (solar_date.year, 
+                solar_date.month,
+                record_dict['ndarray_type_tag'])
     
             
     def solar_year(self, record_dict):
         '''
         Function which takes a record_dict containing all values from a query in the get_db_slices function 
-        and returns the solar year of the observation
+        and returns a tuple containing the solar year of the observation and the ndarray_type_tag value
         '''
         # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
         #TODO: Make more general (if possible)
         # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
         solar_date = self.solar_date(record_dict)
-        return solar_date.year
+        return (solar_date.year,
+                record_dict['ndarray_type_tag'])
             
             
     def solar_month(self, record_dict):
         '''
         Function which takes a record_dict containing all values from a query in the get_db_slices function 
-        and returns the solar year of the observation
+        and returns a tuple containing the solar month of the observation and the ndarray_type_tag value
         '''
         # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
         #TODO: Make more general (if possible)
         # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
         solar_date = self.solar_date(record_dict)
-        return solar_date.month
+        return (solar_date.month,
+                record_dict['ndarray_type_tag'])
             
             
     def get_slices(self, 
@@ -689,6 +695,7 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index, slice_i
                         ):
                         continue
                     
+                    record_dict.update({'ndarray_type_tag': ndarray_type_tag})
                     record_dict.update({'slice_index': ndarray_slice_index})
                     record_dict.update({'slice_group': slice_grouping_function(record_dict)})
                                         
