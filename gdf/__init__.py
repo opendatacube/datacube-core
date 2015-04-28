@@ -557,8 +557,8 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index;
         def get_db_slices(dimension_range_dict, 
                           slice_dimension,
                           slice_grouping_function, 
-                          exclusive, 
                           ndarray_type_tags, 
+                          exclusive, 
                           database, 
                           result_dict):
             '''

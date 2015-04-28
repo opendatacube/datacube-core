@@ -87,6 +87,36 @@ class TestGDF(unittest.TestCase):
         ndarray_dict = test_gdf.get_ndarrays(self.TEST_3D_DIMENSION_RANGE_DICT, exclusive=True)
         ndarray_dict = test_gdf.get_ndarrays(self.TEST_3D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'], exclusive=True)
         
+    def test_GDF_get_slices(self):
+        "Test GDF get_slices function"
+        #TODO: Define tests which check DB contents
+        test_gdf = GDF() # Test default configuration
+        
+        ndarray_dict = test_gdf.get_slices(self.TEST_2D_DIMENSION_RANGE_DICT)
+        ndarray_dict = test_gdf.get_slices(self.TEST_2D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'])
+        ndarray_dict = test_gdf.get_slices(self.TEST_2D_DIMENSION_RANGE_DICT, exclusive=True)
+        ndarray_dict = test_gdf.get_slices(self.TEST_2D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'], exclusive=True)
+        
+        ndarray_dict = test_gdf.get_slices(self.TEST_3D_DIMENSION_RANGE_DICT)
+        ndarray_dict = test_gdf.get_slices(self.TEST_3D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'])
+        ndarray_dict = test_gdf.get_slices(self.TEST_3D_DIMENSION_RANGE_DICT, exclusive=True)
+        ndarray_dict = test_gdf.get_slices(self.TEST_3D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'], exclusive=True)
+        
+    def test_GDF_get_grouped_slices(self):
+        "Test GDF get_grouped_slices function"
+        #TODO: Define tests which check DB contents
+        test_gdf = GDF() # Test default configuration
+        
+        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_2D_DIMENSION_RANGE_DICT)
+        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_2D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'])
+        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_2D_DIMENSION_RANGE_DICT, exclusive=True)
+        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_2D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'], exclusive=True)
+        
+        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_3D_DIMENSION_RANGE_DICT)
+        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_3D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'])
+        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_3D_DIMENSION_RANGE_DICT, exclusive=True)
+        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_3D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'], exclusive=True)
+        
         
 #
 # Define test suites
