@@ -52,11 +52,11 @@ setup(name='gdf',
                   'scipy',
                   'pytz'
                   ],
-      url = 'https://github.com/alex-ip/gdf', # To be moved to a proper GA repository soon
+      url = 'https://github.com/GeoscienceAustralia/gdf'
       author = 'Alex Ip',
       maintainer = 'Alex Ip, Geoscience Australia',
       maintainer_email = 'alex.ip@ga.gov.au',
-      description = 'General Data Framework (GDF)',
-      long_description = 'General Data Framework (GDF). Developed under HPD program within Geoinformatics and Data Services Section',
+      description = 'Generalsed Data Framework (GDF)',
+      long_description = 'Generalised Data Framework (GDF). Developed under HPD program within Geoinformatics and Data Services Section',
       license = 'BSD 3'
      )
