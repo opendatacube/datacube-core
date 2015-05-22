@@ -57,16 +57,22 @@ class TestDatabase(unittest.TestCase):
     SUITE = 'TestDatabase'
 
     # Test DB connection parameters
+    TEST_DB_REF = 'test_db' 
+
     TEST_HOST = '130.56.244.228' 
     TEST_PORT = 6432
-    TEST_DBNAME = 'gdf'
+    TEST_DBNAME = 'gdf_landsat'
+#    TEST_HOST = 'localhost' 
+#    TEST_PORT = 5432
+#    TEST_DBNAME = 'gdf'
     TEST_USER = 'cube_user'
     TEST_PASSWORD = 'GAcube0'
     TEST_QUERY = 'select 1 as test_field'
 
     def test_database(self):
         "Test Database constructor"
-        test_db = Database(self.TEST_HOST, 
+        test_db = Database(self.TEST_DB_REF,
+                           self.TEST_HOST, 
                            self.TEST_PORT, 
                            self.TEST_DBNAME, 
                            self.TEST_USER, 
@@ -78,7 +84,8 @@ class TestDatabase(unittest.TestCase):
 
     def test_execSQL(self):
         "Test execSQL function"
-        test_db = Database(self.TEST_HOST, 
+        test_db = Database(self.TEST_DB_REF,
+                           self.TEST_HOST, 
                            self.TEST_PORT, 
                            self.TEST_DBNAME, 
                            self.TEST_USER, 
@@ -90,7 +97,8 @@ class TestDatabase(unittest.TestCase):
 
     def test_query(self):
         "Test query function"
-        test_db = Database(self.TEST_HOST, 
+        test_db = Database(self.TEST_DB_REF,
+                           self.TEST_HOST, 
                            self.TEST_PORT, 
                            self.TEST_DBNAME, 
                            self.TEST_USER, 

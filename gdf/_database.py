@@ -39,16 +39,8 @@ import psycopg2
 
 from EOtools.utils import log_multiline
 
-# Set top level standard output 
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(logging.DEBUG)
-console_formatter = logging.Formatter('%(message)s')
-console_handler.setFormatter(console_formatter)
-
 logger = logging.getLogger(__name__)
-if not logger.level:
-    logger.setLevel(logging.DEBUG) # Default logging level for all modules
-    logger.addHandler(console_handler)
+#logger.setLevel(logging.DEBUG) # Logging level for this module
 
 class CachedResultSet(object):
     '''Class CachedResultSet to manage an in-memory cache of query results
@@ -57,7 +49,7 @@ class CachedResultSet(object):
         '''Constructor for class CachedResultSet
         
         Parameter:
-            cursor: psycopg2 cursor object through which the result setfrom a previously executed query will be retrieved 
+            cursor: psycopg2 cursor object through which the result set from a previously executed query will be retrieved 
         '''
         if cursor.description is None: # No fields returned            
             self._field_names = []
@@ -138,6 +130,9 @@ class Database(object):
         '''
         connection = connection or self._default_connection or self.create_connection()
         
+        log_multiline(logger.debug, SQL, 'SQL', '\t')
+        log_multiline(logger.debug, params, 'params', '\t')
+        
         # Use local cursor to return results
         return CachedResultSet(self.execSQL(SQL, params=None, cursor=connection.cursor()))
         
@@ -160,7 +155,7 @@ class Database(object):
             self._default_connection = self.create_connection()
             self._default_cursor = self._default_connection.cursor()
     
-    def __init__(self, host, port, dbname, user, password, keep_connection=True, autocommit=True):
+    def __init__(self, db_ref, host, port, dbname, user, password, keep_connection=True, autocommit=True):
         '''
         Constructor for class Database.
         
@@ -171,6 +166,7 @@ class Database(object):
             user: PostgreSQL database user
             password: PostgreSQL database password for user
         '''
+        self._db_ref = db_ref
         self._host = host
         self._port = port
         self._dbname = dbname
@@ -187,6 +183,10 @@ class Database(object):
         
         
     # Define class properties
+    @property
+    def db_ref(self):
+        return self._db_ref
+
     @property
     def host(self):
         return self._host

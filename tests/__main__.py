@@ -3,7 +3,6 @@ import test_config_file
 import test_database
 import test_gdf
 
-
 # Run all tests
 test_arguments.main()
 test_config_file.main()

@@ -42,7 +42,7 @@ from gdf import GDF
 
 
 #
-# Test cases
+# Test cases for GDF class
 #
 
 # pylint: disable=too-many-public-methods
@@ -53,6 +53,10 @@ from gdf import GDF
 
 class TestGDF(unittest.TestCase):
     """Unit tests for utility functions."""
+    
+    # Test ranges for get_ndarrays function
+    TEST_2D_DIMENSION_RANGE_DICT = {'X': (140, 142), 'Y': (-36, -34)}
+    TEST_3D_DIMENSION_RANGE_DICT = {'X': (140, 142), 'Y': (-36, -34), 'T': (1293840000, 1325376000)}
 
     def test_GDF(self):
         "Test GDF constructor"
@@ -61,10 +65,59 @@ class TestGDF(unittest.TestCase):
         assert test_gdf.code_root == os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'gdf')), 'Code root is incorrect'
         assert len(test_gdf.config_files) == 1, 'Default config path list should have one entry'
         assert test_gdf.config_files[0] == os.path.abspath(os.path.join(test_gdf.code_root, GDF.DEFAULT_CONFIG_FILE)), 'Default config path is incorrect'
-        assert test_gdf.configuration.get('command_line') is not None, 'Command line parameter dict not set'
-        assert test_gdf.configuration.get('configurations') is not None, 'Configurations dict not set'
-        assert len(test_gdf.configuration['configurations']) > 0, 'Config files must define at least one setup'
+        assert test_gdf.command_line_params is not None, 'Command line parameter dict not set'
+        assert test_gdf.configuration is not None, 'Configurations dict not set'
+        assert len(test_gdf.configuration) > 0, 'Config files must define at least one setup'
         assert len(test_gdf.databases) > 0, 'At least one database must be set up'
+        assert test_gdf.ndarray_config is not None, 'NDArray configuration dict not set'
+        assert len(test_gdf.ndarray_config) > 0, 'NDArray configuration dict must contain at least one ndarray_type definition'
+        
+    def test_GDF_get_ndarrays(self):
+        "Test GDF get_ndarrays function"
+        #TODO: Define tests which check DB contents
+        test_gdf = GDF() # Test default configuration
+        
+        ndarray_dict = test_gdf.get_ndarrays(self.TEST_2D_DIMENSION_RANGE_DICT)
+        ndarray_dict = test_gdf.get_ndarrays(self.TEST_2D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'])
+        ndarray_dict = test_gdf.get_ndarrays(self.TEST_2D_DIMENSION_RANGE_DICT, exclusive=True)
+        ndarray_dict = test_gdf.get_ndarrays(self.TEST_2D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'], exclusive=True)
+        
+        ndarray_dict = test_gdf.get_ndarrays(self.TEST_3D_DIMENSION_RANGE_DICT)
+        ndarray_dict = test_gdf.get_ndarrays(self.TEST_3D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'])
+        ndarray_dict = test_gdf.get_ndarrays(self.TEST_3D_DIMENSION_RANGE_DICT, exclusive=True)
+        ndarray_dict = test_gdf.get_ndarrays(self.TEST_3D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'], exclusive=True)
+        
+    def test_GDF_get_slices(self):
+        "Test GDF get_slices function"
+        #TODO: Define tests which check DB contents
+        test_gdf = GDF() # Test default configuration
+        
+        ndarray_dict = test_gdf.get_slices(self.TEST_2D_DIMENSION_RANGE_DICT)
+        ndarray_dict = test_gdf.get_slices(self.TEST_2D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'])
+        ndarray_dict = test_gdf.get_slices(self.TEST_2D_DIMENSION_RANGE_DICT, exclusive=True)
+        ndarray_dict = test_gdf.get_slices(self.TEST_2D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'], exclusive=True)
+        
+        ndarray_dict = test_gdf.get_slices(self.TEST_3D_DIMENSION_RANGE_DICT)
+        ndarray_dict = test_gdf.get_slices(self.TEST_3D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'])
+        ndarray_dict = test_gdf.get_slices(self.TEST_3D_DIMENSION_RANGE_DICT, exclusive=True)
+        ndarray_dict = test_gdf.get_slices(self.TEST_3D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'], exclusive=True)
+        
+    def test_GDF_get_grouped_slices(self):
+        "Test GDF get_grouped_slices function"
+        #TODO: Define tests which check DB contents
+        test_gdf = GDF() # Test default configuration
+        
+        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_2D_DIMENSION_RANGE_DICT)
+        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_2D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'])
+        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_2D_DIMENSION_RANGE_DICT, exclusive=True)
+        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_2D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'], exclusive=True)
+        
+        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_3D_DIMENSION_RANGE_DICT)
+        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_3D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'])
+        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_3D_DIMENSION_RANGE_DICT, exclusive=True)
+        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_3D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'], exclusive=True)
+        
+        
 #
 # Define test suites
 #

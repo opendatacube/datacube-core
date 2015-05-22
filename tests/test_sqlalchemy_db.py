@@ -32,12 +32,12 @@ Created on 12/03/2015
 
 @author: Alex Ip
 
-Tests for the gdf._CommandLineArgs.py module.
+Tests for the gdf._SQLAlchemyDB.py module.
 '''
 
-import sys
+
 import unittest
-from gdf._arguments import CommandLineArgs
+from gdf._sqlalchemy_db import SQLAlchemyDB, NDarrayType, Dimension, Domain
 
 
 #
@@ -50,56 +50,44 @@ from gdf._arguments import CommandLineArgs
 #
 
 
-class TestCommandLineArgs(unittest.TestCase):
+class TestSQLAlchemyDB(unittest.TestCase):
     """Unit tests for utility functions."""
 
-    MODULE = 'gdf._arguments'
-    SUITE = 'TestCommandLineArgs'
-    
-    TEST_ARG_DESCRIPTOR = {'test': {'short_flag': '-t', 
-                                    'long_flag': '--test', 
-                                    'default': False, 
-                                    'action': 'store_const', 
-                                    'const': True,
-                                    'help': 'Test mode flag'
-                                    },
-                           'test_value': {'short_flag': '-v', 
-                                    'long_flag': '--value', 
-                                    'default': 'default_test_value', 
-                                    'action': 'store_const', 
-                                    'const': None,
-                                    'help': 'Test mode flag'
-                                    }
-                           }
+    MODULE = 'gdf._sqlalchemy_db'
+    SUITE = 'TestSQLAlchemyDB'
 
-    def test_CommandLineArgs(self):
-        "Test CommandLineArgs constructor"
-        
-        # Remember actual arguments in order to avoid side-effects
-        original_sys_argv = list(sys.argv)
-        
-        # Simulate command line arguments
-        sys.argv.append("--config=config_file.conf")
-        sys.argv.append("--debug")
-        sys.argv.append("--test")
-        sys.argv.append("unnkown")
-        
-        command_line_args = CommandLineArgs(TestCommandLineArgs.TEST_ARG_DESCRIPTOR)
-        
-        assert command_line_args.arguments['config_files'] == 'config_file.conf', 'Default --config argument not parsed'
-        assert command_line_args.arguments['debug'], 'Default --debug argument not parsed'
-        assert command_line_args.arguments['test'], 'Custom --test argument not parsed'
-        assert command_line_args.arguments['test_value'] == 'default_test_value', 'Default value for custom test_value argument not set'
+    # Test DB connection parameters
+    TEST_DBREF = 'test'
+#    TEST_HOST = '130.56.244.228' 
+#    TEST_PORT = 6432
+    TEST_HOST = 'localhost' 
+    TEST_PORT = 5432
+    TEST_DBNAME = 'gdf'
+    TEST_USER = 'cube_user'
+    TEST_PASSWORD = 'GAcube0'
+    TEST_QUERY = 'select 1 as test_field'
 
-        # Remove simulated test arguments
-        sys.argv = original_sys_argv
+    def test_SQLAlchemyDB(self):
+        "Test SQLAlchemyDB constructor"
+        test_db = SQLAlchemyDB(self.TEST_DBREF, 
+                               self.TEST_HOST, 
+                               self.TEST_PORT, 
+                               self.TEST_DBNAME, 
+                               self.TEST_USER, 
+                               self.TEST_PASSWORD
+                               )
+        
+        assert len(test_db.ndarray_types) > 0, 'No NDArrayType objects created'
+        
+
+
 #
 # Define test suites
 #
 def test_suite():
     """Returns a test suite of all the tests in this module."""
 
-    test_classes = [TestCommandLineArgs
+    test_classes = [TestSQLAlchemyDB
                     ]
 
     suite_list = map(unittest.defaultTestLoader.loadTestsFromTestCase,
