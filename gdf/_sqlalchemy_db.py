@@ -58,31 +58,31 @@ class SQLAlchemyDB(object):
     classdocs
     '''
 
-    def get_ndarray_types(self):
+    def get_storage_types(self):
         '''
-        Return a dict containing all defined (<ndarray_type_tag>: <ndarray_type>) pairs in DB
+        Return a dict containing all defined (<storage_type_tag>: <storage_type>) pairs in DB
         '''
-        return {ndarray_type.ndarray_type_tag: ndarray_type for ndarray_type in self.session.query(NDarrayType)}
+        return {storage_type.storage_type_tag: storage_type for storage_type in self.session.query(storageType)}
         
     def get_dimensions(self):
         '''
         Return a dict containing all defined (<dimension_tag>: <dimension>) pairs in DB
-        Requires self.ndarray_types
+        Requires self.storage_types
         '''
         dimension_set = set([])
-        for ndarray_type in self.ndarray_types.values():
-            dimension_set |= set(ndarray_type.dimensions)
+        for storage_type in self.storage_types.values():
+            dimension_set |= set(storage_type.dimensions)
             
         return {dimension.dimension_tag: dimension for dimension in dimension_set}
             
     def get_domains(self):
         '''
         Return a dict containing all defined (<domain_tag>: <domain>) pairs in DB
-        Requires self.ndarray_types
+        Requires self.storage_types
         '''
         domain_set = set([])
-        for ndarray_type in self.ndarray_types.values():
-            domain_set |= set(ndarray_type.domains)
+        for storage_type in self.storage_types.values():
+            domain_set |= set(storage_type.domains)
             
         return {domain.domain_tag: domain for domain in domain_set}
             
@@ -119,59 +119,59 @@ class SQLAlchemyDB(object):
         self.session = Session()
         
         # Create dicts containing relevant configuration objects
-        self._ndarray_types = self.get_ndarray_types()
+        self._storage_types = self.get_storage_types()
         self._dimensions = self.get_dimensions()
         self._domains = self.get_domains()
 
-    def get_ndarrays(self, dimension_range_dict): 
-        #TODO: Complete this function to return a list of SQLAlchemy NDArray objects
+    def get_storages(self, dimension_range_dict): 
+        #TODO: Complete this function to return a list of SQLAlchemy storage objects
         '''
-        Function to return all ndarrays which fall in the specified dimensional ranges
+        Function to return all storages which fall in the specified dimensional ranges
         
         Parameter:
             dimension_range_dict: dict defined as {<dimension_tag>: (<min_value>, <max_value>), 
                                                    <dimension_tag>: (<min_value>, <max_value>)...}
         '''
-        ndarray_dict = {}
+        storage_dict = {}
         
-        for ndarray_type in self._ndarray_types.values():
-            logger.debug('ndarray_type = %s', ndarray_type)
+        for storage_type in self._storage_types.values():
+            logger.debug('storage_type = %s', storage_type)
             
-            # Skip ndarray_type if  dimensionality of query is greater than dimensionality of ndarray_type - may do this differently
-            if set(dimension_range_dict.keys()) > set([dimension.dimension_tag for dimension in ndarray_type.dimensions]):
+            # Skip storage_type if  dimensionality of query is greater than dimensionality of storage_type - may do this differently
+            if set(dimension_range_dict.keys()) > set([dimension.dimension_tag for dimension in storage_type.dimensions]):
                 continue
             
-            # Create a dict of lists containing ndarrays for each ndarray_type
-            ndarray_dict[ndarray_type] = {}
+            # Create a dict of lists containing storages for each storage_type
+            storage_dict[storage_type] = {}
             
             # Obtain list of dimension tags ordered by creation order
-            dimension_tag_list = [dimension.dimension_tag for dimension in ndarray_type.dimensions if dimension.dimension_tag in dimension_range_dict.keys()]
+            dimension_tag_list = [dimension.dimension_tag for dimension in storage_type.dimensions if dimension.dimension_tag in dimension_range_dict.keys()]
             logger.debug('dimension_tag_list = %s', dimension_tag_list)
 
-            SQL = '''-- Find ndarrays which fall in range
+            SQL = '''-- Find storages which fall in range
 select distinct'''
             for dimension_tag in dimension_tag_list:
                 SQL +='''
-%s.ndarray_dimension_index as %s_index,
-%s.ndarray_dimension_min as %s_min,
-%s.ndarray_dimension_max as %s_max,''' % (dimension_tag, dimension_tag, dimension_tag, dimension_tag, dimension_tag, dimension_tag)
+%s.storage_dimension_index as %s_index,
+%s.storage_dimension_min as %s_min,
+%s.storage_dimension_max as %s_max,''' % (dimension_tag, dimension_tag, dimension_tag, dimension_tag, dimension_tag, dimension_tag)
             SQL +='''
-ndarray.*
-from ndarray
+storage.*
+from storage
 '''                    
             for dimension_tag in dimension_tag_list:
                 SQL +='''join (
 select *
 from dimension 
     join dimension_domain using(dimension_id)
-    join ndarray_dimension using(dimension_id, domain_id)
-    where ndarray_type_id = %d
-    and ndarray_version = 0
+    join storage_dimension using(dimension_id, domain_id)
+    where storage_type_id = %d
+    and storage_version = 0
     and dimension.dimension_tag = '%s'
-    and (ndarray_dimension_min < %f 
-      and ndarray_dimension_max > %f)
-    ) %s using(ndarray_type_id, ndarray_id, ndarray_version)
-''' % (ndarray_type.ndarray_type_id, 
+    and (storage_dimension_min < %f 
+      and storage_dimension_max > %f)
+    ) %s using(storage_type_id, storage_id, storage_version)
+''' % (storage_type.storage_type_id, 
    dimension_tag, 
    dimension_range_dict[dimension_tag][1], # Max
    dimension_range_dict[dimension_tag][0], # Min
@@ -181,7 +181,7 @@ from dimension
 order by ''' + '_index, '.join(dimension_tag_list) + '''_index;
 '''
             
-            #TODO: Evaluate the SQL query to obtain a list of ndarray objects
+            #TODO: Evaluate the SQL query to obtain a list of storage objects
             log_multiline(logger.debug, SQL , 'SQL', '\t')
             print SQL
                 
@@ -211,8 +211,8 @@ order by ''' + '_index, '.join(dimension_tag_list) + '''_index;
         return self._password
         
     @property
-    def ndarray_types(self):
-        return self._ndarray_types
+    def storage_types(self):
+        return self._storage_types
 
     @property
     def dimensions(self):
@@ -294,13 +294,13 @@ class IndexingType(Base):
                             self.indexing_type_id, self.indexing_type_name)
        
        
-class _NDarrayTypeDimension(Base):
-    __tablename__ = 'ndarray_type_dimension'
+class _storageTypeDimension(Base):
+    __tablename__ = 'storage_type_dimension'
 
-    ndarray_type_id = Column(BIGINT, ForeignKey('ndarray_type.ndarray_type_id'), primary_key=True)
+    storage_type_id = Column(BIGINT, ForeignKey('storage_type.storage_type_id'), primary_key=True)
     domain_id = Column(BIGINT, ForeignKey('dimension_domain.domain_id'), primary_key=True)
     dimension_id = Column(BIGINT, ForeignKey('dimension_domain.dimension_id'), primary_key=True)
-    creation_order = Column(SMALLINT)
+    dimension_order = Column(SMALLINT)
     dimension_extent = Column(NUMERIC)
     dimension_elements = Column(BIGINT)
     dimension_cache = Column(BIGINT)
@@ -312,100 +312,100 @@ class _NDarrayTypeDimension(Base):
     _dimension_domain = relationship('_DimensionDomain', 
                                     foreign_keys=[domain_id, dimension_id], 
                                     uselist=False, 
-                                    backref='ndarray_type_dimension', 
+                                    backref='storage_type_dimension', 
                                     innerjoin=True,
-                                    primaryjoin="and_(_DimensionDomain.domain_id==_NDarrayTypeDimension.domain_id, "
-                                                "_DimensionDomain.dimension_id==_NDarrayTypeDimension.dimension_id)"
+                                    primaryjoin="and_(_DimensionDomain.domain_id==_storageTypeDimension.domain_id, "
+                                                "_DimensionDomain.dimension_id==_storageTypeDimension.dimension_id)"
                                     )
     
     indexing_type = relationship('IndexingType', 
                                     foreign_keys=[indexing_type_id], 
                                     uselist=False, 
-                                    backref='ndarray_type_dimension', 
+                                    backref='storage_type_dimension', 
                                     innerjoin=True,
-                                    primaryjoin="IndexingType.indexing_type_id==_NDarrayTypeDimension.indexing_type_id"
+                                    primaryjoin="IndexingType.indexing_type_id==_storageTypeDimension.indexing_type_id"
                                     )
     
     reference_system = relationship('ReferenceSystem', 
                                     foreign_keys=[reference_system_id], 
                                     uselist=False, 
-                                    backref='ndarray_type_dimension', 
+                                    backref='storage_type_dimension', 
                                     innerjoin=True,
-                                    primaryjoin="ReferenceSystem.reference_system_id==_NDarrayTypeDimension.reference_system_id"
+                                    primaryjoin="ReferenceSystem.reference_system_id==_storageTypeDimension.reference_system_id"
                                     )
     
     index_reference_system = relationship('ReferenceSystem', 
                                     foreign_keys=[index_reference_system_id], 
                                     uselist=False, 
-                                    backref='index_ndarray_type_dimension', 
+                                    backref='index_storage_type_dimension', 
                                     innerjoin=True,
-                                    primaryjoin="ReferenceSystem.reference_system_id==_NDarrayTypeDimension.index_reference_system_id",
+                                    primaryjoin="ReferenceSystem.reference_system_id==_storageTypeDimension.index_reference_system_id",
                                     )
     
     def __repr__(self):
-        return "<_NDarrayTypeDimension(ndarray_type_id='%d', dimension_id='%d', domain_id='%d')>" % (
-                            self.ndarray_type_id, self.dimension_id, self.domain_id)
+        return "<_storageTypeDimension(storage_type_id='%d', dimension_id='%d', domain_id='%d')>" % (
+                            self.storage_type_id, self.dimension_id, self.domain_id)
        
        
-class NDarrayType(Base):
-    __tablename__ = 'ndarray_type'
+class storageType(Base):
+    __tablename__ = 'storage_type'
 
-    ndarray_type_id = Column(BIGINT, primary_key=True)
-    ndarray_type_name = Column(String(254))
-    ndarray_type_tag = Column(String(16))
+    storage_type_id = Column(BIGINT, primary_key=True)
+    storage_type_name = Column(String(254))
+    storage_type_tag = Column(String(16))
     
-    _ndarray_type_dimensions = relationship('_NDarrayTypeDimension', 
-                                foreign_keys=[ndarray_type_id],
+    _storage_type_dimensions = relationship('_storageTypeDimension', 
+                                foreign_keys=[storage_type_id],
                                 uselist=True, 
-                                backref='ndarray_type',
+                                backref='storage_type',
                                 innerjoin=True,
-                                primaryjoin="_NDarrayTypeDimension.ndarray_type_id==NDarrayType.ndarray_type_id",
-                                order_by=[_NDarrayTypeDimension.creation_order]
+                                primaryjoin="_storageTypeDimension.storage_type_id==storageType.storage_type_id",
+                                order_by=[_storageTypeDimension.dimension_order]
                                 )
     
     def __repr__(self):
-        return "<NDarrayType(ndarray_type_tag='%s', ndarray_type_name='%s', ndarray_type_tag='%s')>" % (
-                            self.ndarray_type_tag, self.ndarray_type_name, self.ndarray_type_tag)
+        return "<storageType(storage_type_tag='%s', storage_type_name='%s', storage_type_tag='%s')>" % (
+                            self.storage_type_tag, self.storage_type_name, self.storage_type_tag)
     
     def _dimensions(self):
         '''Return list of dimension objects sorted by creation order
         '''
-        return [ndarray_type_dimension._dimension_domain.dimension for ndarray_type_dimension in self._ndarray_type_dimensions]
+        return [storage_type_dimension._dimension_domain.dimension for storage_type_dimension in self._storage_type_dimensions]
 
     def _domains(self):
         '''Return set of domain objects
         '''
-        return set([ndarray_type_dimension._dimension_domain.domain for ndarray_type_dimension in self._ndarray_type_dimensions])
+        return set([storage_type_dimension._dimension_domain.domain for storage_type_dimension in self._storage_type_dimensions])
     
     def get_index_and_ordinate(self, dimension_tag, dimension_value):
         '''
-        Returns a index value and offset within ndarray for given dimension_tag and dimension_value
+        Returns a index value and offset within storage for given dimension_tag and dimension_value
         '''
         dimension = [dimension for dimension in self.dimensions if dimension.dimension_tag == dimension_tag][0]
         
-        ndarray_type_dimension = [ndarray_type_dimension for ndarray_type_dimension in self._ndarray_type_dimensions if ndarray_type_dimension.dimension_id == dimension.dimension_id][0]
+        storage_type_dimension = [storage_type_dimension for storage_type_dimension in self._storage_type_dimensions if storage_type_dimension.dimension_id == dimension.dimension_id][0]
         
-        domain = [domain for domain in self.domains if domain.domain_id == ndarray_type_dimension.domain_id][0]
+        domain = [domain for domain in self.domains if domain.domain_id == storage_type_dimension.domain_id][0]
         
         #TODO: Re-examine conditions for exceptional indexing - not sure if this is the best way
-        if (ndarray_type_dimension.indexing_type.indexing_type_name == 'regular' and 
-            ndarray_type_dimension.index_reference_system_id == ndarray_type_dimension.reference_system_id):
+        if (storage_type_dimension.indexing_type.indexing_type_name == 'regular' and 
+            storage_type_dimension.index_reference_system_id == storage_type_dimension.reference_system_id):
             # Regular index calculated from origin and extent values
-            ndarray_index = (dimension_value - ndarray_type_dimension.dimension_origin) // ndarray_type_dimension.dimension_extent
-            ndarray_ordinate = ((dimension_value - ndarray_type_dimension.dimension_origin) % ndarray_type_dimension.dimension_extent) * ndarray_type_dimension.dimension_elements
+            storage_index = (dimension_value - storage_type_dimension.dimension_origin) // storage_type_dimension.dimension_extent
+            storage_ordinate = ((dimension_value - storage_type_dimension.dimension_origin) % storage_type_dimension.dimension_extent) * storage_type_dimension.dimension_elements
         else:
             # Special case for year-indexed time (irregular intervals)
             if (dimension.dimension_tag == 'T' and
-                ndarray_type_dimension.index_reference_system.reference_system_tag == 'YEAR' and 
-                ndarray_type_dimension.reference_system.reference_system_tag == 'SSE'):
+                storage_type_dimension.index_reference_system.reference_system_tag == 'YEAR' and 
+                storage_type_dimension.reference_system.reference_system_tag == 'SSE'):
                 #Set year index value form seconds-since-epoch value
-                ndarray_index = datetime.fromtimestamp(dimension_value).year
+                storage_index = datetime.fromtimestamp(dimension_value).year
                 # Keep seconds-since-epoch value?
-                ndarray_ordinate = dimension_value
+                storage_ordinate = dimension_value
             else:
                 raise Exception('Unhandled indexing type')    
             
-        return ndarray_index, ndarray_ordinate
+        return storage_index, storage_ordinate
 
     @property
     def dimensions(self):

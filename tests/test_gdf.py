@@ -54,7 +54,7 @@ from gdf import GDF
 class TestGDF(unittest.TestCase):
     """Unit tests for utility functions."""
     
-    # Test ranges for get_ndarrays function
+    # Test ranges for get_storage_units function
     TEST_2D_DIMENSION_RANGE_DICT = {'X': (140, 142), 'Y': (-36, -34)}
     TEST_3D_DIMENSION_RANGE_DICT = {'X': (140, 142), 'Y': (-36, -34), 'T': (1293840000, 1325376000)}
 
@@ -69,53 +69,53 @@ class TestGDF(unittest.TestCase):
         assert test_gdf.configuration is not None, 'Configurations dict not set'
         assert len(test_gdf.configuration) > 0, 'Config files must define at least one setup'
         assert len(test_gdf.databases) > 0, 'At least one database must be set up'
-        assert test_gdf.ndarray_config is not None, 'NDArray configuration dict not set'
-        assert len(test_gdf.ndarray_config) > 0, 'NDArray configuration dict must contain at least one ndarray_type definition'
+        assert test_gdf.storage_config is not None, 'storage configuration dict not set'
+        assert len(test_gdf.storage_config) > 0, 'storage configuration dict must contain at least one storage_type definition'
         
-    def test_GDF_get_ndarrays(self):
-        "Test GDF get_ndarrays function"
+    def test_GDF_get_storage_units(self):
+        "Test GDF get_storage_units function"
         #TODO: Define tests which check DB contents
         test_gdf = GDF() # Test default configuration
         
-        ndarray_dict = test_gdf.get_ndarrays(self.TEST_2D_DIMENSION_RANGE_DICT)
-        ndarray_dict = test_gdf.get_ndarrays(self.TEST_2D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'])
-        ndarray_dict = test_gdf.get_ndarrays(self.TEST_2D_DIMENSION_RANGE_DICT, exclusive=True)
-        ndarray_dict = test_gdf.get_ndarrays(self.TEST_2D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'], exclusive=True)
+        storage_dict = test_gdf.get_storage_units(self.TEST_2D_DIMENSION_RANGE_DICT)
+        storage_dict = test_gdf.get_storage_units(self.TEST_2D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'])
+        storage_dict = test_gdf.get_storage_units(self.TEST_2D_DIMENSION_RANGE_DICT, exclusive=True)
+        storage_dict = test_gdf.get_storage_units(self.TEST_2D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'], exclusive=True)
         
-        ndarray_dict = test_gdf.get_ndarrays(self.TEST_3D_DIMENSION_RANGE_DICT)
-        ndarray_dict = test_gdf.get_ndarrays(self.TEST_3D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'])
-        ndarray_dict = test_gdf.get_ndarrays(self.TEST_3D_DIMENSION_RANGE_DICT, exclusive=True)
-        ndarray_dict = test_gdf.get_ndarrays(self.TEST_3D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'], exclusive=True)
+        storage_dict = test_gdf.get_storage_units(self.TEST_3D_DIMENSION_RANGE_DICT)
+        storage_dict = test_gdf.get_storage_units(self.TEST_3D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'])
+        storage_dict = test_gdf.get_storage_units(self.TEST_3D_DIMENSION_RANGE_DICT, exclusive=True)
+        storage_dict = test_gdf.get_storage_units(self.TEST_3D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'], exclusive=True)
         
     def test_GDF_get_slices(self):
         "Test GDF get_slices function"
         #TODO: Define tests which check DB contents
         test_gdf = GDF() # Test default configuration
         
-        ndarray_dict = test_gdf.get_slices(self.TEST_2D_DIMENSION_RANGE_DICT)
-        ndarray_dict = test_gdf.get_slices(self.TEST_2D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'])
-        ndarray_dict = test_gdf.get_slices(self.TEST_2D_DIMENSION_RANGE_DICT, exclusive=True)
-        ndarray_dict = test_gdf.get_slices(self.TEST_2D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'], exclusive=True)
+        storage_dict = test_gdf.get_slices(self.TEST_2D_DIMENSION_RANGE_DICT)
+        storage_dict = test_gdf.get_slices(self.TEST_2D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'])
+        storage_dict = test_gdf.get_slices(self.TEST_2D_DIMENSION_RANGE_DICT, exclusive=True)
+        storage_dict = test_gdf.get_slices(self.TEST_2D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'], exclusive=True)
         
-        ndarray_dict = test_gdf.get_slices(self.TEST_3D_DIMENSION_RANGE_DICT)
-        ndarray_dict = test_gdf.get_slices(self.TEST_3D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'])
-        ndarray_dict = test_gdf.get_slices(self.TEST_3D_DIMENSION_RANGE_DICT, exclusive=True)
-        ndarray_dict = test_gdf.get_slices(self.TEST_3D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'], exclusive=True)
+        storage_dict = test_gdf.get_slices(self.TEST_3D_DIMENSION_RANGE_DICT)
+        storage_dict = test_gdf.get_slices(self.TEST_3D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'])
+        storage_dict = test_gdf.get_slices(self.TEST_3D_DIMENSION_RANGE_DICT, exclusive=True)
+        storage_dict = test_gdf.get_slices(self.TEST_3D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'], exclusive=True)
         
     def test_GDF_get_grouped_slices(self):
         "Test GDF get_grouped_slices function"
         #TODO: Define tests which check DB contents
         test_gdf = GDF() # Test default configuration
         
-        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_2D_DIMENSION_RANGE_DICT)
-        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_2D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'])
-        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_2D_DIMENSION_RANGE_DICT, exclusive=True)
-        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_2D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'], exclusive=True)
+        storage_dict = test_gdf.get_grouped_slices(self.TEST_2D_DIMENSION_RANGE_DICT)
+        storage_dict = test_gdf.get_grouped_slices(self.TEST_2D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'])
+        storage_dict = test_gdf.get_grouped_slices(self.TEST_2D_DIMENSION_RANGE_DICT, exclusive=True)
+        storage_dict = test_gdf.get_grouped_slices(self.TEST_2D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'], exclusive=True)
         
-        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_3D_DIMENSION_RANGE_DICT)
-        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_3D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'])
-        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_3D_DIMENSION_RANGE_DICT, exclusive=True)
-        ndarray_dict = test_gdf.get_grouped_slices(self.TEST_3D_DIMENSION_RANGE_DICT, ndarray_type_tags=['LS5TM'], exclusive=True)
+        storage_dict = test_gdf.get_grouped_slices(self.TEST_3D_DIMENSION_RANGE_DICT)
+        storage_dict = test_gdf.get_grouped_slices(self.TEST_3D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'])
+        storage_dict = test_gdf.get_grouped_slices(self.TEST_3D_DIMENSION_RANGE_DICT, exclusive=True)
+        storage_dict = test_gdf.get_grouped_slices(self.TEST_3D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'], exclusive=True)
         
         
 #

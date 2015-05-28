@@ -122,7 +122,7 @@ class GDF(object):
         self._databases = self.get_dbs()
         
         # Read configuration from databases
-        self._ndarray_config = self.get_ndarray_config()
+        self._storage_config = self.get_storage_config()
         
         log_multiline(logger.debug, self.__dict__, 'GDF.__dict__', '\t')
 
@@ -190,15 +190,15 @@ class GDF(object):
         return result_dict
         
 
-    def get_ndarray_config(self):
+    def get_storage_config(self):
         '''
         Function to return a dict with details of all dimensions managed in databases keyed as follows:
           
         Returns: Dict keyed as follows:
           
             <db_ref>
-                'ndarray_types'
-                    <ndarray_type_tag>
+                'storage_types'
+                    <storage_type_tag>
                         'measurement_types'
                             <measurement_type_tag>
                             ...
@@ -214,7 +214,7 @@ class GDF(object):
                     ...
             ...
          '''
-        def get_db_ndarray_config(database, result_dict):
+        def get_db_storage_config(database, result_dict):
             '''
             Function to return a dict with details of all dimensions managed in a single database 
             
@@ -225,19 +225,19 @@ class GDF(object):
             This is currently a bit ugly because it retrieves the de-normalised data in a single query and then has to
             build the tree from the flat result set. It could be done in a prettier (but slower) way with multiple queries
             '''
-            db_dict = {'ndarray_types': {}}
+            db_dict = {'storage_types': {}}
             
             try:
-                ndarray_type_filter_list = self._configuration[database.db_ref]['ndarray_types'].split(',')
+                storage_type_filter_list = self._configuration[database.db_ref]['storage_types'].split(',')
             except:
-                ndarray_type_filter_list = None
-            logger.debug('ndarray_type_filter_list = %s', ndarray_type_filter_list)
+                storage_type_filter_list = None
+            logger.debug('storage_type_filter_list = %s', storage_type_filter_list)
               
-            SQL = '''-- Query to return all ndarray_type configuration info for database %s
+            SQL = '''-- Query to return all storage_type configuration info for database %s
 select distinct
-ndarray_type_tag,
-ndarray_type_id,
-ndarray_type_name,
+storage_type_tag,
+storage_type_id,
+storage_type_name,
 measurement_type_tag,
 measurement_metatype_id,
 measurement_type_id,
@@ -253,7 +253,7 @@ reference_system.reference_system_definition,
 reference_system.reference_system_unit,
 dimension_tag,
 dimension_id,
-creation_order,
+dimension_order,
 dimension_extent,
 dimension_elements,
 dimension_cache,
@@ -262,44 +262,44 @@ index_reference_system.reference_system_id as index_reference_system_id,
 index_reference_system.reference_system_name as index_reference_system_name,
 index_reference_system.reference_system_definition as index_reference_system_definition,
 index_reference_system.reference_system_unit as index_reference_system_unit  
-from ndarray_type 
-join ndarray_type_measurement_type using(ndarray_type_id)
+from storage_type 
+join storage_type_measurement_type using(storage_type_id)
 join measurement_type using(measurement_metatype_id, measurement_type_id)
 join measurement_metatype using(measurement_metatype_id)
-join ndarray_type_dimension using(ndarray_type_id)
+join storage_type_dimension using(storage_type_id)
 join dimension_domain using(dimension_id, domain_id)
 join domain using(domain_id)
 join dimension using(dimension_id)
 join indexing_type using(indexing_type_id)
 join reference_system using (reference_system_id)
-left join reference_system index_reference_system on index_reference_system.reference_system_id = ndarray_type_dimension.index_reference_system_id
+left join reference_system index_reference_system on index_reference_system.reference_system_id = storage_type_dimension.index_reference_system_id
 ''' % database.db_ref
 
-            # Apply ndarray_type filter if configured
-            if ndarray_type_filter_list:
-                SQL += "where ndarray_type_tag in ('" + "', '".join(ndarray_type_filter_list) + "')"
+            # Apply storage_type filter if configured
+            if storage_type_filter_list:
+                SQL += "where storage_type_tag in ('" + "', '".join(storage_type_filter_list) + "')"
                 
-            SQL += '''order by ndarray_type_tag, measurement_type_index, creation_order;
+            SQL += '''order by storage_type_tag, measurement_type_index, dimension_order;
 '''
 
-            ndarray_types = database.submit_query(SQL)
+            storage_types = database.submit_query(SQL)
             
-            for record_dict in ndarray_types.record_generator():
+            for record_dict in storage_types.record_generator():
                 log_multiline(logger.debug, record_dict, 'record_dict', '\t')
                   
-                ndarray_type_dict = db_dict['ndarray_types'].get(record_dict['ndarray_type_tag'])
-                if ndarray_type_dict is None:
-                    ndarray_type_dict = {'ndarray_type_tag': record_dict['ndarray_type_tag'],
-                                           'ndarray_type_id': record_dict['ndarray_type_id'],
-                                           'ndarray_type_name': record_dict['ndarray_type_name'],
+                storage_type_dict = db_dict['storage_types'].get(record_dict['storage_type_tag'])
+                if storage_type_dict is None:
+                    storage_type_dict = {'storage_type_tag': record_dict['storage_type_tag'],
+                                           'storage_type_id': record_dict['storage_type_id'],
+                                           'storage_type_name': record_dict['storage_type_name'],
                                            'measurement_types': {},
                                            'domains': {},
                                            'dimensions': {}
                                            }
     
-                db_dict['ndarray_types'][record_dict['ndarray_type_tag']] = ndarray_type_dict
+                db_dict['storage_types'][record_dict['storage_type_tag']] = storage_type_dict
                       
-                measurement_type_dict = ndarray_type_dict['measurement_types'].get(record_dict['measurement_type_tag'])
+                measurement_type_dict = storage_type_dict['measurement_types'].get(record_dict['measurement_type_tag'])
                 if measurement_type_dict is None:
                     measurement_type_dict = {'measurement_type_tag': record_dict['measurement_type_tag'],
                                                'measurement_metatype_id': record_dict['measurement_metatype_id'],
@@ -309,9 +309,9 @@ left join reference_system index_reference_system on index_reference_system.refe
                                                'measurement_type_name': record_dict['measurement_type_name']
                                                }
     
-                    ndarray_type_dict['measurement_types'][record_dict['measurement_type_tag']] = measurement_type_dict
+                    storage_type_dict['measurement_types'][record_dict['measurement_type_tag']] = measurement_type_dict
                       
-                domain_dict = ndarray_type_dict['domains'].get(record_dict['domain_tag'])
+                domain_dict = storage_type_dict['domains'].get(record_dict['domain_tag'])
                 if domain_dict is None:
                     domain_dict = {'domain_tag': record_dict['domain_tag'],
                                      'domain_id': record_dict['domain_id'],
@@ -323,13 +323,13 @@ left join reference_system index_reference_system on index_reference_system.refe
                                      'dimensions': {}
                                      }
     
-                    ndarray_type_dict['domains'][record_dict['domain_tag']] = domain_dict
+                    storage_type_dict['domains'][record_dict['domain_tag']] = domain_dict
                       
                 dimension_dict = domain_dict['dimensions'].get(record_dict['dimension_tag'])
                 if dimension_dict is None:
                     dimension_dict = {'dimension_tag': record_dict['dimension_tag'],
                                         'dimension_id': record_dict['dimension_id'],
-                                        'creation_order': record_dict['creation_order'],
+                                        'dimension_order': record_dict['dimension_order'],
                                         'dimension_extent': record_dict['dimension_extent'],
                                         'dimension_elements': record_dict['dimension_elements'],
                                         'dimension_cache': record_dict['dimension_cache'],
@@ -340,52 +340,52 @@ left join reference_system index_reference_system on index_reference_system.refe
                                         'index_reference_system_unit': record_dict['index_reference_system_unit']
                                         }
     
-                    # Store a reference both under domains and ndarray_type
+                    # Store a reference both under domains and storage_type
                     domain_dict['dimensions'][record_dict['dimension_tag']] = dimension_dict
-                    ndarray_type_dict['dimensions'][record_dict['dimension_tag']] = dimension_dict
+                    storage_type_dict['dimensions'][record_dict['dimension_tag']] = dimension_dict
                       
                       
     #            log_multiline(logger.info, db_dict, 'db_dict', '\t')
             result_dict[database.db_ref] = db_dict
             # End of per-DB function
 
-        return self.do_db_query(self.databases, [get_db_ndarray_config])
+        return self.do_db_query(self.databases, [get_db_storage_config])
     
-    def get_ndarrays(self, dimension_range_dict, ndarray_type_tags=[], exclusive=False):
+    def get_storage_units(self, dimension_range_dict, storage_type_tags=[], exclusive=False):
         '''
-        Function to return all ndarrays which fall in the specified dimensional ranges
+        Function to return all storage_units which fall in the specified dimensional ranges
         
         Parameter:
             dimension_range_dict: dict defined as {<dimension_tag>: (<min_value>, <max_value>), 
                                                    <dimension_tag>: (<min_value>, <max_value>)...}
-            ndarray_type_tags: list of ndarray_type_tags to include in query
-            exclusive: Boolean flag to indicate whether query should exclude ndarrays with lower dimensionality than the specified range
+            storage_type_tags: list of storage_type_tags to include in query
+            exclusive: Boolean flag to indicate whether query should exclude storage_units with lower dimensionality than the specified range
                                                    
         Return Value:
-            {<db_ref>: {<ndarray_type_tag>: {(<index1>, <index2>...<indexn>): <ndarray_info_dict>}}}
+            {<db_ref>: {<storage_type_tag>: {(<index1>, <index2>...<indexn>): <storage_info_dict>}}}
         '''
-        def get_db_ndarrays(dimension_range_dict, ndarray_type_tags, exclusive, database, result_dict):
+        def get_db_storage_units(dimension_range_dict, storage_type_tags, exclusive, database, result_dict):
             '''
-            Function to return all ndarrays which fall in the specified dimensional ranges
+            Function to return all storage_units which fall in the specified dimensional ranges
             
             Parameters:
                 dimension_range_dict: dict defined as {<dimension_tag>: (<min_value>, <max_value>), 
                                                        <dimension_tag>: (<min_value>, <max_value>)...}
-                ndarray_type_tags: list of ndarray_type_tags to include in query
-                exclusive: Boolean flag to indicate whether query should exclude ndarrays with lower dimensionality than the specified range
+                storage_type_tags: list of storage_type_tags to include in query
+                exclusive: Boolean flag to indicate whether query should exclude storage_units with lower dimensionality than the specified range
                 database: gdf.database object against which to run the query
                 result_dict: dict to contain the result
                                                                               
             Return Value:
-                {<ndarray_type_tag>: {(<index1>, <index2>...<indexn>): <ndarray_info_dict>}}
+                {<storage_type_tag>: {(<index1>, <index2>...<indexn>): <storage_info_dict>}}
                 
-                Sample <ndarray_info_dict> is as follows:
+                Sample <storage_info_dict> is as follows:
                     {'md5_checksum': None,
-                     'ndarray_bytes': None,
-                     'ndarray_id': 1409962010L,
-                     'ndarray_location': '/ndarrays/MODIS-Terra/MOD09/MODIS-Terra_MOD09_14_-4_2010.nc',
-                     'ndarray_type_id': 100L,
-                     'ndarray_version': 0,
+                     'storage_bytes': None,
+                     'storage_id': 1409962010L,
+                     'storage_location': '/storage_units/MODIS-Terra/MOD09/MODIS-Terra_MOD09_14_-4_2010.nc',
+                     'storage_type_id': 100L,
+                     'storage_version': 0,
                      't_index': 2010,
                      't_max': 1293840000.0,
                      't_min': 1262304000.0,
@@ -397,105 +397,105 @@ left join reference_system index_reference_system on index_reference_system.refe
                      'y_min': -40.0
                      }
             '''
-            db_ndarray_dict = {}
-            ndarray_type_dict = self._ndarray_config[database.db_ref]['ndarray_types']
+            db_storage_dict = {}
+            storage_type_dict = self._storage_config[database.db_ref]['storage_types']
             
-            for ndarray_type in ndarray_type_dict.values():
+            for storage_type in storage_type_dict.values():
                 
-                ndarray_type_tag = ndarray_type['ndarray_type_tag']
-                logger.debug('ndarray_type_tag = %s', ndarray_type_tag)
+                storage_type_tag = storage_type['storage_type_tag']
+                logger.debug('storage_type_tag = %s', storage_type_tag)
                 
-                # Skip any ndarray_types if they are not in a specified list
-                if ndarray_type_tags and (ndarray_type_tag not in ndarray_type_tags):
+                # Skip any storage_types if they are not in a specified list
+                if storage_type_tags and (storage_type_tag not in storage_type_tags):
                     continue
                 
-                # list of dimension_tags for ndarray_type sorted by creation order
-                ndarray_type_dimension_tags = [dimension['dimension_tag'] for dimension in sorted(ndarray_type['dimensions'].values(), key=lambda dimension: dimension['creation_order'])]
-                logger.debug('ndarray_type_dimension_tags = %s', ndarray_type_dimension_tags)
+                # list of dimension_tags for storage_type sorted by creation order
+                storage_type_dimension_tags = [dimension['dimension_tag'] for dimension in sorted(storage_type['dimensions'].values(), key=lambda dimension: dimension['dimension_order'])]
+                logger.debug('storage_type_dimension_tags = %s', storage_type_dimension_tags)
                 # list of dimension_tags for range query sorted by creation order
-                range_dimension_tags = [dimension_tag for dimension_tag in ndarray_type_dimension_tags if dimension_tag in dimension_range_dict.keys()]
+                range_dimension_tags = [dimension_tag for dimension_tag in storage_type_dimension_tags if dimension_tag in dimension_range_dict.keys()]
                 logger.debug('range_dimension_tags = %s', range_dimension_tags)
                 
-                # Skip this ndarray_type if exclusive flag set and dimensionality is less than query range dimnsionality
-                if exclusive and (set(ndarray_type_dimension_tags) < set(range_dimension_tags)):
+                # Skip this storage_type if exclusive flag set and dimensionality is less than query range dimnsionality
+                if exclusive and (set(storage_type_dimension_tags) < set(range_dimension_tags)):
                     continue
                 
-                # Create a dict of ndarrays keyed by indices for each ndarray_type
-                ndarray_dict = {}
+                # Create a dict of storage_units keyed by indices for each storage_type
+                storage_dict = {}
                 
-                SQL = '''-- Find ndarrays which fall in range
+                SQL = '''-- Find storage_units which fall in range
 select distinct'''
-                for dimension_tag in ndarray_type_dimension_tags:
+                for dimension_tag in storage_type_dimension_tags:
                     SQL +='''
-%s.ndarray_dimension_index as %s_index,
-%s.ndarray_dimension_min as %s_min,
-%s.ndarray_dimension_max as %s_max,'''.replace('%s', dimension_tag)
+%s.storage_dimension_index as %s_index,
+%s.storage_dimension_min as %s_min,
+%s.storage_dimension_max as %s_max,'''.replace('%s', dimension_tag)
                 SQL +='''
-ndarray.*
-from ndarray
+storage.*
+from storage
 '''                    
-                for dimension_tag in ndarray_type_dimension_tags:
+                for dimension_tag in storage_type_dimension_tags:
                     SQL += '''join (
 select *
 from dimension 
 join dimension_domain using(dimension_id)
-join ndarray_dimension using(dimension_id, domain_id)
-where ndarray_type_id = %d
-and ndarray_version = 0
+join storage_dimension using(dimension_id, domain_id)
+where storage_type_id = %d
+and storage_version = 0
 and dimension.dimension_tag = '%s'
-''' % (ndarray_type['ndarray_type_id'], 
+''' % (storage_type['storage_type_id'], 
    dimension_tag
    )
                     # Apply range filters
                     if dimension_tag in range_dimension_tags:
-                        SQL += '''and (ndarray_dimension_min < %f 
-    and ndarray_dimension_max > %f)
+                        SQL += '''and (storage_dimension_min < %f 
+    and storage_dimension_max > %f)
 ''' % (dimension_range_dict[dimension_tag][1], # Max
    dimension_range_dict[dimension_tag][0] # Min
    )
 
-                    SQL += ''') %s using(ndarray_type_id, ndarray_id, ndarray_version)
+                    SQL += ''') %s using(storage_type_id, storage_id, storage_version)
 ''' % (dimension_tag)
 
                 SQL +='''
-order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index;
+order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index;
 '''
             
                 log_multiline(logger.debug, SQL , 'SQL', '\t')
     
-                ndarrays = database.submit_query(SQL)
+                storage_units = database.submit_query(SQL)
                 
-                for record_dict in ndarrays.record_generator():
+                for record_dict in storage_units.record_generator():
                     log_multiline(logger.debug, record_dict, 'record_dict', '\t')
-                    ndarray_indices = tuple([record_dict[dimension_tag.lower() + '_index'] for dimension_tag in ndarray_type_dimension_tags])
+                    storage_indices = tuple([record_dict[dimension_tag.lower() + '_index'] for dimension_tag in storage_type_dimension_tags])
     
-                    ndarray_dict[ndarray_indices] = record_dict
+                    storage_dict[storage_indices] = record_dict
                     
-                if ndarray_dict:
-                    db_ndarray_dict[ndarray_type_tag] = ndarray_dict
+                if storage_dict:
+                    db_storage_dict[storage_type_tag] = storage_dict
                                 
                 #log_multiline(logger.info, db_dict, 'db_dict', '\t')
-            result_dict[database.db_ref] = db_ndarray_dict
+            result_dict[database.db_ref] = db_storage_dict
             # End of per-DB function
-        return self.do_db_query(self.databases, [get_db_ndarrays, dimension_range_dict, ndarray_type_tags, exclusive])
+        return self.do_db_query(self.databases, [get_db_storage_units, dimension_range_dict, storage_type_tags, exclusive])
     
     
     def solar_date(self, record_dict):
         '''
         Function which takes a record_dict containing all values from a query in the get_db_slices function 
-        and returns a tuple containing the solar date of the observation and the ndarray_type_tag value
+        and returns a tuple containing the solar date of the observation and the storage_type_tag value
         '''
         # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
         #TODO: Make more general (if possible)
         # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
         return (datetime.fromtimestamp(record_dict['slice_index_value'] + (record_dict['x_min'] + record_dict['x_max']) * 120).date(),
-                record_dict['ndarray_type_tag'])
+                record_dict['storage_type_tag'])
             
             
     def solar_year_month(self, record_dict):
         '''
         Function which takes a record_dict containing all values from a query in the get_db_slices function 
-        and returns a (year, month, ndarray_type_tag) tuple from the solar date of the observation
+        and returns a (year, month, storage_type_tag) tuple from the solar date of the observation
         '''
         # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
         #TODO: Make more general (if possible)
@@ -509,7 +509,7 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index;
     def solar_year(self, record_dict):
         '''
         Function which takes a record_dict containing all values from a query in the get_db_slices function 
-        and returns a tuple containing the solar year of the observation and the ndarray_type_tag value
+        and returns a tuple containing the solar year of the observation and the storage_type_tag value
         '''
         # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
         #TODO: Make more general (if possible)
@@ -522,7 +522,7 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index;
     def solar_month(self, record_dict):
         '''
         Function which takes a record_dict containing all values from a query in the get_db_slices function 
-        and returns a tuple containing the solar month of the observation and the ndarray_type_tag value
+        and returns a tuple containing the solar month of the observation and the storage_type_tag value
         '''
         # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
         #TODO: Make more general (if possible)
@@ -534,56 +534,56 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index;
             
     def get_slices(self, 
                    dimension_range_dict, 
-                   ndarray_type_tags=[], 
+                   storage_type_tags=[], 
                    exclusive=False,
                    slice_dimension='T',
                    slice_grouping_function=None):
         '''
-        Function to return all ndarrays which fall in the specified dimensional ranges
+        Function to return all slices which fall in the specified dimensional ranges
         
         Parameter:
             dimension_range_dict: dict defined as {<dimension_tag>: (<min_value>, <max_value>), 
                                                    <dimension_tag>: (<min_value>, <max_value>)...}
             slice_dimension: Dimension along which to group results
             slice_locality: Range (in slice_dimension units) in which to group slices
-            ndarray_type_tags: list of ndarray_type_tags to include in query
-            exclusive: Boolean flag to indicate whether query should exclude ndarrays with lower dimensionality than the specified range
+            storage_type_tags: list of storage_type_tags to include in query
+            exclusive: Boolean flag to indicate whether query should exclude storage_units with lower dimensionality than the specified range
                                                    
         Return Value:
             TODO: Make this correct
-            {<db_ref>: {<ndarray_type_tag>: {(<index1>, <index2>...<indexn>): <ndarray_info_dict>}}}
+            {<db_ref>: {<storage_type_tag>: {(<index1>, <index2>...<indexn>): <storage_info_dict>}}}
         '''
         
         def get_db_slices(dimension_range_dict, 
                           slice_dimension,
                           slice_grouping_function, 
-                          ndarray_type_tags, 
+                          storage_type_tags, 
                           exclusive, 
                           database, 
                           result_dict):
             '''
-            Function to return all slices in ndarrays which fall in the specified dimensional ranges
+            Function to return all slices in storage_units which fall in the specified dimensional ranges
             
             Parameters:
                 dimension_range_dict: dict defined as {<dimension_tag>: (<min_value>, <max_value>), 
                                                        <dimension_tag>: (<min_value>, <max_value>)...}
                 slice_dimension: Dimension along which to group results
                 slice_locality: Range (in slice_dimension units) in which to group slices
-                ndarray_type_tags: list of ndarray_type_tags to include in query
-                exclusive: Boolean flag to indicate whether query should exclude ndarrays with lower dimensionality than the specified range
+                storage_type_tags: list of storage_type_tags to include in query
+                exclusive: Boolean flag to indicate whether query should exclude storage_units with lower dimensionality than the specified range
                 database: gdf.database object against which to run the query
                 result_dict: dict to contain the result
                                                                               
             Return Value:
-                {<ndarray_type_tag>: {(<index1>, <index2>...<indexn>): <ndarray_info_dict>}}
+                {<storage_type_tag>: {(<index1>, <index2>...<indexn>): <storage_info_dict>}}
                 
-                Sample <ndarray_info_dict> is as follows:
+                Sample <storage_info_dict> is as follows:
                     {'md5_checksum': None,
-                     'ndarray_bytes': None,
-                     'ndarray_id': 1409962010L,
-                     'ndarray_location': '/ndarrays/MODIS-Terra/MOD09/MODIS-Terra_MOD09_14_-4_2010.nc',
-                     'ndarray_type_id': 100L,
-                     'ndarray_version': 0,
+                     'storage_bytes': None,
+                     'storage_id': 1409962010L,
+                     'storage_location': '/storage_units/MODIS-Terra/MOD09/MODIS-Terra_MOD09_14_-4_2010.nc',
+                     'storage_type_id': 100L,
+                     'storage_version': 0,
                      't_index': 2010,
                      't_max': 1293840000.0,
                      't_min': 1262304000.0,
@@ -596,69 +596,69 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index;
                      }
             '''
             db_slice_dict = {}
-            ndarray_type_dict = self._ndarray_config[database.db_ref]['ndarray_types']
+            storage_type_dict = self._storage_config[database.db_ref]['storage_types']
             
-            for ndarray_type in ndarray_type_dict.values():
+            for storage_type in storage_type_dict.values():
                 
-                ndarray_type_tag = ndarray_type['ndarray_type_tag']
-                logger.debug('ndarray_type_tag = %s', ndarray_type_tag)
+                storage_type_tag = storage_type['storage_type_tag']
+                logger.debug('storage_type_tag = %s', storage_type_tag)
             
                 
-                # Skip any ndarray_types if they are not in a specified list
-                if ndarray_type_tags and (ndarray_type_tag not in ndarray_type_tags):
+                # Skip any storage_types if they are not in a specified list
+                if storage_type_tags and (storage_type_tag not in storage_type_tags):
                     continue
                 
-                # list of dimension_tags for ndarray_type sorted by creation order
-                ndarray_type_dimension_tags = [dimension['dimension_tag'] for dimension in sorted(ndarray_type['dimensions'].values(), key=lambda dimension: dimension['creation_order'])]
-                logger.debug('ndarray_type_dimension_tags = %s', ndarray_type_dimension_tags)
+                # list of dimension_tags for storage_type sorted by creation order
+                storage_type_dimension_tags = [dimension['dimension_tag'] for dimension in sorted(storage_type['dimensions'].values(), key=lambda dimension: dimension['dimension_order'])]
+                logger.debug('storage_type_dimension_tags = %s', storage_type_dimension_tags)
                 # list of dimension_tags for range query sorted by creation order
-                range_dimension_tags = [dimension_tag for dimension_tag in ndarray_type_dimension_tags if dimension_tag in dimension_range_dict.keys()]
+                range_dimension_tags = [dimension_tag for dimension_tag in storage_type_dimension_tags if dimension_tag in dimension_range_dict.keys()]
                 logger.debug('range_dimension_tags = %s', range_dimension_tags)
                 
-                # Skip this ndarray_type if exclusive flag set and dimensionality is less than query range dimnsionality
-                if exclusive and (set(ndarray_type_dimension_tags) < set(range_dimension_tags)):
+                # Skip this storage_type if exclusive flag set and dimensionality is less than query range dimnsionality
+                if exclusive and (set(storage_type_dimension_tags) < set(range_dimension_tags)):
                     continue
                 
-                # Create a dict of ndarrays keyed by indices for each ndarray_type
-                ndarray_dict = {}
+                # Create a dict of storage units keyed by indices for each storage_type
+                storage_dict = {}
                 
-                SQL = '''-- Find ndarrays which fall in range
+                SQL = '''-- Find storage_units which fall in range
 select distinct'''
-                for dimension_tag in ndarray_type_dimension_tags:
+                for dimension_tag in storage_type_dimension_tags:
                     SQL +='''
-%s.ndarray_dimension_index as %s_index,
-%s.ndarray_dimension_min as %s_min,
-%s.ndarray_dimension_max as %s_max,'''.replace('%s', dimension_tag)
+%s.storage_dimension_index as %s_index,
+%s.storage_dimension_min as %s_min,
+%s.storage_dimension_max as %s_max,'''.replace('%s', dimension_tag)
                 SQL +='''
-ndarray.*,
+storage.*,
 dataset_index.*
-from ndarray
+from storage
 '''                    
-                for dimension_tag in ndarray_type_dimension_tags:
+                for dimension_tag in storage_type_dimension_tags:
                     SQL += '''join (
 select *
 from dimension 
 join dimension_domain using(dimension_id)
-join ndarray_dimension using(dimension_id, domain_id)
-where ndarray_type_id = %d
-and ndarray_version = 0
+join storage_dimension using(dimension_id, domain_id)
+where storage_type_id = %d
+and storage_version = 0
 and dimension.dimension_tag = '%s'
-''' % (ndarray_type['ndarray_type_id'], 
+''' % (storage_type['storage_type_id'], 
    dimension_tag
    )
                     # Apply range filters
                     if dimension_tag in range_dimension_tags:
-                        SQL += '''and (ndarray_dimension_min < %f 
-    and ndarray_dimension_max > %f)
+                        SQL += '''and (storage_dimension_min < %f 
+    and storage_dimension_max > %f)
 ''' % (dimension_range_dict[dimension_tag][1], # Max
    dimension_range_dict[dimension_tag][0] # Min
    )
 
-                    SQL += ''') %s using(ndarray_type_id, ndarray_id, ndarray_version)
+                    SQL += ''') %s using(storage_type_id, storage_id, storage_version)
 ''' % (dimension_tag)
 
                 SQL +='''
-    join ndarray_dataset using (ndarray_type_id, ndarray_id, ndarray_version)
+    join storage_dataset using (storage_type_id, storage_id, storage_version)
     join (
       select coalesce(indexing_value, (min_value+max_value)/2) as slice_index_value,
       *
@@ -670,22 +670,22 @@ and dimension.dimension_tag = '%s'
 ''' % (slice_dimension)
 
                 SQL +='''
-order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index, slice_index_value;
+order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_index_value;
 '''            
                 log_multiline(logger.debug, SQL , 'SQL', '\t')
     
-                ndarrays = database.submit_query(SQL)
+                storage_units = database.submit_query(SQL)
                 
-                last_ndarray_id = -1 # Initial impossible value
-                ndarray_slice_index = 0
-                for record_dict in ndarrays.record_generator():
+                last_storage_id = -1 # Initial impossible value
+                storage_slice_index = 0
+                for record_dict in storage_units.record_generator():
                     
-                    # Determine position of slice in ndarray
-                    if record_dict['ndarray_id'] == last_ndarray_id:
-                        ndarray_slice_index += 1
+                    # Determine position of slice in storage
+                    if record_dict['storage_id'] == last_storage_id:
+                        storage_slice_index += 1
                     else:
-                        ndarray_slice_index = 0
-                        last_ndarray_id = record_dict['ndarray_id']
+                        storage_slice_index = 0
+                        last_storage_id = record_dict['storage_id']
                         
                     # Don't add this slice to the result dict if a range is set for the slicing dimension and it's outside that range
                     if (slice_dimension in dimension_range_dict.keys() and
@@ -695,16 +695,16 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index, slice_i
                         ):
                         continue
                     
-                    record_dict.update({'ndarray_type_tag': ndarray_type_tag})
-                    record_dict.update({'slice_index': ndarray_slice_index})
+                    record_dict.update({'storage_type_tag': storage_type_tag})
+                    record_dict.update({'slice_index': storage_slice_index})
                     record_dict.update({'slice_group': slice_grouping_function(record_dict)})
                                         
 #                    log_multiline(logger.debug, record_dict, 'record_dict', '\t')
-                    ndarray_indices = tuple([record_dict[dimension_tag.lower() + '_index'] for dimension_tag in ndarray_type_dimension_tags])
-                    ndarray_dict[(tuple(ndarray_indices), ndarray_slice_index)] = record_dict
+                    storage_indices = tuple([record_dict[dimension_tag.lower() + '_index'] for dimension_tag in storage_type_dimension_tags])
+                    storage_dict[(tuple(storage_indices), storage_slice_index)] = record_dict
                     
-                if ndarray_dict:
-                    db_slice_dict[ndarray_type_tag] = ndarray_dict
+                if storage_dict:
+                    db_slice_dict[storage_type_tag] = storage_dict
                                 
                 #log_multiline(logger.info, db_dict, 'db_dict', '\t')
             result_dict[database.db_ref] = db_slice_dict
@@ -716,7 +716,7 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index, slice_i
                                                          dimension_range_dict, 
                                                          slice_dimension, 
                                                          slice_grouping_function, 
-                                                         ndarray_type_tags, 
+                                                         storage_type_tags, 
                                                          exclusive
                                                          ]
                                         )
@@ -727,13 +727,13 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index, slice_i
         '''
         result_dict = {}
         for db_ref in interim_dict.keys():
-            for ndarray_type_tag in interim_dict[db_ref].keys():
-                for slice_ref in interim_dict[db_ref][ndarray_type_tag].keys():
-                    slice_dict = interim_dict[db_ref][ndarray_type_tag][slice_ref]
+            for storage_type_tag in interim_dict[db_ref].keys():
+                for slice_ref in interim_dict[db_ref][storage_type_tag].keys():
+                    slice_dict = interim_dict[db_ref][storage_type_tag][slice_ref]
                     
                     # Add extra information 
                     slice_dict['db_ref'] = db_ref
-                    slice_dict['ndarray_type_tag'] = ndarray_type_tag
+                    slice_dict['storage_type_tag'] = storage_type_tag
                     
                     slice_group = slice_dict['slice_group']
                     slice_list = result_dict.get(slice_group)
@@ -746,7 +746,7 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index, slice_i
     
     def get_grouped_slices(self, 
                    dimension_range_dict, 
-                   ndarray_type_tags=[], 
+                   storage_type_tags=[], 
                    exclusive=False,
                    slice_dimension='T',
                    slice_grouping_function=None):
@@ -755,7 +755,7 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index, slice_i
         '''
         
         interim_dict = self.get_slices(dimension_range_dict, 
-                   ndarray_type_tags, 
+                   storage_type_tags, 
                    exclusive,
                    slice_dimension,
                    slice_grouping_function)
@@ -786,7 +786,7 @@ order by ''' + '_index, '.join(ndarray_type_dimension_tags) + '''_index, slice_i
         return self._databases
 
     @property
-    def ndarray_config(self):
-        return self._ndarray_config
+    def storage_config(self):
+        return self._storage_config
     
         

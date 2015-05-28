@@ -37,7 +37,7 @@ Tests for the gdf._SQLAlchemyDB.py module.
 
 
 import unittest
-from gdf._sqlalchemy_db import SQLAlchemyDB, NDarrayType, Dimension, Domain
+from gdf._sqlalchemy_db import SQLAlchemyDB, StorageType, Dimension, Domain
 
 
 #
@@ -77,7 +77,7 @@ class TestSQLAlchemyDB(unittest.TestCase):
                                self.TEST_PASSWORD
                                )
         
-        assert len(test_db.ndarray_types) > 0, 'No NDArrayType objects created'
+        assert len(test_db.storage_types) > 0, 'No NDArrayType objects created'
         
 
 
