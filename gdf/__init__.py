@@ -188,7 +188,6 @@ class GDF(object):
 
         log_multiline(logger.debug, result_dict, 'result_dict', '\t')
         return result_dict
-        
 
     def get_storage_config(self):
         '''
@@ -761,7 +760,6 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                    slice_grouping_function)
         
         return self.get_grouped_slices_from_dict(interim_dict)
-
         
     
     # Define properties for GDF class
@@ -788,5 +786,3 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
     @property
     def storage_config(self):
         return self._storage_config
-    
-        
