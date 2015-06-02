@@ -2,7 +2,9 @@ import os
 import sys
 import threading
 import traceback
-from datetime import datetime
+import numpy as np
+from datetime import datetime, date, timedelta
+import pytz
 
 from _database import Database, CachedResultSet
 from _arguments import CommandLineArgs
@@ -786,3 +788,102 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
     @property
     def storage_config(self):
         return self._storage_config
+    
+    def get_descriptor(self, query_parameter):
+        '''
+        query_parameter = \
+        {
+        'storage_types':
+            ['LS5TM', 'LS7ETM', 'LS8OLITIRS'],
+        'dimensions': {
+             'x': {
+                   'range': (140, 142),
+                   'crs': 'EPSG:4326'
+                   },
+             'y': {
+                   'range': (-36, -35),
+                   'crs': 'EPSG:4326'
+                   },
+             't': {
+                   'range': (1293840000, 1325376000),
+                   'crs': 'SSE', # Seconds since epoch
+                   'grouping_function': '<e.g. gdf.solar_day>'
+                   }
+             },
+        'polygon': '<some kind of text representation of a polygon for PostGIS to sort out>' # We won't be doing this in the pilot
+        }
+        '''
+        
+        # Create a dummy array of days since 1/1/1970 between min and max timestamps
+        min_date_ordinal = date.fromtimestamp(1293840000).toordinal()
+        max_date_ordinal = date.fromtimestamp(1325376000).toordinal()
+        epoch_date_ordinal = date(1970, 1, 1).toordinal()
+        date_array = np.array(range(min_date_ordinal - epoch_date_ordinal, max_date_ordinal - epoch_date_ordinal), dtype=np.int16)
+        
+        descriptor = {
+            'LS5TM': { # storage_type identifier
+                 'dimensions': ['x', 'y', 't'],
+                 'variables': { # These will be the variables which can be accessed as arrays
+                       'B10': {
+                            'datatype': 'int16',
+                            'nodata_value': -999
+                            },
+                       'B20': {
+                            'datatype': 'int16',
+                            'nodata_value': -999
+                            },
+                       'B30': {
+                            'datatype': 'int16',
+                            'nodata_value': -999
+                            },
+                       'B40': {
+                            'datatype': 'int16',
+                            'nodata_value': -999
+                            },
+                       'B50': {
+                            'datatype': 'int16',
+                            'nodata_value': -999
+                            },
+                       'B70': {
+                            'datatype': 'int16',
+                            'nodata_value': -999
+                            },
+                       'PQ': { # There is no reason why we can't put PQ in with NBAR if we want to
+                            'datatype': 'int16'
+                            }
+                       },
+                 'result_min': (140, -36, 1293840000),
+                 'result_max': (141, -35, 1325376000),
+                 'overlap': (0, 0, 0), # We won't be doing this in the pilot
+                 'buffer_size': (128, 128, 128), # Chunk size to use
+                 'result_shape': (8000, 8000, 40), # Overall size of result set
+                 'irregular_indices': { # Regularly indexed dimensions (e.g. x & y) won't need to be specified, but we could also do that here if we wanted to
+                       't': date_array # Array of days since 1/1/1970
+                       },
+                 'storage_units': { # Should wind up with 8 for the 2x2x2 query above
+                       (140, -36, 2010): { # Storage unit indices
+                            'storage_min': (140, -36, 1293840000),
+                            'storage_max': (141, -35, 1293800400),
+                            'storage_shape': (4000, 4000, 24)
+                            },
+                       (140, -36, 2011): { # Storage unit indices
+                            'storage_min': (140, -36, 1293800400),
+                            'storage_max': (141, -35, 1325376000),
+                            'storage_shape': (4000, 4000, 23)
+                            },
+                       (140, -35, 2011): { # Storage unit indices
+                            'storage_min': (140, -36, 1293840000),
+                            'storage_max': (141, -35, 1293800400),
+                            'storage_shape': (4000, 4000, 20)
+                            }
+            #          ...
+            #          <more storage_unit sub-descriptors>
+            #          ...
+                       }
+            #    ...
+            #    <more storage unit type sub-descriptors>
+            #    ...
+                 }
+            }
+
+        return descriptor
