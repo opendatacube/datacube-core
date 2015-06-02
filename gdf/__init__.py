@@ -5,6 +5,7 @@ import traceback
 import numpy as np
 from datetime import datetime, date, timedelta
 import pytz
+import collections
 
 from _database import Database, CachedResultSet
 from _arguments import CommandLineArgs
@@ -15,8 +16,8 @@ from EOtools.utils import log_multiline
 
 # Set handler for root logger to standard output 
 console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(logging.INFO)
-#console_handler.setLevel(logging.DEBUG)
+#console_handler.setLevel(logging.INFO)
+console_handler.setLevel(logging.DEBUG)
 console_formatter = logging.Formatter('%(message)s')
 console_handler.setFormatter(console_formatter)
 logging.root.addHandler(console_handler)
@@ -47,7 +48,7 @@ class GDF(object):
         
         Returns: dict {<db_ref>: {<param_name>: <param_value>,... },... }
         '''
-        config_dict = {}
+        config_dict = collections.OrderedDict() # Need to preserve order of config files
         
         # Use default config file if none provided
         config_files_string = self._command_line_params['config_files'] or os.path.join(self._code_root, GDF.DEFAULT_CONFIG_FILE)
@@ -59,29 +60,33 @@ class GDF(object):
         for config_file in self._config_files:
             config_file_object = ConfigFile(config_file)
         
-            # Merge all configuration sections from individual config files to config dict
-            config_dict.update(config_file_object.configuration)
+            # Merge all configuration sections from individual config files to config dict, ignoring duplicate db_refs           
+            for db_ref in config_file_object.configuration.keys():
+                if db_ref in config_dict.keys():
+                    logger.warning('Duplicate db_ref "%s" in config file %s ignored' % (db_ref, config_file))
+                else:
+                    config_dict[db_ref] = config_file_object.configuration[db_ref]
         
         log_multiline(logger.debug, config_dict, 'config_dict', '\t')
         return config_dict
     
     def get_dbs(self):
         '''
-        Function to return a dict of database objects keyed by db_ref
+        Function to return an ordered dict of database objects keyed by db_ref
         '''
-        database_dict = {}
+        database_dict = collections.OrderedDict()
         
         # Create a database connection for every valid configuration
-        for section_name in sorted(self._configuration.keys()):
-            section_dict = self._configuration[section_name]
+        for db_ref in self._configuration.keys():
+            db_dict = self._configuration[db_ref]
             try:
-                host = section_dict['host']
-                port = section_dict['port']
-                dbname = section_dict['dbname']
-                user = section_dict['user']
-                password = section_dict['password']
+                host = db_dict['host']
+                port = db_dict['port']
+                dbname = db_dict['dbname']
+                user = db_dict['user']
+                password = db_dict['password']
                 
-                database = Database(db_ref=section_name,
+                database = Database(db_ref=db_ref,
                                     host=host, 
                                     port=port, 
                                     dbname=dbname, 
@@ -92,9 +97,9 @@ class GDF(object):
                 
                 database.submit_query('select 1 as test_field') # Test DB connection
                 
-                database_dict[section_name] = database
+                database_dict[db_ref] = database
             except Exception, e:
-                logger.warning('Unable to connect to database for %s: %s', section_name, e.message)
+                logger.warning('Unable to connect to database for %s: %s', db_ref, e.message)
 
         log_multiline(logger.debug, database_dict, 'database_dict', '\t')
         return database_dict
@@ -193,31 +198,40 @@ class GDF(object):
 
     def get_storage_config(self):
         '''
-        Function to return a dict with details of all dimensions managed in databases keyed as follows:
+        Function to return a dict with details of all storage unit types managed in databases keyed as follows:
           
         Returns: Dict keyed as follows:
           
-            <db_ref>
-                'storage_types'
-                    <storage_type_tag>
-                        'measurement_types'
-                            <measurement_type_tag>
-                            ...
-                        'domains'
-                            <domain_name>
-                                'dimensions'
-                                    <dimension_tag>
-                                    ...
-                            ...
-                        'dimensions'
-                            <dimension_tag>
-                            ...
+            <storage_type_tag>: {
+                'db_ref':
+                <db_ref>,
+                'measurement_types': {
+                    <measurement_type_tag>: {
+                        <measurement_type_attribute_name>: <measurement_type_attribute_value>,
+                        ...
+                        }
                     ...
+                    }
+                'domains': {
+                    <domain_name>
+                        'dimensions':
+                            <dimension_tag>,
+                            ...
+                            }
+                    ...
+                    }
+                'dimensions'
+                    <dimension_tag>
+                    ...
+                    }
+                ...
+                }
             ...
-         '''
+            }
+        '''
         def get_db_storage_config(database, result_dict):
             '''
-            Function to return a dict with details of all dimensions managed in a single database 
+            Function to return a dict with details of all storage types managed in a single database 
             
             Parameters:
                 database: gdf.database object against which to run the query
@@ -226,7 +240,7 @@ class GDF(object):
             This is currently a bit ugly because it retrieves the de-normalised data in a single query and then has to
             build the tree from the flat result set. It could be done in a prettier (but slower) way with multiple queries
             '''
-            db_dict = {'storage_types': {}}
+            db_storage_config_dict = {}
             
             try:
                 storage_type_filter_list = self._configuration[database.db_ref]['storage_types'].split(',')
@@ -288,17 +302,18 @@ left join reference_system index_reference_system on index_reference_system.refe
             for record_dict in storage_types.record_generator():
                 log_multiline(logger.debug, record_dict, 'record_dict', '\t')
                   
-                storage_type_dict = db_dict['storage_types'].get(record_dict['storage_type_tag'])
+                storage_type_dict = db_storage_config_dict.get(record_dict['storage_type_tag'])
                 if storage_type_dict is None:
-                    storage_type_dict = {'storage_type_tag': record_dict['storage_type_tag'],
-                                           'storage_type_id': record_dict['storage_type_id'],
-                                           'storage_type_name': record_dict['storage_type_name'],
-                                           'measurement_types': {},
-                                           'domains': {},
-                                           'dimensions': {}
-                                           }
+                    storage_type_dict = {'db_ref': database.db_ref,
+                                         'storage_type_tag': record_dict['storage_type_tag'],
+                                         'storage_type_id': record_dict['storage_type_id'],
+                                         'storage_type_name': record_dict['storage_type_name'],
+                                         'measurement_types': {},
+                                         'domains': {},
+                                         'dimensions': {}
+                                        }
     
-                db_dict['storage_types'][record_dict['storage_type_tag']] = storage_type_dict
+                db_storage_config_dict[record_dict['storage_type_tag']] = storage_type_dict
                       
                 measurement_type_dict = storage_type_dict['measurement_types'].get(record_dict['measurement_type_tag'])
                 if measurement_type_dict is None:
@@ -347,10 +362,20 @@ left join reference_system index_reference_system on index_reference_system.refe
                       
                       
     #            log_multiline(logger.info, db_dict, 'db_dict', '\t')
-            result_dict[database.db_ref] = db_dict
+            result_dict[database.db_ref] = db_storage_config_dict
             # End of per-DB function
 
-        return self.do_db_query(self.databases, [get_db_storage_config])
+        storage_config_dict = self.do_db_query(self.databases, [get_db_storage_config])
+        
+        # Filter out duplicate storage unit types. Only keep first definition
+        filtered_storage_config_dict = {}
+        for db_ref in self._configuration.keys():
+            for storage_unit_type in storage_config_dict[db_ref].keys():
+                if storage_unit_type in filtered_storage_config_dict.keys():
+                    logger.warning('Ignored duplicate storage unit type "%s" in DB "%s"' % (storage_unit_type, db_ref))
+                else:
+                    filtered_storage_config_dict[storage_unit_type] = storage_config_dict[db_ref][storage_unit_type]
+        return filtered_storage_config_dict
     
     def get_storage_units(self, dimension_range_dict, storage_type_tags=[], exclusive=False):
         '''
@@ -399,9 +424,7 @@ left join reference_system index_reference_system on index_reference_system.refe
                      }
             '''
             db_storage_dict = {}
-            storage_type_dict = self._storage_config[database.db_ref]['storage_types']
-            
-            for storage_type in storage_type_dict.values():
+            for storage_type in self._storage_config.values():
                 
                 storage_type_tag = storage_type['storage_type_tag']
                 logger.debug('storage_type_tag = %s', storage_type_tag)
@@ -597,9 +620,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index;
                      }
             '''
             db_slice_dict = {}
-            storage_type_dict = self._storage_config[database.db_ref]['storage_types']
-            
-            for storage_type in storage_type_dict.values():
+            for storage_type in self._storage_config.values():
                 
                 storage_type_tag = storage_type['storage_type_tag']
                 logger.debug('storage_type_tag = %s', storage_type_tag)

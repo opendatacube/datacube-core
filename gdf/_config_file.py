@@ -37,6 +37,7 @@ import sys
 import os
 import logging
 import ConfigParser
+import collections
 
 from EOtools.utils import log_multiline
 
@@ -50,7 +51,7 @@ class ConfigFile(object):
         config_parser = ConfigParser.SafeConfigParser(allow_no_value=True)
         config_parser.read(self._path)
         
-        config_dict = {}
+        config_dict = collections.OrderedDict() # Need to preserve order of sections
         for section_name in config_parser.sections():
             section_dict = {}
             config_dict[section_name.lower()] = section_dict
