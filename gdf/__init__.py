@@ -23,7 +23,7 @@ console_handler.setFormatter(console_formatter)
 logging.root.addHandler(console_handler)
 
 logger = logging.getLogger(__name__)
-#logger.setLevel(logging.DEBUG) # Logging level for this module
+logger.setLevel(logging.DEBUG) # Logging level for this module
 
 thread_exception = None
 
@@ -33,6 +33,7 @@ class GDF(object):
     Manages configuration and database connections.
     '''
     DEFAULT_CONFIG_FILE = 'gdf_default.conf' # N.B: Assumed to reside in code root directory
+    EPOCH_DATE_ORDINAL = date(1970, 1, 1).toordinal()
     
     def get_command_line_params(self):
         '''
@@ -273,6 +274,7 @@ dimension_extent,
 dimension_elements,
 dimension_cache,
 dimension_origin,
+indexing_type_name as indexing_type,
 index_reference_system.reference_system_id as index_reference_system_id,
 index_reference_system.reference_system_name as index_reference_system_name,
 index_reference_system.reference_system_definition as index_reference_system_definition,
@@ -350,6 +352,7 @@ left join reference_system index_reference_system on index_reference_system.refe
                                         'dimension_elements': record_dict['dimension_elements'],
                                         'dimension_cache': record_dict['dimension_cache'],
                                         'dimension_origin': record_dict['dimension_origin'],
+                                        'indexing_type': record_dict['indexing_type'],
                                         'index_reference_system_id': record_dict['index_reference_system_id'],
                                         'index_reference_system_name': record_dict['index_reference_system_name'],
                                         'index_reference_system_definition': record_dict['index_reference_system_definition'],
@@ -507,53 +510,61 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index;
     def solar_date(self, record_dict):
         '''
         Function which takes a record_dict containing all values from a query in the get_db_slices function 
-        and returns a tuple containing the solar date of the observation and the storage_type_tag value
+        and returns the solar date of the observation
         '''
         # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
         #TODO: Make more general (if possible)
         # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
-        return (datetime.fromtimestamp(record_dict['slice_index_value'] + (record_dict['x_min'] + record_dict['x_max']) * 120).date(),
-                record_dict['storage_type_tag'])
+        return datetime.fromtimestamp(record_dict['slice_index_value'] + (record_dict['x_min'] + record_dict['x_max']) * 120).date()
             
+            
+    def solar_day_since_epoch(self, record_dict):
+        '''
+        Function which takes a record_dict containing all values from a query in the get_db_slices function 
+        and returns the number of days since 1/1/1970
+        '''
+        # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
+        #TODO: Make more general (if possible)
+        # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
+        solar_date = self.solar_date(record_dict)
+        return solar_date.toordinal() - GDF.EPOCH_DATE_ORDINAL
+    
             
     def solar_year_month(self, record_dict):
         '''
         Function which takes a record_dict containing all values from a query in the get_db_slices function 
-        and returns a (year, month, storage_type_tag) tuple from the solar date of the observation
+        and returns a (year, month) tuple from the solar date of the observation
         '''
         # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
         #TODO: Make more general (if possible)
         # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
-        solar_date_tuple = self.solar_date(record_dict)
-        return (solar_date_tuple[0].year, 
-                solar_date_tuple[0].month,
-                solar_date_tuple[1])
+        solar_date = self.solar_date(record_dict)
+        return (solar_date.year, 
+                solar_date.month)
     
             
     def solar_year(self, record_dict):
         '''
         Function which takes a record_dict containing all values from a query in the get_db_slices function 
-        and returns a tuple containing the solar year of the observation and the storage_type_tag value
+        and returns the solar year of the observation
         '''
         # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
         #TODO: Make more general (if possible)
         # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
-        solar_date_tuple = self.solar_date(record_dict)
-        return (solar_date_tuple[0].year,
-                solar_date_tuple[1])
+        solar_date = self.solar_date(record_dict)
+        return solar_date.year
             
             
     def solar_month(self, record_dict):
         '''
         Function which takes a record_dict containing all values from a query in the get_db_slices function 
-        and returns a tuple containing the solar month of the observation and the storage_type_tag value
+        and returns the solar month of the observation
         '''
         # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
         #TODO: Make more general (if possible)
         # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
-        solar_date_tuple = self.solar_date(record_dict)
-        return (solar_date_tuple[0].month,
-                solar_date_tuple[1])
+        solar_date = self.solar_date(record_dict)
+        return solar_date.month
             
             
     def get_slices(self, 
@@ -641,11 +652,16 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index;
                 if exclusive and (set(storage_type_dimension_tags) < set(range_dimension_tags)):
                     continue
                 
+                #===============================================================
+                # # list of dimension_tags for i sorted by creation order
+                # irregular_dimensions = [dimension_tag for dimension_tag in storage_type_dimension_tags if storage_type['dimensions'][dimension_tag]['indexing_type'] == 'irregular']
+                #===============================================================
+                
                 # Create a dict of storage units keyed by indices for each storage_type
                 storage_dict = {}
                 
-                SQL = '''-- Find storage_units which fall in range
-select distinct'''
+                SQL = '''-- Find all slices in storage_units which fall in range for storage type %s
+select distinct''' % storage_type_tag
                 for dimension_tag in storage_type_dimension_tags:
                     SQL +='''
 %s.storage_dimension_index as %s_index,
@@ -732,7 +748,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
             result_dict[database.db_ref] = db_slice_dict
             # End of per-DB function
             
-        slice_grouping_function = slice_grouping_function or self.solar_date
+        slice_grouping_function = slice_grouping_function or self.solar_day_since_epoch # Default to solar day since epoch
         
         return self.do_db_query(self.databases, [get_db_slices, 
                                                          dimension_range_dict, 
@@ -757,7 +773,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                     slice_dict['db_ref'] = db_ref
                     slice_dict['storage_type_tag'] = storage_type_tag
                     
-                    slice_group = slice_dict['slice_group']
+                    slice_group = (slice_dict['slice_group'], storage_type_tag)
                     slice_list = result_dict.get(slice_group)
                     if not slice_list:
                         slice_list = []
@@ -835,76 +851,79 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         }
         '''
         
-        # Create a dummy array of days since 1/1/1970 between min and max timestamps
-        min_date_ordinal = date.fromtimestamp(1293840000).toordinal()
-        max_date_ordinal = date.fromtimestamp(1325376000).toordinal()
-        epoch_date_ordinal = date(1970, 1, 1).toordinal()
-        date_array = np.array(range(min_date_ordinal - epoch_date_ordinal, max_date_ordinal - epoch_date_ordinal), dtype=np.int16)
+        #=======================================================================
+        # # Create a dummy array of days since 1/1/1970 between min and max timestamps
+        # min_date_ordinal = date.fromtimestamp(1293840000).toordinal()
+        # max_date_ordinal = date.fromtimestamp(1325376000).toordinal()
+        # date_array = np.array(range(min_date_ordinal - GDF.EPOCH_DATE_ORDINAL, max_date_ordinal - GDF.EPOCH_DATE_ORDINAL), dtype=np.int16)
+        # 
+        # descriptor = {
+        #     'LS5TM': { # storage_type identifier
+        #          'dimensions': ['x', 'y', 't'],
+        #          'variables': { # These will be the variables which can be accessed as arrays
+        #                'B10': {
+        #                     'datatype': 'int16',
+        #                     'nodata_value': -999
+        #                     },
+        #                'B20': {
+        #                     'datatype': 'int16',
+        #                     'nodata_value': -999
+        #                     },
+        #                'B30': {
+        #                     'datatype': 'int16',
+        #                     'nodata_value': -999
+        #                     },
+        #                'B40': {
+        #                     'datatype': 'int16',
+        #                     'nodata_value': -999
+        #                     },
+        #                'B50': {
+        #                     'datatype': 'int16',
+        #                     'nodata_value': -999
+        #                     },
+        #                'B70': {
+        #                     'datatype': 'int16',
+        #                     'nodata_value': -999
+        #                     },
+        #                'PQ': { # There is no reason why we can't put PQ in with NBAR if we want to
+        #                     'datatype': 'int16'
+        #                     }
+        #                },
+        #          'result_min': (140, -36, 1293840000),
+        #          'result_max': (141, -35, 1325376000),
+        #          'overlap': (0, 0, 0), # We won't be doing this in the pilot
+        #          'buffer_size': (128, 128, 128), # Chunk size to use
+        #          'result_shape': (8000, 8000, 40), # Overall size of result set
+        #          'irregular_indices': { # Regularly indexed dimensions (e.g. x & y) won't need to be specified, but we could also do that here if we wanted to
+        #                't': date_array # Array of days since 1/1/1970
+        #                },
+        #          'storage_units': { # Should wind up with 8 for the 2x2x2 query above
+        #                (140, -36, 2010): { # Storage unit indices
+        #                     'storage_min': (140, -36, 1293840000),
+        #                     'storage_max': (141, -35, 1293800400),
+        #                     'storage_shape': (4000, 4000, 24)
+        #                     },
+        #                (140, -36, 2011): { # Storage unit indices
+        #                     'storage_min': (140, -36, 1293800400),
+        #                     'storage_max': (141, -35, 1325376000),
+        #                     'storage_shape': (4000, 4000, 23)
+        #                     },
+        #                (140, -35, 2011): { # Storage unit indices
+        #                     'storage_min': (140, -36, 1293840000),
+        #                     'storage_max': (141, -35, 1293800400),
+        #                     'storage_shape': (4000, 4000, 20)
+        #                     }
+        #     #          ...
+        #     #          <more storage_unit sub-descriptors>
+        #     #          ...
+        #                }
+        #     #    ...
+        #     #    <more storage unit type sub-descriptors>
+        #     #    ...
+        #          }
+        #     }
+        #=======================================================================
+        descriptor = {}
         
-        descriptor = {
-            'LS5TM': { # storage_type identifier
-                 'dimensions': ['x', 'y', 't'],
-                 'variables': { # These will be the variables which can be accessed as arrays
-                       'B10': {
-                            'datatype': 'int16',
-                            'nodata_value': -999
-                            },
-                       'B20': {
-                            'datatype': 'int16',
-                            'nodata_value': -999
-                            },
-                       'B30': {
-                            'datatype': 'int16',
-                            'nodata_value': -999
-                            },
-                       'B40': {
-                            'datatype': 'int16',
-                            'nodata_value': -999
-                            },
-                       'B50': {
-                            'datatype': 'int16',
-                            'nodata_value': -999
-                            },
-                       'B70': {
-                            'datatype': 'int16',
-                            'nodata_value': -999
-                            },
-                       'PQ': { # There is no reason why we can't put PQ in with NBAR if we want to
-                            'datatype': 'int16'
-                            }
-                       },
-                 'result_min': (140, -36, 1293840000),
-                 'result_max': (141, -35, 1325376000),
-                 'overlap': (0, 0, 0), # We won't be doing this in the pilot
-                 'buffer_size': (128, 128, 128), # Chunk size to use
-                 'result_shape': (8000, 8000, 40), # Overall size of result set
-                 'irregular_indices': { # Regularly indexed dimensions (e.g. x & y) won't need to be specified, but we could also do that here if we wanted to
-                       't': date_array # Array of days since 1/1/1970
-                       },
-                 'storage_units': { # Should wind up with 8 for the 2x2x2 query above
-                       (140, -36, 2010): { # Storage unit indices
-                            'storage_min': (140, -36, 1293840000),
-                            'storage_max': (141, -35, 1293800400),
-                            'storage_shape': (4000, 4000, 24)
-                            },
-                       (140, -36, 2011): { # Storage unit indices
-                            'storage_min': (140, -36, 1293800400),
-                            'storage_max': (141, -35, 1325376000),
-                            'storage_shape': (4000, 4000, 23)
-                            },
-                       (140, -35, 2011): { # Storage unit indices
-                            'storage_min': (140, -36, 1293840000),
-                            'storage_max': (141, -35, 1293800400),
-                            'storage_shape': (4000, 4000, 20)
-                            }
-            #          ...
-            #          <more storage_unit sub-descriptors>
-            #          ...
-                       }
-            #    ...
-            #    <more storage unit type sub-descriptors>
-            #    ...
-                 }
-            }
-
+        
         return descriptor
