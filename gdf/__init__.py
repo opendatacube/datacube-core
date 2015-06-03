@@ -16,14 +16,14 @@ from EOtools.utils import log_multiline
 
 # Set handler for root logger to standard output 
 console_handler = logging.StreamHandler(sys.stdout)
-#console_handler.setLevel(logging.INFO)
-console_handler.setLevel(logging.DEBUG)
+console_handler.setLevel(logging.INFO)
+#console_handler.setLevel(logging.DEBUG)
 console_formatter = logging.Formatter('%(message)s')
 console_handler.setFormatter(console_formatter)
 logging.root.addHandler(console_handler)
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG) # Logging level for this module
+#logger.setLevel(logging.DEBUG) # Logging level for this module
 
 thread_exception = None
 
