@@ -5,6 +5,7 @@ import traceback
 import numpy as np
 from datetime import datetime, date, timedelta
 import pytz
+import calendar
 import collections
 
 from _database import Database, CachedResultSet
@@ -16,16 +17,22 @@ from EOtools.utils import log_multiline
 
 # Set handler for root logger to standard output 
 console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(logging.INFO)
-#console_handler.setLevel(logging.DEBUG)
+#console_handler.setLevel(logging.INFO)
+console_handler.setLevel(logging.DEBUG)
 console_formatter = logging.Formatter('%(message)s')
 console_handler.setFormatter(console_formatter)
 logging.root.addHandler(console_handler)
 
 logger = logging.getLogger(__name__)
-#logger.setLevel(logging.DEBUG) # Logging level for this module
+#logger.setLevel(logging.DEBUG) # Initial logging level for this module
 
 thread_exception = None
+
+def dt2secs(datetime_param):
+    '''
+    Helper function to convert datetime into seconds since epoch. Naive datetime is treated as UTC
+    '''
+    return calendar.timegm(datetime_param.timetuple())
 
 class GDF(object):
     '''
@@ -117,7 +124,8 @@ class GDF(object):
         self._command_line_params = self.get_command_line_params()
         
         if self._command_line_params['debug']:
-            logger.setLevel(logging.DEBUG)
+            self.debug = True
+            
         #=======================================================================
         # else:
         #     logger.setLevel(logging.INFO)
@@ -179,7 +187,8 @@ class GDF(object):
             
             database = databases[db_ref]
             process_thread = threading.Thread(target=thread_execute,                    
-                                              args=args+[database, result_dict]
+                                              args=args+[database, result_dict],
+                                              name=db_ref
                                               )
             thread_list.append(process_thread)
             process_thread.setDaemon(False)
@@ -241,7 +250,7 @@ class GDF(object):
             This is currently a bit ugly because it retrieves the de-normalised data in a single query and then has to
             build the tree from the flat result set. It could be done in a prettier (but slower) way with multiple queries
             '''
-            db_storage_config_dict = {}
+            db_storage_config_dict = collections.OrderedDict()
             
             try:
                 storage_type_filter_list = self._configuration[database.db_ref]['storage_types'].split(',')
@@ -260,6 +269,11 @@ measurement_type_id,
 measurement_type_index, 
 measurement_metatype_name,
 measurement_type_name,
+nodata_value,
+datatype_name,
+numpy_datatype_name,
+gdal_datatype_name,
+netcdf_datatype_name,
 domain_tag,
 domain_id,
 domain_name,
@@ -283,6 +297,7 @@ from storage_type
 join storage_type_measurement_type using(storage_type_id)
 join measurement_type using(measurement_metatype_id, measurement_type_id)
 join measurement_metatype using(measurement_metatype_id)
+join datatype using(datatype_id)
 join storage_type_dimension using(storage_type_id)
 join dimension_domain using(dimension_id, domain_id)
 join domain using(domain_id)
@@ -310,9 +325,9 @@ left join reference_system index_reference_system on index_reference_system.refe
                                          'storage_type_tag': record_dict['storage_type_tag'],
                                          'storage_type_id': record_dict['storage_type_id'],
                                          'storage_type_name': record_dict['storage_type_name'],
-                                         'measurement_types': {},
+                                         'measurement_types': collections.OrderedDict(),
                                          'domains': {},
-                                         'dimensions': {}
+                                         'dimensions': collections.OrderedDict()
                                         }
     
                 db_storage_config_dict[record_dict['storage_type_tag']] = storage_type_dict
@@ -324,7 +339,12 @@ left join reference_system index_reference_system on index_reference_system.refe
                                                'measurement_type_id': record_dict['measurement_type_id'],
                                                'measurement_type_index': record_dict['measurement_type_index'],
                                                'measurement_metatype_name': record_dict['measurement_metatype_name'],
-                                               'measurement_type_name': record_dict['measurement_type_name']
+                                               'measurement_type_name': record_dict['measurement_type_name'],
+                                               'nodata_value': record_dict['nodata_value'],
+                                               'datatype_name': record_dict['datatype_name'],
+                                               'numpy_datatype_name': record_dict['numpy_datatype_name'],
+                                               'gdal_datatype_name': record_dict['gdal_datatype_name'],
+                                               'netcdf_datatype_name': record_dict['netcdf_datatype_name']
                                                }
     
                     storage_type_dict['measurement_types'][record_dict['measurement_type_tag']] = measurement_type_dict
@@ -644,8 +664,12 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index;
                 # list of dimension_tags for storage_type sorted by creation order
                 storage_type_dimension_tags = [dimension['dimension_tag'] for dimension in sorted(storage_type['dimensions'].values(), key=lambda dimension: dimension['dimension_order'])]
                 logger.debug('storage_type_dimension_tags = %s', storage_type_dimension_tags)
-                # list of dimension_tags for range query sorted by creation order
-                range_dimension_tags = [dimension_tag for dimension_tag in storage_type_dimension_tags if dimension_tag in dimension_range_dict.keys()]
+                
+                # list of dimension_tags for range query sorted by creation order (do all if 
+                if dimension_range_dict:
+                    range_dimension_tags = [dimension_tag for dimension_tag in storage_type_dimension_tags if dimension_tag in dimension_range_dict.keys()]
+                else:
+                    range_dimension_tags = []
                 logger.debug('range_dimension_tags = %s', range_dimension_tags)
                 
                 # Skip this storage_type if exclusive flag set and dimensionality is less than query range dimnsionality
@@ -707,6 +731,12 @@ and dimension.dimension_tag = '%s'
     ) dataset_index using(dataset_type_id, dataset_id)
 ''' % (slice_dimension)
 
+                # Restrict slices to those within range if required
+                if slice_dimension in range_dimension_tags:
+                    SQL += '''where slice_index_value between %f and %f
+''' % (dimension_range_dict[slice_dimension][0], # Min
+       dimension_range_dict[slice_dimension][1]) # Max
+
                 SQL +='''
 order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_index_value;
 '''            
@@ -726,7 +756,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                         last_storage_id = record_dict['storage_id']
                         
                     # Don't add this slice to the result dict if a range is set for the slicing dimension and it's outside that range
-                    if (slice_dimension in dimension_range_dict.keys() and
+                    if (slice_dimension in range_dimension_tags and
                         (record_dict['slice_index_value'] < dimension_range_dict[slice_dimension][0] or
                          record_dict['slice_index_value'] > dimension_range_dict[slice_dimension][1]
                          )
@@ -826,30 +856,41 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
     def storage_config(self):
         return self._storage_config
     
+    @property
+    def debug(self):
+        return self._debug
+    
+    @debug.setter
+    def debug(self, debug_value):
+        if debug_value:
+            logger.setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.INFO)
+    
     def get_descriptor(self, query_parameter):
         '''
-        query_parameter = \
-        {
-        'storage_types':
-            ['LS5TM', 'LS7ETM', 'LS8OLITIRS'],
-        'dimensions': {
-             'x': {
-                   'range': (140, 142),
-                   'crs': 'EPSG:4326'
-                   },
-             'y': {
-                   'range': (-36, -35),
-                   'crs': 'EPSG:4326'
-                   },
-             't': {
-                   'range': (1293840000, 1325376000),
-                   'crs': 'SSE', # Seconds since epoch
-                   'grouping_function': '<e.g. gdf.solar_day>'
-                   }
-             },
-        'polygon': '<some kind of text representation of a polygon for PostGIS to sort out>' # We won't be doing this in the pilot
-        }
-        '''
+query_parameter = \
+{
+'storage_types':
+    ['LS5TM', 'LS7ETM', 'LS8OLITIRS'],
+'dimensions': {
+     'x': {
+           'range': (140, 142),
+           'crs': 'EPSG:4326'
+           },
+     'y': {
+           'range': (-36, -35),
+           'crs': 'EPSG:4326'
+           },
+     't': {
+           'range': (1293840000, 1325376000),
+           'crs': 'SSE', # Seconds since epoch
+           'grouping_function': GDF.solar_days_since_epoch
+           }
+     },
+'polygon': '<some kind of text representation of a polygon for PostGIS to sort out>' # We won't be doing this in the pilot
+}
+'''
         
         #=======================================================================
         # # Create a dummy array of days since 1/1/1970 between min and max timestamps
@@ -924,6 +965,71 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         #     }
         #=======================================================================
         descriptor = {}
+              
+        try:
+            dimension_range_dict = {dimension_tag.upper(): query_parameter['dimensions'][dimension_tag].get('range') for dimension_tag in query_parameter['dimensions'].keys()}
+        except KeyError:
+            dimension_range_dict = None
+
+        try:
+            storage_type_tags = [storage_type_tag.upper() for storage_type_tag in query_parameter['storage_types']]
+        except KeyError:
+            storage_type_tags = None
+
+        # Fix T as the slicing dimension
+        try:
+            slice_grouping_function = query_parameter['dimensions']['T']['grouping_function'] or self.solar_day_since_epoch
+        except KeyError:
+            try:
+                slice_grouping_function = query_parameter['dimensions']['t']['grouping_function'] or self.solar_day_since_epoch
+            except KeyError:
+                slice_grouping_function = self.solar_day_since_epoch
+            
         
+        slice_dict = self.get_slices(dimension_range_dict, 
+                   storage_type_tags, 
+                   exclusive = False,
+                   slice_dimension = 'T', # Default to T for trial implementation
+                   slice_grouping_function = slice_grouping_function)
+        
+        log_multiline(logger.debug, slice_dict, 'slice_dict', '\t')
+        
+        for db_ref in slice_dict.keys():
+            storage_type_dict = slice_dict[db_ref]
+            for storage_type in storage_type_dict.keys():
+                dimension_list = [dimension_tag.upper() for dimension_tag in self._storage_config[storage_type]['dimensions'].keys()]
+                descriptor[storage_type] = {'dimensions': dimension_list,
+                                            'variables': self._storage_config[storage_type]['measurement_types'] # TODO: make this conform to descriptor spec
+                                            }
+        
+                
+                # Create a key for every storage unit index tuple
+                storage_unit_indices_list = sorted(list(set([slice_indices[0] for slice_indices in storage_type_dict[storage_type].keys()])))
+                
+                storage_unit_dict = collections.OrderedDict()
+                for storage_unit_indices in storage_unit_indices_list:
+                    # Build list of slices for given storage unit                   
+                    slice_list = [storage_type_dict[storage_type][slice_indices] for slice_indices in storage_type_dict[storage_type].keys() if slice_indices[0] == storage_unit_indices]
+                    
+                    # Build tuples for storage unit max/min/shape                                                            
+                    min_list = []
+                    max_list = []
+                    shape_list = []   
+                    for dimension in dimension_list:
+                        if dimension == 'T': # TODO: Don't make this hard-coded for T
+                            min_list.append(min([slice_record['min_value'] for slice_record in slice_list])) 
+                            max_list.append(max([slice_record['max_value'] for slice_record in slice_list]))
+                            shape_list.append(len(set([slice_record['slice_group'] for slice_record in slice_list]))) # Unique grouping values
+                        else:           
+                            min_list.append(min([slice_record['%s_min' % dimension.lower()] for slice_record in slice_list])) 
+                            max_list.append(max([slice_record['%s_max' % dimension.lower()] for slice_record in slice_list])) 
+                            shape_list.append(self._storage_config[storage_type]['dimensions'][dimension]['dimension_elements'])
+                            
+                    storage_unit_dict[storage_unit_indices] = {'storage_min': tuple(min_list),
+                                                      'storage_max': tuple(max_list),
+                                                      'storage_shape': tuple(shape_list),
+                                                      }
+                
+                descriptor[storage_type]['storage_units'] = storage_unit_dict
         
         return descriptor
