@@ -142,6 +142,36 @@ class TestDatabase(unittest.TestCase):
         assert len(cached_result_set.field_names) == 2, 'field_names list property should have two items'
         
 
+    def test_calc_values(self):
+        "Test generator with calculated fields function"
+        
+        def plus_one(record_dict):
+            return record_dict['test_field'] + 1
+        
+        def plus_two(record_dict):
+            return record_dict['test_field'] + 2
+        
+        # Define calculated fields using previously defined functions
+        calculated_field_dict = {'plus_one': plus_one,
+                                'plus_two': plus_two
+                                }
+        
+        test_db = Database(self.TEST_DB_REF,
+                           self.TEST_HOST, 
+                           self.TEST_PORT, 
+                           self.TEST_DBNAME, 
+                           self.TEST_USER, 
+                           self.TEST_PASSWORD
+                           )
+        
+        cached_result_set = test_db.submit_query(self.TEST_QUERY)
+        
+        first_record_dict = list(cached_result_set.record_generator(calculated_field_dict))[0]
+        assert first_record_dict['test_field'] == 1, 'First field value should be 1'
+        assert first_record_dict['plus_one'] == 2, 'Second field value should be 2'
+        assert first_record_dict['plus_two'] == 3, 'Third field value should be 3'
+        
+
 #
 # Define test suites
 #

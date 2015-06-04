@@ -67,11 +67,24 @@ class CachedResultSet(object):
                     
             self._record_count = len(self._result_dict[self._field_names[0]])
      
-    def record_generator(self): 
-        '''Generator function to return a complete dict for each record
+    def record_generator(self, calculated_field_dict=None): 
         '''
-        for record_index in range(self.record_count):
-            yield {field_name: self._result_dict[field_name][record_index] for field_name in self._field_names}   
+        Generator function to return a complete dict for each record
+        
+        Optional parameter: calculated_field_dict = {
+            <calculated_field_name>: <function_on_record_dict>,
+            <calculated_field_name>: <function_on_record_dict>,
+            ...
+            }
+            
+            where <function_on_record_dict> is a function which takes a record_dict and returns a single value
+        '''
+        calculated_field_dict = calculated_field_dict or {}
+        for record_index in range(self._record_count):
+            record_fields = {field_name: self._result_dict[field_name][record_index] for field_name in self._field_names}
+            calculated_fields = {field_name: calculated_field_dict[field_name](record_fields) for field_name in calculated_field_dict.keys()}
+            record_fields.update(calculated_fields)   
+            yield record_fields
             
     def add_values(self, value_dict): 
         '''
