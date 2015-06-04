@@ -108,10 +108,39 @@ class TestDatabase(unittest.TestCase):
         cached_result_set = test_db.submit_query(self.TEST_QUERY)
         
         assert cached_result_set.record_count == 1, 'Query should return exactly one row'
-        assert len(cached_result_set.field_names) == 1, 'Query should return exactly one field'
+        assert cached_result_set.field_count == 1, 'Query should return exactly one field'
         assert cached_result_set.field_names[0] == 'test_field', 'Field name should be "test_field"'
         assert list(cached_result_set.record_generator())[0]['test_field'] == 1, 'Field value should be 1'
         assert len(cached_result_set.field_values) == 1, 'field_values dict property should have only one item'
+        
+    def test_add_values(self):
+        "Test query function"
+        test_db = Database(self.TEST_DB_REF,
+                           self.TEST_HOST, 
+                           self.TEST_PORT, 
+                           self.TEST_DBNAME, 
+                           self.TEST_USER, 
+                           self.TEST_PASSWORD
+                           )
+        
+        cached_result_set = test_db.submit_query(self.TEST_QUERY)
+        
+        field_name = cached_result_set.field_names[0]
+        new_field_name = field_name + '_plus_one'
+        new_field_values = [field_value + 1 for field_value in cached_result_set.field_values[field_name]]
+        
+        cached_result_set.add_values({new_field_name: new_field_values})
+        
+        assert cached_result_set.record_count == 1, 'Modified result set should have exactly one row'
+        assert cached_result_set.field_count == 2, 'Modified result set should have exactly two fields'
+        assert cached_result_set.field_names[0] == 'test_field', 'First field name should be "test_field"'
+        assert cached_result_set.field_names[1] == 'test_field_plus_one', 'Second field name should be "test_field_plus_one"'
+        first_record_dict = list(cached_result_set.record_generator())[0]
+        assert first_record_dict['test_field'] == 1, 'First field value should be 1'
+        assert first_record_dict['test_field_plus_one'] == 2, 'Second field value should be 2'
+        assert len(cached_result_set.field_values) == 2, 'field_values dict property should have two items'
+        assert len(cached_result_set.field_names) == 2, 'field_names list property should have two items'
+        
 
 #
 # Define test suites

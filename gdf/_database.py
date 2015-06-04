@@ -50,10 +50,12 @@ class CachedResultSet(object):
         
         Parameter:
             cursor: psycopg2 cursor object through which the result set from a previously executed query will be retrieved 
+            Stores values in lists to avoid duplicating field names in dicts
         '''
         if cursor.description is None: # No fields returned            
             self._field_names = []
             self._result_dict = {}
+            self._record_count = 0
         else:
             self._field_names = [field_descriptor[0] for field_descriptor in cursor.description]
             
@@ -62,24 +64,57 @@ class CachedResultSet(object):
             for record in cursor:
                 for field_index in range(len(record)):
                     self._result_dict[self._field_names[field_index]].append(record[field_index])
+                    
+            self._record_count = len(self._result_dict[self._field_names[0]])
      
     def record_generator(self): 
         '''Generator function to return a complete dict for each record
         '''
         for record_index in range(self.record_count):
-            yield {field_name: self._result_dict[field_name][record_index] for field_name in self._field_names}           
+            yield {field_name: self._result_dict[field_name][record_index] for field_name in self._field_names}   
+            
+    def add_values(self, value_dict): 
+        '''
+        Function to add new calculated values to the result set.
+        Parameter: value_dict = {
+            <field_name_string>: <field_value_list>,
+            <field_name_string>: <field_value_list>,
+            ...
+            }
+            
+        N.B: Overwriting of existing field values IS permitted
+        '''
+        new_field_count = 0
+        
+        for field_name in [field_name.lower() for field_name in value_dict.keys()]:
+            assert len(value_dict[field_name]) == self._record_count, 'Mismatched record count. Result set has $d but %s has %d.' % (self._record_count,
+                                                                                                               field_name,
+                                                                                                               len(value_dict[field_name])
+                                                                                                               )
+            if field_name not in self._field_names:
+                self._field_names.append(field_name)
+                new_field_count += 1
+                
+            self._result_dict[field_name] = value_dict[field_name]
+        
+        return new_field_count
+    
 
     @property
     def field_names(self):
-        return list(self._field_names)
+        return self._field_names
+
+    @property
+    def field_count(self):
+        return len(self._field_names)
 
     @property
     def record_count(self):
-        return len(self._result_dict[self._field_names[0]])
+        return self._record_count
 
     @property
     def field_values(self):
-        return dict(self._result_dict)
+        return self._result_dict
 
 
 class Database(object):
