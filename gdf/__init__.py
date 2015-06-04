@@ -1107,45 +1107,65 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
     
                 slice_result_set = database.submit_query(SQL)
                 
-                # Create dict containing list of result indices for each distinct storage_id
-                #TODO: Fix this to work with all three primary key fields
-                storage_index_dict = {storage_id: 
-                                      [index for index in range(slice_result_set.record_count) if slice_result_set.field_values['storage_id'][index] == storage_id] 
-                                      for storage_id in set(slice_result_set.field_values['storage_id'])}
-                log_multiline(logger.debug, storage_index_dict, 'storage_index_dict', '\t')
+                # List of unique storage index tuples: e.g. (x, y, t) indices
+                storage_index_tuple_set = set([tuple([slice_result_set.field_values[dimension_tag.lower() + '_index'][index] 
+                                                                   for dimension_tag in storage_type_dimension_tags])
+                                                            for index in range(slice_result_set.record_count)]
+                                                           )
+                
+                # Create dict containing list of result indices for each distinct storage_index_tuple
+                storage_result_indices_list_dict = {storage_index_tuple: 
+                                      [index for index in range(slice_result_set.record_count) 
+                                       if tuple([slice_result_set.field_values[dimension_tag.lower() + '_index'][index] 
+                                                                   for dimension_tag in storage_type_dimension_tags]) == storage_index_tuple] 
+                                      for storage_index_tuple in storage_index_tuple_set}
+                log_multiline(logger.debug, storage_result_indices_list_dict, 'storage_result_indices_list_dict', '\t')
+                del storage_index_tuple_set # Don't need this any more - could generate this set on the fly, but this is more readable
                 
                 storage_type_slice_set = set() # Overall set of unique slices for this storage type
                 storage_units_descriptor = {}
-                for storage_id, storage_index_list in storage_index_dict.items():
-                    
-                    storage_indices = tuple([slice_result_set.field_values[dimension_tag.lower() + '_index'][storage_index_list[0]] for dimension_tag in storage_type_dimension_tags])
-                        
+                for storage_index_tuple, storage_index_list in storage_result_indices_list_dict.items():
                     min_list = []
                     max_list = []
                     shape_list = []
                     for dimension in [dimension.upper() for dimension in storage_type_dimension_tags]:
                         if dimension == 'T': # TODO: Don't make this hard-coded for T slices
                             # Special case for T where values come from slices in groups
-                            min_list.append(min([slice_result_set.field_values['slice_index_value'][storage_index] for storage_index in storage_index_list]))
-                            max_list.append(max([slice_result_set.field_values['slice_index_value'][storage_index] for storage_index in storage_index_list]))
-                            slice_set = set([slice_grouping_function(record_dict) for record_dict in slice_result_set.record_generator() if record_dict['storage_id'] == storage_id])
+                            min_list.append(max(min([slice_result_set.field_values['slice_index_value'][storage_index] for storage_index in storage_index_list]),
+                                                (dimension_range_dict.get(dimension)[0] if dimension_range_dict.get(dimension) else 0)
+                                                )
+                                            )
+
+                            max_list.append(min(max([slice_result_set.field_values['slice_index_value'][storage_index] for storage_index in storage_index_list]),
+                                                (dimension_range_dict.get(dimension)[1] if dimension_range_dict.get(dimension) else sys.maxint)
+                                                )
+                                            )
+                            # Have to iterate through all records to compute group values - performance hit
+                            slice_set = set([slice_grouping_function(record_dict) for record_dict in slice_result_set.record_generator() 
+                                             if tuple([record_dict[dimension_tag.lower() + '_index']
+                                                       for dimension_tag in storage_type_dimension_tags]) == storage_index_tuple])
                             storage_type_slice_set |= slice_set
-                            # Count the unique slice group values
+                            # Count the unique slice group values for this storage unit
                             shape_list.append(len(slice_set))
                             del slice_set
                         else: # Dimension with regular index   
-                            #TODO - take range into account      
-                            min_list.append(min([slice_result_set.field_values['%s_min' % dimension.lower()][storage_index] for storage_index in storage_index_list]))
-                            max_list.append(max([slice_result_set.field_values['%s_max' % dimension.lower()][storage_index] for storage_index in storage_index_list]))
-                            shape_list.append(self._storage_config[storage_type_tag]['dimensions'][dimension]['dimension_elements'])
+                            min_value = max(min([slice_result_set.field_values['%s_min' % dimension.lower()][storage_index] for storage_index in storage_index_list]),
+                                                (dimension_range_dict.get(dimension)[0] if dimension_range_dict.get(dimension) else 0)
+                                                )
+                            max_value = min(max([slice_result_set.field_values['%s_max' % dimension.lower()][storage_index] for storage_index in storage_index_list]),
+                                                (dimension_range_dict.get(dimension)[1] if dimension_range_dict.get(dimension) else sys.maxint)
+                                                )
+                            min_list.append(min_value)
+                            max_list.append(max_value)
+                            shape_list.append((max_value - min_value) / self._storage_config[storage_type_tag]['dimensions'][dimension]['dimension_element_size'])
                 
-                    storage_units_descriptor[storage_indices] = {
+                    storage_units_descriptor[storage_index_tuple] = {
                                                                  'storage_min': tuple(min_list),
                                                                  'storage_max': tuple(max_list),
                                                                  'storage_shape': tuple(shape_list)
                                                                  }
                                                
-                                               
+                del storage_result_indices_list_dict                               
                                                
                                                
                 if storage_units_descriptor:
