@@ -1049,16 +1049,17 @@ select distinct''' % storage_type_tag
 %s.storage_dimension_min as %s_min,
 %s.storage_dimension_max as %s_max,'''.replace('%s', dimension_tag)
                 SQL +='''
-storage.*,
-dataset_index.*
+storage_type_id,
+storage_id,
+storage_version,
+slice_index_value
 from storage
 '''                    
                 for dimension_tag in storage_type_dimension_tags:
                     SQL += '''join (
 select *
-from dimension 
-join dimension_domain using(dimension_id)
-join storage_dimension using(dimension_id, domain_id)
+from storage_dimension
+join dimension using(dimension_id)
 where storage_type_id = %d
 and storage_version = 0
 and dimension.dimension_tag = '%s'
@@ -1079,8 +1080,13 @@ and dimension.dimension_tag = '%s'
                 SQL +='''
     join storage_dataset using (storage_type_id, storage_id, storage_version)
     join (
-      select coalesce(indexing_value, (min_value+max_value)/2) as slice_index_value,
-      *
+      select dataset_type_id, 
+        dataset_id,
+        coalesce(indexing_value, (min_value+max_value)/2) as slice_index_value,
+        dimension_tag,
+        min_value,
+        max_value,
+        indexing_value
       from dataset 
       join dataset_dimension using(dataset_type_id, dataset_id)
       join dimension using(dimension_id)
@@ -1102,6 +1108,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                 slice_result_set = database.submit_query(SQL)
                 
                 # Create dict containing list of result indices for each distinct storage_id
+                #TODO: Fix this to work with all three primary key fields
                 storage_index_dict = {storage_id: 
                                       [index for index in range(slice_result_set.record_count) if slice_result_set.field_values['storage_id'][index] == storage_id] 
                                       for storage_id in set(slice_result_set.field_values['storage_id'])}
@@ -1119,8 +1126,8 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                     for dimension in [dimension.upper() for dimension in storage_type_dimension_tags]:
                         if dimension == 'T': # TODO: Don't make this hard-coded for T slices
                             # Special case for T where values come from slices in groups
-                            min_list.append(min([slice_result_set.field_values['min_value'][storage_index] for storage_index in storage_index_list]))
-                            max_list.append(max([slice_result_set.field_values['max_value'][storage_index] for storage_index in storage_index_list]))
+                            min_list.append(min([slice_result_set.field_values['slice_index_value'][storage_index] for storage_index in storage_index_list]))
+                            max_list.append(max([slice_result_set.field_values['slice_index_value'][storage_index] for storage_index in storage_index_list]))
                             slice_set = set([slice_grouping_function(record_dict) for record_dict in slice_result_set.record_generator() if record_dict['storage_id'] == storage_id])
                             storage_type_slice_set |= slice_set
                             # Count the unique slice group values
@@ -1154,13 +1161,10 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                         max_value = max([storage_unit_descriptor['storage_max'][dimension_index] for storage_unit_descriptor in storage_units_descriptor.values()])
                         min_list.append(min_value)
                         max_list.append(max_value)
-                        
-                        logger.debug('min_value = %f' % min_value)
-                        logger.debug('max_value = %f' % max_value)
     
                         if dimension == 'T': #TODO: Don't make this hard-coded for T slices
                             shape_list.append(len(storage_type_slice_set))
-                        else:
+                        else: # Calculate number of elements
                             shape_list.append((max_value - min_value) / self._storage_config[storage_type_tag]['dimensions'][dimension]['dimension_element_size'])
                                               
                     storage_type_descriptor['result_min'] = tuple(min_list)
@@ -1170,6 +1174,8 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                     # Show all unique group values in order
                     #TODO: Don't make this hard-coded for T slices
                     storage_type_descriptor['irregular_indices'] = {'T': np.array(sorted(list(storage_type_slice_set)), dtype = np.int16)}
+                    
+                    storage_type_descriptor['variables'] = dict(self._storage_config[storage_type_tag]['measurement_types'])
     
                     result_dict[storage_type_tag] = storage_type_descriptor                    
             # End of per-DB function
