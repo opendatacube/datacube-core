@@ -1293,7 +1293,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         try:
             dimension_range_dict = {dimension_tag.upper(): query_parameter['dimensions'][dimension_tag].get('range') for dimension_tag in query_parameter['dimensions'].keys()}
         except KeyError:
-            dimension_range_dict = None
+            dimension_range_dict = {}
 
         try:
             storage_type_tags = [storage_type_tag.upper() for storage_type_tag in query_parameter['storage_types']]
