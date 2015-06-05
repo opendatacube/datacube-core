@@ -1218,6 +1218,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                         else: # Calculate number of elements
                             shape_list.append((max_value - min_value) / self._storage_config[storage_type_tag]['dimensions'][dimension]['dimension_element_size'])
                                               
+                    storage_type_descriptor['dimensions'] = storage_type_dimension_tags
                     storage_type_descriptor['result_min'] = tuple(min_list)
                     storage_type_descriptor['result_max'] = tuple(max_list)
                     storage_type_descriptor['result_shape'] = tuple(shape_list)
