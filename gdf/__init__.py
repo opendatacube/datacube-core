@@ -904,7 +904,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         else:
             logger.setLevel(logging.INFO)
     
-    def get_descriptor(self, query_parameter):
+    def get_descriptor(self, query_parameter=None):
         '''
 query_parameter = \
 {
@@ -1057,6 +1057,7 @@ query_parameter = \
                                                 storage_units_descriptor
                                                 ):
                 '''
+                This function is a bit ugly, but it needs to run in two places so it's better not to have it inline
                 '''
                 logger.debug('update_storage_units_descriptor() called')
                 if storage_index_tuple is not None: # We have values to write
@@ -1290,6 +1291,8 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
             # End of per-DB function
 
         # Start of cross-DB function
+        query_parameter = query_parameter or {} # Handle None as a parameter
+        
         try:
             dimension_range_dict = {dimension_tag.upper(): query_parameter['dimensions'][dimension_tag].get('range') for dimension_tag in query_parameter['dimensions'].keys()}
         except KeyError:
