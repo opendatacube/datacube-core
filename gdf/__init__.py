@@ -1081,10 +1081,10 @@ query_parameter = \
                     overall_slice_group_set |= storage_slice_group_set
                     
                     # Update all overall max/mins
-                    for dimension in regular_storage_type_dimension_tags:
+                    for dimension in storage_type_dimension_tags:
                         overall_min_dict[dimension] = min(overall_min_dict[dimension], storage_min_dict[dimension])
                         overall_max_dict[dimension] = max(overall_max_dict[dimension], storage_max_dict[dimension])
-                    
+                        
                     storage_unit_descriptor = {
                                                'storage_min': tuple([storage_min_dict[dimension] for dimension in storage_type_dimension_tags]),
                                                'storage_max': tuple([storage_max_dict[dimension] for dimension in storage_type_dimension_tags]),
@@ -1200,12 +1200,12 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                 
                 # Define initial max/min/shape values
                 dimension_minmax_dict = {dimension: (dimension_range_dict.get(dimension) or (-sys.maxint-1, sys.maxint)) for dimension in storage_type_dimension_tags}
-                storage_min_dict = {}
-                storage_max_dict = {}
-                storage_shape_dict = {}
-                overall_min_dict = {dimension: dimension_minmax_dict[dimension][0] for dimension in storage_type_dimension_tags}
-                overall_max_dict = {dimension: dimension_minmax_dict[dimension][1] for dimension in storage_type_dimension_tags}
-                overall_shape_dict = {}
+                storage_min_dict = {dimension: sys.maxint for dimension in storage_type_dimension_tags}
+                storage_max_dict = {dimension: -sys.maxint-1 for dimension in storage_type_dimension_tags}
+                storage_shape_dict = {dimension: 0 for dimension in storage_type_dimension_tags}
+                overall_min_dict = {dimension: sys.maxint for dimension in storage_type_dimension_tags}
+                overall_max_dict = {dimension: -sys.maxint-1 for dimension in storage_type_dimension_tags}
+                overall_shape_dict = {dimension: 0 for dimension in storage_type_dimension_tags}
                 
                 storage_slice_group_set = set()
                 overall_slice_group_set = set()
