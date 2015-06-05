@@ -55,8 +55,43 @@ class TestGDF(unittest.TestCase):
     """Unit tests for utility functions."""
     
     # Test ranges for get_storage_units function
-    TEST_2D_DIMENSION_RANGE_DICT = {'X': (140, 142), 'Y': (-36, -34)}
-    TEST_3D_DIMENSION_RANGE_DICT = {'X': (140, 142), 'Y': (-36, -34), 'T': (1293840000, 1325376000)}
+    TEST_2D_PARAMETER = \
+{
+'storage_types':
+    ['LS5TM', 'LS7ETM', 'LS8OLITIRS'],
+'dimensions': {
+     'x': {
+           'range': (139.5, 142.5),
+           'crs': 'EPSG:4326'
+           },
+     'y': {
+           'range': (-36.5, -33.5),
+           'crs': 'EPSG:4326'
+           },
+     },
+'polygon': '<some kind of text representation of a polygon for PostGIS to sort out>' # We won't be doing this in the pilot
+}
+    TEST_3D_PARAMETER = \
+{
+'storage_types':
+    ['LS5TM', 'LS7ETM', 'LS8OLITIRS'],
+'dimensions': {
+     'x': {
+           'range': (139.5, 142.5),
+           'crs': 'EPSG:4326'
+           },
+     'y': {
+           'range': (-36.5, -33.5),
+           'crs': 'EPSG:4326'
+           },
+     't': {
+           'range': (1288569600, 1296518400), # 1/11/2010 - 31/1/2011
+           'crs': 'SSE', # Seconds since epoch
+           'grouping_function': None
+           }
+     },
+'polygon': '<some kind of text representation of a polygon for PostGIS to sort out>' # We won't be doing this in the pilot
+}
 
     def test_GDF(self):
         "Test GDF constructor"
@@ -72,50 +107,14 @@ class TestGDF(unittest.TestCase):
         assert test_gdf.storage_config is not None, 'storage configuration dict not set'
         assert len(test_gdf.storage_config) > 0, 'storage configuration dict must contain at least one storage_type definition'
         
-    def test_GDF_get_storage_units(self):
-        "Test GDF get_storage_units function"
+    def test_GDF_get_descriptor(self):
+        "Test GDF get_descriptor function"
         #TODO: Define tests which check DB contents
         test_gdf = GDF() # Test default configuration
         
-        storage_dict = test_gdf.get_storage_units(self.TEST_2D_DIMENSION_RANGE_DICT)
-        storage_dict = test_gdf.get_storage_units(self.TEST_2D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'])
-        storage_dict = test_gdf.get_storage_units(self.TEST_2D_DIMENSION_RANGE_DICT, exclusive=True)
-        storage_dict = test_gdf.get_storage_units(self.TEST_2D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'], exclusive=True)
-        
-        storage_dict = test_gdf.get_storage_units(self.TEST_3D_DIMENSION_RANGE_DICT)
-        storage_dict = test_gdf.get_storage_units(self.TEST_3D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'])
-        storage_dict = test_gdf.get_storage_units(self.TEST_3D_DIMENSION_RANGE_DICT, exclusive=True)
-        storage_dict = test_gdf.get_storage_units(self.TEST_3D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'], exclusive=True)
-        
-    def test_GDF_get_slices(self):
-        "Test GDF get_slices function"
-        #TODO: Define tests which check DB contents
-        test_gdf = GDF() # Test default configuration
-        
-        storage_dict = test_gdf.get_slices(self.TEST_2D_DIMENSION_RANGE_DICT)
-        storage_dict = test_gdf.get_slices(self.TEST_2D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'])
-        storage_dict = test_gdf.get_slices(self.TEST_2D_DIMENSION_RANGE_DICT, exclusive=True)
-        storage_dict = test_gdf.get_slices(self.TEST_2D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'], exclusive=True)
-        
-        storage_dict = test_gdf.get_slices(self.TEST_3D_DIMENSION_RANGE_DICT)
-        storage_dict = test_gdf.get_slices(self.TEST_3D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'])
-        storage_dict = test_gdf.get_slices(self.TEST_3D_DIMENSION_RANGE_DICT, exclusive=True)
-        storage_dict = test_gdf.get_slices(self.TEST_3D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'], exclusive=True)
-        
-    def test_GDF_get_grouped_slices(self):
-        "Test GDF get_grouped_slices function"
-        #TODO: Define tests which check DB contents
-        test_gdf = GDF() # Test default configuration
-        
-        storage_dict = test_gdf.get_grouped_slices(self.TEST_2D_DIMENSION_RANGE_DICT)
-        storage_dict = test_gdf.get_grouped_slices(self.TEST_2D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'])
-        storage_dict = test_gdf.get_grouped_slices(self.TEST_2D_DIMENSION_RANGE_DICT, exclusive=True)
-        storage_dict = test_gdf.get_grouped_slices(self.TEST_2D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'], exclusive=True)
-        
-        storage_dict = test_gdf.get_grouped_slices(self.TEST_3D_DIMENSION_RANGE_DICT)
-        storage_dict = test_gdf.get_grouped_slices(self.TEST_3D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'])
-        storage_dict = test_gdf.get_grouped_slices(self.TEST_3D_DIMENSION_RANGE_DICT, exclusive=True)
-        storage_dict = test_gdf.get_grouped_slices(self.TEST_3D_DIMENSION_RANGE_DICT, storage_type_tags=['LS5TM'], exclusive=True)
+        descriptor = test_gdf.get_descriptor(self.TEST_3D_PARAMETER)
+        descriptor = test_gdf.get_descriptor(self.TEST_2D_PARAMETER)
+        descriptor = test_gdf.get_descriptor()
         
         
 #
