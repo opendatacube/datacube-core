@@ -77,24 +77,35 @@ class GDF(object):
     DEFAULT_CONFIG_FILE = 'gdf_default.conf' # N.B: Assumed to reside in code root directory
     EPOCH_DATE_ORDINAL = date(1970, 1, 1).toordinal()
     
-    def get_command_line_params(self):
+    def get_command_line_params(self, arg_descriptors={}):
         '''
         Function to return a dict of command line parameters
+        
+        Parameters:
+            arg_descriptors: dict keyed by dest variable name containing sub-dicts as follows:
+                'short_flag': '-d', 
+                'long_flag': '--debug', 
+                'default': <Boolean>, 
+                'action': 'store_const', 
+                'const': <Boolean>,
+                'help': <help string>
+                
         '''
-        command_line_args_object = CommandLineArgs()
+        command_line_args_object = CommandLineArgs(arg_descriptors)
         
         return command_line_args_object.arguments
         
-    def get_config(self):
+    def get_config(self, config_files_string=None):
         '''
         Function to return a nested dict of config file entries
-        
+        Parameter:
+            config_files_string - comma separated list of GDF config files
         Returns: dict {<db_ref>: {<param_name>: <param_value>,... },... }
         '''
         config_dict = collections.OrderedDict() # Need to preserve order of config files
         
         # Use default config file if none provided
-        config_files_string = self._command_line_params['config_files'] or os.path.join(self._code_root, GDF.DEFAULT_CONFIG_FILE)
+        config_files_string = config_files_string or os.path.join(self._code_root, GDF.DEFAULT_CONFIG_FILE)
         
         # Set list of absolute config file paths from comma-delimited list
         self._config_files = [os.path.abspath(config_file) for config_file in config_files_string.split(',')] 
@@ -167,12 +178,12 @@ class GDF(object):
         #=======================================================================
                 
         # Create master configuration dict containing both command line and config_file parameters
-        self._configuration = self.get_config()
+        self._configuration = self.get_config(self._command_line_params['config_files'])
                 
-        # Create master database dict
+        # Create master database dict with Database objects keyed by db_ref
         self._databases = self.get_dbs()
         
-        # Read configuration from databases
+        # Read storage configuration from databases
         self._storage_config = self.get_storage_config()
         
         log_multiline(logger.debug, self.__dict__, 'GDF.__dict__', '\t')
@@ -446,6 +457,14 @@ left join reference_system index_reference_system on index_reference_system.refe
         #TODO: Make more general (if possible)
         # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
         return datetime.fromtimestamp(record_dict['slice_index_value'] + (record_dict['x_min'] + record_dict['x_max']) * 120).date()
+            
+            
+    def null_grouping(self, record_dict):
+        '''
+        Function which takes a record_dict containing all values from a query in the get_db_slices function 
+        and returns the slice_index_value unmodified
+        '''
+        return record_dict['slice_index_value']
             
             
     def solar_days_since_epoch(self, record_dict):
