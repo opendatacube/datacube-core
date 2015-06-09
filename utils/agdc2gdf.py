@@ -46,6 +46,7 @@ import calendar
 import collections
 import numexpr
 import logging
+import errno
 
 import gdf
 from gdf import Database, CachedResultSet
@@ -130,7 +131,28 @@ class AGDC2GDF(GDF):
                                         'const': None, 
                                         'help': 'AGDC processing level to process'
                                         },
-                    }
+                                'storage_root': {'short_flag': '-r', 
+                                        'long_flag': '--root', 
+                                        'default': None, 
+                                        'action': 'store',
+                                        'const': None, 
+                                        'help': 'Root directory of GDF filestore'
+                                        },
+                                'temp_dir': {'short_flag': '-t', 
+                                        'long_flag': '--temp', 
+                                        'default': None, 
+                                        'action': 'store',
+                                        'const': None, 
+                                        'help': 'Temporary directory for AGDC2GDF operation'
+                                        },
+                                'force': {'short_flag': '-f', 
+                                        'long_flag': '--force', 
+                                        'default': False, 
+                                        'action': 'store_const', 
+                                        'const': True,
+                                        'help': 'Flag to force replacement of existing files'
+                                        },
+                                }
     
     def __init__(self):
         '''Constructor for class AGDC2GDF
@@ -157,7 +179,12 @@ class AGDC2GDF(GDF):
         # Create master GDF database dict
         self._databases = self.get_dbs()
         
+        self.force = self._command_line_params.get('force')
+        self.temp_dir = self._command_line_params.get('temp_dir') or agdc2gdf_config_file_object.configuration['agdc2gdf']['temp_dir']
+
         self.storage_type = self._command_line_params.get('storage_type') or agdc2gdf_config_file_object.configuration['gdf']['storage_type']
+        self.storage_root = self._command_line_params.get('storage_root') or agdc2gdf_config_file_object.configuration['gdf']['storage_root']
+        
         self.agdc_satellite = self._command_line_params.get('satellite') or agdc2gdf_config_file_object.configuration['agdc']['satellite']
         self.agdc_sensor = self._command_line_params.get('sensor') or agdc2gdf_config_file_object.configuration['agdc']['sensor']
         self.agdc_level = self._command_line_params.get('level') or agdc2gdf_config_file_object.configuration['agdc']['level']
@@ -253,12 +280,78 @@ order by end_datetime
         log_multiline(logger.debug, params, 'params', '\t')
         
         tile_result_set = self.agdc_db.submit_query(SQL, params)
-        log_multiline(logger.debug, [record for record in tile_result_set.record_generator()], 'tile_result_set', '\t')
+
+        # Return descriptor - this shouldn't be too big for one storage unit
+        return [record for record in tile_result_set.record_generator()]
     
-    def create_netcdf(self, data_descriptor):
-        pass
+    def create_netcdf(self, storage_indices, data_descriptor):
+        '''
+        Function to create netCDF-CF file for specified storage indices
+        '''
+        def make_dir(dirname):
+            '''
+            Function to create a specified directory if it doesn't exist
+            '''
+            try:
+                os.makedirs(dirname)
+            except OSError, exception:
+                if exception.errno != errno.EEXIST or not os.path.isdir(dirname):
+                    raise exception
     
-    def write_gdf(self, data_descriptor):
+        temp_storage_dir = os.path.join(self.temp_dir, self.storage_type)
+        make_dir(temp_storage_dir)
+        
+        storage_dir = os.path.join(self.storage_root, self.storage_type)
+        make_dir(storage_dir)
+        
+        storage_file = self.storage_type + '_' + '_'.join([str(index) for index in storage_indices]) + '.nc'
+        
+        temp_storage_path = os.path.join(temp_storage_dir, storage_file)
+        storage_path = os.path.join(storage_dir, storage_file)
+        
+        if os.path.isfile(storage_path) and not self.force: 
+            raise Exception('Storage unit %s already exists' % storage_path)
+        
+         
+        
+        return storage_path
+    
+    def write_gdf_data(self, storage_indices, data_descriptor, storage_unit_path):
+        '''
+        Function to write records to database. Must occur in a single transaction
+        '''
+
+        def get_storage_id(record, storage_indices):
+            '''
+            Function to write storage unit record if required and return storage unit ID
+            '''
+            pass
+
+        def get_platform_id(record):
+            '''
+            Function to write platform (satellite) record if required and return platform ID
+            '''
+            pass
+        
+        def get_instrument_id(record, platform_id):
+            '''
+            Function to write instrument (sensor) record if required and return instrument ID
+            '''
+            pass
+        
+        def get_observation_id(record, instrument_id):
+            '''
+            Function to write observation (acquisition) record if required and return observation ID
+            '''
+            pass
+        
+        def get_dataset_id(record, observation_id):
+            '''
+            Function to write observation (acquisition) record if required and return observation ID
+            '''
+            pass
+        
+        
         pass
     
     def ordinate2index(self, ordinate, dimension):
@@ -273,8 +366,18 @@ order by end_datetime
         '''
         Return the reference system ordinate from the storage unit index for the specified storage type, index value and dimension tag
         '''
-        return ((index * self._storage_config[self.storage_type]['dimensions'][dimension]['dimension_extent']) + 
-                self._storage_config[self.storage_type]['dimensions'][dimension]['dimension_origin'])
+        if dimension == 'T':
+            #TODO: Make this more general - need to cater for other reference systems besides seconds since epoch
+            index_reference_system_name = self._storage_config[self.storage_type]['dimensions']['T']['index_reference_system_name'].lower()
+            if index_reference_system_name == 'decade':
+                return gdf.dt2secs(datetime(index*10, 1, 1))
+            if index_reference_system_name == 'year':
+                return gdf.dt2secs(datetime(index, 1, 1))
+            elif index_reference_system_name == 'month':
+                return gdf.dt2secs(datetime(index // 12, index % 12, 1))
+        else: # Not time   
+            return ((index * self._storage_config[self.storage_type]['dimensions'][dimension]['dimension_extent']) + 
+                    self._storage_config[self.storage_type]['dimensions'][dimension]['dimension_origin'])
         
 
 
@@ -293,12 +396,13 @@ def main():
     
     # Do migration in storage unit batches
     for storage_indices in storage_indices_list:
-    
         data_descriptor = agdc2gdf.read_agdc(storage_indices) 
+        log_multiline(logger.debug, data_descriptor, 'data_descriptor', '\t')
                 
-        agdc2gdf.create_netcdf(data_descriptor)
+        storage_unit_path = agdc2gdf.create_netcdf(storage_indices, data_descriptor)
+        logger.debug('storage_unit_path = %s', storage_unit_path)
                 
-        agdc2gdf.write_gdf(data_descriptor)
+        agdc2gdf.write_gdf_data(storage_indices, data_descriptor, storage_unit_path)
         
          
 
