@@ -250,6 +250,26 @@ class GDFNetCDF(object):
             set_variable(variable, variable_config)
             
         
+    def write_array(self, variable_name, data_array, indices_dict):
+        '''
+        '''        
+        dimension_config = self.storage_config['dimensions']
+        dimensions = dimension_config.keys()
+        index_dimensions = indices_dict.keys()
+        dimension_names = [dimension_config[dimension]['dimension_name'] for dimension in dimensions]
+        # Dict of dimensions and sizes read from netCDF
+        nc_shape_dict = {dimension[index]: len(self.netcdf_object.dimensions[dimension_names[index]]) for index in len(dimensions)}
+        
+        assert len(data_array.shape) + len(indices_dict) == len(dimensions), 'Indices must be provided for all dimensions not covered by the data array'
+        
+        assert data_array.shape == (nc_shape_dict[dimension] for dimension in dimensions if dimension not in indices_dict), 'Shape of data array does not match storage unit'
+        
+        # Create slices for accessing netcdf array
+        slices = [slice(indices_dict[dimension], indices_dict[dimension] + 1) if dimension in index_dimensions 
+                  else slice(0, nc_shape_dict[dimension]) for dimension in dimensions]
+        
+        self.netcdf_object.variables[variable_name][slices] = data_array
+    
     def get_attributes(self, verbose=None, normalise=True):
         """
         Copy the global and variable attributes from a netCDF object to an

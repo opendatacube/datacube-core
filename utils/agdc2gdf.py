@@ -320,7 +320,7 @@ order by end_datetime
                 os.remove(storage_path)
             else:
                 logger.warning('Skipping existing storage unit %s' % storage_path)
-		return
+                return
         
         t_indices = np.array([dt2secs(record_dict['end_datetime']) for record_dict in data_descriptor])
         
@@ -332,13 +332,24 @@ order by end_datetime
                          dimension_index_dict={'T': t_indices}, netcdf_format=None)
         del t_indices
         
+        variable_dict = self.storage_config[self.storage_type]['measurement_types']
+        variable_names = variable_dict.keys()
+        
+        slice_index = 0
         for record_dict in data_descriptor:
             tile_dataset = gdal.Open(record_dict['tile_pathname'])
             assert tile_dataset, 'Failed to open tile file %s' % record_dict['tile_pathname']
+            
             logger.debug('Reading array data from tile file %s', record_dict['tile_pathname'])
             data_array = tile_dataset.ReadAsArray()
-        
+            
+            for variable_index in range(len(variable_dict)):
+                variable_name = variable_names[variable_index]
+                logger.debug('Writing array to variable %s', variable_name)
+                gdfnetcdf.write_array(variable_name, data_array[variable_index + 1], {'T': slice_index})
                  
+        del gdfnetcdf # Close the netCDF
+        
         logger.debug('Moving temporary storage unit %s to %s', temp_storage_path, storage_path)
         shutil.move(temp_storage_path, storage_path)
         
