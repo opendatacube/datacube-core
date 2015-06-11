@@ -43,10 +43,13 @@ import calendar
 import collections
 import numexpr
 import logging
+from pprint import pprint
 
 from _database import Database, CachedResultSet
 from _arguments import CommandLineArgs
 from _config_file import ConfigFile
+from _gdfnetcdf import GDFNetCDF
+from _utils import dt2secs
 
 from EOtools.utils import log_multiline
 
@@ -63,12 +66,6 @@ logger = logging.getLogger(__name__)
 
 thread_exception = None
 
-def dt2secs(datetime_param):
-    '''
-    Helper function to convert datetime into seconds since epoch. Naive datetime is treated as UTC
-    '''
-    return calendar.timegm(datetime_param.timetuple())
-
 class GDF(object):
     '''
     Class definition for GDF (General Data Framework).
@@ -77,24 +74,35 @@ class GDF(object):
     DEFAULT_CONFIG_FILE = 'gdf_default.conf' # N.B: Assumed to reside in code root directory
     EPOCH_DATE_ORDINAL = date(1970, 1, 1).toordinal()
     
-    def get_command_line_params(self):
+    def get_command_line_params(self, arg_descriptors={}):
         '''
         Function to return a dict of command line parameters
+        
+        Parameters:
+            arg_descriptors: dict keyed by dest variable name containing sub-dicts as follows:
+                'short_flag': '-d', 
+                'long_flag': '--debug', 
+                'default': <Boolean>, 
+                'action': 'store_const', 
+                'const': <Boolean>,
+                'help': <help string>
+                
         '''
-        command_line_args_object = CommandLineArgs()
+        command_line_args_object = CommandLineArgs(arg_descriptors)
         
         return command_line_args_object.arguments
         
-    def get_config(self):
+    def get_config(self, config_files_string=None):
         '''
         Function to return a nested dict of config file entries
-        
+        Parameter:
+            config_files_string - comma separated list of GDF config files
         Returns: dict {<db_ref>: {<param_name>: <param_value>,... },... }
         '''
         config_dict = collections.OrderedDict() # Need to preserve order of config files
         
         # Use default config file if none provided
-        config_files_string = self._command_line_params['config_files'] or os.path.join(self._code_root, GDF.DEFAULT_CONFIG_FILE)
+        config_files_string = config_files_string or os.path.join(self._code_root, GDF.DEFAULT_CONFIG_FILE)
         
         # Set list of absolute config file paths from comma-delimited list
         self._config_files = [os.path.abspath(config_file) for config_file in config_files_string.split(',')] 
@@ -167,12 +175,12 @@ class GDF(object):
         #=======================================================================
                 
         # Create master configuration dict containing both command line and config_file parameters
-        self._configuration = self.get_config()
+        self._configuration = self.get_config(self._command_line_params['config_files'])
                 
-        # Create master database dict
+        # Create master database dict with Database objects keyed by db_ref
         self._databases = self.get_dbs()
         
-        # Read configuration from databases
+        # Read storage configuration from databases
         self._storage_config = self.get_storage_config()
         
         log_multiline(logger.debug, self.__dict__, 'GDF.__dict__', '\t')
@@ -359,40 +367,43 @@ class GDF(object):
               
             SQL = '''-- Query to return all storage_type configuration info for database %s
 select distinct
-storage_type_tag,
-storage_type_id,
-storage_type_name,
-measurement_type_tag,
-measurement_metatype_id,
-measurement_type_id,
-measurement_type_index, 
-measurement_metatype_name,
-measurement_type_name,
-nodata_value,
-datatype_name,
-numpy_datatype_name,
-gdal_datatype_name,
-netcdf_datatype_name,
-domain_tag,
-domain_id,
-domain_name,
-reference_system.reference_system_id,
-reference_system.reference_system_name,
-reference_system.reference_system_definition,
-reference_system.reference_system_unit,
-dimension_tag,
-dimension_id,
-dimension_order,
-dimension_extent,
-dimension_elements,
-dimension_cache,
-dimension_origin,
-dimension_extent::double precision / dimension_elements::double precision as dimension_element_size,
-indexing_type_name as indexing_type,
-index_reference_system.reference_system_id as index_reference_system_id,
-index_reference_system.reference_system_name as index_reference_system_name,
-index_reference_system.reference_system_definition as index_reference_system_definition,
-index_reference_system.reference_system_unit as index_reference_system_unit  
+    storage_type_tag,
+    storage_type_id,
+    storage_type_name,
+    measurement_type_tag,
+    measurement_metatype_id,
+    measurement_type_id,
+    measurement_type_index, 
+    measurement_metatype_name,
+    measurement_type_name,
+    nodata_value,
+    datatype_name,
+    numpy_datatype_name,
+    gdal_datatype_name,
+    netcdf_datatype_name,
+    domain_tag,
+    domain_id,
+    domain_name,
+    reference_system.reference_system_id,
+    reference_system.reference_system_name,
+    reference_system.reference_system_definition,
+    reference_system.reference_system_unit,
+    dimension_tag,
+    dimension_name,
+    dimension_id,
+    dimension_order,
+    dimension_extent,
+    dimension_elements,
+    dimension_cache,
+    dimension_origin,
+    dimension_extent::double precision / dimension_elements::double precision as dimension_element_size,
+    indexing_type_name as indexing_type,
+    index_reference_system.reference_system_id as index_reference_system_id,
+    index_reference_system.reference_system_name as index_reference_system_name,
+    index_reference_system.reference_system_definition as index_reference_system_definition,
+    index_reference_system.reference_system_unit as index_reference_system_unit  ,
+    property_name,
+    attribute_string
 from storage_type 
 join storage_type_measurement_type using(storage_type_id)
 join measurement_type using(measurement_metatype_id, measurement_type_id)
@@ -405,6 +416,8 @@ join dimension using(dimension_id)
 join indexing_type using(indexing_type_id)
 join reference_system using (reference_system_id)
 left join reference_system index_reference_system on index_reference_system.reference_system_id = storage_type_dimension.index_reference_system_id
+left join storage_type_dimension_property using(storage_type_id, domain_id, dimension_id)
+left join property using(property_id)
 ''' % database.db_ref
 
             # Apply storage_type filter if configured
@@ -458,14 +471,15 @@ left join reference_system index_reference_system on index_reference_system.refe
                                      'reference_system_name': record_dict['reference_system_name'],
                                      'reference_system_definition': record_dict['reference_system_definition'],
                                      'reference_system_unit': record_dict['reference_system_unit'], 
-                                     'dimensions': {}
+                                     'dimensions': []
                                      }
     
                     storage_type_dict['domains'][record_dict['domain_tag']] = domain_dict
                       
-                dimension_dict = domain_dict['dimensions'].get(record_dict['dimension_tag'])
+                dimension_dict = storage_type_dict['dimensions'].get(record_dict['dimension_tag'])
                 if dimension_dict is None:
                     dimension_dict = {'dimension_tag': record_dict['dimension_tag'],
+                                        'dimension_name': record_dict['dimension_name'],
                                         'dimension_id': record_dict['dimension_id'],
                                         'dimension_order': record_dict['dimension_order'],
                                         'dimension_extent': record_dict['dimension_extent'],
@@ -474,16 +488,27 @@ left join reference_system index_reference_system on index_reference_system.refe
                                         'dimension_origin': record_dict['dimension_origin'],
                                         'dimension_element_size': record_dict['dimension_element_size'],
                                         'indexing_type': record_dict['indexing_type'],
+                                        'domain_tag': record_dict['domain_tag'],
+                                        'domain_id': record_dict['domain_id'],
+                                        'domain_name': record_dict['domain_name'],
+                                        'reference_system_id': record_dict['reference_system_id'],
+                                        'reference_system_name': record_dict['reference_system_name'],
+                                        'reference_system_definition': record_dict['reference_system_definition'],
+                                        'reference_system_unit': record_dict['reference_system_unit'],
                                         'index_reference_system_id': record_dict['index_reference_system_id'],
                                         'index_reference_system_name': record_dict['index_reference_system_name'],
                                         'index_reference_system_definition': record_dict['index_reference_system_definition'],
-                                        'index_reference_system_unit': record_dict['index_reference_system_unit']
+                                        'index_reference_system_unit': record_dict['index_reference_system_unit'],
+                                        'properties': {}
                                         }
     
-                    # Store a reference both under domains and storage_type
-                    domain_dict['dimensions'][record_dict['dimension_tag']] = dimension_dict
+                    
                     storage_type_dict['dimensions'][record_dict['dimension_tag']] = dimension_dict
+                    domain_dict['dimensions'].append(record_dict['dimension_tag'])
                       
+                if dimension_dict['properties'].get(record_dict['property_name']) is None:
+                    dimension_dict['properties'][record_dict['property_name']] = record_dict['attribute_string']
+               
                       
     #            log_multiline(logger.info, db_dict, 'db_dict', '\t')
             result_dict[database.db_ref] = db_storage_config_dict
@@ -510,6 +535,14 @@ left join reference_system index_reference_system on index_reference_system.refe
         #TODO: Make more general (if possible)
         # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
         return datetime.fromtimestamp(record_dict['slice_index_value'] + (record_dict['x_min'] + record_dict['x_max']) * 120).date()
+            
+            
+    def null_grouping(self, record_dict):
+        '''
+        Function which takes a record_dict containing all values from a query in the get_db_slices function 
+        and returns the slice_index_value unmodified
+        '''
+        return record_dict['slice_index_value']
             
             
     def solar_days_since_epoch(self, record_dict):
@@ -998,11 +1031,20 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                 slice_grouping_function = self.solar_days_since_epoch
             
         
-        return self.do_storage_type_query(storage_type_tags, 
-                                          [get_storage_type_descriptors, 
-                                            dimension_range_dict, 
-                                            'T', 
-                                            slice_grouping_function, 
-                                            False
-                                            ]
-                                          )
+        return self.do_db_query(self.databases, [get_db_descriptors, 
+                                                dimension_range_dict, 
+                                                'T', 
+                                                slice_grouping_function, 
+                                                storage_type_tags, 
+                                                False
+                                                ]
+                                        )
+def main():
+    # Testing stuff
+    gdf = GDF()
+    pprint(gdf.storage_config['LS5TM'])
+    pprint(dict(gdf.storage_config['LS5TM']['dimensions']))
+    pprint(dict(gdf.storage_config['LS5TM']['measurement_types']))
+
+if __name__ == '__main__':
+    main()
