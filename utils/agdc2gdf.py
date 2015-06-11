@@ -319,7 +319,8 @@ order by end_datetime
                 logger.debug('Removing existing storage unit %s' % storage_path)
                 os.remove(storage_path)
             else:
-                raise Exception('Storage unit %s already exists' % storage_path)
+                logger.warning('Skipping existing storage unit %s' % storage_path)
+		return
         
         t_indices = np.array([dt2secs(record_dict['end_datetime']) for record_dict in data_descriptor])
         
@@ -334,6 +335,7 @@ order by end_datetime
         for record_dict in data_descriptor:
             tile_dataset = gdal.Open(record_dict['tile_pathname'])
             assert tile_dataset, 'Failed to open tile file %s' % record_dict['tile_pathname']
+            logger.debug('Reading array data from tile file %s', record_dict['tile_pathname'])
             data_array = tile_dataset.ReadAsArray()
         
                  
@@ -378,7 +380,7 @@ order by end_datetime
             pass
         
         
-        pass
+        assert storage_unit_path, 'Storage unit path not given'
     
     def ordinate2index(self, ordinate, dimension):
         '''
@@ -426,7 +428,8 @@ def main():
 #        log_multiline(logger.debug, data_descriptor, 'data_descriptor', '\t')
                 
         storage_unit_path = agdc2gdf.create_netcdf(storage_indices, data_descriptor)
-                
+        if not storage_unit_path: continue
+        
         agdc2gdf.write_gdf_data(storage_indices, data_descriptor, storage_unit_path)
         
          
