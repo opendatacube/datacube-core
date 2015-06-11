@@ -233,8 +233,10 @@ class GDFNetCDF(object):
                                       for dimension in self.storage_config['dimensions'].keys()])
             logger.debug('Creating variable %s with dimensions %s and chunk sizes %s', variable_name, dimensions, chunksizes)
             
-            self.netcdf_object.createVariable(variable_name, variable_config['netcdf_datatype_name'], dimensions=dimensions,
+            variable = self.netcdf_object.createVariable(variable_name, variable_config['netcdf_datatype_name'], dimensions=dimensions,
                    chunksizes=chunksizes, fill_value=variable_config['nodata_value'], zlib=True)
+            
+            return variable
             
         # Start of create function
         # Default to existing instance value
