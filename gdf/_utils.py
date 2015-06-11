@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 #===============================================================================
 # Copyright (c)  2014 Geoscience Australia
 # All rights reserved.
@@ -24,47 +26,18 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
-[agdc2gdf]
-# Set default ranges for testing - Can be overridden on command line
-# Inclusive x & y indices
-xmin = 140
-xmax = 141
-ymin = -36
-ymax = -35
-# Inclusive t index (years)
-tmin = 2010
-tmax = 2011
+'''
+Miscellaneous utilities for GDF
 
-force=True
+Created on Jun 11, 2015
 
-# Value for Raijin
-#temp_dir = /short/v10/axi547/gdf_temp
-# Local directory
-temp_dir = /home/user/gdf_temp
+@author: Alex Ip
+'''
+import calendar
 
-[gdf]
-# Use default config file
-#config_files = <some other config file>
+def dt2secs(datetime_param):
+    '''
+    Helper function to convert datetime into seconds since epoch. Naive datetime is treated as UTC
+    '''
+    return calendar.timegm(datetime_param.timetuple())
 
-# Single storage type to populate
-storage_type = LS5TM
-
-# Value for Raijin
-#storage_root = /short/v10/axi547/gdf
-# Local directory
-storage_root = /home/user/gdf_root
-
-[agdc]
-# Database connection parameters for AGDC Landsat database
-# Port-forwarded to server at NCI
-db_ref = agdc_landsat
-host = localhost
-port = 5434
-dbname = hypercube_v0
-user = cube_user
-password = GAcube0
-
-# Selection criteria
-satellite = LS5
-sensor = TM
-level = NBAR

@@ -47,12 +47,17 @@ import collections
 import numexpr
 import logging
 import errno
+import shutil
+from osgeo import gdal
 
 import gdf
-from gdf import Database, CachedResultSet
+from gdf import Database
+from gdf import CachedResultSet
 from gdf import CommandLineArgs
 from gdf import ConfigFile
 from gdf import GDF
+from gdf import GDFNetCDF
+from gdf import dt2secs
 
 from EOtools.utils import log_multiline
 
@@ -179,7 +184,7 @@ class AGDC2GDF(GDF):
         # Create master GDF database dict
         self._databases = self.get_dbs()
         
-        self.force = self._command_line_params.get('force')
+        self.force = self._command_line_params.get('force') or agdc2gdf_config_file_object.configuration['agdc2gdf']['force']
         self.temp_dir = self._command_line_params.get('temp_dir') or agdc2gdf_config_file_object.configuration['agdc2gdf']['temp_dir']
 
         self.storage_type = self._command_line_params.get('storage_type') or agdc2gdf_config_file_object.configuration['gdf']['storage_type']
@@ -309,10 +314,31 @@ order by end_datetime
         temp_storage_path = os.path.join(temp_storage_dir, storage_file)
         storage_path = os.path.join(storage_dir, storage_file)
         
-        if os.path.isfile(storage_path) and not self.force: 
-            raise Exception('Storage unit %s already exists' % storage_path)
+        if os.path.isfile(storage_path):
+            if self.force: 
+                logger.debug('Removing existing storage unit %s' % storage_path)
+                os.remove(storage_path)
+            else:
+                raise Exception('Storage unit %s already exists' % storage_path)
         
-         
+        t_indices = np.array([dt2secs(record_dict['end_datetime']) for record_dict in data_descriptor])
+        
+        gdfnetcdf = GDFNetCDF(storage_config=self.storage_config[self.storage_type])
+        
+        logger.debug('Creating temporary storage unit %s', temp_storage_path)
+        gdfnetcdf.create(netcdf_filename=temp_storage_path, 
+                         index_tuple=storage_indices, 
+                         dimension_index_dict={'T': t_indices}, netcdf_format=None)
+        del t_indices
+        
+        for record_dict in data_descriptor:
+            tile_dataset = gdal.Open(record_dict['tile_pathname'])
+            assert tile_dataset, 'Failed to open tile file %s' % record_dict['tile_pathname']
+            data_array = tile_dataset.ReadAsArray()
+        
+                 
+        logger.debug('Moving temporary storage unit %s to %s', temp_storage_path, storage_path)
+        shutil.move(temp_storage_path, storage_path)
         
         return storage_path
     
@@ -397,10 +423,9 @@ def main():
     # Do migration in storage unit batches
     for storage_indices in storage_indices_list:
         data_descriptor = agdc2gdf.read_agdc(storage_indices) 
-        log_multiline(logger.debug, data_descriptor, 'data_descriptor', '\t')
+#        log_multiline(logger.debug, data_descriptor, 'data_descriptor', '\t')
                 
         storage_unit_path = agdc2gdf.create_netcdf(storage_indices, data_descriptor)
-        logger.debug('storage_unit_path = %s', storage_unit_path)
                 
         agdc2gdf.write_gdf_data(storage_indices, data_descriptor, storage_unit_path)
         
