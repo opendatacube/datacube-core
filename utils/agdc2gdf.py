@@ -346,7 +346,9 @@ order by end_datetime
             for variable_index in range(len(variable_dict)):
                 variable_name = variable_names[variable_index]
                 logger.debug('Writing array to variable %s', variable_name)
-                gdfnetcdf.write_array(variable_name, data_array[variable_index + 1], {'T': slice_index})
+                gdfnetcdf.write_array(variable_name, data_array[variable_index], {'T': slice_index})
+
+            slice_index += 1
                  
         del gdfnetcdf # Close the netCDF
         

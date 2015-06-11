@@ -258,17 +258,25 @@ class GDFNetCDF(object):
         index_dimensions = indices_dict.keys()
         dimension_names = [dimension_config[dimension]['dimension_name'] for dimension in dimensions]
         # Dict of dimensions and sizes read from netCDF
-        nc_shape_dict = {dimension[index]: len(self.netcdf_object.dimensions[dimension_names[index]]) for index in len(dimensions)}
+        nc_shape_dict = {dimensions[index]: len(self.netcdf_object.dimensions[dimension_names[index]]) for index in range(len(dimensions))}
+
+        logger.debug('nc_shape_dict = %s', nc_shape_dict)
         
         assert len(data_array.shape) + len(indices_dict) == len(dimensions), 'Indices must be provided for all dimensions not covered by the data array'
         
-        assert data_array.shape == (nc_shape_dict[dimension] for dimension in dimensions if dimension not in indices_dict), 'Shape of data array does not match storage unit'
+        slice_shape = tuple(nc_shape_dict[dimension] for dimension in dimensions if dimension not in indices_dict)
+        assert data_array.shape == slice_shape, 'Shape of data array %s does not match storage unit slice shape %s' % (data_array.shape, slice_shape)
         
         # Create slices for accessing netcdf array
         slices = [slice(indices_dict[dimension], indices_dict[dimension] + 1) if dimension in index_dimensions 
                   else slice(0, nc_shape_dict[dimension]) for dimension in dimensions]
-        
-        self.netcdf_object.variables[variable_name][slices] = data_array
+        logger.debug('slices = %s', slices)
+
+        #logger.debug('slice = %s', self.netcdf_object.variables[variable_name][slices]
+        logger.debug('data_array = %s', data_array)
+
+        #self.netcdf_object.variables[variable_name][slices] = data_array
+        #self.netcdf_object.variables[variable_name][indices_dict['T']] = data_array
     
     def get_attributes(self, verbose=None, normalise=True):
         """
