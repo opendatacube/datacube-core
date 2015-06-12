@@ -286,11 +286,10 @@ class GDFNetCDF(object):
         logger.debug('variable = %s' % variable)
 
         logger.debug('slice = %s', variable[indices_dict['T']])
-        #logger.debug('slice = %s', variable[slices])
         logger.debug('data_array = %s', data_array)
 
-        #self.netcdf_object.variables[variable_name][slices] = data_array
-        #self.netcdf_object.variables[variable_name][indices_dict['T']] = data_array
+        self.netcdf_object.variables[variable_name][slices] = data_array
+        self.netcdf_object.sync()
     
     def get_attributes(self, verbose=None, normalise=True):
         """
