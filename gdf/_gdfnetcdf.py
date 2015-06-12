@@ -258,7 +258,7 @@ class GDFNetCDF(object):
             
         logger.debug('self.netcdf_object.variables = %s' % self.netcdf_object.variables)
         
-    def write_array(self, variable_name, data_array, indices_dict):
+    def write_slice(self, variable_name, slice_array, indices_dict):
         '''
         '''        
         dimension_config = self.storage_config['dimensions']
@@ -271,24 +271,23 @@ class GDFNetCDF(object):
         logger.debug('variable_name = %s', variable_name)
         logger.debug('nc_shape_dict = %s', nc_shape_dict)
         
-        assert len(data_array.shape) + len(indices_dict) == len(dimensions), 'Indices must be provided for all dimensions not covered by the data array'
+        assert len(slice_array.shape) + len(indices_dict) == len(dimensions), 'Indices must be provided for all dimensions not covered by the data array'
         
         slice_shape = tuple(nc_shape_dict[dimension] for dimension in dimensions if dimension not in indices_dict)
-        assert data_array.shape == slice_shape, 'Shape of data array %s does not match storage unit slice shape %s' % (data_array.shape, slice_shape)
+        assert slice_array.shape == slice_shape, 'Shape of data array %s does not match storage unit slice shape %s' % (slice_array.shape, slice_shape)
         
         # Create slices for accessing netcdf array
-        slices = [slice(indices_dict[dimension], indices_dict[dimension] + 1) if dimension in index_dimensions 
+        slicing = [slice(indices_dict[dimension], indices_dict[dimension] + 1) if dimension in index_dimensions 
                   else slice(0, nc_shape_dict[dimension]) for dimension in dimensions]
-        logger.debug('slices = %s', slices)
+        logger.debug('slicing = %s', slicing)
 
         logger.debug('self.netcdf_object.variables = %s' % self.netcdf_object.variables)
         variable = self.netcdf_object.variables[variable_name]
-        logger.debug('variable = %s' % variable)
+#        logger.debug('variable = %s' % variable)
 
-        logger.debug('slice = %s', variable[indices_dict['T']])
-        logger.debug('data_array = %s', data_array)
+        logger.debug('slice_array = %s', slice_array)
 
-        self.netcdf_object.variables[variable_name][slices] = data_array
+        variable[slicing] = slice_array
         self.netcdf_object.sync()
     
     def get_attributes(self, verbose=None, normalise=True):
