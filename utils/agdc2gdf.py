@@ -184,7 +184,7 @@ class AGDC2GDF(GDF):
         # Create master GDF database dict
         self._databases = self.get_dbs()
         
-        self.force = self._command_line_params.get('force') or agdc2gdf_config_file_object.configuration['agdc2gdf']['force']
+        self.force = self._command_line_params.get('force') or agdc2gdf_config_file_object.configuration['agdc2gdf'].get('force')
         self.temp_dir = self._command_line_params.get('temp_dir') or agdc2gdf_config_file_object.configuration['agdc2gdf']['temp_dir']
 
         self.storage_type = self._command_line_params.get('storage_type') or agdc2gdf_config_file_object.configuration['gdf']['storage_type']
