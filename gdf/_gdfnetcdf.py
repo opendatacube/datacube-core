@@ -157,6 +157,7 @@ class GDFNetCDF(object):
                 variable.__setattr__(property_name, property_value)
             
             variable[:] = dimension_index_vector    
+            self.netcdf_object.sync()
             #===================================================================
             # if dimension_name == 'time':
             #     variable[:] = netCDF4.date2num(dimension_index_list,
@@ -227,16 +228,20 @@ class GDFNetCDF(object):
         #=======================================================================
             
         def set_variable(variable_name, variable_config):
-            dimensions = tuple([self.storage_config['dimensions'][dimension]['dimension_name']
-                                      for dimension in self.storage_config['dimensions'].keys()])
-            chunksizes = tuple([self.storage_config['dimensions'][dimension]['dimension_cache'] 
-                                      for dimension in self.storage_config['dimensions'].keys()])
+            dimensions = self.storage_config['dimensions'].keys()
+            dimension_names = tuple([self.storage_config['dimensions'][dimension]['dimension_name']
+                                      for dimension in dimensions])
+
+            nc_shape_dict = {dimensions[index]: len(self.netcdf_object.dimensions[dimension_names[index]]) for index in range(len(dimensions))}
+
+            chunksizes = tuple([min(self.storage_config['dimensions'][dimension]['dimension_cache'], nc_shape_dict[dimension])
+                                      for dimension in dimensions])
             logger.debug('Creating variable %s with dimensions %s and chunk sizes %s', variable_name, dimensions, chunksizes)
             
-            variable = self.netcdf_object.createVariable(variable_name, variable_config['netcdf_datatype_name'], dimensions=dimensions,
-                   chunksizes=chunksizes, fill_value=variable_config['nodata_value'], zlib=True)
-            
-            return variable
+            variable = self.netcdf_object.createVariable(variable_name, variable_config['netcdf_datatype_name'], dimensions=dimension_names,
+                   chunksizes=chunksizes, fill_value=variable_config['nodata_value'], zlib=False)
+            logger.debug('variable = %s' % variable)
+            self.netcdf_object.sync()
             
         # Start of create function
         # Default to existing instance value
@@ -251,6 +256,7 @@ class GDFNetCDF(object):
         for variable, variable_config in self.storage_config['measurement_types'].items():
             set_variable(variable, variable_config)
             
+        logger.debug('self.netcdf_object.variables = %s' % self.netcdf_object.variables)
         
     def write_array(self, variable_name, data_array, indices_dict):
         '''
@@ -262,6 +268,7 @@ class GDFNetCDF(object):
         # Dict of dimensions and sizes read from netCDF
         nc_shape_dict = {dimensions[index]: len(self.netcdf_object.dimensions[dimension_names[index]]) for index in range(len(dimensions))}
 
+        logger.debug('variable_name = %s', variable_name)
         logger.debug('nc_shape_dict = %s', nc_shape_dict)
         
         assert len(data_array.shape) + len(indices_dict) == len(dimensions), 'Indices must be provided for all dimensions not covered by the data array'
@@ -274,7 +281,12 @@ class GDFNetCDF(object):
                   else slice(0, nc_shape_dict[dimension]) for dimension in dimensions]
         logger.debug('slices = %s', slices)
 
-        #logger.debug('slice = %s', self.netcdf_object.variables[variable_name][slices]
+        logger.debug('self.netcdf_object.variables = %s' % self.netcdf_object.variables)
+        variable = self.netcdf_object.variables[variable_name]
+        logger.debug('variable = %s' % variable)
+
+        logger.debug('slice = %s', variable[indices_dict['T']])
+        #logger.debug('slice = %s', variable[slices])
         logger.debug('data_array = %s', data_array)
 
         #self.netcdf_object.variables[variable_name][slices] = data_array
@@ -396,6 +408,3 @@ class GDFNetCDF(object):
         bounds_name = dimension_name + '_bounds'
         
         netcdf_builder.add_bounds(self.netcdf_object, dimension_name, bounds, bounds_name)
-        
-
-        
