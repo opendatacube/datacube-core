@@ -159,7 +159,7 @@ class Analytics(object):
 		functionResult['array_input'] = []
 		count = 1
 		for array in arrays:
-			functionResult['array_input'].append({ arrays[count-1]['variable'] : copy.deepcopy(arrays[0]) })
+			functionResult['array_input'].append({ arrays[count-1]['variable'] : copy.deepcopy(arrays[count-1]) })
 			count += 1
 		functionResult['function'] = function
 		functionResult['array_output'] = { name : copy.deepcopy(arrays[0]) }
