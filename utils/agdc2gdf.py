@@ -323,8 +323,6 @@ order by end_datetime
         t_indices = np.array([dt2secs(record_dict['end_datetime']) for record_dict in data_descriptor])
         
         gdfnetcdf = GDFNetCDF(storage_config=self.storage_config[self.storage_type])
-        # Set georeferencing from first tile
-        gdfnetcdf.georeference_from_file(data_descriptor[0]['tile_pathname'])
         
         logger.debug('Creating temporary storage unit %s', temp_storage_path)
         gdfnetcdf.create(netcdf_filename=temp_storage_path, 
@@ -332,6 +330,9 @@ order by end_datetime
                          dimension_index_dict={'T': t_indices}, netcdf_format=None)
         del t_indices
         
+        # Set georeferencing from first tile
+        gdfnetcdf.georeference_from_file(data_descriptor[0]['tile_pathname'])
+
         variable_dict = self.storage_config[self.storage_type]['measurement_types']
         variable_names = variable_dict.keys()
                 
