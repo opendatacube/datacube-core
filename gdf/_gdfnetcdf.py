@@ -210,6 +210,11 @@ class GDFNetCDF(object):
         #     lines    = template_dataset.RasterYSize
     def write_slice(self, variable_name, slice_array, indices_dict):
         '''
+        Function to set a specified slice in the specified netCDF variable
+        Parameters:
+            variable_name: Name of variable to which slice array will be written
+            slice_array: Numpy array to be written to netCDF file
+            indices_dict: Dict keyed by dimension tag indicating the dimension(s) & index/indices to which the slice should be written
         '''        
         dimension_config = self.storage_config['dimensions']
         dimensions = dimension_config.keys()
@@ -220,6 +225,8 @@ class GDFNetCDF(object):
 
         logger.debug('variable_name = %s', variable_name)
         logger.debug('nc_shape_dict = %s', nc_shape_dict)
+        
+        assert set(index_dimensions) <= set(dimensions), 'Invalid slice index dimension(s)'
         
         assert len(slice_array.shape) + len(indices_dict) == len(dimensions), 'Indices must be provided for all dimensions not covered by the data array'
         
@@ -239,7 +246,90 @@ class GDFNetCDF(object):
 
         variable[slicing] = slice_array
         self.netcdf_object.sync()
-    
+        
+    def read_slice(self, variable_name, indices_dict):
+        '''
+        Function to read a specified slice in the specified netCDF variable
+        Parameters:
+            variable_name: Name of variable from which the slice array will be read
+            indices_dict: Dict keyed by dimension tag indicating the dimension(s) & index/indices from which the slice should be read
+        Returns:
+            slice_array: Numpy array read from netCDF file
+        '''        
+        dimension_config = self.storage_config['dimensions']
+        dimensions = dimension_config.keys()
+        index_dimensions = indices_dict.keys()
+        dimension_names = [dimension_config[dimension]['dimension_name'] for dimension in dimensions]
+        # Dict of dimensions and sizes read from netCDF
+        nc_shape_dict = {dimensions[index]: len(self.netcdf_object.dimensions[dimension_names[index]]) for index in range(len(dimensions))}
+
+        logger.debug('variable_name = %s', variable_name)
+        logger.debug('nc_shape_dict = %s', nc_shape_dict)
+        
+        assert set(index_dimensions) <= set(dimensions), 'Invalid slice index dimension(s)'
+        
+        # Create slices for accessing netcdf array
+        slicing = [slice(indices_dict[dimension], indices_dict[dimension] + 1) if dimension in index_dimensions 
+                  else slice(0, nc_shape_dict[dimension]) for dimension in dimensions]
+        logger.debug('slicing = %s', slicing)
+
+        logger.debug('self.netcdf_object.variables = %s' % self.netcdf_object.variables)
+        variable = self.netcdf_object.variables[variable_name]
+#        logger.debug('variable = %s' % variable)
+
+        slice_array = variable[slicing]
+        logger.debug('slice_array = %s', slice_array)
+        return slice_array
+
+    def read_subset(self, variable_name, range_dict):
+        '''
+        Function to read a specified slice in the specified netCDF variable
+        Parameters:
+            variable_name: Name of variable from which the slice array will be read
+            range_dict: Dict keyed by dimension tag containing the dimension(s) & range tuples from which the subset should be read
+        Returns:
+            subset_array: Numpy array read from netCDF file
+        '''        
+        dimension_config = self.storage_config['dimensions']
+        dimensions = dimension_config.keys()
+        range_dimensions = range_dict.keys()
+        dimension_names = [dimension_config[dimension]['dimension_name'] for dimension in dimensions]
+        # Dict of dimensions and sizes read from netCDF
+        nc_shape_dict = {dimensions[index]: len(self.netcdf_object.dimensions[dimension_names[index]]) for index in range(len(dimensions))}
+        
+
+        logger.debug('variable_name = %s', variable_name)
+        logger.debug('nc_shape_dict = %s', nc_shape_dict)
+        
+        assert set(range_dimensions) <= set(dimensions), 'Invalid range dimension(s)'
+        
+        range_index_dict = {} # Dict containing range index tuples
+        for dimension in dimensions:
+            if dimension in range_dimensions:
+                dimension_array = self.netcdf_object.variables[dimension_names[dimension]][...]
+                index_array = np.where((dimension_array >= range_dict[dimension][0]) * (dimension_array <= range_dict[dimension][1]))
+                try:
+                    range_index_dict[dimension] = (index_array[0], index_array[-1] + 1)
+                except IndexError:
+                    logger.warning('Invalid range %s for dimension %s', range_dict[dimension], dimension)
+                    return None
+                    
+            else: # Range not defined for this dimension
+                range_index_dict[dimension] = (0, nc_shape_dict[dimension])
+        logger.debug('range_index_dict = %s', range_index_dict)
+            
+        # Create slices for accessing netcdf array
+        slicing = [slice(range_index_dict[dimension][0], range_index_dict[dimension][1])]
+        logger.debug('slicing = %s', slicing)
+
+        variable = self.netcdf_object.variables[variable_name]
+#        logger.debug('variable = %s' % variable)
+
+        subset_array = variable[slicing]
+        logger.debug('subset_array = %s', subset_array)
+        return subset_array
+        
+        
     def get_attributes(self, verbose=None, normalise=True):
         """
         Copy the global and variable attributes from a netCDF object to an
