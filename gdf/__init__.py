@@ -726,11 +726,12 @@ query_parameter = \
         #          }
         #     }
         #=======================================================================
-        def get_storage_type_descriptors(dimension_range_dict, 
+        def get_db_descriptors(dimension_range_dict, 
                           slice_dimension,
                           slice_grouping_function, 
+                          storage_type_tags, 
                           exclusive, 
-                          storage_type_tag, 
+                          database, 
                           result_dict):
             '''
             Function to return descriptors for all storage_units which fall in the specified dimensional ranges
@@ -742,7 +743,7 @@ query_parameter = \
                 slice_locality: Range (in slice_dimension units) in which to group slices
                 storage_type_tags: list of storage_type_tags to include in query
                 exclusive: Boolean flag to indicate whether query should exclude storage_units with lower dimensionality than the specified range
-                storage_type: storage_type string against which to run the query
+                database: gdf.database object against which to run the query
                 result_dict: dict to contain the result
                                                                               
             Return Value:
@@ -821,46 +822,52 @@ query_parameter = \
                 # End of update_storage_units_descriptor() definition
             
             
-            logger.debug('storage_type_tag = %s', storage_type_tag)
-            storage_type = self._storage_config[storage_type_tag]
-            database = self._databases[storage_type['db_ref']]
+            for storage_type in self._storage_config.values():
                 
-            # list of dimension_tags for storage_type sorted by creation order
-            storage_type_dimension_tags = [dimension['dimension_tag'] for dimension in sorted(storage_type['dimensions'].values(), key=lambda dimension: dimension['dimension_order'])]
-            logger.debug('storage_type_dimension_tags = %s', storage_type_dimension_tags)
+                storage_type_tag = storage_type['storage_type_tag']
+                logger.debug('storage_type_tag = %s', storage_type_tag)
             
-            # list of dimension_tags for range query sorted by creation order (do all if 
-            if dimension_range_dict:
-                range_dimension_tags = [dimension_tag for dimension_tag in storage_type_dimension_tags if dimension_tag in dimension_range_dict.keys()]
-            else:
-                range_dimension_tags = []
-            logger.debug('range_dimension_tags = %s', range_dimension_tags)
-            
-            # Skip this storage_type if exclusive flag set and dimensionality is less than query range dimnsionality
-            if exclusive and (set(storage_type_dimension_tags) < set(range_dimension_tags)):
-                return
-            
-            #===============================================================
-            # # list of dimension_tags for i sorted by creation order
-            # irregular_dimensions = [dimension_tag for dimension_tag in storage_type_dimension_tags if storage_type['dimensions'][dimension_tag]['indexing_type'] == 'irregular']
-            #===============================================================
-            
-            # Create a sub-descriptor for each storage_type
-            storage_type_descriptor = {}
-            
-            SQL = '''-- Find all slices in storage_units which fall in range for storage type %s
+                
+                # Skip any storage_types if they are not in a specified list
+                if storage_type_tags and (storage_type_tag not in storage_type_tags):
+                    continue
+                
+                # list of dimension_tags for storage_type sorted by creation order
+                storage_type_dimension_tags = [dimension['dimension_tag'] for dimension in sorted(storage_type['dimensions'].values(), key=lambda dimension: dimension['dimension_order'])]
+                logger.debug('storage_type_dimension_tags = %s', storage_type_dimension_tags)
+                
+                # list of dimension_tags for range query sorted by creation order (do all if 
+                if dimension_range_dict:
+                    range_dimension_tags = [dimension_tag for dimension_tag in storage_type_dimension_tags if dimension_tag in dimension_range_dict.keys()]
+                else:
+                    range_dimension_tags = []
+                logger.debug('range_dimension_tags = %s', range_dimension_tags)
+                
+                # Skip this storage_type if exclusive flag set and dimensionality is less than query range dimnsionality
+                if exclusive and (set(storage_type_dimension_tags) < set(range_dimension_tags)):
+                    continue
+                
+                #===============================================================
+                # # list of dimension_tags for i sorted by creation order
+                # irregular_dimensions = [dimension_tag for dimension_tag in storage_type_dimension_tags if storage_type['dimensions'][dimension_tag]['indexing_type'] == 'irregular']
+                #===============================================================
+                
+                # Create a sub-descriptor for each storage_type
+                storage_type_descriptor = {}
+                
+                SQL = '''-- Find all slices in storage_units which fall in range for storage type %s
 select distinct''' % storage_type_tag
-            for dimension_tag in storage_type_dimension_tags:
-                SQL +='''
+                for dimension_tag in storage_type_dimension_tags:
+                    SQL +='''
 %s.storage_dimension_index as %s_index,
 %s.storage_dimension_min as %s_min,
 %s.storage_dimension_max as %s_max,'''.replace('%s', dimension_tag)
-            SQL +='''
+                SQL +='''
 slice_index_value
 from storage
 '''                    
-            for dimension_tag in storage_type_dimension_tags:
-                SQL += '''join (
+                for dimension_tag in storage_type_dimension_tags:
+                    SQL += '''join (
 select *
 from storage_dimension
 join dimension using(dimension_id)
@@ -870,18 +877,18 @@ and dimension.dimension_tag = '%s'
 ''' % (storage_type['storage_type_id'], 
    dimension_tag
    )
-                # Apply range filters
-                if dimension_tag in range_dimension_tags:
-                    SQL += '''and (storage_dimension_min < %f 
+                    # Apply range filters
+                    if dimension_tag in range_dimension_tags:
+                        SQL += '''and (storage_dimension_min < %f 
     and storage_dimension_max > %f)
 ''' % (dimension_range_dict[dimension_tag][1], # Max
    dimension_range_dict[dimension_tag][0] # Min
    )
 
-                SQL += ''') %s using(storage_type_id, storage_id, storage_version)
+                    SQL += ''') %s using(storage_type_id, storage_id, storage_version)
 ''' % (dimension_tag)
 
-            SQL +='''
+                SQL +='''
     join storage_dataset using (storage_type_id, storage_id, storage_version)
     join (
       select dataset_type_id, 
@@ -898,115 +905,115 @@ and dimension.dimension_tag = '%s'
     ) dataset_index using(dataset_type_id, dataset_id)
 ''' % (slice_dimension)
 
-            # Restrict slices to those within range if required
-            if slice_dimension in range_dimension_tags:
-                SQL += '''where slice_index_value between %f and %f
+                # Restrict slices to those within range if required
+                if slice_dimension in range_dimension_tags:
+                    SQL += '''where slice_index_value between %f and %f
 ''' % (dimension_range_dict[slice_dimension][0], # Min
        dimension_range_dict[slice_dimension][1]) # Max
 
-            SQL +='''
+                SQL +='''
 order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_index_value;
 '''            
-            log_multiline(logger.debug, SQL , 'SQL', '\t')
-
-            slice_result_set = database.submit_query(SQL)
-            
-            storage_units_descriptor = {} # Dict to hold all storage unit descriptors for this storage type
-            
-            regular_storage_type_dimension_tags = [dimension for dimension in storage_type_dimension_tags if self._storage_config[storage_type_tag]['dimensions'][dimension]['indexing_type'] == 'regular'] 
-            irregular_storage_type_dimension_tags = [dimension for dimension in storage_type_dimension_tags if self._storage_config[storage_type_tag]['dimensions'][dimension]['indexing_type'] == 'irregular'] 
-            fixed_storage_type_dimension_tags = [dimension for dimension in storage_type_dimension_tags if self._storage_config[storage_type_tag]['dimensions'][dimension]['indexing_type'] == 'fixed'] 
-            
-            # Define initial max/min/shape values
-            dimension_minmax_dict = {dimension: (dimension_range_dict.get(dimension) or (-sys.maxint-1, sys.maxint)) for dimension in storage_type_dimension_tags}
-            storage_min_dict = {dimension: sys.maxint for dimension in storage_type_dimension_tags}
-            storage_max_dict = {dimension: -sys.maxint-1 for dimension in storage_type_dimension_tags}
-            storage_shape_dict = {dimension: 0 for dimension in storage_type_dimension_tags}
-            overall_min_dict = {dimension: sys.maxint for dimension in storage_type_dimension_tags}
-            overall_max_dict = {dimension: -sys.maxint-1 for dimension in storage_type_dimension_tags}
-            overall_shape_dict = {dimension: 0 for dimension in storage_type_dimension_tags}
-            
-            storage_slice_group_set = set()
-            overall_slice_group_set = set()
-            
-            storage_index_tuple = None
-            # Iterate through all records once only
-            for record_dict in slice_result_set.record_generator({'slice_group_value': slice_grouping_function}):
-                logger.debug('record_dict = %s', record_dict)
-                new_storage_index_tuple = tuple([record_dict[dimension_tag.lower() + '_index'] 
-                                             for dimension_tag in storage_type_dimension_tags])
+                log_multiline(logger.debug, SQL , 'SQL', '\t')
+    
+                slice_result_set = database.submit_query(SQL)
                 
-                if new_storage_index_tuple != storage_index_tuple: # Change in storage unit                        
-                    update_storage_units_descriptor(storage_index_tuple,
-                                            storage_type_dimension_tags,
-                                            regular_storage_type_dimension_tags,
-                                            fixed_storage_type_dimension_tags,
-                                            storage_min_dict,
-                                            overall_min_dict,
-                                            storage_max_dict,
-                                            overall_max_dict,
-                                            storage_shape_dict,
-                                            storage_slice_group_set,
-                                            overall_slice_group_set,
-                                            storage_units_descriptor
-                                            )
-                        
-                    # Re-initialise max & min dicts for new storage unit
-                    storage_min_dict = {dimension: sys.maxint for dimension in storage_type_dimension_tags}
-                    storage_max_dict = {dimension: -sys.maxint-1 for dimension in storage_type_dimension_tags}
-                    storage_slice_group_set = set()
-                    storage_index_tuple = new_storage_index_tuple
+                storage_units_descriptor = {} # Dict to hold all storage unit descriptors for this storage type
                 
-                # Do the following for every record
-                storage_slice_group_set.add(record_dict['slice_group_value'])
-                # Update min & max values
-                for dimension in regular_storage_type_dimension_tags:
-                    storage_min_dict[dimension] = min(storage_min_dict[dimension], record_dict['%s_min' % dimension.lower()])
-                    storage_max_dict[dimension] = max(storage_max_dict[dimension], record_dict['%s_max' % dimension.lower()])
+                regular_storage_type_dimension_tags = [dimension for dimension in storage_type_dimension_tags if self._storage_config[storage_type_tag]['dimensions'][dimension]['indexing_type'] == 'regular'] 
+                irregular_storage_type_dimension_tags = [dimension for dimension in storage_type_dimension_tags if self._storage_config[storage_type_tag]['dimensions'][dimension]['indexing_type'] == 'irregular'] 
+                fixed_storage_type_dimension_tags = [dimension for dimension in storage_type_dimension_tags if self._storage_config[storage_type_tag]['dimensions'][dimension]['indexing_type'] == 'fixed'] 
                 
-            # All records processed - write last descriptor
-            update_storage_units_descriptor(storage_index_tuple,
-                                            storage_type_dimension_tags,
-                                            regular_storage_type_dimension_tags,
-                                            fixed_storage_type_dimension_tags,
-                                            storage_min_dict,
-                                            overall_min_dict,
-                                            storage_max_dict,
-                                            overall_max_dict,
-                                            storage_shape_dict,
-                                            storage_slice_group_set,
-                                            overall_slice_group_set,
-                                            storage_units_descriptor
-                                            )
+                # Define initial max/min/shape values
+                dimension_minmax_dict = {dimension: (dimension_range_dict.get(dimension) or (-sys.maxint-1, sys.maxint)) for dimension in storage_type_dimension_tags}
+                storage_min_dict = {dimension: sys.maxint for dimension in storage_type_dimension_tags}
+                storage_max_dict = {dimension: -sys.maxint-1 for dimension in storage_type_dimension_tags}
+                storage_shape_dict = {dimension: 0 for dimension in storage_type_dimension_tags}
+                overall_min_dict = {dimension: sys.maxint for dimension in storage_type_dimension_tags}
+                overall_max_dict = {dimension: -sys.maxint-1 for dimension in storage_type_dimension_tags}
+                overall_shape_dict = {dimension: 0 for dimension in storage_type_dimension_tags}
+                
+                storage_slice_group_set = set()
+                overall_slice_group_set = set()
+                
+                storage_index_tuple = None
+                # Iterate through all records once only
+                for record_dict in slice_result_set.record_generator({'slice_group_value': slice_grouping_function}):
+                    logger.debug('record_dict = %s', record_dict)
+                    new_storage_index_tuple = tuple([record_dict[dimension_tag.lower() + '_index'] 
+                                                 for dimension_tag in storage_type_dimension_tags])
+                    
+                    if new_storage_index_tuple != storage_index_tuple: # Change in storage unit                        
+                        update_storage_units_descriptor(storage_index_tuple,
+                                                storage_type_dimension_tags,
+                                                regular_storage_type_dimension_tags,
+                                                fixed_storage_type_dimension_tags,
+                                                storage_min_dict,
+                                                overall_min_dict,
+                                                storage_max_dict,
+                                                overall_max_dict,
+                                                storage_shape_dict,
+                                                storage_slice_group_set,
+                                                overall_slice_group_set,
+                                                storage_units_descriptor
+                                                )
+                            
+                        # Re-initialise max & min dicts for new storage unit
+                        storage_min_dict = {dimension: sys.maxint for dimension in storage_type_dimension_tags}
+                        storage_max_dict = {dimension: -sys.maxint-1 for dimension in storage_type_dimension_tags}
+                        storage_slice_group_set = set()
+                        storage_index_tuple = new_storage_index_tuple
+                    
+                    # Do the following for every record
+                    storage_slice_group_set.add(record_dict['slice_group_value'])
+                    # Update min & max values
+                    for dimension in regular_storage_type_dimension_tags:
+                        storage_min_dict[dimension] = min(storage_min_dict[dimension], record_dict['%s_min' % dimension.lower()])
+                        storage_max_dict[dimension] = max(storage_max_dict[dimension], record_dict['%s_max' % dimension.lower()])
+                    
+                # All records processed - write last descriptor
+                update_storage_units_descriptor(storage_index_tuple,
+                                                storage_type_dimension_tags,
+                                                regular_storage_type_dimension_tags,
+                                                fixed_storage_type_dimension_tags,
+                                                storage_min_dict,
+                                                overall_min_dict,
+                                                storage_max_dict,
+                                                overall_max_dict,
+                                                storage_shape_dict,
+                                                storage_slice_group_set,
+                                                overall_slice_group_set,
+                                                storage_units_descriptor
+                                                )
+                
+                if storage_units_descriptor: # If any storage units were found
+                    storage_type_descriptor['storage_units'] = storage_units_descriptor
+                
+                    # Determine overall max/min/shape values
+                    for dimension in regular_storage_type_dimension_tags:
+                        overall_shape_dict[dimension] = (overall_max_dict[dimension] - overall_min_dict[dimension]) / self._storage_config[storage_type_tag]['dimensions'][dimension]['dimension_element_size']
             
-            if storage_units_descriptor: # If any storage units were found
-                storage_type_descriptor['storage_units'] = storage_units_descriptor
-            
-                # Determine overall max/min/shape values
-                for dimension in regular_storage_type_dimension_tags:
-                    overall_shape_dict[dimension] = (overall_max_dict[dimension] - overall_min_dict[dimension]) / self._storage_config[storage_type_tag]['dimensions'][dimension]['dimension_element_size']
-        
-                for dimension in irregular_storage_type_dimension_tags: # Should be just 'T' for the EO trial
-                    #TODO: Make the query and processig more general for multiple irregular dimensions
+                    for dimension in irregular_storage_type_dimension_tags: # Should be just 'T' for the EO trial
+                        #TODO: Make the query and processig more general for multiple irregular dimensions
+                        # Show all unique group values in order
+                        storage_type_descriptor['irregular_indices'] = {dimension: np.array(sorted(list(overall_slice_group_set)), dtype = np.int16)}
+                    
+                        overall_shape_dict[dimension] = len(overall_slice_group_set)  
+                                              
+                    storage_type_descriptor['dimensions'] = storage_type_dimension_tags
+                    
+                    storage_type_descriptor['result_min'] = tuple([overall_min_dict[dimension] for dimension in storage_type_dimension_tags])
+                    storage_type_descriptor['result_max'] = tuple([overall_max_dict[dimension] for dimension in storage_type_dimension_tags])
+                    storage_type_descriptor['result_shape'] = tuple([overall_shape_dict[dimension] for dimension in storage_type_dimension_tags])
+                    
                     # Show all unique group values in order
-                    storage_type_descriptor['irregular_indices'] = {dimension: np.array(sorted(list(overall_slice_group_set)), dtype = np.int16)}
-                
-                    overall_shape_dict[dimension] = len(overall_slice_group_set)  
-                                          
-                storage_type_descriptor['dimensions'] = storage_type_dimension_tags
-                
-                storage_type_descriptor['result_min'] = tuple([overall_min_dict[dimension] for dimension in storage_type_dimension_tags])
-                storage_type_descriptor['result_max'] = tuple([overall_max_dict[dimension] for dimension in storage_type_dimension_tags])
-                storage_type_descriptor['result_shape'] = tuple([overall_shape_dict[dimension] for dimension in storage_type_dimension_tags])
-                
-                # Show all unique group values in order
-                #TODO: Don't make this hard-coded for T slices
-                storage_type_descriptor['irregular_indices'] = {'T': np.array(sorted(list(overall_slice_group_set)), dtype = np.int16)}
-                
-                storage_type_descriptor['variables'] = dict(self._storage_config[storage_type_tag]['measurement_types'])
-
-                result_dict[storage_type_tag] = storage_type_descriptor                    
-            # End of per-storage_type function
+                    #TODO: Don't make this hard-coded for T slices
+                    storage_type_descriptor['irregular_indices'] = {'T': np.array(sorted(list(overall_slice_group_set)), dtype = np.int16)}
+                    
+                    storage_type_descriptor['variables'] = dict(self._storage_config[storage_type_tag]['measurement_types'])
+    
+                    result_dict[storage_type_tag] = storage_type_descriptor                    
+            # End of per-DB function
 
         # Start of cross-DB function
         query_parameter = query_parameter or {} # Handle None as a parameter
