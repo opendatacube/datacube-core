@@ -40,6 +40,8 @@ import os
 import re
 from collections import OrderedDict
 import logging
+from osgeo import gdal, gdalconst, osr
+from datetime import datetime
 
 from EOtools.utils import log_multiline
 
@@ -158,74 +160,6 @@ class GDFNetCDF(object):
             
             variable[:] = dimension_index_vector    
             self.netcdf_object.sync()
-            #===================================================================
-            # if dimension_name == 'time':
-            #     variable[:] = netCDF4.date2num(dimension_index_list,
-            #                                  units=variable.units,
-            #                                  calendar=variable.calendar)
-            # else:
-            #     variable[:] = dimension_index_vector
-            #===================================================================
-                
-        #=======================================================================
-        #     # Open the existing dataset using GDAL
-        #     samples  = template_dataset.RasterXSize
-        #     lines    = template_dataset.RasterYSize
-        #     bands    = len(variables)
-        #     geoT     = template_dataset.GetGeoTransform()
-        #     prj      = template_dataset.GetProjection()
-        #     metadata = template_dataset.GetMetadata_Dict()
-        # 
-        # 
-        #     # Is this specifying centre of pixel or upper left???
-        #     # UPDATE!!! netCDF should be centre
-        #     latvec, lonvec = calcLatLonVectors(geoT, samples, lines)
-        # 
-        #     netcdf_object = netcdf_builder.ncopen(netcdf_path, permission='w')
-        #     netcdf_builder.set_timelatlon(netcdf_object, 0, lines, samples, timeunit='seconds since 1970-01-01 00:00:00')
-        #     netcdf_builder.add_data(netcdf_object, 'latitude', latvec)
-        #     netcdf_builder.add_data(netcdf_object, 'longitude', lonvec)
-        # 
-        #     # Set coordinate reference system metadata variable
-        #     ref = osr.SpatialReference()
-        #     ref.ImportFromWkt(prj)
-        #     crs_metadata = {'crs:name': ref.GetAttrValue('geogcs'),
-        #                 'crs:longitude_of_prime_meridian': 0.0, # This needs to be fixed!!! An OSR object should have this, but maybe only for specific OSR references??
-        #                 'crs:inverse_flattening': ref.GetInvFlattening(),
-        #                 'crs:semi_major_axis': ref.GetSemiMajor(),
-        #                 'crs:semi_minor_axis': ref.GetSemiMinor(),
-        #                 }
-        #     netcdf_builder.set_variable(netcdf_object, 'crs', 'i4')
-        #     netcdf_builder.set_attributes(netcdf_object, crs_metadata)
-        # 
-        #     creation_date = datetime.utcnow().strftime("%Y%m%d")
-        #     netcdf_object.history = 'Reformatted to NetCDF %s.' %(creation_date)
-        #     netcdf_object.license = 'TEST DATA for SPEDDEXES.'
-        #     netcdf_object.spatial_coverage = "1 degree grid."
-        #     netcdf_object.featureType = 'grid'
-        # 
-        #     extents = getMinMaxExtents(samples, lines, geoT)
-        #     #pdb.set_trace()
-        #     netcdf_object.geospatial_lat_min = extents[0]
-        #     netcdf_object.geospatial_lat_max = extents[1]
-        #     netcdf_object.geospatial_lat_units = 'degrees_north'
-        #     netcdf_object.geospatial_lat_resolution = geoT[5]
-        #     netcdf_object.geospatial_lon_min = extents[2]
-        #     netcdf_object.geospatial_lon_max = extents[3]
-        #     netcdf_object.geospatial_lon_units = 'degrees_east'
-        #     netcdf_object.geospatial_lon_resolution = geoT[1]
-        # 
-        #     # Create individual variables for different output values
-        #     for variable_name in sorted(variables):
-        #         netcdf_builder.set_variable(netcdf_object, variable_name, dtype=dtypeMapping(variables[variable_name]['gdal_dtype']), fill=variables[variable_name]['no_data_value'])
-        # 
-        #         # A method of handling variable metadata
-        #         metadata_dict = {variable_name + ':' + 'coordinates': 'lat lon',
-        #                          variable_name + ':' + 'grid_mapping': 'crs'
-        #                          }
-        # 
-        #         netcdf_builder.set_attributes(netcdf_object, metadata_dict)
-        #=======================================================================
             
         def set_variable(variable_name, variable_config):
             dimensions = self.storage_config['dimensions'].keys()
@@ -241,6 +175,13 @@ class GDFNetCDF(object):
             variable = self.netcdf_object.createVariable(variable_name, variable_config['netcdf_datatype_name'], dimensions=dimension_names,
                    chunksizes=chunksizes, fill_value=variable_config['nodata_value'], zlib=False)
             logger.debug('variable = %s' % variable)
+            
+            # A method of handling variable metadata
+            metadata_dict = {variable_name + ':' + 'coordinates': 'lat lon',
+                             variable_name + ':' + 'grid_mapping': 'crs'
+                             }
+     
+            self.set_attributes(metadata_dict)            
             self.netcdf_object.sync()
             
         # Start of create function
@@ -406,3 +347,141 @@ class GDFNetCDF(object):
         bounds_name = dimension_name + '_bounds'
         
         netcdf_builder.add_bounds(self.netcdf_object, dimension_name, bounds, bounds_name)
+        
+    def georeference_from_file(self, gdal_dataset_path):
+        '''
+        Function to set georeferencing from template GDAL dataset
+        '''
+        def getMinMaxExtents(samples, lines, geoTransform):
+            """
+            Calculates the min/max extents based on the input latitude and longitude vectors.
+        
+            :param samples:
+                An integer representing the number of samples (columns) in an array.
+        
+            :param lines:
+                An integer representing the number of lines (rows) in an array.
+        
+            :param geoTransform:
+                A tuple containing the geotransform information returned by GDAL.
+        
+            :return:
+                A tuple containing (min_lat, max_lat, min_lon, max_lat)
+        
+            :notes:
+                Hasn't been tested for nothern or western hemispheres.
+            """
+            extents = []
+            x_list  = [0,samples]
+            y_list  = [0,lines]
+        
+            for px in x_list:
+                for py in y_list:
+                    x = geoTransform[0]+(px*geoTransform[1])+(py*geoTransform[2])
+                    y = geoTransform[3]+(px*geoTransform[4])+(py*geoTransform[5])
+                    extents.append([x,y])
+        
+            extents = np.array(extents)
+            min_lat = np.min(extents[:,1])
+            max_lat = np.max(extents[:,1])
+            min_lon = np.min(extents[:,0])
+            max_lon = np.max(extents[:,0])
+        
+            return (min_lat, max_lat, min_lon, max_lon)
+        #=======================================================================
+        #     # Open the existing dataset using GDAL
+        #     samples  = template_dataset.RasterXSize
+        #     lines    = template_dataset.RasterYSize
+        #     bands    = len(variables)
+        #     geoT     = template_dataset.GetGeoTransform()
+        #     prj      = template_dataset.GetProjection()
+        #     metadata = template_dataset.GetMetadata_Dict()
+        # 
+        # 
+        #     # Is this specifying centre of pixel or upper left???
+        #     # UPDATE!!! netCDF should be centre
+        #     latvec, lonvec = calcLatLonVectors(geoT, samples, lines)
+        # 
+        #     netcdf_object = netcdf_builder.ncopen(netcdf_path, permission='w')
+        #     netcdf_builder.set_timelatlon(netcdf_object, 0, lines, samples, timeunit='seconds since 1970-01-01 00:00:00')
+        #     netcdf_builder.add_data(netcdf_object, 'latitude', latvec)
+        #     netcdf_builder.add_data(netcdf_object, 'longitude', lonvec)
+        # 
+        #     # Set coordinate reference system metadata variable
+        #     ref = osr.SpatialReference()
+        #     ref.ImportFromWkt(prj)
+        #     crs_metadata = {'crs:name': ref.GetAttrValue('geogcs'),
+        #                 'crs:longitude_of_prime_meridian': 0.0, # This needs to be fixed!!! An OSR object should have this, but maybe only for specific OSR references??
+        #                 'crs:inverse_flattening': ref.GetInvFlattening(),
+        #                 'crs:semi_major_axis': ref.GetSemiMajor(),
+        #                 'crs:semi_minor_axis': ref.GetSemiMinor(),
+        #                 }
+        #     netcdf_builder.set_variable(netcdf_object, 'crs', 'i4')
+        #     netcdf_builder.set_attributes(netcdf_object, crs_metadata)
+        # 
+        #     creation_date = datetime.utcnow().strftime("%Y%m%d")
+        #     netcdf_object.history = 'Reformatted to NetCDF %s.' %(creation_date)
+        #     netcdf_object.license = 'TEST DATA for SPEDDEXES.'
+        #     netcdf_object.spatial_coverage = "1 degree grid."
+        #     netcdf_object.featureType = 'grid'
+        # 
+        #     extents = getMinMaxExtents(samples, lines, geoT)
+        #     #pdb.set_trace()
+        #     netcdf_object.geospatial_lat_min = extents[0]
+        #     netcdf_object.geospatial_lat_max = extents[1]
+        #     netcdf_object.geospatial_lat_units = 'degrees_north'
+        #     netcdf_object.geospatial_lat_resolution = geoT[5]
+        #     netcdf_object.geospatial_lon_min = extents[2]
+        #     netcdf_object.geospatial_lon_max = extents[3]
+        #     netcdf_object.geospatial_lon_units = 'degrees_east'
+        #     netcdf_object.geospatial_lon_resolution = geoT[1]
+        # 
+        #     # Create individual variables for different output values
+        #     for variable_name in sorted(variables):
+        #         netcdf_builder.set_variable(netcdf_object, variable_name, dtype=dtypeMapping(variables[variable_name]['gdal_dtype']), fill=variables[variable_name]['no_data_value'])
+        # 
+        #         # A method of handling variable metadata
+        #         metadata_dict = {variable_name + ':' + 'coordinates': 'lat lon',
+        #                          variable_name + ':' + 'grid_mapping': 'crs'
+        #                          }
+        # 
+        #         netcdf_builder.set_attributes(netcdf_object, metadata_dict)
+        #=======================================================================
+        gdal_dataset = gdal.Open(gdal_dataset_path)
+        assert gdal_dataset, 'Unable to open file %s' % gdal_dataset_path
+        
+        geotransform = gdal_dataset.GetGeoTransform()
+        projection = gdal_dataset.GetProjection()
+        
+        # Set coordinate reference system metadata variable
+        spatial_reference = osr.SpatialReference()
+        spatial_reference.ImportFromWkt(projection)
+        crs_metadata = {'crs:name': spatial_reference.GetAttrValue('geogcs'),
+                    'crs:longitude_of_prime_meridian': 0.0, # This needs to be fixed!!! An OSR object should have this, but maybe only for specific OSR references??
+                    'crs:inverse_flattening': spatial_reference.GetInvFlattening(),
+                    'crs:semi_major_axis': spatial_reference.GetSemiMajor(),
+                    'crs:semi_minor_axis': spatial_reference.GetSemiMinor(),
+                    }
+        self.set_variable('crs', 'i4')
+        self.set_attributes(crs_metadata)
+     
+        creation_date = datetime.utcnow().strftime("%Y%m%d")
+        self.netcdf_object.history = 'AGDC GeoTIFF Tile reformatted to NetCDF %s.' %(creation_date)
+        self.netcdf_object.license = 'Generalised Data Framework Test File'
+        self.netcdf_object.spatial_coverage = "1 degree grid."
+        self.netcdf_object.featureType = 'grid'
+     
+        #     samples  = template_dataset.RasterXSize
+        #     lines    = template_dataset.RasterYSize
+        extents = getMinMaxExtents(gdal_dataset.RasterXSize, gdal_dataset.RasterYSize, geotransform)
+        #pdb.set_trace()
+        self.netcdf_object.geospatial_lat_min = extents[0]
+        self.netcdf_object.geospatial_lat_max = extents[1]
+        self.netcdf_object.geospatial_lat_units = 'degrees_north'
+        self.netcdf_object.geospatial_lat_resolution = geotransform[5]
+        self.netcdf_object.geospatial_lon_min = extents[2]
+        self.netcdf_object.geospatial_lon_max = extents[3]
+        self.netcdf_object.geospatial_lon_units = 'degrees_east'
+        self.netcdf_object.geospatial_lon_resolution = geotransform[1]
+
+        
