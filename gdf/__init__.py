@@ -1030,12 +1030,12 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
             
         # Fix T as the slicing dimension
         try:
-            slice_grouping_function = query_parameter['dimensions']['T']['grouping_function'] or self.solar_days_since_epoch
+            slice_grouping_function = query_parameter['dimensions']['T']['grouping_function'] or self.null_grouping # self.solar_days_since_epoch
         except KeyError:
             try:
-                slice_grouping_function = query_parameter['dimensions']['t']['grouping_function'] or self.solar_days_since_epoch
+                slice_grouping_function = query_parameter['dimensions']['t']['grouping_function'] or self.null_grouping # self.solar_days_since_epoch
             except KeyError:
-                slice_grouping_function = self.solar_days_since_epoch
+                slice_grouping_function = self.null_grouping # self.solar_days_since_epoch
             
         
         return self.do_db_query(self.databases, [get_db_descriptors, 

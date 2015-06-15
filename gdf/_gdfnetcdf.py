@@ -311,7 +311,8 @@ class GDFNetCDF(object):
                 logger.debug('dimension_array = %s', dimension_array)
                 logger.debug('range = %s', range_dict[dimension])
                 # Use half pixel slop factor
-                index_array = np.where((dimension_array > range_dict[dimension][0] - dimension_config[dimension]['dimension_element_size'] / 2.0) * (dimension_array <= range_dict[dimension][1] + dimension_config[dimension]['dimension_element_size'] / 2.0))
+                index_array = np.where((dimension_array > range_dict[dimension][0] - dimension_config[dimension]['dimension_element_size'] / 2.0) * 
+                                       (dimension_array <= range_dict[dimension][1] + dimension_config[dimension]['dimension_element_size'] / 2.0))
                 logger.debug('index_array = %s', index_array)
                 try:
                     range_index_dict[dimension] = (index_array[0][0], index_array[0][-1] + 1)
