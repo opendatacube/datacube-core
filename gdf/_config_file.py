@@ -46,6 +46,11 @@ logger = logging.getLogger(__name__)
 
 class ConfigFile(object):
     def parse_config_file(self):
+        '''
+        Function to return a nested dict of config file entries
+        Returns: 
+            dict {<section_name>: {<key>: <value>,... },... }
+        '''
         logger.debug('Opening config file %s', self._path)
         
         config_parser = ConfigParser.SafeConfigParser(allow_no_value=True)

@@ -182,7 +182,7 @@ class Database(object):
         log_multiline(logger.debug, params, 'params', '\t')
         
         # Use local cursor to return results
-        return CachedResultSet(self.execSQL(SQL, params=None, cursor=connection.cursor()))
+        return CachedResultSet(self.execSQL(SQL, params, cursor=connection.cursor()))
         
     
     def _close_default_connection(self):
