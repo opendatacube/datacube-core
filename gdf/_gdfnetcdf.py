@@ -199,6 +199,15 @@ class GDFNetCDF(object):
             
         logger.debug('self.netcdf_object.variables = %s' % self.netcdf_object.variables)
         
+        creation_date = datetime.utcnow().strftime("%Y%m%d")
+        self.netcdf_object.history = 'NetCDF-CF file created %s.' %(creation_date)
+        self.netcdf_object.license = 'Generalised Data Framework NetCDF-CF Test File'
+        self.netcdf_object.spatial_coverage = '%f %s grid' % (self.storage_config['dimensions']['X']['dimension_extent'],
+                                                              self.storage_config['dimensions']['X']['reference_system_unit'])
+        self.netcdf_object.featureType = 'grid'
+     
+        #     samples  = template_dataset.RasterXSize
+        #     lines    = template_dataset.RasterYSize
     def write_slice(self, variable_name, slice_array, indices_dict):
         '''
         '''        
@@ -451,28 +460,23 @@ class GDFNetCDF(object):
         assert gdal_dataset, 'Unable to open file %s' % gdal_dataset_path
         
         geotransform = gdal_dataset.GetGeoTransform()
+        logger.debug('geotransform = %s', geotransform)
         projection = gdal_dataset.GetProjection()
+        logger.debug('projection = %s', projection)
         
         # Set coordinate reference system metadata variable
         spatial_reference = osr.SpatialReference()
         spatial_reference.ImportFromWkt(projection)
         crs_metadata = {'crs:name': spatial_reference.GetAttrValue('geogcs'),
-                    'crs:longitude_of_prime_meridian': 0.0, # This needs to be fixed!!! An OSR object should have this, but maybe only for specific OSR references??
+                    'crs:longitude_of_prime_meridian': 0.0, #TODO: This needs to be fixed!!! An OSR object should have this, but maybe only for specific OSR references??
                     'crs:inverse_flattening': spatial_reference.GetInvFlattening(),
                     'crs:semi_major_axis': spatial_reference.GetSemiMajor(),
                     'crs:semi_minor_axis': spatial_reference.GetSemiMinor(),
                     }
         self.set_variable('crs', 'i4')
         self.set_attributes(crs_metadata)
+        logger.debug('crs_metadata = %s', crs_metadata)
      
-        creation_date = datetime.utcnow().strftime("%Y%m%d")
-        self.netcdf_object.history = 'AGDC GeoTIFF Tile reformatted to NetCDF %s.' %(creation_date)
-        self.netcdf_object.license = 'Generalised Data Framework Test File'
-        self.netcdf_object.spatial_coverage = "1 degree grid."
-        self.netcdf_object.featureType = 'grid'
-     
-        #     samples  = template_dataset.RasterXSize
-        #     lines    = template_dataset.RasterYSize
         extents = getMinMaxExtents(gdal_dataset.RasterXSize, gdal_dataset.RasterYSize, geotransform)
         #pdb.set_trace()
         self.netcdf_object.geospatial_lat_min = extents[0]
