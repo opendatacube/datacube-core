@@ -177,8 +177,7 @@ class AGDC2GDF(GDF):
         if self._command_line_params['debug']:
             self.debug = True                
 
-        if self._command_line_params['dryrun']:
-            self.dryrun = True                
+        self.dryrun = self._command_line_params['dryrun']
 
         agdc2gdf_config_file = self._command_line_params['config_files'] or os.path.join(self._code_root, AGDC2GDF.DEFAULT_CONFIG_FILE)
         
@@ -403,13 +402,13 @@ and storage_location = %(storage_location)s;
             
             storage_id_result = self.database.submit_query(SQL, params)
             assert storage_id_result.record_count == 1, '%d records retrieved for storage_id query'
-            return storage_id_result['storage_id'][0]
+            return storage_id_result.field_values['storage_id'][0]
             
         def get_observation_id(record):
             '''
             Function to write observation (acquisition) record if required and return observation ID
             '''
-            SQL = '''Attempt to insert an observation record and return observation_id
+            SQL = '''-- Attempt to insert an observation record and return observation_id
 insert into observation(
     observation_type_id,
     observation_id,
@@ -424,12 +423,12 @@ select
     %(observation_start_datetime)s,
     %(observation_end_datetime)s,
     1, -- Passive Satellite-borne
-    (select instrument_id from instrument where instrument_tag = %(instrument_tag)s
+    (select instrument_id from instrument where instrument_tag = %(instrument_tag)s)
 where not exists (
     select observation_id from observation
     where observation_type_id = 1 -- Optical Satellite
     and instrument_type_id = 1 -- Passive Satellite-borne
-    and instrument_id = (select instrument_id from instrument where instrument_tag = %(instrument_tag)s
+    and instrument_id = (select instrument_id from instrument where instrument_tag = %(instrument_tag)s)
     and observation_start_datetime = %(observation_start_datetime)s
     and observation_end_datetime = %(observation_end_datetime)s
     );
@@ -437,7 +436,7 @@ where not exists (
 select observation_id from observation
 where observation_type_id = 1 -- Optical Satellite
 and instrument_type_id = 1 -- Passive Satellite-borne
-and instrument_id = (select instrument_id from instrument where instrument_tag = %(instrument_tag)s
+and instrument_id = (select instrument_id from instrument where instrument_tag = %(instrument_tag)s)
 and observation_start_datetime = %(observation_start_datetime)s
 and observation_end_datetime = %(observation_end_datetime)s;
 '''
@@ -453,14 +452,14 @@ and observation_end_datetime = %(observation_end_datetime)s;
             
             observation_id_result = self.database.submit_query(SQL, params)
             assert observation_id_result.record_count == 1, '%d records retrieved for observation_id query'
-            return observation_id_result['observation_id'][0]
+            return observation_id_result.field_values['observation_id'][0]
            
         
         def get_dataset_id(record, observation_id):
             '''
             Function to write observation (acquisition) record if required and return observation ID
             '''
-            SQL = '''Attempt to insert a dataset record and return dataset_id
+            SQL = '''-- Attempt to insert a dataset record and return dataset_id
 insert into dataset(
     dataset_type_id,
     dataset_id,
@@ -496,7 +495,7 @@ and dataset_location = %(dataset_location)s
             
             observation_id_result = self.database.submit_query(SQL, params)
             assert observation_id_result.record_count == 1, '%d records retrieved for observation_id query'
-            return observation_id_result['observation_id'][0]
+            return observation_id_result.field_values['observation_id'][0]
         
         
         # Start of write_gdf_data(self, storage_indices, data_descriptor, storage_unit_path) definition
