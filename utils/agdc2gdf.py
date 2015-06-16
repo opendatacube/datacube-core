@@ -298,12 +298,9 @@ order by end_datetime
         storage_path = self.get_storage_path(self.storage_type, storage_indices)
         
         if os.path.isfile(storage_path):
-            if self.force: 
-                logger.debug('Removing existing storage unit %s' % storage_path)
-                os.remove(storage_path)
-            else:
+            if not self.force: 
                 logger.warning('Skipping existing storage unit %s' % storage_path)
-                return
+                return storage_path #TODO: Make this return nothing. 
         
         t_indices = np.array([dt2secs(record_dict['end_datetime']) for record_dict in data_descriptor])
         
@@ -339,6 +336,9 @@ order by end_datetime
         del gdfnetcdf # Close the netCDF
         
         logger.debug('Moving temporary storage unit %s to %s', temp_storage_path, storage_path)
+        if os.path.isfile(storage_path):
+            logger.debug('Removing existing storage unit %s' % storage_path)
+            os.remove(storage_path)
         shutil.move(temp_storage_path, storage_path)
         
         return storage_path
@@ -553,6 +553,7 @@ def main():
                 
         storage_unit_path = agdc2gdf.create_netcdf(storage_indices, data_descriptor)
         if not storage_unit_path: continue
+        logger.debug('storage_unit_path = %s', storage_unit_path)
         
         agdc2gdf.write_gdf_data(storage_indices, data_descriptor, storage_unit_path)
         
