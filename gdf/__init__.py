@@ -118,11 +118,7 @@ class GDF(object):
                 'help': <help string>
                 
         '''
-        # Combine class arg descriptor with any supplied
-        full_arg_descriptors = GDF.ARG_DESCRIPTORS.copy()
-        full_arg_descriptors.update(arg_descriptors)
-        
-        command_line_args_object = CommandLineArgs(full_arg_descriptors)
+        command_line_args_object = CommandLineArgs(arg_descriptors)
         
         return command_line_args_object.arguments
         
@@ -204,7 +200,7 @@ class GDF(object):
         self._code_root = os.path.abspath(os.path.dirname(__file__)) # Directory containing module code
         
         # Create master configuration dict containing both command line and config_file parameters
-        self._command_line_params = self.get_command_line_params()
+        self._command_line_params = self.get_command_line_params(GDF.ARG_DESCRIPTORS)
         
         if self._command_line_params['debug']:
             self.debug = True
