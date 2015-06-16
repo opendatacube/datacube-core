@@ -186,7 +186,6 @@ class AGDC2GDF(GDF):
         self.force = self._command_line_params.get('force') or agdc2gdf_config_file_object.configuration['agdc2gdf'].get('force')
         
         self.storage_type = self._command_line_params.get('storage_type') or agdc2gdf_config_file_object.configuration['gdf']['storage_type']
-        self.storage_root = self._command_line_params.get('storage_root') or self._storage_config[self.storage_type]['storage_root']
 
         self.agdc_satellite = self._command_line_params.get('satellite') or agdc2gdf_config_file_object.configuration['agdc']['satellite']
         self.agdc_sensor = self._command_line_params.get('sensor') or agdc2gdf_config_file_object.configuration['agdc']['sensor']
@@ -199,8 +198,12 @@ class AGDC2GDF(GDF):
         
         # Read GDF storage configuration from databases
         self._storage_config = self.get_storage_config()
+        self.storage_type_config = self._storage_config[self.storage_type]
+        self.database = self._databases[self.storage_type_config['db_ref']]
         
-        self.dimensions = self._storage_config[self.storage_type]['dimensions'] # This is used a lot
+        self.storage_root = self._command_line_params.get('storage_root') or self.storage_type_config['storage_root']
+        
+        self.dimensions = self.storage_type_config['dimensions'] # This is used a lot
                 
         
         # Set up AGDC stuff now
@@ -230,7 +233,7 @@ class AGDC2GDF(GDF):
        
         # Set self.range_dict from either command line or config file values
         self.range_dict = {}
-        for dimension in self._storage_config[self.storage_type]['dimensions']:
+        for dimension in self.storage_type_config['dimensions']:
             min_value = int(self._command_line_params['%smin' % dimension.lower()] or agdc2gdf_config_file_object.configuration['agdc2gdf']['%smin' % dimension.lower()])
             max_value = int(self._command_line_params['%smax' % dimension.lower()] or agdc2gdf_config_file_object.configuration['agdc2gdf']['%smax' % dimension.lower()])
             self.range_dict[dimension] = (min_value, max_value)
@@ -258,7 +261,7 @@ and level_name = %(level)s
 order by end_datetime
 '''     
         #TODO: Make this more general
-        index_reference_system_name = self._storage_config[self.storage_type]['dimensions']['T']['index_reference_system_name'].lower()
+        index_reference_system_name = self.storage_type_config['dimensions']['T']['index_reference_system_name'].lower()
         t_index = storage_indices[self.dimensions.keys().index('T')]
         if index_reference_system_name == 'decade':
             start_datetime = datetime(t_index*10, 1, 1)
@@ -291,16 +294,8 @@ order by end_datetime
         '''
         Function to create netCDF-CF file for specified storage indices
         '''
-        temp_storage_dir = os.path.join(self.temp_dir, self.storage_type)
-        make_dir(temp_storage_dir)
-        
-        storage_dir = os.path.join(self.storage_root, self.storage_type)
-        make_dir(storage_dir)
-        
-        storage_file = self.storage_type + '_' + '_'.join([str(index) for index in storage_indices]) + '.nc'
-        
-        temp_storage_path = os.path.join(temp_storage_dir, storage_file)
-        storage_path = os.path.join(storage_dir, storage_file)
+        temp_storage_path = self.get_temp_storage_path(self.storage_type, storage_indices)
+        storage_path = self.get_storage_path(self.storage_type, storage_indices)
         
         if os.path.isfile(storage_path):
             if self.force: 
@@ -353,45 +348,170 @@ order by end_datetime
         Function to write records to database. Must occur in a single transaction
         '''
 
-        def get_storage_id(record, storage_indices):
+        def get_storage_id(record, storage_unit_path):
             '''
             Function to write storage unit record if required and return storage unit ID
             '''
-            pass
-
-        def get_platform_id(record):
-            '''
-            Function to write platform (satellite) record if required and return platform ID
-            '''
-            pass
-        
-        def get_instrument_id(record, platform_id):
-            '''
-            Function to write instrument (sensor) record if required and return instrument ID
-            '''
-            pass
-        
-        def get_observation_id(record, instrument_id):
+            SQL ='''-- Attempt to insert a storage record and return storage_id
+insert into storage(
+    storage_type_id,
+    storage_id,
+    storage_version,
+    storage_location,
+    md5_checksum,
+    storage_bytes,
+    spatial_footprint_id
+    )  
+values(
+    %(storage_type_id)s,
+    nextval('storage_id_seq'::regclass),
+    0, -- storage_version
+    %(storage_location)s,
+    NULL,
+    NULL,
+    NULL
+    )
+where not exists (
+    select storage_id from storage 
+    where storage_type_id =%(storage_type_id)s
+    and storage_location = %(storage_location)s
+    );
+            
+select storage_id from storage
+where storage_type_id =%(storage_type_id)s
+and storage_location = %(storage_location)s;
+'''            
+            params = {'storage_type_id': self.storage_type_config['storage_type_id'],
+                      'storage_location': storage_unit_path
+                      }
+            
+            log_multiline(logger.debug, self.database.default_cursor.mogrify(SQL, params), 'Mogrified SQL', '\t')
+            
+            storage_id_result = self.database.submit_query(SQL, params)
+            assert storage_id_result.record_count == 1, '%d records retrieved for storage_id query'
+            return storage_id_result['storage_id'][0]
+            
+        def get_observation_id(record):
             '''
             Function to write observation (acquisition) record if required and return observation ID
             '''
-            pass
+            SQL = '''Attempt to insert an observation record and return observation_id
+insert into observation(
+    observation_type_id,
+    observation_id,
+    observation_start_datetime,
+    observation_end_datetime,
+    instrument_type_id,
+    instrument_id
+    )
+values (
+    1, -- Optical Satellite
+    nextval('observation_id_seq'::regclass),
+    %(observation_start_datetime)s,
+    %(observation_end_datetime)s,
+    1, -- Passive Satellite-borne
+    (select instrument_id from instrument where instrument_tag = %(instrument_tag)s
+    )
+where not exists (
+    select observation_id from observation
+    where observation_type_id = 1 -- Optical Satellite
+    and instrument_type_id = 1 -- Passive Satellite-borne
+    and instrument_id = (select instrument_id from instrument where instrument_tag = %(instrument_tag)s
+    and observation_start_datetime = %(observation_start_datetime)s
+    and observation_end_datetime = %(observation_end_datetime)s
+    );
+
+select observation_id from observation
+where observation_type_id = 1 -- Optical Satellite
+and instrument_type_id = 1 -- Passive Satellite-borne
+and instrument_id = (select instrument_id from instrument where instrument_tag = %(instrument_tag)s
+and observation_start_datetime = %(observation_start_datetime)s
+and observation_end_datetime = %(observation_end_datetime)s;
+'''
+            params = {'instrument_tag': record['sensor_name'],
+                      'observation_start_datetime': record['start_datetime'],
+                      'observation_end_datetime': record['end_datetime']
+                      }
+            
+            observation_id_result = self.database.submit_query(SQL, params)
+            assert observation_id_result.record_count == 1, '%d records retrieved for observation_id query'
+            return observation_id_result['observation_id'][0]
+           
         
         def get_dataset_id(record, observation_id):
             '''
             Function to write observation (acquisition) record if required and return observation ID
             '''
-            pass
+            SQL = '''Attempt to insert a dataset record and return dataset_id
+insert into dataset(
+    dataset_type_id,
+    dataset_id,
+    observation_type_id,
+    observation_id,
+    dataset_location
+    )
+values (
+    (select dataset_type_id from dataset_type where dataset_type_tag = %(dataset_type_tag)s),
+    nextval('dataset_id_seq'::regclass),
+    1, -- Optical Satellite
+    %(observation_id)s,
+    %(dataset_location)s
+    )
+where not exists (
+    select dataset_id from dataset
+    where dataset_type_id = (select dataset_type_id from dataset_type where dataset_type_tag = %(dataset_type_tag)s)
+    and dataset_location = %(dataset_location)s
+    );
+
+select dataset_id from dataset
+where dataset_type_id = (select dataset_type_id from dataset_type where dataset_type_tag = %(dataset_type_tag)s)
+and dataset_location = %(dataset_location)s
+'''
+            params = {'dataset_type_tag': record['level_name'],
+                      'observation_id': observation_id,
+                      'dataset_location': record['dataset_path']
+                      }
+            
+            observation_id_result = self.database.submit_query(SQL, params)
+            assert observation_id_result.record_count == 1, '%d records retrieved for observation_id query'
+            return observation_id_result['observation_id'][0]
         
         
-        assert storage_unit_path, 'Storage unit path not given'
+        # Start of write_gdf_data(self, storage_indices, data_descriptor, storage_unit_path) definition
+        assert os.path.isfile(storage_unit_path), 'Storage unit file does not exist'
+        
+        self.database.keep_connection = True
+        self.database.autocommit = False
+        self.database.execSQL('begin;') # Begin transaction
+        
+        try:
+            storage_type_id = self.storage_type_config['storage_type_id']
+            for record in data_descriptor:
+                storage_id = get_storage_id(record, storage_unit_path)
+                observation_id = get_observation_id(record)
+                dataset_id = get_dataset_id(record, observation_id)
+                
+                
+                
+                
+                
+            self.database.execSQL('commit;') # Commit transaction    
+        except:
+            try:
+                self.database.execSQL('rollback;') # Rollback transaction
+            except:
+                pass 
+        finally:
+            self.database.autocommit = True
+            self.database.keep_connection = False
+            
     
     def ordinate2index(self, ordinate, dimension):
         '''
         Return the storage unit index from the reference system ordinate for the specified storage type, ordinate value and dimension tag
         '''
-        return int((ordinate - self._storage_config[self.storage_type]['dimensions'][dimension]['dimension_origin']) / 
-                   self._storage_config[self.storage_type]['dimensions'][dimension]['dimension_extent'])
+        return int((ordinate - self.storage_type_config['dimensions'][dimension]['dimension_origin']) / 
+                   self.storage_type_config['dimensions'][dimension]['dimension_extent'])
         
 
     def index2ordinate(self, index, dimension):
@@ -400,7 +520,7 @@ order by end_datetime
         '''
         if dimension == 'T':
             #TODO: Make this more general - need to cater for other reference systems besides seconds since epoch
-            index_reference_system_name = self._storage_config[self.storage_type]['dimensions']['T']['index_reference_system_name'].lower()
+            index_reference_system_name = self.storage_type_config['dimensions']['T']['index_reference_system_name'].lower()
             if index_reference_system_name == 'decade':
                 return gdf.dt2secs(datetime(index*10, 1, 1))
             if index_reference_system_name == 'year':
@@ -408,8 +528,8 @@ order by end_datetime
             elif index_reference_system_name == 'month':
                 return gdf.dt2secs(datetime(index // 12, index % 12, 1))
         else: # Not time   
-            return ((index * self._storage_config[self.storage_type]['dimensions'][dimension]['dimension_extent']) + 
-                    self._storage_config[self.storage_type]['dimensions'][dimension]['dimension_origin'])
+            return ((index * self.storage_type_config['dimensions'][dimension]['dimension_extent']) + 
+                    self.storage_type_config['dimensions'][dimension]['dimension_origin'])
         
 
 

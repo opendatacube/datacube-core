@@ -83,6 +83,7 @@ class GDF(object):
                                         'help': 'Flag to force refreshing of cached config'
                                         },
                                 }
+    MAX_UNITS_IN_MEMORY = 1000 #TODO: Do something better than this
     
     def cache_object(self, cached_object, cache_filename):
         '''
@@ -1130,8 +1131,65 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                                         )
         
         
-    def read_arrays(self, storage_type, variable_names, range_dict):
-        pass
+    def get_temp_storage_path(self, storage_type, storage_indices):
+        '''
+        Function to return the path to a temporary storage unit file with the specified storage_type & storage_indices
+        '''
+        temp_storage_dir = os.path.join(self.temp_dir, storage_type)
+        make_dir(temp_storage_dir)        
+        return os.path.join(temp_storage_dir, storage_type + '_' + '_'.join([str(index) for index in storage_indices]) + '.nc')
+    
+    def get_storage_path(self, storage_type, storage_indices):
+        '''
+        Function to return the path to a storage unit file with the specified storage_type & storage_indices
+        '''
+        storage_dir = os.path.join(self._storage_config[storage_type]['storage_root'], storage_type)
+        make_dir(storage_dir)
+        return os.path.join(storage_dir, storage_type + '_' + '_'.join([str(index) for index in storage_indices]) + '.nc')
+    
+    def read_arrays(self, storage_type, variable_names=None, range_dict={}, filename=None):
+        '''
+        Function to return composite in-memory arrays
+        '''
+        storage_config = self._storage_config[storage_type]
+        dimensions = storage_config['dimensions'].keys() # All dimensions in order
+        range_dimensions = [dimension for dimension in dimensions if dimension in range_dict.keys()] # Range dimensions in order
+        
+        # Default to all variables
+        variable_names = variable_names or storage_config['measurement_types'].keys()
+
+        # Create complete range dict with minmax tuples for every dimension
+        full_range_dict = {dimensions[dimension_index]: (range_dict[dimensions[dimension_index]] if dimensions[dimension_index] in range_dimensions 
+                                                         else (self._global_descriptor[storage_type]['result_min'][dimension_index], 
+                                                               self._global_descriptor[storage_type]['result_max'][dimension_index]))
+                           for dimension_index in range(len(dimensions))}
+        logger.debug('full_range_dict = %s', full_range_dict)
+        
+        storage_indices_list = []
+        for storage_indices, storage_extents in sorted(self._global_descriptor[storage_type]['storage_units'].items()):
+            in_range = True
+            for dimension_index in range(len(dimensions)):
+                dimension = dimensions[dimension_index]
+                in_range = (storage_extents['storage_min'][dimension_index] <= full_range_dict[dimension][1] and 
+                            storage_extents['storage_max'][dimension_index] >= full_range_dict[dimension][0])
+                if not in_range:
+                    logger.debug('Storage unit %s is NOT in range', storage_indices)
+                    break
+            if in_range:
+                storage_indices_list.append(storage_indices)
+                logger.debug('Storage unit %s is in range', storage_indices)
+        logger.debug('storage_indices_list = %s', storage_indices_list)
+        
+        #TODO: Do this check more thoroughly
+        assert filename or len(storage_indices_list) <= GDF.MAX_UNITS_IN_MEMORY, 'Too many storage units for an in-memory query'
+        
+        #=======================================================================
+        # # Read data from storage units
+        # for storage_indices in storage_indices_list:
+        #     gdfnetcdf = GDFNetCDF(storage_config, self.get_storage_path(storage_type, storage_indices))
+        #     for variable_name in variable_names:
+        #         subset_array, dimension_indices_dict = gdfnetcdf.read_subset(variable_name, range_dict)
+        #=======================================================================
         
         
 def main():
