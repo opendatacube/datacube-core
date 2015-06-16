@@ -148,6 +148,9 @@ class Database(object):
         if autocommit:
             db_connection.autocommit = True
             db_connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+        else:
+            db_connection.autocommit = False
+            db_connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_UNCOMMITTED)
 
         return db_connection
     
