@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 #===============================================================================
 # Copyright (c)  2014 Geoscience Australia
 # All rights reserved.
@@ -33,11 +32,25 @@ Created on Jun 11, 2015
 
 @author: Alex Ip
 '''
+import os
 import calendar
+from socket import errno
+
 
 def dt2secs(datetime_param):
     '''
     Helper function to convert datetime into seconds since epoch. Naive datetime is treated as UTC
     '''
     return calendar.timegm(datetime_param.timetuple())
+
+def make_dir(dirname):
+    '''
+    Function to create a specified directory if it doesn't exist
+    '''
+    try:
+        os.makedirs(dirname)
+    except OSError, exception:
+        if exception.errno != errno.EEXIST or not os.path.isdir(dirname):
+            raise exception
+
 

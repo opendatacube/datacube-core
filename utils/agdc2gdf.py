@@ -56,6 +56,7 @@ from gdf import ConfigFile
 from gdf import GDF
 from gdf import GDFNetCDF
 from gdf import dt2secs
+from gdf import make_dir
 
 from EOtools.utils import log_multiline
 
@@ -183,11 +184,10 @@ class AGDC2GDF(GDF):
         self._databases = self.get_dbs()
         
         self.force = self._command_line_params.get('force') or agdc2gdf_config_file_object.configuration['agdc2gdf'].get('force')
-        self.temp_dir = self._command_line_params.get('temp_dir') or agdc2gdf_config_file_object.configuration['agdc2gdf']['temp_dir']
-
-        self.storage_type = self._command_line_params.get('storage_type') or agdc2gdf_config_file_object.configuration['gdf']['storage_type']
-        self.storage_root = self._command_line_params.get('storage_root') or agdc2gdf_config_file_object.configuration['gdf']['storage_root']
         
+        self.storage_type = self._command_line_params.get('storage_type') or agdc2gdf_config_file_object.configuration['gdf']['storage_type']
+        self.storage_root = self._command_line_params.get('storage_root') or self._storage_config[self.storage_type]['storage_root']
+
         self.agdc_satellite = self._command_line_params.get('satellite') or agdc2gdf_config_file_object.configuration['agdc']['satellite']
         self.agdc_sensor = self._command_line_params.get('sensor') or agdc2gdf_config_file_object.configuration['agdc']['sensor']
         self.agdc_level = self._command_line_params.get('level') or agdc2gdf_config_file_object.configuration['agdc']['level']
@@ -291,16 +291,6 @@ order by end_datetime
         '''
         Function to create netCDF-CF file for specified storage indices
         '''
-        def make_dir(dirname):
-            '''
-            Function to create a specified directory if it doesn't exist
-            '''
-            try:
-                os.makedirs(dirname)
-            except OSError, exception:
-                if exception.errno != errno.EEXIST or not os.path.isdir(dirname):
-                    raise exception
-    
         temp_storage_dir = os.path.join(self.temp_dir, self.storage_type)
         make_dir(temp_storage_dir)
         

@@ -43,13 +43,15 @@ import calendar
 import collections
 import numexpr
 import logging
+import cPickle
 from pprint import pprint
+from distutils.util import strtobool
 
 from _database import Database, CachedResultSet
 from _arguments import CommandLineArgs
 from _config_file import ConfigFile
 from _gdfnetcdf import GDFNetCDF
-from _utils import dt2secs
+from _gdfutils import dt2secs, make_dir
 
 from EOtools.utils import log_multiline
 
@@ -62,7 +64,7 @@ console_handler.setFormatter(console_formatter)
 logging.root.addHandler(console_handler)
 
 logger = logging.getLogger(__name__)
-#logger.setLevel(logging.DEBUG) # Initial logging level for this module
+logger.setLevel(logging.INFO) # Initial logging level for this module
 
 thread_exception = None
 
@@ -73,6 +75,33 @@ class GDF(object):
     '''
     DEFAULT_CONFIG_FILE = 'gdf_default.conf' # N.B: Assumed to reside in code root directory
     EPOCH_DATE_ORDINAL = date(1970, 1, 1).toordinal()
+    ARG_DESCRIPTORS = {'refresh': {'short_flag': '-r', 
+                                        'long_flag': '--refresh', 
+                                        'default': False, 
+                                        'action': 'store_const', 
+                                        'const': True,
+                                        'help': 'Flag to force refreshing of cached config'
+                                        },
+                                }
+    
+    def cache_object(self, cached_object, cache_filename):
+        '''
+        Function to write an object to a cached pickle file
+        '''
+        cache_file = open(os.path.join(self.cache_dir, cache_filename), 'wb')
+        cPickle.dump(cached_object, cache_file, -1)
+        cache_file.close()
+    
+    def get_cached_object(self, cache_filename):
+        '''
+        Function to retrieve an object from a cached pickle file
+        Will raise a general exception if refresh is forced
+        '''
+        if self.refresh: raise Exception('Refresh Forced')
+        cache_file = open(os.path.join(self.cache_dir, cache_filename), 'r')
+        cached_object = cPickle.load(cache_file)
+        cache_file.close()
+        return cached_object
     
     def get_command_line_params(self, arg_descriptors={}):
         '''
@@ -88,7 +117,11 @@ class GDF(object):
                 'help': <help string>
                 
         '''
-        command_line_args_object = CommandLineArgs(arg_descriptors)
+        # Combine class arg descriptor with any supplied
+        full_arg_descriptors = GDF.ARG_DESCRIPTORS.copy()
+        full_arg_descriptors.update(arg_descriptors)
+        
+        command_line_args_object = CommandLineArgs(full_arg_descriptors)
         
         return command_line_args_object.arguments
         
@@ -117,6 +150,12 @@ class GDF(object):
                     logger.warning('Duplicate db_ref "%s" in config file %s ignored' % (db_ref, config_file))
                 else:
                     config_dict[db_ref] = config_file_object.configuration[db_ref]
+                    
+        # Set variables from global config and remove global config from result dict
+        for key, value in config_dict['gdf'].items():
+            self.__setattr__(key, value)
+            logger.debug('self.%s = %s', key, value)
+        del config_dict['gdf']
         
         log_multiline(logger.debug, config_dict, 'config_dict', '\t')
         return config_dict
@@ -176,12 +215,54 @@ class GDF(object):
                 
         # Create master configuration dict containing both command line and config_file parameters
         self._configuration = self.get_config(self._command_line_params['config_files'])
-                
-        # Create master database dict with Database objects keyed by db_ref
-        self._databases = self.get_dbs()
         
+        # Create global directories if they don't exist
+        make_dir(self.temp_dir)
+        make_dir(self.cache_dir)
+        
+        # Convert self.refresh to Boolean
+        self.refresh = strtobool(self.refresh)
+        
+        # Force refresh if config has changed
+        try:
+            cached_config = self.get_cached_object('configuration.pkl')
+            need_refresh = (self._configuration != cached_config) 
+            if need_refresh:
+                self.cache_object(self._configuration, 'configuration.pkl')
+                self.refresh = True
+        except:
+            pass
+        
+        if self.refresh:
+            logger.info('Forcing refresh of all cached data')
+        
+        # Create master database dict with Database objects keyed by db_ref
+        try:           
+            self._databases = self.get_cached_object('databases.pkl')
+            logger.info('Loaded cached database configuration %s', self._databases.keys())
+        except:
+            self._databases = self.get_dbs()
+            self.cache_object(self._databases, 'databases.pkl')      
+            logger.info('Connected to databases %s', self._databases.keys())
+        
+        # Read storage configuration from cache or databases
+        try:           
+            self._storage_config = self.get_cached_object('storage_config.pkl')
+            logger.info('Loaded cached storage configuration %s', self._storage_config.keys())
+        except:
+            self._storage_config = self.get_storage_config()
+            self.cache_object(self._storage_config, 'storage_config.pkl')
+            logger.info('Read storage configuration from databases %s', self._storage_config.keys())
+            
         # Read storage configuration from databases
-        self._storage_config = self.get_storage_config()
+        try:           
+            self._global_descriptor = self.get_cached_object('global_descriptor.pkl')
+            logger.info('Loaded cached global descriptor %s', self._global_descriptor.keys())
+        except:
+            logger.info('Creating global descriptor... Please wait.')
+            self._global_descriptor = self.get_descriptor()
+            self.cache_object(self._global_descriptor, 'global_descriptor.pkl')
+            logger.info('Created global descriptor %s', self._global_descriptor.keys())
         
         log_multiline(logger.debug, self.__dict__, 'GDF.__dict__', '\t')
 
@@ -435,6 +516,7 @@ left join property using(property_id)
                 storage_type_dict = db_storage_config_dict.get(record_dict['storage_type_tag'])
                 if storage_type_dict is None:
                     storage_type_dict = {'db_ref': database.db_ref,
+                                         'storage_root': self._configuration[database.db_ref]['storage_root'],
                                          'storage_type_tag': record_dict['storage_type_tag'],
                                          'storage_type_id': record_dict['storage_type_id'],
                                          'storage_type_name': record_dict['storage_type_name'],
@@ -1046,6 +1128,12 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                                                 False
                                                 ]
                                         )
+        
+        
+    def read_arrays(self, storage_type, variable_names, range_dict):
+        pass
+        
+        
 def main():
     # Testing stuff
     gdf = GDF()

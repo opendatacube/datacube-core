@@ -283,12 +283,13 @@ class GDFNetCDF(object):
 
     def read_subset(self, variable_name, range_dict):
         '''
-        Function to read a specified slice in the specified netCDF variable
+        Function to read an array subset of the specified netCDF variable
         Parameters:
-            variable_name: Name of variable from which the slice array will be read
+            variable_name: Name of variable from which the subset array will be read
             range_dict: Dict keyed by dimension tag containing the dimension(s) & range tuples from which the subset should be read
         Returns:
             subset_array: Numpy array read from netCDF file
+            dimension_indices_dict: Dict containing array indices for each dimension
         '''        
         dimension_config = self.storage_config['dimensions']
         dimensions = dimension_config.keys()
@@ -297,12 +298,12 @@ class GDFNetCDF(object):
         # Dict of dimensions and sizes read from netCDF
         nc_shape_dict = {dimensions[index]: len(self.netcdf_object.dimensions[dimension_names[index]]) for index in range(len(dimensions))}
         
-
         logger.debug('variable_name = %s', variable_name)
         logger.debug('nc_shape_dict = %s', nc_shape_dict)
         
         assert set(range_dimensions) <= set(dimensions), 'Invalid range dimension(s)'
         
+        dimension_indices_dict = {} # Dict containing all indices for each dimension
         range_index_dict = {} # Dict containing range index tuples
         for dimension_index in range(len(dimensions)):
             dimension = dimensions[dimension_index]
@@ -314,6 +315,7 @@ class GDFNetCDF(object):
                 index_array = np.where((dimension_array > range_dict[dimension][0] - dimension_config[dimension]['dimension_element_size'] / 2.0) * 
                                        (dimension_array <= range_dict[dimension][1] + dimension_config[dimension]['dimension_element_size'] / 2.0))
                 logger.debug('index_array = %s', index_array)
+                dimension_indices_dict[dimension] = index_array
                 try:
                     range_index_dict[dimension] = (index_array[0][0], index_array[0][-1] + 1)
                 except IndexError:
@@ -333,7 +335,7 @@ class GDFNetCDF(object):
 
         subset_array = variable[slicing].data
         logger.debug('subset_array = %s', subset_array)
-        return subset_array
+        return subset_array, dimension_indices_dict
         
         
     def get_attributes(self, verbose=None, normalise=True):
