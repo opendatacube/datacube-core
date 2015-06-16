@@ -156,6 +156,13 @@ class AGDC2GDF(GDF):
                                         'const': True,
                                         'help': 'Flag to force replacement of existing files'
                                         },
+                                'dryrun': {'short_flag': '-dr', 
+                                        'long_flag': '--dryrun', 
+                                        'default': False, 
+                                        'action': 'store_const', 
+                                        'const': True,
+                                        'help': 'Flag to skip file writing and SQL query execution'
+                                        },
                                 }
     
     def __init__(self):
@@ -169,6 +176,9 @@ class AGDC2GDF(GDF):
         
         if self._command_line_params['debug']:
             self.debug = True                
+
+        if self._command_line_params['dryrun']:
+            self.dryrun = True                
 
         agdc2gdf_config_file = self._command_line_params['config_files'] or os.path.join(self._code_root, AGDC2GDF.DEFAULT_CONFIG_FILE)
         
@@ -297,10 +307,12 @@ order by end_datetime
         temp_storage_path = self.get_temp_storage_path(self.storage_type, storage_indices)
         storage_path = self.get_storage_path(self.storage_type, storage_indices)
         
-        if os.path.isfile(storage_path):
-            if not self.force: 
-                logger.warning('Skipping existing storage unit %s' % storage_path)
-                return storage_path #TODO: Make this return nothing. 
+        if self.dryrun:
+            return storage_path
+        
+        if os.path.isfile(storage_path) and not self.force: 
+            logger.warning('Skipping existing storage unit %s' % storage_path)
+            return 
         
         t_indices = np.array([dt2secs(record_dict['end_datetime']) for record_dict in data_descriptor])
         
@@ -386,6 +398,9 @@ and storage_location = %(storage_location)s;
             
             log_multiline(logger.debug, self.database.default_cursor.mogrify(SQL, params), 'Mogrified SQL', '\t')
             
+            if self.dryrun:
+                return -1
+            
             storage_id_result = self.database.submit_query(SQL, params)
             assert storage_id_result.record_count == 1, '%d records retrieved for storage_id query'
             return storage_id_result['storage_id'][0]
@@ -431,6 +446,11 @@ and observation_end_datetime = %(observation_end_datetime)s;
                       'observation_end_datetime': record['end_datetime']
                       }
             
+            log_multiline(logger.debug, self.database.default_cursor.mogrify(SQL, params), 'Mogrified SQL', '\t')
+            
+            if self.dryrun:
+                return -1
+            
             observation_id_result = self.database.submit_query(SQL, params)
             assert observation_id_result.record_count == 1, '%d records retrieved for observation_id query'
             return observation_id_result['observation_id'][0]
@@ -468,6 +488,11 @@ and dataset_location = %(dataset_location)s
                       'observation_id': observation_id,
                       'dataset_location': record['dataset_path']
                       }
+            
+            log_multiline(logger.debug, self.database.default_cursor.mogrify(SQL, params), 'Mogrified SQL', '\t')
+            
+            if self.dryrun:
+                return -1
             
             observation_id_result = self.database.submit_query(SQL, params)
             assert observation_id_result.record_count == 1, '%d records retrieved for observation_id query'
