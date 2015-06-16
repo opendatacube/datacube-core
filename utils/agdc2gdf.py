@@ -523,11 +523,12 @@ and dataset_location = %(dataset_location)s
                 
                 
             self.database.execSQL('commit;') # Commit transaction    
-        except:
+        except Exception, caught_exception:
             try:
                 self.database.execSQL('rollback;') # Rollback transaction
             except:
                 pass 
+            raise caught_exception
         finally:
             self.database.autocommit = True
             self.database.keep_connection = False
