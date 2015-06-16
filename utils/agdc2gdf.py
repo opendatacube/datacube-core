@@ -362,7 +362,7 @@ insert into storage(
     storage_bytes,
     spatial_footprint_id
     )  
-values(
+select
     %(storage_type_id)s,
     nextval('storage_id_seq'::regclass),
     0, -- storage_version
@@ -370,7 +370,6 @@ values(
     NULL,
     NULL,
     NULL
-    )
 where not exists (
     select storage_id from storage 
     where storage_type_id =%(storage_type_id)s
@@ -404,14 +403,13 @@ insert into observation(
     instrument_type_id,
     instrument_id
     )
-values (
+select
     1, -- Optical Satellite
     nextval('observation_id_seq'::regclass),
     %(observation_start_datetime)s,
     %(observation_end_datetime)s,
     1, -- Passive Satellite-borne
     (select instrument_id from instrument where instrument_tag = %(instrument_tag)s
-    )
 where not exists (
     select observation_id from observation
     where observation_type_id = 1 -- Optical Satellite
@@ -450,13 +448,12 @@ insert into dataset(
     observation_id,
     dataset_location
     )
-values (
+select
     (select dataset_type_id from dataset_type where dataset_type_tag = %(dataset_type_tag)s),
     nextval('dataset_id_seq'::regclass),
     1, -- Optical Satellite
     %(observation_id)s,
     %(dataset_location)s
-    )
 where not exists (
     select dataset_id from dataset
     where dataset_type_id = (select dataset_type_id from dataset_type where dataset_type_tag = %(dataset_type_tag)s)
@@ -488,8 +485,13 @@ and dataset_location = %(dataset_location)s
             storage_type_id = self.storage_type_config['storage_type_id']
             for record in data_descriptor:
                 storage_id = get_storage_id(record, storage_unit_path)
+                logger.debug('storage_id = %s', storage_id)
+                
                 observation_id = get_observation_id(record)
+                logger.debug('observation_id = %s', observation_id)
+
                 dataset_id = get_dataset_id(record, observation_id)
+                logger.debug('dataset_id = %s', dataset_id)
                 
                 
                 
