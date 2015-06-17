@@ -360,11 +360,11 @@ order by end_datetime
         Function to write records to database. Must occur in a single transaction
         '''
 
-        def get_storage_id(record, storage_unit_path):
+        def get_storage_key(record, storage_unit_path):
             '''
-            Function to write storage unit record if required and return storage unit ID
+            Function to write storage unit record if required and return storage unit ID (tuple containing storage_type_id & storage_id)
             '''
-            SQL ='''-- Attempt to insert a storage record and return storage_id
+            SQL ='''-- Attempt to insert a storage record and return storage_id 
 insert into storage(
     storage_type_id,
     storage_id,
@@ -403,11 +403,11 @@ and storage_location = %(storage_location)s;
             
             storage_id_result = self.database.submit_query(SQL, params)
             assert storage_id_result.record_count == 1, '%d records retrieved for storage_id query'
-            return storage_id_result.field_values['storage_id'][0]
+            return (storage_id_result.field_values['storage_type_id'][0], storage_id_result.field_values['storage_id'][0])
             
-        def get_observation_id(record):
+        def get_observation_key(record):
             '''
-            Function to write observation (acquisition) record if required and return observation ID
+            Function to write observation (acquisition) record if required and return observation ID (tuple containing observation_type_id and observation_id)
             '''
             SQL = '''-- Attempt to insert an observation record and return observation_id
 insert into observation(
@@ -434,7 +434,7 @@ where not exists (
     and observation_end_datetime = %(observation_end_datetime)s
     );
 
-select observation_id from observation
+select observation_type_id, observation_id from observation
 where observation_type_id = 1 -- Optical Satellite
 and instrument_type_id = 1 -- Passive Satellite-borne
 and instrument_id = (select instrument_id from instrument where instrument_tag = %(instrument_tag)s)
@@ -453,12 +453,12 @@ and observation_end_datetime = %(observation_end_datetime)s;
             
             observation_id_result = self.database.submit_query(SQL, params)
             assert observation_id_result.record_count == 1, '%d records retrieved for observation_id query'
-            return observation_id_result.field_values['observation_id'][0]
+            return (observation_id_result.field_values['observation_type_id'][0], observation_id_result.field_values['observation_id'][0])
            
         
-        def get_dataset_id(record, observation_id):
+        def get_dataset_key(record, observation_key):
             '''
-            Function to write observation (acquisition) record if required and return observation ID
+            Function to write observation (acquisition) record if required and return dataset ID (tuple containing dataset_type_id & dataset_id)
             '''
             SQL = '''-- Attempt to insert a dataset record and return dataset_id
 insert into dataset(
@@ -471,22 +471,74 @@ insert into dataset(
 select
     (select dataset_type_id from dataset_type where dataset_type_tag = %(dataset_type_tag)s),
     nextval('dataset_id_seq'::regclass),
-    1, -- Optical Satellite
+    %(observation_type_id)s
     %(observation_id)s,
     %(dataset_location)s
 where not exists (
     select dataset_id from dataset
-    where dataset_type_id = (select dataset_type_id from dataset_type where dataset_type_tag = %(dataset_type_tag)s)
-    and dataset_location = %(dataset_location)s
+    where observation_type_id = %(observation_type_id)s
+        and observation_id = %(observation_id)s
+        and dataset_location = %(dataset_location)s
     );
 
-select dataset_id from dataset
-where dataset_type_id = (select dataset_type_id from dataset_type where dataset_type_tag = %(dataset_type_tag)s)
-and dataset_location = %(dataset_location)s
+select dataset_type_id, dataset_id from dataset
+where observation_type_id = %(observation_type_id)s
+    and observation_id = %(observation_id)s
+    and dataset_location = %(dataset_location)s
 '''
             params = {'dataset_type_tag': record['level_name'],
-                      'observation_id': observation_id,
+                      'observation_type_id': observation_key[0],
+                      'observation_id': observation_key[1],
                       'dataset_location': record['dataset_path']
+                      }
+            
+            log_multiline(logger.debug, self.database.default_cursor.mogrify(SQL, params), 'Mogrified SQL', '\t')
+            
+            if self.dryrun:
+                return -1
+            
+            dataset_id_result = self.database.submit_query(SQL, params)
+            assert dataset_id_result.record_count == 1, '%d records retrieved for dataset_id query'
+            return (dataset_id_result.field_values['dataset_type_id'][0], dataset_id_result.field_values['dataset_id'][0])
+        
+        
+        def set_dataset_dimensions(record, dataset_key, min_max_indexing_tuple):
+            '''
+            Function to write dataset_dimension record if required
+            '''
+            SQL = '''-- Attempt to insert dataset_dimension records
+insert into dataset_dimension(
+  dataset_type_id,
+  dataset_id,
+  domain_id,
+  dimension_id,
+  min_value,
+  max_value,
+  indexing_value,
+    )
+select
+  %(dataset_type_id)s,
+  %(dataset_id)s,
+  %(domain_id)s,
+  %(dimension_id)s,
+  %(min_value)s,
+  %(max_value)s,
+  %(indexing_value)s,
+where not exists (
+    select * from dataset_dimension
+    where dataset_type_id = %(dataset_type_id)s,
+        and dataset_id = %(dataset_id)s,
+        and domain_id = %(domain_id)s,
+        and dimension_id = %(dimension_id)s,
+    );
+'''
+            params = {'dataset_type_id': dataset_key[0],
+                      'dataset_id': dataset_key[1],
+                      'observation_type_id': observation_key[0],
+                      'observation_id': observation_key[1],
+                      'min_value': min_max_indexing_tuple[0],
+                      'max_value': min_max_indexing_tuple[1],
+                      'indexing_value': min_max_indexing_tuple[2]
                       }
             
             log_multiline(logger.debug, self.database.default_cursor.mogrify(SQL, params), 'Mogrified SQL', '\t')
@@ -502,38 +554,42 @@ and dataset_location = %(dataset_location)s
         # Start of write_gdf_data(self, storage_indices, data_descriptor, storage_unit_path) definition
         assert os.path.isfile(storage_unit_path), 'Storage unit file does not exist'
         
+        # Keep all database operations in the same transaction
         self.database.keep_connection = True
         self.database.autocommit = False
         
-        logger.debug('self.database.default_connection = %s', self.database.default_connection)
-        logger.debug('self.database.default_cursor = %s', self.database.default_cursor)
-        logger.debug('self.database.default_connection.status = %s', self.database.default_connection.status)
-        
         try:
             # Get storage unit ID - this doesn't change from record to record
-            storage_id = get_storage_id(data_descriptor[0], storage_unit_path)
-            logger.debug('storage_id = %s', storage_id)
-                
-            logger.debug('self.database.default_connection = %s', self.database.default_connection)
-            logger.debug('self.database.default_cursor = %s', self.database.default_cursor)
-            logger.debug('self.database.default_connection.status = %s', self.database.default_connection.status)
+            storage_key = get_storage_key(data_descriptor[0], storage_unit_path)
+            logger.debug('storage_key = %s', storage_key)
 
             for record in data_descriptor:
-                observation_id = get_observation_id(record)
-                logger.debug('observation_id = %s', observation_id)
+                observation_key = get_observation_key(record)
+                logger.debug('observation_key = %s', observation_key)
 
-                logger.debug('self.database.default_connection = %s', self.database.default_connection)
-                logger.debug('self.database.default_cursor = %s', self.database.default_cursor)
-                logger.debug('self.database.default_connection.status = %s', self.database.default_connection.status)
-
-                dataset_id = get_dataset_id(record, observation_id)
-                logger.debug('dataset_id = %s', dataset_id)
+                dataset_key = get_dataset_key(record, observation_key)
+                logger.debug('dataset_key = %s', dataset_key)
                 
-                logger.debug('self.database.default_connection = %s', self.database.default_connection)
-                logger.debug('self.database.default_cursor = %s', self.database.default_cursor)
-                logger.debug('self.database.default_connection.status = %s', self.database.default_connection.status)
-
-                
+                for dimension in self.dimensions:
+                    if dimension == 'X':
+                        min_max_indexing_tuple = (min(record['ul_x'], record['ll_x']),
+                                                  max(record['ur_x'], record['lr_x']),
+                                                  None
+                                                  )
+                    elif dimension == 'Y':
+                        min_max_indexing_tuple = (min(record['ll_y'], record['lr_y']),
+                                                  max(record['ul_y'], record['ur_y']),
+                                                  None
+                                                  )
+                    elif dimension == 'T':
+                        min_value = dt2secs(record['start_datetime'])
+                        max_value = dt2secs(record['end_datetime'])
+                        min_max_indexing_tuple = (min_value,
+                                                  max_value,
+                                                  (min_value + max_value) / 2.0
+                                                  )
+                        
+                    set_dataset_dimensions(record, dataset_key, min_max_indexing_tuple)
                 
                 
                 
@@ -545,6 +601,7 @@ and dataset_location = %(dataset_location)s
                 pass 
             raise caught_exception
         finally:
+            # Reset DB to keep transactions short
             self.database.autocommit = True
             self.database.keep_connection = False
             
