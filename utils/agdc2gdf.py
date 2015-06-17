@@ -388,9 +388,9 @@ where not exists (
     and storage_location = %(storage_location)s
     );
             
-select storage_id from storage
+select storage_type_id, storage_id from storage
 where storage_type_id =%(storage_type_id)s
-and storage_location = %(storage_location)s;
+    and storage_location = %(storage_location)s;
 '''            
             params = {'storage_type_id': self.storage_type_config['storage_type_id'],
                       'storage_location': storage_unit_path
@@ -436,10 +436,10 @@ where not exists (
 
 select observation_type_id, observation_id from observation
 where observation_type_id = 1 -- Optical Satellite
-and instrument_type_id = 1 -- Passive Satellite-borne
-and instrument_id = (select instrument_id from instrument where instrument_tag = %(instrument_tag)s)
-and observation_start_datetime = %(observation_start_datetime)s
-and observation_end_datetime = %(observation_end_datetime)s;
+    and instrument_type_id = 1 -- Passive Satellite-borne
+    and instrument_id = (select instrument_id from instrument where instrument_tag = %(instrument_tag)s)
+    and observation_start_datetime = %(observation_start_datetime)s
+    and observation_end_datetime = %(observation_end_datetime)s;
 '''
             params = {'instrument_tag': record['sensor_name'],
                       'observation_start_datetime': record['start_datetime'],
@@ -471,7 +471,7 @@ insert into dataset(
 select
     (select dataset_type_id from dataset_type where dataset_type_tag = %(dataset_type_tag)s),
     nextval('dataset_id_seq'::regclass),
-    %(observation_type_id)s
+    %(observation_type_id)s,
     %(observation_id)s,
     %(dataset_location)s
 where not exists (
@@ -502,19 +502,19 @@ where observation_type_id = %(observation_type_id)s
             return (dataset_id_result.field_values['dataset_type_id'][0], dataset_id_result.field_values['dataset_id'][0])
         
         
-        def set_dataset_dimensions(record, dataset_key, min_max_indexing_tuple):
+        def set_dataset_dimensions(dataset_key, dimension_key, min_max_indexing_tuple):
             '''
             Function to write dataset_dimension record if required
             '''
             SQL = '''-- Attempt to insert dataset_dimension records
 insert into dataset_dimension(
-  dataset_type_id,
-  dataset_id,
-  domain_id,
-  dimension_id,
-  min_value,
-  max_value,
-  indexing_value,
+    dataset_type_id,
+    dataset_id,
+    domain_id,
+    dimension_id,
+    min_value,
+    max_value,
+    indexing_value
     )
 select
   %(dataset_type_id)s,
@@ -523,19 +523,19 @@ select
   %(dimension_id)s,
   %(min_value)s,
   %(max_value)s,
-  %(indexing_value)s,
+  %(indexing_value)s
 where not exists (
     select * from dataset_dimension
-    where dataset_type_id = %(dataset_type_id)s,
-        and dataset_id = %(dataset_id)s,
-        and domain_id = %(domain_id)s,
-        and dimension_id = %(dimension_id)s,
+    where dataset_type_id = %(dataset_type_id)s
+        and dataset_id = %(dataset_id)s
+        and domain_id = %(domain_id)s
+        and dimension_id = %(dimension_id)s
     );
 '''
             params = {'dataset_type_id': dataset_key[0],
                       'dataset_id': dataset_key[1],
-                      'observation_type_id': observation_key[0],
-                      'observation_id': observation_key[1],
+                      'domain_id': dimension_key[0],
+                      'dimension_id': dimension_key[1],
                       'min_value': min_max_indexing_tuple[0],
                       'max_value': min_max_indexing_tuple[1],
                       'indexing_value': min_max_indexing_tuple[2]
@@ -544,11 +544,9 @@ where not exists (
             log_multiline(logger.debug, self.database.default_cursor.mogrify(SQL, params), 'Mogrified SQL', '\t')
             
             if self.dryrun:
-                return -1
+                return
             
-            dataset_id_result = self.database.submit_query(SQL, params)
-            assert dataset_id_result.record_count == 1, '%d records retrieved for dataset_id query'
-            return dataset_id_result.field_values['dataset_id'][0]
+            self.database.submit_query(SQL, params)
         
         
         # Start of write_gdf_data(self, storage_indices, data_descriptor, storage_unit_path) definition
@@ -571,6 +569,10 @@ where not exists (
                 logger.debug('dataset_key = %s', dataset_key)
                 
                 for dimension in self.dimensions:
+                    dimension_key = (self.storage_type_config['dimensions'][dimension]['domain_id'],
+                                     self.storage_type_config['dimensions'][dimension]['dimension_id']
+                                     )
+
                     if dimension == 'X':
                         min_max_indexing_tuple = (min(record['ul_x'], record['ll_x']),
                                                   max(record['ur_x'], record['lr_x']),
@@ -586,10 +588,10 @@ where not exists (
                         max_value = dt2secs(record['end_datetime'])
                         min_max_indexing_tuple = (min_value,
                                                   max_value,
-                                                  (min_value + max_value) / 2.0
+                                                  int((min_value + max_value) / 2.0 + 0.5)
                                                   )
                         
-                    set_dataset_dimensions(record, dataset_key, min_max_indexing_tuple)
+                    set_dataset_dimensions(dataset_key, dimension_key, min_max_indexing_tuple)
                 
                 
                 
