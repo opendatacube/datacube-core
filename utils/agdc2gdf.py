@@ -311,7 +311,8 @@ order by end_datetime
         
         if os.path.isfile(storage_path) and not self.force: 
             logger.warning('Skipping existing storage unit %s' % storage_path)
-            return 
+#            return 
+            return storage_path #TODO: Remove this temporary debugging hack
         
         t_indices = np.array([dt2secs(record_dict['end_datetime']) for record_dict in data_descriptor])
         
@@ -493,9 +494,9 @@ and dataset_location = %(dataset_location)s
             if self.dryrun:
                 return -1
             
-            observation_id_result = self.database.submit_query(SQL, params)
-            assert observation_id_result.record_count == 1, '%d records retrieved for observation_id query'
-            return observation_id_result.field_values['observation_id'][0]
+            dataset_id_result = self.database.submit_query(SQL, params)
+            assert dataset_id_result.record_count == 1, '%d records retrieved for dataset_id query'
+            return dataset_id_result.field_values['dataset_id'][0]
         
         
         # Start of write_gdf_data(self, storage_indices, data_descriptor, storage_unit_path) definition
@@ -503,10 +504,10 @@ and dataset_location = %(dataset_location)s
         
         self.database.keep_connection = True
         self.database.autocommit = False
-        self.database.begin() # Begin transaction
         
         logger.debug('self.database.default_connection = %s', self.database.default_connection)
         logger.debug('self.database.default_cursor = %s', self.database.default_cursor)
+        logger.debug('self.database.default_connection.status = %s', self.database.default_connection.status)
         
         try:
             # Get storage unit ID - this doesn't change from record to record
@@ -515,6 +516,7 @@ and dataset_location = %(dataset_location)s
                 
             logger.debug('self.database.default_connection = %s', self.database.default_connection)
             logger.debug('self.database.default_cursor = %s', self.database.default_cursor)
+            logger.debug('self.database.default_connection.status = %s', self.database.default_connection.status)
 
             for record in data_descriptor:
                 observation_id = get_observation_id(record)
@@ -522,12 +524,14 @@ and dataset_location = %(dataset_location)s
 
                 logger.debug('self.database.default_connection = %s', self.database.default_connection)
                 logger.debug('self.database.default_cursor = %s', self.database.default_cursor)
+                logger.debug('self.database.default_connection.status = %s', self.database.default_connection.status)
 
                 dataset_id = get_dataset_id(record, observation_id)
                 logger.debug('dataset_id = %s', dataset_id)
                 
                 logger.debug('self.database.default_connection = %s', self.database.default_connection)
                 logger.debug('self.database.default_cursor = %s', self.database.default_cursor)
+                logger.debug('self.database.default_connection.status = %s', self.database.default_connection.status)
 
                 
                 

@@ -241,6 +241,7 @@ class Database(object):
             logger.warning('Autocommit enabled. Ignoring transaction commit request.')
         elif self._default_connection.status == psycopg2.extensions.STATUS_IN_TRANSACTION:
             self._default_connection.commit()
+            logger.debug('Transaction on default connection committed')
         else:
             logger.warning('Default connection not in transaction. Ignoring transaction commit request.')
         
@@ -252,6 +253,7 @@ class Database(object):
             logger.warning('Autocommit enabled. Ignoring transaction rollback request.')
         elif self._default_connection.status == psycopg2.extensions.STATUS_IN_TRANSACTION:
             self._default_connection.rollback()
+            logger.debug('Transaction on default connection rolled back')
         else:
             logger.warning('Default connection not in transaction. Ignoring transaction rollback request.')
         
