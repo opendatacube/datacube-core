@@ -598,7 +598,10 @@ left join property using(property_id)
         # Filter out duplicate storage unit types. Only keep first definition
         filtered_storage_config_dict = {}
         for db_ref in self._configuration.keys():
-            for storage_unit_type in storage_config_dict[db_ref].keys():
+            db_storage_config_dict = storage_config_dict.get(db_ref)
+            if not db_storage_config_dict:
+                continue
+            for storage_unit_type in db_storage_config_dict.keys():
                 if storage_unit_type in filtered_storage_config_dict.keys():
                     logger.warning('Ignored duplicate storage unit type "%s" in DB "%s"' % (storage_unit_type, db_ref))
                 else:
@@ -1087,7 +1090,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                     
                     # Show all unique group values in order
                     #TODO: Don't make this hard-coded for T slices
-                    storage_type_descriptor['irregular_indices'] = {'T': np.array(sorted(list(overall_slice_group_set)), dtype = np.int16)}
+                    storage_type_descriptor['irregular_indices'] = {'T': np.array(sorted(list(overall_slice_group_set)), dtype = np.int32)}
                     
                     storage_type_descriptor['variables'] = dict(self._storage_config[storage_type_tag]['measurement_types'])
     
