@@ -127,6 +127,12 @@ class GDFNetCDF(object):
                 index: index for storage unit
                 dimension_index_vector: Numpy array of index values for irregular dimension (e.g. time) or None for unlimited irregular dimension
             '''
+
+            logger.debug('dimension = %s', dimension)
+            logger.debug('dimension_config = %s', dimension_config)
+            logger.debug('index = %s', index)
+            logger.debug('dimension_index_vector = %s', dimension_index_vector)
+
             if dimension_config['indexing_type'] == 'regular' and not dimension_index_vector:
                 dimension_min = index * dimension_config['dimension_extent'] + dimension_config['dimension_origin']
 #                dimension_max = dimension_min + dimension_config['dimension_extent']
