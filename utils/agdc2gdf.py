@@ -568,7 +568,7 @@ insert into storage_dataset(
 select
     %(storage_type_id)s,
     %(storage_id)s,
-    %(storage_version),
+    %(storage_version)s,
     %(dataset_type_id)s,
     %(dataset_id)s
 where not exists (
@@ -608,12 +608,12 @@ insert into storage_dimension(
     dimension_id,
     storage_dimension_index,
     storage_dimension_min,
-    storage_dimension_max,
+    storage_dimension_max
     )
 select
     %(storage_type_id)s,
     %(storage_id)s,
-    %(storage_version),
+    %(storage_version)s,
     %(domain_id)s,
     %(dimension_id)s,
     %(storage_dimension_index)s,
@@ -638,6 +638,7 @@ where not exists (
                       'storage_dimension_max': min_index_max_tuple[2]
                       }
 
+            log_multiline(logger.debug, SQL, 'SQL', '\t')
             log_multiline(logger.debug, self.database.default_cursor.mogrify(SQL, params), 'Mogrified SQL', '\t')
             
             if self.dryrun:
@@ -659,11 +660,16 @@ where not exists (
             storage_key = get_storage_key(record, storage_unit_path)
             logger.debug('storage_key = %s', storage_key)
 
-            for dimension_index in self.dimensions:
-                dimension = self.dimensions[dimension_index]
-                dimension_key = (self.storage_type_config['dimensions'][dimension]['domain_id'],
-                                 self.storage_type_config['dimensions'][dimension]['dimension_id']
+            # Set storage_dimension record for each dimension
+            logger.debug('self.dimensions = %s', self.dimensions)
+            for dimension_index in range(len(self.dimensions)):
+                logger.debug('dimension_index = %d', dimension_index)
+                dimension = self.dimensions.keys()[dimension_index]
+                logger.debug('dimension = %s', dimension)
+                dimension_key = (self.dimensions[dimension]['domain_id'],
+                                 self.dimensions[dimension]['dimension_id']
                                  )
+                logger.debug('dimension_key = %s', dimension_key)
 
                 min_index_max_tuple = (self.index2ordinate(storage_indices[dimension_index], dimension),
                                        storage_indices[dimension_index], # Indexing value
@@ -680,6 +686,7 @@ where not exists (
                 dataset_key = get_dataset_key(record, observation_key)
                 logger.debug('dataset_key = %s', dataset_key)
                 
+                # Set dataset_dimension record for each dimension
                 for dimension in self.dimensions:
                     dimension_key = (self.storage_type_config['dimensions'][dimension]['domain_id'],
                                      self.storage_type_config['dimensions'][dimension]['dimension_id']
@@ -735,6 +742,7 @@ where not exists (
         if dimension == 'T':
             #TODO: Make this more general - need to cater for other reference systems besides seconds since epoch
             index_reference_system_name = self.storage_type_config['dimensions']['T']['index_reference_system_name'].lower()
+            logger.debug('index_reference_system_name = %s', index_reference_system_name)
             if index_reference_system_name == 'decade':
                 return gdf.dt2secs(datetime(index*10, 1, 1))
             if index_reference_system_name == 'year':
