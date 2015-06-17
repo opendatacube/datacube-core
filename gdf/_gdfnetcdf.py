@@ -49,7 +49,7 @@ from EOtools.utils import log_multiline
 from pprint import pprint
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG) # Logging level for this module
+logger.setLevel(logging.INFO) # Logging level for this module
 
 try:
     import netcdf_builder

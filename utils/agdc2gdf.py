@@ -61,7 +61,7 @@ from gdf import make_dir
 from EOtools.utils import log_multiline
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG) # Logging level for this module
+logger.setLevel(logging.INFO) # Logging level for this module
 
 class AGDC2GDF(GDF):
     DEFAULT_CONFIG_FILE = 'agdc2gdf_default.conf' # N.B: Assumed to reside in code root directory
@@ -311,8 +311,8 @@ order by end_datetime
         
         if os.path.isfile(storage_path) and not self.force: 
             logger.warning('Skipping existing storage unit %s' % storage_path)
-#            return 
-            return storage_path #TODO: Remove this temporary debugging hack
+            return 
+#            return storage_path #TODO: Remove this temporary debugging hack
         
         t_indices = np.array([dt2secs(record_dict['end_datetime']) for record_dict in data_descriptor])
         
@@ -772,13 +772,16 @@ def main():
     for storage_indices in storage_indices_list:
         data_descriptor = agdc2gdf.read_agdc(storage_indices) 
 #        log_multiline(logger.debug, data_descriptor, 'data_descriptor', '\t')
+        if not data_descriptor:
+            logger.info('No tiles found for storage unit %s', storage_indices)
+            continue
                 
         storage_unit_path = agdc2gdf.create_netcdf(storage_indices, data_descriptor)
         if not storage_unit_path: continue
         logger.debug('storage_unit_path = %s', storage_unit_path)
         
         agdc2gdf.write_gdf_data(storage_indices, data_descriptor, storage_unit_path)
-        
+        logger.info('Finished creating and indexing %s', storage_unit_path)
          
 
 if __name__ == '__main__':
