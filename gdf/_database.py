@@ -150,7 +150,7 @@ class Database(object):
             db_connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
         else:
             db_connection.autocommit = False
-            db_connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_UNCOMMITTED)
+            db_connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_READ_COMMITTED)
 
         return db_connection
     
@@ -231,7 +231,40 @@ class Database(object):
         self._setup_default_cursor()
         
         log_multiline(logger.debug, self.__dict__, 'Database.__dict__', '\t')
+    
+    
+    def begin(self): 
+        '''
+        Begin transaction if autocommit not enabled (Probably redundant - transactions begin automatically)
+        '''
+        if self._autocommit:
+            logger.warning('Autocommit enabled. Ignoring transaction begin request.')
+        elif not self._default_cursor.in_transaction():
+            self._default_cursor.begin()
+        else:
+            logger.warning('Default cursor already in transaction')
+            
+    def commit(self): 
+        '''
+        Commit transaction if autocommit not enabled
+        '''
+        if self._autocommit:
+            logger.warning('Autocommit enabled. Ignoring transaction commit request.')
+        elif self._default_cursor.in_transaction():
+            self._default_cursor.commit()
+        else:
+            logger.warning('Default cursor not in transaction. Ignoring transaction commit request.')
         
+    def rollback(self): 
+        '''
+        Rollback transaction if autocommit not enabled
+        '''
+        if self._autocommit:
+            logger.warning('Autocommit enabled. Ignoring transaction rollback request.')
+        elif self._default_cursor.in_transaction():
+            self._default_cursor.rollback()
+        else:
+            logger.warning('Default cursor not in transaction. Ignoring transaction rollback request.')
         
     # Define class properties
     @property

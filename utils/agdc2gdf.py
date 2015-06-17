@@ -503,13 +503,12 @@ and dataset_location = %(dataset_location)s
         
         self.database.keep_connection = True
         self.database.autocommit = False
-        self.database.execSQL('begin;') # Begin transaction
+        self.database.begin() # Begin transaction
+        
         logger.debug('self.database.default_connection = %s', self.database.default_connection)
         logger.debug('self.database.default_cursor = %s', self.database.default_cursor)
         
         try:
-            storage_type_id = self.storage_type_config['storage_type_id']
-
             # Get storage unit ID - this doesn't change from record to record
             storage_id = get_storage_id(data_descriptor[0], storage_unit_path)
             logger.debug('storage_id = %s', storage_id)
@@ -534,10 +533,10 @@ and dataset_location = %(dataset_location)s
                 
                 
                 
-            self.database.execSQL('commit;') # Commit transaction    
+            self.database.commit() # Commit transaction    
         except Exception, caught_exception:
             try:
-                self.database.execSQL('rollback;') # Rollback transaction
+                self.database.rollback() # Rollback transaction
             except:
                 pass 
             raise caught_exception
