@@ -364,7 +364,7 @@ order by end_datetime
             '''
             Function to write storage unit record if required and return storage unit ID (tuple containing storage_type_id & storage_id)
             '''
-            SQL ='''-- Attempt to insert a storage record and return storage_id 
+            SQL ='''-- Attempt to insert a storage record and return storage key 
 insert into storage(
     storage_type_id,
     storage_id,
@@ -383,12 +383,12 @@ select
     NULL,
     NULL
 where not exists (
-    select storage_id from storage 
+    select storage_type_id, storage_id, storage_version from storage 
     where storage_type_id =%(storage_type_id)s
     and storage_location = %(storage_location)s
     );
             
-select storage_type_id, storage_id from storage
+select storage_type_id, storage_id, storage_version from storage
 where storage_type_id =%(storage_type_id)s
     and storage_location = %(storage_location)s;
 '''            
@@ -399,17 +399,19 @@ where storage_type_id =%(storage_type_id)s
             log_multiline(logger.debug, self.database.default_cursor.mogrify(SQL, params), 'Mogrified SQL', '\t')
             
             if self.dryrun:
-                return -1
+                return (None, None, None)
             
             storage_id_result = self.database.submit_query(SQL, params)
             assert storage_id_result.record_count == 1, '%d records retrieved for storage_id query'
-            return (storage_id_result.field_values['storage_type_id'][0], storage_id_result.field_values['storage_id'][0])
+            return (storage_id_result.field_values['storage_type_id'][0], 
+                    storage_id_result.field_values['storage_id'][0],
+                    storage_id_result.field_values['storage_version'][0])
             
         def get_observation_key(record):
             '''
             Function to write observation (acquisition) record if required and return observation ID (tuple containing observation_type_id and observation_id)
             '''
-            SQL = '''-- Attempt to insert an observation record and return observation_id
+            SQL = '''-- Attempt to insert an observation record and return observation key
 insert into observation(
     observation_type_id,
     observation_id,
@@ -449,11 +451,12 @@ where observation_type_id = 1 -- Optical Satellite
             log_multiline(logger.debug, self.database.default_cursor.mogrify(SQL, params), 'Mogrified SQL', '\t')
             
             if self.dryrun:
-                return -1
+                return (None, None)
             
             observation_id_result = self.database.submit_query(SQL, params)
             assert observation_id_result.record_count == 1, '%d records retrieved for observation_id query'
-            return (observation_id_result.field_values['observation_type_id'][0], observation_id_result.field_values['observation_id'][0])
+            return (observation_id_result.field_values['observation_type_id'][0], 
+                    observation_id_result.field_values['observation_id'][0])
            
         
         def get_dataset_key(record, observation_key):
@@ -499,10 +502,11 @@ where observation_type_id = %(observation_type_id)s
             
             dataset_id_result = self.database.submit_query(SQL, params)
             assert dataset_id_result.record_count == 1, '%d records retrieved for dataset_id query'
-            return (dataset_id_result.field_values['dataset_type_id'][0], dataset_id_result.field_values['dataset_id'][0])
+            return (dataset_id_result.field_values['dataset_type_id'][0], 
+                    dataset_id_result.field_values['dataset_id'][0])
         
         
-        def set_dataset_dimensions(dataset_key, dimension_key, min_max_indexing_tuple):
+        def set_dataset_dimensions(dataset_key, dimension_key, min_index_max_tuple):
             '''
             Function to write dataset_dimension record if required
             '''
@@ -536,11 +540,104 @@ where not exists (
                       'dataset_id': dataset_key[1],
                       'domain_id': dimension_key[0],
                       'dimension_id': dimension_key[1],
-                      'min_value': min_max_indexing_tuple[0],
-                      'max_value': min_max_indexing_tuple[1],
-                      'indexing_value': min_max_indexing_tuple[2]
+                      'min_value': min_index_max_tuple[0],
+                      'indexing_value': min_index_max_tuple[1],
+                      'max_value': min_index_max_tuple[2]
                       }
             
+            log_multiline(logger.debug, self.database.default_cursor.mogrify(SQL, params), 'Mogrified SQL', '\t')
+            
+            if self.dryrun:
+                return
+            
+            self.database.submit_query(SQL, params)
+        
+        
+        def set_storage_dataset(storage_key, dataset_key):
+            '''
+            Function to write storage_dataset record if required
+            '''
+            SQL = '''-- Attempt to insert storage_dataset record
+insert into storage_dataset(
+    storage_type_id,
+    storage_id,
+    storage_version,
+    dataset_type_id,
+    dataset_id
+    )
+select
+    %(storage_type_id)s,
+    %(storage_id)s,
+    %(storage_version),
+    %(dataset_type_id)s,
+    %(dataset_id)s
+where not exists (
+    select * from storage_dataset
+    where storage_type_id = %(storage_type_id)s
+        and storage_id = %(storage_id)s
+        and storage_version = %(storage_version)s
+        and dataset_type_id = %(dataset_type_id)s
+        and dataset_id = %(dataset_id)s
+    );
+'''
+            params = {'storage_type_id': storage_key[0],
+                      'storage_id': storage_key[1],
+                      'storage_version': storage_key[2],
+                      'dataset_type_id': dataset_key[0],
+                      'dataset_id': dataset_key[1],
+                      }
+            
+            log_multiline(logger.debug, self.database.default_cursor.mogrify(SQL, params), 'Mogrified SQL', '\t')
+            
+            if self.dryrun:
+                return
+            
+            self.database.submit_query(SQL, params)
+        
+        
+        def set_storage_dimension(storage_key, dimension_key, min_index_max_tuple):
+            '''
+            Function to write storage_dimension record if required
+            '''
+            SQL = '''-- Attempt to insert storage_dimension record
+insert into storage_dimension(
+    storage_type_id,
+    storage_id,
+    storage_version,
+    domain_id,
+    dimension_id,
+    storage_dimension_index,
+    storage_dimension_min,
+    storage_dimension_max,
+    )
+select
+    %(storage_type_id)s,
+    %(storage_id)s,
+    %(storage_version),
+    %(domain_id)s,
+    %(dimension_id)s,
+    %(storage_dimension_index)s,
+    %(storage_dimension_min)s,
+    %(storage_dimension_max)s
+where not exists (
+    select * from storage_dimension
+    where storage_type_id = %(storage_type_id)s
+        and storage_id = %(storage_id)s
+        and storage_version = %(storage_version)s
+        and domain_id = %(domain_id)s
+        and dimension_id = %(dimension_id)s
+    );
+'''
+            params = {'storage_type_id': storage_key[0],
+                      'storage_id': storage_key[1],
+                      'storage_version': storage_key[2],
+                      'domain_id': dimension_key[0],
+                      'dimension_id': dimension_key[1],
+                      'storage_dimension_min': min_index_max_tuple[0],
+                      'storage_dimension_index': min_index_max_tuple[1],
+                      'storage_dimension_max': min_index_max_tuple[2]
+                      }
+
             log_multiline(logger.debug, self.database.default_cursor.mogrify(SQL, params), 'Mogrified SQL', '\t')
             
             if self.dryrun:
@@ -558,9 +655,24 @@ where not exists (
         
         try:
             # Get storage unit ID - this doesn't change from record to record
-            storage_key = get_storage_key(data_descriptor[0], storage_unit_path)
+            record = data_descriptor[0]
+            storage_key = get_storage_key(record, storage_unit_path)
             logger.debug('storage_key = %s', storage_key)
 
+            for dimension_index in self.dimensions:
+                dimension = self.dimensions[dimension_index]
+                dimension_key = (self.storage_type_config['dimensions'][dimension]['domain_id'],
+                                 self.storage_type_config['dimensions'][dimension]['dimension_id']
+                                 )
+
+                min_index_max_tuple = (self.index2ordinate(storage_indices[dimension_index], dimension),
+                                       storage_indices[dimension_index], # Indexing value
+                                       self.index2ordinate(storage_indices[dimension_index] + 1, dimension)
+                                       )
+
+                set_storage_dimension(storage_key, dimension_key, min_index_max_tuple)
+                
+            # Process each tile record
             for record in data_descriptor:
                 observation_key = get_observation_key(record)
                 logger.debug('observation_key = %s', observation_key)
@@ -574,26 +686,26 @@ where not exists (
                                      )
 
                     if dimension == 'X':
-                        min_max_indexing_tuple = (min(record['ul_x'], record['ll_x']),
-                                                  max(record['ur_x'], record['lr_x']),
-                                                  None
-                                                  )
+                        min_index_max_tuple = (min(record['ul_x'], record['ll_x']),
+                                               None, # No indexing value for regular dimension
+                                               max(record['ur_x'], record['lr_x'])
+                                               )
                     elif dimension == 'Y':
-                        min_max_indexing_tuple = (min(record['ll_y'], record['lr_y']),
-                                                  max(record['ul_y'], record['ur_y']),
-                                                  None
-                                                  )
+                        min_index_max_tuple = (min(record['ll_y'], record['lr_y']),
+                                               None, # No indexing value for regular dimension
+                                               max(record['ul_y'], record['ur_y'])
+                                               )
                     elif dimension == 'T':
                         min_value = dt2secs(record['start_datetime'])
                         max_value = dt2secs(record['end_datetime'])
-                        min_max_indexing_tuple = (min_value,
-                                                  max_value,
-                                                  int((min_value + max_value) / 2.0 + 0.5)
-                                                  )
+                        min_index_max_tuple = (min_value,
+                                               int((min_value + max_value) / 2.0 + 0.5),
+                                               max_value
+                                               )
                         
-                    set_dataset_dimensions(dataset_key, dimension_key, min_max_indexing_tuple)
+                    set_dataset_dimensions(dataset_key, dimension_key, min_index_max_tuple)
                 
-                
+                set_storage_dataset(storage_key, dataset_key)
                 
             self.database.commit() # Commit transaction    
         except Exception, caught_exception:
