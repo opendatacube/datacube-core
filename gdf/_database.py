@@ -233,27 +233,16 @@ class Database(object):
         log_multiline(logger.debug, self.__dict__, 'Database.__dict__', '\t')
     
     
-    def begin(self): 
-        '''
-        Begin transaction if autocommit not enabled (Probably redundant - transactions begin automatically)
-        '''
-        if self._autocommit:
-            logger.warning('Autocommit enabled. Ignoring transaction begin request.')
-        elif not self._default_cursor.in_transaction():
-            self._default_cursor.begin()
-        else:
-            logger.warning('Default cursor already in transaction')
-            
     def commit(self): 
         '''
         Commit transaction if autocommit not enabled
         '''
         if self._autocommit:
             logger.warning('Autocommit enabled. Ignoring transaction commit request.')
-        elif self._default_cursor.in_transaction():
-            self._default_cursor.commit()
+        elif self._default_connection.status == psycopg2.extensions.STATUS_IN_TRANSACTION:
+            self._default_connection.commit()
         else:
-            logger.warning('Default cursor not in transaction. Ignoring transaction commit request.')
+            logger.warning('Default connection not in transaction. Ignoring transaction commit request.')
         
     def rollback(self): 
         '''
@@ -261,10 +250,10 @@ class Database(object):
         '''
         if self._autocommit:
             logger.warning('Autocommit enabled. Ignoring transaction rollback request.')
-        elif self._default_cursor.in_transaction():
-            self._default_cursor.rollback()
+        elif self._default_connection.status == psycopg2.extensions.STATUS_IN_TRANSACTION:
+            self._default_connection.rollback()
         else:
-            logger.warning('Default cursor not in transaction. Ignoring transaction rollback request.')
+            logger.warning('Default connection not in transaction. Ignoring transaction rollback request.')
         
     # Define class properties
     @property
