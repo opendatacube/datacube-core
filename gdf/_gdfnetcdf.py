@@ -183,7 +183,8 @@ class GDFNetCDF(object):
             
             # A method of handling variable metadata
             metadata_dict = {variable_name + ':' + 'coordinates': 'lat lon',
-                             variable_name + ':' + 'grid_mapping': 'crs'
+                             variable_name + ':' + 'grid_mapping': 'crs',
+                             variable_name + ':' + 'name': variable_config['measurement_type_name']
                              }
      
             self.set_attributes(metadata_dict)            
