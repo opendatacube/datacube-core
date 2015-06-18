@@ -202,35 +202,28 @@ class GDF(object):
         # Create master configuration dict containing both command line and config_file parameters
         self._command_line_params = self.get_command_line_params(GDF.ARG_DESCRIPTORS)
         
-        if self._command_line_params['debug']:
-            self.debug = True
-            
-        #=======================================================================
-        # else:
-        #     logger.setLevel(logging.INFO)
-        #=======================================================================
+        self._debug = False
+        self.debug = self._command_line_params['debug']
                 
         # Create master configuration dict containing both command line and config_file parameters
-        self._configuration = self.get_config(self._command_line_params['config_files'])
-        
+        self._configuration = self.get_config(self._command_line_params['config_files'])       
+       
         # Create global directories if they don't exist
         make_dir(self.temp_dir)
         make_dir(self.cache_dir)
         
         # Convert self.refresh to Boolean
-        self.refresh = strtobool(self.refresh)
+        self.refresh = self.debug or strtobool(self.refresh)
         
         # Force refresh if config has changed
         try:
             cached_config = self.get_cached_object('configuration.pkl')
-            need_refresh = (self._configuration != cached_config) 
-            if need_refresh:
-                self.cache_object(self._configuration, 'configuration.pkl')
-                self.refresh = True
+            self.refresh = self.refresh or (self._configuration != cached_config) 
         except:
-            pass
+            self.refresh = True
         
         if self.refresh:
+            self.cache_object(self._configuration, 'configuration.pkl')
             logger.info('Forcing refresh of all cached data')
         
         # Create master database dict with Database objects keyed by db_ref
@@ -251,15 +244,17 @@ class GDF(object):
             self.cache_object(self._storage_config, 'storage_config.pkl')
             logger.info('Read storage configuration from databases %s', self._storage_config.keys())
             
-        # Read storage configuration from databases
-        try:           
-            self._global_descriptor = self.get_cached_object('global_descriptor.pkl')
-            logger.info('Loaded cached global descriptor %s', self._global_descriptor.keys())
-        except:
-            logger.info('Creating global descriptor... Please wait.')
-            self._global_descriptor = self.get_descriptor()
-            self.cache_object(self._global_descriptor, 'global_descriptor.pkl')
-            logger.info('Created global descriptor %s', self._global_descriptor.keys())
+        #=======================================================================
+        # # Read storage configuration from databases
+        # try:           
+        #     self._global_descriptor = self.get_cached_object('global_descriptor.pkl')
+        #     logger.info('Loaded cached global descriptor %s', self._global_descriptor.keys())
+        # except:
+        #     logger.info('Creating global descriptor... Please wait.')
+        #     self._global_descriptor = self.get_descriptor()
+        #     self.cache_object(self._global_descriptor, 'global_descriptor.pkl')
+        #     logger.info('Created global descriptor %s', self._global_descriptor.keys())
+        #=======================================================================
         
         log_multiline(logger.debug, self.__dict__, 'GDF.__dict__', '\t')
 
@@ -448,6 +443,7 @@ select distinct
     storage_type_tag,
     storage_type_id,
     storage_type_name,
+    storage_type_location,
     measurement_type_tag,
     measurement_metatype_id,
     measurement_type_id,
@@ -505,90 +501,127 @@ left join property using(property_id)
             SQL += '''order by storage_type_tag, measurement_type_index, dimension_order;
 '''
 
-            storage_types = database.submit_query(SQL)
+            storage_config_results = database.submit_query(SQL)
             
-            for record_dict in storage_types.record_generator():
-                log_multiline(logger.debug, record_dict, 'record_dict', '\t')
+            for record in storage_config_results.record_generator():
+                log_multiline(logger.debug, record, 'record', '\t')
                   
-                storage_type_dict = db_storage_config_dict.get(record_dict['storage_type_tag'])
+                storage_type_dict = db_storage_config_dict.get(record['storage_type_tag'])
                 if storage_type_dict is None:
                     storage_type_dict = {'db_ref': database.db_ref,
-                                         'storage_root': self._configuration[database.db_ref]['storage_root'],
-                                         'storage_type_tag': record_dict['storage_type_tag'],
-                                         'storage_type_id': record_dict['storage_type_id'],
-                                         'storage_type_name': record_dict['storage_type_name'],
+                                         'storage_type_tag': record['storage_type_tag'],
+                                         'storage_type_id': record['storage_type_id'],
+                                         'storage_type_name': record['storage_type_name'],
+                                         'storage_type_location': record['storage_type_location'],
                                          'measurement_types': collections.OrderedDict(),
                                          'domains': {},
                                          'dimensions': collections.OrderedDict()
                                         }
     
-                db_storage_config_dict[record_dict['storage_type_tag']] = storage_type_dict
+                db_storage_config_dict[record['storage_type_tag']] = storage_type_dict
                       
-                measurement_type_dict = storage_type_dict['measurement_types'].get(record_dict['measurement_type_tag'])
+                measurement_type_dict = storage_type_dict['measurement_types'].get(record['measurement_type_tag'])
                 if measurement_type_dict is None:
-                    measurement_type_dict = {'measurement_type_tag': record_dict['measurement_type_tag'],
-                                               'measurement_metatype_id': record_dict['measurement_metatype_id'],
-                                               'measurement_type_id': record_dict['measurement_type_id'],
-                                               'measurement_type_index': record_dict['measurement_type_index'],
-                                               'measurement_metatype_name': record_dict['measurement_metatype_name'],
-                                               'measurement_type_name': record_dict['measurement_type_name'],
-                                               'nodata_value': record_dict['nodata_value'],
-                                               'datatype_name': record_dict['datatype_name'],
-                                               'numpy_datatype_name': record_dict['numpy_datatype_name'],
-                                               'gdal_datatype_name': record_dict['gdal_datatype_name'],
-                                               'netcdf_datatype_name': record_dict['netcdf_datatype_name']
+                    measurement_type_dict = {'measurement_type_tag': record['measurement_type_tag'],
+                                               'measurement_metatype_id': record['measurement_metatype_id'],
+                                               'measurement_type_id': record['measurement_type_id'],
+                                               'measurement_type_index': record['measurement_type_index'],
+                                               'measurement_metatype_name': record['measurement_metatype_name'],
+                                               'measurement_type_name': record['measurement_type_name'],
+                                               'nodata_value': record['nodata_value'],
+                                               'datatype_name': record['datatype_name'],
+                                               'numpy_datatype_name': record['numpy_datatype_name'],
+                                               'gdal_datatype_name': record['gdal_datatype_name'],
+                                               'netcdf_datatype_name': record['netcdf_datatype_name']
                                                }
     
-                    storage_type_dict['measurement_types'][record_dict['measurement_type_tag']] = measurement_type_dict
+                    storage_type_dict['measurement_types'][record['measurement_type_tag']] = measurement_type_dict
                       
-                domain_dict = storage_type_dict['domains'].get(record_dict['domain_tag'])
+                domain_dict = storage_type_dict['domains'].get(record['domain_tag'])
                 if domain_dict is None:
-                    domain_dict = {'domain_tag': record_dict['domain_tag'],
-                                     'domain_id': record_dict['domain_id'],
-                                     'domain_name': record_dict['domain_name'],
-                                     'reference_system_id': record_dict['reference_system_id'],
-                                     'reference_system_name': record_dict['reference_system_name'],
-                                     'reference_system_definition': record_dict['reference_system_definition'],
-                                     'reference_system_unit': record_dict['reference_system_unit'], 
+                    domain_dict = {'domain_tag': record['domain_tag'],
+                                     'domain_id': record['domain_id'],
+                                     'domain_name': record['domain_name'],
+                                     'reference_system_id': record['reference_system_id'],
+                                     'reference_system_name': record['reference_system_name'],
+                                     'reference_system_definition': record['reference_system_definition'],
+                                     'reference_system_unit': record['reference_system_unit'], 
                                      'dimensions': []
                                      }
     
-                    storage_type_dict['domains'][record_dict['domain_tag']] = domain_dict
+                    storage_type_dict['domains'][record['domain_tag']] = domain_dict
                       
-                dimension_dict = storage_type_dict['dimensions'].get(record_dict['dimension_tag'])
+                dimension_dict = storage_type_dict['dimensions'].get(record['dimension_tag'])
                 if dimension_dict is None:
-                    dimension_dict = {'dimension_tag': record_dict['dimension_tag'],
-                                        'dimension_name': record_dict['dimension_name'],
-                                        'dimension_id': record_dict['dimension_id'],
-                                        'dimension_order': record_dict['dimension_order'],
-                                        'dimension_extent': record_dict['dimension_extent'],
-                                        'dimension_elements': record_dict['dimension_elements'],
-                                        'dimension_cache': record_dict['dimension_cache'],
-                                        'dimension_origin': record_dict['dimension_origin'],
-                                        'dimension_element_size': record_dict['dimension_element_size'],
-                                        'indexing_type': record_dict['indexing_type'],
-                                        'domain_tag': record_dict['domain_tag'],
-                                        'domain_id': record_dict['domain_id'],
-                                        'domain_name': record_dict['domain_name'],
-                                        'reference_system_id': record_dict['reference_system_id'],
-                                        'reference_system_name': record_dict['reference_system_name'],
-                                        'reference_system_definition': record_dict['reference_system_definition'],
-                                        'reference_system_unit': record_dict['reference_system_unit'],
-                                        'index_reference_system_id': record_dict['index_reference_system_id'],
-                                        'index_reference_system_name': record_dict['index_reference_system_name'],
-                                        'index_reference_system_definition': record_dict['index_reference_system_definition'],
-                                        'index_reference_system_unit': record_dict['index_reference_system_unit'],
+                    dimension_dict = {'dimension_tag': record['dimension_tag'],
+                                        'dimension_name': record['dimension_name'],
+                                        'dimension_id': record['dimension_id'],
+                                        'dimension_order': record['dimension_order'],
+                                        'dimension_extent': record['dimension_extent'],
+                                        'dimension_elements': record['dimension_elements'],
+                                        'dimension_cache': record['dimension_cache'],
+                                        'dimension_origin': record['dimension_origin'],
+                                        'dimension_element_size': record['dimension_element_size'],
+                                        'indexing_type': record['indexing_type'],
+                                        'domain_tag': record['domain_tag'],
+                                        'domain_id': record['domain_id'],
+                                        'domain_name': record['domain_name'],
+                                        'reference_system_id': record['reference_system_id'],
+                                        'reference_system_name': record['reference_system_name'],
+                                        'reference_system_definition': record['reference_system_definition'],
+                                        'reference_system_unit': record['reference_system_unit'],
+                                        'index_reference_system_id': record['index_reference_system_id'],
+                                        'index_reference_system_name': record['index_reference_system_name'],
+                                        'index_reference_system_definition': record['index_reference_system_definition'],
+                                        'index_reference_system_unit': record['index_reference_system_unit'],
                                         'properties': {}
                                         }
     
                     
-                    storage_type_dict['dimensions'][record_dict['dimension_tag']] = dimension_dict
-                    domain_dict['dimensions'].append(record_dict['dimension_tag'])
+                    storage_type_dict['dimensions'][record['dimension_tag']] = dimension_dict
+                    domain_dict['dimensions'].append(record['dimension_tag'])
                       
-                if dimension_dict['properties'].get(record_dict['property_name']) is None:
-                    dimension_dict['properties'][record_dict['property_name']] = record_dict['attribute_string']
+                if dimension_dict['properties'].get(record['property_name']) is None:
+                    dimension_dict['properties'][record['property_name']] = record['attribute_string']
                
-                      
+            del storage_config_results 
+            
+            SQL='''-- Find maxima and minima for all storage types and dimensions
+select
+    storage_type_tag,
+    dimension_order,
+    dimension_tag,
+    min(storage_dimension_index) as min_index,
+    max(storage_dimension_index) as max_index,
+    min(storage_dimension_min) as min_value,
+    max(storage_dimension_max) as max_value
+from storage_type
+join storage_type_dimension using(storage_type_id)
+join storage using(storage_type_id)
+join storage_dimension using(storage_type_id, storage_id, storage_version, domain_id, dimension_id)
+join dimension using(dimension_id)
+'''
+            # Apply storage_type filter if configured
+            if storage_type_filter_list:
+                SQL += "where storage_type_tag in ('" + "', '".join(storage_type_filter_list) + "')"
+
+            SQL += '''
+group by 1,2,3
+order by 1,2           
+'''
+            min_max_results = database.submit_query(SQL)
+            for record in min_max_results.record_generator():
+                logger.debug('record = %s', record)
+                storage_type_dict = db_storage_config_dict.get(record['storage_type_tag'])
+                logger.debug('storage_type_dict = %s', storage_type_dict)
+                if storage_type_dict:
+                    dimension_dict = storage_type_dict['dimensions'].get(record['dimension_tag'])
+                    if True: #dimension_dict:
+                        dimension_dict['min_index'] = record['min_index']
+                        dimension_dict['max_index'] = record['max_index']
+                        dimension_dict['min_value'] = record['min_value']
+                        dimension_dict['max_value'] = record['max_value']
+                        
     #            log_multiline(logger.info, db_dict, 'db_dict', '\t')
             result_dict[database.db_ref] = db_storage_config_dict
             # End of per-DB function
@@ -706,10 +739,13 @@ left join property using(property_id)
     
     @debug.setter
     def debug(self, debug_value):
-        if debug_value:
-            logger.setLevel(logging.DEBUG)
-        else:
-            logger.setLevel(logging.INFO)
+        if self._debug != debug_value:
+            self._debug = debug_value
+            
+            if self._debug:
+                logger.setLevel(logging.DEBUG)
+            else:
+                logger.setLevel(logging.INFO)
     
     def get_descriptor(self, query_parameter=None):
         '''
@@ -1142,7 +1178,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         '''
         Function to return the path to a storage unit file with the specified storage_type & storage_indices
         '''
-        storage_dir = os.path.join(self._storage_config[storage_type]['storage_root'], storage_type)
+        storage_dir = os.path.join(self._storage_config[storage_type]['storage_type_location'], storage_type)
         make_dir(storage_dir)
         return os.path.join(storage_dir, storage_type + '_' + '_'.join([str(index) for index in storage_indices]) + '.nc')
     
@@ -1154,33 +1190,41 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         dimensions = storage_config['dimensions'].keys() # All dimensions in order
         range_dimensions = [dimension for dimension in dimensions if dimension in range_dict.keys()] # Range dimensions in order
         
-        # Default to all variables
+        # Default to all variables if none specified
         variable_names = variable_names or storage_config['measurement_types'].keys()
+        
+        
 
-        # Create complete range dict with minmax tuples for every dimension
-        full_range_dict = {dimensions[dimension_index]: (range_dict[dimensions[dimension_index]] if dimensions[dimension_index] in range_dimensions 
-                                                         else (self._global_descriptor[storage_type]['result_min'][dimension_index], 
-                                                               self._global_descriptor[storage_type]['result_max'][dimension_index]))
-                           for dimension_index in range(len(dimensions))}
-        logger.debug('full_range_dict = %s', full_range_dict)
+        #=======================================================================
+        # # Create complete range dict with minmax tuples for every dimension
+        # full_range_dict = {dimensions[dimension_index]: (range_dict[dimensions[dimension_index]] if dimensions[dimension_index] in range_dimensions 
+        #                                                  else (self._global_descriptor[storage_type]['result_min'][dimension_index], 
+        #                                                        self._global_descriptor[storage_type]['result_max'][dimension_index]))
+        #                    for dimension_index in range(len(dimensions))}
+        # logger.debug('full_range_dict = %s', full_range_dict)
+        #=======================================================================
         
-        storage_indices_list = []
-        for storage_indices, storage_extents in sorted(self._global_descriptor[storage_type]['storage_units'].items()):
-            in_range = True
-            for dimension_index in range(len(dimensions)):
-                dimension = dimensions[dimension_index]
-                in_range = (storage_extents['storage_min'][dimension_index] <= full_range_dict[dimension][1] and 
-                            storage_extents['storage_max'][dimension_index] >= full_range_dict[dimension][0])
-                if not in_range:
-                    logger.debug('Storage unit %s is NOT in range', storage_indices)
-                    break
-            if in_range:
-                storage_indices_list.append(storage_indices)
-                logger.debug('Storage unit %s is in range', storage_indices)
-        logger.debug('storage_indices_list = %s', storage_indices_list)
-        
-        #TODO: Do this check more thoroughly
-        assert filename or len(storage_indices_list) <= GDF.MAX_UNITS_IN_MEMORY, 'Too many storage units for an in-memory query'
+        #=======================================================================
+        # storage_indices_list = []
+        # for storage_indices, storage_extents in sorted(self._global_descriptor[storage_type]['storage_units'].items()):
+        #     in_range = True
+        #     for dimension_index in range(len(dimensions)):
+        #         dimension = dimensions[dimension_index]
+        #         in_range = (storage_extents['storage_min'][dimension_index] <= full_range_dict[dimension][1] and 
+        #                     storage_extents['storage_max'][dimension_index] >= full_range_dict[dimension][0])
+        #         if not in_range:
+        #             logger.debug('Storage unit %s is NOT in range', storage_indices)
+        #             break
+        #     if in_range:
+        #         storage_indices_list.append(storage_indices)
+        #         logger.debug('Storage unit %s is in range', storage_indices)
+        # logger.debug('storage_indices_list = %s', storage_indices_list)
+        # 
+        # 
+        # 
+        # #TODO: Do this check more thoroughly
+        # assert filename or len(storage_indices_list) <= GDF.MAX_UNITS_IN_MEMORY, 'Too many storage units for an in-memory query'
+        #=======================================================================
         
         #=======================================================================
         # # Read data from storage units

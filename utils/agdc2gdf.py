@@ -135,13 +135,6 @@ class AGDC2GDF(GDF):
                                         'const': None, 
                                         'help': 'AGDC processing level to process'
                                         },
-                                'storage_root': {'short_flag': '-r', 
-                                        'long_flag': '--root', 
-                                        'default': None, 
-                                        'action': 'store',
-                                        'const': None, 
-                                        'help': 'Root directory of GDF filestore'
-                                        },
                                 'temp_dir': {'short_flag': '-t', 
                                         'long_flag': '--temp', 
                                         'default': None, 
@@ -174,9 +167,6 @@ class AGDC2GDF(GDF):
         # Create master configuration dict containing both command line and config_file parameters
         self._command_line_params = self.get_command_line_params(AGDC2GDF.ARG_DESCRIPTORS)
         
-        if self._command_line_params['debug']:
-            self.debug = True                
-
         self.dryrun = self._command_line_params['dryrun']
 
         agdc2gdf_config_file = self._command_line_params['config_files'] or os.path.join(self._code_root, AGDC2GDF.DEFAULT_CONFIG_FILE)
@@ -209,8 +199,6 @@ class AGDC2GDF(GDF):
         self._storage_config = self.get_storage_config()
         self.storage_type_config = self._storage_config[self.storage_type]
         self.database = self._databases[self.storage_type_config['db_ref']]
-        
-        self.storage_root = self._command_line_params.get('storage_root') or self.storage_type_config['storage_root']
         
         self.dimensions = self.storage_type_config['dimensions'] # This is used a lot
                 
