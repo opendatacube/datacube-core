@@ -35,6 +35,7 @@ Created on Jun 11, 2015
 import os
 import calendar
 import time
+from datetime import datetime
 from socket import errno
 
 
@@ -48,7 +49,7 @@ def secs2dt(seconds_param):
     '''
     Helper function to convert seconds since epoch into datetime. Naive datetime is treated as UTC
     '''
-    return time.gmtime(seconds_param)
+    return datetime.fromtimestamp(seconds_param)
 
 def make_dir(dirname):
     '''

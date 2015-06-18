@@ -136,7 +136,7 @@ class GDFNetCDF(object):
             if dimension_config['indexing_type'] == 'regular' and not dimension_index_vector:
                 element_size = dimension_config['dimension_element_size']
                 dimension_min = index * dimension_config['dimension_extent'] + dimension_config['dimension_origin'] + element_size / 2.0 # Half pixel to account for netCDF centre of pixel reference
-                dimension_max = dimension_min + dimension_config['dimension_extent'] + element_size
+                dimension_max = dimension_min + dimension_config['dimension_extent']
                 
                 dimension_index_vector = np.around(np.arange(dimension_min, dimension_max, element_size), 8)
                 

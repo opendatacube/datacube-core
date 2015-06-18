@@ -1185,7 +1185,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
             #TODO: Make this more general - need to cater for other reference systems besides seconds since epoch
             index_reference_system_name = self.storage_config[storage_type]['dimensions']['T']['index_reference_system_name'].lower()
             logger.debug('index_reference_system_name = %s', index_reference_system_name)
-            datetime_value = secs2dt()
+            datetime_value = secs2dt(ordinate)
             if index_reference_system_name == 'decade':
                 return datetime_value.year // 10
             if index_reference_system_name == 'year':

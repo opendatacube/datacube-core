@@ -61,7 +61,7 @@ from gdf import make_dir
 from EOtools.utils import log_multiline
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO) # Logging level for this module
+logger.setLevel(logging.DEBUG) # Logging level for this module
 
 class AGDC2GDF(GDF):
     DEFAULT_CONFIG_FILE = 'agdc2gdf_default.conf' # N.B: Assumed to reside in code root directory
@@ -292,7 +292,7 @@ order by end_datetime
         Function to create netCDF-CF file for specified storage indices
         '''
         temp_storage_path = self.get_temp_storage_path(storage_indices)
-        storage_path = self.get_storage_path(storage_indices)
+        storage_path = self.get_storage_path(self.storage_type, storage_indices)
         
         if self.dryrun:
             return storage_path
@@ -723,10 +723,6 @@ where not exists (
         return os.path.join(temp_storage_dir, self.storage_type + '_' + '_'.join([str(index) for index in storage_indices]) + '.nc')
     
     
-    def get_storage_path(self, storage_indices):
-        return GDF.get_storage_config(self, self.storage_type, storage_indices)
-        
-
 
 def main(): 
     agdc2gdf = AGDC2GDF()
@@ -735,9 +731,9 @@ def main():
     # Create list of storage unit indices from CRS ranges
     #TODO - Find some way of not hard coding the dimensions
     storage_indices_list = [(t, x, y) 
-                            for t in range(agdc2gdf.ordinate2index(agdc2gdf.storage_type, 'T', agdc2gdf.range_dict['T'][0]), agdc2gdf.ordinate2index(agdc2gdf.storage_type, 'T', agdc2gdf.range_dict['T'][1]) + 1)
-                            for x in range(agdc2gdf.ordinate2index(agdc2gdf.storage_type, 'X', agdc2gdf.range_dict['X'][0]), agdc2gdf.ordinate2index(agdc2gdf.storage_type, 'X', agdc2gdf.range_dict['X'][1]) + 1)
-                            for y in range(agdc2gdf.ordinate2index(agdc2gdf.storage_type, 'Y', agdc2gdf.range_dict['Y'][0]), agdc2gdf.ordinate2index(agdc2gdf.storage_type, 'Y', agdc2gdf.range_dict['Y'][1]) + 1)
+                            for t in range(agdc2gdf.range_dict['T'][0], agdc2gdf.range_dict['T'][1] + 1)
+                            for x in range(agdc2gdf.range_dict['X'][0], agdc2gdf.range_dict['X'][1] + 1)
+                            for y in range(agdc2gdf.range_dict['Y'][0], agdc2gdf.range_dict['Y'][1] + 1)
                             ]
     logger.debug('storage_indices_list = %s', storage_indices_list)
     
