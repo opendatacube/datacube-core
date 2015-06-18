@@ -1220,10 +1220,11 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         Function to return composite in-memory arrays
         '''
         storage_config = self._storage_config[storage_type]
-        dimensions = storage_config['dimensions'].keys() # All dimensions in order
-        irregular_dimensions = [dimension for dimension in dimension if storage_config['dimensions']['indexing_type'] == 'irregular']
+        dimension_config = storage_config['dimensions']
+        dimensions = dimension_config.keys() # All dimensions in order
+        irregular_dimensions = [dimension for dimension in dimensions if dimension_config[dimension]['indexing_type'] == 'irregular']
         range_dimensions = [dimension for dimension in dimensions if dimension in range_dict.keys()] # Range dimensions in order
-        dimension_element_size = storage_config['dimensions']['dimension_element_size']
+        dimension_element_sizes = {dimension: dimension_config[dimension]['dimension_element_size'] for dimension in dimensions}
         
         # Default to all variables if none specified
         variable_names = variable_names or storage_config['measurement_types'].keys()
@@ -1232,8 +1233,8 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         index_range_dict = {dimensions[dimension_index]: ((self.ordinate2index(storage_type, dimensions[dimension_index], range_dict[dimensions[dimension_index]][0]),
                                                            self.ordinate2index(storage_type, dimensions[dimension_index], range_dict[dimensions[dimension_index]][1]))
                                                           if dimensions[dimension_index] in range_dimensions 
-                                                          else (storage_config['dimensions'][dimensions[dimension_index]]['min_index'], 
-                                                                storage_config['dimensions'][dimensions[dimension_index]]['max_index']))
+                                                          else (dimension_config[dimensions[dimension_index]]['min_index'], 
+                                                                dimension_config[dimensions[dimension_index]]['max_index']))
                            for dimension_index in range(len(dimensions))}
         logger.debug('index_range_dict = %s', index_range_dict)
         
@@ -1264,20 +1265,22 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
             
             
         # Create composite array indices
-        result_array_indices = (np.array(dimension_index_dict[dimension] if dimension in irregular_dimensions
-                           else range(dimension_index_dict[dimension][0], dimension_index_dict[dimension][-1] + dimension_element_size, dimension_element_size)
-                           )
-                          for dimension in dimensions)
-        logger.debug('result_indices = %s', result_array_indices)
+        result_array_indices = {dimension: (np.array(list(dimension_index_dict[dimension])) if dimension in irregular_dimensions
+                                            else np.arange(dimension_index_dict[dimension][0], dimension_index_dict[dimension][-1] + dimension_element_sizes[dimension], dimension_element_sizes[dimension]))
+                                for dimension in dimensions}
+        logger.debug('result_array_indices = %s', result_array_indices)
         
         result_dict = {'variables': {},
                        'indices': result_array_indices
                        }
-        
         # Create empty composite arrays
+        array_shape = [len(result_array_indices[dimension]) for dimension in dimensions]
+        logger.debug('array_shape = %s', array_shape)
         for variable_name in variable_names:
-            result_dict['variables'][variable_name] = np.zeros(shape=(len(result_array_indices[dimension]) for dimension in dimensions),
-                                dtype=subset_dict[subset_dict.keys()[0]].get_datatype(variable_name))
+            dtype = subset_dict[subset_dict.keys()[0]][0].get_datatype(variable_name)
+            logger.debug('dtype = %s', dtype)
+
+            result_dict['variables'][variable_name] = np.zeros(shape=array_shape, dtype=dtype)
 
         for indices in subset_dict.keys():
             # Unpack tuple
@@ -1288,9 +1291,13 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
             for dimension in dimensions:
                 min_index_value = subset_indices[dimension][0]
                 max_index_value = subset_indices[dimension][-1]
-                
-                min_index = np.where(result_array_indices[dimension] == min_index_value)
-                max_index = np.where(result_array_indices[dimension] == max_index_value)
+                logger.debug('%s min_index_value = %s,\nmax_index_value = %s', dimension, min_index_value, max_index_value)
+                logger.debug('result_array_indices[dimension] = %s', result_array_indices[dimension])
+                logger.debug('min_where = %s', np.where(result_array_indices[dimension] == min_index_value))
+                logger.debug('max_where = %s', np.where(result_array_indices[dimension] == max_index_value))
+                min_index = np.where(result_array_indices[dimension] == min_index_value)[0][0]
+                max_index = np.where(result_array_indices[dimension] == max_index_value)[0][0]
+                logger.debug('%s min_index = %s,\nmax_index = %s', dimension, min_index, max_index)
                 slicing.append(slice(min_index, max_index + 1))
             logger.debug('slicing = %s', slicing)
             
@@ -1312,9 +1319,9 @@ def main():
     gdf = GDF()
     gdf.debug = True
     # pprint(gdf.storage_config['LS5TM'])
-    pprint(dict(gdf.storage_config['LS5TM']['dimensions']))
+    # pprint(dict(gdf.storage_config['LS5TM']['dimensions']))
     # pprint(dict(gdf.storage_config['LS5TM']['measurement_types']))
-    # gdf.read_arrays('LS5TM', None, {'X': (140.999, 141.001), 'Y': (-36.001, -35.999)})
+    gdf.read_arrays('LS5TM', None, {'X': (140.999, 141.001), 'Y': (-36.001, -35.999)})
 
 if __name__ == '__main__':
     main()

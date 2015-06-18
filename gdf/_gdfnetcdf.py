@@ -134,12 +134,11 @@ class GDFNetCDF(object):
             logger.debug('dimension_index_vector = %s', dimension_index_vector)
 
             if dimension_config['indexing_type'] == 'regular' and not dimension_index_vector:
-                dimension_min = index * dimension_config['dimension_extent'] + dimension_config['dimension_origin']
-#                dimension_max = dimension_min + dimension_config['dimension_extent']
+                element_size = dimension_config['dimension_element_size']
+                dimension_min = index * dimension_config['dimension_extent'] + dimension_config['dimension_origin'] + element_size / 2.0
+                dimension_max = dimension_min + dimension_config['dimension_extent'] + element_size
                 
-                dimension_index_vector = (np.arange(dimension_config['dimension_elements']) * dimension_config['dimension_element_size'] + # Pixel size
-                                            dimension_min + # Storage unit positional offset
-                                            (dimension_config['dimension_element_size'] / 2.0)) # Half pixel to account for netCDF centre of pixel reference
+                dimension_index_vector = (np.arange(dimension_min, dimension_max, element_size) # Half pixel to account for netCDF centre of pixel reference
                 
             #TODO: Implement fixed indexing type
                 
@@ -388,9 +387,14 @@ class GDFNetCDF(object):
         logger.debug('subset_array = %s', subset_array)
         return subset_array, dimension_indices_dict
         
-    def get_datatype(self, variable_name):
-        return self.storage_config[]
+
+    def get_datatype(self, variable_name, convention='numpy'):
+        '''
+        Returns NetCDF datatype of specified variable
+        '''
+        return self.storage_config['measurement_types'][variable_name].get(convention + '_datatype_name')
         
+
     def get_attributes(self, verbose=None, normalise=True):
         """
         Copy the global and variable attributes from a netCDF object to an
