@@ -179,7 +179,7 @@ class GDFNetCDF(object):
             logger.debug('Creating variable %s with dimensions %s and chunk sizes %s', variable_name, dimensions, chunksizes)
             
             variable = self.netcdf_object.createVariable(variable_name, variable_config['netcdf_datatype_name'], dimensions=dimension_names,
-                   chunksizes=chunksizes, fill_value=variable_config['nodata_value'], zlib=False)
+                   chunksizes=chunksizes, fill_value=variable_config['nodata_value'], zlib=True)
             logger.debug('variable = %s' % variable)
             
             # A method of handling variable metadata
@@ -287,6 +287,50 @@ class GDFNetCDF(object):
         logger.debug('slice_array = %s', slice_array)
         return slice_array
 
+    def get_subset_indices(self, range_dict):
+        '''
+        Function to read an array subset of the specified netCDF variable
+        Parameters:
+            variable_name: Name of variable from which the subset array will be read
+            range_dict: Dict keyed by dimension tag containing the dimension(s) & range tuples from which the subset should be read
+        Returns:
+            dimension_indices_dict: Dict containing array indices for each dimension
+        '''        
+        dimension_config = self.storage_config['dimensions']
+        dimensions = dimension_config.keys()
+        range_dimensions = range_dict.keys()
+        dimension_names = [dimension_config[dimension]['dimension_name'] for dimension in dimensions]
+        
+        # Dict of dimensions and sizes read from netCDF 
+        nc_shape_dict = {dimensions[index]: len(self.netcdf_object.dimensions[dimension_names[index]]) for index in range(len(dimensions))}
+        logger.debug('nc_shape_dict = %s', nc_shape_dict)
+        
+        assert set(range_dimensions) <= set(dimensions), 'Invalid range dimension(s)'
+        
+        # Create slices for accessing netcdf array
+        dimension_indices_dict = {} # Dict containing all indices for each dimension
+        for dimension_index in range(len(dimensions)):
+            dimension = dimensions[dimension_index]
+            dimension_array = self.netcdf_object.variables[dimension_names[dimension_index]][:]
+            if dimension in range_dimensions:
+                logger.debug('dimension_array = %s', dimension_array)
+                logger.debug('range = %s', range_dict[dimension])
+                # Use half pixel slop factor
+                mask_array = ((dimension_array > range_dict[dimension][0] - dimension_config[dimension]['dimension_element_size'] / 2.0) * 
+                                       (dimension_array <= range_dict[dimension][1] + dimension_config[dimension]['dimension_element_size'] / 2.0))
+                index_array = np.where(mask_array)
+                logger.debug('index_array = %s', index_array)
+                dimension_indices_dict[dimension] = dimension_array[mask_array]
+
+                if not index_array:
+                    logger.warning('Invalid range %s for dimension %s', range_dict[dimension], dimension)
+                    return None
+            else: # Range not defined for this dimension - take the whole lot
+                dimension_indices_dict[dimension] = dimension_array
+            
+        return dimension_indices_dict
+
+
     def read_subset(self, variable_name, range_dict):
         '''
         Function to read an array subset of the specified netCDF variable
@@ -340,9 +384,12 @@ class GDFNetCDF(object):
 #        logger.debug('variable = %s' % variable)
 
         subset_array = variable[slicing].data
+        
         logger.debug('subset_array = %s', subset_array)
         return subset_array, dimension_indices_dict
         
+    def get_datatype(self, variable_name):
+        return self.storage_config[]
         
     def get_attributes(self, verbose=None, normalise=True):
         """
@@ -520,7 +567,7 @@ class GDFNetCDF(object):
                     'crs:semi_major_axis': spatial_reference.GetSemiMajor(),
                     'crs:semi_minor_axis': spatial_reference.GetSemiMinor(),
                     }
-        self.set_variable('crs', 'i4')
+        self.set_variable('crs', dims=(), dtype='i4')
         self.set_attributes(crs_metadata)
         logger.debug('crs_metadata = %s', crs_metadata)
      

@@ -1221,7 +1221,9 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         '''
         storage_config = self._storage_config[storage_type]
         dimensions = storage_config['dimensions'].keys() # All dimensions in order
+        irregular_dimensions = [dimension for dimension in dimension if storage_config['dimensions']['indexing_type'] == 'irregular']
         range_dimensions = [dimension for dimension in dimensions if dimension in range_dict.keys()] # Range dimensions in order
+        dimension_element_size = storage_config['dimensions']['dimension_element_size']
         
         # Default to all variables if none specified
         variable_names = variable_names or storage_config['measurement_types'].keys()
@@ -1243,23 +1245,62 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
             logger.debug('Opening storage unit %s', storage_path)
             if os.path.exists(storage_path):
                 gdfnetcdf = GDFNetCDF(storage_config, storage_path)
-                variable_dict = {}
-                for variable_name in variable_names:
-                    subset = gdfnetcdf.read_subset(variable_name, range_dict)
-#                    logger.debug('%s subset = %s', variable_name, subset)
-                    variable_dict[variable_name] = subset
+                subset_indices = gdfnetcdf.get_subset_indices(range_dict)
+                if not subset_indices:
+                    gdfnetcdf.close()
+                    raise Exception('Invalid subset range %s for storage unit %s' % (range_dict, storage_path))
 
-                # Keep track of all indices for each dimension - use last subset indices (should all be the same)
-                for dimension in subset[1].keys():
-                    dimension_index_dict[dimension] |= set(subset[1][dimension].tolist())
-
-                if variable_dict:
-                    subset_dict[indices] = variable_dict
-            else:
-                logger.debug('Storage unit %s does not exist', storage_path)
+                # Keep track of all indices for each dimension
+                for dimension in dimensions:
+                    dimension_index_dict[dimension] |= set(subset_indices[dimension].tolist())
+                    
+            subset_dict[indices] = (gdfnetcdf, subset_indices)  
+        logger.debug('subset_dict = %s', subset_dict)
+            
+        # Convert index sets to sorted lists
+        for dimension in dimensions:
+            dimension_index_dict[dimension] = sorted(dimension_index_dict[dimension])
+        logger.debug('dimension_index_dict = %s', dimension_index_dict)
+            
+            
+        # Create composite array indices
+        result_array_indices = (np.array(dimension_index_dict[dimension] if dimension in irregular_dimensions
+                           else range(dimension_index_dict[dimension][0], dimension_index_dict[dimension][-1] + dimension_element_size, dimension_element_size)
+                           )
+                          for dimension in dimensions)
+        logger.debug('result_indices = %s', result_array_indices)
         
-        log_multiline(logger.debug, subset_dict, 'subset_dict', '\t')
-        logger.debug('Result size = %s', tuple(len(dimension_index_dict[dimension]) for dimension in dimensions))
+        result_dict = {'variables': {},
+                       'indices': result_array_indices
+                       }
+        
+        # Create empty composite arrays
+        for variable_name in variable_names:
+            result_dict['variables'][variable_name] = np.zeros(shape=(len(result_array_indices[dimension]) for dimension in dimensions),
+                                dtype=subset_dict[subset_dict.keys()[0]].get_datatype(variable_name))
+
+        for indices in subset_dict.keys():
+            # Unpack tuple
+            gdfnetcdf = subset_dict[indices][0]  
+            subset_indices = subset_dict[indices][1] 
+                                                           
+            slicing = []
+            for dimension in dimensions:
+                min_index_value = subset_indices[dimension][0]
+                max_index_value = subset_indices[dimension][-1]
+                
+                min_index = np.where(result_array_indices[dimension] == min_index_value)
+                max_index = np.where(result_array_indices[dimension] == max_index_value)
+                slicing.append(slice(min_index, max_index + 1))
+            logger.debug('slicing = %s', slicing)
+            
+            for variable_name in variable_names:
+                # Read data into array
+                result_dict['variables'][variable_name][slicing] = gdfnetcdf.read_subset(variable_name, range_dict)[0]
+
+        
+        log_multiline(logger.debug, result_dict, 'result_dict', '\t')
+        logger.debug('Result size = %s', tuple(len(result_array_indices[dimension]) for dimension in dimensions))
          
          
         #TODO: Do this check more thoroughly
@@ -1270,12 +1311,10 @@ def main():
     # Testing stuff
     gdf = GDF()
     gdf.debug = True
-    #===========================================================================
     # pprint(gdf.storage_config['LS5TM'])
-    # pprint(dict(gdf.storage_config['LS5TM']['dimensions']))
+    pprint(dict(gdf.storage_config['LS5TM']['dimensions']))
     # pprint(dict(gdf.storage_config['LS5TM']['measurement_types']))
-    #===========================================================================
-    gdf.read_arrays('LS5TM', None, {'X': (140.999, 141.001), 'Y': (-36.001, -35.999)})
+    # gdf.read_arrays('LS5TM', None, {'X': (140.999, 141.001), 'Y': (-36.001, -35.999)})
 
 if __name__ == '__main__':
     main()
