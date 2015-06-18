@@ -44,6 +44,7 @@ import collections
 import numexpr
 import logging
 import cPickle
+import itertools
 from pprint import pprint
 from distutils.util import strtobool
 
@@ -51,7 +52,7 @@ from _database import Database, CachedResultSet
 from _arguments import CommandLineArgs
 from _config_file import ConfigFile
 from _gdfnetcdf import GDFNetCDF
-from _gdfutils import dt2secs, make_dir
+from _gdfutils import dt2secs, secs2dt, make_dir
 
 from EOtools.utils import log_multiline
 
@@ -1166,22 +1167,53 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                                         )
         
         
-    def get_temp_storage_path(self, storage_type, storage_indices):
-        '''
-        Function to return the path to a temporary storage unit file with the specified storage_type & storage_indices
-        '''
-        temp_storage_dir = os.path.join(self.temp_dir, storage_type)
-        make_dir(temp_storage_dir)        
-        return os.path.join(temp_storage_dir, storage_type + '_' + '_'.join([str(index) for index in storage_indices]) + '.nc')
-    
     def get_storage_path(self, storage_type, storage_indices):
         '''
         Function to return the path to a storage unit file with the specified storage_type & storage_indices
         '''
         storage_dir = os.path.join(self._storage_config[storage_type]['storage_type_location'], storage_type)
-        make_dir(storage_dir)
+#        make_dir(storage_dir)
         return os.path.join(storage_dir, storage_type + '_' + '_'.join([str(index) for index in storage_indices]) + '.nc')
     
+    
+    def ordinate2index(self, storage_type, dimension, ordinate):
+        '''
+        Return the storage unit index from the reference system ordinate for the specified storage type, ordinate value and dimension tag
+        '''
+        if dimension == 'T':
+            #TODO: Make this more general - need to cater for other reference systems besides seconds since epoch
+            index_reference_system_name = self.storage_config[storage_type]['dimensions']['T']['index_reference_system_name'].lower()
+            logger.debug('index_reference_system_name = %s', index_reference_system_name)
+            datetime_value = secs2dt()
+            if index_reference_system_name == 'decade':
+                return datetime_value.year // 10
+            if index_reference_system_name == 'year':
+                return datetime_value.year
+            elif index_reference_system_name == 'month':
+                return datetime_value.year * 12 + datetime_value.month - 1
+        else:
+            return int((ordinate - self.storage_config[storage_type]['dimensions'][dimension]['dimension_origin']) / 
+                       self.storage_config[storage_type]['dimensions'][dimension]['dimension_extent'])
+        
+
+    def index2ordinate(self, storage_type, dimension, index):
+        '''
+        Return the reference system ordinate from the storage unit index for the specified storage type, index value and dimension tag
+        '''
+        if dimension == 'T':
+            #TODO: Make this more general - need to cater for other reference systems besides seconds since epoch
+            index_reference_system_name = self.storage_config[storage_type]['dimensions']['T']['index_reference_system_name'].lower()
+            logger.debug('index_reference_system_name = %s', index_reference_system_name)
+            if index_reference_system_name == 'decade':
+                return dt2secs(datetime(index*10, 1, 1))
+            if index_reference_system_name == 'year':
+                return dt2secs(datetime(index, 1, 1))
+            elif index_reference_system_name == 'month':
+                return dt2secs(datetime(index // 12, index % 12 + 1, 1))
+        else: # Not time   
+            return ((index * self.storage_config[storage_type]['dimensions'][dimension]['dimension_extent']) + 
+                    self.storage_config[storage_type]['dimensions'][dimension]['dimension_origin'])
+            
     def read_arrays(self, storage_type, variable_names=None, range_dict={}, filename=None):
         '''
         Function to return composite in-memory arrays
@@ -1192,39 +1224,34 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         
         # Default to all variables if none specified
         variable_names = variable_names or storage_config['measurement_types'].keys()
-        
-        
 
-        #=======================================================================
-        # # Create complete range dict with minmax tuples for every dimension
-        # full_range_dict = {dimensions[dimension_index]: (range_dict[dimensions[dimension_index]] if dimensions[dimension_index] in range_dimensions 
-        #                                                  else (self._global_descriptor[storage_type]['result_min'][dimension_index], 
-        #                                                        self._global_descriptor[storage_type]['result_max'][dimension_index]))
-        #                    for dimension_index in range(len(dimensions))}
-        # logger.debug('full_range_dict = %s', full_range_dict)
-        #=======================================================================
+        # Create complete range dict with minmax tuples for every dimension
+        index_range_dict = {dimensions[dimension_index]: ((self.ordinate2index(storage_type, dimensions[dimension_index], range_dict[dimensions[dimension_index]][0]),
+                                                           self.ordinate2index(storage_type, dimensions[dimension_index], range_dict[dimensions[dimension_index]][1]))
+                                                          if dimensions[dimension_index] in range_dimensions 
+                                                          else (storage_config['dimensions'][dimensions[dimension_index]]['min_index'], 
+                                                                storage_config['dimensions'][dimensions[dimension_index]]['max_index']))
+                           for dimension_index in range(len(dimensions))}
+        logger.debug('index_range_dict = %s', index_range_dict)
         
-        #=======================================================================
-        # storage_indices_list = []
-        # for storage_indices, storage_extents in sorted(self._global_descriptor[storage_type]['storage_units'].items()):
-        #     in_range = True
-        #     for dimension_index in range(len(dimensions)):
-        #         dimension = dimensions[dimension_index]
-        #         in_range = (storage_extents['storage_min'][dimension_index] <= full_range_dict[dimension][1] and 
-        #                     storage_extents['storage_max'][dimension_index] >= full_range_dict[dimension][0])
-        #         if not in_range:
-        #             logger.debug('Storage unit %s is NOT in range', storage_indices)
-        #             break
-        #     if in_range:
-        #         storage_indices_list.append(storage_indices)
-        #         logger.debug('Storage unit %s is in range', storage_indices)
-        # logger.debug('storage_indices_list = %s', storage_indices_list)
-        # 
-        # 
-        # 
-        # #TODO: Do this check more thoroughly
-        # assert filename or len(storage_indices_list) <= GDF.MAX_UNITS_IN_MEMORY, 'Too many storage units for an in-memory query'
-        #=======================================================================
+        storage_dict = {}
+        for indices in itertools.product(*[range(index_range_dict[dimension][0], index_range_dict[dimension][1]+1) for dimension in dimensions]):
+            logger.debug('indices = %s', indices)
+            storage_path = self.get_storage_path(storage_type, indices)
+            if os.path.exists(storage_path):
+                gdfnetcdf = GDFNetCDF(storage_path)
+                for variable_name in variable_names:
+                    subset = gdfnetcdf.read_subset(variable_name, range_dict)
+                    logger.debug('%s subset = %s', variable_name, subset)
+            else:
+                logger.debug('Storage unit %s does not exist', storage_path)
+        
+        logger.debug('storage_dict = %s', storage_dict)
+         
+         
+         
+        #TODO: Do this check more thoroughly
+        assert filename or len(storage_dict) <= GDF.MAX_UNITS_IN_MEMORY, 'Too many storage units for an in-memory query'
         
         #=======================================================================
         # # Read data from storage units
@@ -1238,9 +1265,13 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
 def main():
     # Testing stuff
     gdf = GDF()
-    pprint(gdf.storage_config['LS5TM'])
-    pprint(dict(gdf.storage_config['LS5TM']['dimensions']))
-    pprint(dict(gdf.storage_config['LS5TM']['measurement_types']))
+    gdf.debug = True
+    #===========================================================================
+    # pprint(gdf.storage_config['LS5TM'])
+    # pprint(dict(gdf.storage_config['LS5TM']['dimensions']))
+    # pprint(dict(gdf.storage_config['LS5TM']['measurement_types']))
+    #===========================================================================
+    gdf.read_arrays('LS5TM', None, {'X': (140.999, 141.001), 'Y': (-36.001, -35.999)})
 
 if __name__ == '__main__':
     main()

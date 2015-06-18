@@ -291,8 +291,8 @@ order by end_datetime
         '''
         Function to create netCDF-CF file for specified storage indices
         '''
-        temp_storage_path = self.get_temp_storage_path(self.storage_type, storage_indices)
-        storage_path = self.get_storage_path(self.storage_type, storage_indices)
+        temp_storage_path = self.get_temp_storage_path(storage_indices)
+        storage_path = self.get_storage_path(storage_indices)
         
         if self.dryrun:
             return storage_path
@@ -659,9 +659,9 @@ where not exists (
                                  )
                 logger.debug('dimension_key = %s', dimension_key)
 
-                min_index_max_tuple = (self.index2ordinate(storage_indices[dimension_index], dimension),
+                min_index_max_tuple = (self.index2ordinate(self.storage_type, dimension, storage_indices[dimension_index]),
                                        storage_indices[dimension_index], # Indexing value
-                                       self.index2ordinate(storage_indices[dimension_index] + 1, dimension)
+                                       self.index2ordinate(self.storage_type, dimension, storage_indices[dimension_index] + 1)
                                        )
 
                 set_storage_dimension(storage_key, dimension_key, min_index_max_tuple)
@@ -714,32 +714,17 @@ where not exists (
             self.database.autocommit = True
             self.database.keep_connection = False
             
+    def get_temp_storage_path(self, storage_indices):
+        '''
+        Function to return the path to a temporary storage unit file with the specified storage_type & storage_indices
+        '''
+        temp_storage_dir = os.path.join(self.temp_dir, self.storage_type)
+        make_dir(temp_storage_dir)        
+        return os.path.join(temp_storage_dir, self.storage_type + '_' + '_'.join([str(index) for index in storage_indices]) + '.nc')
     
-    def ordinate2index(self, ordinate, dimension):
-        '''
-        Return the storage unit index from the reference system ordinate for the specified storage type, ordinate value and dimension tag
-        '''
-        return int((ordinate - self.storage_type_config['dimensions'][dimension]['dimension_origin']) / 
-                   self.storage_type_config['dimensions'][dimension]['dimension_extent'])
-        
-
-    def index2ordinate(self, index, dimension):
-        '''
-        Return the reference system ordinate from the storage unit index for the specified storage type, index value and dimension tag
-        '''
-        if dimension == 'T':
-            #TODO: Make this more general - need to cater for other reference systems besides seconds since epoch
-            index_reference_system_name = self.storage_type_config['dimensions']['T']['index_reference_system_name'].lower()
-            logger.debug('index_reference_system_name = %s', index_reference_system_name)
-            if index_reference_system_name == 'decade':
-                return gdf.dt2secs(datetime(index*10, 1, 1))
-            if index_reference_system_name == 'year':
-                return gdf.dt2secs(datetime(index, 1, 1))
-            elif index_reference_system_name == 'month':
-                return gdf.dt2secs(datetime(index // 12, index % 12, 1))
-        else: # Not time   
-            return ((index * self.storage_type_config['dimensions'][dimension]['dimension_extent']) + 
-                    self.storage_type_config['dimensions'][dimension]['dimension_origin'])
+    
+    def get_storage_path(self, storage_indices):
+        return GDF.get_storage_config(self, self.storage_type, storage_indices)
         
 
 
@@ -750,9 +735,9 @@ def main():
     # Create list of storage unit indices from CRS ranges
     #TODO - Find some way of not hard coding the dimensions
     storage_indices_list = [(t, x, y) 
-                            for t in range(agdc2gdf.ordinate2index(agdc2gdf.range_dict['T'][0], 'T'), agdc2gdf.ordinate2index(agdc2gdf.range_dict['T'][1], 'T') + 1)
-                            for x in range(agdc2gdf.ordinate2index(agdc2gdf.range_dict['X'][0], 'X'), agdc2gdf.ordinate2index(agdc2gdf.range_dict['X'][1], 'X') + 1)
-                            for y in range(agdc2gdf.ordinate2index(agdc2gdf.range_dict['Y'][0], 'Y'), agdc2gdf.ordinate2index(agdc2gdf.range_dict['Y'][1], 'Y') + 1)
+                            for t in range(agdc2gdf.ordinate2index(agdc2gdf.storage_type, 'T', agdc2gdf.range_dict['T'][0]), agdc2gdf.ordinate2index(agdc2gdf.storage_type, 'T', agdc2gdf.range_dict['T'][1]) + 1)
+                            for x in range(agdc2gdf.ordinate2index(agdc2gdf.storage_type, 'X', agdc2gdf.range_dict['X'][0]), agdc2gdf.ordinate2index(agdc2gdf.storage_type, 'X', agdc2gdf.range_dict['X'][1]) + 1)
+                            for y in range(agdc2gdf.ordinate2index(agdc2gdf.storage_type, 'Y', agdc2gdf.range_dict['Y'][0]), agdc2gdf.ordinate2index(agdc2gdf.storage_type, 'Y', agdc2gdf.range_dict['Y'][1]) + 1)
                             ]
     logger.debug('storage_indices_list = %s', storage_indices_list)
     

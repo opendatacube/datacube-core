@@ -34,6 +34,7 @@ Created on Jun 11, 2015
 '''
 import os
 import calendar
+import time
 from socket import errno
 
 
@@ -42,6 +43,12 @@ def dt2secs(datetime_param):
     Helper function to convert datetime into seconds since epoch. Naive datetime is treated as UTC
     '''
     return calendar.timegm(datetime_param.timetuple())
+
+def secs2dt(seconds_param):
+    '''
+    Helper function to convert seconds since epoch into datetime. Naive datetime is treated as UTC
+    '''
+    return time.gmtime(seconds_param)
 
 def make_dir(dirname):
     '''
