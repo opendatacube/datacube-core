@@ -309,31 +309,31 @@ class GDFNetCDF(object):
         
         assert set(range_dimensions) <= set(dimensions), 'Invalid range dimension(s)'
         
+        # Create slices for accessing netcdf array
         dimension_indices_dict = {} # Dict containing all indices for each dimension
-        range_index_dict = {} # Dict containing range index tuples
+        slicing = []
         for dimension_index in range(len(dimensions)):
             dimension = dimensions[dimension_index]
+            dimension_array = self.netcdf_object.variables[dimension_names[dimension_index]][:]
             if dimension in range_dimensions:
-                dimension_array = self.netcdf_object.variables[dimension_names[dimension_index]][:]
                 logger.debug('dimension_array = %s', dimension_array)
                 logger.debug('range = %s', range_dict[dimension])
                 # Use half pixel slop factor
-                index_array = np.where((dimension_array > range_dict[dimension][0] - dimension_config[dimension]['dimension_element_size'] / 2.0) * 
+                mask_array = ((dimension_array > range_dict[dimension][0] - dimension_config[dimension]['dimension_element_size'] / 2.0) * 
                                        (dimension_array <= range_dict[dimension][1] + dimension_config[dimension]['dimension_element_size'] / 2.0))
+                index_array = np.where(mask_array)
                 logger.debug('index_array = %s', index_array)
-                dimension_indices_dict[dimension] = index_array
+                dimension_indices_dict[dimension] = dimension_array[mask_array]
                 try:
-                    range_index_dict[dimension] = (index_array[0][0], index_array[0][-1] + 1)
+                    dimension_slice = slice(index_array[0][0], index_array[0][-1] + 1)
                 except IndexError:
                     logger.warning('Invalid range %s for dimension %s', range_dict[dimension], dimension)
                     return None
-                    
             else: # Range not defined for this dimension
-                range_index_dict[dimension] = (0, nc_shape_dict[dimension])
-        logger.debug('range_index_dict = %s', range_index_dict)
+                dimension_indices_dict[dimension] = dimension_array
+                dimension_slice = slice(0, nc_shape_dict[dimension])
+            slicing.append(dimension_slice)
             
-        # Create slices for accessing netcdf array
-        slicing = [slice(range_index_dict[dimension][0], range_index_dict[dimension][1]) for dimension in dimensions]
         logger.debug('slicing = %s', slicing)
 
         variable = self.netcdf_object.variables[variable_name]

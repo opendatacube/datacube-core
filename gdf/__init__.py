@@ -46,6 +46,7 @@ import logging
 import cPickle
 import itertools
 from pprint import pprint
+from math import floor
 from distutils.util import strtobool
 
 from _database import Database, CachedResultSet
@@ -1192,8 +1193,8 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
             elif index_reference_system_name == 'month':
                 return datetime_value.year * 12 + datetime_value.month - 1
         else:
-            return int((ordinate - self.storage_config[storage_type]['dimensions'][dimension]['dimension_origin']) / 
-                       self.storage_config[storage_type]['dimensions'][dimension]['dimension_extent'])
+            return int(floor((ordinate - self.storage_config[storage_type]['dimensions'][dimension]['dimension_origin']) / 
+                       self.storage_config[storage_type]['dimensions'][dimension]['dimension_extent']))
         
 
     def index2ordinate(self, storage_type, dimension, index):
@@ -1234,32 +1235,35 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                            for dimension_index in range(len(dimensions))}
         logger.debug('index_range_dict = %s', index_range_dict)
         
-        storage_dict = {}
+        subset_dict = collections.OrderedDict()
+        dimension_index_dict = {dimension: set() for dimension in dimensions}
         for indices in itertools.product(*[range(index_range_dict[dimension][0], index_range_dict[dimension][1]+1) for dimension in dimensions]):
             logger.debug('indices = %s', indices)
             storage_path = self.get_storage_path(storage_type, indices)
+            logger.debug('Opening storage unit %s', storage_path)
             if os.path.exists(storage_path):
-                gdfnetcdf = GDFNetCDF(storage_path)
+                gdfnetcdf = GDFNetCDF(storage_config, storage_path)
+                variable_dict = {}
                 for variable_name in variable_names:
                     subset = gdfnetcdf.read_subset(variable_name, range_dict)
-                    logger.debug('%s subset = %s', variable_name, subset)
+#                    logger.debug('%s subset = %s', variable_name, subset)
+                    variable_dict[variable_name] = subset
+
+                # Keep track of all indices for each dimension - use last subset indices (should all be the same)
+                for dimension in subset[1].keys():
+                    dimension_index_dict[dimension] |= set(subset[1][dimension].tolist())
+
+                if variable_dict:
+                    subset_dict[indices] = variable_dict
             else:
                 logger.debug('Storage unit %s does not exist', storage_path)
         
-        logger.debug('storage_dict = %s', storage_dict)
-         
+        log_multiline(logger.debug, subset_dict, 'subset_dict', '\t')
+        logger.debug('Result size = %s', tuple(len(dimension_index_dict[dimension]) for dimension in dimensions))
          
          
         #TODO: Do this check more thoroughly
-        assert filename or len(storage_dict) <= GDF.MAX_UNITS_IN_MEMORY, 'Too many storage units for an in-memory query'
-        
-        #=======================================================================
-        # # Read data from storage units
-        # for storage_indices in storage_indices_list:
-        #     gdfnetcdf = GDFNetCDF(storage_config, self.get_storage_path(storage_type, storage_indices))
-        #     for variable_name in variable_names:
-        #         subset_array, dimension_indices_dict = gdfnetcdf.read_subset(variable_name, range_dict)
-        #=======================================================================
+        assert filename or len(subset_dict) <= GDF.MAX_UNITS_IN_MEMORY, 'Too many storage units for an in-memory query'
         
         
 def main():
