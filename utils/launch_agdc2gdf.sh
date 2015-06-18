@@ -1,8 +1,9 @@
 #!/bin/bash
 # launch_gdf2gdf.sh
 
-script_dir=$(readlink -e $(dirname $0))
-echo script_dir = ${script_dir}
+# script is in utils directory under gdf root dir
+gdf_root=$(dirname $(readlink -e $(dirname $0)))
+echo gdf_root = ${gdf_root}
 
 storage_type='LS7ETM'
 satellite='LS7'
@@ -21,7 +22,7 @@ tmax=2015
 #    do
         for t in $(seq ${tmin} ${tmax})
         do
-            qsub -v script_dir=${script_dir},storage_type=${storage_type},satellite=${satellite},sensor=${sensor},level=${level},xmin=${xmin},xmax=${xmax},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t} ${script_dir}/agdc2gdf_qsub.sh
+            qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensor=${sensor},level=${level},xmin=${xmin},xmax=${xmax},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t} ${gdf_root}/utils/agdc2gdf_qsub.sh
         done
 #    done
 #done

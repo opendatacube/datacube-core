@@ -10,6 +10,6 @@ export MODULEPATH=/projects/u46/opt/modules/modulefiles:$MODULEPATH
 module load agdc
 module load SQLAlchemy
 module load netCDF4/1.0.7
-export PYTHONPATH=`pwd`:/home/547/axi547/git_code/netcdf-tools/create:$PYTHONPATH
+export PYTHONPATH=${gdf_root}:/home/547/axi547/git_code/netcdf-tools/create:$PYTHONPATH
 
-python ${script_dir}/agdc2gdf.py --storage_type=${storage_type} --satellite=${satellite} --sensor=${sensor} --level=${level} --xmin=${xmin} --xmax=${xmax} --ymin=${ymin} --ymax=${ymax} --tmin=${tmin} --tmax=${tmax} --debug --force
+python ${gdf_root}/utils/agdc2gdf.py --storage_type=${storage_type} --satellite=${satellite} --sensor=${sensor} --level=${level} --xmin=${xmin} --xmax=${xmax} --ymin=${ymin} --ymax=${ymax} --tmin=${tmin} --tmax=${tmax} --debug --force

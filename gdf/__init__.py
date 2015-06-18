@@ -1266,7 +1266,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
             
         # Create composite array indices
         result_array_indices = {dimension: (np.array(list(dimension_index_dict[dimension])) if dimension in irregular_dimensions
-                                            else np.arange(dimension_index_dict[dimension][0], dimension_index_dict[dimension][-1] + dimension_element_sizes[dimension], dimension_element_sizes[dimension]))
+                                            else np.around(np.arange(dimension_index_dict[dimension][0], dimension_index_dict[dimension][-1] + dimension_element_sizes[dimension], dimension_element_sizes[dimension]), 8))
                                 for dimension in dimensions}
         logger.debug('result_array_indices = %s', result_array_indices)
         
