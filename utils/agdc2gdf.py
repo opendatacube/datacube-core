@@ -306,7 +306,7 @@ order by end_datetime
         
         gdfnetcdf = GDFNetCDF(storage_config=self.storage_config[self.storage_type])
         
-        logger.debug('Creating temporary storage unit %s', temp_storage_path)
+        logger.debug('Creating temporary storage unit %s with %d timeslices', temp_storage_path, len(data_descriptor))
         gdfnetcdf.create(netcdf_filename=temp_storage_path, 
                          index_tuple=storage_indices, 
                          dimension_index_dict={'T': t_indices}, netcdf_format=None)
@@ -323,7 +323,7 @@ order by end_datetime
             tile_dataset = gdal.Open(record_dict['tile_pathname'])
             assert tile_dataset, 'Failed to open tile file %s' % record_dict['tile_pathname']
             
-            logger.debug('Reading array data from tile file %s', record_dict['tile_pathname'])
+            logger.debug('Reading array data from tile file %s (%d/%d)', record_dict['tile_pathname'], slice_index + 1, len(data_descriptor))
             data_array = tile_dataset.ReadAsArray()
             
             for variable_index in range(len(variable_dict)):
