@@ -108,7 +108,7 @@ class AGDC2GDF(GDF):
                                         'help': 'Maximum inclusive t (years) of spatial range to process'
                                         },
                                 'storage_type': {'short_flag': '-st', 
-                                        'long_flag': '--storage', 
+                                        'long_flag': '--storage_type', 
                                         'default': None, 
                                         'action': 'store',
                                         'const': None, 
@@ -184,6 +184,7 @@ class AGDC2GDF(GDF):
         
         self.force = self._command_line_params.get('force') or agdc2gdf_config_file_object.configuration['agdc2gdf'].get('force')
         
+        logger.debug("self._command_line_params.get('storage_type') = %s", self._command_line_params.get('storage_type'))
         self.storage_type = self._command_line_params.get('storage_type') or agdc2gdf_config_file_object.configuration['gdf']['storage_type']
 
         self.agdc_satellite = self._command_line_params.get('satellite') or agdc2gdf_config_file_object.configuration['agdc']['satellite']
