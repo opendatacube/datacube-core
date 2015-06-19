@@ -1318,10 +1318,10 @@ def main():
     # Testing stuff
     gdf = GDF()
     gdf.debug = True
-    # pprint(gdf.storage_config['LS5TM'])
+    pprint(gdf.storage_config['LS5TM'])
     # pprint(dict(gdf.storage_config['LS5TM']['dimensions']))
     # pprint(dict(gdf.storage_config['LS5TM']['measurement_types']))
-    gdf.read_arrays('LS5TM', None, {'X': (140.999, 141.001), 'Y': (-36.001, -35.999)})
+#    gdf.read_arrays('LS5TM', None, {'X': (140.999, 141.001), 'Y': (-36.001, -35.999)})
 
 if __name__ == '__main__':
     main()
