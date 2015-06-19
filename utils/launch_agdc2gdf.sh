@@ -21,15 +21,21 @@ tmax=2015
         do
             storage_type='LS5TM'
             satellite='LS5'
-            sensor='TM'
-            echo qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensor=${sensor},level=${level},xmin=${xmin},xmax=${xmax},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t} ${gdf_root}/utils/agdc2gdf_qsub.sh
-            qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensor=${sensor},level=${level},xmin=${xmin},xmax=${xmax},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t} ${gdf_root}/utils/agdc2gdf_qsub.sh
+            sensors='TM'
+            echo qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${xmin},xmax=${xmax},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t} ${gdf_root}/utils/agdc2gdf_qsub.sh
+            qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${xmin},xmax=${xmax},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t} ${gdf_root}/utils/agdc2gdf_qsub.sh
 
             storage_type='LS7ETM'
             satellite='LS7'
-            sensor='ETM+'
-            echo qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensor=${sensor},level=${level},xmin=${xmin},xmax=${xmax},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t} ${gdf_root}/utils/agdc2gdf_qsub.sh
-            qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensor=${sensor},level=${level},xmin=${xmin},xmax=${xmax},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t} ${gdf_root}/utils/agdc2gdf_qsub.sh
+            sensors='ETM+'
+            echo qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${xmin},xmax=${xmax},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t} ${gdf_root}/utils/agdc2gdf_qsub.sh
+            qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${xmin},xmax=${xmax},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t} ${gdf_root}/utils/agdc2gdf_qsub.sh
+
+            storage_type='LS8OLI'
+            satellite='LS8'
+            sensors='OLI,OLI_TIRS'
+            echo qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${xmin},xmax=${xmax},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t} ${gdf_root}/utils/agdc2gdf_qsub.sh
+            qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${xmin},xmax=${xmax},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t} ${gdf_root}/utils/agdc2gdf_qsub.sh
         done
 #    done
 #done

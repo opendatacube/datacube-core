@@ -121,12 +121,12 @@ class AGDC2GDF(GDF):
                                         'const': None, 
                                         'help': 'AGDC satellite to process'
                                         },
-                                'sensor': {'short_flag': '-se', 
-                                        'long_flag': '--sensor', 
+                                'sensors': {'short_flag': '-se', 
+                                        'long_flag': '--sensors', 
                                         'default': None, 
                                         'action': 'store',
                                         'const': None, 
-                                        'help': 'AGDC sensor to process'
+                                        'help': 'Comma-separated list of AGDC sensors to process'
                                         },
                                 'level': {'short_flag': '-l', 
                                         'long_flag': '--level', 
@@ -188,7 +188,10 @@ class AGDC2GDF(GDF):
         self.storage_type = self._command_line_params.get('storage_type') or agdc2gdf_config_file_object.configuration['gdf']['storage_type']
 
         self.agdc_satellite = self._command_line_params.get('satellite') or agdc2gdf_config_file_object.configuration['agdc']['satellite']
-        self.agdc_sensor = self._command_line_params.get('sensor') or agdc2gdf_config_file_object.configuration['agdc']['sensor']
+
+        self.agdc_sensors = self._command_line_params.get('sensors') or agdc2gdf_config_file_object.configuration['agdc']['sensors']
+        self.agdc_sensors = tuple(self.agdc_sensors.split(','))
+
         self.agdc_level = self._command_line_params.get('level') or agdc2gdf_config_file_object.configuration['agdc']['level']
         
         #=======================================================================
@@ -254,7 +257,7 @@ and x_index = %(x_index)s
 and y_index = %(y_index)s
 and end_datetime between %(start_datetime)s and %(end_datetime)s
 and satellite_tag = %(satellite)s
-and sensor_name = %(sensor)s
+and sensor_name in %(sensors)s
 and level_name = %(level)s
 order by end_datetime
 '''     
@@ -276,7 +279,7 @@ order by end_datetime
                 'start_datetime': start_datetime,
                 'end_datetime': end_datetime,
                 'satellite': self.agdc_satellite,
-                'sensor': self.agdc_sensor, 
+                'sensors': self.agdc_sensors, 
                 'level': self.agdc_level,
                 }
         
@@ -294,14 +297,15 @@ order by end_datetime
         '''
         temp_storage_path = self.get_temp_storage_path(storage_indices)
         storage_path = self.get_storage_path(self.storage_type, storage_indices)
+        make_dir(os.path.dirname(storage_path))        
         
         if self.dryrun:
             return storage_path
         
         if os.path.isfile(storage_path) and not self.force: 
             logger.warning('Skipping existing storage unit %s' % storage_path)
-            return 
-#            return storage_path #TODO: Remove this temporary debugging hack
+#            return 
+            return storage_path #TODO: Remove this temporary debugging hack
         
         t_indices = np.array([dt2secs(record_dict['end_datetime']) for record_dict in data_descriptor])
         
@@ -327,6 +331,7 @@ order by end_datetime
             logger.debug('Reading array data from tile file %s (%d/%d)', record_dict['tile_pathname'], slice_index + 1, len(data_descriptor))
             data_array = tile_dataset.ReadAsArray()
             
+            #TODO: Set up proper mapping between AGDC & GDF bands so this works with non-contiguous ranges
             for variable_index in range(len(variable_dict)):
                 variable_name = variable_names[variable_index]
                 logger.debug('Writing array to variable %s', variable_name)
