@@ -500,6 +500,37 @@ where observation_type_id = %(observation_type_id)s
                     dataset_id_result.field_values['dataset_id'][0])
         
         
+        def set_dataset_metadata(record, dataset_key):
+            SQL = '''-- Attempt to insert dataset_metadata records
+insert into dataset_metadata(
+    dataset_type_id,
+    dataset_id,
+    xml_text
+    )
+select
+  %(dataset_type_id)s,
+  %(dataset_id)s,
+  %(xml_text)s::xml
+where not exists (
+    select * from dataset_metadata
+    where dataset_type_id = %(dataset_type_id)s
+        and dataset_id = %(dataset_id)s
+        )
+    and xml_is_well_formed(%(xml_text)s)
+'''
+            params = {'dataset_type_id': dataset_key[0],
+                      'dataset_id': dataset_key[1],
+                      'xml_text': record['xml_text']
+                      }
+        
+            log_multiline(logger.debug, self.database.default_cursor.mogrify(SQL, params), 'Mogrified SQL', '\t')
+            
+            if self.dryrun:
+                return
+            
+            self.database.submit_query(SQL, params)
+            
+
         def set_dataset_dimensions(dataset_key, dimension_key, min_index_max_tuple):
             '''
             Function to write dataset_dimension record if required
@@ -679,6 +710,8 @@ where not exists (
 
                 dataset_key = get_dataset_key(record, observation_key)
                 logger.debug('dataset_key = %s', dataset_key)
+                
+                set_dataset_metadata(record, dataset_key)
                 
                 # Set dataset_dimension record for each dimension
                 for dimension in self.dimensions:
