@@ -194,11 +194,6 @@ class AGDC2GDF(GDF):
 
         self.agdc_level = self._command_line_params.get('level') or agdc2gdf_config_file_object.configuration['agdc']['level']
         
-        #=======================================================================
-        # # Read GDF storage configuration from databases but only keep the one for the specified storage type - not interested in anything else
-        # self._storage_config = dict([storage_tuple for storage_tuple in self.get_storage_config().items() if storage_tuple[0] == self.storage_type])
-        #=======================================================================
-        
         # Read GDF storage configuration from databases
         self._storage_config = self.get_storage_config()
         self.storage_type_config = self._storage_config[self.storage_type]
@@ -304,8 +299,8 @@ order by end_datetime
         
         if os.path.isfile(storage_path) and not self.force: 
             logger.warning('Skipping existing storage unit %s' % storage_path)
-#            return 
-            return storage_path #TODO: Remove this temporary debugging hack
+            return 
+#            return storage_path #TODO: Remove this temporary debugging hack
         
         t_indices = np.array([dt2secs(record_dict['end_datetime']) for record_dict in data_descriptor])
         
@@ -505,7 +500,7 @@ where observation_type_id = %(observation_type_id)s
 insert into dataset_metadata(
     dataset_type_id,
     dataset_id,
-    xml_text
+    metadata_xml
     )
 select
   %(dataset_type_id)s,
