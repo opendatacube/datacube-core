@@ -230,6 +230,8 @@ class GDFNetCDF(object):
         nc_shape_dict = {dimensions[index]: len(self.netcdf_object.dimensions[dimension_names[index]]) for index in range(len(dimensions))}
 
         logger.debug('variable_name = %s', variable_name)
+        logger.debug('slice_array.shape = %s', slice_array.shape)
+        logger.debug('indices_dict = %s', indices_dict)
         logger.debug('nc_shape_dict = %s', nc_shape_dict)
         
         assert set(index_dimensions) <= set(dimensions), 'Invalid slice index dimension(s)'

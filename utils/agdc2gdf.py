@@ -325,12 +325,16 @@ order by end_datetime
             
             logger.debug('Reading array data from tile file %s (%d/%d)', record_dict['tile_pathname'], slice_index + 1, len(data_descriptor))
             data_array = tile_dataset.ReadAsArray()
+            logger.debug('data_array.shape = %s', data_array.shape)
             
             #TODO: Set up proper mapping between AGDC & GDF bands so this works with non-contiguous ranges
             for variable_index in range(len(variable_dict)):
                 variable_name = variable_names[variable_index]
                 logger.debug('Writing array to variable %s', variable_name)
-                gdfnetcdf.write_slice(variable_name, data_array[variable_index], {'T': slice_index})
+                if len(data_array.shape) == 3:
+                    gdfnetcdf.write_slice(variable_name, data_array[variable_index], {'T': slice_index})
+                elif len(data_array.shape) == 2:
+                    gdfnetcdf.write_slice(variable_name, data_array, {'T': slice_index})
 
             slice_index += 1
                  
@@ -478,7 +482,7 @@ where observation_type_id = %(observation_type_id)s
     and observation_id = %(observation_id)s
     and dataset_location = %(dataset_location)s
 '''
-            params = {'dataset_type_tag': record['level_name'],
+            params = {'dataset_type_tag': 'PQ' if record['level_name'] == 'PQA' else record['level_name'],
                       'observation_type_id': observation_key[0],
                       'observation_id': observation_key[1],
                       'dataset_location': record['dataset_path']
