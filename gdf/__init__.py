@@ -867,25 +867,7 @@ query_parameter = \
                 result_dict: dict to contain the result
                                                                               
             Return Value:
-                {<storage_type_tag>: {(<index1>, <index2>...<indexn>): <storage_info_dict>}}
-                
-                Sample <storage_info_dict> is as follows:
-                    {'md5_checksum': None,
-                     'storage_bytes': None,
-                     'storage_id': 1409962010L,
-                     'storage_location': '/storage_units/MODIS-Terra/MOD09/MODIS-Terra_MOD09_14_-4_2010.nc',
-                     'storage_type_id': 100L,
-                     'storage_version': 0,
-                     't_index': 2010,
-                     't_max': 1293840000.0,
-                     't_min': 1262304000.0,
-                     'x_index': 14,
-                     'x_max': 150.0,
-                     'x_min': 140.0,
-                     'y_index': -4,
-                     'y_max': -30.0,
-                     'y_min': -40.0
-                     }
+                {db_ref: <Descriptor as defined above>}
             '''
 
             def update_storage_units_descriptor(storage_index_tuple,
@@ -1168,13 +1150,19 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                                         )
         
         
+    def get_storage_filename(self, storage_type, storage_indices):
+        '''
+        Function to return the filename for a storage unit file with the specified storage_type & storage_indices
+        '''
+        return storage_type + '_' + '_'.join([str(index) for index in storage_indices]) + '.nc'
+    
     def get_storage_path(self, storage_type, storage_indices):
         '''
-        Function to return the path to a storage unit file with the specified storage_type & storage_indices
+        Function to return the full path to a storage unit file with the specified storage_type & storage_indices
         '''
         storage_dir = os.path.join(self._storage_config[storage_type]['storage_type_location'], storage_type)
 #        make_dir(storage_dir)
-        return os.path.join(storage_dir, storage_type + '_' + '_'.join([str(index) for index in storage_indices]) + '.nc')
+        return os.path.join(storage_dir, self.get_storage_filename(storage_type, storage_indices))
     
     
     def ordinate2index(self, storage_type, dimension, ordinate):

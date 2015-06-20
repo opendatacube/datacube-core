@@ -382,7 +382,7 @@ where storage_type_id =%(storage_type_id)s
     and storage_location = %(storage_location)s;
 '''            
             params = {'storage_type_id': self.storage_type_config['storage_type_id'],
-                      'storage_location': storage_unit_path
+                      'storage_location': os.path.basename(storage_unit_path)
                       }
             
             log_multiline(logger.debug, self.database.default_cursor.mogrify(SQL, params), 'Mogrified SQL', '\t')
