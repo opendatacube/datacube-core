@@ -382,7 +382,7 @@ where storage_type_id =%(storage_type_id)s
     and storage_location = %(storage_location)s;
 '''            
             params = {'storage_type_id': self.storage_type_config['storage_type_id'],
-                      'storage_location': os.path.basename(storage_unit_path)
+                      'storage_location': self.get_storage_filename(self.storage_type, storage_indices)
                       }
             
             log_multiline(logger.debug, self.database.default_cursor.mogrify(SQL, params), 'Mogrified SQL', '\t')
@@ -754,7 +754,7 @@ where not exists (
         '''
         temp_storage_dir = os.path.join(self.temp_dir, self.storage_type)
         make_dir(temp_storage_dir)        
-        return os.path.join(temp_storage_dir, self.storage_type + '_' + '_'.join([str(index) for index in storage_indices]) + '.nc')
+        return os.path.join(temp_storage_dir, self.get_storage_filename(self.storage_type, storage_indices))
     
     
 
