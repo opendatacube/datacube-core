@@ -462,14 +462,16 @@ insert into dataset(
     dataset_id,
     observation_type_id,
     observation_id,
-    dataset_location
+    dataset_location,
+    creation_datetime
     )
 select
     (select dataset_type_id from dataset_type where dataset_type_tag = %(dataset_type_tag)s),
     nextval('dataset_id_seq'::regclass),
     %(observation_type_id)s,
     %(observation_id)s,
-    %(dataset_location)s
+    %(dataset_location)s,
+    %(creation_datetime)s
 where not exists (
     select dataset_id from dataset
     where observation_type_id = %(observation_type_id)s
@@ -485,7 +487,8 @@ where observation_type_id = %(observation_type_id)s
             params = {'dataset_type_tag': 'PQ' if record['level_name'] == 'PQA' else record['level_name'],
                       'observation_type_id': observation_key[0],
                       'observation_id': observation_key[1],
-                      'dataset_location': record['dataset_path']
+                      'dataset_location': record['dataset_path'],
+                      'creation_datetime': record['datetime_processed'].replace(tzinfo=pytz.UTC) # Convert naiive time to UTC
                       }
             
             log_multiline(logger.debug, self.database.default_cursor.mogrify(SQL, params), 'Mogrified SQL', '\t')
@@ -767,7 +770,6 @@ def main():
 #    storage_config = agdc2gdf.storage_config[agdc2gdf.storage_type]
     
     # Create list of storage unit indices from CRS ranges
-    #TODO - Find some way of not hard coding the dimensions
     storage_indices_list = [(t, x, y) 
                             for t in range(agdc2gdf.range_dict['T'][0], agdc2gdf.range_dict['T'][1] + 1)
                             for x in range(agdc2gdf.range_dict['X'][0], agdc2gdf.range_dict['X'][1] + 1)

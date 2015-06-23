@@ -1,10 +1,13 @@
 #!/bin/bash
-#PBS -P v10
+#@#PBS -P v10
+#PBS -P r78
 #PBS -q normal
 #PBS -l walltime=12:00:00,mem=2GB,ncpus=1
 #PBS -l wd
 #@#PBS -m e
 #PBS -M alex.ip@ga.gov.au
+
+umask u=rwx,g=rwx,o=rx
 
 export MODULEPATH=/projects/u46/opt/modules/modulefiles:$MODULEPATH
 module load agdc
