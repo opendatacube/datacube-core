@@ -1261,10 +1261,13 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                 subset_dict[indices] = (gdfnetcdf, subset_indices)  
         logger.debug('subset_dict = %s', subset_dict)
             
+        #TODO: Do this check more thoroughly
+        assert filename or len(subset_dict) <= GDF.MAX_UNITS_IN_MEMORY, 'Too many storage units for an in-memory query'
+
         # Convert index sets to sorted lists
         for dimension in dimensions:
             if not dimension_index_dict[dimension]:
-		logger.warning('No data found')
+                logger.warning('No data found')
                 return
 
             dimension_index_dict[dimension] = sorted(dimension_index_dict[dimension])
@@ -1311,8 +1314,6 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                 logger.debug('result_array_indices[%s] = %s', dimension, result_array_indices[dimension])
                 if dimension == 'T':
 #                    logger.debug('Un-grouped %s min_index_value = %s, max_index_value = %s', dimension, min_index_value, max_index_value)
-#                    min_index_value = get_t_group_value(min_index_value)
-#                    max_index_value = get_t_group_value(max_index_value)
                     subset_group_values = t_group_value_array[np.in1d(t_value_array, subset_indices[dimension])] # Convert raw time values to group values
                     logger.debug('%s subset_group_values = %s', dimension, subset_group_values)
                     dimension_selection = np.in1d(result_array_indices[dimension], subset_group_values) # Array of t indices for result array
@@ -1331,24 +1332,15 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
             for variable_name in variable_names:
                 # Read data into array
                 read_array = gdfnetcdf.read_subset(variable_name, range_dict)[0]
-                logger.debug('read_array = %s', read_array)
-#                for group_value in subset_group_values:
-#                    result_group_index = numpy.where(result_array_indices['T'] == group_value)
-#                    timeslice_selection = [result_group_index if dimension == 'T' else selection[dimension] for dimension in dimensions]
-#                    logger.debug('timeslice_selection = %s', timeslice_selection)
-#                    timeslice_array = result_dict['variables'][variable_name][timeslice_selection] #TODO: Check whether this assignment causes timeslice to be copied
-#                    logger.debug('timeslice_array = %s', timeslice_array)
+                logger.debug('read_array from %s = %s', gdfnetcdf.netcdf_filename, read_array)
 
                 logger.debug("result_dict['variables'][variable_name][selection] = %s", result_dict['variables'][variable_name][selection])
                 result_dict['variables'][variable_name][selection] = gdfnetcdf.read_subset(variable_name, range_dict)[0]
-
         
         log_multiline(logger.debug, result_dict, 'result_dict', '\t')
         logger.debug('Result size = %s', tuple(len(result_array_indices[dimension]) for dimension in dimensions))
          
          
-        #TODO: Do this check more thoroughly
-        assert filename or len(subset_dict) <= GDF.MAX_UNITS_IN_MEMORY, 'Too many storage units for an in-memory query'
         
         
 def main():
