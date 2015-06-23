@@ -1130,12 +1130,12 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         except KeyError:
             storage_type_tags = self._storage_config.keys()
             
-        # Fix T as the slicing dimension
+        # Fix T as the selection dimension
         try:
-            slice_grouping_function = query_parameter['dimensions']['T']['grouping_function'] or self.null_grouping # self.solar_days_since_epoch
+            slice_grouping_function = query_parameter['dimensions']['T']['grouping_function'] or self.solar_days_since_epoch
         except KeyError:
             try:
-                slice_grouping_function = query_parameter['dimensions']['t']['grouping_function'] or self.null_grouping # self.solar_days_since_epoch
+                slice_grouping_function = query_parameter['dimensions']['t']['grouping_function'] or self.solar_days_since_epoch
             except KeyError:
                 slice_grouping_function = self.null_grouping # self.solar_days_since_epoch
             
@@ -1207,10 +1207,21 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
             return ((index * self.storage_config[storage_type]['dimensions'][dimension]['dimension_extent']) + 
                     self.storage_config[storage_type]['dimensions'][dimension]['dimension_origin'])
             
-    def read_arrays(self, storage_type, variable_names=None, range_dict={}, filename=None):
+    def read_arrays(self, storage_type, variable_names=None, range_dict={}, grouping_function=None, filename=None):
         '''
         Function to return composite in-memory arrays
         '''
+
+        def get_t_group_value(t_value):
+            #TODO: Do something better than this
+            '''
+            Nasty function to return the pre-calculated group value of a raw T value
+            Assumes len(t_group_value_list) == len(dimension_index_dict['T']) and t_value in dimension_index_dict['T']
+            '''
+            assert t_value in dimension_index_dict['T'], 'Unrecognised time value %s' % t_value
+            return t_group_value_list[dimension_index_dict['T'].index(t_value)]
+
+        grouping_function = grouping_function or self.solar_days_since_epoch
         storage_config = self._storage_config[storage_type]
         dimension_config = storage_config['dimensions']
         dimensions = dimension_config.keys() # All dimensions in order
@@ -1247,17 +1258,28 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                 for dimension in dimensions:
                     dimension_index_dict[dimension] |= set(subset_indices[dimension].tolist())
                     
-            subset_dict[indices] = (gdfnetcdf, subset_indices)  
+                subset_dict[indices] = (gdfnetcdf, subset_indices)  
         logger.debug('subset_dict = %s', subset_dict)
             
         # Convert index sets to sorted lists
         for dimension in dimensions:
+            if not dimension_index_dict[dimension]:
+		logger.warning('No data found')
+                return
+
             dimension_index_dict[dimension] = sorted(dimension_index_dict[dimension])
+
         logger.debug('dimension_index_dict = %s', dimension_index_dict)
             
-            
+        #TODO: Replace this awful code which creates a "fake" record dict for the grouping function
+        t_group_value_list = [grouping_function({'slice_index_value': t_index, 'x_min': dimension_index_dict['X'][0], 'x_max':  dimension_index_dict['X'][-1]}) for t_index in dimension_index_dict['T']]
+        t_group_values = sorted(set(t_group_value_list))
+
+        t_value_array = np.array(dimension_index_dict['T'])
+        t_group_value_array = np.array(t_group_value_list)
+
         # Create composite array indices
-        result_array_indices = {dimension: (np.array(list(dimension_index_dict[dimension])) if dimension in irregular_dimensions
+        result_array_indices = {dimension: (np.array(t_group_values) if dimension == 'T'
                                             else np.around(np.arange(dimension_index_dict[dimension][0], dimension_index_dict[dimension][-1] + dimension_element_sizes[dimension], dimension_element_sizes[dimension]), 8))
                                 for dimension in dimensions}
         logger.debug('result_array_indices = %s', result_array_indices)
@@ -1272,30 +1294,53 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
             dtype = subset_dict[subset_dict.keys()[0]][0].get_datatype(variable_name)
             logger.debug('dtype = %s', dtype)
 
-            result_dict['variables'][variable_name] = np.zeros(shape=array_shape, dtype=dtype)
+            #TODO: Make this do something sensible for PQ which has None as its nodata_value
+            result_dict['variables'][variable_name] = np.ones(shape=array_shape, dtype=dtype) * storage_config['measurement_types'][variable_name]['nodata_value']
 
         for indices in subset_dict.keys():
             # Unpack tuple
             gdfnetcdf = subset_dict[indices][0]  
             subset_indices = subset_dict[indices][1] 
                                                            
-            slicing = []
+            selection = []
             for dimension in dimensions:
+                logger.debug('subset_indices[%s] = %s', dimension, subset_indices[dimension])
                 min_index_value = subset_indices[dimension][0]
                 max_index_value = subset_indices[dimension][-1]
-                logger.debug('%s min_index_value = %s,\nmax_index_value = %s', dimension, min_index_value, max_index_value)
-                logger.debug('result_array_indices[dimension] = %s', result_array_indices[dimension])
-                logger.debug('min_where = %s', np.where(result_array_indices[dimension] == min_index_value))
-                logger.debug('max_where = %s', np.where(result_array_indices[dimension] == max_index_value))
-                min_index = np.where(result_array_indices[dimension] == min_index_value)[0][0]
-                max_index = np.where(result_array_indices[dimension] == max_index_value)[0][0]
-                logger.debug('%s min_index = %s,\nmax_index = %s', dimension, min_index, max_index)
-                slicing.append(slice(min_index, max_index + 1))
-            logger.debug('slicing = %s', slicing)
+
+                logger.debug('result_array_indices[%s] = %s', dimension, result_array_indices[dimension])
+                if dimension == 'T':
+#                    logger.debug('Un-grouped %s min_index_value = %s, max_index_value = %s', dimension, min_index_value, max_index_value)
+#                    min_index_value = get_t_group_value(min_index_value)
+#                    max_index_value = get_t_group_value(max_index_value)
+                    subset_group_values = t_group_value_array[np.in1d(t_value_array, subset_indices[dimension])] # Convert raw time values to group values
+                    logger.debug('%s subset_group_values = %s', dimension, subset_group_values)
+                    dimension_selection = np.in1d(result_array_indices[dimension], subset_group_values) # Array of t indices for result array
+                    logger.debug('%s dimension_selection = %s', dimension, dimension_selection)
+                else:   
+                    logger.debug('%s min_index_value = %s, max_index_value = %s', dimension, min_index_value, max_index_value)
+                    logger.debug('%s min_where = %s, max_where = %s', dimension, np.where(result_array_indices[dimension] == min_index_value), np.where(result_array_indices[dimension] == max_index_value))
+                    min_index = np.where(result_array_indices[dimension] == min_index_value)[0][0]
+                    max_index = np.where(result_array_indices[dimension] == max_index_value)[0][0]
+                    logger.debug('%s min_index = %s, max_index = %s', dimension, min_index, max_index)
+                    logger.debug('%s result index subset = %s', dimension, result_array_indices[dimension][min_index: max_index + 1])
+                    dimension_selection = slice(min_index, max_index + 1)
+                selection.append(dimension_selection)
+            logger.debug('selection = %s', selection)
             
             for variable_name in variable_names:
                 # Read data into array
-                result_dict['variables'][variable_name][slicing] = gdfnetcdf.read_subset(variable_name, range_dict)[0]
+                read_array = gdfnetcdf.read_subset(variable_name, range_dict)[0]
+                logger.debug('read_array = %s', read_array)
+#                for group_value in subset_group_values:
+#                    result_group_index = numpy.where(result_array_indices['T'] == group_value)
+#                    timeslice_selection = [result_group_index if dimension == 'T' else selection[dimension] for dimension in dimensions]
+#                    logger.debug('timeslice_selection = %s', timeslice_selection)
+#                    timeslice_array = result_dict['variables'][variable_name][timeslice_selection] #TODO: Check whether this assignment causes timeslice to be copied
+#                    logger.debug('timeslice_array = %s', timeslice_array)
+
+                logger.debug("result_dict['variables'][variable_name][selection] = %s", result_dict['variables'][variable_name][selection])
+                result_dict['variables'][variable_name][selection] = gdfnetcdf.read_subset(variable_name, range_dict)[0]
 
         
         log_multiline(logger.debug, result_dict, 'result_dict', '\t')
@@ -1310,13 +1355,13 @@ def main():
     # Testing stuff
     gdf = GDF()
     gdf.debug = True
-    pprint(gdf.storage_config['LS5TM'])
+    #pprint(gdf.storage_config['LS5TM'])
     # pprint(dict(gdf.storage_config['LS5TM']['dimensions']))
     # pprint(dict(gdf.storage_config['LS5TM']['measurement_types']))
-    #gdf.read_arrays('LS5TM', None, {'X': (140.999, 141.001), 'Y': (-36.001, -35.999)})
-    pprint(gdf.storage_config['LS8OLI'])
-    pprint(dict(gdf.storage_config['LS8OLI']['dimensions']))
-    pprint(dict(gdf.storage_config['LS8OLI']['measurement_types']))
+    gdf.read_arrays('LS5TM', None, {'X': (140.999, 141.001), 'Y': (-36.001, -35.999)})
+    #pprint(gdf.storage_config['LS8OLI'])
+    #pprint(dict(gdf.storage_config['LS8OLI']['dimensions']))
+    #pprint(dict(gdf.storage_config['LS8OLI']['measurement_types']))
 
 if __name__ == '__main__':
     main()

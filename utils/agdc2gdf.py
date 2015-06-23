@@ -222,6 +222,7 @@ class AGDC2GDF(GDF):
                                 autocommit=True)
             
             self.agdc_db.submit_query('select 1 as test_field') # Test DB connection
+            logger.debug('Connected to database %s:%s for %s', host, dbname, db_ref)
         except Exception, e:
             logger.error('Unable to connect to database for %s: %s', db_ref, e.message)
             raise e
