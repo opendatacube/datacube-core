@@ -136,7 +136,7 @@ class AGDC2GDF(GDF):
                                         'help': 'AGDC processing level to process'
                                         },
                                 'temp_dir': {'short_flag': '-t', 
-                                        'long_flag': '--temp', 
+                                        'long_flag': '--temp_dir', 
                                         'default': None, 
                                         'action': 'store',
                                         'const': None, 
@@ -179,6 +179,9 @@ class AGDC2GDF(GDF):
         # Create master GDF configuration dict containing both command line and config_file parameters
         self._configuration = self.get_config(gdf_config_files_string)
                 
+        self.temp_dir = self._command_line_params.get('temp_dir') or agdc2gdf_config_file_object.configuration['agdc']['temp_dir']
+        make_dir(self.temp_dir)
+
         # Create master GDF database dict
         self._databases = self.get_dbs()
         
