@@ -10,6 +10,7 @@ xmin=139
 xmax=141
 ymin=-37
 ymax=-35
+temp_dir='/jobfs'
 
 for x in $(seq ${xmin} ${xmax})
 do
@@ -24,8 +25,8 @@ do
         tmax=2013
         for t in $(seq ${tmin} ${tmax})
         do
-            echo qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${x},xmax=${x},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t} ${gdf_root}/utils/agdc2gdf_qsub.sh
-            qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${x},xmax=${x},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t} ${gdf_root}/utils/agdc2gdf_qsub.sh
+            echo qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${x},xmax=${x},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t},temp_dir=${temp_dir} ${gdf_root}/utils/agdc2gdf_qsub.sh
+            qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${x},xmax=${x},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t},temp_dir=${temp_dir} ${gdf_root}/utils/agdc2gdf_qsub.sh
         done
 
         # 17 years of LS5
@@ -36,8 +37,8 @@ do
         tmax=2015
         for t in $(seq ${tmin} ${tmax})
         do
-            echo qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${x},xmax=${x},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t} ${gdf_root}/utils/agdc2gdf_qsub.sh
-            qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${x},xmax=${x},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t} ${gdf_root}/utils/agdc2gdf_qsub.sh
+            echo qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${x},xmax=${x},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t},temp_dir=${temp_dir} ${gdf_root}/utils/agdc2gdf_qsub.sh
+            qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${x},xmax=${x},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t},temp_dir=${temp_dir} ${gdf_root}/utils/agdc2gdf_qsub.sh
         done
 
         # 3 years of LS5
@@ -48,8 +49,8 @@ do
         tmax=2015
         for t in $(seq ${tmin} ${tmax})
         do
-            echo qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${x},xmax=${x},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t} ${gdf_root}/utils/agdc2gdf_qsub.sh
-            qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${x},xmax=${x},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t} ${gdf_root}/utils/agdc2gdf_qsub.sh
+            echo qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${x},xmax=${x},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t},temp_dir=${temp_dir} ${gdf_root}/utils/agdc2gdf_qsub.sh
+            qsub -v gdf_root=${gdf_root},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${x},xmax=${x},ymin=${ymin},ymax=${ymax},tmin=${t},tmax=${t},temp_dir=${temp_dir} ${gdf_root}/utils/agdc2gdf_qsub.sh
         done
 #    done
 done

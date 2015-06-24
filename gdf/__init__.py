@@ -1251,7 +1251,6 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                 gdfnetcdf = GDFNetCDF(storage_config, storage_path)
                 subset_indices = gdfnetcdf.get_subset_indices(range_dict)
                 if not subset_indices:
-                    gdfnetcdf.close()
                     raise Exception('Invalid subset range %s for storage unit %s' % (range_dict, storage_path))
 
                 # Keep track of all indices for each dimension
@@ -1259,6 +1258,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                     dimension_index_dict[dimension] |= set(subset_indices[dimension].tolist())
                     
                 subset_dict[indices] = (gdfnetcdf, subset_indices)  
+        logger.debug('%d storage units found', len(subset_dict))
         logger.debug('subset_dict = %s', subset_dict)
             
         #TODO: Do this check more thoroughly
@@ -1293,8 +1293,9 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         # Create empty composite arrays
         array_shape = [len(result_array_indices[dimension]) for dimension in dimensions]
         logger.debug('array_shape = %s', array_shape)
+
         for variable_name in variable_names:
-            dtype = subset_dict[subset_dict.keys()[0]][0].get_datatype(variable_name)
+            dtype = storage_config['measurement_types'][variable_name]['numpy_datatype_name']
             logger.debug('dtype = %s', dtype)
 
             #TODO: Make this do something sensible for PQ which has None as its nodata_value
@@ -1302,7 +1303,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
 
         for indices in subset_dict.keys():
             # Unpack tuple
-            gdfnetcdf = subset_dict[indices][0]  
+            gdfnetcdf = subset_dict[indices][0]
             subset_indices = subset_dict[indices][1] 
                                                            
             selection = []

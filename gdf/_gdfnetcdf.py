@@ -49,7 +49,7 @@ from EOtools.utils import log_multiline
 from pprint import pprint
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO) # Logging level for this module
+logger.setLevel(logging.DEBUG) # Logging level for this module
 
 try:
     import netcdf_builder
@@ -70,6 +70,7 @@ class GDFNetCDF(object):
             netcdf_mode: Mode for netCDF file open
             netcdf_format: Format for netCDF file open
         '''
+        self._isopen = False
         self.storage_config = storage_config
         self.netcdf_filename = netcdf_filename
         self.netcdf_mode = netcdf_mode or 'r' # Default to 'r' for reading
@@ -84,13 +85,20 @@ class GDFNetCDF(object):
         '''
         Destructor for class GDFNetCDF
         '''
+        self.close()
+
+    def close(self):
+        '''
+        Destructor for class GDFNetCDF
+        '''
+        self._isopen = False
         try:
             self.netcdf_object.close()
         except:
             pass
 
         
-    def open(self, netcdf_filename, netcdf_mode=None, netcdf_format=None):
+    def open(self, netcdf_filename=None, netcdf_mode=None, netcdf_format=None):
         '''
         Constructor for class GDFNetCDF
         Parameters:
@@ -99,8 +107,12 @@ class GDFNetCDF(object):
             netcdf_mode: Mode for netCDF file open
             netcdf_format: Format for netCDF file open
         '''
+        self._isopen = False
+
         # Default to existing instance values
-        self.netcdf_filename = netcdf_filename
+        self.netcdf_filename = netcdf_filename or self.netcdf_filename
+        assert self.netcdf_filename, 'NetCDF filename not provided'
+
         self.netcdf_mode = netcdf_mode or self.netcdf_mode
         self.netcdf_format = netcdf_format or self.netcdf_format
 
@@ -108,9 +120,10 @@ class GDFNetCDF(object):
             self.netcdf_object = netCDF4.Dataset(self.netcdf_filename, mode=self.netcdf_mode, format=self.netcdf_format)
         else:
             # Format will be deduced by the netCDF modules
-            self.netcdf_object = netCDF4.Dataset(netcdf_filename, mode=self.netcdf_mode)
+            self.netcdf_object = netCDF4.Dataset(self.netcdf_filename, mode=self.netcdf_mode)
             self.netcdf_format = self.netcdf_object.file_format
 
+        self._isopen = True
         
     def create(self, netcdf_filename, index_tuple, dimension_index_dict={}, netcdf_format=None):
         '''
@@ -222,6 +235,9 @@ class GDFNetCDF(object):
             slice_array: Numpy array to be written to netCDF file
             indices_dict: Dict keyed by dimension tag indicating the dimension(s) & index/indices to which the slice should be written
         '''        
+        if not self._isopen:
+            self.open()
+
         dimension_config = self.storage_config['dimensions']
         dimensions = dimension_config.keys()
         index_dimensions = indices_dict.keys()
@@ -233,7 +249,7 @@ class GDFNetCDF(object):
         logger.debug('slice_array.shape = %s', slice_array.shape)
         logger.debug('indices_dict = %s', indices_dict)
         logger.debug('nc_shape_dict = %s', nc_shape_dict)
-        
+
         assert set(index_dimensions) <= set(dimensions), 'Invalid slice index dimension(s)'
         
         assert len(slice_array.shape) + len(indices_dict) == len(dimensions), 'Indices must be provided for all dimensions not covered by the data array'
@@ -264,6 +280,9 @@ class GDFNetCDF(object):
         Returns:
             slice_array: Numpy array read from netCDF file
         '''        
+        if not self._isopen:
+            self.open()
+
         dimension_config = self.storage_config['dimensions']
         dimensions = dimension_config.keys()
         index_dimensions = indices_dict.keys()
@@ -272,6 +291,7 @@ class GDFNetCDF(object):
         nc_shape_dict = {dimensions[index]: len(self.netcdf_object.dimensions[dimension_names[index]]) for index in range(len(dimensions))}
 
         logger.debug('variable_name = %s', variable_name)
+        logger.debug('indices_dict = %s', indices_dict)
         logger.debug('nc_shape_dict = %s', nc_shape_dict)
         
         assert set(index_dimensions) <= set(dimensions), 'Invalid slice index dimension(s)'
@@ -298,6 +318,9 @@ class GDFNetCDF(object):
         Returns:
             dimension_indices_dict: Dict containing array indices for each dimension
         '''        
+        if not self._isopen:
+            self.open()
+
         dimension_config = self.storage_config['dimensions']
         dimensions = dimension_config.keys()
         range_dimensions = range_dict.keys()
@@ -305,6 +328,7 @@ class GDFNetCDF(object):
         
         # Dict of dimensions and sizes read from netCDF 
         nc_shape_dict = {dimensions[index]: len(self.netcdf_object.dimensions[dimension_names[index]]) for index in range(len(dimensions))}
+        logger.debug('range_dict = %s', range_dict)
         logger.debug('nc_shape_dict = %s', nc_shape_dict)
         
         assert set(range_dimensions) <= set(dimensions), 'Invalid range dimension(s)'
@@ -343,6 +367,9 @@ class GDFNetCDF(object):
             subset_array: Numpy array read from netCDF file
             dimension_indices_dict: Dict containing array indices for each dimension
         '''        
+        if not self._isopen:
+            self.open()
+
         dimension_config = self.storage_config['dimensions']
         dimensions = dimension_config.keys()
         range_dimensions = range_dict.keys()
@@ -351,6 +378,7 @@ class GDFNetCDF(object):
         nc_shape_dict = {dimensions[index]: len(self.netcdf_object.dimensions[dimension_names[index]]) for index in range(len(dimensions))}
         
         logger.debug('variable_name = %s', variable_name)
+        logger.debug('range_dict = %s', range_dict)
         logger.debug('nc_shape_dict = %s', nc_shape_dict)
         
         assert set(range_dimensions) <= set(dimensions), 'Invalid range dimension(s)'
@@ -385,7 +413,7 @@ class GDFNetCDF(object):
         variable = self.netcdf_object.variables[variable_name]
 #        logger.debug('variable = %s' % variable)
 
-        subset_array = variable[slicing].data
+        subset_array = variable[slicing]
         
         logger.debug('subset_array = %s', subset_array)
         return subset_array, dimension_indices_dict
@@ -588,5 +616,9 @@ class GDFNetCDF(object):
         self.netcdf_object.geospatial_lon_max = extents[3]
         self.netcdf_object.geospatial_lon_units = 'degrees_east'
         self.netcdf_object.geospatial_lon_resolution = geotransform[1]
+
+    @property
+    def isopen(self):
+        return self._isopen
 
         
