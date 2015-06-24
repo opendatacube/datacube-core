@@ -1340,6 +1340,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         
         log_multiline(logger.debug, result_dict, 'result_dict', '\t')
         logger.debug('Result size = %s', tuple(len(result_array_indices[dimension]) for dimension in dimensions))
+        return result_dict
          
          
         
