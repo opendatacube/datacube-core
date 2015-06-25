@@ -1447,20 +1447,24 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         
 def main():
     # Testing stuff
-    gdf = GDF()
-    gdf.debug = True
-    #pprint(gdf.storage_config['LS5TM'])
-    # pprint(dict(gdf.storage_config['LS5TM']['dimensions']))
-    # pprint(dict(gdf.storage_config['LS5TM']['measurement_types']))
-    gdf.get_data(data_request_descriptor={'storage_type': 'LS5TM', 
-                                          'dimensions': {'X': {'range': (140.999, 141.001)}, 
-                                                         'Y': {'range': (-36.001, -35.999)}
-                                                         }
-                                          }
-                 )
-    #pprint(gdf.storage_config['LS8OLI'])
-    #pprint(dict(gdf.storage_config['LS8OLI']['dimensions']))
-    #pprint(dict(gdf.storage_config['LS8OLI']['measurement_types']))
+    g = GDF()
+    g.debug = True
+    #pprint(g.storage_config['LS5TM'])
+    # pprint(dict(g.storage_config['LS5TM']['dimensions']))
+    # pprint(dict(g.storage_config['LS5TM']['measurement_types']))
+    # pprint(g.storage_config['LS8OLI'])
+    # pprint(dict(g.storage_config['LS8OLI']['dimensions']))
+    # pprint(dict(g.storage_config['LS8OLI']['measurement_types']))
+    data_request_descriptor = {'storage_type': 'LS5TM', 
+                               'variables': ('B30', 'B40'), 
+                               'dimensions': {'X': {'range': (140.0, 140.25550)}, 
+                                              'Y': {'range': (-36.0, -35.74425)},
+                                              'T': {'range': (1262304000.0, 1267401599.999999)}, # 2010-01-01 00:00:00.0 - 2010-02-28 23:59:59.999999
+                                              }
+                               }
+ 
+    d = g.get_data(data_request_descriptor)
+    pprint(d)
 
 if __name__ == '__main__':
     main()
