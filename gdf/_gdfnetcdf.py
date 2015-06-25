@@ -151,7 +151,7 @@ class GDFNetCDF(object):
                 dimension_min = index * dimension_config['dimension_extent'] + dimension_config['dimension_origin'] + element_size / 2.0 # Half pixel to account for netCDF centre of pixel reference
                 dimension_max = dimension_min + dimension_config['dimension_extent']
                 
-                dimension_index_vector = np.around(np.arange(dimension_min, dimension_max, element_size), 8)
+                dimension_index_vector = np.around(np.arange(dimension_min, dimension_max, element_size), 6)
                 
             #TODO: Implement fixed indexing type
                 
@@ -342,8 +342,8 @@ class GDFNetCDF(object):
                 logger.debug('dimension_array = %s', dimension_array)
                 logger.debug('range = %s', range_dict[dimension])
                 # Use half pixel slop factor
-                mask_array = ((dimension_array > range_dict[dimension][0] - dimension_config[dimension]['dimension_element_size'] / 2.0) * 
-                                       (dimension_array <= range_dict[dimension][1] + dimension_config[dimension]['dimension_element_size'] / 2.0))
+                mask_array = ((dimension_array > range_dict[dimension][0]) * # - dimension_config[dimension]['dimension_element_size'] / 2.0) * 
+                                       (dimension_array <= range_dict[dimension][1])) # + dimension_config[dimension]['dimension_element_size'] / 2.0))
                 index_array = np.where(mask_array)
                 logger.debug('index_array = %s', index_array)
                 dimension_indices_dict[dimension] = dimension_array[mask_array]
@@ -393,8 +393,8 @@ class GDFNetCDF(object):
                 logger.debug('dimension_array = %s', dimension_array)
                 logger.debug('range = %s', range_dict[dimension])
                 # Use half pixel slop factor
-                mask_array = ((dimension_array > range_dict[dimension][0] - dimension_config[dimension]['dimension_element_size'] / 2.0) * 
-                                       (dimension_array <= range_dict[dimension][1] + dimension_config[dimension]['dimension_element_size'] / 2.0))
+                mask_array = ((dimension_array > range_dict[dimension][0]) * # - dimension_config[dimension]['dimension_element_size'] / 2.0) * 
+                                       (dimension_array <= range_dict[dimension][1])) # + dimension_config[dimension]['dimension_element_size'] / 2.0))
                 index_array = np.where(mask_array)
                 logger.debug('index_array = %s', index_array)
                 dimension_indices_dict[dimension] = dimension_array[mask_array]

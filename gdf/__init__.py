@@ -1314,7 +1314,8 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
 
                 # Keep track of all indices for each dimension
                 for dimension in dimensions:
-                    dimension_index_dict[dimension] |= set(subset_indices[dimension].tolist())
+                    dimension_indices = np.around(subset_indices[dimension], 6)
+                    dimension_index_dict[dimension] |= set(dimension_indices.tolist())
                     
                 subset_dict[indices] = (gdfnetcdf, subset_indices)  
         logger.debug('%d storage units found', len(subset_dict))
@@ -1354,7 +1355,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
 
         # Create composite array indices
         result_array_indices = {dimension: (np.array(result_grouped_value_dict[dimension]) if dimension in result_grouped_value_dict.keys()
-                                            else np.around(np.arange(dimension_index_dict[dimension][0], dimension_index_dict[dimension][-1] + dimension_element_sizes[dimension], dimension_element_sizes[dimension]), 8))
+                                            else np.around(np.arange(dimension_index_dict[dimension][0], dimension_index_dict[dimension][-1], dimension_element_sizes[dimension]), 6))
                                 for dimension in dimensions}
         
         for dimension in dimensions:
@@ -1407,14 +1408,16 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                                                            
             selection = []
             for dimension in dimensions:
-                logger.debug('subset_indices[%s] = %s', dimension, subset_indices[dimension])
-                min_index_value = subset_indices[dimension][0]
-                max_index_value = subset_indices[dimension][-1]
+                dimension_indices =  np.around(subset_indices[dimension], 6)
+                logger.debug('dimension_indices = %s', dimension, dimension_indices)
+
+                min_index_value = dimension_indices[0]
+                max_index_value = dimension_indices[-1]
 
                 logger.debug('result_array_indices[%s] = %s', dimension, result_array_indices[dimension])
                 if dimension in grouping_function_dict.keys():
 #                    logger.debug('Un-grouped %s min_index_value = %s, max_index_value = %s', dimension, min_index_value, max_index_value)
-                    subset_group_values = grouped_value_dict[dimension][np.in1d(ungrouped_value_dict[dimension], subset_indices[dimension])] # Convert raw time values to group values
+                    subset_group_values = grouped_value_dict[dimension][np.in1d(ungrouped_value_dict[dimension], dimension_indices)] # Convert raw time values to group values
                     logger.debug('%s subset_group_values = %s', dimension, subset_group_values)
                     dimension_selection = np.in1d(result_array_indices[dimension], subset_group_values) # Boolean array mask for result array
                     logger.debug('%s dimension_selection = %s', dimension, dimension_selection)
@@ -1457,8 +1460,8 @@ def main():
     # pprint(dict(g.storage_config['LS8OLI']['measurement_types']))
     data_request_descriptor = {'storage_type': 'LS5TM', 
                                'variables': ('B30', 'B40'), 
-                               'dimensions': {'X': {'range': (140.0, 140.25550)}, 
-                                              'Y': {'range': (-36.0, -35.74425)},
+                               'dimensions': {'X': {'range': (140.0, 140.002)}, 
+                                              'Y': {'range': (-36.0, -35.998)},
                                               'T': {'range': (1262304000.0, 1267401599.999999)}, # 2010-01-01 00:00:00.0 - 2010-02-28 23:59:59.999999
                                               }
                                }
