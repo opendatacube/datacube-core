@@ -115,6 +115,7 @@ class Analytics(object):
 		# stub to call GDF to get Array Descriptors and construct Arrayself.
 		query_parameters = {'storage_types': [storage_type]	, 'dimensions': dimensions}
 		arrayDescriptors = self.gdf.get_descriptor(query_parameters)
+		#pprint(arrayDescriptors)
 
 		if storage_type not in arrayDescriptors.keys():
 			raise AssertionError(storage_type, "not present in descriptor")
@@ -147,6 +148,7 @@ class Analytics(object):
 		# Arrays is a list
 		# output Array is same shape as input array
 		
+		orig_function = function
 		logger.debug('function before = %s', function)
 		count = 1
 		for array in arrays:
@@ -156,12 +158,13 @@ class Analytics(object):
 
 		functionResult = {}
 
-		functionResult['array_input'] = []
+		functionResult['array_input'] = {}
 		count = 1
 		for array in arrays:
-			functionResult['array_input'].append({ arrays[count-1]['variable'] : copy.deepcopy(arrays[count-1]) })
+			functionResult['array_input'][arrays[count-1]['variable']] = copy.deepcopy(arrays[count-1])
 			count += 1
-		functionResult['function'] = function
+		functionResult['orig_function'] = orig_function
+		functionResult['function'] = function		
 		functionResult['array_output'] = { name : copy.deepcopy(arrays[0]) }
 		functionResult['array_output'][name]['variable'] = name
 
@@ -186,28 +189,68 @@ class Analytics(object):
 	def applyReductionFunction(self, array1, dimensions, function, name, output_format):
 
 		function = self.OPERATORS_REDUCTION.get(function)
-		logger.debug('function before = %s', function)
-		function = function.replace('array1', array1['variable'])
-		logger.debug('function after = %s', function)
-		functionResult = {}
-		functionResult['array_input'] = []
-		functionResult['array_input'].append({ array1['variable'] : copy.deepcopy(array1) })
-		functionResult['Function'] = function
-		functionResult['dimension'] = copy.deepcopy(dimensions)
-		functionResult['array_output'] = copy.deepcopy(array1)
-		functionResult['array_output']['variable'] = name
-		functionResult['array_output']['dimensions_order'] = self.diffList(array1['dimensions_order'], dimensions)
+		return self.applyGenericReductionFunction(array1, dimensions, function, name, output_format)
 
-		result = ()
-		for value in functionResult['array_output']['dimensions_order']:
-			index = functionResult['array_input'][0][array1['variable']]['dimensions_order'].index(value)
-			value = functionResult['array_input'][0][array1['variable']]['shape'][index]
-			result += (value,)
-		functionResult['array_output']['shape'] = result
-		
-		functionResult['output_format'] = output_format
+	def applyGenericReductionFunction(self, array1, dimensions, function, name, output_format):
 
-		return functionResult
+		if 'array_input' in array1 and 'array_output' in array1 and 'function' in array1 and 'orig_function' in array1:
+			orig_function = function
+			logger.debug('function before = %s', function)
+			function = function.replace('array1', array1['array_output'].keys()[0])
+			logger.debug('function after = %s', function)
+
+			functionResult = {}
+
+			functionResult['array_input'] = {}
+			functionResult['array_input'][array1['array_output'].keys()[0]] = copy.deepcopy(array1)
+			functionResult['orig_function'] = orig_function
+			functionResult['function'] = function
+			functionResult['dimension'] = copy.deepcopy(dimensions)
+
+			functionResult['array_output'] = {}
+			functionResult['array_output'][name] = copy.deepcopy(array1['array_output'].values()[0])
+			#
+			#functionResult['array_output'][name][name] = copy.deepcopy(array1['array_output'])
+			functionResult['array_output'][name]['variable'] = name
+			functionResult['array_output'][name]['dimensions_order'] = self.diffList(array1['array_output'].values()[0]['dimensions_order'], dimensions)
+
+			result = ()
+			for value in functionResult['array_output'][name]['dimensions_order']:
+				index = functionResult['array_input'].values()[0]['array_output'].values()[0]['dimensions_order'].index(value)
+				value = functionResult['array_input'].values()[0]['array_output'].values()[0]['shape'][index]
+				result += (value,)
+			functionResult['array_output'][name]['shape'] = result
+
+			functionResult['output_format'] = output_format
+
+			return functionResult
+		else:
+			orig_function = function
+			logger.debug('function before = %s', function)
+			function = function.replace('array1', array1['variable'])
+			logger.debug('function after = %s', function)
+			functionResult = {}
+			functionResult['array_input'] = {}
+			functionResult['array_input'][array1['variable']] = copy.deepcopy(array1)
+			functionResult['orig_function'] = orig_function
+			functionResult['function'] = function
+			functionResult['dimension'] = copy.deepcopy(dimensions)
+
+			functionResult['array_output'] = {}
+			functionResult['array_output'][name] = copy.deepcopy(array1)
+			functionResult['array_output'][name]['variable'] = name
+			functionResult['array_output'][name]['dimensions_order'] = self.diffList(array1['dimensions_order'], dimensions)
+
+			result = ()
+			for value in functionResult['array_output'][name]['dimensions_order']:
+				index = functionResult['array_input'][array1['variable']]['dimensions_order'].index(value)
+				value = functionResult['array_input'][array1['variable']]['shape'][index]
+				result += (value,)
+			functionResult['array_output'][name]['shape'] = result
+			
+			functionResult['output_format'] = output_format
+
+			return functionResult
 
 	def diffList(self, list1, list2):
 		list2 = set(list2)
@@ -219,3 +262,6 @@ class Analytics(object):
 	def getPredefinedFunction(self, storage_type, function):
 		function_id = self.OPERATORS_SENSOR_SPECIFIC_BANDMATH.get(function).get('sensors').get(storage_type[0]).get('function')
 		return self.OPERATORS_SENSOR_SPECIFIC_BANDMATH.get(function).get('functions').get(function_id)
+
+	def createPlan(self, array):
+		return array
