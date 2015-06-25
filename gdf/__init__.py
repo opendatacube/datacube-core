@@ -1207,30 +1207,89 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
             return ((index * self.storage_config[storage_type]['dimensions'][dimension]['dimension_extent']) + 
                     self.storage_config[storage_type]['dimensions'][dimension]['dimension_origin'])
             
-    def read_arrays(self, storage_type, variable_names=None, range_dict={}, grouping_function=None, filename=None):
+    def get_data(self, data_request_descriptor={}, destination_filename=None):
         '''
         Function to return composite in-memory arrays
+
+        data_request = \
+        {
+        'storage_type': 'LS5TM',
+        'variables': ('B30', 'B40','PQ'), # Note that we won’t necessarily have PQ in the same storage unit
+        'dimensions': {
+             'x': {
+                   'range': (140, 142),
+                   'array_range': (0, 127)
+                   'crs': 'EPSG:4326'
+                   },
+             'y': {
+                   'range': (-36, -35),
+                   'array_range': (0, 127)
+                   'crs': 'EPSG:4326'
+                   },
+             't': {
+                   'range': (1293840000, 1325376000),
+                   'array_range': (0, 127)
+                   'crs': 'SSE', # Seconds since epoch
+                   'grouping_function': '<e.g. gdf.solar_day>'
+                   }
+             },
+        'polygon': '<some kind of text representation of a polygon for PostGIS to sort out>' # We won't be doing this in the pilot
+        }
+         
+         
+         
+        data_response = \
+        {
+        'dimensions': ['x', 'y', 't'],
+        'arrays': { # All of these will have the same shape
+             'B30': '<Numpy array>',
+             'B40': '<Numpy array>',
+             'PQ': '<Numpy array>'
+             },
+        'indices': [# These will be the actual x, y & t (long, lat & time) values for each array index
+        '<numpy array of x indices>',
+        '<numpy array of y indices>',
+        '<numpy array of t indices>'
+        ]
+        }
         '''
+        #=======================================================================
+        # def get_t_group_value(t_value):
+        #     #TODO: Do something better than this
+        #     '''
+        #     Nasty function to return the pre-calculated group value of a raw T value
+        #     Assumes len(t_group_value_list) == len(dimension_index_dict['T']) and t_value in dimension_index_dict['T']
+        #     '''
+        #     assert t_value in dimension_index_dict['T'], 'Unrecognised time value %s' % t_value
+        #     return t_group_value_list[dimension_index_dict['T'].index(t_value)]
+        #=======================================================================
+        
+        storage_type = data_request_descriptor['storage_type'] 
+        
+        # Convert dimension tags to upper case
+        range_dict = {dimension.upper(): dimension_spec['range'] 
+                      for dimension, dimension_spec in data_request_descriptor['dimensions'].items()} 
+        # Create dict of array slices if specified
+        slice_dict = {dimension.upper(): slice(*dimension_spec['array_range']) 
+                      for dimension, dimension_spec in data_request_descriptor['dimensions'].items() if dimension_spec.get('array_range')} 
 
-        def get_t_group_value(t_value):
-            #TODO: Do something better than this
-            '''
-            Nasty function to return the pre-calculated group value of a raw T value
-            Assumes len(t_group_value_list) == len(dimension_index_dict['T']) and t_value in dimension_index_dict['T']
-            '''
-            assert t_value in dimension_index_dict['T'], 'Unrecognised time value %s' % t_value
-            return t_group_value_list[dimension_index_dict['T'].index(t_value)]
+        # Create dict of grouping functions if specified
+        grouping_function_dict = {dimension.upper(): dimension_spec['grouping_function'] 
+                      for dimension, dimension_spec in data_request_descriptor['dimensions'].items() if dimension_spec.get('grouping_function')} 
+        
+        # Default grouping function for time is self.solar_days_since_epoch
+        grouping_function_dict['T'] = grouping_function_dict.get('T') or self.solar_days_since_epoch 
 
-        grouping_function = grouping_function or self.solar_days_since_epoch
+        grouping_function = data_request_descriptor['dimensions']['T'].get('grouping_function')
         storage_config = self._storage_config[storage_type]
         dimension_config = storage_config['dimensions']
         dimensions = dimension_config.keys() # All dimensions in order
-        irregular_dimensions = [dimension for dimension in dimensions if dimension_config[dimension]['indexing_type'] == 'irregular']
+#        irregular_dimensions = [dimension for dimension in dimensions if dimension_config[dimension]['indexing_type'] == 'irregular']
         range_dimensions = [dimension for dimension in dimensions if dimension in range_dict.keys()] # Range dimensions in order
         dimension_element_sizes = {dimension: dimension_config[dimension]['dimension_element_size'] for dimension in dimensions}
         
         # Default to all variables if none specified
-        variable_names = variable_names or storage_config['measurement_types'].keys()
+        variable_names = data_request_descriptor.get('variables') or storage_config['measurement_types'].keys()
 
         # Create complete range dict with minmax tuples for every dimension
         index_range_dict = {dimensions[dimension_index]: ((self.ordinate2index(storage_type, dimensions[dimension_index], range_dict[dimensions[dimension_index]][0]),
@@ -1241,6 +1300,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                            for dimension_index in range(len(dimensions))}
         logger.debug('index_range_dict = %s', index_range_dict)
         
+        # Find all existing storage units in range and retrieve the indices in ranges for each dimension 
         subset_dict = collections.OrderedDict()
         dimension_index_dict = {dimension: set() for dimension in dimensions}
         for indices in itertools.product(*[range(index_range_dict[dimension][0], index_range_dict[dimension][1]+1) for dimension in dimensions]):
@@ -1262,9 +1322,11 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         logger.debug('subset_dict = %s', subset_dict)
             
         #TODO: Do this check more thoroughly
-        assert filename or len(subset_dict) <= GDF.MAX_UNITS_IN_MEMORY, 'Too many storage units for an in-memory query'
+        assert destination_filename or len(subset_dict) <= GDF.MAX_UNITS_IN_MEMORY, 'Too many storage units for an in-memory query'
 
         # Convert index sets to sorted lists
+        group_value_dict = {}
+        result_group_value_dict = {}
         for dimension in dimensions:
             if not dimension_index_dict[dimension]:
                 logger.warning('No data found')
@@ -1272,24 +1334,57 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
 
             dimension_index_dict[dimension] = sorted(dimension_index_dict[dimension])
 
-        logger.debug('dimension_index_dict = %s', dimension_index_dict)
+            #TODO: Replace this awful code which creates a "fake" record dict for the grouping function
+            grouping_function = grouping_function_dict.get(dimension)
+            if grouping_function:
+                # Create list of group values for each 
+                group_value_dict[dimension] = [grouping_function({'slice_index_value': t_index, 'x_min': dimension_index_dict['X'][0], 'x_max':  dimension_index_dict['X'][-1]}) for t_index in dimension_index_dict['T']]
+                # Create sorted array of unique values
+                result_group_value_dict[dimension] = np.array(sorted(set(group_value_dict[dimension])))
+                # Convert group_value_dict[dimension] from list to array
+                group_value_dict[dimension] = np.array(group_value_dict[dimension])
             
-        #TODO: Replace this awful code which creates a "fake" record dict for the grouping function
-        t_group_value_list = [grouping_function({'slice_index_value': t_index, 'x_min': dimension_index_dict['X'][0], 'x_max':  dimension_index_dict['X'][-1]}) for t_index in dimension_index_dict['T']]
-        t_group_values = sorted(set(t_group_value_list))
-
-        t_value_array = np.array(dimension_index_dict['T'])
-        t_group_value_array = np.array(t_group_value_list)
+        logger.debug('dimension_index_dict = %s', dimension_index_dict)
+        logger.debug('group_value_dict = %s', group_value_dict)
+        logger.debug('result_group_value_dict = %s', result_group_value_dict)
+            
 
         # Create composite array indices
-        result_array_indices = {dimension: (np.array(t_group_values) if dimension == 'T'
+        result_array_indices = {dimension: (np.array(result_group_value_dict[dimension]) if dimension in result_group_value_dict.keys()
                                             else np.around(np.arange(dimension_index_dict[dimension][0], dimension_index_dict[dimension][-1] + dimension_element_sizes[dimension], dimension_element_sizes[dimension]), 8))
                                 for dimension in dimensions}
-        logger.debug('result_array_indices = %s', result_array_indices)
         
-        result_dict = {'variables': {},
+        for dimension in dimensions:
+            if not dimension_index_dict[dimension]:
+                logger.warning('No data found')
+                return
+
+            dimension_index_dict[dimension] = sorted(dimension_index_dict[dimension])
+
+        # Apply optional array ranges
+        if slice_dict:
+            logger.debug('Applying slices from slice_dict %s', slice_dict)
+            result_array_indices = {dimension: (index_array[slice_dict[dimension]] if dimension in slice_dict.keys()
+                                                else index_array)
+                                    for dimension, index_array in result_array_indices.items()}
+            # Revise index_range_dict to conform to reduced ranges
+            restricted_range_dict = {dimension: ((max(range_dict[dimension][0], result_array_indices[dimension][0]), 
+                                                  min(range_dict[dimension][1], result_array_indices[dimension][-1])) if dimension in range_dict.keys()
+                                                 else (result_array_indices[dimension][0], result_array_indices[dimension][-1]))
+                                    for dimension in dimensions}
+        else:
+            restricted_range_dict = range_dict
+                                
+        logger.debug('result_array_indices = %s', result_array_indices)
+        logger.debug('restricted_range_dict = %s', restricted_range_dict)
+        
+        # Create empty result_dict for returning result
+        result_dict = {
+                       'dimensions': dimensions,
+                       'arrays': {},
                        'indices': result_array_indices
                        }
+
         # Create empty composite arrays
         array_shape = [len(result_array_indices[dimension]) for dimension in dimensions]
         logger.debug('array_shape = %s', array_shape)
@@ -1298,8 +1393,9 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
             dtype = storage_config['measurement_types'][variable_name]['numpy_datatype_name']
             logger.debug('dtype = %s', dtype)
 
-            #TODO: Make this do something sensible for PQ which has None as its nodata_value
-            result_dict['variables'][variable_name] = np.ones(shape=array_shape, dtype=dtype) * storage_config['measurement_types'][variable_name]['nodata_value']
+            #TODO: Do something better for variables with no no-data value specified (e.g. PQ)
+            nodata_value = storage_config['measurement_types'][variable_name]['nodata_value'] or 0
+            result_dict['arrays'][variable_name] = np.ones(shape=array_shape, dtype=dtype) * nodata_value
 
         for indices in subset_dict.keys():
             # Unpack tuple
@@ -1313,11 +1409,11 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                 max_index_value = subset_indices[dimension][-1]
 
                 logger.debug('result_array_indices[%s] = %s', dimension, result_array_indices[dimension])
-                if dimension == 'T':
+                if dimension in grouping_function_dict.keys():
 #                    logger.debug('Un-grouped %s min_index_value = %s, max_index_value = %s', dimension, min_index_value, max_index_value)
-                    subset_group_values = t_group_value_array[np.in1d(t_value_array, subset_indices[dimension])] # Convert raw time values to group values
+                    subset_group_values = group_value_dict[dimension][np.in1d(result_group_value_dict[dimension], subset_indices[dimension])] # Convert raw time values to group values
                     logger.debug('%s subset_group_values = %s', dimension, subset_group_values)
-                    dimension_selection = np.in1d(result_array_indices[dimension], subset_group_values) # Array of t indices for result array
+                    dimension_selection = np.in1d(result_array_indices[dimension], subset_group_values) # Boolean array mask for result array
                     logger.debug('%s dimension_selection = %s', dimension, dimension_selection)
                 else:   
                     logger.debug('%s min_index_value = %s, max_index_value = %s', dimension, min_index_value, max_index_value)
@@ -1332,7 +1428,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
             
             for variable_name in variable_names:
                 # Read data into array
-                read_array = gdfnetcdf.read_subset(variable_name, range_dict)[0]
+                read_array = gdfnetcdf.read_subset(variable_name, restricted_range_dict)[0]
                 logger.debug('read_array from %s = %s', gdfnetcdf.netcdf_filename, read_array)
 
                 logger.debug("result_dict['variables'][variable_name][selection] = %s", result_dict['variables'][variable_name][selection])
@@ -1340,6 +1436,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         
         log_multiline(logger.debug, result_dict, 'result_dict', '\t')
         logger.debug('Result size = %s', tuple(len(result_array_indices[dimension]) for dimension in dimensions))
+        
         return result_dict
          
          
@@ -1352,7 +1449,12 @@ def main():
     #pprint(gdf.storage_config['LS5TM'])
     # pprint(dict(gdf.storage_config['LS5TM']['dimensions']))
     # pprint(dict(gdf.storage_config['LS5TM']['measurement_types']))
-    gdf.read_arrays('LS5TM', None, {'X': (140.999, 141.001), 'Y': (-36.001, -35.999)})
+    gdf.get_data(data_request_descriptor={'storage_type': 'LS5TM', 
+                                          'dimensions': {'X': {'range': (140.999, 141.001)}, 
+                                                         'Y': {'range': (-36.001, -35.999)}
+                                                         }
+                                          }
+                 )
     #pprint(gdf.storage_config['LS8OLI'])
     #pprint(dict(gdf.storage_config['LS8OLI']['dimensions']))
     #pprint(dict(gdf.storage_config['LS8OLI']['measurement_types']))
