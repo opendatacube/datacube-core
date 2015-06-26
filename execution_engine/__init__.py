@@ -47,7 +47,7 @@ class ExecutionEngine(object):
 
 	def executePlanBandmath(self, plan):
 		
-		pprint(plan)
+		#pprint(plan)
 		#build query
 		data_request_param = {}
 		data_request_param['dimensions'] = plan['array_input'].values()[0]['dimensions']
@@ -57,11 +57,12 @@ class ExecutionEngine(object):
 		for array in plan['array_input'].values():
 			data_request_param['variables'] += (array['variable'],)
 		
-		#pprint(data_request_param)
+		pprint(data_request_param)
 
-		#response = self.gdf.get_data(data_request_param)
+		data_response = self.gdf.get_data(data_request_param)
+		pprint(data_response)
 		#input_arrays = response['arrays']
-
+		'''
 		b30 = np.random.rand(5,1024,1024) * 255
 		b40 = np.random.rand(5,1024,1024) * 255
 		pq = np.random.rand(5,1024,1024)
@@ -86,10 +87,15 @@ class ExecutionEngine(object):
 		] 
 		}
 		#pprint(data_response)
+		'''
 		
 		functionResult = {}
 		functionResult['plan'] = copy.deepcopy(plan)
 		functionResult['array_result'] = ne.evaluate(plan['function'],  data_response['arrays'])
+
+		no_data_value = plan['array_output'].values()[0]['no_data_value']
+		for array in data_response['arrays'].values():
+			functionResult['array_result'][array == no_data_value] = no_data_value
 
 		return functionResult
 	
@@ -153,9 +159,10 @@ class ExecutionEngine(object):
 
 		#pprint(data_request_param)
 
-		#response = self.gdf.get_data(data_request_param)
+		data_response = self.gdf.get_data(data_request_param)
+		pprint(data_response)
 		#input_arrays = response['arrays']
-
+		'''
 		b30 = np.random.rand(6,1024,1024) * 255
 
 		data_response = \
@@ -169,7 +176,7 @@ class ExecutionEngine(object):
 		] 
 		}
 		#pprint(data_response)
-		
+		'''
 		'''
 		function_name = None
 		for op in self.SUPPORTED_REDUCTION_OPERATORS:
