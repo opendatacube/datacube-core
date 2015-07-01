@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import math
 import gdal
 import osr
+from scipy import ndimage
+from scipy.io import netcdf
 
 import csv
 
@@ -92,11 +94,34 @@ class ExecutionEngine(object):
 		functionResult = {}
 		functionResult['plan'] = copy.deepcopy(plan)
 		functionResult['array_result'] = ne.evaluate(plan['function'],  data_response['arrays'])
+		functionResult['array_indices'] = data_response['indices']
 
 		no_data_value = plan['array_output'].values()[0]['no_data_value']
 		for array in data_response['arrays'].values():
 			functionResult['array_result'][array == no_data_value] = no_data_value
+		
+		
+		#Apply Cloud mask
 
+		data_request_param = {}
+		data_request_param['dimensions'] = plan['array_input'].values()[0]['dimensions']
+		data_request_param['storage_type'] = plan['array_input'].values()[0]['storage_type']+'PQ'
+		data_request_param['variables'] = ("PQ",)
+		
+		pprint(data_request_param)
+		try:
+			data_response = self.gdf.get_data(data_request_param)
+			pprint(data_response)
+
+			pqa_mask = self.get_pqa_mask(data_response['arrays'][data_request_param['variables'][0]])
+			functionResult['pq'] = pqa_mask
+			print "PQA"
+			pprint(pqa_mask)
+
+			functionResult['array_result'][~pqa_mask] = no_data_value
+		except:
+			print "no cloud information found"
+			pass
 		return functionResult
 	
 	def executePlanReduction(self, plan):
@@ -128,10 +153,15 @@ class ExecutionEngine(object):
 			name2 = result['plan']['array_output'].keys()[0]
 			#name2 = result['plan'['array_output'].keys()[0]
 
+			no_data_value = functionResult['plan']['array_output'].values()[0]['no_data_value']
+
 			if len(plan['dimension']) == 1 :
 				print "here 1"
 				dim = result['plan']['array_output'].values()[0]['dimensions_order'].index(plan['dimension'][0])
 				functionResult['array_result'] = func(result['array_result'], axis=dim)
+				functionResult['array_result'][functionResult['array_result'] == no_data_value] = 0
+				#masked_array = np.ma.masked_array(result['array_result'], result['array_result'] == no_data_value)
+				#functionResult['array_result'] = func(masked_array,axis=dim).filled(no_data_value)				
 			elif len(plan['dimension']) == 2 :
 				print "here 2"
 				dim = result['plan']['array_output'].values()[0]['dimensions_order'].index(plan['array_output'].values()[0]['dimensions_order'][0])
@@ -192,15 +222,30 @@ class ExecutionEngine(object):
 		functionResult['plan'] = copy.deepcopy(plan)
 		#functionResult['array_result'] = ne.evaluate(plan['function'],  data_response['arrays'])
 
+		no_data_value = functionResult['plan']['array_output'].values()[0]['no_data_value']
+		print no_data_value
 		if len(plan['dimension']) == 1 :
+			print "here1"
 			dim = data_response['dimensions'].index(plan['dimension'][0])
-			functionResult['array_result'] = func(data_response['arrays'].values()[0], axis=dim)
+			#functionResult['array_result'] = func(data_response['arrays'].values()[0], axis=dim)
+
+			masked_array = np.ma.masked_array(data_response['arrays'].values()[0],data_response['arrays'].values()[0] == no_data_value)
+			functionResult['array_result'] = func(masked_array,axis=dim).filled(no_data_value)
+
+			#functionResult['array_result'] = func(data_response['arrays'].values()[0], axis=dim)
 		elif len(plan['dimension']) == 2 :
+			print "here2"
+
 			dim = data_response['dimensions'].index(plan['array_output'].values()[0]['dimensions_order'][0])
 			size = data_response['arrays'].values()[0].shape[dim]
 			out = np.empty([size])
 			for i in range(size):
-				out[i] = func(data_response['arrays'].values()[0][i])
+#				out[i] = func(data_response['arrays'].values()[0][i])
+				masked_array = np.ma.masked_array(data_response['arrays'].values()[0][i], data_response['arrays'].values()[0][i] == no_data_value)
+				out[i] = func(masked_array)
+				if np.isnan(out[i]):
+					out[i] = no_data_value
+
 			functionResult['array_result'] = out
 
 		return functionResult
@@ -258,6 +303,8 @@ class ExecutionEngine(object):
 
 	def writeNDVI2GeoTiff(self, functionResult, filename):
 
+		no_data_value = functionResult['plan']['array_output'].values()[0]['no_data_value']
+
 		num_t = functionResult['array_result'].shape[0]
 		rows = functionResult['array_result'].shape[1]
 		cols = functionResult['array_result'].shape[2]
@@ -268,13 +315,14 @@ class ExecutionEngine(object):
 		# set projection
 
 		proj = osr.SpatialReference()
-		srs = functionResult['plan']['array_output'].values()[0]['dimensions']['x']['crs']
+		#srs = functionResult['plan']['array_output'].values()[0]['dimensions']['X']['crs']
+		srs = 'EPSG:4326'
 		proj.SetWellKnownGeogCS(srs)  
 		dataset.SetProjection(proj.ExportToWkt())
 		
 		# set geo transform
-		xmin = functionResult['plan']['array_output'].values()[0]['dimensions']['x']['range'][0] 
-		ymax = functionResult['plan']['array_output'].values()[0]['dimensions']['y']['range'][1]
+		xmin = functionResult['plan']['array_output'].values()[0]['dimensions']['X']['range'][0] 
+		ymax = functionResult['plan']['array_output'].values()[0]['dimensions']['Y']['range'][1]
 		pixel_size = 0.00025
 		geotransform = (xmin, pixel_size, 0, ymax,0, -pixel_size)  
 		dataset.SetGeoTransform(geotransform)
@@ -282,7 +330,72 @@ class ExecutionEngine(object):
 		for i in range(num_t):
 			band = dataset.GetRasterBand(i+1)
 			band.WriteArray(functionResult['array_result'][i])
+			band.SetNoDataValue(no_data_value)
 			band.FlushCache()
+	
+	def writeNDVI2NetCDF(self, functionResult, filename):
+
+		no_data_value = functionResult['plan']['array_output'].values()[0]['no_data_value']
+
+		num_t = functionResult['array_result'].shape[0]
+		rows = functionResult['array_result'].shape[1]
+		cols = functionResult['array_result'].shape[2]
+
+		pixel_size = 0.00025
+		grid_size = rows * pixel_size
+
+		pprint(functionResult)
+
+		f = netcdf.netcdf_file(filename, 'w')
+		f.createDimension('time', num_t)
+		f.createDimension('longitude', rows)
+		f.createDimension('latitude', cols)
+
+		time = f.createVariable('time', 'f8', ('time',))
+		time[:] = functionResult['array_indices']['T']
+		time.long_name = 'time'
+		time.calendar = 'gregorian'
+		time.standard_name = 'time'
+		time.axis = 'T'
+		time.units = 'seconds since 1970-01-01'
+
+		longitude = f.createVariable('longitude', 'f8', ('longitude',))
+		longitude[:] = functionResult['array_indices']['X']
+		longitude.units = 'degrees_east'
+		longitude.long_name = 'longitude'
+		longitude.standard_name = 'longitude'
+		longitude.axis = 'X'
+
+		latitude = f.createVariable('latitude', 'f8', ('latitude',))
+		latitude[:] = functionResult['array_indices']['Y']
+		latitude.units = 'degrees_north'
+		latitude.long_name = 'latitude'
+		latitude.standard_name = 'latitude'
+		latitude.axis = 'Y'
+
+		result = f.createVariable('result', 'f8', ('time','longitude', 'latitude'))
+ 		#short B10(time, longitude, latitude) ;
+		result[:] = functionResult['array_result']
+		result._FillValue = no_data_value
+		result.name = 'result'
+		result.coordinates = 'lat lon'
+		result.grid_mapping = 'crs'
+
+
+		f.history = 'AnalyticsEngine test output file.'
+		f.license = 'Result file'
+		f.spatial_coverage = `grid_size` + ' degrees grid'
+		f.featureType = 'grid'
+		f.geospatial_lat_min = min(functionResult['array_indices']['Y'])
+		f.geospatial_lat_max = max(functionResult['array_indices']['Y'])
+		f.geospatial_lat_units = 'degrees_north'
+		f.geospatial_lat_resolution = -pixel_size
+		f.geospatial_lon_min = min(functionResult['array_indices']['X'])
+		f.geospatial_lon_max = max(functionResult['array_indices']['X'])
+		f.geospatial_lon_units = 'degrees_east'
+		f.geospatial_lon_resolution = pixel_size
+
+		f.close()
 
 	def writeToCSV(self, functionResult, filename):
 		with open(filename, 'w') as fp:
@@ -293,3 +406,47 @@ class ExecutionEngine(object):
 					writer.writerow([data])
 				else:
 					writer.writerow(data)
+
+	def get_pqa_mask(self, pqa_ndarray, good_pixel_masks=[32767,16383,2457], dilation=3):
+
+		pqa_mask = np.zeros(pqa_ndarray.shape, dtype=np.bool)
+		for i in range(len(pqa_ndarray)):
+			pqa_array = pqa_ndarray[i]
+			# Ignore bit 6 (saturation for band 62) - always 0 for Landsat 5
+			pqa_array = pqa_array | 64
+
+			# Dilating both the cloud and cloud shadow masks 
+			s = [[1,1,1],[1,1,1],[1,1,1]]
+			acca = (pqa_array & 1024) >> 10
+			erode = ndimage.binary_erosion(acca, s, iterations=dilation, border_value=1)
+			dif = erode - acca
+			dif[dif < 0] = 1
+			pqa_array += (dif << 10)
+			del acca
+			fmask = (pqa_array & 2048) >> 11
+			erode = ndimage.binary_erosion(fmask, s, iterations=dilation, border_value=1)
+			dif = erode - fmask
+			dif[dif < 0] = 1
+			pqa_array += (dif << 11)
+			del fmask
+			acca_shad = (pqa_array & 4096) >> 12
+			erode = ndimage.binary_erosion(acca_shad, s, iterations=dilation, border_value=1)
+			dif = erode - acca_shad
+			dif[dif < 0] = 1
+			pqa_array += (dif << 12)
+			del acca_shad
+			fmask_shad = (pqa_array & 8192) >> 13
+			erode = ndimage.binary_erosion(fmask_shad, s, iterations=dilation, border_value=1)
+			dif = erode - fmask_shad
+			dif[dif < 0] = 1
+			pqa_array += (dif << 13)
+
+			#=======================================================================
+			# pqa_mask = ma.getmask(ma.masked_equal(pqa_array, int(good_pixel_masks[0])))
+			# for good_pixel_mask in good_pixel_masks[1:]:
+			#    pqa_mask = ma.mask_or(pqa_mask, ma.getmask(ma.masked_equal(pqa_array, int(good_pixel_mask))))
+			#=======================================================================
+			#pqa_mask[i] = np.zeros(pqa_array.shape, dtype=np.bool)
+			for good_pixel_mask in good_pixel_masks:
+				pqa_mask[i][pqa_array == good_pixel_mask] = True
+		return pqa_mask
