@@ -1451,22 +1451,35 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
 def main():
     # Testing stuff
     g = GDF()
-    g.debug = True
-    #pprint(g.storage_config['LS5TM'])
+    # g.debug = True
+    # pprint(g.storage_config['LS5TM'])
     # pprint(dict(g.storage_config['LS5TM']['dimensions']))
     # pprint(dict(g.storage_config['LS5TM']['measurement_types']))
     # pprint(g.storage_config['LS8OLI'])
     # pprint(dict(g.storage_config['LS8OLI']['dimensions']))
     # pprint(dict(g.storage_config['LS8OLI']['measurement_types']))
+    print 'Starting 1024 x 1024 at ', datetime.now()
     data_request_descriptor = {'storage_type': 'LS5TM', 
                                'variables': ('B30', 'B40'), 
-                               'dimensions': {'X': {'range': (140.0, 140.002)}, 
-                                              'Y': {'range': (-36.0, -35.998)},
-                                              'T': {'range': (1262304000.0, 1267401599.999999)}, # 2010-01-01 00:00:00.0 - 2010-02-28 23:59:59.999999
+                               'dimensions': {'X': {'range': (140.0, 140.256)}, 
+                                              'Y': {'range': (-36.0, -35.744)}
                                               }
                                }
- 
+#                                              'T': {'range': (1262304000.0, 1267401599.999999)}, # 2010-01-01 00:00:00.0 - 2010-02-28 23:59:59.999999
     d = g.get_data(data_request_descriptor)
+    print 'Finishing 1024 x 1024 at ', datetime.now()
+    pprint(d)
+ 
+    print 'Starting 128 x 128 at ', datetime.now()
+    data_request_descriptor = {'storage_type': 'LS5TM', 
+                               'variables': ('B30', 'B40'), 
+                               'dimensions': {'X': {'range': (140.0, 140.032)}, 
+                                              'Y': {'range': (-36.0, -35.968)}
+                                              }
+                               }
+#                                              'T': {'range': (1262304000.0, 1267401599.999999)}, # 2010-01-01 00:00:00.0 - 2010-02-28 23:59:59.999999
+    d = g.get_data(data_request_descriptor)
+    print 'Finishing 128 x 128 at ', datetime.now()
     pprint(d)
 
 if __name__ == '__main__':
