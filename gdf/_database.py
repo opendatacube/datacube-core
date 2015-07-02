@@ -37,7 +37,7 @@ import sys
 import logging
 import psycopg2
 
-from EOtools.utils import log_multiline
+from eotools.utils import log_multiline
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO) # Logging level for this module

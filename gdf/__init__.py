@@ -55,7 +55,7 @@ from _config_file import ConfigFile
 from _gdfnetcdf import GDFNetCDF
 from _gdfutils import dt2secs, secs2dt, make_dir
 
-from EOtools.utils import log_multiline
+from eotools.utils import log_multiline
 
 # Set handler for root logger to standard output 
 console_handler = logging.StreamHandler(sys.stdout)

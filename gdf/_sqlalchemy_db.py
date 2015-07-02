@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from EOtools.utils import log_multiline
 
 #===============================================================================
 # Copyright (c)  2014 Geoscience Australia
@@ -46,7 +45,7 @@ from sqlalchemy.dialects.postgresql import \
 #    JSON, JSONB, OID, TSVECTOR
 import logging
 
-from EOtools.utils import log_multiline
+from eotools.utils import log_multiline
 
     
 logger = logging.getLogger(__name__)

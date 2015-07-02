@@ -39,7 +39,7 @@ import logging
 import ConfigParser
 import collections
 
-from EOtools.utils import log_multiline
+from eotools.utils import log_multiline
 
 logger = logging.getLogger(__name__)
 #logger.setLevel(logging.DEBUG) # Logging level for this module
