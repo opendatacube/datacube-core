@@ -87,7 +87,7 @@ class GDF(object):
                                 }
     MAX_UNITS_IN_MEMORY = 1000 #TODO: Do something better than this
     
-    def cache_object(self, cached_object, cache_filename):
+    def _cache_object(self, cached_object, cache_filename):
         '''
         Function to write an object to a cached pickle file
         '''
@@ -95,7 +95,7 @@ class GDF(object):
         cPickle.dump(cached_object, cache_file, -1)
         cache_file.close()
     
-    def get_cached_object(self, cache_filename):
+    def _get_cached_object(self, cache_filename):
         '''
         Function to retrieve an object from a cached pickle file
         Will raise a general exception if refresh is forced
@@ -106,7 +106,7 @@ class GDF(object):
         cache_file.close()
         return cached_object
     
-    def get_command_line_params(self, arg_descriptors={}):
+    def _get_command_line_params(self, arg_descriptors={}):
         '''
         Function to return a dict of command line parameters
         
@@ -124,7 +124,7 @@ class GDF(object):
         
         return command_line_args_object.arguments
         
-    def get_config(self, config_files_string=None):
+    def _get_config(self, config_files_string=None):
         '''
         Function to return a nested dict of config file entries
         Parameter:
@@ -159,7 +159,7 @@ class GDF(object):
         log_multiline(logger.debug, config_dict, 'config_dict', '\t')
         return config_dict
     
-    def get_dbs(self):
+    def _get_dbs(self):
         '''
         Function to return an ordered dict of database objects keyed by db_ref
         '''
@@ -202,13 +202,13 @@ class GDF(object):
         self._code_root = os.path.abspath(os.path.dirname(__file__)) # Directory containing module code
         
         # Create master configuration dict containing both command line and config_file parameters
-        self._command_line_params = self.get_command_line_params(GDF.ARG_DESCRIPTORS)
+        self._command_line_params = self._get_command_line_params(GDF.ARG_DESCRIPTORS)
         
         self._debug = False
         self.debug = self._command_line_params['debug']
                 
         # Create master configuration dict containing both command line and config_file parameters
-        self._configuration = self.get_config(self._command_line_params['config_files'])       
+        self._configuration = self._get_config(self._command_line_params['config_files'])       
        
         # Create global directories if they don't exist
         make_dir(self.temp_dir)
@@ -219,49 +219,49 @@ class GDF(object):
         
         # Force refresh if config has changed
         try:
-            cached_config = self.get_cached_object('configuration.pkl')
+            cached_config = self._get_cached_object('configuration.pkl')
             self.refresh = self.refresh or (self._configuration != cached_config) 
         except:
             self.refresh = True
         
         if self.refresh:
-            self.cache_object(self._configuration, 'configuration.pkl')
+            self._cache_object(self._configuration, 'configuration.pkl')
             logger.info('Forcing refresh of all cached data')
         
         # Create master database dict with Database objects keyed by db_ref
         try:           
-            self._databases = self.get_cached_object('databases.pkl')
+            self._databases = self._get_cached_object('databases.pkl')
             logger.info('Loaded cached database configuration %s', self._databases.keys())
         except:
-            self._databases = self.get_dbs()
-            self.cache_object(self._databases, 'databases.pkl')      
+            self._databases = self._get_dbs()
+            self._cache_object(self._databases, 'databases.pkl')      
             logger.info('Connected to databases %s', self._databases.keys())
         
         # Read storage configuration from cache or databases
         try:           
-            self._storage_config = self.get_cached_object('storage_config.pkl')
+            self._storage_config = self._get_cached_object('storage_config.pkl')
             logger.info('Loaded cached storage configuration %s', self._storage_config.keys())
         except:
-            self._storage_config = self.get_storage_config()
-            self.cache_object(self._storage_config, 'storage_config.pkl')
+            self._storage_config = self._get_storage_config()
+            self._cache_object(self._storage_config, 'storage_config.pkl')
             logger.info('Read storage configuration from databases %s', self._storage_config.keys())
             
         #=======================================================================
         # # Read storage configuration from databases
         # try:           
-        #     self._global_descriptor = self.get_cached_object('global_descriptor.pkl')
+        #     self._global_descriptor = self._get_cached_object('global_descriptor.pkl')
         #     logger.info('Loaded cached global descriptor %s', self._global_descriptor.keys())
         # except:
         #     logger.info('Creating global descriptor... Please wait.')
         #     self._global_descriptor = self.get_descriptor()
-        #     self.cache_object(self._global_descriptor, 'global_descriptor.pkl')
+        #     self._cache_object(self._global_descriptor, 'global_descriptor.pkl')
         #     logger.info('Created global descriptor %s', self._global_descriptor.keys())
         #=======================================================================
         
         log_multiline(logger.debug, self.__dict__, 'GDF.__dict__', '\t')
 
         
-    def do_db_query(self, databases, args):
+    def _do_db_query(self, databases, args):
         '''
         Generic function to execute a function across multiple databases, each function in its own thread
         Returns a dict which must be updated by db_function in a thread-safe manner 
@@ -324,7 +324,7 @@ class GDF(object):
         log_multiline(logger.debug, result_dict, 'result_dict', '\t')
         return result_dict
 
-    def do_storage_type_query(self, storage_types, args):
+    def _do_storage_type_query(self, storage_types, args):
         '''
         Generic function to execute a function across multiple databases, each function in its own thread
         Returns a dict which must be updated by db_function in a thread-safe manner 
@@ -388,7 +388,7 @@ class GDF(object):
         log_multiline(logger.debug, result_dict, 'result_dict', '\t')
         return result_dict
 
-    def get_storage_config(self):
+    def _get_storage_config(self):
         '''
         Function to return a dict with details of all storage unit types managed in databases keyed as follows:
           
@@ -628,7 +628,7 @@ order by 1,2
             result_dict[database.db_ref] = db_storage_config_dict
             # End of per-DB function
 
-        storage_config_dict = self.do_db_query(self.databases, [get_db_storage_config])
+        storage_config_dict = self._do_db_query(self.databases, [get_db_storage_config])
         
         # Filter out duplicate storage unit types. Only keep first definition
         filtered_storage_config_dict = {}
@@ -1140,7 +1140,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                 slice_grouping_function = self.null_grouping # self.solar_days_since_epoch
             
         
-        return self.do_db_query(self.databases, [get_db_descriptors, 
+        return self._do_db_query(self.databases, [get_db_descriptors, 
                                                 dimension_range_dict, 
                                                 'T', 
                                                 slice_grouping_function, 
@@ -1310,11 +1310,12 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                 gdfnetcdf = GDFNetCDF(storage_config, storage_path)
                 subset_indices = gdfnetcdf.get_subset_indices(range_dict)
                 if not subset_indices:
-                    raise Exception('Invalid subset range %s for storage unit %s' % (range_dict, storage_path))
+                    raise Exception('Invalid subset range %s for storage unit %s' % (range_dict, storage_path)) # This should never happen
 
                 # Keep track of all indices for each dimension
                 for dimension in dimensions:
                     dimension_indices = np.around(subset_indices[dimension], 6)
+                    #TODO: Find a vectorised way of doing this instead of using sets
                     dimension_index_dict[dimension] |= set(dimension_indices.tolist())
                     
                 subset_dict[indices] = (gdfnetcdf, subset_indices)  
@@ -1355,7 +1356,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
 
         # Create composite array indices
         result_array_indices = {dimension: (np.array(result_grouped_value_dict[dimension]) if dimension in result_grouped_value_dict.keys()
-                                            else np.around(np.arange(dimension_index_dict[dimension][0], dimension_index_dict[dimension][-1], dimension_element_sizes[dimension]), 6))
+                                            else np.around(np.arange(dimension_index_dict[dimension][0], dimension_index_dict[dimension][-1] + dimension_element_sizes[dimension], dimension_element_sizes[dimension]), 6))
                                 for dimension in dimensions}
         
         for dimension in dimensions:
@@ -1424,8 +1425,8 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                 else:   
                     logger.debug('%s min_index_value = %s, max_index_value = %s', dimension, min_index_value, max_index_value)
                     logger.debug('%s min_where = %s, max_where = %s', dimension, np.where(result_array_indices[dimension] == min_index_value), np.where(result_array_indices[dimension] == max_index_value))
-                    min_index = np.where(result_array_indices[dimension] == min_index_value)[0][0]
-                    max_index = np.where(result_array_indices[dimension] == max_index_value)[0][0]
+                    min_index = np.where(result_array_indices[dimension] >= min_index_value)[0][0]
+                    max_index = np.where(result_array_indices[dimension] <= max_index_value)[0][-1]
                     logger.debug('%s min_index = %s, max_index = %s', dimension, min_index, max_index)
                     logger.debug('%s result index subset = %s', dimension, result_array_indices[dimension][min_index: max_index + 1])
                     dimension_selection = slice(min_index, max_index + 1)
@@ -1448,39 +1449,3 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
          
         
         
-def main():
-    # Testing stuff
-    g = GDF()
-    # g.debug = True
-    # pprint(g.storage_config['LS5TM'])
-    # pprint(dict(g.storage_config['LS5TM']['dimensions']))
-    # pprint(dict(g.storage_config['LS5TM']['measurement_types']))
-    # pprint(g.storage_config['LS8OLI'])
-    # pprint(dict(g.storage_config['LS8OLI']['dimensions']))
-    # pprint(dict(g.storage_config['LS8OLI']['measurement_types']))
-    print 'Starting 1024 x 1024 at ', datetime.now()
-    data_request_descriptor = {'storage_type': 'LS5TM', 
-                               'variables': ('B30', 'B40'), 
-                               'dimensions': {'X': {'range': (140.0, 140.256)}, 
-                                              'Y': {'range': (-36.0, -35.744)}
-                                              }
-                               }
-#                                              'T': {'range': (1262304000.0, 1267401599.999999)}, # 2010-01-01 00:00:00.0 - 2010-02-28 23:59:59.999999
-    d = g.get_data(data_request_descriptor)
-    print 'Finishing 1024 x 1024 at ', datetime.now()
-    pprint(d)
- 
-    print 'Starting 128 x 128 at ', datetime.now()
-    data_request_descriptor = {'storage_type': 'LS5TM', 
-                               'variables': ('B30', 'B40'), 
-                               'dimensions': {'X': {'range': (140.0, 140.032)}, 
-                                              'Y': {'range': (-36.0, -35.968)}
-                                              }
-                               }
-#                                              'T': {'range': (1262304000.0, 1267401599.999999)}, # 2010-01-01 00:00:00.0 - 2010-02-28 23:59:59.999999
-    d = g.get_data(data_request_descriptor)
-    print 'Finishing 128 x 128 at ', datetime.now()
-    pprint(d)
-
-if __name__ == '__main__':
-    main()

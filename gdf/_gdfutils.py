@@ -35,9 +35,10 @@ Created on Jun 11, 2015
 import os
 import calendar
 import time
+import math
 from datetime import datetime
 from socket import errno
-
+import matplotlib.pyplot as plt
 
 def dt2secs(datetime_param):
     '''
@@ -61,4 +62,20 @@ def make_dir(dirname):
         if exception.errno != errno.EEXIST or not os.path.isdir(dirname):
             raise exception
 
+def plotImages(arrays):
+    img = arrays
+    num_t = img.shape[0]
+    num_rowcol = math.ceil(math.sqrt(num_t))
+    fig = plt.figure()
+    fig.clf()
+    plot_count = 1
+    for i in range(img.shape[0]):
+        data = img[i]
+        ax = fig.add_subplot(num_rowcol, num_rowcol, plot_count)
+        plt.setp(ax, xticks=[], yticks=[])
+        cax = ax.imshow(data, interpolation='nearest', aspect = 'equal')
+        #fig.colorbar(cax)
+        plot_count += 1
+    fig.tight_layout()
+    plt.show()
 

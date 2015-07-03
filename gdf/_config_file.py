@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 #logger.setLevel(logging.DEBUG) # Logging level for this module
 
 class ConfigFile(object):
-    def parse_config_file(self):
+    def _parse_config_file(self):
         '''
         Function to return a nested dict of config file entries
         Returns: 
@@ -79,7 +79,7 @@ class ConfigFile(object):
         self._path = os.path.abspath(path)
         assert os.path.exists(self._path), "%s does not exist" % self._path
         
-        self._configuration = self.parse_config_file() 
+        self._configuration = self._parse_config_file() 
         
         log_multiline(logger.debug, self.__dict__, 'ConfigFile.__dict__', '\t')
         

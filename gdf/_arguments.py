@@ -61,7 +61,7 @@ class CommandLineArgs(object):
                                     }
                     }
     
-    def parse_args(self, arg_descriptors):
+    def _parse_args(self, arg_descriptors):
         """Virtual function to parse command line arguments.
     
         Parameters:
@@ -76,7 +76,7 @@ class CommandLineArgs(object):
         Returns:
             argparse namespace object
         """
-        logger.debug('Calling parse_args()')
+        logger.debug('Calling _parse_args()')
         log_multiline(logger.debug, arg_descriptors, 'arg_descriptors', '\t')
             
         _arg_parser = argparse.ArgumentParser(description=os.path.basename(sys.argv[0]))
@@ -120,7 +120,7 @@ class CommandLineArgs(object):
         arg_descriptors = temp_arg_descriptors
         log_multiline(logger.debug, arg_descriptors, 'arg_descriptors', '\t')
         
-        self._arguments = self.parse_args(arg_descriptors)
+        self._arguments = self._parse_args(arg_descriptors)
         
         log_multiline(logger.debug, self.__dict__, 'CommandLineArgs.__dict__', '\t')
         
