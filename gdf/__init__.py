@@ -1356,7 +1356,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
 
         # Create composite array indices
         result_array_indices = {dimension: (np.array(result_grouped_value_dict[dimension]) if dimension in result_grouped_value_dict.keys()
-                                            else np.around(np.arange(dimension_index_dict[dimension][0], dimension_index_dict[dimension][-1] + dimension_element_sizes[dimension], dimension_element_sizes[dimension]), 6))
+                                            else np.around(np.arange(dimension_index_dict[dimension][0], dimension_index_dict[dimension][-1] + 0.000001, dimension_element_sizes[dimension]), 6))
                                 for dimension in dimensions}
         
         for dimension in dimensions:
@@ -1410,7 +1410,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
             selection = []
             for dimension in dimensions:
                 dimension_indices =  np.around(subset_indices[dimension], 6)
-                logger.debug('dimension_indices = %s', dimension, dimension_indices)
+                logger.debug('%s dimension_indices = %s', dimension, dimension_indices)
 
                 min_index_value = dimension_indices[0]
                 max_index_value = dimension_indices[-1]

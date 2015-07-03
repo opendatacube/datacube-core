@@ -38,7 +38,10 @@ import time
 import math
 from datetime import datetime
 from socket import errno
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except:
+    pass
 
 def dt2secs(datetime_param):
     '''
