@@ -1246,11 +1246,21 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
              'B40': '<Numpy array>',
              'PQ': '<Numpy array>'
              },
-        'indices': [# These will be the actual x, y & t (long, lat & time) values for each array index
-        '<numpy array of x indices>',
-        '<numpy array of y indices>',
-        '<numpy array of t indices>'
-        ]
+        'indices': [ # These will be the actual x, y & t (long, lat & time) values for each array index
+            '<numpy array of x indices>',
+            '<numpy array of y indices>',
+            '<numpy array of t indices>'
+            ]
+        'element_sizes': [ # These will be the element sizes for each dimension
+            '< x element size>',
+            '< y element size>',
+            '< t element size>'
+            ]
+        'coordinate_reference_systems': [ # These will be the coordinate_reference_systems for each dimension
+            '< x CRS>',
+            '< y CRS>',
+            '< t CRS>'
+            ]
         }
         '''
         #=======================================================================
@@ -1387,7 +1397,13 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         result_dict = {
                        'dimensions': dimensions,
                        'arrays': {},
-                       'indices': result_array_indices
+                       'indices': result_array_indices,
+                       'element_sizes': [dimension_config[dimension]['dimension_element_size'] for dimension in dimensions],
+                       'coordinate_reference_systems': [{'reference_system_name': dimension_config[dimension]['reference_system_name'],
+                                                         'reference_system_definition': dimension_config[dimension]['reference_system_definition'],
+                                                         'reference_system_unit': dimension_config[dimension]['reference_system_unit']
+                                                         } 
+                                                         for dimension in dimensions]
                        }
 
         # Create empty composite arrays
