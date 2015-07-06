@@ -58,6 +58,12 @@ def secs2dt(seconds_param):
     '''
     return datetime.fromtimestamp(seconds_param)
 
+def dt2days(datetime_param):
+    '''
+    Helper function to convert datetime into days since epoch. Naive datetime is treated as UTC
+    '''
+    return datetime_param.toordinal() - EPOCH_DATE_ORDINAL
+
 def days2dt(days_param):
     '''
     Helper function to convert days since epoch into datetime. Naive datetime is treated as UTC

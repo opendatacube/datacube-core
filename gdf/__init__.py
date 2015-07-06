@@ -53,7 +53,7 @@ from _database import Database, CachedResultSet
 from _arguments import CommandLineArgs
 from _config_file import ConfigFile
 from _gdfnetcdf import GDFNetCDF
-from _gdfutils import dt2secs, secs2dt, make_dir
+from _gdfutils import dt2secs, secs2dt, days2dt, dt2days, make_dir
 
 from eotools.utils import log_multiline
 
@@ -76,7 +76,7 @@ class GDF(object):
     Manages configuration and database connections.
     '''
     DEFAULT_CONFIG_FILE = 'gdf_default.conf' # N.B: Assumed to reside in code root directory
-    EPOCH_DATE_ORDINAL = date(1970, 1, 1).toordinal()
+
     ARG_DESCRIPTORS = {'refresh': {'short_flag': '-r', 
                                         'long_flag': '--refresh', 
                                         'default': False, 
@@ -667,11 +667,8 @@ order by 1,2
         Function which takes a record_dict containing all values from a query in the get_db_slices function 
         and returns the number of days since 1/1/1970
         '''
-        # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
         #TODO: Make more general (if possible)
-        # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
-        solar_date = self.solar_date(record_dict)
-        return solar_date.toordinal() - GDF.EPOCH_DATE_ORDINAL
+        return dt2days(self.solar_date(record_dict))
     
             
     def solar_year_month(self, record_dict):
