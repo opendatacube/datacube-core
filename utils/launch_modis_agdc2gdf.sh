@@ -25,7 +25,7 @@ do
         for t in $(seq ${tmin} ${tmax})
         do
             echo qsub -v gdf_root=${gdf_root},config=${config},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${x},xmax=${x},ymin=${y},ymax=${y},tmin=${t},tmax=${t},temp_dir=${temp_dir} ${gdf_root}/utils/agdc2gdf_qsub.sh
-#            qsub -v gdf_root=${gdf_root},config=${config},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${x},xmax=${x},ymin=${y},ymax=${y},tmin=${t},tmax=${t},temp_dir=${temp_dir} ${gdf_root}/utils/agdc2gdf_qsub.sh
+            qsub -v gdf_root=${gdf_root},config=${config},storage_type=${storage_type},satellite=${satellite},sensors=${sensors},level=${level},xmin=${x},xmax=${x},ymin=${y},ymax=${y},tmin=${t},tmax=${t},temp_dir=${temp_dir} ${gdf_root}/utils/agdc2gdf_qsub.sh
         done
     done
 done
