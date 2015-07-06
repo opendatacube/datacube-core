@@ -38,10 +38,16 @@ import time
 import math
 from datetime import datetime, date
 from socket import errno
+import logging
+
+logger = logging.getLogger(__name__)
+#logger.setLevel(logging.DEBUG) # Logging level for this module
+
+# Ignore failed import of graphical modules
 try:
     import matplotlib.pyplot as plt
 except:
-    pass
+    logger.warning('WARNING: Unable to import matplotlib.pyplot. Any graphical function calls will fail.')
 
 #TODO: Do something about duplicate definition (here and in gdf)
 EPOCH_DATE_ORDINAL = date(1970, 1, 1).toordinal()
