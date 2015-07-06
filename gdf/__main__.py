@@ -49,7 +49,8 @@ def main():
     # pprint(dict(g.storage_config['LS8OLI']['dimensions']))
     # pprint(dict(g.storage_config['LS8OLI']['measurement_types']))
     
-    print 'Starting 256 x 256 single-band cross-boundary selection at ', datetime.now()
+    t0 = datetime.now()
+    print 'Starting 256 x 256 single-band cross-boundary selection at ', t0
     data_request_descriptor = {'storage_type': 'LS5TM', 
                                'variables': ('B30',), 
                                'dimensions': {'X': {'range': (140.968, 141.032)}, 
@@ -58,12 +59,14 @@ def main():
                                               }
                                }
     d = g.get_data(data_request_descriptor)
-    print 'Finishing 256 x 256 cross-boundary selection at ', datetime.now()
+    t1 = datetime.now()
+    print 'Finishing 256 x 256 cross-boundary selection at %s (Elapsed time %s)' % (t1, t1 - t0)
     pprint(d)
 
 
 #===============================================================================
-#     print 'Starting 128 x 128 dual band selection at ', datetime.now()
+#     t0 = datetime.now()
+#     print 'Starting 128 x 128 single-cell, dual-band selection at ', t0
 #     data_request_descriptor = {'storage_type': 'LS5TM', 
 #                                'variables': ('B30', 'B40'), 
 #                                'dimensions': {'X': {'range': (140.0, 140.032)}, 
@@ -72,10 +75,12 @@ def main():
 #                                }
 # #                                              'T': {'range': (1262304000.0, 1267401599.999999)}, # 2010-01-01 00:00:00.0 - 2010-02-28 23:59:59.999999
 #     d = g.get_data(data_request_descriptor)
-#     print 'Finishing 128 x 128 dual band selection at ', datetime.now()
+#     t1 = datetime.now()
+#     print 'Finishing 128 x 128 single-cell, dual-band selection at %s (Elapsed time %s)' % (t1, t1 - t0)
 #     pprint(d)
 # 
-#     print 'Starting 1024 x 1024 dual band selection at ', datetime.now()
+#     t0 = datetime.now()
+#     print 'Starting 1024 x 1024 single-cell, dual-band selection at ', datetime.now()
 #     data_request_descriptor = {'storage_type': 'LS5TM', 
 #                                'variables': ('B30', 'B40'), 
 #                                'dimensions': {'X': {'range': (140.0, 140.256)}, 
@@ -84,7 +89,8 @@ def main():
 #                                }
 # #                                              'T': {'range': (1262304000.0, 1267401599.999999)}, # 2010-01-01 00:00:00.0 - 2010-02-28 23:59:59.999999
 #     d = g.get_data(data_request_descriptor)
-#     print 'Finishing 1024 x 1024 dual band selection at ', datetime.now()
+#     t1 = datetime.now()
+#     print 'Finishing 1024 x 1024 single-cell, dual-band selection at %s (Elapsed time %s)' % (t1, t1 - t0)
 #     pprint(d)
 #===============================================================================
  
