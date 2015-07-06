@@ -58,7 +58,7 @@ from gdf import GDFNetCDF
 from gdf import dt2secs
 from gdf import make_dir
 
-from EOtools.utils import log_multiline
+from eotools.utils import log_multiline
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG) # Logging level for this module
@@ -165,7 +165,7 @@ class AGDC2GDF(GDF):
         self._gdf_root = os.path.abspath(os.path.dirname(gdf.__file__)) # Directory containing module code
         
         # Create master configuration dict containing both command line and config_file parameters
-        self._command_line_params = self.get_command_line_params(AGDC2GDF.ARG_DESCRIPTORS)
+        self._command_line_params = self._get_command_line_params(AGDC2GDF.ARG_DESCRIPTORS)
         
         self.dryrun = self._command_line_params['dryrun']
 
@@ -177,13 +177,13 @@ class AGDC2GDF(GDF):
         gdf_config_files_string = agdc2gdf_config_file_object.configuration['gdf'].get('config_files') or os.path.join(self._gdf_root, GDF.DEFAULT_CONFIG_FILE)
         
         # Create master GDF configuration dict containing both command line and config_file parameters
-        self._configuration = self.get_config(gdf_config_files_string)
+        self._configuration = self._get_config(gdf_config_files_string)
                 
         self.temp_dir = self._command_line_params.get('temp_dir') or agdc2gdf_config_file_object.configuration['agdc']['temp_dir']
         make_dir(self.temp_dir)
 
-        # Create master GDF database dict
-        self._databases = self.get_dbs()
+        # Create master GDF database dictorage_config
+        self._databases = self._get_dbs()
         
         self.force = self._command_line_params.get('force') or agdc2gdf_config_file_object.configuration['agdc2gdf'].get('force')
         
@@ -198,7 +198,7 @@ class AGDC2GDF(GDF):
         self.agdc_level = self._command_line_params.get('level') or agdc2gdf_config_file_object.configuration['agdc']['level']
         
         # Read GDF storage configuration from databases
-        self._storage_config = self.get_storage_config()
+        self._storage_config = self._get_storage_config()
         self.storage_type_config = self._storage_config[self.storage_type]
         self.database = self._databases[self.storage_type_config['db_ref']]
         
