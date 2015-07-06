@@ -1300,7 +1300,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         # Default to all variables if none specified
         variable_names = data_request_descriptor.get('variables') or storage_config['measurement_types'].keys()
 
-        # Create complete range dict with minmax tuples for every dimension
+        # Create complete range dict with minmax tuples for every dimension, either calculated from supplied ranges or looked up from config if not supplied
         index_range_dict = {dimensions[dimension_index]: ((self.ordinate2index(storage_type, dimensions[dimension_index], range_dict[dimensions[dimension_index]][0]),
                                                            self.ordinate2index(storage_type, dimensions[dimension_index], range_dict[dimensions[dimension_index]][1]))
                                                           if dimensions[dimension_index] in range_dimensions 
@@ -1311,7 +1311,9 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         
         # Find all existing storage units in range and retrieve the indices in ranges for each dimension 
         subset_dict = collections.OrderedDict()
-        dimension_index_dict = {dimension: set() for dimension in dimensions}
+        dimension_index_dict = {dimension: set() for dimension in dimensions} # Dict containing set (converted to list) of unique indices for each dimension
+        # Iterate through all possible storage unit index combinations
+        #TODO: Make this more targeted and efficient - OK for continuous ranges, but probably could do better
         for indices in itertools.product(*[range(index_range_dict[dimension][0], index_range_dict[dimension][1]+1) for dimension in dimensions]):
             logger.debug('indices = %s', indices)
             storage_path = self.get_storage_path(storage_type, indices)
@@ -1336,6 +1338,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         assert destination_filename or len(subset_dict) <= GDF.MAX_UNITS_IN_MEMORY, 'Too many storage units for an in-memory query'
 
         for dimension in dimensions:
+            # Expect to find indices in all dimensions
             if not dimension_index_dict[dimension]:
                 logger.warning('No data found')
                 return
@@ -1343,16 +1346,17 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
             # Convert index set to sorted list
             dimension_index_dict[dimension] = sorted(dimension_index_dict[dimension])
 
+        # Create lookup arrays (grouped_value_dict) and sorted sets of of unique values (result_grouped_value_dict) for grouped indices
         ungrouped_value_dict = {}
         grouped_value_dict = {}
         result_grouped_value_dict = {}
         for dimension in dimensions:
-            #TODO: Replace this awful code which creates a "fake" record dict for the grouping function
             grouping_function = grouping_function_dict.get(dimension)
             if grouping_function:
-                # Create list of ungrouped values for each dimension
+                # Create list of ungrouped values
                 ungrouped_value_dict[dimension] = dimension_index_dict[dimension]
-                # Create list of grouped values for each dimension
+                # Create list of grouped values
+                #TODO: Replace this awful code which creates a "fake" record dict for the grouping function
                 grouped_value_dict[dimension] = [grouping_function({'slice_index_value': t_index, 'x_min': dimension_index_dict['X'][0], 'x_max':  dimension_index_dict['X'][-1]}) for t_index in dimension_index_dict['T']]
                 # Create sorted array of unique values
                 result_grouped_value_dict[dimension] = np.array(sorted(set(grouped_value_dict[dimension])))
@@ -1364,19 +1368,13 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         logger.debug('result_grouped_value_dict = %s', result_grouped_value_dict)
             
 
-        # Create composite array indices
+        # Create composite result array indices either from result_grouped_value_dict if irregular & grouped or created as a range if regular
         result_array_indices = {dimension: (np.array(result_grouped_value_dict[dimension]) if dimension in result_grouped_value_dict.keys()
                                             else np.around(np.arange(dimension_index_dict[dimension][0], dimension_index_dict[dimension][-1] + 0.000001, dimension_element_sizes[dimension]), 6))
                                 for dimension in dimensions}
         
-        for dimension in dimensions:
-            if not dimension_index_dict[dimension]:
-                logger.warning('No data found')
-                return
-
-            dimension_index_dict[dimension] = sorted(dimension_index_dict[dimension])
-
         # Apply optional array ranges
+        #TODO: TEST THIS!
         if slice_dict:
             logger.debug('Applying slices from slice_dict %s', slice_dict)
             result_array_indices = {dimension: (index_array[slice_dict[dimension]] if dimension in slice_dict.keys()
@@ -1387,7 +1385,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                                                   min(range_dict[dimension][1], result_array_indices[dimension][-1])) if dimension in range_dict.keys()
                                                  else (result_array_indices[dimension][0], result_array_indices[dimension][-1]))
                                     for dimension in dimensions}
-        else:
+        else: # No array range supplied - use full range
             restricted_range_dict = range_dict
                                 
         logger.debug('result_array_indices = %s', result_array_indices)
@@ -1406,18 +1404,19 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                                                          for dimension in dimensions]
                        }
 
-        # Create empty composite arrays
+        # Create empty composite result arrays
         array_shape = [len(result_array_indices[dimension]) for dimension in dimensions]
         logger.debug('array_shape = %s', array_shape)
 
         for variable_name in variable_names:
             dtype = storage_config['measurement_types'][variable_name]['numpy_datatype_name']
-            logger.debug('dtype = %s', dtype)
+            logger.debug('%s dtype = %s', variable_name, dtype)
 
             #TODO: Do something better for variables with no no-data value specified (e.g. PQ)
             nodata_value = storage_config['measurement_types'][variable_name]['nodata_value'] or 0
             result_dict['arrays'][variable_name] = np.ones(shape=array_shape, dtype=dtype) * nodata_value
 
+        # Iterate through all storage units with data
         for indices in subset_dict.keys():
             # Unpack tuple
             gdfnetcdf = subset_dict[indices][0]
@@ -1428,6 +1427,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                 dimension_indices =  np.around(subset_indices[dimension], 6)
                 logger.debug('%s dimension_indices = %s', dimension, dimension_indices)
 
+                # Find min/max index values from storage unit
                 min_index_value = dimension_indices[0]
                 max_index_value = dimension_indices[-1]
 
