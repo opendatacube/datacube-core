@@ -36,12 +36,15 @@ import os
 import calendar
 import time
 import math
-from datetime import datetime
+from datetime import datetime, date
 from socket import errno
 try:
     import matplotlib.pyplot as plt
 except:
     pass
+
+#TODO: Do something about duplicate definition (here and in gdf)
+EPOCH_DATE_ORDINAL = date(1970, 1, 1).toordinal()
 
 def dt2secs(datetime_param):
     '''
@@ -54,6 +57,12 @@ def secs2dt(seconds_param):
     Helper function to convert seconds since epoch into datetime. Naive datetime is treated as UTC
     '''
     return datetime.fromtimestamp(seconds_param)
+
+def days2dt(days_param):
+    '''
+    Helper function to convert days since epoch into datetime. Naive datetime is treated as UTC
+    '''
+    return datetime.fromordinal(days_param + EPOCH_DATE_ORDINAL)
 
 def make_dir(dirname):
     '''
