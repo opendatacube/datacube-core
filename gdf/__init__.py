@@ -49,12 +49,6 @@ from pprint import pprint
 from math import floor
 from distutils.util import strtobool
 
-from _database import Database, CachedResultSet
-from _arguments import CommandLineArgs
-from _config_file import ConfigFile
-from _gdfnetcdf import GDFNetCDF
-from _gdfutils import dt2secs, secs2dt, days2dt, dt2days, make_dir
-
 from eotools.utils import log_multiline
 
 # Set handler for root logger to standard output 
@@ -67,6 +61,12 @@ logging.root.addHandler(console_handler)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO) # Initial logging level for this module
+
+from _database import Database, CachedResultSet
+from _arguments import CommandLineArgs
+from _config_file import ConfigFile
+from _gdfnetcdf import GDFNetCDF
+from _gdfutils import dt2secs, secs2dt, days2dt, dt2days, make_dir
 
 thread_exception = None
 
