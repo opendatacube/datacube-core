@@ -1298,8 +1298,9 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
         variable_names = data_request_descriptor.get('variables') or storage_config['measurement_types'].keys()
 
         # Create complete range dict with minmax tuples for every dimension, either calculated from supplied ranges or looked up from config if not supplied
+        #TODO: Do something a bit nicer than the "- 0.000001" on the upper bound get the correct indices on storage unit boundaries
         index_range_dict = {dimensions[dimension_index]: ((self.ordinate2index(storage_type, dimensions[dimension_index], range_dict[dimensions[dimension_index]][0]),
-                                                           self.ordinate2index(storage_type, dimensions[dimension_index], range_dict[dimensions[dimension_index]][1]))
+                                                           self.ordinate2index(storage_type, dimensions[dimension_index], range_dict[dimensions[dimension_index]][1] - 0.000001))
                                                           if dimensions[dimension_index] in range_dimensions 
                                                           else (dimension_config[dimensions[dimension_index]]['min_index'], 
                                                                 dimension_config[dimensions[dimension_index]]['max_index']))
