@@ -1437,18 +1437,13 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                     dimension_selection = np.in1d(result_array_indices[dimension], subset_group_values) # Boolean array mask for result array
                     logger.debug('%s dimension_selection = %s', dimension, dimension_selection)
                 else:   
-                    #===========================================================
-                    # logger.debug('%s min_index_value = %s, max_index_value = %s', dimension, min_index_value, max_index_value)
-                    # logger.debug('%s min_where = %s, max_where = %s', dimension, np.where(result_array_indices[dimension] == min_index_value), np.where(result_array_indices[dimension] == max_index_value))
-                    # min_index = np.where(result_array_indices[dimension] >= min_index_value)[0][0]
-                    # max_index = np.where(result_array_indices[dimension] <= max_index_value)[0][-1]
-                    # logger.debug('%s min_index = %s, max_index = %s', dimension, min_index, max_index)
-                    # logger.debug('%s result index subset = %s', dimension, result_array_indices[dimension][min_index: max_index + 1])
-                    # dimension_selection = slice(min_index, max_index + 1)
-                    #===========================================================
-#                    logger.debug('Un-grouped %s min_index_value = %s, max_index_value = %s', dimension, min_index_value, max_index_value)
-                    dimension_selection = np.in1d(result_array_indices[dimension], subset_indices) # Boolean array mask for result array
-                    logger.debug('%s dimension_selection = %s', dimension, dimension_selection)
+                    logger.debug('%s min_index_value = %s, max_index_value = %s', dimension, min_index_value, max_index_value)
+                    logger.debug('%s min_where = %s, max_where = %s', dimension, np.where(result_array_indices[dimension] == min_index_value), np.where(result_array_indices[dimension] == max_index_value))
+                    min_index = np.where(result_array_indices[dimension] >= min_index_value)[0][0]
+                    max_index = np.where(result_array_indices[dimension] <= max_index_value)[0][-1]
+                    logger.debug('%s min_index = %s, max_index = %s', dimension, min_index, max_index)
+                    logger.debug('%s result index subset = %s', dimension, result_array_indices[dimension][min_index: max_index + 1])
+                    dimension_selection = slice(min_index, max_index + 1)
                 selection.append(dimension_selection)
             logger.debug('selection = %s', selection)
             
