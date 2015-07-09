@@ -1373,6 +1373,11 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                                             else np.around(np.arange(dimension_index_dict[dimension][0], dimension_index_dict[dimension][-1] + 0.000001, dimension_element_sizes[dimension]), 6))
                                 for dimension in dimensions}
         
+        # Reverse any indices with reverse_index flag set
+        for dimension in dimensions:
+            if dimension_config[dimension]['reverse_index']:
+                result_array_indices[dimension] = result_array_indices[dimension][::-1]
+        
         # Apply optional array ranges
         #TODO: TEST THIS!
         if slice_dict:
