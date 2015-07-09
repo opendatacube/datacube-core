@@ -282,9 +282,9 @@ order by end_datetime
                 'level': self.agdc_level,
                 }
         
-        log_multiline(logger.debug, SQL, 'SQL', '\t')
-        log_multiline(logger.debug, params, 'params', '\t')
-        
+#        log_multiline(logger.debug, SQL, 'SQL', '\t')
+#        log_multiline(logger.debug, params, 'params', '\t')
+
         tile_result_set = self.agdc_db.submit_query(SQL, params)
 
         # Return descriptor - this shouldn't be too big for one storage unit
@@ -774,10 +774,10 @@ def main():
 #    storage_config = agdc2gdf.storage_config[agdc2gdf.storage_type]
     
     # Create list of storage unit indices from CRS ranges
-    storage_indices_list = [(t, x, y) 
+    storage_indices_list = [(t, y, x) 
                             for t in range(agdc2gdf.range_dict['T'][0], agdc2gdf.range_dict['T'][1] + 1)
-                            for x in range(agdc2gdf.range_dict['X'][0], agdc2gdf.range_dict['X'][1] + 1)
                             for y in range(agdc2gdf.range_dict['Y'][0], agdc2gdf.range_dict['Y'][1] + 1)
+                            for x in range(agdc2gdf.range_dict['X'][0], agdc2gdf.range_dict['X'][1] + 1)
                             ]
     logger.debug('storage_indices_list = %s', storage_indices_list)
     
@@ -785,10 +785,10 @@ def main():
     for storage_indices in storage_indices_list:
         try:
             data_descriptor = agdc2gdf.read_agdc(storage_indices) 
-#            log_multiline(logger.debug, data_descriptor, 'data_descriptor', '\t')
             if not data_descriptor:
                 logger.info('No tiles found for storage unit %s', storage_indices)
                 continue
+            log_multiline(logger.debug, data_descriptor, 'data_descriptor', '\t')
                     
             storage_unit_path = agdc2gdf.create_netcdf(storage_indices, data_descriptor)
             if not storage_unit_path: continue
