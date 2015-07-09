@@ -246,18 +246,6 @@ class GDF(object):
             self._cache_object(self._storage_config, 'storage_config.pkl')
             logger.info('Read storage configuration from databases %s', self._storage_config.keys())
             
-        #=======================================================================
-        # # Read storage configuration from databases
-        # try:           
-        #     self._global_descriptor = self._get_cached_object('global_descriptor.pkl')
-        #     logger.info('Loaded cached global descriptor %s', self._global_descriptor.keys())
-        # except:
-        #     logger.info('Creating global descriptor... Please wait.')
-        #     self._global_descriptor = self.get_descriptor()
-        #     self._cache_object(self._global_descriptor, 'global_descriptor.pkl')
-        #     logger.info('Created global descriptor %s', self._global_descriptor.keys())
-        #=======================================================================
-        
         log_multiline(logger.debug, self.__dict__, 'GDF.__dict__', '\t')
 
         
@@ -901,9 +889,6 @@ query_parameter = \
                         
                         storage_shape_dict[dimension] = len(storage_slice_group_set)  
                         
-                    #TODO: Deal with fixed dimensions   
-                    # for dimension in irregular_storage_type_dimension_tags:                           
-                    
                     # Merge slice group values into overall set
                     overall_slice_group_set |= storage_slice_group_set
                     
@@ -947,11 +932,6 @@ query_parameter = \
                 # Skip this storage_type if exclusive flag set and dimensionality is less than query range dimnsionality
                 if exclusive and (set(storage_type_dimension_tags) < set(range_dimension_tags)):
                     continue
-                
-                #===============================================================
-                # # list of dimension_tags for i sorted by creation order
-                # irregular_dimensions = [dimension_tag for dimension_tag in storage_type_dimension_tags if storage_type['dimensions'][dimension_tag]['indexing_type'] == 'irregular']
-                #===============================================================
                 
                 # Create a sub-descriptor for each storage_type
                 storage_type_descriptor = {}
@@ -1095,7 +1075,6 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                         overall_shape_dict[dimension] = (overall_max_dict[dimension] - overall_min_dict[dimension]) / self._storage_config[storage_type_tag]['dimensions'][dimension]['dimension_element_size']
             
                     for dimension in irregular_storage_type_dimension_tags: # Should be just 'T' for the EO trial
-                        #TODO: Make the query and processig more general for multiple irregular dimensions
                         # Show all unique group values in order
                         storage_type_descriptor['irregular_indices'] = {dimension: np.array(sorted(list(overall_slice_group_set)), dtype = np.int16)}
                     
@@ -1262,17 +1241,6 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
             ]
         }
         '''
-        #=======================================================================
-        # def get_t_group_value(t_value):
-        #     #TODO: Do something better than this
-        #     '''
-        #     Nasty function to return the pre-calculated group value of a raw T value
-        #     Assumes len(t_group_value_list) == len(dimension_index_dict['T']) and t_value in dimension_index_dict['T']
-        #     '''
-        #     assert t_value in dimension_index_dict['T'], 'Unrecognised time value %s' % t_value
-        #     return t_group_value_list[dimension_index_dict['T'].index(t_value)]
-        #=======================================================================
-        
         storage_type = data_request_descriptor['storage_type'] 
         
         # Convert dimension tags to upper case
@@ -1422,6 +1390,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
             result_dict['arrays'][variable_name] = np.ones(shape=array_shape, dtype=dtype) * nodata_value
 
         # Iterate through all storage units with data
+        # TODO: Implement merging of multiple group layers. Current implemntation breaks when more than one layer per group
         for indices in subset_dict.keys():
             # Unpack tuple
             gdfnetcdf = subset_dict[indices][0]
@@ -1432,10 +1401,6 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                 dimension_indices =  np.around(subset_indices[dimension], 6)
                 logger.debug('%s dimension_indices = %s', dimension, dimension_indices)
 
-                # Find min/max index values from storage unit
-#                min_index_value = min(dimension_indices)
-#                max_index_value = max(dimension_indices)
-
                 logger.debug('result_array_indices[%s] = %s', dimension, result_array_indices[dimension])
                 if dimension in grouping_function_dict.keys():
 #                    logger.debug('Un-grouped %s min_index_value = %s, max_index_value = %s', dimension, min_index_value, max_index_value)
@@ -1444,16 +1409,10 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                     dimension_selection = np.in1d(result_array_indices[dimension], subset_group_values) # Boolean array mask for result array
                     logger.debug('%s dimension_selection = %s', dimension, dimension_selection)
                 else:   
-#                    logger.debug('%s min_index_value = %s, max_index_value = %s', dimension, min_index_value, max_index_value)
-#                    logger.debug('%s min_where = %s, max_where = %s', dimension, np.where(result_array_indices[dimension] == min_index_value), np.where(result_array_indices[dimension] == max_index_value))
-#                    min_index = np.where(result_array_indices[dimension] >= min_index_value)[0][0]
-#                    max_index = np.where(result_array_indices[dimension] <= max_index_value)[0][-1]
-#                    logger.debug('%s min_index = %s, max_index = %s', dimension, min_index, max_index)
-#                    logger.debug('%s result index subset = %s', dimension, result_array_indices[dimension][min_index: max_index + 1])
                     dimension_selection = np.in1d(result_array_indices[dimension], dimension_indices) # Boolean array mask for result array
-                    logger.debug('%s dimension_selection = %s', dimension, dimension_selection)
+                    logger.debug('%s boolean dimension_selection = %s', dimension, dimension_selection)
                     dimension_selection = slice(np.where(dimension_selection)[0][0], np.where(dimension_selection)[0][-1] + 1)
-                    logger.debug('%s dimension_selection = %s', dimension, dimension_selection)
+                    logger.debug('%s slice dimension_selection = %s', dimension, dimension_selection)
                 selection.append(dimension_selection)
             logger.debug('selection = %s', selection)
             
