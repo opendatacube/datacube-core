@@ -1433,8 +1433,8 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                 logger.debug('%s dimension_indices = %s', dimension, dimension_indices)
 
                 # Find min/max index values from storage unit
-                min_index_value = dimension_indices[0]
-                max_index_value = dimension_indices[-1]
+#                min_index_value = min(dimension_indices)
+#                max_index_value = max(dimension_indices)
 
                 logger.debug('result_array_indices[%s] = %s', dimension, result_array_indices[dimension])
                 if dimension in grouping_function_dict.keys():
@@ -1444,13 +1444,16 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                     dimension_selection = np.in1d(result_array_indices[dimension], subset_group_values) # Boolean array mask for result array
                     logger.debug('%s dimension_selection = %s', dimension, dimension_selection)
                 else:   
-                    logger.debug('%s min_index_value = %s, max_index_value = %s', dimension, min_index_value, max_index_value)
-                    logger.debug('%s min_where = %s, max_where = %s', dimension, np.where(result_array_indices[dimension] == min_index_value), np.where(result_array_indices[dimension] == max_index_value))
-                    min_index = np.where(result_array_indices[dimension] >= min_index_value)[0][0]
-                    max_index = np.where(result_array_indices[dimension] <= max_index_value)[0][-1]
-                    logger.debug('%s min_index = %s, max_index = %s', dimension, min_index, max_index)
-                    logger.debug('%s result index subset = %s', dimension, result_array_indices[dimension][min_index: max_index + 1])
-                    dimension_selection = slice(min_index, max_index + 1)
+#                    logger.debug('%s min_index_value = %s, max_index_value = %s', dimension, min_index_value, max_index_value)
+#                    logger.debug('%s min_where = %s, max_where = %s', dimension, np.where(result_array_indices[dimension] == min_index_value), np.where(result_array_indices[dimension] == max_index_value))
+#                    min_index = np.where(result_array_indices[dimension] >= min_index_value)[0][0]
+#                    max_index = np.where(result_array_indices[dimension] <= max_index_value)[0][-1]
+#                    logger.debug('%s min_index = %s, max_index = %s', dimension, min_index, max_index)
+#                    logger.debug('%s result index subset = %s', dimension, result_array_indices[dimension][min_index: max_index + 1])
+                    dimension_selection = np.in1d(result_array_indices[dimension], dimension_indices) # Boolean array mask for result array
+                    logger.debug('%s dimension_selection = %s', dimension, dimension_selection)
+                    dimension_selection = slice(np.where(dimension_selection)[0][0], np.where(dimension_selection)[0][-1] + 1)
+                    logger.debug('%s dimension_selection = %s', dimension, dimension_selection)
                 selection.append(dimension_selection)
             logger.debug('selection = %s', selection)
             
@@ -1458,8 +1461,9 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                 # Read data into array
                 read_array = gdfnetcdf.read_subset(variable_name, restricted_range_dict)[0]
                 logger.debug('read_array from %s = %s', gdfnetcdf.netcdf_filename, read_array)
+                logger.debug('read_array.shape from %s = %s', gdfnetcdf.netcdf_filename, read_array.shape)
 
-                logger.debug("result_dict['arrays'][variable_name][selection] = %s", result_dict['arrays'][variable_name][selection])
+                logger.debug("result_dict['arrays'][variable_name][selection].shape = %s", result_dict['arrays'][variable_name][selection].shape)
                 result_dict['arrays'][variable_name][selection] = gdfnetcdf.read_subset(variable_name, range_dict)[0]
         
         log_multiline(logger.debug, result_dict, 'result_dict', '\t')

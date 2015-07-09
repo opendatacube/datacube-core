@@ -53,7 +53,7 @@ def main():
     print 'Starting 256 x 256 single-band cross-boundary selection at ', t0
     data_request_descriptor = {'storage_type': 'LS5TM', 
                                'variables': ('B30',), 
-                               'dimensions': {'X': {'range': (140.968, 141.032)}, 
+                               'dimensions': {'X': {'range': (147.968, 148.032)}, 
                                               'Y': {'range': (-36.032, -35.968)},
                                               'T': {'range': (1262304000.0, 1325375999.999999)}, # 2010-01-01 00:00:00.0 - 2011-12-31 23:59:59.999999
                                               }
