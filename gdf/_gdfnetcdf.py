@@ -153,6 +153,10 @@ class GDFNetCDF(object):
                 
                 dimension_index_vector = np.around(np.arange(dimension_min, dimension_max, element_size), 6)
                 
+                # Cater for reversed index (e.g. positive Y index tends Southwards when image origin is in UL/NW corner)
+                if dimension_config['reverse_index']:
+                    dimension_index_vector = dimension_index_vector[::-1]
+                
             #TODO: Implement fixed indexing type
                 
             log_multiline(logger.debug, dimension_index_vector, 'dimension_index_vector for %s' % dimension, '\t')
@@ -195,7 +199,7 @@ class GDFNetCDF(object):
             logger.debug('variable = %s' % variable)
             
             # A method of handling variable metadata
-            metadata_dict = {variable_name + ':' + 'coordinates': 'lat lon',
+            metadata_dict = {variable_name + ':' + 'coordinates': 'latitude longitude',
                              variable_name + ':' + 'grid_mapping': 'crs',
                              variable_name + ':' + 'name': variable_config['measurement_type_name']
                              }
@@ -341,9 +345,7 @@ class GDFNetCDF(object):
             if dimension in range_dimensions:
                 logger.debug('dimension_array = %s', dimension_array)
                 logger.debug('range = %s', range_dict[dimension])
-                # Use half pixel slop factor
-                mask_array = ((dimension_array > range_dict[dimension][0]) * # - dimension_config[dimension]['dimension_element_size'] / 2.0) * 
-                                       (dimension_array <= range_dict[dimension][1])) # + dimension_config[dimension]['dimension_element_size'] / 2.0))
+                mask_array = ((dimension_array > range_dict[dimension][0]) * (dimension_array <= range_dict[dimension][1])) 
                 index_array = np.where(mask_array)
                 logger.debug('index_array = %s', index_array)
                 dimension_indices_dict[dimension] = dimension_array[mask_array]
@@ -392,9 +394,7 @@ class GDFNetCDF(object):
             if dimension in range_dimensions:
                 logger.debug('dimension_array = %s', dimension_array)
                 logger.debug('range = %s', range_dict[dimension])
-                # Use half pixel slop factor
-                mask_array = ((dimension_array > range_dict[dimension][0]) * # - dimension_config[dimension]['dimension_element_size'] / 2.0) * 
-                                       (dimension_array <= range_dict[dimension][1])) # + dimension_config[dimension]['dimension_element_size'] / 2.0))
+                mask_array = ((dimension_array > range_dict[dimension][0]) * (dimension_array <= range_dict[dimension][1]))
                 index_array = np.where(mask_array)
                 logger.debug('index_array = %s', index_array)
                 dimension_indices_dict[dimension] = dimension_array[mask_array]
