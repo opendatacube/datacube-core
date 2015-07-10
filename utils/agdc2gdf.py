@@ -57,6 +57,7 @@ from gdf import GDF
 from gdf import GDFNetCDF
 from gdf import dt2secs
 from gdf import make_dir
+from gdf import directory_writable
 
 from eotools.utils import log_multiline
 
@@ -180,7 +181,14 @@ class AGDC2GDF(GDF):
         self._configuration = self._get_config(gdf_config_files_string)
                 
         self.temp_dir = self._command_line_params.get('temp_dir') or agdc2gdf_config_file_object.configuration['agdc']['temp_dir']
-        make_dir(self.temp_dir)
+        # Try to create temp & cache directories if they don't exist
+        if not directory_writable(self.temp_dir):
+            new_temp_dir = os.path.join(os.path.expanduser("~"), 'gdf', 'temp')
+            logger.warning('Unable to access temporary directory %s. Using %s instead.', self.temp_dir, new_temp_dir)
+            self.temp_dir = new_temp_dir
+            if not directory_writable(self.temp_dir):
+                raise Exception('Unable to write to temporary directory %s', self.temp_dir)
+            
 
         # Create master GDF database dictorage_config
         self._databases = self._get_dbs()

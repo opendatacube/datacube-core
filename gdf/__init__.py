@@ -84,6 +84,13 @@ class GDF(object):
                                         'const': True,
                                         'help': 'Flag to force refreshing of cached config'
                                         },
+                       'cache_dir': {'short_flag': '-c', 
+                                    'long_flag': '--cache_dir', 
+                                    'default': None, 
+                                    'action': 'store',
+                                    'const': None, 
+                                    'help': 'Cache directory for GDF operation'
+                                    },
                                 }
     MAX_UNITS_IN_MEMORY = 1000 #TODO: Do something better than this
     
@@ -209,18 +216,11 @@ class GDF(object):
                 
         # Create master configuration dict containing both command line and config_file parameters
         self._configuration = self._get_config(self._command_line_params['config_files'])       
-       
-        # Try to create temp & cache directories if they don't exist
-        if not directory_writable(self.temp_dir):
-            new_temp_dir = os.path.join(os.path.expanduser("~"), 'gdf', 'temp')
-            logger.warning('Unable to access temporary directory %s. Using %s instead.', self.temp_dir, new_temp_dir)
-            self.temp_dir = new_temp_dir
-            if not directory_writable(self.temp_dir):
-                raise Exception('Unable to write to temporary directory %s', self.temp_dir)
-            
+        
+        self.cache_dir = self._command_line_params['cache_dir'] or self.cache_dir        
         if not directory_writable(self.cache_dir):
             new_cache_dir = os.path.join(os.path.expanduser("~"), 'gdf', 'cache')
-            logger.warning('Unable to access cache directory %s. Using %s instead.', self.cache_dir, new_temp_dir)
+            logger.warning('Unable to access cache directory %s. Using %s instead.', self.cache_dir, new_cache_dir)
             self.cache_dir = new_cache_dir
             if not directory_writable(self.cache_dir):
                 raise Exception('Unable to write to cache directory %s', self.cache_dir)
