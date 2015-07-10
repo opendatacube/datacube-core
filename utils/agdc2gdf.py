@@ -788,7 +788,7 @@ def main():
             if not data_descriptor:
                 logger.info('No tiles found for storage unit %s', storage_indices)
                 continue
-            log_multiline(logger.debug, data_descriptor, 'data_descriptor', '\t')
+#            log_multiline(logger.debug, data_descriptor, 'data_descriptor', '\t')
                     
             storage_unit_path = agdc2gdf.create_netcdf(storage_indices, data_descriptor)
             if not storage_unit_path: continue
