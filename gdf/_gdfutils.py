@@ -86,6 +86,21 @@ def make_dir(dirname):
         if exception.errno != errno.EEXIST or not os.path.isdir(dirname):
             raise exception
 
+def directory_writable(dir_path):
+    '''
+    Function to return true if dir_path can be written to
+    '''
+    try:
+        make_dir(dir_path)
+        test_filename = os.path.join(dir_path, 'test')
+        test_file = open(test_filename, 'w')
+        test_file.close()
+        os.remove(test_filename)
+        return True
+    except:
+        return False
+                
+            
 def plotImages(arrays):
     img = arrays
     num_t = img.shape[0]

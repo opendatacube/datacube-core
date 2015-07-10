@@ -66,7 +66,7 @@ from _database import Database, CachedResultSet
 from _arguments import CommandLineArgs
 from _config_file import ConfigFile
 from _gdfnetcdf import GDFNetCDF
-from _gdfutils import dt2secs, secs2dt, days2dt, dt2days, make_dir
+from _gdfutils import dt2secs, secs2dt, days2dt, dt2days, make_dir, directory_writable
 
 thread_exception = None
 
@@ -210,10 +210,21 @@ class GDF(object):
         # Create master configuration dict containing both command line and config_file parameters
         self._configuration = self._get_config(self._command_line_params['config_files'])       
        
-        # Create global directories if they don't exist
-        make_dir(self.temp_dir)
-        make_dir(self.cache_dir)
-        
+        # Try to create temp & cache directories if they don't exist
+        if not directory_writable(self.temp_dir):
+            new_temp_dir = os.path.join(os.path.expanduser("~"), 'gdf', 'temp')
+            logger.warning('Unable to access temporary directory %s. Using %s instead.', self.temp_dir, new_temp_dir)
+            self.temp_dir = new_temp_dir
+            if not directory_writable(self.temp_dir):
+                raise Exception('Unable to write to temporary directory %s', self.temp_dir)
+            
+        if not directory_writable(self.cache_dir):
+            new_cache_dir = os.path.join(os.path.expanduser("~"), 'gdf', 'cache')
+            logger.warning('Unable to access cache directory %s. Using %s instead.', self.cache_dir, new_temp_dir)
+            self.cache_dir = new_cache_dir
+            if not directory_writable(self.cache_dir):
+                raise Exception('Unable to write to cache directory %s', self.cache_dir)
+                    
         # Convert self.refresh to Boolean
         self.refresh = self.debug or strtobool(self.refresh)
         
