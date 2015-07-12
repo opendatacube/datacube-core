@@ -93,6 +93,7 @@ class GDF(object):
                                     },
                                 }
     MAX_UNITS_IN_MEMORY = 1000 #TODO: Do something better than this
+    DECIMAL_PLACES = 6
     
     def _cache_object(self, cached_object, cache_filename):
         '''
@@ -891,7 +892,7 @@ query_parameter = \
                         storage_min_dict[dimension] = max(storage_min_dict[dimension], dimension_minmax_dict[dimension][0])
                         storage_max_dict[dimension] = min(storage_max_dict[dimension], dimension_minmax_dict[dimension][1])
                         
-                        storage_shape_dict[dimension] = (storage_max_dict[dimension] - storage_min_dict[dimension]) / self._storage_config[storage_type]['dimensions'][dimension]['dimension_element_size']
+                        storage_shape_dict[dimension] = round((storage_max_dict[dimension] - storage_min_dict[dimension]) / self._storage_config[storage_type]['dimensions'][dimension]['dimension_element_size'], GDF.DECIMAL_PLACES)
                         
                     for dimension in irregular_storage_type_dimensions: # Should be just 'T' for the EO trial
                         #TODO: Make the query and processig more general for multiple irregular dimensions
@@ -1139,14 +1140,15 @@ order by ''' + '_index, '.join(storage_type_dimensions) + '''_index, slice_index
                 slice_grouping_function = self.solar_days_since_epoch
             
         
-        return self._do_db_query(self.databases, [get_db_descriptors, 
-                                                dimension_range_dict, 
-                                                'T', 
-                                                slice_grouping_function, 
-                                                storage_types, 
-                                                False
-                                                ]
-                                        )
+        return self._do_db_query({db_ref: self.databases[db_ref] for db_ref in sorted(set([self._storage_config[storage_type]['db_ref'] for storage_type in storage_types]))}
+                                 [get_db_descriptors, 
+                                  dimension_range_dict, 
+                                  'T', 
+                                  slice_grouping_function, 
+                                  storage_types, 
+                                  False
+                                  ]
+                                 )
         
         
     def get_storage_filename(self, storage_type, storage_indices):
@@ -1291,7 +1293,7 @@ order by ''' + '_index, '.join(storage_type_dimensions) + '''_index, slice_index
         # Create complete range dict with minmax tuples for every dimension, either calculated from supplied ranges or looked up from config if not supplied
         #TODO: Do something a bit nicer than the "- 0.000001" on the upper bound get the correct indices on storage unit boundaries
         index_range_dict = {dimensions[dimension_index]: ((self.ordinate2index(storage_type, dimensions[dimension_index], range_dict[dimensions[dimension_index]][0]),
-                                                           self.ordinate2index(storage_type, dimensions[dimension_index], range_dict[dimensions[dimension_index]][1] - 0.000001))
+                                                           self.ordinate2index(storage_type, dimensions[dimension_index], range_dict[dimensions[dimension_index]][1] - pow(0.1, GDF.DECIMAL_PLACES)))
                                                           if dimensions[dimension_index] in range_dimensions 
                                                           else (dimension_config[dimensions[dimension_index]]['min_index'], 
                                                                 dimension_config[dimensions[dimension_index]]['max_index']))
@@ -1308,14 +1310,14 @@ order by ''' + '_index, '.join(storage_type_dimensions) + '''_index, slice_index
             storage_path = self.get_storage_path(storage_type, indices)
             logger.debug('Opening storage unit %s', storage_path)
             if os.path.exists(storage_path):
-                gdfnetcdf = GDFNetCDF(storage_config, storage_path)
+                gdfnetcdf = GDFNetCDF(storage_config, netcdf_filename=storage_path, decimal_places=GDF.DECIMAL_PLACES)
                 subset_indices = gdfnetcdf.get_subset_indices(range_dict)
                 if not subset_indices:
                     raise Exception('Invalid subset range %s for storage unit %s' % (range_dict, storage_path)) # This should never happen
 
                 # Keep track of all indices for each dimension
                 for dimension in dimensions:
-                    dimension_indices = np.around(subset_indices[dimension], 6)
+                    dimension_indices = np.around(subset_indices[dimension], GDF.DECIMAL_PLACES)
                     #TODO: Find a vectorised way of doing this instead of using sets
                     dimension_index_dict[dimension] |= set(dimension_indices.tolist())
                     
@@ -1359,7 +1361,7 @@ order by ''' + '_index, '.join(storage_type_dimensions) + '''_index, slice_index
 
         # Create composite result array indices either from result_grouped_value_dict if irregular & grouped or created as a range if regular
         result_array_indices = {dimension: (np.array(result_grouped_value_dict[dimension]) if dimension in result_grouped_value_dict.keys()
-                                            else np.around(np.arange(dimension_index_dict[dimension][0], dimension_index_dict[dimension][-1] + 0.000001, dimension_element_sizes[dimension]), 6))
+                                            else np.around(np.arange(dimension_index_dict[dimension][0], dimension_index_dict[dimension][-1] + pow(0.1, GDF.DECIMAL_PLACES), dimension_element_sizes[dimension]), GDF.DECIMAL_PLACES))
                                 for dimension in dimensions}
         
         # Reverse any indices with reverse_index flag set
@@ -1419,7 +1421,7 @@ order by ''' + '_index, '.join(storage_type_dimensions) + '''_index, slice_index
                                                            
             selection = []
             for dimension in dimensions:
-                dimension_indices =  np.around(subset_indices[dimension], 6)
+                dimension_indices =  np.around(subset_indices[dimension], GDF.DECIMAL_PLACES)
                 logger.debug('%s dimension_indices = %s', dimension, dimension_indices)
 
                 logger.debug('result_array_indices[%s] = %s', dimension, result_array_indices[dimension])

@@ -61,7 +61,7 @@ class GDFNetCDF(object):
     '''
     Class GDFNetCDF - Class to manage GDF netCDF storage units
     '''
-    def __init__(self, storage_config, netcdf_filename=None, netcdf_mode=None, netcdf_format=None):
+    def __init__(self, storage_config, netcdf_filename=None, netcdf_mode=None, netcdf_format=None, decimal_places=None):
         '''
         Constructor for class GDFNetCDF
         Parameters:
@@ -75,6 +75,7 @@ class GDFNetCDF(object):
         self.netcdf_filename = netcdf_filename
         self.netcdf_mode = netcdf_mode or 'r' # Default to 'r' for reading
         self.netcdf_format = netcdf_format or 'NETCDF4_CLASSIC'
+        self.decimal_places = decimal_places if decimal_places is not None else 6 # Default to 6 decimal places if no precision specified
         
         if netcdf_filename is None:
             self.netcdf_object = None
@@ -151,7 +152,7 @@ class GDFNetCDF(object):
                 dimension_min = index * dimension_config['dimension_extent'] + dimension_config['dimension_origin'] + element_size / 2.0 # Half pixel to account for netCDF centre of pixel reference
                 dimension_max = dimension_min + dimension_config['dimension_extent']
                 
-                dimension_index_vector = np.around(np.arange(dimension_min, dimension_max, element_size), 6)
+                dimension_index_vector = np.around(np.arange(dimension_min, dimension_max, element_size), GDFNetCDF.DECIMAL_PLACES)
                 
                 # Cater for reversed index (e.g. positive Y index tends Southwards when image origin is in UL/NW corner)
                 if dimension_config['reverse_index']:
