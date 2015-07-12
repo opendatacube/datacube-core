@@ -847,7 +847,7 @@ query_parameter = \
         def get_db_descriptors(dimension_range_dict, 
                           slice_dimension,
                           slice_grouping_function, 
-                          storage_type_tags, 
+                          storage_types, 
                           exclusive, 
                           database, 
                           result_dict):
@@ -859,7 +859,7 @@ query_parameter = \
                                                        <dimension_tag>: (<min_value>, <max_value>)...}
                 slice_dimension: Dimension along which to group results
                 slice_locality: Range (in slice_dimension units) in which to group slices
-                storage_type_tags: list of storage_type_tags to include in query
+                storage_types: list of storage_type_tags to include in query
                 exclusive: Boolean flag to indicate whether query should exclude storage_units with lower dimensionality than the specified range
                 database: gdf.database object against which to run the query
                 result_dict: dict to contain the result
@@ -891,7 +891,7 @@ query_parameter = \
                         storage_min_dict[dimension] = max(storage_min_dict[dimension], dimension_minmax_dict[dimension][0])
                         storage_max_dict[dimension] = min(storage_max_dict[dimension], dimension_minmax_dict[dimension][1])
                         
-                        storage_shape_dict[dimension] = (storage_max_dict[dimension] - storage_min_dict[dimension]) / self._storage_config[storage_type_tag]['dimensions'][dimension]['dimension_element_size']
+                        storage_shape_dict[dimension] = (storage_max_dict[dimension] - storage_min_dict[dimension]) / self._storage_config[storage_type]['dimensions'][dimension]['dimension_element_size']
                         
                     for dimension in irregular_storage_type_dimension_tags: # Should be just 'T' for the EO trial
                         #TODO: Make the query and processig more general for multiple irregular dimensions
@@ -918,19 +918,19 @@ query_parameter = \
                     storage_units_descriptor[storage_index_tuple] = storage_unit_descriptor
                 # End of update_storage_units_descriptor() definition
             
-            
-            for storage_type in self._storage_config.values():
+            # Start of get_descriptor() definition
+            for storage_config in self._storage_config.values():
                 
-                storage_type_tag = storage_type['storage_type_tag']
-                logger.debug('storage_type_tag = %s', storage_type_tag)
+                storage_type = storage_config['storage_type_tag']
+                logger.debug('storage_type = %s', storage_type)
             
                 
                 # Skip any storage_types if they are not in a specified list
-                if storage_type_tags and (storage_type_tag not in storage_type_tags):
+                if storage_types and (storage_type not in storage_types):
                     continue
                 
                 # list of dimension_tags for storage_type sorted by creation order
-                storage_type_dimension_tags = [dimension['dimension_tag'] for dimension in sorted(storage_type['dimensions'].values(), key=lambda dimension: dimension['dimension_order'])]
+                storage_type_dimension_tags = [dimension['dimension_tag'] for dimension in sorted(storage_config['dimensions'].values(), key=lambda dimension: dimension['dimension_order'])]
                 logger.debug('storage_type_dimension_tags = %s', storage_type_dimension_tags)
                 
                 # list of dimension_tags for range query sorted by creation order (do all if 
@@ -948,7 +948,7 @@ query_parameter = \
                 storage_type_descriptor = {}
                 
                 SQL = '''-- Find all slices in storage_units which fall in range for storage type %s
-select distinct''' % storage_type_tag
+select distinct''' % storage_type
                 for dimension_tag in storage_type_dimension_tags:
                     SQL +='''
 %s.storage_dimension_index as %s_index,
@@ -966,7 +966,7 @@ join dimension using(dimension_id)
 where storage_type_id = %d
 and storage_version = 0
 and dimension.dimension_tag = '%s'
-''' % (storage_type['storage_type_id'], 
+''' % (storage_config['storage_type_id'], 
    dimension_tag
    )
                     # Apply range filters
@@ -1012,9 +1012,9 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                 
                 storage_units_descriptor = {} # Dict to hold all storage unit descriptors for this storage type
                 
-                regular_storage_type_dimension_tags = [dimension for dimension in storage_type_dimension_tags if self._storage_config[storage_type_tag]['dimensions'][dimension]['indexing_type'] == 'regular'] 
-                irregular_storage_type_dimension_tags = [dimension for dimension in storage_type_dimension_tags if self._storage_config[storage_type_tag]['dimensions'][dimension]['indexing_type'] == 'irregular'] 
-                fixed_storage_type_dimension_tags = [dimension for dimension in storage_type_dimension_tags if self._storage_config[storage_type_tag]['dimensions'][dimension]['indexing_type'] == 'fixed'] 
+                regular_storage_type_dimension_tags = [dimension for dimension in storage_type_dimension_tags if self._storage_config[storage_type]['dimensions'][dimension]['indexing_type'] == 'regular'] 
+                irregular_storage_type_dimension_tags = [dimension for dimension in storage_type_dimension_tags if self._storage_config[storage_type]['dimensions'][dimension]['indexing_type'] == 'irregular'] 
+                fixed_storage_type_dimension_tags = [dimension for dimension in storage_type_dimension_tags if self._storage_config[storage_type]['dimensions'][dimension]['indexing_type'] == 'fixed'] 
                 
                 # Define initial max/min/shape values
                 dimension_minmax_dict = {dimension: (dimension_range_dict.get(dimension) or (-sys.maxint-1, sys.maxint)) for dimension in storage_type_dimension_tags}
@@ -1083,7 +1083,7 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                 
                     # Determine overall max/min/shape values
                     for dimension in regular_storage_type_dimension_tags:
-                        overall_shape_dict[dimension] = (overall_max_dict[dimension] - overall_min_dict[dimension]) / self._storage_config[storage_type_tag]['dimensions'][dimension]['dimension_element_size']
+                        overall_shape_dict[dimension] = (overall_max_dict[dimension] - overall_min_dict[dimension]) / self._storage_config[storage_type]['dimensions'][dimension]['dimension_element_size']
             
                     for dimension in irregular_storage_type_dimension_tags: # Should be just 'T' for the EO trial
                         # Show all unique group values in order
@@ -1101,9 +1101,9 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
                     #TODO: Don't make this hard-coded for T slices
                     storage_type_descriptor['irregular_indices'] = {'T': np.array(sorted(list(overall_slice_group_set)), dtype = np.int32)}
                     
-                    storage_type_descriptor['variables'] = dict(self._storage_config[storage_type_tag]['measurement_types'])
+                    storage_type_descriptor['variables'] = dict(self._storage_config[storage_type]['measurement_types'])
     
-                    result_dict[storage_type_tag] = storage_type_descriptor                    
+                    result_dict[storage_type] = storage_type_descriptor                    
             # End of per-DB function
 
         # Start of cross-DB function
@@ -1115,25 +1115,29 @@ order by ''' + '_index, '.join(storage_type_dimension_tags) + '''_index, slice_i
             dimension_range_dict = {}
 
         try:
-            storage_type_tags = [storage_type_tag.upper() for storage_type_tag in query_parameter['storage_types'] if storage_type_tag in self._storage_config.keys()]
+            storage_types = [storage_type.upper() for storage_type in query_parameter['storage_types'] if storage_type in self._storage_config.keys()]
         except KeyError:
-            storage_type_tags = self._storage_config.keys()
+            try:
+                storage_types = [query_parameter['storage_type'].upper()] # Check for single storage type
+            except KeyError:
+                storage_types = self._storage_config.keys()
             
-        # Fix T as the selection dimension
-        try:
+        # Make self.solar_days_since_epoch the default grouping function for T
+        #TODO: Make this more general for all irregular dimensions
+        try: # Check for both upper & lower case dimension tag
             slice_grouping_function = query_parameter['dimensions']['T']['grouping_function'] or self.solar_days_since_epoch
         except KeyError:
             try:
                 slice_grouping_function = query_parameter['dimensions']['t']['grouping_function'] or self.solar_days_since_epoch
             except KeyError:
-                slice_grouping_function = self.null_grouping # self.solar_days_since_epoch
+                slice_grouping_function = self.solar_days_since_epoch
             
         
         return self._do_db_query(self.databases, [get_db_descriptors, 
                                                 dimension_range_dict, 
                                                 'T', 
                                                 slice_grouping_function, 
-                                                storage_type_tags, 
+                                                storage_types, 
                                                 False
                                                 ]
                                         )
