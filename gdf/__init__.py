@@ -1090,11 +1090,11 @@ order by ''' + '_index, '.join(storage_type_dimensions) + '''_index, slice_index
                 
                     # Determine overall max/min/shape values
                     for dimension in regular_storage_type_dimensions:
-                        overall_shape_dict[dimension] = (overall_max_dict[dimension] - overall_min_dict[dimension]) / self._storage_config[storage_type]['dimensions'][dimension]['dimension_element_size']
+                        overall_shape_dict[dimension] = round((overall_max_dict[dimension] - overall_min_dict[dimension]) / self._storage_config[storage_type]['dimensions'][dimension]['dimension_element_size'], GDF.DECIMAL_PLACES)
             
                     for dimension in irregular_storage_type_dimensions: # Should be just 'T' for the EO trial
                         # Show all unique group values in order
-                        storage_type_descriptor['irregular_indices'] = {dimension: np.array(sorted(list(overall_slice_group_set)), dtype = np.int16)}
+                        storage_type_descriptor['irregular_indices'] = {dimension: np.array(sorted(list(overall_slice_group_set)))} #, dtype = np.int16)}
                     
                         overall_shape_dict[dimension] = len(overall_slice_group_set)  
                                               
@@ -1140,7 +1140,7 @@ order by ''' + '_index, '.join(storage_type_dimensions) + '''_index, slice_index
                 slice_grouping_function = self.solar_days_since_epoch
             
         
-        return self._do_db_query({db_ref: self.databases[db_ref] for db_ref in sorted(set([self._storage_config[storage_type]['db_ref'] for storage_type in storage_types]))}
+        return self._do_db_query({db_ref: self.databases[db_ref] for db_ref in sorted(set([self._storage_config[storage_type]['db_ref'] for storage_type in storage_types]))},
                                  [get_db_descriptors, 
                                   dimension_range_dict, 
                                   'T', 

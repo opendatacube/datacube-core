@@ -49,8 +49,6 @@ def main():
     # pprint(dict(g.storage_config['LS8OLI']['dimensions']))
     # pprint(dict(g.storage_config['LS8OLI']['measurement_types']))
     
-    t0 = datetime.now()
-    print 'Starting 256 x 256 single-band cross-boundary selection at ', t0
     data_request_descriptor = {'storage_type': 'LS5TM', 
                                'variables': ('B30',), 
                                'dimensions': {'X': {'range': (147.968, 148.032)}, 
@@ -58,10 +56,18 @@ def main():
                                               'T': {'range': (1262304000.0, 1325375999.999999)}, # 2010-01-01 00:00:00.0 - 2011-12-31 23:59:59.999999
                                               }
                                }
-    d = g.get_data(data_request_descriptor)
+    t0 = datetime.now()
+    print 'Starting 256 x 256 single-band cross-boundary descriptor at ', t0
+    d = g.get_descriptor(data_request_descriptor)
     t1 = datetime.now()
-    print 'Finishing 256 x 256 cross-boundary selection at %s (Elapsed time %s)' % (t1, t1 - t0)
+    print 'Finishing 256 x 256 cross-boundary descriptor at %s (Elapsed time %s)' % (t1, t1 - t0)
     pprint(d)
+
+    t0 = datetime.now()
+    print 'Starting 256 x 256 single-band cross-boundary selection at ', t0
+    a = g.get_data(data_request_descriptor)
+    print 'Finishing 256 x 256 cross-boundary selection at %s (Elapsed time %s)' % (t1, t1 - t0)
+    pprint(a)
 
 
 #===============================================================================
