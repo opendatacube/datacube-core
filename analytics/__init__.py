@@ -13,72 +13,6 @@ from gdf import GDF
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG) # Logging level for this module
 
-'''
-Example 1 - create array
-
-from pprint import pprint
-from datetime import datetime
-from gdf import GDF, dt2secs
-from analytics import Analytics
-a = Analytics()
-g = GDF()
-
-dimensions = { 'x': { 'range': (140, 142), 'crs': 'EPSG:4326' }, 'y': { 'range': (-36, -34), 'crs': 'EPSG:4326' }, 't': { 'range': (1288569600, 1296518400), 'crs': 'SSE', 'grouping_function': g.solar_days_since_epoch } }
-array = a.createArray('LS5TM', ['B40'], dimensions)
-pprint(array)
-
-Example 2 - sensor specific ndvi
-
-from pprint import pprint
-from datetime import datetime
-from gdf import GDF, dt2secs
-from analytics import Analytics
-a = Analytics()
-g = GDF()
-
-dimensions = { 'x': { 'range': (140, 142), 'crs': 'EPSG:4326' }, 'y': { 'range': (-36, -34), 'crs': 'EPSG:4326' }, 't': { 'range': (1288569600, 1296518400), 'crs': 'SSE', 'grouping_function': g.solar_days_since_epoch } }
-storage_types = ['LS5TM']
-
-ndvi = a.applySensorSpecificBandMathFunction(storage_types, 'ndvi', dimensions, 'ndvi-result', 'netcdf-cf')
-pprint(ndvi)
-
-Example 3 - generic ndvi
-
-from pprint import pprint
-from datetime import datetime
-from gdf import GDF, dt2secs
-from analytics import Analytics
-a = Analytics()
-g = GDF()
-
-dimensions = { 'x': { 'range': (140, 142), 'crs': 'EPSG:4326' }, 'y': { 'range': (-36, -34), 'crs': 'EPSG:4326' }, 't': { 'range': (1288569600, 1296518400), 'crs': 'SSE', 'grouping_function': g.solar_days_since_epoch } }
-storage_types = ['LS5TM']
-variables = ['B40', 'B30']
-arrays = a.createArray(storage_types[0], variables, dimensions)
-
-ndvi_array = a.applyBandMathFunction([arrays[variables[0]], arrays[variables[1]]], '((array1 - array2) / (array1 + array2))', 'ndvi-result', 'netcdf-cf')
-pprint(ndvi_array)
-
-Example 4 - median
-
-from pprint import pprint
-from datetime import datetime
-from gdf import GDF, dt2secs
-from analytics import Analytics
-a = Analytics()
-g = GDF()
-
-dimensions = { 'x': { 'range': (140, 142), 'crs': 'EPSG:4326' }, 'y': { 'range': (-36, -34), 'crs': 'EPSG:4326' }, 't': { 'range': (1288569600, 1296518400), 'crs': 'SSE', 'grouping_function': g.solar_days_since_epoch } }
-arrays = a.createArray('LS5TM', ['B40'], dimensions)
-
-median_t_array = a.applyReductionFunction(arrays['B40'], ['T'], 'median', 'medianResult', 'netcdf-cf')
-pprint(median_t_array)
-
-median_xy_array = a.applyReductionFunction(arrays['B40'], ['X', 'Y'], 'median', 'medianResult', 'netcdf-cf')
-pprint(median_xy_array)
-
-'''
-
 class Analytics(object):
 
 	SUPPORTED_OUTPUT_TYPES = ['netcdf-cf', 'geotiff']
@@ -110,19 +44,38 @@ class Analytics(object):
 		logger.debug('Initialise Analytics Module.')
 		self.gdf = GDF()
 		self.gdf.debug = False
+		self.plan = []
+		self.planDict = {}
 
-	def createArray(self, storage_type, variables, dimensions):
-		# stub to call GDF to get Array Descriptors and construct Arrayself.
-		query_parameters = {'storage_types': [storage_type]	, 'dimensions': dimensions}
+	def task(self, name):
+
+		return self.plan[self.planDict[name]]
+
+	def add_to_plan(self, name, task):
+		
+		self.plan.append( { name : task })
+		size = len(self.plan)
+		self.planDict[name] = size-1
+
+		return self.plan[size-1]
+
+	def createArray(self, storage_type, variables, dimensions, name):
+		query_parameters = {}
+		query_parameters['storage_type'] = storage_type
+		query_parameters['dimensions'] = dimensions
+		query_parameters['variables'] = ()
+
+		for array in variables:
+			query_parameters['variables'] += (array,)
+
 		arrayDescriptors = self.gdf.get_descriptor(query_parameters)
-		#pprint(arrayDescriptors)
 
 		if storage_type not in arrayDescriptors.keys():
 			raise AssertionError(storage_type, "not present in descriptor")
 
 		logger.debug('storage_type = %s', storage_type)
 
-		arrayResults = {}
+		arrayResults = []
 
 		for variable in variables:
 			if variable not in arrayDescriptors[storage_type]['variables']:
@@ -139,118 +92,179 @@ class Analytics(object):
 			arrayResult['data_type'] = arrayDescriptors[storage_type]['variables'][variable]['numpy_datatype_name']
 			arrayResult['no_data_value'] = arrayDescriptors[storage_type]['variables'][variable]['nodata_value']
 
-			arrayResults[variable] = arrayResult
-			
-		return arrayResults
+			arrayResults.append({variable : arrayResult})
+
+		task = {}
+		task['array_input'] = arrayResults
+		task['array_output'] = copy.deepcopy(arrayResult)
+		task['array_output']['variable'] = 'data'
+		task['function'] = 'get_data'
+		task['orig_function'] = 'get_data'
+
+		return self.add_to_plan(name, task)
+
+	def applyCloudMask(self, arrays, mask, name):
+		size = len(arrays)
+		if size == 0:
+			raise AssertionError("Input array is empty")
+
+		task = {}
+		task['array_input'] = []
+		for array in arrays.keys():
+			task['array_input'].append(array)
+
+		task['array_mask'] = mask.keys()[0]
+		task['orig_function'] = 'apply_cloud_mask'
+		task['function'] = 'apply_cloud_mask'
+		task['array_output'] = copy.deepcopy(arrays.values()[0]['array_output'])
+		task['array_output']['variable'] = name
+
+		return self.add_to_plan(name, task)
 
 	# generic version
-	def applyBandMathFunction(self, arrays, function, name, output_format):
+	def applyBandMath(self, arrays, function, name):
 		# Arrays is a list
 		# output Array is same shape as input array
-		
-		orig_function = function
-		logger.debug('function before = %s', function)
-		count = 1
-		for array in arrays:
-			function = function.replace('array'+str(count), arrays[count-1]['variable'])
-			count += 1
-		logger.debug('function after = %s', function)
+		size = len(arrays)
+		if size == 0:
+			raise AssertionError("Input array is empty")
 
-		functionResult = {}
+		variables = []
+		if size == 1: # 1 input
+			if arrays.values()[0]['function'] == 'get_data':
 
-		functionResult['array_input'] = {}
-		count = 1
-		for array in arrays:
-			functionResult['array_input'][arrays[count-1]['variable']] = copy.deepcopy(arrays[count-1])
-			count += 1
-		functionResult['orig_function'] = orig_function
-		functionResult['function'] = function		
-		functionResult['array_output'] = { name : copy.deepcopy(arrays[0]) }
-		functionResult['array_output'][name]['variable'] = name
+				# check shape is same for all input arrays
+				shape = arrays.values()[0]['array_input'][0].values()[0]['shape']
+				for variable in arrays.values()[0]['array_input']:
+					if shape != variable.values()[0]['shape']:
+						raise AssertionError("Shape is different")
+					variables.append(variable.keys()[0])
+			else:
+				variables.append(arrays.keys()[0])
 
-		functionResult['output_format'] = output_format
+			orig_function = function
+			logger.debug('function before = %s', function)
+			count = 1
+			for variable in variables:
+				function = function.replace('array'+str(count), variable)
+				count += 1
+			logger.debug('function after = %s', function)
 
-		return functionResult
+			task = {}
+
+			task['array_input'] = []
+			task['array_input'].append(arrays.keys()[0])
+			task['orig_function'] = orig_function
+			task['function'] = function
+			task['array_output'] = copy.deepcopy(arrays.values()[0]['array_output'])
+			task['array_output']['variable'] = name
+
+			return self.add_to_plan(name, task)
+
+		else: # multi-dependencies
+			pprint(arrays)
+			for array in arrays:
+				variables.append(array.keys()[0])
+
+			orig_function = function
+			logger.debug('function before = %s', function)
+			count = 1
+			for variable in variables:
+				function = function.replace('array'+str(count), variable)
+				count += 1
+			logger.debug('function after = %s', function)
+
+			task = {}
+
+			task['array_input'] = []
+
+			for array in arrays:
+				task['array_input'].append(array.keys()[0])
+
+			task['orig_function'] = orig_function
+			task['function'] = function
+			task['array_output'] = copy.deepcopy(arrays[0].values()[0]['array_output'])
+			task['array_output']['variable'] = name
+
+			return self.add_to_plan(name, task)
 
 	# sensor specific version
-	def applySensorSpecificBandMathFunction(self, storage_types, function, dimensions, name, output_format):
-		variables = self.getPredefinedInputs(storage_types[0], function)
-		arrays = self.createArray(storage_types[0], variables, dimensions)
-
-		array_list = []
-		for variable in variables:
-			array_list.append(arrays[variable]) 
+	def applySensorSpecificBandMath(self, storage_types, function, dimensions, name_data, name_result):
+		variables = self.getPredefinedInputs(storage_types, function)
+		arrays = self.createArray(storage_types, variables, dimensions, name_data)
 
 		function_text = self.getPredefinedFunction(storage_types, function)
-		band_math_function = self.applyBandMathFunction(array_list, function_text, name, output_format)
+		return self.applyBandMath(arrays, function_text, name_result)
 
-		return band_math_function
-
-	def applyReductionFunction(self, array1, dimensions, function, name, output_format):
+	def applyReduction(self, array1, dimensions, function, name):
 
 		function = self.OPERATORS_REDUCTION.get(function)
-		return self.applyGenericReductionFunction(array1, dimensions, function, name, output_format)
+		return self.applyGenericReductionFunction(array1, dimensions, function, name)
 
-	def applyGenericReductionFunction(self, array1, dimensions, function, name, output_format):
+	def applyGenericReduction(self, arrays, dimensions, function, name):
+		
+		size = len(arrays)
+		if size != 1:
+			raise AssertionError("Input array should be 1")
 
-		if 'array_input' in array1 and 'array_output' in array1 and 'function' in array1 and 'orig_function' in array1:
+		if arrays.values()[0]['function'] == 'get_data':
+
+			variable = arrays.values()[0]['array_input'][0].values()[0]['variable']
 			orig_function = function
 			logger.debug('function before = %s', function)
-			function = function.replace('array1', array1['array_output'].keys()[0])
+			function = function.replace('array1', variable)
 			logger.debug('function after = %s', function)
 
-			functionResult = {}
+			task = {}
 
-			functionResult['array_input'] = {}
-			functionResult['array_input'][array1['array_output'].keys()[0]] = copy.deepcopy(array1)
-			functionResult['orig_function'] = orig_function
-			functionResult['function'] = function
-			functionResult['dimension'] = copy.deepcopy(dimensions)
+			task['array_input'] = []
+			task['array_input'].append(arrays.keys()[0])
+			task['orig_function'] = orig_function
+			task['function'] = function
+			task['dimension'] = copy.deepcopy(dimensions)
 
-			functionResult['array_output'] = {}
-			functionResult['array_output'][name] = copy.deepcopy(array1['array_output'].values()[0])
-			#
-			#functionResult['array_output'][name][name] = copy.deepcopy(array1['array_output'])
-			functionResult['array_output'][name]['variable'] = name
-			functionResult['array_output'][name]['dimensions_order'] = self.diffList(array1['array_output'].values()[0]['dimensions_order'], dimensions)
+			task['array_output'] = copy.deepcopy(arrays.values()[0]['array_output'])
+			task['array_output']['variable'] = name
+			task['array_output']['dimensions_order'] = self.diffList(arrays.values()[0]['array_input'][0].values()[0]['dimensions_order'], dimensions)
 
 			result = ()
-			for value in functionResult['array_output'][name]['dimensions_order']:
-				index = functionResult['array_input'].values()[0]['array_output'].values()[0]['dimensions_order'].index(value)
-				value = functionResult['array_input'].values()[0]['array_output'].values()[0]['shape'][index]
+			for value in task['array_output']['dimensions_order']:
+				input_task = self.task(task['array_input'][0])
+				index = input_task.values()[0]['array_output']['dimensions_order'].index(value)
+				value = input_task.values()[0]['array_output']['shape'][index]
 				result += (value,)
-			functionResult['array_output'][name]['shape'] = result
+			task['array_output']['shape'] = result
 
-			functionResult['output_format'] = output_format
-
-			return functionResult
+			return self.add_to_plan(name, task)
 		else:
+			variable = arrays.keys()[0]
 			orig_function = function
 			logger.debug('function before = %s', function)
-			function = function.replace('array1', array1['variable'])
+			function = function.replace('array1', variable)
 			logger.debug('function after = %s', function)
-			functionResult = {}
-			functionResult['array_input'] = {}
-			functionResult['array_input'][array1['variable']] = copy.deepcopy(array1)
-			functionResult['orig_function'] = orig_function
-			functionResult['function'] = function
-			functionResult['dimension'] = copy.deepcopy(dimensions)
 
-			functionResult['array_output'] = {}
-			functionResult['array_output'][name] = copy.deepcopy(array1)
-			functionResult['array_output'][name]['variable'] = name
-			functionResult['array_output'][name]['dimensions_order'] = self.diffList(array1['dimensions_order'], dimensions)
+			task = {}
+			
+			task['array_input'] = []
+			task['array_input'].append(variable)
+			task['orig_function'] = orig_function
+			task['function'] = function
+			task['dimension'] = copy.deepcopy(dimensions)
+
+			task['array_output'] = copy.deepcopy(arrays.values()[0]['array_output'])
+			task['array_output']['variable'] = name
+			task['array_output']['dimensions_order'] = self.diffList(arrays.values()[0]['array_output']['dimensions_order'], dimensions)
 
 			result = ()
-			for value in functionResult['array_output'][name]['dimensions_order']:
-				index = functionResult['array_input'][array1['variable']]['dimensions_order'].index(value)
-				value = functionResult['array_input'][array1['variable']]['shape'][index]
+			for value in task['array_output']['dimensions_order']:
+				input_task = self.task(task['array_input'][0])
+				pprint(input_task)
+				index = input_task.values()[0]['array_output']['dimensions_order'].index(value)
+				value = input_task.values()[0]['array_output']['shape'][index]
 				result += (value,)
-			functionResult['array_output'][name]['shape'] = result
-			
-			functionResult['output_format'] = output_format
+			task['array_output']['shape'] = result
 
-			return functionResult
+			return self.add_to_plan(name, task)
 
 	def diffList(self, list1, list2):
 		list2 = set(list2)
@@ -260,8 +274,6 @@ class Analytics(object):
 		return self.OPERATORS_SENSOR_SPECIFIC_BANDMATH.get(function).get('sensors').get(storage_type).get('input')
 
 	def getPredefinedFunction(self, storage_type, function):
-		function_id = self.OPERATORS_SENSOR_SPECIFIC_BANDMATH.get(function).get('sensors').get(storage_type[0]).get('function')
+		function_id = self.OPERATORS_SENSOR_SPECIFIC_BANDMATH.get(function).get('sensors').get(storage_type).get('function')
 		return self.OPERATORS_SENSOR_SPECIFIC_BANDMATH.get(function).get('functions').get(function_id)
 
-	def createPlan(self, array):
-		return array
