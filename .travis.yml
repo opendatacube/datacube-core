@@ -1,0 +1,54 @@
+# file:   .travis.yml
+# author: Robert Woodcock
+#         Minerals Resources National Research Flagship
+# date:   Sunday July 19, 2015
+
+# whitelist
+branches:
+  only:
+    - robw_add_docs
+
+language: python
+python:
+    # - "3.4"
+    - "2.7"
+
+# Command to install miniconda to build test environment
+before_install:
+  # Install required packages
+  - sudo apt-get update -qq
+  # PostgreSQL and PostGIS
+  - sudo apt-get install -qq postgresql-9.3 postgresql-9.3-dbg postgresql-client-9.3 postgresql-client-common postgresql-common postgresql-contrib-9.3 postgresql-server-dev-9.3 postgresql-9.3-postgis-2.1 postgresql-9.3-postgis-2.1-scripts
+  # HDF4, HDF5, and netCDF4
+  # Note: Using libhdf4-alt-dev for compatibility with GDAL
+  - sudo apt-get install -qq zlib1g zlib1g-dev zlib1g-dbg zlibc zlib-bin libhdf4-alt-dev hdf4-tools libhdf5-serial-dev hdf5-tools netcdf-bin netcdf-dbg libnetcdf-dev
+  # GEOS, PROJ4 and GDAL
+  - sudo apt-get install -qq libgeos-dev libgeos-dbg proj-bin proj-data gdal-bin libgdal-dev
+  # Python and packages
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+    else
+      wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    fi
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  # Add binstar channels to get custom builds
+  # - conda config --add channels <channel name>
+  - conda update -q conda
+  # Useful for debugging any issues with conda
+  - conda info -a
+
+install:
+  - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION sphinx numpy scipy matplotlib h5py imaging shapely gdal netCDF4
+  - source activate test-agdc
+  - python setup.py update_version install
+
+# Command to run tests
+#script:
+#  - python setup.py update_mocks
+#  - coverage run --source agdc run_test.py
+
+#after_success:
+#  - coveralls
