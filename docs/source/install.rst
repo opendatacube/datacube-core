@@ -19,15 +19,22 @@ PostgreSQL and PostGIS::
 
 HDF4, HDF5, and netCDF4::
 
-   apt-get install zlib1g zlib1g-dev zlib1g-dbg zlibc zlib-bin libhdf4-alt-dev libhdf4-doc hdf4-tools libhdf5-doc libhdf5-serial-dev hdf5-tools netcdf-bin netcdf-dbg netcdf-doc libnetcdf-dev
+   apt-get install libhdf4-alt-dev libhdf5-serial-dev libnetcdf-dev
 
 .. note::
 
     Using libhdf4-alt-dev for compatibility with GDAL
 
-GEOS, PROJ4 and GDAL::
+GDAL::
 
-    apt-get install libgeos-dev libgeos-dbg libgeos-doc proj-bin proj-data gdal-bin libgdal-dev libgdal-doc
+    apt-get install libgdal-dev
+
+Optional packages (useful utilities, docs)::
+
+    apt-get install postgresql-doc-9.3 libhdf4-doc  libhdf5-doc netcdf-doc libgdal-doc
+    apt-get install hdf4-toolshdf5-tools netcdf-bin gdal-bin pgadmin3
+
+
 
 Python and packages
 -------------------
@@ -43,7 +50,16 @@ Download `MiniConda <https://repo.continuum.io/miniconda/Miniconda-latest-Linux-
 
     bash Miniconda-latest-Linux-x86_64.sh
 
+.. note::
+
+    You can use the full Anaconda installation if you prefer, it will have some packages by default.
+
 Use conda to install the Python packages::
 
-    conda install nose pip sphinx numpy scipy h5py imaging matplotlib shapely  gdal netCDF4
+    conda install nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2
 
+
+.. attention::
+
+    EOTools from https://github.com/GeoscienceAustralia/eo-tools is also required.
+    TODO: This needs to be replaced with a regular conda package or dependency removed
