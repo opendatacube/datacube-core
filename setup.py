@@ -29,7 +29,7 @@
 
 from distutils.core import setup
 
-version = 0.0.0'
+version = 0.0.0
 
 setup(name='gdf',
       version = version,
