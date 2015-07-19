@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#===============================================================================
+# ===============================================================================
 # Copyright (c)  2014 Geoscience Australia
 # All rights reserved.
 # 
@@ -25,38 +25,40 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#===============================================================================
+# ===============================================================================
 
 from distutils.core import setup
 
-version = 0.0.0
+version = '0.0.0'
 
 setup(name='gdf',
-      version = version,
-      package_dir = {
-                     'gdf' : 'gdf'
-                     },
-      packages = [
-                  'gdf'
-                  ],
-      package_data = {
-                      'gdf': ['gdf_default.conf']
-                      },
-      scripts = [
-                 ],
-      requires = [
-                  'EOtools',
-                  'psycopg2',
-                  'gdal',
-                  'numexpr',
-                  'scipy',
-                  'pytz'
-                  ],
-      url = 'https://github.com/GeoscienceAustralia/gdf'
-      author = 'Alex Ip',
-      maintainer = 'Alex Ip, Geoscience Australia',
-      maintainer_email = 'alex.ip@ga.gov.au',
-      description = 'Generalsed Data Framework (GDF)',
-      long_description = 'Generalised Data Framework (GDF). Developed under HPD program within Geoinformatics and Data Services Section',
-      license = 'BSD 3'
-     )
+      version=version,
+      package_dir={
+          'gdf': 'gdf'
+      },
+      packages=[
+          'gdf'
+      ],
+      package_data={
+          'gdf': ['gdf_default.conf']
+      },
+      scripts=[
+      ],
+      requires=[
+          'psycopg2',
+          'gdal',
+          'numexpr',
+          'numpy',
+          'matplotlib',
+          'netcdf4',
+          'scipy',
+          'pytz'
+      ],
+      url='https://github.com/GeoscienceAustralia/gdf',
+      author='Alex Ip',
+      maintainer='Alex Ip, Geoscience Australia',
+      maintainer_email='alex.ip@ga.gov.au',
+      description='Generalsed Data Framework (GDF)',
+      long_description='Generalised Data Framework (GDF). Developed under HPD program within Geoinformatics and Data Services Section',
+      license='Apache License 2.0'
+      )

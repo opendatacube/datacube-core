@@ -59,7 +59,7 @@ from gdf import dt2secs
 from gdf import make_dir
 from gdf import directory_writable
 
-from eotools.utils import log_multiline
+from gdf._gdfutils import log_multiline
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG) # Logging level for this module

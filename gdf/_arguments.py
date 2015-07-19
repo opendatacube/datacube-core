@@ -39,7 +39,7 @@ import logging
 import argparse
 
 
-from eotools.utils import log_multiline
+from _gdfutils import log_multiline
 
 logger = logging.getLogger(__name__)
 #logger.setLevel(logging.DEBUG) # Logging level for this module

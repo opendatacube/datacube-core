@@ -39,6 +39,7 @@ import math
 from datetime import datetime, date
 from socket import errno
 import logging
+from pprint import pformat
 
 logger = logging.getLogger(__name__)
 #logger.setLevel(logging.DEBUG) # Logging level for this module
@@ -118,3 +119,27 @@ def plotImages(arrays):
     fig.tight_layout()
     plt.show()
 
+def log_multiline(log_function, log_text, title=None, prefix=''):
+    """Function to log multi-line text
+    """
+    logger.debug('log_multiline(%s, %s, %s, %s) called', log_function, repr(log_text), repr(title), repr(prefix))
+
+    if isinstance(log_text, str):
+        logger.debug('log_text is type str')
+        log_list = log_text.splitlines()
+    elif isinstance(log_text, list) and isinstance(log_text[0], str):
+        logger.debug('log_text is type list with first element of type text')
+        log_list = log_text
+    else:
+        logger.debug('log_text is type ' + type(log_text).__name__)
+        log_list = pformat(log_text).splitlines()
+
+    log_function(prefix + '=' * 80)
+    if title:
+        log_function(prefix + title)
+        log_function(prefix + '-' * 80)
+
+    for line in log_list:
+        log_function(prefix + line)
+
+    log_function(prefix + '=' * 80)
