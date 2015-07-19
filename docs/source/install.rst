@@ -9,10 +9,6 @@ These installation instructions are tested on:
 Required software
 -----------------
 
-.. attention::
-
-    These dependencies should be trimmed further. There's an excess of utilities listed used by some developers and not others.
-
 PostgreSQL and PostGIS::
 
     apt-get install postgresql-9.3 postgresql-client-9.3 postgresql-contrib-9.3 postgresql-9.3-postgis-2.1 postgresql-9.3-postgis-2.1-scripts
