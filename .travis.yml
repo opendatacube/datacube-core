@@ -13,6 +13,7 @@ python:
     # - "3.4"
     - "2.7"
 
+# Travis already has postgresql installed - see addons: and  before_script: sections for configuration
 addons:
   postgresql: "9.3"
 
@@ -23,13 +24,9 @@ addons:
 before_install:
   # Install required packages
   - sudo apt-get update -qq
-  # PostgreSQL and PostGIS Note: Travis already has postgresql installed - see addons: and  before_script: sections for configuration
-  #- sudo apt-get install -qq postgresql-9.3 postgresql-client-9.3 postgresql-contrib-9.3 postgresql-9.3-postgis-2.1 postgresql-9.3-postgis-2.1-scripts
-  # HDF4, HDF5, and netCDF4
+  # HDF4, HDF5, GDAL and netCDF4
   # Note: Using libhdf4-alt-dev for compatibility with GDAL
-  - sudo apt-get install -qq zlib1g zlib1g-dev zlib1g-dbg zlibc zlib-bin libhdf4-alt-dev hdf4-tools libhdf5-serial-dev hdf5-tools netcdf-bin netcdf-dbg libnetcdf-dev
-  # GEOS, PROJ4 and GDAL
-  - sudo apt-get install -qq libgeos-dev libgeos-dbg proj-bin proj-data gdal-bin libgdal-dev
+  - sudo apt-get install -qq libhdf4-alt-dev libhdf5-serial-dev libnetcdf-dev libgdal-dev
   # Python and packages
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
       wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
@@ -47,7 +44,7 @@ before_install:
   - conda info -a
 
 install:
-  - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION sphinx numpy scipy matplotlib h5py imaging shapely gdal netCDF4
+  - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2
   - source activate test-agdc
   - python setup.py update_version install
 
