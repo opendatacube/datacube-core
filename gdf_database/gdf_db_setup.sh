@@ -24,4 +24,4 @@ CREATE ROLE cube_user LOGIN
 GRANT cube_user_group TO cube_user;
 "
 
-create_db_from_backup $dbname $db_backup_file
+./create_db_from_backup.sh $dbname $db_backup_file
