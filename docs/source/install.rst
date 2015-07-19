@@ -32,7 +32,7 @@ GDAL::
 Optional packages (useful utilities, docs)::
 
     apt-get install postgresql-doc-9.3 libhdf4-doc  libhdf5-doc netcdf-doc libgdal-doc
-    apt-get install hdf4-toolshdf5-tools netcdf-bin gdal-bin pgadmin3
+    apt-get install hdf4-tools hdf5-tools netcdf-bin gdal-bin pgadmin3
 
 
 
@@ -54,7 +54,7 @@ Download `MiniConda <https://repo.continuum.io/miniconda/Miniconda-latest-Linux-
 
     You can use the full Anaconda installation if you prefer, it will have some packages by default.
 
-Use conda to install the Python packages::
+Use conda to install the required Python packages::
 
     conda install nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2
 
