@@ -30,7 +30,26 @@ ALTER DATABASE ${dbname}
   SET search_path = "\"$USER\"",public, topology;
 
 COMMENT ON DATABASE ${dbname}
-  IS 'GDF Database with Landsat & MOD09 configuration data only';"
+  IS 'GDF Database restored from ${db_backup_file} $(date)';"
+
+
+# Install required extensions to database
+psql -d ${dbname} -c "
+CREATE EXTENSION postgis
+  SCHEMA public;"
+
+psql -d ${dbname} -c "
+CREATE SCHEMA topology
+  AUTHORIZATION cube_admin;"
+
+psql -d ${dbname} -c "
+CREATE EXTENSION postgis_topology
+  SCHEMA topology;"
+
+psql -d ${dbname} -c "
+CREATE EXTENSION adminpack
+  SCHEMA pg_catalog;"
+
 
 # Restore DB from backup
 pg_restore -d ${dbname} ${db_backup_file}
