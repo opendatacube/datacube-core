@@ -54,8 +54,3 @@ Use conda to install the required Python packages::
 
     conda install nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2
 
-
-.. attention::
-
-    EOTools from https://github.com/GeoscienceAustralia/eo-tools is also required.
-    TODO: This needs to be replaced with a regular conda package or dependency removed
