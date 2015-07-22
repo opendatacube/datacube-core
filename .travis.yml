@@ -17,9 +17,6 @@ python:
 addons:
   postgresql: "9.3"
 
-#before_script:
-  #- psql -U postgres -c "create extension postgis"
-
 # Command to install miniconda to build test environment
 before_install:
   # Install required packages
@@ -46,7 +43,7 @@ before_install:
 install:
   - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2
   - source activate test-agdc
-  - python setup.py update_version install
+  - python setup.py install
 
 # Command to run tests
 #script:
