@@ -97,7 +97,8 @@ def plot3D(array_result):
 		data[data == -999] = 0
 		ax = fig.add_subplot(num_rowcol,num_rowcol,plot_count)
 		cax = ax.imshow(data, interpolation='nearest', aspect = 'equal')
-		fig.colorbar(cax)
+# TODO: including the color bar is causing crashes in formatting on some system (left > right reported by matplotlib)
+#		fig.colorbar(cax)
 		plt.title("%s %d" % (array_result.keys()[0], plot_count))
 		plt.xlabel(array_result['array_output']['dimensions_order'][1])
 		plt.ylabel(array_result['array_output']['dimensions_order'][2])
