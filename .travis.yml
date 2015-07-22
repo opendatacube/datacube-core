@@ -1,8 +1,3 @@
-# file:   .travis.yml
-# author: Robert Woodcock
-#         Minerals Resources National Research Flagship
-# date:   Sunday July 19, 2015
-
 # whitelist
 branches:
   only:
@@ -41,14 +36,13 @@ before_install:
   - conda info -a
 
 install:
-  - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2
+  - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2 coverage
   - source activate test-agdc
   - python setup.py install
 
 # Command to run tests
-#script:
-#  - python setup.py update_mocks
-#  - coverage run --source agdc run_test.py
+script:
+   - coverage run -m unittest discover gdf_tests
 
-#after_success:
-#  - coveralls
+after_success:
+  - coveralls
