@@ -36,10 +36,10 @@ before_install:
   - conda info -a
   # Test database
   - wget https://github.com/data-cube/agdc-v2-data/raw/master/sample_dbs/gdf_modis_20150710.backup
-  - cd ~/gdf_database
+  - cd gdf_database
   - ./gdf_db_setup.sh
   - ./create_db_from_backup.sh ../gdf_modis_20150710.backup
-  - cd ~/
+  - cd ..
 
 install:
   - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2 coverage
