@@ -31,7 +31,7 @@ setup(name='agdc',
       author='AGDC Team',
       maintainer='AGDC Team',
       maintainer_email='',
-      description='AGFDC v2',
+      description='AGDC v2',
       long_description='Australian Geoscience Data Cube v2',
       license='Apache License 2.0'
       )
