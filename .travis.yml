@@ -41,7 +41,7 @@ before_install:
   - cd gdf_database
   - ./gdf_db_setup.sh
   - ./create_db_from_backup.sh gdf_test_modis ../gdf_modis_20150710.backup
-  - ./create_db_from_backup.sh gdf_test_ls ../gdf_ls_20150710.backup
+  - ./create_db_from_backup.sh gdf_test_ls ../gdf_landsat_20150710.backup
   - cd ..
 
 install:
