@@ -36,9 +36,12 @@ before_install:
   - conda info -a
   # Test database
   - wget https://github.com/data-cube/agdc-v2-data/raw/master/sample_dbs/gdf_modis_20150710.backup
+  - wget https://github.com/data-cube/agdc-v2-data/raw/master/sample_dbs/gdf_ls_20150710.backup
+
   - cd gdf_database
   - ./gdf_db_setup.sh
   - ./create_db_from_backup.sh gdf_test_modis ../gdf_modis_20150710.backup
+  - ./create_db_from_backup.sh gdf_test_ls ../gdf_ls_20150710.backup
   - cd ..
 
 install:
