@@ -34,11 +34,18 @@ before_install:
   - conda update -q conda
   # Useful for debugging any issues with conda
   - conda info -a
+  # Test database
+  - wget https://github.com/data-cube/agdc-v2-data/raw/master/sample_dbs/gdf_modis_20150710.backup
+  - cd ~/gdf_database
+  - ./gdf_db_setup.sh
+  - ./create_db_from_backup.sh ../gdf_modis_20150710.backup
+  - cd ~/
 
 install:
   - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2 coverage
   - source activate test-agdc
   - python setup.py install
+  -
 
 # Command to run tests
 script:
