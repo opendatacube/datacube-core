@@ -2,9 +2,9 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.3.7
+-- Dumped from database version 9.3.9
 -- Dumped by pg_dump version 9.3.1
--- Started on 2015-07-09 13:27:08
+-- Started on 2015-07-22 17:39:31
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -16,142 +16,8 @@ SET client_min_messages = warning;
 SET search_path = public, pg_catalog;
 
 --
--- TOC entry 3050 (class 0 OID 3506105)
--- Dependencies: 180
--- Data for Name: dataset_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO dataset_type VALUES (2, 'NBAR', 'NBAR');
-INSERT INTO dataset_type VALUES (3, 'PQ', 'PQ');
-INSERT INTO dataset_type VALUES (4, 'FC', 'FC');
-INSERT INTO dataset_type VALUES (1, 'ORTHO', 'ORTHO');
-INSERT INTO dataset_type VALUES (5, 'L1T', 'L1T');
-INSERT INTO dataset_type VALUES (20, 'MOD09', 'MOD09');
-INSERT INTO dataset_type VALUES (22, 'RBQ500', 'RBQ500');
-
-
---
--- TOC entry 3057 (class 0 OID 3506126)
--- Dependencies: 187
--- Data for Name: domain; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO domain VALUES (1, 'Spatial XY', 'XY');
-INSERT INTO domain VALUES (2, 'Spatial Z', 'Z');
-INSERT INTO domain VALUES (3, 'Temporal', 'T');
-INSERT INTO domain VALUES (4, 'Spectral', 'B');
-INSERT INTO domain VALUES (5, 'Spatial XYZ', 'XYZ');
-
-
---
--- TOC entry 3059 (class 0 OID 3506132)
--- Dependencies: 189
--- Data for Name: reference_system; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO reference_system VALUES (3, 'Australian Height Datum (AHD)', 'metres', 'AHD', 'AHD');
-INSERT INTO reference_system VALUES (50, 'Landsat 5 Reflectance Bands', 'band', 'LS5', 'LS5');
-INSERT INTO reference_system VALUES (70, 'Landsat 7 Spectral Bands', 'band', 'LS7', 'LS7');
-INSERT INTO reference_system VALUES (80, 'Landsat 8 Band', 'band', 'LS8', 'LS8');
-INSERT INTO reference_system VALUES (4326, 'Unprojected WGS84 (Lat-long)', 'degrees', 'EPSG:4326', 'EPSG:4326');
-INSERT INTO reference_system VALUES (5, 'Year', 'year', 'YEAR', 'YEAR');
-INSERT INTO reference_system VALUES (4, 'Seconds since 1/1/1970 0:00', 'seconds', 'seconds since 1970-01-01 00:00:00', 'SSE');
-
-
---
--- TOC entry 3052 (class 0 OID 3506111)
--- Dependencies: 182
--- Data for Name: dataset_type_domain; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO dataset_type_domain VALUES (1, 1, 4326);
-INSERT INTO dataset_type_domain VALUES (2, 1, 4326);
-INSERT INTO dataset_type_domain VALUES (3, 1, 4326);
-INSERT INTO dataset_type_domain VALUES (4, 1, 4326);
-INSERT INTO dataset_type_domain VALUES (5, 1, 4326);
-INSERT INTO dataset_type_domain VALUES (1, 3, 4);
-INSERT INTO dataset_type_domain VALUES (2, 3, 4);
-INSERT INTO dataset_type_domain VALUES (3, 3, 4);
-INSERT INTO dataset_type_domain VALUES (4, 3, 4);
-INSERT INTO dataset_type_domain VALUES (5, 3, 4);
-INSERT INTO dataset_type_domain VALUES (20, 1, 4326);
-INSERT INTO dataset_type_domain VALUES (20, 3, 4);
-INSERT INTO dataset_type_domain VALUES (22, 1, 4326);
-INSERT INTO dataset_type_domain VALUES (22, 3, 4);
-
-
---
--- TOC entry 3055 (class 0 OID 3506120)
--- Dependencies: 185
--- Data for Name: dimension; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO dimension VALUES (1, 'longitude', 'X');
-INSERT INTO dimension VALUES (2, 'latitude', 'Y');
-INSERT INTO dimension VALUES (3, 'height/depth', 'Z');
-INSERT INTO dimension VALUES (5, 'spectral', 'LAMBDA');
-INSERT INTO dimension VALUES (4, 'time', 'T');
-
-
---
--- TOC entry 3056 (class 0 OID 3506123)
--- Dependencies: 186
--- Data for Name: dimension_domain; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO dimension_domain VALUES (1, 1);
-INSERT INTO dimension_domain VALUES (1, 2);
-INSERT INTO dimension_domain VALUES (2, 3);
-INSERT INTO dimension_domain VALUES (3, 4);
-INSERT INTO dimension_domain VALUES (4, 5);
-INSERT INTO dimension_domain VALUES (5, 1);
-INSERT INTO dimension_domain VALUES (5, 2);
-INSERT INTO dimension_domain VALUES (5, 3);
-
-
---
--- TOC entry 3051 (class 0 OID 3506108)
--- Dependencies: 181
--- Data for Name: dataset_type_dimension; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO dataset_type_dimension VALUES (1, 1, 1, 3);
-INSERT INTO dataset_type_dimension VALUES (1, 1, 2, 2);
-INSERT INTO dataset_type_dimension VALUES (1, 3, 4, 1);
-INSERT INTO dataset_type_dimension VALUES (2, 1, 1, 3);
-INSERT INTO dataset_type_dimension VALUES (2, 1, 2, 2);
-INSERT INTO dataset_type_dimension VALUES (2, 3, 4, 1);
-INSERT INTO dataset_type_dimension VALUES (3, 1, 1, 3);
-INSERT INTO dataset_type_dimension VALUES (3, 1, 2, 2);
-INSERT INTO dataset_type_dimension VALUES (3, 3, 4, 1);
-INSERT INTO dataset_type_dimension VALUES (4, 1, 1, 3);
-INSERT INTO dataset_type_dimension VALUES (4, 1, 2, 2);
-INSERT INTO dataset_type_dimension VALUES (4, 3, 4, 1);
-INSERT INTO dataset_type_dimension VALUES (5, 1, 1, 3);
-INSERT INTO dataset_type_dimension VALUES (5, 1, 2, 2);
-INSERT INTO dataset_type_dimension VALUES (5, 3, 4, 1);
-INSERT INTO dataset_type_dimension VALUES (20, 1, 1, 3);
-INSERT INTO dataset_type_dimension VALUES (20, 1, 2, 2);
-INSERT INTO dataset_type_dimension VALUES (20, 3, 4, 1);
-INSERT INTO dataset_type_dimension VALUES (22, 1, 1, 3);
-INSERT INTO dataset_type_dimension VALUES (22, 1, 2, 2);
-INSERT INTO dataset_type_dimension VALUES (22, 3, 4, 1);
-
-
---
--- TOC entry 3054 (class 0 OID 3506117)
--- Dependencies: 184
--- Data for Name: datatype; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO datatype VALUES (3, 'string', NULL, NULL, NULL);
-INSERT INTO datatype VALUES (1, 'int16', 'int16', 'int16', 'i2');
-INSERT INTO datatype VALUES (2, 'float32', 'float32', 'float32', 'f4');
-
-
---
--- TOC entry 3067 (class 0 OID 3506176)
--- Dependencies: 200
+-- TOC entry 4541 (class 0 OID 3524109)
+-- Dependencies: 201
 -- Data for Name: measurement_metatype; Type: TABLE DATA; Schema: public; Owner: cube_admin
 --
 
@@ -161,8 +27,8 @@ INSERT INTO measurement_metatype VALUES (3, 'Categorical Pixel Quality Bit-array
 
 
 --
--- TOC entry 3068 (class 0 OID 3506179)
--- Dependencies: 201
+-- TOC entry 4542 (class 0 OID 3524112)
+-- Dependencies: 202
 -- Data for Name: measurement_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
 --
 
@@ -240,29 +106,36 @@ INSERT INTO measurement_type VALUES (1, 250, '500m MODIS Reflectance Band Qualit
 INSERT INTO measurement_type VALUES (1, 260, '1km MODIS Reflectance Band Quality', 'RBQ1000');
 
 
---
--- TOC entry 3053 (class 0 OID 3506114)
--- Dependencies: 183
--- Data for Name: dataset_type_measurement_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
---
-
-INSERT INTO dataset_type_measurement_type VALUES (3, 3, 3, 1, 1);
-
+SET search_path = earth_observation, pg_catalog;
 
 --
--- TOC entry 3058 (class 0 OID 3506129)
--- Dependencies: 188
--- Data for Name: indexing_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
+-- TOC entry 4516 (class 0 OID 3524020)
+-- Dependencies: 176
+-- Data for Name: spectral_parameters; Type: TABLE DATA; Schema: earth_observation; Owner: cube_admin
 --
 
-INSERT INTO indexing_type VALUES (1, 'regular');
-INSERT INTO indexing_type VALUES (2, 'irregular');
-INSERT INTO indexing_type VALUES (3, 'fixed');
+
+
+SET search_path = public, pg_catalog;
+
+--
+-- TOC entry 4521 (class 0 OID 3524037)
+-- Dependencies: 181
+-- Data for Name: dataset_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
+--
+
+INSERT INTO dataset_type VALUES (2, 'NBAR', 'NBAR');
+INSERT INTO dataset_type VALUES (3, 'PQ', 'PQ');
+INSERT INTO dataset_type VALUES (4, 'FC', 'FC');
+INSERT INTO dataset_type VALUES (1, 'ORTHO', 'ORTHO');
+INSERT INTO dataset_type VALUES (5, 'L1T', 'L1T');
+INSERT INTO dataset_type VALUES (20, 'MOD09', 'MOD09');
+INSERT INTO dataset_type VALUES (22, 'RBQ500', 'RBQ500');
 
 
 --
--- TOC entry 3066 (class 0 OID 3506173)
--- Dependencies: 199
+-- TOC entry 4540 (class 0 OID 3524106)
+-- Dependencies: 200
 -- Data for Name: instrument_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
 --
 
@@ -270,8 +143,8 @@ INSERT INTO instrument_type VALUES (1, 'Passive Satellite-borne');
 
 
 --
--- TOC entry 3071 (class 0 OID 3506193)
--- Dependencies: 205
+-- TOC entry 4547 (class 0 OID 3524126)
+-- Dependencies: 207
 -- Data for Name: platform_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
 --
 
@@ -279,20 +152,20 @@ INSERT INTO platform_type VALUES (1, 'Satellite');
 
 
 --
--- TOC entry 3070 (class 0 OID 3506190)
--- Dependencies: 204
+-- TOC entry 4546 (class 0 OID 3524123)
+-- Dependencies: 206
 -- Data for Name: platform; Type: TABLE DATA; Schema: public; Owner: cube_admin
 --
 
-INSERT INTO platform VALUES (1, 5, 'Landsat 5');
-INSERT INTO platform VALUES (1, 7, 'Landsat 7');
-INSERT INTO platform VALUES (1, 8, 'Landsat 8');
-INSERT INTO platform VALUES (1, 100, 'MODIS Terra');
+INSERT INTO platform VALUES (1, 5, 'Landsat 5', 'LS5');
+INSERT INTO platform VALUES (1, 7, 'Landsat 7', 'LS7');
+INSERT INTO platform VALUES (1, 8, 'Landsat 8', 'LS8');
+INSERT INTO platform VALUES (1, 100, 'MODIS Terra', 'MODIS-Terra');
 
 
 --
--- TOC entry 3065 (class 0 OID 3506170)
--- Dependencies: 198
+-- TOC entry 4539 (class 0 OID 3524103)
+-- Dependencies: 199
 -- Data for Name: instrument; Type: TABLE DATA; Schema: public; Owner: cube_admin
 --
 
@@ -305,8 +178,8 @@ INSERT INTO instrument VALUES (1, 100, 'MODIS-Terra', 1, 100, 'MODIS-Terra');
 
 
 --
--- TOC entry 3069 (class 0 OID 3506187)
--- Dependencies: 203
+-- TOC entry 4545 (class 0 OID 3524120)
+-- Dependencies: 205
 -- Data for Name: observation_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
 --
 
@@ -314,8 +187,197 @@ INSERT INTO observation_type VALUES (1, 'Optical Satellite');
 
 
 --
--- TOC entry 3063 (class 0 OID 3506159)
--- Dependencies: 195
+-- TOC entry 4543 (class 0 OID 3524115)
+-- Dependencies: 203
+-- Data for Name: observation; Type: TABLE DATA; Schema: public; Owner: cube_admin
+--
+
+
+
+--
+-- TOC entry 4517 (class 0 OID 3524023)
+-- Dependencies: 177
+-- Data for Name: dataset; Type: TABLE DATA; Schema: public; Owner: cube_admin
+--
+
+
+
+--
+-- TOC entry 4528 (class 0 OID 3524058)
+-- Dependencies: 188
+-- Data for Name: domain; Type: TABLE DATA; Schema: public; Owner: cube_admin
+--
+
+INSERT INTO domain VALUES (1, 'Spatial XY', 'XY');
+INSERT INTO domain VALUES (2, 'Spatial Z', 'Z');
+INSERT INTO domain VALUES (3, 'Temporal', 'T');
+INSERT INTO domain VALUES (4, 'Spectral', 'B');
+INSERT INTO domain VALUES (5, 'Spatial XYZ', 'XYZ');
+
+
+--
+-- TOC entry 4530 (class 0 OID 3524064)
+-- Dependencies: 190
+-- Data for Name: reference_system; Type: TABLE DATA; Schema: public; Owner: cube_admin
+--
+
+INSERT INTO reference_system VALUES (3, 'Australian Height Datum (AHD)', 'metres', 'AHD', 'AHD');
+INSERT INTO reference_system VALUES (50, 'Landsat 5 Reflectance Bands', 'band', 'LS5', 'LS5');
+INSERT INTO reference_system VALUES (70, 'Landsat 7 Spectral Bands', 'band', 'LS7', 'LS7');
+INSERT INTO reference_system VALUES (80, 'Landsat 8 Band', 'band', 'LS8', 'LS8');
+INSERT INTO reference_system VALUES (4326, 'Unprojected WGS84 (Lat-long)', 'degrees', 'EPSG:4326', 'EPSG:4326');
+INSERT INTO reference_system VALUES (5, 'Year', 'year', 'YEAR', 'YEAR');
+INSERT INTO reference_system VALUES (4, 'Seconds since 1/1/1970 0:00', 'seconds', 'seconds since 1970-01-01 00:00:00', 'SSE');
+
+
+--
+-- TOC entry 4523 (class 0 OID 3524043)
+-- Dependencies: 183
+-- Data for Name: dataset_type_domain; Type: TABLE DATA; Schema: public; Owner: cube_admin
+--
+
+INSERT INTO dataset_type_domain VALUES (1, 1, 4326);
+INSERT INTO dataset_type_domain VALUES (2, 1, 4326);
+INSERT INTO dataset_type_domain VALUES (3, 1, 4326);
+INSERT INTO dataset_type_domain VALUES (4, 1, 4326);
+INSERT INTO dataset_type_domain VALUES (5, 1, 4326);
+INSERT INTO dataset_type_domain VALUES (1, 3, 4);
+INSERT INTO dataset_type_domain VALUES (2, 3, 4);
+INSERT INTO dataset_type_domain VALUES (3, 3, 4);
+INSERT INTO dataset_type_domain VALUES (4, 3, 4);
+INSERT INTO dataset_type_domain VALUES (5, 3, 4);
+INSERT INTO dataset_type_domain VALUES (20, 1, 4326);
+INSERT INTO dataset_type_domain VALUES (20, 3, 4);
+INSERT INTO dataset_type_domain VALUES (22, 1, 4326);
+INSERT INTO dataset_type_domain VALUES (22, 3, 4);
+
+
+--
+-- TOC entry 4526 (class 0 OID 3524052)
+-- Dependencies: 186
+-- Data for Name: dimension; Type: TABLE DATA; Schema: public; Owner: cube_admin
+--
+
+INSERT INTO dimension VALUES (1, 'longitude', 'X');
+INSERT INTO dimension VALUES (2, 'latitude', 'Y');
+INSERT INTO dimension VALUES (3, 'height/depth', 'Z');
+INSERT INTO dimension VALUES (5, 'spectral', 'LAMBDA');
+INSERT INTO dimension VALUES (4, 'time', 'T');
+
+
+--
+-- TOC entry 4527 (class 0 OID 3524055)
+-- Dependencies: 187
+-- Data for Name: dimension_domain; Type: TABLE DATA; Schema: public; Owner: cube_admin
+--
+
+INSERT INTO dimension_domain VALUES (1, 1);
+INSERT INTO dimension_domain VALUES (1, 2);
+INSERT INTO dimension_domain VALUES (2, 3);
+INSERT INTO dimension_domain VALUES (3, 4);
+INSERT INTO dimension_domain VALUES (4, 5);
+INSERT INTO dimension_domain VALUES (5, 1);
+INSERT INTO dimension_domain VALUES (5, 2);
+INSERT INTO dimension_domain VALUES (5, 3);
+
+
+--
+-- TOC entry 4522 (class 0 OID 3524040)
+-- Dependencies: 182
+-- Data for Name: dataset_type_dimension; Type: TABLE DATA; Schema: public; Owner: cube_admin
+--
+
+INSERT INTO dataset_type_dimension VALUES (1, 1, 1, 3, false);
+INSERT INTO dataset_type_dimension VALUES (1, 1, 2, 2, false);
+INSERT INTO dataset_type_dimension VALUES (1, 3, 4, 1, false);
+INSERT INTO dataset_type_dimension VALUES (2, 1, 1, 3, false);
+INSERT INTO dataset_type_dimension VALUES (2, 1, 2, 2, false);
+INSERT INTO dataset_type_dimension VALUES (2, 3, 4, 1, false);
+INSERT INTO dataset_type_dimension VALUES (3, 1, 1, 3, false);
+INSERT INTO dataset_type_dimension VALUES (3, 1, 2, 2, false);
+INSERT INTO dataset_type_dimension VALUES (3, 3, 4, 1, false);
+INSERT INTO dataset_type_dimension VALUES (4, 1, 1, 3, false);
+INSERT INTO dataset_type_dimension VALUES (4, 1, 2, 2, false);
+INSERT INTO dataset_type_dimension VALUES (4, 3, 4, 1, false);
+INSERT INTO dataset_type_dimension VALUES (5, 1, 1, 3, false);
+INSERT INTO dataset_type_dimension VALUES (5, 1, 2, 2, false);
+INSERT INTO dataset_type_dimension VALUES (5, 3, 4, 1, false);
+INSERT INTO dataset_type_dimension VALUES (20, 1, 1, 3, false);
+INSERT INTO dataset_type_dimension VALUES (20, 1, 2, 2, false);
+INSERT INTO dataset_type_dimension VALUES (20, 3, 4, 1, false);
+INSERT INTO dataset_type_dimension VALUES (22, 1, 1, 3, false);
+INSERT INTO dataset_type_dimension VALUES (22, 1, 2, 2, false);
+INSERT INTO dataset_type_dimension VALUES (22, 3, 4, 1, false);
+
+
+--
+-- TOC entry 4518 (class 0 OID 3524026)
+-- Dependencies: 178
+-- Data for Name: dataset_dimension; Type: TABLE DATA; Schema: public; Owner: cube_admin
+--
+
+
+
+--
+-- TOC entry 4558 (class 0 OID 0)
+-- Dependencies: 179
+-- Name: dataset_id_seq; Type: SEQUENCE SET; Schema: public; Owner: cube_admin
+--
+
+SELECT pg_catalog.setval('dataset_id_seq', 100, false);
+
+
+--
+-- TOC entry 4520 (class 0 OID 3524031)
+-- Dependencies: 180
+-- Data for Name: dataset_metadata; Type: TABLE DATA; Schema: public; Owner: cube_admin
+--
+
+
+
+--
+-- TOC entry 4525 (class 0 OID 3524049)
+-- Dependencies: 185
+-- Data for Name: datatype; Type: TABLE DATA; Schema: public; Owner: cube_admin
+--
+
+INSERT INTO datatype VALUES (3, 'string', NULL, NULL, NULL);
+INSERT INTO datatype VALUES (1, 'int16', 'int16', 'int16', 'i2');
+INSERT INTO datatype VALUES (2, 'float32', 'float32', 'float32', 'f4');
+
+
+--
+-- TOC entry 4524 (class 0 OID 3524046)
+-- Dependencies: 184
+-- Data for Name: dataset_type_measurement_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
+--
+
+INSERT INTO dataset_type_measurement_type VALUES (3, 3, 3, 1, 1);
+
+
+--
+-- TOC entry 4529 (class 0 OID 3524061)
+-- Dependencies: 189
+-- Data for Name: indexing_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
+--
+
+INSERT INTO indexing_type VALUES (1, 'regular');
+INSERT INTO indexing_type VALUES (2, 'irregular');
+INSERT INTO indexing_type VALUES (3, 'fixed');
+
+
+--
+-- TOC entry 4559 (class 0 OID 0)
+-- Dependencies: 204
+-- Name: observation_id_seq; Type: SEQUENCE SET; Schema: public; Owner: cube_admin
+--
+
+SELECT pg_catalog.setval('observation_id_seq', 100, false);
+
+
+--
+-- TOC entry 4536 (class 0 OID 3524092)
+-- Dependencies: 196
 -- Data for Name: property; Type: TABLE DATA; Schema: public; Owner: cube_admin
 --
 
@@ -327,8 +389,8 @@ INSERT INTO property VALUES (5, 'calendar', 3);
 
 
 --
--- TOC entry 3060 (class 0 OID 3506135)
--- Dependencies: 190
+-- TOC entry 4531 (class 0 OID 3524067)
+-- Dependencies: 191
 -- Data for Name: reference_system_indexing; Type: TABLE DATA; Schema: public; Owner: cube_admin
 --
 
@@ -341,8 +403,24 @@ INSERT INTO reference_system_indexing VALUES (50, 5, 'Band 7 - Middle Infrared 2
 
 
 --
--- TOC entry 3061 (class 0 OID 3506138)
--- Dependencies: 191
+-- TOC entry 4553 (class 0 OID 3525949)
+-- Dependencies: 232
+-- Data for Name: spatial_footprint; Type: TABLE DATA; Schema: public; Owner: cube_admin
+--
+
+
+
+--
+-- TOC entry 4198 (class 0 OID 3524771)
+-- Dependencies: 214
+-- Data for Name: spatial_ref_sys; Type: TABLE DATA; Schema: public; Owner: cube_admin
+--
+
+
+
+--
+-- TOC entry 4532 (class 0 OID 3524070)
+-- Dependencies: 192
 -- Data for Name: storage_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
 --
 
@@ -359,8 +437,24 @@ INSERT INTO storage_type VALUES (101, 'MODIS Terra RBQ500', 'MOD09RBQ', '/g/data
 
 
 --
--- TOC entry 3062 (class 0 OID 3506144)
--- Dependencies: 192
+-- TOC entry 4548 (class 0 OID 3524129)
+-- Dependencies: 208
+-- Data for Name: storage; Type: TABLE DATA; Schema: public; Owner: cube_admin
+--
+
+
+
+--
+-- TOC entry 4549 (class 0 OID 3524132)
+-- Dependencies: 209
+-- Data for Name: storage_dataset; Type: TABLE DATA; Schema: public; Owner: cube_admin
+--
+
+
+
+--
+-- TOC entry 4533 (class 0 OID 3524076)
+-- Dependencies: 193
 -- Data for Name: storage_type_dimension; Type: TABLE DATA; Schema: public; Owner: cube_admin
 --
 
@@ -395,8 +489,25 @@ INSERT INTO storage_type_dimension VALUES (50, 1, 2, 3, 1, 4000, 128, 0, 1, 4326
 
 
 --
--- TOC entry 3064 (class 0 OID 3506162)
--- Dependencies: 196
+-- TOC entry 4550 (class 0 OID 3524135)
+-- Dependencies: 210
+-- Data for Name: storage_dimension; Type: TABLE DATA; Schema: public; Owner: cube_admin
+--
+
+
+
+--
+-- TOC entry 4560 (class 0 OID 0)
+-- Dependencies: 211
+-- Name: storage_id_seq; Type: SEQUENCE SET; Schema: public; Owner: cube_admin
+--
+
+SELECT pg_catalog.setval('storage_id_seq', 100, false);
+
+
+--
+-- TOC entry 4537 (class 0 OID 3524095)
+-- Dependencies: 197
 -- Data for Name: storage_type_dimension_property; Type: TABLE DATA; Schema: public; Owner: cube_admin
 --
 
@@ -494,8 +605,8 @@ INSERT INTO storage_type_dimension_property VALUES (100, 3, 4, 4, 'T');
 
 
 --
--- TOC entry 3072 (class 0 OID 3506207)
--- Dependencies: 209
+-- TOC entry 4552 (class 0 OID 3524140)
+-- Dependencies: 212
 -- Data for Name: storage_type_measurement_type; Type: TABLE DATA; Schema: public; Owner: cube_admin
 --
 
@@ -531,7 +642,7 @@ INSERT INTO storage_type_measurement_type VALUES (100, 1, 205, 1, 6, -28672);
 INSERT INTO storage_type_measurement_type VALUES (100, 1, 206, 1, 7, -28672);
 
 
--- Completed on 2015-07-09 13:27:35
+-- Completed on 2015-07-22 17:40:06
 
 --
 -- PostgreSQL database dump complete
