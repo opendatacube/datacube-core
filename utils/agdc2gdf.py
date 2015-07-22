@@ -348,8 +348,9 @@ order by end_datetime
                 elif len(data_array.shape) == 2:
                     gdfnetcdf.write_slice(variable_name, data_array, {'T': slice_index})
 
+            gdfnetcdf.sync() # Write cached data to disk      
             slice_index += 1
-                 
+            
         del gdfnetcdf # Close the netCDF
         
         logger.debug('Moving temporary storage unit %s to %s', temp_storage_path, storage_path)
