@@ -59,12 +59,12 @@ class TestDatabase(unittest.TestCase):
     # Test DB connection parameters
     TEST_DB_REF = 'test_db' 
 
-    TEST_HOST = '130.56.244.228' 
-    TEST_PORT = 6432
-    TEST_DBNAME = 'gdf_landsat'
-#    TEST_HOST = 'localhost' 
-#    TEST_PORT = 5432
-#    TEST_DBNAME = 'gdf'
+    # TEST_HOST = '130.56.244.228'
+    # TEST_PORT = 6432
+    # TEST_DBNAME = 'gdf_landsat'
+    TEST_HOST = 'localhost'
+    TEST_PORT = 5432
+    TEST_DBNAME = 'gdf_test_ls'
     TEST_USER = 'cube_user'
     TEST_PASSWORD = 'GAcube0'
     TEST_QUERY = 'select 1 as test_field'
