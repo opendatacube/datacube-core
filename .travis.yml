@@ -56,7 +56,7 @@ before_install:
   - cd ..
 
 install:
-  - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2 coverage coveralls
+  - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2 coverage python-coveralls
   - source activate test-agdc
   - python setup.py install
   -
