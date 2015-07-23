@@ -182,7 +182,6 @@ class GDFNetCDF(object):
                 variable.__setattr__(property_name, property_value)
             
             variable[:] = dimension_index_vector    
-            self.netcdf_object.sync()
             
         def set_variable(variable_name, variable_config):
             dimensions = self.storage_config['dimensions'].keys()
@@ -199,10 +198,11 @@ class GDFNetCDF(object):
                    chunksizes=chunksizes, fill_value=variable_config['nodata_value'], zlib=True)
             logger.debug('variable = %s' % variable)
             
-            # A method of handling variable metadata
-            metadata_dict = {variable_name + ':' + 'coordinates': 'latitude longitude',
+            # Set variable metadata
+            metadata_dict = {variable_name + ':' + 'coordinates': ' '.join(dimension_names),
                              variable_name + ':' + 'grid_mapping': 'crs',
-                             variable_name + ':' + 'name': variable_config['measurement_type_name']
+                             variable_name + ':' + 'standard_name': variable_name,
+                             variable_name + ':' + 'long_name': variable_config['measurement_type_name']
                              }
      
             self.set_attributes(metadata_dict)            
@@ -229,9 +229,9 @@ class GDFNetCDF(object):
         self.netcdf_object.spatial_coverage = '%f %s grid' % (self.storage_config['dimensions']['X']['dimension_extent'],
                                                               self.storage_config['dimensions']['X']['reference_system_unit'])
         self.netcdf_object.featureType = 'grid'
+        
+        self.sync()
      
-        #     samples  = template_dataset.RasterXSize
-        #     lines    = template_dataset.RasterYSize
     def write_slice(self, variable_name, slice_array, indices_dict):
         '''
         Function to set a specified slice in the specified netCDF variable
@@ -274,7 +274,6 @@ class GDFNetCDF(object):
         logger.debug('slice_array = %s', slice_array)
 
         variable[slicing] = slice_array
-        self.netcdf_object.sync()
         
     def read_slice(self, variable_name, indices_dict):
         '''
@@ -565,7 +564,7 @@ class GDFNetCDF(object):
                 A tuple containing (min_lat, max_lat, min_lon, max_lat)
         
             :notes:
-                Hasn't been tested for nothern or western hemispheres.
+                Hasn't been tested for northern or western hemispheres.
             """
             extents = []
             x_list  = [0,samples]
@@ -617,6 +616,14 @@ class GDFNetCDF(object):
         self.netcdf_object.geospatial_lon_max = extents[3]
         self.netcdf_object.geospatial_lon_units = 'degrees_east'
         self.netcdf_object.geospatial_lon_resolution = geotransform[1]
+
+
+    def sync(self):
+        '''
+        Function to sync file to disk
+        '''
+        if self._isopen:
+            self.netcdf_object.sync()
 
     @property
     def isopen(self):
