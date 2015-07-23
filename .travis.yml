@@ -14,6 +14,7 @@ addons:
 
 # Command to install miniconda to build test environment
 before_install:
+  - sudo rm /etc/apt/sources.list.d/ubuntugis-stable-source.list # see https://github.com/travis-ci/travis-ci/issues/2401
   # Install required packages
   - sudo apt-get update -qq
   # HDF4, HDF5, GDAL and netCDF4
