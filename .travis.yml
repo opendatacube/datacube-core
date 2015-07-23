@@ -16,10 +16,12 @@ addons:
 before_install:
   # Install required packages
   - sudo apt-get update -qq
-  - sudo rm /etc/apt/sources.list.d/ubuntugis-stable-source.list # see https://github.com/travis-ci/travis-ci/issues/2401
+  # This fix doesn't work for the postgis being uninstalled by gdal package dependencies.Keeping it here so I have the reference until this is resolved.
+  #- sudo rm /etc/apt/sources.list.d/ubuntugis-stable-source.list # see https://github.com/travis-ci/travis-ci/issues/2401
   # HDF4, HDF5, GDAL and netCDF4
   # Note: Using libhdf4-alt-dev for compatibility with GDAL
-  - sudo apt-get install -qq libhdf4-alt-dev libhdf5-serial-dev libnetcdf-dev libgdal-dev
+  # Including libgdal1-dev and libgdal1h to resolve postgis being uninstalled by gdal problem
+  - sudo apt-get install -qq libhdf4-alt-dev libhdf5-serial-dev libnetcdf-dev libgdal-dev libgdal1-dev libgdal1h
   # Python and packages
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
       wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
