@@ -30,7 +30,8 @@ before_install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   # Add binstar channels to get custom builds
-  # - conda config --add channels <channel name>
+  # Add Jess Robertson (CSIRO) binstar channel to get custom builds for some utilities
+  - conda config --add channels jesserobertson
   - conda update -q conda
   # Useful for debugging any issues with conda
   - conda info -a
@@ -45,7 +46,7 @@ before_install:
   - cd ..
 
 install:
-  - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2 coverage
+  - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2 coverage coveralls
   - source activate test-agdc
   - python setup.py install
   -
