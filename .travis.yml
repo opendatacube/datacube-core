@@ -13,13 +13,13 @@ sudo: false
 
 # Travis already has postgresql installed - see addons: and  before_script: sections for configuration
 addons:
-  postgresql: "9.2"
+  postgresql: "9.3"
   apt:
     packages:
-    - libhdf4-alt-dev
+#    - libhdf4-alt-dev
     - libhdf5-serial-dev
     - libnetcdf-dev
-    - libgdal-dev
+#    - libgdal-dev
 
 # Command to install miniconda to build test environment
 before_install:
