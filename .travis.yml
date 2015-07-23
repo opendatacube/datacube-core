@@ -11,25 +11,22 @@ python:
 # Use the new travis docker based infrastructure
 sudo: false
 
-# Travis already has postgresql installed - see addons: and  before_script: sections for configuration
+# Install required packages
 addons:
   postgresql: "9.3"
   apt:
     packages:
+# libhdf4-alt-dev is not available on travis CI. It would appear this package is not required by tests at this time
+# TODO: Check if this dependency is truly required
 #    - libhdf4-alt-dev
     - libhdf5-serial-dev
     - libnetcdf-dev
+# libgdal-dev has a packaging conflict on travis ci which causes it to uninstall postgis.
+# TODO: Check if this dependency is truly required
 #    - libgdal-dev
 
 # Command to install miniconda to build test environment
 before_install:
-  # Install required packages
-  # - sudo apt-get update -qq
-  # This fix doesn't work for the postgis being uninstalled by gdal package dependencies.Keeping it here so I have the reference until this is resolved.
-  #- sudo rm /etc/apt/sources.list.d/ubuntugis-stable-source.list # see https://github.com/travis-ci/travis-ci/issues/2401
-  # HDF4, HDF5, GDAL and netCDF4
-  # Note: Using libhdf4-alt-dev for compatibility with GDAL
-  #- sudo apt-get install -qq libhdf4-alt-dev libhdf5-serial-dev libnetcdf-dev libgdal-dev
   # Python and packages
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
       wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
@@ -40,7 +37,6 @@ before_install:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
-  # Add binstar channels to get custom builds
   # Add Jess Robertson (CSIRO) binstar channel to get custom builds for some utilities
   - conda config --add channels jesserobertson
   - conda update -q conda
@@ -51,6 +47,9 @@ before_install:
   - wget https://github.com/data-cube/agdc-v2-data/raw/master/sample_dbs/gdf_landsat_20150710.backup
 
   - cd gdf_database
+  # Travis logs will show a WARNING regarding the "gdf_modis" does not exist, and Error regarding SCHEMA topology
+  # These are to be expected and can be safely ignored. It is a consequence of restoring a backup after creating an empty
+  # database that ensures the database setup scripts are working
   - ./gdf_db_setup.sh
   - ./create_db_from_backup.sh gdf_test_modis ../gdf_modis_20150710.backup
   - ./create_db_from_backup.sh gdf_test_ls ../gdf_landsat_20150710.backup
