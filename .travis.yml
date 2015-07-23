@@ -13,7 +13,7 @@ sudo: false
 
 # Travis already has postgresql installed - see addons: and  before_script: sections for configuration
 addons:
-  postgresql: "9.3"
+  postgresql: "9.2"
   apt:
     packages:
     - libhdf4-alt-dev
