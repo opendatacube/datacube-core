@@ -20,9 +20,7 @@ before_install:
   #- sudo rm /etc/apt/sources.list.d/ubuntugis-stable-source.list # see https://github.com/travis-ci/travis-ci/issues/2401
   # HDF4, HDF5, GDAL and netCDF4
   # Note: Using libhdf4-alt-dev for compatibility with GDAL
-  - sudo apt-get install -qq libhdf4-alt-dev libhdf5-serial-dev libnetcdf-dev libgdal-dev
-  # Fixing postgis uninstall by gdal package problem on travis, attempt to reinstall
-  - sudo apt-get install -qq postgresql-9.3-postgis-2.1
+  #- sudo apt-get install -qq libhdf4-alt-dev libhdf5-serial-dev libnetcdf-dev libgdal-dev
   # Python and packages
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
       wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
