@@ -8,14 +8,23 @@ python:
     # - "3.4"
     - "2.7"
 
+# Use the new travis docker based infrastructure
+sudo: false
+
 # Travis already has postgresql installed - see addons: and  before_script: sections for configuration
 addons:
   postgresql: "9.3"
+  apt:
+    packages:
+    - libhdf4-alt-dev
+    - libhdf5-serial-dev
+    - libnetcdf-dev
+    - libgdal-dev
 
 # Command to install miniconda to build test environment
 before_install:
   # Install required packages
-  - sudo apt-get update -qq
+  # - sudo apt-get update -qq
   # This fix doesn't work for the postgis being uninstalled by gdal package dependencies.Keeping it here so I have the reference until this is resolved.
   #- sudo rm /etc/apt/sources.list.d/ubuntugis-stable-source.list # see https://github.com/travis-ci/travis-ci/issues/2401
   # HDF4, HDF5, GDAL and netCDF4
