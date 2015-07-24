@@ -1,12 +1,6 @@
-# whitelist
-branches:
-  only:
-    - robw_add_docs
-
 language: python
 python:
-    # - "3.4"
-    - "2.7"
+  - "2.7"
 
 # Use the new travis docker based infrastructure
 sudo: false
@@ -42,10 +36,10 @@ before_install:
   - conda update -q conda
   # Useful for debugging any issues with conda
   - conda info -a
-  # Test database
+  # Test databases and data
   - wget https://github.com/data-cube/agdc-v2-data/raw/master/sample_dbs/gdf_modis_20150710.backup
   - wget https://github.com/data-cube/agdc-v2-data/raw/master/sample_dbs/gdf_landsat_20150710.backup
-
+  # TODO: Add download of test data when available in a suitable size
   - cd gdf_database
   # Travis logs will show a WARNING regarding the "gdf_modis" does not exist, and Error regarding SCHEMA topology
   # These are to be expected and can be safely ignored. It is a consequence of restoring a backup after creating an empty
@@ -59,11 +53,10 @@ install:
   - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2 coverage python-coveralls
   - source activate test-agdc
   - python setup.py install
-  -
 
 # Command to run tests
 script:
-   - coverage run -m unittest discover gdf_tests
+  - coverage run -m unittest discover gdf_tests
 
 after_success:
   - coveralls
