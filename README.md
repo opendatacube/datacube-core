@@ -1,7 +1,10 @@
 # gdf
 General Data Framework (GDF)
 
+Build Status - Master
 [![Build Status - Master](https://travis-ci.org/agdc-research-trial/gdf-trial.svg?branch=master)](https://travis-ci.org/agdc-research-trial/gdf-trial)
+
+Build Status - Develop
 [![Build Status - Develop](https://travis-ci.org/agdc-research-trial/gdf-trial.svg?branch=develop)](https://travis-ci.org/agdc-research-trial/gdf-trial)
 
 The scope and design objectives of the GDF can be described as follows:
