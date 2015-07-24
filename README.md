@@ -1,9 +1,8 @@
 # gdf
 General Data Framework (GDF)
 
-[![Build Status](https://travis-ci.org/agdc-research-trial/gdf-trial.svg?branch=robw_add_docs)](https://travis-ci.org/agdc-research-trial/gdf-trial)
-
-**Note:** Travis CI is not full integrated, ignore build errors icon until this is resolved
+[![Build Status - Master](https://travis-ci.org/agdc-research-trial/gdf-trial.svg?branch=master)](https://travis-ci.org/agdc-research-trial/gdf-trial)
+[![Build Status - Develop](https://travis-ci.org/agdc-research-trial/gdf-trial.svg?branch=develop)](https://travis-ci.org/agdc-research-trial/gdf-trial)
 
 The scope and design objectives of the GDF can be described as follows:
 . The current GDF implementation is intended as a working prototype for a cohesive, sustainable framework for large-scale multidimensional data management for geoscientific data. The design of the GDF has been driven by the longer-term strategic goals of Geoscience Australia (GA) in that it both aligns us with existing best practice in scientific data, and allows us to push well beyond the capabilities of the current implementation of the AGDC.

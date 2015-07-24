@@ -1,3 +1,9 @@
+# whitelist
+branches:
+  only:
+    - master
+    - develop
+
 language: python
 python:
   - "2.7"
