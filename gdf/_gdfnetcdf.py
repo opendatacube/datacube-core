@@ -43,7 +43,7 @@ import logging
 from osgeo import gdal, gdalconst, osr
 from datetime import datetime
 
-from eotools.utils import log_multiline
+from _gdfutils import log_multiline
 
 # Only needed for testing
 from pprint import pprint
