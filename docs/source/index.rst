@@ -15,6 +15,7 @@ Contents:
 
    install
    db_setup
+   developer
    license
 
 
