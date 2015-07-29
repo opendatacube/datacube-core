@@ -1,5 +1,6 @@
-# gdf
-General Data Framework (GDF)
+# Australian Geoscience Data Cube v2
+
+Powered by the General Data Framework (GDF)
 
 Master -
 [![Build Status - Master](https://travis-ci.org/data-cube/agdc-v2.svg?branch=master)](https://travis-ci.org/data-cube/agdc-v2)
