@@ -2,12 +2,12 @@
 General Data Framework (GDF)
 
 Build Status - Master
-[![Build Status - Master](https://travis-ci.org/agdc-research-trial/gdf-trial.svg?branch=master)](https://travis-ci.org/agdc-research-trial/gdf-trial)
-[![Coverage Status](https://coveralls.io/repos/agdc-research-trial/gdf-trial/badge.svg?branch=master&service=github)](https://coveralls.io/github/agdc-research-trial/gdf-trial?branch=master)
+[![Build Status - Master](https://travis-ci.org/data-cube/agdc-v2.svg?branch=master)](https://travis-ci.org/data-cube/agdc-v2)
+[![Coverage Status](https://coveralls.io/repos/data-cube/agdc-v2/badge.svg?branch=master&service=github)](https://coveralls.io/github/data-cube/agdc-v2?branch=master)
 
 Build Status - Develop
-[![Build Status - Develop](https://travis-ci.org/agdc-research-trial/gdf-trial.svg?branch=develop)](https://travis-ci.org/agdc-research-trial/gdf-trial)
-[![Coverage Status](https://coveralls.io/repos/agdc-research-trial/gdf-trial/badge.svg?branch=develop&service=github)](https://coveralls.io/github/agdc-research-trial/gdf-trial?branch=develop)
+[![Build Status - Develop](https://travis-ci.org/data-cube/agdc-v2.svg?branch=develop)](https://travis-ci.org/data-cube/agdc-v2)
+[![Coverage Status](https://coveralls.io/repos/data-cube/agdc-v2/badge.svg?branch=develop&service=github)](https://coveralls.io/github/data-cube/agdc-v2?branch=develop)
 
 The scope and design objectives of the GDF can be described as follows:
 . The current GDF implementation is intended as a working prototype for a cohesive, sustainable framework for large-scale multidimensional data management for geoscientific data. The design of the GDF has been driven by the longer-term strategic goals of Geoscience Australia (GA) in that it both aligns us with existing best practice in scientific data, and allows us to push well beyond the capabilities of the current implementation of the AGDC.
