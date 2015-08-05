@@ -4,16 +4,19 @@ from distutils.core import setup
 
 version = '0.0.0'
 
-setup(name='agdc',
+setup(name='agdc-v2',
       version=version,
       packages=[
           'gdf',
           'analytics',
           'analytics_utils',
           'execution_engine',
+          'utils',
       ],
       package_data={
-          'gdf': ['gdf_default.conf']
+          'gdf': ['gdf_default.conf',
+                  'gdf_default_nci_write.conf'],
+          'utils': ['agdc2gdf_default.conf'],
       },
       scripts=[
       ],
@@ -28,8 +31,8 @@ setup(name='agdc',
           'pytz'
       ],
       url='https://github.com/data-cube/agdc-v2',
-      author='AGDC Team',
-      maintainer='AGDC Team',
+      author='AGDC Collaboration',
+      maintainer='AGDC Collaboration',
       maintainer_email='',
       description='AGDC v2',
       long_description='Australian Geoscience Data Cube v2',
