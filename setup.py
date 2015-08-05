@@ -11,12 +11,9 @@ setup(name='agdc-v2',
           'analytics',
           'analytics_utils',
           'execution_engine',
-          'utils',
       ],
       package_data={
-          'gdf': ['gdf_default.conf',
-                  'gdf_default_nci_write.conf'],
-          'utils': ['agdc2gdf_default.conf'],
+          'gdf': ['gdf_default.conf']
       },
       scripts=[
       ],

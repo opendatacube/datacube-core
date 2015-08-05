@@ -42,7 +42,7 @@ import logging
 from pprint import pformat
 
 logger = logging.getLogger(__name__)
-#logger.setLevel(logging.DEBUG) # Logging level for this module
+logger.setLevel(logging.INFO) # Logging level for this module
 
 # Ignore failed import of graphical modules
 try:
