@@ -4,7 +4,7 @@ from distutils.core import setup
 
 version = '0.0.0'
 
-setup(name='agdc',
+setup(name='agdc-v2',
       version=version,
       packages=[
           'gdf',
@@ -28,8 +28,8 @@ setup(name='agdc',
           'pytz'
       ],
       url='https://github.com/data-cube/agdc-v2',
-      author='AGDC Team',
-      maintainer='AGDC Team',
+      author='AGDC Collaboration',
+      maintainer='AGDC Collaboration',
       maintainer_email='',
       description='AGDC v2',
       long_description='Australian Geoscience Data Cube v2',
