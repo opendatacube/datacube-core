@@ -1,7 +1,8 @@
+from __future__ import print_function
 from datetime import datetime
 import sys
 from abc import ABCMeta, abstractmethod
-
+import argparse
 import numpy as np
 import gdal
 import netCDF4
@@ -12,13 +13,20 @@ chunk_y=400
 chunk_time=1
 epoch = datetime(1970,1,1,0,0,0)
 
+def print(s='', end='\n', file=sys.stdout):
+    file.write(s + end)
+    file.flush()
 
 class BaseNetCDF(object):
+    """
+    Base class for creating a NetCDF file based upon GeoTIFF data.
+
+    Sub-classes will create the NetCDF in different structures.
+    """
 
     __metaclass__ = ABCMeta
 
     def __init__(self, netcdf_path, mode='r'):
-        print "BaseNetCDF.__init__"
         self.nco = self.open_netcdf(netcdf_path, mode)
         self.netcdf_path = netcdf_path
 
@@ -131,11 +139,6 @@ class SeparateBandsTimeSlicedNetCDF(BaseNetCDF):
             band.set_auto_maskandscale(False)
             band.units = "1"
             netcdfbands.append(band)
-        #band1.units = 'degC'
-        #band1.scale_factor = 0.01
-        #band1.add_offset = 0.00
-        #band1.long_name = 'minimum monthly temperature'
-        #band1.standard_name = 'air_temperature'
         return netcdfbands
 
     def _get_netcdf_bands(self, nbands):
@@ -149,6 +152,8 @@ class SeparateBandsTimeSlicedNetCDF(BaseNetCDF):
         nbands, lats, lons = self._get_nbands_lats_lons_from_gdalds(gdal_dataset)
         netcdfbands = self._get_netcdf_bands(nbands)
 
+        time_index = len(self.nco.variables['time'])
+
         for idx, out_band in enumerate(netcdfbands, start=1):
             in_band = gdal_dataset.GetRasterBand(idx)
 
@@ -157,8 +162,9 @@ class SeparateBandsTimeSlicedNetCDF(BaseNetCDF):
             out_band.source_filename = metadata.get('filename')
             out_band.missing_value = in_band.GetNoDataValue()
 
-            out_band[0,:,:] = in_band.ReadAsArray()
-            print('.',)
+            out_band[time_index-1,:,:] = in_band.ReadAsArray()
+            print('.', end='')
+        print()
 
 #     # check that the files exist
 #     # check that the files area (lat/longs) matches
@@ -173,31 +179,66 @@ class BandAsDimensionNetCDF(BaseNetCDF):
     def _create_variables(self, lats, lons, nbands):
         self._create_standard_dimensions(lats, lons)
         self._create_band_dimension(nbands)
+        self._create_data_variable()
 
     def _create_band_dimension(self, nbands):
         self.nco.createDimension('band', nbands)
-        band = self.nco.createVariable('band','f4',('band'))
+        band = self.nco.createVariable('band', str,('band'))
+
+    def _create_data_variable(self):
+        chunk_band = 1
+        self.nco.createVariable('observation', 'i2',  ('time', 'band', 'latitude', 'longitude'),
+               zlib=True,chunksizes=[chunk_time,chunk_band,chunk_y,chunk_x],fill_value=-9999)
+
+    def _write_data_to_netcdf(self, gdal_dataset):
+        nbands, lats, lons = self._get_nbands_lats_lons_from_gdalds(gdal_dataset)
+
+        time_index = len(self.nco.dimensions['time']) - 1
+        band_var = self.nco.variables['band']
+
+        observation = self.nco.variables['observation']
+        for band_idx in range(nbands):
+            in_band = gdal_dataset.GetRasterBand(band_idx + 1)
+
+            metadata = in_band.GetMetadata() # eg. filename: 'source.tif', name: 'Photosynthetic Vegetation'
+
+            band_var[band_idx] = metadata.get('name')
+
+            observation[time_index,band_idx,:,:] = in_band.ReadAsArray()
+            print('.', end="")
+        print()
 
 
 
-def main(args):
-    if len(args) < 3:
-        print("Usage: geotiff_to_netcdf.py input_geotiff.tiff output_netcdf.nc")
-        exit()
 
-    netcdf_path = args[2]
-    geotiff_path = args[1]
-    if (args[0] == 'geotiff_to_netcdf.py'):
-        dcnc = SeparateBandsTimeSlicedNetCDF(netcdf_path, mode='w')
-        dcnc.create_from_geotiff(geotiff_path)
+def main():
+    parser = argparse.ArgumentParser()
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--create", action='store_true', help="Overwrite or create a new NetCDF file")
+    group.add_argument("--append", action='store_true', help="Append the geotiff to a new portion of the NetCDF")
+    parser.add_argument("-b", "--band_as_dimension", action="store_true", help="Store bands as a dimension instead of as new dataset")
+    parser.add_argument("geotiff", help="Input GeoTIFF filename")
+    parser.add_argument("netcdf", help="NetCDF file to create or write to")
+
+    args = parser.parse_args()
+
+    if (args.band_as_dimension):
+        netcdf_class = BandAsDimensionNetCDF
+    else:
+        netcdf_class = SeparateBandsTimeSlicedNetCDF
+
+
+    if (args.create):
+        dcnc = netcdf_class(args.netcdf, mode='w')
+        dcnc.create_from_geotiff(args.geotiff)
         dcnc.close()
-    elif (args[0] == 'append_to_netcdf.py'):
-        dcnc = SeparateBandsTimeSlicedNetCDF(netcdf_path, mode='a')
-        dcnc.append_geotiff(geotiff_path)
+    elif (args.append):
+        dcnc = netcdf_class(args.netcdf, mode='a')
+        dcnc.append_geotiff(args.geotiff)
         dcnc.close()
     else:
-        print("Unknown command line name")
+        print("Unknown action")
 
 
 if __name__ == '__main__':
-    main(sys.argv)
+    main()
