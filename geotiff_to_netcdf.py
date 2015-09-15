@@ -111,13 +111,33 @@ class BaseNetCDF(object):
 
     @abstractmethod
     def _create_variables(self, lats, lons, nbands):
+        """
+        Create the structure of the NetCDF file, ie, which variables with which dimensions
+
+        :param lats: list of latitudes
+        :param lons: list of longitudes
+        :param nbands: number of bands
+        :return:
+        """
         pass
 
     @abstractmethod
     def _write_data_to_netcdf(self, dataset):
+        """
+        Read in all the data from the geotiff `dataset` and write it as a new time
+         slice to the NetCDF file
+        :param dataset: open geotiff dataset
+        :return:
+        """
         pass
 
     def append_geotiff(self, geotiff):
+        """
+        Read a geotiff file and append it to the open NetCDF file
+
+        :param geotiff:string path to a geotiff file
+        :return:
+        """
         dataset = gdal.Open(geotiff)
         ds_metadata = dataset.GetMetadata()
         self._add_time(ds_metadata['start_datetime'])
@@ -126,6 +146,11 @@ class BaseNetCDF(object):
 
 
 class SeparateBandsTimeSlicedNetCDF(BaseNetCDF):
+    """
+    Create individual datasets for each `band` of data
+
+    This closely matches the existing GeoTiff tile file structure
+    """
     def _create_variables(self, lats, lons, nbands):
         self._create_standard_dimensions(lats, lons)
         self._create_bands(nbands)
@@ -176,6 +201,11 @@ class SeparateBandsTimeSlicedNetCDF(BaseNetCDF):
 #     pass
 
 class BandAsDimensionNetCDF(BaseNetCDF):
+    """
+    Store all data values in a single dataset with an extra dimension for `band`
+
+
+    """
     def _create_variables(self, lats, lons, nbands):
         self._create_standard_dimensions(lats, lons)
         self._create_band_dimension(nbands)
