@@ -8,9 +8,6 @@ import gdal
 import netCDF4
 import dateutil.parser
 
-chunk_x=400
-chunk_y=400
-chunk_time=1
 epoch = datetime(1970,1,1,0,0,0)
 
 def print(s='', end='\n', file=sys.stdout):
@@ -26,9 +23,12 @@ class BaseNetCDF(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, netcdf_path, mode='r'):
+    def __init__(self, netcdf_path, mode='r', chunk_x=400, chunk_y=400, chunk_time=1):
         self.nco = self.open_netcdf(netcdf_path, mode)
         self.netcdf_path = netcdf_path
+        self.chunk_x = chunk_x
+        self.chunk_y = chunk_y
+        self.chunk_time = chunk_time
 
     def close(self):
         self.nco.close()
@@ -159,7 +159,7 @@ class SeparateBandsTimeSlicedNetCDF(BaseNetCDF):
         netcdfbands = []
         for i in range(1,nbands+1):
             band = self.nco.createVariable('band' + str(i), 'i2',  ('time', 'latitude', 'longitude'),
-               zlib=True,chunksizes=[chunk_time,chunk_y,chunk_x],fill_value=-9999)
+               zlib=True,chunksizes=[self.chunk_time,self.chunk_y,self.chunk_x],fill_value=-9999)
             band.grid_mapping = 'crs'
             band.set_auto_maskandscale(False)
             band.units = "1"
@@ -218,7 +218,7 @@ class BandAsDimensionNetCDF(BaseNetCDF):
     def _create_data_variable(self):
         chunk_band = 1
         self.nco.createVariable('observation', 'i2',  ('time', 'band', 'latitude', 'longitude'),
-               zlib=True,chunksizes=[chunk_time,chunk_band,chunk_y,chunk_x],fill_value=-9999)
+               zlib=True,chunksizes=[self.chunk_time,self.chunk_band,self.chunk_y,self.chunk_x],fill_value=-9999)
 
     def _write_data_to_netcdf(self, gdal_dataset):
         nbands, lats, lons = self._get_nbands_lats_lons_from_gdalds(gdal_dataset)
