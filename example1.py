@@ -4,7 +4,8 @@ from datacube.api.query import list_tiles_as_list
 from datacube.api.utils import get_dataset_metadata
 from datacube.api.utils import get_dataset_data
 
-from geotiff_to_netcdf import BandAsDimensionNetCDF, SeparateBandsTimeSlicedNetCDF
+from geotiff_to_netcdf import BandAsDimensionNetCDF, BandAsDatasetNetCDF, get_description_from_dataset
+import gdal
 
 from datetime import date
 import sys
@@ -34,16 +35,19 @@ netcdf_filename = 'multi_band.nc'
 
 arg25paths = [dstile.path for tile in tiles for dstile in tile.datasets.itervalues() if dstile.bands == Ls57Arg25Bands]
 
+# Find an actual tiff file to use the structure of, not a VRT
 initial_file = [path for path in arg25paths if path.endswith("tif")][0]
-arg25paths.remove(initial_file)
 
+
+dataset = gdal.Open(initial_file)
+description = get_description_from_dataset(dataset)
 
 print("Creating {}".format(netcdf_filename))
-multi_band_file = SeparateBandsTimeSlicedNetCDF(netcdf_filename, mode='w')
+multi_band_file = BandAsDatasetNetCDF(netcdf_filename, mode='w')
 print("Creating netcdf structure from {}".format(initial_file))
-multi_band_file.create_from_geotiff(initial_file)
-print("Appending from {}".format(arg25paths[1]))
-multi_band_file.append_geotiff(arg25paths[1])
+multi_band_file.create_from_description(description)
+print("Appending from {}".format(arg25paths[0]))
+multi_band_file.append_geotiff(arg25paths[0])
 multi_band_file.close()
 # for path in arg25paths:
     # multi_band_file
