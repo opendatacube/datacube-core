@@ -154,7 +154,7 @@ class BandAsDatasetNetCDF(BaseNetCDF):
 
     def _create_variables(self):
         self._create_standard_dimensions(self.description.lats, self.description.lons)
-        self._create_bands(len(self.description.nbands))
+        self._create_bands(len(self.description.bands))
 
     def _create_bands(self, nbands):
         netcdfbands = []
@@ -248,6 +248,15 @@ class BandAsDimensionNetCDF(BaseNetCDF):
         print()
 
 
+class Description(object):
+    def __init__(self, bands=None, lats=None, lons=None):
+        self.bands = [] if bands is None else bands
+        self.lats = [] if lats is None else lats
+        self.lons = [] if lons is None else lons
+class Messenger:
+    def __init__(self, **kwargs):
+        self.__dict__ = kwargs
+
 def get_description_from_dataset(dataset):
     """
     Return a description of a GDAL dataset, usefed for creating a new NetCDF file to hold the same data
@@ -283,7 +292,7 @@ def get_description_from_dataset(dataset):
 
         bands.append(dict(name=name, dtype=dtype, no_data=no_data))
 
-    return dict(bands=bands, lats=lats, lons=lons)
+    return Description(bands=bands, lats=lats, lons=lons)
 
 
 def main():
