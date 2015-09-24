@@ -1,50 +1,151 @@
 
 import subprocess
+import os
+import sys
+from glob import glob
+from osgeo import gdal,ogr,osr
+from math import floor, ceil
 
-src_files = '/g/data/rs0/scenes/ARG25_V0.0/2015-04/LS7_ETM_NBAR_P54_GANBAR01-002_089_081_20150425/scene01/*.tif'
-src_vrt = 'LS7_ETM_NBAR_P54_GANBAR01-002_089_081_20150425.vrt'
+# From Metageta and http://gis.stackexchange.com/a/57837/2910
+def GetExtent(gt,cols,rows):
+    ''' Return list of corner coordinates from a geotransform
 
+        @type gt:   C{tuple/list}
+        @param gt: geotransform
+        @type cols:   C{int}
+        @param cols: number of columns in the dataset
+        @type rows:   C{int}
+        @param rows: number of rows in the dataset
+        @rtype:    C{[float,...,float]}
+        @return:   coordinates of each corner
+    '''
+    ext=[]
+    xarr=[0,cols]
+    yarr=[0,rows]
 
-subprocess.call(['gdalbuildvrt', src_vrt, src_files], shell=True).wait()
-
-
-
-
-target_src = 'EPSG:4326'
-reprojected_vrt = 'LS7_ETM_NBAR_P54_GANBAR01-002_089_081_20150425.{}.vrt'.format(target_src.lower().replace(':', ''))
-target_pixel_res = "0.00025"
-
-subprocess.call(['gdalwarp',
-                 '-t', target_src,
-                 '-of', 'VRT',
-                 '-tr', target_pixel_res, target_pixel_res,
-                 src_vrt, reprojected_vrt]).wait()
-
-target_dir = 'tiles/'
-pixel_size = '4000'
-tile_index = 'tile_grid.shp'
-output_format = 'NetCDF'
-create_options = 'FORMAT=NC4'
-
-subprocess.call(['gdal_retile.py', '-v', '-targetDir', target_dir,
-                 '-ps', pixel_size, pixel_size,
-                 '-tileIndex', tile_index,
-                 '-of', output_format,
-                 '-co', create_options,
-                 reprojected_vrt]).wait()
-
-cfa_format = 'NETCDF4'
-nc4_aggregate_name = 'cfa_aggregate.nc'
-input_files = '*.nc'
-
-subprocess.call(['cfa', '-f', cfa_format, '-o', nc4_aggregate_name, input_files], shell=True).wait()
+    for px in xarr:
+        for py in yarr:
+            x=gt[0]+(px*gt[1])+(py*gt[2])
+            y=gt[3]+(px*gt[4])+(py*gt[5])
+            ext.append([x,y])
+            print x,y
+        yarr.reverse()
+    return ext
 
 
-#Pixel resolution (Fraction of a degree)
-#-tr 0.00025 0.00025
+def reproject_coords(coords,src_srs,tgt_srs):
+    ''' Reproject a list of x,y coordinates.
 
-#Force to nest within the grid definition
-#-tap
+        @type geom:     C{tuple/list}
+        @param geom:    List of [[x,y],...[x,y]] coordinates
+        @type src_srs:  C{osr.SpatialReference}
+        @param src_srs: OSR SpatialReference object
+        @type tgt_srs:  C{osr.SpatialReference}
+        @param tgt_srs: OSR SpatialReference object
+        @rtype:         C{tuple/list}
+        @return:        List of transformed [[x,y],...[x,y]] coordinates
+    '''
+    trans_coords=[]
+    transform = osr.CoordinateTransformation( src_srs, tgt_srs)
+    for x,y in coords:
+        x,y,z = transform.TransformPoint(x,y)
+        trans_coords.append([x,y])
+    return trans_coords
+
+
+def get_extents(raster_filename):
+    ds = gdal.Open(raster_filename)
+
+    gt = ds.GetGeoTransform()
+    cols = ds.RasterXSize
+    rows = ds.RasterYSize
+    ext = GetExtent(gt,cols,rows)
+
+    src_srs = osr.SpatialReference()
+    src_srs.ImportFromWkt(ds.GetProjection())
+    #tgt_srs=osr.SpatialReference()
+    #tgt_srs.ImportFromEPSG(4326)
+    tgt_srs = src_srs.CloneGeogCS()
+
+    geo_ext = reproject_coords(ext,src_srs,tgt_srs)
+
+    return geo_ext
+
+project_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+shapefile_path = os.path.join(project_path, 'example_grid', 'example_grid.shp')
+
+def execute(command_list):
+    print("Running command: " + ' '.join(command_list))
+    subprocess.check_call(command_list)
+
+def combine_bands_to_vrt(src_files, basename):
+
+    scene_vrt = '{}.vrt'.format(basename)
+
+    execute(['gdalbuildvrt', '-separate', scene_vrt] + sorted(glob(src_files)))
+
+    return scene_vrt
+
+
+def create_vrt_with_correct_srs(input_vrt, basename, target_srs="EPSG:4326"):
+    reprojected_vrt = '{}.{}.vrt'.format(basename, target_srs.lower().replace(':', ''))
+    target_pixel_res = "0.00025"
+
+    execute(['gdalwarp',
+             '-t_srs', target_srs,
+             '-of', 'VRT',
+             '-tr', target_pixel_res, target_pixel_res,  # Pixel resolution x,y (Fraction of a degree)
+             '-tap',  # Force to nest within the grid definition
+             '-srcnodata', '-999', '-dstnodata', '-999',
+             input_vrt, reprojected_vrt])
+    return reprojected_vrt
+
+
+def create_vrt_with_extended_extents(input_vrt, basename):
+    extents = get_extents(input_vrt)
+    print("Extents: " + str(extents))
+    xmin = str(floor(min(p[0] for p in extents)))
+    xmax = str(ceil(max(p[0] for p in extents)))
+    ymin = str(floor(min(p[1] for p in extents)))
+    ymax = str(ceil(max(p[1] for p in extents)))
+
+    extended_vrt = '{}.extended.vrt'.format(basename)
+
+    execute(['gdalbuildvrt', '-te', xmin, ymin, xmax, ymax, extended_vrt, input_vrt])
+
+    return extended_vrt
+
+
+def create_tile_files(input_vrt):
+    # target_dir = 'tiles/'
+    target_dir = '.'
+    pixel_size = '4000'
+    output_format = 'NetCDF'
+    create_options = 'FORMAT=NC4'
+
+    execute(['gdal_retile.py', '-v', '-targetDir', target_dir,
+             '-ps', pixel_size, pixel_size,
+             '-of', output_format,
+             '-co', create_options,
+             '-v',
+             input_vrt])
+
+
+def create_aggregated_netcdf():
+    cfa_format = 'NETCDF4'
+    nc4_aggregate_name = 'cfa_aggregate.nc'
+    input_files = '*.nc'
+
+    execute(['cfa',
+             '-f', cfa_format,
+             '-o', nc4_aggregate_name]+ glob(input_files))
+
+combined_vrt = combine_bands_to_vrt(src_files='/g/data/rs0/scenes/ARG25_V0.0/2015-04/LS7_ETM_NBAR_P54_GANBAR01-002_089_081_20150425/scene01/*.tif',
+                                    basename='LS7_ETM_NBAR_P54_GANBAR01-002_089_081_20150425')
+reprojected_vrt = create_vrt_with_correct_srs(combined_vrt, basename='LS7_ETM_NBAR_P54_GANBAR01-002_089_081_20150425')
+extended_vrt = create_vrt_with_extended_extents(reprojected_vrt, basename='LS7_ETM_NBAR_P54_GANBAR01-002_089_081_20150425')
+create_tile_files(extended_vrt)
+# create_aggregated_netcdf()
 
 
 #Nearest neighbour vs convolution. Depends on whether discrete values
