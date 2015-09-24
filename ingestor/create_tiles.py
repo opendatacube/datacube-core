@@ -127,6 +127,8 @@ def create_tile_files(input_vrt):
              '-ps', pixel_size, pixel_size,
              '-of', output_format,
              '-co', create_options,
+             '-co', 'COMPRESS=DEFLATE',
+             '-co', 'ZLEVEL=1',
              '-v',
              input_vrt])
 
