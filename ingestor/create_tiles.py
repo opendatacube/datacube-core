@@ -1,6 +1,7 @@
 
 import subprocess
 import os
+import click
 import sys
 from glob import glob
 from osgeo import gdal,ogr,osr
@@ -142,13 +143,36 @@ def create_aggregated_netcdf():
              '-f', cfa_format,
              '-o', nc4_aggregate_name]+ glob(input_files))
 
-combined_vrt = combine_bands_to_vrt(src_files='/g/data/rs0/scenes/ARG25_V0.0/2015-04/LS7_ETM_NBAR_P54_GANBAR01-002_089_081_20150425/scene01/*.tif',
-                                    basename='LS7_ETM_NBAR_P54_GANBAR01-002_089_081_20150425')
-reprojected_vrt = create_vrt_with_correct_srs(combined_vrt, basename='LS7_ETM_NBAR_P54_GANBAR01-002_089_081_20150425')
-extended_vrt = create_vrt_with_extended_extents(reprojected_vrt, basename='LS7_ETM_NBAR_P54_GANBAR01-002_089_081_20150425')
-create_tile_files(extended_vrt)
+config = {
+    'output_dir': '/short/v10/dra547/tmp/today',
+    'srs': 'EPSG:4326',
+    'grid_lats': [],
+    'grid_lons': []
+}
+
+injest_task = {
+    'src_files': '/g/data/rs0/scenes/ARG25_V0.0/2015-04/LS7_ETM_NBAR_P54_GANBAR01-002_089_081_20150425/scene01/*.tif',
+    'basename': 'LS7_ETM_NBAR_P54_GANBAR01-002_089_081_20150425'
+}
+
+
+
+@click.command()
+#@click.argument('basename', help='Base named used to output files')
+#@click.option('--output_dir', default='.')
+def main():
+    basename = injest_task['basename']
+    src_files = injest_task['src_files']
+    os.chdir(config['output_dir'])
+    combined_vrt = combine_bands_to_vrt(src_files=src_files,
+                                    basename=basename)
+    reprojected_vrt = create_vrt_with_correct_srs(combined_vrt, basename=basename)
+    extended_vrt = create_vrt_with_extended_extents(reprojected_vrt, basename=basename)
+    create_tile_files(extended_vrt)
 # create_aggregated_netcdf()
 
+if __name__ == '__main__':
+    main()
 
 #Nearest neighbour vs convolution. Depends on whether discrete values
 #-r resampling_method
