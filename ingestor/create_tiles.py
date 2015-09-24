@@ -83,7 +83,7 @@ def combine_bands_to_vrt(src_files, basename):
 
     scene_vrt = '{}.vrt'.format(basename)
 
-    execute(['gdalbuildvrt', '-separate', scene_vrt] + sorted(glob(src_files)))
+    execute(['gdalbuildvrt', '-separate', scene_vrt] + src_files)
 
     return scene_vrt
 
@@ -154,18 +154,26 @@ injest_task = {
     'src_files': '/g/data/rs0/scenes/ARG25_V0.0/2015-04/LS7_ETM_NBAR_P54_GANBAR01-002_089_081_20150425/scene01/*.tif',
     'basename': 'LS7_ETM_NBAR_P54_GANBAR01-002_089_081_20150425'
 }
+injest_task = {
+    'src_files': '/g/data/rs0/scenes/ARG25_V0.0/1994-02/LS5_TM_NBAR_P54_GANBAR01-002_099_081_19940209/scene01/*.tif',
+    'basename': 'LS5_TM_NBAR_P54_GANBAR01-002_099_081_19940209'
+}
 
 
 
 @click.command()
-#@click.argument('basename', help='Base named used to output files')
-#@click.option('--output_dir', default='.')
-def main():
-    basename = injest_task['basename']
-    src_files = injest_task['src_files']
-    os.chdir(config['output_dir'])
-    combined_vrt = combine_bands_to_vrt(src_files=src_files,
-                                    basename=basename)
+@click.option('--output-dir', default='.')
+@click.argument('basename')
+@click.argument('src-files',
+                type=click.Path(exists=True, readable=True),
+                nargs=-1)
+def main(basename, src_files, output_dir):
+    os.chdir(output_dir)
+
+    print('Source files: ' + str(src_files))
+
+    combined_vrt = combine_bands_to_vrt(src_files=list(src_files),
+                                        basename=basename)
     reprojected_vrt = create_vrt_with_correct_srs(combined_vrt, basename=basename)
     extended_vrt = create_vrt_with_extended_extents(reprojected_vrt, basename=basename)
     create_tile_files(extended_vrt)
