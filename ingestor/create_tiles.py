@@ -135,7 +135,7 @@ def create_tile_files(input_vrt):
              input_vrt])
 
 
-def rename_files(csv_path, format_string, vars):
+def rename_files(csv_path, format_string, file_attributes):
     """
     Standard naming uses lowerleft corner of tile
 
@@ -149,7 +149,9 @@ def rename_files(csv_path, format_string, vars):
             minlon = int(float(minlon))
             minlat = int(float(minlat))
             base, middle, extension = orig_filename.split('.')
-            new_filename = base + '_' + str(minlon) + '_' + str(minlat) + '.' + extension
+            file_attributes = dict(file_attributes)
+            file_attributes.update({'x': minlon, 'y': minlat, 'file_extension': extension})
+            new_filename = format_string.format(**file_attributes)
             print("Renaming {} to {}".format(orig_filename, new_filename))
             os.rename(orig_filename, new_filename)
 
@@ -168,7 +170,7 @@ config = {
     'srs': 'EPSG:4326',
     'grid_lats': [],
     'grid_lons': [],
-    'directory_structure': '{product_name}/{x}_{y}/{year}/{product_name}_{sensor_name}_{x}_{y}_{timestamp}.tif'
+    'directory_structure': '{product_name}/{x}_{y}/{year}/{product_name}_{sensor_name}_{x}_{y}_{timestamp}.{file_extension}'
 }
 
 example_file_data = {
@@ -208,7 +210,7 @@ def main(basename, src_files, output_dir):
     reprojected_vrt = create_vrt_with_correct_srs(combined_vrt, basename=basename)
     extended_vrt = create_vrt_with_extended_extents(reprojected_vrt, basename=basename)
     create_tile_files(extended_vrt)
-    rename_files('test.csv')
+    rename_files('test.csv', config['directory_structure'], example_file_data)
 # create_aggregated_netcdf()
 
 if __name__ == '__main__':
