@@ -130,8 +130,28 @@ def create_tile_files(input_vrt):
              '-co', create_options,
              '-co', 'COMPRESS=DEFLATE',
              '-co', 'ZLEVEL=1',
+             '-csv', 'test.csv',
              '-v',
              input_vrt])
+
+
+def rename_files(csv_path, format_string, vars):
+    """
+    Standard naming uses lowerleft corner of tile
+
+    Lower left is minlon, minlat
+    :param csv_path:
+    :return:
+    """
+    with open(csv_path, 'r') as csvfile:
+        for line in csvfile:
+            orig_filename, minlon, maxlon, minlat, maxlat = line.split(';')
+            minlon = int(float(minlon))
+            minlat = int(float(minlat))
+            base, middle, extension = orig_filename.split('.')
+            new_filename = base + '_' + str(minlon) + '_' + str(minlat) + '.' + extension
+            print("Renaming {} to {}".format(orig_filename, new_filename))
+            os.rename(orig_filename, new_filename)
 
 
 def create_aggregated_netcdf():
@@ -177,6 +197,7 @@ def main(basename, src_files, output_dir):
     reprojected_vrt = create_vrt_with_correct_srs(combined_vrt, basename=basename)
     extended_vrt = create_vrt_with_extended_extents(reprojected_vrt, basename=basename)
     create_tile_files(extended_vrt)
+    rename_files('test.csv')
 # create_aggregated_netcdf()
 
 if __name__ == '__main__':
