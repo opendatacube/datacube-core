@@ -167,8 +167,19 @@ config = {
     'output_dir': '/short/v10/dra547/tmp/today',
     'srs': 'EPSG:4326',
     'grid_lats': [],
-    'grid_lons': []
+    'grid_lons': [],
+    'directory_structure': '{product_name}/{x}_{y}/{year}/{product_name}_{sensor_name}_{x}_{y}_{timestamp}.tif'
 }
+
+example_file_data = {
+    'product_name': 'FOO',
+    'x': 140,
+    'y': -33,
+    'year': '2014',
+    'sensor_name': 'EYEINSKY',
+    'timestamp': '2014-09-12'
+}
+
 
 injest_task = {
     'src_files': '/g/data/rs0/scenes/ARG25_V0.0/2015-04/LS7_ETM_NBAR_P54_GANBAR01-002_089_081_20150425/scene01/*.tif',
