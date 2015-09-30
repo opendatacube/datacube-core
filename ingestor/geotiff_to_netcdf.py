@@ -259,7 +259,7 @@ class Messenger:
 
 def get_description_from_dataset(dataset):
     """
-    Return a description of a GDAL dataset, usefed for creating a new NetCDF file to hold the same data
+    Return a description of a GDAL dataset, used for creating a new NetCDF file to hold the same data
 
     Example description:
     dict(bands=[{'dtype': 'Int16',
