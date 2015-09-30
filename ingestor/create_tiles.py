@@ -2,10 +2,11 @@
 import subprocess
 import os
 import click
-import sys
+import errno
 from glob import glob
 from osgeo import gdal,ogr,osr
 from math import floor, ceil
+import os.path
 
 # From Metageta and http://gis.stackexchange.com/a/57837/2910
 def GetExtent(gt,cols,rows):
@@ -135,6 +136,15 @@ def create_tile_files(input_vrt):
              input_vrt])
 
 
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc: # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else: raise
+
+
 def rename_files(csv_path, format_string, file_attributes):
     """
     Standard naming uses lowerleft corner of tile
@@ -151,7 +161,11 @@ def rename_files(csv_path, format_string, file_attributes):
             base, middle, extension = orig_filename.split('.')
             file_attributes = dict(file_attributes)
             file_attributes.update({'x': minlon, 'y': minlat, 'file_extension': extension})
+
             new_filename = format_string.format(**file_attributes)
+            dirname = os.path.dirname(new_filename)
+            mkdir_p(dirname)
+
             print("Renaming {} to {}".format(orig_filename, new_filename))
             os.rename(orig_filename, new_filename)
 
