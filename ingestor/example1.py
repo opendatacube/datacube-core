@@ -10,6 +10,9 @@ import gdal
 from datetime import date
 import sys
 
+
+# python geotiff_to_netcdf.py --append -b /g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/LS5_TM/150_-034/2006/LS5_TM_FC_150_-034_2006-02-10T23-40-08.399006.tif out.nc
+
 # Define a DatasetType mapping
 DS_TYPES_MAP = {'arg25': DatasetType.ARG25,
                 'fc25': DatasetType.FC25,
@@ -51,3 +54,5 @@ multi_band_file.append_geotiff(arg25paths[0])
 multi_band_file.close()
 # for path in arg25paths:
     # multi_band_file
+
+# /short/u46/gxr547/GA/NBAR/LS8_OLI_TIRS_NBAR_P54_GANBAR01-015_101_078_20141012
