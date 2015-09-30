@@ -1,4 +1,3 @@
-
 import subprocess
 import os
 import click
@@ -34,6 +33,10 @@ def GetExtent(gt,cols,rows):
     return ext
 
 
+def GetDatasetExtent(dataset):
+    return GetExtent(dataset.GetGeoTransform(), dataset.RasterXSize, dataset.RasterYSize)
+
+
 def reproject_coords(coords,src_srs,tgt_srs):
     ''' Reproject a list of x,y coordinates.
 
@@ -57,10 +60,7 @@ def reproject_coords(coords,src_srs,tgt_srs):
 def get_extents(raster_filename):
     ds = gdal.Open(raster_filename)
 
-    gt = ds.GetGeoTransform()
-    cols = ds.RasterXSize
-    rows = ds.RasterYSize
-    ext = GetExtent(gt,cols,rows)
+    ext = GetDatasetExtent(ds)
 
     src_srs = osr.SpatialReference()
     src_srs.ImportFromWkt(ds.GetProjection())
@@ -117,22 +117,17 @@ def create_vrt_with_extended_extents(input_vrt, basename):
     return extended_vrt
 
 
-def create_tile_files(input_vrt):
-    # target_dir = 'tiles/'
-    target_dir = '.'
-    pixel_size = '4000'
-    output_format = 'NetCDF'
-    create_options = 'FORMAT=NC4'
+def create_tile_files(input_vrt, target_dir='.', pixel_size=4000,
+                      output_format='NetCDF',
+                      create_options=['FORMAT=NC4', 'COMPRESS=DEFLATE', 'ZLEVEL=1']):
+
+    # Make list like ['-co', 'FORMAT=NC4', '-co', 'COMPRESS=DEFLATE', '-co', 'ZLEVEL=1']
+    create_options = sum([['-co', option] for option in create_options], [])
 
     execute(['gdal_retile.py', '-v', '-targetDir', target_dir,
              '-ps', pixel_size, pixel_size,
-             '-of', output_format,
-             '-co', create_options,
-             '-co', 'COMPRESS=DEFLATE',
-             '-co', 'ZLEVEL=1',
-             '-csv', 'test.csv',
-             '-v',
-             input_vrt])
+             '-of', output_format, '-csv', 'test.csv', '-v'] + create_options +
+             [input_vrt])
 
 
 def rename_files(csv_path, format_string, file_attributes):
@@ -173,7 +168,8 @@ config = {
     'srs': 'EPSG:4326',
     'grid_lats': [],
     'grid_lons': [],
-    'directory_structure': '{product_name}/{x}_{y}/{year}/{product_name}_{sensor_name}_{x}_{y}_{timestamp}.{file_extension}'
+    'directory_structure': '{product_name}/{x}_{y}/{year}/{product_name}_{sensor_name}_{x}_{y}_{timestamp}.{file_extension}',
+    'file_extension': 'nc'
 }
 
 example_file_data = {
@@ -196,6 +192,16 @@ injest_task = {
 }
 
 
+def create_tiles(input_files, output_dir, filename_format, basename, file_data):
+    os.chdir(output_dir)
+
+    combined_vrt = combine_bands_to_vrt(src_files=list(input_files),
+                                        basename=basename)
+    reprojected_vrt = create_vrt_with_correct_srs(combined_vrt, basename=basename)
+    extended_vrt = create_vrt_with_extended_extents(reprojected_vrt, basename=basename)
+    create_tile_files(extended_vrt)
+    rename_files('test.csv', filename_format, file_data)
+
 
 @click.command()
 @click.option('--output-dir', default='.')
@@ -204,16 +210,13 @@ injest_task = {
                 type=click.Path(exists=True, readable=True),
                 nargs=-1)
 def main(basename, src_files, output_dir):
-    os.chdir(output_dir)
 
     print('Source files: ' + str(src_files))
 
-    combined_vrt = combine_bands_to_vrt(src_files=list(src_files),
-                                        basename=basename)
-    reprojected_vrt = create_vrt_with_correct_srs(combined_vrt, basename=basename)
-    extended_vrt = create_vrt_with_extended_extents(reprojected_vrt, basename=basename)
-    create_tile_files(extended_vrt)
-    rename_files('test.csv', config['directory_structure'], example_file_data)
+    create_tiles(list(src_files), output_dir,
+                 '{product_name}/{x}_{y}/{year}/{product_name}_{sensor_name}_{x}_{y}_{timestamp}.{file_extension}',
+                 example_file_data)
+
 # create_aggregated_netcdf()
 
 if __name__ == '__main__':
