@@ -258,6 +258,12 @@ class Messenger:
     def __init__(self, **kwargs):
         self.__dict__ = kwargs
 
+
+def get_description_from_geotiff(geotiff):
+    dataset = gdal.Open(geotiff)
+    return get_description_from_dataset(dataset)
+
+
 def get_description_from_dataset(dataset):
     """
     Return a description of a GDAL dataset, used for creating a new NetCDF file to hold the same data
@@ -295,22 +301,25 @@ def get_description_from_dataset(dataset):
 
     return Description(bands=bands, lats=lats, lons=lons)
 
+
 def create_or_replace(geotiff_path, netcdf_path):
     netcdf_writer = BandAsDatasetNetCDF
+
     if not os.path.isfile(netcdf_path):
         ncfile = netcdf_writer(netcdf_path, mode='w')
-        ncfile.create_from_geotiff(geotiff_path)
-        ncfile.close()
+        description = get_description_from_geotiff(geotiff_path)
+        ncfile.create_from_description(description)
     else:
         ncfile = netcdf_writer(netcdf_path, mode='a')
-        ncfile.append_geotiff(geotiff_path)
-        ncfile.close()
+
+    ncfile.append_geotiff(geotiff_path)
+    ncfile.close()
 
 
 def main():
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--create", action='store_true', help="Overwrite or create a new NetCDF file")
+    group.add_argument("--create", action='store_true', help="Create a new, empty, NetCDF file")
     group.add_argument("--append", action='store_true', help="Append the geotiff to a new portion of the NetCDF")
     parser.add_argument("-b", "--band_as_dimension", action="store_true",
                         help="Store bands as a dimension instead of as new dataset")
@@ -327,7 +336,8 @@ def main():
 
     if args.create:
         dcnc = netcdf_class(args.netcdf, mode='w')
-        dcnc.create_from_geotiff(args.geotiff)
+        description = get_desription_from_geotiff(args.geotiff)
+        dcnc.create_from_description(description)
         dcnc.close()
     elif args.append:
         dataset = gdal.Open(args.geotiff)
