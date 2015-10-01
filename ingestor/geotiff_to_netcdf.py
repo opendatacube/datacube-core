@@ -122,11 +122,11 @@ class BaseNetCDF(object):
         pass
 
     @abstractmethod
-    def _write_data_to_netcdf(self, dataset):
+    def _write_data_to_netcdf(self, dataset, ds_description):
         """
         Read in all the data from the geotiff `dataset` and write it as a new time
          slice to the NetCDF file
-        :param dataset: open geotiff dataset
+        :param dataset: open GDAL dataset
         :return:
         """
         pass
@@ -222,10 +222,10 @@ class SingleVariableNetCDF(BaseNetCDF):
         self._create_band_dimension()
         self._create_data_variable()
 
-    def _create_band_dimension(self, nbands):
+    def _create_band_dimension(self):
         nbands = len(self.description.bands)
         self.nco.createDimension('band', nbands)
-        band = self.nco.createVariable('band', str,('band'))
+        band = self.nco.createVariable('band', str, 'band')
 
     def _create_data_variable(self):
         chunk_band = 1
@@ -239,13 +239,14 @@ class SingleVariableNetCDF(BaseNetCDF):
         time_index = len(self.nco.dimensions['time']) - 1
         band_var = self.nco.variables['band']
 
+        ds_bands = sorted(ds_description['image']['bands'].values(), key=lambda band: band['number'])
+
         observation = self.nco.variables['observation']
         for band_idx in range(nbands):
             in_band = gdal_dataset.GetRasterBand(band_idx + 1)
+            metadata = ds_bands[band_idx]
 
-            metadata = in_band.GetMetadata()  # eg. filename: 'source.tif', name: 'Photosynthetic Vegetation'
-
-            band_var[band_idx] = metadata.get('name')
+            band_var[band_idx] = metadata.get('number')
 
             observation[time_index, band_idx, :, :] = in_band.ReadAsArray()
             print_and_flush('.', end="")
