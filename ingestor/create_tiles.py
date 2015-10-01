@@ -123,6 +123,7 @@ def create_tile_files(input_vrt, target_dir='.', pixel_size=4000,
 
     # Make list like ['-co', 'FORMAT=NC4', '-co', 'COMPRESS=DEFLATE', '-co', 'ZLEVEL=1']
     create_options = sum([['-co', option] for option in create_options], [])
+    pixel_size = str(pixel_size)
 
     execute(['gdal_retile.py', '-v', '-targetDir', target_dir,
              '-ps', pixel_size, pixel_size,
@@ -168,7 +169,7 @@ config = {
     'srs': 'EPSG:4326',
     'grid_lats': [],
     'grid_lons': [],
-    'directory_structure': '{product_name}/{x}_{y}/{year}/{product_name}_{sensor_name}_{x}_{y}_{timestamp}.{file_extension}',
+    'directory_structure': '{product_name}/{x}_{y}/{year}/{product_name}_{sensor_name}_{x}_{y}_{timestamp}.{extension}',
     'file_extension': 'nc'
 }
 
