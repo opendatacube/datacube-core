@@ -7,6 +7,7 @@ import numpy as np
 import gdal
 import netCDF4
 import dateutil.parser
+import os.path
 
 epoch = datetime(1970, 1, 1, 0, 0, 0)
 
@@ -293,6 +294,17 @@ def get_description_from_dataset(dataset):
         bands.append(dict(name=name, dtype=dtype, no_data=no_data))
 
     return Description(bands=bands, lats=lats, lons=lons)
+
+def create_or_replace(geotiff_path, netcdf_path):
+    netcdf_writer = BandAsDatasetNetCDF
+    if not os.path.isfile(netcdf_path):
+        ncfile = netcdf_writer(netcdf_path, mode='w')
+        ncfile.create_from_geotiff(geotiff_path)
+        ncfile.close()
+    else:
+        ncfile = netcdf_writer(netcdf_path, mode='a')
+        ncfile.append_geotiff(geotiff_path)
+        ncfile.close()
 
 
 def main():
