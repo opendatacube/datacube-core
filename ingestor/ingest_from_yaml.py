@@ -46,7 +46,7 @@ def main(yaml_file, output_dir):
 
     # Import into proper NetCDF files
     for geotiff, netcdf in renames:
-        create_or_replace(geotiff, netcdf)
+        create_or_replace(geotiff, netcdf, data)
 
 
 if __name__ == '__main__':

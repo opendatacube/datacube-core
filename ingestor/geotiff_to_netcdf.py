@@ -77,9 +77,10 @@ class BaseNetCDF(object):
     def _set_global_attributes(self):
         self.nco.Conventions = 'CF-1.6'
 
-    def _add_time(self, timestamp):
-        # Parse ISO 8601 date/time string
-        start_datetime = dateutil.parser.parse(timestamp)
+    def _add_time(self, start_date):
+        # Convert to datetime at midnight
+        start_datetime = datetime.combine(start_date, datetime.min.time())
+
         # Convert to seconds since epoch (1970-01-01)
         start_datetime_delta = start_datetime - epoch
 
@@ -97,7 +98,7 @@ class BaseNetCDF(object):
 
         return nbands, lats, lons
 
-    def create_from_description(self, description):
+    def create_from_description(self, description, ds_description):
         self.description = description
 
         self._set_wgs84_crs()
@@ -130,7 +131,7 @@ class BaseNetCDF(object):
         """
         pass
 
-    def append_geotiff(self, geotiff):
+    def append_geotiff(self, geotiff, ds_description):
         """
         Read a geotiff file and append it to the open NetCDF file
 
@@ -139,9 +140,9 @@ class BaseNetCDF(object):
         """
         dataset = gdal.Open(geotiff)
         ds_metadata = dataset.GetMetadata()
-        self._add_time(ds_metadata['start_datetime'])
+        self._add_time(ds_description['acquisition']['aos'])
 
-        self._write_data_to_netcdf(dataset)
+        self._write_data_to_netcdf(dataset, ds_description)
 
         del dataset
 
@@ -176,21 +177,23 @@ class BandAsDatasetNetCDF(BaseNetCDF):
             netcdfbands.append(band)
         return netcdfbands
 
-    def _write_data_to_netcdf(self, gdal_dataset):
+    def _write_data_to_netcdf(self, gdal_dataset, ds_description):
         nbands = len(self.description.bands)
         lats = self.description.lats
         lons = self.description.lons
         netcdfbands = self._get_netcdf_bands(nbands)
+
+        ds_bands = sorted(ds_description['image']['bands'].values(), key=lambda band: band['number'])
 
         time_index = len(self.nco.variables['time'])
 
         for idx, out_band in enumerate(netcdfbands, start=1):
             in_band = gdal_dataset.GetRasterBand(idx)
 
-            metadata = in_band.GetMetadata()  # eg. filename: 'source.tif', name: 'Photosynthetic Vegetation'
-            out_band.long_name = metadata.get('name')
-            out_band.source_filename = metadata.get('filename')
-            out_band.missing_value = in_band.GetNoDataValue()
+            metadata = ds_bands[idx-1]
+            out_band.long_name = metadata.get('number')
+            out_band.source_filename = metadata.get('path')
+            out_band.missing_value = -999
 
             out_band[time_index-1, :, :] = in_band.ReadAsArray()
             print_and_flush('.', end='')
@@ -230,7 +233,7 @@ class BandAsDimensionNetCDF(BaseNetCDF):
                                 zlib=True, chunksizes=[self.chunk_time, chunk_band, self.chunk_y, self.chunk_x],
                                 fill_value=-9999)
 
-    def _write_data_to_netcdf(self, gdal_dataset):
+    def _write_data_to_netcdf(self, gdal_dataset, ds_description):
         nbands, lats, lons = self._get_nbands_lats_lons_from_gdalds(gdal_dataset)
 
         time_index = len(self.nco.dimensions['time']) - 1
@@ -302,17 +305,17 @@ def get_description_from_dataset(dataset):
     return Description(bands=bands, lats=lats, lons=lons)
 
 
-def create_or_replace(geotiff_path, netcdf_path):
+def create_or_replace(geotiff_path, netcdf_path, import_description):
     netcdf_writer = BandAsDatasetNetCDF
 
     if not os.path.isfile(netcdf_path):
         ncfile = netcdf_writer(netcdf_path, mode='w')
-        description = get_description_from_geotiff(geotiff_path)
-        ncfile.create_from_description(description)
+        file_description = get_description_from_geotiff(geotiff_path)
+        ncfile.create_from_description(file_description, import_description)
     else:
         ncfile = netcdf_writer(netcdf_path, mode='a')
 
-    ncfile.append_geotiff(geotiff_path)
+    ncfile.append_geotiff(geotiff_path, import_description)
     ncfile.close()
 
 
