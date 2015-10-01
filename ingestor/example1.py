@@ -4,7 +4,7 @@ from datacube.api.query import list_tiles_as_list
 from datacube.api.utils import get_dataset_metadata
 from datacube.api.utils import get_dataset_data
 
-from geotiff_to_netcdf import BandAsDimensionNetCDF, BandAsDatasetNetCDF, get_description_from_dataset
+from geotiff_to_netcdf import SingleVariableNetCDF, MultiVariableNetCDF, get_description_from_dataset
 import gdal
 
 from datetime import date
@@ -46,7 +46,7 @@ dataset = gdal.Open(initial_file)
 description = get_description_from_dataset(dataset)
 
 print("Creating {}".format(netcdf_filename))
-multi_band_file = BandAsDatasetNetCDF(netcdf_filename, mode='w')
+multi_band_file = MultiVariableNetCDF(netcdf_filename, mode='w')
 print("Creating netcdf structure from {}".format(initial_file))
 multi_band_file.create_from_description(description)
 print("Appending from {}".format(arg25paths[0]))

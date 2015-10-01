@@ -147,7 +147,7 @@ class BaseNetCDF(object):
         del dataset
 
 
-class BandAsDatasetNetCDF(BaseNetCDF):
+class MultiVariableNetCDF(BaseNetCDF):
     """
     Create individual datasets for each `band` of data
 
@@ -209,7 +209,7 @@ class BandAsDatasetNetCDF(BaseNetCDF):
 #     pass
 
 
-class BandAsDimensionNetCDF(BaseNetCDF):
+class SingleVariableNetCDF(BaseNetCDF):
     """
     Store all data values in a single dataset with an extra dimension for `band`
 
@@ -305,15 +305,14 @@ def get_description_from_dataset(dataset):
     return Description(bands=bands, lats=lats, lons=lons)
 
 
-def create_or_replace(geotiff_path, netcdf_path, import_description):
-    netcdf_writer = BandAsDatasetNetCDF
+def create_or_replace(geotiff_path, netcdf_path, import_description, netcdf_class=MultiVariableNetCDF):
 
     if not os.path.isfile(netcdf_path):
-        ncfile = netcdf_writer(netcdf_path, mode='w')
+        ncfile = netcdf_class(netcdf_path, mode='w')
         file_description = get_description_from_geotiff(geotiff_path)
         ncfile.create_from_description(file_description, import_description)
     else:
-        ncfile = netcdf_writer(netcdf_path, mode='a')
+        ncfile = netcdf_class(netcdf_path, mode='a')
 
     ncfile.append_geotiff(geotiff_path, import_description)
     ncfile.close()
@@ -332,9 +331,9 @@ def main():
     args = parser.parse_args()
 
     if args.band_as_dimension:
-        netcdf_class = BandAsDimensionNetCDF
+        netcdf_class = SingleVariableNetCDF
     else:
-        netcdf_class = BandAsDatasetNetCDF
+        netcdf_class = MultiVariableNetCDF
 
 
     if args.create:
