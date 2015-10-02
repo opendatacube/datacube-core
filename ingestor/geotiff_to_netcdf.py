@@ -98,7 +98,7 @@ class BaseNetCDF(object):
 
         return nbands, lats, lons
 
-    def create_from_description(self, description, ds_description):
+    def create_from_description(self, description):
         self.description = description
 
         self._set_wgs84_crs()
@@ -131,20 +131,20 @@ class BaseNetCDF(object):
         """
         pass
 
-    def append_geotiff(self, geotiff, ds_description):
+    def append_geotiff(self, geotiff, ga_dataset):
         """
         Read a geotiff file and append it to the open NetCDF file
 
         :param geotiff:string path to a geotiff file
         :return:
         """
-        dataset = gdal.Open(geotiff)
-        ds_metadata = dataset.GetMetadata()
-        self._add_time(ds_description['acquisition']['aos'])
+        gdal_dataset = gdal.Open(geotiff)
+        ds_metadata = gdal_dataset.GetMetadata()
+        self._add_time(ga_dataset.acquisition.aos)
 
-        self._write_data_to_netcdf(dataset, ds_description)
+        self._write_data_to_netcdf(gdal_dataset, ga_dataset)
 
-        del dataset
+        del gdal_dataset
 
 
 class MultiVariableNetCDF(BaseNetCDF):
@@ -153,7 +153,8 @@ class MultiVariableNetCDF(BaseNetCDF):
 
     This closely matches the existing GeoTiff tile file structure
     """
-
+    def _load_description(self):
+        self.description = Description
     def _create_variables(self):
         self._create_standard_dimensions(self.description.lats, self.description.lons)
         self._create_bands(len(self.description.bands))
@@ -177,13 +178,13 @@ class MultiVariableNetCDF(BaseNetCDF):
             netcdfbands.append(band)
         return netcdfbands
 
-    def _write_data_to_netcdf(self, gdal_dataset, ds_description):
+    def _write_data_to_netcdf(self, gdal_dataset, ga_dataset):
         nbands = len(self.description.bands)
         lats = self.description.lats
         lons = self.description.lons
         netcdfbands = self._get_netcdf_bands(nbands)
 
-        ds_bands = sorted(ds_description['image']['bands'].values(), key=lambda band: band['number'])
+        ds_bands = sorted(ga_dataset.image.bands.values(), key=lambda band: band.number)
 
         time_index = len(self.nco.variables['time'])
 
@@ -191,8 +192,8 @@ class MultiVariableNetCDF(BaseNetCDF):
             in_band = gdal_dataset.GetRasterBand(idx)
 
             metadata = ds_bands[idx-1]
-            out_band.long_name = metadata.get('number')
-            out_band.source_filename = metadata.get('path')
+            out_band.long_name = metadata.number
+            out_band.source_filename = str(metadata.path)
             out_band.missing_value = -999
 
             out_band[time_index-1, :, :] = in_band.ReadAsArray()
@@ -233,20 +234,20 @@ class SingleVariableNetCDF(BaseNetCDF):
                                 zlib=True, chunksizes=[self.chunk_time, chunk_band, self.chunk_y, self.chunk_x],
                                 fill_value=-9999)
 
-    def _write_data_to_netcdf(self, gdal_dataset, ds_description):
+    def _write_data_to_netcdf(self, gdal_dataset, ga_dataset):
         nbands, lats, lons = self._get_nbands_lats_lons_from_gdalds(gdal_dataset)
 
         time_index = len(self.nco.dimensions['time']) - 1
         band_var = self.nco.variables['band']
 
-        ds_bands = sorted(ds_description['image']['bands'].values(), key=lambda band: band['number'])
+        ds_bands = sorted(ga_dataset.image.bands.values(), key=lambda band: band.number)
 
         observation = self.nco.variables['observation']
         for band_idx in range(nbands):
             in_band = gdal_dataset.GetRasterBand(band_idx + 1)
             metadata = ds_bands[band_idx]
 
-            band_var[band_idx] = metadata.get('number')
+            band_var[band_idx] = metadata.number
 
             observation[time_index, band_idx, :, :] = in_band.ReadAsArray()
             print_and_flush('.', end="")
@@ -264,11 +265,11 @@ class Messenger:
 
 
 def get_description_from_geotiff(geotiff):
-    dataset = gdal.Open(geotiff)
-    return get_description_from_dataset(dataset)
+    gdal_dataset = gdal.Open(geotiff)
+    return get_description_from_dataset(gdal_dataset)
 
 
-def get_description_from_dataset(dataset):
+def get_description_from_dataset(gdal_dataset):
     """
     Return a description of a GDAL dataset, used for creating a new NetCDF file to hold the same data
 
@@ -285,16 +286,16 @@ def get_description_from_dataset(dataset):
                          -33.99975]),
              lons=array([150., 150.00025, 150.0005, ..., 150.99925, 150.9995,
                                                   150.99975]))
-    :param dataset: a gdal dataset
+    :param gdal_dataset: a gdal dataset
     :return: nested dictionary describing the structure
     """
-    nbands, nlats, nlons = dataset.RasterCount, dataset.RasterYSize, dataset.RasterXSize
-    geotransform = dataset.GetGeoTransform()
+    nbands, nlats, nlons = gdal_dataset.RasterCount, gdal_dataset.RasterYSize, gdal_dataset.RasterXSize
+    geotransform = gdal_dataset.GetGeoTransform()
     lons = np.arange(nlons)*geotransform[1]+geotransform[0]
     lats = np.arange(nlats)*geotransform[5]+geotransform[3]
     bands = []
     for band_idx in range(nbands):
-        src_band = dataset.GetRasterBand(band_idx + 1)
+        src_band = gdal_dataset.GetRasterBand(band_idx + 1)
         src_metadata = src_band.GetMetadata()  # eg. filename: 'source.tif', name: 'Photosynthetic Vegetation'
 
         name = src_metadata.get('name')
@@ -306,16 +307,18 @@ def get_description_from_dataset(dataset):
     return Description(bands=bands, lats=lats, lons=lons)
 
 
-def create_or_replace(geotiff_path, netcdf_path, import_description, netcdf_class=MultiVariableNetCDF):
+def create_or_replace(geotiff_path, netcdf_path, dataset, netcdf_class=MultiVariableNetCDF):
 
     if not os.path.isfile(netcdf_path):
         ncfile = netcdf_class(netcdf_path, mode='w')
         file_description = get_description_from_geotiff(geotiff_path)
-        ncfile.create_from_description(file_description, import_description)
+        ncfile.create_from_description(file_description)
     else:
         ncfile = netcdf_class(netcdf_path, mode='a')
+        file_description = get_description_from_geotiff(geotiff_path)
+        ncfile.description = file_description
 
-    ncfile.append_geotiff(geotiff_path, import_description)
+    ncfile.append_geotiff(geotiff_path, dataset)
     ncfile.close()
 
 
@@ -339,7 +342,7 @@ def main():
 
     if args.create:
         dcnc = netcdf_class(args.netcdf, mode='w')
-        description = get_desription_from_geotiff(args.geotiff)
+        description = get_description_from_geotiff(args.geotiff)
         dcnc.create_from_description(description)
         dcnc.close()
     elif args.append:

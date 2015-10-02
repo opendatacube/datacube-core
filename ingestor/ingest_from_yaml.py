@@ -3,6 +3,7 @@ import click
 import os
 import os.path
 import yaml
+import pathlib
 from create_tiles import calc_target_names, create_tiles
 from geotiff_to_netcdf import create_or_replace, MultiVariableNetCDF, SingleVariableNetCDF
 from pprint import pprint
@@ -14,11 +15,18 @@ def read_yaml(filename):
         return data
 
 
-def get_input_files(input_file, data):
-    bands = sorted([band for band_num, band in data['image']['bands'].items()], key=lambda band: band['number'])
-    input_files = [band['path'] for band in bands]
-    base_input_directory = os.path.dirname(input_file)
-    input_files = [os.path.join(base_input_directory, filename) for filename in input_files]
+def get_input_files(input_path, data):
+    """
+
+    :type input_path: pathlib.Path
+    :param data:
+    :return:
+    """
+
+    assert input_path.is_dir()
+    bands = sorted([band for band_num, band in data.image.bands.items()], key=lambda band: band.number)
+    input_files = [band.path for band in bands]
+    input_files = [input_path / filename for filename in input_files]
 
     return input_files
 
@@ -27,15 +35,33 @@ def get_input_files(input_file, data):
 @click.option('--output-dir', '-o', default='.')
 @click.option('--multi-variable', 'netcdf_class', flag_value=MultiVariableNetCDF, default=True)
 @click.option('--single-variable', 'netcdf_class', flag_value=SingleVariableNetCDF)
-@click.argument('yaml_file', type=click.Path(exists=True))
-def main(yaml_file, output_dir, netcdf_class):
+@click.option('--read-yaml', 'input_type', flag_value='yaml', default=True)
+@click.option('--read-dataset', 'input_type', flag_value='dataset')
+@click.argument('path', type=click.Path(exists=True))
+def main(path, output_dir, input_type, netcdf_class):
     os.chdir(output_dir)
 
-    data = read_yaml(yaml_file)
-    pprint(data, indent=2)
+    path = pathlib.Path(path)
 
-    input_files = get_input_files(yaml_file, data)
-    basename = data['ga_label']
+    if input_type == 'yaml':
+        dataset = read_yaml(path)
+        pprint(dataset, indent=2)
+
+        path = path.parent
+        dataset = eodatasets.type.DatasetMetadata.from_dict(dataset)
+
+    elif input_type == 'dataset':
+        import eodatasets.drivers
+        import eodatasets.type
+
+
+        eodriver = eodatasets.drivers.EODSDriver()
+        dataset = eodatasets.type.DatasetMetadata()
+        eodriver.fill_metadata(dataset, path)
+
+
+    input_files = get_input_files(path, dataset)
+    basename = dataset.ga_label
     filename_format = 'combined_singlevar_{x}_{y}.nc'
     tile_options = {
         'output_format': 'GTiff',
@@ -44,11 +70,14 @@ def main(yaml_file, output_dir, netcdf_class):
 
     # Create Tiles
     create_tiles(input_files, output_dir, basename, tile_options)
-    renames = calc_target_names('test.csv', filename_format, data)
+    renames = calc_target_names('test.csv', filename_format, dataset)
 
     # Import into proper NetCDF files
     for geotiff, netcdf in renames:
-        create_or_replace(geotiff, netcdf, data, netcdf_class=netcdf_class)
+        create_or_replace(geotiff, netcdf, dataset, netcdf_class=netcdf_class)
+
+
+
 
 
 if __name__ == '__main__':
