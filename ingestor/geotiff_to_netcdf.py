@@ -88,7 +88,6 @@ class BaseNetCDF(object):
         return crso
 
     def _set_global_attributes(self):
-        self.nco.Conventions = 'CF-1.6'
         self.nco.spatial_coverage = "1.000000 degrees grid"
         self.nco.featureType = "grid"
         self.nco.geospatial_lat_min = self.description.get_lat_min()
@@ -99,7 +98,15 @@ class BaseNetCDF(object):
         self.nco.geospatial_lon_units = "degrees_east"
         creation_date = datetime.utcnow().strftime("%Y%m%d")
         self.nco.history = "NetCDF-CF file created %s." % creation_date
-        self.nco.licence = "Test file ingestion for AGDCv2"
+
+        # Attributes for NCI Compliance
+        self.nco.title = "Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE"
+        self.nco.summary = "These files are experimental, short lived, and the format will change."
+        self.nco.source = "This data is a reprojection and retile of the Landsat L1T surface reflectance scene data available from /g/data/rs0/scenes/"
+        self.nco.product_version = "0.0.0"
+        self.nco.date_created = datetime.today().isoformat()
+        self.nco.Conventions = 'CF-1.6'
+        self.nco.license = "Creative Commons Attribution 4.0 International CC BY 4.0"
 
     def _add_time(self, start_date):
         # Convert to datetime at midnight
@@ -200,7 +207,6 @@ class MultiVariableNetCDF(BaseNetCDF):
 
             metadata = ds_bands[idx-1]
             out_band.long_name = metadata.number
-            out_band.source_filename = str(metadata.path)
             out_band.missing_value = -999
 
             out_band[time_index-1, :, :] = in_band.ReadAsArray()
@@ -225,12 +231,17 @@ class SingleVariableNetCDF(BaseNetCDF):
         nbands = len(self.description.bands)
         self.nco.createDimension('band', nbands)
         band = self.nco.createVariable('band', str, 'band')
+        band.long_name = "Surface reflectance band"
 
     def _create_data_variable(self):
         chunk_band = 1
-        self.nco.createVariable('observation', 'i2',  ('time', 'band', 'latitude', 'longitude'),
+        observations = self.nco.createVariable('observation', 'i2',  ('time', 'band', 'latitude', 'longitude'),
                                 zlib=True, chunksizes=[self.chunk_time, chunk_band, self.chunk_y, self.chunk_x],
                                 fill_value=-999)
+        observations.long_name = "Surface reflectance factor"
+        observations.units = '1'
+        observations.grid_mapping = 'crs'
+        observations.set_auto_maskandscale(False)
 
     def _write_data_to_netcdf(self, gdal_dataset, ga_dataset):
         nbands, lats, lons = _get_nbands_lats_lons_from_gdalds(gdal_dataset)
