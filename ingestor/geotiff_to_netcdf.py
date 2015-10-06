@@ -171,7 +171,6 @@ class MultiVariableNetCDF(BaseNetCDF):
         self._create_bands(self.description.bands)
 
     def _create_bands(self, bands):
-        import ipdb; ipdb.set_trace()
         for i, band in enumerate(bands, 1):
             band = self.nco.createVariable('band' + str(i), 'i2',  ('time', 'latitude', 'longitude'),
                                            zlib=True, chunksizes=[self.chunk_time, self.chunk_y, self.chunk_x],
