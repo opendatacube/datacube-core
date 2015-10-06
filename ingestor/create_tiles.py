@@ -119,7 +119,9 @@ def create_vrt_with_extended_extents(input_vrt, basename):
 
 def create_tile_files(input_vrt, target_dir='.', pixel_size=4000,
                       output_format='NetCDF',
-                      create_options=['FORMAT=NC4', 'COMPRESS=DEFLATE', 'ZLEVEL=1']):
+                      create_options=None):
+    if create_options is None:
+        create_options=['FORMAT=NC4', 'COMPRESS=DEFLATE', 'ZLEVEL=1']
 
     # Make list like ['-co', 'FORMAT=NC4', '-co', 'COMPRESS=DEFLATE', '-co', 'ZLEVEL=1']
     create_options = sum([['-co', option] for option in create_options], [])
@@ -141,7 +143,7 @@ def calc_target_names(csv_path, format_string, dataset):
 
     :param csv_path: Location of CSV file
     :param format_string: String describing new filename
-    :param file_attributes: attributes to use in the format string
+    :param dataset: attributes to use in the format string
     :return: list of tuples (existing_filename, new_filename)
     """
     renames = []
@@ -220,7 +222,9 @@ injest_task = {
 }
 
 
-def create_tiles(input_files, output_dir, basename, tile_options={}):
+def create_tiles(input_files, output_dir, basename, tile_options=None):
+    if tile_options is None:
+        tile_options = []
     os.chdir(output_dir)
 
     src_files = [str(path) for path in input_files]

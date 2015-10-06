@@ -6,7 +6,6 @@ import argparse
 import numpy as np
 import gdal
 import netCDF4
-import dateutil.parser
 import os.path
 
 epoch = datetime(1970, 1, 1, 0, 0, 0)
@@ -15,6 +14,16 @@ epoch = datetime(1970, 1, 1, 0, 0, 0)
 def print_and_flush(s='', end='\n'):
     sys.stdout.write(s + end)
     sys.stdout.flush()
+
+
+def _get_nbands_lats_lons_from_gdalds(gdal_dataset):
+    nbands, nlats, nlons = gdal_dataset.RasterCount, gdal_dataset.RasterYSize, gdal_dataset.RasterXSize
+    # Calculate pixel coordinates for each x,y based on the GeoTransform
+    geotransform = gdal_dataset.GetGeoTransform()
+    lons = np.arange(nlons)*geotransform[1]+geotransform[0]
+    lats = np.arange(nlats)*geotransform[5]+geotransform[3]
+
+    return nbands, lats, lons
 
 
 class BaseNetCDF(object):
@@ -32,6 +41,7 @@ class BaseNetCDF(object):
         self.chunk_x = chunk_x
         self.chunk_y = chunk_y
         self.chunk_time = chunk_time
+        self.description = Description()
 
     def close(self):
         self.nco.close()
@@ -46,21 +56,24 @@ class BaseNetCDF(object):
         self.nco.createDimension('longitude', len(lons))
         self.nco.createDimension('latitude', len(lats))
         self.nco.createDimension('time', None)
-        timeo = self.nco.createVariable('time', 'f4', ('time'))
+        timeo = self.nco.createVariable('time', 'f4', 'time')
         timeo.units = 'seconds since 1970-01-01 00:00:00'
         timeo.standard_name = 'time'
         timeo.long_name = 'Time, unix time-stamp'
         timeo.calendar = 'standard'
+        timeo.axis = "T"
 
-        lon = self.nco.createVariable('longitude', 'f4', ('longitude'))
+        lon = self.nco.createVariable('longitude', 'f4', 'longitude')
         lon.units = 'degrees_east'
         lon.standard_name = 'longitude'
         lon.long_name = 'longitude'
+        lon.axis = "X"
 
-        lat = self.nco.createVariable('latitude', 'f4', ('latitude'))
+        lat = self.nco.createVariable('latitude', 'f4', 'latitude')
         lat.units = 'degrees_north'
         lat.standard_name = 'latitude'
         lat.long_name = 'latitude'
+        lat.axis = "Y"
 
         lon[:] = lons
         lat[:] = lats
@@ -76,6 +89,17 @@ class BaseNetCDF(object):
 
     def _set_global_attributes(self):
         self.nco.Conventions = 'CF-1.6'
+        self.nco.spatial_coverage = "1.000000 degrees grid"
+        self.nco.featureType = "grid"
+        self.nco.geospatial_lat_min = self.description.get_lat_min()
+        self.nco.geospatial_lat_max = self.description.get_lat_max()
+        self.nco.geospatial_lat_units = "degrees_north"
+        self.nco.geospatial_lon_min = self.description.get_lon_min()
+        self.nco.geospatial_lon_max = self.description.get_lon_max()
+        self.nco.geospatial_lon_units = "degrees_east"
+        creation_date = datetime.utcnow().strftime("%Y%m%d")
+        self.nco.history = "NetCDF-CF file created %s." % creation_date
+        self.nco.licence = "Test file ingestion for AGDCv2"
 
     def _add_time(self, start_date):
         # Convert to datetime at midnight
@@ -88,15 +112,6 @@ class BaseNetCDF(object):
 
         # Save as next coordinate in file
         times[len(times)] = start_datetime_delta.total_seconds()
-
-    def _get_nbands_lats_lons_from_gdalds(self, dataset):
-        nbands, nlats, nlons = dataset.RasterCount, dataset.RasterYSize, dataset.RasterXSize
-        # Calculate pixel coordinates for each x,y based on the GeoTransform
-        geotransform = dataset.GetGeoTransform()
-        lons = np.arange(nlons)*geotransform[1]+geotransform[0]
-        lats = np.arange(nlats)*geotransform[5]+geotransform[3]
-
-        return nbands, lats, lons
 
     def create_from_description(self, description):
         self.description = description
@@ -113,11 +128,6 @@ class BaseNetCDF(object):
     def _create_variables(self):
         """
         Create the structure of the NetCDF file, ie, which variables with which dimensions
-
-        :param lats: list of latitudes
-        :param lons: list of longitudes
-        :param nbands: number of bands
-        :return:
         """
         pass
 
@@ -155,34 +165,32 @@ class MultiVariableNetCDF(BaseNetCDF):
     """
     def _load_description(self):
         self.description = Description
+
     def _create_variables(self):
         self._create_standard_dimensions(self.description.lats, self.description.lons)
-        self._create_bands(len(self.description.bands))
+        self._create_bands(self.description.bands)
 
-    def _create_bands(self, nbands):
-        netcdfbands = []
-        for i in range(1, nbands+1):
+    def _create_bands(self, bands):
+        import ipdb; ipdb.set_trace()
+        for i, band in enumerate(bands, 1):
             band = self.nco.createVariable('band' + str(i), 'i2',  ('time', 'latitude', 'longitude'),
                                            zlib=True, chunksizes=[self.chunk_time, self.chunk_y, self.chunk_x],
                                            fill_value=-9999)
             band.grid_mapping = 'crs'
             band.set_auto_maskandscale(False)
             band.units = "1"
-            netcdfbands.append(band)
-        return netcdfbands
 
-    def _get_netcdf_bands(self, nbands):
+    def _get_netcdf_bands(self, bands):
         netcdfbands = []
-        for i in range(1, nbands+1):
+        for i, _ in enumerate(bands, 1):
             band = self.nco.variables['band' + str(i)]
             netcdfbands.append(band)
         return netcdfbands
 
     def _write_data_to_netcdf(self, gdal_dataset, ga_dataset):
-        nbands = len(self.description.bands)
         lats = self.description.lats
         lons = self.description.lons
-        netcdfbands = self._get_netcdf_bands(nbands)
+        netcdfbands = self._get_netcdf_bands(self.description.bands)
 
         ds_bands = sorted(ga_dataset.image.bands.values(), key=lambda band: band.number)
 
@@ -199,15 +207,6 @@ class MultiVariableNetCDF(BaseNetCDF):
             out_band[time_index-1, :, :] = in_band.ReadAsArray()
             print_and_flush('.', end='')
         print()
-
-#     # check that the files exist
-#     # check that the files area (lat/longs) matches
-#     # check that the bands in the geotiff match the netcdf
-#     # check that the other metadata matches
-#     # check that the time-slice doesn't already exist
-#     # add the time to the netcdf
-#     # add each band to the netcdf at the new time
-#     pass
 
 
 class SingleVariableNetCDF(BaseNetCDF):
@@ -235,7 +234,7 @@ class SingleVariableNetCDF(BaseNetCDF):
                                 fill_value=-9999)
 
     def _write_data_to_netcdf(self, gdal_dataset, ga_dataset):
-        nbands, lats, lons = self._get_nbands_lats_lons_from_gdalds(gdal_dataset)
+        nbands, lats, lons = _get_nbands_lats_lons_from_gdalds(gdal_dataset)
 
         time_index = len(self.nco.dimensions['time']) - 1
         band_var = self.nco.variables['band']
@@ -255,10 +254,32 @@ class SingleVariableNetCDF(BaseNetCDF):
 
 
 class Description(object):
-    def __init__(self, bands=None, lats=None, lons=None):
+    bands = []
+    lats = []
+    lons = []
+    lat_resolution = None
+    lon_resolution = None
+
+    def __init__(self, bands=None, lats=None, lons=None, lat_resultion=None, lon_resolution=None):
         self.bands = [] if bands is None else bands
         self.lats = [] if lats is None else lats
         self.lons = [] if lons is None else lons
+        self.lat_resolution = lat_resultion
+        self.lon_resolution = lon_resolution
+
+    def get_lat_min(self):
+        return min(self.lats)
+
+    def get_lat_max(self):
+        return max(self.lats)
+
+    def get_lon_min(self):
+        return min(self.lons)
+
+    def get_lon_max(self):
+        return max(self.lons)
+
+
 class Messenger:
     def __init__(self, **kwargs):
         self.__dict__ = kwargs
@@ -304,7 +325,7 @@ def get_description_from_dataset(gdal_dataset):
 
         bands.append(dict(name=name, dtype=dtype, no_data=no_data))
 
-    return Description(bands=bands, lats=lats, lons=lons)
+    return Description(bands=bands, lats=lats, lons=lons, lat_resultion=geotransform[5], lon_resolution=geotransform[1])
 
 
 def create_or_replace(geotiff_path, netcdf_path, dataset, netcdf_class=MultiVariableNetCDF):
@@ -338,7 +359,6 @@ def main():
         netcdf_class = SingleVariableNetCDF
     else:
         netcdf_class = MultiVariableNetCDF
-
 
     if args.create:
         dcnc = netcdf_class(args.netcdf, mode='w')
