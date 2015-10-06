@@ -212,16 +212,6 @@ example_file_data = {
 }
 
 
-ingest_task = {
-    'src_files': '/g/data/rs0/scenes/ARG25_V0.0/2015-04/LS7_ETM_NBAR_P54_GANBAR01-002_089_081_20150425/scene01/*.tif',
-    'basename': 'LS7_ETM_NBAR_P54_GANBAR01-002_089_081_20150425'
-}
-ingest_task = {
-    'src_files': '/g/data/rs0/scenes/ARG25_V0.0/1994-02/LS5_TM_NBAR_P54_GANBAR01-002_099_081_19940209/scene01/*.tif',
-    'basename': 'LS5_TM_NBAR_P54_GANBAR01-002_099_081_19940209'
-}
-
-
 def create_tiles(input_files, output_dir, basename, tile_options=None):
     if tile_options is None:
         tile_options = []
