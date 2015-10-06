@@ -175,7 +175,7 @@ class MultiVariableNetCDF(BaseNetCDF):
         for i, band in enumerate(bands, 1):
             band = self.nco.createVariable('band' + str(i), 'i2',  ('time', 'latitude', 'longitude'),
                                            zlib=True, chunksizes=[self.chunk_time, self.chunk_y, self.chunk_x],
-                                           fill_value=-9999)
+                                           fill_value=-999)
             band.grid_mapping = 'crs'
             band.set_auto_maskandscale(False)
             band.units = "1"
@@ -231,7 +231,7 @@ class SingleVariableNetCDF(BaseNetCDF):
         chunk_band = 1
         self.nco.createVariable('observation', 'i2',  ('time', 'band', 'latitude', 'longitude'),
                                 zlib=True, chunksizes=[self.chunk_time, chunk_band, self.chunk_y, self.chunk_x],
-                                fill_value=-9999)
+                                fill_value=-999)
 
     def _write_data_to_netcdf(self, gdal_dataset, ga_dataset):
         nbands, lats, lons = _get_nbands_lats_lons_from_gdalds(gdal_dataset)
