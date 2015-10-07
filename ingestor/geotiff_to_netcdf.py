@@ -89,13 +89,14 @@ class BaseNetCDF(object):
 
     def _set_global_attributes(self):
         self.nco.spatial_coverage = "1.000000 degrees grid"
-        self.nco.featureType = "grid"
         self.nco.geospatial_lat_min = self.description.get_lat_min()
         self.nco.geospatial_lat_max = self.description.get_lat_max()
         self.nco.geospatial_lat_units = "degrees_north"
+        self.nco.geospatial_lat_resolution = "0.00025"
         self.nco.geospatial_lon_min = self.description.get_lon_min()
         self.nco.geospatial_lon_max = self.description.get_lon_max()
         self.nco.geospatial_lon_units = "degrees_east"
+        self.nco.geospatial_lon_resolution = "0.00025"
         creation_date = datetime.utcnow().strftime("%Y%m%d")
         self.nco.history = "NetCDF-CF file created %s." % creation_date
 
