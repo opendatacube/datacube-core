@@ -231,24 +231,25 @@ class SingleVariableNetCDF(BaseNetCDF):
     def _create_band_dimension(self):
         nbands = len(self.description.bands)
         self.nco.createDimension('band', nbands)
-        band = self.nco.createVariable('band', str, 'band')
-        band.long_name = "Surface reflectance band"
+        band = self.nco.createVariable('band_name', str, 'band')
+        band.long_name = "Surface reflectance band name/number"
 
     def _create_data_variable(self):
         chunk_band = 1
-        observations = self.nco.createVariable('observation', 'i2',  ('time', 'band', 'latitude', 'longitude'),
-                                zlib=True, chunksizes=[self.chunk_time, chunk_band, self.chunk_y, self.chunk_x],
+        observations = self.nco.createVariable('observation', 'i2',  ('band', 'time', 'latitude', 'longitude'),
+                                zlib=True, chunksizes=[chunk_band, self.chunk_time, self.chunk_y, self.chunk_x],
                                 fill_value=-999)
         observations.long_name = "Surface reflectance factor"
         observations.units = '1'
         observations.grid_mapping = 'crs'
         observations.set_auto_maskandscale(False)
+        observations.coordinates = 'band_name'
 
     def _write_data_to_netcdf(self, gdal_dataset, ga_dataset):
         nbands, lats, lons = _get_nbands_lats_lons_from_gdalds(gdal_dataset)
 
         time_index = len(self.nco.dimensions['time']) - 1
-        band_var = self.nco.variables['band']
+        band_var = self.nco.variables['band_name']
 
         ds_bands = sorted(ga_dataset.image.bands.values(), key=lambda band: band.number)
 
@@ -259,7 +260,7 @@ class SingleVariableNetCDF(BaseNetCDF):
 
             band_var[band_idx] = metadata.number
 
-            observation[time_index, band_idx, :, :] = in_band.ReadAsArray()
+            observation[band_idx, time_index, :, :] = in_band.ReadAsArray()
             print_and_flush('.', end="")
         print()
 
