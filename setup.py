@@ -13,7 +13,9 @@ setup(
         'eodatasets',
         'gdal',
         'pathlib',
-        'pyyaml'
+        'pyyaml',
+        'numpy',
+        'netCDF4',
     ],
     entry_points='''
         [console_scripts]
