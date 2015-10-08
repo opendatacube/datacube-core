@@ -149,7 +149,7 @@ class BaseNetCDF(object):
         """
         pass
 
-    def append_geotiff(self, geotiff, ga_dataset):
+    def append_gdal_tile(self, geotiff, ga_dataset):
         """
         Read a geotiff file and append it to the open NetCDF file
 
@@ -335,18 +335,26 @@ def get_input_spec_from_gdal_dataset(gdal_dataset):
     return TileSpec(bands=bands, lats=lats, lons=lons, lat_resultion=geotransform[5], lon_resolution=geotransform[1])
 
 
-def create_or_append(geotiff_path, netcdf_path, dataset, netcdf_class=MultiVariableNetCDF):
+def append_to_netcdf(gdal_tile, netcdf_path, dataset, netcdf_class=MultiVariableNetCDF):
+    """
+    Create a new
+    :param gdal_tile:
+    :param netcdf_path:
+    :param dataset:
+    :param netcdf_class:
+    :return:
+    """
 
     if not os.path.isfile(netcdf_path):
         ncfile = netcdf_class(netcdf_path, mode='w')
-        file_description = get_input_spec_from_file(geotiff_path)
+        file_description = get_input_spec_from_file(gdal_tile)
         ncfile.create_from_tile_spec(file_description)
     else:
         ncfile = netcdf_class(netcdf_path, mode='a')
-        file_description = get_input_spec_from_file(geotiff_path)
+        file_description = get_input_spec_from_file(gdal_tile)
         ncfile.tile_spec = file_description
 
-    ncfile.append_geotiff(geotiff_path, dataset)
+    ncfile.append_gdal_tile(gdal_tile, dataset)
     ncfile.close()
 
 
@@ -375,7 +383,7 @@ def main():
     elif args.append:
         dataset = gdal.Open(args.geotiff)
         dcnc = netcdf_class(args.netcdf, mode='a')
-        dcnc.append_geotiff(args.geotiff)
+        dcnc.append_gdal_tile(args.geotiff)
         dcnc.close()
     else:
         print("Unknown action")

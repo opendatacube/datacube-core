@@ -2,9 +2,8 @@
 import click
 import os
 import pathlib
-from create_tiles import calc_output_filenames, create_tiles
-from geotiff_to_netcdf import create_or_append, MultiVariableNetCDF, SingleVariableNetCDF
-from pprint import pprint
+from create_tiles import calc_output_filenames, create_tiles, list_tile_files
+from geotiff_to_netcdf import append_to_netcdf, MultiVariableNetCDF, SingleVariableNetCDF
 import eodatasets.drivers
 import eodatasets.type
 from eodatasets.serialise import read_yaml_metadata
@@ -24,8 +23,7 @@ def get_input_filenames(input_path, eodataset):
     """
     assert input_path.is_dir()
     bands = sorted([band for band_num, band in eodataset.image.bands.items()], key=lambda band: band.number)
-    input_files = [band.path for band in bands]
-    input_files = [input_path / filename for filename in input_files]
+    input_files = [input_path / band.path for band in bands]
 
     return input_files
 
@@ -65,15 +63,15 @@ def main(input_path, output_dir, netcdf_class, tile, merge, filename_format):
     input_files = get_input_filenames(input_path, eodataset)
     basename = eodataset.ga_label
 
-    # Create Tiles
     if tile:
-        create_tiles(input_files, output_dir, basename, DEFAULT_TILE_OPTIONS)
+        created_tiles = create_tiles(input_files, basename, DEFAULT_TILE_OPTIONS)
 
     # Import tiles into NetCDF files
     if merge:
-        renames = calc_output_filenames('test.csv', filename_format, eodataset)
-        for geotiff, netcdf in renames:
-            create_or_append(geotiff, netcdf, eodataset, netcdf_class=netcdf_class)
+        created_tiles = list_tile_files('test.csv')
+        tile_mappings = calc_output_filenames(created_tiles, filename_format, eodataset)
+        for geotiff, netcdf in tile_mappings:
+            append_to_netcdf(geotiff, netcdf, eodataset, netcdf_class=netcdf_class)
 
 
 if __name__ == '__main__':

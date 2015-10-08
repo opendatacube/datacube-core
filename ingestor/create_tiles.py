@@ -1,66 +1,67 @@
 import subprocess
 import os
-import click
-from glob import glob
-from osgeo import gdal,ogr,osr
+from collections import namedtuple
+from osgeo import gdal, osr
 from math import floor, ceil
 import os.path
 
-# From Metageta and http://gis.stackexchange.com/a/57837/2910
-def GetExtent(gt,cols,rows):
-    ''' Return list of corner coordinates from a geotransform
 
-        @type gt:   C{tuple/list}
-        @param gt: geotransform
-        @type cols:   C{int}
-        @param cols: number of columns in the dataset
-        @type rows:   C{int}
-        @param rows: number of rows in the dataset
-        @rtype:    C{[float,...,float]}
-        @return:   coordinates of each corner
-    '''
-    ext=[]
-    xarr=[0,cols]
-    yarr=[0,rows]
+# From Metageta and http://gis.stackexchange.com/a/57837/2910
+def get_extent(geotransform, cols, rows):
+    """ Return list of corner coordinates from a geotransform
+
+    @type geotransform:   C{tuple/list}
+    @param geotransform: geotransform
+    @type cols:   C{int}
+    @param cols: number of columns in the dataset
+    @type rows:   C{int}
+    @param rows: number of rows in the dataset
+    @rtype:    C{[float,...,float]}
+    @return:   coordinates of each corner
+    """
+    ext = []
+    xarr = [0, cols]
+    yarr = [0, rows]
 
     for px in xarr:
         for py in yarr:
-            x=gt[0]+(px*gt[1])+(py*gt[2])
-            y=gt[3]+(px*gt[4])+(py*gt[5])
-            ext.append([x,y])
-            print x,y
+            x = geotransform[0] + (px * geotransform[1]) + (py * geotransform[2])
+            y = geotransform[3] + (px * geotransform[4]) + (py * geotransform[5])
+            ext.append([x, y])
+            print x, y
         yarr.reverse()
     return ext
 
 
-def GetDatasetExtent(gdal_dataset):
-    return GetExtent(gdal_dataset.GetGeoTransform(), gdal_dataset.RasterXSize, gdal_dataset.RasterYSize)
+def get_dataset_extent(gdal_dataset):
+    return get_extent(gdal_dataset.GetGeoTransform(), gdal_dataset.RasterXSize, gdal_dataset.RasterYSize)
 
 
 def reproject_coords(coords, src_srs, tgt_srs):
-    ''' Reproject a list of x,y coordinates.
+    """
+    Reproject a list of x,y coordinates.
 
-        @type geom:     C{tuple/list}
-        @param geom:    List of [[x,y],...[x,y]] coordinates
-        @type src_srs:  C{osr.SpatialReference}
-        @param src_srs: OSR SpatialReference object
-        @type tgt_srs:  C{osr.SpatialReference}
-        @param tgt_srs: OSR SpatialReference object
-        @rtype:         C{tuple/list}
-        @return:        List of transformed [[x,y],...[x,y]] coordinates
-    '''
-    trans_coords=[]
-    transform = osr.CoordinateTransformation( src_srs, tgt_srs)
-    for x,y in coords:
-        x,y,z = transform.TransformPoint(x,y)
-        trans_coords.append([x,y])
+    @type coords:     C{tuple/list}
+    @param coords:    List of [[x,y],...[x,y]] coordinates
+    @type src_srs:  C{osr.SpatialReference}
+    @param src_srs: OSR SpatialReference object
+    @type tgt_srs:  C{osr.SpatialReference}
+    @param tgt_srs: OSR SpatialReference object
+    @rtype:         C{tuple/list}
+    @return:        List of transformed [[x,y],...[x,y]] coordinates
+    """
+    trans_coords = []
+    transform = osr.CoordinateTransformation(src_srs, tgt_srs)
+    for x, y in coords:
+        x, y, z = transform.TransformPoint(x, y)
+        trans_coords.append([x, y])
     return trans_coords
 
 
 def get_file_extents(raster_filename):
     ds = gdal.Open(raster_filename)
 
-    ext = GetDatasetExtent(ds)
+    ext = get_dataset_extent(ds)
 
     src_srs = osr.SpatialReference()
     src_srs.ImportFromWkt(ds.GetProjection())
@@ -68,15 +69,17 @@ def get_file_extents(raster_filename):
     #tgt_srs.ImportFromEPSG(4326)
     tgt_srs = src_srs.CloneGeogCS()
 
-    geo_ext = reproject_coords(ext,src_srs,tgt_srs)
+    geo_ext = reproject_coords(ext, src_srs,tgt_srs)
 
     return geo_ext
+
 
 def execute(command_list):
     print("Running command: " + ' '.join(command_list))
     subprocess.check_call(command_list)
 
-def combine_bands_to_vrt(src_files, basename):
+
+def stack_bands_together(src_files, basename):
 
     scene_vrt = '{}.vrt'.format(basename)
 
@@ -114,11 +117,29 @@ def create_vrt_with_extended_extents(input_vrt, basename):
     return extended_vrt
 
 
+TileFile = namedtuple('TileFile', 'filename minlon maxlon minlat maxlat')
+
+
+def list_tile_files(csv_path):
+    tile_files = []
+    with open(csv_path, 'r') as csvfile:
+        for line in csvfile:
+            filename, minlon, maxlon, minlat, maxlat = line.split(';')
+            minlon = int(float(minlon))
+            minlat = int(float(minlat))
+
+            tile_file = TileFile(filename, minlon, maxlon, minlat, maxlat)
+            tile_files.append(tile_file)
+
+    return tile_files
+
+
 def create_tile_files(input_vrt, target_dir='.', pixel_size=4000,
                       output_format='NetCDF',
                       create_options=None):
     if create_options is None:
-        create_options=['FORMAT=NC4', 'COMPRESS=DEFLATE', 'ZLEVEL=1']
+        create_options = ['FORMAT=NC4', 'COMPRESS=DEFLATE', 'ZLEVEL=1']
+    csv_path = 'test.csv'
 
     # Make list like ['-co', 'FORMAT=NC4', '-co', 'COMPRESS=DEFLATE', '-co', 'ZLEVEL=1']
     create_options = sum([['-co', option] for option in create_options], [])
@@ -126,59 +147,46 @@ def create_tile_files(input_vrt, target_dir='.', pixel_size=4000,
 
     execute(['gdal_retile.py', '-v', '-targetDir', target_dir,
              '-ps', pixel_size, pixel_size,
-             '-of', output_format, '-csv', 'test.csv', '-v'] + create_options +
+             '-of', output_format, '-csv', csv_path, '-v'] + create_options +
              [input_vrt])
 
+    return list_tile_files(csv_path)
 
-def calc_output_filenames(csv_path, format_string, dataset):
+
+def calc_output_filenames(tile_files, format_string, dataset):
     """
-    Read CSV generated by gdal_retile and return list of renames
+    Read CSV generated by gdal_retile and return list of tile mappings
+
+    Example format string:
+    {product_name}/{x}_{y}/{year}/{product_name}_{sensor_name}_{x}_{y}_{timestamp}.{file_extension}
+
 
     Additional attributes are:
     x = minimum longitude in file
     y = minimum latitude in file
 
-    :param csv_path: Location of CSV file
+    :param tile_files: List of TileFiles
+    :type tile_files: list of TileFile
     :param format_string: String describing new filename
     :param dataset: attributes to use in the format string
     :return: list of tuples (existing_filename, new_filename)
     """
     renames = []
-    with open(csv_path, 'r') as csvfile:
-        for line in csvfile:
-            orig_filename, minlon, maxlon, minlat, maxlat = line.split(';')
-            minlon = int(float(minlon))
-            minlat = int(float(minlat))
-            base, middle, extension = orig_filename.split('.')
+    for tile_file in tile_files:
+        base, middle, extension = tile_file.filename.split('.')
 
-            #FIXME DODGY
-            file_attributes = {
-                'x': minlon,
-                'y': minlat,
-                'extension': extension,
-                'ga_label': dataset.ga_label
-            }
+        # FIXME DODGY
+        file_attributes = {
+            'x': tile_file.minlon,
+            'y': tile_file.minlat,
+            'extension': extension,
+            'ga_label': dataset.ga_label
+        }
 
-            new_filename = format_string.format(**file_attributes)
-            dirname = os.path.dirname(new_filename)
+        new_filename = format_string.format(**file_attributes)
 
-            renames.append((orig_filename, new_filename))
+        renames.append((tile_file.filename, new_filename))
     return renames
-
-
-def rename_files(csv_path, format_string, file_attributes):
-    """
-    Standard naming uses lowerleft corner of tile
-
-    Lower left is minlon, minlat
-    :param csv_path:
-    :return:
-    """
-    with open(csv_path, 'r') as csvfile:
-        renames = calc_output_filenames(csv_path, format_string, file_attributes)
-        for src, target in renames:
-            print("Renaming {} to {}".format(src, target))
-            os.renames(src, target)
 
 
 EXAMPLE_CONFIG = {
@@ -190,48 +198,28 @@ EXAMPLE_CONFIG = {
     'file_extension': 'nc'
 }
 
-EXAMPLE_FILE_DATA = {
-    'product_name': 'FOO',
-    'x': 140,
-    'y': -33,
-    'year': '2014',
-    'sensor_name': 'EYEINSKY',
-    'timestamp': '2014-09-12'
-}
 
+def create_tiles(input_files, basename, tile_options=None):
+    """
+    Run a series of steps to turn a list of input files into a grid of stacked tiles
 
-def create_tiles(input_files, output_dir, basename, tile_options=None):
+    :param input_files:
+    :param basename:
+    :param tile_options:
+    :return:
+    """
     if tile_options is None:
         tile_options = []
-    os.chdir(output_dir)
 
     src_files = [str(path) for path in input_files]
-    combined_vrt = combine_bands_to_vrt(src_files=src_files,
-                                        basename=basename)
+
+    combined_vrt = stack_bands_together(src_files=src_files, basename=basename)
     reprojected_vrt = create_vrt_with_correct_srs(combined_vrt, basename=basename)
     extended_vrt = create_vrt_with_extended_extents(reprojected_vrt, basename=basename)
-    create_tile_files(extended_vrt, **tile_options)
+    created_tiles = create_tile_files(extended_vrt, **tile_options)
 
+    return created_tiles
 
-@click.command()
-@click.option('--output-dir', default='.')
-@click.argument('basename')
-@click.argument('src-files',
-                type=click.Path(exists=True, readable=True),
-                nargs=-1)
-def main(basename, src_files, output_dir):
-
-    print('Source files: ' + str(src_files))
-
-    create_tiles(list(src_files), output_dir)
-    rename_files('test.csv',
-                 '{product_name}/{x}_{y}/{year}/{product_name}_{sensor_name}_{x}_{y}_{timestamp}.{file_extension}',
-                 example_file_data)
-
-# create_aggregated_netcdf()
-
-if __name__ == '__main__':
-    main()
 
 #Nearest neighbour vs convolution. Depends on whether discrete values
 #-r resampling_method
