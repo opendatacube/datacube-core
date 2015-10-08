@@ -13,6 +13,7 @@ DEFAULT_TILE_OPTIONS = {
     'create_options': ['COMPRESS=DEFLATE', 'ZLEVEL=1']
 }
 
+
 def get_input_filenames(input_path, eodataset):
     """
     Extract absolute filenames from a DatasetMetadata object
@@ -30,12 +31,27 @@ def get_input_filenames(input_path, eodataset):
 
 def is_yaml_file(path):
     """
-    Is the provided path a yaml file
+    Is this a path to a yaml file
 
     :type path: pathlib.Path
-    :return: boolean
+    :rtype: boolean
     """
     return path.is_file() and path.suffix == '.yaml'
+
+
+def load_dataset(input_path):
+    input_path = pathlib.Path(input_path)
+
+    if is_yaml_file(input_path):
+        eodataset = read_yaml_metadata(input_path)
+        input_path = input_path.parent
+
+    elif input_path.is_dir():
+        eodriver = eodatasets.drivers.EODSDriver()
+        eodataset = eodatasets.type.DatasetMetadata()
+        eodriver.fill_metadata(eodataset, input_path)
+
+    return input_path, eodataset
 
 
 @click.command(help="Example output filename format: combined_{x}_{y}.nc ")
@@ -49,16 +65,7 @@ def is_yaml_file(path):
 def main(input_path, output_dir, netcdf_class, tile, merge, filename_format):
     os.chdir(output_dir)
 
-    input_path = pathlib.Path(input_path)
-
-    if is_yaml_file(input_path):
-        eodataset = read_yaml_metadata(input_path)
-        input_path = input_path.parent
-
-    elif input_path.is_dir():
-        eodriver = eodatasets.drivers.EODSDriver()
-        eodataset = eodatasets.type.DatasetMetadata()
-        eodriver.fill_metadata(eodataset, input_path)
+    input_path, eodataset = load_dataset(input_path)
 
     input_files = get_input_filenames(input_path, eodataset)
     basename = eodataset.ga_label

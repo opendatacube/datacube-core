@@ -103,7 +103,8 @@ class BaseNetCDF(object):
         # Attributes for NCI Compliance
         self.nco.title = "Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE"
         self.nco.summary = "These files are experimental, short lived, and the format will change."
-        self.nco.source = "This data is a reprojection and retile of the Landsat L1T surface reflectance scene data available from /g/data/rs0/scenes/"
+        self.nco.source = "This data is a reprojection and retile of the Landsat L1T surface reflectance " \
+                          "scene data available from /g/data/rs0/scenes/"
         self.nco.product_version = "0.0.0"
         self.nco.date_created = datetime.today().isoformat()
         self.nco.Conventions = 'CF-1.6'
@@ -121,12 +122,23 @@ class BaseNetCDF(object):
         # Save as next coordinate in file
         times[len(times)] = start_datetime_delta.total_seconds()
 
-    def create_from_tile_spec(self, tile_spec):
-        self.tile_spec = tile_spec
+    @classmethod
+    def create_from_tile_spec(cls, file_path, tile_spec):
+        netcdf = cls(file_path, mode='w')
+        netcdf.tile_spec = tile_spec
 
-        self._set_wgs84_crs()
-        self._set_global_attributes()
-        self._create_variables()
+        netcdf._set_wgs84_crs()
+        netcdf._set_global_attributes()
+        netcdf._create_variables()
+
+        return netcdf
+
+    @classmethod
+    def open_with_tile_spec(cls, file_path, tile_spec):
+        netcdf = cls(file_path)
+        netcdf.tile_spec = tile_spec
+
+        return netcdf
 
     def write_time_slice(self, slices, timestamp):
         self._add_time(timestamp)
@@ -157,7 +169,6 @@ class BaseNetCDF(object):
         :return:
         """
         gdal_dataset = gdal.Open(geotiff)
-        ds_metadata = gdal_dataset.GetMetadata()
         self._add_time(ga_dataset.acquisition.aos)
 
         self._write_data_to_netcdf(gdal_dataset, ga_dataset)
@@ -192,8 +203,6 @@ class MultiVariableNetCDF(BaseNetCDF):
         return netcdfbands
 
     def _write_data_to_netcdf(self, gdal_dataset, ga_dataset):
-        lats = self.tile_spec.lats
-        lons = self.tile_spec.lons
         netcdfbands = self._get_netcdf_bands(self.tile_spec.bands)
 
         ds_bands = sorted(ga_dataset.image.bands.values(), key=lambda band: band.number)
@@ -219,6 +228,7 @@ class SingleVariableNetCDF(BaseNetCDF):
     def _create_variables(self):
         lats = self.tile_spec.lats
         lons = self.tile_spec.lons
+
         self._create_standard_dimensions(lats, lons)
         self._create_band_dimension()
         self._create_data_variable()
@@ -232,8 +242,9 @@ class SingleVariableNetCDF(BaseNetCDF):
     def _create_data_variable(self):
         chunk_band = 1
         observations = self.nco.createVariable('observation', 'i2',  ('band', 'time', 'latitude', 'longitude'),
-                                zlib=True, chunksizes=[chunk_band, self.chunk_time, self.chunk_y, self.chunk_x],
-                                fill_value=-999)
+                                               zlib=True,
+                                               chunksizes=[chunk_band, self.chunk_time, self.chunk_y, self.chunk_x],
+                                               fill_value=-999)
         observations.long_name = "Surface reflectance factor"
         observations.units = '1'
         observations.grid_mapping = 'crs'
@@ -335,26 +346,24 @@ def get_input_spec_from_gdal_dataset(gdal_dataset):
     return TileSpec(bands=bands, lats=lats, lons=lons, lat_resultion=geotransform[5], lon_resolution=geotransform[1])
 
 
-def append_to_netcdf(gdal_tile, netcdf_path, dataset, netcdf_class=MultiVariableNetCDF):
+def append_to_netcdf(gdal_tile, netcdf_path, eodataset, netcdf_class=MultiVariableNetCDF):
     """
-    Create a new
-    :param gdal_tile:
-    :param netcdf_path:
-    :param dataset:
+    Append a raster slice to a new or existing NetCDF file
+
+    :param gdal_tile: pathname to raster slice, readable by gdal
+    :param netcdf_path: pathname to
+    :param eodataset:
     :param netcdf_class:
     :return:
     """
+    tile_spec = get_input_spec_from_file(gdal_tile)
 
     if not os.path.isfile(netcdf_path):
-        ncfile = netcdf_class(netcdf_path, mode='w')
-        file_description = get_input_spec_from_file(gdal_tile)
-        ncfile.create_from_tile_spec(file_description)
+        ncfile = netcdf_class.create_from_tile_spec(netcdf_path, tile_spec)
     else:
-        ncfile = netcdf_class(netcdf_path, mode='a')
-        file_description = get_input_spec_from_file(gdal_tile)
-        ncfile.tile_spec = file_description
+        ncfile = netcdf_class.open_with_tile_spec(netcdf_path, tile_spec)
 
-    ncfile.append_gdal_tile(gdal_tile, dataset)
+    ncfile.append_gdal_tile(gdal_tile, eodataset)
     ncfile.close()
 
 
@@ -381,7 +390,6 @@ def main():
         dcnc.create_from_tile_spec(tile_spec)
         dcnc.close()
     elif args.append:
-        dataset = gdal.Open(args.geotiff)
         dcnc = netcdf_class(args.netcdf, mode='a')
         dcnc.append_gdal_tile(args.geotiff)
         dcnc.close()

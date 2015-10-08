@@ -1,9 +1,7 @@
 import subprocess
-import os
 from collections import namedtuple
 from osgeo import gdal, osr
 from math import floor, ceil
-import os.path
 
 
 # From Metageta and http://gis.stackexchange.com/a/57837/2910
@@ -65,11 +63,11 @@ def get_file_extents(raster_filename):
 
     src_srs = osr.SpatialReference()
     src_srs.ImportFromWkt(ds.GetProjection())
-    #tgt_srs=osr.SpatialReference()
-    #tgt_srs.ImportFromEPSG(4326)
+    # tgt_srs=osr.SpatialReference()
+    # tgt_srs.ImportFromEPSG(4326)
     tgt_srs = src_srs.CloneGeogCS()
 
-    geo_ext = reproject_coords(ext, src_srs,tgt_srs)
+    geo_ext = reproject_coords(ext, src_srs, tgt_srs)
 
     return geo_ext
 
@@ -88,7 +86,7 @@ def stack_bands_together(src_files, basename):
     return scene_vrt
 
 
-def create_vrt_with_correct_srs(input_vrt, basename, target_srs="EPSG:4326"):
+def reproject(input_vrt, basename, target_srs="EPSG:4326"):
     reprojected_vrt = '{}.{}.vrt'.format(basename, target_srs.lower().replace(':', ''))
     target_pixel_res = "0.00025"
 
@@ -102,7 +100,7 @@ def create_vrt_with_correct_srs(input_vrt, basename, target_srs="EPSG:4326"):
     return reprojected_vrt
 
 
-def create_vrt_with_extended_extents(input_vrt, basename):
+def extend_extents_to_grid(input_vrt, basename):
     extents = get_file_extents(input_vrt)
     print("Extents: " + str(extents))
     xmin = str(floor(min(p[0] for p in extents)))
@@ -147,8 +145,7 @@ def create_tile_files(input_vrt, target_dir='.', pixel_size=4000,
 
     execute(['gdal_retile.py', '-v', '-targetDir', target_dir,
              '-ps', pixel_size, pixel_size,
-             '-of', output_format, '-csv', csv_path, '-v'] + create_options +
-             [input_vrt])
+             '-of', output_format, '-csv', csv_path, '-v'] + create_options + [input_vrt])
 
     return list_tile_files(csv_path)
 
@@ -206,22 +203,22 @@ def create_tiles(input_files, basename, tile_options=None):
     :param input_files:
     :param basename:
     :param tile_options:
-    :return:
+    :rtype: list[TileFile]
     """
     if tile_options is None:
         tile_options = []
 
     src_files = [str(path) for path in input_files]
 
-    combined_vrt = stack_bands_together(src_files=src_files, basename=basename)
-    reprojected_vrt = create_vrt_with_correct_srs(combined_vrt, basename=basename)
-    extended_vrt = create_vrt_with_extended_extents(reprojected_vrt, basename=basename)
+    combined_vrt = stack_bands_together(src_files, basename)
+    reprojected_vrt = reproject(combined_vrt, basename)
+    extended_vrt = extend_extents_to_grid(reprojected_vrt, basename)
     created_tiles = create_tile_files(extended_vrt, **tile_options)
 
     return created_tiles
 
 
-#Nearest neighbour vs convolution. Depends on whether discrete values
-#-r resampling_method
+# Nearest neighbour vs convolution. Depends on whether discrete values
+# -r resampling_method
 
 
