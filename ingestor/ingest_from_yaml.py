@@ -1,82 +1,79 @@
 
 import click
 import os
-import os.path
-import yaml
 import pathlib
-from create_tiles import calc_target_names, create_tiles
-from geotiff_to_netcdf import create_or_replace, MultiVariableNetCDF, SingleVariableNetCDF
+from create_tiles import calc_output_filenames, create_tiles
+from geotiff_to_netcdf import create_or_append, MultiVariableNetCDF, SingleVariableNetCDF
 from pprint import pprint
 import eodatasets.drivers
 import eodatasets.type
+from eodatasets.serialise import read_yaml_metadata
 
+DEFAULT_TILE_OPTIONS = {
+    'output_format': 'GTiff',
+    'create_options': ['COMPRESS=DEFLATE', 'ZLEVEL=1']
+}
 
-def read_yaml(filename):
-    with open(str(filename)) as f:
-        data = yaml.load(f)
-        return data
-
-
-def get_input_files(input_path, data):
+def get_input_filenames(input_path, eodataset):
     """
+    Extract absolute filenames from a DatasetMetadata object
 
     :type input_path: pathlib.Path
-    :type data: eodatasets.type.DatasetMetadata
-    :return:
+    :type eodataset: eodatasets.type.DatasetMetadata
+    :return: list of filenames
     """
-
     assert input_path.is_dir()
-    bands = sorted([band for band_num, band in data.image.bands.items()], key=lambda band: band.number)
+    bands = sorted([band for band_num, band in eodataset.image.bands.items()], key=lambda band: band.number)
     input_files = [band.path for band in bands]
     input_files = [input_path / filename for filename in input_files]
 
     return input_files
 
 
+def is_yaml_file(path):
+    """
+    Is the provided path a yaml file
+
+    :type path: pathlib.Path
+    :return: boolean
+    """
+    return path.is_file() and path.suffix == '.yaml'
+
+
 @click.command(help="Example output filename format: combined_{x}_{y}.nc ")
 @click.option('--output-dir', '-o', default='.')
 @click.option('--multi-variable', 'netcdf_class', flag_value=MultiVariableNetCDF, default=True)
 @click.option('--single-variable', 'netcdf_class', flag_value=SingleVariableNetCDF)
-@click.option('--read-yaml', 'input_type', flag_value='yaml', default=True)
-@click.option('--read-dataset', 'input_type', flag_value='dataset')
 @click.option('--tile/--no-tile', default=True, help="Allow partial processing")
 @click.option('--merge/--no-merge', default=True, help="Allow partial processing")
-@click.argument('path', type=click.Path(exists=True))
+@click.argument('input_path', type=click.Path(exists=True, readable=True))
 @click.argument('filename-format')
-def main(path, output_dir, input_type, netcdf_class, tile, merge, filename_format):
+def main(input_path, output_dir, netcdf_class, tile, merge, filename_format):
     os.chdir(output_dir)
 
-    path = pathlib.Path(path)
+    input_path = pathlib.Path(input_path)
 
-    if input_type == 'yaml':
-        dataset = read_yaml(path)
-        pprint(dataset, indent=2)
+    if is_yaml_file(input_path):
+        eodataset = read_yaml_metadata(input_path)
+        input_path = input_path.parent
 
-        path = path.parent
-        dataset = eodatasets.type.DatasetMetadata.from_dict(dataset)
-
-    elif input_type == 'dataset':
+    elif input_path.is_dir():
         eodriver = eodatasets.drivers.EODSDriver()
-        dataset = eodatasets.type.DatasetMetadata()
-        eodriver.fill_metadata(dataset, path)
+        eodataset = eodatasets.type.DatasetMetadata()
+        eodriver.fill_metadata(eodataset, input_path)
 
-
-    input_files = get_input_files(path, dataset)
-    basename = dataset.ga_label
-    tile_options = {
-        'output_format': 'GTiff',
-        'create_options': ['COMPRESS=DEFLATE', 'ZLEVEL=1']
-    }
+    input_files = get_input_filenames(input_path, eodataset)
+    basename = eodataset.ga_label
 
     # Create Tiles
     if tile:
-        create_tiles(input_files, output_dir, basename, tile_options)
+        create_tiles(input_files, output_dir, basename, DEFAULT_TILE_OPTIONS)
 
     # Import tiles into NetCDF files
     if merge:
-        renames = calc_target_names('test.csv', filename_format, dataset)
+        renames = calc_output_filenames('test.csv', filename_format, eodataset)
         for geotiff, netcdf in renames:
-            create_or_replace(geotiff, netcdf, dataset, netcdf_class=netcdf_class)
+            create_or_append(geotiff, netcdf, eodataset, netcdf_class=netcdf_class)
 
 
 if __name__ == '__main__':

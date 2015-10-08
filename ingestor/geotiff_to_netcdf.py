@@ -8,7 +8,7 @@ import gdal
 import netCDF4
 import os.path
 
-epoch = datetime(1970, 1, 1, 0, 0, 0)
+EPOCH = datetime(1970, 1, 1, 0, 0, 0)
 
 
 def print_and_flush(s='', end='\n'):
@@ -41,7 +41,7 @@ class BaseNetCDF(object):
         self.chunk_x = chunk_x
         self.chunk_y = chunk_y
         self.chunk_time = chunk_time
-        self.description = Description()
+        self.tile_spec = TileSpec()
 
     def close(self):
         self.nco.close()
@@ -89,12 +89,12 @@ class BaseNetCDF(object):
 
     def _set_global_attributes(self):
         self.nco.spatial_coverage = "1.000000 degrees grid"
-        self.nco.geospatial_lat_min = self.description.get_lat_min()
-        self.nco.geospatial_lat_max = self.description.get_lat_max()
+        self.nco.geospatial_lat_min = self.tile_spec.get_lat_min()
+        self.nco.geospatial_lat_max = self.tile_spec.get_lat_max()
         self.nco.geospatial_lat_units = "degrees_north"
         self.nco.geospatial_lat_resolution = "0.00025"
-        self.nco.geospatial_lon_min = self.description.get_lon_min()
-        self.nco.geospatial_lon_max = self.description.get_lon_max()
+        self.nco.geospatial_lon_min = self.tile_spec.get_lon_min()
+        self.nco.geospatial_lon_max = self.tile_spec.get_lon_max()
         self.nco.geospatial_lon_units = "degrees_east"
         self.nco.geospatial_lon_resolution = "0.00025"
         creation_date = datetime.utcnow().strftime("%Y%m%d")
@@ -114,15 +114,15 @@ class BaseNetCDF(object):
         start_datetime = datetime.combine(start_date, datetime.min.time())
 
         # Convert to seconds since epoch (1970-01-01)
-        start_datetime_delta = start_datetime - epoch
+        start_datetime_delta = start_datetime - EPOCH
 
         times = self.nco.variables['time']
 
         # Save as next coordinate in file
         times[len(times)] = start_datetime_delta.total_seconds()
 
-    def create_from_description(self, description):
-        self.description = description
+    def create_from_tile_spec(self, tile_spec):
+        self.tile_spec = tile_spec
 
         self._set_wgs84_crs()
         self._set_global_attributes()
@@ -171,12 +171,9 @@ class MultiVariableNetCDF(BaseNetCDF):
 
     This closely matches the existing GeoTiff tile file structure
     """
-    def _load_description(self):
-        self.description = Description
-
     def _create_variables(self):
-        self._create_standard_dimensions(self.description.lats, self.description.lons)
-        self._create_bands(self.description.bands)
+        self._create_standard_dimensions(self.tile_spec.lats, self.tile_spec.lons)
+        self._create_bands(self.tile_spec.bands)
 
     def _create_bands(self, bands):
         for i, band in enumerate(bands, 1):
@@ -195,9 +192,9 @@ class MultiVariableNetCDF(BaseNetCDF):
         return netcdfbands
 
     def _write_data_to_netcdf(self, gdal_dataset, ga_dataset):
-        lats = self.description.lats
-        lons = self.description.lons
-        netcdfbands = self._get_netcdf_bands(self.description.bands)
+        lats = self.tile_spec.lats
+        lons = self.tile_spec.lons
+        netcdfbands = self._get_netcdf_bands(self.tile_spec.bands)
 
         ds_bands = sorted(ga_dataset.image.bands.values(), key=lambda band: band.number)
 
@@ -218,18 +215,16 @@ class MultiVariableNetCDF(BaseNetCDF):
 class SingleVariableNetCDF(BaseNetCDF):
     """
     Store all data values in a single dataset with an extra dimension for `band`
-
-
     """
     def _create_variables(self):
-        lats = self.description.lats
-        lons = self.description.lons
+        lats = self.tile_spec.lats
+        lons = self.tile_spec.lons
         self._create_standard_dimensions(lats, lons)
         self._create_band_dimension()
         self._create_data_variable()
 
     def _create_band_dimension(self):
-        nbands = len(self.description.bands)
+        nbands = len(self.tile_spec.bands)
         self.nco.createDimension('band', nbands)
         band = self.nco.createVariable('band_name', str, 'band')
         band.long_name = "Surface reflectance band name/number"
@@ -265,7 +260,7 @@ class SingleVariableNetCDF(BaseNetCDF):
         print()
 
 
-class Description(object):
+class TileSpec(object):
     bands = []
     lats = []
     lons = []
@@ -297,16 +292,16 @@ class Messenger:
         self.__dict__ = kwargs
 
 
-def get_description_from_geotiff(geotiff):
-    gdal_dataset = gdal.Open(geotiff)
-    return get_description_from_dataset(gdal_dataset)
+def get_input_spec_from_file(filename):
+    gdal_dataset = gdal.Open(filename)
+    return get_input_spec_from_gdal_dataset(gdal_dataset)
 
 
-def get_description_from_dataset(gdal_dataset):
+def get_input_spec_from_gdal_dataset(gdal_dataset):
     """
-    Return a description of a GDAL dataset, used for creating a new NetCDF file to hold the same data
+    Return a specification of a GDAL dataset, used for creating a new NetCDF file to hold the same data
 
-    Example description:
+    Example specification:
     dict(bands=[{'dtype': 'Int16',
                      'name': 'Photosynthetic Vegetation',
                      'no_data': -999.0},
@@ -337,19 +332,19 @@ def get_description_from_dataset(gdal_dataset):
 
         bands.append(dict(name=name, dtype=dtype, no_data=no_data))
 
-    return Description(bands=bands, lats=lats, lons=lons, lat_resultion=geotransform[5], lon_resolution=geotransform[1])
+    return TileSpec(bands=bands, lats=lats, lons=lons, lat_resultion=geotransform[5], lon_resolution=geotransform[1])
 
 
-def create_or_replace(geotiff_path, netcdf_path, dataset, netcdf_class=MultiVariableNetCDF):
+def create_or_append(geotiff_path, netcdf_path, dataset, netcdf_class=MultiVariableNetCDF):
 
     if not os.path.isfile(netcdf_path):
         ncfile = netcdf_class(netcdf_path, mode='w')
-        file_description = get_description_from_geotiff(geotiff_path)
-        ncfile.create_from_description(file_description)
+        file_description = get_input_spec_from_file(geotiff_path)
+        ncfile.create_from_tile_spec(file_description)
     else:
         ncfile = netcdf_class(netcdf_path, mode='a')
-        file_description = get_description_from_geotiff(geotiff_path)
-        ncfile.description = file_description
+        file_description = get_input_spec_from_file(geotiff_path)
+        ncfile.tile_spec = file_description
 
     ncfile.append_geotiff(geotiff_path, dataset)
     ncfile.close()
@@ -374,8 +369,8 @@ def main():
 
     if args.create:
         dcnc = netcdf_class(args.netcdf, mode='w')
-        description = get_description_from_geotiff(args.geotiff)
-        dcnc.create_from_description(description)
+        tile_spec = get_input_spec_from_file(args.geotiff)
+        dcnc.create_from_tile_spec(tile_spec)
         dcnc.close()
     elif args.append:
         dataset = gdal.Open(args.geotiff)
