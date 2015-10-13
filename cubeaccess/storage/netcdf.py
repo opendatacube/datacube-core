@@ -21,7 +21,7 @@ import netCDF4 as nc4
 import contextlib
 
 
-class NetCDF4Datatset(object):
+class NetCDF4StorageUnit(object):
     def __init__(self, filepath):
         self._filepath = filepath
         self.coordinates = dict()
@@ -33,7 +33,7 @@ class NetCDF4Datatset(object):
                 if len(dims) == 1 and name == dims[0]:
                     self.coordinates[name] = Coordinate(var.dtype, var[0], var[-1], var.shape[0])
                 else:
-                    ndv = None  # var.missing_value or var.fill_value
+                    ndv = getattr(var, 'missing_value', None) or getattr(var, 'fill_value', None)
                     self.variables[name] = Variable(var.dtype, ndv, var.dimensions)
 
     def _open_dataset(self):

@@ -15,12 +15,13 @@
 from __future__ import absolute_import, division, print_function
 from builtins import *
 
+import numpy
 from collections import namedtuple
 
 
-Range = namedtuple('Range', ['begin', 'end'])
 Coordinate = namedtuple('Coordinate', ['dtype', 'begin', 'end', 'length'])
 Variable = namedtuple('Variable', ['dtype', 'ndv', 'coordinates'])
+
 
 def _make_index(nDims):
     try:
@@ -44,58 +45,73 @@ def _make_index(nDims):
         return Index()
 
 
-class ConcatDataset(object):
-    def __init__(self, datasets):
-        ConcatDataset._check_consistency(datasets)
-        self._build_unchecked(datasets, {})
+def check_storage_consistent(storage_units):
+    first_coord = storage_units[0].coordinates
+    all_vars = dict()
 
-    @classmethod
-    def _check_consistency(cls, datasets):
-        first_coord = datasets[0].coordinates
-        all_vars = dict()
-
-        for ds in datasets:
-            if len(first_coord) != len(ds.coordinates):
+    for su in storage_units:
+        if len(first_coord) != len(su.coordinates):
+            raise RuntimeError("inconsistent dimensions")
+        for dim in first_coord:
+            coord = su.coordinates[dim]
+            if dim not in su.coordinates:
                 raise RuntimeError("inconsistent dimensions")
-            for dim in first_coord:
-                coord = ds.coordinates[dim]
-                if dim not in ds.coordinates:
-                    raise RuntimeError("inconsistent dimensions")
-                if first_coord[dim].dtype != coord.dtype:
-                    raise RuntimeError("inconsistent dimensions")
-                if (first_coord[dim].begin > first_coord[dim].end) != (coord.begin > coord.end):
-                    # if begin == end assume ascending order
-                    raise RuntimeError("inconsistent dimensions")
+            if first_coord[dim].dtype != coord.dtype:
+                raise RuntimeError("inconsistent dimensions")
+            if (first_coord[dim].begin > first_coord[dim].end) != (coord.begin > coord.end):
+                # if begin == end assume ascending order
+                raise RuntimeError("inconsistent dimensions")
 
-            for var in all_vars:
-                if var in ds.variables and all_vars[var] != ds.variables[var]:
-                    raise RuntimeError("inconsistent variables")
+        for var in all_vars:
+            if var in su.variables and all_vars[var] != su.variables[var]:
+                raise RuntimeError("inconsistent variables")
 
-            all_vars.update(ds.variables)
+        all_vars.update(su.variables)
 
-    def _build_unchecked(self, datasets, precision):
-        self._datasets = [sds for ds in datasets for sds in (ds._datasets if isinstance(ds, ConcatDataset) else [ds])]
-        first_coord = self._datasets[0].coordinates
+
+def merge_unique(ars, kind='mergesort', reverse=False):
+    c = numpy.concatenate(ars)
+    c[::-1 if reverse else 1].sort(kind=kind)
+    flag = numpy.ones(len(c), dtype=bool)
+    numpy.not_equal(c[1:], c[:-1], out=flag[1:])
+    return c[flag]
+
+
+class StorageUnitSet(object):
+    @staticmethod
+    def merge_coordinate(dim, storage_units, precision, **kwargs):
+        coord = storage_units[0].coordinates[dim]
+        return merge_unique([su.get(dim, **kwargs).round(precision) for su in storage_units],
+                            reverse=coord.begin > coord.end)
+
+    def __init__(self, storage_units):
+        check_storage_consistent(storage_units)
+        self._build_unchecked(storage_units)
+
+    def _build_unchecked(self, storage_units):
+        self._storage_units = [sus for su in storage_units for sus in (su._storage_units if isinstance(su, StorageUnitSet) else [su])]
+        first_coord = self._storage_units[0].coordinates
         self._dims = first_coord.keys()
         self.variables = {}
 
         self._index = _make_index(len(self._dims))
-        for id_, ds in enumerate(self._datasets):
-            coords = [min(ds.coordinates[dim].begin, ds.coordinates[dim].end) for dim in self._dims] \
-                     + [max(ds.coordinates[dim].begin, ds.coordinates[dim].end) for dim in self._dims]
+        for id_, su in enumerate(self._storage_units):
+            coords = [min(su.coordinates[dim].begin, su.coordinates[dim].end) for dim in self._dims] \
+                     + [max(su.coordinates[dim].begin, su.coordinates[dim].end) for dim in self._dims]
             self._index.insert(id_, coords)
-            self.variables.update(ds.variables)
+            self.variables.update(su.variables)
 
         self.coordinates = {}
         self._coord_data = {}
         for idx, dim in enumerate(self._dims):
             begin = self._index.bounds[idx]
             end = self._index.bounds[idx + len(self._dims)]
-            density = lambda coord: (coord.length-1)/abs(coord.end - coord.begin)
-            max_density = max(density(ds.coordinates[dim]) for ds in self._datasets if ds.coordinates[dim] > 1)
-            # for ds in self._datasets:
+
+            def density(coord): return (coord.length-1)/abs(coord.end - coord.begin)
+            max_density = max(density(su.coordinates[dim]) for su in self._storage_units if su.coordinates[dim] > 1)
+            # for su in self._datasets:
             #
-            #     coord_set = np.around(ds.get(dim), precision.get(dim, 6))
+            #     coord_set = np.around(su.get(dim), precision.get(dim, 6))
             #     if dim in self._coord_data:
             #         self._coord_data[dim] = np.union1d(self._coord_data[dim], coord_set)
             #     else:
@@ -105,3 +121,31 @@ class ConcatDataset(object):
                                                begin if first_coord[dim].begin <= first_coord[dim].end else end,
                                                end if first_coord[dim].begin <= first_coord[dim].end else begin,
                                                int((end-begin)*max_density+1.5))
+
+    def get(self, name, precision=None, **kwargs):
+        precision = precision or {}
+        bounds = self._index.bounds[:]
+        for idx, dim in enumerate(self._dims):
+            if dim in kwargs:
+                if kwargs[dim].start:
+                    bounds[idx] = max(bounds[idx], kwargs[dim].start)
+                if kwargs[dim].stop:
+                    bounds[idx+len(self._dims)] = min(bounds[idx+len(self._dims)], kwargs[dim].stop)
+
+        storage_units = [self._storage_units[idx] for idx in self._index.intersection(bounds)]
+
+        if name in self.variables:
+            coord_data = {}
+            for idx, dim in enumerate(self._dims):
+                coord_data[dim] = StorageUnitSet.merge_coordinate(dim, storage_units, precision.get(dim, 6))
+            var = self.variables[name]
+            shape = [len(coord_data[dim]) for dim in var.coordinates]
+            result = numpy.empty(shape, dtype=var.dtype)
+            # TODO: fill result from storage units
+            return result
+
+        if name in self.coordinates:
+            coord_data = StorageUnitSet.merge_coordinate(name, storage_units, precision.get(name, 6), **kwargs)
+            return coord_data
+
+        raise KeyError(name + " is not a variable or coordinate")
