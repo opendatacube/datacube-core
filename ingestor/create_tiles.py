@@ -166,7 +166,7 @@ def calc_output_filenames(tile_files, format_string, dataset):
     :type tile_files: list of TileFile
     :param format_string: String describing new filename
     :param dataset: attributes to use in the format string
-    :return: list of tuples (existing_filename, new_filename)
+    :rtype: list[(existing_filename, new_filename)]
     """
     renames = []
     for tile_file in tile_files:
