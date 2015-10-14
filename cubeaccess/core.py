@@ -21,25 +21,7 @@ from collections import namedtuple, OrderedDict
 try:
     from xxray import DataArray
 except ImportError:
-    class DataArray(object):
-        def __init__(self, data, coords=None, dims=None, attrs=None):
-            self.values = data
-            self.dims = dims or ["dim_%s"%i for i in xrange(data.ndim)]
-            if coords:
-                self.coords = OrderedDict(zip(self.dims, coords))
-            else:
-                self.coords = OrderedDict(zip(self.dims, (numpy.arange(0, l) for l in data.shape)))
-            self.attrs = attrs or OrderedDict()
-
-        def __repr__(self):
-            summary = [
-                'DataArray ' + ', '.join("%s: %s" % x for x in zip(self.dims, self.values.shape)),
-                repr(self.values), 'Coordinates:'
-            ]
-            for name, data in self.coords.items():
-                summary.append(" * "+name+": "+repr(data))
-            return '\n'.join(summary)
-
+    from cubeaccess.ghetto import DataArray
 
 Coordinate = namedtuple('Coordinate', ['dtype', 'begin', 'end', 'length'])
 Variable = namedtuple('Variable', ['dtype', 'ndv', 'coordinates'])
@@ -53,17 +35,7 @@ def _make_index(nDims):
         return Index(properties=p)
 
     except ImportError:
-        class Index(object):
-            def __init__(self):
-                self.bounds = None
-
-            def insert(self, id_, bounds):
-                if self.bounds:
-                    self.bounds = [min(self.bounds[i], bounds[i]) for i in xrange(len(self.bounds)//2)] \
-                                + [max(self.bounds[len(self.bounds)//2+i], bounds[len(self.bounds)//2+i]) for i in xrange(len(self.bounds)//2)]
-                else:
-                    self.bounds = bounds
-
+        from cubeaccess.ghetto import Index
         return Index()
 
 
