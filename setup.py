@@ -11,6 +11,7 @@ setup(
     install_requires=[
         'click',
         'eodatasets',
+        'eotools',
         'gdal',
         'pathlib',
         'pyyaml',
