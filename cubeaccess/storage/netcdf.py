@@ -12,10 +12,12 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+
 from __future__ import absolute_import, division, print_function
 from builtins import *
 
-from cubeaccess.core import Coordinate, Variable
+from cubeaccess.core import Coordinate, Variable, DataArray
+from cubeaccess.storage.utils import coord2index
 
 import netCDF4 as nc4
 import contextlib
@@ -41,4 +43,16 @@ class NetCDF4StorageUnit(object):
 
     def get(self, name, **kwargs):
         with contextlib.closing(self._open_dataset()) as ncds:
-            return ncds.variables[name]
+            if name in self.coordinates:
+                data = ncds.variables[name]
+                index = coord2index(data, kwargs.get(name, None))
+                data = data[index]
+                return DataArray(data, coords=[data], dims=[name])
+
+            if name in self.variables:
+                var = self.variables[name]
+                coords = tuple(ncds.variables[dim] for dim in var.coordinates)
+                indexes = tuple(coord2index(data, kwargs.get(name, None)) for data in coords)
+                coords = tuple(data[idx] for data, idx in zip(coords, indexes))
+                return DataArray(ncds.variables[name][indexes], coords=coords, dims=var.coordinates)
+

@@ -12,6 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+
 from __future__ import absolute_import, division, print_function
 from builtins import *
 
@@ -103,13 +104,6 @@ class StorageUnitSet(object):
 
             def density(coord): return (coord.length-1)/abs(coord.end - coord.begin)
             max_density = max(density(su.coordinates[dim]) for su in self._storage_units if su.coordinates[dim] > 1)
-            # for su in self._datasets:
-            #
-            #     coord_set = np.around(su.get(dim), precision.get(dim, 6))
-            #     if dim in self._coord_data:
-            #         self._coord_data[dim] = np.union1d(self._coord_data[dim], coord_set)
-            #     else:
-            #         self._coord_data[dim] = coord_set
 
             self.coordinates[dim] = Coordinate(first_coord[dim].dtype,
                                                begin if first_coord[dim].begin <= first_coord[dim].end else end,
@@ -135,7 +129,11 @@ class StorageUnitSet(object):
             var = self.variables[name]
             shape = [len(coord_data[dim]) for dim in var.coordinates]
             data = numpy.empty(shape, dtype=var.dtype)
-            # TODO: fill data from storage units
+
+            for su in storage_units:
+                su.get(name, **kwargs)
+                # TODO: fill data from storage units
+
             return DataArray(data, coords=[coord_data[dim] for dim in var.coordinates], dims=var.coordinates)
 
         if name in self.coordinates:

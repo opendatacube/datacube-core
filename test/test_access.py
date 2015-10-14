@@ -12,12 +12,14 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+
 from __future__ import absolute_import, division, print_function
 from builtins import *
 
 import numpy as np
 from cubeaccess.core import Coordinate, Variable, DataArray, StorageUnitSet
 from cubeaccess.storage import NetCDF4StorageUnit
+from cubeaccess.storage.utils import coord2index
 
 
 class TestStorageUnit(object):
@@ -28,22 +30,17 @@ class TestStorageUnit(object):
     def get(self, name, **kwargs):
         if name in self.variables:
             var = self.variables[name]
-            coords = [self.get(dim, **kwargs) for dim in var.coordinates]
+            coords = [self.get(dim, **kwargs).values for dim in var.coordinates]
             shape = [coord.shape[0] for coord in coords]
             result = np.empty(shape, var.dtype)
             return DataArray(result, coords=coords, dims=var.coordinates)
 
         if name in self.coordinates:
             coord = self.coordinates[name]
-            step = -1 if coord.begin > coord.end else 1
-            result = np.linspace(coord.begin, coord.end, coord.length, dtype=coord.dtype)[::step]
-            if name in kwargs:
-                if kwargs[name].start:
-                    result = result[np.searchsorted(result, kwargs[name].start):]
-                if kwargs[name].stop:
-                    result = result[:np.searchsorted(result, kwargs[name].stop, side='right')]
-            #return result[::step]
-            return DataArray(result[::step], coords=[result[::step]], dims=[name])
+            data = np.linspace(coord.begin, coord.end, coord.length, dtype=coord.dtype)
+            index = coord2index(data, kwargs.get(name, None))
+            data = data[index]
+            return DataArray(data, coords=[data], dims=[name])
 
         raise RuntimeError("unknown variable")
 
@@ -64,7 +61,7 @@ ds2 = TestStorageUnit({
 })
 
 
-def _test_netcdf():
+def test_netcdf():
     files = [
         "/short/v10/dra547/injest_examples/multiple_band_variables/LS7_ETM_NBAR_P54_GANBAR01-002_089_078_2015_152_-26.nc",
         "/short/v10/dra547/injest_examples/multiple_band_variables/LS7_ETM_NBAR_P54_GANBAR01-002_089_078_2015_152_-27.nc",
@@ -75,9 +72,10 @@ def _test_netcdf():
     ]
 
     mds = StorageUnitSet([NetCDF4StorageUnit(filename) for filename in files])
+    print(mds.get('band2'))
 
-    print(mds.coordinates)
-    print(mds.variables)
+    # print(mds.coordinates)
+    # print(mds.variables)
 
 
 def test_storage_unit_set():
@@ -98,7 +96,7 @@ def test_storage_unit_set():
     assert(np.allclose(mds.get('x', x=slice(-2, 5)).values, np.linspace(5, -2, 8)))
     assert(np.allclose(mds.get('y', y=slice(-2.5, 5.5)).values, np.linspace(0, 5.5, 12)))
 
-    print('x:', mds.get('x'))
-    print('y:', mds.get('y'))
-    print('t:', mds.get('t'))
-    print('B10', mds.get('B10'))
+    # print('x:', mds.get('x'))
+    # print('y:', mds.get('y'))
+    # print('t:', mds.get('t'))
+    # print('B10', mds.get('B10'))

@@ -13,4 +13,18 @@
 #    limitations under the License.
 
 
-from cubeaccess.storage.netcdf import NetCDF4StorageUnit
+import numpy
+
+
+def coord2index(coord, slice_):
+    len_ = len(coord)
+
+    if not slice_:
+        return slice(0, len_)
+
+    if coord[0] > coord[1]:  # reversed
+        return slice(len_-numpy.searchsorted(coord[::-1], slice_.stop, side='right') if slice_.stop else 0,
+                     len_-numpy.searchsorted(coord[::-1], slice_.start) if slice_.start else len_)
+    else:
+        return slice(numpy.searchsorted(coord, slice_.start) if slice_.start else 0,
+                     numpy.searchsorted(coord, slice_.stop, side='right') if slice_.stop else len_)
