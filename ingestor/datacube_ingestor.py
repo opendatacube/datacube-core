@@ -47,7 +47,7 @@ def load_dataset(input_path):
     """
 
     :param input_path:
-    :return:
+    :rtype: (pathlib.Path, eodataset.DatasetMetadata)
     """
     input_path = pathlib.Path(input_path)
 
@@ -83,9 +83,6 @@ def setup_logging(verbosity):
     """
     logging_level = logging.WARN - 10 * verbosity
     logging.basicConfig(level=logging_level)
-
-
-
 
 
 @click.command(help="Example output filename format: combined_{x}_{y}.nc ")

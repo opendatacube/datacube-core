@@ -24,7 +24,7 @@ setup(
 
     entry_points={
       'console_scripts': [
-          'datacube_ingest = ingestor.ingest_from_yaml:main'
+          'datacube_ingest = ingestor.datacube_ingestor:main'
       ]
     },
 )
