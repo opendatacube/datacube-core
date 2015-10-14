@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from builtins import *
 
 import numpy as np
-from cubeaccess.core import Coordinate, Variable, StorageUnitSet
+from cubeaccess.core import Coordinate, Variable, DataArray, StorageUnitSet
 from cubeaccess.storage import NetCDF4StorageUnit
 
 
@@ -28,9 +28,10 @@ class TestStorageUnit(object):
     def get(self, name, **kwargs):
         if name in self.variables:
             var = self.variables[name]
-            shape = [self.get(dim, **kwargs).shape[0] for dim in var.coordinates]
+            coords = [self.get(dim, **kwargs) for dim in var.coordinates]
+            shape = [coord.shape[0] for coord in coords]
             result = np.empty(shape, var.dtype)
-            return result
+            return DataArray(result, coords=coords, dims=var.coordinates)
 
         if name in self.coordinates:
             coord = self.coordinates[name]
@@ -41,7 +42,8 @@ class TestStorageUnit(object):
                     result = result[np.searchsorted(result, kwargs[name].start):]
                 if kwargs[name].stop:
                     result = result[:np.searchsorted(result, kwargs[name].stop, side='right')]
-            return result[::step]
+            #return result[::step]
+            return DataArray(result[::step], coords=[result[::step]], dims=[name])
 
         raise RuntimeError("unknown variable")
 
@@ -93,9 +95,10 @@ def test_storage_unit_set():
     assert(mds.coordinates['y'].end == 14.5)
     assert(mds.coordinates['y'].length == 30)
 
-    assert(np.allclose(mds.get('x', x=slice(-2, 5)), np.linspace(5, -2, 8)))
-    assert(np.allclose(mds.get('y', y=slice(-2.5, 5.5)), np.linspace(0, 5.5, 12)))
+    assert(np.allclose(mds.get('x', x=slice(-2, 5)).values, np.linspace(5, -2, 8)))
+    assert(np.allclose(mds.get('y', y=slice(-2.5, 5.5)).values, np.linspace(0, 5.5, 12)))
 
     print('x:', mds.get('x'))
     print('y:', mds.get('y'))
     print('t:', mds.get('t'))
+    print('B10', mds.get('B10'))

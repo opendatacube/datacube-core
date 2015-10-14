@@ -16,7 +16,29 @@ from __future__ import absolute_import, division, print_function
 from builtins import *
 
 import numpy
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
+
+try:
+    from xxray import DataArray
+except ImportError:
+    class DataArray(object):
+        def __init__(self, data, coords=None, dims=None, attrs=None):
+            self.values = data
+            self.dims = dims or ["dim_%s"%i for i in xrange(data.ndim)]
+            if coords:
+                self.coords = OrderedDict(zip(self.dims, coords))
+            else:
+                self.coords = OrderedDict(zip(self.dims, (numpy.arange(0, l) for l in data.shape)))
+            self.attrs = attrs or OrderedDict()
+
+        def __repr__(self):
+            summary = [
+                'DataArray ' + ', '.join("%s: %s" % x for x in zip(self.dims, self.values.shape)),
+                repr(self.values), 'Coordinates:'
+            ]
+            for name, data in self.coords.items():
+                summary.append(" * "+name+": "+repr(data))
+            return '\n'.join(summary)
 
 
 Coordinate = namedtuple('Coordinate', ['dtype', 'begin', 'end', 'length'])
@@ -81,7 +103,7 @@ class StorageUnitSet(object):
     @staticmethod
     def merge_coordinate(dim, storage_units, precision, **kwargs):
         coord = storage_units[0].coordinates[dim]
-        return merge_unique([su.get(dim, **kwargs).round(precision) for su in storage_units],
+        return merge_unique([su.get(dim, **kwargs).values.round(precision) for su in storage_units],
                             reverse=coord.begin > coord.end)
 
     def __init__(self, storage_units):
@@ -140,12 +162,12 @@ class StorageUnitSet(object):
                 coord_data[dim] = StorageUnitSet.merge_coordinate(dim, storage_units, precision.get(dim, 6))
             var = self.variables[name]
             shape = [len(coord_data[dim]) for dim in var.coordinates]
-            result = numpy.empty(shape, dtype=var.dtype)
-            # TODO: fill result from storage units
-            return result
+            data = numpy.empty(shape, dtype=var.dtype)
+            # TODO: fill data from storage units
+            return DataArray(data, coords=[coord_data[dim] for dim in var.coordinates], dims=var.coordinates)
 
         if name in self.coordinates:
-            coord_data = StorageUnitSet.merge_coordinate(name, storage_units, precision.get(name, 6), **kwargs)
-            return coord_data
+            data = StorageUnitSet.merge_coordinate(name, storage_units, precision.get(name, 6), **kwargs)
+            return DataArray(data, coords=[data], dims=[name])
 
         raise KeyError(name + " is not a variable or coordinate")
