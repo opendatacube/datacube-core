@@ -47,3 +47,4 @@ class BomModisDriver(eodatasets.DatasetDriver):
         :type final_path: pathlib.Path
         :rtype: ptype.BandMetadata
         """
+        pass

@@ -1,4 +1,4 @@
-from gdf import GDFNetCDF, GDF
+# from gdf import GDFNetCDF, GDF
 
 # The storage_config used by GDF seems overly complicated, here
 # is a somewhat simplified version of it that's a bit easier to read.
@@ -29,7 +29,7 @@ storage_config_ls8 = {
             'dimension_name': 'latitude',  # Used
             'dimension_element_size': 0.00025,
             'dimension_elements': 4000,
-            "dimension_cache": 128, #  Chunk size
+            "dimension_cache": 128,  # Chunk size
             "properties": {
                 "units": "degrees_east",
                 "long_name": "longitude",

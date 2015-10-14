@@ -311,6 +311,7 @@ def get_input_spec_from_file(filename):
 def input_spec_from_eodataset(eodataset):
     pass
 
+
 def tile_spec_from_gdal_dataset(gdal_dataset):
     """
     Return a specification of a GDAL dataset, used for creating a new NetCDF file to hold the same data
