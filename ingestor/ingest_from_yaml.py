@@ -3,7 +3,7 @@ import click
 import os
 import pathlib
 from create_tiles import calc_output_filenames, create_tiles, list_tile_files
-from geotiff_to_netcdf import append_to_netcdf, MultiVariableNetCDF, SingleVariableNetCDF
+from netcdf_writer import append_to_netcdf, MultiVariableNetCDF, SingleVariableNetCDF
 import eodatasets.drivers
 import eodatasets.type
 from eodatasets.serialise import read_yaml_metadata

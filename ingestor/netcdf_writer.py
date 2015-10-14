@@ -152,7 +152,7 @@ class BaseNetCDF(object):
         pass
 
     @abstractmethod
-    def _write_data_to_netcdf(self, dataset, ds_description):
+    def _write_data_to_netcdf(self, dataset, eodataset):
         """
         Read in all the data from the geotiff `dataset` and write it as a new time
          slice to the NetCDF file
@@ -161,7 +161,7 @@ class BaseNetCDF(object):
         """
         pass
 
-    def append_gdal_tile(self, geotiff, ga_dataset):
+    def append_gdal_tile(self, geotiff, eodataset):
         """
         Read a geotiff file and append it to the open NetCDF file
 
@@ -169,9 +169,9 @@ class BaseNetCDF(object):
         :return:
         """
         gdal_dataset = gdal.Open(geotiff)
-        self._add_time(ga_dataset.acquisition.aos)
+        self._add_time(eodataset.acquisition.aos)
 
-        self._write_data_to_netcdf(gdal_dataset, ga_dataset)
+        self._write_data_to_netcdf(gdal_dataset, eodataset)
 
         del gdal_dataset
 
@@ -202,10 +202,10 @@ class MultiVariableNetCDF(BaseNetCDF):
             netcdfbands.append(band)
         return netcdfbands
 
-    def _write_data_to_netcdf(self, gdal_dataset, ga_dataset):
+    def _write_data_to_netcdf(self, gdal_dataset, eodataset):
         netcdfbands = self._get_netcdf_bands(self.tile_spec.bands)
 
-        ds_bands = sorted(ga_dataset.image.bands.values(), key=lambda band: band.number)
+        ds_bands = sorted(eodataset.image.bands.values(), key=lambda band: band.number)
 
         time_index = len(self.nco.variables['time'])
 
@@ -251,13 +251,13 @@ class SingleVariableNetCDF(BaseNetCDF):
         observations.set_auto_maskandscale(False)
         observations.coordinates = 'band_name'
 
-    def _write_data_to_netcdf(self, gdal_dataset, ga_dataset):
+    def _write_data_to_netcdf(self, gdal_dataset, eodataset):
         nbands, lats, lons = _get_nbands_lats_lons_from_gdalds(gdal_dataset)
 
         time_index = len(self.nco.dimensions['time']) - 1
         band_var = self.nco.variables['band_name']
 
-        ds_bands = sorted(ga_dataset.image.bands.values(), key=lambda band: band.number)
+        ds_bands = sorted(eodataset.image.bands.values(), key=lambda band: band.number)
 
         observation = self.nco.variables['observation']
         for band_idx in range(nbands):
@@ -305,10 +305,13 @@ class Messenger:
 
 def get_input_spec_from_file(filename):
     gdal_dataset = gdal.Open(filename)
-    return get_input_spec_from_gdal_dataset(gdal_dataset)
+    return tile_spec_from_gdal_dataset(gdal_dataset)
 
 
-def get_input_spec_from_gdal_dataset(gdal_dataset):
+def input_spec_from_eodataset(eodataset):
+    pass
+
+def tile_spec_from_gdal_dataset(gdal_dataset):
     """
     Return a specification of a GDAL dataset, used for creating a new NetCDF file to hold the same data
 
