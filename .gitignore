@@ -58,3 +58,6 @@ target/
 
 # IntelliJ/PyCharm
 .idea
+
+# Test stuff
+.hypothesis

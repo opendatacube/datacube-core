@@ -17,8 +17,13 @@ setup(
         'numpy',
         'netCDF4',
     ],
-    entry_points='''
-        [console_scripts]
-        datacube_ingest=ingestor.ingest_from_yaml:main
-    ''',
+    tests_require=[
+        'pytest',
+    ],
+
+    entry_points={
+      'console_scripts': [
+          'datacube_ingest = ingestor.ingest_from_yaml:main'
+      ]
+    },
 )
