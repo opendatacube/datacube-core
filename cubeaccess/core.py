@@ -14,15 +14,17 @@
 
 
 from __future__ import absolute_import, division, print_function
-from builtins import *
+from collections import namedtuple
 
+from builtins import *
 import numpy
-from collections import namedtuple, OrderedDict
+
+from .utils import coord2index
 
 try:
     from xxray import DataArray
 except ImportError:
-    from cubeaccess.ghetto import DataArray
+    from .ghetto import DataArray
 
 Coordinate = namedtuple('Coordinate', ['dtype', 'begin', 'end', 'length'])
 Variable = namedtuple('Variable', ['dtype', 'ndv', 'coordinates'])
@@ -36,7 +38,7 @@ def _make_index(nDims):
         return Index(properties=p)
 
     except ImportError:
-        from cubeaccess.ghetto import Index
+        from .ghetto import Index
         return Index()
 
 
@@ -123,18 +125,29 @@ class StorageUnitSet(object):
         storage_units = [self._storage_units[idx] for idx in self._index.intersection(bounds)]
 
         if name in self.variables:
-            coord_data = {}
-            for idx, dim in enumerate(self._dims):
-                coord_data[dim] = StorageUnitSet.merge_coordinate(dim, storage_units, precision.get(dim, 6))
             var = self.variables[name]
-            shape = [len(coord_data[dim]) for dim in var.coordinates]
+            coords = [StorageUnitSet.merge_coordinate(dim, storage_units, precision.get(dim, 6))
+                      for dim in var.coordinates]
+            shape = [len(coord) for coord in coords]
             data = numpy.empty(shape, dtype=var.dtype)
+            data.fill(var.ndv)
+
+            def idx_from_coord(coord):
+                result = slice(coord[0], coord[-1])
+                if result.start > result.stop:
+                    return slice(result.stop, result.start)
+                return result
 
             for su in storage_units:
-                su.get(name, **kwargs)
-                # TODO: fill data from storage units
+                su_data = su.get(name, **kwargs)
+                coord_idx = [idx_from_coord(su_data.coords[dim]) for dim in su_data.dims]
+                indexes = tuple(coord2index(coord, idx) for coord, idx in zip(coords, coord_idx))
 
-            return DataArray(data, coords=[coord_data[dim] for dim in var.coordinates], dims=var.coordinates)
+                # if you're here you need to implement interleaved copy
+                assert(all(idx.stop - idx.start == shape for idx, shape in zip(indexes, su_data.values.shape)))
+                data[indexes] = su_data.values
+
+            return DataArray(data, coords=coords, dims=var.coordinates)
 
         if name in self.coordinates:
             data = StorageUnitSet.merge_coordinate(name, storage_units, precision.get(name, 6), **kwargs)

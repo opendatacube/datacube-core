@@ -13,4 +13,4 @@
 #    limitations under the License.
 
 
-from cubeaccess.storage.netcdf import NetCDF4StorageUnit
+from .netcdf import NetCDF4StorageUnit

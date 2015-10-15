@@ -14,13 +14,13 @@
 
 
 from __future__ import absolute_import, division, print_function
-from builtins import *
-
-from cubeaccess.core import Coordinate, Variable, DataArray
-from cubeaccess.storage.utils import coord2index
-
-import netCDF4 as nc4
 import contextlib
+
+from builtins import *
+import netCDF4 as nc4
+
+from ..core import Coordinate, Variable, DataArray
+from ..utils import coord2index
 
 
 class NetCDF4StorageUnit(object):
@@ -51,8 +51,9 @@ class NetCDF4StorageUnit(object):
 
             if name in self.variables:
                 var = self.variables[name]
-                coords = tuple(ncds.variables[dim] for dim in var.coordinates)
+                coords = [ncds.variables[dim] for dim in var.coordinates]
                 indexes = tuple(coord2index(data, kwargs.get(name, None)) for data in coords)
-                coords = tuple(data[idx] for data, idx in zip(coords, indexes))
+                coords = [data[idx] for data, idx in zip(coords, indexes)]
                 return DataArray(ncds.variables[name][indexes], coords=coords, dims=var.coordinates)
 
+        raise KeyError(name + " is not a variable or coordinate")

@@ -14,12 +14,13 @@
 
 
 from __future__ import absolute_import, division, print_function
-from builtins import *
 
+from builtins import *
 import numpy as np
+
 from cubeaccess.core import Coordinate, Variable, DataArray, StorageUnitSet
 from cubeaccess.storage import NetCDF4StorageUnit
-from cubeaccess.storage.utils import coord2index
+from cubeaccess.utils import coord2index
 
 
 class TestStorageUnit(object):
@@ -72,6 +73,8 @@ def test_netcdf():
     ]
 
     mds = StorageUnitSet([NetCDF4StorageUnit(filename) for filename in files])
+    data = mds.get('band2')
+    assert(np.any(data.values != -999))
     print(mds.get('band2'))
 
     # print(mds.coordinates)
