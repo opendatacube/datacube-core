@@ -14,9 +14,9 @@
 
 
 from __future__ import absolute_import, division, print_function
-import contextlib
-
 from builtins import *
+
+import contextlib
 import netCDF4 as nc4
 
 from ..core import Coordinate, Variable, DataArray
@@ -52,8 +52,10 @@ class NetCDF4StorageUnit(object):
             if name in self.variables:
                 var = self.variables[name]
                 coords = [ncds.variables[dim] for dim in var.coordinates]
-                indexes = tuple(coord2index(data, kwargs.get(name, None)) for data in coords)
+                indexes = tuple(coord2index(data, kwargs.get(dim, None)) for dim, data in zip(var.coordinates, coords))
                 coords = [data[idx] for data, idx in zip(coords, indexes)]
-                return DataArray(ncds.variables[name][indexes], coords=coords, dims=var.coordinates)
+                data = ncds.variables[name]
+                data.set_auto_mask(False)
+                return DataArray(data[indexes], coords=coords, dims=var.coordinates)
 
         raise KeyError(name + " is not a variable or coordinate")

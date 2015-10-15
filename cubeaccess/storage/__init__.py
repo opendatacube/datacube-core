@@ -14,3 +14,4 @@
 
 
 from .netcdf import NetCDF4StorageUnit
+from .geotif import GeoTifStorageUnit

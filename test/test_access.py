@@ -19,7 +19,7 @@ from builtins import *
 import numpy as np
 
 from cubeaccess.core import Coordinate, Variable, DataArray, StorageUnitSet
-from cubeaccess.storage import NetCDF4StorageUnit
+from cubeaccess.storage import NetCDF4StorageUnit, GeoTifStorageUnit
 from cubeaccess.utils import coord2index
 
 
@@ -62,7 +62,27 @@ ds2 = TestStorageUnit({
 })
 
 
-def test_netcdf():
+def test_geotif_storage_unit():
+    files = [
+        "/g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/LS5_TM/142_-033/2004/LS5_TM_NBAR_142_-033_2004-11-07T00-05-33.311000.tif",
+        "/g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/LS5_TM/142_-033/2004/LS5_TM_NBAR_142_-033_2004-12-25T00-06-26.534031.tif",
+        "/g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/LS5_TM/142_-033/2004/LS5_TM_NBAR_142_-033_2004-01-07T23-59-21.879044.tif",
+    ]
+
+    su = GeoTifStorageUnit(files[0])
+    assert(set(su.coordinates.keys()) == set(['x', 'y']))
+
+    data = su.get('2', x=slice(142.5, 142.7), y=slice(-32.5, -32.2))
+    assert(len(data.coords['x']) == 801)
+    assert(len(data.coords['y']) == 1201)
+    assert(np.any(data.values != -999))
+
+    # print(su.coordinates)
+    # print (su.variables)
+    # print(data)
+
+
+def test_netcdf_storage_unit():
     files = [
         "/short/v10/dra547/injest_examples/multiple_band_variables/LS7_ETM_NBAR_P54_GANBAR01-002_089_078_2015_152_-26.nc",
         "/short/v10/dra547/injest_examples/multiple_band_variables/LS7_ETM_NBAR_P54_GANBAR01-002_089_078_2015_152_-27.nc",
@@ -72,11 +92,19 @@ def test_netcdf():
         "/short/v10/dra547/injest_examples/multiple_band_variables/LS7_ETM_NBAR_P54_GANBAR01-002_089_078_2015_154_-27.nc"
     ]
 
+    su = NetCDF4StorageUnit(files[2])
+    assert(set(su.coordinates.keys()) == set(['longitude', 'latitude', 'time']))
+
+    data = su.get('band2', longitude=slice(153.5, 153.7), latitude=slice(-25.5, -25.2))
+    assert(len(data.coords['longitude']) == 801)
+    assert(len(data.coords['latitude']) == 1201)
+    assert(np.any(data.values != -999))
+
     mds = StorageUnitSet([NetCDF4StorageUnit(filename) for filename in files])
     data = mds.get('band2')
     assert(np.any(data.values != -999))
-    print(mds.get('band2'))
 
+    #print(mds.get('band2'))
     # print(mds.coordinates)
     # print(mds.variables)
 
