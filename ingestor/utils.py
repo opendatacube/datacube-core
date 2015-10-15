@@ -1,5 +1,9 @@
+import logging
 from osgeo import osr, gdal
 import subprocess
+from osgeo import gdal
+
+_LOG = logging.getLogger(__name__)
 
 
 def get_extent(geotransform, cols, rows):
@@ -26,7 +30,6 @@ def get_extent(geotransform, cols, rows):
             x = geotransform[0] + (px * geotransform[1]) + (py * geotransform[2])
             y = geotransform[3] + (px * geotransform[4]) + (py * geotransform[5])
             ext.append([x, y])
-            print x, y
         yarr.reverse()
     return ext
 
@@ -48,30 +51,35 @@ def reproject_coords(coords, src_srs, tgt_srs):
     @rtype:         C{tuple/list}
     @return:        List of transformed [[x,y],...[x,y]] coordinates
     """
-    trans_coords = []
+    transformed_coords = []
     transform = osr.CoordinateTransformation(src_srs, tgt_srs)
     for x, y in coords:
         x, y, z = transform.TransformPoint(x, y)
-        trans_coords.append([x, y])
-    return trans_coords
+        transformed_coords.append([x, y])
+    return transformed_coords
 
 
-def get_file_extents(raster_filename):
+def get_file_extents(raster_filename, epsg_ref=4326):
+    """
+    Calculate file extents with a specific geoprojection
+
+    :param raster_filename:
+    :return: [(x,y),...]
+    """
     ds = gdal.Open(raster_filename)
 
-    ext = get_dataset_extent(ds)
+    extents = get_dataset_extent(ds)
 
     src_srs = osr.SpatialReference()
     src_srs.ImportFromWkt(ds.GetProjection())
-    # tgt_srs=osr.SpatialReference()
-    # tgt_srs.ImportFromEPSG(4326)
-    tgt_srs = src_srs.CloneGeogCS()
 
-    geo_ext = reproject_coords(ext, src_srs, tgt_srs)
+    tgt_srs = osr.SpatialReference()
+    tgt_srs.ImportFromEPSG(epsg_ref)
 
-    return geo_ext
+    return reproject_coords(extents, src_srs, tgt_srs)
 
 
 def execute(command_list):
-    print("Running command: " + ' '.join(command_list))
+    _LOG.debug("Running command: " + ' '.join(command_list))
     subprocess.check_call(command_list)
+

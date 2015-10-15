@@ -94,8 +94,9 @@ def setup_logging(verbosity):
 @click.option('--verbose', '-v', count=True, help="Use multiple times for more verbosity")
 @click.argument('input_path', type=click.Path(exists=True, readable=True))
 @click.argument('filename-format')
-def main(input_path, output_dir, netcdf_class, tile, merge, filename_format, verbose=0):
+def main(input_path, output_dir, filename_format, netcdf_class=MultiVariableNetCDF, tile=True, merge=True, verbose=0):
     os.chdir(output_dir)
+    setup_logging(verbose)
 
     input_path, eodataset = load_dataset(input_path)
 

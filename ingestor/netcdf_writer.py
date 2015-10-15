@@ -135,7 +135,7 @@ class BaseNetCDF(object):
 
     @classmethod
     def open_with_tile_spec(cls, file_path, tile_spec):
-        netcdf = cls(file_path)
+        netcdf = cls(file_path, mode='a')
         netcdf.tile_spec = tile_spec
 
         return netcdf

@@ -1,11 +1,31 @@
 from collections import namedtuple
+import logging
 from math import floor, ceil
 
 from ingestor.utils import get_file_extents, execute
 
+_LOG = logging.getLogger(__name__)
+
+TileFile = namedtuple('TileFile', 'filename minlon maxlon minlat maxlat')
+
+EXAMPLE_CONFIG = {
+    'output_dir': '/short/v10/dra547/tmp/today',
+    'srs': 'EPSG:4326',
+    'grid_lats': [],
+    'grid_lons': [],
+    'directory_structure': '{product_name}/{x}_{y}/{year}/{product_name}_{sensor_name}_{x}_{y}_{timestamp}.{extension}',
+    'file_extension': 'nc'
+}
+
 
 def stack_bands_together(src_files, basename):
+    """
+    Take a list of src files of equal position and time, and stack them into a single VRT
 
+    :param src_files: []
+    :param basename: str
+    :return: filename string
+    """
     scene_vrt = '{}.vrt'.format(basename)
 
     execute(['gdalbuildvrt', '-separate', scene_vrt] + src_files)
@@ -13,36 +33,44 @@ def stack_bands_together(src_files, basename):
     return scene_vrt
 
 
-def reproject(input_vrt, basename, target_srs="EPSG:4326"):
+def calculate_expanded_extents(filename):
+    """
+
+    :param filename:
+    :return:
+    """
+    _LOG.debug("Calculating expanded extents for {}".format(filename))
+    extents = get_file_extents(filename)
+    _LOG.debug("Input extents: {}".format(extents))
+    xmin = str(floor(min(p[0] for p in extents)))
+    ymin = str(floor(min(p[1] for p in extents)))
+    xmax = str(ceil(max(p[0] for p in extents)))
+    ymax = str(ceil(max(p[1] for p in extents)))
+
+    expanded_extents = xmin, ymin, xmax, ymax
+    _LOG.debug("Expanded extents are: {}".format(expanded_extents))
+
+    return expanded_extents
+
+
+def reproject_and_expand(input_vrt, basename, output_extents, target_srs="EPSG:4326"):
     reprojected_vrt = '{}.{}.vrt'.format(basename, target_srs.lower().replace(':', ''))
     target_pixel_res = "0.00025"
+
+    extents_args = []
+    if output_extents:
+        extents_args = ['-te'] + list(output_extents)
 
     execute(['gdalwarp',
              '-t_srs', target_srs,
              '-of', 'VRT',
              '-tr', target_pixel_res, target_pixel_res,  # Pixel resolution x,y (Fraction of a degree)
              '-tap',  # Force to nest within the grid definition
-             '-srcnodata', '-999', '-dstnodata', '-999',
-             input_vrt, reprojected_vrt])
+             '-srcnodata', '-999',
+             '-dstnodata', '-999'] +
+            extents_args +
+            [input_vrt, reprojected_vrt])
     return reprojected_vrt
-
-
-def extend_extents_to_grid(input_vrt, basename):
-    extents = get_file_extents(input_vrt)
-    print("Extents: " + str(extents))
-    xmin = str(floor(min(p[0] for p in extents)))
-    xmax = str(ceil(max(p[0] for p in extents)))
-    ymin = str(floor(min(p[1] for p in extents)))
-    ymax = str(ceil(max(p[1] for p in extents)))
-
-    extended_vrt = '{}.extended.vrt'.format(basename)
-
-    execute(['gdalbuildvrt', '-te', xmin, ymin, xmax, ymax, extended_vrt, input_vrt])
-
-    return extended_vrt
-
-
-TileFile = namedtuple('TileFile', 'filename minlon maxlon minlat maxlat')
 
 
 def list_tile_files(csv_path):
@@ -113,16 +141,6 @@ def calc_output_filenames(tile_files, format_string, dataset):
     return renames
 
 
-EXAMPLE_CONFIG = {
-    'output_dir': '/short/v10/dra547/tmp/today',
-    'srs': 'EPSG:4326',
-    'grid_lats': [],
-    'grid_lons': [],
-    'directory_structure': '{product_name}/{x}_{y}/{year}/{product_name}_{sensor_name}_{x}_{y}_{timestamp}.{extension}',
-    'file_extension': 'nc'
-}
-
-
 def create_tiles(input_files, basename, tile_options=None):
     """
     Run a series of steps to turn a list of input files into a grid of stacked tiles
@@ -138,14 +156,11 @@ def create_tiles(input_files, basename, tile_options=None):
     src_files = [str(path) for path in input_files]
 
     combined_vrt = stack_bands_together(src_files, basename)
-    reprojected_vrt = reproject(combined_vrt, basename)
-    extended_vrt = extend_extents_to_grid(reprojected_vrt, basename)
-    created_tiles = create_tile_files(extended_vrt, **tile_options)
+    tile_aligned_extents = calculate_expanded_extents(combined_vrt)
+    expanded_reprojected_vrt = reproject_and_expand(combined_vrt, basename, output_extents=tile_aligned_extents)
+    created_tiles = create_tile_files(expanded_reprojected_vrt, **tile_options)
 
     return created_tiles
 
-
 # Nearest neighbour vs convolution. Depends on whether discrete values
 # -r resampling_method
-
-
