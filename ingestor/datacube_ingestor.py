@@ -84,19 +84,9 @@ def setup_logging(verbosity):
     logging_level = logging.WARN - 10 * verbosity
     logging.basicConfig(level=logging_level)
 
-
-@click.command(help="Example output filename format: combined_{x}_{y}.nc ")
-@click.option('--output-dir', '-o', default='.')
-@click.option('--multi-variable', 'netcdf_class', flag_value=MultiVariableNetCDF, default=True)
-@click.option('--single-variable', 'netcdf_class', flag_value=SingleVariableNetCDF)
-@click.option('--tile/--no-tile', default=True, help="Allow partial processing")
-@click.option('--merge/--no-merge', default=True, help="Allow partial processing")
-@click.option('--verbose', '-v', count=True, help="Use multiple times for more verbosity")
-@click.argument('input_path', type=click.Path(exists=True, readable=True))
-@click.argument('filename-format')
-def ingest(input_path, output_dir, filename_format, netcdf_class=MultiVariableNetCDF, tile=True, merge=True, verbose=0):
+def ingest(input_path, output_dir, filename_format, netcdf_class=MultiVariableNetCDF, tile=True, merge=True):
+    initial_dir = os.getcwd()
     os.chdir(output_dir)
-    setup_logging(verbose)
 
     input_path, eodataset = load_dataset(input_path)
 
@@ -112,11 +102,27 @@ def ingest(input_path, output_dir, filename_format, netcdf_class=MultiVariableNe
         netcdf_paths = merge_tiles_to_netcdf(eodataset, filename_format, netcdf_class)
         _LOG.info("Created/alterated storage units: {}".format(netcdf_paths))
 
+    os.chdir(initial_dir)
+
+@click.command(help="Example output filename format: combined_{x}_{y}.nc ")
+@click.option('--output-dir', '-o', default='.')
+@click.option('--multi-variable', 'netcdf_class', flag_value=MultiVariableNetCDF, default=True)
+@click.option('--single-variable', 'netcdf_class', flag_value=SingleVariableNetCDF)
+@click.option('--tile/--no-tile', default=True, help="Allow partial processing")
+@click.option('--merge/--no-merge', default=True, help="Allow partial processing")
+@click.option('--verbose', '-v', count=True, help="Use multiple times for more verbosity")
+@click.argument('input_path', type=click.Path(exists=True, readable=True))
+@click.argument('filename-format')
+def main(input_path, output_dir, filename_format, netcdf_class=MultiVariableNetCDF, tile=True, merge=True, verbose=0):
+    setup_logging(verbose)
+
+    ingest(input_path, output_dir, filename_format, netcdf_class, tile, merge)
+
 
 if __name__ == '__main__':
     try:
         from ipdb import launch_ipdb_on_exception
         with launch_ipdb_on_exception():
-            ingest()
+            main()
     except ImportError:
-        ingest()
+        main()
