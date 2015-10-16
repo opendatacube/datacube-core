@@ -1,10 +1,9 @@
 import logging
-import click
-from osgeo import osr, gdal
 import subprocess
 import warnings
 
-from osgeo import gdal
+import click
+from osgeo import osr, gdal
 import numpy as np
 import scipy.ndimage
 
@@ -101,7 +100,7 @@ def print_image(filename, size=50):
     """
     chars = np.asarray(list(' .,:;irsXA253hMHGS#9B&@'))
 
-    character_size_ratio = 7/4.0 # width to height
+    character_size_ratio = 7/4.0  # width to height
     output_height = float(size)
 
     ds = gdal.Open(filename)
@@ -113,9 +112,9 @@ def print_image(filename, size=50):
     scale_factor = output_height / input_height
 
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore") # We don't care that the output shape may have changed
+        warnings.simplefilter("ignore")  # We don't care that the output shape may have changed
         image = scipy.ndimage.interpolation.zoom(ar, (scale_factor, scale_factor*character_size_ratio), order=0)
 
     image *= (22.0/image.max())
     image = image.clip(0)
-    print( "\n".join( ("".join(r) for r in chars[image.astype(int)]) ) )
+    print("\n".join(("".join(r) for r in chars[image.astype(int)])))
