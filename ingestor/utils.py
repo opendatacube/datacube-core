@@ -89,8 +89,10 @@ def preserve_cwd(function):
     """
     Decorator function to preserve the current working directory
 
+    Thanks to http://stackoverflow.com/a/170174/119603
+
     :param function:
-    :return:
+    :return: wrapped function
     """
     @functools.wraps(function)
     def decorator(*args, **kwargs):
