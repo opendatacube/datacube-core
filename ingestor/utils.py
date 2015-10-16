@@ -1,4 +1,6 @@
+import functools
 import logging
+import os
 import subprocess
 import warnings
 
@@ -81,6 +83,23 @@ def get_file_extents(raster_filename, epsg_ref=4326):
     tgt_srs.ImportFromEPSG(epsg_ref)
 
     return reproject_coords(extents, src_srs, tgt_srs)
+
+
+def preserve_cwd(function):
+    """
+    Decorator function to preserve the current working directory
+
+    :param function:
+    :return:
+    """
+    @functools.wraps(function)
+    def decorator(*args, **kwargs):
+        cwd = os.getcwd()
+        try:
+            return function(*args, **kwargs)
+        finally:
+            os.chdir(cwd)
+    return decorator
 
 
 def execute(command_list):

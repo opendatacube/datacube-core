@@ -3,6 +3,7 @@ import os
 import pathlib
 import logging
 from create_tiles import calc_output_filenames, create_tiles, list_tile_files
+from ingestor.utils import preserve_cwd
 from netcdf_writer import append_to_netcdf, MultiVariableNetCDF, SingleVariableNetCDF
 import eodatasets.drivers
 import eodatasets.type
@@ -84,8 +85,20 @@ def setup_logging(verbosity):
     logging_level = logging.WARN - 10 * verbosity
     logging.basicConfig(level=logging_level)
 
+
+@preserve_cwd
 def ingest(input_path, output_dir, filename_format, netcdf_class=MultiVariableNetCDF, tile=True, merge=True):
-    initial_dir = os.getcwd()
+    """
+    Run a series of steps to stack, split into tiles and re-merge into netcdf an input dataset
+
+    :param input_path: str, pathname to a ga-metadata.yaml file or directory that eo-datasets can process
+    :param output_dir: str, pathname
+    :param filename_format: string format for output filenames, extracts fields from the input EO-Dataset
+    :param netcdf_class: either MultiVariableNetCDF or SingleVariableNetCDF
+    :param tile: boolean, whether to run the tiling step
+    :param merge: boolean, whether
+    :return: list of created tile-files
+    """
     os.chdir(output_dir)
 
     input_path, eodataset = load_dataset(input_path)
@@ -102,7 +115,8 @@ def ingest(input_path, output_dir, filename_format, netcdf_class=MultiVariableNe
         netcdf_paths = merge_tiles_to_netcdf(eodataset, filename_format, netcdf_class)
         _LOG.info("Created/alterated storage units: {}".format(netcdf_paths))
 
-    os.chdir(initial_dir)
+    return netcdf_paths
+
 
 @click.command(help="Example output filename format: combined_{x}_{y}.nc ")
 @click.option('--output-dir', '-o', default='.')
