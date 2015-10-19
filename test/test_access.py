@@ -69,14 +69,14 @@ netcdffiles = [
     "/short/v10/dra547/injest_examples/multiple_band_variables/LS7_ETM_NBAR_P54_GANBAR01-002_089_078_2015_154_-27.nc"
 ]
 geotiffiles = [
-    "/mnt/data/tiles/EPSG4326_1deg_0.00025pixel/LS7_ETM/142_-033/2010/LS7_ETM_NBAR_142_-033_2010-01-16T00-12-07.682499.tif",
-    "/mnt/data/tiles/EPSG4326_1deg_0.00025pixel/LS7_ETM/142_-033/2010/LS7_ETM_FC_142_-033_2010-01-16T00-12-07.682499.tif",
-    "/mnt/data/tiles/EPSG4326_1deg_0.00025pixel/LS7_ETM/142_-033/2010/LS7_ETM_NBAR_142_-033_2010-01-16T00-11-43.729979.tif",
-    "/mnt/data/tiles/EPSG4326_1deg_0.00025pixel/LS7_ETM/142_-033/2010/LS7_ETM_FC_142_-033_2010-01-16T00-11-43.729979.tif",
-    "/mnt/data/tiles/EPSG4326_1deg_0.00025pixel/LS7_ETM/142_-033/2010/LS7_ETM_NBAR_142_-033_2010-01-07T00-17-46.208174.tif",
-    # "/g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/LS5_TM/142_-033/2004/LS5_TM_NBAR_142_-033_2004-11-07T00-05-33.311000.tif",
-    # "/g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/LS5_TM/142_-033/2004/LS5_TM_NBAR_142_-033_2004-12-25T00-06-26.534031.tif",
-    # "/g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/LS5_TM/142_-033/2004/LS5_TM_NBAR_142_-033_2004-01-07T23-59-21.879044.tif",
+    # "/mnt/data/tiles/EPSG4326_1deg_0.00025pixel/LS7_ETM/142_-033/2010/LS7_ETM_NBAR_142_-033_2010-01-16T00-12-07.682499.tif",
+    # "/mnt/data/tiles/EPSG4326_1deg_0.00025pixel/LS7_ETM/142_-033/2010/LS7_ETM_FC_142_-033_2010-01-16T00-12-07.682499.tif",
+    # "/mnt/data/tiles/EPSG4326_1deg_0.00025pixel/LS7_ETM/142_-033/2010/LS7_ETM_NBAR_142_-033_2010-01-16T00-11-43.729979.tif",
+    # "/mnt/data/tiles/EPSG4326_1deg_0.00025pixel/LS7_ETM/142_-033/2010/LS7_ETM_FC_142_-033_2010-01-16T00-11-43.729979.tif",
+    # "/mnt/data/tiles/EPSG4326_1deg_0.00025pixel/LS7_ETM/142_-033/2010/LS7_ETM_NBAR_142_-033_2010-01-07T00-17-46.208174.tif",
+    "/g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/LS5_TM/142_-033/2004/LS5_TM_NBAR_142_-033_2004-01-07T23-59-21.879044.tif",
+    "/g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/LS5_TM/142_-033/2004/LS5_TM_NBAR_142_-033_2004-11-07T00-05-33.311000.tif",
+    "/g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/LS5_TM/142_-033/2004/LS5_TM_NBAR_142_-033_2004-12-25T00-06-26.534031.tif",
 ]
 
 
@@ -101,7 +101,7 @@ def test_geotif_storage_unit():
     files = geotiffiles
 
     su = GeoTifStorageUnit(files[0])
-    assert(set(su.coordinates.keys()) == set(['x', 'y']))
+    assert(set(su.coordinates.keys()) == ({'x', 'y'}))
 
     data = su.get('2', x=slice(142.5, 142.7), y=slice(-32.5, -32.2))
     assert(len(data.coords['x']) == 801)
@@ -113,20 +113,20 @@ def test_geotif_storage_unit():
     # print(data)
 
 
-def _test_netcdf_storage_unit():
+def test_netcdf_storage_unit():
     files = netcdffiles
 
     su = NetCDF4StorageUnit(files[2])
-    assert(set(su.coordinates.keys()) == set(['longitude', 'latitude', 'time']))
+    assert(set(su.coordinates.keys()) == ({'longitude', 'latitude', 'time'}))
 
     data = su.get('band2', longitude=slice(153.5, 153.7), latitude=slice(-25.5, -25.2))
     assert(len(data.coords['longitude']) == 801)
     assert(len(data.coords['latitude']) == 1201)
     assert(np.any(data.values != -999))
 
-    mds = StorageUnitSet([NetCDF4StorageUnit(filename) for filename in files])
-    data = mds.get('band2')
-    assert(np.any(data.values != -999))
+    # mds = StorageUnitSet([NetCDF4StorageUnit(filename) for filename in files])
+    # data = mds.get('band2')
+    # assert(np.any(data.values != -999))
 
     # print(mds.get('band2'))
     # print(mds.coordinates)
@@ -137,21 +137,26 @@ def test_storage_unit_stack():
     files = geotiffiles
 
     def time_from_filename(f):
-        return files.index(f)
+        from datetime import datetime
+        dtstr = f.split('/')[-1].split('_')[-1][:-4]
+        # 2004-11-07T00-05-33.311000
+        dt = datetime.strptime(dtstr, "%Y-%m-%dT%H-%M-%S.%f")
+        return np.datetime64(dt, 's')
 
     storage_units = [StorageUnitDimensionProxy(GeoTifStorageUnit(f), ('t', time_from_filename(f))) for f in files]
     stack = StorageUnitStack(storage_units, 't')
     times = np.array([time_from_filename(f) for f in files])
-    assert(np.allclose(stack.get('t').values, times))
+    assert(np.all(stack.get('t').values == times))
 
-    data = stack.get('2', t=slice(2, 3), x=slice(142.5, 142.7), y=slice(-32.5, -32.2))
-    assert (len(data.coords['t']) == 2)
+    tslice = slice(np.datetime64('2004-11-07T00:05:33Z', 's'), np.datetime64('2004-12-25T00:06:26Z', 's'))
+    data = stack.get('2', t=tslice, x=slice(142.5, 142.7), y=slice(-32.5, -32.2))
+    assert(len(data.coords['t']) == 2)
     assert(len(data.coords['x']) == 801)
     assert(len(data.coords['y']) == 1201)
     assert(np.any(data.values != -999))
 
-    print(stack.coordinates)
-    print(stack.variables)
+    # print(stack.coordinates)
+    # print(stack.variables)
 
 
 def test_storage_unit_set():

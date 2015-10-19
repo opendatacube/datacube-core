@@ -74,7 +74,7 @@ class StorageUnitDimensionProxy(object):
     def __init__(self, storage_unit, *coords):
         self._storage_unit = storage_unit
         self._dimensions = tuple(name for name, value in coords)
-        self.coordinates = {name: Coordinate(numpy.dtype(type(value)), value, value, 1) for name, value in coords}
+        self.coordinates = {name: Coordinate(getattr(value, 'dtype', numpy.dtype(type(value))), value, value, 1) for name, value in coords}
         self.coordinates.update(storage_unit.coordinates)
 
         def expand_var(var):
@@ -88,7 +88,7 @@ class StorageUnitDimensionProxy(object):
                                    kwargs[name].stop and kwargs[name].stop < value):
                 data = numpy.empty(0, dtype=self.coordinates[name].dtype)
             else:
-                data = numpy.array([value], dtype = self.coordinates[name].dtype)
+                data = numpy.array([value], dtype=self.coordinates[name].dtype)
             return DataArray(data, coords=[data], dims=[name])
 
         if name in self.coordinates:
@@ -115,7 +115,7 @@ class StorageUnitDimensionProxy(object):
 class StorageUnitStack(object):
     def __init__(self, storage_units, stack_dim):
         def su_cmp(a, b):
-            return a.coordinates[stack_dim].begin < b.coordinates[stack_dim].begin
+            return cmp(a.coordinates[stack_dim].begin, b.coordinates[stack_dim].begin)
 
         storage_units = sorted(storage_units, su_cmp)
         StorageUnitStack.check_consistent(storage_units, stack_dim)
@@ -148,9 +148,9 @@ class StorageUnitStack(object):
 
         if name in self.variables:
             var = self.variables[name]
-            #TODO: call get only on the relevant subset of storage units
-            #TODO: use index version of get
-            #TODO: use 'fill' version of get
+            # TODO: call get only on the relevant subset of storage units
+            # TODO: use index version of get
+            # TODO: use 'fill' version of get
             arrays = [su.get(name, **kwargs) for su in self._storage_units]
             coords = [numpy.concatenate([ar.coords[self._stack_dim] for ar in arrays], axis=0)] + \
                      [arrays[0].coords[dim] for dim in var.coordinates[1:]]
