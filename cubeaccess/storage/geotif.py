@@ -53,7 +53,7 @@ class GeoTifStorageUnit(object):
         if name in self.variables:
             var = self.variables[name]
             coords = [self.get(dim).values for dim in var.coordinates]
-            indexes = tuple(coord2index(data, kwargs.get(dim, None)) for dim, data in zip(var.coordinates,coords))
+            indexes = tuple(coord2index(data, kwargs.get(dim, None)) for dim, data in zip(var.coordinates, coords))
             coords = [data[idx] for data, idx in zip(coords, indexes)]
             dataset = gdal.Open(self._filepath, gdalconst.GA_ReadOnly)
             if dataset is None:

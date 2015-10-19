@@ -16,6 +16,14 @@
 import numpy
 
 
+def merge_unique(ars, kind='mergesort', reverse=False):
+    c = numpy.concatenate(ars)
+    c[::-1 if reverse else 1].sort(kind=kind)
+    flag = numpy.ones(len(c), dtype=bool)
+    numpy.not_equal(c[1:], c[:-1], out=flag[1:])
+    return c[flag]
+
+
 def coord2index(coord, slice_):
     len_ = len(coord)
 
