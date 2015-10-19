@@ -2,7 +2,7 @@ from collections import namedtuple
 import logging
 from math import floor, ceil
 
-from ingestor.utils import get_file_extents, execute
+from ingester.utils import get_file_extents, execute
 
 _LOG = logging.getLogger(__name__)
 

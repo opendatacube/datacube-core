@@ -3,7 +3,7 @@ import os
 import pathlib
 import logging
 from create_tiles import calc_output_filenames, create_tiles, list_tile_files
-from ingestor.utils import preserve_cwd
+from ingester.utils import preserve_cwd
 from netcdf_writer import append_to_netcdf, MultiVariableNetCDF, SingleVariableNetCDF
 import eodatasets.drivers
 import eodatasets.type

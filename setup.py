@@ -6,7 +6,7 @@ setup(
     name='datacube-experiments',
     description='Experimental Datacube v2 Ingestor',
     version='0.0.1',
-    packages=['ingestor'],
+    packages=['ingester'],
     url='http://github.com/omad/datacube-experiments',
     install_requires=[
         'click',
@@ -24,8 +24,8 @@ setup(
 
     entry_points={
       'console_scripts': [
-          'datacube_ingest = ingestor.datacube_ingestor:main',
-          'print_image = ingestor.utils:print_image',
+          'datacube_ingest = ingester.datacube_ingestor:main',
+          'print_image = ingester.utils:print_image',
       ]
     },
 )
