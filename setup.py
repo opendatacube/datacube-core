@@ -24,7 +24,7 @@ setup(
 
     entry_points={
       'console_scripts': [
-          'datacube_ingest = ingester.datacube_ingestor:main',
+          'datacube_ingest = ingester.datacube_ingester:main',
           'print_image = ingester.utils:print_image',
       ]
     },
