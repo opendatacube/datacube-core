@@ -11,8 +11,7 @@ from eodatasets.serialise import read_yaml_metadata
 
 
 _LOG = logging.getLogger(__name__)
-
-
+CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 DEFAULT_TILE_OPTIONS = {
     'output_format': 'GTiff',
     'create_options': ['COMPRESS=DEFLATE', 'ZLEVEL=1']
@@ -118,7 +117,7 @@ def ingest(input_path, output_dir, filename_format, netcdf_class=MultiVariableNe
     return netcdf_paths
 
 
-@click.command(help="Example output filename format: combined_{x}_{y}.nc ")
+@click.command(help="Example output filename format: combined_{x}_{y}.nc", context_settings=CLICK_SETTINGS)
 @click.option('--output-dir', '-o', default='.')
 @click.option('--multi-variable', 'netcdf_class', flag_value=MultiVariableNetCDF, default=True)
 @click.option('--single-variable', 'netcdf_class', flag_value=SingleVariableNetCDF)
