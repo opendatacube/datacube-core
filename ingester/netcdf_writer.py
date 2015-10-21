@@ -1,6 +1,4 @@
-from __future__ import print_function
 from datetime import datetime
-import sys
 from abc import ABCMeta, abstractmethod
 import argparse
 import numpy as np
@@ -9,11 +7,6 @@ import netCDF4
 import os.path
 
 EPOCH = datetime(1970, 1, 1, 0, 0, 0)
-
-
-def print_and_flush(s='', end='\n'):
-    sys.stdout.write(s + end)
-    sys.stdout.flush()
 
 
 def _get_nbands_lats_lons_from_gdalds(gdal_dataset):
@@ -140,10 +133,6 @@ class BaseNetCDF(object):
 
         return netcdf
 
-    def write_time_slice(self, slices, timestamp):
-        self._add_time(timestamp)
-        self._write_data_to_netcdf(slices)
-
     @abstractmethod
     def _create_variables(self):
         """
@@ -217,8 +206,6 @@ class MultiVariableNetCDF(BaseNetCDF):
             out_band.missing_value = -999
 
             out_band[time_index-1, :, :] = in_band.ReadAsArray()
-            print_and_flush('.', end='')
-        print()
 
 
 class SingleVariableNetCDF(BaseNetCDF):
@@ -267,8 +254,6 @@ class SingleVariableNetCDF(BaseNetCDF):
             band_var[band_idx] = metadata.number
 
             observation[band_idx, time_index, :, :] = in_band.ReadAsArray()
-            print_and_flush('.', end="")
-        print()
 
 
 class TileSpec(object):
@@ -398,7 +383,7 @@ def main():
         dcnc.append_gdal_tile(args.geotiff)
         dcnc.close()
     else:
-        print("Unknown action")
+        print 'Unknown action'
 
 
 if __name__ == '__main__':

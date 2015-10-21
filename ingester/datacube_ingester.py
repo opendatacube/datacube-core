@@ -20,7 +20,7 @@ DEFAULT_TILE_OPTIONS = {
 
 def get_input_filenames(input_path, eodataset):
     """
-    Extract absolute filenames from a DatasetMetadata object
+    Extracts absolute filenames from a DatasetMetadata object.
 
     :type input_path: pathlib.Path
     :type eodataset: eodatasets.type.DatasetMetadata
@@ -35,7 +35,7 @@ def get_input_filenames(input_path, eodataset):
 
 def is_yaml_file(path):
     """
-    Is this a path to a yaml file
+    Checks if this is a path to a yaml file
 
     :type path: pathlib.Path
     :rtype: boolean
@@ -45,6 +45,7 @@ def is_yaml_file(path):
 
 def load_dataset(input_path):
     """
+    Loads a dataset metadata description
 
     :param input_path:
     :rtype: (pathlib.Path, eodataset.DatasetMetadata)
@@ -76,7 +77,7 @@ def merge_tiles_to_netcdf(eodataset, filename_format, netcdf_class):
 
 def setup_logging(verbosity):
     """
-    Setup logging, defaults to WARN
+    Setups up logging, defaults to WARN
 
     :param verbosity: 1 for INFO, 2 for DEBUG
     :return:
@@ -88,7 +89,7 @@ def setup_logging(verbosity):
 @preserve_cwd
 def ingest(input_path, output_dir, filename_format, netcdf_class=MultiVariableNetCDF, tile=True, merge=True):
     """
-    Run a series of steps to stack, split into tiles and re-merge into netcdf an input dataset
+    Runs a series of steps to: stack, split into tiles and re-merge into netcdf an input dataset
 
     :param input_path: str, pathname to a ga-metadata.yaml file or directory that eo-datasets can process
     :param output_dir: str, pathname
@@ -126,7 +127,11 @@ def ingest(input_path, output_dir, filename_format, netcdf_class=MultiVariableNe
 @click.option('--verbose', '-v', count=True, help="Use multiple times for more verbosity")
 @click.argument('input_path', type=click.Path(exists=True, readable=True))
 @click.argument('filename-format')
-def main(input_path, output_dir, filename_format, netcdf_class=MultiVariableNetCDF, tile=True, merge=True, verbose=0):
+def main(input_path, output_dir, filename_format, netcdf_class=MultiVariableNetCDF,
+         tile=True, merge=True, verbose=0):
+    """
+    Runs ingest from the command line
+    """
     setup_logging(verbose)
 
     ingest(input_path, output_dir, filename_format, netcdf_class, tile, merge)
