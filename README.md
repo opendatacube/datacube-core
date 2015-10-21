@@ -20,3 +20,33 @@ The Australian Geoscience Data Cube provides an integrated gridded data analysis
 In 2014, Geoscience Australia, CSIRO and the NCI established the Australian Geoscience Data Cube, building on earlier work of Geoscience Australia and expanding it to include additional earth observation satellite and other gridded data collections (e.g. MODIS, DEM) in order to expand the range of integrated data analysis capabilities that were available. The complete software stack and petabytes of EO are deployed at the NCI petascale computing facility for use by NCI users.
 
 __The current AGDC v2 implementation is intended as a working prototype__ for a cohesive, sustainable framework for large-scale multidimensional data management for geoscientific data. This public development release is intended to foster broader collaboration on the design and implementation. It is not intended for operational use.
+
+## Test Ingestion Script
+
+    $ datacube_ingest --help
+    Usage: datacube_ingest [OPTIONS] INPUT_PATH FILENAME_FORMAT
+    
+      Example output filename format: combined_{x}_{y}.nc
+    
+    Options:
+      -o, --output-dir TEXT
+      --multi-variable
+      --single-variable
+      --tile / --no-tile     Allow partial processing
+      --merge / --no-merge   Allow partial processing
+      -v, --verbose          Use multiple times for more verbosity
+      --help                 Show this message and exit.
+
+
+## Python Usage
+
+Tile and stack files with:
+
+    from ingester import datacube_ingester
+    
+    input_path = "/g/data/rs0/scenes/ARG25_V0.0/2015-08/LS8_OLI_TIRS_NBAR_P54_GANBAR01-032_089_081_20150807/"
+    output_dir = "/tmp/ingest_test/"
+    filename_format = "combined_{x}_{y}.nc"
+    
+    datacube_ingester.ingest(input_path, output_dir, filename_format)
+

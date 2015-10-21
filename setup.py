@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+from setuputils import setup
 
 version = '0.0.0'
 
@@ -11,6 +11,7 @@ setup(name='agdc',
           'analytics',
           'analytics_utils',
           'execution_engine',
+          'ingester'
       ],
       package_data={
           'gdf': ['gdf_default.conf']
@@ -25,7 +26,17 @@ setup(name='agdc',
           'matplotlib',
           'netcdf4',
           'scipy',
-          'pytz'
+          'pytz',
+          ],
+      install_requires=[
+          'click',
+          'eodatasets',
+          'eotools',
+          'pathlib',
+          'pyyaml',
+      ],
+      tests_require=[
+          'pytest',
       ],
       url='https://github.com/data-cube/agdc-v2',
       author='AGDC Team',
@@ -33,5 +44,11 @@ setup(name='agdc',
       maintainer_email='',
       description='AGDC v2',
       long_description='Australian Geoscience Data Cube v2',
-      license='Apache License 2.0'
-      )
+      license='Apache License 2.0',
+      entry_points={
+          'console_scripts': [
+              'datacube_ingest = ingester.datacube_ingester:main',
+              'print_image = ingester.utils:print_image',
+          ]
+      },
+)
