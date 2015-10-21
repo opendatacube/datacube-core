@@ -14,51 +14,42 @@
 
 
 from __future__ import absolute_import, division, print_function
-
 from builtins import *
-import numpy as np
 
-from cubeaccess.core import Coordinate, Variable, DataArray, StorageUnitSet, StorageUnitDimensionProxy, StorageUnitStack
+import numpy
+
+from cubeaccess.core import Coordinate, Variable, StorageUnitBase, StorageUnitDimensionProxy, StorageUnitStack
 from cubeaccess.storage import NetCDF4StorageUnit, GeoTifStorageUnit
-from cubeaccess.utils import coord2index
+from cubeaccess.indexing import Range
 
 
-class TestStorageUnit(object):
+class TestStorageUnit(StorageUnitBase):
     def __init__(self, coords, vars):
         self.coordinates = coords
         self.variables = vars
 
-    def get(self, name, **kwargs):
-        if name in self.variables:
-            var = self.variables[name]
-            coords = [self.get(dim, **kwargs).values for dim in var.coordinates]
-            shape = [coord.shape[0] for coord in coords]
-            result = np.empty(shape, var.dtype)
-            return DataArray(result, coords=coords, dims=var.coordinates)
+    def _get_coord(self, name):
+        coord = self.coordinates[name]
+        data = numpy.linspace(coord.begin, coord.end, coord.length, dtype=coord.dtype)
+        return data
 
-        if name in self.coordinates:
-            coord = self.coordinates[name]
-            data = np.linspace(coord.begin, coord.end, coord.length, dtype=coord.dtype)
-            index = coord2index(data, kwargs.get(name, None))
-            data = data[index]
-            return DataArray(data, coords=[data], dims=[name])
-
-        raise RuntimeError("unknown variable")
+    def _fill_data(self, name, index, dest):
+        dest.fill(1)
 
 
 ds1 = TestStorageUnit({
-    't': Coordinate(np.int, 100, 400, 4),
-    'y': Coordinate(np.float32, 0, 9.5, 20),
-    'x': Coordinate(np.float32, 9, 0, 10)
+    't': Coordinate(numpy.int, 100, 400, 4),
+    'y': Coordinate(numpy.float32, 0, 9.5, 20),
+    'x': Coordinate(numpy.float32, 9, 0, 10)
 }, {
-    'B10': Variable(np.float32, np.nan, ('t', 'y', 'x'))
+    'B10': Variable(numpy.float32, numpy.nan, ('t', 'y', 'x'))
 })
 ds2 = TestStorageUnit({
-    't': Coordinate(np.int, 500, 600, 3),
-    'y': Coordinate(np.float32, 5, 14.5, 20),
-    'x': Coordinate(np.float32, 4, -5, 10)
+    't': Coordinate(numpy.int, 500, 600, 3),
+    'y': Coordinate(numpy.float32, 5, 14.5, 20),
+    'x': Coordinate(numpy.float32, 4, -5, 10)
 }, {
-    'B10': Variable(np.float32, np.nan, ('t', 'y', 'x'))
+    'B10': Variable(numpy.float32, numpy.nan, ('t', 'y', 'x'))
 })
 netcdffiles = [
     "/short/v10/dra547/injest_examples/multiple_band_variables/LS7_ETM_NBAR_P54_GANBAR01-002_089_078_2015_152_-26.nc",
@@ -80,20 +71,29 @@ geotiffiles = [
 ]
 
 
+def _time_from_filename(f):
+    from datetime import datetime
+    dtstr = f.split('/')[-1].split('_')[-1][:-4]
+    # 2004-11-07T00-05-33.311000
+    dt = datetime.strptime(dtstr, "%Y-%m-%dT%H-%M-%S.%f")
+    return numpy.datetime64(dt, 's')
+
+
 def test_storage_unit_dimension_proxy():
     su = StorageUnitDimensionProxy(ds1, ('greg', 12.0))
-    data = su.get('greg')
-    assert(data.values == np.array([12.0]))
+    data = su._get_coord('greg')
+    assert(data == numpy.array([12.0]))
 
     data = su.get('B10')
     assert(data.values.shape == (1, 4, 20, 10))
     assert(data.dims == ('greg', 't', 'y', 'x'))
+    assert(numpy.all(data.values == 1))
 
     # print(data)
     # print (su.coordinates)
     # print (su.variables)
 
-    data = su.get('B10', greg=slice(13, 14))
+    data = su.get('B10', greg=Range(13, 14))
     assert(data.values.size == 0)
 
 
@@ -103,11 +103,15 @@ def test_geotif_storage_unit():
     su = GeoTifStorageUnit(files[0])
     assert(set(su.coordinates.keys()) == ({'x', 'y'}))
 
-    data = su.get('2', x=slice(142.5, 142.7), y=slice(-32.5, -32.2))
+    data = su.get('2', x=Range(142.5, 142.7), y=Range(-32.5, -32.2))
     assert(len(data.coords['x']) == 801)
     assert(len(data.coords['y']) == 1201)
-    assert(np.any(data.values != -999))
+    assert(numpy.any(data.values != -999))
 
+    data = su.get('2', x=slice(500), y=slice(3400, None))
+    assert(len(data.coords['x']) == 500)
+    assert(len(data.coords['y']) == 600)
+    assert(numpy.any(data.values != -999))
     # print(su.coordinates)
     # print (su.variables)
     # print(data)
@@ -119,10 +123,10 @@ def test_netcdf_storage_unit():
     su = NetCDF4StorageUnit(files[2])
     assert(set(su.coordinates.keys()) == ({'longitude', 'latitude', 'time'}))
 
-    data = su.get('band2', longitude=slice(153.5, 153.7), latitude=slice(-25.5, -25.2))
+    data = su.get('band2', longitude=Range(153.5, 153.7), latitude=Range(-25.5, -25.2))
     assert(len(data.coords['longitude']) == 801)
     assert(len(data.coords['latitude']) == 1201)
-    assert(np.any(data.values != -999))
+    assert(numpy.any(data.values != -999))
 
     # mds = StorageUnitSet([NetCDF4StorageUnit(filename) for filename in files])
     # data = mds.get('band2')
@@ -134,50 +138,25 @@ def test_netcdf_storage_unit():
 
 
 def test_storage_unit_stack():
+    #TODO: use ds1/ds2
     files = geotiffiles
 
-    def time_from_filename(f):
-        from datetime import datetime
-        dtstr = f.split('/')[-1].split('_')[-1][:-4]
-        # 2004-11-07T00-05-33.311000
-        dt = datetime.strptime(dtstr, "%Y-%m-%dT%H-%M-%S.%f")
-        return np.datetime64(dt, 's')
-
-    storage_units = [StorageUnitDimensionProxy(GeoTifStorageUnit(f), ('t', time_from_filename(f))) for f in files]
+    storage_units = [StorageUnitDimensionProxy(GeoTifStorageUnit(f), ('t', _time_from_filename(f))) for f in files]
     stack = StorageUnitStack(storage_units, 't')
-    times = np.array([time_from_filename(f) for f in files])
-    assert(np.all(stack.get('t').values == times))
+    times = numpy.array([_time_from_filename(f) for f in files])
+    assert(numpy.all(stack._get_coord('t') == times))
 
-    tslice = slice(np.datetime64('2004-11-07T00:05:33Z', 's'), np.datetime64('2004-12-25T00:06:26Z', 's'))
-    data = stack.get('2', t=tslice, x=slice(142.5, 142.7), y=slice(-32.5, -32.2))
+    trange = Range(numpy.datetime64('2004-11-07T00:05:33Z', 's'), numpy.datetime64('2004-12-25T00:06:26Z', 's'))
+    data = stack.get('2', t=trange, x=Range(142.5, 142.7), y=Range(-32.5, -32.2))
     assert(len(data.coords['t']) == 2)
     assert(len(data.coords['x']) == 801)
     assert(len(data.coords['y']) == 1201)
-    assert(np.any(data.values != -999))
+    assert(numpy.any(data.values != -999))
 
+    data = stack.get('2', t=slice(0, 2), x=slice(500), y=slice(3400, None))
+    assert(len(data.coords['t']) == 2)
+    assert(len(data.coords['x']) == 500)
+    assert(len(data.coords['y']) == 600)
+    assert(numpy.any(data.values != -999))
     # print(stack.coordinates)
     # print(stack.variables)
-
-
-def test_storage_unit_set():
-    mds = StorageUnitSet([ds1, ds2])
-
-    assert(mds.coordinates['t'].begin == 100)
-    assert(mds.coordinates['t'].end == 600)
-    assert(mds.coordinates['t'].length == 11)
-
-    assert(mds.coordinates['x'].begin == 9)
-    assert(mds.coordinates['x'].end == -5)
-    assert(mds.coordinates['x'].length == 15)
-
-    assert(mds.coordinates['y'].begin == 0)
-    assert(mds.coordinates['y'].end == 14.5)
-    assert(mds.coordinates['y'].length == 30)
-
-    assert(np.allclose(mds.get('x', x=slice(-2, 5)).values, np.linspace(5, -2, 8)))
-    assert(np.allclose(mds.get('y', y=slice(-2.5, 5.5)).values, np.linspace(0, 5.5, 12)))
-
-    # print('x:', mds.get('x'))
-    # print('y:', mds.get('y'))
-    # print('t:', mds.get('t'))
-    # print('B10', mds.get('B10'))

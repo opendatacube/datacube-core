@@ -20,11 +20,10 @@ import numpy
 from osgeo import gdal, gdalconst
 from osgeo.gdal_array import GDALTypeCodeToNumericTypeCode
 
-from ..core import Coordinate, Variable, DataArray
-from ..utils import coord2index
+from ..core import Coordinate, Variable, StorageUnitBase
 
 
-class GeoTifStorageUnit(object):
+class GeoTifStorageUnit(StorageUnitBase):
     def __init__(self, filepath):
         self._filepath = filepath
         dataset = gdal.Open(self._filepath, gdalconst.GA_ReadOnly)
@@ -41,25 +40,17 @@ class GeoTifStorageUnit(object):
             return Variable(GDALTypeCodeToNumericTypeCode(band.DataType), band.GetNoDataValue(), ('y', 'x'))
         self.variables = {str(i+1): band2var(dataset.GetRasterBand(i+1)) for i in xrange(dataset.RasterCount)}
 
-    def get(self, name, **kwargs):
-        name = str(name)
-        if name in self.coordinates:
-            coord = self.coordinates[name]
-            data = numpy.linspace(coord.begin, coord.end, coord.length, dtype=coord.dtype)
-            index = coord2index(data, kwargs.get(name, None))
-            data = data[index]
-            return DataArray(data, coords=[data], dims=[name])
+    def _get_coord(self, name):
+        coord = self.coordinates[name]
+        data = numpy.linspace(coord.begin, coord.end, coord.length, dtype=coord.dtype)
+        return data
 
-        if name in self.variables:
-            var = self.variables[name]
-            coords = [self.get(dim).values for dim in var.coordinates]
-            indexes = tuple(coord2index(data, kwargs.get(dim, None)) for dim, data in zip(var.coordinates, coords))
-            coords = [data[idx] for data, idx in zip(coords, indexes)]
-            dataset = gdal.Open(self._filepath, gdalconst.GA_ReadOnly)
-            if dataset is None:
-                raise IOError("failed to open " + self._filepath)
-            data = dataset.GetRasterBand(int(name)).ReadAsArray(indexes[1].start,
-                                                                indexes[0].start,
-                                                                indexes[1].stop-indexes[1].start,
-                                                                indexes[0].stop-indexes[0].start)
-            return DataArray(data, coords=coords, dims=var.coordinates)
+    def _fill_data(self, name, index, dest):
+        dataset = gdal.Open(self._filepath, gdalconst.GA_ReadOnly)
+        if dataset is None:
+            raise IOError("failed to open " + self._filepath)
+        dataset.GetRasterBand(int(name)).ReadAsArray(index[1].start,
+                                                     index[0].start,
+                                                     index[1].stop - index[1].start,
+                                                     index[0].stop - index[0].start,
+                                                     buf_obj=dest)

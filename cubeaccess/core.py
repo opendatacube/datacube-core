@@ -20,27 +20,17 @@ from builtins import *
 from functools import reduce
 import numpy
 
-from .utils import coord2index, merge_unique
+from .utils import merge_unique
+from .indexing import make_index, index_shape
 
 try:
-    from xxray import DataArray
+    from xray import DataArray
 except ImportError:
     from .ghetto import DataArray
 
-Coordinate = namedtuple('Coordinate', ['dtype', 'begin', 'end', 'length'])
-Variable = namedtuple('Variable', ['dtype', 'ndv', 'coordinates'])
-
-
-def _make_index(ndims):
-    try:
-        from rtree.index import Index, Property
-        p = Property()
-        p.dimension = ndims
-        return Index(properties=p)
-
-    except ImportError:
-        from .ghetto import Index
-        return Index()
+Range = namedtuple('Range', ('begin', 'end'))
+Coordinate = namedtuple('Coordinate', ('dtype', 'begin', 'end', 'length'))
+Variable = namedtuple('Variable', ('dtype', 'ndv', 'coordinates'))
 
 
 def is_consistent_coords(coord1, coord2):
@@ -70,7 +60,30 @@ def check_storage_unit_set_consistent(storage_units):
         all_vars.update(su.variables)
 
 
-class StorageUnitDimensionProxy(object):
+class StorageUnitBase(object):
+    def _get_coord(self, name):
+        raise NotImplementedError()
+
+    def _fill_data(self, name, index, dest):
+        raise NotImplementedError()
+
+    def get(self, name, dest=None, **kwargs):
+        var = self.variables[name]
+        coords = [self._get_coord(dim) for dim in var.coordinates]
+        index = tuple(make_index(coord, kwargs.get(dim)) for coord, dim in zip(coords, var.coordinates))
+        shape = index_shape(index)
+
+        if not dest:
+            dest = numpy.empty(shape, dtype=var.dtype)
+            dest.fill(var.ndv)
+        assert(all(a <= b for a, b in zip(shape, dest.shape)))
+        # TODO: subindex dest
+        self._fill_data(name, index, dest)
+
+        return DataArray(dest, coords=[coord[idx] for coord, idx in zip(coords, index)], dims=var.coordinates)
+
+
+class StorageUnitDimensionProxy(StorageUnitBase):
     def __init__(self, storage_unit, *coords):
         self._storage_unit = storage_unit
         self._dimensions = tuple(name for name, value in coords)
@@ -81,50 +94,31 @@ class StorageUnitDimensionProxy(object):
             return Variable(var.dtype, var.ndv, self._dimensions + var.coordinates)
         self.variables = {name: expand_var(var) for name, var in storage_unit.variables.items()}
 
-    def get(self, name, **kwargs):
+    def _get_coord(self, name):
         if name in self._dimensions:
             value = self.coordinates[name].begin
-            if name in kwargs and (kwargs[name].start and kwargs[name].start > value or
-                                   kwargs[name].stop and kwargs[name].stop < value):
-                data = numpy.empty(0, dtype=self.coordinates[name].dtype)
-            else:
-                data = numpy.array([value], dtype=self.coordinates[name].dtype)
-            return DataArray(data, coords=[data], dims=[name])
+            return numpy.array([value], dtype=self.coordinates[name].dtype)
+        return self._storage_unit._get_coord(name)
 
-        if name in self.coordinates:
-            return self._storage_unit.get(name, **kwargs)
-
-        if name in self.variables:
-            var = self.variables[name]
-            coords = [self.get(dim, **kwargs).values for dim in self._dimensions]
-            if any(coord.size == 0 for coord in coords):
-                coords += [self._storage_unit.get(dim, **kwargs).values
-                           for dim in self._storage_unit.variables[name].coordinates]
-                shape = [coord.size for coord in coords]
-                data = numpy.empty(shape, dtype=var.dtype)
-            else:
-                data = self._storage_unit.get(name, **kwargs)
-                coords += [data.coords[dim] for dim in data.dims]
-                shape = [coord.size for coord in coords]
-                data = data.values.reshape(shape)
-            return DataArray(data, coords=coords, dims=var.coordinates)
-
-        raise KeyError(name + " is not a variable or coordinate")
+    def _fill_data(self, name, index, dest):
+        shape = index_shape(index)
+        ndims = len(self._dimensions)
+        if any(i == 0 for i in shape[:ndims]):
+            return dest
+        self._storage_unit._fill_data(name, index[ndims:], dest[(0,)*ndims])
 
 
-class StorageUnitStack(object):
+class StorageUnitStack(StorageUnitBase):
     def __init__(self, storage_units, stack_dim):
-        def su_cmp(a, b):
-            return cmp(a.coordinates[stack_dim].begin, b.coordinates[stack_dim].begin)
-
-        storage_units = sorted(storage_units, su_cmp)
-        StorageUnitStack.check_consistent(storage_units, stack_dim)
-
         for a, b in zip(storage_units[:-1], storage_units[1:]):
+            if a.coordinates[stack_dim].begin >= b.coordinates[stack_dim].begin:
+                raise RuntimeError("source storage units must be sorted")
             if a.coordinates[stack_dim].end > b.coordinates[stack_dim].begin:
                 raise RuntimeError("overlapping coordinates are not supported yet")
 
-        stack_coord_data = merge_unique([su.get(stack_dim).values for su in storage_units])
+        StorageUnitStack.check_consistent(storage_units, stack_dim)
+
+        stack_coord_data = merge_unique([su._get_coord(stack_dim) for su in storage_units])
 
         self._stack_dim = stack_dim
         self._storage_units = storage_units
@@ -136,32 +130,28 @@ class StorageUnitStack(object):
                                                  len(stack_coord_data))
         self.variables = reduce(lambda a, b: a.update(b) or a, (su.variables for su in storage_units), {})
 
-    def get(self, name, **kwargs):
+    def _get_coord(self, name):
         if name == self._stack_dim:
-            data = self._stack_coord_data
-            index = coord2index(data, kwargs.get(name, None))
-            data = data[index]
-            return DataArray(data, coords=[data], dims=[name])
+            return self._stack_coord_data
+        return self._storage_units[0]._get_coord(name)
 
-        if name in self.coordinates:
-            return self._storage_units[0].get(name, **kwargs)
-
-        if name in self.variables:
-            var = self.variables[name]
-            # TODO: call get only on the relevant subset of storage units
-            # TODO: use index version of get
-            # TODO: use 'fill' version of get
-            arrays = [su.get(name, **kwargs) for su in self._storage_units]
-            coords = [numpy.concatenate([ar.coords[self._stack_dim] for ar in arrays], axis=0)] + \
-                     [arrays[0].coords[dim] for dim in var.coordinates[1:]]
-
-            data = numpy.concatenate([ar.values for ar in arrays], axis=0)
-            assert(data.shape == tuple(coord.size for coord in coords))
-            return DataArray(data, coords=coords, dims=var.coordinates)
-
-        raise KeyError(name + " is not a variable or coordinate")
-
-
+    def _fill_data(self, name, index, dest):
+        idx = 0
+        for su in self._storage_units:
+            length = su.coordinates[self._stack_dim].length
+            if idx < index[0].stop and idx+length > index[0].start:
+                # TODO: slice dest
+                # TODO: make new index
+                data_slice = slice(
+                    max(0, index[0].start-idx),
+                    min(length, index[0].stop-idx),
+                    index[0].step)
+                subindex = (data_slice,) + index[1:]
+                dest_slice = slice(idx+data_slice.start-index[0].start, idx+data_slice.stop-index[0].start)
+                su._fill_data(name, subindex, dest[dest_slice])
+            idx += length
+            if idx >= index[0].stop:
+                break
 
     @staticmethod
     def check_consistent(storage_units, stack_dim):
@@ -182,86 +172,3 @@ class StorageUnitStack(object):
                     raise RuntimeError("inconsistent variables")
 
             all_vars.update(su.variables)
-
-
-class StorageUnitSet(object):
-    def __init__(self, storage_units):
-        check_storage_unit_set_consistent(storage_units)
-        self._build_unchecked(storage_units)
-
-    def _build_unchecked(self, storage_units):
-        self._storage_units = [sus for su in storage_units for sus in (su._storage_units if isinstance(su, StorageUnitSet) else [su])]
-        first_coord = self._storage_units[0].coordinates
-        self._dims = first_coord.keys()
-        self.variables = {}
-
-        self._index = _make_index(len(self._dims))
-        for id_, su in enumerate(self._storage_units):
-            coords = [min(su.coordinates[dim].begin, su.coordinates[dim].end) for dim in self._dims] \
-                     + [max(su.coordinates[dim].begin, su.coordinates[dim].end) for dim in self._dims]
-            self._index.insert(id_, coords)
-            self.variables.update(su.variables)
-
-        self.coordinates = {}
-        self._coord_data = {}
-        for idx, dim in enumerate(self._dims):
-            begin = self._index.bounds[idx]
-            end = self._index.bounds[idx + len(self._dims)]
-
-            def density(coord): return (coord.length-1)/abs(coord.end - coord.begin)
-            max_density = max(density(su.coordinates[dim]) for su in self._storage_units if su.coordinates[dim] > 1)
-
-            self.coordinates[dim] = Coordinate(first_coord[dim].dtype,
-                                               begin if first_coord[dim].begin <= first_coord[dim].end else end,
-                                               end if first_coord[dim].begin <= first_coord[dim].end else begin,
-                                               int((end-begin)*max_density+1.5))
-
-    def get(self, name, precision=None, **kwargs):
-        precision = precision or {}
-        bounds = self._index.bounds[:]
-        for idx, dim in enumerate(self._dims):
-            if dim in kwargs:
-                if kwargs[dim].start:
-                    bounds[idx] = max(bounds[idx], kwargs[dim].start)
-                if kwargs[dim].stop:
-                    bounds[idx+len(self._dims)] = min(bounds[idx+len(self._dims)], kwargs[dim].stop)
-
-        storage_units = [self._storage_units[idx] for idx in self._index.intersection(bounds)]
-
-        if name in self.variables:
-            var = self.variables[name]
-            coords = [StorageUnitSet.merge_coordinate(dim, storage_units, precision.get(dim, 6))
-                      for dim in var.coordinates]
-            shape = [len(coord) for coord in coords]
-            data = numpy.empty(shape, dtype=var.dtype)
-            data.fill(var.ndv)
-
-            def idx_from_coord(coord):
-                result = slice(coord[0], coord[-1])
-                if result.start > result.stop:
-                    return slice(result.stop, result.start)
-                return result
-
-            for su in storage_units:
-                su_data = su.get(name, **kwargs)
-                coord_idx = [idx_from_coord(su_data.coords[dim]) for dim in su_data.dims]
-                indexes = tuple(coord2index(coord, idx) for coord, idx in zip(coords, coord_idx))
-
-                # if you're here you need to implement interleaved copy
-                assert(all(idx.stop - idx.start == shape for idx, shape in zip(indexes, su_data.values.shape)))
-                data[indexes] = su_data.values
-
-            return DataArray(data, coords=coords, dims=var.coordinates)
-
-        if name in self.coordinates:
-            data = StorageUnitSet.merge_coordinate(name, storage_units, precision.get(name, 6), **kwargs)
-            return DataArray(data, coords=[data], dims=[name])
-
-        raise KeyError(name + " is not a variable or coordinate")
-
-    @staticmethod
-    def merge_coordinate(dim, storage_units, precision, **kwargs):
-        coord = storage_units[0].coordinates[dim]
-        return merge_unique([su.get(dim, **kwargs).values.round(precision) for su in storage_units],
-                            reverse=coord.begin > coord.end)
-

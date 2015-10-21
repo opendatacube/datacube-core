@@ -13,6 +13,9 @@
 #    limitations under the License.
 
 
+from __future__ import absolute_import, division, print_function
+from builtins import *
+
 import numpy
 
 
@@ -22,17 +25,3 @@ def merge_unique(ars, kind='mergesort', reverse=False):
     flag = numpy.ones(len(c), dtype=bool)
     numpy.not_equal(c[1:], c[:-1], out=flag[1:])
     return c[flag]
-
-
-def coord2index(coord, slice_):
-    len_ = len(coord)
-
-    if not slice_:
-        return slice(0, len_)
-
-    if coord[0] > coord[1]:  # reversed
-        return slice(len_-numpy.searchsorted(coord[::-1], slice_.stop, side='right') if slice_.stop else 0,
-                     len_-numpy.searchsorted(coord[::-1], slice_.start) if slice_.start else len_)
-    else:
-        return slice(numpy.searchsorted(coord, slice_.start) if slice_.start else 0,
-                     numpy.searchsorted(coord, slice_.stop, side='right') if slice_.stop else len_)

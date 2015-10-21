@@ -16,14 +16,15 @@
 from __future__ import absolute_import, division, print_function
 from builtins import *
 
+import numpy
 import contextlib
 import netCDF4 as nc4
 
-from ..core import Coordinate, Variable, DataArray
-from ..utils import coord2index
+from ..core import Coordinate, Variable, StorageUnitBase, DataArray
+from ..indexing import make_index, index_shape
 
 
-class NetCDF4StorageUnit(object):
+class NetCDF4StorageUnit(StorageUnitBase):
     def __init__(self, filepath):
         self._filepath = filepath
         self.coordinates = dict()
@@ -41,21 +42,11 @@ class NetCDF4StorageUnit(object):
     def _open_dataset(self):
         return nc4.Dataset(self._filepath, mode='r', clobber=False, diskless=False, persist=False, format='NETCDF4')
 
-    def get(self, name, **kwargs):
+    def _get_coord(self, name):
+        coord = self.coordinates[name]
         with contextlib.closing(self._open_dataset()) as ncds:
-            if name in self.coordinates:
-                data = ncds.variables[name]
-                index = coord2index(data, kwargs.get(name, None))
-                data = data[index]
-                return DataArray(data, coords=[data], dims=[name])
+            return ncds[name][:]
 
-            if name in self.variables:
-                var = self.variables[name]
-                coords = [ncds.variables[dim] for dim in var.coordinates]
-                indexes = tuple(coord2index(data, kwargs.get(dim, None)) for dim, data in zip(var.coordinates, coords))
-                coords = [data[idx] for data, idx in zip(coords, indexes)]
-                data = ncds.variables[name]
-                data.set_auto_mask(False)
-                return DataArray(data[indexes], coords=coords, dims=var.coordinates)
-
-        raise KeyError(name + " is not a variable or coordinate")
+    def _fill_data(self, name, index, dest):
+        with contextlib.closing(self._open_dataset()) as ncds:
+            numpy.copyto(dest, ncds[name][index])

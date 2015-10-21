@@ -38,23 +38,3 @@ class DataArray(object):
         for name, data in self.coords.items():
             summary.append(" * "+name+": "+repr(data))
         return '\n'.join(summary)
-
-
-class Index(object):
-    def __init__(self):
-        self.bounds = None
-        self._data = []
-
-    def insert(self, id_, bounds):
-        if self.bounds:
-            self.bounds = [min(self.bounds[i], bounds[i]) for i in xrange(len(self.bounds)//2)] \
-                        + [max(self.bounds[len(self.bounds)//2+i], bounds[len(self.bounds)//2+i]) for i in xrange(len(self.bounds)//2)]
-        else:
-            self.bounds = bounds
-        self._data.append((id_, bounds))
-
-    def intersection(self, query):
-        ndim = len(self.bounds)//2
-        result = [id_ for id_, bounds in self._data if
-                  all(bounds[i] <= query[ndim+i] and bounds[ndim+i] >= query[i] for i in xrange(ndim))]
-        return result
