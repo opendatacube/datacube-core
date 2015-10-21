@@ -1,15 +1,17 @@
 from datetime import datetime
 from abc import ABCMeta, abstractmethod
 import argparse
+import os.path
+
 import numpy as np
 import gdal
 import netCDF4
-import os.path
+import yaml
+
+from eodatasets import serialise
+from ingester.utils import _get_nbands_lats_lons_from_gdalds
 
 EPOCH = datetime(1970, 1, 1, 0, 0, 0)
-
-
-
 
 
 class BaseNetCDF(object):
@@ -168,6 +170,10 @@ class MultiVariableNetCDF(BaseNetCDF):
         self._create_standard_dimensions(self.tile_spec.lats, self.tile_spec.lons)
         self._create_bands(self.tile_spec.bands)
 
+        # Create Variable Length Variable to store extra metadata
+        extra_meta = self.nco.createVariable('extra_metadata', str, 'time')
+        extra_meta.long_name = 'Extra source metadata'
+
     def _create_bands(self, bands):
         for i, band in enumerate(bands, 1):
             band = self.nco.createVariable('band' + str(i), 'i2',  ('time', 'latitude', 'longitude'),
@@ -175,7 +181,10 @@ class MultiVariableNetCDF(BaseNetCDF):
                                            fill_value=-999)
             band.grid_mapping = 'crs'
             band.set_auto_maskandscale(False)
-            band.units = "1"
+            band.units = '1'
+
+            srcfilename = self.nco.createVariable('srcfilename_band' + str(i), str, 'time')
+            srcfilename.long_name = 'Source filename from data import'
 
     def _get_netcdf_bands(self, bands):
         netcdfbands = []
@@ -187,18 +196,22 @@ class MultiVariableNetCDF(BaseNetCDF):
     def _write_data_to_netcdf(self, gdal_dataset, eodataset):
         netcdfbands = self._get_netcdf_bands(self.tile_spec.bands)
 
-        ds_bands = sorted(eodataset.image.bands.values(), key=lambda band: band.number)
+        gdal_bands = [gdal_dataset.GetRasterBand(idx + 1) for idx in range(gdal_dataset.RasterCount)]
 
-        time_index = len(self.nco.variables['time'])
+        metadata_bands = sorted(eodataset.image.bands.values(), key=lambda band: band.number)
 
-        for idx, out_band in enumerate(netcdfbands, start=1):
-            in_band = gdal_dataset.GetRasterBand(idx)
+        time_index = len(self.nco.variables['time']) - 1
 
-            metadata = ds_bands[idx-1]
+        for in_band, out_band, metadata in zip(gdal_bands, netcdfbands, metadata_bands):
             out_band.long_name = metadata.number
             out_band.missing_value = -999
 
-            out_band[time_index-1, :, :] = in_band.ReadAsArray()
+            out_band[time_index, :, :] = in_band.ReadAsArray()
+
+        extra_meta = self.nco.variables['extra_metadata']
+        # FIXME Yucky, we don't really want to be using yaml and private methods here
+        extra_meta[time_index] = yaml.dump(eodataset, Dumper=serialise._create_relative_dumper('/'))
+
 
 
 class SingleVariableNetCDF(BaseNetCDF):
