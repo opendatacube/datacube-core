@@ -139,3 +139,14 @@ def print_image(filename, size=50):
     image *= (22.0/image.max())
     image = image.clip(0)
     print("\n".join(("".join(r) for r in chars[image.astype(int)])))
+
+
+def _get_nbands_lats_lons_from_gdalds(gdal_dataset):
+    nbands, nlats, nlons = gdal_dataset.RasterCount, gdal_dataset.RasterYSize, gdal_dataset.RasterXSize
+
+    # Calculate pixel coordinates for each x,y based on the GeoTransform
+    geotransform = gdal_dataset.GetGeoTransform()
+    lons = np.arange(nlons)*geotransform[1]+geotransform[0]
+    lats = np.arange(nlats)*geotransform[5]+geotransform[3]
+
+    return nbands, lats, lons
