@@ -75,7 +75,7 @@ class StorageUnitBase(object):
 
         if not dest:
             dest = numpy.empty(shape, dtype=var.dtype)
-            dest.fill(var.ndv)
+            # dest.fill(var.ndv)
         assert(all(a <= b for a, b in zip(shape, dest.shape)))
         # TODO: subindex dest
         self._fill_data(name, index, dest)

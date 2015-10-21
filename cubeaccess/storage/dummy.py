@@ -13,6 +13,23 @@
 #    limitations under the License.
 
 
-from .netcdf import NetCDF4StorageUnit
-from .geotif import GeoTifStorageUnit
-from .dummy import DummyStorageUnit
+from __future__ import absolute_import, division, print_function
+from builtins import *
+
+import numpy
+
+from ..core import StorageUnitBase
+
+
+class DummyStorageUnit(StorageUnitBase):
+    def __init__(self, coords, vars):
+        self.coordinates = coords
+        self.variables = vars
+
+    def _get_coord(self, name):
+        coord = self.coordinates[name]
+        data = numpy.linspace(coord.begin, coord.end, coord.length, dtype=coord.dtype)
+        return data
+
+    def _fill_data(self, name, index, dest):
+        dest.fill(1)

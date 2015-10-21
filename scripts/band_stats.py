@@ -36,6 +36,7 @@ def _get_dataset_files():
     return files
 
 
+@profile
 def _get_dataset():
     files = _get_dataset_files()
     input = [(GeoTifStorageUnit(f), _time_from_filename(f)) for f in files]
@@ -44,24 +45,24 @@ def _get_dataset():
     return stack
 
 
-# @profile
+@profile
 def main():
     stack = _get_dataset()
     # TODO: group by
     # TODO: chunk by index
-    n = 3500
-    print(n)
+    n = 500
+
     nir = stack.get('4', y=slice(n))
-    #red = stack.get('3', y=slice(1000))
+    red = stack.get('3', y=slice(n))
 
     # TODO: mask
-    # nir = nir.values.astype(numpy.float32)
-    # nir[nir == -999] = numpy.nan
-    # red = red.values.astype(numpy.float32)
-    # red[red == -999] = numpy.nan
+    nir = nir.values.astype(numpy.float32)
+    nir[nir == -999] = numpy.nan
+    red = red.values.astype(numpy.float32)
+    red[red == -999] = numpy.nan
     # nir = numpy.ma.masked_equal(nir.values, -999)
     # red = numpy.ma.masked_equal(red.values, -999)
-    # ndvi = (nir-red)/(nir+red)
+    ndvi = (nir-red)/(nir+red)
 
     # print(ndvi)
 
