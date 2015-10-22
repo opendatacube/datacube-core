@@ -29,53 +29,49 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #===============================================================================
-'''
+"""
 Created on Jun 9, 2015
 
 @author: Alex Ip (based on code by Matt Paget & Edward King)
-'''
+"""
 import netCDF4
 import numpy as np
-import os
-import re
-from collections import OrderedDict
 import logging
-from osgeo import gdal, gdalconst, osr
+from osgeo import gdal, osr
 from datetime import datetime
 
 from _gdfutils import log_multiline
 
-# Only needed for testing
-from pprint import pprint
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO) # Logging level for this module
 
 try:
     import netcdf_builder
 except ImportError:
-    logger.error('Requires netcdf_builder.py (https://stash.csiro.au/projects/CMAR_RS/repos/netcdf-tools/browse/create/netcdf_builder.py)')
+    logger.error('Requires netcdf_builder.py '
+                 '(https://stash.csiro.au/projects/CMAR_RS/repos/netcdf-tools/browse/create/netcdf_builder.py)')
     raise
 
+
 class GDFNetCDF(object):
-    '''
+    """
     Class GDFNetCDF - Class to manage GDF netCDF storage units
-    '''
+    """
     def __init__(self, storage_config, netcdf_filename=None, netcdf_mode=None, netcdf_format=None, decimal_places=None):
-        '''
+        """
         Constructor for class GDFNetCDF
         Parameters:
             storage_config: nested dict containing configuration for storage type (defined in class GDF)
             netcdf_filename: Filename of netCDF file to be opened
             netcdf_mode: Mode for netCDF file open
             netcdf_format: Format for netCDF file open
-        '''
+        """
         self._isopen = False
         self.storage_config = storage_config
         self.netcdf_filename = netcdf_filename
-        self.netcdf_mode = netcdf_mode or 'r' # Default to 'r' for reading
+        self.netcdf_mode = netcdf_mode or 'r'  # Default to 'r' for reading
         self.netcdf_format = netcdf_format or 'NETCDF4_CLASSIC'
-        self.decimal_places = decimal_places if decimal_places is not None else 6 # Default to 6 decimal places if no precision specified
+        self.decimal_places = decimal_places if decimal_places is not None else 6  # Default to 6 decimal places if no precision specified
         
         if netcdf_filename is None:
             self.netcdf_object = None
@@ -83,31 +79,30 @@ class GDFNetCDF(object):
             self.open(netcdf_filename)
             
     def __del__(self):
-        '''
+        """
         Destructor for class GDFNetCDF
-        '''
+        """
         self.close()
 
     def close(self):
-        '''
+        """
         Destructor for class GDFNetCDF
-        '''
+        """
         self._isopen = False
         try:
             self.netcdf_object.close()
         except:
             pass
 
-        
     def open(self, netcdf_filename=None, netcdf_mode=None, netcdf_format=None):
-        '''
+        """
         Constructor for class GDFNetCDF
         Parameters:
             storage_config: nested dict containing configuration for storage type (defined in class GDF)
             netcdf_filename: Filename of netCDF file to be opened
             netcdf_mode: Mode for netCDF file open
             netcdf_format: Format for netCDF file open
-        '''
+        """
         self._isopen = False
 
         # Default to existing instance values
@@ -127,20 +122,20 @@ class GDFNetCDF(object):
         self._isopen = True
         
     def create(self, netcdf_filename, index_tuple, dimension_index_dict={}, netcdf_format=None):
-        '''
+        """
         Create new NetCDF File in 'w' mode with required dimensions
         Parameters:
             index_tuple = tuple of storage unit indices
             dimension_index_dict: dict of iterables or 1D numpy arrays keyed by dimension_tag. Required for irregular dimensions (e.g. time)
-        '''
+        """
         def set_dimension(dimension, dimension_config, index, dimension_index_vector=None):
-            '''
+            """
             Parameters:
                 dimension: Dimension tag (e.g. X, Y, T, etc.)
                 dimension_config: Nested dict containing storage configuration from GDF.storage_config['<storage_type>']
                 index: index for storage unit
                 dimension_index_vector: Numpy array of index values for irregular dimension (e.g. time) or None for unlimited irregular dimension
-            '''
+            """
 
             logger.debug('dimension = %s', dimension)
             logger.debug('dimension_config = %s', dimension_config)
@@ -158,16 +153,17 @@ class GDFNetCDF(object):
                 if dimension_config['reverse_index']:
                     dimension_index_vector = dimension_index_vector[::-1]
                 
-            #TODO: Implement fixed indexing type
+            # TODO: Implement fixed indexing type
                 
             log_multiline(logger.debug, dimension_index_vector, 'dimension_index_vector for %s' % dimension, '\t')
             
             if dimension_index_vector is not None:
                 dimension_index_shape = dimension_index_vector.shape
                 assert len(dimension_index_shape) == 1, 'Invalid dimension_index_vector shape. Must be 1D'
-                assert dimension_index_shape[0] <= dimension_config['dimension_elements'], 'dimension_index_vector must have %d elements or fewer' % dimension_config['dimension_elements']
+                assert dimension_index_shape[0] <= dimension_config['dimension_elements'], \
+                    'dimension_index_vector must have %d elements or fewer' % dimension_config['dimension_elements']
                 dimension_size = len(dimension_index_vector)
-                #TODO: Do range checks to ensure indices are within storage unit boundaries
+                # TODO: Do range checks to ensure indices are within storage unit boundaries
             else:
                 dimension_size = 0 # Unlimited dimension
                 
@@ -224,7 +220,7 @@ class GDFNetCDF(object):
         logger.debug('self.netcdf_object.variables = %s' % self.netcdf_object.variables)
         
         creation_date = datetime.utcnow().strftime("%Y%m%d")
-        self.netcdf_object.history = 'NetCDF-CF file created %s.' %(creation_date)
+        self.netcdf_object.history = 'NetCDF-CF file created %s.' % creation_date
         self.netcdf_object.license = 'Generalised Data Framework NetCDF-CF Test File'
         self.netcdf_object.spatial_coverage = '%f %s grid' % (self.storage_config['dimensions']['X']['dimension_extent'],
                                                               self.storage_config['dimensions']['X']['reference_system_unit'])
@@ -233,13 +229,13 @@ class GDFNetCDF(object):
         self.sync()
      
     def write_slice(self, variable_name, slice_array, indices_dict):
-        '''
+        """
         Function to set a specified slice in the specified netCDF variable
         Parameters:
             variable_name: Name of variable to which slice array will be written
             slice_array: Numpy array to be written to netCDF file
             indices_dict: Dict keyed by dimension tag indicating the dimension(s) & index/indices to which the slice should be written
-        '''        
+        """        
         if not self._isopen:
             self.open()
 
@@ -276,14 +272,14 @@ class GDFNetCDF(object):
         variable[slicing] = slice_array
         
     def read_slice(self, variable_name, indices_dict):
-        '''
+        """
         Function to read a specified slice in the specified netCDF variable
         Parameters:
             variable_name: Name of variable from which the slice array will be read
             indices_dict: Dict keyed by dimension tag indicating the dimension(s) & index/indices from which the slice should be read
         Returns:
             slice_array: Numpy array read from netCDF file
-        '''        
+        """        
         if not self._isopen:
             self.open()
 
@@ -314,14 +310,14 @@ class GDFNetCDF(object):
         return slice_array
 
     def get_subset_indices(self, range_dict):
-        '''
+        """
         Function to read an array subset of the specified netCDF variable
         Parameters:
             variable_name: Name of variable from which the subset array will be read
             range_dict: Dict keyed by dimension tag containing the dimension(s) & range tuples from which the subset should be read
         Returns:
             dimension_indices_dict: Dict containing array indices for each dimension
-        '''        
+        """        
         if not self._isopen:
             self.open()
 
@@ -353,14 +349,13 @@ class GDFNetCDF(object):
                 if not index_array:
                     logger.warning('Invalid range %s for dimension %s', range_dict[dimension], dimension)
                     return None
-            else: # Range not defined for this dimension - take the whole lot
+            else:  # Range not defined for this dimension - take the whole lot
                 dimension_indices_dict[dimension] = dimension_array
             
         return dimension_indices_dict
 
-
     def read_subset(self, variable_name, range_dict):
-        '''
+        """
         Function to read an array subset of the specified netCDF variable
         Parameters:
             variable_name: Name of variable from which the subset array will be read
@@ -368,7 +363,7 @@ class GDFNetCDF(object):
         Returns:
             subset_array: Numpy array read from netCDF file
             dimension_indices_dict: Dict containing array indices for each dimension
-        '''        
+        """        
         if not self._isopen:
             self.open()
 
@@ -386,7 +381,7 @@ class GDFNetCDF(object):
         assert set(range_dimensions) <= set(dimensions), 'Invalid range dimension(s)'
         
         # Create slices for accessing netcdf array
-        dimension_indices_dict = {} # Dict containing all indices for each dimension
+        dimension_indices_dict = {}  # Dict containing all indices for each dimension
         slicing = []
         for dimension_index in range(len(dimensions)):
             dimension = dimensions[dimension_index]
@@ -417,14 +412,12 @@ class GDFNetCDF(object):
         
         logger.debug('subset_array = %s', subset_array)
         return subset_array, dimension_indices_dict
-        
 
     def get_datatype(self, variable_name, convention='numpy'):
-        '''
+        """
         Returns NetCDF datatype of specified variable
-        '''
+        """
         return self.storage_config['measurement_types'][variable_name].get(convention + '_datatype_name')
-        
 
     def get_attributes(self, verbose=None, normalise=True):
         """
@@ -476,7 +469,6 @@ class GDFNetCDF(object):
         """
         netcdf_builder.show_dimensions(self.netcdf_object)
 
-
     def set_variable(self, varname, dtype='f4', dims=None, chunksize=None, fill=None, zlib=False, **kwargs):
         """
         Define (create) a variable in a netCDF object.  No data is written to the
@@ -507,8 +499,6 @@ class GDFNetCDF(object):
         """
         netcdf_builder.set_variable(self.netcdf_object, varname, dtype=dtype, dims=dims, chunksize=chunksize, fill=fill, zlib=zlib, **kwargs)
 
-
-
     def add_bounds(self, dimension_tag, bounds):
         """Add a bounds array of data to the netCDF object.
         Bounds array can be a list, tuple or NumPy array.
@@ -538,16 +528,16 @@ class GDFNetCDF(object):
               the bounds array will be written as date2num data.
         """
         dimension_tag = dimension_tag.upper()
-        dimension_name=self.storage_config['dimensions'][dimension_tag]['dimension_name']
+        dimension_name = self.storage_config['dimensions'][dimension_tag]['dimension_name']
         bounds_name = dimension_name + '_bounds'
         
         netcdf_builder.add_bounds(self.netcdf_object, dimension_name, bounds, bounds_name)
         
     def georeference_from_file(self, gdal_dataset_path):
-        '''
+        """
         Function to set georeferencing from template GDAL dataset
-        '''
-        def getMinMaxExtents(samples, lines, geoTransform):
+        """
+        def get_min_max_extents(samples, lines, geoTransform):
             """
             Calculates the min/max extents based on the input latitude and longitude vectors.
         
@@ -567,8 +557,8 @@ class GDFNetCDF(object):
                 Hasn't been tested for northern or western hemispheres.
             """
             extents = []
-            x_list  = [0,samples]
-            y_list  = [0,lines]
+            x_list = [0, samples]
+            y_list = [0, lines]
         
             for px in x_list:
                 for py in y_list:
@@ -582,7 +572,7 @@ class GDFNetCDF(object):
             min_lon = np.min(extents[:,0])
             max_lon = np.max(extents[:,0])
         
-            return (min_lat, max_lat, min_lon, max_lon)
+            return min_lat, max_lat, min_lon, max_lon
         
         # Start of georeference_from_file(self, gdal_dataset_path) definition
         gdal_dataset = gdal.Open(gdal_dataset_path)
@@ -596,18 +586,21 @@ class GDFNetCDF(object):
         # Set coordinate reference system metadata variable
         spatial_reference = osr.SpatialReference()
         spatial_reference.ImportFromWkt(projection)
-        crs_metadata = {'crs:name': spatial_reference.GetAttrValue('geogcs'),
-                    'crs:longitude_of_prime_meridian': 0.0, #TODO: This needs to be fixed!!! An OSR object should have this, but maybe only for specific OSR references??
-                    'crs:inverse_flattening': spatial_reference.GetInvFlattening(),
-                    'crs:semi_major_axis': spatial_reference.GetSemiMajor(),
-                    'crs:semi_minor_axis': spatial_reference.GetSemiMinor(),
-                    }
+        crs_metadata = {
+            'crs:name': spatial_reference.GetAttrValue('geogcs'),
+            'crs:longitude_of_prime_meridian': 0.0,
+            # TODO: This needs to be fixed!!! An OSR object should have this,
+            # but maybe only for specific OSR references??
+            'crs:inverse_flattening': spatial_reference.GetInvFlattening(),
+            'crs:semi_major_axis': spatial_reference.GetSemiMajor(),
+            'crs:semi_minor_axis': spatial_reference.GetSemiMinor(),
+            }
         self.set_variable('crs', dims=(), dtype='i4')
         self.set_attributes(crs_metadata)
         logger.debug('crs_metadata = %s', crs_metadata)
      
-        extents = getMinMaxExtents(gdal_dataset.RasterXSize, gdal_dataset.RasterYSize, geotransform)
-        #pdb.set_trace()
+        extents = get_min_max_extents(gdal_dataset.RasterXSize, gdal_dataset.RasterYSize, geotransform)
+
         self.netcdf_object.geospatial_lat_min = extents[0]
         self.netcdf_object.geospatial_lat_max = extents[1]
         self.netcdf_object.geospatial_lat_units = 'degrees_north'
@@ -617,11 +610,10 @@ class GDFNetCDF(object):
         self.netcdf_object.geospatial_lon_units = 'degrees_east'
         self.netcdf_object.geospatial_lon_resolution = geotransform[1]
 
-
     def sync(self):
-        '''
+        """
         Function to sync file to disk
-        '''
+        """
         if self._isopen:
             self.netcdf_object.sync()
 
@@ -629,4 +621,3 @@ class GDFNetCDF(object):
     def isopen(self):
         return self._isopen
 
-        
