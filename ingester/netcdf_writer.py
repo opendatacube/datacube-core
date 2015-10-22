@@ -213,7 +213,6 @@ class MultiVariableNetCDF(BaseNetCDF):
         extra_meta[time_index] = yaml.dump(eodataset, Dumper=serialise._create_relative_dumper('/'))
 
 
-
 class SingleVariableNetCDF(BaseNetCDF):
     """
     Store all data values in a single dataset with an extra dimension for `band`
@@ -289,18 +288,9 @@ class TileSpec(object):
         return max(self.lons)
 
 
-class Messenger:
-    def __init__(self, **kwargs):
-        self.__dict__ = kwargs
-
-
 def get_input_spec_from_file(filename):
     gdal_dataset = gdal.Open(filename)
     return tile_spec_from_gdal_dataset(gdal_dataset)
-
-
-def input_spec_from_eodataset(eodataset):
-    pass
 
 
 def tile_spec_from_gdal_dataset(gdal_dataset):

@@ -150,3 +150,8 @@ def _get_nbands_lats_lons_from_gdalds(gdal_dataset):
     lats = np.arange(nlats)*geotransform[5]+geotransform[3]
 
     return nbands, lats, lons
+
+
+class Messenger:
+    def __init__(self, **kwargs):
+        self.__dict__ = kwargs
