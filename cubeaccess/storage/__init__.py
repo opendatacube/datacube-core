@@ -15,4 +15,4 @@
 
 from .netcdf import NetCDF4StorageUnit
 from .geotif import GeoTifStorageUnit
-from .dummy import DummyStorageUnit
+from .faux import FauxStorageUnit

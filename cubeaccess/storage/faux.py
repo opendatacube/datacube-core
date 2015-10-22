@@ -21,7 +21,7 @@ import numpy
 from ..core import StorageUnitBase
 
 
-class DummyStorageUnit(StorageUnitBase):
+class FauxStorageUnit(StorageUnitBase):
     def __init__(self, coords, vars):
         self.coordinates = coords
         self.variables = vars
@@ -32,4 +32,7 @@ class DummyStorageUnit(StorageUnitBase):
         return data
 
     def _fill_data(self, name, index, dest):
-        dest.fill(1)
+        var = self.variables[name]
+        shape = tuple(self.coordinates[dim].length for dim in var.coordinates)
+        size = reduce(lambda x, y: x*y, shape, 1)
+        numpy.copyto(dest, numpy.arange(size).reshape(shape)[index])

@@ -19,18 +19,18 @@ from builtins import *
 import numpy
 
 from cubeaccess.core import Coordinate, Variable, StorageUnitDimensionProxy, StorageUnitStack
-from cubeaccess.storage import NetCDF4StorageUnit, GeoTifStorageUnit, DummyStorageUnit
+from cubeaccess.storage import NetCDF4StorageUnit, GeoTifStorageUnit, FauxStorageUnit
 from cubeaccess.indexing import Range
 
 
-ds1 = DummyStorageUnit({
+ds1 = FauxStorageUnit({
     't': Coordinate(numpy.int, 100, 400, 4),
     'y': Coordinate(numpy.float32, 0, 9.5, 20),
     'x': Coordinate(numpy.float32, 9, 0, 10)
 }, {
     'B10': Variable(numpy.float32, numpy.nan, ('t', 'y', 'x'))
 })
-ds2 = DummyStorageUnit({
+ds2 = FauxStorageUnit({
     't': Coordinate(numpy.int, 500, 600, 3),
     'y': Coordinate(numpy.float32, 0, 9.5, 20),
     'x': Coordinate(numpy.float32, 9, 0, 10)
@@ -39,8 +39,34 @@ ds2 = DummyStorageUnit({
 })
 
 
-def test_dummy_storage_unit():
-    pass
+def test_common_storage_unit():
+    data = ds1.get('B10')
+    assert (data.values.shape == (4, 20, 10))
+    assert (data.dims == ('t', 'y', 'x'))
+    assert ((data.values.ravel() == numpy.arange(data.values.size)).all())
+
+    expected = numpy.array([
+        [
+            [223, 224, 225, 226],
+            [233, 234, 235, 236],
+            [243, 244, 245, 246]
+        ],
+        [
+            [423, 424, 425, 426],
+            [433, 434, 435, 436],
+            [443, 444, 445, 446]
+        ]
+    ])
+
+    data = ds1.get('B10', t=slice(1, 3), y=slice(2, 5), x=slice(3, 7))
+    assert (data.values.shape == (2, 3, 4))
+    assert ((data.values == expected).all())
+
+    dest = numpy.zeros((3, 4, 5))
+    data = ds1.get('B10', dest=dest, t=slice(1, 3), y=slice(2, 5), x=slice(3, 7))
+    assert (data.values.shape == (2, 3, 4))
+    assert ((data.values == expected).all())
+    assert ((dest[:2, :3, :4] == expected).all())
 
 
 def test_storage_unit_dimension_proxy():
@@ -48,35 +74,40 @@ def test_storage_unit_dimension_proxy():
     data = su._get_coord('greg')
     assert(data == numpy.array([12.0]))
 
-    data = su.get('B10')
-    assert(data.values.shape == (1, 4, 20, 10))
-    assert(data.dims == ('greg', 't', 'y', 'x'))
-    assert(numpy.all(data.values == 1))
-
-    # print(data)
-    # print (su.coordinates)
-    # print (su.variables)
+    data1 = su.get('B10')
+    data2 = ds1.get('B10')
+    assert (data1.values.shape == (1,) + data2.values.shape)
+    assert (data1.dims == ('greg',) + data2.dims)
+    assert ((data1.values.ravel() == data2.values.ravel()).all())
 
     data = su.get('B10', greg=Range(13, 14))
-    assert(data.values.size == 0)
+    assert (data.values.size == 0)
 
 
 def test_storage_unit_stack():
     stack = StorageUnitStack([ds1, ds2], 't')
+    expected = numpy.array([
+        [
+            [624, 625, 626],
+            [634, 635, 636]
+        ],
+        [
+            [24, 25, 26],
+            [34, 35, 36]
+        ]
+    ])
 
-    data = stack.get('B10', t=Range(200, 400), x=Range(1, 5), y=Range(1, 5))
-    assert(len(data.coords['t']) == 3)
-    assert(len(data.coords['x']) == 5)
-    assert(len(data.coords['y']) == 9)
-    assert(numpy.any(data.values != -999))
+    data = stack.get('B10', t=Range(400, 500), x=Range(3, 5), y=Range(1, 1.5))
+    assert (len(data.coords['t']) == 2)
+    assert (len(data.coords['x']) == 3)
+    assert (len(data.coords['y']) == 2)
+    assert ((data.values == expected).all())
 
-    data = stack.get('B10', t=slice(0, 2), x=slice(3), y=slice(1, 6))
-    assert(len(data.coords['t']) == 2)
-    assert(len(data.coords['x']) == 3)
-    assert(len(data.coords['y']) == 5)
-    assert(numpy.any(data.values != -999))
-    # print(stack.coordinates)
-    # print(stack.variables)
+    data = stack.get('B10', t=slice(3, 5), x=slice(4, 7), y=slice(2, 4))
+    assert (len(data.coords['t']) == 2)
+    assert (len(data.coords['x']) == 3)
+    assert (len(data.coords['y']) == 2)
+    assert ((data.values == expected).all())
 
 
 def test_geotif_storage_unit():
@@ -92,20 +123,17 @@ def test_geotif_storage_unit():
     ]
 
     su = GeoTifStorageUnit(files[0])
-    assert(set(su.coordinates.keys()) == ({'x', 'y'}))
+    assert (set(su.coordinates.keys()) == ({'x', 'y'}))
 
     data = su.get('2', x=Range(142.5, 142.7), y=Range(-32.5, -32.2))
-    assert(len(data.coords['x']) == 801)
-    assert(len(data.coords['y']) == 1201)
-    assert(numpy.any(data.values != -999))
+    assert (len(data.coords['x']) == 801)
+    assert (len(data.coords['y']) == 1201)
+    assert (numpy.any(data.values != -999))
 
     data = su.get('2', x=slice(500), y=slice(3400, None))
-    assert(len(data.coords['x']) == 500)
-    assert(len(data.coords['y']) == 600)
-    assert(numpy.any(data.values != -999))
-    # print(su.coordinates)
-    # print (su.variables)
-    # print(data)
+    assert (len(data.coords['x']) == 500)
+    assert (len(data.coords['y']) == 600)
+    assert (numpy.any(data.values != -999))
 
 
 def test_netcdf_storage_unit():
@@ -119,17 +147,9 @@ def test_netcdf_storage_unit():
     ]
 
     su = NetCDF4StorageUnit(files[2])
-    assert(set(su.coordinates.keys()) == ({'longitude', 'latitude', 'time'}))
+    assert (set(su.coordinates.keys()) == ({'longitude', 'latitude', 'time'}))
 
     data = su.get('band2', longitude=Range(153.5, 153.7), latitude=Range(-25.5, -25.2))
-    assert(len(data.coords['longitude']) == 801)
-    assert(len(data.coords['latitude']) == 1201)
-    assert(numpy.any(data.values != -999))
-
-    # mds = StorageUnitSet([NetCDF4StorageUnit(filename) for filename in files])
-    # data = mds.get('band2')
-    # assert(np.any(data.values != -999))
-
-    # print(mds.get('band2'))
-    # print(mds.coordinates)
-    # print(mds.variables)
+    assert (len(data.coords['longitude']) == 801)
+    assert (len(data.coords['latitude']) == 1201)
+    assert (numpy.any(data.values != -999))

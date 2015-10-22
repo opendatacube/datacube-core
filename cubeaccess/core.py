@@ -20,7 +20,6 @@ from builtins import *
 from functools import reduce
 import numpy
 
-from .utils import merge_unique
 from .indexing import make_index, index_shape
 
 try:
@@ -73,11 +72,10 @@ class StorageUnitBase(object):
         index = tuple(make_index(coord, kwargs.get(dim)) for coord, dim in zip(coords, var.coordinates))
         shape = index_shape(index)
 
-        if not dest:
+        if dest is None:
             dest = numpy.empty(shape, dtype=var.dtype)
-            # dest.fill(var.ndv)
-        assert(all(a <= b for a, b in zip(shape, dest.shape)))
-        # TODO: subindex dest
+        else:
+            dest = dest[tuple(slice(c) for c in shape)]
         self._fill_data(name, index, dest)
 
         return DataArray(dest, coords=[coord[idx] for coord, idx in zip(coords, index)], dims=var.coordinates)
@@ -115,10 +113,9 @@ class StorageUnitStack(StorageUnitBase):
                 raise RuntimeError("source storage units must be sorted")
             if a.coordinates[stack_dim].end > b.coordinates[stack_dim].begin:
                 raise RuntimeError("overlapping coordinates are not supported yet")
-
         StorageUnitStack.check_consistent(storage_units, stack_dim)
 
-        stack_coord_data = merge_unique([su._get_coord(stack_dim) for su in storage_units])
+        stack_coord_data = numpy.concatenate([su._get_coord(stack_dim) for su in storage_units])
 
         self._stack_dim = stack_dim
         self._storage_units = storage_units
@@ -140,15 +137,10 @@ class StorageUnitStack(StorageUnitBase):
         for su in self._storage_units:
             length = su.coordinates[self._stack_dim].length
             if idx < index[0].stop and idx+length > index[0].start:
-                # TODO: slice dest
-                # TODO: make new index
-                data_slice = slice(
-                    max(0, index[0].start-idx),
-                    min(length, index[0].stop-idx),
-                    index[0].step)
-                subindex = (data_slice,) + index[1:]
-                dest_slice = slice(idx+data_slice.start-index[0].start, idx+data_slice.stop-index[0].start)
-                su._fill_data(name, subindex, dest[dest_slice])
+                slice_ = slice(max(0, index[0].start-idx), min(length, index[0].stop-idx), index[0].step)
+                su_index = (slice_,) + index[1:]
+                dest_index = slice(idx+slice_.start-index[0].start, idx+slice_.stop-index[0].start)
+                su._fill_data(name, su_index, dest[dest_index])
             idx += length
             if idx >= index[0].stop:
                 break
