@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-from setuputils import setup
+from setuptools import setup
 
 version = '0.0.0'
 
-setup(name='agdc',
+setup(name='agdc-v2',
       version=version,
       packages=[
           'gdf',
@@ -27,7 +27,7 @@ setup(name='agdc',
           'netcdf4',
           'scipy',
           'pytz',
-          ],
+      ],
       install_requires=[
           'click',
           'eodatasets',
