@@ -17,9 +17,18 @@ from __future__ import absolute_import, division, print_function
 from builtins import *
 
 import numpy
+import datetime
+
+
+import builtins
+if 'profile' not in builtins.__dict__:
+    profile = lambda x: x
+    builtins.__dict__['profile'] = lambda x: x
+
 
 from cubeaccess.core import StorageUnitDimensionProxy, StorageUnitStack
 from cubeaccess.storage import GeoTifStorageUnit
+from cubeaccess.indexing import Range
 
 
 def _time_from_filename(f):
@@ -30,41 +39,67 @@ def _time_from_filename(f):
     return numpy.datetime64(dt, 's')
 
 
-def _get_dataset_files():
-    import glob
-    files = glob.glob("/g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/LS5_TM/142_-033/2004/LS5_TM_NBAR_142_-033_*.tif")
-    return files
-
-
 @profile
-def _get_dataset():
-    files = _get_dataset_files()
+def _get_dataset(lat, lon, dataset='NBAR', sat='LS5_TM'):
+    import glob
+    lat_lon_str = '{:03d}_-{:03d}'.format(lat, abs(lon))
+    pattern = '/g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/{sat}/{ll}/*/{sat}_{ds}_{ll}_*.tif'.format(sat=sat,
+                                                                                                       ll=lat_lon_str,
+                                                                                                       ds=dataset)
+    files = glob.glob(pattern)
     input = [(GeoTifStorageUnit(f), _time_from_filename(f)) for f in files]
     input.sort(key=lambda p: p[1])
     stack = StorageUnitStack([StorageUnitDimensionProxy(su, ('t', t)) for su, t in input], 't')
     return stack
 
 
+def argpercentile(a, q, axis=0):
+    # TODO: pass ndv
+    # TODO: pass q's as an array
+    nans = numpy.isnan(a).sum(axis=axis)
+    index = ((q/100.0)*((a.shape[axis]-1)-nans) + 0.5).astype(int)
+    indices = numpy.indices(index.shape)
+    index = tuple(indices[:axis]) + (index,) + tuple(indices[axis:])
+    return numpy.argsort(a, axis=axis)[index]
+
+
+def argpercentile1(a, q, axis=0):
+    idx = int(q*(a.shape[axis]-1)/100.0 + 0.5)
+    return numpy.argpartition(a, idx, axis=axis).take(idx, axis=axis)
+
+
 @profile
-def main():
-    stack = _get_dataset()
-    # TODO: group by
-    # TODO: chunk by index
-    n = 500
+def do_work(stack, **kwargs):
+    print(datetime.datetime.now(), kwargs)
 
-    nir = stack.get('4', y=slice(n))
-    red = stack.get('3', y=slice(n))
+    nir = stack.get('4', **kwargs)
+    red = stack.get('3', **kwargs)
 
-    # TODO: mask
     nir = nir.values.astype(numpy.float32)
     nir[nir == -999] = numpy.nan
     red = red.values.astype(numpy.float32)
     red[red == -999] = numpy.nan
-    # nir = numpy.ma.masked_equal(nir.values, -999)
-    # red = numpy.ma.masked_equal(red.values, -999)
-    ndvi = (nir-red)/(nir+red)
 
-    # print(ndvi)
+    ndvi = (nir-red)/(nir+red)
+    del nir
+    index = argpercentile(ndvi, 10, axis=0)
+    index = (index,) + tuple(numpy.indices(index.shape))
+
+    red = red[index]
+    green = stack.get('2', **kwargs).values[index].astype(numpy.float32)
+    green[green == -999] = numpy.nan
+    blue = stack.get('1', **kwargs).values[index].astype(numpy.float32)
+    blue[blue == -999] = numpy.nan
+
+    return red, green, blue
+
+
+def main():
+    N = 400
+    stack = _get_dataset(142, -033)
+    for dt in numpy.arange('1988', '1989', dtype='datetime64[Y]'):
+        for yoff in range(0, 4000, N):
+            do_work(stack, y=slice(yoff, yoff+N), t=Range(dt, dt+numpy.timedelta64(1, 'Y')))
 
 
 if __name__ == "__main__":

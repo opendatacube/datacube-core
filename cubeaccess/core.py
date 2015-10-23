@@ -27,7 +27,6 @@ try:
 except ImportError:
     from .ghetto import DataArray
 
-Range = namedtuple('Range', ('begin', 'end'))
 Coordinate = namedtuple('Coordinate', ('dtype', 'begin', 'end', 'length'))
 Variable = namedtuple('Variable', ('dtype', 'ndv', 'coordinates'))
 
@@ -42,21 +41,6 @@ def comp_dict(d1, d2, p):
 
 def is_consistent_coord_set(coords1, coords2):
     return comp_dict(coords1, coords2, is_consistent_coords)
-
-
-def check_storage_unit_set_consistent(storage_units):
-    first_coord = storage_units[0].coordinates
-    all_vars = dict()
-
-    for su in storage_units:
-        if not is_consistent_coord_set(first_coord, su.coordinates):
-            raise RuntimeError("inconsistent dimensions")
-
-        for var in all_vars:
-            if var in su.variables and all_vars[var] != su.variables[var]:
-                raise RuntimeError("inconsistent variables")
-
-        all_vars.update(su.variables)
 
 
 class StorageUnitBase(object):
