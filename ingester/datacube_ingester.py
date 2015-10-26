@@ -83,7 +83,7 @@ def setup_logging(verbosity):
     :return:
     """
     logging_level = logging.WARN - 10 * verbosity
-    logging.basicConfig(level=logging_level)
+    logging.basicConfig(level=logging_level, format='%(asctime)s %(levelname)s %(message)s')
 
 
 @preserve_cwd
@@ -113,7 +113,7 @@ def ingest(input_path, output_dir, filename_format, netcdf_class=MultiVariableNe
     # Import tiles into NetCDF files
     if merge:
         netcdf_paths = merge_tiles_to_netcdf(eodataset, filename_format, netcdf_class)
-        _LOG.info("Created/alterated storage units: {}".format(netcdf_paths))
+        _LOG.info("Created/altered storage units: {}".format(netcdf_paths))
 
     return netcdf_paths
 
