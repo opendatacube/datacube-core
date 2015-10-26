@@ -58,9 +58,7 @@ def argpercentile(a, q, axis=0):
     # TODO: keepdim?
     q = numpy.array(q, dtype=numpy.float64, copy=True)/100.0
     nans = numpy.isnan(a).sum(axis=axis)
-    index = (numpy.outer(q, (a.shape[axis]-1)-nans) + 0.5).astype(int)
-    if q.ndim == 0:
-        index = index[0]
+    index = (q[...,numpy.newaxis]*(a.shape[axis]-1-nans) + 0.5).astype(int)
     indices = numpy.indices(a.shape[:axis] + a.shape[axis+1:])
     index = tuple(indices[:axis]) + (index,) + tuple(indices[axis:])
     return numpy.argsort(a, axis=axis)[index]
