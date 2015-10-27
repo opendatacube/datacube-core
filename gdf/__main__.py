@@ -68,6 +68,7 @@ def main():
     t0 = datetime.now()
     print 'Starting 256 x 256 single-band cross-boundary selection at ', t0
     a = g.get_data(data_request_descriptor)
+    t1 = datetime.now()
     print 'Finishing 256 x 256 cross-boundary selection at %s (Elapsed time %s)' % (t1, t1 - t0)
     pprint(a)
 

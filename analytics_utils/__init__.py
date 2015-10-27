@@ -118,21 +118,21 @@ def plot_3d(array_result):
 
 def writeTXY_to_GeoTiff(array_result, filename):
     """
-    Export TXY/TYX to GeoTiff
+        Export TXY/TYX to GeoTiff
 
-    Parameters:
-        array_result: computed array as a result of execution
-        filename: name of output GeoTiff file
-    """
+        Parameters:
+                array_result: computed array as a result of execution
+                filename: name of output GeoTiff file
+        """
 
-    no_data_value = array_result['plan']['array_output'].values()[0]['no_data_value']
+    no_data_value = array_result['array_output']['no_data_value']
 
-    # dims = array_result['array_result'].shape
-    # dim_order = array_result['plan']['array_output'].values()[0]['dimensions_order']
+    dims = array_result['array_output']['shape']
+    dim_order = array_result['array_output']['dimensions_order']
 
-    num_t = array_result['array_result'].shape[0]
-    rows = array_result['array_result'].shape[1]
-    cols = array_result['array_result'].shape[2]
+    num_t = dims[0]
+    rows = int(dims[1])
+    cols = int(dims[2])
 
     driver = gdal.GetDriverByName('GTiff')
     dataset = driver.Create(filename, rows, cols, num_t, gdal.GDT_Int16)
@@ -145,33 +145,33 @@ def writeTXY_to_GeoTiff(array_result, filename):
     dataset.SetProjection(proj.ExportToWkt())
 
     # set geo transform
-    xmin = array_result['plan']['array_output'].values()[0]['dimensions']['X']['range'][0]
-    ymax = array_result['plan']['array_output'].values()[0]['dimensions']['Y']['range'][1]
+    xmin = array_result['array_output']['dimensions']['X']['range'][0]
+    ymax = array_result['array_output']['dimensions']['Y']['range'][1]
     pixel_size = 0.00025
     geotransform = (xmin, pixel_size, 0, ymax, 0, -pixel_size)
     dataset.SetGeoTransform(geotransform)
 
     for i in range(num_t):
         band = dataset.GetRasterBand(i + 1)
-        band.WriteArray(array_result['array_result'][i])
+        band.WriteArray(array_result['array_result'].values()[0][i])
         band.SetNoDataValue(no_data_value)
         band.FlushCache()
 
 
 def writeNDVI2NetCDF(array_result, filename):
     """
-    Export TXY/TYX to NetCDF
+        Export TXY/TYX to NetCDF
 
-    Parameters:
-        array_result: computed array as a result of execution
-        filename: name of output NetCDF file
-    """
+        Parameters:
+                array_result: computed array as a result of execution
+                filename: name of output NetCDF file
+        """
 
-    no_data_value = array_result['plan']['array_output'].values()[0]['no_data_value']
-
-    num_t = array_result['array_result'].shape[0]
-    rows = array_result['array_result'].shape[1]
-    cols = array_result['array_result'].shape[2]
+    no_data_value = array_result['array_output']['no_data_value']
+    dims = array_result['array_output']['shape']
+    num_t = dims[0]
+    rows = int(dims[1])
+    cols = int(dims[2])
 
     pixel_size = 0.00025
     grid_size = rows * pixel_size
@@ -229,20 +229,20 @@ def writeNDVI2NetCDF(array_result, filename):
     f.close()
 
 
-def write_to_csv(array_result, filename):
+def writeToCSV(array_result, filename):
     """
-    Export 1D/2D array to CSV file
+        Export 1D/2D array to CSV file
 
-    Parameters:
-        array_result: computed array as a result of execution
-        filename: name of output CSV file
-    """
+        Parameters:
+                array_result: computed array as a result of execution
+                filename: name of output CSV file
+        """
 
     with open(filename, 'w') as fp:
         writer = csv.writer(fp, delimiter=',')
-        for i in range(array_result['array_result'].shape[0]):
-            data = array_result['array_result'][i].tolist()
-            if len(array_result['array_result'].shape) == 1:
+        for i in range(int(array_result['array_output']['shape'][0])):
+            data = array_result['array_result'].values()[0][i].tolist()
+            if len(array_result['array_result'].values()[0].shape) == 1:
                 writer.writerow([data])
             else:
                 writer.writerow(data)
@@ -252,11 +252,11 @@ def get_pqa_mask(pqa_ndarray, good_pixel_masks=None, dilation=3):
     """
     create pqa_mask from a ndarray
 
-    Parameters:
-        pqa_ndarray: input pqa array
-        good_pixel_masks: known good pixel values
-        dilation: amount of dilation to apply
-    """
+        Parameters:
+                pqa_ndarray: input pqa array
+                good_pixel_masks: known good pixel values
+                dilation: amount of dilation to apply
+        """
     if not good_pixel_masks:
         good_pixel_masks = [32767, 16383, 2457]
 

@@ -52,7 +52,6 @@ from gdf import directory_writable
 from gdf._gdfutils import make_dir, log_multiline
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)  # Logging level for this module
 
 
 class AGDC2GDF(GDF):
@@ -776,6 +775,7 @@ where not exists (
 
 
 def main():
+    logger.setLevel(logging.INFO)
     agdc2gdf = AGDC2GDF()
     #    storage_config = agdc2gdf.storage_config[agdc2gdf.storage_type]
 
