@@ -34,6 +34,7 @@ Created on 12/03/2015
 
 Tests for the gdf._database.py module.
 """
+from __future__ import absolute_import
 
 import unittest
 from gdf._database import Database

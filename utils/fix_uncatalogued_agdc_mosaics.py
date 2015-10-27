@@ -34,6 +34,7 @@ Created on Jun 23, 2015
 
 @author: Alex Ip
 """
+from __future__ import absolute_import
 import os
 import sys
 import logging

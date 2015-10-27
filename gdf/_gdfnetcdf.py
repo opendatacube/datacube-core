@@ -34,6 +34,7 @@ Created on Jun 9, 2015
 
 @author: Alex Ip (based on code by Matt Paget & Edward King)
 """
+from __future__ import absolute_import
 import logging
 from datetime import datetime
 
@@ -41,7 +42,7 @@ import netCDF4
 import numpy as np
 from osgeo import gdal, osr
 
-from _gdfutils import log_multiline
+from ._gdfutils import log_multiline
 
 # Only needed for testing
 
@@ -49,7 +50,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)  # Logging level for this module
 
 try:
-    import netcdf_builder
+    from . import netcdf_builder
 except ImportError:
     logger.error(
         'Requires netcdf_builder.py '

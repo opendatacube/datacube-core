@@ -32,13 +32,14 @@ Created on 12/03/2015
 
 @author: Alex Ip
 """
+from __future__ import absolute_import
 
 import sys
 import os
 import logging
 import argparse
 
-from _gdfutils import log_multiline
+from ._gdfutils import log_multiline
 
 logger = logging.getLogger(__name__)
 

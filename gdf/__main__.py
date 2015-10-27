@@ -32,6 +32,8 @@ Created on 12/03/2015
 
 @author: Alex Ip
 """
+from __future__ import absolute_import
+from __future__ import print_function
 
 from datetime import datetime
 from pprint import pprint
@@ -59,17 +61,17 @@ def main():
                                               }
                                }
     t0 = datetime.now()
-    print 'Starting 256 x 256 single-band cross-boundary descriptor at ', t0
+    print('Starting 256 x 256 single-band cross-boundary descriptor at ', t0)
     d = g.get_descriptor(data_request_descriptor)
     t1 = datetime.now()
-    print 'Finishing 256 x 256 cross-boundary descriptor at %s (Elapsed time %s)' % (t1, t1 - t0)
+    print('Finishing 256 x 256 cross-boundary descriptor at %s (Elapsed time %s)' % (t1, t1 - t0))
     pprint(d)
 
     t0 = datetime.now()
-    print 'Starting 256 x 256 single-band cross-boundary selection at ', t0
+    print('Starting 256 x 256 single-band cross-boundary selection at ', t0)
     a = g.get_data(data_request_descriptor)
     t1 = datetime.now()
-    print 'Finishing 256 x 256 cross-boundary selection at %s (Elapsed time %s)' % (t1, t1 - t0)
+    print('Finishing 256 x 256 cross-boundary selection at %s (Elapsed time %s)' % (t1, t1 - t0))
     pprint(a)
 
 

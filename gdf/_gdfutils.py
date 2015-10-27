@@ -32,6 +32,7 @@ Created on Jun 11, 2015
 
 @author: Alex Ip
 """
+from __future__ import absolute_import
 import os
 import calendar
 import math

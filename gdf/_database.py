@@ -32,12 +32,13 @@ Created on 12/03/2015
 
 @author: Alex Ip
 """
+from __future__ import absolute_import
 
 import logging
 
 import psycopg2
 
-from _gdfutils import log_multiline
+from ._gdfutils import log_multiline
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)  # Logging level for this module

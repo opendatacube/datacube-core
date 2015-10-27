@@ -32,6 +32,7 @@ Created on 12/03/2015
 
 @author: Alex Ip
 """
+from __future__ import absolute_import
 import os
 import sys
 import threading
@@ -46,11 +47,11 @@ from distutils.util import strtobool
 
 import numpy as np
 
-from _database import Database
-from _arguments import CommandLineArgs
-from _config_file import ConfigFile
-from _gdfnetcdf import GDFNetCDF
-from _gdfutils import dt2secs, secs2dt, dt2days, directory_writable, log_multiline
+from ._database import Database
+from ._arguments import CommandLineArgs
+from ._config_file import ConfigFile
+from ._gdfnetcdf import GDFNetCDF
+from ._gdfutils import dt2secs, secs2dt, dt2days, directory_writable, log_multiline
 
 # Set handler for root logger to standard output
 console_handler = logging.StreamHandler(sys.stdout)

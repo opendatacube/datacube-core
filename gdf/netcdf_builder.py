@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 # -------------------------------------------------------------------------------
 # Name:         netcdf_builder
 # Purpose:      Selection of functions to open, create and manage netCDF
@@ -144,7 +146,7 @@ def _setattr(obj, name, val):
     try:
         setattr(obj, name, val)
     except AttributeError as e:
-        print "WARNING: A bug in your netCDF C library version (" + vers + ") may mean that updating an attribute with a value that has a larger size than the current value may cause a library crash. See https://code.google.com/p/netcdf4-python/issues/detail?id=110 for details. We'll attempt to apply the work-around. Best option, however, is to upgrade your netCDF C library."
+        print("WARNING: A bug in your netCDF C library version (" + vers + ") may mean that updating an attribute with a value that has a larger size than the current value may cause a library crash. See https://code.google.com/p/netcdf4-python/issues/detail?id=110 for details. We'll attempt to apply the work-around. Best option, however, is to upgrade your netCDF C library.")
         # Ok, we'll fix it, need a temporary variable name
         import uuid
         tmp = str(uuid.uuid4()).split('-')[0]
@@ -154,10 +156,10 @@ def _setattr(obj, name, val):
             tmp = str(uuid.uuid4()).split('-')[0]
             cnt += 1
             if cnt > 10:
-                print 'Failed to create a unique temporary attribute name'
+                print('Failed to create a unique temporary attribute name')
                 raise e
         # Apply the fix
-        print 'Applying set attribute work-around'
+        print('Applying set attribute work-around')
         setattr(obj, tmp, tmp)
         setattr(obj, name, val)
         delattr(obj, tmp)
@@ -168,7 +170,7 @@ def _normalise(d, verbose=None):
     """
     for k, v in d.iteritems():
         if verbose:
-            print 'Attribute type and value (' + k + '):', type(v), v
+            print('Attribute type and value (' + k + '):', type(v), v)
         if not isinstance(v, str) and not isinstance(v, unicode):
             # Its probably a numpy dtype thanks to the netCDF* module.
             # Need to convert it to a standard python type for JSON.
@@ -183,9 +185,9 @@ def _normalise(d, verbose=None):
                 else:
                     v = str(v)
                 if verbose:
-                    print '  Converted to type:', type(v)
+                    print('  Converted to type:', type(v))
             except TypeError:
-                print 'Conversion error (' + k + '):', type(v), v
+                print('Conversion error (' + k + '):', type(v), v)
                 pass
             d[k] = v
     return d
@@ -263,7 +265,7 @@ def set_attributes(ncobj, ncdict, delval='DELETE'):
                 # Its ok to have _FillValue in the dict as long as it has
                 # the same value as the variable's attribute
                 if getattr(ncobj.variables[p[0]], p[2]) != ncdict[k]:
-                    print "Warning: As of netcdf4-python version 0.9.2, _FillValue can only be set when the variable is created (see http://netcdf4-python.googlecode.com/svn/trunk/Changelog). The only way to change the _FillValue would be to copy the array and create a new variable."
+                    print("Warning: As of netcdf4-python version 0.9.2, _FillValue can only be set when the variable is created (see http://netcdf4-python.googlecode.com/svn/trunk/Changelog). The only way to change the _FillValue would be to copy the array and create a new variable.")
                     raise AttributeError("Can not change " + k)
             else:
                 _setattr(ncobj.variables[p[0]], p[2], ncdict[k])
@@ -335,9 +337,9 @@ def show_dimensions(ncobj):
     """
     Print the dimension names, lengths and whether they are unlimited.
     """
-    print '{0:10} {1:7} {2}'.format("DimName", "Length", "IsUnlimited")
+    print('{0:10} {1:7} {2}'.format("DimName", "Length", "IsUnlimited"))
     for dim, obj in ncobj.dimensions.iteritems():
-        print '{0:10} {1:<7d} {2!s}'.format(dim, len(obj), obj.isunlimited())
+        print('{0:10} {1:<7d} {2!s}'.format(dim, len(obj), obj.isunlimited()))
 
 
 def set_variable(ncobj, varname, dtype='f4', dims=None, chunksize=None, fill=None, zlib=False, **kwargs):

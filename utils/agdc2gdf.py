@@ -31,6 +31,7 @@ Created on Jun 5, 2015
 
 @author: Alex Ip
 """
+from __future__ import absolute_import
 
 import os
 from datetime import datetime, timedelta

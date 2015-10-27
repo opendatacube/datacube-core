@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 #!/usr/bin/env python
 
 import copy
@@ -30,7 +32,7 @@ class ExecutionEngine(object):
 
         for task in plan:
             function = task.values()[0]['orig_function']
-            print 'function =', function
+            print('function =', function)
             if function == 'get_data':  # get data
                 self.executeGetData(task)
             elif function == 'apply_cloud_mask':  # apply cloud mask
@@ -70,10 +72,10 @@ class ExecutionEngine(object):
         data_key = task.values()[0]['array_input'][0]
         mask_key = task.values()[0]['array_mask']
         no_data_value = task.values()[0]['array_output']['no_data_value']
-        print 'key =', key
-        print 'data key =', data_key
-        print 'data mask_key =', mask_key
-        print 'no_data_value =', no_data_value
+        print('key =', key)
+        print('data key =', data_key)
+        print('data mask_key =', mask_key)
+        print('no_data_value =', no_data_value)
 
         array_desc = self.cache[task.values()[0]['array_input'][0]]
 
@@ -127,8 +129,8 @@ class ExecutionEngine(object):
 
         key = task.keys()[0]
         data_key = task.values()[0]['array_input'][0]
-        print 'key =', key
-        print 'data key =', data_key
+        print('key =', key)
+        print('data key =', data_key)
 
         data = self.cache[data_key]['array_dimensions']
 
@@ -157,11 +159,11 @@ class ExecutionEngine(object):
                     del array_result['array_indices'][index]
         elif len(task.values()[0]['dimension']) == 2:  # 3D -> 1D reduction
             size = task.values()[0]['array_output']['shape'][0]
-            print 'size =', size
+            print('size =', size)
             out = np.empty([size])
             dim = self.cache[data_key]['array_dimensions'].index(
                 task.values()[0]['array_output']['dimensions_order'][0])
-            print 'dim =', dim
+            print('dim =', dim)
 
             # to fix bug in gdf
             # size = self.cache[data_key]['array_result'].values()[0].shape[dim]

@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 #!/usr/bin/env python
 
 # Adapted get_pqa_mask function from stacker.py by Josh Sixsmith & Alex IP of Geoscience Australia
@@ -47,7 +49,7 @@ def plot_1d(array_result):
     Parameters:
         array_result: computed array as a result of execution
     """
-    print 'plot1D'
+    print('plot1D')
     img = array_result['array_result'].values()[0]
 
     # no_data_value = array_result['array_output']['no_data_value']
@@ -68,7 +70,7 @@ def plot_2d(array_result):
     Parameters:
         array_result: computed array as a result of execution
     """
-    print 'plot2D'
+    print('plot2D')
 
     img = array_result['array_result'].values()[0]
     fig = plt.figure(1)
@@ -91,7 +93,7 @@ def plot_3d(array_result):
     Parameters:
         array_result: computed array as a result of execution
     """
-    print 'plot3D'
+    print('plot3D')
 
     img = array_result['array_result'].values()[0]
     num_t = img.shape[0]
