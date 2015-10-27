@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-#===============================================================================
+# ===============================================================================
 # Copyright (c)  2014 Geoscience Australia
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #     * Redistributions of source code must retain the above copyright
@@ -14,7 +14,7 @@
 #     * Neither Geoscience Australia nor the names of its contributors may be
 #       used to endorse or promote products derived from this software
 #       without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 # ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -25,35 +25,36 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#===============================================================================
+# ===============================================================================
 
-'''
+"""
 Fixer for uncatalogued mosaics in AGDC database
 
 Created on Jun 23, 2015
 
 @author: Alex Ip
-'''
+"""
 import os
 import sys
 import logging
 from osgeo import gdal
 
-from gdf import Database, make_dir
+from gdf import Database
+from gdf. _gdfutils import make_dir
 
-# Set handler for root logger to standard output 
+# Set handler for root logger to standard output
 console_handler = logging.StreamHandler(sys.stdout)
-#console_handler.setLevel(logging.INFO)
+# console_handler.setLevel(logging.INFO)
 console_handler.setLevel(logging.DEBUG)
 console_formatter = logging.Formatter('%(message)s')
 console_handler.setFormatter(console_formatter)
 logging.root.addHandler(console_handler)
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG) # Initial logging level for this module
+logger.setLevel(logging.DEBUG)  # Initial logging level for this module
 
-# DB_HOST = '130.56.244.224' 
-DB_HOST = '130.56.244.228' 
+# DB_HOST = '130.56.244.224'
+DB_HOST = '130.56.244.228'
 DB_PORT = 6432
 # DB_NAME = 'hypercube_v0'
 DB_NAME = 'agdc_snapshot_20150622'
@@ -67,14 +68,14 @@ def create_mosaic_file(record):
     assert os.path.exists(tile_pathname1), 'First source tile %s does not exist' % tile_pathname1
     tile_pathname2 = record['tile_pathname2']
     assert os.path.exists(tile_pathname2), 'Second source tile %s does not exist' % tile_pathname2
-    
+
     make_dir(os.path.dirname(mosaic_tile_path))
-    
+
     raise Exception('create_mosaic_file not implemented yet')
 
     logger.info('Creating Dataset %s', mosaic_tile_path)
-    
-    #TODO: Finish this
+
+    # TODO: Finish this
     if record['level_name'] == 'PQA':
         # Make bitwise-and composite
         pass
@@ -82,8 +83,9 @@ def create_mosaic_file(record):
         # Make VRT
         pass
 
+
 def write_mosaic_records(database, record):
-    SQL='''-- Insert record for existing mosaic tile
+    sql = '''-- Insert record for existing mosaic tile
 insert into tile (
   x_index,
   y_index,
@@ -106,22 +108,22 @@ values (
 update tile
 set tile_class_id = 3
 where tile_class_id = 1
-and 
+and
 tile_id = in (%(tile_id1)s, %(tile_id1)s);
-'''                
-    database.submit_query(SQL, record)
+'''
+    database.submit_query(sql, record)
+
 
 def main():
-
     database = Database(db_ref='agdc', host=DB_HOST, port=DB_PORT, dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD)
-    
-    SQL='''-- Find all overlap tiles
+
+    sql = '''-- Find all overlap tiles
 SELECT * from ztmp.temp; # Here's one I prepared earlier...
 /*
-SELECT 
-    level_name, 
-    t1.tile_type_id, 
-    t1.x_index, 
+SELECT
+    level_name,
+    t1.tile_type_id,
+    t1.x_index,
     t1.y_index,
     a1.start_datetime,
     a2.end_datetime,
@@ -132,14 +134,14 @@ SELECT
     d2.dataset_id AS dataset_id2,
     t2.tile_id AS tile_id2,
     regexp_replace(regexp_replace(t1.tile_pathname, '(/(-)*\d{3}_(-)*\d{3}/\d{4}/)(.*)\.\w+$'::text, '\1mosaic_cache/\4.vrt'::text), '(.*_PQA_.*)\.vrt$'::text, '\1.tif'::text) AS tile_pathname,
-    a1.x_ref as path, 
-    a1.y_ref as row1, 
+    a1.x_ref as path,
+    a1.y_ref as row1,
     a2.y_ref as row2,
-    a1.end_datetime as first_end_datetime, 
+    a1.end_datetime as first_end_datetime,
     a2.start_datetime as second_start_datetime,
-    d1.dataset_path as dataset_path1, 
+    d1.dataset_path as dataset_path1,
     d2.dataset_path as dataset_path2,
-    t1.tile_pathname as tile_pathname1, 
+    t1.tile_pathname as tile_pathname1,
     t2.tile_pathname as tile_pathname2
    FROM acquisition a1
      JOIN dataset d1 ON d1.acquisition_id = a1.acquisition_id
@@ -155,14 +157,14 @@ and t2.tile_class_id in (1,3) --Non-overlapped & overlapped
 and mt.tile_id is null -- Uncatalogued
 order by t1.x_index, t1.y_index, level_name, a1.end_datetime;
 */
-'''    
-    
-    uncatalogued_mosaics = database.submit_query(SQL)
-    
+'''
+
+    uncatalogued_mosaics = database.submit_query(sql)
+
     for record in uncatalogued_mosaics:
         mosaic_file_ok = False
         mosaic_tile_path = record['tile_pathname']
-        
+
         try:
             if os.path.exists(mosaic_tile_path):
                 dataset = gdal.Open(mosaic_tile_path)
@@ -174,17 +176,17 @@ order by t1.x_index, t1.y_index, level_name, a1.end_datetime;
                     mosaic_file_ok = True
             else:
                 logger.warning('Dataset %s does not exist', mosaic_tile_path)
-            
+
             if not mosaic_file_ok:
                 create_mosaic_file(record)
             else:
                 logger.info('Dataset %s is OK', mosaic_tile_path)
-                
+
             write_mosaic_records(database, record)
-                
-        except Exception, e:
-            logger.warning('Exception raised while processing %s: %s', mosaic_tile_path, e.message)     
-              
-    
+
+        except Exception as e:
+            logger.warning('Exception raised while processing %s: %s', mosaic_tile_path, e.message)
+
+
 if __name__ == '__main__':
     main()

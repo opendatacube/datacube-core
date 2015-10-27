@@ -1,4 +1,4 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Name:         netcdf_builder
 # Purpose:      Selection of functions to open, create and manage netCDF
 #		objects and files. These routines have been developed and
@@ -63,7 +63,7 @@
 # 		the message should prove helpful.
 # 13 May 2015	Implemented the work-around, in addition to printing the warning
 # 		message.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 # All functions, except ncopen(), operate on the netCDF object that is
 # returned from ncopen().  The functions contain "standard" operations for
@@ -90,16 +90,13 @@
 #  OrderedDict
 #  https://code.google.com/p/netcdf4-python/
 
+import os
+import re
+
 import netCDF4
 import numpy as np
-import os, re
-try: from collections import OrderedDict
-except ImportError:
-    try: from ordereddict import OrderedDict
-    except ImportError:
-        print "Require OrderedDict, https://pypi.python.org/pypi/ordereddict"
-        raise
 
+from collections import OrderedDict
 
 
 def ncopen(fname, permission='a', format='NETCDF4_CLASSIC'):
@@ -108,10 +105,10 @@ def ncopen(fname, permission='a', format='NETCDF4_CLASSIC'):
     Default permission is 'a' for appending.
     """
     if permission == 'w':
-        ncobj = netCDF4.Dataset(fname,mode=permission,format=format)
+        ncobj = netCDF4.Dataset(fname, mode=permission, format=format)
     else:
         # Format will be deduced by the netCDF modules
-        ncobj = netCDF4.Dataset(fname,mode=permission)
+        ncobj = netCDF4.Dataset(fname, mode=permission)
     return ncobj
 
 
@@ -130,7 +127,8 @@ def _ncversion(v=None):
     if v is None:
         return str(netCDF4.getlibversion()).split()[0]  # Full string version
     v = v.split('.')
-    if len(v) == 1: v.append('0')
+    if len(v) == 1:
+        v.append('0')
     return float('.'.join(v[0:2]))  # [major].[minor] number as a float
 
 
@@ -152,9 +150,9 @@ def _setattr(obj, name, val):
         tmp = str(uuid.uuid4()).split('-')[0]
         cnt = 0
         while (not re.match('[a-z]', tmp)) or \
-              (getattr(obj, tmp, None) is not None):
+                (getattr(obj, tmp, None) is not None):
             tmp = str(uuid.uuid4()).split('-')[0]
-            cnt = cnt + 1
+            cnt += 1
             if cnt > 10:
                 print 'Failed to create a unique temporary attribute name'
                 raise e
@@ -168,9 +166,10 @@ def _setattr(obj, name, val):
 def _normalise(d, verbose=None):
     """Normalise value types from numpy to regular types.
     """
-    for k,v in d.iteritems():
-        if verbose: print 'Attribute type and value ('+k+'):', type(v), v
-        if not isinstance(v,str) and not isinstance(v,unicode):
+    for k, v in d.iteritems():
+        if verbose:
+            print 'Attribute type and value (' + k + '):', type(v), v
+        if not isinstance(v, str) and not isinstance(v, unicode):
             # Its probably a numpy dtype thanks to the netCDF* module.
             # Need to convert it to a standard python type for JSON.
             # May need to implement more type checks here.
@@ -183,9 +182,10 @@ def _normalise(d, verbose=None):
                     v = v.tolist()  # works for numpy arrays and scalars
                 else:
                     v = str(v)
-                if verbose: print '  Converted to type:', type(v)
+                if verbose:
+                    print '  Converted to type:', type(v)
             except TypeError:
-                print 'Conversion error ('+k+'):', type(v), v
+                print 'Conversion error (' + k + '):', type(v), v
                 pass
             d[k] = v
     return d
@@ -217,13 +217,13 @@ def get_attributes(ncobj, verbose=None, normalise=True):
     d = OrderedDict()
 
     # Get the global attributes
-    d.update( ncobj.__dict__ )
+    d.update(ncobj.__dict__)
 
     # Iterate through each Dimension and Variable, pre-pending the dimension
     # or variable name to the name of each attribute
-    for name,var in ncobj.variables.iteritems():
-        for att,val in var.__dict__.iteritems():
-            d.update( {name+':'+att : val} )
+    for name, var in ncobj.variables.iteritems():
+        for att, val in var.__dict__.iteritems():
+            d.update({name + ':' + att: val})
     if normalise:
         d = _normalise(d, verbose)
     return d
@@ -249,27 +249,27 @@ def set_attributes(ncobj, ncdict, delval='DELETE'):
     # Add metadata attributes
     for k in ncdict.keys():
         p = k.partition(':')
-        if p[1]=="":
+        if p[1] == "":
             # Key is a global attribute
-            if ncdict[k]==delval:
+            if ncdict[k] == delval:
                 delattr(ncobj, p[0])
             else:
                 _setattr(ncobj, p[0], ncdict[k])
         elif p[0] in ncobj.variables:
             # Key is a variable attribute
-            if ncdict[k]==delval:
+            if ncdict[k] == delval:
                 delattr(ncobj.variables[p[0]], p[2])
             elif p[2] == "_FillValue":
                 # Its ok to have _FillValue in the dict as long as it has
                 # the same value as the variable's attribute
                 if getattr(ncobj.variables[p[0]], p[2]) != ncdict[k]:
                     print "Warning: As of netcdf4-python version 0.9.2, _FillValue can only be set when the variable is created (see http://netcdf4-python.googlecode.com/svn/trunk/Changelog). The only way to change the _FillValue would be to copy the array and create a new variable."
-                    raise AttributeError("Can not change "+k)
+                    raise AttributeError("Can not change " + k)
             else:
                 _setattr(ncobj.variables[p[0]], p[2], ncdict[k])
         else:
             raise ValueError("Variable name in dict does not match any variable names in the netcdf object:", p[0])
-    #print "Updated attributes in netcdf object"
+            # print "Updated attributes in netcdf object"
 
 
 def set_timelatlon(ncobj, ntime, nlat, nlon, timeunit=None):
@@ -304,17 +304,17 @@ def set_timelatlon(ncobj, ntime, nlat, nlon, timeunit=None):
       dates = [datetime(2011,2,1)]
       times[:] = netCDF4.date2num(dates,units=times.units,calendar=times.calendar)
     """
-    if timeunit==None:
+    if timeunit is None:
         timeunit = 'days since 1800-01-01 00:00:00.0'
 
     # Dimensions can be renamed with the 'renameDimension' method of the file
-    ncobj.createDimension('time',ntime)
-    ncobj.createDimension('latitude',nlat)
-    ncobj.createDimension('longitude',nlon)
+    ncobj.createDimension('time', ntime)
+    ncobj.createDimension('latitude', nlat)
+    ncobj.createDimension('longitude', nlon)
 
-    times = ncobj.createVariable('time','f8',('time',))
-    latitudes = ncobj.createVariable('latitude','f8',('latitude',))
-    longitudes = ncobj.createVariable('longitude','f8',('longitude',))
+    times = ncobj.createVariable('time', 'f8', ('time',))
+    latitudes = ncobj.createVariable('latitude', 'f8', ('latitude',))
+    longitudes = ncobj.createVariable('longitude', 'f8', ('longitude',))
 
     latitudes.long_name = 'latitude'
     latitudes.standard_name = 'latitude'
@@ -335,9 +335,9 @@ def show_dimensions(ncobj):
     """
     Print the dimension names, lengths and whether they are unlimited.
     """
-    print '{0:10} {1:7} {2}'.format("DimName","Length","IsUnlimited")
-    for dim,obj in ncobj.dimensions.iteritems():
-        print '{0:10} {1:<7d} {2!s}'.format(dim,len(obj),obj.isunlimited())
+    print '{0:10} {1:7} {2}'.format("DimName", "Length", "IsUnlimited")
+    for dim, obj in ncobj.dimensions.iteritems():
+        print '{0:10} {1:<7d} {2!s}'.format(dim, len(obj), obj.isunlimited())
 
 
 def set_variable(ncobj, varname, dtype='f4', dims=None, chunksize=None, fill=None, zlib=False, **kwargs):
@@ -369,9 +369,9 @@ def set_variable(ncobj, varname, dtype='f4', dims=None, chunksize=None, fill=Non
     no compression.
     """
     if dims is None:
-        dims = ('time','latitude','longitude')
+        dims = ('time', 'latitude', 'longitude')
     return ncobj.createVariable(varname, dtype, dimensions=dims,
-                   chunksizes=chunksize, fill_value=fill, zlib=zlib, **kwargs)
+                                chunksizes=chunksize, fill_value=fill, zlib=zlib, **kwargs)
 
 
 def add_time(ncobj, datetime_list, timevar='time'):
@@ -411,25 +411,25 @@ def add_bounds(ncobj, dimname, bounds, bndname=None):
     corresponding dimension with an extra size for the number of vertices.
 
     This function:
-    	- Adds a 'bounds' attribute to the dimension variable if required.
-    	  If a bounds attribute exits then its value will be used for the bounds
-    	  variable (bndname). Otherwise if a bndname is given then this will be
-    	  used. Otherwise the default bndname will be '_bounds' appended to the
-    	  dimension name.
-    	- If the bounds variable exists then a ValueError will be raised if its
-    	  shape does not match the bounds array.
-    	- If the bounds variable does not exist then it will be created. If so
-    	  an exra dimension is required for the number of vertices. Any existing
-    	  dimension of the right size will be used. Otherwise a new dimension
-    	  will be created. The new dimension's name will be 'nv' (number of
-    	  vertices), unless this dimension name is already used in which case
-    	  '_nv' appended to the dimension name will be used instead.
-    	- Lastly, the bounds array is written to the bounds variable. If the
-    	  corresponding dimension is time (name = 'time' or dim.axis = 't') then
-    	  the bounds array will be written as date2num data.
+        - Adds a 'bounds' attribute to the dimension variable if required.
+          If a bounds attribute exits then its value will be used for the bounds
+          variable (bndname). Otherwise if a bndname is given then this will be
+          used. Otherwise the default bndname will be '_bounds' appended to the
+          dimension name.
+        - If the bounds variable exists then a ValueError will be raised if its
+          shape does not match the bounds array.
+        - If the bounds variable does not exist then it will be created. If so
+          an exra dimension is required for the number of vertices. Any existing
+          dimension of the right size will be used. Otherwise a new dimension
+          will be created. The new dimension's name will be 'nv' (number of
+          vertices), unless this dimension name is already used in which case
+          '_nv' appended to the dimension name will be used instead.
+        - Lastly, the bounds array is written to the bounds variable. If the
+          corresponding dimension is time (name = 'time' or dim.axis = 't') then
+          the bounds array will be written as date2num data.
     """
     # Convert bounds data to a numpy array if needed
-    if isinstance(bounds,(list,tuple)):
+    if isinstance(bounds, (list, tuple)):
         bounds = np.array(bounds)
     bndshp = bounds.shape  # tuple
     nverts = bndshp[-1]
@@ -439,18 +439,19 @@ def add_bounds(ncobj, dimname, bounds, bndname=None):
     if 'bounds' in dimobj.ncattrs():
         bndname = dimobj.bounds
     else:
-        if bndname is None: bndname = dimname+'_bounds'
+        if bndname is None:
+            bndname = dimname + '_bounds'
         dimobj.bounds = bndname
     # Get/set the variable object of the bounds variable
     if bndname in ncobj.variables:
         bndobj = ncobj.variables[bndname]
         if bndobj.shape != bndshp:
-            raise ValueError('Existing bounds variable shape does not '+ \
-            			'match data:', bndname, bndobj.shape, bshp)
+            raise ValueError('Existing bounds variable shape does not ' +
+                             'match data:', bndname, bndobj.shape, bshp)
     else:
         # Need a number of vertices dimension
         nvname = None
-        for k,v in ncobj.dimensions.items():
+        for k, v in ncobj.dimensions.items():
             if len(v) == nverts:
                 nvname = k
                 break
@@ -458,10 +459,10 @@ def add_bounds(ncobj, dimname, bounds, bndname=None):
             nvname = 'nv'
             if nvname in ncobj.dimensions:
                 nvname = dimname + '_nv'  # Change it if there's a conflict
-            ncobj.createDimension(nvname,nverts)
+            ncobj.createDimension(nvname, nverts)
         # Create the bounds variable
         bndobj = ncobj.createVariable(bndname, dimobj.dtype,
-        			dimobj.dimensions+(nvname,))
+                                      dimobj.dimensions + (nvname,))
     # Is this a time dimension
     istime = False
     if dimname.lower() == 'time':
@@ -472,7 +473,7 @@ def add_bounds(ncobj, dimname, bounds, bndname=None):
     # Add the bounds array
     if istime:
         bndobj[:] = netCDF4.date2num(bounds, units=dimobj.units,
-                                 calendar=dimobj.calendar)
+                                     calendar=dimobj.calendar)
     else:
         bndobj[:] = bounds
 
@@ -541,7 +542,7 @@ def add_data(ncobj, varname, data, index=None):
 
     # If data is a list then first convert it to a numpy aray so that
     # the shape can be properly interogated
-    if isinstance(data,(list,tuple)):
+    if isinstance(data, (list, tuple)):
         data = np.array(data)
     dshp = data.shape  # tuple
 
@@ -562,54 +563,91 @@ def add_data(ncobj, varname, data, index=None):
         index = ('',) * len(vshp)
 
     range = []  # List of slice objects, one per dimension
-    for i,x in enumerate(index):
-        if isinstance(x,slice):
+    for i, x in enumerate(index):
+        if isinstance(x, slice):
             range.append(x)
-        elif isinstance(x,(tuple,list)):
+        elif isinstance(x, (tuple, list)):
             range.append(slice(x))
-        elif isinstance(x,int):
+        elif isinstance(x, int):
             # Assume x is start index and we slice to the corresponding
             # shape of data
-            if len(vshp)==len(dshp):
+            if len(vshp) == len(dshp):
                 # dshp must be same size as vshp for this to work!
-                range.append( slice(x,x+dshp[i]) )
+                range.append(slice(x, x + dshp[i]))
             else:
-                raise ValueError("Number of dimensions for the data and variable do not match, so I can't guess which data dimension this index refers to. Be explicit with the index range in a slice or string")
-        elif isinstance(x,str):
+                raise ValueError(
+                    "Number of dimensions for the data and variable do not match, so I can't guess which data dimension this index refers to. Be explicit with the index range in a slice or string")
+        elif isinstance(x, str):
             # Assume its some sort of start:stop:stride string
             p = x.split(':')
-            for j in [0,1,2]:
-              if j<len(p):
-                if p[j]=='': p[j]=None
-                else: p[j]=int(p[j])
-              else:
-                p.append(None)
-            range.append(slice(p[0],p[1],p[2]))
+            for j in [0, 1, 2]:
+                if j < len(p):
+                    if p[j] == '':
+                        p[j] = None
+                    else:
+                        p[j] = int(p[j])
+                else:
+                    p.append(None)
+            range.append(slice(p[0], p[1], p[2]))
         else:
-            raise TypeError("Index element is not a valid type: ",x,type(x))
+            raise TypeError("Index element is not a valid type: ", x, type(x))
 
     # Try to add the data to the variable.
     # netCDF4.Variable will complain if dimensions and size ar not valid
     var[range] = data
 
+
 # Alias functions to support some back compatibility with code that imported
 # earlier versions of this file.
-def nc_open(*args,**kwargs): return ncopen(args,kwargs)
-def nc_close(*args,**kwargs): return ncclose(args,kwargs)
-def nc_get_attributes(*args,**kwargs): return get_attributes(args,kwargs)
-def nc_set_attributes(*args,**kwargs): return set_attributes(args,kwargs)
-def nc_set_timelatlon(*args,**kwargs): return set_timelatlon(args,kwargs)
-def nc_show_dims(*args,**kwargs): return show_dims(args,kwargs)
-def nc_set_var(*args,**kwargs): return set_var(args,kwargs)
-def nc_add_time(*args,**kwargs): return add_time(args,kwargs)
-def nc_add_data(*args,**kwargs): return add_data(args,kwargs)
-def nc3_open(*args,**kwargs): return ncopen(args,kwargs)
-def nc3_close(*args,**kwargs): return ncclose(args,kwargs)
-def nc3_get_attributes(*args,**kwargs): return get_attributes(args,kwargs)
-def nc3_set_attributes(*args,**kwargs): return set_attributes(args,kwargs)
-def nc3_set_timelatlon(*args,**kwargs): return set_timelatlon(args,kwargs)
-def nc3_show_dims(*args,**kwargs): return show_dims(args,kwargs)
-def nc3_set_var(*args,**kwargs): return set_var(args,kwargs)
-def nc3_add_time(*args,**kwargs): return add_time(args,kwargs)
-def nc3_add_data(*args,**kwargs): return add_data(args,kwargs)
+def nc_open(*args, **kwargs): return ncopen(args, kwargs)
 
+
+def nc_close(*args, **kwargs): return ncclose(args, kwargs)
+
+
+def nc_get_attributes(*args, **kwargs): return get_attributes(args, kwargs)
+
+
+def nc_set_attributes(*args, **kwargs): return set_attributes(args, kwargs)
+
+
+def nc_set_timelatlon(*args, **kwargs): return set_timelatlon(args, kwargs)
+
+
+def nc_show_dims(*args, **kwargs): return show_dims(args, kwargs)
+
+
+def nc_set_var(*args, **kwargs): return set_var(args, kwargs)
+
+
+def nc_add_time(*args, **kwargs): return add_time(args, kwargs)
+
+
+def nc_add_data(*args, **kwargs): return add_data(args, kwargs)
+
+
+def nc3_open(*args, **kwargs): return ncopen(args, kwargs)
+
+
+def nc3_close(*args, **kwargs): return ncclose(args, kwargs)
+
+
+def nc3_get_attributes(*args, **kwargs): return get_attributes(args, kwargs)
+
+
+def nc3_set_attributes(*args, **kwargs): return set_attributes(args, kwargs)
+
+
+def nc3_set_timelatlon(*args, **kwargs): return set_timelatlon(args, kwargs)
+
+
+def nc3_show_dims(*args, **kwargs): return show_dims(args, kwargs)
+
+
+def nc3_set_var(*args, **kwargs): return set_var(args, kwargs)
+
+
+def nc3_add_time(*args, **kwargs): return add_time(args, kwargs)
+
+
+def nc3_add_data(*args, **kwargs): return add_data(args, kwargs)
