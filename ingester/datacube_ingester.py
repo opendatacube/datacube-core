@@ -2,8 +2,10 @@ import click
 import os
 import pathlib
 import logging
+import yaml
 from create_tiles import calc_output_filenames, create_tiles, list_tile_files
 from ingester.utils import preserve_cwd
+from netcdf_indexer import index_netcdfs
 from netcdf_writer import append_to_netcdf, MultiVariableNetCDF, SingleVariableNetCDF
 import eodatasets.drivers
 import eodatasets.type
@@ -84,6 +86,7 @@ def setup_logging(verbosity):
     """
     logging_level = logging.WARN - 10 * verbosity
     logging.basicConfig(level=logging_level, format='%(asctime)s %(levelname)s %(message)s')
+    _LOG.debug('Logging setup at level %d' % logging_level)
 
 
 @preserve_cwd
@@ -100,6 +103,7 @@ def ingest(input_path, output_dir, filename_format, netcdf_class=MultiVariableNe
     :return: list of created tile-files
     """
     os.chdir(output_dir)
+    _LOG.debug('Writing output to %s' % os.getcwd())
 
     input_path, eodataset = load_dataset(input_path)
 
@@ -115,7 +119,14 @@ def ingest(input_path, output_dir, filename_format, netcdf_class=MultiVariableNe
         netcdf_paths = merge_tiles_to_netcdf(eodataset, filename_format, netcdf_class)
         _LOG.info("Created/altered storage units: {}".format(netcdf_paths))
 
+    write_cube_index(netcdf_paths)
+
     return netcdf_paths
+
+def write_cube_index(cube_filenames, output_name='cube_descriptions.yaml'):
+    cube_descriptions = index_netcdfs(cube_filenames)
+    with open('cube_descriptions.yaml', 'w') as file:
+        yaml.dump(cube_descriptions, file)
 
 
 @click.command(help="Example output filename format: combined_{x}_{y}.nc", context_settings=CLICK_SETTINGS)
@@ -134,7 +145,7 @@ def main(input_path, output_dir, filename_format, netcdf_class=MultiVariableNetC
     """
     setup_logging(verbose)
 
-    ingest(input_path, output_dir, filename_format, netcdf_class, tile, merge)
+    affected_tiles = ingest(input_path, output_dir, filename_format, netcdf_class, tile, merge)
 
 
 if __name__ == '__main__':

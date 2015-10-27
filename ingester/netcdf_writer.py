@@ -166,6 +166,7 @@ class MultiVariableNetCDF(BaseNetCDF):
 
     This closely matches the existing GeoTiff tile file structure
     """
+
     def _create_variables(self):
         self._create_standard_dimensions(self.tile_spec.lats, self.tile_spec.lons)
         self._create_bands(self.tile_spec.bands)
@@ -176,7 +177,7 @@ class MultiVariableNetCDF(BaseNetCDF):
 
     def _create_bands(self, bands):
         for i, band in enumerate(bands, 1):
-            band = self.nco.createVariable('band' + str(i), 'i2',  ('time', 'latitude', 'longitude'),
+            band = self.nco.createVariable('band' + str(i), 'i2', ('time', 'latitude', 'longitude'),
                                            zlib=True, chunksizes=[self.chunk_time, self.chunk_y, self.chunk_x],
                                            fill_value=-999)
             band.grid_mapping = 'crs'
@@ -217,6 +218,7 @@ class SingleVariableNetCDF(BaseNetCDF):
     """
     Store all data values in a single dataset with an extra dimension for `band`
     """
+
     def _create_variables(self):
         lats = self.tile_spec.lats
         lons = self.tile_spec.lons
@@ -233,7 +235,7 @@ class SingleVariableNetCDF(BaseNetCDF):
 
     def _create_data_variable(self):
         chunk_band = 1
-        observations = self.nco.createVariable('observation', 'i2',  ('band', 'time', 'latitude', 'longitude'),
+        observations = self.nco.createVariable('observation', 'i2', ('band', 'time', 'latitude', 'longitude'),
                                                zlib=True,
                                                chunksizes=[chunk_band, self.chunk_time, self.chunk_y, self.chunk_x],
                                                fill_value=-999)
@@ -315,8 +317,8 @@ def tile_spec_from_gdal_dataset(gdal_dataset):
     """
     nbands, nlats, nlons = gdal_dataset.RasterCount, gdal_dataset.RasterYSize, gdal_dataset.RasterXSize
     geotransform = gdal_dataset.GetGeoTransform()
-    lons = np.arange(nlons)*geotransform[1]+geotransform[0]
-    lats = np.arange(nlats)*geotransform[5]+geotransform[3]
+    lons = np.arange(nlons) * geotransform[1] + geotransform[0]
+    lats = np.arange(nlats) * geotransform[5] + geotransform[3]
     bands = []
     for band_idx in range(nbands):
         src_band = gdal_dataset.GetRasterBand(band_idx + 1)
