@@ -40,7 +40,7 @@ import psycopg2
 from _gdfutils import log_multiline
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO) # Logging level for this module
+
 
 class CachedResultSet(object):
     '''Class CachedResultSet to manage an in-memory cache of query results

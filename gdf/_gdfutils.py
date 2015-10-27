@@ -42,13 +42,7 @@ import logging
 from pprint import pformat
 
 logger = logging.getLogger(__name__)
-#logger.setLevel(logging.DEBUG) # Logging level for this module
 
-# Ignore failed import of graphical modules
-try:
-    import matplotlib.pyplot as plt
-except:
-    logger.warning('WARNING: Unable to import matplotlib.pyplot. Any graphical function calls will fail.')
 
 #TODO: Do something about duplicate definition (here and in gdf)
 EPOCH_DATE_ORDINAL = date(1970, 1, 1).toordinal()
@@ -103,6 +97,8 @@ def directory_writable(dir_path):
                 
             
 def plotImages(arrays):
+    import matplotlib.pyplot as plt
+
     img = arrays
     num_t = img.shape[0]
     num_rowcol = math.ceil(math.sqrt(num_t))

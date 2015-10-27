@@ -42,7 +42,7 @@ import argparse
 from _gdfutils import log_multiline
 
 logger = logging.getLogger(__name__)
-#logger.setLevel(logging.DEBUG) # Logging level for this module
+
 
 class CommandLineArgs(object):
     DEFAULT_ARG_DESCRIPTORS = {'debug': {'short_flag': '-d', 

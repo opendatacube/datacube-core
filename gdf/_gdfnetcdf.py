@@ -41,16 +41,9 @@ from osgeo import gdal, osr
 from datetime import datetime
 
 from _gdfutils import log_multiline
-
+import netcdf_builder # from https://stash.csiro.au/projects/CMAR_RS/repos/netcdf-tools/browse/create/netcdf_builder.py
 
 logger = logging.getLogger(__name__)
-
-try:
-    import netcdf_builder
-except ImportError:
-    logger.error('Requires netcdf_builder.py '
-                 '(https://stash.csiro.au/projects/CMAR_RS/repos/netcdf-tools/browse/create/netcdf_builder.py)')
-    raise
 
 
 class GDFNetCDF(object):

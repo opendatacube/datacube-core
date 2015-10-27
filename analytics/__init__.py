@@ -11,7 +11,7 @@ import logging
 from gdf import GDF
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG) # Logging level for this module
+
 
 class Analytics(object):
 

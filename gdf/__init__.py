@@ -54,20 +54,10 @@ from _config_file import ConfigFile
 from _gdfnetcdf import GDFNetCDF
 from _gdfutils import dt2secs, secs2dt, days2dt, dt2days, make_dir, directory_writable, log_multiline
 
-# Set handler for root logger to standard output
-console_handler = logging.StreamHandler(sys.stdout)
-#console_handler.setLevel(logging.INFO)
-console_handler.setLevel(logging.DEBUG)
-console_formatter = logging.Formatter('%(message)s')
-console_handler.setFormatter(console_formatter)
-logging.root.addHandler(console_handler)
-
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO) # Initial logging level for this module
-
-
 
 thread_exception = None
+
 
 class GDF(object):
     '''
