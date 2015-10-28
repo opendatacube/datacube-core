@@ -91,7 +91,7 @@ class BaseNetCDF(object):
         # Attributes for NCI Compliance
         self.nco.title = "Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE"
         self.nco.summary = "These files are experimental, short lived, and the format will change."
-        self.nco.source = "This data is a reprojection and retile of the Landsat L1T surface reflectance " \
+        self.nco.source = "This data is a reprojection and retile of Landsat surface reflectance " \
                           "scene data available from /g/data/rs0/scenes/"
         self.nco.product_version = "0.0.0"
         self.nco.date_created = datetime.today().isoformat()
