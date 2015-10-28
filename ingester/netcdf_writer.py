@@ -199,15 +199,21 @@ class MultiVariableNetCDF(BaseNetCDF):
 
         gdal_bands = [gdal_dataset.GetRasterBand(idx + 1) for idx in range(gdal_dataset.RasterCount)]
 
-        metadata_bands = sorted(eodataset.image.bands.values(), key=lambda band: band.number)
+        eodataset_bands = sorted(eodataset.image.bands.values(), key=lambda band: band.number)
+
+        filename_vars = [self.nco.variables[varname] for varname in self.nco.variables if 'srcfile' in varname]
+
+        src_filename = gdal_dataset.GetFileList()[0] # TODO This isn't right
+        # We actually want the original src filename, not the intermediate tile file.
 
         time_index = len(self.nco.variables['time']) - 1
 
-        for in_band, out_band, metadata in zip(gdal_bands, netcdfbands, metadata_bands):
+        for in_band, out_band, metadata, filenamevar in zip(gdal_bands, netcdfbands, eodataset_bands, filename_vars):
             out_band.long_name = metadata.number
             out_band.missing_value = -999
 
             out_band[time_index, :, :] = in_band.ReadAsArray()
+            filenamevar[time_index] = src_filename
 
         extra_meta = self.nco.variables['extra_metadata']
         # FIXME Yucky, we don't really want to be using yaml and private methods here
