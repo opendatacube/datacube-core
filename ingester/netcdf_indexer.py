@@ -65,8 +65,8 @@ def read_netcdf_structure(filename):
                 coordinates[name] = {
                     'dtype': str(var.dtype),
                     'begin': var[0].item(),
-                    'end': var[-1].item(),
-                    'length': var.shape[0]
+                    'end': var[var.size - 1].item(),
+                    'length': var.shape[0]  # can't use size directly, it's a numpy.scalar
                 }
             else:
                 ndv = getattr(var, 'missing_value', None) or getattr(var, 'fill_value', None)
