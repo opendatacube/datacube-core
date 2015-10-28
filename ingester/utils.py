@@ -106,7 +106,12 @@ def preserve_cwd(function):
 
 def execute(command_list):
     _LOG.debug("Running command: " + ' '.join(command_list))
-    subprocess.check_call(command_list, env=dict(os.environ, GDAL_CACHEMAX="250"))
+    proc = subprocess.Popen(command_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                            env=dict(os.environ, GDAL_CACHEMAX="250"))
+    # see http://stackoverflow.com/a/13924218/119603
+    for line in proc.stdout:
+        _LOG.debug(line)
+    # subprocess.check_call(command_list, env=dict(os.environ, GDAL_CACHEMAX="250"))
 
 
 @click.command(help="Print an image to the terminal ")

@@ -77,16 +77,30 @@ def merge_tiles_to_netcdf(eodataset, filename_format, netcdf_class):
     return [netcdf_path for _, netcdf_path in tile_mappings]
 
 
-def setup_logging(verbosity):
+def setup_logging(verbosity, filename=None):
     """
     Setups up logging, defaults to WARN
 
     :param verbosity: 1 for INFO, 2 for DEBUG
     :return:
     """
-    logging_level = logging.WARN - 10 * verbosity
-    logging.basicConfig(level=logging_level, format='%(asctime)s %(levelname)s %(message)s')
-    _LOG.debug('Logging setup at level %d' % logging_level)
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+
+    stderr_logging_level = logging.WARN - 10 * verbosity
+    sh = logging.StreamHandler()
+    sh.setLevel(stderr_logging_level)
+    sh.setFormatter(formatter)
+
+    logger.addHandler(sh)
+    _LOG.debug('Logging to console at level %d' % stderr_logging_level)
+
+    if filename:
+        fh = logging.FileHandler(filename)
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+        _LOG.debug('Logging to %s' % filename)
 
 
 @preserve_cwd
@@ -123,14 +137,17 @@ def ingest(input_path, output_dir, filename_format, netcdf_class=MultiVariableNe
 
     return netcdf_paths
 
+
 def write_cube_index(cube_filenames, output_name='cube_descriptions.yaml'):
     cube_descriptions = index_netcdfs(cube_filenames)
-    with open('cube_descriptions.yaml', 'w') as file:
+    with open(output_name, 'w') as file:
         yaml.dump(cube_descriptions, file)
+    _LOG.info('Stored cube descriptions into %s' % output_name)
 
 
 @click.command(help="Example output filename format: combined_{x}_{y}.nc", context_settings=CLICK_SETTINGS)
 @click.option('--output-dir', '-o', default='.')
+@click.option('--log', type=click.Path())
 @click.option('--multi-variable', 'netcdf_class', flag_value=MultiVariableNetCDF, default=True)
 @click.option('--single-variable', 'netcdf_class', flag_value=SingleVariableNetCDF)
 @click.option('--tile/--no-tile', default=True, help="Allow partial processing")
@@ -138,14 +155,17 @@ def write_cube_index(cube_filenames, output_name='cube_descriptions.yaml'):
 @click.option('--verbose', '-v', count=True, help="Use multiple times for more verbosity")
 @click.argument('input_path', type=click.Path(exists=True, readable=True))
 @click.argument('filename-format')
-def main(input_path, output_dir, filename_format, netcdf_class=MultiVariableNetCDF,
+def main(input_path, output_dir, filename_format, log, netcdf_class=MultiVariableNetCDF,
          tile=True, merge=True, verbose=0):
     """
     Runs ingest from the command line
     """
-    setup_logging(verbose)
+    setup_logging(verbose, log)
+    _LOG.debug('datacube-ingester started')
 
     affected_tiles = ingest(input_path, output_dir, filename_format, netcdf_class, tile, merge)
+
+    _LOG.debug('datacube-ingester finished')
 
 
 if __name__ == '__main__':
