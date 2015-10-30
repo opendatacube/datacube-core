@@ -16,6 +16,7 @@
 from __future__ import absolute_import, division, print_function
 from builtins import *
 
+from functools import reduce
 import numpy
 
 from ..core import StorageUnitBase
