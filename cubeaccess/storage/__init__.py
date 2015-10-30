@@ -13,6 +13,14 @@
 #    limitations under the License.
 
 
-from .netcdf import NetCDF4StorageUnit
-from .geotif import GeoTifStorageUnit
 from .faux import FauxStorageUnit
+
+try:
+    from .netcdf import NetCDF4StorageUnit
+except ImportError:
+    pass
+
+try:
+    from .geotif import GeoTifStorageUnit
+except ImportError:
+    pass

@@ -4,7 +4,7 @@ python:
   - "2.7"
   - "3.5"
 
-sudo: true
+sudo: false
 
 addons:
   apt:
