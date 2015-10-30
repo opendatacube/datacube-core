@@ -13,7 +13,7 @@ cache: apt
 
 install:
   - travis_retry pip install pep8 pylint pytest pytest-cov coveralls
-  - travis_retry pip install -r requirements.txt
+  - travis_retry pip install .
 
 script:
     # - pep8 eodatasets --max-line-length 120
