@@ -49,6 +49,7 @@ setup(name='agdc-v2',
           'console_scripts': [
               'datacube_ingest = ingester.datacube_ingester:main',
               'print_image = ingester.utils:print_image',
+              'ingester = ingester.ingester:main'
           ]
       },
 )

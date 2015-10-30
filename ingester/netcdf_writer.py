@@ -1,20 +1,23 @@
+from collections import namedtuple
 from datetime import datetime
 from abc import ABCMeta, abstractmethod
 import argparse
 import os.path
+from netCDF4._netCDF4 import date2index
 
 import numpy as np
-import gdal
+from osgeo import gdal, osr
 import netCDF4
 import yaml
 
 from eodatasets import serialise
+from gdf import GDFNetCDF, dt2secs
 from ingester.utils import _get_nbands_lats_lons_from_gdalds
 
 EPOCH = datetime(1970, 1, 1, 0, 0, 0)
 
 
-class BaseNetCDF(object):
+class NetCDFWriter(object):
     """
     Base class for creating a NetCDF file based upon GeoTIFF data.
 
@@ -23,13 +26,18 @@ class BaseNetCDF(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, netcdf_path, mode='r', chunk_x=400, chunk_y=400, chunk_time=1):
-        self.nco = netCDF4.Dataset(netcdf_path, mode)
+    def __init__(self, netcdf_path, tile_spec):
+
+        if not os.path.isfile(netcdf_path):
+            self.nco = netCDF4.Dataset(netcdf_path, 'w')
+
+            self._set_crs(tile_spec)
+            self._set_global_attributes(tile_spec)
+            self._create_variables(tile_spec)
+        else:
+            self.nco = netCDF4.Dataset(netcdf_path, 'a')
+
         self.netcdf_path = netcdf_path
-        self.chunk_x = chunk_x
-        self.chunk_y = chunk_y
-        self.chunk_time = chunk_time
-        self.tile_spec = TileSpec()
 
     def close(self):
         self.nco.close()
@@ -66,23 +74,25 @@ class BaseNetCDF(object):
         lon[:] = lons
         lat[:] = lats
 
-    def _set_wgs84_crs(self):
+    def _set_crs(self, tile_spec):
+        projection = osr.SpatialReference(tile_spec.projection)
+        assert projection.IsGeographic()
         crso = self.nco.createVariable('crs', 'i4')
-        crso.long_name = "Lon/Lat Coords in WGS84"
-        crso.grid_mapping_name = "latitude_longitude"
+        crso.long_name = projection.GetAttrValue('GEOGCS') # "Lon/Lat Coords in WGS84"
+        crso.grid_mapping_name = "latitude_longitude" # TODO support other projections
         crso.longitude_of_prime_meridian = 0.0
-        crso.semi_major_axis = 6378137.0
-        crso.inverse_flattening = 298.257223563
+        crso.semi_major_axis = projection.GetSemiMajor()
+        crso.inverse_flattening = projection.GetInvFlattening()
         return crso
 
-    def _set_global_attributes(self):
+    def _set_global_attributes(self, tile_spec):
         self.nco.spatial_coverage = "1.000000 degrees grid"
-        self.nco.geospatial_lat_min = self.tile_spec.get_lat_min()
-        self.nco.geospatial_lat_max = self.tile_spec.get_lat_max()
+        self.nco.geospatial_lat_min = tile_spec.lat_min
+        self.nco.geospatial_lat_max = tile_spec.lat_max
         self.nco.geospatial_lat_units = "degrees_north"
-        self.nco.geospatial_lat_resolution = "0.00025"
-        self.nco.geospatial_lon_min = self.tile_spec.get_lon_min()
-        self.nco.geospatial_lon_max = self.tile_spec.get_lon_max()
+        self.nco.geospatial_lat_resolution = "0.00025" # FIXME Shouldn't be hard coded
+        self.nco.geospatial_lon_min = tile_spec.lon_min
+        self.nco.geospatial_lon_max = tile_spec.lon_max
         self.nco.geospatial_lon_units = "degrees_east"
         self.nco.geospatial_lon_resolution = "0.00025"
         creation_date = datetime.utcnow().strftime("%Y%m%d")
@@ -98,94 +108,71 @@ class BaseNetCDF(object):
         self.nco.Conventions = 'CF-1.6'
         self.nco.license = "Creative Commons Attribution 4.0 International CC BY 4.0"
 
-    def _add_time(self, start_date):
+    def find_or_create_time_index(self, date_string):
         # Convert to datetime at midnight
-        start_datetime = datetime.combine(start_date, datetime.min.time())
-
-        # Convert to seconds since epoch (1970-01-01)
-        start_datetime_delta = start_datetime - EPOCH
+        slice_date = datetime.combine(date_string, datetime.min.time())
 
         times = self.nco.variables['time']
 
-        # Save as next coordinate in file
-        times[len(times)] = start_datetime_delta.total_seconds()
+        try:
+            index = date2index(slice_date, times)
+        except IndexError:
+            # Append to times
+            # Convert to seconds since epoch (1970-01-01)
+            start_datetime_delta = slice_date - EPOCH
+            stored_time_value = start_datetime_delta.total_seconds()
 
-    @classmethod
-    def create_from_tile_spec(cls, file_path, tile_spec):
-        netcdf = cls(file_path, mode='w')
-        netcdf.tile_spec = tile_spec
+            index = len(times)
 
-        netcdf._set_wgs84_crs()
-        netcdf._set_global_attributes()
-        netcdf._create_variables()
+            # Save as next coordinate in file
+            times[index] = start_datetime_delta.total_seconds()
 
-        return netcdf
+        return index
 
-    @classmethod
-    def open_with_tile_spec(cls, file_path, tile_spec):
-        netcdf = cls(file_path, mode='a')
-        netcdf.tile_spec = tile_spec
-
-        return netcdf
-
-    @abstractmethod
-    def _create_variables(self):
+    def append_gdal_tile(self, gdal_dataset, input_spec, varname, input_filename):
         """
-        Create the structure of the NetCDF file, ie, which variables with which dimensions
-        """
-        pass
 
-    @abstractmethod
-    def _write_data_to_netcdf(self, dataset, eodataset):
-        """
-        Read in all the data from the geotiff `dataset` and write it as a new time
-         slice to the NetCDF file
-        :param dataset: open GDAL dataset
         :return:
         """
-        pass
+        eodataset = input_spec.dataset
+        if varname in self.nco.variables:
+            out_band = self.nco.variables[varname]
+            src_filename = self.nco.variables[varname + "_src_filenames"]
+        else:
+            chunking = input_spec.storage_spec['chunking']
+            chunksizes = [chunking[dim] for dim in ['t', 'y', 'x']]
+            dtype = input_spec.bands[varname].dtype
+            ndv = input_spec.bands[varname].fill_value
+            out_band, src_filename = self._create_data_variable(varname, dtype, chunksizes, ndv)
 
-    def append_gdal_tile(self, geotiff, eodataset):
+        acquisition_date = eodataset['acquisition']['aos']
+
+        time_index = self.find_or_create_time_index(acquisition_date)
+
+        out_band[time_index, :, :] = gdal_dataset.ReadAsArray()
+        src_filename[time_index] = input_filename
+
+    def _create_variables(self, tile_spec):
         """
-        Read a geotiff file and append it to the open NetCDF file
 
-        :param geotiff:string path to a geotiff file
-        :return:
         """
-        gdal_dataset = gdal.Open(geotiff)
-        self._add_time(eodataset.acquisition.aos)
-
-        self._write_data_to_netcdf(gdal_dataset, eodataset)
-
-        del gdal_dataset
-
-
-class MultiVariableNetCDF(BaseNetCDF):
-    """
-    Create individual datasets for each `band` of data
-
-    This closely matches the existing GeoTiff tile file structure
-    """
-
-    def _create_variables(self):
-        self._create_standard_dimensions(self.tile_spec.lats, self.tile_spec.lons)
-        self._create_bands(self.tile_spec.bands)
+        self._create_standard_dimensions(tile_spec.lats, tile_spec.lons)
 
         # Create Variable Length Variable to store extra metadata
         extra_meta = self.nco.createVariable('extra_metadata', str, 'time')
         extra_meta.long_name = 'Extra source metadata'
 
-    def _create_bands(self, bands):
-        for i, band in enumerate(bands, 1):
-            band = self.nco.createVariable('band' + str(i), 'i2', ('time', 'latitude', 'longitude'),
-                                           zlib=True, chunksizes=[self.chunk_time, self.chunk_y, self.chunk_x],
-                                           fill_value=-999)
-            band.grid_mapping = 'crs'
-            band.set_auto_maskandscale(False)
-            band.units = '1'
+    def _create_data_variable(self, varname, dtype, chunksizes, ndv):
+        newvar = self.nco.createVariable(varname, dtype, ('time', 'latitude', 'longitude'),
+                                       zlib=True, chunksizes=chunksizes,
+                                       fill_value=ndv)
+        newvar.grid_mapping = 'crs'
+        newvar.set_auto_maskandscale(False)
+        newvar.units = '1'
 
-            srcfilename = self.nco.createVariable('srcfilename_band' + str(i), str, 'time')
-            srcfilename.long_name = 'Source filename from data import'
+        src_filename = self.nco.createVariable(varname + "_src_filenames", str, 'time')
+        src_filename.long_name = 'Source filename from data import'
+        return newvar, src_filename
 
     def _get_netcdf_bands(self, bands):
         netcdfbands = []
@@ -194,152 +181,45 @@ class MultiVariableNetCDF(BaseNetCDF):
             netcdfbands.append(band)
         return netcdfbands
 
-    def _write_data_to_netcdf(self, gdal_dataset, eodataset):
-        netcdfbands = self._get_netcdf_bands(self.tile_spec.bands)
-
-        gdal_bands = [gdal_dataset.GetRasterBand(idx + 1) for idx in range(gdal_dataset.RasterCount)]
-
-        eodataset_bands = sorted(eodataset.image.bands.values(), key=lambda band: band.number)
-
-        filename_vars = [self.nco.variables[varname] for varname in self.nco.variables if 'srcfile' in varname]
-
-        src_filename = gdal_dataset.GetFileList()[0] # TODO This isn't right
-        # We actually want the original src filename, not the intermediate tile file.
-
-        time_index = len(self.nco.variables['time']) - 1
-
-        for in_band, out_band, metadata, filenamevar in zip(gdal_bands, netcdfbands, eodataset_bands, filename_vars):
-            out_band.long_name = metadata.number
-            out_band.missing_value = -999
-
-            out_band[time_index, :, :] = in_band.ReadAsArray()
-            filenamevar[time_index] = src_filename
-
-        extra_meta = self.nco.variables['extra_metadata']
-        # FIXME Yucky, we don't really want to be using yaml and private methods here
-        extra_meta[time_index] = yaml.dump(eodataset, Dumper=serialise._create_relative_dumper('/'))
-
-
-class SingleVariableNetCDF(BaseNetCDF):
-    """
-    Store all data values in a single dataset with an extra dimension for `band`
-    """
-
-    def _create_variables(self):
-        lats = self.tile_spec.lats
-        lons = self.tile_spec.lons
-
-        self._create_standard_dimensions(lats, lons)
-        self._create_band_dimension()
-        self._create_data_variable()
-
-    def _create_band_dimension(self):
-        nbands = len(self.tile_spec.bands)
-        self.nco.createDimension('band', nbands)
-        band = self.nco.createVariable('band_name', str, 'band')
-        band.long_name = "Surface reflectance band name/number"
-
-    def _create_data_variable(self):
-        chunk_band = 1
-        observations = self.nco.createVariable('observation', 'i2', ('band', 'time', 'latitude', 'longitude'),
-                                               zlib=True,
-                                               chunksizes=[chunk_band, self.chunk_time, self.chunk_y, self.chunk_x],
-                                               fill_value=-999)
-        observations.long_name = "Surface reflectance factor"
-        observations.units = '1'
-        observations.grid_mapping = 'crs'
-        observations.set_auto_maskandscale(False)
-        observations.coordinates = 'band_name'
-
-    def _write_data_to_netcdf(self, gdal_dataset, eodataset):
-        nbands, lats, lons = _get_nbands_lats_lons_from_gdalds(gdal_dataset)
-
-        time_index = len(self.nco.dimensions['time']) - 1
-        band_var = self.nco.variables['band_name']
-
-        ds_bands = sorted(eodataset.image.bands.values(), key=lambda band: band.number)
-
-        observation = self.nco.variables['observation']
-        for band_idx in range(nbands):
-            in_band = gdal_dataset.GetRasterBand(band_idx + 1)
-            metadata = ds_bands[band_idx]
-
-            band_var[band_idx] = metadata.number
-
-            observation[band_idx, time_index, :, :] = in_band.ReadAsArray()
 
 
 class TileSpec(object):
-    bands = []
     lats = []
     lons = []
-    lat_resolution = None
-    lon_resolution = None
 
-    def __init__(self, bands=None, lats=None, lons=None, lat_resultion=None, lon_resolution=None):
-        self.bands = [] if bands is None else bands
-        self.lats = [] if lats is None else lats
-        self.lons = [] if lons is None else lons
-        self.lat_resolution = lat_resultion
-        self.lon_resolution = lon_resolution
+    def __init__(self, gdal_ds):
+        self._gdal_ds = gdal_ds
+        nlats, nlons = gdal_ds.RasterYSize, gdal_ds.RasterXSize
+        geotransform = gdal_ds.GetGeoTransform()
+        self.lons = np.arange(nlons) * geotransform[1] + geotransform[0]
+        self.lats = np.arange(nlats) * geotransform[5] + geotransform[3]
 
-    def get_lat_min(self):
+    @property
+    def num_bands(self):
+        return self._gdal_ds.RasterCount
+
+    @property
+    def projection(self):
+        return self._gdal_ds.GetProjection()
+
+    @property
+    def lat_min(self):
         return min(self.lats)
 
-    def get_lat_max(self):
+    @property
+    def lat_max(self):
         return max(self.lats)
 
-    def get_lon_min(self):
+    @property
+    def lon_min(self):
         return min(self.lons)
 
-    def get_lon_max(self):
+    @property
+    def lon_max(self):
         return max(self.lons)
 
 
-def get_input_spec_from_file(filename):
-    gdal_dataset = gdal.Open(filename)
-    return tile_spec_from_gdal_dataset(gdal_dataset)
-
-
-def tile_spec_from_gdal_dataset(gdal_dataset):
-    """
-    Return a specification of a GDAL dataset, used for creating a new NetCDF file to hold the same data
-
-    Example specification:
-    dict(bands=[{'dtype': 'Int16',
-                     'name': 'Photosynthetic Vegetation',
-                     'no_data': -999.0},
-                    {'dtype': 'Int16',
-                     'name': 'Non-Photosynthetic Vegetation',
-                     'no_data': -999.0},
-                    {'dtype': 'Int16', 'name': 'Bare Soil', 'no_data': -999.0},
-                    {'dtype': 'Int16', 'name': 'Unmixing Error', 'no_data': -999.0}],
-             lats=array([-33., -33.00025, -33.0005, ..., -33.99925, -33.9995,
-                         -33.99975]),
-             lons=array([150., 150.00025, 150.0005, ..., 150.99925, 150.9995,
-                                                  150.99975]))
-    :param gdal_dataset: a gdal dataset
-    :return: nested dictionary describing the structure
-    """
-    nbands, nlats, nlons = gdal_dataset.RasterCount, gdal_dataset.RasterYSize, gdal_dataset.RasterXSize
-    geotransform = gdal_dataset.GetGeoTransform()
-    lons = np.arange(nlons) * geotransform[1] + geotransform[0]
-    lats = np.arange(nlats) * geotransform[5] + geotransform[3]
-    bands = []
-    for band_idx in range(nbands):
-        src_band = gdal_dataset.GetRasterBand(band_idx + 1)
-        src_metadata = src_band.GetMetadata()  # eg. filename: 'source.tif', name: 'Photosynthetic Vegetation'
-
-        name = src_metadata.get('name')
-        dtype = gdal.GetDataTypeName(src_band.DataType)
-        no_data = src_band.GetNoDataValue()
-
-        bands.append(dict(name=name, dtype=dtype, no_data=no_data))
-
-    return TileSpec(bands=bands, lats=lats, lons=lons, lat_resultion=geotransform[5], lon_resolution=geotransform[1])
-
-
-def append_to_netcdf(gdal_tile, netcdf_path, eodataset, netcdf_class=MultiVariableNetCDF):
+def append_to_netcdf(gdal_dataset, netcdf_path, input_spec, bandname, input_filename):
     """
     Append a raster slice to a new or existing NetCDF file
 
@@ -349,46 +229,31 @@ def append_to_netcdf(gdal_tile, netcdf_path, eodataset, netcdf_class=MultiVariab
     :param netcdf_class:
     :return:
     """
-    tile_spec = get_input_spec_from_file(gdal_tile)
+    tile_spec = TileSpec(gdal_dataset)
 
-    if not os.path.isfile(netcdf_path):
-        ncfile = netcdf_class.create_from_tile_spec(netcdf_path, tile_spec)
-    else:
-        ncfile = netcdf_class.open_with_tile_spec(netcdf_path, tile_spec)
+    ncfile = NetCDFWriter(netcdf_path, tile_spec)
 
-    ncfile.append_gdal_tile(gdal_tile, eodataset)
+    ncfile.append_gdal_tile(gdal_dataset, input_spec, bandname, input_filename)
     ncfile.close()
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--create", action='store_true', help="Create a new, empty, NetCDF file")
-    group.add_argument("--append", action='store_true', help="Append the geotiff to a new portion of the NetCDF")
-    parser.add_argument("-b", "--band_as_dimension", action="store_true",
-                        help="Store bands as a dimension instead of as new dataset")
-    parser.add_argument("geotiff", help="Input GeoTIFF filename")
-    parser.add_argument("netcdf", help="NetCDF file to create or write to")
+def create_with_gdf():
+    storage_config = {}
 
-    args = parser.parse_args()
+    gdfnetcdf = GDFNetCDF(storage_config=storage_config)
 
-    if args.band_as_dimension:
-        netcdf_class = SingleVariableNetCDF
-    else:
-        netcdf_class = MultiVariableNetCDF
+    t_indices = np.array([dt2secs(record_dict['end_datetime']) for record_dict in data_descriptor])
 
-    if args.create:
-        dcnc = netcdf_class(args.netcdf, mode='w')
-        tile_spec = get_input_spec_from_file(args.geotiff)
-        dcnc.create_from_tile_spec(tile_spec)
-        dcnc.close()
-    elif args.append:
-        dcnc = netcdf_class(args.netcdf, mode='a')
-        dcnc.append_gdal_tile(args.geotiff)
-        dcnc.close()
-    else:
-        print 'Unknown action'
+    gdfnetcdf.create(netcdf_filename=temp_storage_path,
+                     index_tuple=storage_indices,
+                     dimension_index_dict={'T': t_indices}, netcdf_format=None)
+
+    # Set georeferencing from first tile
+    gdfnetcdf.georeference_from_file(data_descriptor[0]['tile_pathname'])
+
+    if len(data_array.shape) == 3:
+        gdfnetcdf.write_slice(variable_name, data_array[variable_index], {'T': slice_index})
+    elif len(data_array.shape) == 2:
+        gdfnetcdf.write_slice(variable_name, data_array, {'T': slice_index})
 
 
-if __name__ == '__main__':
-    main()

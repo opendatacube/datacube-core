@@ -1,5 +1,6 @@
 import click
 import os
+import gdal
 import pathlib
 import logging
 import yaml
@@ -72,7 +73,8 @@ def merge_tiles_to_netcdf(eodataset, filename_format, netcdf_class):
     created_tiles = list_tile_files('test.csv')
     tile_mappings = calc_output_filenames(created_tiles, filename_format, eodataset)
     for geotiff, netcdf in tile_mappings:
-        append_to_netcdf(geotiff, netcdf, eodataset, netcdf_class=netcdf_class)
+        gdal_dataset = gdal.Open(geotiff)
+        append_to_netcdf(gdal_dataset, netcdf, eodataset, netcdf_class=netcdf_class)
 
     return [netcdf_path for _, netcdf_path in tile_mappings]
 
