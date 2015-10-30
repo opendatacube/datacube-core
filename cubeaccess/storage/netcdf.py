@@ -20,8 +20,7 @@ import numpy
 import contextlib
 import netCDF4 as nc4
 
-from ..core import Coordinate, Variable, StorageUnitBase, DataArray
-from ..indexing import make_index, index_shape
+from ..core import Coordinate, Variable, StorageUnitBase
 
 
 class NetCDF4StorageUnit(StorageUnitBase):
