@@ -20,7 +20,7 @@ import numpy
 import pytest
 
 from cubeaccess.core import Coordinate, Variable, StorageUnitDimensionProxy, StorageUnitStack
-from cubeaccess.storage import NetCDF4StorageUnit, GeoTifStorageUnit, FauxStorageUnit
+from cubeaccess.storage import FauxStorageUnit
 from cubeaccess.indexing import Range
 
 
@@ -113,6 +113,8 @@ def test_storage_unit_stack():
 
 @pytest.mark.data
 def test_geotif_storage_unit():
+    from cubeaccess.storage import GeoTifStorageUnit
+
     files = [
         # "/mnt/data/tiles/EPSG4326_1deg_0.00025pixel/LS7_ETM/142_-033/2010/LS7_ETM_NBAR_142_-033_2010-01-16T00-12-07.682499.tif",
         # "/mnt/data/tiles/EPSG4326_1deg_0.00025pixel/LS7_ETM/142_-033/2010/LS7_ETM_FC_142_-033_2010-01-16T00-12-07.682499.tif",
@@ -140,6 +142,8 @@ def test_geotif_storage_unit():
 
 @pytest.mark.data
 def test_netcdf_storage_unit():
+    from cubeaccess.storage import NetCDF4StorageUnit
+
     files = [
         "/short/v10/dra547/injest_examples/multiple_band_variables/LS7_ETM_NBAR_P54_GANBAR01-002_089_078_2015_152_-26.nc",
         "/short/v10/dra547/injest_examples/multiple_band_variables/LS7_ETM_NBAR_P54_GANBAR01-002_089_078_2015_152_-27.nc",
