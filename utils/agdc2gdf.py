@@ -62,7 +62,7 @@ from gdf import directory_writable
 from gdf._gdfutils import log_multiline
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG) # Logging level for this module
+logger.setLevel(logging.INFO) # Logging level for this module
 
 class AGDC2GDF(GDF):
     DEFAULT_CONFIG_FILE = 'agdc2gdf_default.conf' # N.B: Assumed to reside in code root directory

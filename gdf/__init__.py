@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#===============================================================================
+# ===============================================================================
 # Copyright (c)  2014 Geoscience Australia
 # All rights reserved.
 # 
@@ -25,13 +25,13 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#===============================================================================
-'''
+# ===============================================================================
+"""
 GDF Class
 Created on 12/03/2015
 
 @author: Alex Ip
-'''
+"""
 import os
 import sys
 import threading
@@ -48,6 +48,7 @@ import itertools
 from pprint import pprint
 from math import floor
 from distutils.util import strtobool
+
 from _database import Database, CachedResultSet
 from _arguments import CommandLineArgs
 from _config_file import ConfigFile
@@ -55,15 +56,17 @@ from _gdfnetcdf import GDFNetCDF
 from _gdfutils import dt2secs, secs2dt, days2dt, dt2days, make_dir, directory_writable, log_multiline
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO) # Initial logging level for this module
+
 
 thread_exception = None
 
 
 class GDF(object):
-    '''
+    """
     Class definition for GDF (General Data Framework).
     Manages configuration and database connections.
-    '''
+    """
     DEFAULT_CONFIG_FILE = 'gdf_default.conf' # N.B: Assumed to reside in code root directory
 
     ARG_DESCRIPTORS = {'refresh': {'short_flag': '-r', 
@@ -85,18 +88,18 @@ class GDF(object):
     DECIMAL_PLACES = 6
     
     def _cache_object(self, cached_object, cache_filename):
-        '''
+        """
         Function to write an object to a cached pickle file
-        '''
+        """
         cache_file = open(os.path.join(self.cache_dir, cache_filename), 'wb')
         cPickle.dump(cached_object, cache_file, -1)
         cache_file.close()
     
     def _get_cached_object(self, cache_filename):
-        '''
+        """
         Function to retrieve an object from a cached pickle file
         Will raise a general exception if refresh is forced
-        '''
+        """
         if self.refresh: raise Exception('Refresh Forced')
         cache_file = open(os.path.join(self.cache_dir, cache_filename), 'r')
         cached_object = cPickle.load(cache_file)
@@ -104,7 +107,7 @@ class GDF(object):
         return cached_object
     
     def _get_command_line_params(self, arg_descriptors={}):
-        '''
+        """
         Function to return a dict of command line parameters
         
         Parameters:
@@ -116,18 +119,18 @@ class GDF(object):
                 'const': <Boolean>,
                 'help': <help string>
                 
-        '''
+        """
         command_line_args_object = CommandLineArgs(arg_descriptors)
         
         return command_line_args_object.arguments
         
     def _get_config(self, config_files_string=None):
-        '''
+        """
         Function to return a nested dict of config file entries
         Parameter:
             config_files_string - comma separated list of GDF config files
         Returns: dict {<db_ref>: {<param_name>: <param_value>,... },... }
-        '''
+        """
         config_dict = collections.OrderedDict() # Need to preserve order of config files
         
         # Use default config file if none provided
@@ -157,9 +160,9 @@ class GDF(object):
         return config_dict
     
     def _get_dbs(self):
-        '''
+        """
         Function to return an ordered dict of database objects keyed by db_ref
-        '''
+        """
         database_dict = collections.OrderedDict()
         
         # Create a database connection for every valid configuration
@@ -192,8 +195,8 @@ class GDF(object):
         
 
     def __init__(self):
-        '''Constructor for class GDF
-        '''
+        """Constructor for class GDF
+        """
         self._config_files = [] # List of config files read
         
         self._code_root = os.path.abspath(os.path.dirname(__file__)) # Directory containing module code
@@ -251,7 +254,7 @@ class GDF(object):
 
         
     def _do_db_query(self, databases, args):
-        '''
+        """
         Generic function to execute a function across multiple databases, each function in its own thread
         Returns a dict which must be updated by db_function in a thread-safe manner 
         
@@ -259,7 +262,7 @@ class GDF(object):
             databases: dict of database objects keyed by db_ref
             args: list containing db_function to be multi-threaded and its arguments. 
                 NB: Last two arguments of db_function must be database and result_dict 
-        '''        
+        """        
         def check_thread_exception():
             """"Check for exception raised by previous thread and raise it if found.
             Note that any other threads already underway will be allowed to finish normally.
@@ -314,7 +317,7 @@ class GDF(object):
         return result_dict
 
     def _do_storage_type_query(self, storage_types, args):
-        '''
+        """
         Generic function to execute a function across multiple databases, each function in its own thread
         Returns a dict which must be updated by db_function in a thread-safe manner 
         
@@ -322,7 +325,7 @@ class GDF(object):
             storage_types: List of storage_types to process (None for all storage types)
             args: list containing db_function to be multi-threaded and its arguments. 
                 NB: Last two arguments of db_function must be database and result_dict 
-        '''        
+        """        
         def check_thread_exception():
             """"Check for exception raised by previous thread and raise it if found.
             Note that any other threads already underway will be allowed to finish normally.
@@ -378,7 +381,7 @@ class GDF(object):
         return result_dict
 
     def _get_storage_config(self):
-        '''
+        """
         Function to return a dict with details of all storage unit types managed in databases keyed as follows:
           
         Returns: Dict keyed as follows:
@@ -409,9 +412,9 @@ class GDF(object):
                 }
             ...
             }
-        '''
+        """
         def get_db_storage_config(database, result_dict):
-            '''
+            """
             Function to return a dict with details of all storage types managed in a single database 
             
             Parameters:
@@ -420,7 +423,7 @@ class GDF(object):
                         
             This is currently a bit ugly because it retrieves the de-normalised data in a single query and then has to
             build the tree from the flat result set. It could be done in a prettier (but slower) way with multiple queries
-            '''
+            """
             db_storage_config_dict = collections.OrderedDict()
             
             try:
@@ -429,7 +432,7 @@ class GDF(object):
                 storage_type_filter_list = None
             logger.debug('storage_type_filter_list = %s', storage_type_filter_list)
               
-            SQL = '''-- Query to return all storage_type configuration info for database %s
+            SQL = """-- Query to return all storage_type configuration info for database %s
 select distinct
     storage_type_tag,
     storage_type_id,
@@ -484,14 +487,14 @@ join reference_system using (reference_system_id)
 left join reference_system index_reference_system on index_reference_system.reference_system_id = storage_type_dimension.index_reference_system_id
 left join storage_type_dimension_property using(storage_type_id, domain_id, dimension_id)
 left join property using(property_id)
-''' % database.db_ref
+""" % database.db_ref
 
             # Apply storage_type filter if configured
             if storage_type_filter_list:
                 SQL += "where storage_type_tag in ('" + "', '".join(storage_type_filter_list) + "')"
                 
-            SQL += '''order by storage_type_tag, measurement_type_index, dimension_order;
-'''
+            SQL += """order by storage_type_tag, measurement_type_index, dimension_order;
+"""
 
             storage_config_results = database.submit_query(SQL)
             
@@ -579,7 +582,7 @@ left join property using(property_id)
                
             del storage_config_results 
             
-            SQL='''-- Find maxima and minima for all storage types and dimensions
+            SQL="""-- Find maxima and minima for all storage types and dimensions
 select
     storage_type_tag,
     dimension_order,
@@ -593,15 +596,15 @@ join storage_type_dimension using(storage_type_id)
 join storage using(storage_type_id)
 join storage_dimension using(storage_type_id, storage_id, storage_version, domain_id, dimension_id)
 join dimension using(dimension_id)
-'''
+"""
             # Apply storage_type filter if configured
             if storage_type_filter_list:
                 SQL += "where storage_type_tag in ('" + "', '".join(storage_type_filter_list) + "')"
 
-            SQL += '''
+            SQL += """
 group by 1,2,3
 order by 1,2           
-'''
+"""
             min_max_results = database.submit_query(SQL)
             for record in min_max_results.record_generator():
                 logger.debug('record = %s', record)
@@ -635,70 +638,64 @@ order by 1,2
         return filtered_storage_config_dict
     
     def solar_date(self, record_dict):
-        '''
+        """
         Function which takes a record_dict containing all values from a query in the get_db_slices function 
         and returns the solar date of the observation
-        '''
+        """
         # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
         #TODO: Make more general (if possible)
         # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
         return datetime.fromtimestamp(record_dict['slice_index_value'] + (record_dict['x_min'] + record_dict['x_max']) * 120).date()
-            
-            
+
     def null_grouping(self, record_dict):
-        '''
+        """
         Function which takes a record_dict containing all values from a query in the get_db_slices function 
         and returns the slice_index_value unmodified
-        '''
+        """
         return record_dict['slice_index_value']
-            
-            
+
     def solar_days_since_epoch(self, record_dict):
-        '''
+        """
         Function which takes a record_dict containing all values from a query in the get_db_slices function 
         and returns the number of days since 1/1/1970
-        '''
+        """
         #TODO: Make more general (if possible)
         return dt2days(self.solar_date(record_dict))
-    
-            
+
     def solar_year_month(self, record_dict):
-        '''
+        """
         Function which takes a record_dict containing all values from a query in the get_db_slices function 
         and returns a (year, month) tuple from the solar date of the observation
-        '''
+        """
         # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
         #TODO: Make more general (if possible)
         # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
         solar_date = self.solar_date(record_dict)
         return (solar_date.year, 
                 solar_date.month)
-    
-            
+
     def solar_year(self, record_dict):
-        '''
+        """
         Function which takes a record_dict containing all values from a query in the get_db_slices function 
         and returns the solar year of the observation
-        '''
+        """
         # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
         #TODO: Make more general (if possible)
         # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
         solar_date = self.solar_date(record_dict)
         return solar_date.year
-            
-            
+
     def solar_month(self, record_dict):
-        '''
+        """
         Function which takes a record_dict containing all values from a query in the get_db_slices function 
         and returns the solar month of the observation
-        '''
+        """
         # Assumes slice_index_value is time in seconds since epoch and x values are in degrees
         #TODO: Make more general (if possible)
         # Note: Solar time offset = average X ordinate in degrees converted to solar time offset in seconds 
         solar_date = self.solar_date(record_dict)
         return solar_date.month
-            
-            
+
     @property
     def code_root(self):
         return self._code_root
@@ -738,7 +735,7 @@ order by 1,2
                 logger.setLevel(logging.INFO)
     
     def get_descriptor(self, query_parameter=None):
-        '''
+        """
 query_parameter = \
 {
 'storage_types':
@@ -760,7 +757,7 @@ query_parameter = \
      },
 'polygon': '<some kind of text representation of a polygon for PostGIS to sort out>' # We won't be doing this in the pilot
 }
-'''
+"""
         
         #=======================================================================
         # # Create a dummy array of days since 1/1/1970 between min and max timestamps
@@ -841,7 +838,7 @@ query_parameter = \
                           exclusive, 
                           database, 
                           result_dict):
-            '''
+            """
             Function to return descriptors for all storage_units which fall in the specified dimensional ranges
             
             Parameters:
@@ -856,7 +853,7 @@ query_parameter = \
                                                                               
             Return Value:
                 {db_ref: <Descriptor as defined above>}
-            '''
+            """
 
             def update_storage_units_descriptor(storage_index_tuple,
                                                 storage_type_dimensions,
@@ -871,9 +868,9 @@ query_parameter = \
                                                 overall_slice_group_set,
                                                 storage_units_descriptor
                                                 ):
-                '''
+                """
                 This function is a bit ugly, but it needs to run in two places so it's better not to have it inline
-                '''
+                """
                 logger.debug('update_storage_units_descriptor() called')
                 if storage_index_tuple is not None: # We have values to write
                     for dimension in regular_storage_type_dimensions:
@@ -943,40 +940,40 @@ query_parameter = \
                 # Create a sub-descriptor for each storage_type
                 storage_type_descriptor = {}
                 
-                SQL = '''-- Find all slices in storage_units which fall in range for storage type %s
-select distinct''' % storage_type
+                SQL = """-- Find all slices in storage_units which fall in range for storage type %s
+select distinct""" % storage_type
                 for dimension_tag in storage_type_dimensions:
-                    SQL +='''
+                    SQL +="""
 %s.storage_dimension_index as %s_index,
 %s.storage_dimension_min as %s_min,
-%s.storage_dimension_max as %s_max,'''.replace('%s', dimension_tag)
-                SQL +='''
+%s.storage_dimension_max as %s_max,""".replace('%s', dimension_tag)
+                SQL +="""
 slice_index_value
 from storage
-'''                    
+"""                    
                 for dimension_tag in storage_type_dimensions:
-                    SQL += '''join (
+                    SQL += """join (
 select *
 from storage_dimension
 join dimension using(dimension_id)
 where storage_type_id = %d
 and storage_version = 0
 and dimension.dimension_tag = '%s'
-''' % (storage_config['storage_type_id'], 
+""" % (storage_config['storage_type_id'], 
    dimension_tag
    )
                     # Apply range filters
                     if dimension_tag in range_dimensions:
-                        SQL += '''and (storage_dimension_min < %f 
+                        SQL += """and (storage_dimension_min < %f 
     and storage_dimension_max > %f)
-''' % (dimension_range_dict[dimension_tag][1], # Max
+""" % (dimension_range_dict[dimension_tag][1], # Max
    dimension_range_dict[dimension_tag][0] # Min
    )
 
-                    SQL += ''') %s using(storage_type_id, storage_id, storage_version)
-''' % (dimension_tag)
+                    SQL += """) %s using(storage_type_id, storage_id, storage_version)
+""" % (dimension_tag)
 
-                SQL +='''
+                SQL +="""
     join storage_dataset using (storage_type_id, storage_id, storage_version)
     join (
       select dataset_type_id, 
@@ -991,17 +988,17 @@ and dimension.dimension_tag = '%s'
       join dimension using(dimension_id)
       where dimension_tag = '%s'
     ) dataset_index using(dataset_type_id, dataset_id)
-''' % (slice_dimension)
+""" % (slice_dimension)
 
                 # Restrict slices to those within range if required
                 if slice_dimension in range_dimensions:
-                    SQL += '''where slice_index_value between %f and %f
-''' % (dimension_range_dict[slice_dimension][0], # Min
+                    SQL += """where slice_index_value between %f and %f
+""" % (dimension_range_dict[slice_dimension][0], # Min
        dimension_range_dict[slice_dimension][1]) # Max
 
-                SQL +='''
-order by ''' + '_index, '.join(storage_type_dimensions) + '''_index, slice_index_value;
-'''            
+                SQL +="""
+order by """ + '_index, '.join(storage_type_dimensions) + """_index, slice_index_value;
+"""            
                 log_multiline(logger.debug, SQL , 'SQL', '\t')
     
                 slice_result_set = database.submit_query(SQL)
@@ -1141,28 +1138,28 @@ order by ''' + '_index, '.join(storage_type_dimensions) + '''_index, slice_index
         
         
     def get_storage_filename(self, storage_type, storage_indices):
-        '''
+        """
         Function to return the filename for a storage unit file with the specified storage_type & storage_indices
-        '''
+        """
         return storage_type + '_' + '_'.join([str(index) for index in storage_indices]) + '.nc'
     
     def get_storage_dir(self, storage_type, storage_indices):
-        '''
+        """
         Function to return the filename for a storage unit file with the specified storage_type & storage_indices
-        '''
+        """
         return os.path.join(self._storage_config[storage_type]['storage_type_location'], storage_type)
     
     def get_storage_path(self, storage_type, storage_indices):
-        '''
+        """
         Function to return the full path to a storage unit file with the specified storage_type & storage_indices
-        '''
+        """
         return os.path.join(self.get_storage_dir(storage_type, storage_indices), self.get_storage_filename(storage_type, storage_indices))
     
     
     def ordinate2index(self, storage_type, dimension, ordinate):
-        '''
+        """
         Return the storage unit index from the reference system ordinate for the specified storage type, ordinate value and dimension tag
-        '''
+        """
         if dimension == 'T':
             #TODO: Make this more general - need to cater for other reference systems besides seconds since epoch
             index_reference_system_name = self.storage_config[storage_type]['dimensions']['T']['index_reference_system_name'].lower()
@@ -1180,9 +1177,9 @@ order by ''' + '_index, '.join(storage_type_dimensions) + '''_index, slice_index
         
 
     def index2ordinate(self, storage_type, dimension, index):
-        '''
+        """
         Return the reference system ordinate from the storage unit index for the specified storage type, index value and dimension tag
-        '''
+        """
         if dimension == 'T':
             #TODO: Make this more general - need to cater for other reference systems besides seconds since epoch
             index_reference_system_name = self.storage_config[storage_type]['dimensions']['T']['index_reference_system_name'].lower()
@@ -1198,7 +1195,7 @@ order by ''' + '_index, '.join(storage_type_dimensions) + '''_index, slice_index
                     self.storage_config[storage_type]['dimensions'][dimension]['dimension_origin'])
             
     def get_data(self, data_request_descriptor={}, destination_filename=None):
-        '''
+        """
         Function to return composite in-memory arrays
 
         data_request = \
@@ -1252,7 +1249,7 @@ order by ''' + '_index, '.join(storage_type_dimensions) + '''_index, slice_index
             '< t CRS>'
             ]
         }
-        '''
+        """
         storage_type = data_request_descriptor['storage_type'] 
         
         # Convert dimension tags to upper case

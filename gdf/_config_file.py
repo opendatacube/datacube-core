@@ -42,6 +42,7 @@ import collections
 from _gdfutils import log_multiline
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO) # Logging level for this module
 
 
 class ConfigFile(object):

@@ -56,12 +56,14 @@ before_install:
   - cd ..
 
 install:
-  - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2 coverage python-coveralls
+  - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2 coverage python-coveralls pep8 pylint
   - source activate test-agdc
   - python setup.py install
 
 # Command to run tests
 script:
+#  - pep8 --filename=*.py --max-line-length 120 analytics analytics_utils execution_engine gdf gdf_database gdf_tests utils
+#  - pylint analytics analytics_utils execution_engine gdf gdf_database gdf_tests utils --reports no
   - coverage run -m unittest discover gdf_tests
 
 after_success:

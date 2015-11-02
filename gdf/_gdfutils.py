@@ -42,6 +42,7 @@ import logging
 from pprint import pformat
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO) # Logging level for this module
 
 
 #TODO: Do something about duplicate definition (here and in gdf)
