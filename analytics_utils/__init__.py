@@ -1,10 +1,10 @@
-from __future__ import absolute_import
-from __future__ import print_function
 #!/usr/bin/env python
 
 # Adapted get_pqa_mask function from stacker.py by Josh Sixsmith & Alex IP of Geoscience Australia
 # https://github.com/GeoscienceAustralia/agdc/blob/master/src/stacker.py
 
+from __future__ import absolute_import
+from __future__ import print_function
 import math
 import csv
 
