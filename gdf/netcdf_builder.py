@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-from __future__ import print_function
 # -------------------------------------------------------------------------------
 # Name:         netcdf_builder
 # Purpose:      Selection of functions to open, create and manage netCDF
@@ -92,6 +90,8 @@ from __future__ import print_function
 #  OrderedDict
 #  https://code.google.com/p/netcdf4-python/
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import re
 

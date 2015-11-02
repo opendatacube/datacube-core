@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 # -*- coding: utf-8 -*-
 #
 # AGDC documentation build configuration file, created by
@@ -13,6 +12,7 @@ from __future__ import absolute_import
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+from __future__ import absolute_import
 import sys
 import os
 
