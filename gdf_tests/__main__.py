@@ -1,7 +1,8 @@
-import test_arguments
-import test_config_file
-import test_database
-import test_gdf
+from __future__ import absolute_import
+from . import test_arguments
+from . import test_config_file
+from . import test_database
+from . import test_gdf
 
 # Run all tests
 test_arguments.main()
