@@ -105,6 +105,10 @@ def preserve_cwd(function):
 
 
 def execute(command_list):
+    """
+    Execute an external command and log any stdout/stderr messages to logging
+    :param command_list:
+    """
     _LOG.debug("Running command: " + ' '.join(command_list))
     proc = subprocess.Popen(command_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             env=dict(os.environ, GDAL_CACHEMAX="250"))

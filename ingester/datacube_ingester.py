@@ -7,7 +7,7 @@ import yaml
 from create_tiles import calc_output_filenames, create_tiles, list_tile_files
 from ingester.utils import preserve_cwd
 from netcdf_indexer import index_netcdfs
-from netcdf_writer import append_to_netcdf, MultiVariableNetCDF, SingleVariableNetCDF
+from netcdf_writer import append_to_netcdf
 import eodatasets.drivers
 import eodatasets.type
 from eodatasets.serialise import read_yaml_metadata
@@ -69,12 +69,12 @@ def load_dataset(input_path):
     return input_path, eodataset
 
 
-def merge_tiles_to_netcdf(eodataset, filename_format, netcdf_class):
+def merge_tiles_to_netcdf(eodataset, filename_format):
     created_tiles = list_tile_files('test.csv')
     tile_mappings = calc_output_filenames(created_tiles, filename_format, eodataset)
     for geotiff, netcdf in tile_mappings:
         gdal_dataset = gdal.Open(geotiff)
-        append_to_netcdf(gdal_dataset, netcdf, eodataset, netcdf_class=netcdf_class)
+        append_to_netcdf(gdal_dataset, netcdf, eodataset)
 
     return [netcdf_path for _, netcdf_path in tile_mappings]
 
@@ -106,14 +106,13 @@ def setup_logging(verbosity, filename=None):
 
 
 @preserve_cwd
-def ingest(input_path, output_dir, filename_format, netcdf_class=MultiVariableNetCDF, tile=True, merge=True):
+def ingest(input_path, output_dir, filename_format, tile=True, merge=True):
     """
     Runs a series of steps to: stack, split into tiles and re-merge into netcdf an input dataset
 
     :param input_path: str, pathname to a ga-metadata.yaml file or directory that eo-datasets can process
     :param output_dir: str, pathname
     :param filename_format: string format for output filenames, extracts fields from the input EO-Dataset
-    :param netcdf_class: either MultiVariableNetCDF or SingleVariableNetCDF
     :param tile: boolean, whether to run the tiling step
     :param merge: boolean, whether
     :return: list of created tile-files
@@ -132,7 +131,7 @@ def ingest(input_path, output_dir, filename_format, netcdf_class=MultiVariableNe
 
     # Import tiles into NetCDF files
     if merge:
-        netcdf_paths = merge_tiles_to_netcdf(eodataset, filename_format, netcdf_class)
+        netcdf_paths = merge_tiles_to_netcdf(eodataset, filename_format)
         _LOG.info("Created/altered storage units: {}".format(netcdf_paths))
 
     write_cube_index(netcdf_paths)
@@ -150,22 +149,19 @@ def write_cube_index(cube_filenames, output_name='cube_descriptions.yaml'):
 @click.command(help="Example output filename format: combined_{x}_{y}.nc", context_settings=CLICK_SETTINGS)
 @click.option('--output-dir', '-o', default='.')
 @click.option('--log', type=click.Path())
-@click.option('--multi-variable', 'netcdf_class', flag_value=MultiVariableNetCDF, default=True)
-@click.option('--single-variable', 'netcdf_class', flag_value=SingleVariableNetCDF)
 @click.option('--tile/--no-tile', default=True, help="Allow partial processing")
 @click.option('--merge/--no-merge', default=True, help="Allow partial processing")
 @click.option('--verbose', '-v', count=True, help="Use multiple times for more verbosity")
 @click.argument('input_path', type=click.Path(exists=True, readable=True))
 @click.argument('filename-format')
-def main(input_path, output_dir, filename_format, log, netcdf_class=MultiVariableNetCDF,
-         tile=True, merge=True, verbose=0):
+def main(input_path, output_dir, filename_format, log, tile=True, merge=True, verbose=0):
     """
     Runs ingest from the command line
     """
     setup_logging(verbose, log)
     _LOG.debug('datacube-ingester started')
 
-    affected_tiles = ingest(input_path, output_dir, filename_format, netcdf_class, tile, merge)
+    affected_tiles = ingest(input_path, output_dir, filename_format, tile, merge)
 
     _LOG.debug('datacube-ingester finished')
 

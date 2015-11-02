@@ -1,18 +1,12 @@
-from collections import namedtuple
 from datetime import datetime
-from abc import ABCMeta, abstractmethod
-import argparse
 import os.path
-from netCDF4._netCDF4 import date2index
 
 import numpy as np
-from osgeo import gdal, osr
 import netCDF4
-import yaml
+from netCDF4 import date2index
+from osgeo import osr
 
-from eodatasets import serialise
 from gdf import GDFNetCDF, dt2secs
-from ingester.utils import _get_nbands_lats_lons_from_gdalds
 
 EPOCH = datetime(1970, 1, 1, 0, 0, 0)
 
@@ -23,8 +17,6 @@ class NetCDFWriter(object):
 
     Sub-classes will create the NetCDF in different structures.
     """
-
-    __metaclass__ = ABCMeta
 
     def __init__(self, netcdf_path, tile_spec):
 
@@ -78,8 +70,8 @@ class NetCDFWriter(object):
         projection = osr.SpatialReference(tile_spec.projection)
         assert projection.IsGeographic()
         crso = self.nco.createVariable('crs', 'i4')
-        crso.long_name = projection.GetAttrValue('GEOGCS') # "Lon/Lat Coords in WGS84"
-        crso.grid_mapping_name = "latitude_longitude" # TODO support other projections
+        crso.long_name = projection.GetAttrValue('GEOGCS')  # "Lon/Lat Coords in WGS84"
+        crso.grid_mapping_name = "latitude_longitude"  # TODO support other projections
         crso.longitude_of_prime_meridian = 0.0
         crso.semi_major_axis = projection.GetSemiMajor()
         crso.inverse_flattening = projection.GetInvFlattening()
@@ -90,7 +82,7 @@ class NetCDFWriter(object):
         self.nco.geospatial_lat_min = tile_spec.lat_min
         self.nco.geospatial_lat_max = tile_spec.lat_max
         self.nco.geospatial_lat_units = "degrees_north"
-        self.nco.geospatial_lat_resolution = "0.00025" # FIXME Shouldn't be hard coded
+        self.nco.geospatial_lat_resolution = "0.00025"  # FIXME Shouldn't be hard coded
         self.nco.geospatial_lon_min = tile_spec.lon_min
         self.nco.geospatial_lon_max = tile_spec.lon_max
         self.nco.geospatial_lon_units = "degrees_east"
@@ -164,8 +156,8 @@ class NetCDFWriter(object):
 
     def _create_data_variable(self, varname, dtype, chunksizes, ndv):
         newvar = self.nco.createVariable(varname, dtype, ('time', 'latitude', 'longitude'),
-                                       zlib=True, chunksizes=chunksizes,
-                                       fill_value=ndv)
+                                         zlib=True, chunksizes=chunksizes,
+                                         fill_value=ndv)
         newvar.grid_mapping = 'crs'
         newvar.set_auto_maskandscale(False)
         newvar.units = '1'
@@ -180,7 +172,6 @@ class NetCDFWriter(object):
             band = self.nco.variables['band' + str(i)]
             netcdfbands.append(band)
         return netcdfbands
-
 
 
 class TileSpec(object):
@@ -223,10 +214,11 @@ def append_to_netcdf(gdal_dataset, netcdf_path, input_spec, bandname, input_file
     """
     Append a raster slice to a new or existing NetCDF file
 
-    :param gdal_tile: pathname to raster slice, readable by gdal
-    :param netcdf_path: pathname to
-    :param eodataset:
-    :param netcdf_class:
+    :param gdal_dataset: dataset to read the slice from
+    :param netcdf_path: pathname to output netcdf file
+    :param input_spec:
+    :param bandname:
+    :param input_filename: used for metadata only
     :return:
     """
     tile_spec = TileSpec(gdal_dataset)
