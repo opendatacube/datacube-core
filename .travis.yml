@@ -62,9 +62,9 @@ install:
 
 # Command to run tests
 script:
-#  - pep8 --filename=*.py --max-line-length 120 analytics analytics_utils execution_engine gdf gdf_database gdf_tests utils
-#  - pylint analytics analytics_utils execution_engine gdf gdf_database gdf_tests utils --reports no
-  - coverage run -m unittest discover gdf_tests
+#  - pep8 --filename=*.py --max-line-length 120 analytics analytics_utils execution_engine gdf gdf_database gdf utils
+#  - pylint analytics analytics_utils execution_engine gdf gdf_database gdf utils --reports no
+  - coverage run -m unittest discover tests/gdf
 
 after_success:
   - coveralls

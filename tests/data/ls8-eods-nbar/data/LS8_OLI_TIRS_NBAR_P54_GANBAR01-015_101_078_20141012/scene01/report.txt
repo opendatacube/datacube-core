@@ -1,0 +1,53 @@
+
+                  GA NBAR Processing Report
+                  -------------------------
+
+Dataset ID:         LS8_OLI_TIRS_NBAR_P54_GANBAR01-015_101_078_20141012
+Satellite:          Landsat-8           Sensor:             OLI-TIRS
+Camera Number:      N/A                 Sensor Mode:        PUSH-BROOM
+
+Ground Station:     LGS
+
+Processing Level:   NBAR                Resampling:         
+Map Projection:     UTM                 Zone:               53
+Earth Ellipsoid:    GRS80               Datum:              GDA94
+
+Path/Strip No.:     101                 Row No:             078
+Image Lines:        8841                Image Pixels:       9161
+Image Orientation:  NUP                 Pixel Size:         25.0000000
+Output Bands:       1, 2, 3, 4, 5, 6, 7
+
+Scene Centre Lat:   -25.967             Scene Centre Long:  135.125
+Scene Centre Date:  2014-10-12          Scene Centre Time:  00:56:05.562178
+
+Product Format:     GEOTIFF             Interleaving:       
+
+Completion Date:    2014-11-06          Completion Time:    00:32:06
+
+Termination Status: completed
+
+
+
+                  PRODUCT FORMATTING
+                  ------------------
+
+Product Scene Centre Location (lat/long) : -25.967 / 135.125 deg.
+Product Scene Centre Date/Time (yyyy-mm-dd hh:mm:ss.ss): 2014-10-12 00:56:05.562178
+
+Product Extent:
+
+  Lat:   -24.9700000 ------------ Lat:   -24.9682600
+  Long:  133.9796900              Long:  136.2483800
+  North: 7237987.500              North: 7237987.500
+  East:   397012.500              East:   626012.500
+  |                                                |
+  |                                                |
+  |                                                |
+  |                                                |
+  |                                                |
+  |                                                |
+  Lat:   -26.9652800              Lat:   -26.9633800
+  Long:  133.9623300              Long:  136.2696200
+  North: 7016987.500              North: 7016987.500
+  East:   397012.500 ------------ East:   626012.500
+
