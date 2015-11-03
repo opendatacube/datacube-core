@@ -44,7 +44,7 @@ from pprint import pformat
 logger = logging.getLogger(__name__)
 
 
-# TODO: Do something about duplicate definition (here and in gdf_tests)
+# TODO: Do something about duplicate definition (here and in gdf)
 EPOCH_DATE_ORDINAL = date(1970, 1, 1).toordinal()
 
 

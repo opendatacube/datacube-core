@@ -293,10 +293,10 @@ class GDF(object):
                     config_dict[db_ref] = config_file_object.configuration[db_ref]
 
         # Set variables from global config and remove global config from result dict
-        for key, value in config_dict['gdf_tests'].items():
+        for key, value in config_dict['gdf'].items():
             self.__setattr__(key, value)
             logger.debug('self.%s = %s', key, value)
-        del config_dict['gdf_tests']
+        del config_dict['gdf']
 
         log_multiline(logger.debug, config_dict, 'config_dict', '\t')
         return config_dict
@@ -353,7 +353,7 @@ class GDF(object):
 
         self.cache_dir = self._command_line_params['cache_dir'] or self.cache_dir
         if not directory_writable(self.cache_dir):
-            new_cache_dir = os.path.join(os.path.expanduser("~"), 'gdf_tests', 'cache')
+            new_cache_dir = os.path.join(os.path.expanduser("~"), 'gdf', 'cache')
             logger.warning('Unable to access cache directory %s. Using %s instead.', self.cache_dir, new_cache_dir)
             self.cache_dir = new_cache_dir
             if not directory_writable(self.cache_dir):
@@ -498,7 +498,7 @@ class GDF(object):
             Function to return a dict with details of all storage types managed in a single database
 
             Parameters:
-                database: gdf_tests.database object against which to run the query
+                database: gdf.database object against which to run the query
                 result_dict: dict to contain the result
 
             This is currently a bit ugly because it retrieves the de-normalised data in a single query and then has to
@@ -874,7 +874,7 @@ query_parameter = \
                 storage_types: list of storage_type_tags to include in query
                 exclusive: Boolean flag to indicate whether query should exclude storage_units with lower dimensionality
                            than the specified range
-                database: gdf_tests.database object against which to run the query
+                database: gdf.database object against which to run the query
                 result_dict: dict to contain the result
 
             Return Value:
@@ -1271,7 +1271,7 @@ order by ''' + '_index, '.join(storage_type_dimensions) + '''_index, slice_index
                    'range': (1293840000, 1325376000),
                    'array_range': (0, 127)
                    'crs': 'SSE', # Seconds since epoch
-                   'grouping_function': '<e.g. gdf_tests.solar_day>'
+                   'grouping_function': '<e.g. gdf.solar_day>'
                    }
              },
         'polygon': '<some kind of text representation of a polygon for PostGIS to sort out>'
