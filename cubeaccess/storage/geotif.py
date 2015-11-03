@@ -24,21 +24,26 @@ from ..core import Coordinate, Variable, StorageUnitBase
 
 
 class GeoTifStorageUnit(StorageUnitBase):
-    def __init__(self, filepath):
+    def __init__(self, filepath, other=None):
         self._filepath = filepath
-        dataset = gdal.Open(self._filepath, gdalconst.GA_ReadOnly)
-        if dataset is None:
-            raise IOError("failed to open " + self._filepath)
+        if not other:
+            dataset = gdal.Open(self._filepath, gdalconst.GA_ReadOnly)
+            if dataset is None:
+                raise IOError("failed to open " + self._filepath)
 
-        t = self._transform = dataset.GetGeoTransform()
-        self.coordinates = {
-            'x': Coordinate(numpy.float32, t[0], t[0]+(dataset.RasterXSize-1)*t[1], dataset.RasterXSize),
-            'y': Coordinate(numpy.float32, t[3], t[3]+(dataset.RasterYSize-1)*t[5], dataset.RasterYSize)
-        }
+            t = self._transform = dataset.GetGeoTransform()
+            self.coordinates = {
+                'x': Coordinate(numpy.float32, t[0], t[0]+(dataset.RasterXSize-1)*t[1], dataset.RasterXSize),
+                'y': Coordinate(numpy.float32, t[3], t[3]+(dataset.RasterYSize-1)*t[5], dataset.RasterYSize)
+            }
 
-        def band2var(band):
-            return Variable(GDALTypeCodeToNumericTypeCode(band.DataType), band.GetNoDataValue(), ('y', 'x'))
-        self.variables = {str(i+1): band2var(dataset.GetRasterBand(i+1)) for i in xrange(dataset.RasterCount)}
+            def band2var(band):
+                return Variable(GDALTypeCodeToNumericTypeCode(band.DataType), band.GetNoDataValue(), ('y', 'x'))
+            self.variables = {str(i+1): band2var(dataset.GetRasterBand(i+1)) for i in xrange(dataset.RasterCount)}
+        else:
+            self._transform = other._transform
+            self.coordinates = other.coordinates
+            self.variables = other.variables
 
     def _get_coord(self, name):
         coord = self.coordinates[name]
