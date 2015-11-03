@@ -127,7 +127,7 @@ def load_yaml(filename):
 
 def load_eodataset(dataset_path):
     # dataset_path = "/short/u46/gxr547/GA/NBAR/LS5_TM_NBAR_P54_GANBAR01-002_100_081_20100228/"
-    with open(dataset_path + "ga-metadata.yaml", "r") as stream:
+    with open(os.path.join(dataset_path, "ga-metadata.yaml"), "r") as stream:
         dataset_config = yaml.load(stream)
 
     for name in dataset_config['image']['bands']:
