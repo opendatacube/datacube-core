@@ -36,10 +36,11 @@ Tests for the gdf._ConfigFile.py module.
 """
 from __future__ import absolute_import
 import unittest
+import inspect
 
 import os
 
-from _config_file import ConfigFile
+from datacube.gdf._config_file import ConfigFile
 
 
 #
@@ -66,7 +67,7 @@ class TestConfigFile(unittest.TestCase):
         """
 
         # Default config file should be ../gdf/gdf_default.conf
-        default_config_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'gdf', 'gdf_default.conf')
+        default_config_file = os.path.join(os.path.dirname(inspect.getfile(ConfigFile)), 'gdf_default.conf')
 
         config_file_object = ConfigFile(default_config_file)
 
