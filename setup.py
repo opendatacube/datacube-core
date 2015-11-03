@@ -8,14 +8,14 @@ version = '0.0.0'
 setup(name='agdc-v2',
       version=version,
       packages=[
-          'gdf',
-          'analytics',
-          'analytics_utils',
-          'execution_engine',
-          'ingester'
+          'datacube.gdf',
+          'datacube.analytics',
+          'datacube.analytics_utils',
+          'datacube.execution_engine',
+          'datacube.ingester'
       ],
       package_data={
-          'gdf': ['gdf_default.conf']
+          'datacube/gdf': ['gdf_default.conf']
       },
       scripts=[
       ],
@@ -31,8 +31,6 @@ setup(name='agdc-v2',
       ],
       install_requires=[
           'click',
-          'eodatasets',
-          'eotools',
           'pathlib',
           'pyyaml',
       ],
@@ -48,9 +46,7 @@ setup(name='agdc-v2',
       license='Apache License 2.0',
       entry_points={
           'console_scripts': [
-              'datacube_ingest = ingester.datacube_ingester:main',
-              'print_image = ingester.utils:print_image',
-              'ingester = ingester.ingester:main'
+              'datacube_ingester = datacube.ingester.ingester:main'
           ]
       },
 )
