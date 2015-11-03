@@ -247,5 +247,3 @@ def create_with_gdf():
         gdfnetcdf.write_slice(variable_name, data_array[variable_index], {'T': slice_index})
     elif len(data_array.shape) == 2:
         gdfnetcdf.write_slice(variable_name, data_array, {'T': slice_index})
-
-

@@ -150,7 +150,8 @@ class GDFNetCDF(object):
                 dimension: Dimension tag (e.g. X, Y, T, etc.)
                 dimension_config: Nested dict containing storage configuration from GDF.storage_config['<storage_type>']
                 index: index for storage unit
-                dimension_index_vector: Numpy array of index values for irregular dimension (e.g. time) or None for unlimited irregular dimension
+                dimension_index_vector: Numpy array of index values for irregular dimension (e.g. time)
+                                        or None for unlimited irregular dimension
             """
 
             logger.debug('dimension = %s', dimension)
@@ -161,7 +162,7 @@ class GDFNetCDF(object):
             if dimension_config['indexing_type'] == 'regular' and not dimension_index_vector:
                 element_size = dimension_config['dimension_element_size']
                 dimension_min = index * dimension_config['dimension_extent'] + dimension_config[
-                    'dimension_origin'] + element_size / 2.0  # Half pixel to account for netCDF centre of pixel reference
+                    'dimension_origin'] + element_size / 2.0  # Half pixel for netcdf centre of pixel reference
                 dimension_max = dimension_min + dimension_config['dimension_extent']
 
                 dimension_index_vector = np.around(np.arange(dimension_min, dimension_max, element_size),
@@ -661,4 +662,3 @@ class GDFNetCDF(object):
     @property
     def isopen(self):
         return self._isopen
-

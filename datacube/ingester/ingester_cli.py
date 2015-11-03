@@ -15,5 +15,3 @@ CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 def main(ingest_config, storage_config, dataset_path):
     # "/short/u46/gxr547/GA/NBAR/LS5_TM_NBAR_P54_GANBAR01-002_100_081_20100228/"
     run_ingest(storage_config, ingest_config, dataset_path)
-
-

@@ -62,7 +62,7 @@ console_handler.setFormatter(console_formatter)
 logging.root.addHandler(console_handler)
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO) # Initial logging level for this module
+logger.setLevel(logging.INFO)  # Initial logging level for this module
 
 thread_exception = None
 
@@ -565,7 +565,8 @@ join domain using(domain_id)
 join dimension using(dimension_id)
 join indexing_type using(indexing_type_id)
 join reference_system using (reference_system_id)
-left join reference_system index_reference_system on index_reference_system.reference_system_id = storage_type_dimension.index_reference_system_id
+left join reference_system index_reference_system on
+    index_reference_system.reference_system_id = storage_type_dimension.index_reference_system_id
 left join storage_type_dimension_property using(storage_type_id, domain_id, dimension_id)
 left join property using(property_id)
 ''' % database.db_ref
@@ -992,16 +993,12 @@ join dimension using(dimension_id)
 where storage_type_id = %d
 and storage_version = 0
 and dimension.dimension_tag = '%s'
-''' % (storage_config['storage_type_id'],
-       dimension_tag
-       )
+''' % (storage_config['storage_type_id'], dimension_tag)
                     # Apply range filters
                     if dimension_tag in range_dimensions:
                         sql += '''and (storage_dimension_min < %f
     and storage_dimension_max > %f)
-''' % (dimension_range_dict[dimension_tag][1],  # Max
-       dimension_range_dict[dimension_tag][0]  # Min
-       )
+''' % (dimension_range_dict[dimension_tag][1], dimension_range_dict[dimension_tag][0])  # Max, Min
 
                     sql += ''') %s using(storage_type_id, storage_id, storage_version)
 ''' % dimension_tag
@@ -1026,8 +1023,7 @@ and dimension.dimension_tag = '%s'
                 # Restrict slices to those within range if required
                 if slice_dimension in range_dimensions:
                     sql += '''where slice_index_value between %f and %f
-''' % (dimension_range_dict[slice_dimension][0],  # Min
-       dimension_range_dict[slice_dimension][1])  # Max
+''' % (dimension_range_dict[slice_dimension][0], dimension_range_dict[slice_dimension][1])  # Min, Max
 
                 sql += '''
 order by ''' + '_index, '.join(storage_type_dimensions) + '''_index, slice_index_value;

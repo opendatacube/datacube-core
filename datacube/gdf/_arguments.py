@@ -84,7 +84,6 @@ def _parse_args(arg_descriptors):
     return args.__dict__
 
 
-
 class CommandLineArgs(object):
     DEFAULT_ARG_DESCRIPTORS = {'debug': {'short_flag': '-d',
                                          'long_flag': '--debug',

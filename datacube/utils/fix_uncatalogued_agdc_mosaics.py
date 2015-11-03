@@ -136,7 +136,9 @@ SELECT
     a2.acquisition_id AS acquisition_id2,
     d2.dataset_id AS dataset_id2,
     t2.tile_id AS tile_id2,
-    regexp_replace(regexp_replace(t1.tile_pathname, '(/(-)*\d{3}_(-)*\d{3}/\d{4}/)(.*)\.\w+$'::text, '\1mosaic_cache/\4.vrt'::text), '(.*_PQA_.*)\.vrt$'::text, '\1.tif'::text) AS tile_pathname,
+    regexp_replace(regexp_replace(t1.tile_pathname,
+     '(/(-)*\d{3}_(-)*\d{3}/\d{4}/)(.*)\.\w+$'::text, '\1mosaic_cache/\4.vrt'::text), '(.*_PQA_.*)\.vrt$'::text,
+     '\1.tif'::text) AS tile_pathname,
     a1.x_ref as path,
     a1.y_ref as row1,
     a2.y_ref as row2,
@@ -149,11 +151,17 @@ SELECT
    FROM acquisition a1
      JOIN dataset d1 ON d1.acquisition_id = a1.acquisition_id
      JOIN tile t1 ON t1.dataset_id = d1.dataset_id AND (t1.tile_class_id = 1 OR t1.tile_class_id = 3)
-     JOIN acquisition a2 ON a1.satellite_id = a2.satellite_id AND a1.sensor_id = a2.sensor_id AND a1.x_ref = a2.x_ref AND a1.y_ref = (a2.y_ref - 1) AND a1.end_datetime - a2.start_datetime between interval '-12 seconds' and interval '12 seconds' AND a1.acquisition_id <> a2.acquisition_id
+     JOIN acquisition a2
+      ON a1.satellite_id = a2.satellite_id AND a1.sensor_id = a2.sensor_id AND a1.x_ref = a2.x_ref AND a1.y_ref = (
+      a2.y_ref - 1)
+      AND a1.end_datetime - a2.start_datetime between interval '-12 seconds'
+      AND interval '12 seconds' AND a1.acquisition_id <> a2.acquisition_id
      JOIN dataset d2 ON d2.acquisition_id = a2.acquisition_id AND d1.level_id = d2.level_id
-     JOIN tile t2 ON t2.dataset_id = d2.dataset_id AND t1.tile_type_id = t2.tile_type_id AND (t2.tile_class_id = 1 OR t2.tile_class_id = 3) AND t1.x_index = t2.x_index AND t1.y_index = t2.y_index
+     JOIN tile t2 ON t2.dataset_id = d2.dataset_id AND t1.tile_type_id = t2.tile_type_id
+      AND (t2.tile_class_id = 1 OR t2.tile_class_id = 3) AND t1.x_index = t2.x_index AND t1.y_index = t2.y_index
      JOIN processing_level on d1.level_id = processing_level.level_id
-     LEFT JOIN tile mt ON mt.tile_class_id = 4 AND mt.dataset_id = t1.dataset_id AND mt.tile_type_id = t1.tile_type_id AND mt.x_index = t1.x_index AND mt.y_index = t1.y_index
+     LEFT JOIN tile mt ON mt.tile_class_id = 4 AND mt.dataset_id = t1.dataset_id
+      AND mt.tile_type_id = t1.tile_type_id AND mt.x_index = t1.x_index AND mt.y_index = t1.y_index
 where t1.tile_type_id = 1
 and t1.tile_class_id in (1,3) --Non-overlapped & overlapped
 and t2.tile_class_id in (1,3) --Non-overlapped & overlapped

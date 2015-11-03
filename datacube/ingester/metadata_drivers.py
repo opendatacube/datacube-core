@@ -2,6 +2,7 @@ from netCDF4 import Dataset, num2date, date2num, date2index
 import eodatasets
 from eodatasets import type as ptype
 
+
 class BomModisDriver(eodatasets.DatasetDriver):
     """
     Extend EODatasets to read metadata about alternative inputs for the datacube

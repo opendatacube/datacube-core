@@ -1,8 +1,8 @@
 # -------------------------------------------------------------------------------
 # Name:         netcdf_builder
 # Purpose:      Selection of functions to open, create and manage netCDF
-#		objects and files. These routines have been developed and
-#		tested with netCDF3 and netCDF4 file formats.
+#       objects and files. These routines have been developed and
+#       tested with netCDF3 and netCDF4 file formats.
 #
 # Author:       Matt Paget, Edward King
 #
@@ -19,40 +19,40 @@
 # Updates:
 # 24 Mar 2011	Initial demonstration of the idea.
 # 16 Nov 2011	Separated the code into logical components and made the netCDF
-#		object the primary object to be passed between routines.
-#		Generalised the nc3_add_data() routine to accept slices (or
-#		slice-like elements) and thus give the user more control over
-#		where data is placed in the NetCDF variable.
+#       object the primary object to be passed between routines.
+#       Generalised the nc3_add_data() routine to accept slices (or
+#       slice-like elements) and thus give the user more control over
+#       where data is placed in the NetCDF variable.
 # 22 Nov 2011	Added optional timeunit argument to nc3_set_timelatlon().
-#		Some minor changes to the comments.
+#       Some minor changes to the comments.
 # 10 Feb 2013	Renamed to netcdf_builder.py
-#		Changed the 'nc3' prefix of all routines to 'nc'. Retained
-#		'nc3*' function names for backward compatibility.
-#		Refreshed routines to work with the netCDF4-python package.
-#		Updated add variables commands to add a _FillValue by default.
-#		Added mode keyword in call to Dataset for permission parameter
-#		in nc_open.
-#		Added zlib option to nc_set_var.
+#       Changed the 'nc3' prefix of all routines to 'nc'. Retained
+#       'nc3*' function names for backward compatibility.
+#       Refreshed routines to work with the netCDF4-python package.
+#       Updated add variables commands to add a _FillValue by default.
+#       Added mode keyword in call to Dataset for permission parameter
+#       in nc_open.
+#       Added zlib option to nc_set_var.
 # 11 Apr 2013	Added chunksizes option to nc_set_var.
 # 17 Apr 2013	Wrapped import of OrderedDict in a try statement.
-#		Rearranged default order of dimension attributes.
-#		Added a check for changing the _FillValue attribute of a
-#		variable in nc_set_attributes.
+#       Rearranged default order of dimension attributes.
+#       Added a check for changing the _FillValue attribute of a
+#       variable in nc_set_attributes.
 # 12 Oct 2013	Added axis attribute to time, latitude and longitude dimensions
-#		in nc_set_timelatlon (not strictly required but handy for
-#		completeness).
-#		Removed 'nc_' prefix from each function name but retained
-#		previous function names as alias functions at the bottom of the
-#		script.
-#		Changed default format to NETCDF4_CLASSIC in ncopen().
+#       in nc_set_timelatlon (not strictly required but handy for
+#       completeness).
+#       Removed 'nc_' prefix from each function name but retained
+#       previous function names as alias functions at the bottom of the
+#       script.
+#       Changed default format to NETCDF4_CLASSIC in ncopen().
 # 19 Mar 2014	Added add_bounds() function for adding the CF bounds attribute
-#		to a dimension and the associated bounds array to a new
-#		variable.
-#		Added warning comment to add_data() docstring.
+#       to a dimension and the associated bounds array to a new
+#       variable.
+#       Added warning comment to add_data() docstring.
 # 15 Aug 2014	Added type normalisation to get_attributes - now as an
-#		internal function called for all global and variable attributes
-#		and switchable via a boolean parameter. Previously, variable
-#		attributes were normalised.
+#       internal function called for all global and variable attributes
+#       and switchable via a boolean parameter. Previously, variable
+#       attributes were normalised.
 # 12 May 2015	Added _ncversion() and _setattr() functions to provide a
 # 		wrapper for the bug described at
 # 		  https://code.google.com/p/netcdf4-python/issues/detail?id=110
@@ -92,13 +92,11 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-import os
-import re
+from collections import OrderedDict
 
+import re
 import netCDF4
 import numpy as np
-
-from collections import OrderedDict
 
 
 def ncopen(fname, permission='a', format='NETCDF4_CLASSIC'):
@@ -146,7 +144,13 @@ def _setattr(obj, name, val):
     try:
         setattr(obj, name, val)
     except AttributeError as e:
-        print("WARNING: A bug in your netCDF C library version (" + vers + ") may mean that updating an attribute with a value that has a larger size than the current value may cause a library crash. See https://code.google.com/p/netcdf4-python/issues/detail?id=110 for details. We'll attempt to apply the work-around. Best option, however, is to upgrade your netCDF C library.")
+        print(
+            "WARNING: A bug in your netCDF C library version (%s"
+            ") may mean that updating an attribute with a value that has a larger "
+            "size than the current value may cause a library crash. "
+            "See https://code.google.com/p/netcdf4-python/issues/detail?id=110 for details. "
+            "We'll attempt to apply the work-around. Best option, however, is to "
+            "upgrade your netCDF C library.".format(vers))
         # Ok, we'll fix it, need a temporary variable name
         import uuid
         tmp = str(uuid.uuid4()).split('-')[0]
@@ -265,7 +269,12 @@ def set_attributes(ncobj, ncdict, delval='DELETE'):
                 # Its ok to have _FillValue in the dict as long as it has
                 # the same value as the variable's attribute
                 if getattr(ncobj.variables[p[0]], p[2]) != ncdict[k]:
-                    print("Warning: As of netcdf4-python version 0.9.2, _FillValue can only be set when the variable is created (see http://netcdf4-python.googlecode.com/svn/trunk/Changelog). The only way to change the _FillValue would be to copy the array and create a new variable.")
+                    print(
+                        "Warning: As of netcdf4-python version 0.9.2, _"
+                        "FillValue can only be set when the variable is created "
+                        "(see http://netcdf4-python.googlecode.com/svn/trunk/Changelog). "
+                        "The only way to change the _FillValue would be to copy the array "
+                        "and create a new variable.")
                     raise AttributeError("Can not change " + k)
             else:
                 _setattr(ncobj.variables[p[0]], p[2], ncdict[k])
@@ -578,7 +587,9 @@ def add_data(ncobj, varname, data, index=None):
                 range.append(slice(x, x + dshp[i]))
             else:
                 raise ValueError(
-                    "Number of dimensions for the data and variable do not match, so I can't guess which data dimension this index refers to. Be explicit with the index range in a slice or string")
+                    "Number of dimensions for the data and variable do not match, so I can't "
+                    "guess which data dimension this index refers to. Be explicit with the index "
+                    "range in a slice or string")
         elif isinstance(x, str):
             # Assume its some sort of start:stop:stride string
             p = x.split(':')
