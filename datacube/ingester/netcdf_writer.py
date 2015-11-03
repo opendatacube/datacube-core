@@ -6,7 +6,7 @@ import os.path
 import numpy as np
 import netCDF4
 
-from datacube.gdf import GDFNetCDF, dt2secs
+from gdf import GDFNetCDF, dt2secs
 
 EPOCH = datetime(1970, 1, 1, 0, 0, 0)
 

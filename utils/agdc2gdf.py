@@ -165,7 +165,7 @@ class AGDC2GDF(GDF):
         agdc2gdf_config_file_object = ConfigFile(agdc2gdf_config_file)
 
         # Comma separated list of GDF config files specified in master config file
-        gdf_config_files_string = agdc2gdf_config_file_object.configuration['gdf'].get('config_files') or os.path.join(
+        gdf_config_files_string = agdc2gdf_config_file_object.configuration['gdf_tests'].get('config_files') or os.path.join(
             self._gdf_root, GDF.DEFAULT_CONFIG_FILE)
 
         # Create master GDF configuration dict containing both command line and config_file parameters
@@ -175,7 +175,7 @@ class AGDC2GDF(GDF):
             'temp_dir']
         # Try to create temp & cache directories if they don't exist
         if not directory_writable(self.temp_dir):
-            new_temp_dir = os.path.join(os.path.expanduser("~"), 'gdf', 'temp')
+            new_temp_dir = os.path.join(os.path.expanduser("~"), 'gdf_tests', 'temp')
             logger.warning('Unable to access temporary directory %s. Using %s instead.', self.temp_dir, new_temp_dir)
             self.temp_dir = new_temp_dir
             if not directory_writable(self.temp_dir):
@@ -190,7 +190,7 @@ class AGDC2GDF(GDF):
         logger.debug("self._command_line_params.get('storage_type') = %s",
                      self._command_line_params.get('storage_type'))
         self.storage_type = self._command_line_params.get('storage_type') or \
-            agdc2gdf_config_file_object.configuration['gdf']['storage_type']
+            agdc2gdf_config_file_object.configuration['gdf_tests']['storage_type']
 
         self.agdc_satellite = self._command_line_params.get('satellite') or \
             agdc2gdf_config_file_object.configuration['agdc']['satellite']

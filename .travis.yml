@@ -62,9 +62,9 @@ install:
 
 # Command to run tests
 script:
-  - pep8 --filename=*.py --max-line-length 120 datacube
+  - pep8 --filename=*.py --max-line-length 120 datacube gdf analytics analytics_utils execution_engine
 #  - pylint datacube --reports no
-  - coverage run -m unittest discover tests/gdf
+  - coverage run -m unittest discover gdf_tests tests
 
 after_success:
   - coveralls

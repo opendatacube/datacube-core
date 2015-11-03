@@ -10,7 +10,7 @@ import numpy as np
 import numexpr as ne
 
 from datacube.gdf import GDF
-from datacube.analytics_utils import get_pqa_mask
+from analytics_utils import get_pqa_mask
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)  # Logging level for this module
@@ -165,7 +165,7 @@ class ExecutionEngine(object):
                 task.values()[0]['array_output']['dimensions_order'][0])
             print('dim =', dim)
 
-            # to fix bug in gdf
+            # to fix bug in gdf_tests
             # size = self.cache[data_key]['array_result'].values()[0].shape[dim]
             # print 'size =', size
             # out = np.empty([size])

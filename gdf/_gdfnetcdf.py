@@ -45,8 +45,6 @@ import numpy as np
 from ._gdfutils import log_multiline
 
 
-# Only needed for testing
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)  # Logging level for this module
 

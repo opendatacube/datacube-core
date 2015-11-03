@@ -32,15 +32,14 @@ Created on 12/03/2015
 
 @author: Alex Ip
 
-Tests for the gdf._ConfigFile.py module.
+Tests for the gdf_tests._CommandLineArgs.py module.
 """
 from __future__ import absolute_import
+
+import sys
 import unittest
-import inspect
 
-import os
-
-from datacube.gdf._config_file import ConfigFile
+from gdf import CommandLineArgs
 
 
 #
@@ -53,25 +52,55 @@ from datacube.gdf._config_file import ConfigFile
 #
 
 
-class TestConfigFile(unittest.TestCase):
+class TestCommandLineArgs(unittest.TestCase):
     """
     Unit tests for utility functions.
     """
 
-    MODULE = 'gdf._config_file'
-    SUITE = 'TestConfigFile'
+    MODULE = 'gdf_tests._arguments'
+    SUITE = 'TestCommandLineArgs'
 
-    def test_ConfigFile(self):
+    TEST_ARG_DESCRIPTOR = {'test': {'short_flag': '-t',
+                                    'long_flag': '--test',
+                                    'default': False,
+                                    'action': 'store_const',
+                                    'const': True,
+                                    'help': 'Test mode flag'
+                                    },
+                           'test_value': {'short_flag': '-v',
+                                          'long_flag': '--value',
+                                          'default': 'default_test_value',
+                                          'action': 'store_const',
+                                          'const': None,
+                                          'help': 'Test mode flag'
+                                          }
+                           }
+
+    def test_CommandLineArgs(self):
         """
-        Test ConfigFile constructor
+        Test CommandLineArgs constructor
         """
 
-        # Default config file should be ../gdf/gdf_default.conf
-        default_config_file = os.path.join(os.path.dirname(inspect.getfile(ConfigFile)), 'gdf_default.conf')
+        # Remember actual arguments in order to avoid side-effects
+        original_sys_argv = list(sys.argv)
 
-        config_file_object = ConfigFile(default_config_file)
+        # Simulate command line arguments
+        sys.argv.append("--config=config_file.conf")
+        sys.argv.append("--debug")
+        sys.argv.append("--test")
+        sys.argv.append("unnkown")
 
-        assert config_file_object.path == os.path.abspath(default_config_file), 'path property is not set correctly'
+        command_line_args = CommandLineArgs(TestCommandLineArgs.TEST_ARG_DESCRIPTOR)
+
+        assert command_line_args.arguments[
+                   'config_files'] == 'config_file.conf', 'Default --config argument not parsed'
+        assert command_line_args.arguments['debug'], 'Default --debug argument not parsed'
+        assert command_line_args.arguments['test'], 'Custom --test argument not parsed'
+        assert command_line_args.arguments[
+                   'test_value'] == 'default_test_value', 'Default value for custom test_value argument not set'
+
+        # Remove simulated test arguments
+        sys.argv = original_sys_argv
 
 
 #
@@ -82,7 +111,7 @@ class TestConfigFile(unittest.TestCase):
 def test_suite():
     """Returns a test suite of all the tests in this module."""
 
-    test_classes = [TestConfigFile
+    test_classes = [TestCommandLineArgs
                     ]
 
     suite_list = map(unittest.defaultTestLoader.loadTestsFromTestCase,

@@ -32,7 +32,7 @@ Created on 12/03/2015
 
 @author: Alex Ip
 
-Tests for the gdf._GDF.py module.
+Tests for the gdf_tests._GDF.py module.
 """
 from __future__ import absolute_import
 
@@ -41,7 +41,7 @@ import inspect
 
 import os
 
-from datacube.gdf import GDF
+from gdf import GDF
 
 
 #

@@ -5,7 +5,7 @@ import copy
 from pprint import pprint
 import logging
 
-from datacube.gdf import GDF
+from gdf import GDF
 
 logger = logging.getLogger(__name__)
 

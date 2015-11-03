@@ -32,13 +32,13 @@ Created on 12/03/2015
 
 @author: Alex Ip
 
-Tests for the gdf._database.py module.
+Tests for the gdf_tests._database.py module.
 """
 from __future__ import absolute_import
 
 import unittest
 
-from datacube.gdf import Database
+from gdf import Database
 
 
 #
@@ -54,7 +54,7 @@ from datacube.gdf import Database
 class TestDatabase(unittest.TestCase):
     """Unit tests for utility functions."""
 
-    MODULE = 'gdf._database'
+    MODULE = 'gdf_tests._database'
     SUITE = 'TestDatabase'
 
     # Test DB connection parameters

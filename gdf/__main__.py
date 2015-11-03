@@ -38,7 +38,7 @@ from __future__ import print_function
 from datetime import datetime
 from pprint import pprint
 
-from datacube.gdf import GDF
+from gdf import GDF
 
 
 def main():

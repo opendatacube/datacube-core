@@ -8,14 +8,14 @@ version = '0.0.0'
 setup(name='agdc-v2',
       version=version,
       packages=[
-          'datacube.gdf',
+          'datacube.gdf_tests',
           'datacube.analytics',
           'datacube.analytics_utils',
           'datacube.execution_engine',
           'datacube.ingester'
       ],
       package_data={
-          'datacube/gdf': ['gdf_default.conf']
+          'datacube/gdf_tests': ['gdf_default.conf']
       },
       scripts=[
       ],
