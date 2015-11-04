@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from netCDF4 import Dataset, num2date, date2num, date2index
 import eodatasets
 from eodatasets import type as ptype

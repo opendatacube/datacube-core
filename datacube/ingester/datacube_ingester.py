@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import logging
 
 import click
@@ -6,10 +7,10 @@ import gdal
 import pathlib
 import yaml
 
-from create_tiles import calc_output_filenames, create_tiles, list_tile_files
-from utils import preserve_cwd
-from netcdf_indexer import index_netcdfs
-from netcdf_writer import append_to_netcdf
+from .create_tiles import calc_output_filenames, create_tiles, list_tile_files
+from .utils import preserve_cwd
+from .netcdf_indexer import index_netcdfs
+from .netcdf_writer import append_to_netcdf
 import eodatasets.drivers
 import eodatasets.type
 from eodatasets.serialise import read_yaml_metadata

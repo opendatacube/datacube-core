@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import functools
 import logging
 import os
@@ -130,7 +132,7 @@ def print_image(filename, size=50):
     """
     chars = np.asarray(list(' .,:;irsXA253hMHGS#9B&@'))
 
-    character_size_ratio = 7/4.0  # width to height
+    character_size_ratio = 7 / 4.0  # width to height
     output_height = float(size)
 
     ds = gdal.Open(filename)
@@ -143,11 +145,11 @@ def print_image(filename, size=50):
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")  # We don't care that the output shape may have changed
-        image = scipy.ndimage.interpolation.zoom(ar, (scale_factor, scale_factor*character_size_ratio), order=0)
+        image = scipy.ndimage.interpolation.zoom(ar, (scale_factor, scale_factor * character_size_ratio), order=0)
 
-    image *= (22.0/image.max())
+    image *= (22.0 / image.max())
     image = image.clip(0)
-    print("\n".join(("".join(r) for r in chars[image.astype(int)])))
+    print(("\n".join(("".join(r) for r in chars[image.astype(int)]))))
 
 
 def _get_nbands_lats_lons_from_gdalds(gdal_dataset):
@@ -155,12 +157,13 @@ def _get_nbands_lats_lons_from_gdalds(gdal_dataset):
 
     # Calculate pixel coordinates for each x,y based on the GeoTransform
     geotransform = gdal_dataset.GetGeoTransform()
-    lons = np.arange(nlons)*geotransform[1]+geotransform[0]
-    lats = np.arange(nlats)*geotransform[5]+geotransform[3]
+    lons = np.arange(nlons) * geotransform[1] + geotransform[0]
+    lats = np.arange(nlats) * geotransform[5] + geotransform[3]
 
     return nbands, lats, lons
 
 
 class Messenger:
+
     def __init__(self, **kwargs):
         self.__dict__ = kwargs

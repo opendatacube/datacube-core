@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from datetime import datetime
 from netCDF4 import date2index
 from osgeo import osr

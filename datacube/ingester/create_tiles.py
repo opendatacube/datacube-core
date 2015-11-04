@@ -1,8 +1,9 @@
+from __future__ import absolute_import
 from collections import namedtuple
 import logging
 from math import floor, ceil
 
-from utils import get_file_extents, execute
+from .utils import get_file_extents, execute
 
 _LOG = logging.getLogger(__name__)
 
