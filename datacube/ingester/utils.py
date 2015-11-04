@@ -162,7 +162,32 @@ def _get_nbands_lats_lons_from_gdalds(gdal_dataset):
     return nbands, lats, lons
 
 
-class Messenger(object):
+@click.command(help="Create an empty dataset.\n\n"
+                    "Copies extents, cols, rows, projection and datatype from the source dataset, \n"
+                    "but doesn't copy any data.\n"
+                    "This should produce a tiny file suitable for testing ingestion and tiling.")
+@click.argument('src_filename', type=click.Path(exists=True, readable=True))
+@click.argument('out_filename', type=click.Path())
+def create_empty_dataset(src_filename, out_filename):
+    """
+    Create a new GDAL dataset based on an existing one, but with no data.
 
-    def __init__(self, **kwargs):
-        self.__dict__ = kwargs
+    Will contain the same projection, extents, etc, but have a very small filesize.
+
+    These files can be used for automated testing without having to lug enormous files around.
+
+    :param src_filename: Source Filename
+    :param out_filename: Output Filename
+    """
+    inds = gdal.Open(src_filename)
+    driver = inds.GetDriver()
+    band = inds.GetRasterBand(1)
+
+    out = driver.Create(out_filename,
+                        inds.RasterXSize,
+                        inds.RasterYSize,
+                        inds.RasterCount,
+                        band.DataType)
+    out.SetGeoTransform(inds.GetGeoTransform())
+    out.SetProjection(inds.GetProjection())
+    out.FlushCache()
