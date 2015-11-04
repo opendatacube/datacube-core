@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, division
 import logging
 
 import click
@@ -164,6 +164,7 @@ def main(input_path, output_dir, filename_format, log, tile=True, merge=True, ve
     _LOG.debug('datacube-ingester started')
 
     affected_tiles = ingest(input_path, output_dir, filename_format, tile, merge)
+    _LOG.debug('Affected tiles %s', affected_tiles)
 
     _LOG.debug('datacube-ingester finished')
 

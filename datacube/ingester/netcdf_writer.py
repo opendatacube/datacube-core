@@ -1,13 +1,15 @@
 from __future__ import absolute_import
+
+import logging
+import os.path
 from datetime import datetime
+
+import netCDF4
+import numpy as np
 from netCDF4 import date2index
 from osgeo import osr
 
-import os.path
-import numpy as np
-import netCDF4
-
-from gdf import GDFNetCDF, dt2secs
+_LOG = logging.getLogger(__name__)
 
 EPOCH = datetime(1970, 1, 1, 0, 0, 0)
 
@@ -113,7 +115,7 @@ class NetCDFWriter(object):
             # Append to times
             # Convert to seconds since epoch (1970-01-01)
             start_datetime_delta = slice_date - EPOCH
-            stored_time_value = start_datetime_delta.total_seconds()
+            _LOG.debug('stored time value %s', start_datetime_delta.total_seconds())
 
             index = len(times)
 
@@ -228,23 +230,3 @@ def append_to_netcdf(gdal_dataset, netcdf_path, input_spec, bandname, input_file
 
     ncfile.append_gdal_tile(gdal_dataset, input_spec, bandname, input_filename)
     ncfile.close()
-
-
-def create_with_gdf():
-    storage_config = {}
-
-    gdfnetcdf = GDFNetCDF(storage_config=storage_config)
-
-    t_indices = np.array([dt2secs(record_dict['end_datetime']) for record_dict in data_descriptor])
-
-    gdfnetcdf.create(netcdf_filename=temp_storage_path,
-                     index_tuple=storage_indices,
-                     dimension_index_dict={'T': t_indices}, netcdf_format=None)
-
-    # Set georeferencing from first tile
-    gdfnetcdf.georeference_from_file(data_descriptor[0]['tile_pathname'])
-
-    if len(data_array.shape) == 3:
-        gdfnetcdf.write_slice(variable_name, data_array[variable_index], {'T': slice_index})
-    elif len(data_array.shape) == 2:
-        gdfnetcdf.write_slice(variable_name, data_array, {'T': slice_index})

@@ -1,10 +1,10 @@
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 from osgeo import gdal, gdalconst, osr
 
 import os
 import yaml
 
+from datacube import compat
 from .netcdf_writer import append_to_netcdf, TileSpec
 
 
@@ -56,8 +56,8 @@ def create_tiles(src_ds, dst_size, dst_res, dst_srs=None, src_srs=None, src_tr=N
     max_x = int(max(x // dst_size['x'] for x, _ in dst_ext))
     max_y = int(max(y // dst_size['y'] for _, y in dst_ext))
 
-    for y in xrange(min_y, max_y + 1):
-        for x in xrange(min_x, max_x + 1):
+    for y in compat.range(min_y, max_y + 1):
+        for x in compat.range(min_x, max_x + 1):
             # TODO: check that it intersects with dst_ext
             transform = [x * dst_size['x'], dst_res['x'], 0.0, y * dst_size['y'], 0.0, dst_res['y']]
             print(transform)

@@ -1,7 +1,12 @@
 from __future__ import absolute_import
-from netCDF4 import Dataset, num2date, date2num, date2index
+
+import logging
+
+from netCDF4 import Dataset, num2date
 import eodatasets
 from eodatasets import type as ptype
+
+_LOG = logging.getLogger()
 
 
 class BomModisDriver(eodatasets.DatasetDriver):
@@ -40,6 +45,7 @@ class BomModisDriver(eodatasets.DatasetDriver):
             times = nco.variables['time']
             minlat, maxlat, minlon, maxlon = lats[0], lats[-1], lons[0], lons[-1]
             time = num2date(times[0], times.units, times.calendar)
+            _LOG.debug('lat %s-%s, lon %s-%s, time %s', minlat, maxlat, minlon, maxlon, time)
 
         return dataset
 
