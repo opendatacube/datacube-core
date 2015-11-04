@@ -8,7 +8,8 @@ import netCDF4
 import numpy as np
 from netCDF4 import date2index
 from osgeo import osr
-from utils import get_dataset_extent
+
+from .utils import get_dataset_extent
 
 _LOG = logging.getLogger(__name__)
 

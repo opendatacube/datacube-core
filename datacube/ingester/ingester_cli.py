@@ -25,13 +25,13 @@ def setup_logging(verbosity, filename=None):
     sh.setFormatter(formatter)
 
     logger.addHandler(sh)
-    _LOG.debug('Logging to console at level %d' % stderr_logging_level)
+    _LOG.debug('Logging to console at level %d', stderr_logging_level)
 
     if filename:
         fh = logging.FileHandler(filename)
         fh.setFormatter(formatter)
         logger.addHandler(fh)
-        _LOG.debug('Logging to %s' % filename)
+        _LOG.debug('Logging to %s', filename)
 
 
 @click.command(help="Ingest a dataset into a storage unit.", context_settings=CLICK_SETTINGS)
