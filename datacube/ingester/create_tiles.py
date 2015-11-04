@@ -1,6 +1,7 @@
 from __future__ import absolute_import
-from collections import namedtuple
+
 import logging
+from collections import namedtuple
 from math import floor, ceil
 
 from .utils import get_file_extents, execute
@@ -40,16 +41,16 @@ def calculate_expanded_extents(filename):
     :param filename:
     :return:
     """
-    _LOG.debug("Calculating expanded extents for {}".format(filename))
+    _LOG.debug("Calculating expanded extents for %r", filename)
     extents = get_file_extents(filename)
-    _LOG.debug("Input extents: {}".format(extents))
+    _LOG.debug("Input extents: %r", extents)
     xmin = str(floor(min(p[0] for p in extents)))
     ymin = str(floor(min(p[1] for p in extents)))
     xmax = str(ceil(max(p[0] for p in extents)))
     ymax = str(ceil(max(p[1] for p in extents)))
 
     expanded_extents = xmin, ymin, xmax, ymax
-    _LOG.debug("Expanded extents are: {}".format(expanded_extents))
+    _LOG.debug("Expanded extents are %r", expanded_extents)
 
     return expanded_extents
 

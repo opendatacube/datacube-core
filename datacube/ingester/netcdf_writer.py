@@ -148,9 +148,6 @@ class NetCDFWriter(object):
         src_filename[time_index] = input_filename
 
     def _create_variables(self, tile_spec):
-        """
-
-        """
         self._create_standard_dimensions(tile_spec.lats, tile_spec.lons)
 
         # Create Variable Length Variable to store extra metadata

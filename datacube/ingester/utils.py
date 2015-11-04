@@ -162,7 +162,7 @@ def _get_nbands_lats_lons_from_gdalds(gdal_dataset):
     return nbands, lats, lons
 
 
-class Messenger:
+class Messenger(object):
 
     def __init__(self, **kwargs):
         self.__dict__ = kwargs

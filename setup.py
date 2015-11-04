@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 #!/usr/bin/env python
 
 from setuptools import setup
@@ -33,6 +32,7 @@ setup(name='agdc-v2',
           'click',
           'pathlib',
           'pyyaml',
+          'eodatasets'
       ],
       tests_require=[
           'pytest',
@@ -49,4 +49,4 @@ setup(name='agdc-v2',
               'datacube_ingester = datacube.ingester.ingester:main'
           ]
       },
-)
+      )

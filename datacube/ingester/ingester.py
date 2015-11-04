@@ -58,16 +58,20 @@ def create_tiles(src_ds, dst_size, dst_res, dst_srs=None, src_srs=None, src_tr=N
 
     for y in compat.range(min_y, max_y + 1):
         for x in compat.range(min_x, max_x + 1):
-            # TODO: check that it intersects with dst_ext
-            transform = [x * dst_size['x'], dst_res['x'], 0.0, y * dst_size['y'], 0.0, dst_res['y']]
-            print(transform)
-            print(x * dst_size['x'], y * dst_size['y'], (x + 1) * dst_size['x'], (y + 1) * dst_size['y'])
-            width = int(dst_size['x'] / dst_res['x'])
-            height = int(dst_size['y'] / dst_res['y'])
-            region = extract_region(width, height, transform, dst_srs.ExportToWkt(), dst_type)
-            r = gdal.ReprojectImage(src_ds, region)
-            assert (r == 0)
-            yield region
+            yield _calc_region(dst_res, dst_size, dst_srs, dst_type, src_ds, x, y)
+
+
+def _calc_region(dst_res, dst_size, dst_srs, dst_type, src_ds, x, y):
+    # TODO: check that it intersects with dst_ext
+    transform = [x * dst_size['x'], dst_res['x'], 0.0, y * dst_size['y'], 0.0, dst_res['y']]
+    print(transform)
+    print(x * dst_size['x'], y * dst_size['y'], (x + 1) * dst_size['x'], (y + 1) * dst_size['y'])
+    width = int(dst_size['x'] / dst_res['x'])
+    height = int(dst_size['y'] / dst_res['y'])
+    region = extract_region(width, height, transform, dst_srs.ExportToWkt(), dst_type)
+    r = gdal.ReprojectImage(src_ds, region)
+    assert r == 0
+    return region
 
 
 def make_input_specs(ingest_config, storage_configs, eodataset):

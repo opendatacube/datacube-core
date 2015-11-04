@@ -9,7 +9,7 @@ from eodatasets import type as ptype
 _LOG = logging.getLogger()
 
 
-class BomModisDriver(eodatasets.DatasetDriver):
+class BomModisDriver(eodatasets.drivers.DatasetDriver):
     """
     Extend EODatasets to read metadata about alternative inputs for the datacube
 
