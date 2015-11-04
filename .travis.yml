@@ -23,9 +23,9 @@ addons:
 before_install:
   # Python and packages
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+      travis_retry wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
     else
-      wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+      travis_retry wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
     fi
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
@@ -33,12 +33,12 @@ before_install:
   - conda config --set always_yes yes --set changeps1 no
   # Add Jess Robertson (CSIRO) binstar channel to get custom builds for some utilities
   - conda config --add channels jesserobertson
-  - conda update -q conda
+  - travis_retry conda update -q conda
   # Useful for debugging any issues with conda
   - conda info -a
   # Test databases and data
-  - wget https://github.com/data-cube/agdc-v2-data/raw/master/sample_dbs/gdf_modis_20150710.backup
-  - wget https://github.com/data-cube/agdc-v2-data/raw/master/sample_dbs/gdf_landsat_20150710.backup
+  - travis_retry wget https://github.com/data-cube/agdc-v2-data/raw/master/sample_dbs/gdf_modis_20150710.backup
+  - travis_retry wget https://github.com/data-cube/agdc-v2-data/raw/master/sample_dbs/gdf_landsat_20150710.backup
   # TODO: Add download of test data when available in a suitable size
   - cd gdf_database
   # Travis logs will show a WARNING regarding the "gdf_modis" does not exist, and Error regarding SCHEMA topology
