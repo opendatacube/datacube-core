@@ -46,7 +46,7 @@ setup(name='agdc-v2',
       license='Apache License 2.0',
       entry_points={
           'console_scripts': [
-              'datacube_ingester = datacube.ingester.ingester:main'
+              'datacube_ingester = datacube.ingester.ingester_cli:main'
           ]
       },
       )
