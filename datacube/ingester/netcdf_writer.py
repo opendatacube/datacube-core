@@ -8,6 +8,7 @@ import netCDF4
 import numpy as np
 from netCDF4 import date2index
 from osgeo import osr
+from utils import get_dataset_extent
 
 _LOG = logging.getLogger(__name__)
 
@@ -47,20 +48,20 @@ class NetCDFWriter(object):
         self.nco.createDimension('longitude', len(lons))
         self.nco.createDimension('latitude', len(lats))
         self.nco.createDimension('time', None)
-        timeo = self.nco.createVariable('time', 'f4', 'time')
+        timeo = self.nco.createVariable('time', 'double', 'time')
         timeo.units = 'seconds since 1970-01-01 00:00:00'
         timeo.standard_name = 'time'
         timeo.long_name = 'Time, unix time-stamp'
         timeo.calendar = 'standard'
         timeo.axis = "T"
 
-        lon = self.nco.createVariable('longitude', 'f4', 'longitude')
+        lon = self.nco.createVariable('longitude', 'double', 'longitude')
         lon.units = 'degrees_east'
         lon.standard_name = 'longitude'
         lon.long_name = 'longitude'
         lon.axis = "X"
 
-        lat = self.nco.createVariable('latitude', 'f4', 'latitude')
+        lat = self.nco.createVariable('latitude', 'double', 'latitude')
         lat.units = 'degrees_north'
         lat.standard_name = 'latitude'
         lat.long_name = 'latitude'
@@ -184,6 +185,7 @@ class TileSpec(object):
         geotransform = gdal_ds.GetGeoTransform()
         self.lons = np.arange(nlons) * geotransform[1] + geotransform[0]
         self.lats = np.arange(nlats) * geotransform[5] + geotransform[3]
+        self.extents = get_dataset_extent(gdal_ds)
 
     @property
     def num_bands(self):
@@ -195,19 +197,19 @@ class TileSpec(object):
 
     @property
     def lat_min(self):
-        return min(self.lats)
+        return min(y for x,y in self.extents)
 
     @property
     def lat_max(self):
-        return max(self.lats)
+        return max(y for x,y in self.extents)
 
     @property
     def lon_min(self):
-        return min(self.lons)
+        return min(x for x,y in self.extents)
 
     @property
     def lon_max(self):
-        return max(self.lons)
+        return max(x for x,y in self.extents)
 
 
 def append_to_netcdf(gdal_dataset, netcdf_path, input_spec, bandname, input_filename):
