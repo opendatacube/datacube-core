@@ -197,19 +197,19 @@ class TileSpec(object):
 
     @property
     def lat_min(self):
-        return min(y for x,y in self.extents)
+        return min(y for x, y in self.extents)
 
     @property
     def lat_max(self):
-        return max(y for x,y in self.extents)
+        return max(y for x, y in self.extents)
 
     @property
     def lon_min(self):
-        return min(x for x,y in self.extents)
+        return min(x for x, y in self.extents)
 
     @property
     def lon_max(self):
-        return max(x for x,y in self.extents)
+        return max(x for x, y in self.extents)
 
 
 def append_to_netcdf(gdal_dataset, netcdf_path, input_spec, bandname, input_filename):

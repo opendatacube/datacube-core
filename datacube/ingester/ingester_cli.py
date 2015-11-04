@@ -48,7 +48,3 @@ def main(ingest_config, storage_config, dataset_path, log, verbose=0):
     # "/short/u46/gxr547/GA/NBAR/LS5_TM_NBAR_P54_GANBAR01-002_100_081_20100228/"
     setup_logging(verbose, log)
     run_ingest(storage_config, ingest_config, dataset_path)
-
-
-if __name__ == '__main__':
-    main()
