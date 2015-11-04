@@ -1,0 +1,11 @@
+--index-url https://pypi.python.org/simple/
+
+# Install eo-datasets from Github. (currently a requirement)
+-e git+https://github.com/GeoscienceAustralia/eo-datasets.git@develop#egg=eodatasets
+
+# Test dependencies
+pytest
+mock
+
+# Install the remaining from setup.py:
+-e .
