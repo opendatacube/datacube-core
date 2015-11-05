@@ -66,8 +66,7 @@ script:
   # Check for basic Python 3 incompatiblities.
   - pylint --py3k --reports no ${py_files}
 
-  - coverage run -m unittest discover gdf_tests
-  - coverage run -m unittest discover tests
+  - py.test --cov datacube datacube tests
 
 after_success:
   - coveralls
