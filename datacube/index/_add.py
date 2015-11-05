@@ -44,20 +44,20 @@ def index_dataset(db, dataset_doc, path=None):
     :type path: pathlib.Path
     :return:
     """
+    # TODO: These lookups will depend on the document type.
     dataset_id = dataset_doc['id']
     source_datsets = dataset_doc['lineage']['source_datasets']
+    product_type = dataset_doc['product_type']
 
     # Clear them. We don't store them.
     dataset_doc['lineage']['source_datasets'] = None
 
+    # Get source datasets & index them.
     sources = {}
-
-    # Get source datasets, insert them.
     for classifier, source_dataset in source_datsets.items():
         source_id = index_dataset(db, source_dataset)
         sources[classifier] = source_id
 
-    product_type = dataset_doc['product_type']
 
     # TODO: If throws error, dataset may exist already.
     db.insert_dataset(dataset_doc, dataset_id, path, product_type)
