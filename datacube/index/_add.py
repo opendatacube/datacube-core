@@ -6,8 +6,9 @@ Usually only performable by admins or privileged users.
 """
 from __future__ import absolute_import
 
-import yaml
-from neocommon.serialise import to_simple_type
+import datetime
+import json
+
 from sqlalchemy import create_engine
 
 from . import tables
@@ -22,9 +23,10 @@ class Db(object):
             tables.dataset.insert().values(
                 id=dataset_id,
                 type=product_type,
-                # TODO: Does path make sense? Or a separate table?
-                metadata_path=path,
-                metadata=dataset_doc
+                # TODO: Does a single path make sense? Or a separate 'locations' table?
+                metadata_path=str(path),
+                # We convert to JSON ourselves so we can specify our own serialiser (for date conversion etc)
+                metadata=json.dumps(dataset_doc, default=json_serialiser)
             )
         )
 
@@ -49,7 +51,7 @@ def index_dataset(db, dataset_doc, path=None):
     source_datsets = dataset_doc['lineage']['source_datasets']
     product_type = dataset_doc['product_type']
 
-    # Clear them. We don't store them.
+    # Clear them. We store them separately.
     dataset_doc['lineage']['source_datasets'] = None
 
     # Get source datasets & index them.
@@ -57,7 +59,6 @@ def index_dataset(db, dataset_doc, path=None):
     for classifier, source_dataset in source_datsets.items():
         source_id = index_dataset(db, source_dataset)
         sources[classifier] = source_id
-
 
     # TODO: If throws error, dataset may exist already.
     db.insert_dataset(dataset_doc, dataset_id, path, product_type)
@@ -69,11 +70,24 @@ def index_dataset(db, dataset_doc, path=None):
     return dataset_id
 
 
-def simple_add_dataset(metadata_path):
+def add_dataset_simple(dataset):
+    """
+    Add a dataset to the index. Needs great expansion...
+
+    :type dataset: datacube.model.Dataset
+    """
+    # TODO: Load from config.
     engine = create_engine('postgresql:///agdc', echo=True)
     connection = engine.connect()
 
     tables.ensure_db(connection, engine)
-    parsed_metadata = yaml.load(open(metadata_path))
 
-    index_dataset(Db(connection), to_simple_type(parsed_metadata), path=metadata_path)
+    index_dataset(Db(connection), dataset.metadata_doc, path=dataset.metadata_path)
+
+
+def json_serialiser(obj):
+    """Fallback json serialiser."""
+
+    if isinstance(obj, (datetime.datetime, datetime.date)):
+        return obj.isoformat()
+    raise TypeError("Type not serializable: {}".format(type(obj)))
