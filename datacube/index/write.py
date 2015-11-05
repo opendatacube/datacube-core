@@ -10,7 +10,7 @@ import yaml
 from neocommon.serialise import to_simple_type
 from sqlalchemy import create_engine
 
-from . import _model
+from . import tables
 
 
 def index_dataset(connection, dataset_d, path=None):
@@ -31,7 +31,7 @@ def index_dataset(connection, dataset_d, path=None):
 
     # TODO: If throws error, dataset may exist already.
     connection.execute(
-        _model.dataset.insert().values(
+        tables.dataset.insert().values(
             id=dataset_id,
             type=product_type,
             # TODO: Does path make sense? Or a separate table?
@@ -42,7 +42,7 @@ def index_dataset(connection, dataset_d, path=None):
 
     # Link to sources.
     for classifier, source_dataset_id in sources.items():
-        connection.execute(_model.dataset_source.insert().values(
+        connection.execute(tables.dataset_source.insert().values(
             classifier=classifier,
             dataset_ref=dataset_id,
             source_dataset_ref=source_dataset_id
@@ -62,7 +62,7 @@ def _ingest_one(metadata_path):
     engine = create_engine('postgresql:///agdc', echo=True)
     connection = engine.connect()
 
-    _model.ensure_db(connection, engine)
+    tables.ensure_db(connection, engine)
 
     parsed_metadata = yaml.load(open(metadata_path))
 
