@@ -8,10 +8,10 @@ from sqlalchemy import Table
 
 from . import _core
 
-dataset_query_field = Table('query_field_type', _core.metadata)
 
 # Name, parse_function, field_type_ref
-storage_query_field = Table('storage_query_field', _core.metadata)
+DATASET_QUERY_FIELD = Table('query_field_type', _core.METADATA)
+STORAGE_QUERY_FIELD = Table('storage_query_field', _core.METADATA)
 
-# psql type ?
-query_field_type = Table('query_field_type', _core.metadata)
+# psql type, python type .. ?
+QUERY_FIELD_TYPE = Table('query_field_type', _core.METADATA)

@@ -20,7 +20,7 @@ class Db(object):
 
     def insert_dataset(self, dataset_doc, dataset_id, path, product_type):
         self.connection.execute(
-            tables.dataset.insert().values(
+            tables.DATASET.insert().values(
                 id=dataset_id,
                 type=product_type,
                 # TODO: Does a single path make sense? Or a separate 'locations' table?
@@ -31,7 +31,7 @@ class Db(object):
         )
 
     def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
-        self.connection.execute(tables.dataset_source.insert().values(
+        self.connection.execute(tables.DATASET_SOURCE.insert().values(
             classifier=classifier,
             dataset_ref=dataset_id,
             source_dataset_ref=source_dataset_id

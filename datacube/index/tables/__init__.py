@@ -5,13 +5,13 @@ Module
 from __future__ import absolute_import
 
 from ._core import ensure_db
-from ._dataset import dataset, dataset_source
-from ._fields import dataset_query_field, storage_query_field
-from ._storage import storage, storage_mapping, storage_type
+from ._dataset import DATASET, DATASET_SOURCE
+from ._fields import DATASET_QUERY_FIELD, STORAGE_QUERY_FIELD
+from ._storage import STORAGE, STORAGE_MAPPING, STORAGE_TYPE
 
 __all__ = [
     'ensure_db',
-    'dataset', 'dataset_source',
-    'dataset_query_field', 'storage_query_field',
-    'storage', 'storage_mapping', 'storage_type'
+    'DATASET', 'DATASET_SOURCE',
+    'DATASET_QUERY_FIELD', 'STORAGE_QUERY_FIELD',
+    'STORAGE', 'STORAGE_MAPPING', 'STORAGE_TYPE'
 ]

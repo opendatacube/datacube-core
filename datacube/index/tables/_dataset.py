@@ -15,8 +15,8 @@ from . import _core
 
 _LOG = logging.getLogger(__name__)
 
-dataset = Table(
-    'dataset', _core.metadata,
+DATASET = Table(
+    'dataset', _core.METADATA,
     Column('id', postgres.UUID, primary_key=True),
     # (typically) product type: 'nbar', 'ortho' etc.
     Column('type', String, nullable=False, doc=''),
@@ -33,16 +33,16 @@ dataset = Table(
 )
 
 # Link datasets to their source datasets.
-dataset_source = Table(
-    'dataset_source', _core.metadata,
+DATASET_SOURCE = Table(
+    'dataset_source', _core.METADATA,
     Column('id', Integer, primary_key=True, autoincrement=True),
-    Column('dataset_ref', None, ForeignKey(dataset.c.id)),
+    Column('dataset_ref', None, ForeignKey(DATASET.c.id)),
 
     # An identifier for this source dataset.
     #    -> Usually it's the dataset type ('ortho', 'nbar'...), as there's typically only one source
     #       of each type.
     Column('classifier', String, nullable=False),
-    Column('source_dataset_ref', None, ForeignKey(dataset.c.id)),
+    Column('source_dataset_ref', None, ForeignKey(DATASET.c.id)),
 
     Column('added', DateTime(timezone=True), server_default=func.now()),
 
@@ -50,13 +50,13 @@ dataset_source = Table(
     UniqueConstraint('source_dataset_ref', 'dataset_ref'),
 )
 
-_example_datasets_matching = {
+_EXAMPLE_DATASETS_MATCHING = {
     'product_type': 'NBAR',
     'platform': {
         'code': 'LANDSAT_7'
     }
 }
-_example_dataset_type_measurements = {
+_EXAMPLE_DATASET_TYPE_MEASUREMENTS = {
     '10': {
         'dtype': 'int16',
         'fill_value': -999,

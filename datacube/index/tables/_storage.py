@@ -14,10 +14,10 @@ from sqlalchemy.sql import func
 from . import _core
 from . import _dataset
 
-# Modern equivalent of 'tile_type' (how to stor
+# Modern equivalent of 'tile_type' (how to store on disk)
 # -> Serialises to 'storage_config.yaml' documents
-storage_type = Table(
-    'storage_type', _core.metadata,
+STORAGE_TYPE = Table(
+    'storage_type', _core.METADATA,
     Column('id', Integer, primary_key=True, autoincrement=True),
     # 'NetCDF CF', 'GeoTIFF' etc...
     Column('type', String, unique=False),
@@ -25,9 +25,9 @@ storage_type = Table(
     Column('descriptor', postgres.JSONB),
 )
 
-# Map a dataset type to how we will store it.
-storage_mapping = Table(
-    'storage_mapping', _core.metadata,
+# Map a dataset type to how we will store it (storage_type and each measurement/band).
+STORAGE_MAPPING = Table(
+    'storage_mapping', _core.METADATA,
     Column('id', Integer, primary_key=True, autoincrement=True),
 
     # Match any datasets whose metadata is a superset of this.
@@ -43,7 +43,7 @@ storage_mapping = Table(
     Column('dataset_measurements_key', postgres.ARRAY(String), default='bands'),
 
     # The storage type to use.
-    Column('storage_type_ref', ForeignKey(storage_type.c.id), nullable=False),
+    Column('storage_type_ref', ForeignKey(STORAGE_TYPE.c.id), nullable=False),
 
     # Storage config for each measurement.
     # The value depends on the storage type (eg. NetCDF CF).
@@ -62,11 +62,11 @@ storage_mapping = Table(
 
 # Which storage units our dataset is in.
 # Unique: (dataset, representation)?
-storage = Table(
-    'storage', _core.metadata,
+STORAGE = Table(
+    'storage', _core.METADATA,
     Column('id', Integer, primary_key=True, autoincrement=True),
-    Column('dataset_ref', None, ForeignKey(_dataset.dataset.c.id)),
-    Column('storage_mapping_ref', None, ForeignKey(storage_mapping.c.id)),
+    Column('dataset_ref', None, ForeignKey(_dataset.DATASET.c.id)),
+    Column('storage_mapping_ref', None, ForeignKey(STORAGE_MAPPING.c.id)),
 
     # TODO: Define this (from Damien's code?). It says which subset of the dataset is stored here.
     Column('descriptor', postgres.JSONB, nullable=False),
@@ -76,7 +76,7 @@ storage = Table(
     Column('added', DateTime(timezone=True), server_default=func.now()),
 )
 
-_example_storage_descriptor = {
+_EXAMPLE_STORAGE_DESCRIPTOR = {
     'base_path': '/tmp/v10/dra547/',
     'chunking': {'t': 1, 'x': 500, 'y': 500},
     'dimension_order': ['t', 'y', 'x'],
