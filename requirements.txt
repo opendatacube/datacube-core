@@ -7,6 +7,7 @@ numpy
 
 # Test dependencies
 pytest
+pytest-cov
 mock
 
 # Install the remaining from setup.py:

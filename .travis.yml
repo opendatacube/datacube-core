@@ -50,23 +50,13 @@ before_install:
   - cd ..
 
 install:
-  - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2 coverage python-coveralls flake8 pylint
+  - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2 coverage python-coveralls pep8 pylint pytest
   - source activate test-agdc
   - travis_retry pip install -r requirements.txt 
   - python setup.py install
 
 script:
-  # Check all files other than 'compat.py'.
-  #   -> compat.py contains both Python 2 and 3 syntax, so will fail lint checks.
-  #   -> 'datacube_ingester.py' is broken and soon to be replaced at time of writing.
-  - export py_files=$( find datacube -iname '*.py' -not -iname 'compat.py' -not -iname 'datacube_ingester.py' )
-
-  - pylint --reports no ${py_files}
-  - pep8 --max-line-length 120 ${py_files}
-  # Check for basic Python 3 incompatiblities.
-  - pylint --py3k --reports no ${py_files}
-
-  - py.test --cov datacube datacube tests
+  - ./check-code.sh
 
 after_success:
   - coveralls
