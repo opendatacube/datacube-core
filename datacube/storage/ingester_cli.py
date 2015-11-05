@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import click as click
 import logging
 
-from datacube.ingester.ingester import run_ingest
+from datacube.storage.ingester import run_ingest
 
 _LOG = logging.getLogger(__name__)
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])

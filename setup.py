@@ -11,7 +11,7 @@ setup(name='agdc-v2',
           'analytics',
           'analytics_utils',
           'execution_engine',
-          'datacube.ingester'
+          'datacube.storage'
       ],
       package_data={
           'gdf_tests': ['gdf_default.conf']

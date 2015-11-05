@@ -1,6 +1,6 @@
 from __future__ import print_function, absolute_import
 
-from datacube.ingester.ingester import run_ingest
+from datacube.storage.ingester import run_ingest
 
 
 def test_ingest(tmpdir):
