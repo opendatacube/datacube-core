@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Module
+Fields that can be queried or indexed within a dataset or storage.
 """
 from __future__ import absolute_import
 

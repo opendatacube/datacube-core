@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Database model.
+Tables for indexing the datasets which were ingested into the AGDC.
 """
 from __future__ import absolute_import
 

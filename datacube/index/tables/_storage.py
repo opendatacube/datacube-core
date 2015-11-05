@@ -1,6 +1,8 @@
 # coding=utf-8
 """
-Module
+Tables for indexing the storage of a dataset in a reprojected or new form.
+
+(ie. What NetCDF files do I have of this dataset?)
 """
 from __future__ import absolute_import
 
@@ -41,8 +43,7 @@ storage_mapping = Table(
     Column('dataset_measurements_key', postgres.ARRAY(String), default='bands'),
 
     # The storage type to use.
-    Column('storage_type_ref', ForeignKey(storage_type.c.id),
-           nullable=False),
+    Column('storage_type_ref', ForeignKey(storage_type.c.id), nullable=False),
 
     # Storage config for each measurement.
     # The value depends on the storage type (eg. NetCDF CF).
