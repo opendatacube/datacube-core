@@ -65,6 +65,30 @@ class StorageUnitBase(object):
         return DataArray(dest, coords=[coord[idx] for coord, idx in zip(coords, index)], dims=var.coordinates)
 
 
+class StorageUnitVariableProxy(StorageUnitBase):
+    def __init__(self, storage_unit, varmap):
+        # TODO: check _storage_unit has all the vars in varmap
+        self._storage_unit = storage_unit
+        self._new2old = varmap
+        self._old2new = {name: key for key, name in varmap.items()}
+
+    @property
+    def coordinates(self):
+        return self._storage_unit.coordinates
+
+    @property
+    def variables(self):
+        return {self._old2new[name]: value
+                for name, value in self._storage_unit.variables.items()
+                if name in self._old2new}
+
+    def _get_coord(self, name):
+        return self._storage_unit._get_coord(name)
+
+    def _fill_data(self, name, index, dest):
+        self._storage_unit._fill_data(self._new2old[name], index, dest)
+
+
 class StorageUnitDimensionProxy(StorageUnitBase):
     def __init__(self, storage_unit, *coords):
         self._storage_unit = storage_unit

@@ -19,7 +19,7 @@ from builtins import *
 import numpy
 import pytest
 
-from cubeaccess.core import Coordinate, Variable, StorageUnitDimensionProxy, StorageUnitStack
+from cubeaccess.core import Coordinate, Variable, StorageUnitVariableProxy, StorageUnitDimensionProxy, StorageUnitStack
 from cubeaccess.storage import FauxStorageUnit
 from cubeaccess.indexing import Range
 
@@ -68,6 +68,15 @@ def test_common_storage_unit():
     assert (data.values.shape == (2, 3, 4))
     assert ((data.values == expected).all())
     assert ((dest[:2, :3, :4] == expected).all())
+
+
+def test_storage_unit_variable_proxy():
+    su = StorageUnitVariableProxy(ds1, {'greg': 'B10'})
+    expected = ds1.get('B10')
+    result = su.get('greg')
+    assert (result.values.shape == expected.values.shape)
+    assert (result.dims == expected.dims)
+    assert ((result.values == expected.values).all())
 
 
 def test_storage_unit_dimension_proxy():
