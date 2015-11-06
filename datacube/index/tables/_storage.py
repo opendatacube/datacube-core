@@ -19,9 +19,10 @@ from . import _dataset
 STORAGE_TYPE = Table(
     'storage_type', _core.METADATA,
     Column('id', Integer, primary_key=True, autoincrement=True),
-    # 'NetCDF CF', 'GeoTIFF' etc...
+    # The storage "driver" to use: eg. 'NetCDF CF', 'GeoTIFF'...
     Column('type', String, unique=False),
 
+    # See "_EXAMPLE_STORAGE_TYPE_DESCRIPTOR" below
     Column('descriptor', postgres.JSONB),
 )
 
@@ -68,7 +69,7 @@ STORAGE = Table(
     Column('dataset_ref', None, ForeignKey(_dataset.DATASET.c.id)),
     Column('storage_mapping_ref', None, ForeignKey(STORAGE_MAPPING.c.id)),
 
-    # TODO: Define this (from Damien's code?). It says which subset of the dataset is stored here.
+    # See "_EXAMPLE_STORAGE_DESCRIPTOR" below.
     Column('descriptor', postgres.JSONB, nullable=False),
 
     Column('path', String, nullable=False),
