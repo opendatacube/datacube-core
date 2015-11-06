@@ -26,6 +26,7 @@ def ingest(dataset_path):
         # dataset_storage_config = config.storage_config(dataset)
 
         # storage_records = storage.store(config.ingest_config, dataset_storage_config, dataset)
+
         # index.add_storage_records(dataset, storage_records)
         _LOG.info('Ingested %r', dataset_path)
     else:

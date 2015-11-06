@@ -33,7 +33,6 @@ setup(name='agdc-v2',
           'pathlib',
           'pyyaml',
           'sqlalchemy',
-          'eodatasets'
       ],
       tests_require=[
           'pytest',

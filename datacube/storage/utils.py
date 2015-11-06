@@ -3,12 +3,10 @@ import functools
 import logging
 import os
 import subprocess
-import warnings
 
 import click
 from osgeo import osr, gdal
 import numpy as np
-import scipy.ndimage
 
 _LOG = logging.getLogger(__name__)
 
@@ -117,38 +115,6 @@ def execute(command_list):
     for line in proc.stdout:
         _LOG.debug(line)
     # subprocess.check_call(command_list, env=dict(os.environ, GDAL_CACHEMAX="250"))
-
-
-@click.command(help="Print an image to the terminal ")
-@click.option('--size', '-s')
-@click.argument('filename', type=click.Path(exists=True, readable=True))
-def print_image(filename, size=50):
-    """
-    Output an ASCII representation of a GDAL image to the terminal
-
-    :param filename:
-    :return:
-    """
-    chars = np.asarray(list(' .,:;irsXA253hMHGS#9B&@'))
-
-    character_size_ratio = 7 / 4.0  # width to height
-    output_height = float(size)
-
-    ds = gdal.Open(filename)
-    band = ds.GetRasterBand(1)
-    ar = band.ReadAsArray()
-
-    input_width, input_height = ar.shape
-
-    scale_factor = output_height / input_height
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")  # We don't care that the output shape may have changed
-        image = scipy.ndimage.interpolation.zoom(ar, (scale_factor, scale_factor * character_size_ratio), order=0)
-
-    image *= (22.0 / image.max())
-    image = image.clip(0)
-    print(("\n".join(("".join(r) for r in chars[image.astype(int)]))))
 
 
 def _get_nbands_lats_lons_from_gdalds(gdal_dataset):
