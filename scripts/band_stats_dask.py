@@ -16,9 +16,10 @@
 from __future__ import absolute_import, division, print_function
 from builtins import *
 
-import dask.array
 import dask.imperative
 import dask.multiprocessing
+
+from distributed import Executor
 
 import numpy
 
@@ -28,25 +29,42 @@ if 'profile' not in builtins.__dict__:
     builtins.__dict__['profile'] = lambda x: x
 
 from cubeaccess.indexing import Range
-from .common import do_work, _get_dataset, write_file
+from common import do_work, _get_dataset, write_files
 
 
-def main():
-    stack = _get_dataset(146, -034)
-    pqa = _get_dataset(146, -034, dataset='PQA')
-    N = 250
-    zzz = []
-    for tidx, dt in enumerate(numpy.arange('1989', '1991', dtype='datetime64[Y]')):
-        data = []
-        for yidx, yoff in enumerate(range(0, 4000, N)):
-            kwargs = dict(y=slice(yoff, yoff+N), t=Range(dt, dt+numpy.timedelta64(1, 'Y')))
-            r = dask.imperative.do(do_work)(stack, pqa, **kwargs)
-            data.append(r)
-        r = dask.imperative.do(write_file)(str(dt), data)
-        zzz.append(r)
-    dask.imperative.compute(zzz, num_workers=16, get=dask.multiprocessing.get)
+def main(argv):
+    lon = int(argv[1])
+    lat = int(argv[2])
+    dt = numpy.datetime64(argv[3])
 
+    stack = _get_dataset(lon, lat)
+    pqa = _get_dataset(lon, lat, dataset='PQA')
+
+    # TODO: this needs to propagate somehow from the input to the output
+    geotr = stack._storage_units[0]._storage_unit._transform
+    proj = stack._storage_units[0]._storage_unit._projection
+
+    qs = [10, 50, 90]
+    num_workers = 16
+    N = 4000//num_workers
+
+    tasks = []
+    #for tidx, dt in enumerate(numpy.arange('1990', '1991', dtype='datetime64[Y]')):
+    filename = '/g/data/u46/gxr547/%s_%s_%s'%(lon, lat, dt)
+    data = []
+    for yidx, yoff in enumerate(range(0, 4000, N)):
+        kwargs = dict(y=slice(yoff, yoff+N), t=Range(dt, dt+numpy.timedelta64(1, 'Y')))
+        r = dask.imperative.do(do_work)(stack, pqa, qs, **kwargs)
+        data.append(r)
+    r = dask.imperative.do(write_files)(filename, data, qs, N, geotr, proj)
+    tasks.append(r)
+
+    #executor = Executor('127.0.0.1:8787')
+    #dask.imperative.compute(tasks, get=executor.get)
+    #dask.imperative.compute(tasks[0], num_workers=16)
+    dask.imperative.compute(tasks, get=dask.multiprocessing.get, num_workers=num_workers)
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    main(sys.argv)

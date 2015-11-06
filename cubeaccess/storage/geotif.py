@@ -32,6 +32,7 @@ class GeoTifStorageUnit(StorageUnitBase):
                 raise IOError("failed to open " + self._filepath)
 
             t = self._transform = dataset.GetGeoTransform()
+            self._projection = dataset.GetProjection()
             self.coordinates = {
                 'x': Coordinate(numpy.float32, t[0], t[0]+(dataset.RasterXSize-1)*t[1], dataset.RasterXSize),
                 'y': Coordinate(numpy.float32, t[3], t[3]+(dataset.RasterYSize-1)*t[5], dataset.RasterYSize)
@@ -42,6 +43,7 @@ class GeoTifStorageUnit(StorageUnitBase):
             self.variables = {str(i+1): band2var(dataset.GetRasterBand(i+1)) for i in xrange(dataset.RasterCount)}
         else:
             self._transform = other._transform
+            self._projection = other._projection
             self.coordinates = other.coordinates
             self.variables = other.variables
 

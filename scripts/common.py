@@ -20,6 +20,7 @@ from osgeo import gdal
 
 from cubeaccess.core import StorageUnitDimensionProxy, StorageUnitStack
 from cubeaccess.storage import GeoTifStorageUnit
+from cubeaccess.indexing import make_index
 
 
 def argpercentile(a, q, axis=0):
@@ -31,7 +32,7 @@ def argpercentile(a, q, axis=0):
     index = (q*(a.shape[axis]-1-nans) + 0.5).astype(numpy.int32)
     indices = numpy.indices(a.shape[:axis] + a.shape[axis+1:])
     index = tuple(indices[:axis]) + (index,) + tuple(indices[axis:])
-    return numpy.argsort(a, axis=axis)[index]
+    return numpy.argsort(a, axis=axis)[index], nans == a.shape[axis]
 
 
 def _time_from_filename(f):
@@ -55,16 +56,22 @@ def _get_dataset(lat, lon, dataset='NBAR', sat='LS5_TM'):
     return stack
 
 
-def write_file(name, data):
+def write_files(name, data, qs, N, geotr, proj):
     driver = gdal.GetDriverByName("GTiff")
-    raster = driver.Create(name+'.tif', 4000, 4000, 3, gdal.GDT_Int16,
-                           options=["INTERLEAVE=BAND", "COMPRESS=LZW", "TILED=YES"])
-    for idx, y in enumerate(range(0, 4000, 250)):
-        raster.GetRasterBand(1).WriteArray(data[idx][0], 0, y)
-        raster.GetRasterBand(2).WriteArray(data[idx][1], 0, y)
-        raster.GetRasterBand(3).WriteArray(data[idx][2], 0, y)
-    raster.FlushCache()
-    del raster
+    nbands = len(data[0])
+    for qidx, q in enumerate(qs):
+        print('writing', name+'_'+str(q)+'.tif')
+        raster = driver.Create(name+'_'+str(q)+'.tif', 4000, 4000, nbands, gdal.GDT_Int16,
+                               options=["INTERLEAVE=BAND", "COMPRESS=LZW", "TILED=YES"])
+        raster.SetProjection(proj)
+        raster.SetGeoTransform(geotr)
+        for band_num in range(nbands):
+            band = raster.GetRasterBand(band_num+1)
+            for idx, y in enumerate(range(0, 4000, N)):
+                band.WriteArray(data[idx][band_num][qidx], 0, y)
+            band.FlushCache()
+        raster.FlushCache()
+        del raster
 
 
 def ndv_to_nan(a, ndv=-999):
@@ -73,32 +80,43 @@ def ndv_to_nan(a, ndv=-999):
     return a
 
 
-def do_thing(nir, red, green, blue, pqa):
+def do_work(stack, pq, qs, **kwargs):
+    print('starting', datetime.now(), kwargs)
+    pqa = pq.get('1', **kwargs).values
+    red = ndv_to_nan(stack.get('3', **kwargs).values)
+    nir = ndv_to_nan(stack.get('4', **kwargs).values)
+
     masked = 255 | 256 | 15360
     pqa_idx = ((pqa & masked) != masked)
+    del pqa
 
-    nir = ndv_to_nan(nir)
     nir[pqa_idx] = numpy.nan
-    red = ndv_to_nan(red)
     red[pqa_idx] = numpy.nan
 
     ndvi = (nir-red)/(nir+red)
-    index = argpercentile(ndvi, 90, axis=0)
-    index = (index,) + tuple(numpy.indices(index.shape))
+    index, mask = argpercentile(ndvi, qs, axis=0)
 
-    red = red[index]
-    green = ndv_to_nan(green[index])
-    blue = ndv_to_nan(blue[index])
+    # TODO: make slicing coordinates nicer
+    tcoord = stack._get_coord('t')
+    slice_ = make_index(tcoord, kwargs['t'])
+    tcoord = tcoord[slice_]
+    tcoord = tcoord[index]
+    months = tcoord.astype('datetime64[M]').astype(int) % 12 + 1
+    months[..., mask] = 0
 
-    return red, green, blue
+    index = (index,) + tuple(numpy.indices(ndvi.shape[1:]))
 
+    def index_data(data):
+        data = ndv_to_nan(data[index])
+        data[..., mask] = numpy.nan
+        return data
 
-def do_work(stack, pq, **kwargs):
-    print(datetime.now(), kwargs)
+    nir = index_data(nir)
+    red = index_data(red)
+    blue = index_data(stack.get('1', **kwargs).values)
+    green = index_data(stack.get('2', **kwargs).values)
+    ir1 = index_data(stack.get('5', **kwargs).values)
+    ir2 = index_data(stack.get('6', **kwargs).values)
 
-    nir = stack.get('4', **kwargs).values
-    red = stack.get('3', **kwargs).values
-    pqa = pq.get('1', **kwargs).values
-    green = stack.get('2', **kwargs).values
-    blue = stack.get('1', **kwargs).values
-    return do_thing(nir, red, green, blue, pqa)
+    print('done', datetime.now(), kwargs)
+    return blue, green, red, nir, ir1, ir2, months
