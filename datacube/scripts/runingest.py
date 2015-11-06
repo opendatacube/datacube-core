@@ -14,5 +14,5 @@ if __name__ == '__main__':
     # TODO: Command-line script (move from storage package & expand)
     import sys
 
-    logging.basicConfig()
+    logging.basicConfig(level=logging.DEBUG)
     ingest(Path(sys.argv[1]))

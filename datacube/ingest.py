@@ -6,7 +6,8 @@ from __future__ import absolute_import
 
 import logging
 
-from . import index
+from .config import UserConfig
+from .index import connect as index_connect
 from . import model
 
 _LOG = logging.getLogger(__name__)
@@ -17,8 +18,10 @@ def ingest(dataset_path):
 
     dataset = model.Dataset.from_path(dataset_path)
 
+    index = index_connect(UserConfig.find())
+
     if not index.contains_dataset(dataset):
-        index.add_dataset_simple(dataset)
+        index.add_dataset(dataset)
 
         # dataset_storage_config = config.storage_config(dataset)
 

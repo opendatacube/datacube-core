@@ -4,7 +4,7 @@ from __future__ import absolute_import
 
 import datetime
 
-from datacube.index._add import index_dataset
+from datacube.index._api import _index_dataset
 
 
 
@@ -134,7 +134,7 @@ def test_index_dataset():
             self.dataset_source.add((classifier, dataset_id, source_dataset_id))
 
     mock_db = MockDb()
-    index_dataset(mock_db, _EXAMPLE_NBAR)
+    _index_dataset(mock_db, _EXAMPLE_NBAR)
 
     # Three datasets (ours and the two embedded source datasets)
     assert len(mock_db.dataset) == 3
