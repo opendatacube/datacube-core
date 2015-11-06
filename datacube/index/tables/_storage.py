@@ -32,6 +32,7 @@ STORAGE_MAPPING = Table(
     Column('id', Integer, primary_key=True, autoincrement=True),
 
     # Match any datasets whose metadata is a superset of this.
+    # See "_EXAMPLE_DATASETS_MATCHING" below
     Column('datasets_matching', postgres.JSONB, nullable=False),
 
     # Where in the dataset metadata to find a dictionary of measurements.
@@ -58,6 +59,7 @@ STORAGE_MAPPING = Table(
     #   dtype: int16
     #   fill_value: -999
     #   interpolation: cubic
+    # See "_EXAMPLE_DATASET_TYPE_MEASUREMENTS" below.
     Column('measurements', postgres.JSONB)
 )
 
@@ -76,6 +78,26 @@ STORAGE = Table(
 
     Column('added', DateTime(timezone=True), server_default=func.now()),
 )
+
+_EXAMPLE_DATASETS_MATCHING = {
+    'product_type': 'NBAR',
+    'platform': {
+        'code': 'LANDSAT_7'
+    }
+}
+
+_EXAMPLE_DATASET_TYPE_MEASUREMENTS = {
+    '10': {
+        'dtype': 'int16',
+        'fill_value': -999,
+        'interpolation': 'nearest'
+    },
+    '20': {
+        'dtype': 'int16',
+        'fill_value': -999,
+        'interpolation': 'cubic'
+    }
+}
 
 _EXAMPLE_STORAGE_TYPE_DESCRIPTOR = {
     'base_path': '/tmp/v10/dra547/',

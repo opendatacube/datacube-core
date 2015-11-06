@@ -49,23 +49,3 @@ DATASET_SOURCE = Table(
     UniqueConstraint('dataset_ref', 'classifier'),
     UniqueConstraint('source_dataset_ref', 'dataset_ref'),
 )
-
-_EXAMPLE_DATASETS_MATCHING = {
-    'product_type': 'NBAR',
-    'platform': {
-        'code': 'LANDSAT_7'
-    }
-}
-_EXAMPLE_DATASET_TYPE_MEASUREMENTS = {
-    '10': {
-        'dtype': 'int16',
-        'fill_value': -999,
-        'interpolation': 'nearest'
-    },
-    '20': {
-        'dtype': 'int16',
-        'fill_value': -999,
-        'interpolation': 'cubic'
-    }
-
-}
