@@ -14,11 +14,12 @@
 
 from __future__ import absolute_import, print_function
 from datetime import datetime
+from itertools import groupby
 
 import numpy
 from osgeo import gdal
 
-from cubeaccess.core import StorageUnitDimensionProxy, StorageUnitStack
+from cubeaccess.core import StorageUnitVariableProxy, StorageUnitDimensionProxy, StorageUnitStack
 from cubeaccess.storage import GeoTifStorageUnit
 from cubeaccess.indexing import make_index
 
@@ -36,22 +37,44 @@ def argpercentile(a, q, axis=0):
 
 
 def _time_from_filename(f):
-    dtstr = f.split('/')[-1].split('_')[-1][:-4]
+    dtstr = f.split('/')[-1].split('_')[-1][:-4].split('.')[0]
     # 2004-11-07T00-05-33.311000
-    dt = datetime.strptime(dtstr, "%Y-%m-%dT%H-%M-%S.%f")
+    # dt = dateutil.parser.parse(dtstr)
+    # dt = datetime.strptime(dtstr, "%Y-%m-%dT%H-%M-%S.%f")
+    dt = datetime.strptime(dtstr, "%Y-%m-%dT%H-%M-%S")
     return numpy.datetime64(dt, 's')
 
 
 def _get_dataset(lat, lon, dataset='NBAR', sat='LS5_TM'):
     import glob
     lat_lon_str = '{:03d}_-{:03d}'.format(lat, abs(lon))
-    pattern = '/g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/{sat}/{ll}/*/{sat}_{ds}_{ll}_*.tif'.format(sat=sat,
-                                                                                                       ll=lat_lon_str,
-                                                                                                       ds=dataset)
-    files = glob.glob(pattern)
-    template = GeoTifStorageUnit(files[0])
-    input = [(GeoTifStorageUnit(f, template), _time_from_filename(f)) for f in files]
+    input = []
+    LS57varmap = {'blue': '1', 'green': '2', 'red': '3', 'nir': '4', 'ir1': '5', 'ir2': '6'}
+    PQAvarmap = {'pqa': '1'}
+    varmaps = {
+        'NBAR': {
+            'LS5_TM': LS57varmap,
+            'LS7_ETM': LS57varmap,
+            'LS8_OLI_TIRS': {'blue': '2', 'green': '3', 'red': '4', 'nir': '5', 'ir1': '6', 'ir2': '7'}
+        },
+        'PQA': {
+            'LS5_TM': PQAvarmap,
+            'LS7_ETM': PQAvarmap,
+            'LS8_OLI_TIRS': PQAvarmap
+        }
+    }
+
+    for sat in ['LS5_TM', 'LS7_ETM', 'LS8_OLI_TIRS']:
+        pattern = '{sat}/{ll}/*/{sat}_{ds}_{ll}_*.tif'.format(sat=sat,
+                                                              ll=lat_lon_str,
+                                                              ds=dataset)
+        files = glob.glob('/g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/' + pattern)
+        template = GeoTifStorageUnit(files[0])
+        input += [(StorageUnitVariableProxy(GeoTifStorageUnit(f, template),
+                                            varmaps[dataset][sat]),
+                   _time_from_filename(f)) for f in files]
     input.sort(key=lambda p: p[1])
+    input = [i.next() for k,i in groupby(input, key=lambda p: p[1])]
     stack = StorageUnitStack([StorageUnitDimensionProxy(su, ('t', t)) for su, t in input], 't')
     return stack
 
@@ -82,9 +105,9 @@ def ndv_to_nan(a, ndv=-999):
 
 def do_work(stack, pq, qs, **kwargs):
     print('starting', datetime.now(), kwargs)
-    pqa = pq.get('1', **kwargs).values
-    red = ndv_to_nan(stack.get('3', **kwargs).values)
-    nir = ndv_to_nan(stack.get('4', **kwargs).values)
+    pqa = pq.get('pqa', **kwargs).values
+    red = ndv_to_nan(stack.get('red', **kwargs).values)
+    nir = ndv_to_nan(stack.get('nir', **kwargs).values)
 
     masked = 255 | 256 | 15360
     pqa_idx = ((pqa & masked) != masked)
@@ -113,10 +136,10 @@ def do_work(stack, pq, qs, **kwargs):
 
     nir = index_data(nir)
     red = index_data(red)
-    blue = index_data(stack.get('1', **kwargs).values)
-    green = index_data(stack.get('2', **kwargs).values)
-    ir1 = index_data(stack.get('5', **kwargs).values)
-    ir2 = index_data(stack.get('6', **kwargs).values)
+    blue = index_data(stack.get('blue', **kwargs).values)
+    green = index_data(stack.get('green', **kwargs).values)
+    ir1 = index_data(stack.get('ir1', **kwargs).values)
+    ir2 = index_data(stack.get('ir2', **kwargs).values)
 
     print('done', datetime.now(), kwargs)
     return blue, green, red, nir, ir1, ir2, months

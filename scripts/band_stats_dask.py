@@ -41,8 +41,8 @@ def main(argv):
     pqa = _get_dataset(lon, lat, dataset='PQA')
 
     # TODO: this needs to propagate somehow from the input to the output
-    geotr = stack._storage_units[0]._storage_unit._transform
-    proj = stack._storage_units[0]._storage_unit._projection
+    geotr = stack._storage_units[0]._storage_unit._storage_unit._transform
+    proj = stack._storage_units[0]._storage_unit._storage_unit._projection
 
     qs = [10, 50, 90]
     num_workers = 16
