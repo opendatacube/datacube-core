@@ -28,7 +28,7 @@ def ingest(dataset_path):
         # storage_records = storage.store(config.ingest_config, dataset_storage_config, dataset)
 
         # index.add_storage_records(dataset, storage_records)
-        _LOG.info('Ingested %r', dataset_path)
+        _LOG.info('Ingested %s', dataset_path)
     else:
         # TODO: Check/write any missing storage records for the dataset?
-        _LOG.info('Skipping already-ingested dataset %r', dataset_path)
+        _LOG.info('Skipping already-ingested dataset %s', dataset_path)
