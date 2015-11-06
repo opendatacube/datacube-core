@@ -1,18 +1,23 @@
 # coding=utf-8
 """
-Module
+Database access.
 """
 from __future__ import absolute_import
 
-import json
-
-from sqlalchemy import create_engine
 import datetime
+import json
 
 from . import tables
 
 
 class Db(object):
+    """
+    A very thin database access api.
+
+    It exists so that higher level modules are not tied to SQLAlchemy, connections or specifics of database-access.
+
+    (and can be unit tested without any actual databases)
+    """
     def __init__(self, engine):
         self._engine = engine
         self._connection = None

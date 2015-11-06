@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Module
+High-level API code for accessing the Index.
 """
 from __future__ import absolute_import
 
