@@ -76,7 +76,7 @@ STORAGE = Table(
     Column('added', DateTime(timezone=True), server_default=func.now()),
 )
 
-_EXAMPLE_STORAGE_DESCRIPTOR = {
+_EXAMPLE_STORAGE_TYPE_DESCRIPTOR = {
     'base_path': '/tmp/v10/dra547/',
     'chunking': {'t': 1, 'x': 500, 'y': 500},
     'dimension_order': ['t', 'y', 'x'],
@@ -98,4 +98,22 @@ _EXAMPLE_STORAGE_DESCRIPTOR = {
     'resolution': {'x': 0.00025, 'y': -0.00025},
     'tile_size': {'x': 1.0, 'y': -1.0},
     'type': 'NetCDF CF'
+}
+
+_EXAMPLE_STORAGE_DESCRIPTOR = {
+    'path': '/tmp/something.nc',
+    'size_bytes': 34534534345,
+
+    'extents': [
+        {
+            'x': {
+                'from': 1.0,
+                'to': 23
+            },
+
+            't': {
+                'from': 5345345345
+            }
+        }
+    ]
 }

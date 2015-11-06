@@ -1,9 +1,14 @@
-id: fba15ab4-6bd8-11e5-a08b-a0000100fe80
 
-ga_level: P54
-product_type: NBAR
-platform: LANDSAT_7
-instrument: TM
+name: LS7 NBAR
+
+match:
+  dataset:
+    ga_level: P54
+    product_type: NBAR
+    platform:
+      code: LANDSAT_7
+    instrument:
+      name: TM
 
 storage:
     - name: foo
