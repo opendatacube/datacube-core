@@ -20,7 +20,10 @@ def _connection_string(host=None, database=None):
     >>> _connection_string(host='postgres.dev.lan', database='agdc')
     'postgresql://postgres.dev.lan/agdc'
     """
-    return 'postgresql://{host}/{database}'.format(host=host, database=database)
+    return 'postgresql://{host}/{database}'.format(
+        host=host or '',
+        database=database or ''
+    )
 
 
 def connect(config):
