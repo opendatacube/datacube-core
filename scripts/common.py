@@ -65,7 +65,7 @@ def _get_dataset(lat, lon, dataset='NBAR', sat='LS5_TM'):
     }
 
     for sat in ['LS5_TM', 'LS7_ETM', 'LS8_OLI_TIRS']:
-        pattern = '{sat}/{ll}/*/{sat}_{ds}_{ll}_*.tif'.format(sat=sat,
+        pattern = '{sat}/{ll}/*/{sat}_{ds}_{ll}_*[0-9][0-9].tif'.format(sat=sat,
                                                               ll=lat_lon_str,
                                                               ds=dataset)
         files = glob.glob('/g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/' + pattern)
