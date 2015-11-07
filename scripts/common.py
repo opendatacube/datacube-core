@@ -74,7 +74,7 @@ def _get_dataset(lat, lon, dataset='NBAR', sat='LS5_TM'):
                                             varmaps[dataset][sat]),
                    _time_from_filename(f)) for f in files]
     input.sort(key=lambda p: p[1])
-    input = [i.next() for k,i in groupby(input, key=lambda p: p[1])]
+    input = [i.next() for k, i in groupby(input, key=lambda p: p[1])]
     stack = StorageUnitStack([StorageUnitDimensionProxy(su, ('t', t)) for su, t in input], 't')
     return stack
 
@@ -90,8 +90,13 @@ def write_files(name, data, qs, N, geotr, proj):
         raster.SetGeoTransform(geotr)
         for band_num in range(nbands):
             band = raster.GetRasterBand(band_num+1)
+            band.SetNoDataValue(-999)
             for idx, y in enumerate(range(0, 4000, N)):
-                band.WriteArray(data[idx][band_num][qidx], 0, y)
+                # TODO: hadle writing ndv nicer
+                chunk = data[idx][band_num][qidx]
+                if chunk.dtype == numpy.float32:
+                    chunk = nan_to_ndv(chunk)
+                band.WriteArray(chunk, 0, y)
             band.FlushCache()
         raster.FlushCache()
         del raster
@@ -100,6 +105,11 @@ def write_files(name, data, qs, N, geotr, proj):
 def ndv_to_nan(a, ndv=-999):
     a = a.astype(numpy.float32)
     a[a == ndv] = numpy.nan
+    return a
+
+
+def nan_to_ndv(a, ndv=-999):
+    a[numpy.isnan(a)] = ndv
     return a
 
 
@@ -125,7 +135,7 @@ def do_work(stack, pq, qs, **kwargs):
     tcoord = tcoord[slice_]
     tcoord = tcoord[index]
     months = tcoord.astype('datetime64[M]').astype(int) % 12 + 1
-    months[..., mask] = 0
+    months[..., mask] = -999
 
     index = (index,) + tuple(numpy.indices(ndvi.shape[1:]))
 
