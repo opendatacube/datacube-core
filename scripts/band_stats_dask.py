@@ -29,7 +29,7 @@ if 'profile' not in builtins.__dict__:
     builtins.__dict__['profile'] = lambda x: x
 
 from cubeaccess.indexing import Range
-from common import do_work, _get_dataset, write_files
+from common import do_work, _get_dataset, write_file
 
 
 def main(argv):
@@ -56,13 +56,14 @@ def main(argv):
         kwargs = dict(y=slice(yoff, yoff+N), t=Range(dt, dt+numpy.timedelta64(1, 'Y')))
         r = dask.imperative.do(do_work)(stack, pqa, qs, **kwargs)
         data.append(r)
-    r = dask.imperative.do(write_files)(filename, data, qs, N, geotr, proj)
-    tasks.append(r)
+    for qidx, q in enumerate(qs):
+        r = dask.imperative.do(write_file)(filename + '_' + str(q) + '.tif', data, qidx, N, geotr, proj)
+        tasks.append(r)
 
     #executor = Executor('127.0.0.1:8787')
     #dask.imperative.compute(tasks, get=executor.get)
-    #dask.imperative.compute(tasks[0], num_workers=16)
-    dask.imperative.compute(tasks, get=dask.multiprocessing.get, num_workers=num_workers)
+
+    dask.imperative.compute(tasks, num_workers=num_workers)
 
 
 if __name__ == "__main__":

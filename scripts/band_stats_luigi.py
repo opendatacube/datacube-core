@@ -27,7 +27,7 @@ if 'profile' not in builtins.__dict__:
     builtins.__dict__['profile'] = lambda x: x
 
 from cubeaccess.indexing import Range
-from common import do_work, _get_dataset, write_files
+from common import do_work, _get_dataset, write_file
 
 
 class DTEncoder(json.JSONEncoder):
@@ -36,7 +36,7 @@ class DTEncoder(json.JSONEncoder):
 
 
 def get_filename(args, band):
-    return '/g/data/u46/gxr547/'+ str(hash(json.dumps(args, sort_keys=True, cls=DTEncoder))) + "_" + str(band)+".npy"
+    return '/g/data/u46/gxr547/spam/'+ str(hash(json.dumps(args, sort_keys=True, cls=DTEncoder))) + "_" + str(band)+".npy"
 
 
 class DoChunk(luigi.Task):
@@ -60,6 +60,7 @@ class DoChunk(luigi.Task):
 
 class DoPretty(luigi.Task):
     dt = luigi.Parameter()
+    qidx = luigi.Parameter()
     N = luigi.Parameter(significant=False)
     stack = luigi.Parameter(significant=False)
     pqa = luigi.Parameter(significant=False)
@@ -73,7 +74,7 @@ class DoPretty(luigi.Task):
             yield DoChunk(self.dt, self.N, yoff, self.stack, self.pqa, self.qs)
 
     def output(self):
-        return [luigi.file.LocalTarget(self.filename+'_'+str(q)) for q in self.qs]
+        return luigi.file.LocalTarget(self.filename)
 
     def run(self):
         data = []
@@ -81,7 +82,7 @@ class DoPretty(luigi.Task):
             kwargs = dict(y=slice(yoff, yoff+self.N), t=Range(self.dt, self.dt+numpy.timedelta64(1, 'Y')))
             bands = [numpy.load(get_filename(kwargs, idx)) for idx in range(7)]
             data.append(bands)
-        write_files(self.filename, data, self.qs, self.N, self.geotr, self.proj)
+        write_file(self.filename, data, self.qidx, self.N, self.geotr, self.proj)
 
 
 def main(argv):
@@ -100,10 +101,11 @@ def main(argv):
     qs = [10, 50, 90]
     num_workers = 16
     N = 4000//num_workers
-    filename = '/g/data/u46/gxr547/%s_%s_%s'%(lon, lat, dt)
+    filename = '/g/data/u46/gxr547/spam/%s_%s_%s'%(lon, lat, dt)
 
-    task = DoPretty(stack=stack, pqa=pqa, dt=dt, N=N, filename=filename, qs=qs, geotr=geotr, proj=proj)
-    luigi.build([task], local_scheduler=True, workers=16)
+    tasks = [DoPretty(stack=stack, pqa=pqa, dt=dt, N=N, qidx=qidx, qs=qs, geotr=geotr, proj=proj,
+                      filename=filename+'_'+str(q)+'.tif') for qidx, q in enumerate(qs)]
+    luigi.build(tasks, local_scheduler=True, workers=16)
 
 if __name__ == "__main__":
     import sys

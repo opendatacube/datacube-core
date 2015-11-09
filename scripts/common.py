@@ -17,7 +17,7 @@ from datetime import datetime
 from itertools import groupby
 
 import numpy
-from osgeo import gdal
+import rasterio
 
 from cubeaccess.core import StorageUnitVariableProxy, StorageUnitDimensionProxy, StorageUnitStack
 from cubeaccess.storage import GeoTifStorageUnit
@@ -79,27 +79,20 @@ def _get_dataset(lat, lon, dataset='NBAR', sat='LS5_TM'):
     return stack
 
 
-def write_files(name, data, qs, N, geotr, proj):
-    driver = gdal.GetDriverByName("GTiff")
+def write_file(name, data, qidx, N, geotr, proj):
     nbands = len(data[0])
-    for qidx, q in enumerate(qs):
-        print('writing', name+'_'+str(q)+'.tif')
-        raster = driver.Create(name+'_'+str(q)+'.tif', 4000, 4000, nbands, gdal.GDT_Int16,
-                               options=["INTERLEAVE=BAND", "COMPRESS=LZW", "TILED=YES"])
-        raster.SetProjection(proj)
-        raster.SetGeoTransform(geotr)
+    print('writing', name)
+    with rasterio.open(name, 'w', driver='GTiff',
+                       width=4000, height=4000, count=nbands, dtype=numpy.int16,
+                       crs=proj, transform=geotr, nodata=-999,
+                       INTERLEAVE="BAND", COMPRESS="LZW", TILED="YES") as raster:
         for band_num in range(nbands):
-            band = raster.GetRasterBand(band_num+1)
-            band.SetNoDataValue(-999)
             for idx, y in enumerate(range(0, 4000, N)):
                 # TODO: hadle writing ndv nicer
                 chunk = data[idx][band_num][qidx]
                 if chunk.dtype == numpy.float32:
-                    chunk = nan_to_ndv(chunk)
-                band.WriteArray(chunk, 0, y)
-            band.FlushCache()
-        raster.FlushCache()
-        del raster
+                    chunk = nan_to_ndv(chunk).astype(numpy.int16)
+                raster.write(chunk, indexes=band_num + 1, window=((y, y + chunk.shape[0]), (0, 4000)))
 
 
 def ndv_to_nan(a, ndv=-999):
@@ -134,7 +127,7 @@ def do_work(stack, pq, qs, **kwargs):
     slice_ = make_index(tcoord, kwargs['t'])
     tcoord = tcoord[slice_]
     tcoord = tcoord[index]
-    months = tcoord.astype('datetime64[M]').astype(int) % 12 + 1
+    months = (tcoord.astype('datetime64[M]').astype(numpy.int64) % 12).astype(numpy.int16) + 1
     months[..., mask] = -999
 
     index = (index,) + tuple(numpy.indices(ndvi.shape[1:]))
