@@ -14,11 +14,9 @@
 
 
 from __future__ import absolute_import, division, print_function
-from builtins import *
 
 import numpy
-from osgeo import gdal, gdalconst
-from osgeo.gdal_array import GDALTypeCodeToNumericTypeCode
+import rasterio
 
 from ..core import Coordinate, Variable, StorageUnitBase
 
@@ -27,20 +25,17 @@ class GeoTifStorageUnit(StorageUnitBase):
     def __init__(self, filepath, other=None):
         self._filepath = filepath
         if not other:
-            dataset = gdal.Open(self._filepath, gdalconst.GA_ReadOnly)
-            if dataset is None:
-                raise IOError("failed to open " + self._filepath)
+            with rasterio.open(self._filepath) as dataset:
+                t = self._transform = dataset.get_transform()
+                self._projection = str(dataset.crs_wkt)
+                self.coordinates = {
+                    'x': Coordinate(numpy.float32, t[0], t[0]+(dataset.width-1)*t[1], dataset.height),
+                    'y': Coordinate(numpy.float32, t[3], t[3]+(dataset.width-1)*t[5], dataset.height)
+                }
 
-            t = self._transform = dataset.GetGeoTransform()
-            self._projection = dataset.GetProjection()
-            self.coordinates = {
-                'x': Coordinate(numpy.float32, t[0], t[0]+(dataset.RasterXSize-1)*t[1], dataset.RasterXSize),
-                'y': Coordinate(numpy.float32, t[3], t[3]+(dataset.RasterYSize-1)*t[5], dataset.RasterYSize)
-            }
-
-            def band2var(band):
-                return Variable(GDALTypeCodeToNumericTypeCode(band.DataType), band.GetNoDataValue(), ('y', 'x'))
-            self.variables = {str(i+1): band2var(dataset.GetRasterBand(i+1)) for i in xrange(dataset.RasterCount)}
+            def band2var(i):
+                return Variable(dataset.dtypes[i], dataset.nodatavals[i], ('y', 'x'))
+            self.variables = {str(i+1): band2var(i) for i in xrange(dataset.count)}
         else:
             self._transform = other._transform
             self._projection = other._projection
@@ -53,11 +48,6 @@ class GeoTifStorageUnit(StorageUnitBase):
         return data
 
     def _fill_data(self, name, index, dest):
-        dataset = gdal.Open(self._filepath, gdalconst.GA_ReadOnly)
-        if dataset is None:
-            raise IOError("failed to open " + self._filepath)
-        dataset.GetRasterBand(int(name)).ReadAsArray(index[1].start,
-                                                     index[0].start,
-                                                     index[1].stop - index[1].start,
-                                                     index[0].stop - index[0].start,
-                                                     buf_obj=dest)
+        with rasterio.open(self._filepath) as dataset:
+            dataset.read(int(name), out=dest,
+                         window=((index[0].start, index[0].stop), (index[1].start, index[1].stop)))
