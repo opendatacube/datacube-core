@@ -6,9 +6,6 @@ import datetime
 
 from datacube.index._api import _index_dataset
 
-
-
-
 _nbar_uuid = 'f2f12372-8366-11e5-817e-1040f381a756'
 _ortho_uuid = '5cf41d98-eda9-11e4-8a8e-1040f381a756'
 _telemetry_uuid = '4ec8fe97-e8b9-11e4-87ff-1040f381a756'
@@ -119,28 +116,33 @@ _EXAMPLE_NBAR = {
 }
 
 
+class MockDb(object):
+    def __init__(self):
+        self.dataset = []
+        self.dataset_source = set()
+        self.already_ingested = set()
+
+    def insert_dataset(self, dataset_doc, dataset_id, path, product_type):
+        # Will we pretend this one was already ingested?
+        if dataset_id in self.already_ingested:
+            return False
+
+        self.dataset.append((dataset_doc, dataset_id, path, product_type))
+        return True
+
+    def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
+        self.dataset_source.add((classifier, dataset_id, source_dataset_id))
+
+
 def test_index_dataset():
-
-    class MockDb(object):
-
-        def __init__(self):
-            self.dataset = []
-            self.dataset_source = set()
-
-        def insert_dataset(self, dataset_doc, dataset_id, path, product_type):
-            self.dataset.append((dataset_doc, dataset_id, path, product_type))
-
-        def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
-            self.dataset_source.add((classifier, dataset_id, source_dataset_id))
-
     mock_db = MockDb()
     _index_dataset(mock_db, _EXAMPLE_NBAR)
 
-    # Three datasets (ours and the two embedded source datasets)
-    assert len(mock_db.dataset) == 3
-
     ids = {d[0]['id'] for d in mock_db.dataset}
     assert ids == {_nbar_uuid, _ortho_uuid, _telemetry_uuid}
+
+    # Three datasets (ours and the two embedded source datasets)
+    assert len(mock_db.dataset) == 3
 
     # Our three datasets should be linked together
     # Nbar -> Ortho -> Telemetry
@@ -148,4 +150,47 @@ def test_index_dataset():
     assert mock_db.dataset_source == {
         ('ortho', _nbar_uuid, _ortho_uuid),
         ('satellite_telemetry_data', _ortho_uuid, _telemetry_uuid)
+    }
+
+
+def test_index_already_ingested_dataset():
+    mock_db = MockDb()
+    mock_db.already_ingested = {_nbar_uuid}
+    _index_dataset(mock_db, _EXAMPLE_NBAR)
+
+    # Nothing ingested, because we reported the first as already ingested.
+    assert len(mock_db.dataset) == 0
+
+    assert len(mock_db.dataset_source) == 0
+
+
+def test_index_already_ingested_source_dataset():
+    mock_db = MockDb()
+    mock_db.already_ingested = {_ortho_uuid, _telemetry_uuid}
+    _index_dataset(mock_db, _EXAMPLE_NBAR)
+
+    # Only the first dataset ingested
+    assert len(mock_db.dataset) == 1
+    assert mock_db.dataset[0][1] == _nbar_uuid
+
+    assert len(mock_db.dataset_source) == 0
+
+
+def test_index_two_levels_already_ingested():
+    mock_db = MockDb()
+    # RAW was already ingested.
+    mock_db.already_ingested = {_telemetry_uuid}
+    _index_dataset(mock_db, _EXAMPLE_NBAR)
+
+    ids = {d[0]['id'] for d in mock_db.dataset}
+    assert ids == {_nbar_uuid, _ortho_uuid}
+
+    # Two datasets (the telemetry data already ingested)
+    assert len(mock_db.dataset) == 2
+
+    # Our two datasets should be linked together
+    # Nbar -> Ortho
+    assert len(mock_db.dataset_source) == 1
+    assert mock_db.dataset_source == {
+        ('ortho', _nbar_uuid, _ortho_uuid),
     }
