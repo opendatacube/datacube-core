@@ -16,5 +16,6 @@ pep8 --max-line-length 120 ${py_files}
 pylint --py3k --reports no ${py_files}
 
 # Run tests, taking coverage.
-py.test --cov datacube datacube tests
+# Users can specify extra folders as arguments.
+py.test --cov datacube datacube tests $@
 

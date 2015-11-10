@@ -48,6 +48,8 @@ before_install:
   - ./create_db_from_backup.sh gdf_test_modis ../gdf_modis_20150710.backup
   - ./create_db_from_backup.sh gdf_test_ls ../gdf_landsat_20150710.backup
   - cd ..
+  # Create blank database used by the integration tests.
+  - createdb agdcintegration
 
 install:
   - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2 coverage python-coveralls pep8 pylint pytest
@@ -56,7 +58,7 @@ install:
   - python setup.py install
 
 script:
-  - ./check-code.sh
+  - ./check-code.sh integration_tests
 
 after_success:
   - coveralls
