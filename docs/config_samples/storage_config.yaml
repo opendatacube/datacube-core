@@ -1,5 +1,8 @@
-id: sdfklsdm34itsdv
-name: foo
+#
+# Sample Storage Configuration
+#
+
+name: 30m_bands
 projection:
     spatial_ref: |
         GEOGCS["WGS 84",
