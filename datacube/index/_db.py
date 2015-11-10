@@ -8,7 +8,7 @@ import datetime
 import json
 import logging
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select, text, bindparam, exists
 from sqlalchemy.exc import IntegrityError
 
 from .tables import ensure_db, DATASET, DATASET_SOURCE
@@ -70,35 +70,49 @@ class Db(object):
 
         :return: Tranasction object
         """
-        return self._connection.begin()
+        return _BegunTransaction(self._connection)
 
-    def _execute(self, eow):
-        return self._connection.execute(eow)
-
-    def insert_dataset(self, dataset_doc, dataset_id, path, product_type, ignore_duplicates=True):
+    def insert_dataset(self, dataset_doc, dataset_id, path, product_type):
+        """
+        Insert dataset if not already indexed.
+        :type dataset_doc: dict
+        :type dataset_id: str or uuid.UUID
+        :type path: pathlib.Path
+        :type product_type: str
+        :return: whether it was inserted
+        :rtype: bool
+        """
         try:
-            self._execute(
-                DATASET.insert().values(
-                    id=dataset_id,
-                    type=product_type,
-                    # TODO: Does a single path make sense? Or a separate 'locations' table?
-                    metadata_path=str(path) if path else None,
-                    # We convert to JSON ourselves so we can specify our own serialiser (for date conversion etc)
-                    metadata=json.dumps(dataset_doc, default=_json_serialiser)
-                )
+            ret = self._connection.execute(
+                # Insert if not exists.
+                #     (there's still a tiny chance of a race condition: It will throw an integrity error if another
+                #      connection inserts the same dataset in the time between the subquery and the main query.
+                #      This is ok for our purposes.)
+                DATASET.insert().from_select(
+                    ['id', 'type', 'metadata_path', 'metadata'],
+                    select([
+                        bindparam('id'), bindparam('type'), bindparam('metadata_path'), bindparam('metadata')
+                    ]).where(~exists(select([DATASET.c.id]).where(DATASET.c.id == bindparam('id'))))
+                ),
+                id=dataset_id,
+                type=product_type,
+                # TODO: Does a single path make sense? Or a separate 'locations' table?
+                metadata_path=str(path) if path else None,
+                # We convert to JSON ourselves so we can specify our own serialiser (for date conversion etc)
+                metadata=json.dumps(dataset_doc, default=_json_serialiser)
             )
-            return True
+            return ret.rowcount > 0
         except IntegrityError as e:
-            # Unique constraint error: either UUID or path name.
-            # We are often inserting datasets
-            if (e.orig.pgcode == PGCODE_UNIQUE_CONSTRAINT) and ignore_duplicates:
-                if ignore_duplicates:
-                    _LOG.info('Duplicate dataset, not inserting: %s @ %s', dataset_id, path)
-                    return False
+            if e.orig.pgcode == PGCODE_UNIQUE_CONSTRAINT:
+                _LOG.info('Duplicate dataset, not inserting: %s @ %s', dataset_id, path)
+                # We're still going to raise it, because the transaction will have been invalidated.
             raise
 
+    def contains_dataset(self, dataset_id):
+        return bool(self._connection.execute(select([DATASET.c.id]).where(DATASET.c.id == dataset_id)).fetchone())
+
     def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
-        self._execute(
+        self._connection.execute(
             DATASET_SOURCE.insert().values(
                 classifier=classifier,
                 dataset_ref=dataset_id,
@@ -113,3 +127,27 @@ def _json_serialiser(obj):
     if isinstance(obj, (datetime.datetime, datetime.date)):
         return obj.isoformat()
     raise TypeError("Type not serializable: {}".format(type(obj)))
+
+
+class _BegunTransaction(object):
+    def __init__(self, connection):
+        self._connection = connection
+        self.begin()
+
+    def begin(self):
+        self._connection.execute(text('BEGIN'))
+
+    def commit(self):
+        self._connection.execute(text('COMMIT'))
+
+    def rollback(self):
+        self._connection.execute(text('ROLLBACK'))
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            self.rollback()
+        else:
+            self.commit()

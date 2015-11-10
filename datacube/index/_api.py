@@ -70,11 +70,13 @@ class AccessIndex(object):
 
     def add_dataset(self, dataset):
         """
+        Index a dataset if needed. Ignores datasets that are already indexed.
         :type dataset: datacube.model.Dataset
-
+        :return: dataset id if newly indexed.
+        :rtype: uuid.UUID or None
         """
         with self.db.begin() as transaction:
-            _index_dataset(self.db, dataset.metadata_doc, path=dataset.metadata_path)
+            return _index_dataset(self.db, dataset.metadata_doc, path=dataset.metadata_path)
 
     # Dummy implementation: TODO.
     def contains_dataset(self, dataset):
@@ -84,5 +86,6 @@ class AccessIndex(object):
         :type dataset: datacube.model.Dataset
         :rtype: bool
         """
+
         # We haven't indexed anything.
         return False

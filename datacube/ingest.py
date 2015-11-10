@@ -21,14 +21,15 @@ def ingest(dataset_path):
     index = index_connect(UserConfig.find())
 
     if not index.contains_dataset(dataset):
-        index.add_dataset(dataset)
+        was_indexed = index.add_dataset(dataset)
 
         # dataset_storage_config = config.storage_config(dataset)
 
         # storage_records = storage.store(config.ingest_config, dataset_storage_config, dataset)
 
         # index.add_storage_records(dataset, storage_records)
-        _LOG.info('Ingested %s', dataset_path)
+        if was_indexed:
+            _LOG.info('Ingested %s', dataset_path)
     else:
         # TODO: Check/write any missing storage records for the dataset?
         _LOG.info('Skipping already-ingested dataset %s', dataset_path)
