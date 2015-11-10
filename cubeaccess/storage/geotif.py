@@ -29,8 +29,8 @@ class GeoTifStorageUnit(StorageUnitBase):
                 t = self._transform = dataset.get_transform()
                 self._projection = str(dataset.crs_wkt)
                 self.coordinates = {
-                    'x': Coordinate(numpy.float32, t[0], t[0]+(dataset.width-1)*t[1], dataset.height),
-                    'y': Coordinate(numpy.float32, t[3], t[3]+(dataset.width-1)*t[5], dataset.height)
+                    'x': Coordinate(numpy.float64, t[0], t[0]+(dataset.width-1)*t[1], dataset.width),
+                    'y': Coordinate(numpy.float64, t[3], t[3]+(dataset.height-1)*t[5], dataset.height)
                 }
 
             def band2var(i):

@@ -16,12 +16,16 @@
 from __future__ import absolute_import, division, print_function
 from builtins import *
 
+import os
 import numpy
 import pytest
 
 from cubeaccess.core import Coordinate, Variable, StorageUnitVariableProxy, StorageUnitDimensionProxy, StorageUnitStack
 from cubeaccess.storage import FauxStorageUnit
 from cubeaccess.indexing import Range
+
+
+DATA_DIR = os.path.join(os.path.split(os.path.realpath(__file__))[0], 'data')
 
 
 ds1 = FauxStorageUnit({
@@ -120,33 +124,22 @@ def test_storage_unit_stack():
     assert ((data.values == expected).all())
 
 
-@pytest.mark.data
 def test_geotif_storage_unit():
     from cubeaccess.storage import GeoTifStorageUnit
 
-    files = [
-        # "/mnt/data/tiles/EPSG4326_1deg_0.00025pixel/LS7_ETM/142_-033/2010/LS7_ETM_NBAR_142_-033_2010-01-16T00-12-07.682499.tif",
-        # "/mnt/data/tiles/EPSG4326_1deg_0.00025pixel/LS7_ETM/142_-033/2010/LS7_ETM_FC_142_-033_2010-01-16T00-12-07.682499.tif",
-        # "/mnt/data/tiles/EPSG4326_1deg_0.00025pixel/LS7_ETM/142_-033/2010/LS7_ETM_NBAR_142_-033_2010-01-16T00-11-43.729979.tif",
-        # "/mnt/data/tiles/EPSG4326_1deg_0.00025pixel/LS7_ETM/142_-033/2010/LS7_ETM_FC_142_-033_2010-01-16T00-11-43.729979.tif",
-        # "/mnt/data/tiles/EPSG4326_1deg_0.00025pixel/LS7_ETM/142_-033/2010/LS7_ETM_NBAR_142_-033_2010-01-07T00-17-46.208174.tif",
-        "/g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/LS5_TM/142_-033/2004/LS5_TM_NBAR_142_-033_2004-01-07T23-59-21.879044.tif",
-        "/g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/LS5_TM/142_-033/2004/LS5_TM_NBAR_142_-033_2004-11-07T00-05-33.311000.tif",
-        "/g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/LS5_TM/142_-033/2004/LS5_TM_NBAR_142_-033_2004-12-25T00-06-26.534031.tif",
-    ]
-
-    su = GeoTifStorageUnit(files[0])
+    su = GeoTifStorageUnit(DATA_DIR+'/test.tif')
     assert (set(su.coordinates.keys()) == ({'x', 'y'}))
 
-    data = su.get('2', x=Range(142.5, 142.7), y=Range(-32.5, -32.2))
-    assert (len(data.coords['x']) == 801)
-    assert (len(data.coords['y']) == 1201)
-    assert (numpy.any(data.values != -999))
+    # floating point dodge... am I doing something wrong?
+    data = su.get('2', x=Range(144.5, 144.7-0.00001), y=Range(-35.5, -35.2-0.00001))
+    assert (len(data.coords['x']) == 800)
+    assert (len(data.coords['y']) == 600)
+    assert (numpy.all(data.values == 2))
 
-    data = su.get('2', x=slice(500), y=slice(3400, None))
+    data = su.get('1', x=slice(500), y=slice(1400, None))
     assert (len(data.coords['x']) == 500)
     assert (len(data.coords['y']) == 600)
-    assert (numpy.any(data.values != -999))
+    assert (numpy.any(data.values == 1))
 
 
 @pytest.mark.data
