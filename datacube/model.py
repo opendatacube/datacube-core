@@ -51,6 +51,10 @@ class Dataset(object):
         self.metadata_doc = metadata_doc
         self.metadata_path = metadata_path
 
+    @property
+    def id(self):
+        return self.metadata_doc['id']
+
     @classmethod
     def from_path(cls, path):
         metadata_type, metadata_path = _expected_metadata_path(path)

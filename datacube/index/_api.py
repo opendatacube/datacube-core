@@ -78,7 +78,6 @@ class AccessIndex(object):
         with self.db.begin() as transaction:
             return _index_dataset(self.db, dataset.metadata_doc, path=dataset.metadata_path)
 
-    # Dummy implementation: TODO.
     def contains_dataset(self, dataset):
         """
         Have we already indexed this dataset?
@@ -86,6 +85,4 @@ class AccessIndex(object):
         :type dataset: datacube.model.Dataset
         :rtype: bool
         """
-
-        # We haven't indexed anything.
-        return False
+        return self.db.contains_dataset(dataset.id)
