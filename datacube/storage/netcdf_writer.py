@@ -126,11 +126,12 @@ class NetCDFWriter(object):
 
         return index
 
-    def append_gdal_tile(self, gdal_dataset, input_spec, varname, input_filename):
+    def append_gdal_tile(self, gdal_dataset, input_spec, bandname, input_filename):
         """
 
         :return:
         """
+        varname = input_spec.bands[bandname].vname
         eodataset = input_spec.dataset
         if varname in self.nco.variables:
             out_band = self.nco.variables[varname]
@@ -138,8 +139,8 @@ class NetCDFWriter(object):
         else:
             chunking = input_spec.storage_spec['chunking']
             chunksizes = [chunking[dim] for dim in ['t', 'y', 'x']]
-            dtype = input_spec.bands[varname].dtype
-            ndv = input_spec.bands[varname].fill_value
+            dtype = input_spec.bands[bandname].dtype
+            ndv = input_spec.bands[bandname].fill_value
             out_band, src_filename = self._create_data_variable(varname, dtype, chunksizes, ndv)
 
         acquisition_date = eodataset['acquisition']['aos']
