@@ -49,7 +49,7 @@ class Db(object):
         connection_string = _connection_string(hostname, database)
         _engine = create_engine(
             connection_string,
-            echo=True,
+            echo=False,
             # 'AUTOCOMMIT' here means READ-COMMITTED isolation level with autocommit on.
             # When a transaction is needed we will do an explicit begin/commit.
             isolation_level='AUTOCOMMIT'

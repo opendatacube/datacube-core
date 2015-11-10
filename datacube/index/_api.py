@@ -41,6 +41,7 @@ def _index_dataset(db, dataset_doc, path=None):
     # Clear source datasets: We store them separately.
     indexable_doc['lineage']['source_datasets'] = None
 
+    _LOG.info('Indexing %s @ %s', dataset_id, path)
     was_inserted = db.insert_dataset(indexable_doc, dataset_id, path, product_type)
 
     if not was_inserted:
