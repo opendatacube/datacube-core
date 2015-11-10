@@ -1,15 +1,18 @@
 from __future__ import absolute_import, division, print_function
-from osgeo import gdal, gdalconst, osr
 
+import logging
 import os
 import yaml
+
+from osgeo import gdal, gdalconst, osr
 
 from datacube import compat
 from .netcdf_writer import append_to_netcdf, TileSpec
 
+_LOG = logging.getLogger(__name__)
+
 
 class SimpleObject(object):
-
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
@@ -64,8 +67,8 @@ def create_tiles(src_ds, dst_size, dst_res, dst_srs=None, src_srs=None, src_tr=N
 def _calc_region(dst_res, dst_size, dst_srs, dst_type, src_ds, x, y):
     # TODO: check that it intersects with dst_ext
     transform = [x * dst_size['x'], dst_res['x'], 0.0, y * dst_size['y'], 0.0, dst_res['y']]
-    print(transform)
-    print(x * dst_size['x'], y * dst_size['y'], (x + 1) * dst_size['x'], (y + 1) * dst_size['y'])
+    _LOG.debug(transform)
+    _LOG.debug([x * dst_size['x'], y * dst_size['y'], (x + 1) * dst_size['x'], (y + 1) * dst_size['y']])
     width = int(dst_size['x'] / dst_res['x'])
     height = int(dst_size['y'] / dst_res['y'])
     region = extract_region(width, height, transform, dst_srs.ExportToWkt(), dst_type)
@@ -77,7 +80,7 @@ def _calc_region(dst_res, dst_size, dst_srs, dst_type, src_ds, x, y):
 def make_input_specs(ingest_config, storage_configs, eodataset):
     for storage in ingest_config['storage']:
         if storage['name'] not in storage_configs:
-            print(('Error: Storage name "%s" is not found Storage Configurations. Skipping' % storage['name']))
+            _LOG.warning('Storage name "%s" is not found Storage Configurations. Skipping', storage['name'])
             continue
         storage_spec = storage_configs[storage['name']]
 
@@ -102,7 +105,7 @@ def ingest(input_spec):
     for band_name in input_spec.bands.keys():
         input_filename = input_spec.dataset['image']['bands'][band_name]['path']
         src_ds = gdal.Open(input_filename, gdalconst.GA_ReadOnly)
-        print("doing", band_name, input_filename)
+        _LOG.debug("Ingesting: %s %s", band_name, input_filename)
         for im in create_tiles(src_ds,
                                input_spec.storage_spec['tile_size'],
                                input_spec.storage_spec['resolution'],
@@ -114,10 +117,10 @@ def ingest(input_spec):
 
             out_filename = generate_filename(input_spec.storage_spec['filename_format'], input_spec.dataset, tile_spec)
 
-            print((os.getcwd(), out_filename))
+            _LOG.debug((os.getcwd(), out_filename))
             append_to_netcdf(im, out_filename, input_spec, band_name, input_filename)
 
-            print(im)
+            _LOG.debug(im)
 
 
 def load_yaml(filename):
