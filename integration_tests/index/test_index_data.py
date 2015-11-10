@@ -8,12 +8,7 @@ from __future__ import absolute_import
 
 import datetime
 
-from datacube.index._db import Db
-
-
-def connect():
-    return Db.connect('localhost', 'agdcintegration')
-
+from integration_tests.index._common import init_db, connect_db
 
 _telemetry_uuid = '4ec8fe97-e8b9-11e4-87ff-1040f381a756'
 _telemetry_dataset = {
@@ -38,7 +33,7 @@ _telemetry_dataset = {
 
 
 def test_index_dataset():
-    db = connect()
+    db = init_db()
 
     assert not db.contains_dataset(_telemetry_uuid)
 
@@ -69,5 +64,6 @@ def test_index_dataset():
     assert not db.contains_dataset(_telemetry_uuid)
 
     # Check with a new connection too:
-    db = connect()
+    db = connect_db()
     assert not db.contains_dataset(_telemetry_uuid)
+

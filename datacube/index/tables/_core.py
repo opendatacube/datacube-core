@@ -21,4 +21,5 @@ METADATA = MetaData(naming_convention=SQL_NAMING_CONVENTIONS, schema=SCHEMA_NAME
 def ensure_db(connection, engine):
     if not engine.dialect.has_schema(connection, SCHEMA_NAME):
         engine.execute(CreateSchema(SCHEMA_NAME))
-        METADATA.create_all(engine)
+
+    METADATA.create_all(engine)

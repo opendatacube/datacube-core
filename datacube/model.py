@@ -4,7 +4,11 @@ Core classes used across modules.
 """
 from __future__ import absolute_import
 
+import logging
+
 import yaml
+
+_LOG = logging.getLogger(__name__)
 
 
 # TODO: move this and from_path() to a separate dataset-loader module ...?

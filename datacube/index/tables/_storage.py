@@ -6,7 +6,7 @@ Tables for indexing the storage of a dataset in a reprojected or new form.
 """
 from __future__ import absolute_import
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, UniqueConstraint, BigInteger
 from sqlalchemy import Table, Column, Integer, String, DateTime
 from sqlalchemy.dialects import postgres
 from sqlalchemy.sql import func
@@ -21,16 +21,27 @@ STORAGE_TYPE = Table(
     Column('id', Integer, primary_key=True, autoincrement=True),
 
     # The storage "driver" to use: eg. 'NetCDF CF', 'GeoTIFF'...
-    Column('type', String, unique=False, nullable=False),
+    Column('driver', String, nullable=False),
+
+    # A name/label for this type (eg. '30m bands'). Specified by users.
+    Column('name', String, nullable=False),
 
     # See "_EXAMPLE_STORAGE_TYPE_DESCRIPTOR" below
     Column('descriptor', postgres.JSONB, nullable=False),
+
+    UniqueConstraint('driver', 'name'),
 )
 
 # Map a dataset type to how we will store it (storage_type and each measurement/band).
 STORAGE_MAPPING = Table(
     'storage_mapping', _core.METADATA,
     Column('id', Integer, primary_key=True, autoincrement=True),
+
+    # The storage type to use.
+    Column('storage_type_ref', ForeignKey(STORAGE_TYPE.c.id), nullable=False),
+
+    # A name/label for this mapping (eg. 'LS7 NBAR'). Specified by users.
+    Column('name', String, nullable=False),
 
     # Match any datasets whose metadata is a superset of this.
     # See "_EXAMPLE_DATASETS_MATCHING" below
@@ -43,13 +54,10 @@ STORAGE_MAPPING = Table(
     # It expects to find a dictionary, where:
     #       - keys are band ids.
     #       - each value is a dictionary containing measurement information.
-    Column('dataset_measurements_key', postgres.ARRAY(String), default='bands', nullable=False),
-
-    # The storage type to use.
-    Column('storage_type_ref', ForeignKey(STORAGE_TYPE.c.id), nullable=False),
+    Column('dataset_measurements_key', postgres.ARRAY(String), default=['bands'], nullable=False),
 
     # Storage config for each measurement.
-    # The value depends on the storage type (eg. NetCDF CF).
+    # The expected values depend on the storage driver (eg. NetCDF).
     #
     # Eg.
     # '10':
@@ -61,14 +69,16 @@ STORAGE_MAPPING = Table(
     #   fill_value: -999
     #   interpolation: cubic
     # See "_EXAMPLE_DATASET_TYPE_MEASUREMENTS" below.
-    Column('measurements', postgres.JSONB)
+    Column('measurements', postgres.JSONB),
+
+    UniqueConstraint('storage_type_ref', 'name'),
 )
 
 # Which storage units our dataset is in.
 # Unique: (dataset, representation)?
 STORAGE = Table(
     'storage', _core.METADATA,
-    Column('id', Integer, primary_key=True, autoincrement=True),
+    Column('id', BigInteger, primary_key=True, autoincrement=True),
     Column('dataset_ref', None, ForeignKey(_dataset.DATASET.c.id), nullable=False),
     Column('storage_mapping_ref', None, ForeignKey(STORAGE_MAPPING.c.id), nullable=False),
 

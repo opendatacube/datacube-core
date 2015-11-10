@@ -1,18 +1,19 @@
 
 name: LS5 NBAR
 
+# Any datasets matching these metadata properties.
 match:
-  dataset:
-    ga_level: P54
-    product_type: NBAR
-    platform:
-      code: LANDSAT_5
-    instrument:
-      name: TM
+    metadata:
+        platform:
+            code: LANDSAT_5
+        instrument:
+            name: TM
+        product_type: NBAR
 
+# Store them using storage definitions '30m_bands' and '15m_bands':
 storage:
     - name: 30m_bands
-      bands:
+      measurements:
         '10':
             dtype: int16
             fill_value: -999
@@ -44,7 +45,7 @@ storage:
             resampling_method: cubic
             varname: band_70
     - name: 15m_band
-      bands:
+      measurements:
         '8':
             dtype: int16
             fill_value: -999

@@ -8,10 +8,10 @@ import datetime
 import json
 import logging
 
-from sqlalchemy import create_engine, select, text, bindparam, exists
+from sqlalchemy import create_engine, select, text, bindparam, exists, and_
 from sqlalchemy.exc import IntegrityError
 
-from .tables import ensure_db, DATASET, DATASET_SOURCE
+from .tables import ensure_db, DATASET, DATASET_SOURCE, STORAGE_TYPE, STORAGE_MAPPING
 
 PGCODE_UNIQUE_CONSTRAINT = '23505'
 
@@ -99,7 +99,7 @@ class Db(object):
                 # TODO: Does a single path make sense? Or a separate 'locations' table?
                 metadata_path=str(path) if path else None,
                 # We convert to JSON ourselves so we can specify our own serialiser (for date conversion etc)
-                metadata=json.dumps(dataset_doc, default=_json_serialiser)
+                metadata=self._to_json(dataset_doc)
             )
             return ret.rowcount > 0
         except IntegrityError as e:
@@ -107,6 +107,9 @@ class Db(object):
                 _LOG.info('Duplicate dataset, not inserting: %s @ %s', dataset_id, path)
                 # We're still going to raise it, because the transaction will have been invalidated.
             raise
+
+    def _to_json(self, dataset_doc):
+        return json.dumps(dataset_doc, default=_json_serialiser)
 
     def contains_dataset(self, dataset_id):
         return bool(self._connection.execute(select([DATASET.c.id]).where(DATASET.c.id == dataset_id)).fetchone())
@@ -117,6 +120,43 @@ class Db(object):
                 classifier=classifier,
                 dataset_ref=dataset_id,
                 source_dataset_ref=source_dataset_id
+            )
+        )
+
+    def ensure_storage_type(self, driver, name, descriptor):
+        # TODO: Update them if they already exist. This will do for now.
+        self._connection.execute(
+            STORAGE_TYPE.insert().values(
+                driver=driver,
+                name=name,
+                descriptor=descriptor
+            )
+        )
+
+    def get_storage_type(self, storage_type_id):
+        return self._connection.execute(
+            STORAGE_TYPE.select().where(STORAGE_TYPE.c.id == storage_type_id)
+        ).fetchone()
+
+    def get_storage_mappings(self, dataset_metadata):
+        return self._connection.execute(
+            STORAGE_MAPPING.select().where(
+                STORAGE_MAPPING.c.datasets_matching.contained_by(self._to_json(dataset_metadata))
+            )
+        ).fetchall()
+
+    def ensure_storage_mapping(self, driver, storage_type_name, name, datasets_matching,
+                               data_measurements_key, measurements):
+        self._connection.execute(
+            STORAGE_MAPPING.insert().values(
+                storage_type_ref=select([STORAGE_TYPE.c.id]).where(
+                    and_(STORAGE_TYPE.c.driver == driver,
+                         STORAGE_TYPE.c.name == storage_type_name)
+                ),
+                name=name,
+                datasets_matching=datasets_matching,
+                dataset_measurements_key=data_measurements_key,
+                measurements=measurements,
             )
         )
 

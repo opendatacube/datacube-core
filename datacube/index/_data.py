@@ -8,7 +8,7 @@ import copy
 import logging
 
 from datacube.config import UserConfig
-from ._db import Db
+from ._core_db import Db
 
 _LOG = logging.getLogger(__name__)
 
@@ -17,14 +17,15 @@ def connect(config=UserConfig.find()):
     """
     Connect to the index.
     :type config: datacube.config.UserConfig
-    :rtype: AccessIndex
+    :rtype: DataIndex
     """
-    return AccessIndex(Db.connect(config.db_hostname, config.db_database))
+    return DataIndex(Db.connect(config.db_hostname, config.db_database))
 
 
-def _index_dataset(db, dataset_doc, path=None):
+def _ensure_dataset(db, dataset_doc, path=None):
     """
-    Index a dataset if needed.
+    Ensure a dataset is in the index (add it if needed).
+
     :type db: Db
     :type dataset_doc: dict
     :type path: pathlib.Path
@@ -52,7 +53,7 @@ def _index_dataset(db, dataset_doc, path=None):
         # Get source datasets & index them.
         sources = {}
         for classifier, source_dataset in source_datasets.items():
-            source_id = _index_dataset(db, source_dataset)
+            source_id = _ensure_dataset(db, source_dataset)
             if source_id is None:
                 # Was already indexed.
                 continue
@@ -65,19 +66,22 @@ def _index_dataset(db, dataset_doc, path=None):
     return dataset_id
 
 
-class AccessIndex(object):
+class DataIndex(object):
     def __init__(self, db):
+        """
+        :type db: datacube.index._core_db.Db
+        """
         self.db = db
 
-    def add_dataset(self, dataset):
+    def ensure_dataset(self, dataset):
         """
-        Index a dataset if needed. Ignores datasets that are already indexed.
+        Ensure a dataset is in the index. Add it if not present.
         :type dataset: datacube.model.Dataset
         :return: dataset id if newly indexed.
         :rtype: uuid.UUID or None
         """
         with self.db.begin() as transaction:
-            return _index_dataset(self.db, dataset.metadata_doc, path=dataset.metadata_path)
+            return _ensure_dataset(self.db, dataset.metadata_doc, path=dataset.metadata_path)
 
     def contains_dataset(self, dataset):
         """
