@@ -35,7 +35,7 @@ class GeoTifStorageUnit(StorageUnitBase):
 
             def band2var(i):
                 return Variable(dataset.dtypes[i], dataset.nodatavals[i], ('y', 'x'))
-            self.variables = {str(i+1): band2var(i) for i in xrange(dataset.count)}
+            self.variables = {str(i+1): band2var(i) for i in range(dataset.count)}
         else:
             self._transform = other._transform
             self._projection = other._projection
