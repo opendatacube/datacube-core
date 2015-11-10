@@ -36,15 +36,15 @@ DATASET = Table(
 DATASET_SOURCE = Table(
     'dataset_source', _core.METADATA,
     Column('id', Integer, primary_key=True, autoincrement=True),
-    Column('dataset_ref', None, ForeignKey(DATASET.c.id)),
+    Column('dataset_ref', None, ForeignKey(DATASET.c.id), nullable=False),
 
     # An identifier for this source dataset.
     #    -> Usually it's the dataset type ('ortho', 'nbar'...), as there's typically only one source
     #       of each type.
     Column('classifier', String, nullable=False),
-    Column('source_dataset_ref', None, ForeignKey(DATASET.c.id)),
+    Column('source_dataset_ref', None, ForeignKey(DATASET.c.id), nullable=False),
 
-    Column('added', DateTime(timezone=True), server_default=func.now()),
+    Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
 
     UniqueConstraint('dataset_ref', 'classifier'),
     UniqueConstraint('source_dataset_ref', 'dataset_ref'),

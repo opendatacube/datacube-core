@@ -19,11 +19,12 @@ from . import _dataset
 STORAGE_TYPE = Table(
     'storage_type', _core.METADATA,
     Column('id', Integer, primary_key=True, autoincrement=True),
+
     # The storage "driver" to use: eg. 'NetCDF CF', 'GeoTIFF'...
-    Column('type', String, unique=False),
+    Column('type', String, unique=False, nullable=False),
 
     # See "_EXAMPLE_STORAGE_TYPE_DESCRIPTOR" below
-    Column('descriptor', postgres.JSONB),
+    Column('descriptor', postgres.JSONB, nullable=False),
 )
 
 # Map a dataset type to how we will store it (storage_type and each measurement/band).
@@ -42,7 +43,7 @@ STORAGE_MAPPING = Table(
     # It expects to find a dictionary, where:
     #       - keys are band ids.
     #       - each value is a dictionary containing measurement information.
-    Column('dataset_measurements_key', postgres.ARRAY(String), default='bands'),
+    Column('dataset_measurements_key', postgres.ARRAY(String), default='bands', nullable=False),
 
     # The storage type to use.
     Column('storage_type_ref', ForeignKey(STORAGE_TYPE.c.id), nullable=False),
@@ -68,15 +69,15 @@ STORAGE_MAPPING = Table(
 STORAGE = Table(
     'storage', _core.METADATA,
     Column('id', Integer, primary_key=True, autoincrement=True),
-    Column('dataset_ref', None, ForeignKey(_dataset.DATASET.c.id)),
-    Column('storage_mapping_ref', None, ForeignKey(STORAGE_MAPPING.c.id)),
+    Column('dataset_ref', None, ForeignKey(_dataset.DATASET.c.id), nullable=False),
+    Column('storage_mapping_ref', None, ForeignKey(STORAGE_MAPPING.c.id), nullable=False),
 
     # See "_EXAMPLE_STORAGE_DESCRIPTOR" below.
     Column('descriptor', postgres.JSONB, nullable=False),
 
     Column('path', String, nullable=False),
 
-    Column('added', DateTime(timezone=True), server_default=func.now()),
+    Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
 )
 
 _EXAMPLE_DATASETS_MATCHING = {
