@@ -9,6 +9,8 @@ sudo: false
 addons:
   apt:
     packages:
+      - libproj-dev
+      - libgdal1-dev
 cache: apt
 
 install:
