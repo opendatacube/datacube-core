@@ -11,6 +11,7 @@ setup(
     install_requires=[
         'future',
         'numpy',
+        'rasterio'
     ],
     license='Apache License 2.0',
 )
