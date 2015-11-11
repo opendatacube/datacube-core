@@ -1,18 +1,15 @@
 #!/usr/bin/env python
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 version = '0.0.0'
 
 setup(name='agdc-v2',
       version=version,
-      packages=[
-          'gdf_tests',
-          'analytics',
-          'analytics_utils',
-          'execution_engine',
-          'datacube.storage'
-      ],
+      packages=find_packages(
+          exclude=('tests', 'tests.*',
+                   'integration_tests', 'integration_tests.*')
+      ),
       package_data={
           'gdf_tests': ['gdf_default.conf']
       },
