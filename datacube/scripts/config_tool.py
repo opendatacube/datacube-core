@@ -4,22 +4,21 @@ Configure the Data Cube from the command-line.
 """
 from __future__ import absolute_import
 
-import logging
 import sys
 
 import click
 import yaml
 
-from datacube import index
+from datacube import index, config
 
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
 @click.group(help="Configure the Data Cube", context_settings=CLICK_SETTINGS)
 @click.option('--verbose', '-v', count=True, help="Use multiple times for more verbosity")
-def cli(verbose):
-    logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.WARN)
-    logging.getLogger('datacube').setLevel(logging.WARN - 10 * verbose)
+@click.option('--log-queries', is_flag=True, help="Print database queries.")
+def cli(verbose, log_queries):
+    config.init_logging(verbosity_level=verbose, log_queries=log_queries)
 
 
 @cli.group(help='Storage types')
@@ -32,10 +31,10 @@ def storage():
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
 def add_storage(yaml_file):
-    config = index.data_management_connect()
+    dm = index.data_management_connect()
 
     for descriptor_path in yaml_file:
-        config.ensure_storage_type(_parse_doc(descriptor_path))
+        dm.ensure_storage_type(_parse_doc(descriptor_path))
 
 
 @storage.command('template', help='Print an example YAML template')
@@ -58,10 +57,10 @@ def mappings():
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
 def add_mappings(yaml_file):
-    config = index.data_management_connect()
+    dm = index.data_management_connect()
 
     for descriptor_path in yaml_file:
-        config.ensure_storage_mapping(_parse_doc(descriptor_path))
+        dm.ensure_storage_mapping(_parse_doc(descriptor_path))
 
 
 @mappings.command('template', help='Print an example YAML template')

@@ -5,6 +5,7 @@ User configuration.
 from __future__ import absolute_import
 
 import StringIO
+import logging
 import os
 from ConfigParser import SafeConfigParser
 
@@ -58,3 +59,10 @@ class UserConfig(object):
     @property
     def db_database(self):
         return self._prop('db_database')
+
+
+def init_logging(verbosity_level=0, log_queries=False):
+    logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.WARN)
+    logging.getLogger('datacube').setLevel(logging.WARN - 10 * verbosity_level)
+    if log_queries:
+        logging.getLogger('sqlalchemy.engine').setLevel('INFO')
