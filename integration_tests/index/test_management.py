@@ -8,6 +8,7 @@ from datacube.index._management import DataManagement
 from integration_tests.index._common import init_db
 
 _STORAGE_TYPE = {
+    'driver': 'NetCDF CF',
     'base_path': '/short/v10/dra547/tmp/7/',
     'chunking': {'t': 1, 'x': 500, 'y': 500},
     'dimension_order': ['t', 'y', 'x'],
@@ -30,6 +31,7 @@ _STORAGE_TYPE = {
 }
 
 _STORAGE_MAPPING = {
+    'driver': 'NetCDF CF',
     'name': 'LS5 NBAR',
     'match': {
         'metadata':
@@ -102,8 +104,8 @@ def test_add_storage_type():
     storage_mappings = dm.get_storage_mappings_for_dataset(_DATASET_METADATA)
     assert len(storage_mappings) == 0
 
-    dm.ensure_storage_type(_STORAGE_TYPE, 'NetCDF CF')
-    dm.ensure_storage_mapping(_STORAGE_MAPPING, driver='NetCDF CF')
+    dm.ensure_storage_type(_STORAGE_TYPE)
+    dm.ensure_storage_mapping(_STORAGE_MAPPING)
 
     # The properties of the dataset should match.
     storage_mappings = dm.get_storage_mappings_for_dataset(_DATASET_METADATA)

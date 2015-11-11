@@ -3,6 +3,8 @@
 #
 
 name: 30m_bands
+driver: NetCDF CF
+
 projection:
     spatial_ref: |
         GEOGCS["WGS 84",

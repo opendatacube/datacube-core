@@ -46,23 +46,27 @@ class DataManagement(object):
             for mapping in mappings
         ]
 
-    def ensure_storage_type(self, descriptor, driver):
+    def ensure_storage_type(self, descriptor):
         """
         Ensure a storage type is in the index (add it if needed).
 
         :return:
         """
+        # TODO: Validate (Against JSON Schema?)
         name = descriptor['name']
+        driver = descriptor['driver']
         self.db.ensure_storage_type(driver, name, descriptor)
 
-    def ensure_storage_mapping(self, descriptor, driver):
+    def ensure_storage_mapping(self, descriptor):
         """
         Take a parsed storage mapping file and ensure it's in the index.
         (update if needed)
 
         :return:
         """
+        # TODO: Validate doc (Against JSON Schema?)
         name = descriptor['name']
+        driver = descriptor['driver']
         datasets_matching = descriptor['match']['metadata']
         storage_mappings = descriptor['storage']
         with self.db.begin() as transaction:
