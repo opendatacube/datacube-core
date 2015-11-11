@@ -5,7 +5,6 @@ Storage of datasets
 from __future__ import absolute_import
 
 import logging
-import os
 
 from pathlib import Path
 
@@ -52,7 +51,10 @@ def store(storage_mappings, dataset):
             band_path = dataset_path.joinpath(band_descriptor['path'])
 
             _LOG.debug('Band path: %s', band_path)
-            assert os.path.exists(band_path)
+            assert band_path.exists()
+
+            band_descriptor = mapping.measurements[band_id]
+
 
         _LOG.debug('Storage type description: %r', storage_type.descriptor)
 
