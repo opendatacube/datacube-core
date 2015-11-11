@@ -42,7 +42,7 @@ from osgeo import gdal
 import os
 
 from gdf import Database
-from _gdfutils import make_dir
+from gdf._gdfutils import make_dir
 
 
 # Set handler for root logger to standard output

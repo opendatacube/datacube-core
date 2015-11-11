@@ -49,7 +49,7 @@ from gdf import GDF
 from gdf import GDFNetCDF
 from gdf import dt2secs
 from gdf import directory_writable
-from _gdfutils import make_dir, log_multiline
+from gdf._gdfutils import make_dir, log_multiline
 
 logger = logging.getLogger(__name__)
 

@@ -9,7 +9,7 @@ import logging
 import numpy as np
 import numexpr as ne
 
-from datacube.gdf import GDF
+from gdf import GDF
 from analytics_utils import get_pqa_mask
 
 logger = logging.getLogger(__name__)
