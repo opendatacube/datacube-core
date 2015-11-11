@@ -48,8 +48,7 @@ setup(name='agdc-v2',
       entry_points={
           'console_scripts': [
               'datacube-ingest = datacube.scripts.run_ingest:cli',
-              'datacube-config = datacube.scripts.config_tool:cli',
-              'create_empty_dataset = datacube.ingester.utils:create_empty_dataset'
+              'datacube-config = datacube.scripts.config_tool:cli'
           ]
       },
       )
