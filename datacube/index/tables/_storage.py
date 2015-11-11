@@ -45,7 +45,7 @@ STORAGE_MAPPING = Table(
 
     # Match any datasets whose metadata is a superset of this.
     # See "_EXAMPLE_DATASETS_MATCHING" below
-    Column('datasets_matching', postgres.JSONB, nullable=False),
+    Column('dataset_metadata', postgres.JSONB, nullable=False),
 
     # Where in the dataset metadata to find a dictionary of measurements.
     # For EO datasets this is "bands".
@@ -91,7 +91,7 @@ STORAGE = Table(
 )
 
 _EXAMPLE_DATASETS_MATCHING = {
-    'product_type': 'NBAR',
+    'product_type': 'nbar',
     'platform': {
         'code': 'LANDSAT_7'
     }

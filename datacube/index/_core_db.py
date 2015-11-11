@@ -145,14 +145,14 @@ class Db(object):
         :type dataset_metadata: dict
         :rtype: dict
         """
-        # Find any storage mappings whose 'datasets_matching' document is a subset of the metadata.
+        # Find any storage mappings whose 'dataset_metadata' document is a subset of the metadata.
         return self._connection.execute(
             STORAGE_MAPPING.select().where(
-                STORAGE_MAPPING.c.datasets_matching.contained_by(self._to_json(dataset_metadata))
+                STORAGE_MAPPING.c.dataset_metadata.contained_by(self._to_json(dataset_metadata))
             )
         ).fetchall()
 
-    def ensure_storage_mapping(self, driver, storage_type_name, name, datasets_matching,
+    def ensure_storage_mapping(self, driver, storage_type_name, name, dataset_metadata,
                                data_measurements_key, measurements):
         self._connection.execute(
             STORAGE_MAPPING.insert().values(
@@ -161,7 +161,7 @@ class Db(object):
                          STORAGE_TYPE.c.name == storage_type_name)
                 ),
                 name=name,
-                datasets_matching=datasets_matching,
+                dataset_metadata=dataset_metadata,
                 dataset_measurements_key=data_measurements_key,
                 measurements=measurements,
             )

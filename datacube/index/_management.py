@@ -39,7 +39,7 @@ class DataManagement(object):
             StorageMapping(
                 self._get_storage_type(mapping['storage_type_ref']),
                 mapping['name'],
-                DatasetMatcher(mapping['datasets_matching']),
+                DatasetMatcher(mapping['dataset_metadata']),
                 mapping['measurements'],
                 mapping['dataset_measurements_key']
             )
@@ -67,7 +67,7 @@ class DataManagement(object):
         # TODO: Validate doc (Against JSON Schema?)
         name = descriptor['name']
         driver = descriptor['driver']
-        datasets_matching = descriptor['match']['metadata']
+        dataset_metadata = descriptor['match']['metadata']
         storage_mappings = descriptor['storage']
         with self.db.begin() as transaction:
             for mapping in storage_mappings:
@@ -77,7 +77,7 @@ class DataManagement(object):
                     driver,
                     storage_type_name,
                     name,
-                    datasets_matching,
+                    dataset_metadata,
                     # The offset within an eodataset to find a band list.
                     ['image', 'bands'],
                     measurements
