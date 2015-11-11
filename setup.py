@@ -11,7 +11,8 @@ setup(
     install_requires=[
         'future',
         'numpy',
-        'rasterio'
+        'rasterio',
+        'netcdf4',
     ],
     license='Apache License 2.0',
 )

@@ -18,7 +18,6 @@ from builtins import *
 
 import os
 import numpy
-import pytest
 
 from cubeaccess.core import Coordinate, Variable, StorageUnitVariableProxy, StorageUnitDimensionProxy, StorageUnitStack
 from cubeaccess.storage import FauxStorageUnit
@@ -142,23 +141,14 @@ def test_geotif_storage_unit():
     assert (numpy.any(data.values == 1))
 
 
-@pytest.mark.data
 def test_netcdf_storage_unit():
     from cubeaccess.storage import NetCDF4StorageUnit
 
-    files = [
-        "/short/v10/dra547/injest_examples/multiple_band_variables/LS7_ETM_NBAR_P54_GANBAR01-002_089_078_2015_152_-26.nc",
-        "/short/v10/dra547/injest_examples/multiple_band_variables/LS7_ETM_NBAR_P54_GANBAR01-002_089_078_2015_152_-27.nc",
-        "/short/v10/dra547/injest_examples/multiple_band_variables/LS7_ETM_NBAR_P54_GANBAR01-002_089_078_2015_153_-26.nc",
-        "/short/v10/dra547/injest_examples/multiple_band_variables/LS7_ETM_NBAR_P54_GANBAR01-002_089_078_2015_153_-27.nc",
-        "/short/v10/dra547/injest_examples/multiple_band_variables/LS7_ETM_NBAR_P54_GANBAR01-002_089_078_2015_154_-26.nc",
-        "/short/v10/dra547/injest_examples/multiple_band_variables/LS7_ETM_NBAR_P54_GANBAR01-002_089_078_2015_154_-27.nc"
-    ]
-
-    su = NetCDF4StorageUnit(files[2])
+    su = NetCDF4StorageUnit(DATA_DIR+'/test.nc')
     assert (set(su.coordinates.keys()) == ({'longitude', 'latitude', 'time'}))
 
-    data = su.get('band2', longitude=Range(153.5, 153.7), latitude=Range(-25.5, -25.2))
-    assert (len(data.coords['longitude']) == 801)
-    assert (len(data.coords['latitude']) == 1201)
-    assert (numpy.any(data.values != -999))
+    data = su.get('B2', longitude=Range(151.5, 151.7-0.00001), latitude=Range(-29.5, -29.2-0.00001))
+    assert (len(data.coords['time']) == 3)
+    assert (len(data.coords['longitude']) == 800)
+    assert (len(data.coords['latitude']) == 600)
+    assert (numpy.all(data.values == 2))

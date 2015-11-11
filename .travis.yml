@@ -11,6 +11,8 @@ addons:
     packages:
       - libproj-dev
       - libgdal1-dev
+      - libhdf5-serial-dev
+      - libnetcdf-dev
 cache: apt
 
 install:
