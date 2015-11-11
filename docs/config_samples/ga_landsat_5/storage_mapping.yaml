@@ -9,7 +9,7 @@ match:
             code: LANDSAT_5
         instrument:
             name: TM
-        product_type: nbar
+        product_type: EODS_NBAR
 
 # Store them using storage definitions '30m_bands' and '15m_bands':
 storage:
@@ -45,9 +45,9 @@ storage:
             fill_value: -999
             resampling_method: cubic
             varname: band_70
-    - name: 15m_band
-      measurements:
-        '8':
-            dtype: int16
-            fill_value: -999
-            resampling_method: linear
+#    - name: 15m_band
+#      measurements:
+#        '8':
+#            dtype: int16
+#            fill_value: -999
+#            resampling_method: linear

@@ -8,6 +8,7 @@ from osgeo import gdal, gdalconst, osr
 from pathlib import Path
 
 from datacube import compat
+from datacube.model import StorageSegment
 from .netcdf_writer import append_to_netcdf, TileSpec
 
 _LOG = logging.getLogger(__name__)
@@ -118,24 +119,32 @@ def ingest(input_spec):
 
     for band_name in input_spec.bands.keys():
         input_filename = input_spec.dataset['image']['bands'][band_name]['path']
-        src_ds = gdal.Open(input_filename, gdalconst.GA_ReadOnly)
-        _LOG.debug("Ingesting: %s %s", band_name, input_filename)
-        for im in create_tiles(src_ds,
-                               input_spec.storage_spec['tile_size'],
-                               input_spec.storage_spec['resolution'],
-                               dst_srs=osr.SpatialReference(input_spec.storage_spec['projection']['spatial_ref'])):
 
-            tile_spec = TileSpec(im)
-            # we have tile_spec, input_spec.storage_spec, input_spec.eodataset, input_spec.bands
-            # also, im has the SRS we want to use
+        band_info = input_spec.bands[band_name]
+        crazy_band_tiler(band_info, input_filename,
+                         input_spec.storage_spec, input_spec.dataset)
 
-            out_filename = generate_filename(input_spec.storage_spec['filename_format'], input_spec.dataset, tile_spec)
-            ensure_path_exists(out_filename)
 
-            _LOG.debug((os.getcwd(), out_filename))
-            append_to_netcdf(im, out_filename, input_spec, band_name, input_filename)
+def crazy_band_tiler(band_info, input_filename, storage_spec, time_value, dataset_metadata):
 
-            _LOG.debug(im)
+    src_ds = gdal.Open(input_filename, gdalconst.GA_ReadOnly)
+    _LOG.debug("Ingesting: %s %s", band_info, input_filename)
+    for im in create_tiles(src_ds,
+                           storage_spec['tile_size'],
+                           storage_spec['resolution'],
+                           dst_srs=osr.SpatialReference(str(storage_spec['projection']['spatial_ref']))):
+        tile_spec = TileSpec(im)
+        # we have tile_spec, input_spec.storage_spec, input_spec.eodataset, input_spec.bands
+        # also, im has the SRS we want to use
+
+        out_filename = generate_filename(storage_spec['filename_format'], dataset_metadata, tile_spec)
+        ensure_path_exists(out_filename)
+
+        _LOG.debug((os.getcwd(), out_filename))
+
+        append_to_netcdf(im, out_filename, storage_spec, dataset_metadata, band_info, time_value, input_filename)
+        yield out_filename, {}  # TODO: Fill in the things greg needs
+        _LOG.debug(im)
 
 
 def load_yaml(filename):

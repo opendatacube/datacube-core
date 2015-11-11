@@ -110,20 +110,17 @@ class NetCDFWriter(object):
         self.nco.Conventions = 'CF-1.6'
         self.nco.license = "Creative Commons Attribution 4.0 International CC BY 4.0"
 
-    def find_or_create_time_index(self, date_string):
-        # Convert to datetime at midnight
-        slice_date = datetime.combine(date_string, datetime.min.time())
-
+    def find_or_create_time_index(self, insertion_time):
         times = self.nco.variables['time']
 
         try:
-            index = date2index(slice_date, times)
-            _LOG.debug('Found date %s at index %s', slice_date, index)
+            index = date2index(insertion_time, times)
+            _LOG.debug('Found date %s at index %s', insertion_time, index)
         except (ValueError, IndexError) as e:
-            _LOG.debug('%s: datetime %s not found, appending into times', e, slice_date)
+            _LOG.debug('%s: datetime %s not found, appending into times', e, insertion_time)
             # Append to times
             # Convert to seconds since epoch (1970-01-01)
-            start_datetime_delta = slice_date - EPOCH
+            start_datetime_delta = insertion_time - EPOCH
             _LOG.debug('stored time value %s', start_datetime_delta.total_seconds())
 
             index = len(times)
@@ -146,26 +143,24 @@ class NetCDFWriter(object):
         out_band[time_index, :, :] = nparray
         src_filename[time_index] = "Raw Array"
 
-    def append_gdal_tile(self, gdal_dataset, input_spec, bandname, input_filename):
+    def append_gdal_tile(self, gdal_dataset, band_info, storage_type, dataset_metadata,
+                         time_value, input_filename):
         """
 
         :return:
         """
-        varname = input_spec.bands[bandname].varname
-        eodataset = input_spec.dataset
+        varname = band_info.varname
         if varname in self.nco.variables:
             out_band = self.nco.variables[varname]
             src_filename = self.nco.variables[varname + "_src_filenames"]
         else:
-            chunking = input_spec.storage_spec['chunking']
+            chunking = storage_type['chunking']
             chunksizes = [chunking[dim] for dim in ['t', 'y', 'x']]
-            dtype = input_spec.bands[bandname].dtype
-            ndv = input_spec.bands[bandname].fill_value
+            dtype = band_info.dtype
+            ndv = band_info.fill_value
             out_band, src_filename = self._create_data_variable(varname, dtype, chunksizes, ndv)
 
-        acquisition_date = eodataset['acquisition']['aos']
-
-        time_index = self.find_or_create_time_index(acquisition_date)
+        time_index = self.find_or_create_time_index(time_value)
 
         out_band[time_index, :, :] = gdal_dataset.ReadAsArray()
         src_filename[time_index] = input_filename
@@ -245,7 +240,8 @@ class TileSpec(object):
         return self._geotransform[1]
 
 
-def append_to_netcdf(gdal_dataset, netcdf_path, input_spec, bandname, input_filename=""):
+def append_to_netcdf(gdal_dataset, netcdf_path, storage_type, dataset_metadata, band_info,
+                     time_value, input_filename=""):
     """
     Append a raster slice to a new or existing NetCDF file
 
@@ -260,5 +256,6 @@ def append_to_netcdf(gdal_dataset, netcdf_path, input_spec, bandname, input_file
 
     ncfile = NetCDFWriter(netcdf_path, tile_spec)
 
-    ncfile.append_gdal_tile(gdal_dataset, input_spec, bandname, input_filename)
+    ncfile.append_gdal_tile(gdal_dataset, band_info, storage_type, dataset_metadata,
+                            time_value, input_filename)
     ncfile.close()

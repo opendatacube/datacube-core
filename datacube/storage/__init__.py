@@ -9,6 +9,8 @@ import logging
 from pathlib import Path
 
 from datacube.model import StorageSegment
+from datacube.storage.ingester import crazy_band_tiler
+from datacube.storage.ingester import SimpleObject  # TODO: Use actual classes
 
 _LOG = logging.getLogger(__name__)
 
@@ -58,6 +60,20 @@ def store(storage_mappings, dataset):
 
             # How to store this band/measurement:
             _LOG.debug('Measurement descriptor: %r', measurement_descriptor)
+            band_info = SimpleObject(**measurement_descriptor)  # TODO: Use actual classes
+            input_filename = str(band_path)
+            dataset_metadata = dataset.metadata_doc
+
+            time_value = dataset_metadata['extent']['center_dt']
+
+            for filename, metadata in crazy_band_tiler(band_info, input_filename, storage_type.descriptor,
+                                                       time_value, dataset_metadata):
+                yield StorageSegment(
+                    dataset.id,
+                    storage_type,
+                    metadata,
+                    Path(filename)
+                )
 
         _LOG.debug('Storage type description: %r', storage_type.descriptor)
 
@@ -65,18 +81,6 @@ def store(storage_mappings, dataset):
         # We don't have a representation of a storage unit (just file path). Is that a problem?
 
         # Two segments inside one storage unit.
-        yield StorageSegment(
-            dataset.id,
-            storage_type,
-            {'something': {'x': 234}},
-            Path('/tmp/something1.nc')
-        )
-        yield StorageSegment(
-            dataset.id,
-            storage_type,
-            {'something': {'x': 235}},
-            Path('/tmp/something1.nc')
-        )
 
 
 def _get_doc_offset(offset, document):
