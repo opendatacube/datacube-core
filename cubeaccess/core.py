@@ -28,7 +28,7 @@ except ImportError:
     from .ghetto import DataArray
 
 Coordinate = namedtuple('Coordinate', ('dtype', 'begin', 'end', 'length'))
-Variable = namedtuple('Variable', ('dtype', 'ndv', 'coordinates'))
+Variable = namedtuple('Variable', ('dtype', 'nodata', 'coordinates'))
 
 
 def is_consistent_coords(coord1, coord2):
@@ -44,13 +44,27 @@ def is_consistent_coord_set(coords1, coords2):
 
 
 class StorageUnitBase(object):
-    def _get_coord(self, name):
-        raise NotImplementedError()
-
-    def _fill_data(self, name, index, dest):
-        raise NotImplementedError()
+    """
+    :type coordinates: dict[str, Coordinate]
+    :type variables: dict[str, Variable]
+    """
 
     def get(self, name, dest=None, **kwargs):
+        """
+        Return portion of the data corresponding to the slice description
+        Slice is defined by specifying keyword arguments with coordinate names
+        If builtin slice is used then positional indexing is used,
+        if Range object is used the coordinate labels are used
+
+        Example:
+          su.get('B2', time=slice(3,6), longitude=Range(151.5, 151.7), latitude=Range(-29.5, -29.2))
+
+        :param name: name of the variable
+        :param dest: where to put the data
+        :type name: str
+        :type dest: numpy.array
+        :rtype: DataArray
+        """
         var = self.variables[name]
         coords = [self._get_coord(dim) for dim in var.coordinates]
         index = tuple(make_index(coord, kwargs.get(dim)) for coord, dim in zip(coords, var.coordinates))
@@ -64,9 +78,38 @@ class StorageUnitBase(object):
 
         return DataArray(dest, coords=[coord[idx] for coord, idx in zip(coords, index)], dims=var.coordinates)
 
+    def _get_coord(self, name):
+        """
+        :return coordinate labels
+        :param name: name of the coordinate
+        :type name: str
+        :rtype numpy.array
+        """
+        raise NotImplementedError()
+
+    def _fill_data(self, name, index, dest):
+        """
+        :param name: name of the variable
+        :param index: slice description
+        :param dest: where to put the data
+        :type name: str
+        :type index: tuple[slice]
+        :type dest: numpy.array
+        """
+        raise NotImplementedError()
+
 
 class StorageUnitVariableProxy(StorageUnitBase):
+    """
+    Proxy remapping variable names
+    """
     def __init__(self, storage_unit, varmap):
+        """
+        :param storage_unit: storage unit to proxy
+        :param varmap: dictionary mapping new names to old ones
+        :type storage_unit: StorageUnitBase
+        :type varmap: dict[str, str]
+        """
         # TODO: check _storage_unit has all the vars in varmap
         self._storage_unit = storage_unit
         self._new2old = varmap
@@ -90,14 +133,23 @@ class StorageUnitVariableProxy(StorageUnitBase):
 
 
 class StorageUnitDimensionProxy(StorageUnitBase):
+    """
+    Proxy adding extra dimensions
+    """
     def __init__(self, storage_unit, *coords):
+        """
+        :param storage_unit: storage unit to proxy
+        :param coords: list of name: value pairs for the new dimensions
+        :type storage_unit: StorageUnitBase
+        :type coords: list[str, T]
+        """
         self._storage_unit = storage_unit
         self._dimensions = tuple(name for name, value in coords)
         self.coordinates = {name: Coordinate(getattr(value, 'dtype', numpy.dtype(type(value))), value, value, 1) for name, value in coords}
         self.coordinates.update(storage_unit.coordinates)
 
         def expand_var(var):
-            return Variable(var.dtype, var.ndv, self._dimensions + var.coordinates)
+            return Variable(var.dtype, var.nodata, self._dimensions + var.coordinates)
         self.variables = {name: expand_var(var) for name, var in storage_unit.variables.items()}
 
     def _get_coord(self, name):
@@ -115,7 +167,16 @@ class StorageUnitDimensionProxy(StorageUnitBase):
 
 
 class StorageUnitStack(StorageUnitBase):
+    """
+    Proxy stacking multiple storage units along a dimension
+    """
     def __init__(self, storage_units, stack_dim):
+        """
+        :param storage_units: storage unit to stack
+        :param stack_dim: name of the dimension to stack along
+        :type storage_units: list[StorageUnitBase]
+        :type stack_dim: str
+        """
         for a, b in zip(storage_units[:-1], storage_units[1:]):
             if a.coordinates[stack_dim].begin >= b.coordinates[stack_dim].begin:
                 raise RuntimeError("source storage units must be sorted")
