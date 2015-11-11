@@ -41,11 +41,14 @@ def store(storage_mappings, dataset):
         #     fill_value: -999
         #     resampling_method: cubic
         #     varname: band_20
-        _LOG.debug('Measurements: %r', mapping.measurements)
+        # The key ('20') should match an equivalent entry in the dataset band/measurement list.
 
-        # Loop through band paths as an example.
+        # Example of getting paths to bands/measurements.
         dataset_measurements = _get_doc_offset(mapping.dataset_measurements_offset, dataset.metadata_doc)
-        for band_id, band_descriptor in dataset_measurements.items():
+        for measurement_id, measurement_descriptor in mapping.measurements.items():
+            # Get the corresponding measurement/band from the dataset.
+            band_descriptor = dataset_measurements[measurement_id]
+
             # The path of a band is relative to the dataset path.
             dataset_path = dataset.metadata_path.parent
             band_path = dataset_path.joinpath(band_descriptor['path'])
@@ -53,8 +56,8 @@ def store(storage_mappings, dataset):
             _LOG.debug('Band path: %s', band_path)
             assert band_path.exists()
 
-            band_descriptor = mapping.measurements[band_id]
-
+            # How to store this band/measurement:
+            _LOG.debug('Measurement descriptor: %r', measurement_descriptor)
 
         _LOG.debug('Storage type description: %r', storage_type.descriptor)
 
