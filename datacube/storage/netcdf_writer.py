@@ -33,7 +33,7 @@ class NetCDFWriter(object):
             self._create_variables(tile_spec)
         else:
             self.nco = netCDF4.Dataset(netcdf_path, 'a')
-
+        self._tile_spec = tile_spec
         self.netcdf_path = netcdf_path
 
     def close(self):
@@ -83,15 +83,20 @@ class NetCDFWriter(object):
         return crso
 
     def _set_global_attributes(self, tile_spec):
-        self.nco.spatial_coverage = "1.000000 degrees grid"
+        """
+
+        :type tile_spec: TileSpec
+        :return:
+        """
+        self.nco.spatial_coverage = "1.000000 degrees grid"  # FIXME: Don't hard code
         self.nco.geospatial_lat_min = tile_spec.lat_min
         self.nco.geospatial_lat_max = tile_spec.lat_max
         self.nco.geospatial_lat_units = "degrees_north"
-        self.nco.geospatial_lat_resolution = "0.00025"  # FIXME Shouldn't be hard coded
+        self.nco.geospatial_lat_resolution = tile_spec.lat_res
         self.nco.geospatial_lon_min = tile_spec.lon_min
         self.nco.geospatial_lon_max = tile_spec.lon_max
         self.nco.geospatial_lon_units = "degrees_east"
-        self.nco.geospatial_lon_resolution = "0.00025"
+        self.nco.geospatial_lon_resolution = tile_spec.lon_res
         creation_date = datetime.utcnow().strftime("%Y%m%d")
         self.nco.history = "NetCDF-CF file created %s." % creation_date
 
@@ -113,7 +118,9 @@ class NetCDFWriter(object):
 
         try:
             index = date2index(slice_date, times)
-        except IndexError:
+            _LOG.debug('Found date %s at index %s', slice_date, index)
+        except (ValueError, IndexError) as e:
+            _LOG.debug('%s: datetime %s not found, appending into times', e, slice_date)
             # Append to times
             # Convert to seconds since epoch (1970-01-01)
             start_datetime_delta = slice_date - EPOCH
@@ -126,12 +133,25 @@ class NetCDFWriter(object):
 
         return index
 
+    def append_np_array(self, time, nparray, varname, dtype, ndv, chunking):
+        if varname in self.nco.variables:
+            out_band = self.nco.variables[varname]
+            src_filename = self.nco.variables[varname + "_src_filenames"]
+        else:
+            chunksizes = [chunking[dim] for dim in ['t', 'y', 'x']]
+            out_band, src_filename = self._create_data_variable(varname, dtype, chunksizes, ndv)
+
+        time_index = self.find_or_create_time_index(time)
+
+        out_band[time_index, :, :] = nparray
+        src_filename[time_index] = "Raw Array"
+
     def append_gdal_tile(self, gdal_dataset, input_spec, bandname, input_filename):
         """
 
         :return:
         """
-        varname = input_spec.bands[bandname].vname
+        varname = input_spec.bands[bandname].varname
         eodataset = input_spec.dataset
         if varname in self.nco.variables:
             out_band = self.nco.variables[varname]
@@ -183,19 +203,22 @@ class TileSpec(object):
 
     def __init__(self, gdal_ds):
         self._gdal_ds = gdal_ds
+        self._nbands = gdal_ds.RasterCount
+        self._projection = gdal_ds.GetProjection()
         nlats, nlons = gdal_ds.RasterYSize, gdal_ds.RasterXSize
         geotransform = gdal_ds.GetGeoTransform()
+        self._geotransform = geotransform
         self.lons = np.arange(nlons) * geotransform[1] + geotransform[0]
         self.lats = np.arange(nlats) * geotransform[5] + geotransform[3]
         self.extents = get_dataset_extent(gdal_ds)
 
     @property
     def num_bands(self):
-        return self._gdal_ds.RasterCount
+        return self._nbands
 
     @property
     def projection(self):
-        return self._gdal_ds.GetProjection()
+        return self._projection
 
     @property
     def lat_min(self):
@@ -213,8 +236,16 @@ class TileSpec(object):
     def lon_max(self):
         return max(x for x, y in self.extents)
 
+    @property
+    def lat_res(self):
+        return self._geotransform[5]
 
-def append_to_netcdf(gdal_dataset, netcdf_path, input_spec, bandname, input_filename):
+    @property
+    def lon_res(self):
+        return self._geotransform[1]
+
+
+def append_to_netcdf(gdal_dataset, netcdf_path, input_spec, bandname, input_filename=""):
     """
     Append a raster slice to a new or existing NetCDF file
 

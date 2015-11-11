@@ -5,6 +5,7 @@ import os
 import yaml
 
 from osgeo import gdal, gdalconst, osr
+from pathlib import Path
 
 from datacube import compat
 from .netcdf_writer import append_to_netcdf, TileSpec
@@ -77,6 +78,13 @@ def _calc_region(dst_res, dst_size, dst_srs, dst_type, src_ds, x, y):
     return region
 
 
+class InputSpec(object):
+    def __init__(self, storage_spec, bands, dataset):
+        self.storage_spec = storage_spec
+        self.bands = bands
+        self.dataset = dataset
+
+
 def make_input_specs(ingest_config, storage_configs, eodataset):
     for storage in ingest_config['storage']:
         if storage['name'] not in storage_configs:
@@ -84,7 +92,7 @@ def make_input_specs(ingest_config, storage_configs, eodataset):
             continue
         storage_spec = storage_configs[storage['name']]
 
-        yield SimpleObject(
+        yield InputSpec(
             storage_spec=storage_spec,
             bands={
                 name: SimpleObject(**vals) for name, vals in storage['bands'].items()
@@ -97,6 +105,12 @@ def generate_filename(filename_format, eodataset, tile_spec):
     merged = eodataset.copy()
     merged.update(tile_spec.__dict__)
     return filename_format.format(**merged)
+
+
+def ensure_path_exists(filename):
+    file_dir = Path(filename).parent
+    if not file_dir.exists:
+        file_dir.parent.mkdir(parents=True)
 
 
 def ingest(input_spec):
@@ -116,6 +130,7 @@ def ingest(input_spec):
             # also, im has the SRS we want to use
 
             out_filename = generate_filename(input_spec.storage_spec['filename_format'], input_spec.dataset, tile_spec)
+            ensure_path_exists(out_filename)
 
             _LOG.debug((os.getcwd(), out_filename))
             append_to_netcdf(im, out_filename, input_spec, band_name, input_filename)

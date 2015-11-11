@@ -128,12 +128,6 @@ def _get_nbands_lats_lons_from_gdalds(gdal_dataset):
     return nbands, lats, lons
 
 
-@click.command(help="Create an empty dataset.\n\n"
-                    "Copies extents, cols, rows, projection and datatype from the source dataset, \n"
-                    "but doesn't copy any data.\n"
-                    "This should produce a tiny file suitable for testing ingestion and tiling.")
-@click.argument('src_filename', type=click.Path(exists=True, readable=True))
-@click.argument('out_filename', type=click.Path())
 def create_empty_dataset(src_filename, out_filename):
     """
     Create a new GDAL dataset based on an existing one, but with no data.
@@ -157,3 +151,13 @@ def create_empty_dataset(src_filename, out_filename):
     out.SetGeoTransform(inds.GetGeoTransform())
     out.SetProjection(inds.GetProjection())
     out.FlushCache()
+
+
+@click.command(help="Create an empty dataset.\n\n"
+                    "Copies extents, cols, rows, projection and datatype from the source dataset, \n"
+                    "but doesn't copy any data.\n"
+                    "This should produce a tiny file suitable for testing ingestion and tiling.")
+@click.argument('src_filename', type=click.Path(exists=True, readable=True))
+@click.argument('out_filename', type=click.Path())
+def create_empty_dataset_cli(src_filename, out_filename):
+    create_empty_dataset(src_filename, out_filename)
