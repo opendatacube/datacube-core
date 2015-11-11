@@ -8,6 +8,7 @@ import cachetools
 
 from datacube.config import UserConfig
 from datacube.index._core_db import Db
+from datacube.model import StorageMapping, StorageType, DatasetMatcher
 
 
 def connect(config=UserConfig.find()):
@@ -17,47 +18,6 @@ def connect(config=UserConfig.find()):
     :rtype: DataManagement
     """
     return DataManagement(Db.connect(config.db_hostname, config.db_database))
-
-
-class DatasetMatcher(object):
-    def __init__(self, metadata):
-        # Match by exact metadata properties (a subset of the metadata doc)
-        #: :type: dict
-        self.metadata = metadata
-
-
-class StorageType(object):
-    def __init__(self, driver, name, descriptor):
-        # Name of the storage driver. 'NetCDF CF', 'GeoTiff' etc.
-        #: :type: str
-        self.driver = driver
-
-        # Name for this config (specified by users)
-        #: :type: str
-        self.name = name
-
-        # A definition of the storage (understood by the storage driver)
-        #: :type: dict
-        self.descriptor = descriptor
-
-
-class StorageMapping(object):
-    def __init__(self, storage_type, name, match, measurements):
-        # Which datasets to match.
-        #: :type: DatasetMatcher
-        self.match = match
-
-        #: :type: StorageType
-        self.storage_type = storage_type
-
-        # A name for the mapping (specified by users). (unique to the storage type)
-        #: :type: str
-        self.name = name
-
-        # A dictionary of the measurements to store
-        # (key is measurement id, value is a doc understood by the storage driver)
-        #: :type: dict
-        self.measurements = measurements
 
 
 class DataManagement(object):
@@ -80,7 +40,8 @@ class DataManagement(object):
                 self._get_storage_type(mapping['storage_type_ref']),
                 mapping['name'],
                 DatasetMatcher(mapping['datasets_matching']),
-                mapping['measurements']
+                mapping['measurements'],
+                mapping['dataset_measurements_key']
             )
             for mapping in mappings
         ]
@@ -114,6 +75,6 @@ class DataManagement(object):
                     name,
                     datasets_matching,
                     # The offset within an eodataset to find a band list.
-                    ['bands'],
+                    ['image', 'bands'],
                     measurements
                 )

@@ -6,14 +6,13 @@ from __future__ import absolute_import
 
 import logging
 
+from . import model, storage
 from .index import data_index_connect, data_management_connect
-from . import model
 
 _LOG = logging.getLogger(__name__)
 
 
 def ingest(dataset_path):
-    # config = load_config()
 
     dataset = model.Dataset.from_path(dataset_path)
 
@@ -22,18 +21,17 @@ def ingest(dataset_path):
 
     if not index.contains_dataset(dataset):
         was_indexed = index.ensure_dataset(dataset)
-
-        storage_mappings = config.get_storage_mappings_for_dataset(dataset.metadata_doc)
-
-        for mapping in storage_mappings:
-            storage_type = mapping.storage_type
-            measurements = mapping.measurements
-
-            # storage_records = storage.store(storage_type, measurements, dataset)
-
-        # index.add_storage_records(dataset, storage_records)
         if was_indexed:
+            storage_mappings = config.get_storage_mappings_for_dataset(dataset.metadata_doc)
+            _LOG.debug('Storage mappings: %s', storage_mappings)
+
+            storage_segments = list(storage.store(storage_mappings, dataset))
+
+            # index.add_storage_segments(dataset, storage_segments)
+
             _LOG.info('Ingested %s', dataset_path)
+        else:
+            _LOG.info('Skipping just-ingested dataset %s', dataset_path)
     else:
         # TODO: Check/write any missing storage records for the dataset?
         _LOG.info('Skipping already-ingested dataset %s', dataset_path)

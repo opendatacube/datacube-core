@@ -8,7 +8,7 @@ match:
             code: LANDSAT_5
         instrument:
             name: TM
-        product_type: NBAR
+        product_type: nbar
 
 # Store them using storage definitions '30m_bands' and '15m_bands':
 storage:

@@ -11,6 +11,71 @@ import yaml
 _LOG = logging.getLogger(__name__)
 
 
+# Match datasets. (for mapping to storage)
+class DatasetMatcher(object):
+    def __init__(self, metadata):
+        # Match by exact metadata properties (a subset of the metadata doc)
+        #: :type: dict
+        self.metadata = metadata
+
+
+class StorageType(object):
+    def __init__(self, driver, name, descriptor):
+        # Name of the storage driver. 'NetCDF CF', 'GeoTiff' etc.
+        #: :type: str
+        self.driver = driver
+
+        # Name for this config (specified by users)
+        #: :type: str
+        self.name = name
+
+        # A definition of the storage (understood by the storage driver)
+        #: :type: dict
+        self.descriptor = descriptor
+
+
+class StorageMapping(object):
+    def __init__(self, storage_type, name, match, measurements, dataset_measurements_offset):
+        # Which datasets to match.
+        #: :type: DatasetMatcher
+        self.match = match
+
+        #: :type: StorageType
+        self.storage_type = storage_type
+
+        # A name for the mapping (specified by users). (unique to the storage type)
+        #: :type: str
+        self.name = name
+
+        # A dictionary of the measurements to store
+        # (key is measurement id, value is a doc understood by the storage driver)
+        #: :type: dict
+        self.measurements = measurements
+
+        # The offset within a dataset document to find a matching set of measuremnts.
+        # (they should have at least a path field in the dataset)
+        #: :type: str
+        self.dataset_measurements_offset = dataset_measurements_offset
+
+
+class StorageSegment(object):
+    def __init__(self, dataset_id, storage_type, descriptor, path):
+        #: :type: uuid.UUID
+        self.dataset_id = dataset_id
+
+        #: :type: StorageType
+        self.storage_type = storage_type
+
+        # A descriptor for this segment. (parameters etc)
+        # A 'document' understandable by the storage driver. Properties inside may be queried by users.
+        #: :type: dict
+        self.descriptor = descriptor
+
+        # Path of the 'storage unit' containing this segment.
+        #: :type: pathlib.Path
+        self.path = path
+
+
 # TODO: move this and from_path() to a separate dataset-loader module ...?
 def _expected_metadata_path(dataset_path):
     """
@@ -36,7 +101,7 @@ def _expected_metadata_path(dataset_path):
 
 
 class Dataset(object):
-    def __init__(self, metadata_type, metadata_doc, metadata_path, path):
+    def __init__(self, metadata_type, metadata_doc, metadata_path):
         """
         A dataset on disk.
 
@@ -46,13 +111,13 @@ class Dataset(object):
         :type metadata_doc: dict
         :param metadata_path:
         :type metadata_path: Path
-        :param path: Path provided for the dataset by the user
-            It is not normalised: the metadata path is more useful as a location identifier.
         """
         super(Dataset, self).__init__()
-        self.path = path
+        #: :type: str
         self.metadata_type = metadata_type
+        #: :type: dict
         self.metadata_doc = metadata_doc
+        #: :type: pathlib.Path
         self.metadata_path = metadata_path
 
     @property
@@ -71,4 +136,4 @@ class Dataset(object):
         else:
             raise ValueError('Only eo docs are supported at the moment (provided {})'.format(metadata_type))
 
-        return Dataset(metadata_type, metadata_doc, metadata_path, path)
+        return Dataset(metadata_type, metadata_doc, metadata_path)
