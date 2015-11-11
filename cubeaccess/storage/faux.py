@@ -23,6 +23,7 @@ from ..core import StorageUnitBase
 
 
 class FauxStorageUnit(StorageUnitBase):
+    """ Fake Storage Unit for testing """
     def __init__(self, coords, vars):
         self.coordinates = coords
         self.variables = vars

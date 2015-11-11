@@ -23,6 +23,10 @@ from ..core import Coordinate, Variable, StorageUnitBase
 
 class GeoTifStorageUnit(StorageUnitBase):
     def __init__(self, filepath, other=None):
+        """
+        :param other: template to copy coords/variables from (to speed up loading)
+        :type other: GeoTifStorageUnit
+        """
         self._filepath = filepath
         if not other:
             with rasterio.open(self._filepath) as dataset:

@@ -21,6 +21,9 @@ from collections import OrderedDict
 
 
 class DataArray(object):
+    """
+    Fake DataArray to make xray dependency optional
+    """
     def __init__(self, data, coords=None, dims=None, attrs=None):
         self.values = data
         self.dims = dims or ["dim_%s" % i for i in xrange(data.ndim)]
