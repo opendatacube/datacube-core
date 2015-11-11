@@ -9,6 +9,7 @@ import json
 import logging
 
 from sqlalchemy import create_engine, select, text, bindparam, exists, and_
+from sqlalchemy.engine.url import URL as engine_url
 from sqlalchemy.exc import IntegrityError
 
 from .tables import ensure_db, DATASET, DATASET_SOURCE, STORAGE_TYPE, STORAGE_MAPPING
@@ -16,19 +17,6 @@ from .tables import ensure_db, DATASET, DATASET_SOURCE, STORAGE_TYPE, STORAGE_MA
 PGCODE_UNIQUE_CONSTRAINT = '23505'
 
 _LOG = logging.getLogger(__name__)
-
-
-def _connection_string(host=None, database=None):
-    """
-    >>> _connection_string(database='agdc')
-    'postgresql:///agdc'
-    >>> _connection_string(host='postgres.dev.lan', database='agdc')
-    'postgresql://postgres.dev.lan/agdc'
-    """
-    return 'postgresql://{host}/{database}'.format(
-        host=host or '',
-        database=database or ''
-    )
 
 
 class Db(object):
@@ -46,9 +34,8 @@ class Db(object):
 
     @classmethod
     def connect(cls, hostname, database):
-        connection_string = _connection_string(hostname, database)
         _engine = create_engine(
-            connection_string,
+            engine_url('postgresql', host=hostname, database=database),
             echo=False,
             # 'AUTOCOMMIT' here means READ-COMMITTED isolation level with autocommit on.
             # When a transaction is needed we will do an explicit begin/commit.
