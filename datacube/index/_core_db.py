@@ -139,6 +139,13 @@ class Db(object):
         ).fetchone()
 
     def get_storage_mappings(self, dataset_metadata):
+        """
+        Find any storage mappings that match the given dataset.
+
+        :type dataset_metadata: dict
+        :rtype: dict
+        """
+        # Find any storage mappings whose 'datasets_matching' document is a subset of the metadata.
         return self._connection.execute(
             STORAGE_MAPPING.select().where(
                 STORAGE_MAPPING.c.datasets_matching.contained_by(self._to_json(dataset_metadata))
