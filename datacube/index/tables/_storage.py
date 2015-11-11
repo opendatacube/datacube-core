@@ -74,20 +74,23 @@ STORAGE_MAPPING = Table(
     UniqueConstraint('storage_type_ref', 'name'),
 )
 
-# Which storage units our dataset is in.
-# Unique: (dataset, representation)?
-STORAGE = Table(
-    'storage', _core.METADATA,
+STORAGE_UNIT = Table(
+    'storage_unit', _core.METADATA,
     Column('id', BigInteger, primary_key=True, autoincrement=True),
-    Column('dataset_ref', None, ForeignKey(_dataset.DATASET.c.id), nullable=False),
     Column('storage_mapping_ref', None, ForeignKey(STORAGE_MAPPING.c.id), nullable=False),
 
     # See "_EXAMPLE_STORAGE_DESCRIPTOR" below.
     Column('descriptor', postgres.JSONB, nullable=False),
 
-    Column('path', String, nullable=False),
+    Column('path', String, unique=True, nullable=False),
 
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
+)
+
+DATASET_STORAGE = Table(
+    'dataset_storage', _core.METADATA,
+    Column('dataset_ref', None, ForeignKey(_dataset.DATASET.c.id), primary_key=True, nullable=False),
+    Column('storage_unit_ref', None, ForeignKey(STORAGE_UNIT.c.id), primary_key=True, nullable=False),
 )
 
 _EXAMPLE_DATASETS_MATCHING = {

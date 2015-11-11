@@ -2,13 +2,12 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import os
-import yaml
 
+import yaml
 from osgeo import gdal, gdalconst, osr
 from pathlib import Path
 
 from datacube import compat
-from datacube.model import StorageSegment
 from .netcdf_writer import append_to_netcdf, TileSpec
 
 _LOG = logging.getLogger(__name__)

@@ -8,9 +8,9 @@ import logging
 
 from pathlib import Path
 
-from datacube.model import StorageSegment
-from datacube.storage.ingester import crazy_band_tiler
+from datacube.model import StorageUnit
 from datacube.storage.ingester import SimpleObject  # TODO: Use actual classes
+from datacube.storage.ingester import crazy_band_tiler
 
 _LOG = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ def store(storage_mappings, dataset):
 
             for filename, metadata in crazy_band_tiler(band_info, input_filename, storage_type.descriptor,
                                                        time_value, dataset_metadata):
-                yield StorageSegment(
+                yield StorageUnit(
                     dataset.id,
                     storage_type,
                     metadata,

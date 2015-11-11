@@ -58,10 +58,13 @@ class StorageMapping(object):
         self.dataset_measurements_offset = dataset_measurements_offset
 
 
-class StorageSegment(object):
-    def __init__(self, dataset_id, storage_type, descriptor, path):
-        #: :type: uuid.UUID
-        self.dataset_id = dataset_id
+class StorageUnit(object):
+    def __init__(self, dataset_ids, storage_type, descriptor, path, id_=None):
+        #: :type: int
+        self.id_ = id_
+
+        #: :type: list[uuid.UUID]
+        self.dataset_ids = dataset_ids
 
         #: :type: StorageType
         self.storage_type = storage_type
