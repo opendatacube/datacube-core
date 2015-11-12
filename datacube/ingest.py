@@ -25,7 +25,7 @@ def ingest(dataset_path):
             storage_mappings = config.get_storage_mappings_for_dataset(dataset.metadata_doc)
             _LOG.debug('Storage mappings: %s', storage_mappings)
 
-            storage_segments = list(storage.store(storage_mappings, dataset))
+            storage_segments = storage.store(storage_mappings, dataset)
 
             # index.add_storage_segments(dataset, storage_segments)
 

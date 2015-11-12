@@ -36,16 +36,19 @@ def index_netcdfs(filenames):
     :param filenames:
     :return: list of file description dicts
     """
-    collection_description = []
+    collection_description = {}
     for filename in filenames:
         coordinates, measurements = read_netcdf_structure(filename)
 
-        collection_description.append({
-            'filename': filename,
+        collection_description[filename] = {
             'coordinates': coordinates,
             'measurements': measurements
-        })
+        }
     return collection_description
+
+
+def skip_variable(var):
+    return not hasattr(var, 'units')
 
 
 def read_netcdf_structure(filename):
@@ -59,7 +62,12 @@ def read_netcdf_structure(filename):
         coordinates = {}
         measurements = {}
 
+        skipped_variables = ('crs', 'extra_metadata')
+
         for name, var in nco.variables.items():
+            if skip_variable(var):
+                continue
+
             dims = var.dimensions
             name = str(name)
             if len(dims) == 1 and name == dims[0]:
@@ -70,7 +78,7 @@ def read_netcdf_structure(filename):
                     'length': var.shape[0]  # can't use size directly, it's a numpy.scalar
                 }
             else:
-                ndv = getattr(var, 'missing_value', None) or getattr(var, 'fill_value', None)
+                ndv = getattr(var, 'missing_value', None) or getattr(var, '_FillValue', None)
                 if ndv:
                     ndv = ndv.item()
                 measurements[name] = {
