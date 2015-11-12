@@ -4,6 +4,8 @@ Module
 """
 from __future__ import absolute_import
 
+import os
+
 import cachetools
 
 from datacube.config import SystemConfig
@@ -49,7 +51,7 @@ class DataManagement(object):
                 self.config.resolve_location(mapping['location_name'], mapping['location_offset'])
             )
             for mapping in mappings
-        ]
+            ]
 
     def ensure_storage_type(self, descriptor):
         """
