@@ -37,7 +37,7 @@ class StorageType(object):
 class StorageMapping(object):
     def __init__(self, storage_type, name, match,
                  measurements, dataset_measurements_offset,
-                 location_name, location_offset):
+                 filename_pattern):
         # Which datasets to match.
         #: :type: DatasetMatcher
         self.match = match
@@ -59,15 +59,10 @@ class StorageMapping(object):
         #: :type: str
         self.dataset_measurements_offset = dataset_measurements_offset
 
-        # The name of the location where the storage units should be stored.
-        #: :type: str
-        self.location_name = location_name
-
-        # The offset relative to location where the storage units should be stored.
-        # Can be a filename pattern
+        # The filename pattern where the storage units should be stored.
         # TODO: define pattern expansion rules
         #: :type: str
-        self.location_offset = location_offset
+        self.filename_pattern = filename_pattern
 
 
 class StorageUnit(object):

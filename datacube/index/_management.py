@@ -4,6 +4,7 @@ Module
 """
 from __future__ import absolute_import
 
+import os
 import cachetools
 
 from datacube.config import SystemConfig
@@ -17,15 +18,18 @@ def connect(config=SystemConfig.find()):
     :type config: datacube.config.SystemConfig
     :rtype: DataManagement
     """
-    return DataManagement(Db.connect(config.db_hostname, config.db_database, config.db_username, config.db_port))
+    return DataManagement(Db.connect(config.db_hostname, config.db_database, config.db_username, config.db_port),
+                          config)
 
 
 class DataManagement(object):
-    def __init__(self, db):
+    def __init__(self, db, config):
         """
         :type db: datacube.index._core_db.Db
+        :type config: datacube.config.SystemConfig
         """
         self.db = db
+        self.config = config
         self._cached_storage_types = {}
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
@@ -35,6 +39,8 @@ class DataManagement(object):
 
     def get_storage_mappings_for_dataset(self, dataset_metadata):
         mappings = self.db.get_storage_mappings(dataset_metadata)
+        def resolve_location(location, offset):
+            return os.path.join(self.config.location_mappings[location], offset)
         return [
             StorageMapping(
                 self._get_storage_type(mapping['storage_type_ref']),
@@ -42,8 +48,7 @@ class DataManagement(object):
                 DatasetMatcher(mapping['dataset_metadata']),
                 mapping['measurements'],
                 mapping['dataset_measurements_key'],
-                mapping['location_name'],
-                mapping['location_offset']
+                resolve_location(mapping['location_name'], mapping['location_offset'])
             )
             for mapping in mappings
         ]

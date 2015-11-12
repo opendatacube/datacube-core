@@ -31,8 +31,8 @@ def store(storage_mappings, dataset):
         if storage_type.driver != 'NetCDF CF':
             raise RuntimeError('Unknown storage driver')
 
-        # TODO: sort the location thing out
-        storage_type.descriptor["filename_format"] = '/short/u46/gxr547/gregcube/'+mapping.location_offset
+        # TODO: hack? tiler takes way too many params as it is...
+        storage_type.descriptor["filename_format"] = mapping.filename_pattern
         dataset_measurements = _get_doc_offset(mapping.dataset_measurements_offset, dataset.metadata_doc)
         for measurement_id, measurement_descriptor in mapping.measurements.items():
             # Get the corresponding measurement/band from the dataset.
