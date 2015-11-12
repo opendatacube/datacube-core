@@ -19,8 +19,6 @@ from builtins import *
 import dask.imperative
 import dask.multiprocessing
 
-from distributed import Executor
-
 import numpy
 
 import builtins
@@ -28,11 +26,14 @@ if 'profile' not in builtins.__dict__:
     profile = lambda x: x
     builtins.__dict__['profile'] = lambda x: x
 
-from cubeaccess.indexing import Range
+from datacube.cubeaccess.indexing import Range
 from common import do_work, _get_dataset, write_file
 
 
 def main(argv):
+    import yappi
+    yappi.start(builtins=True)
+
     lon = int(argv[1])
     lat = int(argv[2])
     dt = numpy.datetime64(argv[3])
@@ -63,7 +64,9 @@ def main(argv):
     #executor = Executor('127.0.0.1:8787')
     #dask.imperative.compute(tasks, get=executor.get)
 
-    dask.imperative.compute(tasks, num_workers=num_workers)
+    dask.imperative.compute(tasks, get=dask.multiprocessing.get, num_workers=num_workers)
+
+    yappi.convert2pstats(yappi.get_func_stats()).dump_stats('dask_mp.lprof')
 
 
 if __name__ == "__main__":

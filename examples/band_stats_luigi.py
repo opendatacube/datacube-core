@@ -14,19 +14,18 @@
 
 
 from __future__ import absolute_import, division, print_function
-from builtins import *
-
-import luigi
 import json
 
+from builtins import *
 import numpy
-
 import builtins
+
+import luigi
 if 'profile' not in builtins.__dict__:
     profile = lambda x: x
     builtins.__dict__['profile'] = lambda x: x
 
-from cubeaccess.indexing import Range
+from datacube.cubeaccess.indexing import Range
 from common import do_work, _get_dataset, write_file
 
 

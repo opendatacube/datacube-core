@@ -17,11 +17,11 @@ from datetime import datetime
 from itertools import groupby
 
 import numpy
-import rasterio
 
+import rasterio
 from cubeaccess.core import StorageUnitVariableProxy, StorageUnitDimensionProxy, StorageUnitStack
 from cubeaccess.storage import GeoTifStorageUnit
-from cubeaccess.indexing import make_index
+from datacube.cubeaccess.indexing import make_index
 
 
 def argpercentile(a, q, axis=0):

@@ -14,15 +14,14 @@
 
 
 from __future__ import absolute_import, division, print_function
-from builtins import *
 
+from builtins import *
 import os
 import numpy
 
 from cubeaccess.core import Coordinate, Variable, StorageUnitVariableProxy, StorageUnitDimensionProxy, StorageUnitStack
 from cubeaccess.storage import FauxStorageUnit
-from cubeaccess.indexing import Range
-
+from datacube.cubeaccess.indexing import Range
 
 DATA_DIR = os.path.join(os.path.split(os.path.realpath(__file__))[0], 'data')
 
@@ -124,7 +123,7 @@ def test_storage_unit_stack():
 
 
 def test_geotif_storage_unit():
-    from cubeaccess.storage import GeoTifStorageUnit
+    from datacube.cubeaccess.storage import GeoTifStorageUnit
 
     su = GeoTifStorageUnit(DATA_DIR+'/test.tif')
     assert (set(su.coordinates.keys()) == ({'x', 'y'}))
@@ -143,7 +142,7 @@ def test_geotif_storage_unit():
 
 
 def test_netcdf_storage_unit():
-    from cubeaccess.storage import NetCDF4StorageUnit
+    from datacube.cubeaccess.storage import NetCDF4StorageUnit
 
     su = NetCDF4StorageUnit(DATA_DIR+'/test.nc')
     assert (set(su.coordinates.keys()) == ({'longitude', 'latitude', 'time'}))
