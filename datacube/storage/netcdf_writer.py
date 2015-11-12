@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-from collections import namedtuple
 import logging
 import os.path
 from datetime import datetime
@@ -10,18 +9,12 @@ import numpy as np
 from netCDF4 import date2index
 from osgeo import osr
 
+from datacube.model import VariableAlreadyExists
 from .utils import get_dataset_extent
 
 _LOG = logging.getLogger(__name__)
 
 EPOCH = datetime(1970, 1, 1, 0, 0, 0)
-
-# StorageSegmentMetadata = namedtuple('StorageSegmentMetadata', 'coordinates', 'measurements', 'spatial_extent',
-#                                     'time_extent')
-# Coordinate = namedtuple('Coordinate', 'dtype', 'units', 'first_label', 'last_label', 'num_labels')
-# Measurement = namedtuple('Measurement', 'dtype', 'ndv', 'coords')
-# SpatialExtent = namedtuple('SpatialExtent', 'ul_lat', 'ul_lon', 'ur_lat')
-# TimeExtent = namedtuple('TimeExtent', 'units', 'start', 'end')
 
 
 class NetCDFWriter(object):
@@ -119,22 +112,22 @@ class NetCDFWriter(object):
         self.nco.license = "Creative Commons Attribution 4.0 International CC BY 4.0"
 
     def find_or_create_time_index(self, insertion_time):
+        """
+        Only allow a single time index at the moment
+        :param insertion_time:
+        :return:
+        """
         times = self.nco.variables['time']
 
-        try:
-            index = date2index(insertion_time, times)
-            _LOG.debug('Found date %s at index %s', insertion_time, index)
-        except (ValueError, IndexError) as e:
-            _LOG.debug('%s: datetime %s not found, appending into times', e, insertion_time)
-            # Append to times
-            # Convert to seconds since epoch (1970-01-01)
+        if len(times) == 0:
+            _LOG.debug('Inserting time %s', insertion_time)
             start_datetime_delta = insertion_time - EPOCH
             _LOG.debug('stored time value %s', start_datetime_delta.total_seconds())
-
             index = len(times)
-
             # Save as next coordinate in file
             times[index] = start_datetime_delta.total_seconds()
+        else:
+            index = date2index(insertion_time, times)  # Blow up for a different time
 
         return index
 
@@ -158,14 +151,13 @@ class NetCDFWriter(object):
         """
         varname = band_info.varname
         if varname in self.nco.variables:
-            out_band = self.nco.variables[varname]
-            src_filename = self.nco.variables[varname + "_src_filenames"]
-        else:
-            chunking = storage_type['chunking']
-            chunksizes = [chunking[dim] for dim in ['t', 'y', 'x']]
-            dtype = band_info.dtype
-            ndv = band_info.fill_value
-            out_band, src_filename = self._create_data_variable(varname, dtype, chunksizes, ndv)
+            raise VariableAlreadyExists('Variable %s already exists and should not be overwritten.')
+
+        chunking = storage_type['chunking']
+        chunksizes = [chunking[dim] for dim in ['t', 'y', 'x']]
+        dtype = band_info.dtype
+        ndv = band_info.fill_value
+        out_band, src_filename = self._create_data_variable(varname, dtype, chunksizes, ndv)
 
         time_index = self.find_or_create_time_index(time_value)
 
@@ -210,7 +202,6 @@ class TileSpec(object):
     lons = []
 
     def __init__(self, gdal_ds):
-        self._gdal_ds = gdal_ds
         self._nbands = gdal_ds.RasterCount
         self._projection = gdal_ds.GetProjection()
         nlats, nlons = gdal_ds.RasterYSize, gdal_ds.RasterXSize

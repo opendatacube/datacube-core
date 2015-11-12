@@ -147,3 +147,7 @@ class Dataset(object):
             raise ValueError('Only eo docs are supported at the moment (provided {})'.format(metadata_type))
 
         return Dataset(metadata_type, metadata_doc, metadata_path)
+
+
+class VariableAlreadyExists(Exception):
+    pass
