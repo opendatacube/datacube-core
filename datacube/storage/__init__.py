@@ -6,6 +6,7 @@ from __future__ import absolute_import
 
 import logging
 
+from datacube.model import StorageUnit
 from datacube.storage.ingester import SimpleObject  # TODO: Use actual classes
 from datacube.storage.ingester import crazy_band_tiler
 from datacube.storage.netcdf_indexer import index_netcdfs
@@ -64,12 +65,16 @@ def store(storage_mappings, dataset):
 
     _LOG.debug('Wrote storage units: %s', created_storage_units)
 
-    return created_storage_units
-
-    # Return descriptions of written 'tiles'/'segments'.
-    # We don't have a representation of a storage unit (just file path). Is that a problem?
-
-    # Two segments inside one storage unit.
+    return [
+        StorageUnit(
+            [dataset.id],
+            # TODO: Use the correct mapping
+            storage_mappings[0],
+            unit_descriptor,
+            path
+        )
+        for path, unit_descriptor in created_storage_units.items()
+        ]
 
 
 def _get_doc_offset(offset, document):

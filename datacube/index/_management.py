@@ -4,8 +4,6 @@ Module
 """
 from __future__ import absolute_import
 
-import os
-
 import cachetools
 
 from datacube.config import SystemConfig
@@ -36,7 +34,10 @@ class DataManagement(object):
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def _get_storage_type(self, id_):
         _storage_type = self.db.get_storage_type(id_)
-        return StorageType(_storage_type['driver'], _storage_type['name'], _storage_type['descriptor'])
+        return StorageType(_storage_type['driver'],
+                           _storage_type['name'],
+                           _storage_type['descriptor'],
+                           id_=_storage_type['id'])
 
     def get_storage_mappings_for_dataset(self, dataset_metadata):
         mappings = self.db.get_storage_mappings(dataset_metadata)
@@ -48,7 +49,8 @@ class DataManagement(object):
                 DatasetMatcher(mapping['dataset_metadata']),
                 mapping['measurements'],
                 mapping['dataset_measurements_key'],
-                self.config.resolve_location(mapping['location_name'], mapping['location_offset'])
+                self.config.resolve_location(mapping['location_name'], mapping['location_offset']),
+                id_=mapping['id']
             )
             for mapping in mappings
             ]

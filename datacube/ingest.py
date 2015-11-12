@@ -24,12 +24,12 @@ def ingest(dataset_path):
         if was_indexed:
             _LOG.info('Indexed %s', dataset_path)
 
-    _write_missing_storage_units(config, dataset)
+    _write_missing_storage_units(config, index, dataset)
 
     _LOG.info('Completed dataset %s', dataset_path)
 
 
-def _write_missing_storage_units(config, dataset):
+def _write_missing_storage_units(config, index, dataset):
     """
     Ensure all storage units have been written for the dataset.
     """
@@ -38,4 +38,4 @@ def _write_missing_storage_units(config, dataset):
     _LOG.debug('Storage mappings: %s', storage_mappings)
     if storage_mappings:
         storage_units = storage.store(storage_mappings, dataset)
-        # index.add_storage_units(storage_units)
+        index.add_storage_units(storage_units)

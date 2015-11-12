@@ -91,3 +91,23 @@ class DataIndex(object):
         :rtype: bool
         """
         return self.db.contains_dataset(dataset.id)
+
+    def add_storage_units(self, storage_units):
+        """
+        :type storage_units: list[datacube.model.StorageUnit]
+        """
+        for unit in storage_units:
+            with self.db.begin() as transaction:
+                unit_id = self.db.add_storage_unit(
+                    unit.path,
+                    unit.dataset_ids,
+                    unit.descriptor,
+                    unit.storage_mapping.id_,
+                )
+                _LOG.debug('Indexed unit %s @ %s', unit_id, unit.path)
+
+    def add_storage_unit(self, storage_unit):
+        """
+        :type storage_unit: datacube.model.StorageUnit
+        """
+        return self.add_storage_units([storage_unit])

@@ -20,7 +20,7 @@ class DatasetMatcher(object):
 
 
 class StorageType(object):
-    def __init__(self, driver, name, descriptor):
+    def __init__(self, driver, name, descriptor, id_=None):
         # Name of the storage driver. 'NetCDF CF', 'GeoTiff' etc.
         #: :type: str
         self.driver = driver
@@ -33,11 +33,15 @@ class StorageType(object):
         #: :type: dict
         self.descriptor = descriptor
 
+        # Database primary key
+        #: :type: int
+        self.id_ = id_
+
 
 class StorageMapping(object):
     def __init__(self, storage_type, name, match,
                  measurements, dataset_measurements_offset,
-                 filename_pattern):
+                 filename_pattern, id_=None):
         # Which datasets to match.
         #: :type: DatasetMatcher
         self.match = match
@@ -64,26 +68,31 @@ class StorageMapping(object):
         #: :type: str
         self.filename_pattern = filename_pattern
 
-
-class StorageUnit(object):
-    def __init__(self, dataset_ids, storage_type, descriptor, path, id_=None):
+        # Database primary key
         #: :type: int
         self.id_ = id_
 
+
+class StorageUnit(object):
+    def __init__(self, dataset_ids, storage_mapping, descriptor, path, id_=None):
         #: :type: list[uuid.UUID]
         self.dataset_ids = dataset_ids
 
-        #: :type: StorageType
-        self.storage_type = storage_type
+        #: :type: StorageMapping
+        self.storage_mapping = storage_mapping
 
         # A descriptor for this segment. (parameters etc)
         # A 'document' understandable by the storage driver. Properties inside may be queried by users.
         #: :type: dict
         self.descriptor = descriptor
 
-        # Path of the 'storage unit' containing this segment.
+        # An offset from the location defined in the storage type.
         #: :type: pathlib.Path
         self.path = path
+
+        # Database primary key
+        #: :type: int
+        self.id_ = id_
 
 
 # TODO: move this and from_path() to a separate dataset-loader module ...?

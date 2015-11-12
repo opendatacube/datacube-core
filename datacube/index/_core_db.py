@@ -12,7 +12,8 @@ from sqlalchemy import create_engine, select, text, bindparam, exists, and_
 from sqlalchemy.engine.url import URL as engine_url
 from sqlalchemy.exc import IntegrityError
 
-from .tables import ensure_db, DATASET, DATASET_SOURCE, STORAGE_TYPE, STORAGE_MAPPING
+from .tables import ensure_db, DATASET, DATASET_SOURCE, STORAGE_TYPE, \
+    STORAGE_MAPPING, STORAGE_UNIT, DATASET_STORAGE
 
 PGCODE_UNIQUE_CONSTRAINT = '23505'
 
@@ -155,6 +156,24 @@ class Db(object):
                 location_offset=location_offset,
             )
         )
+
+    def add_storage_unit(self, path, dataset_ids, descriptor, storage_mapping_id):
+        unit_id = self._connection.execute(
+            STORAGE_UNIT.insert().returning(STORAGE_UNIT.c.id).values(
+                storage_mapping_ref=storage_mapping_id,
+                descriptor=self._to_json(descriptor),
+                path=path
+            )
+        ).scalar()
+
+        self._connection.execute(
+            DATASET_STORAGE.insert(),
+            [
+                {'dataset_ref': dataset_id, 'storage_unit_ref': unit_id}
+                for dataset_id in dataset_ids
+                ]
+        )
+        return unit_id
 
 
 def _json_serialiser(obj):

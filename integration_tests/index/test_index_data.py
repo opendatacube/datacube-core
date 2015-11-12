@@ -8,6 +8,12 @@ from __future__ import absolute_import
 
 import datetime
 
+import pytest
+
+from datacube.index._data import DataIndex
+from datacube.index.tables import STORAGE_MAPPING, STORAGE_UNIT
+from datacube.index.tables._storage import DATASET_STORAGE
+from datacube.model import StorageUnit, StorageMapping
 from integration_tests.index._common import init_db, connect_db
 
 _telemetry_uuid = '4ec8fe97-e8b9-11e4-87ff-1040f381a756'
@@ -67,3 +73,57 @@ def test_index_dataset():
     db = connect_db()
     assert not db.contains_dataset(_telemetry_uuid)
 
+
+@pytest.mark.xfail
+def test_index_storage_unit():
+    db = init_db()
+    index = DataIndex(db)
+
+    # Setup foreign keys for our storage unit.
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid,
+        '/tmp/test/' + _telemetry_uuid,
+        'satellite_telemetry_data'
+    )
+    assert was_inserted
+    db.ensure_storage_type(
+        'NetCDF CF',
+        'test_storage_type',
+        {'storage_type': 'descriptor'}
+    )
+    db.ensure_storage_mapping(
+        'NetCDF CF',
+        'test_storage_type',
+        'Test storage mapping',
+        'location1', '/tmp/some/loc', {}, [], {}
+    )
+    mapping = db._connection.execute(STORAGE_MAPPING.select()).first()
+
+    # Add storage unit
+    index.add_storage_unit(
+        StorageUnit(
+            [_telemetry_uuid],
+            StorageMapping(
+                # Yikes:
+                None, None, None, None, None, None,
+                id_=mapping['id']
+            ),
+            {'test': 'descriptor'},
+            '/test/offset'
+        )
+    )
+
+    units = db._connection.execute(STORAGE_UNIT.select()).fetchall()
+    assert len(units) == 1
+    unit = units[0]
+    assert unit['descriptor'] == {'test': 'descriptor'}
+    assert unit['path'] == '/test/offset'
+    assert unit['storage_mapping_ref'] == mapping['id']
+
+    # Dataset and storage should have been linked.
+    d_ss = db._connection.execute(DATASET_STORAGE.select()).fetchall()
+    assert len(d_ss) == 1
+    d_s = d_ss[0]
+    assert d_s['dataset_ref'] == _telemetry_uuid
+    assert d_s['storage_unit_ref'] == unit['id']
