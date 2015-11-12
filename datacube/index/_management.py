@@ -6,15 +6,15 @@ from __future__ import absolute_import
 
 import cachetools
 
-from datacube.config import UserConfig
+from datacube.config import SystemConfig
 from datacube.index._core_db import Db
 from datacube.model import StorageMapping, StorageType, DatasetMatcher
 
 
-def connect(config=UserConfig.find()):
+def connect(config=SystemConfig.find()):
     """
     Connect to the .
-    :type config: datacube.config.UserConfig
+    :type config: datacube.config.SystemConfig
     :rtype: DataManagement
     """
     return DataManagement(Db.connect(config.db_hostname, config.db_database))

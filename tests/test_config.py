@@ -4,12 +4,12 @@ Module
 """
 from __future__ import absolute_import
 
-from datacube.config import UserConfig
+from datacube.config import SystemConfig
 from tests import util
 
 
 def test_find_defaults():
-    config = UserConfig.find(paths=[])
+    config = SystemConfig.find(paths=[])
     assert config.db_hostname == ''
     assert config.db_database == 'datacube'
 
@@ -25,17 +25,41 @@ db_database: overridden_db
         """
     })
 
-    config_paths = [str(files.joinpath('base.conf'))]
-
     # One config file
-    config = UserConfig.find(paths=config_paths)
+    config = SystemConfig.find(paths=[str(files.joinpath('base.conf'))])
     assert config.db_hostname == 'fakehost.test.lan'
     # Not set: uses default
     assert config.db_database == 'datacube'
 
     # Now two config files, with the latter overriding earlier options.
-    config_paths.append(str(files.joinpath('override.conf')))
-
-    config = UserConfig.find(paths=config_paths)
+    config = SystemConfig.find(paths=[str(files.joinpath('base.conf')),
+                                      str(files.joinpath('override.conf'))])
     assert config.db_hostname == 'overridden.test.lan'
     assert config.db_database == 'overridden_db'
+
+
+def test_get_locations():
+    files = util.write_files({
+        'base.conf': """[locations]
+ls7_ortho: file:///tmp/test/ls7_ortho
+t_archive: file:///tmp/test/t_archive
+        """,
+        'override.conf': """[locations]
+t_archive: file:///tmp/override
+        """
+    })
+
+    config = SystemConfig.find(paths=[str(files.joinpath('base.conf'))])
+    assert config.location_mappings == {
+        'gdata': 'file:///g/data',
+        'ls7_ortho': 'file:///tmp/test/ls7_ortho',
+        't_archive': 'file:///tmp/test/t_archive'
+    }
+
+    config = SystemConfig.find(paths=[str(files.joinpath('base.conf')),
+                                      str(files.joinpath('override.conf'))])
+    assert config.location_mappings == {
+        'gdata': 'file:///g/data',
+        'ls7_ortho': 'file:///tmp/test/ls7_ortho',
+        't_archive': 'file:///tmp/override'
+    }

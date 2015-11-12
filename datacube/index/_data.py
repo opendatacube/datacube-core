@@ -7,16 +7,16 @@ from __future__ import absolute_import
 import copy
 import logging
 
-from datacube.config import UserConfig
+from datacube.config import SystemConfig
 from ._core_db import Db
 
 _LOG = logging.getLogger(__name__)
 
 
-def connect(config=UserConfig.find()):
+def connect(config=SystemConfig.find()):
     """
     Connect to the index.
-    :type config: datacube.config.UserConfig
+    :type config: datacube.config.SystemConfig
     :rtype: DataIndex
     """
     return DataIndex(Db.connect(config.db_hostname, config.db_database))

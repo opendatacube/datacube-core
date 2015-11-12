@@ -25,11 +25,15 @@ db_hostname:
 db_database: datacube
 
 [locations]
+# Where to reach storage locations from the current machine.
+#  -> Location names (here 'gdata') are arbitrary, but correspond to names used in the
+#     storage mapping files.
+#  -> We may eventually support remote protocols (http, S3, etc) to lazily fetch remote data.
 gdata: file:///g/data
 """
 
 
-class UserConfig(object):
+class SystemConfig(object):
     """
     System configuration for the user.
 
@@ -45,12 +49,12 @@ class UserConfig(object):
         """
         Find config from possible filesystem locations.
         :type paths: list[str]
-        :rtype: UserConfig
+        :rtype: SystemConfig
         """
         config = SafeConfigParser()
         config.readfp(StringIO.StringIO(_DEFAULT_CONF))
         config.read([p for p in paths if p])
-        return UserConfig(config)
+        return SystemConfig(config)
 
     def _prop(self, key, section='datacube'):
         return self._config.get(section, key)
@@ -62,6 +66,13 @@ class UserConfig(object):
     @property
     def db_database(self):
         return self._prop('db_database')
+
+    @property
+    def location_mappings(self):
+        """
+        :rtype: dict[str, str]
+        """
+        return dict(self._config.items('locations'))
 
 
 def init_logging(verbosity_level=0, log_queries=False):
