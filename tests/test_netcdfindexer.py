@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+from datetime import datetime
 from pytest import fixture
 
 from datacube.storage.netcdf_indexer import index_netcdfs
@@ -20,16 +21,19 @@ def test_create_sample_netcdf_from_gdalds(tmpdir, example_netcdf_path):
     assert files_metadata
     assert len(files_metadata) == 1
 
-    required_attrs = {
-        'coordinates': ('dtype', 'begin', 'end', 'length'),
-        'measurements': ('units', 'dtype', 'dimensions', 'ndv')
-    }
+    reqd_coords_attrs = set(['dtype', 'begin', 'end', 'length'])
+    reqd_measurements_attrs = set(['units', 'dtype', 'dimensions', 'ndv'])
+    reqd_extents_attributes = set(
+        ['geospatial_lat_max', 'geospatial_lat_min', 'geospatial_lon_max', 'geospatial_lon_min', 'time_min',
+         'time_max'])
 
-    # This seemed like a good idea... it no longer does but it works
     for filename, filedata in files_metadata.items():
-        for name, fields in required_attrs.items():
-            for field_name, field_data in filedata[name].items():
-                for reqd_field in fields:
-                    assert reqd_field in field_data
-                    assert field_data[reqd_field]
+        for coordinate in filedata['coordinates'].values():
+            assert reqd_coords_attrs.issubset(coordinate.keys())
+        for measurement in filedata['measurements'].values():
+            assert reqd_measurements_attrs.issubset(measurement.keys())
 
+        assert reqd_extents_attributes.issubset(filedata['extents'].keys())
+
+        assert type(filedata['extents']['time_min']) == datetime
+        assert type(filedata['extents']['time_max']) == datetime

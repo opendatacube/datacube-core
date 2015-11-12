@@ -60,16 +60,16 @@ def store(storage_mappings, dataset):
 
         _LOG.debug('Storage type description: %r', storage_type.descriptor)
 
-        created_storage_units = index_netcdfs(storage_unit_filenames)
+    created_storage_units = index_netcdfs(storage_unit_filenames)
 
-        _LOG.debug('Wrote storage units: %s', created_storage_units)
+    _LOG.debug('Wrote storage units: %s', created_storage_units)
 
-        return created_storage_units
+    return created_storage_units
 
-        # Return descriptions of written 'tiles'/'segments'.
-        # We don't have a representation of a storage unit (just file path). Is that a problem?
+    # Return descriptions of written 'tiles'/'segments'.
+    # We don't have a representation of a storage unit (just file path). Is that a problem?
 
-        # Two segments inside one storage unit.
+    # Two segments inside one storage unit.
 
 
 def _get_doc_offset(offset, document):

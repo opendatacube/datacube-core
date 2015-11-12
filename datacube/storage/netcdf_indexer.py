@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from collections import namedtuple
 
 import netCDF4
+from netCDF4 import num2date
 
 Coordinate = namedtuple('Coordinate', ('dtype', 'begin', 'end', 'length'))
 Variable = namedtuple('Variable', ('dtype', 'ndv', 'coordinates'))
@@ -36,15 +37,12 @@ def index_netcdfs(filenames):
     :param filenames:
     :return: list of file description dicts
     """
-    collection_description = {}
-    for filename in filenames:
-        coordinates, measurements = read_netcdf_structure(filename)
+    files_descriptions = {}
 
-        collection_description[filename] = {
-            'coordinates': coordinates,
-            'measurements': measurements
-        }
-    return collection_description
+    for filename in filenames:
+        files_descriptions[filename] = read_netcdf_structure(filename)
+
+    return files_descriptions
 
 
 def skip_variable(var):
@@ -61,6 +59,13 @@ def read_netcdf_structure(filename):
     with netCDF4.Dataset(filename) as nco:
         coordinates = {}
         measurements = {}
+        extents = {k: getattr(nco, k) for k in
+                   ['geospatial_lat_max', 'geospatial_lat_min', 'geospatial_lon_max', 'geospatial_lon_min']}
+
+        time_units = nco.variables['time'].units
+
+        extents['time_min'] = num2date(nco.variables['time'][0], time_units)
+        extents['time_max'] = num2date(nco.variables['time'][-1], time_units)
 
         skipped_variables = ('crs', 'extra_metadata')
 
@@ -87,4 +92,5 @@ def read_netcdf_structure(filename):
                     'ndv': ndv,
                     'dimensions': [str(dim) for dim in var.dimensions]
                 }
-    return coordinates, measurements
+
+    return dict(coordinates=coordinates, measurements=measurements, extents=extents)
