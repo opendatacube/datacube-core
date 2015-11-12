@@ -8,8 +8,6 @@ from __future__ import absolute_import
 
 import datetime
 
-import pytest
-
 from datacube.index._data import DataIndex
 from datacube.index.tables import STORAGE_MAPPING, STORAGE_UNIT
 from datacube.index.tables._storage import DATASET_STORAGE
@@ -74,7 +72,6 @@ def test_index_dataset():
     assert not db.contains_dataset(_telemetry_uuid)
 
 
-@pytest.mark.xfail
 def test_index_storage_unit():
     db = init_db()
     index = DataIndex(db)

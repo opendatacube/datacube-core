@@ -9,6 +9,7 @@ import json
 import logging
 
 from sqlalchemy import create_engine, select, text, bindparam, exists, and_
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.url import URL as engine_url
 from sqlalchemy.exc import IntegrityError
 
@@ -40,7 +41,10 @@ class Db(object):
             echo=False,
             # 'AUTOCOMMIT' here means READ-COMMITTED isolation level with autocommit on.
             # When a transaction is needed we will do an explicit begin/commit.
-            isolation_level='AUTOCOMMIT'
+            isolation_level='AUTOCOMMIT',
+
+            json_serializer=_to_json,
+            # json_deserializer=my_deserialize_fn
         )
         _connection = _engine.connect()
         ensure_db(_connection, _engine)
@@ -79,15 +83,15 @@ class Db(object):
                 DATASET.insert().from_select(
                     ['id', 'type', 'metadata_path', 'metadata'],
                     select([
-                        bindparam('id'), bindparam('type'), bindparam('metadata_path'), bindparam('metadata')
+                        bindparam('id'), bindparam('type'), bindparam('metadata_path'),
+                        bindparam('metadata', type_=JSONB)
                     ]).where(~exists(select([DATASET.c.id]).where(DATASET.c.id == bindparam('id'))))
                 ),
                 id=dataset_id,
                 type=product_type,
                 # TODO: Does a single path make sense? Or a separate 'locations' table?
                 metadata_path=str(path) if path else None,
-                # We convert to JSON ourselves so we can specify our own serialiser (for date conversion etc)
-                metadata=self._to_json(dataset_doc)
+                metadata=dataset_doc
             )
             return ret.rowcount > 0
         except IntegrityError as e:
@@ -95,9 +99,6 @@ class Db(object):
                 _LOG.info('Duplicate dataset, not inserting: %s @ %s', dataset_id, path)
                 # We're still going to raise it, because the transaction will have been invalidated.
             raise
-
-    def _to_json(self, dataset_doc):
-        return json.dumps(dataset_doc, default=_json_serialiser)
 
     def contains_dataset(self, dataset_id):
         return bool(self._connection.execute(select([DATASET.c.id]).where(DATASET.c.id == dataset_id)).fetchone())
@@ -136,7 +137,7 @@ class Db(object):
         # Find any storage mappings whose 'dataset_metadata' document is a subset of the metadata.
         return self._connection.execute(
             STORAGE_MAPPING.select().where(
-                STORAGE_MAPPING.c.dataset_metadata.contained_by(self._to_json(dataset_metadata))
+                STORAGE_MAPPING.c.dataset_metadata.contained_by(dataset_metadata)
             )
         ).fetchall()
 
@@ -161,7 +162,7 @@ class Db(object):
         unit_id = self._connection.execute(
             STORAGE_UNIT.insert().returning(STORAGE_UNIT.c.id).values(
                 storage_mapping_ref=storage_mapping_id,
-                descriptor=self._to_json(descriptor),
+                descriptor=descriptor,
                 path=path
             )
         ).scalar()
@@ -176,9 +177,12 @@ class Db(object):
         return unit_id
 
 
-def _json_serialiser(obj):
-    """Fallback json serialiser."""
+def _to_json(o):
+    return json.dumps(o, default=_json_fallback)
 
+
+def _json_fallback(obj):
+    """Fallback json serialiser."""
     if isinstance(obj, (datetime.datetime, datetime.date)):
         return obj.isoformat()
     raise TypeError("Type not serializable: {}".format(type(obj)))
