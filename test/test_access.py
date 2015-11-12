@@ -128,6 +128,7 @@ def test_geotif_storage_unit():
 
     su = GeoTifStorageUnit(DATA_DIR+'/test.tif')
     assert (set(su.coordinates.keys()) == ({'x', 'y'}))
+    assert (su.variables['2'].nodata == -999)
 
     # floating point dodge... am I doing something wrong?
     data = su.get('2', x=Range(144.5, 144.7-0.00001), y=Range(-35.5, -35.2-0.00001))
@@ -146,6 +147,7 @@ def test_netcdf_storage_unit():
 
     su = NetCDF4StorageUnit(DATA_DIR+'/test.nc')
     assert (set(su.coordinates.keys()) == ({'longitude', 'latitude', 'time'}))
+    assert (su.variables['B2'].nodata == -999)
 
     data = su.get('B2', longitude=Range(151.5, 151.7-0.00001), latitude=Range(-29.5, -29.2-0.00001))
     assert (len(data.coords['time']) == 3)

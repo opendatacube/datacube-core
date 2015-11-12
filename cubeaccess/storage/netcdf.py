@@ -35,7 +35,9 @@ class NetCDF4StorageUnit(StorageUnitBase):
                 if len(dims) == 1 and name == dims[0]:
                     self.coordinates[name] = Coordinate(var.dtype, var[0], var[-1], var.shape[0])
                 else:
-                    ndv = getattr(var, 'missing_value', None) or getattr(var, 'fill_value', None)
+                    ndv = (getattr(var, '_FillValue', None) or
+                           getattr(var, 'missing_value', None) or
+                           getattr(var, 'fill_value', None))
                     self.variables[name] = Variable(var.dtype, ndv, var.dimensions)
 
     def _open_dataset(self):
