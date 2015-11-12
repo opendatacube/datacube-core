@@ -31,21 +31,8 @@ def store(storage_mappings, dataset):
         if storage_type.driver != 'NetCDF CF':
             raise RuntimeError('Unknown storage driver')
 
-        # dict of measurements ('bands') and their settings for the storage driver.
-        # eg.
-        #  '10':
-        #     dtype: int16
-        #     fill_value: -999
-        #     resampling_method: cubic
-        #     varname: band_10
-        # '20':
-        #     dtype: int16
-        #     fill_value: -999
-        #     resampling_method: cubic
-        #     varname: band_20
-        # The key ('20') should match an equivalent entry in the dataset band/measurement list.
-
-        # Example of getting paths to bands/measurements.
+        # TODO: sort the location thing out
+        storage_type.descriptor["filename_format"] = '/short/u46/gxr547/gregcube/'+mapping.location_offset
         dataset_measurements = _get_doc_offset(mapping.dataset_measurements_offset, dataset.metadata_doc)
         for measurement_id, measurement_descriptor in mapping.measurements.items():
             # Get the corresponding measurement/band from the dataset.

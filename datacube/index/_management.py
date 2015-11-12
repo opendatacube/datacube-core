@@ -41,7 +41,9 @@ class DataManagement(object):
                 mapping['name'],
                 DatasetMatcher(mapping['dataset_metadata']),
                 mapping['measurements'],
-                mapping['dataset_measurements_key']
+                mapping['dataset_measurements_key'],
+                mapping['location_name'],
+                mapping['location_offset']
             )
             for mapping in mappings
         ]
@@ -72,11 +74,15 @@ class DataManagement(object):
         with self.db.begin() as transaction:
             for mapping in storage_mappings:
                 storage_type_name = mapping['name']
+                location_name = mapping['location_name']
+                location_offset = mapping['location_offset']
                 measurements = mapping['measurements']
                 self.db.ensure_storage_mapping(
                     driver,
                     storage_type_name,
                     name,
+                    location_name,
+                    location_offset,
                     dataset_metadata,
                     # The offset within an eodataset to find a band list.
                     ['image', 'bands'],

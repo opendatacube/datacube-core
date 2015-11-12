@@ -43,6 +43,12 @@ STORAGE_MAPPING = Table(
     # A name/label for this mapping (eg. 'LS7 NBAR'). Specified by users.
     Column('name', String, nullable=False),
 
+    # The name of the location where the storage units should be stored. Specified by users.
+    Column('location_name', String, nullable=False),
+
+    # The offset relative to location where the storage units should be stored. Specified by users.
+    Column('location_offset', String, nullable=False),
+
     # Match any datasets whose metadata is a superset of this.
     # See "_EXAMPLE_DATASETS_MATCHING" below
     Column('dataset_metadata', postgres.JSONB, nullable=False),
