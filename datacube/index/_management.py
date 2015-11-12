@@ -39,7 +39,7 @@ class DataManagement(object):
 
     def get_storage_mappings_for_dataset(self, dataset_metadata):
         mappings = self.db.get_storage_mappings(dataset_metadata)
-        
+
         def resolve_location(location, offset):
             return os.path.join(self.config.location_mappings[location], offset)
         return [
