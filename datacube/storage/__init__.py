@@ -32,7 +32,10 @@ def store(storage_mappings, dataset):
             raise RuntimeError('Unknown storage driver')
 
         # TODO: hack? tiler takes way too many params as it is...
-        storage_type.descriptor["filename_format"] = mapping.filename_pattern
+        if not mapping.filename_pattern.startswith('file://'):
+            raise RuntimeError('URI protocol is not supported (yet): %s' % mapping.filename_pattern)
+        storage_type.descriptor["filename_format"] = mapping.filename_pattern[7:]
+
         dataset_measurements = _get_doc_offset(mapping.dataset_measurements_offset, dataset.metadata_doc)
         for measurement_id, measurement_descriptor in mapping.measurements.items():
             # Get the corresponding measurement/band from the dataset.
