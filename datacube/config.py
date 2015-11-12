@@ -112,7 +112,8 @@ class SystemConfig(object):
 
 
 def init_logging(verbosity_level=0, log_queries=False):
-    logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.WARN)
-    logging.getLogger('datacube').setLevel(logging.WARN - 10 * verbosity_level)
+    logging_level = logging.WARN - 10 * verbosity_level
+    logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging_level)
+    logging.getLogger('datacube').setLevel(logging_level)
     if log_queries:
         logging.getLogger('sqlalchemy.engine').setLevel('INFO')
