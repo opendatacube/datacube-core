@@ -7,7 +7,7 @@ from __future__ import absolute_import
 import StringIO
 import logging
 import os
-from ConfigParser import SafeConfigParser
+from ConfigParser import SafeConfigParser, NoOptionError
 
 # Config locations in order. Properties found in latter locations override former.
 DEFAULT_CONF_PATHS = (
@@ -51,7 +51,7 @@ class SystemConfig(object):
         :type paths: list[str]
         :rtype: SystemConfig
         """
-        config = SafeConfigParser(defaults={'db_username': None, 'db_port': None})
+        config = SafeConfigParser()
         config.readfp(StringIO.StringIO(_DEFAULT_CONF))
         config.read([p for p in paths if p])
         return SystemConfig(config)
@@ -76,11 +76,17 @@ class SystemConfig(object):
 
     @property
     def db_username(self):
-        return self._prop('db_username')
+        try:
+            return self._prop('db_username')
+        except NoOptionError:
+            return None
 
     @property
     def db_port(self):
-        return self._prop('db_port')
+        try:
+            return self._prop('db_port')
+        except NoOptionError:
+            return None
 
 
 def init_logging(verbosity_level=0, log_queries=False):
