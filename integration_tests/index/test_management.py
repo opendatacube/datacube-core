@@ -5,6 +5,7 @@ Module
 from __future__ import absolute_import
 
 from datacube.index._management import DataManagement
+from datacube.config import SystemConfig
 from integration_tests.index._common import init_db
 
 _STORAGE_TYPE = {
@@ -45,6 +46,8 @@ _STORAGE_MAPPING = {
         {
 
             'name': '30m_bands',
+            'location_name': 'gdata',
+            'location_offset': '/location_offset/file.nc',
             'measurements': {
                 '1': {'dtype': 'int16',
                       'fill_value': -999,
@@ -99,7 +102,7 @@ _DATASET_METADATA = {
 
 
 def test_add_storage_type():
-    dm = DataManagement(init_db())
+    dm = DataManagement(init_db(), SystemConfig.find([]))
 
     storage_mappings = dm.get_storage_mappings_for_dataset(_DATASET_METADATA)
     assert len(storage_mappings) == 0
@@ -113,6 +116,7 @@ def test_add_storage_type():
 
     mapping = storage_mappings[0]
     assert mapping.name == 'LS5 NBAR'
+    assert mapping.filename_pattern == 'file:///g/data/location_offset/file.nc'
     assert mapping.match.metadata == _STORAGE_MAPPING['match']['metadata']
     assert mapping.measurements == _STORAGE_MAPPING['storage'][0]['measurements']
 
