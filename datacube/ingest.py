@@ -22,16 +22,20 @@ def ingest(dataset_path):
     if not index.contains_dataset(dataset):
         was_indexed = index.ensure_dataset(dataset)
         if was_indexed:
-            storage_mappings = config.get_storage_mappings_for_dataset(dataset.metadata_doc)
-            _LOG.debug('Storage mappings: %s', storage_mappings)
+            _LOG.info('Indexed %s', dataset_path)
 
-            storage_segments = storage.store(storage_mappings, dataset)
+    _write_missing_storage_units(config, dataset)
 
-            # index.add_storage_segments(dataset, storage_segments)
+    _LOG.info('Completed dataset %s', dataset_path)
 
-            _LOG.info('Ingested %s', dataset_path)
-        else:
-            _LOG.info('Skipping just-ingested dataset %s', dataset_path)
-    else:
-        # TODO: Check/write any missing storage records for the dataset?
-        _LOG.info('Skipping already-ingested dataset %s', dataset_path)
+
+def _write_missing_storage_units(config, dataset):
+    """
+    Ensure all storage units have been written for the dataset.
+    """
+    # TODO: Query for missing storage units, not all storage units.
+    storage_mappings = config.get_storage_mappings_for_dataset(dataset.metadata_doc)
+    _LOG.debug('Storage mappings: %s', storage_mappings)
+    if storage_mappings:
+        storage_units = storage.store(storage_mappings, dataset)
+        # index.add_storage_units(storage_units)
