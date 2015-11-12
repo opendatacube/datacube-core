@@ -28,4 +28,4 @@ chunking:
     y: 500
     t: 1
 dimension_order: ['t', 'y', 'x']
-filename_format: '/short/v10/dra547/tmp/7/{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_{creation_dt:%Y-%m-%dT%H-%M-%S.%f}.nc'
+

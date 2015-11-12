@@ -23,6 +23,9 @@ _DEFAULT_CONF = """
 # Blank implies localhost
 db_hostname:
 db_database: datacube
+
+[locations]
+gdata: file:///g/data
 """
 
 
