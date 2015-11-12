@@ -17,7 +17,7 @@ def connect(config=SystemConfig.find()):
     :type config: datacube.config.SystemConfig
     :rtype: DataManagement
     """
-    return DataManagement(Db.connect(config.db_hostname, config.db_database))
+    return DataManagement(Db.connect(config.db_hostname, config.db_database, config.db_username, config.db_port))
 
 
 class DataManagement(object):

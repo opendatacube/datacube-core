@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+from collections import namedtuple
 import logging
 import os.path
 from datetime import datetime
@@ -14,6 +15,13 @@ from .utils import get_dataset_extent
 _LOG = logging.getLogger(__name__)
 
 EPOCH = datetime(1970, 1, 1, 0, 0, 0)
+
+# StorageSegmentMetadata = namedtuple('StorageSegmentMetadata', 'coordinates', 'measurements', 'spatial_extent',
+#                                     'time_extent')
+# Coordinate = namedtuple('Coordinate', 'dtype', 'units', 'first_label', 'last_label', 'num_labels')
+# Measurement = namedtuple('Measurement', 'dtype', 'ndv', 'coords')
+# SpatialExtent = namedtuple('SpatialExtent', 'ul_lat', 'ul_lon', 'ur_lat')
+# TimeExtent = namedtuple('TimeExtent', 'units', 'start', 'end')
 
 
 class NetCDFWriter(object):
@@ -143,8 +151,7 @@ class NetCDFWriter(object):
         out_band[time_index, :, :] = nparray
         src_filename[time_index] = "Raw Array"
 
-    def append_gdal_tile(self, gdal_dataset, band_info, storage_type, dataset_metadata,
-                         time_value, input_filename):
+    def append_gdal_tile(self, gdal_dataset, band_info, storage_type, time_value, input_filename):
         """
 
         :return:
@@ -164,6 +171,12 @@ class NetCDFWriter(object):
 
         out_band[time_index, :, :] = gdal_dataset.ReadAsArray()
         src_filename[time_index] = input_filename
+
+        # return StorageSegmentMetadata(coordinates=Coordinate(),
+        #                               measurements=[Measurement()],
+        #                               spatial_extent=SpatialExtent(),
+        #                               time_extent=TimeExtent()
+        #                               )
 
     def _create_variables(self, tile_spec):
         self._create_standard_dimensions(tile_spec.lats, tile_spec.lons)
@@ -240,8 +253,7 @@ class TileSpec(object):
         return self._geotransform[1]
 
 
-def append_to_netcdf(gdal_dataset, netcdf_path, storage_type, dataset_metadata, band_info,
-                     time_value, input_filename=""):
+def append_to_netcdf(gdal_dataset, netcdf_path, storage_type, band_info, time_value, input_filename=""):
     """
     Append a raster slice to a new or existing NetCDF file
 
@@ -256,6 +268,6 @@ def append_to_netcdf(gdal_dataset, netcdf_path, storage_type, dataset_metadata, 
 
     ncfile = NetCDFWriter(netcdf_path, tile_spec)
 
-    ncfile.append_gdal_tile(gdal_dataset, band_info, storage_type, dataset_metadata,
+    ncfile.append_gdal_tile(gdal_dataset, band_info, storage_type,
                             time_value, input_filename)
     ncfile.close()

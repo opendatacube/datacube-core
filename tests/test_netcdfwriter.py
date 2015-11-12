@@ -76,8 +76,7 @@ def test_create_sample_netcdf_from_gdalds(tmpdir, example_gdal_path):
     # input_spec.storage_spec['chunking'] # {'x': 100, 'y': 100, 't': 1}
     # input_spec.bands[bandname].dtype
     # input_spec.bands[bandname].fill_value
-    append_to_netcdf(dataset, filename, storage_spec, eodataset, band_info, datetime(2008, 5, 5, 0, 24),
-                     input_filename="")
+    append_to_netcdf(dataset, filename, storage_spec, band_info, datetime(2008, 5, 5, 0, 24), input_filename="")
 
 
     # Perform some basic checks

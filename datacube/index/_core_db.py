@@ -33,9 +33,9 @@ class Db(object):
         self._connection = connection
 
     @classmethod
-    def connect(cls, hostname, database):
+    def connect(cls, hostname, database, username=None, port=None):
         _engine = create_engine(
-            engine_url('postgresql', host=hostname, database=database),
+            engine_url('postgresql', host=hostname, database=database, username=username, port=port),
             echo=False,
             # 'AUTOCOMMIT' here means READ-COMMITTED isolation level with autocommit on.
             # When a transaction is needed we will do an explicit begin/commit.

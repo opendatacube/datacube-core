@@ -6,11 +6,9 @@ from __future__ import absolute_import
 
 import logging
 
-from pathlib import Path
-
-from datacube.model import StorageUnit
 from datacube.storage.ingester import SimpleObject  # TODO: Use actual classes
 from datacube.storage.ingester import crazy_band_tiler
+from datacube.storage.netcdf_indexer import index_netcdfs
 
 _LOG = logging.getLogger(__name__)
 
@@ -25,6 +23,8 @@ def store(storage_mappings, dataset):
     :return:
     """
     _LOG.info('%s mappings for dataset %s', len(storage_mappings), dataset.id)
+
+    storage_unit_filenames = set()
 
     for mapping in storage_mappings:
         storage_type = mapping.storage_type
@@ -48,21 +48,20 @@ def store(storage_mappings, dataset):
             # How to store this band/measurement:
             _LOG.debug('Measurement descriptor: %r', measurement_descriptor)
             band_info = SimpleObject(**measurement_descriptor)  # TODO: Use actual classes
-            input_filename = str(band_path)
-            dataset_metadata = dataset.metadata_doc
 
-            time_value = dataset_metadata['extent']['center_dt']
-
-            for filename, metadata in crazy_band_tiler(band_info, input_filename, storage_type.descriptor,
-                                                       time_value, dataset_metadata):
-                yield StorageUnit(
-                    dataset.id,
-                    storage_type,
-                    metadata,
-                    Path(filename)
-                )
+            for filename in crazy_band_tiler(band_info, input_filename=str(band_path),
+                                             storage_spec=storage_type.descriptor,
+                                             time_value=dataset.metadata_doc['extent']['center_dt'],
+                                             dataset_metadata=dataset.metadata_doc):
+                storage_unit_filenames.add(filename)
 
         _LOG.debug('Storage type description: %r', storage_type.descriptor)
+
+        created_storage_units = index_netcdfs(storage_unit_filenames)
+
+        _LOG.debug('Wrote storage units: %s', created_storage_units)
+
+        return created_storage_units
 
         # Return descriptions of written 'tiles'/'segments'.
         # We don't have a representation of a storage unit (just file path). Is that a problem?

@@ -19,7 +19,7 @@ def connect(config=SystemConfig.find()):
     :type config: datacube.config.SystemConfig
     :rtype: DataIndex
     """
-    return DataIndex(Db.connect(config.db_hostname, config.db_database))
+    return DataIndex(Db.connect(config.db_hostname, config.db_database, config.db_username, config.db_port))
 
 
 def _ensure_dataset(db, dataset_doc, path=None):
