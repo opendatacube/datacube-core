@@ -4,7 +4,6 @@ Module
 """
 from __future__ import absolute_import
 
-import os
 import cachetools
 
 from datacube.config import SystemConfig
@@ -40,8 +39,6 @@ class DataManagement(object):
     def get_storage_mappings_for_dataset(self, dataset_metadata):
         mappings = self.db.get_storage_mappings(dataset_metadata)
 
-        def resolve_location(location, offset):
-            return os.path.join(self.config.location_mappings[location], offset)
         return [
             StorageMapping(
                 self._get_storage_type(mapping['storage_type_ref']),
@@ -49,7 +46,7 @@ class DataManagement(object):
                 DatasetMatcher(mapping['dataset_metadata']),
                 mapping['measurements'],
                 mapping['dataset_measurements_key'],
-                resolve_location(mapping['location_name'], mapping['location_offset'])
+                self.config.resolve_location(mapping['location_name'], mapping['location_offset'])
             )
             for mapping in mappings
         ]
@@ -79,18 +76,14 @@ class DataManagement(object):
         storage_mappings = descriptor['storage']
         with self.db.begin() as transaction:
             for mapping in storage_mappings:
-                storage_type_name = mapping['name']
-                location_name = mapping['location_name']
-                location_offset = mapping['location_offset']
-                measurements = mapping['measurements']
                 self.db.ensure_storage_mapping(
                     driver,
-                    storage_type_name,
+                    mapping['name'],
                     name,
-                    location_name,
-                    location_offset,
+                    mapping['location_name'],
+                    mapping['location_offset'],
                     dataset_metadata,
                     # The offset within an eodataset to find a band list.
                     ['image', 'bands'],
-                    measurements
+                    mapping['measurements']
                 )
