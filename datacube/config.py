@@ -51,7 +51,7 @@ class SystemConfig(object):
         :type paths: list[str]
         :rtype: SystemConfig
         """
-        config = SafeConfigParser()
+        config = SafeConfigParser(defaults={'db_username': None, 'db_port': None})
         config.readfp(StringIO.StringIO(_DEFAULT_CONF))
         config.read([p for p in paths if p])
         return SystemConfig(config)
@@ -73,6 +73,14 @@ class SystemConfig(object):
         :rtype: dict[str, str]
         """
         return dict(self._config.items('locations'))
+
+    @property
+    def db_username(self):
+        return self._prop('db_username')
+
+    @property
+    def db_port(self):
+        return self._prop('db_port')
 
 
 def init_logging(verbosity_level=0, log_queries=False):

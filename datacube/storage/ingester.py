@@ -2,12 +2,12 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import os
+from datacube import compat
 
 import yaml
 from osgeo import gdal, gdalconst, osr
 from pathlib import Path
 
-from datacube import compat
 from .netcdf_writer import append_to_netcdf, TileSpec
 
 _LOG = logging.getLogger(__name__)
@@ -96,7 +96,7 @@ def make_input_specs(ingest_config, storage_configs, eodataset):
             storage_spec=storage_spec,
             bands={
                 name: SimpleObject(**vals) for name, vals in storage['bands'].items()
-            },
+                },
             dataset=eodataset
         )
 
@@ -124,8 +124,15 @@ def ingest(input_spec):
                          input_spec.storage_spec, input_spec.dataset)
 
 
-def crazy_band_tiler(band_info, input_filename, storage_spec, time_value, dataset_metadata):
+class StorageSegmentMetadata(object):
+    def __init__(self, coordinates, measurements, spatial_extent, time_extent):
+        self.coordinates = coordinates
+        self.measurements = measurements
+        self.spatial_extent = spatial_extent
+        self.time_extent = time_extent
 
+
+def crazy_band_tiler(band_info, input_filename, storage_spec, time_value, dataset_metadata):
     src_ds = gdal.Open(input_filename, gdalconst.GA_ReadOnly)
     _LOG.debug("Ingesting: %s %s", band_info, input_filename)
     for im in create_tiles(src_ds,
@@ -141,9 +148,9 @@ def crazy_band_tiler(band_info, input_filename, storage_spec, time_value, datase
 
         _LOG.debug((os.getcwd(), out_filename))
 
-        append_to_netcdf(im, out_filename, storage_spec, dataset_metadata, band_info, time_value, input_filename)
-        yield out_filename, {}  # TODO: Fill in the things greg needs
+        append_to_netcdf(im, out_filename, storage_spec, band_info, time_value, input_filename)
         _LOG.debug(im)
+        yield out_filename
 
 
 def load_yaml(filename):

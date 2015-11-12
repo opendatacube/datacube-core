@@ -38,12 +38,12 @@ def index_netcdfs(filenames):
     """
     collection_description = []
     for filename in filenames:
-        coordinates, variables = read_netcdf_structure(filename)
+        coordinates, measurements = read_netcdf_structure(filename)
 
         collection_description.append({
             'filename': filename,
             'coordinates': coordinates,
-            'variables': variables
+            'measurements': measurements
         })
     return collection_description
 
@@ -57,7 +57,7 @@ def read_netcdf_structure(filename):
     """
     with netCDF4.Dataset(filename) as nco:
         coordinates = {}
-        variables = {}
+        measurements = {}
 
         for name, var in nco.variables.items():
             dims = var.dimensions
@@ -73,9 +73,10 @@ def read_netcdf_structure(filename):
                 ndv = getattr(var, 'missing_value', None) or getattr(var, 'fill_value', None)
                 if ndv:
                     ndv = ndv.item()
-                variables[name] = {
+                measurements[name] = {
                     'dtype': str(var.dtype),
+                    'units': str(var.units),
                     'ndv': ndv,
                     'dimensions': [str(dim) for dim in var.dimensions]
                 }
-    return coordinates, variables
+    return coordinates, measurements
