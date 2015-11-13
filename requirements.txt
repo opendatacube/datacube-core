@@ -1,0 +1,11 @@
+click
+numpy
+--index-url https://pypi.python.org/simple/
+
+# Test dependencies
+pytest
+pytest-cov
+mock
+
+# Install the remaining from setup.py:
+-e .

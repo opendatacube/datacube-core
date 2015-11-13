@@ -2,27 +2,66 @@ language: python
 
 python:
   - "2.7"
-  - "3.5"
 
+# Use the new travis docker based infrastructure
 sudo: false
 
+# Install required packages
 addons:
+  postgresql: "9.4"
   apt:
     packages:
-      - libproj-dev
-      - libgdal1-dev
-      - libhdf5-serial-dev
-      - libnetcdf-dev
-cache: apt
+# libhdf4-alt-dev is not available on travis CI. It would appear this package is not required by tests at this time
+# TODO: Check if this dependency is truly required
+#    - libhdf4-alt-dev
+    - libhdf5-serial-dev
+    - libnetcdf-dev
+    - libproj-dev
+    - libgdal1-dev
+# libgdal-dev has a packaging conflict on travis ci which causes it to uninstall postgis.
+# TODO: Check if this dependency is truly required
+#    - libgdal-dev
+
+# Command to install miniconda to build test environment
+before_install:
+  # Python and packages
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      travis_retry wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+    else
+      travis_retry wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    fi
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  # Add Jess Robertson (CSIRO) binstar channel to get custom builds for some utilities
+  - conda config --add channels jesserobertson
+  - travis_retry conda update -q conda
+  # Useful for debugging any issues with conda
+  - conda info -a
+  # Test databases and data
+  - travis_retry wget https://github.com/data-cube/agdc-v2-data/raw/master/sample_dbs/gdf_modis_20150710.backup
+  - travis_retry wget https://github.com/data-cube/agdc-v2-data/raw/master/sample_dbs/gdf_landsat_20150710.backup
+  # TODO: Add download of test data when available in a suitable size
+  - cd gdf_database
+  # Travis logs will show a WARNING regarding the "gdf_modis" does not exist, and Error regarding SCHEMA topology
+  # These are to be expected and can be safely ignored. It is a consequence of restoring a backup after creating an empty
+  # database that ensures the database setup scripts are working
+  - ./gdf_db_setup.sh
+  - ./create_db_from_backup.sh gdf_test_modis ../gdf_modis_20150710.backup
+  - ./create_db_from_backup.sh gdf_test_ls ../gdf_landsat_20150710.backup
+  - cd ..
+  # Create blank database used by the integration tests.
+  - createdb agdcintegration
 
 install:
-  - travis_retry pip install pep8 pylint pytest pytest-cov coveralls
-  - travis_retry pip install .
+  - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2 coverage python-coveralls pep8 pylint pytest
+  - source activate test-agdc
+  - travis_retry pip install -r requirements.txt 
+  - python setup.py install
 
 script:
-    # - pep8 eodatasets --max-line-length 120
-    # - pylint eodatasets --reports no
-    - py.test --cov test -m "not data"
+  - ./check-code.sh integration_tests
 
 after_success:
-  coveralls
+  - coveralls
