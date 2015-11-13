@@ -16,7 +16,6 @@
 from __future__ import absolute_import, division, print_function
 from collections import namedtuple
 
-from builtins import *
 from functools import reduce
 import numpy
 
@@ -145,7 +144,8 @@ class StorageUnitDimensionProxy(StorageUnitBase):
         """
         self._storage_unit = storage_unit
         self._dimensions = tuple(name for name, value in coords)
-        self.coordinates = {name: Coordinate(getattr(value, 'dtype', numpy.dtype(type(value))), value, value, 1) for name, value in coords}
+        self.coordinates = {name: Coordinate(getattr(value, 'dtype', numpy.dtype(type(value))), value, value, 1)
+                            for name, value in coords}
         self.coordinates.update(storage_unit.coordinates)
 
         def expand_var(var):
@@ -223,9 +223,9 @@ class StorageUnitStack(StorageUnitBase):
             raise KeyError("dimension to stack along is missing")
 
         for su in storage_units:
-            if len(su.coordinates) != len(first_coord) or \
-                    any(k not in su.coordinates or
-                        su.coordinates[k] != first_coord[k] for k in first_coord if k != stack_dim):
+            if (len(su.coordinates) != len(first_coord) or
+                    any(k not in su.coordinates or su.coordinates[k] != first_coord[k]
+                        for k in first_coord if k != stack_dim)):
                 raise RuntimeError("inconsistent coordinates")
 
             for var in all_vars:

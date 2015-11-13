@@ -14,7 +14,6 @@
 
 
 from __future__ import absolute_import, division, print_function
-from builtins import *
 
 import numpy
 from collections import namedtuple
@@ -51,5 +50,5 @@ def make_index(data, idx):
 def index_shape(idx):
     # TODO: single index
     # TODO: step
-    assert(all(i.step == 1 for i in idx))
+    assert all(i.step == 1 for i in idx)
     return tuple(i.stop-i.start for i in idx)

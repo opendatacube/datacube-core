@@ -14,7 +14,6 @@
 
 
 from __future__ import absolute_import, division, print_function
-from builtins import *
 
 from functools import reduce
 import numpy
@@ -24,9 +23,9 @@ from ..core import StorageUnitBase
 
 class FauxStorageUnit(StorageUnitBase):
     """ Fake Storage Unit for testing """
-    def __init__(self, coords, vars):
-        self.coordinates = coords
-        self.variables = vars
+    def __init__(self, coordinates, variables):
+        self.coordinates = coordinates
+        self.variables = variables
 
     def _get_coord(self, name):
         coord = self.coordinates[name]
