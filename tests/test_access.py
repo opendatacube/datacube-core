@@ -15,12 +15,12 @@
 
 from __future__ import absolute_import, division, print_function
 
-from builtins import *
 import os
 import numpy
 
-from cubeaccess.core import Coordinate, Variable, StorageUnitVariableProxy, StorageUnitDimensionProxy, StorageUnitStack
-from cubeaccess.storage import FauxStorageUnit
+from datacube.cubeaccess.core import Coordinate, Variable
+from datacube.cubeaccess.core import StorageUnitVariableProxy, StorageUnitDimensionProxy, StorageUnitStack
+from datacube.cubeaccess.storage import FauxStorageUnit
 from datacube.cubeaccess.indexing import Range
 
 DATA_DIR = os.path.join(os.path.split(os.path.realpath(__file__))[0], 'data')
