@@ -15,23 +15,53 @@
 
 from __future__ import absolute_import, division, print_function
 
-from datacube import index, config
+from collections import defaultdict
 
-#import dask.imperative
-#import dask.multiprocessing
+from datacube import index
 
 import numpy
 
+from datacube.cubeaccess.core import Coordinate, Variable
+from datacube.cubeaccess.core import StorageUnitStack
 from datacube.cubeaccess.storage import NetCDF4StorageUnit
-from datacube.cubeaccess.indexing import Range
-from common import do_work, _get_dataset, write_file
+from common import ndv_to_nan
+
+
+# TODO: this should be in a lib somewhere
+def make_storage_unit(su):
+    coordinates = {name: Coordinate(dtype=numpy.dtype(attrs['dtype']),
+                                    begin=attrs['begin'],
+                                    end=attrs['end'],
+                                    length=attrs['length'])
+                   for name, attrs in su.descriptor['coordinates'].items()}
+    variables = {name: Variable(dtype=numpy.dtype(attrs['dtype']),
+                                nodata=attrs['ndv'],
+                                coordinates=attrs['dimensions'])
+                 for name, attrs in su.descriptor['measurements'].items()}
+    return NetCDF4StorageUnit(su.path, coordinates=coordinates, variables=variables)
+
+
+def combine_storage_units(sus):
+    dims = ('longitude', 'latitude')
+    stacks = defaultdict(list)
+    for su in sus:
+        stacks[tuple(su.coordinates[dim].begin for dim in dims)].append(su)
+    return [StorageUnitStack(sorted(group, key=lambda su: su.coordinates['time'].begin), 'time')
+            for key, group in stacks.items()]
 
 
 def main(argv):
     data_index = index.data_index_connect()
     sus = data_index.get_storage_units()
-    sus = [NetCDF4StorageUnit(su.path) for su in sus]
-    print (sus)
+    sus = [make_storage_unit(su) for su in sus]
+    stacks = combine_storage_units(sus)
+    stack = stacks[0]
+
+    nir = ndv_to_nan(stack.get('band_40').values)
+    red = ndv_to_nan(stack.get('band_30').values)
+    ndvi = numpy.mean((nir-red)/(nir+red), axis=0)
+    print ("NDVI Whoo!!!")
+    print (ndvi)
 
 
 if __name__ == "__main__":

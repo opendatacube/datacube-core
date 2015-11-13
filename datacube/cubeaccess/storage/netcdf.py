@@ -23,21 +23,28 @@ from ..core import Coordinate, Variable, StorageUnitBase
 
 
 class NetCDF4StorageUnit(StorageUnitBase):
-    def __init__(self, filepath):
+    def __init__(self, filepath, variables=None, coordinates=None):
+        """
+        :param variables: variables in the SU
+        :param coordinates: coordinates in the SU
+        """
         self._filepath = filepath
-        self.coordinates = dict()
-        self.variables = dict()
-
-        with contextlib.closing(self._open_dataset()) as ncds:
-            for name, var in ncds.variables.items():
-                dims = var.dimensions
-                if len(dims) == 1 and name == dims[0]:
-                    self.coordinates[name] = Coordinate(var.dtype, var[0], var[-1], var.shape[0])
-                else:
-                    ndv = (getattr(var, '_FillValue', None) or
-                           getattr(var, 'missing_value', None) or
-                           getattr(var, 'fill_value', None))
-                    self.variables[name] = Variable(var.dtype, ndv, var.dimensions)
+        if variables and coordinates:
+            self.coordinates = coordinates
+            self.variables = variables
+        else:
+            self.coordinates = {}
+            self.variables = {}
+            with contextlib.closing(self._open_dataset()) as ncds:
+                for name, var in ncds.variables.items():
+                    dims = var.dimensions
+                    if len(dims) == 1 and name == dims[0]:
+                        self.coordinates[name] = Coordinate(var.dtype, var[0], var[-1], var.shape[0])
+                    else:
+                        ndv = (getattr(var, '_FillValue', None) or
+                               getattr(var, 'missing_value', None) or
+                               getattr(var, 'fill_value', None))
+                        self.variables[name] = Variable(var.dtype, ndv, var.dimensions)
 
     def _open_dataset(self):
         return nc4.Dataset(self._filepath, mode='r', clobber=False, diskless=False, persist=False, format='NETCDF4')
