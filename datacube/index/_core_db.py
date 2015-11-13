@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Database access.
+Lower-level database access.
 """
 from __future__ import absolute_import
 

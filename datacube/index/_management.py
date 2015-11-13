@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Module
+Access methods for storing dataset management & configuration.
 """
 from __future__ import absolute_import
 

@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-High-level API code for accessing the Index.
+Access methods for indexing datasets & storage units.
 """
 from __future__ import absolute_import
 
