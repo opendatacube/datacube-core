@@ -19,8 +19,8 @@ from itertools import groupby
 import numpy
 
 import rasterio
-from cubeaccess.core import StorageUnitVariableProxy, StorageUnitDimensionProxy, StorageUnitStack
-from cubeaccess.storage import GeoTifStorageUnit
+from datacube.cubeaccess.core import StorageUnitVariableProxy, StorageUnitDimensionProxy, StorageUnitStack
+from datacube.cubeaccess.storage import GeoTifStorageUnit
 from datacube.cubeaccess.indexing import make_index
 
 

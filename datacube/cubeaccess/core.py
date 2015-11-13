@@ -191,10 +191,10 @@ class StorageUnitStack(StorageUnitBase):
         self._storage_units = storage_units
         self._stack_coord_data = stack_coord_data
         self.coordinates = storage_units[0].coordinates.copy()
-        self.coordinates[stack_dim] = Coordinate(stack_coord_data.dtype,
-                                                 stack_coord_data[0],
-                                                 stack_coord_data[-1],
-                                                 len(stack_coord_data))
+        self.coordinates[stack_dim] = Coordinate(storage_units[0].coordinates[stack_dim].dtype,
+                                                 storage_units[0].coordinates[stack_dim].begin,
+                                                 storage_units[-1].coordinates[stack_dim].end,
+                                                 sum(su.coordinates[stack_dim].length for su in storage_units))
         self.variables = reduce_(lambda a, b: a.update(b) or a, (su.variables for su in storage_units), {})
 
     def _get_coord(self, name):
