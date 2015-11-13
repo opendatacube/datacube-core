@@ -105,21 +105,19 @@ class Db(object):
 
     def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
         self._connection.execute(
-            DATASET_SOURCE.insert().values(
-                classifier=classifier,
-                dataset_ref=dataset_id,
-                source_dataset_ref=source_dataset_id
-            )
+            DATASET_SOURCE.insert(),
+            classifier=classifier,
+            dataset_ref=dataset_id,
+            source_dataset_ref=source_dataset_id
         )
 
     def ensure_storage_type(self, driver, name, descriptor):
         # TODO: Update them if they already exist. This will do for now.
         self._connection.execute(
-            STORAGE_TYPE.insert().values(
-                driver=driver,
-                name=name,
-                descriptor=descriptor
-            )
+            STORAGE_TYPE.insert(),
+            driver=driver,
+            name=name,
+            descriptor=descriptor
         )
 
     def get_storage_type(self, storage_type_id):
@@ -165,11 +163,10 @@ class Db(object):
 
     def add_storage_unit(self, path, dataset_ids, descriptor, storage_mapping_id):
         unit_id = self._connection.execute(
-            STORAGE_UNIT.insert().returning(STORAGE_UNIT.c.id).values(
-                storage_mapping_ref=storage_mapping_id,
-                descriptor=descriptor,
-                path=path
-            )
+            STORAGE_UNIT.insert().returning(STORAGE_UNIT.c.id),
+            storage_mapping_ref=storage_mapping_id,
+            descriptor=descriptor,
+            path=path
         ).scalar()
 
         self._connection.execute(
