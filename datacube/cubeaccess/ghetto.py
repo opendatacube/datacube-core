@@ -25,11 +25,11 @@ class DataArray(object):
     """
     def __init__(self, data, coords=None, dims=None, attrs=None):
         self.values = data
-        self.dims = dims or ["dim_%s" % i for i in xrange(data.ndim)]
+        self.dims = dims or ["dim_%s" % i for i in range(data.ndim)]
         if coords:
-            self.coords = OrderedDict(zip(self.dims, coords))
+            self.coords = OrderedDict(list(zip(self.dims, coords)))
         else:
-            self.coords = OrderedDict(zip(self.dims, (numpy.arange(0, l) for l in data.shape)))
+            self.coords = OrderedDict(list(zip(self.dims, (numpy.arange(0, l) for l in data.shape))))
         self.attrs = attrs or OrderedDict()
 
     def __repr__(self):

@@ -15,7 +15,7 @@
 
 from __future__ import absolute_import, division, print_function
 
-from functools import reduce
+from functools import reduce as reduce_
 import numpy
 
 from ..core import StorageUnitBase
@@ -35,5 +35,5 @@ class FauxStorageUnit(StorageUnitBase):
     def _fill_data(self, name, index, dest):
         var = self.variables[name]
         shape = tuple(self.coordinates[dim].length for dim in var.coordinates)
-        size = reduce(lambda x, y: x*y, shape, 1)
+        size = reduce_(lambda x, y: x*y, shape, 1)
         numpy.copyto(dest, numpy.arange(size).reshape(shape)[index])

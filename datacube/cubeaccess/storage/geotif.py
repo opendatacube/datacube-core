@@ -41,8 +41,8 @@ class GeoTifStorageUnit(StorageUnitBase):
                 return Variable(dataset.dtypes[i], dataset.nodatavals[i], ('y', 'x'))
             self.variables = {str(i+1): band2var(i) for i in range(dataset.count)}
         else:
-            self._transform = other._transform
-            self._projection = other._projection
+            self._transform = other._transform  # pylint: disable=protected-access
+            self._projection = other._projection  # pylint: disable=protected-access
             self.coordinates = other.coordinates
             self.variables = other.variables
 

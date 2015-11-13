@@ -16,7 +16,7 @@
 from __future__ import absolute_import, division, print_function
 from collections import namedtuple
 
-from functools import reduce
+from functools import reduce as reduce_
 import numpy
 
 from .indexing import make_index, index_shape
@@ -125,10 +125,10 @@ class StorageUnitVariableProxy(StorageUnitBase):
                 if name in self._old2new}
 
     def _get_coord(self, name):
-        return self._storage_unit._get_coord(name)
+        return self._storage_unit._get_coord(name)  # pylint: disable=protected-access
 
     def _fill_data(self, name, index, dest):
-        self._storage_unit._fill_data(self._new2old[name], index, dest)
+        self._storage_unit._fill_data(self._new2old[name], index, dest)  # pylint: disable=protected-access
 
 
 class StorageUnitDimensionProxy(StorageUnitBase):
@@ -156,14 +156,14 @@ class StorageUnitDimensionProxy(StorageUnitBase):
         if name in self._dimensions:
             value = self.coordinates[name].begin
             return numpy.array([value], dtype=self.coordinates[name].dtype)
-        return self._storage_unit._get_coord(name)
+        return self._storage_unit._get_coord(name)  # pylint: disable=protected-access
 
     def _fill_data(self, name, index, dest):
         shape = index_shape(index)
         ndims = len(self._dimensions)
         if any(i == 0 for i in shape[:ndims]):
             return dest
-        self._storage_unit._fill_data(name, index[ndims:], dest[(0,)*ndims])
+        self._storage_unit._fill_data(name, index[ndims:], dest[(0,)*ndims])  # pylint: disable=protected-access
 
 
 class StorageUnitStack(StorageUnitBase):
@@ -184,6 +184,7 @@ class StorageUnitStack(StorageUnitBase):
                 raise RuntimeError("overlapping coordinates are not supported yet")
         StorageUnitStack.check_consistent(storage_units, stack_dim)
 
+        # pylint: disable=protected-access
         stack_coord_data = numpy.concatenate([su._get_coord(stack_dim) for su in storage_units])
 
         self._stack_dim = stack_dim
@@ -194,12 +195,12 @@ class StorageUnitStack(StorageUnitBase):
                                                  stack_coord_data[0],
                                                  stack_coord_data[-1],
                                                  len(stack_coord_data))
-        self.variables = reduce(lambda a, b: a.update(b) or a, (su.variables for su in storage_units), {})
+        self.variables = reduce_(lambda a, b: a.update(b) or a, (su.variables for su in storage_units), {})
 
     def _get_coord(self, name):
         if name == self._stack_dim:
             return self._stack_coord_data
-        return self._storage_units[0]._get_coord(name)
+        return self._storage_units[0]._get_coord(name)  # pylint: disable=protected-access
 
     def _fill_data(self, name, index, dest):
         idx = 0
@@ -209,7 +210,7 @@ class StorageUnitStack(StorageUnitBase):
                 slice_ = slice(max(0, index[0].start-idx), min(length, index[0].stop-idx), index[0].step)
                 su_index = (slice_,) + index[1:]
                 dest_index = slice(idx+slice_.start-index[0].start, idx+slice_.stop-index[0].start)
-                su._fill_data(name, su_index, dest[dest_index])
+                su._fill_data(name, su_index, dest[dest_index])  # pylint: disable=protected-access
             idx += length
             if idx >= index[0].stop:
                 break
