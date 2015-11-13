@@ -127,6 +127,11 @@ class Db(object):
             STORAGE_TYPE.select().where(STORAGE_TYPE.c.id == storage_type_id)
         ).fetchone()
 
+    def get_storage_mapping(self, storage_mapping_id):
+        return self._connection.execute(
+            STORAGE_MAPPING.select().where(STORAGE_MAPPING.c.id == storage_mapping_id)
+        ).fetchone()
+
     def get_storage_mappings(self, dataset_metadata):
         """
         Find any storage mappings that match the given dataset.
@@ -175,6 +180,9 @@ class Db(object):
                 ]
         )
         return unit_id
+
+    def get_storage_units(self):
+        return self._connection.execute(STORAGE_UNIT.select()).fetchall()
 
 
 def _to_json(o):

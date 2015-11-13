@@ -39,21 +39,25 @@ class DataManagement(object):
                            _storage_type['descriptor'],
                            id_=_storage_type['id'])
 
+    def _make_storage_mapping(self, mapping):
+        return StorageMapping(
+            self._get_storage_type(mapping['storage_type_ref']),
+            mapping['name'],
+            DatasetMatcher(mapping['dataset_metadata']),
+            mapping['measurements'],
+            mapping['dataset_measurements_key'],
+            self.config.resolve_location(mapping['location_name'], mapping['location_offset']),
+            id_=mapping['id']
+        )
+
+    @cachetools.cached(cachetools.TTLCache(100, 60))
+    def get_storage_mapping(self, id_):
+        mapping = self.db.get_storage_mapping(id_)
+        return self._make_storage_mapping(mapping)
+
     def get_storage_mappings_for_dataset(self, dataset_metadata):
         mappings = self.db.get_storage_mappings(dataset_metadata)
-
-        return [
-            StorageMapping(
-                self._get_storage_type(mapping['storage_type_ref']),
-                mapping['name'],
-                DatasetMatcher(mapping['dataset_metadata']),
-                mapping['measurements'],
-                mapping['dataset_measurements_key'],
-                self.config.resolve_location(mapping['location_name'], mapping['location_offset']),
-                id_=mapping['id']
-            )
-            for mapping in mappings
-            ]
+        return [self._make_storage_mapping(mapping) for mapping in mappings]
 
     def ensure_storage_type(self, descriptor):
         """

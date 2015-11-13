@@ -9,6 +9,8 @@ import logging
 
 from datacube.config import SystemConfig
 from ._core_db import Db
+from datacube.model import StorageUnit
+
 
 _LOG = logging.getLogger(__name__)
 
@@ -111,3 +113,9 @@ class DataIndex(object):
         :type storage_unit: datacube.model.StorageUnit
         """
         return self.add_storage_units([storage_unit])
+
+    def get_storage_units(self):
+        """
+        :rtype: list[datacube.model.StorageUnit]
+        """
+        return [StorageUnit([], None, su['descriptor'], su['path']) for su in self.db.get_storage_units()]
