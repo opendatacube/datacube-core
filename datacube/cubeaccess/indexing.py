@@ -22,7 +22,7 @@ from collections import namedtuple
 Range = namedtuple('Range', ('begin', 'end'))
 
 
-def _range_to_index(coord, range_):
+def range_to_index(coord, range_):
     size = coord.size
 
     if size > 1 and coord[0] > coord[1]:  # reversed
@@ -37,13 +37,23 @@ def _expand_index(coord, slice_):
     return slice(slice_.start or 0, slice_.stop or coord.size, slice_.step or 1)
 
 
+def normalize_index(coord, index):
+    if index is None:
+        return slice(0, coord.length, 1)
+    if isinstance(index, slice):
+        return slice(index.start or 0, index.stop or coord.length, index.step or 1)
+    if isinstance(index, Range):
+        return Range(index.begin or coord.begin, index.end or coord.end)
+    raise TypeError("this type is not supported")
+
+
 def make_index(data, idx):
     if idx is None:
         return slice(0, data.size, 1)
     if isinstance(idx, slice):
         return _expand_index(data, idx)
     if isinstance(idx, Range):
-        return _range_to_index(data, idx)
+        return range_to_index(data, idx)
     raise TypeError("this type is not supported")
 
 

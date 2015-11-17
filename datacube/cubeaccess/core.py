@@ -16,10 +16,12 @@
 from __future__ import absolute_import, division, print_function
 from collections import namedtuple
 
+import sys
+
 from functools import reduce as reduce_
 import numpy
 
-from .indexing import make_index, index_shape
+from .indexing import make_index, index_shape, normalize_index, Range
 
 try:
     from xray import DataArray
@@ -50,10 +52,10 @@ class StorageUnitBase(object):
 
     def get(self, name, dest=None, **kwargs):
         """
-        Return portion of the data corresponding to the slice description
+        Return portion of a variable data as a DataArray
         Slice is defined by specifying keyword arguments with coordinate names
-        If builtin slice is used then positional indexing is used,
-        if Range object is used the coordinate labels are used
+        Use builtin slice object is used for integer indexing,
+        User indexing.Range object for labels indexing
 
         Example:
           su.get('B2', time=slice(3,6), longitude=Range(151.5, 151.7), latitude=Range(-29.5, -29.2))
@@ -65,8 +67,7 @@ class StorageUnitBase(object):
         :rtype: DataArray
         """
         var = self.variables[name]
-        coords = [self._get_coord(dim) for dim in var.coordinates]
-        index = tuple(make_index(coord, kwargs.get(dim)) for coord, dim in zip(coords, var.coordinates))
+        coords, index = zip(*[self.get_coord(dim, kwargs.get(dim)) for dim in var.coordinates])
         shape = index_shape(index)
 
         if dest is None:
@@ -75,7 +76,37 @@ class StorageUnitBase(object):
             dest = dest[tuple(slice(c) for c in shape)]
         self._fill_data(name, index, dest)
 
-        return DataArray(dest, coords=[coord[idx] for coord, idx in zip(coords, index)], dims=var.coordinates)
+        return DataArray(dest, coords=coords, dims=var.coordinates)
+
+    def coord_slice(self, dim, range_=None):
+        """
+        Convert label index into integer index for a specific coordinate
+
+        :param dim: name of the dimension
+        :param range_: range of coordinate labest
+        :type dim: str
+        :type range_: Range
+        :rtype: slice
+        """
+        assert isinstance(range_, Range)
+        return self.get_coord(dim, range_)[1]
+
+    def get_coord(self, dim, index=None):
+        """
+        Return portion of the coordinate data
+        Slice is defined by specifying keyword arguments with coordinate names
+        Use builtin slice object is used for integer indexing,
+        User indexing.Range object for labels indexing
+
+        :param dim: name of the dimension
+        :param index: index
+        :type dim: str
+        :type index: slice | Range
+        :rtype: numpy.array
+        """
+        coord = self._get_coord(dim)
+        index = make_index(coord, index)
+        return coord[index], index
 
     def _get_coord(self, name):
         """
@@ -84,7 +115,7 @@ class StorageUnitBase(object):
         :type name: str
         :rtype numpy.array
         """
-        raise NotImplementedError()
+        raise RuntimeError("should override get_coord unless you know what you're doing")
 
     def _fill_data(self, name, index, dest):
         """
@@ -124,8 +155,11 @@ class StorageUnitVariableProxy(StorageUnitBase):
                 for name, value in self._storage_unit.variables.items()
                 if name in self._old2new}
 
-    def _get_coord(self, name):
-        return self._storage_unit._get_coord(name)  # pylint: disable=protected-access
+    def coord_slice(self, dim, range_=None):
+        return self._storage_unit.coord_slice(dim, range_)
+
+    def get_coord(self, dim, index=None):
+        return self._storage_unit.get_coord(dim, index)
 
     def _fill_data(self, name, index, dest):
         self._storage_unit._fill_data(self._new2old[name], index, dest)  # pylint: disable=protected-access
@@ -152,11 +186,19 @@ class StorageUnitDimensionProxy(StorageUnitBase):
             return Variable(var.dtype, var.nodata, self._dimensions + var.coordinates)
         self.variables = {name: expand_var(var) for name, var in storage_unit.variables.items()}
 
-    def _get_coord(self, name):
-        if name in self._dimensions:
-            value = self.coordinates[name].begin
-            return numpy.array([value], dtype=self.coordinates[name].dtype)
-        return self._storage_unit._get_coord(name)  # pylint: disable=protected-access
+    def coord_slice(self, dim, range_=None):
+        if dim in self._dimensions:
+            return self.get_coord(dim, range_)[1]
+        else:
+            return self._storage_unit.coord_slice(dim, range_)
+
+    def get_coord(self, dim, index=None):
+        if dim in self._dimensions:
+            data = numpy.array([self.coordinates[dim].begin], dtype=self.coordinates[dim].dtype)
+            index = make_index(data, index)
+            return data[index], index
+        else:
+            return self._storage_unit.get_coord(dim, index)
 
     def _fill_data(self, name, index, dest):
         shape = index_shape(index)
@@ -184,12 +226,8 @@ class StorageUnitStack(StorageUnitBase):
                 raise RuntimeError("overlapping coordinates are not supported yet")
         StorageUnitStack.check_consistent(storage_units, stack_dim)
 
-        # pylint: disable=protected-access
-        stack_coord_data = numpy.concatenate([su._get_coord(stack_dim) for su in storage_units])
-
         self._stack_dim = stack_dim
         self._storage_units = storage_units
-        self._stack_coord_data = stack_coord_data
         self.coordinates = storage_units[0].coordinates.copy()
         self.coordinates[stack_dim] = Coordinate(storage_units[0].coordinates[stack_dim].dtype,
                                                  storage_units[0].coordinates[stack_dim].begin,
@@ -197,10 +235,51 @@ class StorageUnitStack(StorageUnitBase):
                                                  sum(su.coordinates[stack_dim].length for su in storage_units))
         self.variables = reduce_(lambda a, b: a.update(b) or a, (su.variables for su in storage_units), {})
 
-    def _get_coord(self, name):
-        if name == self._stack_dim:
-            return self._stack_coord_data
-        return self._storage_units[0]._get_coord(name)  # pylint: disable=protected-access
+    def _get_coord_index(self, index):
+        idx = 0
+        data = []
+        for su in self._storage_units:
+            length = su.coordinates[self._stack_dim].length
+            if idx < index.stop and idx+length > index.start:
+                slice_ = slice(max(0, index.start-idx), min(length, index.stop-idx), index.step)
+                data.append(su.get_coord(self._stack_dim, slice_)[0])
+            idx += length
+            if idx >= index.stop:
+                break
+        return numpy.concatenate(data), index
+
+    def _get_coord_range(self, range_):
+        idx = 0
+        data = []
+        index = slice(sys.maxsize, 0, 1)
+        for su in self._storage_units:
+            coord = su.coordinates[self._stack_dim]
+            if coord.begin <= coord.end:
+                if range_.begin <= coord.end and range_.end >= coord.begin:
+                    d = su.get_coord(self._stack_dim, Range(max(range_.begin, coord.begin), min(range_.end, coord.end)))
+                    data.append(d[0])
+                    index = slice(min(index.start, idx+d[1].start), max(index.stop, idx+d[1].stop), 1)
+                if range_.begin > coord.end:
+                    break
+            else:  # decreasing coord
+                if range_.begin <= coord.begin and range_.end >= coord.end:
+                    d = su.get_coord(self._stack_dim, Range(max(range_.begin, coord.end), min(range_.end, coord.begin)))
+                    data.append(d[0])
+                    index = slice(min(index.start, idx+d[1].start), max(index.stop, idx+d[1].stop), 1)
+                if range_.end < coord.begin:
+                    break
+            idx += coord.length
+        return numpy.concatenate(data), index
+
+    def get_coord(self, dim, index=None):
+        if dim != self._stack_dim:
+            return self._storage_units[0].get_coord(dim, index)
+        coord = self.coordinates[dim]
+        index = normalize_index(coord, index)
+        if isinstance(index, Range):
+            return self._get_coord_range(index)
+        else:
+            return self._get_coord_index(index)
 
     def _fill_data(self, name, index, dest):
         idx = 0

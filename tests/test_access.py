@@ -83,7 +83,7 @@ def test_storage_unit_variable_proxy():
 
 def test_storage_unit_dimension_proxy():
     su = StorageUnitDimensionProxy(ds1, ('greg', 12.0))
-    data = su._get_coord('greg')
+    data = su.get_coord('greg')[0]
     assert(data == numpy.array([12.0]))
 
     data1 = su.get('B10')

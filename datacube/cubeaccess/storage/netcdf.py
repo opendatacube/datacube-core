@@ -20,6 +20,7 @@ import contextlib
 import netCDF4 as nc4
 
 from ..core import Coordinate, Variable, StorageUnitBase
+from ..indexing import Range, range_to_index, normalize_index
 
 
 class NetCDF4StorageUnit(StorageUnitBase):
@@ -49,10 +50,19 @@ class NetCDF4StorageUnit(StorageUnitBase):
     def _open_dataset(self):
         return nc4.Dataset(self._filepath, mode='r', clobber=False, diskless=False, persist=False, format='NETCDF4')
 
-    def _get_coord(self, name):
-        coord = self.coordinates[name]
-        with contextlib.closing(self._open_dataset()) as ncds:
-            return ncds[name][:]
+    def get_coord(self, dim, index=None):
+        coord = self.coordinates[dim]
+        index = normalize_index(coord, index)
+
+        if isinstance(index, slice):
+            with contextlib.closing(self._open_dataset()) as ncds:
+                return ncds[dim][index], index
+
+        if isinstance(index, Range):
+            with contextlib.closing(self._open_dataset()) as ncds:
+                data = ncds[dim][:]
+                index = range_to_index(data, index)
+                return data[index], index
 
     def _fill_data(self, name, index, dest):
         with contextlib.closing(self._open_dataset()) as ncds:
