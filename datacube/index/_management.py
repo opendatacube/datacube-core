@@ -7,8 +7,8 @@ from __future__ import absolute_import
 import cachetools
 
 from datacube.config import SystemConfig
-from datacube.index._core_db import Db
 from datacube.model import StorageMapping, StorageType, DatasetMatcher, StorageUnit
+from .db import Db
 
 
 def connect(config=SystemConfig.find()):
@@ -99,7 +99,6 @@ class DataManagement(object):
     # TODO: it's crazy for it to be here, but I need get_storage_mapping,
     # TODO: which needs _get_storage_type, which needs config...
     def get_storage_units(self):
-
         """
         :rtype: list[datacube.model.StorageUnit]
         """

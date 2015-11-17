@@ -10,7 +10,7 @@ from sqlalchemy import cast, Index, TIMESTAMP
 from sqlalchemy import func
 from sqlalchemy.dialects import postgresql as postgres
 
-from datacube.index.tables import DATASET
+from .tables import DATASET
 
 
 class Field(object):

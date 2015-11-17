@@ -4,8 +4,8 @@ Common methods for index integration tests.
 """
 from __future__ import absolute_import
 
-from datacube.index._core_db import Db
-from datacube.index.tables._core import METADATA, ensure_db
+from datacube.index.db import Db
+from datacube.index.db.tables._core import METADATA, ensure_db
 
 
 def connect_db():

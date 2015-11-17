@@ -8,7 +8,8 @@ import copy
 import logging
 
 from datacube.config import SystemConfig
-from ._core_db import Db
+from datacube.model import StorageUnit
+from .db import Db
 
 
 _LOG = logging.getLogger(__name__)

@@ -9,8 +9,8 @@ from __future__ import absolute_import
 import datetime
 
 from datacube.index._data import DataIndex
-from datacube.index.tables import STORAGE_MAPPING, STORAGE_UNIT
-from datacube.index.tables._storage import DATASET_STORAGE
+from datacube.index.db.tables import STORAGE_MAPPING, STORAGE_UNIT
+from datacube.index.db.tables._storage import DATASET_STORAGE
 from datacube.model import StorageUnit, StorageMapping
 from integration_tests.index._common import init_db, connect_db
 
