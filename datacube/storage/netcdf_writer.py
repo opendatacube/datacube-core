@@ -151,7 +151,8 @@ class NetCDFWriter(object):
         """
         varname = band_info.varname
         if varname in self.nco.variables:
-            raise VariableAlreadyExists('Variable %s already exists and should not be overwritten.')
+            raise VariableAlreadyExists('Error writing to {}: variable {} already exists and will not be '
+                                        'overwritten.'.format(self.netcdf_path, varname))
 
         chunking = storage_type['chunking']
         chunksizes = [chunking[dim] for dim in ['t', 'y', 'x']]
