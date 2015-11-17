@@ -2,7 +2,7 @@
 # Sample Storage Configuration
 #
 
-name: 30m_bands
+name: 25m_bands
 driver: NetCDF CF
 
 projection:
