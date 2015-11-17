@@ -14,7 +14,8 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.url import URL as engine_url
 from sqlalchemy.exc import IntegrityError
 
-from .tables import ensure_db, DATASET, DATASET_SOURCE, STORAGE_TYPE, \
+from . import tables, _fields
+from .tables import DATASET, DATASET_SOURCE, STORAGE_TYPE, \
     STORAGE_MAPPING, STORAGE_UNIT, DATASET_STORAGE
 
 PGCODE_UNIQUE_CONSTRAINT = '23505'
@@ -48,7 +49,14 @@ class Db(object):
             # json_deserializer=my_deserialize_fn
         )
         _connection = _engine.connect()
-        ensure_db(_connection, _engine)
+        is_new = tables.ensure_db(_connection, _engine)
+
+        # Index any important document fields.
+        if is_new:
+            for field in _fields.parse_doc(tables.DATASET_QUERY_FIELDS['eo']).values():
+                _LOG.debug('Creating index: %s', field.name)
+                field.alchemy_index.create(_engine)
+
         return Db(_engine, _connection)
 
     def begin(self):

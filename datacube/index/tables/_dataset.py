@@ -21,7 +21,7 @@ DATASET = Table(
     # (typically) product type: 'nbar', 'ortho' etc.
     Column('type', String, nullable=False, doc=''),
 
-    Column('metadata', postgres.JSONB, nullable=False),
+    Column('metadata', postgres.JSONB, index=True, nullable=False),
 
     # Location of ingested metadata file (yaml?).
     #   - Individual file paths can be calculated relative to this.
