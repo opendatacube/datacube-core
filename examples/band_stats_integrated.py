@@ -52,6 +52,7 @@ def combine_storage_units(sus):
 
 def main(argv):
     data_index = index.data_index_connect()
+
     sus = data_index.get_storage_units()
     sus = [make_storage_unit(su) for su in sus]
     stacks = combine_storage_units(sus)
