@@ -14,16 +14,27 @@ from .tables import DATASET
 
 
 class Field(object):
+    """
+    A field within a Postgres JSONB document.
+    """
     def __init__(self, name, descriptor):
         self.name = name
         self.descriptor = descriptor
 
     @property
     def alchemy_expression(self):
+        """
+        Get an SQLAlchemy expression for accessing this field.
+        :return:
+        """
         raise NotImplementedError('alchemy expression')
 
     @property
-    def alchemy_jsonb_field(self):
+    def alchemy_jsonb_column(self):
+        """
+        The underlying table column.
+        :return:
+        """
         return DATASET.c.metadata
 
     @property
@@ -32,6 +43,9 @@ class Field(object):
 
     @property
     def alchemy_index(self):
+        """
+        Build an SQLAlchemy index for this field.
+        """
         return Index(
             'ix_dataset_md_' + lower(self.name),
             self.alchemy_expression,
@@ -40,6 +54,9 @@ class Field(object):
 
 
 class ScalarField(Field):
+    """
+    A field with a single value (eg. String, int)
+    """
     @property
     def alchemy_casted_type(self):
         # Default no cast: string
@@ -51,11 +68,15 @@ class ScalarField(Field):
 
     @property
     def alchemy_expression(self):
-        _field = self.alchemy_jsonb_field[self.offset].astext
+        _field = self.alchemy_jsonb_column[self.offset].astext
         return cast(_field, self.alchemy_casted_type) if self.alchemy_casted_type else _field
 
 
 class RangeField(Field):
+    """
+    A range of values. Has min and max values, which may be calculated from multiple
+    values in the document.
+    """
     @property
     def alchemy_range_type(self):
         raise NotImplementedError('range type')
@@ -78,13 +99,13 @@ class RangeField(Field):
         return 'gist'
 
     def _get_expr(self, doc_offsets, agg_function, casted_type):
-        fields = [self.alchemy_jsonb_field[offset].astext for offset in doc_offsets]
+        fields = [self.alchemy_jsonb_column[offset].astext for offset in doc_offsets]
 
         if casted_type:
             fields = [cast(field, casted_type) for field in fields]
 
         # If there's multiple fields, we aggregate them (eg. "min()"). Otherwise use the one.
-        return func.least(*fields) if len(fields) > 1 else fields[0]
+        return agg_function(*fields) if len(fields) > 1 else fields[0]
 
     @property
     def alchemy_expression(self):
