@@ -1,18 +1,14 @@
-from __future__ import absolute_import
+from __future__ import print_function, absolute_import
 
 from datetime import datetime
+
 import numpy as np
 import netCDF4
 from osgeo import gdal
 import pytest
 
 from datacube.storage.netcdf_writer import NetCDFWriter, TileSpec, append_to_netcdf
-from datacube.storage.ingester import InputSpec, SimpleObject
-
-
-@pytest.fixture
-def example_gdal_path(request):
-    return str(request.fspath.dirpath('data/sample_tile_151_-29.tif'))
+from datacube.storage.ingester import SimpleObject
 
 
 class TestTileSpec(TileSpec):
