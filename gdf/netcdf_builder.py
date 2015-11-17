@@ -1,69 +1,69 @@
-# -------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Name:         netcdf_builder
 # Purpose:      Selection of functions to open, create and manage netCDF
-#		objects and files. These routines have been developed and
-#		tested with netCDF3 and netCDF4 file formats.
+#       objects and files. These routines have been developed and tested with
+#       netCDF3 and netCDF4 file formats.
 #
 # Author:       Matt Paget, Edward King
 #
 # Created:      24 March 2011
-# Copyright:    2011-2014 CSIRO (Commonwealth Science and Industry Research
-#               Organisation, Australia).
-# License:      This software is open source under the CSIRO BSD (3 clause)
-#               License variant as provided in the accompanying LICENSE file or
-#               available from
-#   https://stash.csiro.au/projects/CMAR_RS/repos/netcdf-tools/browse/LICENSE.
-#               By continuing, you acknowledge that you have read and you
-#               accept and will abide by the terms of the License.
+# Copyright:    2011-2015 CSIRO (Commonwealth Science and Industry Research
+#       Organisation, Australia).
+# License:      This software is open source under the Apache v2.0 License
+#       as provided in the accompanying LICENSE file or available from
+#         https://github.com/data-cube/agdc-v2/blob/master/LICENSE
+#       By continuing, you acknowledge that you have read and you accept and
+#       will abide by the terms of the License.
 #
 # Updates:
-# 24 Mar 2011	Initial demonstration of the idea.
-# 16 Nov 2011	Separated the code into logical components and made the netCDF
-#		object the primary object to be passed between routines.
-#		Generalised the nc3_add_data() routine to accept slices (or
-#		slice-like elements) and thus give the user more control over
-#		where data is placed in the NetCDF variable.
-# 22 Nov 2011	Added optional timeunit argument to nc3_set_timelatlon().
-#		Some minor changes to the comments.
-# 10 Feb 2013	Renamed to netcdf_builder.py
-#		Changed the 'nc3' prefix of all routines to 'nc'. Retained
-#		'nc3*' function names for backward compatibility.
-#		Refreshed routines to work with the netCDF4-python package.
-#		Updated add variables commands to add a _FillValue by default.
-#		Added mode keyword in call to Dataset for permission parameter
-#		in nc_open.
-#		Added zlib option to nc_set_var.
-# 11 Apr 2013	Added chunksizes option to nc_set_var.
-# 17 Apr 2013	Wrapped import of OrderedDict in a try statement.
-#		Rearranged default order of dimension attributes.
-#		Added a check for changing the _FillValue attribute of a
-#		variable in nc_set_attributes.
-# 12 Oct 2013	Added axis attribute to time, latitude and longitude dimensions
-#		in nc_set_timelatlon (not strictly required but handy for
-#		completeness).
-#		Removed 'nc_' prefix from each function name but retained
-#		previous function names as alias functions at the bottom of the
-#		script.
-#		Changed default format to NETCDF4_CLASSIC in ncopen().
-# 19 Mar 2014	Added add_bounds() function for adding the CF bounds attribute
-#		to a dimension and the associated bounds array to a new
-#		variable.
-#		Added warning comment to add_data() docstring.
-# 15 Aug 2014	Added type normalisation to get_attributes - now as an
-#		internal function called for all global and variable attributes
-#		and switchable via a boolean parameter. Previously, variable
-#		attributes were normalised.
-# 12 May 2015	Added _ncversion() and _setattr() functions to provide a
-# 		wrapper for the bug described at
-# 		  https://code.google.com/p/netcdf4-python/issues/detail?id=110
-# 		A warning message is printed about the bug if the netCDF C
-# 		library version is < 4.2 and an AttributeError occured when
-# 		setting the attribute value. The AttributeError is then raised.
-# 		The library bug may not be cause of the error but if it is then
-# 		the message should prove helpful.
-# 13 May 2015	Implemented the work-around, in addition to printing the warning
-# 		message.
-# -------------------------------------------------------------------------------
+# 24 Mar 2011   Initial demonstration of the idea.
+# 16 Nov 2011   Separated the code into logical components and made the netCDF
+#       object the primary object to be passed between routines.
+#       Generalised the nc3_add_data() routine to accept slices (or slice-like
+#       elements) and thus give the user more control over where data is placed
+#       in the netCDF variable.
+# 22 Nov 2011   Added optional timeunit argument to nc3_set_timelatlon().
+#       Some minor changes to the comments.
+# 10 Feb 2013   Renamed to netcdf_builder.py.
+#       Changed the 'nc3' prefix of all routines to 'nc'.  Retained 'nc3*'
+#       function names for backward compatibility.
+#       Refreshed routines to work with the netCDF4-python package.
+#       Updated add variables commands to add a _FillValue by default.
+#       Added mode keyword in call to Dataset for permission parameter
+#       in nc_open.
+#       Added zlib option to nc_set_var.
+# 11 Apr 2013   Added chunksizes option to nc_set_var.
+# 17 Apr 2013   Wrapped import of OrderedDict in a try statement.
+#       Rearranged default order of dimension attributes.
+#       Added a check for changing the _FillValue attribute of a variable in
+#       nc_set_attributes.
+# 12 Oct 2013   Added axis attribute to time, latitude and longitude dimensions
+#       in nc_set_timelatlon (not strictly required but handy for
+#       completeness).
+#       Removed 'nc_' prefix from each function name but retained previous
+#       function names as alias functions at the bottom of thescript.
+#       Changed default format to NETCDF4_CLASSIC in ncopen().
+# 19 Mar 2014   Added add_bounds() function for adding the CF bounds attribute
+#       to a dimension and the associated bounds array to a new variable.
+#       Added warning comment to add_data() docstring.
+# 15 Aug 2014   Added type normalisation to get_attributes - now as an
+#       internal function called for all global and variable attributes and
+#       switchable via a boolean parameter. Previously, variable attributes
+#       were normalised.
+# 12 May 2015   Added _ncversion() and _setattr() functions to provide a
+#       wrapper for the bug described at
+#         https://code.google.com/p/netcdf4-python/issues/detail?id=110
+#       A warning message is printed about the bug if the netCDF C library
+#       version is < 4.2 and an AttributeError occured when setting the
+#       attribute value.  The AttributeError is then raised.
+#       The library bug may not be cause of the error but if it is then the
+#       message should prove helpful.
+# 13 May 2015   Implemented the work-around, in addition to printing the
+#       warning message.
+# 17 Nov 2015   Changed licence for this implementation to Apache 2.0 to align
+#       with AGDC-v2 collaboration requirements. Updated copyright year to 2015.
+#       Removed tabs from the header section, towards PEP8.
+# -----------------------------------------------------------------------------
 
 # All functions, except ncopen(), operate on the netCDF object that is
 # returned from ncopen().  The functions contain "standard" operations for
