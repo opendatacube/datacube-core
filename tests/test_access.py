@@ -27,16 +27,16 @@ DATA_DIR = os.path.join(os.path.split(os.path.realpath(__file__))[0], 'data')
 
 
 ds1 = FauxStorageUnit({
-    't': Coordinate(numpy.int, 100, 400, 4),
-    'y': Coordinate(numpy.float32, 0, 9.5, 20),
-    'x': Coordinate(numpy.float32, 9, 0, 10)
+    't': Coordinate(numpy.int, 100, 400, 4, '1'),
+    'y': Coordinate(numpy.float32, 0, 9.5, 20, '1'),
+    'x': Coordinate(numpy.float32, 9, 0, 10, '1')
 }, {
     'B10': Variable(numpy.float32, numpy.nan, ('t', 'y', 'x'), '1')
 })
 ds2 = FauxStorageUnit({
-    't': Coordinate(numpy.int, 500, 600, 3),
-    'y': Coordinate(numpy.float32, 0, 9.5, 20),
-    'x': Coordinate(numpy.float32, 9, 0, 10)
+    't': Coordinate(numpy.int, 500, 600, 3, '1'),
+    'y': Coordinate(numpy.float32, 0, 9.5, 20, '1'),
+    'x': Coordinate(numpy.float32, 9, 0, 10, '1')
 }, {
     'B10': Variable(numpy.float32, numpy.nan, ('t', 'y', 'x'), '1')
 })
@@ -82,7 +82,7 @@ def test_storage_unit_variable_proxy():
 
 
 def test_storage_unit_dimension_proxy():
-    su = StorageUnitDimensionProxy(ds1, ('greg', 12.0))
+    su = StorageUnitDimensionProxy(ds1, ('greg', 12.0, numpy.double, '1'))
     data = su.get_coord('greg')[0]
     assert data == numpy.array([12.0])
 

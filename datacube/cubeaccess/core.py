@@ -28,7 +28,7 @@ try:
 except ImportError:
     from .ghetto import DataArray
 
-Coordinate = namedtuple('Coordinate', ('dtype', 'begin', 'end', 'length'))
+Coordinate = namedtuple('Coordinate', ('dtype', 'begin', 'end', 'length', 'units'))
 Variable = namedtuple('Variable', ('dtype', 'nodata', 'dimensions', 'units'))
 
 
@@ -172,14 +172,14 @@ class StorageUnitDimensionProxy(StorageUnitBase):
     def __init__(self, storage_unit, *coords):
         """
         :param storage_unit: storage unit to proxy
-        :param coords: list of name: value pairs for the new dimensions
+        :param coords: list of (name, value, dtype, units) tuples for the new dimensions
         :type storage_unit: StorageUnitBase
-        :type coords: list[str, T]
+        :type coords: list[tuple[str, T, type(T), str]]
         """
         self._storage_unit = storage_unit
-        self._dimensions = tuple(name for name, value in coords)
-        self.coordinates = {name: Coordinate(getattr(value, 'dtype', numpy.dtype(type(value))), value, value, 1)
-                            for name, value in coords}
+        self._dimensions = tuple(coord[0] for coord in coords)
+        self.coordinates = {name: Coordinate(dtype, value, value, 1, units)
+                            for name, value, dtype, units in coords}
         self.coordinates.update(storage_unit.coordinates)
 
         def expand_var(var):
@@ -232,7 +232,8 @@ class StorageUnitStack(StorageUnitBase):
         self.coordinates[stack_dim] = Coordinate(storage_units[0].coordinates[stack_dim].dtype,
                                                  storage_units[0].coordinates[stack_dim].begin,
                                                  storage_units[-1].coordinates[stack_dim].end,
-                                                 sum(su.coordinates[stack_dim].length for su in storage_units))
+                                                 sum(su.coordinates[stack_dim].length for su in storage_units),
+                                                 storage_units[0].coordinates[stack_dim].units)
         self.variables = reduce_(lambda a, b: a.update(b) or a, (su.variables for su in storage_units), {})
 
     def _get_coord_index(self, index):

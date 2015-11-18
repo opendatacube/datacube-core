@@ -47,9 +47,10 @@ class NetCDF4StorageUnit(StorageUnitBase):
             attributes = {k: getattr(ncds, k) for k in ncds.ncattrs()}
             for name, var in ncds.variables.items():
                 dims = var.dimensions
-                units = getattr(var, 'units', None)
+                units = getattr(var, 'units', '1')
                 if len(dims) == 1 and name == dims[0]:
-                    coordinates[name] = Coordinate(dtype=var.dtype, begin=var[0], end=var[-1], length=var.shape[0])
+                    coordinates[name] = Coordinate(dtype=var.dtype, begin=var[0], end=var[-1], length=var.shape[0],
+                                                   units=units)
                     # TODO Store units in coordinates
                 else:
                     ndv = (getattr(var, '_FillValue', None) or
