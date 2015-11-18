@@ -15,55 +15,63 @@
 
 from __future__ import absolute_import, division, print_function
 
-import numpy
 import contextlib
+
+import numpy
 import netCDF4 as nc4
 
 from ..core import Coordinate, Variable, StorageUnitBase
 from ..indexing import Range, range_to_index, normalize_index
 
 
+def _open_dataset(filepath):
+    return nc4.Dataset(filepath, mode='r', clobber=False, diskless=False, persist=False, format='NETCDF4')
+
+
 class NetCDF4StorageUnit(StorageUnitBase):
-    def __init__(self, filepath, variables=None, coordinates=None):
+    def __init__(self, filepath, variables, coordinates, attributes=None):
         """
         :param variables: variables in the SU
         :param coordinates: coordinates in the SU
         """
         self._filepath = filepath
-        if variables and coordinates:
-            self.coordinates = coordinates
-            self.variables = variables
-        else:
-            self.coordinates = {}
-            self.variables = {}
-            with contextlib.closing(self._open_dataset()) as ncds:
-                for name, var in ncds.variables.items():
-                    dims = var.dimensions
-                    if len(dims) == 1 and name == dims[0]:
-                        self.coordinates[name] = Coordinate(var.dtype, var[0], var[-1], var.shape[0])
-                    else:
-                        ndv = (getattr(var, '_FillValue', None) or
-                               getattr(var, 'missing_value', None) or
-                               getattr(var, 'fill_value', None))
-                        self.variables[name] = Variable(var.dtype, ndv, var.dimensions)
+        self.coordinates = coordinates
+        self.variables = variables
+        self.attributes = attributes or {}
 
-    def _open_dataset(self):
-        return nc4.Dataset(self._filepath, mode='r', clobber=False, diskless=False, persist=False, format='NETCDF4')
+    @classmethod
+    def from_file(cls, filepath):
+        coordinates = {}
+        variables = {}
+        with contextlib.closing(_open_dataset(filepath)) as ncds:
+            attributes = {k: getattr(ncds, k) for k in ncds.ncattrs()}
+            for name, var in ncds.variables.items():
+                dims = var.dimensions
+                units = getattr(var, 'units', None)
+                if len(dims) == 1 and name == dims[0]:
+                    coordinates[name] = Coordinate(dtype=var.dtype, begin=var[0], end=var[-1], length=var.shape[0])
+                    # TODO Store units in coordinates
+                else:
+                    ndv = (getattr(var, '_FillValue', None) or
+                           getattr(var, 'missing_value', None) or
+                           getattr(var, 'fill_value', None))
+                    variables[name] = Variable(var.dtype, ndv, var.dimensions, units)
+        return cls(filepath, variables=variables, coordinates=coordinates, attributes=attributes)
 
     def get_coord(self, dim, index=None):
         coord = self.coordinates[dim]
         index = normalize_index(coord, index)
 
         if isinstance(index, slice):
-            with contextlib.closing(self._open_dataset()) as ncds:
+            with contextlib.closing(_open_dataset(self._filepath)) as ncds:
                 return ncds[dim][index], index
 
         if isinstance(index, Range):
-            with contextlib.closing(self._open_dataset()) as ncds:
+            with contextlib.closing(_open_dataset(self._filepath)) as ncds:
                 data = ncds[dim][:]
                 index = range_to_index(data, index)
                 return data[index], index
 
     def _fill_data(self, name, index, dest):
-        with contextlib.closing(self._open_dataset()) as ncds:
+        with contextlib.closing(_open_dataset(self._filepath)) as ncds:
             numpy.copyto(dest, ncds[name][index])

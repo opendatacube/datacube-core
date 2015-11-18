@@ -31,14 +31,14 @@ ds1 = FauxStorageUnit({
     'y': Coordinate(numpy.float32, 0, 9.5, 20),
     'x': Coordinate(numpy.float32, 9, 0, 10)
 }, {
-    'B10': Variable(numpy.float32, numpy.nan, ('t', 'y', 'x'))
+    'B10': Variable(numpy.float32, numpy.nan, ('t', 'y', 'x'), '1')
 })
 ds2 = FauxStorageUnit({
     't': Coordinate(numpy.int, 500, 600, 3),
     'y': Coordinate(numpy.float32, 0, 9.5, 20),
     'x': Coordinate(numpy.float32, 9, 0, 10)
 }, {
-    'B10': Variable(numpy.float32, numpy.nan, ('t', 'y', 'x'))
+    'B10': Variable(numpy.float32, numpy.nan, ('t', 'y', 'x'), '1')
 })
 
 
@@ -144,7 +144,7 @@ def test_geotif_storage_unit():
 def test_netcdf_storage_unit():
     from datacube.cubeaccess.storage import NetCDF4StorageUnit
 
-    su = NetCDF4StorageUnit(DATA_DIR+'/test.nc')
+    su = NetCDF4StorageUnit.from_file(DATA_DIR+'/test.nc')
     assert set(su.coordinates.keys()) == ({'longitude', 'latitude', 'time'})
     assert su.variables['B2'].nodata == -999
 

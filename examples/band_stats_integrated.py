@@ -36,7 +36,8 @@ def make_storage_unit(su):
                    for name, attrs in su.descriptor['coordinates'].items()}
     variables = {name: Variable(dtype=numpy.dtype(attrs['dtype']),
                                 nodata=attrs['ndv'],
-                                coordinates=attrs['dimensions'])
+                                coordinates=attrs['dimensions'],
+                                units=attrs['units'])
                  for name, attrs in su.descriptor['measurements'].items()}
     return NetCDF4StorageUnit(su.path, coordinates=coordinates, variables=variables)
 
@@ -54,9 +55,11 @@ def main(argv):
     data_index = index.data_index_connect()
 
     sus = data_index.get_storage_units()
-    sus = [make_storage_unit(su) for su in sus]
-    stacks = combine_storage_units(sus)
-    stack = stacks[0]
+    pqs = [make_storage_unit(su) for su in sus if 'PQ' in su.path]
+    nbars = [make_storage_unit(su) for su in sus if 'PQ' not in su.path]
+
+    nbar_stacks = combine_storage_units(nbars)
+    stack = nbar_stacks[0]
 
     nir = ndv_to_nan(stack.get('band_40').values)
     red = ndv_to_nan(stack.get('band_30').values)

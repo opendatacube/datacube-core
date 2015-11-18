@@ -29,7 +29,7 @@ except ImportError:
     from .ghetto import DataArray
 
 Coordinate = namedtuple('Coordinate', ('dtype', 'begin', 'end', 'length'))
-Variable = namedtuple('Variable', ('dtype', 'nodata', 'coordinates'))
+Variable = namedtuple('Variable', ('dtype', 'nodata', 'coordinates', 'units'))
 
 
 def is_consistent_coords(coord1, coord2):
@@ -183,7 +183,7 @@ class StorageUnitDimensionProxy(StorageUnitBase):
         self.coordinates.update(storage_unit.coordinates)
 
         def expand_var(var):
-            return Variable(var.dtype, var.nodata, self._dimensions + var.coordinates)
+            return Variable(var.dtype, var.nodata, self._dimensions + var.coordinates, var.units)
         self.variables = {name: expand_var(var) for name, var in storage_unit.variables.items()}
 
     def coord_slice(self, dim, range_=None):

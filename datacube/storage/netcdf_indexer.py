@@ -1,11 +1,7 @@
 from __future__ import absolute_import
-from collections import namedtuple
 
 import netCDF4
 from netCDF4 import num2date
-
-Coordinate = namedtuple('Coordinate', ('dtype', 'begin', 'end', 'length'))
-Variable = namedtuple('Variable', ('dtype', 'ndv', 'coordinates'))
 
 
 def index_netcdfs(filenames):
