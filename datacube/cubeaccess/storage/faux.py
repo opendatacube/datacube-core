@@ -34,6 +34,6 @@ class FauxStorageUnit(StorageUnitBase):
 
     def _fill_data(self, name, index, dest):
         var = self.variables[name]
-        shape = tuple(self.coordinates[dim].length for dim in var.coordinates)
+        shape = tuple(self.coordinates[dim].length for dim in var.dimensions)
         size = reduce_(lambda x, y: x*y, shape, 1)
         numpy.copyto(dest, numpy.arange(size).reshape(shape)[index])

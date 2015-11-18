@@ -29,7 +29,7 @@ except ImportError:
     from .ghetto import DataArray
 
 Coordinate = namedtuple('Coordinate', ('dtype', 'begin', 'end', 'length'))
-Variable = namedtuple('Variable', ('dtype', 'nodata', 'coordinates', 'units'))
+Variable = namedtuple('Variable', ('dtype', 'nodata', 'dimensions', 'units'))
 
 
 def is_consistent_coords(coord1, coord2):
@@ -67,7 +67,7 @@ class StorageUnitBase(object):
         :rtype: DataArray
         """
         var = self.variables[name]
-        coords, index = zip(*[self.get_coord(dim, kwargs.get(dim)) for dim in var.coordinates])
+        coords, index = zip(*[self.get_coord(dim, kwargs.get(dim)) for dim in var.dimensions])
         shape = index_shape(index)
 
         if dest is None:
@@ -76,7 +76,7 @@ class StorageUnitBase(object):
             dest = dest[tuple(slice(c) for c in shape)]
         self._fill_data(name, index, dest)
 
-        return DataArray(dest, coords=coords, dims=var.coordinates)
+        return DataArray(dest, coords=coords, dims=var.dimensions)
 
     def coord_slice(self, dim, range_=None):
         """
@@ -183,7 +183,7 @@ class StorageUnitDimensionProxy(StorageUnitBase):
         self.coordinates.update(storage_unit.coordinates)
 
         def expand_var(var):
-            return Variable(var.dtype, var.nodata, self._dimensions + var.coordinates, var.units)
+            return Variable(var.dtype, var.nodata, self._dimensions + var.dimensions, var.units)
         self.variables = {name: expand_var(var) for name, var in storage_unit.variables.items()}
 
     def coord_slice(self, dim, range_=None):
