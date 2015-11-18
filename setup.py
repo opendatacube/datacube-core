@@ -11,7 +11,8 @@ setup(name='agdc-v2',
                    'integration_tests', 'integration_tests.*')
       ),
       package_data={
-          'gdf_tests': ['gdf_default.conf']
+          'gdf_tests': ['gdf_default.conf'],
+          '': ['*.yaml'],
       },
       scripts=[
       ],

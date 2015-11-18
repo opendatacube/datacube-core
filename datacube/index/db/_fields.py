@@ -6,6 +6,8 @@ from __future__ import absolute_import
 
 from string import lower
 
+import yaml
+from pathlib import Path
 from sqlalchemy import cast, Index, TIMESTAMP
 from sqlalchemy import func
 from sqlalchemy.dialects import postgresql as postgres
@@ -53,7 +55,7 @@ class Field(object):
         )
 
 
-class ScalarField(Field):
+class SimpleField(Field):
     """
     A field with a single value (eg. String, int)
     """
@@ -137,7 +139,13 @@ class DateRangeField(RangeField):
         return func.tstzrange
 
 
-def parse_doc(doc):
+def load_fields():
+    # TODO: Store in DB? This doesn't change often, so is hardcoded for now.
+    doc = yaml.load(Path(__file__).parent.joinpath('dataset-fields.yaml').open('r'))
+    return _parse_doc(doc['eo'])
+
+
+def _parse_doc(doc):
     """
     Parse a field spec document into objects.
 
@@ -169,7 +177,7 @@ def parse_doc(doc):
         type_map = {
             'float-range': FloatRangeField,
             'datetime-range': DateRangeField,
-            'string': ScalarField
+            'string': SimpleField
         }
         type_name = descriptor.get('type') or 'string'
         return type_map.get(type_name)(name, descriptor)

@@ -53,7 +53,7 @@ class Db(object):
 
         # Index any important document fields.
         if is_new:
-            for field in _fields.parse_doc(tables.DATASET_QUERY_FIELDS['eo']).values():
+            for field in _fields.load_fields().values():
                 _LOG.debug('Creating index: %s', field.name)
                 field.alchemy_index.create(_engine)
 

@@ -1,0 +1,57 @@
+
+# This describes the fields within a document that we want to search by.
+#
+# When loaded, database indexes will be created for these fields, and users will be
+# able to query using the short names (eg. '23.0 < lat < 30.0')
+
+# Earth Observation ('eo') dataset documents:
+eo:
+    satellite:
+        offset: [platform, code]
+    sensor:
+        offset: [instrument, name]
+    lat:
+        type: float-range
+        max:
+        - [extent, coord, ur, lat]
+        - [extent, coord, lr, lat]
+        min:
+        - [extent, coord, ul, lat]
+        - [extent, coord, ll, lat]
+
+    lon:
+        type: float-range
+        max:
+        - [extent, coord, ul, lon]
+        - [extent, coord, ur, lon]
+        min:
+        - [extent, coord, ll, lon]
+        - [extent, coord, lr, lon]
+    # Acquisition time.
+#    acq:
+#        type: datetime-range
+#        min:
+#        - [extent, from_dt]
+#        max:
+#        - [extent, to_dt]
+
+    # Ground Station Identifier (eg. 'ASA')
+    gsi:
+        offset: [acquisition, groundstation, code]
+    orbit:
+        offset: [acquisition, platform_orbit]
+
+    # Path/row (specific to Landsat).
+    sat_path:
+        type: float-range
+        min:
+        - [image, satellite_ref_point_start, x]
+        max:
+        - [image, satellite_ref_point_end, x]
+    sat_row:
+        type: float-range
+        min:
+        - [image, satellite_ref_point_start, y]
+        max:
+        - [image, satellite_ref_point_end, y]
+

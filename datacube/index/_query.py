@@ -9,7 +9,6 @@ class Expression(object):
     def __init__(self, field_name):
         """
         :type field_name: str
-        :type between_values:
         """
         self.field_name = field_name
 
