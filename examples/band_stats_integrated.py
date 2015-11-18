@@ -32,11 +32,12 @@ def make_storage_unit(su):
     coordinates = {name: Coordinate(dtype=numpy.dtype(attrs['dtype']),
                                     begin=attrs['begin'],
                                     end=attrs['end'],
-                                    length=attrs['length'])
+                                    length=attrs['length'],
+                                    units='1')  # TODO: should be this: attrs['units'])
                    for name, attrs in su.descriptor['coordinates'].items()}
     variables = {name: Variable(dtype=numpy.dtype(attrs['dtype']),
                                 nodata=attrs['ndv'],
-                                coordinates=attrs['dimensions'],
+                                dimensions=attrs['dimensions'],
                                 units=attrs['units'])
                  for name, attrs in su.descriptor['measurements'].items()}
     return NetCDF4StorageUnit(su.path, coordinates=coordinates, variables=variables)

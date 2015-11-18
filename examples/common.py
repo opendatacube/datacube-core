@@ -75,7 +75,7 @@ def _get_dataset(lat, lon, dataset='NBAR', sat='LS5_TM'):
                    _time_from_filename(f)) for f in files]
     input.sort(key=lambda p: p[1])
     input = [i.next() for k, i in groupby(input, key=lambda p: p[1])]
-    stack = StorageUnitStack([StorageUnitDimensionProxy(su, ('t', t)) for su, t in input], 't')
+    stack = StorageUnitStack([StorageUnitDimensionProxy(su, ('t', t, t.dtype, 'time')) for su, t in input], 't')
     return stack
 
 
