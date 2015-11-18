@@ -18,3 +18,8 @@ def example_gdal_path(request):
     test method.
     """
     return str(request.fspath.dirpath('data/sample_tile_151_-29.tif'))
+
+
+@pytest.fixture
+def example_netcdf_path(request):
+    return str(request.fspath.dirpath('data/sample_tile.nc'))

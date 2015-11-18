@@ -1,14 +1,8 @@
 from __future__ import absolute_import
 
 from datetime import datetime
-from pytest import fixture
 
 from datacube.storage.netcdf_indexer import index_netcdfs
-
-
-@fixture
-def example_netcdf_path(request):
-    return str(request.fspath.dirpath('data/sample_tile.nc'))
 
 
 def test_create_sample_netcdf_from_gdalds(tmpdir, example_netcdf_path):
@@ -22,7 +16,7 @@ def test_create_sample_netcdf_from_gdalds(tmpdir, example_netcdf_path):
     assert len(files_metadata) == 1
 
     reqd_coords_attrs = set(['dtype', 'begin', 'end', 'length'])
-    reqd_measurements_attrs = set(['units', 'dtype', 'dimensions', 'ndv'])
+    reqd_measurements_attrs = set(['units', 'dtype', 'dimensions', 'nodata'])
     reqd_extents_attributes = set(
         ['geospatial_lat_max', 'geospatial_lat_min', 'geospatial_lon_max', 'geospatial_lon_min', 'time_min',
          'time_max'])

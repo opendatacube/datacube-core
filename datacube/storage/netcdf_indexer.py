@@ -1,7 +1,9 @@
 from __future__ import absolute_import
 
-import netCDF4
 from netCDF4 import num2date
+
+from datacube.cubeaccess.storage import NetCDF4StorageUnit
+from datacube.storage.utils import namedtuples2dicts
 
 
 def index_netcdfs(filenames):
@@ -52,41 +54,17 @@ def read_netcdf_structure(filename):
     :param filename:
     :return:
     """
-    with netCDF4.Dataset(filename) as nco:
-        coordinates = {}
-        measurements = {}
-        extents = {k: getattr(nco, k) for k in
-                   ['geospatial_lat_max', 'geospatial_lat_min', 'geospatial_lon_max', 'geospatial_lon_min']}
+    ncsu = NetCDF4StorageUnit.from_file(filename)
 
-        time_units = nco.variables['time'].units
+    extents = {k: ncsu.attributes[k] for k in
+               [u'geospatial_lat_max', u'geospatial_lat_min', u'geospatial_lon_max', u'geospatial_lon_min']}
 
-        extents['time_min'] = num2date(nco.variables['time'][0], time_units)
-        extents['time_max'] = num2date(nco.variables['time'][-1], time_units)
+    time_units = ncsu.coordinates[u'time'].units
 
-        skipped_variables = ('crs', 'extra_metadata')
+    extents['time_min'] = num2date(ncsu.coordinates['time'].begin, time_units)
+    extents['time_max'] = num2date(ncsu.coordinates['time'].end, time_units)
 
-        for name, var in nco.variables.items():
-            if skip_variable(var):
-                continue
+    coordinates = namedtuples2dicts(ncsu.coordinates)
+    variables = namedtuples2dicts(ncsu.variables)
 
-            dims = var.dimensions
-            name = str(name)
-            if len(dims) == 1 and name == dims[0]:
-                coordinates[name] = {
-                    'dtype': str(var.dtype),
-                    'begin': var[0].item(),
-                    'end': var[var.size - 1].item(),
-                    'length': var.shape[0]  # can't use size directly, it's a numpy.scalar
-                }
-            else:
-                ndv = getattr(var, 'missing_value', None) or getattr(var, '_FillValue', None)
-                if ndv:
-                    ndv = ndv.item()
-                measurements[name] = {
-                    'dtype': str(var.dtype),
-                    'units': str(var.units),
-                    'ndv': ndv,
-                    'dimensions': [str(dim) for dim in var.dimensions]
-                }
-
-    return dict(coordinates=coordinates, measurements=measurements, extents=extents)
+    return dict(coordinates=coordinates, measurements=variables, extents=extents)

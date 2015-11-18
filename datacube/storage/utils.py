@@ -161,3 +161,13 @@ def create_empty_dataset(src_filename, out_filename):
 @click.argument('out_filename', type=click.Path())
 def create_empty_dataset_cli(src_filename, out_filename):
     create_empty_dataset(src_filename, out_filename)
+
+
+def namedtuples2dicts(namedtuples):
+    """
+    Convert a dict of namedtuples to a dict of dicts
+
+    :param namedtuples: dict of namedtuples
+    :return: dict of dicts
+    """
+    return {k: dict(vars(v)) for k, v in namedtuples.items()}

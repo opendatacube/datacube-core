@@ -51,7 +51,6 @@ class NetCDF4StorageUnit(StorageUnitBase):
                 if len(dims) == 1 and name == dims[0]:
                     coordinates[name] = Coordinate(dtype=var.dtype, begin=var[0], end=var[-1], length=var.shape[0],
                                                    units=units)
-                    # TODO Store units in coordinates
                 else:
                     ndv = (getattr(var, '_FillValue', None) or
                            getattr(var, 'missing_value', None) or
