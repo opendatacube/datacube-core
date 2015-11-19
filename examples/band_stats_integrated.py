@@ -22,9 +22,9 @@ from datacube import index
 import numpy
 
 from datacube.cubeaccess.core import Coordinate, Variable
-from datacube.cubeaccess.core import StorageUnitStack
+from datacube.cubeaccess.core import StorageUnitStack, StorageUnitVariableProxy
 from datacube.cubeaccess.storage import NetCDF4StorageUnit
-from common import ndv_to_nan
+from common import ndv_to_nan, do_work
 
 
 # TODO: this should be in a lib somewhere
@@ -70,14 +70,33 @@ def get_descriptors(query=None):
     return result
 
 def main(argv):
+    LS57varmap = {'blue': 'band_10',
+                  'green': 'band_20',
+                  'red': 'band_30',
+                  'nir': 'band_40',
+                  'ir1': 'band_50',
+                  'ir2': 'band_70'}
+    PQAvarmap = {'pqa': 'band_pixelquality'}
+
     descriptors = get_descriptors()
 
+    qs = [10, 50, 90]
+    num_workers = 16
+    N = 4000//num_workers
+
     for descriptor in descriptors:
-        nir = ndv_to_nan(descriptor['NBAR'].get('band_40').values)
-        red = ndv_to_nan(descriptor['NBAR'].get('band_30').values)
-        ndvi = numpy.mean((nir-red)/(nir+red), axis=0)
-        print ("NDVI Whoo!!!")
-        print (ndvi)
+        for lat in range(0, 4000, N):
+            data = do_work(StorageUnitVariableProxy(descriptor['NBAR'], LS57varmap),
+                           StorageUnitVariableProxy(descriptor['PQ'], PQAvarmap),
+                           qs,
+                           time='time',
+                           latitude=slice(lat, lat + N))
+
+        # nir = ndv_to_nan(descriptor['NBAR'].get('band_40').values)
+        # red = ndv_to_nan(descriptor['NBAR'].get('band_30').values)
+        # ndvi = numpy.mean((nir-red)/(nir+red), axis=0)
+        # print ("NDVI Whoo!!!")
+        # print (ndvi)
 
 if __name__ == "__main__":
     import sys

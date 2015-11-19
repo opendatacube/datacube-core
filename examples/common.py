@@ -75,7 +75,7 @@ def _get_dataset(lat, lon, dataset='NBAR', sat='LS5_TM'):
                    _time_from_filename(f)) for f in files]
     input.sort(key=lambda p: p[1])
     input = [i.next() for k, i in groupby(input, key=lambda p: p[1])]
-    stack = StorageUnitStack([StorageUnitDimensionProxy(su, ('t', t, t.dtype, 'time')) for su, t in input], 't')
+    stack = StorageUnitStack([StorageUnitDimensionProxy(su, ('t', t, numpy.datetime64, 'time')) for su, t in input], 't')
     return stack
 
 
@@ -106,7 +106,7 @@ def nan_to_ndv(a, ndv=-999):
     return a
 
 
-def do_work(stack, pq, qs, **kwargs):
+def do_work(stack, pq, qs, time='t', **kwargs):
     print('starting', datetime.now(), kwargs)
     pqa = pq.get('pqa', **kwargs).values
     red = ndv_to_nan(stack.get('red', **kwargs).values)
@@ -122,10 +122,7 @@ def do_work(stack, pq, qs, **kwargs):
     ndvi = (nir-red)/(nir+red)
     index, mask = argpercentile(ndvi, qs, axis=0)
 
-    # TODO: make slicing coordinates nicer
-    tcoord = stack._get_coord('t')
-    slice_ = make_index(tcoord, kwargs['t'])
-    tcoord = tcoord[slice_]
+    tcoord = stack.get_coord(time, kwargs.get(time))[0]
     tcoord = tcoord[index]
     months = (tcoord.astype('datetime64[M]').astype(numpy.int64) % 12).astype(numpy.int16) + 1
     months[..., mask] = -999
