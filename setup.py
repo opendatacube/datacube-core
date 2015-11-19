@@ -24,8 +24,7 @@ setup(name='agdc-v2',
           'matplotlib',
           'netcdf4',
           'scipy',
-          'pytz',
-          'pypeg2'
+          'pytz'
       ],
       install_requires=[
           'click',
@@ -36,6 +35,7 @@ setup(name='agdc-v2',
           'numpy',
           'rasterio',
           'netcdf4',
+          'pypeg2'
       ],
       tests_require=[
           'pytest',
