@@ -25,11 +25,13 @@ _telemetry_dataset = {
     'ga_level': 'P00',
     'size_bytes': 637660782,
     'platform': {
-        'code': 'LANDSAT_8'},
+        'code': 'LANDSAT_8'
+    },
     'creation_dt': datetime.datetime(2015, 4, 22, 6, 32, 4),
     'instrument': {'name': 'OLI_TIRS'},
     'format': {
-        'name': 'MD'},
+        'name': 'MD'
+    },
     'lineage': {
         'source_datasets': {}
     }
@@ -124,3 +126,38 @@ def test_index_storage_unit():
     d_s = d_ss[0]
     assert d_s['dataset_ref'] == _telemetry_uuid
     assert d_s['storage_unit_ref'] == unit['id']
+
+
+def test_search_dataset():
+    db = init_db()
+
+    # Setup foreign keys for our storage unit.
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid,
+        '/tmp/test/' + _telemetry_uuid,
+        'satellite_telemetry_data'
+    )
+    assert was_inserted
+
+    field = db.get_dataset_field
+
+    datasets = db.search_datasets_eager(
+        field('satellite') == 'LANDSAT_8',
+    )
+    assert len(datasets) == 1
+    assert datasets[0]['id'] == _telemetry_uuid
+
+    datasets = db.search_datasets_eager(
+        field('satellite') == 'LANDSAT_8',
+        field('sensor') == 'OLI_TIRS',
+    )
+    assert len(datasets) == 1
+    assert datasets[0]['id'] == _telemetry_uuid
+
+    # Wrong sensor name
+    datasets = db.search_datasets_eager(
+        field('satellite') == 'LANDSAT-8',
+        field('sensor') == 'TM',
+    )
+    assert len(datasets) == 0

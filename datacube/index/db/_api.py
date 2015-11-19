@@ -7,8 +7,8 @@ from __future__ import absolute_import
 import datetime
 import json
 import logging
-import numpy
 
+import numpy
 from sqlalchemy import create_engine, select, text, bindparam, exists, and_
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.url import URL as engine_url
@@ -35,6 +35,8 @@ class Db(object):
     def __init__(self, engine, connection):
         self._engine = engine
         self._connection = connection
+
+        self._dataset_fields = _fields.load_fields()
 
     @classmethod
     def connect(cls, hostname, database, username=None, port=None):
@@ -189,6 +191,26 @@ class Db(object):
 
     def get_storage_units(self):
         return self._connection.execute(STORAGE_UNIT.select()).fetchall()
+
+    def get_dataset_field(self, name):
+        return self._dataset_fields[name]
+
+    def search_datasets(self, *expressions):
+        """
+        :type expressions: list[datacube.index.db._fields.Expression]
+        :rtype: list[Dataset]
+        """
+        results = self._connection.execute(
+            # TODO: Select certain fields.
+            DATASET.select().where(
+                and_(*[expression.alchemy_expression for expression in expressions])
+            )
+        )
+        for result in results:
+            yield result
+
+    def search_datasets_eager(self, *expressions):
+        return list(self.search_datasets(*expressions))
 
 
 def _to_json(o):

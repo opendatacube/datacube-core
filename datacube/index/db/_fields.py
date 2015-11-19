@@ -8,6 +8,7 @@ from string import lower
 
 import yaml
 from pathlib import Path
+from psycopg2._range import NumericRange
 from sqlalchemy import cast, Index, TIMESTAMP
 from sqlalchemy import func
 from sqlalchemy.dialects import postgresql as postgres
@@ -19,6 +20,7 @@ class Field(object):
     """
     A field within a Postgres JSONB document.
     """
+
     def __init__(self, name, descriptor):
         self.name = name
         self.descriptor = descriptor
@@ -54,11 +56,24 @@ class Field(object):
             postgresql_using=self.postgres_index_type
         )
 
+    def __eq__(self, value):
+        """
+        :rtype: Expression
+        """
+        raise NotImplementedError('equals expression')
+
+    def between(self, low, high):
+        """
+        :rtype: Expression
+        """
+        raise NotImplementedError('between expression')
+
 
 class SimpleField(Field):
     """
     A field with a single value (eg. String, int)
     """
+
     @property
     def alchemy_casted_type(self):
         # Default no cast: string
@@ -73,12 +88,24 @@ class SimpleField(Field):
         _field = self.alchemy_jsonb_column[self.offset].astext
         return cast(_field, self.alchemy_casted_type) if self.alchemy_casted_type else _field
 
+    def __eq__(self, value):
+        """
+        :rtype: Expression
+        """
+        return EqualsExpression(self, value)
+
+    def between(self, low, high):
+        """
+        :rtype: Expression
+        """
+        raise NotImplementedError('Simple field between expression')
 
 class RangeField(Field):
     """
     A range of values. Has min and max values, which may be calculated from multiple
     values in the document.
     """
+
     @property
     def alchemy_range_type(self):
         raise NotImplementedError('range type')
@@ -118,6 +145,18 @@ class RangeField(Field):
             '[]'
         )
 
+    def __eq__(self, value):
+        """
+        :rtype: Expression
+        """
+        raise NotImplementedError('range equals expression')
+
+    def between(self, low, high):
+        """
+        :rtype: Expression
+        """
+        return RangeBetweenExpression(self, low, high)
+
 
 class FloatRangeField(RangeField):
     @property
@@ -137,6 +176,39 @@ class DateRangeField(RangeField):
     @property
     def alchemy_range_type(self):
         return func.tstzrange
+
+
+class Expression(object):
+    @property
+    def alchemy_expression(self):
+        """
+        Get an SQLAlchemy expression for accessing this field.
+        :return:
+        """
+        raise NotImplementedError('alchemy expression')
+
+
+class RangeBetweenExpression(Expression):
+    def __init__(self, field, low_value, high_value):
+        self.low_value = low_value
+        self.high_value = high_value
+        self.field = field
+
+    @property
+    def alchemy_expression(self):
+        return self.field.alchemy_expression.contained_by(
+            NumericRange(self.low_value, self.high_value)
+        )
+
+
+class EqualsExpression(Expression):
+    def __init__(self, field, value):
+        self.field = field
+        self.value = value
+
+    @property
+    def alchemy_expression(self):
+        return self.field.alchemy_expression == self.value
 
 
 def load_fields():
