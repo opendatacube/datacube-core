@@ -25,6 +25,7 @@ setup(name='agdc-v2',
           'netcdf4',
           'scipy',
           'pytz',
+          'pypeg2'
       ],
       install_requires=[
           'click',
