@@ -25,7 +25,5 @@ storage:
       measurements:
         '1111111111111100':
             dtype: int16
-            nodata: -999
-            units: '1'
             resampling_method: nearest
             varname: band_pixelquality

@@ -96,7 +96,7 @@ def test_create_sample_netcdf_from_gdalds(tmpdir, example_gdal_path):
     dataset = gdal.Open(example_gdal_path)
     bandname = '10'
 
-    band_info = SimpleObject(varname='B10', dtype='int16', nodata=-999, units='1')
+    band_info = SimpleObject(varname='B10', dtype='int16', nodata=-999)
     storage_spec = {'chunking': {'x': 100, 'y': 100, 't': 1}}
 
     append_to_netcdf(dataset, filename, storage_spec, band_info, datetime(2008, 5, 5, 0, 24), input_filename="")

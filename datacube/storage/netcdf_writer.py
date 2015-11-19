@@ -157,8 +157,8 @@ class NetCDFWriter(object):
         chunking = storage_type['chunking']
         chunksizes = [chunking[dim] for dim in ['t', 'y', 'x']]
         dtype = band_info.dtype
-        nodata = band_info.nodata
-        units = band_info.units
+        nodata = getattr(band_info, 'nodata', None)
+        units = getattr(band_info, 'units', None)
         out_band, src_filename = self._create_data_variable(varname, dtype, chunksizes, nodata, units)
 
         time_index = self.find_or_create_time_index(time_value)
@@ -185,7 +185,9 @@ class NetCDFWriter(object):
                                          fill_value=ndv)
         newvar.grid_mapping = 'crs'
         newvar.set_auto_maskandscale(False)
-        newvar.units = units
+
+        if units:
+            newvar.units = units
 
         src_filename = self.nco.createVariable(varname + "_src_filenames", str, 'time')
         src_filename.long_name = 'Source filename from data import'

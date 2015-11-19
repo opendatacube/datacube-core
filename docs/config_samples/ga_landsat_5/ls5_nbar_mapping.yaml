@@ -26,37 +26,31 @@ storage:
         '10':
             dtype: int16
             nodata: -999
-            units: '1'
             resampling_method: cubic
             varname: band_10
         '20':
             dtype: int16
             nodata: -999
-            units: '1'
             resampling_method: cubic
             varname: band_20
         '30':
             dtype: int16
             nodata: -999
-            units: '1'
             resampling_method: cubic
             varname: band_30
         '40':
             dtype: int16
             nodata: -999
-            units: '1'
             resampling_method: cubic
             varname: band_40
         '50':
             dtype: int16
             nodata: -999
-            units: '1'
             resampling_method: cubic
             varname: band_50
         '70':
             dtype: int16
             nodata: -999
-            units: '1'
             resampling_method: cubic
             varname: band_70
 #    - name: 15m_band
