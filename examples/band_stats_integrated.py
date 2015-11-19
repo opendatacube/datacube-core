@@ -43,31 +43,41 @@ def make_storage_unit(su):
     return NetCDF4StorageUnit(su.path, coordinates=coordinates, variables=variables)
 
 
-def combine_storage_units(sus):
+def group_storage_units_by_location(sus):
     dims = ('longitude', 'latitude')
     stacks = defaultdict(list)
     for su in sus:
         stacks[tuple(su.coordinates[dim].begin for dim in dims)].append(su)
-    return [StorageUnitStack(sorted(group, key=lambda su: su.coordinates['time'].begin), 'time')
-            for key, group in stacks.items()]
+    return stacks
 
+
+def get_descriptors(query=None):
+    data_index = index.data_management_connect()
+    sus = data_index.get_storage_units()
+
+    nbars = [make_storage_unit(su) for su in sus if 'PQ' not in su.path]
+    pqs = [make_storage_unit(su) for su in sus if 'PQ' in su.path]
+
+    nbars = group_storage_units_by_location(nbars)
+    pqs = group_storage_units_by_location(pqs)
+
+    result = []
+    for key in nbars:
+        result.append({
+        'NBAR': StorageUnitStack(sorted(nbars[key], key=lambda su: su.coordinates['time'].begin), 'time'),
+        'PQ': StorageUnitStack(sorted(pqs[key], key=lambda su: su.coordinates['time'].begin), 'time')
+        })
+    return result
 
 def main(argv):
-    data_index = index.data_management_connect()
+    descriptors = get_descriptors()
 
-    sus = data_index.get_storage_units()
-    pqs = [make_storage_unit(su) for su in sus if 'PQ' in su.path]
-    nbars = [make_storage_unit(su) for su in sus if 'PQ' not in su.path]
-
-    nbar_stacks = combine_storage_units(nbars)
-    stack = nbar_stacks[0]
-
-    nir = ndv_to_nan(stack.get('band_40').values)
-    red = ndv_to_nan(stack.get('band_30').values)
-    ndvi = numpy.mean((nir-red)/(nir+red), axis=0)
-    print ("NDVI Whoo!!!")
-    print (ndvi)
-
+    for descriptor in descriptors:
+        nir = ndv_to_nan(descriptor['NBAR'].get('band_40').values)
+        red = ndv_to_nan(descriptor['NBAR'].get('band_30').values)
+        ndvi = numpy.mean((nir-red)/(nir+red), axis=0)
+        print ("NDVI Whoo!!!")
+        print (ndvi)
 
 if __name__ == "__main__":
     import sys
