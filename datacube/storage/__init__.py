@@ -51,9 +51,8 @@ def store(storage_mappings, dataset):
 
             # How to store this band/measurement:
             _LOG.debug('Measurement descriptor: %r', measurement_descriptor)
-            band_info = SimpleObject(**measurement_descriptor)  # TODO: Use actual classes
-
-            for filename in crazy_band_tiler(band_info, input_filename=str(band_path),
+            for filename in crazy_band_tiler(SimpleObject(**measurement_descriptor),  # TODO: Use actual classes
+                                             input_filename=str(band_path),
                                              storage_spec=storage_type.descriptor,
                                              time_value=dataset.metadata_doc['extent']['center_dt'],
                                              dataset_metadata=dataset.metadata_doc):
