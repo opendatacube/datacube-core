@@ -4,13 +4,13 @@ Common methods for index integration tests.
 """
 from __future__ import absolute_import
 
-from datacube.index.db import Db
-from datacube.index.db.tables._core import METADATA, ensure_db
+from datacube.index.postgres import PostgresDb
+from datacube.index.postgres.tables._core import METADATA, ensure_db
 
 
 def connect_db():
     # Defaults for running tests.
-    return Db.connect('localhost', 'agdcintegration')
+    return PostgresDb.connect('localhost', 'agdcintegration')
 
 
 def init_db():

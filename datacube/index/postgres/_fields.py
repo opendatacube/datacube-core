@@ -16,16 +16,17 @@ from sqlalchemy import func
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 
+from datacube.index.fields import Expression, Field
 from .tables import DATASET
 
 
-class Field(object):
+class PgField(Field):
     """
     A field within a Postgres JSONB document.
     """
 
     def __init__(self, name, descriptor):
-        self.name = name
+        super(PgField, self).__init__(name)
         self.descriptor = descriptor
 
     @property
@@ -72,7 +73,7 @@ class Field(object):
         raise NotImplementedError('between expression')
 
 
-class SimpleField(Field):
+class SimpleField(PgField):
     """
     A field with a single value (eg. String, int)
     """
@@ -104,7 +105,7 @@ class SimpleField(Field):
         raise NotImplementedError('Simple field between expression')
 
 
-class RangeField(Field):
+class RangeField(PgField):
     """
     A range of values. Has min and max values, which may be calculated from multiple
     values in the document.
@@ -184,7 +185,7 @@ class DateRangeField(RangeField):
         return functools.partial(func.tstzrange, type_=TSTZRANGE)
 
 
-class Expression(object):
+class PgExpression(Expression):
     @property
     def alchemy_expression(self):
         """
@@ -193,13 +194,8 @@ class Expression(object):
         """
         raise NotImplementedError('alchemy expression')
 
-    def __eq__(self, other):
-        if self.__class__ != other.__class__:
-            return False
-        return self.__dict__ == other.__dict__
 
-
-class RangeBetweenExpression(Expression):
+class RangeBetweenExpression(PgExpression):
     def __init__(self, field, low_value, high_value):
         self.low_value = low_value
         self.high_value = high_value
@@ -212,7 +208,7 @@ class RangeBetweenExpression(Expression):
         )
 
 
-class EqualsExpression(Expression):
+class EqualsExpression(PgExpression):
     def __init__(self, field, value):
         self.field = field
         self.value = value

@@ -23,7 +23,7 @@ PGCODE_UNIQUE_CONSTRAINT = '23505'
 _LOG = logging.getLogger(__name__)
 
 
-class Db(object):
+class PostgresDb(object):
     """
     A very thin database access api.
 
@@ -59,7 +59,7 @@ class Db(object):
                 _LOG.debug('Creating index: %s', field.name)
                 field.alchemy_index.create(_engine)
 
-        return Db(_engine, _connection)
+        return PostgresDb(_engine, _connection)
 
     def begin(self):
         """

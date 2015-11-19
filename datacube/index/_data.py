@@ -8,7 +8,7 @@ import copy
 import logging
 
 from datacube.config import SystemConfig
-from .db import Db
+from .postgres import PostgresDb as Db
 
 
 _LOG = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ _LOG = logging.getLogger(__name__)
 
 def connect(config=SystemConfig.find()):
     """
-    Connect to the index.
+    Connect to the index. Default Postgres implementation.
     :type config: datacube.config.SystemConfig
     :rtype: DataIndex
     """
@@ -27,7 +27,7 @@ def _ensure_dataset(db, dataset_doc, path=None):
     """
     Ensure a dataset is in the index (add it if needed).
 
-    :type db: Db
+    :type db: PostgresDb
     :type dataset_doc: dict
     :type path: pathlib.Path
     :returns: The dataset_id if we ingested it.
@@ -70,7 +70,7 @@ def _ensure_dataset(db, dataset_doc, path=None):
 class DataIndex(object):
     def __init__(self, db):
         """
-        :type db: datacube.index._core_db.Db
+        :type db: datacube.index.postgres._api.PostgresDb
         """
         self.db = db
 

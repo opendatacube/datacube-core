@@ -8,7 +8,7 @@ import cachetools
 
 from datacube.config import SystemConfig
 from datacube.model import StorageMapping, StorageType, DatasetMatcher, StorageUnit
-from .db import Db
+from .postgres import PostgresDb
 
 
 def connect(config=SystemConfig.find()):
@@ -17,14 +17,21 @@ def connect(config=SystemConfig.find()):
     :type config: datacube.config.SystemConfig
     :rtype: DataManagement
     """
-    return DataManagement(Db.connect(config.db_hostname, config.db_database, config.db_username, config.db_port),
-                          config)
+    return DataManagement(
+        PostgresDb.connect(
+            config.db_hostname,
+            config.db_database,
+            config.db_username,
+            config.db_port
+        ),
+        config
+    )
 
 
 class DataManagement(object):
     def __init__(self, db, config):
         """
-        :type db: datacube.index._core_db.Db
+        :type db: datacube.index.postgres._api.PostgresDb
         :type config: datacube.config.SystemConfig
         """
         self.db = db
