@@ -57,7 +57,7 @@ before_install:
 install:
   - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2 coverage python-coveralls
   - source activate test-agdc
-  - travis_retry pip install --upgrade pylint
+  - conda install -c http://conda.anaconda.org/jakirkham pylint
   - travis_retry pip install -r requirements.txt 
   - python setup.py install
 
