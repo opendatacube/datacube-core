@@ -8,7 +8,6 @@ import copy
 import logging
 
 from datacube.config import SystemConfig
-from datacube.model import StorageUnit
 from .db import Db
 
 
@@ -113,3 +112,16 @@ class DataIndex(object):
         :type storage_unit: datacube.model.StorageUnit
         """
         return self.add_storage_units([storage_unit])
+
+    def get_dataset_field(self, name):
+        """
+        :type name: str
+        :rtype: datacube.index.db._fields.Field
+        """
+        return self.db.get_dataset_field(name)
+
+    def search_datasets(self, *expressions):
+        return self.db.search_datasets(*expressions)
+
+    def search_datasets_eager(self, *expressions):
+        return list(self.search_datasets(*expressions))

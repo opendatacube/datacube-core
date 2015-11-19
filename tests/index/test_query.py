@@ -6,8 +6,8 @@ from __future__ import absolute_import
 
 import pytest
 
-from datacube.index._query import parse_expressions, UnknownFieldException
 from datacube.index.db._fields import SimpleField, RangeField, RangeBetweenExpression, EqualsExpression
+from datacube.scripts.search_tool import parse_expressions, UnknownFieldException
 
 _sat_field = SimpleField('satellite', {})
 _sens_field = SimpleField('sensor', {})

@@ -209,9 +209,6 @@ class Db(object):
         for result in results:
             yield result
 
-    def search_datasets_eager(self, *expressions):
-        return list(self.search_datasets(*expressions))
-
 
 def _to_json(o):
     return json.dumps(o, default=_json_fallback)

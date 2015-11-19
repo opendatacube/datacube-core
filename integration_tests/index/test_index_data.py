@@ -140,6 +140,7 @@ def test_index_storage_unit():
 
 def test_search_dataset_equals():
     db = init_db()
+    index = DataIndex(db)
 
     # Setup foreign keys for our storage unit.
     was_inserted = db.insert_dataset(
@@ -150,15 +151,15 @@ def test_search_dataset_equals():
     )
     assert was_inserted
 
-    field = db.get_dataset_field
+    field = index.get_dataset_field
 
-    datasets = db.search_datasets_eager(
+    datasets = index.search_datasets_eager(
         field('satellite') == 'LANDSAT_8',
     )
     assert len(datasets) == 1
     assert datasets[0]['id'] == _telemetry_uuid
 
-    datasets = db.search_datasets_eager(
+    datasets = index.search_datasets_eager(
         field('satellite') == 'LANDSAT_8',
         field('sensor') == 'OLI_TIRS',
     )
@@ -166,7 +167,7 @@ def test_search_dataset_equals():
     assert datasets[0]['id'] == _telemetry_uuid
 
     # Wrong sensor name
-    datasets = db.search_datasets_eager(
+    datasets = index.search_datasets_eager(
         field('satellite') == 'LANDSAT-8',
         field('sensor') == 'TM',
     )
@@ -175,6 +176,7 @@ def test_search_dataset_equals():
 
 def test_search_dataset_ranges():
     db = init_db()
+    index = DataIndex(db)
 
     # Setup foreign keys for our storage unit.
     was_inserted = db.insert_dataset(
@@ -185,17 +187,17 @@ def test_search_dataset_ranges():
     )
     assert was_inserted
 
-    field = db.get_dataset_field
+    field = index.get_dataset_field
 
     # In the lat bounds.
-    datasets = db.search_datasets_eager(
+    datasets = index.search_datasets_eager(
         field('lat').between(-30.5, -29.5)
     )
     assert len(datasets) == 1
     assert datasets[0]['id'] == _telemetry_uuid
 
     # Out of the lat bounds.
-    datasets = db.search_datasets_eager(
+    datasets = index.search_datasets_eager(
         field('lat').between(28, 32)
     )
     assert len(datasets) == 0
@@ -203,7 +205,7 @@ def test_search_dataset_ranges():
     # A dataset that overlaps but is not fully contained by the search bounds.
     # TODO: Do we want overlap as the default behaviour?
     # Should we distinguish between 'contains' and 'overlaps'?
-    datasets = db.search_datasets_eager(
+    datasets = index.search_datasets_eager(
         field('lat').between(-40, -30)
     )
     assert len(datasets) == 1
