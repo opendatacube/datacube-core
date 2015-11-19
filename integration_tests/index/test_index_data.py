@@ -115,7 +115,13 @@ def test_index_storage_unit():
             [_telemetry_uuid],
             StorageMapping(
                 # Yikes:
-                None, None, None, None, None, None,
+                storage_type=None,
+                name="test_mapping",
+                match=None,
+                measurements={},
+                dataset_measurements_offset=None,
+                location="file://g/data",
+                filename_pattern="foo.nc",
                 id_=mapping['id']
             ),
             {'test': 'descriptor'},

@@ -116,7 +116,7 @@ def test_add_storage_type():
 
     mapping = storage_mappings[0]
     assert mapping.name == 'LS5 NBAR'
-    assert mapping.filename_pattern == 'file:///g/data/location_offset/file.nc'
+    assert mapping.storage_pattern == 'file:///g/data/location_offset/file.nc'
     assert mapping.match.metadata == _STORAGE_MAPPING['match']['metadata']
     assert mapping.measurements == _STORAGE_MAPPING['storage'][0]['measurements']
 
