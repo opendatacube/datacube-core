@@ -27,6 +27,16 @@ _telemetry_dataset = {
     'platform': {
         'code': 'LANDSAT_8'
     },
+    # We're unlikely to have extent info for a raw dataset, we'll use it for search tests.
+    'extent': {
+        'center_dt': datetime.datetime(2014, 7, 26, 23, 49, 0, 343853),
+        'coord': {
+            'll': {'lat': -31.33333, 'lon': 149.78434},
+            'lr': {'lat': -31.37116, 'lon': 152.20094},
+            'ul': {'lat': -29.23394, 'lon': 149.85216},
+            'ur': {'lat': -29.26873, 'lon': 152.21782}
+        }
+    },
     'creation_dt': datetime.datetime(2015, 4, 22, 6, 32, 4),
     'instrument': {'name': 'OLI_TIRS'},
     'format': {
@@ -128,7 +138,7 @@ def test_index_storage_unit():
     assert d_s['storage_unit_ref'] == unit['id']
 
 
-def test_search_dataset():
+def test_search_dataset_equals():
     db = init_db()
 
     # Setup foreign keys for our storage unit.
@@ -161,3 +171,40 @@ def test_search_dataset():
         field('sensor') == 'TM',
     )
     assert len(datasets) == 0
+
+
+def test_search_dataset_ranges():
+    db = init_db()
+
+    # Setup foreign keys for our storage unit.
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid,
+        '/tmp/test/' + _telemetry_uuid,
+        'satellite_telemetry_data'
+    )
+    assert was_inserted
+
+    field = db.get_dataset_field
+
+    # In the lat bounds.
+    datasets = db.search_datasets_eager(
+        field('lat').between(-30.5, -29.5)
+    )
+    assert len(datasets) == 1
+    assert datasets[0]['id'] == _telemetry_uuid
+
+    # Out of the lat bounds.
+    datasets = db.search_datasets_eager(
+        field('lat').between(28, 32)
+    )
+    assert len(datasets) == 0
+
+    # A dataset that overlaps but is not fully contained by the search bounds.
+    # TODO: Do we want overlap as the default behaviour?
+    # Should we distinguish between 'contains' and 'overlaps'?
+    datasets = db.search_datasets_eager(
+        field('lat').between(-40, -30)
+    )
+    assert len(datasets) == 1
+    assert datasets[0]['id'] == _telemetry_uuid

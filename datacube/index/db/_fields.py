@@ -1,9 +1,11 @@
 # coding=utf-8
+# pylint: disable=abstract-method
 """
 Build and index fields within documents.
 """
 from __future__ import absolute_import
 
+import functools
 from string import lower
 
 import yaml
@@ -12,6 +14,7 @@ from psycopg2._range import NumericRange
 from sqlalchemy import cast, Index, TIMESTAMP
 from sqlalchemy import func
 from sqlalchemy.dialects import postgresql as postgres
+from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 
 from .tables import DATASET
 
@@ -100,6 +103,7 @@ class SimpleField(Field):
         """
         raise NotImplementedError('Simple field between expression')
 
+
 class RangeField(Field):
     """
     A range of values. Has min and max values, which may be calculated from multiple
@@ -107,7 +111,7 @@ class RangeField(Field):
     """
 
     @property
-    def alchemy_range_type(self):
+    def alchemy_create_range(self):
         raise NotImplementedError('range type')
 
     @property
@@ -138,7 +142,7 @@ class RangeField(Field):
 
     @property
     def alchemy_expression(self):
-        return self.alchemy_range_type(
+        return self.alchemy_create_range(
             self._get_expr(self.min_offsets, func.least, self.alchemy_casted_type),
             self._get_expr(self.max_offsets, func.greatest, self.alchemy_casted_type),
             # Inclusive on both sides.
@@ -164,8 +168,9 @@ class FloatRangeField(RangeField):
         return postgres.NUMERIC
 
     @property
-    def alchemy_range_type(self):
-        return func.numrange
+    def alchemy_create_range(self):
+        # Call the postgres 'numrange()' function, hinting to SQLAlchemy that it returns a NUMRANGE.
+        return functools.partial(func.numrange, type_=NUMRANGE)
 
 
 class DateRangeField(RangeField):
@@ -174,8 +179,9 @@ class DateRangeField(RangeField):
         return TIMESTAMP(timezone=True)
 
     @property
-    def alchemy_range_type(self):
-        return func.tstzrange
+    def alchemy_create_range(self):
+        # Call the postgres 'tstzrange()' function, hinting to SQLAlchemy that it returns a TSTZRANGE.
+        return functools.partial(func.tstzrange, type_=TSTZRANGE)
 
 
 class Expression(object):
@@ -196,7 +202,7 @@ class RangeBetweenExpression(Expression):
 
     @property
     def alchemy_expression(self):
-        return self.field.alchemy_expression.contained_by(
+        return self.field.alchemy_expression.overlaps(
             NumericRange(self.low_value, self.high_value)
         )
 
