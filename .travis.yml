@@ -55,7 +55,7 @@ before_install:
   - createdb agdcintegration
 
 install:
-  - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2 coverage python-coveralls pep8 pylint pytest
+  - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2 coverage python-coveralls
   - source activate test-agdc
   - travis_retry pip install -r requirements.txt 
   - python setup.py install

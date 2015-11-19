@@ -1,11 +1,11 @@
-click
-numpy
 --index-url https://pypi.python.org/simple/
 
 # Test dependencies
 pytest
 pytest-cov
 mock
+pep8
+pylint
 
 # Install the remaining from setup.py:
 -e .
