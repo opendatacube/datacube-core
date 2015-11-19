@@ -36,7 +36,7 @@ def make_storage_unit(su):
                                     units='1')  # TODO: should be this: attrs['units'])
                    for name, attrs in su.descriptor['coordinates'].items()}
     variables = {name: Variable(dtype=numpy.dtype(attrs['dtype']),
-                                nodata=attrs['ndv'],
+                                nodata=attrs['nodata'],
                                 dimensions=attrs['dimensions'],
                                 units=attrs['units'])
                  for name, attrs in su.descriptor['measurements'].items()}

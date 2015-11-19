@@ -49,13 +49,15 @@ class NetCDF4StorageUnit(StorageUnitBase):
                 dims = var.dimensions
                 units = getattr(var, 'units', '1')
                 if len(dims) == 1 and name == dims[0]:
-                    coordinates[name] = Coordinate(dtype=var.dtype, begin=var[0], end=var[-1], length=var.shape[0],
-                                                   units=units)
+                    coordinates[name] = Coordinate(dtype=numpy.dtype(var.dtype),
+                                                   begin=var[0].item(), end=var[-1].item(),
+                                                   length=var.shape[0], units=units)
                 else:
                     ndv = (getattr(var, '_FillValue', None) or
                            getattr(var, 'missing_value', None) or
                            getattr(var, 'fill_value', None))
-                    variables[name] = Variable(var.dtype, ndv, var.dimensions, units)
+                    ndv = ndv.item() if ndv else None
+                    variables[name] = Variable(numpy.dtype(var.dtype), ndv, var.dimensions, units)
         return cls(filepath, variables=variables, coordinates=coordinates, attributes=attributes)
 
     def get_coord(self, dim, index=None):

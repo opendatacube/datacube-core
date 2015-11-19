@@ -7,6 +7,7 @@ from __future__ import absolute_import
 import datetime
 import json
 import logging
+import numpy
 
 from sqlalchemy import create_engine, select, text, bindparam, exists, and_
 from sqlalchemy.dialects.postgresql import JSONB
@@ -190,6 +191,8 @@ def _json_fallback(obj):
     """Fallback json serialiser."""
     if isinstance(obj, (datetime.datetime, datetime.date)):
         return obj.isoformat()
+    if isinstance(obj, numpy.dtype):
+        return obj.name
     raise TypeError("Type not serializable: {}".format(type(obj)))
 
 
