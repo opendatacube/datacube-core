@@ -41,7 +41,7 @@ class StorageType(object):
 class StorageMapping(object):
     def __init__(self, storage_type, name, match,
                  measurements, dataset_measurements_offset,
-                 filename_pattern, id_=None):
+                 location, filename_pattern, id_=None):
         # Which datasets to match.
         #: :type: DatasetMatcher
         self.match = match
@@ -63,7 +63,11 @@ class StorageMapping(object):
         #: :type: str
         self.dataset_measurements_offset = dataset_measurements_offset
 
-        # The filename pattern where the storage units should be stored.
+        # The location where the storage units should be stored.
+        #: :type: str
+        self.location = location
+
+        # Storage Unit filename pattern
         # TODO: define pattern expansion rules
         #: :type: str
         self.filename_pattern = filename_pattern
@@ -71,6 +75,18 @@ class StorageMapping(object):
         # Database primary key
         #: :type: int
         self.id_ = id_
+
+    def location_offset(self, filepath):
+        assert filepath.startswith(self.location)
+        return filepath[len(self.location):]
+
+    def resolve_location(self, offset):
+        # We can't use urlparse.urljoin() because it takes a relative path, not a path inside the base.
+        return '/'.join(s.strip('/') for s in (self.location, offset))
+
+    @property
+    def storage_pattern(self):
+        return self.resolve_location(self.filename_pattern)
 
 
 class StorageUnit(object):
@@ -93,6 +109,12 @@ class StorageUnit(object):
         # Database primary key
         #: :type: int
         self.id_ = id_
+
+    @property
+    def filepath(self):
+        filepath = self.storage_mapping.resolve_location(self.path)
+        assert filepath.startswith('file://')
+        return filepath[7:]
 
 
 # TODO: move this and from_path() to a separate dataset-loader module ...?

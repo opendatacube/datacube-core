@@ -40,7 +40,7 @@ def make_storage_unit(su):
                                 dimensions=attrs['dimensions'],
                                 units=attrs.get('units', None))
                  for name, attrs in su.descriptor['measurements'].items()}
-    return NetCDF4StorageUnit(su.path, coordinates=coordinates, variables=variables)
+    return NetCDF4StorageUnit(su.filepath, coordinates=coordinates, variables=variables)
 
 
 def group_storage_units_by_location(sus):

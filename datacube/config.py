@@ -74,28 +74,6 @@ class SystemConfig(object):
         """
         return dict(self._config.items('locations'))
 
-    def resolve_location(self, name, offset):
-        """
-        :param name:
-        :param offset:
-        :return:
-        >>> class MockConfig(object):
-        ...     def items(self, section):
-        ...         return [
-        ...             ('gdata', 'file:///g/data/'),
-        ...             ('tarchive', 'http://eods.test.lan/tarchive')
-        ...         ]
-        >>> c = MockConfig()
-        >>> SystemConfig(c).resolve_location('gdata', 'some/offset')
-        'file:///g/data/some/offset'
-        >>> SystemConfig(c).resolve_location('gdata', 'some/offset')
-        'file:///g/data/some/offset'
-        >>> SystemConfig(c).resolve_location('tarchive', '/some/offset.tif')
-        'http://eods.test.lan/tarchive/some/offset.tif'
-        """
-        # We can't use urlparse.urljoin() because it takes a relative path, not a path inside the base.
-        return '/'.join(s.strip('/') for s in (self.location_mappings[name], offset))
-
     @property
     def db_username(self):
         try:

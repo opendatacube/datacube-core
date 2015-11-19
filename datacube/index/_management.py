@@ -46,7 +46,8 @@ class DataManagement(object):
             DatasetMatcher(mapping['dataset_metadata']),
             mapping['measurements'],
             mapping['dataset_measurements_key'],
-            self.config.resolve_location(mapping['location_name'], mapping['location_offset']),
+            self.config.location_mappings[mapping['location_name']],
+            mapping['location_offset'],
             id_=mapping['id']
         )
 

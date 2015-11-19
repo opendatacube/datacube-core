@@ -25,17 +25,17 @@ def store(storage_mappings, dataset):
     """
     _LOG.info('%s mappings for dataset %s', len(storage_mappings), dataset.id)
 
-    storage_unit_filenames = set()
-
+    result = []
     for mapping in storage_mappings:
+        storage_unit_filenames = set()
         storage_type = mapping.storage_type
         if storage_type.driver != 'NetCDF CF':
             raise RuntimeError('Unknown storage driver')
 
         # TODO: hack? tiler takes way too many params as it is...
-        if not mapping.filename_pattern.startswith('file://'):
-            raise RuntimeError('URI protocol is not supported (yet): %s' % mapping.filename_pattern)
-        storage_type.descriptor["filename_format"] = mapping.filename_pattern[7:]
+        if not mapping.storage_pattern.startswith('file://'):
+            raise RuntimeError('URI protocol is not supported (yet): %s' % mapping.storage_pattern)
+        storage_type.descriptor["filename_format"] = mapping.storage_pattern[7:]
 
         dataset_measurements = _get_doc_offset(mapping.dataset_measurements_offset, dataset.metadata_doc)
         for measurement_id, measurement_descriptor in mapping.measurements.items():
@@ -61,20 +61,20 @@ def store(storage_mappings, dataset):
 
         _LOG.debug('Storage type description: %r', storage_type.descriptor)
 
-    created_storage_units = index_netcdfs(storage_unit_filenames)
+        created_storage_units = index_netcdfs(storage_unit_filenames)
+        _LOG.debug('Wrote storage units: %s', created_storage_units)
+        result += [
+            StorageUnit(
+                [dataset.id],
+                # TODO: Use the correct mapping
+                storage_mappings[0],
+                unit_descriptor,
+                mapping.location_offset('file://'+path)
+            )
+            for path, unit_descriptor in created_storage_units.items()
+            ]
 
-    _LOG.debug('Wrote storage units: %s', created_storage_units)
-
-    return [
-        StorageUnit(
-            [dataset.id],
-            # TODO: Use the correct mapping
-            storage_mappings[0],
-            unit_descriptor,
-            path
-        )
-        for path, unit_descriptor in created_storage_units.items()
-        ]
+    return result
 
 
 def _get_doc_offset(offset, document):
