@@ -19,12 +19,14 @@ storage:
       measurements:
         '1111111111111100':
             dtype: int16
-            fill_value: -999
+            nodata: -999
+            units: '1'
             resampling_method: cubic
             varname: band_pixelquality
 #    - name: 15m_band
 #      measurements:
 #        '8':
 #            dtype: int16
-#            fill_value: -999
+#            nodata: -999
+#            units: '1'
 #            resampling_method: linear

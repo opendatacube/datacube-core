@@ -131,13 +131,13 @@ class NetCDFWriter(object):
 
         return index
 
-    def append_np_array(self, time, nparray, varname, dtype, ndv, chunking):
+    def append_np_array(self, time, nparray, varname, dtype, ndv, chunking, units):
         if varname in self.nco.variables:
             out_band = self.nco.variables[varname]
             src_filename = self.nco.variables[varname + "_src_filenames"]
         else:
             chunksizes = [chunking[dim] for dim in ['t', 'y', 'x']]
-            out_band, src_filename = self._create_data_variable(varname, dtype, chunksizes, ndv)
+            out_band, src_filename = self._create_data_variable(varname, dtype, chunksizes, ndv, units)
 
         time_index = self.find_or_create_time_index(time)
 
@@ -157,8 +157,9 @@ class NetCDFWriter(object):
         chunking = storage_type['chunking']
         chunksizes = [chunking[dim] for dim in ['t', 'y', 'x']]
         dtype = band_info.dtype
-        ndv = band_info.fill_value
-        out_band, src_filename = self._create_data_variable(varname, dtype, chunksizes, ndv)
+        nodata = band_info.nodata
+        units = band_info.units
+        out_band, src_filename = self._create_data_variable(varname, dtype, chunksizes, nodata, units)
 
         time_index = self.find_or_create_time_index(time_value)
 
@@ -178,13 +179,13 @@ class NetCDFWriter(object):
         extra_meta = self.nco.createVariable('extra_metadata', str, 'time')
         extra_meta.long_name = 'Extra source metadata'
 
-    def _create_data_variable(self, varname, dtype, chunksizes, ndv):
+    def _create_data_variable(self, varname, dtype, chunksizes, ndv, units):
         newvar = self.nco.createVariable(varname, dtype, ('time', 'latitude', 'longitude'),
                                          zlib=True, chunksizes=chunksizes,
                                          fill_value=ndv)
         newvar.grid_mapping = 'crs'
         newvar.set_auto_maskandscale(False)
-        newvar.units = '1'
+        newvar.units = units
 
         src_filename = self.nco.createVariable(varname + "_src_filenames", str, 'time')
         src_filename.long_name = 'Source filename from data import'

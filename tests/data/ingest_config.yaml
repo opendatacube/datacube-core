@@ -10,15 +10,15 @@ storage:
       bands:
         '10':
             dtype: int16
-            fill_value: -999
+            nodata: -999
             interpolation: nearest
         '20':
             dtype: int16
-            fill_value: -999
+            nodata: -999
             interpolation: cubic
     - name: bar
       bands:
         '8':
             dtype: int16
-            fill_value: -999
+            nodata: -999
             interpolation: linear

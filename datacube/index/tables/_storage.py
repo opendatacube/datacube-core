@@ -68,11 +68,11 @@ STORAGE_MAPPING = Table(
     # Eg.
     # '10':
     #   dtype: int16
-    #   fill_value: -999
+    #   nodata: -999
     #   interpolation: nearest
     # '20':
     #   dtype: int16
-    #   fill_value: -999
+    #   nodata: -999
     #   interpolation: cubic
     # See "_EXAMPLE_DATASET_TYPE_MEASUREMENTS" below.
     Column('measurements', postgres.JSONB),
