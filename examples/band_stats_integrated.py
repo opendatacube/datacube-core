@@ -53,7 +53,7 @@ def combine_storage_units(sus):
 
 
 def main(argv):
-    data_index = index.data_index_connect()
+    data_index = index.data_management_connect()
 
     sus = data_index.get_storage_units()
     pqs = [make_storage_unit(su) for su in sus if 'PQ' in su.path]
