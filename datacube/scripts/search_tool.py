@@ -131,7 +131,7 @@ def parse_expressions(get_field, *expression_text):
     def _get_field(name):
         field = get_field(name)
         if field is None:
-            raise UnknownFieldException('Unknown field %r' % name)
+            raise UnknownFieldException("Unknown field '%s'" % name)
         return field
 
     raw_expr = _parse_raw_expressions(' '.join(expression_text))

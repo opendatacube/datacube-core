@@ -10,6 +10,8 @@ eo:
         offset: [platform, code]
     sensor:
         offset: [instrument, name]
+    product:
+        offset: [product_type]
     lat:
         type: float-range
         max:

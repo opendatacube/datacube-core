@@ -193,16 +193,18 @@ class PostgresDb(object):
         return self._connection.execute(STORAGE_UNIT.select()).fetchall()
 
     def get_dataset_field(self, name):
-        return self._dataset_fields[name]
+        return self._dataset_fields.get(name)
 
-    def search_datasets(self, *expressions):
+    def search_datasets(self, expressions, select_fields=None):
         """
-        :type expressions: list[datacube.index.db._fields.Expression]
-        :rtype: list[Dataset]
+        :type select_fields: tuple[datacube.index.postgres._fields.PgField]
+        :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
+        :rtype: dict
         """
+        select_fields = [f.alchemy_expression for f in select_fields] if select_fields else [DATASET]
+
         results = self._connection.execute(
-            # TODO: Select certain fields.
-            DATASET.select().where(
+            select(select_fields).where(
                 and_(*[expression.alchemy_expression for expression in expressions])
             )
         )
