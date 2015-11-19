@@ -39,14 +39,15 @@ def _ensure_dataset(db, dataset_doc, path=None):
     # TODO: These lookups will depend on the document type.
     dataset_id = dataset_doc['id']
     source_datasets = dataset_doc['lineage']['source_datasets']
-    product_type = dataset_doc['product_type']
 
     indexable_doc = copy.deepcopy(dataset_doc)
     # Clear source datasets: We store them separately.
     indexable_doc['lineage']['source_datasets'] = None
+    # For now everything is 'eo'
+    metadata_type = 'eo'
 
     _LOG.info('Indexing %s @ %s', dataset_id, path)
-    was_inserted = db.insert_dataset(indexable_doc, dataset_id, path, product_type)
+    was_inserted = db.insert_dataset(indexable_doc, dataset_id, path, metadata_type)
 
     if not was_inserted:
         # No need to index sources: the dataset already existed.
@@ -135,13 +136,13 @@ class DataIndex(object):
     def get_dataset_field(self, name):
         """
         :type name: str
-        :rtype: datacube.index.db._fields.Field
+        :rtype: datacube.index.fields.Field
         """
         return self.db.get_dataset_field(name)
 
     def search_datasets(self, *expressions, **query):
         query_exprs = tuple(_build_expressions(self.get_dataset_field, **query))
-        return self.db.search_datasets(*(expressions+query_exprs))
+        return self.db.search_datasets((expressions+query_exprs))
 
     def search_datasets_eager(self, *expressions, **query):
         return list(self.search_datasets(*expressions, **query))

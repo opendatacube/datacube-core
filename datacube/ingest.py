@@ -34,7 +34,7 @@ def _write_missing_storage_units(config, index, dataset):
     Ensure all storage units have been written for the dataset.
     """
     # TODO: Query for missing storage units, not all storage units.
-    storage_mappings = config.get_storage_mappings_for_dataset(dataset.metadata_doc)
+    storage_mappings = config.get_storage_mappings_for_dataset(dataset)
     _LOG.debug('Storage mappings: %s', storage_mappings)
     if storage_mappings:
         storage_units = storage.store(storage_mappings, dataset)

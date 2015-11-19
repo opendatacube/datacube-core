@@ -18,8 +18,9 @@ _LOG = logging.getLogger(__name__)
 DATASET = Table(
     'dataset', _core.METADATA,
     Column('id', postgres.UUID, primary_key=True),
-    # (typically) product type: 'nbar', 'ortho' etc.
-    Column('type', String, nullable=False, doc=''),
+
+    # Type of metadata document. (Usually 'eo')
+    Column('metadata_type', String, nullable=False),
 
     Column('metadata', postgres.JSONB, index=True, nullable=False),
 

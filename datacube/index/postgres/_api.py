@@ -75,13 +75,13 @@ class PostgresDb(object):
         """
         return _BegunTransaction(self._connection)
 
-    def insert_dataset(self, dataset_doc, dataset_id, path, product_type):
+    def insert_dataset(self, metadata_doc, dataset_id, path, metadata_type):
         """
         Insert dataset if not already indexed.
-        :type dataset_doc: dict
+        :type metadata_doc: dict
         :type dataset_id: str or uuid.UUID
         :type path: pathlib.Path
-        :type product_type: str
+        :type metadata_type: str
         :return: whether it was inserted
         :rtype: bool
         """
@@ -92,17 +92,17 @@ class PostgresDb(object):
                 #      connection inserts the same dataset in the time between the subquery and the main query.
                 #      This is ok for our purposes.)
                 DATASET.insert().from_select(
-                    ['id', 'type', 'metadata_path', 'metadata'],
+                    ['id', 'metadata_type', 'metadata_path', 'metadata'],
                     select([
-                        bindparam('id'), bindparam('type'), bindparam('metadata_path'),
+                        bindparam('id'), bindparam('metadata_type'), bindparam('metadata_path'),
                         bindparam('metadata', type_=JSONB)
                     ]).where(~exists(select([DATASET.c.id]).where(DATASET.c.id == bindparam('id'))))
                 ),
                 id=dataset_id,
-                type=product_type,
+                metadata_type=metadata_type,
                 # TODO: Does a single path make sense? Or a separate 'locations' table?
                 metadata_path=str(path) if path else None,
-                metadata=dataset_doc
+                metadata=metadata_doc
             )
             return ret.rowcount > 0
         except IntegrityError as e:

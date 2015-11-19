@@ -63,8 +63,8 @@ class DataManagement(object):
         mapping = self.db.get_storage_mapping(id_)
         return self._make_storage_mapping(mapping)
 
-    def get_storage_mappings_for_dataset(self, dataset_metadata):
-        mappings = self.db.get_storage_mappings(dataset_metadata)
+    def get_storage_mappings_for_dataset(self, dataset):
+        mappings = self.db.get_storage_mappings(dataset.metadata_doc)
         return [self._make_storage_mapping(mapping) for mapping in mappings]
 
     def ensure_storage_type(self, descriptor):
