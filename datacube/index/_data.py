@@ -7,9 +7,8 @@ from __future__ import absolute_import
 import copy
 import logging
 
-from datacube.model import Range
 from datacube.config import SystemConfig
-from .postgres._fields import RangeField, RangeBetweenExpression, EqualsExpression
+from datacube.model import Range
 from .postgres import PostgresDb as Db
 
 
@@ -76,11 +75,9 @@ def _build_expression(get_field, name, value):
         raise RuntimeError('Unknown field %r' % name)
 
     if isinstance(value, Range):
-        if not isinstance(field, RangeField):
-            raise RuntimeError('%r does not support range queries' % name)
-        return RangeBetweenExpression(field, value.begin, value.end)
+        return field.between(value.begin, value.end)
     else:
-        return EqualsExpression(field, value)
+        return field == value
 
 
 def _build_expressions(get_field, **query):
