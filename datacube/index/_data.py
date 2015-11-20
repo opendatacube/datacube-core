@@ -135,7 +135,14 @@ class DataIndex(object):
         :type name: str
         :rtype: datacube.index.fields.Field
         """
-        return self.db.get_dataset_field(name)
+        return self.db.get_dataset_field('eo', name)
+
+    def get_storage_field(self, name):
+        """
+        :type name: str
+        :rtype: datacube.index.fields.Field
+        """
+        return self.db.get_storage_field('eo', name)
 
     def search_datasets(self, *expressions, **query):
         query_exprs = tuple(_build_expressions(self.get_dataset_field, **query))

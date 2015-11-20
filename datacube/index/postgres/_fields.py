@@ -6,6 +6,7 @@ Build and index fields within documents.
 from __future__ import absolute_import
 
 import functools
+from collections import defaultdict
 from string import lower
 
 import yaml
@@ -17,7 +18,9 @@ from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 
 from datacube.index.fields import Expression, Field
-from .tables import DATASET
+from datacube.index.postgres.tables import DATASET, STORAGE_UNIT
+
+DEFAULT_FIELDS_FILE = Path(__file__).parent.joinpath('document-fields.yaml')
 
 
 class PgField(Field):
@@ -25,9 +28,11 @@ class PgField(Field):
     A field within a Postgres JSONB document.
     """
 
-    def __init__(self, name, descriptor):
+    def __init__(self, name, descriptor, jsonb_column):
         super(PgField, self).__init__(name)
         self.descriptor = descriptor
+        # The underlying SQLAlchemy JSONB column. (eg. DATASET.c.metadata)
+        self.alchemy_jsonb_column = jsonb_column
 
     @property
     def alchemy_expression(self):
@@ -36,14 +41,6 @@ class PgField(Field):
         :return:
         """
         raise NotImplementedError('alchemy expression')
-
-    @property
-    def alchemy_jsonb_column(self):
-        """
-        The underlying table column.
-        :return:
-        """
-        return DATASET.c.metadata
 
     @property
     def postgres_index_type(self):
@@ -218,13 +215,48 @@ class EqualsExpression(PgExpression):
         return self.field.alchemy_expression == self.value
 
 
-def load_fields():
-    # TODO: Store in DB? This doesn't change often, so is hardcoded for now.
-    doc = yaml.load(Path(__file__).parent.joinpath('dataset-fields.yaml').open('r'))
-    return _parse_doc(doc['eo'])
+class FieldCollection(object):
+    def __init__(self):
+        # Three-level dict: metadata_type, doc_type, field_info
+        # eg. 'eo' -> 'dataset' -> 'lat'
+        #  or 'eo' -> 'storage' -> time
+        self.docs = defaultdict(functools.partial(defaultdict, dict))
+
+        # Supported document types:
+        self.document_types = {
+            'dataset': DATASET.c.metadata,
+            'storage_unit': STORAGE_UNIT.c.descriptor,
+        }
+
+    def load_from_file(self, path_):
+        """
+        :type path_: pathlib.Path
+        """
+        self.load_from_doc(yaml.load(path_.open('r')))
+
+    def load_from_doc(self, doc):
+        """
+        :type doc: dict
+        """
+        for metadata_type, doc_types in doc.items():
+            for doc_type, fields in doc_types.items():
+                table_field = self.document_types.get(doc_type)
+                if table_field is None:
+                    raise RuntimeError('Unknown document type %r. Expected one of %r' %
+                                       (doc_type, self.document_types.keys()))
+
+                self.docs[metadata_type][doc_type].update(_parse_fields(fields, table_field))
+
+    def get(self, metadata_type, document_type, name):
+        """
+        :type document_type: str
+        :type name: str
+        :rtype: datacube.index.fields.Field
+        """
+        return self.docs[metadata_type][document_type].get(name)
 
 
-def _parse_doc(doc):
+def _parse_fields(doc, table_column):
     """
     Parse a field spec document into objects.
 
@@ -252,13 +284,13 @@ def _parse_doc(doc):
     :rtype: dict[str, Field]
     """
 
-    def _get_field(name, descriptor):
+    def _get_field(name, descriptor, column):
         type_map = {
             'float-range': FloatRangeField,
             'datetime-range': DateRangeField,
             'string': SimpleField
         }
         type_name = descriptor.get('type') or 'string'
-        return type_map.get(type_name)(name, descriptor)
+        return type_map.get(type_name)(name, descriptor, column)
 
-    return {name: _get_field(name, descriptor) for name, descriptor in doc.items()}
+    return {name: _get_field(name, descriptor, table_column) for name, descriptor in doc.items()}

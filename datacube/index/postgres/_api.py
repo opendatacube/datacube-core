@@ -15,6 +15,7 @@ from sqlalchemy.engine.url import URL as engine_url
 from sqlalchemy.exc import IntegrityError
 
 from . import tables, _fields
+from ._fields import FieldCollection, DEFAULT_FIELDS_FILE
 from .tables import DATASET, DATASET_SOURCE, STORAGE_TYPE, \
     STORAGE_MAPPING, STORAGE_UNIT, DATASET_STORAGE
 
@@ -36,7 +37,9 @@ class PostgresDb(object):
         self._engine = engine
         self._connection = connection
 
-        self._dataset_fields = _fields.load_fields()
+        # These are currently hardcoded and so will not change. We may store them in the DB eventually.
+        self._fields = FieldCollection()
+        self._fields.load_from_file(DEFAULT_FIELDS_FILE)
 
     @classmethod
     def connect(cls, hostname, database, username=None, port=None):
@@ -192,8 +195,11 @@ class PostgresDb(object):
     def get_storage_units(self):
         return self._connection.execute(STORAGE_UNIT.select()).fetchall()
 
-    def get_dataset_field(self, name):
-        return self._dataset_fields.get(name)
+    def get_dataset_field(self, metadata_type, name):
+        return self._fields.get(metadata_type, 'dataset', name)
+
+    def get_storage_field(self, metadata_type, name):
+        return self._fields.get(metadata_type, 'storage_unit', name)
 
     def search_datasets(self, expressions, select_fields=None):
         """
@@ -201,7 +207,18 @@ class PostgresDb(object):
         :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
         :rtype: dict
         """
-        select_fields = [f.alchemy_expression for f in select_fields] if select_fields else [DATASET]
+        return self._search_docs(expressions, select_fields=select_fields, table=DATASET)
+
+    def search_storage_units(self, expressions, select_fields=None):
+        """
+        :type select_fields: tuple[datacube.index.postgres._fields.PgField]
+        :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
+        :rtype: dict
+        """
+        return self._search_docs(expressions, select_fields=select_fields, table=STORAGE_UNIT)
+
+    def _search_docs(self, expressions, select_fields=None, table=None):
+        select_fields = [f.alchemy_expression for f in select_fields] if select_fields else [table]
 
         results = self._connection.execute(
             select(select_fields).where(
