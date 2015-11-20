@@ -16,10 +16,8 @@
 from __future__ import absolute_import, division, print_function
 
 import numpy
-from collections import namedtuple
 
-
-Range = namedtuple('Range', ('begin', 'end'))
+from datacube.model import Range
 
 
 def range_to_index(coord, range_):

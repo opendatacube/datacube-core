@@ -5,10 +5,14 @@ Core classes used across modules.
 from __future__ import absolute_import
 
 import logging
+from collections import namedtuple
 
 import yaml
 
 _LOG = logging.getLogger(__name__)
+
+
+Range = namedtuple('Range', ('begin', 'end'))
 
 
 # Match datasets. (for mapping to storage)

@@ -6,8 +6,10 @@ from __future__ import absolute_import
 
 import pytest
 
+from datacube.model import Range
 from datacube.index.postgres._fields import SimpleField, RangeField, RangeBetweenExpression, EqualsExpression
 from datacube.scripts.search_tool import parse_expressions, UnknownFieldException
+from datacube.index._data import _build_expressions
 
 _sat_field = SimpleField('satellite', {})
 _sens_field = SimpleField('sensor', {})
@@ -50,6 +52,11 @@ def test_parse_multiple_expressions():
             'OTHER'
         )
     ]
+
+
+def test_build_query_expressions():
+    assert [EqualsExpression(_sat_field, "LANDSAT_8")] == _build_expressions(_fields.get, satellite="LANDSAT_8")
+    assert [RangeBetweenExpression(_lat_field, 4, 23.0)] == _build_expressions(_fields.get, lat=Range(4, 23))
 
 
 def test_unknown_field():

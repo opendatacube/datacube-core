@@ -7,7 +7,9 @@ from __future__ import absolute_import
 import copy
 import logging
 
+from datacube.model import Range
 from datacube.config import SystemConfig
+from .postgres._fields import RangeField, RangeBetweenExpression, EqualsExpression
 from .postgres import PostgresDb as Db
 
 
@@ -67,6 +69,23 @@ def _ensure_dataset(db, dataset_doc, path=None):
     return dataset_id
 
 
+def _build_expression(get_field, name, value):
+    field = get_field(name)
+    if field is None:
+        raise RuntimeError('Unknown field %r' % name)
+
+    if isinstance(value, Range):
+        if not isinstance(field, RangeField):
+            raise RuntimeError('%r does not support range queries' % name)
+        return RangeBetweenExpression(field, value.begin, value.end)
+    else:
+        return EqualsExpression(field, value)
+
+
+def _build_expressions(get_field, **query):
+    return [_build_expression(get_field, name, value) for name, value in query.items()]
+
+
 class DataIndex(object):
     def __init__(self, db):
         """
@@ -120,8 +139,9 @@ class DataIndex(object):
         """
         return self.db.get_dataset_field(name)
 
-    def search_datasets(self, *expressions):
-        return self.db.search_datasets(*expressions)
+    def search_datasets(self, *expressions, **query):
+        query_exprs = tuple(_build_expressions(self.get_dataset_field, **query))
+        return self.db.search_datasets(*(expressions+query_exprs))
 
-    def search_datasets_eager(self, *expressions):
-        return list(self.search_datasets(*expressions))
+    def search_datasets_eager(self, *expressions, **query):
+        return list(self.search_datasets(*expressions, **query))
