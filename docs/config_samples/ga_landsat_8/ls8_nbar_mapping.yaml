@@ -1,21 +1,22 @@
 
-name: LS5 NBAR
+name: LS8 NBAR
 driver: NetCDF CF
 
 # Any datasets matching these metadata properties.
 match:
     metadata:
         platform:
-            code: LANDSAT_5
+            code: LANDSAT_8
         instrument:
-            name: TM
+            name: OLI_TIRS
         product_type: EODS_NBAR
 
-# Store them using storage definitions '30m_bands' and '15m_bands':
+# Store them using storage definition '25m_bands':
 storage:
     - name: 25m_bands
       location_name: gdata
-      location_offset: '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc'
+      location_offset: '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S
+      .%f}.nc'
       global_attributes:
         title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
         summary: These files are experimental, short lived, and the format will change.
@@ -23,40 +24,38 @@ storage:
         product_version: '0.0.0'
         license: Creative Commons Attribution 4.0 International CC BY 4.0
       measurements:
-        '10':
+        '1':
             dtype: int16
             nodata: -999
             resampling_method: cubic
-            varname: band_10
-        '20':
+            varname: band_1
+        '2':
             dtype: int16
             nodata: -999
             resampling_method: cubic
-            varname: band_20
-        '30':
+            varname: band_2
+        '3':
             dtype: int16
             nodata: -999
             resampling_method: cubic
-            varname: band_30
-        '40':
+            varname: band_3
+        '4':
             dtype: int16
             nodata: -999
             resampling_method: cubic
-            varname: band_40
-        '50':
+            varname: band_4
+        '5':
             dtype: int16
             nodata: -999
             resampling_method: cubic
-            varname: band_50
-        '70':
+            varname: band_5
+        '6':
             dtype: int16
             nodata: -999
             resampling_method: cubic
-            varname: band_70
-#    - name: 15m_band
-#      measurements:
-#        '8':
-#            dtype: int16
-#            nodata: -999
-#            units: '1'
-#            resampling_method: linear
+            varname: band_6
+        '7':
+            dtype: int16
+            nodata: -999
+            resampling_method: cubic
+            varname: band_7

@@ -1,14 +1,14 @@
 
-name: LS5 NBAR
+name: LS7 NBAR
 driver: NetCDF CF
 
 # Any datasets matching these metadata properties.
 match:
     metadata:
         platform:
-            code: LANDSAT_5
+            code: LANDSAT_7
         instrument:
-            name: TM
+            name: ETM
         product_type: EODS_NBAR
 
 # Store them using storage definitions '30m_bands' and '15m_bands':
@@ -53,10 +53,3 @@ storage:
             nodata: -999
             resampling_method: cubic
             varname: band_70
-#    - name: 15m_band
-#      measurements:
-#        '8':
-#            dtype: int16
-#            nodata: -999
-#            units: '1'
-#            resampling_method: linear
