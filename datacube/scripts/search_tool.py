@@ -3,7 +3,7 @@
 Query datasets and storage units.
 """
 from __future__ import absolute_import
-from __future__ import unicode_literals, print_function
+from __future__ import print_function
 
 import re
 
@@ -12,7 +12,7 @@ from pypeg2 import word, attr, List, some, parse as peg_parse
 
 from datacube import config, index
 
-FIELD_NAME = attr('field_name', word)
+FIELD_NAME = attr(u'field_name', word)
 
 NUMBER = re.compile(r"\d+")
 # A limited string can be used without quotation marks.
@@ -26,8 +26,8 @@ class Expr(object):
         """
         Return this as a database expression.
 
-        :type get_field: (str) -> datacube.index.db._fields.Field
-        :rtype: datacube.index.db._fields.Expression
+        :type get_field: (str) -> datacube.index.fields.Field
+        :rtype: datacube.index.fields.Expression
         """
         raise NotImplementedError('to_expr')
 
@@ -37,8 +37,8 @@ class StringValue(Expr):
         self.value = value
 
     grammar = [
-        attr('value', LIMITED_STRING),
-        ('"', attr('value', STRING_CONTENTS), '"')
+        attr(u'value', LIMITED_STRING),
+        (u'"', attr(u'value', STRING_CONTENTS), u'"')
     ]
 
     def __str__(self):
@@ -55,7 +55,7 @@ class NumericValue(Expr):
     def __init__(self, value=None):
         self.value = value
 
-    grammar = attr('value', NUMBER)
+    grammar = attr(u'value', NUMBER)
 
     def __str__(self):
         return self.value
@@ -72,7 +72,7 @@ class EqualsExpression(Expr):
         self.field_name = field_name
         self.value = value
 
-    grammar = FIELD_NAME, '=', attr('value', [NumericValue, StringValue])
+    grammar = FIELD_NAME, u'=', attr(u'value', [NumericValue, StringValue])
 
     def __str__(self):
         return '{} = {!r}'.format(self.field_name, self.value)
@@ -88,8 +88,8 @@ class BetweenExpression(Expr):
         self.high_value = high_value
 
     grammar = [
-        (attr('low_value', NumericValue), '<', FIELD_NAME, '<', attr('high_value', NumericValue)),
-        (attr('high_value', NumericValue), '>', FIELD_NAME, '>', attr('low_value', NumericValue))
+        (attr(u'low_value', NumericValue), u'<', FIELD_NAME, u'<', attr(u'high_value', NumericValue)),
+        (attr(u'high_value', NumericValue), u'>', FIELD_NAME, u'>', attr(u'low_value', NumericValue))
     ]
 
     def __str__(self):
@@ -124,8 +124,8 @@ class UnknownFieldException(Exception):
 def parse_expressions(get_field, *expression_text):
     """
     :type expression_text: list[str]
-    :type get_field: (str) -> datacube.index.db._fields.Field
-    :rtype: list[datacube.index.db._fields.Expression]
+    :type get_field: (str) -> datacube.index.fields.Field
+    :rtype: list[datacube.index.fields.Expression]
     """
 
     def _get_field(name):
