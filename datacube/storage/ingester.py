@@ -7,8 +7,10 @@ from datacube import compat
 import yaml
 from osgeo import gdal, gdalconst, osr
 from pathlib import Path
+from datacube.storage.utils import tilespec_from_gdaldataset
 
-from .netcdf_writer import append_to_netcdf, TileSpec
+from .netcdf_writer import append_to_netcdf
+from datacube.model import TileSpec
 
 _LOG = logging.getLogger(__name__)
 
@@ -113,17 +115,6 @@ def ensure_path_exists(filename):
         file_dir.parent.mkdir(parents=True)
 
 
-def ingest(input_spec):
-    os.chdir(input_spec.storage_spec['base_path'])
-
-    for band_name in input_spec.bands.keys():
-        input_filename = input_spec.dataset['image']['bands'][band_name]['path']
-
-        band_info = input_spec.bands[band_name]
-        crazy_band_tiler(band_info, input_filename,
-                         input_spec.storage_spec, input_spec.dataset)
-
-
 class StorageSegmentMetadata(object):
     def __init__(self, coordinates, measurements, spatial_extent, time_extent):
         self.coordinates = coordinates
@@ -139,16 +130,14 @@ def crazy_band_tiler(band_info, input_filename, storage_spec, time_value, datase
                            storage_spec['tile_size'],
                            storage_spec['resolution'],
                            dst_srs=osr.SpatialReference(str(storage_spec['projection']['spatial_ref']))):
-        tile_spec = TileSpec(im)
-        # we have tile_spec, input_spec.storage_spec, input_spec.eodataset, input_spec.bands
-        # also, im has the SRS we want to use
+        tile_spec = tilespec_from_gdaldataset(im)
 
         out_filename = generate_filename(storage_spec['filename_format'], dataset_metadata, tile_spec)
         ensure_path_exists(out_filename)
 
         _LOG.debug((os.getcwd(), out_filename))
 
-        append_to_netcdf(im, out_filename, storage_spec, band_info, time_value, input_filename)
+        append_to_netcdf(tile_spec, im, out_filename, storage_spec, band_info, time_value, input_filename)
         _LOG.debug(im)
         yield out_filename
 
@@ -167,12 +156,3 @@ def load_eodataset(dataset_path):
         dataset_config['image']['bands'][name]['path'] = dataset_path + dataset_config['image']['bands'][name]['path']
 
     return dataset_config
-
-
-def run_ingest(storage_config, ingest_config, dataset_path):
-    ingest_config = load_yaml(ingest_config)
-    storage_config = load_yaml(storage_config)
-    storage_configs = {storage_config['name']: storage_config}
-    eodataset = load_eodataset(dataset_path)
-    for input_spec in make_input_specs(ingest_config, storage_configs, eodataset):
-        ingest(input_spec)

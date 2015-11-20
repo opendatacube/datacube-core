@@ -23,19 +23,19 @@ __The current AGDC v2 implementation is intended as a working prototype__ for a 
 
 ## Test Ingestion Script
 
-    $ datacube_ingest --help
-    Usage: datacube_ingest [OPTIONS] INPUT_PATH FILENAME_FORMAT
+    $ datacube-config --help
+    Usage: datacube-config-script.py [OPTIONS] COMMAND [ARGS]...
     
-      Example output filename format: combined_{x}_{y}.nc
+      Configure the Data Cube
     
     Options:
-      -o, --output-dir TEXT
-      --multi-variable
-      --single-variable
-      --tile / --no-tile     Allow partial processing
-      --merge / --no-merge   Allow partial processing
-      -v, --verbose          Use multiple times for more verbosity
-      --help                 Show this message and exit.
+      -v, --verbose  Use multiple times for more verbosity
+      --log-queries  Print database queries.
+      -h, --help     Show this message and exit.
+    
+    Commands:
+      mappings  Dataset-storage mappings
+      storage   Storage types
 
 
 ## Python Usage

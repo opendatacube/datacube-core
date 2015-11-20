@@ -5,12 +5,10 @@ import os.path
 from datetime import datetime
 
 import netCDF4
-import numpy as np
 from netCDF4 import date2index
 from osgeo import osr
 
-from datacube.model import VariableAlreadyExists
-from .utils import get_dataset_extent
+from datacube.model import VariableAlreadyExists, TileSpec
 
 _LOG = logging.getLogger(__name__)
 
@@ -86,7 +84,7 @@ class NetCDFWriter(object):
     def _set_global_attributes(self, tile_spec):
         """
 
-        :type tile_spec: TileSpec
+        :type tile_spec: datacube.model.TileSpec
         :return:
         """
         self.nco.spatial_coverage = "1.000000 degrees grid"  # FIXME: Don't hard code
@@ -98,18 +96,17 @@ class NetCDFWriter(object):
         self.nco.geospatial_lon_max = tile_spec.lon_max
         self.nco.geospatial_lon_units = "degrees_east"
         self.nco.geospatial_lon_resolution = tile_spec.lon_res
-        creation_date = datetime.utcnow().strftime("%Y%m%d")
-        self.nco.history = "NetCDF-CF file created %s." % creation_date
+
+        creation_date = datetime.utcnow()
+        self.nco.history = "NetCDF-CF file created by agdc-v2 at {:%Y%m%d}.".format(creation_date)
+
+        # Attributes from Storage Mapping
+        for name, value in tile_spec.global_attrs:
+            self.nco.setncattr(name, value)
 
         # Attributes for NCI Compliance
-        self.nco.title = "Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE"
-        self.nco.summary = "These files are experimental, short lived, and the format will change."
-        self.nco.source = "This data is a reprojection and retile of Landsat surface reflectance " \
-                          "scene data available from /g/data/rs0/scenes/"
-        self.nco.product_version = "0.0.0"
         self.nco.date_created = datetime.today().isoformat()
         self.nco.Conventions = 'CF-1.6'
-        self.nco.license = "Creative Commons Attribution 4.0 International CC BY 4.0"
 
     def find_or_create_time_index(self, insertion_time):
         """
@@ -166,12 +163,6 @@ class NetCDFWriter(object):
         out_band[time_index, :, :] = gdal_dataset.ReadAsArray()
         src_filename[time_index] = input_filename
 
-        # return StorageSegmentMetadata(coordinates=Coordinate(),
-        #                               measurements=[Measurement()],
-        #                               spatial_extent=SpatialExtent(),
-        #                               time_extent=TimeExtent()
-        #                               )
-
     def _create_variables(self, tile_spec):
         self._create_standard_dimensions(tile_spec.lats, tile_spec.lons)
 
@@ -201,54 +192,7 @@ class NetCDFWriter(object):
         return netcdfbands
 
 
-class TileSpec(object):
-    lats = []
-    lons = []
-
-    def __init__(self, gdal_ds):
-        self._nbands = gdal_ds.RasterCount
-        self._projection = gdal_ds.GetProjection()
-        nlats, nlons = gdal_ds.RasterYSize, gdal_ds.RasterXSize
-        geotransform = gdal_ds.GetGeoTransform()
-        self._geotransform = geotransform
-        self.lons = np.arange(nlons) * geotransform[1] + geotransform[0]
-        self.lats = np.arange(nlats) * geotransform[5] + geotransform[3]
-        self.extents = get_dataset_extent(gdal_ds)
-
-    @property
-    def num_bands(self):
-        return self._nbands
-
-    @property
-    def projection(self):
-        return self._projection
-
-    @property
-    def lat_min(self):
-        return min(y for x, y in self.extents)
-
-    @property
-    def lat_max(self):
-        return max(y for x, y in self.extents)
-
-    @property
-    def lon_min(self):
-        return min(x for x, y in self.extents)
-
-    @property
-    def lon_max(self):
-        return max(x for x, y in self.extents)
-
-    @property
-    def lat_res(self):
-        return self._geotransform[5]
-
-    @property
-    def lon_res(self):
-        return self._geotransform[1]
-
-
-def append_to_netcdf(gdal_dataset, netcdf_path, storage_type, band_info, time_value, input_filename=""):
+def append_to_netcdf(tile_spec, gdal_dataset, netcdf_path, storage_type, band_info, time_value, input_filename=""):
     """
     Append a raster slice to a new or existing NetCDF file
 
@@ -259,8 +203,6 @@ def append_to_netcdf(gdal_dataset, netcdf_path, storage_type, band_info, time_va
     :param input_filename: used for metadata only
     :return:
     """
-    tile_spec = TileSpec(gdal_dataset)
-
     ncfile = NetCDFWriter(netcdf_path, tile_spec)
 
     ncfile.append_gdal_tile(gdal_dataset, band_info, storage_type,

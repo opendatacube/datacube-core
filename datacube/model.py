@@ -7,10 +7,10 @@ from __future__ import absolute_import
 import logging
 from collections import namedtuple
 
+import numpy as np
 import yaml
 
 _LOG = logging.getLogger(__name__)
-
 
 Range = namedtuple('Range', ('begin', 'end'))
 
@@ -92,6 +92,11 @@ class StorageMapping(object):
     def storage_pattern(self):
         return self.resolve_location(self.filename_pattern)
 
+    def __repr__(self):
+        return ('StorageMapping<storage_type={!r},'
+                ' id_={!r},...,location_offset={!r}>'
+                .format(self.storage_type, self.id_, self.resolve_location('')))
+
 
 class StorageUnit(object):
     def __init__(self, dataset_ids, storage_mapping, descriptor, path, id_=None):
@@ -140,7 +145,7 @@ def _expected_metadata_path(dataset_path):
         return 'eo', dataset_path.joinpath('ga-metadata.yaml')
 
     if dataset_path.is_file():
-        return 'eo', dataset_path.parent.joinpath('{}.ga-md.yaml'.format(dataset_path.name))
+        return 'eo', dataset_path
 
     raise ValueError('Unhandled path type for %r' % dataset_path)
 
@@ -186,3 +191,45 @@ class Dataset(object):
 
 class VariableAlreadyExists(Exception):
     pass
+
+
+class TileSpec(object):
+    """
+    Defines a Storage Tile/Storage Unit, it's projection, location, extents, resolution, and global attributes
+
+    """
+
+    lats = []
+    lons = []
+
+    def __init__(self, nlats, nlons, projection, geotransform, extents, global_attrs=None):
+        self.projection = projection
+        self.geotransform = geotransform
+        self.lons = np.arange(nlons) * geotransform[1] + geotransform[0]
+        self.lats = np.arange(nlats) * geotransform[5] + geotransform[3]
+        self.extents = extents
+        self.global_attrs = global_attrs or {}
+
+    @property
+    def lat_min(self):
+        return min(y for x, y in self.extents)
+
+    @property
+    def lat_max(self):
+        return max(y for x, y in self.extents)
+
+    @property
+    def lon_min(self):
+        return min(x for x, y in self.extents)
+
+    @property
+    def lon_max(self):
+        return max(x for x, y in self.extents)
+
+    @property
+    def lat_res(self):
+        return self.geotransform[5]
+
+    @property
+    def lon_res(self):
+        return self.geotransform[1]

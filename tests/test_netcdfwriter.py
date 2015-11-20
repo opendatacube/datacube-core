@@ -7,18 +7,10 @@ import netCDF4
 from osgeo import gdal
 import pytest
 
-from datacube.storage.netcdf_writer import NetCDFWriter, TileSpec, append_to_netcdf
+from datacube.storage.netcdf_writer import NetCDFWriter, append_to_netcdf
+from datacube.model import TileSpec
 from datacube.storage.ingester import SimpleObject
-
-
-class TestTileSpec(TileSpec):
-    def __init__(self, nlats, nlons, nbands, geotransform, projection, extents):
-        self._nbands = nbands
-        self._geotransform = geotransform
-        self._projection = projection
-        self.lons = np.arange(nlons) * geotransform[1] + geotransform[0]
-        self.lats = np.arange(nlats) * geotransform[5] + geotransform[3]
-        self.extents = extents
+from datacube.storage.utils import tilespec_from_gdaldataset
 
 
 def test_create_single_time_netcdf_from_numpy_arrays(tmpdir):
@@ -29,7 +21,7 @@ def test_create_single_time_netcdf_from_numpy_arrays(tmpdir):
                  'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
                  'AUTHORITY["EPSG","4326"]]'
     extents = [[151.0, -29.0], [151.0, -30.0], [152.0, -30.0], [152.0, -29.0]]
-    tile_spec = TestTileSpec(2000, 4000, 2, geotransform, projection, extents)
+    tile_spec = TileSpec(2000, 4000, projection, geotransform, extents)
 
     chunking = {'t': 1, 'y': 100, 'x': 100}
     date = datetime(2008, 1, 1)
@@ -99,7 +91,10 @@ def test_create_sample_netcdf_from_gdalds(tmpdir, example_gdal_path):
     band_info = SimpleObject(varname='B10', dtype='int16', nodata=-999)
     storage_spec = {'chunking': {'x': 100, 'y': 100, 't': 1}}
 
-    append_to_netcdf(dataset, filename, storage_spec, band_info, datetime(2008, 5, 5, 0, 24), input_filename="")
+    tile_spec = tilespec_from_gdaldataset(dataset)
+
+    append_to_netcdf(tile_spec, dataset, filename, storage_spec, band_info, datetime(2008, 5, 5, 0, 24),
+                     input_filename="")
 
     # Perform some basic checks
     nco = netCDF4.Dataset(filename)

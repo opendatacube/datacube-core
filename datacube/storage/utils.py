@@ -7,6 +7,7 @@ import subprocess
 import click
 from osgeo import osr, gdal
 import numpy as np
+from datacube.model import TileSpec
 
 _LOG = logging.getLogger(__name__)
 
@@ -171,3 +172,18 @@ def namedtuples2dicts(namedtuples):
     :return: dict of dicts
     """
     return {k: dict(vars(v)) for k, v in namedtuples.items()}
+
+
+def tilespec_from_gdaldataset(gdal_ds, global_attrs=None):
+    """
+    Create a TileSpec pulling all required attributes from an open gdal dataset
+
+    :param gdal_ds:
+    :param global_attrs:
+    :rtype: TileSpec
+    """
+    projection = gdal_ds.GetProjection()
+    nlats, nlons = gdal_ds.RasterYSize, gdal_ds.RasterXSize
+    geotransform = gdal_ds.GetGeoTransform()
+    extents = get_dataset_extent(gdal_ds)
+    return TileSpec(nlats, nlons, projection, geotransform, extents, global_attrs)
