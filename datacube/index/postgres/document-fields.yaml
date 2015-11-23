@@ -77,6 +77,6 @@ eo:
         lon:
             type: float-range
             min:
-            - [coordinates, geospatial_lon_min]
+            - [extents, geospatial_lon_min]
             max:
-            - [coordinates, geospatial_lon_max]
+            - [extents, geospatial_lon_max]
