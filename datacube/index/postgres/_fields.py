@@ -46,13 +46,15 @@ class PgField(Field):
     def postgres_index_type(self):
         return 'btree'
 
-    @property
-    def alchemy_index(self):
+    def as_alchemy_index(self, prefix):
         """
         Build an SQLAlchemy index for this field.
         """
         return Index(
-            'ix_dataset_md_' + lower(self.name),
+            'ix_field_{prefix}_{name}'.format(
+                prefix=lower(prefix),
+                name=lower(self.name),
+            ),
             self.alchemy_expression,
             postgresql_using=self.postgres_index_type
         )
@@ -246,6 +248,12 @@ class FieldCollection(object):
                                        (doc_type, self.document_types.keys()))
 
                 self.docs[metadata_type][doc_type].update(_parse_fields(fields, table_field))
+
+    def items(self):
+        for metadata_type, doc_types in self.docs.items():
+            for doc_type, fields in doc_types.items():
+                for name, field in fields.items():
+                    yield (metadata_type, doc_type, field)
 
     def get(self, metadata_type, document_type, name):
         """

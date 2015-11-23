@@ -21,6 +21,17 @@ def cli(verbose, log_queries):
     config.init_logging(verbosity_level=verbose, log_queries=log_queries)
 
 
+@cli.group()
+def database():
+    pass
+
+
+@database.command('init', help='Initialise the database')
+def database_init():
+    dm = index.data_management_connect()
+    dm.db.init()
+
+
 @cli.group(help='Storage types')
 def storage():
     pass

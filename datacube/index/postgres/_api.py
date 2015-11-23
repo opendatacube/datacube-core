@@ -14,7 +14,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.url import URL as engine_url
 from sqlalchemy.exc import IntegrityError
 
-from . import tables, _fields
+from . import tables
 from ._fields import FieldCollection, DEFAULT_FIELDS_FILE
 from .tables import DATASET, DATASET_SOURCE, STORAGE_TYPE, \
     STORAGE_MAPPING, STORAGE_UNIT, DATASET_STORAGE
@@ -54,15 +54,20 @@ class PostgresDb(object):
             # json_deserializer=my_deserialize_fn
         )
         _connection = _engine.connect()
-        is_new = tables.ensure_db(_connection, _engine)
-
-        # Index any important document fields.
-        if is_new:
-            for field in _fields.load_fields().values():
-                _LOG.debug('Creating index: %s', field.name)
-                field.alchemy_index.create(_engine)
-
         return PostgresDb(_engine, _connection)
+
+    def init(self):
+        """
+        Init a new database.
+        """
+        is_new = tables.ensure_db(self._connection, self._engine)
+
+        # Index fields within documents.
+        # TODO: Support rerunning this on existing databases (ie. check if each index exists first).
+        if is_new:
+            for metadata_type, doc_type, field in self._fields.items():
+                _LOG.debug('Creating index: %s', field.name)
+                field.as_alchemy_index(prefix=metadata_type + '_' + doc_type).create(self._engine)
 
     def begin(self):
         """
