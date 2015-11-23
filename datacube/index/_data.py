@@ -144,9 +144,38 @@ class DataIndex(object):
         """
         return self.db.get_storage_field('eo', name)
 
+    def get_storage_field_with_fallback(self, name):
+        """
+        :type name: str
+        :rtype: datacube.index.fields.Field
+        """
+        val = self.get_storage_field(name)
+        return val if val is not None else self.get_dataset_field(name)
+
     def search_datasets(self, *expressions, **query):
+        """
+        TODO: Return objects
+        :type expressions: list[datacube.index.fields.Expression]
+        """
         query_exprs = tuple(_build_expressions(self.get_dataset_field, **query))
         return self.db.search_datasets((expressions+query_exprs))
 
     def search_datasets_eager(self, *expressions, **query):
+        """
+        :type expressions: list[datacube.index.fields.Expression]
+        """
         return list(self.search_datasets(*expressions, **query))
+
+    def search_storage_units(self, *expressions, **query):
+        """
+        TODO: Return objects
+        :type expressions: list[datacube.index.fields.Expression]
+        """
+        query_exprs = tuple(_build_expressions(self.get_storage_field_with_fallback, **query))
+        return self.db.search_storage_units((expressions + query_exprs))
+
+    def search_storage_units_eager(self, *expressions, **query):
+        """
+        :type expressions: list[datacube.index.fields.Expression]
+        """
+        return list(self.search_storage_units(*expressions, **query))

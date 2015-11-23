@@ -158,5 +158,15 @@ def dataset(expression):
         print(repr(d))
 
 
+@cli.command(help='Storage units')
+@click.argument('expression',
+                nargs=-1)
+def unit(expression):
+    i = index.data_index_connect()
+
+    for d in i.search_storage_units(*parse_expressions(i.get_storage_field_with_fallback, *expression)):
+        print(repr(d))
+
+
 if __name__ == '__main__':
     cli()
