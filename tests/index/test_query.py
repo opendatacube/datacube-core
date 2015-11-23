@@ -7,13 +7,13 @@ from __future__ import absolute_import
 import pytest
 
 from datacube.index._data import _build_expressions
-from datacube.index.postgres._fields import SimpleField, RangeField, RangeBetweenExpression, EqualsExpression
+from datacube.index.postgres._fields import SimpleDocField, RangeDocField, RangeBetweenExpression, EqualsExpression
 from datacube.model import Range
 from datacube.scripts.search_tool import parse_expressions, UnknownFieldException
 
-_sat_field = SimpleField('satellite', {}, None)
-_sens_field = SimpleField('sensor', {}, None)
-_lat_field = RangeField('lat', {}, None)
+_sat_field = SimpleDocField('satellite', {}, None)
+_sens_field = SimpleDocField('sensor', {}, None)
+_lat_field = RangeDocField('lat', {}, None)
 _fields = {
     'satellite': _sat_field,
     'sensor': _sens_field,

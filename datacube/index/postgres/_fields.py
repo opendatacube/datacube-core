@@ -25,18 +25,19 @@ DEFAULT_FIELDS_FILE = Path(__file__).parent.joinpath('document-fields.yaml')
 
 class PgField(Field):
     """
-    A field within a Postgres JSONB document.
+    Postgres implementation of a searchable field. May be a value inside
+    a JSONB column.
     """
 
-    def __init__(self, name, descriptor, jsonb_column):
+    def __init__(self, name, descriptor, alchemy_column):
         super(PgField, self).__init__(name)
         self.descriptor = descriptor
-        # The underlying SQLAlchemy JSONB column. (eg. DATASET.c.metadata)
-        self.alchemy_jsonb_column = jsonb_column
+        # The underlying SQLAlchemy column. (eg. DATASET.c.metadata)
+        self.alchemy_column = alchemy_column
 
     @property
     def required_alchemy_table(self):
-        return self.alchemy_jsonb_column.table
+        return self.alchemy_column.table
 
     @property
     def alchemy_expression(self):
@@ -67,7 +68,7 @@ class PgField(Field):
         """
         :rtype: Expression
         """
-        raise NotImplementedError('equals expression')
+        return EqualsExpression(self, value)
 
     def between(self, low, high):
         """
@@ -76,7 +77,17 @@ class PgField(Field):
         raise NotImplementedError('between expression')
 
 
-class SimpleField(PgField):
+class NativeField(PgField):
+    @property
+    def alchemy_expression(self):
+        return self.alchemy_column
+
+    def as_alchemy_index(self, prefix):
+        # Don't add extra indexes for native fields.
+        return None
+
+
+class SimpleDocField(PgField):
     """
     A field with a single value (eg. String, int)
     """
@@ -92,7 +103,7 @@ class SimpleField(PgField):
 
     @property
     def alchemy_expression(self):
-        _field = self.alchemy_jsonb_column[self.offset].astext
+        _field = self.alchemy_column[self.offset].astext
         return cast(_field, self.alchemy_casted_type) if self.alchemy_casted_type else _field
 
     def __eq__(self, value):
@@ -108,7 +119,7 @@ class SimpleField(PgField):
         raise NotImplementedError('Simple field between expression')
 
 
-class RangeField(PgField):
+class RangeDocField(PgField):
     """
     A range of values. Has min and max values, which may be calculated from multiple
     values in the document.
@@ -136,7 +147,7 @@ class RangeField(PgField):
         return 'gist'
 
     def _get_expr(self, doc_offsets, agg_function, casted_type):
-        fields = [self.alchemy_jsonb_column[offset].astext for offset in doc_offsets]
+        fields = [self.alchemy_column[offset].astext for offset in doc_offsets]
 
         if casted_type:
             fields = [cast(field, casted_type) for field in fields]
@@ -166,7 +177,7 @@ class RangeField(PgField):
         return RangeBetweenExpression(self, low, high)
 
 
-class FloatRangeField(RangeField):
+class FloatRangeDocField(RangeDocField):
     @property
     def alchemy_casted_type(self):
         return postgres.NUMERIC
@@ -177,7 +188,7 @@ class FloatRangeField(RangeField):
         return functools.partial(func.numrange, type_=NUMRANGE)
 
 
-class DateRangeField(RangeField):
+class DateRangeDocField(RangeDocField):
     @property
     def alchemy_casted_type(self):
         return TIMESTAMP(timezone=True)
@@ -228,16 +239,33 @@ class EqualsExpression(PgExpression):
 
 class FieldCollection(object):
     def __init__(self):
+        # Supported document types:
+        self.document_types = {
+            'dataset': (
+                DATASET.c.metadata,
+                # Native search fields.
+                {
+                    'id': NativeField('id', {}, DATASET.c.id),
+                    'metadata_path': NativeField('metadata_path', {}, DATASET.c.metadata_path)
+                }
+            ),
+            'storage_unit': (
+                STORAGE_UNIT.c.descriptor,
+                # Native search fields.
+                {
+                    'id': NativeField('id', {}, STORAGE_UNIT.c.id),
+                    'path': NativeField('path', {}, STORAGE_UNIT.c.path)
+                }
+            ),
+        }
+
         # Three-level dict: metadata_type, doc_type, field_info
         # eg. 'eo' -> 'dataset' -> 'lat'
         #  or 'eo' -> 'storage' -> time
-        self.docs = defaultdict(functools.partial(defaultdict, dict))
+        self.docs = defaultdict(self._metadata_type_defaults)
 
-        # Supported document types:
-        self.document_types = {
-            'dataset': DATASET.c.metadata,
-            'storage_unit': STORAGE_UNIT.c.descriptor,
-        }
+    def _metadata_type_defaults(self):
+        return dict([(name, default[1].copy()) for name, default in self.document_types.items()])
 
     def load_from_file(self, path_):
         """
@@ -251,7 +279,7 @@ class FieldCollection(object):
         """
         for metadata_type, doc_types in doc.items():
             for doc_type, fields in doc_types.items():
-                table_field = self.document_types.get(doc_type)
+                table_field, defaults = self.document_types.get(doc_type)
                 if table_field is None:
                     raise RuntimeError('Unknown document type %r. Expected one of %r' %
                                        (doc_type, self.document_types.keys()))
@@ -303,9 +331,9 @@ def _parse_fields(doc, table_column):
 
     def _get_field(name, descriptor, column):
         type_map = {
-            'float-range': FloatRangeField,
-            'datetime-range': DateRangeField,
-            'string': SimpleField
+            'float-range': FloatRangeDocField,
+            'datetime-range': DateRangeDocField,
+            'string': SimpleDocField
         }
         type_name = descriptor.get('type') or 'string'
         return type_map.get(type_name)(name, descriptor, column)

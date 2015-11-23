@@ -67,7 +67,9 @@ class PostgresDb(object):
         if is_new:
             for metadata_type, doc_type, field in self._fields.items():
                 _LOG.debug('Creating index: %s', field.name)
-                field.as_alchemy_index(prefix=metadata_type + '_' + doc_type).create(self._engine)
+                index = field.as_alchemy_index(prefix=metadata_type + '_' + doc_type)
+                if index is not None:
+                    index.create(self._engine)
 
     def begin(self):
         """
@@ -227,7 +229,7 @@ class PostgresDb(object):
         from_expression = STORAGE_UNIT
 
         # Join to datasets if we're querying by a dataset field.
-        referenced_tables = set([expression.field.alchemy_jsonb_column.table for expression in expressions])
+        referenced_tables = set([expression.field.alchemy_column.table for expression in expressions])
         _LOG.debug('Searching fields from tables: %s', ', '.join([t.name for t in referenced_tables]))
         if DATASET in referenced_tables:
             from_expression = from_expression.join(DATASET_STORAGE).join(DATASET)
