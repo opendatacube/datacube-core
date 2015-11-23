@@ -18,12 +18,7 @@ def connect(config=SystemConfig.find()):
     :rtype: DataManagement
     """
     return DataManagement(
-        PostgresDb.connect(
-            config.db_hostname,
-            config.db_database,
-            config.db_username,
-            config.db_port
-        ),
+        PostgresDb.from_config(config),
         config
     )
 
@@ -34,13 +29,13 @@ class DataManagement(object):
         :type db: datacube.index.postgres._api.PostgresDb
         :type config: datacube.config.SystemConfig
         """
-        self.db = db
+        self._db = db
         self.config = config
         self._cached_storage_types = {}
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def _get_storage_type(self, id_):
-        _storage_type = self.db.get_storage_type(id_)
+        _storage_type = self._db.get_storage_type(id_)
         return StorageType(_storage_type['driver'],
                            _storage_type['name'],
                            _storage_type['descriptor'],
@@ -60,11 +55,11 @@ class DataManagement(object):
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def get_storage_mapping(self, id_):
-        mapping = self.db.get_storage_mapping(id_)
+        mapping = self._db.get_storage_mapping(id_)
         return self._make_storage_mapping(mapping)
 
     def get_storage_mappings_for_dataset(self, dataset):
-        mappings = self.db.get_storage_mappings(dataset.metadata_doc)
+        mappings = self._db.get_storage_mappings(dataset.metadata_doc)
         return [self._make_storage_mapping(mapping) for mapping in mappings]
 
     def ensure_storage_type(self, descriptor):
@@ -76,7 +71,7 @@ class DataManagement(object):
         # TODO: Validate (Against JSON Schema?)
         name = descriptor['name']
         driver = descriptor['driver']
-        self.db.ensure_storage_type(driver, name, descriptor)
+        self._db.ensure_storage_type(driver, name, descriptor)
 
     def ensure_storage_mapping(self, descriptor):
         """
@@ -90,9 +85,9 @@ class DataManagement(object):
         driver = descriptor['driver']
         dataset_metadata = descriptor['match']['metadata']
         storage_mappings = descriptor['storage']
-        with self.db.begin() as transaction:
+        with self._db.begin() as transaction:
             for mapping in storage_mappings:
-                self.db.ensure_storage_mapping(
+                self._db.ensure_storage_mapping(
                     driver,
                     mapping['name'],
                     name,
@@ -111,4 +106,4 @@ class DataManagement(object):
         :rtype: list[datacube.model.StorageUnit]
         """
         return [StorageUnit([], self.get_storage_mapping(su['storage_mapping_ref']), su['descriptor'], su['path'])
-                for su in self.db.get_storage_units()]
+                for su in self._db.get_storage_units()]

@@ -15,6 +15,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.url import URL as engine_url
 from sqlalchemy.exc import IntegrityError
 
+from datacube.config import SystemConfig
 from . import tables
 from ._fields import FieldCollection, DEFAULT_FIELDS_FILE
 from .tables import DATASET, DATASET_SOURCE, STORAGE_TYPE, \
@@ -56,6 +57,15 @@ class PostgresDb(object):
         )
         _connection = _engine.connect()
         return PostgresDb(_engine, _connection)
+
+    @classmethod
+    def from_config(cls, config=SystemConfig.find()):
+        return PostgresDb.connect(
+            config.db_hostname,
+            config.db_database,
+            config.db_username,
+            config.db_port
+        )
 
     def init(self):
         """

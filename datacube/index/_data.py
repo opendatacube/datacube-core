@@ -9,7 +9,7 @@ import logging
 
 from datacube.config import SystemConfig
 from datacube.model import Range
-from .postgres import PostgresDb as Db
+from .postgres import PostgresDb
 
 
 _LOG = logging.getLogger(__name__)
@@ -21,7 +21,9 @@ def connect(config=SystemConfig.find()):
     :type config: datacube.config.SystemConfig
     :rtype: DataIndex
     """
-    return DataIndex(Db.connect(config.db_hostname, config.db_database, config.db_username, config.db_port))
+    return DataIndex(
+        PostgresDb.from_config(config)
+    )
 
 
 def _ensure_dataset(db, dataset_doc, path=None):
@@ -89,7 +91,7 @@ class DataIndex(object):
         """
         :type db: datacube.index.postgres._api.PostgresDb
         """
-        self.db = db
+        self._db = db
 
     def ensure_dataset(self, dataset):
         """
@@ -98,8 +100,8 @@ class DataIndex(object):
         :return: dataset id if newly indexed.
         :rtype: uuid.UUID or None
         """
-        with self.db.begin() as transaction:
-            return _ensure_dataset(self.db, dataset.metadata_doc, path=dataset.metadata_path)
+        with self._db.begin() as transaction:
+            return _ensure_dataset(self._db, dataset.metadata_doc, path=dataset.metadata_path)
 
     def contains_dataset(self, dataset):
         """
@@ -108,15 +110,15 @@ class DataIndex(object):
         :type dataset: datacube.model.Dataset
         :rtype: bool
         """
-        return self.db.contains_dataset(dataset.id)
+        return self._db.contains_dataset(dataset.id)
 
     def add_storage_units(self, storage_units):
         """
         :type storage_units: list[datacube.model.StorageUnit]
         """
         for unit in storage_units:
-            with self.db.begin() as transaction:
-                unit_id = self.db.add_storage_unit(
+            with self._db.begin() as transaction:
+                unit_id = self._db.add_storage_unit(
                     unit.path,
                     unit.dataset_ids,
                     unit.descriptor,
@@ -135,14 +137,14 @@ class DataIndex(object):
         :type name: str
         :rtype: datacube.index.fields.Field
         """
-        return self.db.get_dataset_field('eo', name)
+        return self._db.get_dataset_field('eo', name)
 
     def get_storage_field(self, name):
         """
         :type name: str
         :rtype: datacube.index.fields.Field
         """
-        return self.db.get_storage_field('eo', name)
+        return self._db.get_storage_field('eo', name)
 
     def get_storage_field_with_fallback(self, name):
         """
@@ -158,7 +160,7 @@ class DataIndex(object):
         :type expressions: list[datacube.index.fields.Expression]
         """
         query_exprs = tuple(_build_expressions(self.get_dataset_field, **query))
-        return self.db.search_datasets((expressions+query_exprs))
+        return self._db.search_datasets((expressions + query_exprs))
 
     def search_datasets_eager(self, *expressions, **query):
         """
@@ -172,7 +174,7 @@ class DataIndex(object):
         :type expressions: list[datacube.index.fields.Expression]
         """
         query_exprs = tuple(_build_expressions(self.get_storage_field_with_fallback, **query))
-        return self.db.search_storage_units((expressions + query_exprs))
+        return self._db.search_storage_units((expressions + query_exprs))
 
     def search_storage_units_eager(self, *expressions, **query):
         """

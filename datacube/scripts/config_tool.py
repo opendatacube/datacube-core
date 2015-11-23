@@ -10,6 +10,7 @@ import click
 import yaml
 
 from datacube import index, config
+from datacube.index.postgres import PostgresDb
 
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 
@@ -28,8 +29,7 @@ def database():
 
 @database.command('init', help='Initialise the database')
 def database_init():
-    dm = index.data_management_connect()
-    dm.db.init()
+    PostgresDb.from_config().init()
 
 
 @cli.group(help='Storage types')
