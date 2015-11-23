@@ -30,12 +30,12 @@ eo:
             - [extent, coord, ll, lon]
             - [extent, coord, lr, lon]
         # Acquisition time.
-        time:
-            type: datetime-range
-            min:
-            - [extent, from_dt]
-            max:
-            - [extent, to_dt]
+#        time:
+#            type: datetime-range
+#            min:
+#            - [extent, from_dt]
+#            max:
+#            - [extent, to_dt]
 
         # Ground Station Identifier (eg. 'ASA')
         gsi:
@@ -58,12 +58,12 @@ eo:
             - [image, satellite_ref_point_end, y]
 
     storage_unit:
-        time:
-            type: datetime-range
-            min:
-            - [extents, time_min]
-            max:
-            - [extents, time_max]
+#        time:
+#            type: datetime-range
+#            min:
+#            - [extents, time_min]
+#            max:
+#            - [extents, time_max]
         lat:
             type: float-range
             min:
