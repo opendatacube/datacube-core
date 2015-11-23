@@ -212,7 +212,11 @@ class PostgresDb(object):
         :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
         :rtype: dict
         """
-        return self._search_docs(expressions, select_fields=select_fields, table=DATASET)
+        return self._search_docs(
+            expressions,
+            select_fields=select_fields,
+            select_table=DATASET
+        )
 
     def search_storage_units(self, expressions, select_fields=None):
         """
@@ -220,13 +224,29 @@ class PostgresDb(object):
         :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
         :rtype: dict
         """
-        return self._search_docs(expressions, select_fields=select_fields, table=STORAGE_UNIT)
+        from_expression = STORAGE_UNIT
 
-    def _search_docs(self, expressions, select_fields=None, table=None):
-        select_fields = [f.alchemy_expression for f in select_fields] if select_fields else [table]
+        # Join to datasets if we're querying by a dataset field.
+        referenced_tables = set([expression.field.alchemy_jsonb_column.table for expression in expressions])
+        _LOG.debug('Searching fields from tables: %s', ', '.join([t.name for t in referenced_tables]))
+        if DATASET in referenced_tables:
+            from_expression = from_expression.join(DATASET_STORAGE).join(DATASET)
+
+        return self._search_docs(
+            expressions,
+            select_fields=select_fields,
+            select_table=STORAGE_UNIT,
+            from_expression=from_expression
+        )
+
+    def _search_docs(self, expressions, select_fields=None, select_table=None, from_expression=None):
+        select_fields = [f.alchemy_expression for f in select_fields] if select_fields else [select_table]
+
+        if from_expression is None:
+            from_expression = select_table
 
         results = self._connection.execute(
-            select(select_fields).where(
+            select(select_fields).select_from(from_expression).where(
                 and_(*[expression.alchemy_expression for expression in expressions])
             )
         )

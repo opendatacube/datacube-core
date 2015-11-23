@@ -35,6 +35,10 @@ class PgField(Field):
         self.alchemy_jsonb_column = jsonb_column
 
     @property
+    def required_alchemy_table(self):
+        return self.alchemy_jsonb_column.table
+
+    @property
     def alchemy_expression(self):
         """
         Get an SQLAlchemy expression for accessing this field.
@@ -185,6 +189,11 @@ class DateRangeField(RangeField):
 
 
 class PgExpression(Expression):
+    def __init__(self, field):
+        super(PgExpression, self).__init__()
+        #: :type: PgField
+        self.field = field
+
     @property
     def alchemy_expression(self):
         """
@@ -196,9 +205,9 @@ class PgExpression(Expression):
 
 class RangeBetweenExpression(PgExpression):
     def __init__(self, field, low_value, high_value):
+        super(RangeBetweenExpression, self).__init__(field)
         self.low_value = low_value
         self.high_value = high_value
-        self.field = field
 
     @property
     def alchemy_expression(self):
@@ -209,7 +218,7 @@ class RangeBetweenExpression(PgExpression):
 
 class EqualsExpression(PgExpression):
     def __init__(self, field, value):
-        self.field = field
+        super(EqualsExpression, self).__init__(field)
         self.value = value
 
     @property
