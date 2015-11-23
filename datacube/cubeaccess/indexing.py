@@ -13,6 +13,11 @@
 #    limitations under the License.
 
 
+"""
+Indexing utilities
+"""
+
+
 from __future__ import absolute_import, division, print_function
 
 import numpy
@@ -21,6 +26,18 @@ from datacube.model import Range
 
 
 def range_to_index(coord, range_):
+    """
+    Convert coordinate label range to slice object
+    :param coord: array of coordinate labels
+    :type coord: numpy.ndarray
+    :type range_: Range
+    :rtype slice
+
+    >>> range_to_index(numpy.arange(10, 20), Range(12, 15))
+    slice(2, 6, 1)
+    >>> range_to_index(numpy.arange(20, 10, -1), Range(12, 15))
+    slice(5, 9, 1)
+    """
     size = coord.size
 
     if size > 1 and coord[0] > coord[1]:  # reversed
@@ -36,6 +53,20 @@ def _expand_index(coord, slice_):
 
 
 def normalize_index(coord, index):
+    """
+    Fill in None fields of slice or Range object
+    :param coord: datacube.cubeaccess.core.Coordinate
+    :type index: slice | Range
+    :rtype slice | Range
+
+    >>> from .core import Coordinate
+    >>> normalize_index(Coordinate(numpy.int, 10, 20, 10, '1'), None)
+    slice(0, 10, 1)
+    >>> normalize_index(Coordinate(numpy.int, 10, 20, 10, '1'), slice(3))
+    slice(0, 3, 1)
+    >>> normalize_index(Coordinate(numpy.int, 10, 20, 10, '1'), Range(None, None))
+    Range(begin=10, end=20)
+    """
     if index is None:
         return slice(0, coord.length, 1)
     if isinstance(index, slice):
@@ -45,18 +76,33 @@ def normalize_index(coord, index):
     raise TypeError("this type is not supported")
 
 
-def make_index(data, idx):
-    if idx is None:
-        return slice(0, data.size, 1)
-    if isinstance(idx, slice):
-        return _expand_index(data, idx)
-    if isinstance(idx, Range):
-        return range_to_index(data, idx)
+def make_index(coord, index):
+    """
+    Convert slice or Range object to slice
+    :param coord: array of coordinate labels
+    :type coord: numpy.ndarray
+    :type index: slice | Range
+    :rtype slice
+    """
+    if index is None:
+        return slice(0, coord.size, 1)
+    if isinstance(index, slice):
+        return _expand_index(coord, index)
+    if isinstance(index, Range):
+        return range_to_index(coord, index)
     raise TypeError("this type is not supported")
 
 
-def index_shape(idx):
+def index_shape(index):
+    """
+    Calculate the shape of the index
+    :type index: List[slice]
+    :rtype: tuple
+
+    >>> index_shape((slice(0,3,1), slice(3,5,1)))
+    (3, 2)
+    """
     # TODO: single index
     # TODO: step
-    assert all(i.step == 1 for i in idx)
-    return tuple(i.stop-i.start for i in idx)
+    assert all(i.step == 1 for i in index)
+    return tuple(i.stop-i.start for i in index)
