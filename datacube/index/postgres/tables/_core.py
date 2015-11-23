@@ -5,7 +5,9 @@ Module
 from __future__ import absolute_import
 
 from sqlalchemy import MetaData
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.schema import CreateSchema
+from sqlalchemy.sql.expression import Executable, ClauseElement
 
 SQL_NAMING_CONVENTIONS = {
     "ix": 'ix_%(column_0_label)s',
@@ -27,3 +29,18 @@ def ensure_db(connection, engine):
     METADATA.create_all(engine)
 
     return is_new
+
+
+class View(Executable, ClauseElement):
+    def __init__(self, name, select):
+        self.name = name
+        self.select = select
+
+
+@compiles(View)
+def visit_create_view(element, compiler, **kw):
+    return "CREATE VIEW %s.%s AS %s" % (
+        SCHEMA_NAME,
+        element.name,
+        compiler.process(element.select, literal_binds=True)
+    )

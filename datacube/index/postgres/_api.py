@@ -7,6 +7,7 @@ from __future__ import absolute_import
 import datetime
 import json
 import logging
+from collections import defaultdict
 
 import numpy
 from sqlalchemy import create_engine, select, text, bindparam, exists, and_
@@ -65,11 +66,26 @@ class PostgresDb(object):
         # Index fields within documents.
         # TODO: Support rerunning this on existing databases (ie. check if each index exists first).
         if is_new:
+
+            views = defaultdict(list)
             for metadata_type, doc_type, field in self._fields.items():
                 _LOG.debug('Creating index: %s', field.name)
                 index = field.as_alchemy_index(prefix=metadata_type + '_' + doc_type)
                 if index is not None:
                     index.create(self._engine)
+
+                views['{}_{}'.format(metadata_type, doc_type)].append(field)
+
+            # Create a view of all our search fields (for debugging convenience).
+            for view_name, fields in views.items():
+                self._engine.execute(
+                    tables.View(
+                        view_name,
+                        select(
+                            [field.alchemy_expression.label(field.name) for field in fields]
+                        )
+                    )
+                )
 
     def begin(self):
         """
