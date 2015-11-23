@@ -50,12 +50,16 @@ eo:
             - [image, satellite_ref_point_start, x]
             max:
             - [image, satellite_ref_point_end, x]
+            # If an end is not specified, use the start.
+            - [image, satellite_ref_point_start, x]
         sat_row:
             type: float-range
             min:
             - [image, satellite_ref_point_start, y]
             max:
             - [image, satellite_ref_point_end, y]
+            # If an end is not specified, use the start.
+            - [image, satellite_ref_point_start, y]
 
     storage_unit:
 #        time:
