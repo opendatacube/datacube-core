@@ -33,7 +33,7 @@ gdata: file:///g/data
 """
 
 
-class SystemConfig(object):
+class LocalConfig(object):
     """
     System configuration for the user.
 
@@ -49,12 +49,12 @@ class SystemConfig(object):
         """
         Find config from possible filesystem locations.
         :type paths: list[str]
-        :rtype: SystemConfig
+        :rtype: LocalConfig
         """
         config = SafeConfigParser()
         config.readfp(StringIO.StringIO(_DEFAULT_CONF))
         config.read([p for p in paths if p])
-        return SystemConfig(config)
+        return LocalConfig(config)
 
     def _prop(self, key, section='datacube'):
         return self._config.get(section, key)

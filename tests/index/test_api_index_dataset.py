@@ -4,7 +4,7 @@ from __future__ import absolute_import
 
 import datetime
 
-from datacube.index._data import _ensure_dataset
+from datacube.index._datasets import _ensure_dataset
 
 _nbar_uuid = 'f2f12372-8366-11e5-817e-1040f381a756'
 _ortho_uuid = '5cf41d98-eda9-11e4-8a8e-1040f381a756'

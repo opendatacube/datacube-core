@@ -4,12 +4,12 @@ Module
 """
 from __future__ import absolute_import
 
-from datacube.config import SystemConfig
+from datacube.config import LocalConfig
 from tests import util
 
 
 def test_find_defaults():
-    config = SystemConfig.find(paths=[])
+    config = LocalConfig.find(paths=[])
     assert config.db_hostname == ''
     assert config.db_database == 'datacube'
 
@@ -26,14 +26,14 @@ db_database: overridden_db
     })
 
     # One config file
-    config = SystemConfig.find(paths=[str(files.joinpath('base.conf'))])
+    config = LocalConfig.find(paths=[str(files.joinpath('base.conf'))])
     assert config.db_hostname == 'fakehost.test.lan'
     # Not set: uses default
     assert config.db_database == 'datacube'
 
     # Now two config files, with the latter overriding earlier options.
-    config = SystemConfig.find(paths=[str(files.joinpath('base.conf')),
-                                      str(files.joinpath('override.conf'))])
+    config = LocalConfig.find(paths=[str(files.joinpath('base.conf')),
+                                     str(files.joinpath('override.conf'))])
     assert config.db_hostname == 'overridden.test.lan'
     assert config.db_database == 'overridden_db'
 
@@ -49,15 +49,15 @@ t_archive: file:///tmp/override
         """
     })
 
-    config = SystemConfig.find(paths=[str(files.joinpath('base.conf'))])
+    config = LocalConfig.find(paths=[str(files.joinpath('base.conf'))])
     assert config.location_mappings == {
         'gdata': 'file:///g/data',
         'ls7_ortho': 'file:///tmp/test/ls7_ortho',
         't_archive': 'file:///tmp/test/t_archive'
     }
 
-    config = SystemConfig.find(paths=[str(files.joinpath('base.conf')),
-                                      str(files.joinpath('override.conf'))])
+    config = LocalConfig.find(paths=[str(files.joinpath('base.conf')),
+                                     str(files.joinpath('override.conf'))])
     assert config.location_mappings == {
         'gdata': 'file:///g/data',
         'ls7_ortho': 'file:///tmp/test/ls7_ortho',

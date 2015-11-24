@@ -4,10 +4,8 @@ Module
 """
 from __future__ import absolute_import
 
-from datacube.config import SystemConfig
-from datacube.index._management import DataManagement
 from datacube.model import Dataset
-from integration_tests.index._common import init_db
+
 
 _STORAGE_TYPE = {
     'driver': 'NetCDF CF',
@@ -102,19 +100,18 @@ _DATASET_METADATA = {
 }
 
 
-def test_add_storage_type():
-    dm = DataManagement(init_db(), SystemConfig.find([]))
+def test_add_storage_type(index):
 
     dataset = Dataset('eo', _DATASET_METADATA, '/tmp/somepath.yaml')
 
-    storage_mappings = dm.get_storage_mappings_for_dataset(dataset)
+    storage_mappings = index.mappings.get_for_dataset(dataset)
     assert len(storage_mappings) == 0
 
-    dm.ensure_storage_type(_STORAGE_TYPE)
-    dm.ensure_storage_mapping(_STORAGE_MAPPING)
+    index.storage_types.add(_STORAGE_TYPE)
+    index.mappings.add(_STORAGE_MAPPING)
 
     # The properties of the dataset should match.
-    storage_mappings = dm.get_storage_mappings_for_dataset(dataset)
+    storage_mappings = index.mappings.get_for_dataset(dataset)
     assert len(storage_mappings) == 1
 
     mapping = storage_mappings[0]
@@ -134,5 +131,5 @@ def test_add_storage_type():
         'platform': {'code': 'LANDSAT_8'},
         'product_type': 'NBAR'
     }, '/tmp/other.yaml')
-    storage_mappings = dm.get_storage_mappings_for_dataset(dataset)
+    storage_mappings = index.mappings.get_for_dataset(dataset)
     assert len(storage_mappings) == 0

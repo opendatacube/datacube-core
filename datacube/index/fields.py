@@ -6,6 +6,7 @@ from __future__ import absolute_import
 
 
 # For the search API.
+from datacube.model import Range
 
 
 class Field(object):
@@ -40,3 +41,18 @@ class Expression(object):
         if self.__class__ != other.__class__:
             return False
         return self.__dict__ == other.__dict__
+
+
+def _build_expression(get_field, name, value):
+    field = get_field(name)
+    if field is None:
+        raise RuntimeError('Unknown field %r' % name)
+
+    if isinstance(value, Range):
+        return field.between(value.begin, value.end)
+    else:
+        return field == value
+
+
+def _build_expressions(get_field, **query):
+    return [_build_expression(get_field, name, value) for name, value in query.items()]

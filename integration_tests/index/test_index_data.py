@@ -8,11 +8,10 @@ from __future__ import absolute_import
 
 import datetime
 
-from datacube.index._data import DataIndex
+from datacube.index.postgres import PostgresDb
 from datacube.index.postgres.tables import STORAGE_MAPPING, STORAGE_UNIT
 from datacube.index.postgres.tables._storage import DATASET_STORAGE
 from datacube.model import StorageUnit, StorageMapping
-from integration_tests.index._common import init_db, connect_db
 
 _telemetry_uuid = '4ec8fe97-e8b9-11e4-87ff-1040f381a756'
 _telemetry_dataset = {
@@ -48,8 +47,7 @@ _telemetry_dataset = {
 }
 
 
-def test_index_dataset():
-    db = init_db()
+def test_index_dataset(db, local_config):
 
     assert not db.contains_dataset(_telemetry_uuid)
 
@@ -80,13 +78,11 @@ def test_index_dataset():
     assert not db.contains_dataset(_telemetry_uuid)
 
     # Check with a new connection too:
-    db = connect_db()
+    db = PostgresDb.from_config(local_config)
     assert not db.contains_dataset(_telemetry_uuid)
 
 
-def test_index_storage_unit():
-    db = init_db()
-    index = DataIndex(db)
+def test_index_storage_unit(index, db):
 
     # Setup foreign keys for our storage unit.
     was_inserted = db.insert_dataset(
@@ -110,7 +106,7 @@ def test_index_storage_unit():
     mapping = db._connection.execute(STORAGE_MAPPING.select()).first()
 
     # Add storage unit
-    index.add_storage_unit(
+    index.storage.add(
         StorageUnit(
             [_telemetry_uuid],
             StorageMapping(
@@ -142,77 +138,3 @@ def test_index_storage_unit():
     d_s = d_ss[0]
     assert d_s['dataset_ref'] == _telemetry_uuid
     assert d_s['storage_unit_ref'] == unit['id']
-
-
-def test_search_dataset_equals():
-    db = init_db()
-    index = DataIndex(db)
-
-    # Setup foreign keys for our storage unit.
-    was_inserted = db.insert_dataset(
-        _telemetry_dataset,
-        _telemetry_uuid,
-        '/tmp/test/' + _telemetry_uuid,
-        'satellite_telemetry_data'
-    )
-    assert was_inserted
-
-    field = index.get_dataset_field
-
-    datasets = index.search_datasets_eager(
-        field('satellite') == 'LANDSAT_8',
-    )
-    assert len(datasets) == 1
-    assert datasets[0]['id'] == _telemetry_uuid
-
-    datasets = index.search_datasets_eager(
-        field('satellite') == 'LANDSAT_8',
-        field('sensor') == 'OLI_TIRS',
-    )
-    assert len(datasets) == 1
-    assert datasets[0]['id'] == _telemetry_uuid
-
-    # Wrong sensor name
-    datasets = index.search_datasets_eager(
-        field('satellite') == 'LANDSAT-8',
-        field('sensor') == 'TM',
-    )
-    assert len(datasets) == 0
-
-
-def test_search_dataset_ranges():
-    db = init_db()
-    index = DataIndex(db)
-
-    # Setup foreign keys for our storage unit.
-    was_inserted = db.insert_dataset(
-        _telemetry_dataset,
-        _telemetry_uuid,
-        '/tmp/test/' + _telemetry_uuid,
-        'satellite_telemetry_data'
-    )
-    assert was_inserted
-
-    field = index.get_dataset_field
-
-    # In the lat bounds.
-    datasets = index.search_datasets_eager(
-        field('lat').between(-30.5, -29.5)
-    )
-    assert len(datasets) == 1
-    assert datasets[0]['id'] == _telemetry_uuid
-
-    # Out of the lat bounds.
-    datasets = index.search_datasets_eager(
-        field('lat').between(28, 32)
-    )
-    assert len(datasets) == 0
-
-    # A dataset that overlaps but is not fully contained by the search bounds.
-    # TODO: Do we want overlap as the default behaviour?
-    # Should we distinguish between 'contains' and 'overlaps'?
-    datasets = index.search_datasets_eager(
-        field('lat').between(-40, -30)
-    )
-    assert len(datasets) == 1
-    assert datasets[0]['id'] == _telemetry_uuid

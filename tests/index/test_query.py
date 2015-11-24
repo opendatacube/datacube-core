@@ -6,7 +6,7 @@ from __future__ import absolute_import
 
 import pytest
 
-from datacube.index._data import _build_expressions
+from datacube.index.fields import _build_expressions
 from datacube.index.postgres._fields import SimpleDocField, RangeDocField, RangeBetweenExpression, EqualsExpression
 from datacube.model import Range
 from datacube.scripts.search_tool import parse_expressions, UnknownFieldException

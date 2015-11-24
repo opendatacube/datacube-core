@@ -294,6 +294,7 @@ class FieldCollection(object):
 
     def get(self, metadata_type, document_type, name):
         """
+        :type metadata_type: str
         :type document_type: str
         :type name: str
         :rtype: datacube.index.fields.Field
