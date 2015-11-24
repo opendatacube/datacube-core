@@ -40,6 +40,7 @@ def get_descriptors(query=None):
                 su.storage_mapping.match.metadata['instrument']['name']
         ptype = su.storage_mapping.match.metadata['product_type']
         key = (stype, ptype)
+        # TODO: group by storage type also?
         storage_units_by_type.setdefault(key, []).append(make_storage_unit(su))
 
     result = {}
@@ -57,6 +58,28 @@ class GDF(object):
 
     def get_descriptor(query=None):
         """
+        query_parameter = \
+        {
+        'storage_types':
+            ['LS5TM', 'LS7ETM', 'LS8OLITIRS'],
+        'dimensions': {
+             'x': {
+                   'range': (140, 142),
+                   'crs': 'EPSG:4326'
+                   },
+             'y': {
+                   'range': (-36, -35),
+                   'crs': 'EPSG:4326'
+                   },
+             't': {
+                   'range': (1293840000, 1325376000),
+                   'crs': 'SSE', # Seconds since epoch
+                   'grouping_function': GDF.solar_days_since_epoch
+                   }
+             },
+        'polygon': '<some kind of text representation of a polygon for PostGIS to sort out>'
+                    # We won't be doing this in the pilot
+        }
         descriptor = {
             'LS5TM': { # storage_type identifier
                  'dimensions': ['x', 'y', 't'],
@@ -234,4 +257,28 @@ class GDF(object):
             ]
         }
         """
-        pass
+        warnings.warn("get_data is deprecated. Don't use unless your name is Peter", DeprecationWarning)
+        data_response = {'arrays': {}}
+        stacks = {}
+        for (ptype, stype, loc), stack in get_descriptors().items():
+            if ptype != descriptor['storage_type']:
+                continue
+            if any(max(stack.coordinates[dim].begin, stack.coordinates[dim].end) <
+                           descriptor['dimensions'][dim]['range'][0] or
+                                   min(stack.coordinates[dim].begin, stack.coordinates[dim].end) >
+                                   descriptor['dimensions'][dim]['range'][1]
+                   for dim in descriptor['dimensions']):
+                continue
+
+            stacks[(ptype, stype, loc)] = stack
+
+        if not all(stacks.keys()[0][2] == x[2] for x in stacks):
+            raise RuntimeError('Cross boundary queries are not supported (yet)')
+
+        for key, stack in stacks.items():
+            for var in stack.variables:
+                if var in descriptor['variables']:
+                    data_response['arrays'][var] = stack.get(var)
+                    data_response['dimensions'] = stack.variables[var].dimensions
+
+        return data_response

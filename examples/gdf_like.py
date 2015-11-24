@@ -44,5 +44,22 @@ def main():
     pp = pprint.PrettyPrinter(indent=4)
     pp.pprint(goo.get_descriptor())
 
+    data_request = {
+        'storage_type': 'LANDSAT_5_TM',
+        'variables': ('band_30', 'band_40', 'band_pixelquality'),
+        'dimensions': {
+            'longitude': {
+                'range': (149, 149.25),
+                'array_range': (0, 127),
+            },
+            'latitude': {
+                'range': (-35.1, -35),
+                'array_range': (0, 127),
+            }
+        }
+    }
+    data = goo.get_data(data_request)
+    pp.pprint(data)
+
 if __name__ == '__main__':
     main()
