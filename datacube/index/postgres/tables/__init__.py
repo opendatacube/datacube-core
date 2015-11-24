@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Module
+SQL Alchemy table definitions.
 """
 from __future__ import absolute_import
 
