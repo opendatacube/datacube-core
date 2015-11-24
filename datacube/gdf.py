@@ -22,6 +22,7 @@ from __future__ import absolute_import, division
 import warnings
 import numpy
 
+from .model import Range
 from .cubeaccess.core import Coordinate, Variable, StorageUnitStack
 from .cubeaccess.storage import NetCDF4StorageUnit
 from . import index
@@ -279,14 +280,13 @@ class GDF(object):
         warnings.warn("get_data is deprecated. Don't use unless your name is Peter", DeprecationWarning)
         data_response = {'arrays': {}}
         stacks = {}
+        request_slice = {dim: Range(*data['range']) for dim, data in descriptor['dimensions'].items()}
         for (ptype, stype, loc), stack in get_descriptors().items():
             if ptype != descriptor['storage_type']:
                 continue
-            if any(max(stack.coordinates[dim].begin, stack.coordinates[dim].end) <
-                   descriptor['dimensions'][dim]['range'][0] or
-                   min(stack.coordinates[dim].begin, stack.coordinates[dim].end) >
-                   descriptor['dimensions'][dim]['range'][1]
-                   for dim in descriptor['dimensions']):
+            if any(max(stack.coordinates[dim].begin, stack.coordinates[dim].end) < range_.begin or
+                   min(stack.coordinates[dim].begin, stack.coordinates[dim].end) > range_.end
+                   for dim, range_ in request_slice.items()):
                 continue
 
             stacks[(ptype, stype, loc)] = stack
@@ -297,7 +297,7 @@ class GDF(object):
         for key, stack in stacks.items():
             for var in stack.variables:
                 if var in descriptor['variables']:
-                    data_response['arrays'][var] = stack.get(var)
+                    data_response['arrays'][var] = stack.get(var, **request_slice)
                     data_response['dimensions'] = stack.variables[var].dimensions
 
         return data_response
