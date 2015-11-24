@@ -7,6 +7,7 @@ from __future__ import absolute_import
 import logging
 
 from . import model, storage
+import datacube.storage.storage
 from .index import data_index_connect, data_management_connect
 
 _LOG = logging.getLogger(__name__)
@@ -37,5 +38,5 @@ def _write_missing_storage_units(config, index, dataset):
     storage_mappings = config.get_storage_mappings_for_dataset(dataset)
     _LOG.debug('Storage mappings: %s', storage_mappings)
     if storage_mappings:
-        storage_units = storage.store(storage_mappings, dataset)
+        storage_units = datacube.storage.storage.store(storage_mappings, dataset)
         index.add_storage_units(storage_units)

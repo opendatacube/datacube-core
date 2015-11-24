@@ -1,6 +1,10 @@
+# coding=utf-8
+"""
+Extract description dictionaries from netCDF4 storage units
+"""
 from __future__ import absolute_import
 
-from netCDF4 import num2date
+import netCDF4
 
 from datacube.cubeaccess.storage import NetCDF4StorageUnit
 from datacube.storage.utils import namedtuples2dicts
@@ -61,8 +65,8 @@ def read_netcdf_structure(filename):
 
     time_units = ncsu.coordinates[u'time'].units
 
-    extents['time_min'] = num2date(ncsu.coordinates['time'].begin, time_units)
-    extents['time_max'] = num2date(ncsu.coordinates['time'].end, time_units)
+    extents['time_min'] = netCDF4.num2date(ncsu.coordinates['time'].begin, time_units)
+    extents['time_max'] = netCDF4.num2date(ncsu.coordinates['time'].end, time_units)
 
     coordinates = namedtuples2dicts(ncsu.coordinates)
     variables = namedtuples2dicts(ncsu.variables)

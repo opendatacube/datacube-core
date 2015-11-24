@@ -1,3 +1,7 @@
+# coding=utf-8
+"""
+Utility functions used in storage access
+"""
 from __future__ import absolute_import, division, print_function
 import functools
 import logging
@@ -7,6 +11,7 @@ import subprocess
 import click
 from osgeo import osr, gdal
 import numpy as np
+from pathlib import Path
 from datacube.model import TileSpec
 
 _LOG = logging.getLogger(__name__)
@@ -129,41 +134,6 @@ def _get_nbands_lats_lons_from_gdalds(gdal_dataset):
     return nbands, lats, lons
 
 
-def create_empty_dataset(src_filename, out_filename):
-    """
-    Create a new GDAL dataset based on an existing one, but with no data.
-
-    Will contain the same projection, extents, etc, but have a very small filesize.
-
-    These files can be used for automated testing without having to lug enormous files around.
-
-    :param src_filename: Source Filename
-    :param out_filename: Output Filename
-    """
-    inds = gdal.Open(src_filename)
-    driver = inds.GetDriver()
-    band = inds.GetRasterBand(1)
-
-    out = driver.Create(out_filename,
-                        inds.RasterXSize,
-                        inds.RasterYSize,
-                        inds.RasterCount,
-                        band.DataType)
-    out.SetGeoTransform(inds.GetGeoTransform())
-    out.SetProjection(inds.GetProjection())
-    out.FlushCache()
-
-
-@click.command(help="Create an empty dataset.\n\n"
-                    "Copies extents, cols, rows, projection and datatype from the source dataset, \n"
-                    "but doesn't copy any data.\n"
-                    "This should produce a tiny file suitable for testing ingestion and tiling.")
-@click.argument('src_filename', type=click.Path(exists=True, readable=True))
-@click.argument('out_filename', type=click.Path())
-def create_empty_dataset_cli(src_filename, out_filename):
-    create_empty_dataset(src_filename, out_filename)
-
-
 def namedtuples2dicts(namedtuples):
     """
     Convert a dict of namedtuples to a dict of dicts
@@ -187,3 +157,9 @@ def tilespec_from_gdaldataset(gdal_ds, global_attrs=None):
     geotransform = gdal_ds.GetGeoTransform()
     extents = get_dataset_extent(gdal_ds)
     return TileSpec(nlats, nlons, projection, geotransform, extents, global_attrs)
+
+
+def ensure_path_exists(filename):
+    file_dir = Path(filename).parent
+    if not file_dir.exists:
+        file_dir.parent.mkdir(parents=True)

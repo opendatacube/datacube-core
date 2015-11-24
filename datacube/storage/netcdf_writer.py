@@ -1,3 +1,7 @@
+# coding=utf-8
+"""
+Create netCDF4 Storage Units and write data to them
+"""
 from __future__ import absolute_import
 
 import logging
@@ -5,10 +9,9 @@ import os.path
 from datetime import datetime
 
 import netCDF4
-from netCDF4 import date2index
 from osgeo import osr
 
-from datacube.model import VariableAlreadyExists, TileSpec
+from datacube.model import VariableAlreadyExists
 
 _LOG = logging.getLogger(__name__)
 
@@ -85,7 +88,6 @@ class NetCDFWriter(object):
         """
 
         :type tile_spec: datacube.model.TileSpec
-        :return:
         """
         self.nco.spatial_coverage = "1.000000 degrees grid"  # FIXME: Don't hard code
         self.nco.geospatial_lat_min = tile_spec.lat_min
@@ -124,7 +126,7 @@ class NetCDFWriter(object):
             # Save as next coordinate in file
             times[index] = start_datetime_delta.total_seconds()
         else:
-            index = date2index(insertion_time, times)  # Blow up for a different time
+            index = netCDF4.date2index(insertion_time, times)  # Blow up for a different time
 
         return index
 

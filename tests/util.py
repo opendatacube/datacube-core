@@ -125,3 +125,28 @@ def file_of_size(path, size_mb):
     with open(path, "wb") as f:
         f.seek(size_mb * 1024 * 1024 - 1)
         f.write("\0")
+
+
+def create_empty_dataset(src_filename, out_filename):
+    """
+    Create a new GDAL dataset based on an existing one, but with no data.
+
+    Will contain the same projection, extents, etc, but have a very small filesize.
+
+    These files can be used for automated testing without having to lug enormous files around.
+
+    :param src_filename: Source Filename
+    :param out_filename: Output Filename
+    """
+    inds = gdal.Open(src_filename)
+    driver = inds.GetDriver()
+    band = inds.GetRasterBand(1)
+
+    out = driver.Create(out_filename,
+                        inds.RasterXSize,
+                        inds.RasterYSize,
+                        inds.RasterCount,
+                        band.DataType)
+    out.SetGeoTransform(inds.GetGeoTransform())
+    out.SetProjection(inds.GetProjection())
+    out.FlushCache()
