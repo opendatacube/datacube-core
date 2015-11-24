@@ -107,6 +107,11 @@ def nan_to_ndv(a, ndv=-999):
 
 
 def do_work(stack, pq, qs, time='t', **kwargs):
+    """
+    calculate qs percentiles of NDVI
+    pull out band pixels corresponding to the percentiles
+    create an extra band carrying month number corresponding to the percentiles
+    """
     print('starting', datetime.now(), kwargs)
     pqa = pq.get('pqa', **kwargs).values
     red = ndv_to_nan(stack.get('red', **kwargs).values)

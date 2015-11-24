@@ -12,6 +12,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+"""
+Example showing usage of search api and data access api to calculate some band time statistics
+"""
 
 from __future__ import absolute_import, division, print_function
 
@@ -29,6 +32,7 @@ from common import ndv_to_nan, do_work
 
 # TODO: this should be in a lib somewhere
 def make_storage_unit(su):
+    """turn db search result into StorageUnit object"""
     coordinates = {name: Coordinate(dtype=numpy.dtype(attrs['dtype']),
                                     begin=attrs['begin'],
                                     end=attrs['end'],
@@ -44,6 +48,7 @@ def make_storage_unit(su):
 
 
 def group_storage_units_by_location(sus):
+    """group_storage_units_by_location so they can be stacked by time"""
     dims = ('longitude', 'latitude')
     stacks = defaultdict(list)
     for su in sus:
@@ -52,6 +57,7 @@ def group_storage_units_by_location(sus):
 
 
 def get_descriptors(query=None):
+    """run a query and turn results into StorageUnitStacks"""
     data_index = index.data_management_connect()
     sus = data_index.get_storage_units()
 
@@ -70,6 +76,7 @@ def get_descriptors(query=None):
     return result
 
 def main(argv):
+    # map bands to meaningfull names
     LS57varmap = {'blue': 'band_10',
                   'green': 'band_20',
                   'red': 'band_30',
@@ -78,13 +85,16 @@ def main(argv):
                   'ir2': 'band_70'}
     PQAvarmap = {'pqa': 'band_pixelquality'}
 
+    # get the data
     descriptors = get_descriptors()
 
     qs = [10, 50, 90]
     num_workers = 16
     N = 4000//num_workers
 
+    # split the work across time stacks
     for descriptor in descriptors:
+        # split the work along the latitude axis in N-sized chunks
         for lat in range(0, 4000, N):
             data = do_work(StorageUnitVariableProxy(descriptor['NBAR'], LS57varmap),
                            StorageUnitVariableProxy(descriptor['PQ'], PQAvarmap),
