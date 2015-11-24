@@ -1,7 +1,5 @@
 # Australian Geoscience Data Cube v2
 
-Powered by the General Data Framework (GDF)
-
 Master -
 [![Build Status - Master](https://travis-ci.org/data-cube/agdc-v2.svg?branch=master)](https://travis-ci.org/data-cube/agdc-v2)
 [![Coverage Status](https://coveralls.io/repos/data-cube/agdc-v2/badge.svg?branch=master&service=github)](https://coveralls.io/github/data-cube/agdc-v2?branch=master)
@@ -21,31 +19,68 @@ In 2014, Geoscience Australia, CSIRO and the NCI established the Australian Geos
 
 __The current AGDC v2 implementation is intended as a working prototype__ for a cohesive, sustainable framework for large-scale multidimensional data management for geoscientific data. This public development release is intended to foster broader collaboration on the design and implementation. It is not intended for operational use.
 
-## Test Ingestion Script
+Requirements
+============
 
-    $ datacube-config --help
-    Usage: datacube-config-script.py [OPTIONS] COMMAND [ARGS]...
+### System
+* PostgreSQL 9.4 or greater
+* Python 2.7
+
+See [requirements.txt](requirements.txt) for required python modules.
+
+Installation
+============
+
+1. Clone repository from GitHub
+    * `git clone https://github.com/data-cube/agdc-v2.git`
+2. Install python requirements
+    * `pip install -r requirements.txt`
+3. Install AGDC-v2
+    * `python setup.py install`
+
+Setup
+=====
+
+### User configuration
+
+Create a basic user configuration in ~/.datacube.conf; For example:
+
+    [datacube]
+    db_hostname: localhost
+    db_database: datacube
+    db_username:
+    db_password:
     
-      Configure the Data Cube
+    [locations]
+    gdata: file:///gdata/datacube
+
+
+### Create the datacube database in PostgreSQL
+
+    createdb datacube
+    agdc-config database init
+
+### Load sample **Storage Type** configuration documents
+
+    datacube-config storage add docs/config_samples/*_type.yaml
+    
+### Load sample **Storage Mapping** configuration documents
+
+    datacube-config mappings add docs/config_samples/*/*_mapping.yaml
+
+
+### Ingest some data
+
+    $ datacube-ingest -h
+    Usage: datacube-ingest-script.py [OPTIONS] [DATASET]...
+    
+      Ingest datasets into the Data Cube.
     
     Options:
       -v, --verbose  Use multiple times for more verbosity
       --log-queries  Print database queries.
       -h, --help     Show this message and exit.
-    
-    Commands:
-      mappings  Dataset-storage mappings
-      storage   Storage types
+      
+    $ datacube-ingest dataset-description.yaml
 
 
-## Python Usage
-
-Tile and stack files with:
-
-    from ingester import datacube_ingester
-    
-    input_path = "/g/data/rs0/scenes/ARG25_V0.0/2015-08/LS8_OLI_TIRS_NBAR_P54_GANBAR01-032_089_081_20150807/"
-    output_dir = "/tmp/ingest_test/"
-    filename_format = "combined_{x}_{y}.nc"
-    
-    datacube_ingester.ingest(input_path, output_dir, filename_format)
