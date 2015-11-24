@@ -1,3 +1,23 @@
+#    Copyright 2015 Geoscience Australia
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+
+"""
+GDF Trial backward compatibility
+Do not use
+"""
+
+from __future__ import absolute_import, division
 
 import warnings
 import numpy
@@ -52,11 +72,10 @@ def get_descriptors(query=None):
     return result
 
 
-
 class GDF(object):
     warnings.warn("GDF is deprecated. Don't use unless your name is Peter", DeprecationWarning)
 
-    def get_descriptor(query=None):
+    def get_descriptor(self, query=None):
         """
         query_parameter = \
         {
@@ -189,19 +208,19 @@ class GDF(object):
 
             for idx, dim in enumerate(result['dimensions']):
                 if storage_min[idx] < result['result_min'][idx]:
-                    result['result_min'] = result['result_min'][:idx] + \
-                                           (storage_min[idx],) + \
-                                           result['result_min'][idx + 1:]
-                    result['result_shape'] = result['result_shape'][:idx] + \
-                                             (result['result_shape'][idx] + storage_shape[idx],) + \
-                                             result['result_shape'][idx + 1:]
+                    result['result_min'] = (result['result_min'][:idx] +
+                                            (storage_min[idx] + 2,) +
+                                            result['result_min'][idx + 1:])
+                    result['result_shape'] = (result['result_shape'][:idx] +
+                                              (result['result_shape'][idx] + storage_shape[idx],) +
+                                              result['result_shape'][idx + 1:])
                 if storage_max[idx] > result['result_max'][idx]:
-                    result['result_max'] = result['result_max'][:idx] + \
-                                           (storage_max[idx],) + \
-                                           result['result_max'][idx + 1:]
-                    result['result_shape'] = result['result_shape'][:idx] + \
-                                             (result['result_shape'][idx] + storage_shape[idx],) + \
-                                             result['result_shape'][idx + 1:]
+                    result['result_max'] = (result['result_max'][:idx] +
+                                            (storage_max[idx],) +
+                                            result['result_max'][idx + 1:])
+                    result['result_shape'] = (result['result_shape'][:idx] +
+                                              (result['result_shape'][idx] + storage_shape[idx],) +
+                                              result['result_shape'][idx + 1:])
         return descriptor
 
     def get_data(self, descriptor):
@@ -264,9 +283,9 @@ class GDF(object):
             if ptype != descriptor['storage_type']:
                 continue
             if any(max(stack.coordinates[dim].begin, stack.coordinates[dim].end) <
-                           descriptor['dimensions'][dim]['range'][0] or
-                                   min(stack.coordinates[dim].begin, stack.coordinates[dim].end) >
-                                   descriptor['dimensions'][dim]['range'][1]
+                   descriptor['dimensions'][dim]['range'][0] or
+                   min(stack.coordinates[dim].begin, stack.coordinates[dim].end) >
+                   descriptor['dimensions'][dim]['range'][1]
                    for dim in descriptor['dimensions']):
                 continue
 
