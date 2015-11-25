@@ -68,7 +68,7 @@ class StorageUnitResource(object):
         :type query: dict[str,str|float|datacube.model.Range]
         """
         query_exprs = tuple(to_expressions(self.get_field, **query))
-        return self._db.search_storage_units((expressions + query_exprs))
+        return self._make(self._db.search_storage_units((expressions + query_exprs)))
 
     def search_eager(self, *expressions, **query):
         """
