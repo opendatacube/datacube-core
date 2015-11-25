@@ -11,8 +11,8 @@ from collections import defaultdict
 
 import numpy
 from sqlalchemy import create_engine, select, text, bindparam, exists, and_
-from sqlalchemy.engine.url import URL as EngineUrl
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.engine.url import URL as EngineUrl
 from sqlalchemy.exc import IntegrityError
 
 from datacube.config import LocalConfig
@@ -69,7 +69,9 @@ class PostgresDb(object):
 
     def init(self):
         """
-        Init a new database.
+        Init a new database (if not already set up).
+
+        :return: If it was newly created.
         """
         is_new = tables.ensure_db(self._connection, self._engine)
 
@@ -96,6 +98,7 @@ class PostgresDb(object):
                         )
                     )
                 )
+        return is_new
 
     def begin(self):
         """

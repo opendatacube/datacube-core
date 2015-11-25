@@ -4,6 +4,7 @@ Configure the Data Cube from the command-line.
 """
 from __future__ import absolute_import
 
+import logging
 import sys
 
 import click
@@ -14,6 +15,8 @@ from datacube.index import index_connect
 from datacube.index.postgres import PostgresDb
 
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
+
+_LOG = logging.getLogger(__name__)
 
 
 @click.group(help="Configure the Data Cube", context_settings=CLICK_SETTINGS)
@@ -30,7 +33,10 @@ def database():
 
 @database.command('init', help='Initialise the database')
 def database_init():
-    PostgresDb.from_config().init()
+    db = PostgresDb.from_config()
+    _LOG.info('Initialising database...')
+    was_created = db.init()
+    _LOG.info('Done.') if was_created else _LOG.info('Nothing to do.')
 
 
 @cli.group(help='Storage types')

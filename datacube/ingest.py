@@ -35,6 +35,7 @@ def _write_missing_storage_units(index, dataset):
     """
     # TODO: Query for missing storage units, not all storage units.
     storage_mappings = index.mappings.get_for_dataset(dataset)
+    _LOG.info('%s applicable storage mapping(s)', len(storage_mappings))
     _LOG.debug('Storage mappings: %s', storage_mappings)
     if storage_mappings:
         storage_units = storage.store(storage_mappings, dataset)
