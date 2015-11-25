@@ -56,14 +56,14 @@ def test_search_dataset_equals(index, db):
         field('satellite') == 'LANDSAT_8',
     )
     assert len(datasets) == 1
-    assert datasets[0]['id'] == _telemetry_uuid
+    assert datasets[0].id == _telemetry_uuid
 
     datasets = index.datasets.search_eager(
         field('satellite') == 'LANDSAT_8',
         field('sensor') == 'OLI_TIRS',
     )
     assert len(datasets) == 1
-    assert datasets[0]['id'] == _telemetry_uuid
+    assert datasets[0].id == _telemetry_uuid
 
     # Wrong sensor name
     datasets = index.datasets.search_eager(
@@ -90,7 +90,7 @@ def test_search_dataset_ranges(index, db):
         field('lat').between(-30.5, -29.5)
     )
     assert len(datasets) == 1
-    assert datasets[0]['id'] == _telemetry_uuid
+    assert datasets[0].id == _telemetry_uuid
 
     # Out of the lat bounds.
     datasets = index.datasets.search_eager(
@@ -105,4 +105,4 @@ def test_search_dataset_ranges(index, db):
         field('lat').between(-40, -30)
     )
     assert len(datasets) == 1
-    assert datasets[0]['id'] == _telemetry_uuid
+    assert datasets[0].id == _telemetry_uuid

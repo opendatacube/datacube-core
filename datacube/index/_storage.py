@@ -63,9 +63,9 @@ class StorageUnitResource(object):
 
     def search(self, *expressions, **query):
         """
-        TODO: Return objects
         :type expressions: tuple[datacube.index.fields.PgExpression]
         :type query: dict[str,str|float|datacube.model.Range]
+        :rtype list[datacube.model.StorageUnit]
         """
         query_exprs = tuple(to_expressions(self.get_field_with_fallback, **query))
         return self._make(self._db.search_storage_units((expressions + query_exprs)))
@@ -74,6 +74,7 @@ class StorageUnitResource(object):
         """
         :type expressions: list[datacube.index.fields.Expression]
         :type query: dict[str,str|float|datacube.model.Range]
+        :rtype list[datacube.model.StorageUnit]
         """
         return list(self.search(*expressions, **query))
 

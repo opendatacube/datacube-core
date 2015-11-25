@@ -7,6 +7,7 @@ from __future__ import absolute_import
 import copy
 import logging
 
+from datacube.model import Dataset
 from .fields import to_expressions
 
 _LOG = logging.getLogger(__name__)
@@ -93,18 +94,26 @@ class DatasetResource(object):
         """
         return self._db.get_dataset_field('eo', name)
 
+    def _make(self, query_result):
+        """
+        :rtype list[datacube.model.Dataset]
+        """
+        return (Dataset(dataset.metadata_type, dataset.metadata, dataset.metadata_path)
+                for dataset in query_result)
+
     def search(self, *expressions, **query):
         """
-        TODO: Return objects
         :type query: dict[str,str|float|datacube.model.Range]
         :type expressions: tuple[datacube.index.fields.PgExpression]
+        :rtype list[datacube.model.Dataset]
         """
         query_exprs = tuple(to_expressions(self.get_field, **query))
-        return self._db.search_datasets((expressions + query_exprs))
+        return self._make(self._db.search_datasets((expressions + query_exprs)))
 
     def search_eager(self, *expressions, **query):
         """
         :type expressions: list[datacube.index.fields.Expression]
         :type query: dict[str,str|float|datacube.model.Range]
+        :rtype list[datacube.model.Dataset]
         """
         return list(self.search(*expressions, **query))
