@@ -87,7 +87,7 @@ class StorageUnitResource(object):
             self.storage_mappings.get(su['storage_mapping_ref']),
             su['descriptor'],
             su['path']
-        ) for su in self._db.get_storage_units())
+        ) for su in query_results)
 
 
 class StorageTypeResource(object):
