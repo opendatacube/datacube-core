@@ -14,7 +14,7 @@
 
 """
 GDF Trial backward compatibility
-Do not use
+Deprecated, do not use
 """
 
 from __future__ import absolute_import, division
@@ -29,6 +29,7 @@ from . import index
 
 
 def make_storage_unit(su):
+    """convert search result into StorageUnit object"""
     coordinates = {name: Coordinate(dtype=numpy.dtype(attrs['dtype']),
                                     begin=attrs['begin'],
                                     end=attrs['end'],
@@ -74,8 +75,6 @@ def get_descriptors(query=None):
 
 
 class GDF(object):
-    warnings.warn("GDF is deprecated. Don't use unless your name is Peter", DeprecationWarning)
-
     def get_descriptor(self, query=None):
         """
         query_parameter = \
@@ -278,15 +277,16 @@ class GDF(object):
         }
         """
         warnings.warn("get_data is deprecated. Don't use unless your name is Peter", DeprecationWarning)
+
         data_response = {'arrays': {}}
         stacks = {}
-        request_slice = {dim: Range(*data['range']) for dim, data in descriptor['dimensions'].items()}
+        reqrange = {dim: Range(*data['range']) for dim, data in descriptor['dimensions'].items()}
         for (ptype, stype, loc), stack in get_descriptors().items():
             if ptype != descriptor['storage_type']:
                 continue
             if any(max(stack.coordinates[dim].begin, stack.coordinates[dim].end) < range_.begin or
                    min(stack.coordinates[dim].begin, stack.coordinates[dim].end) > range_.end
-                   for dim, range_ in request_slice.items()):
+                   for dim, range_ in reqrange.items()):
                 continue
 
             stacks[(ptype, stype, loc)] = stack
@@ -297,7 +297,7 @@ class GDF(object):
         for key, stack in stacks.items():
             for var in stack.variables:
                 if var in descriptor['variables']:
-                    data_response['arrays'][var] = stack.get(var, **request_slice)
+                    data_response['arrays'][var] = stack.get(var, **reqrange)
                     data_response['dimensions'] = stack.variables[var].dimensions
 
         return data_response

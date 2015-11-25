@@ -16,16 +16,6 @@ setup(name='agdc-v2',
       },
       scripts=[
       ],
-      requires=[
-          'psycopg2',
-          'gdal',
-          'numexpr',
-          'numpy',
-          'matplotlib',
-          'netcdf4',
-          'scipy',
-          'pytz'
-      ],
       install_requires=[
           'click',
           'pathlib',
@@ -35,7 +25,9 @@ setup(name='agdc-v2',
           'numpy',
           'rasterio',
           'netcdf4',
-          'pypeg2'
+          'pypeg2',
+          'psycopg2',
+          'gdal',
       ],
       tests_require=[
           'pytest',
