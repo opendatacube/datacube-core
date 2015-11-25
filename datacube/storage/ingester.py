@@ -111,6 +111,8 @@ def generate_filename(filename_format, eodataset, tile_spec):
 
 
 def crazy_band_tiler(band_info, input_filename, storage_spec, time_value, dataset_metadata):
+    input_filename = str(input_filename)
+
     src_ds = gdal.Open(input_filename, gdalconst.GA_ReadOnly)
     _LOG.debug("Ingesting: %s %s", band_info, input_filename)
     for im in create_tiles(src_ds,

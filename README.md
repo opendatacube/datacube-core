@@ -43,7 +43,7 @@ Setup
 
 ### User configuration
 
-Create a basic user configuration in ~/.datacube.conf; For example:
+Create a basic user configuration in `~/.datacube.conf`; For example:
 
     [datacube]
     db_hostname: localhost
@@ -57,16 +57,16 @@ Create a basic user configuration in ~/.datacube.conf; For example:
 
 ### Create the datacube database in PostgreSQL
 
-    createdb datacube
-    agdc-config database init
+    $ createdb datacube
+    $ datacube-config database init
 
 ### Load sample **Storage Type** configuration documents
 
-    datacube-config storage add docs/config_samples/*_type.yaml
+    $ datacube-config storage add docs/config_samples/*_type.yaml
     
 ### Load sample **Storage Mapping** configuration documents
 
-    datacube-config mappings add docs/config_samples/*/*_mapping.yaml
+    $ datacube-config mappings add docs/config_samples/*/*_mapping.yaml
 
 
 ### Ingest some data
