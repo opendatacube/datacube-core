@@ -52,9 +52,9 @@ def group_storage_units_by_location(sus):
     return stacks
 
 
-def get_descriptors(query=None):
+def get_descriptors(**query):
     index = index_connect()
-    sus = index.storage.search()
+    sus = index.storage.search(**query)
 
     storage_units_by_type = {}
     for su in sus:
@@ -75,7 +75,7 @@ def get_descriptors(query=None):
 
 
 class GDF(object):
-    def get_descriptor(self, query=None):
+    def get_descriptor(self, descriptor=None):
         """
         query_parameter = \
         {
@@ -168,7 +168,13 @@ class GDF(object):
         """
         warnings.warn("get_descriptor is deprecated. Don't use unless your name is Peter", DeprecationWarning)
 
-        stacks = get_descriptors()
+        if descriptor:
+            query = {key: descriptor[key] for key in ('satellite', 'sensor', 'product') if key in descriptor}
+            query.update({dim: Range(*data['range']) for dim, data in descriptor['dimensions'].items()})
+        else:
+            query = {}
+
+        stacks = get_descriptors(**query)
 
         descriptor = {}
         for (ptype, stype, loc), stack in stacks.items():
@@ -278,12 +284,24 @@ class GDF(object):
         """
         warnings.warn("get_data is deprecated. Don't use unless your name is Peter", DeprecationWarning)
 
+        if descriptor:
+            query = {key: descriptor[key] for key in ('satellite', 'sensor', 'product') if key in descriptor}
+            reqrange = {dim: Range(*data['range']) for dim, data in descriptor['dimensions'].items()}
+            query.update(reqrange)
+            # TODO: talk to Jeremy about this
+            hack = {
+                'lon': 'longitude',
+                'lat': 'latitude'
+            }
+            reqrange = {hack[dim]: data for dim, data in reqrange.items()}
+        else:
+            query = reqrange = {}
+
         data_response = {'arrays': {}}
         stacks = {}
-        reqrange = {dim: Range(*data['range']) for dim, data in descriptor['dimensions'].items()}
-        for (ptype, stype, loc), stack in get_descriptors().items():
-            if ptype != descriptor['storage_type']:
-                continue
+        for (ptype, stype, loc), stack in get_descriptors(**query).items():
+            # if ptype != descriptor['storage_type']:
+            #     continue
             if any(max(stack.coordinates[dim].begin, stack.coordinates[dim].end) < range_.begin or
                    min(stack.coordinates[dim].begin, stack.coordinates[dim].end) > range_.end
                    for dim, range_ in reqrange.items()):
