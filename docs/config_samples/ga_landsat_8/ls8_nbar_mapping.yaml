@@ -14,7 +14,7 @@ match:
 # Store them using storage definition '25m_bands':
 storage:
     - name: 25m_bands
-      location_name: gdata
+      location_name: eotiles
       location_offset: '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S
       .%f}.nc'
       global_attributes:

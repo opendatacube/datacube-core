@@ -4,9 +4,10 @@ User configuration.
 """
 from __future__ import absolute_import
 
-from io import StringIO
 import logging
 import os
+from io import StringIO
+
 from .compat import SafeConfigParser, NoOptionError
 
 
@@ -27,10 +28,11 @@ db_database: datacube
 
 [locations]
 # Where to reach storage locations from the current machine.
-#  -> Location names (here 'gdata') are arbitrary, but correspond to names used in the
+#  -> Location names (here 'eotiles') are arbitrary, but correspond to names used in the
 #     storage mapping files.
 #  -> We may eventually support remote protocols (http, S3, etc) to lazily fetch remote data.
-gdata: file:///g/data
+# Define these in your own datacube.conf file.
+# eotiles: file:///g/data/...
 """
 
 
