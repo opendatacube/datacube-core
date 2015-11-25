@@ -21,7 +21,8 @@ def test_create_single_time_netcdf_from_numpy_arrays(tmpdir):
                  'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
                  'AUTHORITY["EPSG","4326"]]'
     extents = [[151.0, -29.0], [151.0, -30.0], [152.0, -30.0], [152.0, -29.0]]
-    tile_spec = TileSpec(2000, 4000, projection, geotransform, extents)
+    global_attrs = {'test_attribute': 'test_value'}
+    tile_spec = TileSpec(2000, 4000, projection, geotransform, extents, global_attrs=global_attrs)
 
     chunking = {'t': 1, 'y': 100, 'x': 100}
     date = datetime(2008, 1, 1)
@@ -41,6 +42,8 @@ def test_create_single_time_netcdf_from_numpy_arrays(tmpdir):
     nco = netCDF4.Dataset(filename)
     for var in ('crs', 'time', 'longitude', 'latitude', 'B1', 'B2', 'time'):
         assert var in nco.variables
+    for k, v in global_attrs.items():
+        assert getattr(nco, k) == v
 
     assert len(nco.variables['time']) == 1
     assert len(nco.variables['longitude']) == 4000

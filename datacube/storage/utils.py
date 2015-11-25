@@ -90,39 +90,6 @@ def get_file_extents(raster_filename, epsg_ref=4326):
     return reproject_coords(extents, src_srs, tgt_srs)
 
 
-def preserve_cwd(function):
-    """
-    Decorator function to preserve the current working directory
-
-    Thanks to http://stackoverflow.com/a/170174/119603
-
-    :param function:
-    :return: wrapped function
-    """
-    @functools.wraps(function)
-    def decorator(*args, **kwargs):
-        cwd = os.getcwd()
-        try:
-            return function(*args, **kwargs)
-        finally:
-            os.chdir(cwd)
-    return decorator
-
-
-def execute(command_list):
-    """
-    Execute an external command and log any stdout/stderr messages to logging
-    :param command_list:
-    """
-    _LOG.debug("Running command: " + ' '.join(command_list))
-    proc = subprocess.Popen(command_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                            env=dict(os.environ, GDAL_CACHEMAX="250"))
-    # see http://stackoverflow.com/a/13924218/119603
-    for line in proc.stdout:
-        _LOG.debug(line)
-    # subprocess.check_call(command_list, env=dict(os.environ, GDAL_CACHEMAX="250"))
-
-
 def _get_nbands_lats_lons_from_gdalds(gdal_dataset):
     nbands, nlats, nlons = gdal_dataset.RasterCount, gdal_dataset.RasterYSize, gdal_dataset.RasterXSize
 

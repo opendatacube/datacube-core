@@ -103,7 +103,7 @@ class NetCDFWriter(object):
         self.nco.history = "NetCDF-CF file created by agdc-v2 at {:%Y%m%d}.".format(creation_date)
 
         # Attributes from Storage Mapping
-        for name, value in tile_spec.global_attrs:
+        for name, value in tile_spec.global_attrs.items():
             self.nco.setncattr(name, value)
 
         # Attributes for NCI Compliance
@@ -185,13 +185,6 @@ class NetCDFWriter(object):
         src_filename = self.nco.createVariable(varname + "_src_filenames", str, 'time')
         src_filename.long_name = 'Source filename from data import'
         return newvar, src_filename
-
-    def _get_netcdf_bands(self, bands):
-        netcdfbands = []
-        for i, _ in enumerate(bands, 1):
-            band = self.nco.variables['band' + str(i)]
-            netcdfbands.append(band)
-        return netcdfbands
 
 
 def append_to_netcdf(tile_spec, gdal_dataset, netcdf_path, storage_type, band_info, time_value, input_filename=""):
