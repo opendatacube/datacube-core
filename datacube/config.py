@@ -8,9 +8,10 @@ from io import StringIO
 import logging
 import os
 try:
-    from configparser import SafeConfigParser, NoOptionError
+    import configparser
 except ImportError:
-    from ConfigParser import SafeConfigParser, NoOptionError
+    import ConfigParser as configparser
+from configparser import SafeConfigParser, NoOptionError
 
 
 # Config locations in order. Properties found in latter locations override former.
