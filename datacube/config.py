@@ -7,11 +7,7 @@ from __future__ import absolute_import
 from io import StringIO
 import logging
 import os
-try:
-    import configparser
-except ImportError:
-    import ConfigParser as configparser
-from configparser import SafeConfigParser, NoOptionError
+from .compat import SafeConfigParser, NoOptionError
 
 
 # Config locations in order. Properties found in latter locations override former.

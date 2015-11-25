@@ -20,6 +20,8 @@ if not PY2:
 
     # Lazy range function
     range = range
+
+    from configparser import SafeConfigParser, NoOptionError
 else:
     text_type = unicode
     string_types = (str, unicode)
@@ -29,6 +31,8 @@ else:
 
     # Lazy range function
     range = xrange
+
+    from ConfigParser import SafeConfigParser, NoOptionError
 
 
 def with_metaclass(meta, *bases):
