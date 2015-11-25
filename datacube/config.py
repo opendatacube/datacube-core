@@ -4,10 +4,14 @@ User configuration.
 """
 from __future__ import absolute_import
 
-import StringIO
+from io import StringIO
 import logging
 import os
-from ConfigParser import SafeConfigParser, NoOptionError
+try:
+    from ConfigParser import SafeConfigParser, NoOptionError
+except ImportError:
+    from configparser import SafeConfigParser, NoOptionError
+
 
 # Config locations in order. Properties found in latter locations override former.
 DEFAULT_CONF_PATHS = (
@@ -18,7 +22,7 @@ DEFAULT_CONF_PATHS = (
 )
 
 # Default configuration options.
-_DEFAULT_CONF = """
+_DEFAULT_CONF = u"""
 [datacube]
 # Blank implies localhost
 db_hostname:
@@ -52,7 +56,7 @@ class LocalConfig(object):
         :rtype: LocalConfig
         """
         config = SafeConfigParser()
-        config.readfp(StringIO.StringIO(_DEFAULT_CONF))
+        config.readfp(StringIO(_DEFAULT_CONF))
         config.read([p for p in paths if p])
         return LocalConfig(config)
 
