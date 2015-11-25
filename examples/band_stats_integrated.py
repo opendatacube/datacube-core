@@ -20,7 +20,7 @@ from __future__ import absolute_import, division, print_function
 
 from collections import defaultdict
 
-from datacube import index
+from datacube.index import index_connect
 
 import numpy
 
@@ -58,8 +58,8 @@ def group_storage_units_by_location(sus):
 
 def get_descriptors(query=None):
     """run a query and turn results into StorageUnitStacks"""
-    data_index = index.data_management_connect()
-    sus = data_index.get_storage_units()
+    index = index_connect()
+    sus = index.storage.search_eager()
 
     nbars = [make_storage_unit(su) for su in sus if 'PQ' not in su.path]
     pqs = [make_storage_unit(su) for su in sus if 'PQ' in su.path]

@@ -25,7 +25,7 @@ import numpy
 from .model import Range
 from .cubeaccess.core import Coordinate, Variable, StorageUnitStack
 from .cubeaccess.storage import NetCDF4StorageUnit
-from . import index
+from .index import index_connect
 
 
 def make_storage_unit(su):
@@ -53,8 +53,8 @@ def group_storage_units_by_location(sus):
 
 
 def get_descriptors(query=None):
-    data_index = index.data_management_connect()
-    sus = data_index.get_storage_units()
+    index = index_connect()
+    sus = index.storage.search()
 
     storage_units_by_type = {}
     for su in sus:
