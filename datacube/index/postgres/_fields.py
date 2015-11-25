@@ -7,7 +7,6 @@ from __future__ import absolute_import
 
 import functools
 from collections import defaultdict
-from string import lower
 
 import yaml
 from pathlib import Path
@@ -59,8 +58,8 @@ class PgField(Field):
         """
         return Index(
             'ix_field_{prefix}_{name}'.format(
-                prefix=lower(prefix),
-                name=lower(self.name),
+                prefix=prefix.lower(),
+                name=self.name.lower(),
             ),
             self.alchemy_expression,
             postgresql_using=self.postgres_index_type
