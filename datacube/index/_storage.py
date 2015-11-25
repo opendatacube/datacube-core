@@ -53,7 +53,7 @@ class StorageUnitResource(object):
         """
         return self._db.get_storage_field('eo', name)
 
-    def get_storage_field_with_fallback(self, name):
+    def get_field_with_fallback(self, name):
         """
         :type name: str
         :rtype: datacube.index.fields.Field

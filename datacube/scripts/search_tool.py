@@ -155,7 +155,7 @@ def cli(verbose, log_queries):
 def dataset(expression):
     i = index_connect()
 
-    for d in i.datasets.search(*parse_expressions(i.get_dataset_field, *expression)):
+    for d in i.datasets.search(*parse_expressions(i.datasets.get_field, *expression)):
         print(repr(d))
 
 
@@ -165,7 +165,7 @@ def dataset(expression):
 def unit(expression):
     i = index_connect()
 
-    for d in i.storage.search(*parse_expressions(i.get_storage_field_with_fallback, *expression)):
+    for d in i.storage.search(*parse_expressions(i.storage.get_field_with_fallback, *expression)):
         print(repr(d))
 
 
