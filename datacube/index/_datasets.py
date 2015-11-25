@@ -1,13 +1,13 @@
 # coding=utf-8
 """
-Module
+API for dataset indexing, access and search.
 """
 from __future__ import absolute_import
 
 import copy
 import logging
 
-from .fields import _build_expressions
+from .fields import to_expressions
 
 _LOG = logging.getLogger(__name__)
 
@@ -96,13 +96,15 @@ class DatasetResource(object):
     def search(self, *expressions, **query):
         """
         TODO: Return objects
-        :type expressions: list[datacube.index.fields.Expression]
+        :type query: dict[str,str|float|datacube.model.Range]
+        :type expressions: tuple[datacube.index.fields.PgExpression]
         """
-        query_exprs = tuple(_build_expressions(self.get_field, **query))
+        query_exprs = tuple(to_expressions(self.get_field, **query))
         return self._db.search_datasets((expressions + query_exprs))
 
     def search_eager(self, *expressions, **query):
         """
         :type expressions: list[datacube.index.fields.Expression]
+        :type query: dict[str,str|float|datacube.model.Range]
         """
         return list(self.search(*expressions, **query))

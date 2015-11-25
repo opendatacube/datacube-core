@@ -43,7 +43,7 @@ class Expression(object):
         return self.__dict__ == other.__dict__
 
 
-def _build_expression(get_field, name, value):
+def _to_expression(get_field, name, value):
     field = get_field(name)
     if field is None:
         raise RuntimeError('Unknown field %r' % name)
@@ -54,5 +54,11 @@ def _build_expression(get_field, name, value):
         return field == value
 
 
-def _build_expressions(get_field, **query):
-    return [_build_expression(get_field, name, value) for name, value in query.items()]
+def to_expressions(get_field, **query):
+    """
+    Convert a simple query (dict of param names and values) to expression objects.
+    :type get_field: (str) -> Field
+    :type query: dict[str,str|float|datacube.model.Range]
+    :rtype: list[Expression]
+    """
+    return [_to_expression(get_field, name, value) for name, value in query.items()]

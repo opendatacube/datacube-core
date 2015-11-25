@@ -11,7 +11,7 @@ from string import lower
 
 import yaml
 from pathlib import Path
-from psycopg2._range import NumericRange
+from psycopg2.extras import NumericRange
 from sqlalchemy import cast, Index, TIMESTAMP
 from sqlalchemy import func
 from sqlalchemy.dialects import postgresql as postgres
@@ -54,6 +54,8 @@ class PgField(Field):
     def as_alchemy_index(self, prefix):
         """
         Build an SQLAlchemy index for this field.
+
+        :type prefix: str
         """
         return Index(
             'ix_field_{prefix}_{name}'.format(

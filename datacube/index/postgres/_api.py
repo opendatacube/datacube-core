@@ -11,8 +11,8 @@ from collections import defaultdict
 
 import numpy
 from sqlalchemy import create_engine, select, text, bindparam, exists, and_
+from sqlalchemy.engine.url import URL as EngineUrl
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.engine.url import URL as engine_url
 from sqlalchemy.exc import IntegrityError
 
 from datacube.config import LocalConfig
@@ -46,7 +46,7 @@ class PostgresDb(object):
     @classmethod
     def connect(cls, hostname, database, username=None, port=None):
         _engine = create_engine(
-            engine_url('postgresql', host=hostname, database=database, username=username, port=port),
+            EngineUrl('postgresql', host=hostname, database=database, username=username, port=port),
             echo=False,
             # 'AUTOCOMMIT' here means READ-COMMITTED isolation level with autocommit on.
             # When a transaction is needed we will do an explicit begin/commit.

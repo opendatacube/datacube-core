@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Module
+API for storage indexing, access and search.
 """
 from __future__ import absolute_import
 
@@ -8,7 +8,7 @@ import logging
 
 import cachetools
 
-from datacube.index.fields import _build_expressions
+from datacube.index.fields import to_expressions
 from datacube.model import StorageUnit, StorageType, DatasetMatcher, StorageMapping
 
 _LOG = logging.getLogger(__name__)
@@ -64,14 +64,16 @@ class StorageUnitResource(object):
     def search(self, *expressions, **query):
         """
         TODO: Return objects
-        :type expressions: list[datacube.index.fields.Expression]
+        :type expressions: tuple[datacube.index.fields.PgExpression]
+        :type query: dict[str,str|float|datacube.model.Range]
         """
-        query_exprs = tuple(_build_expressions(self.get_field, **query))
+        query_exprs = tuple(to_expressions(self.get_field, **query))
         return self._db.search_storage_units((expressions + query_exprs))
 
     def search_eager(self, *expressions, **query):
         """
         :type expressions: list[datacube.index.fields.Expression]
+        :type query: dict[str,str|float|datacube.model.Range]
         """
         return list(self.search(*expressions, **query))
 
@@ -109,7 +111,7 @@ class StorageTypeResource(object):
         """
         Ensure a storage type is in the index (add it if needed).
 
-        :return:
+        :type descriptor: dict
         """
         # TODO: Validate (Against JSON Schema?)
         name = descriptor['name']
@@ -131,7 +133,7 @@ class StorageMappingResource(object):
         Take a parsed storage mapping file and ensure it's in the index.
         (update if needed)
 
-        :return:
+        :type descriptor: dict
         """
         # TODO: Validate doc (Against JSON Schema?)
         name = descriptor['name']

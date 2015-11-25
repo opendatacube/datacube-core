@@ -7,7 +7,7 @@ from __future__ import absolute_import
 import logging
 
 from datacube.config import LocalConfig
-from datacube.index._datasets import DatasetResource
+from ._datasets import DatasetResource
 from ._storage import StorageUnitResource, StorageMappingResource, StorageTypeResource
 from .postgres import PostgresDb
 
@@ -17,8 +17,8 @@ _LOG = logging.getLogger(__name__)
 def connect(local_config=LocalConfig.find()):
     """
     Connect to the index. Default Postgres implementation.
-    :type config: datacube.config.LocalConfig
-    :rtype: DataIndex
+    :type local_config: datacube.config.LocalConfig
+    :rtype: Index
     """
     return Index(
         PostgresDb.from_config(local_config),
