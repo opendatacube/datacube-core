@@ -17,8 +17,8 @@ def ingest(dataset_path):
 
     index = index_connect()
 
-    if not index.contains_dataset(dataset):
-        was_indexed = index.ensure_dataset(dataset)
+    if not index.datasets.has(dataset):
+        was_indexed = index.datasets.add(dataset)
         if was_indexed:
             _LOG.info('Indexed %s', dataset_path)
 

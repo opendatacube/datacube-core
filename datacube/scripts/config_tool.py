@@ -9,7 +9,8 @@ import sys
 import click
 import yaml
 
-from datacube import index, config
+from datacube import config
+from datacube.index import index_connect
 from datacube.index.postgres import PostgresDb
 
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -42,10 +43,10 @@ def storage():
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
 def add_storage(yaml_file):
-    dm = index.data_management_connect()
+    dm = index_connect()
 
     for descriptor_path in yaml_file:
-        dm.ensure_storage_type(_parse_doc(descriptor_path))
+        dm.storage_types.add(_parse_doc(descriptor_path))
 
 
 @storage.command('template', help='Print an example YAML template')
@@ -68,10 +69,10 @@ def mappings():
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
 def add_mappings(yaml_file):
-    dm = index.data_management_connect()
+    dm = index_connect()
 
     for descriptor_path in yaml_file:
-        dm.ensure_storage_mapping(_parse_doc(descriptor_path))
+        dm.mappings.add(_parse_doc(descriptor_path))
 
 
 @mappings.command('template', help='Print an example YAML template')

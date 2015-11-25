@@ -10,7 +10,8 @@ import re
 import click
 from pypeg2 import word, attr, List, some, parse as peg_parse
 
-from datacube import config, index
+from datacube import config
+from datacube.index import index_connect
 
 FIELD_NAME = attr(u'field_name', word)
 
@@ -152,9 +153,9 @@ def cli(verbose, log_queries):
 @click.argument('expression',
                 nargs=-1)
 def dataset(expression):
-    i = index.data_index_connect()
+    i = index_connect()
 
-    for d in i.search_datasets(*parse_expressions(i.get_dataset_field, *expression)):
+    for d in i.datasets.search(*parse_expressions(i.get_dataset_field, *expression)):
         print(repr(d))
 
 
@@ -162,9 +163,9 @@ def dataset(expression):
 @click.argument('expression',
                 nargs=-1)
 def unit(expression):
-    i = index.data_index_connect()
+    i = index_connect()
 
-    for d in i.search_storage_units(*parse_expressions(i.get_storage_field_with_fallback, *expression)):
+    for d in i.storage.search(*parse_expressions(i.get_storage_field_with_fallback, *expression)):
         print(repr(d))
 
 
