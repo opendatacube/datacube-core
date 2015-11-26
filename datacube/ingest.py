@@ -12,10 +12,10 @@ from .index import index_connect
 _LOG = logging.getLogger(__name__)
 
 
-def ingest(dataset_path):
+def ingest(dataset_path, index=None):
     dataset = model.Dataset.from_path(dataset_path)
 
-    index = index_connect()
+    index = index or index_connect()
 
     if not index.datasets.has(dataset):
         was_indexed = index.datasets.add(dataset)
