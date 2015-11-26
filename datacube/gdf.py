@@ -18,7 +18,6 @@ GDF Trial backward compatibility
 
 from __future__ import absolute_import, division
 
-import warnings
 import numpy
 
 from .model import Range

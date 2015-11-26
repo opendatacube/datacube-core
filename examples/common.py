@@ -21,7 +21,6 @@ import numpy
 import rasterio
 from datacube.cubeaccess.core import StorageUnitVariableProxy, StorageUnitDimensionProxy, StorageUnitStack
 from datacube.cubeaccess.storage import GeoTifStorageUnit
-from datacube.cubeaccess.indexing import make_index
 
 
 def argpercentile(a, q, axis=0):
