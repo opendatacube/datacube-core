@@ -20,7 +20,7 @@ import numpy
 
 from datacube.storage.access.core import Coordinate, Variable
 from datacube.storage.access.core import StorageUnitVariableProxy, StorageUnitDimensionProxy, StorageUnitStack
-from datacube.storage.access.storage import FauxStorageUnit
+from datacube.storage.access.backends import FauxStorageUnit
 from datacube.model import Range
 
 DATA_DIR = os.path.join(os.path.split(os.path.realpath(__file__))[0], 'data')
@@ -123,7 +123,7 @@ def test_storage_unit_stack():
 
 
 def test_geotif_storage_unit():
-    from datacube.storage.access.storage import GeoTifStorageUnit
+    from datacube.storage.access.backends import GeoTifStorageUnit
 
     su = GeoTifStorageUnit(DATA_DIR+'/test.tif')
     assert set(su.coordinates.keys()) == ({'x', 'y'})
@@ -142,7 +142,7 @@ def test_geotif_storage_unit():
 
 
 def test_netcdf_storage_unit():
-    from datacube.storage.access.storage import NetCDF4StorageUnit
+    from datacube.storage.access.backends import NetCDF4StorageUnit
 
     su = NetCDF4StorageUnit.from_file(DATA_DIR+'/test.nc')
     assert set(su.coordinates.keys()) == ({'longitude', 'latitude', 'time'})

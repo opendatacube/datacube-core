@@ -6,7 +6,7 @@ from __future__ import absolute_import
 
 import netCDF4
 
-from .access.storage import NetCDF4StorageUnit
+from .access.backends import NetCDF4StorageUnit
 from .utils import namedtuples2dicts
 
 

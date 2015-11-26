@@ -22,7 +22,7 @@ import numpy
 
 from .model import Range
 from .storage.access.core import Coordinate, Variable, StorageUnitStack
-from .storage.access.storage import NetCDF4StorageUnit
+from .storage.access.backends import NetCDF4StorageUnit
 from .index import index_connect
 
 
