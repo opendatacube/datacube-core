@@ -18,48 +18,32 @@ Example showing usage of search api and data access api to calculate some band t
 
 from __future__ import absolute_import, division, print_function
 
-from collections import defaultdict
+import click
+import numpy
+import rasterio
+from itertools import product
 
 from datacube.index import index_connect
-
-import numpy
-
-from datacube.cubeaccess.core import Coordinate, Variable
+from datacube.ui import parse_expressions
+from datacube.gdf import make_storage_unit, group_storage_units_by_location
 from datacube.cubeaccess.core import StorageUnitStack, StorageUnitVariableProxy
-from datacube.cubeaccess.storage import NetCDF4StorageUnit
-from common import ndv_to_nan, do_work
 
 
-# TODO: this should be in a lib somewhere
-def make_storage_unit(su):
-    """turn db search result into StorageUnit object"""
-    coordinates = {name: Coordinate(dtype=numpy.dtype(attrs['dtype']),
-                                    begin=attrs['begin'],
-                                    end=attrs['end'],
-                                    length=attrs['length'],
-                                    units=attrs.get('units', None))
-                   for name, attrs in su.descriptor['coordinates'].items()}
-    variables = {name: Variable(dtype=numpy.dtype(attrs['dtype']),
-                                nodata=attrs['nodata'],
-                                dimensions=attrs['dimensions'],
-                                units=attrs.get('units', None))
-                 for name, attrs in su.descriptor['measurements'].items()}
-    return NetCDF4StorageUnit(su.filepath, coordinates=coordinates, variables=variables)
+def ndv_to_nan(a, ndv=-999):
+    a = a.astype(numpy.float32)
+    a[a == ndv] = numpy.nan
+    return a
 
 
-def group_storage_units_by_location(sus):
-    """group_storage_units_by_location so they can be stacked by time"""
-    dims = ('longitude', 'latitude')
-    stacks = defaultdict(list)
-    for su in sus:
-        stacks[tuple(su.coordinates[dim].begin for dim in dims)].append(su)
-    return stacks
+def ls_pqa_mask(pqa):
+    masked = 255 | 256 | 15360
+    return (pqa & masked) != masked
 
 
-def get_descriptors(query=None):
+def get_descriptors(*query):
     """run a query and turn results into StorageUnitStacks"""
     index = index_connect()
-    sus = index.storage.search_eager()
+    sus = index.storage.search_eager(*query)
 
     nbars = [make_storage_unit(su) for su in sus if 'PQ' not in su.path]
     pqs = [make_storage_unit(su) for su in sus if 'PQ' in su.path]
@@ -75,7 +59,22 @@ def get_descriptors(query=None):
         })
     return result
 
-def main(argv):
+
+@click.command()
+@click.argument('expression', nargs=-1)
+@click.option('--band', multiple=True, help="bands to calculate statistics on",
+              type=click.Choice(['blue', 'green', 'red', 'nir', 'ir1', 'ir2']))
+#@click.option('--percentile', type=int, multiple=True)
+@click.option('--mean', is_flag=True, help="calculate mean of the specified bands")
+def main(expression, band, **features):
+    """
+    Calculate some band stats and dump them into tif files in the current directory
+    """
+    stats = [stat for stat, enabled in features.items() if enabled]
+    if len(stats) == 0 or len(band) == 0:
+        print('nothing to do')
+        return
+
     # map bands to meaningfull names
     LS57varmap = {'blue': 'band_10',
                   'green': 'band_20',
@@ -85,29 +84,45 @@ def main(argv):
                   'ir2': 'band_70'}
     PQAvarmap = {'pqa': 'band_pixelquality'}
 
-    # get the data
-    descriptors = get_descriptors()
+    index = index_connect()
+    query = parse_expressions(index.storage.get_field_with_fallback, *expression)
 
-    qs = [10, 50, 90]
-    num_workers = 16
-    N = 4000//num_workers
+    # get the data
+    descriptors = get_descriptors(*query)
+
+    N = 200
 
     # split the work across time stacks
     for descriptor in descriptors:
-        # split the work along the latitude axis in N-sized chunks
-        for lat in range(0, 4000, N):
-            data = do_work(StorageUnitVariableProxy(descriptor['NBAR'], LS57varmap),
-                           StorageUnitVariableProxy(descriptor['PQ'], PQAvarmap),
-                           qs,
-                           time='time',
-                           latitude=slice(lat, lat + N))
+        nbars = StorageUnitVariableProxy(descriptor['NBAR'], LS57varmap)
+        pqas = StorageUnitVariableProxy(descriptor['PQ'], PQAvarmap)
 
-        # nir = ndv_to_nan(descriptor['NBAR'].get('band_40').values)
-        # red = ndv_to_nan(descriptor['NBAR'].get('band_30').values)
-        # ndvi = numpy.mean((nir-red)/(nir+red), axis=0)
-        # print ("NDVI Whoo!!!")
-        # print (ndvi)
+        nbands = len(stats) * len(band)
+        name = "%s_%s.tif"%(nbars.coordinates['longitude'].begin, nbars.coordinates['latitude'].end)
+        with rasterio.open(name, 'w', driver='GTiff',
+                           width=nbars.coordinates['longitude'].length,
+                           height=nbars.coordinates['latitude'].length,
+                           count=nbands, dtype=numpy.int16,
+                           # crs=proj, transform=geotr, TODO: transform/projection
+                           nodata=-999,
+                           INTERLEAVE="BAND", COMPRESS="LZW", TILED="YES") as raster:
+            for band_idx, b in enumerate(band):
+                for lat in range(0, nbars.coordinates['latitude'].length, N):
+                    band_num = band_idx*len(stats)+1
+                    chunk = dict(latitude=slice(lat, lat + N))
+
+                    # TODO: use requested portion of the data, not the whole tile
+                    pqa_mask = ls_pqa_mask(pqas.get('pqa', **chunk).values)
+                    data = nbars.get(b, **chunk).values
+                    data = ndv_to_nan(data, nbars.variables[b].nodata)
+                    data[pqa_mask] = numpy.nan
+
+                    for stat in stats:
+                        result = getattr(numpy, 'nan'+stat)(data, axis=0)
+                        raster.write(result.astype('int16'), indexes=band_num,
+                                     window=((lat, lat + result.shape[0]), (0, result.shape[1])))
+                        band_num += 1
+
 
 if __name__ == "__main__":
-    import sys
-    main(sys.argv)
+    main()
