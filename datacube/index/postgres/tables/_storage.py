@@ -31,7 +31,7 @@ STORAGE_TYPE = Table(
 
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
-    Column('added_by', String, server_default=func.session_user(), nullable=False),
+    Column('added_by', String, server_default=func.current_user(), nullable=False),
 
     UniqueConstraint('driver', 'name'),
 )
@@ -83,7 +83,7 @@ STORAGE_MAPPING = Table(
 
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
-    Column('added_by', String, server_default=func.session_user(), nullable=False),
+    Column('added_by', String, server_default=func.current_user(), nullable=False),
 
     UniqueConstraint('storage_type_ref', 'name'),
 )
@@ -98,7 +98,9 @@ STORAGE_UNIT = Table(
 
     Column('path', String, unique=True, nullable=False),
 
+    # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
+    Column('added_by', String, server_default=func.current_user(), nullable=False),
 )
 
 DATASET_STORAGE = Table(
