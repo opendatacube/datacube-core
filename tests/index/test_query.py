@@ -40,13 +40,13 @@ def test_parse_expression():
 def test_parse_multiple_expressions():
     # Multiple expressions in one command-line statement.
     # Mixed whitespace:
-    between_exp = parse_expressions(_fields.get, 'satellite=LS8 4<lat<23 sensor="OTHER"')
+    between_exp = parse_expressions(_fields.get, 'satellite=LS8 -4<lat<23.5 sensor="OTHER"')
     assert between_exp == [
         EqualsExpression(
             _sat_field,
             'LS8'
         ),
-        RangeBetweenExpression(_lat_field, 4, 23.0),
+        RangeBetweenExpression(_lat_field, -4, 23.5),
         EqualsExpression(
             _sens_field,
             'OTHER'

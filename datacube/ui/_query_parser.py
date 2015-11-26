@@ -23,7 +23,7 @@ from pypeg2 import word, attr, List, maybe_some, parse as peg_parse
 
 FIELD_NAME = attr(u'field_name', word)
 
-NUMBER = re.compile(r"\d+")
+NUMBER = re.compile(r"[-+]?(\d*\.\d+|\d+\.\d*|\d+)")
 # A limited string can be used without quotation marks.
 LIMITED_STRING = re.compile(r"[a-zA-Z][\w\._-]*")
 # Inside string quotation marks. Kept simple. We're not supporting escapes or much else yet...
