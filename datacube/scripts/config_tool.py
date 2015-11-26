@@ -36,7 +36,10 @@ def database_init():
     db = PostgresDb.from_config()
     _LOG.info('Initialising database...')
     was_created = db.init()
-    _LOG.info('Done.') if was_created else _LOG.info('Nothing to do.')
+    if was_created:
+        _LOG.info('Done.')
+    else:
+        _LOG.info('Nothing to do.')
 
 
 @cli.group(help='Storage types')
