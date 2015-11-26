@@ -45,7 +45,7 @@ _STORAGE_MAPPING = {
         {
 
             'name': '30m_bands',
-            'location_name': 'gdata',
+            'location_name': 'eotiles',
             'location_offset': '/location_offset/file.nc',
             'measurements': {
                 '1': {'dtype': 'int16',
@@ -100,8 +100,11 @@ _DATASET_METADATA = {
 }
 
 
-def test_add_storage_type(index):
-
+def test_add_storage_type(index, local_config):
+    """
+    :type local_config: datacube.config.LocalConfig
+    :return:
+    """
     dataset = Dataset('eo', _DATASET_METADATA, '/tmp/somepath.yaml')
 
     storage_mappings = index.mappings.get_for_dataset(dataset)
@@ -116,7 +119,8 @@ def test_add_storage_type(index):
 
     mapping = storage_mappings[0]
     assert mapping.name == 'LS5 NBAR'
-    assert mapping.storage_pattern == 'file:///g/data/location_offset/file.nc'
+
+    assert mapping.storage_pattern == local_config.location_mappings['eotiles'] + '/location_offset/file.nc'
     assert mapping.match.metadata == _STORAGE_MAPPING['match']['metadata']
     assert mapping.measurements == _STORAGE_MAPPING['storage'][0]['measurements']
 
