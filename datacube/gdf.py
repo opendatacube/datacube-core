@@ -14,7 +14,6 @@
 
 """
 GDF Trial backward compatibility
-Deprecated, do not use
 """
 
 from __future__ import absolute_import, division
@@ -166,8 +165,6 @@ class GDF(object):
                  }
             }
         """
-        warnings.warn("get_descriptor is deprecated. Don't use unless your name is Peter", DeprecationWarning)
-
         if descriptor:
             query = {key: descriptor[key] for key in ('satellite', 'sensor', 'product') if key in descriptor}
             query.update({dim: Range(*data['range']) for dim, data in descriptor['dimensions'].items()})
@@ -282,8 +279,6 @@ class GDF(object):
             ]
         }
         """
-        warnings.warn("get_data is deprecated. Don't use unless your name is Peter", DeprecationWarning)
-
         if descriptor:
             query = {key: descriptor[key] for key in ('satellite', 'sensor', 'product') if key in descriptor}
             reqrange = {dim: Range(*data['range']) for dim, data in descriptor['dimensions'].items()}
