@@ -6,8 +6,8 @@ from __future__ import absolute_import
 
 import netCDF4
 
-from datacube.cubeaccess.storage import NetCDF4StorageUnit
-from datacube.storage.utils import namedtuples2dicts
+from .cubeaccess.storage import NetCDF4StorageUnit
+from .utils import namedtuples2dicts
 
 
 def index_netcdfs(filenames):

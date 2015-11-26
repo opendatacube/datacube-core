@@ -21,12 +21,11 @@ from __future__ import absolute_import, division, print_function
 import click
 import numpy
 import rasterio
-from itertools import product
 
 from datacube.index import index_connect
 from datacube.ui import parse_expressions
 from datacube.gdf import make_storage_unit, group_storage_units_by_location
-from datacube.cubeaccess.core import StorageUnitStack, StorageUnitVariableProxy
+from datacube.storage.cubeaccess.core import StorageUnitStack, StorageUnitVariableProxy
 
 
 def ndv_to_nan(a, ndv=-999):
