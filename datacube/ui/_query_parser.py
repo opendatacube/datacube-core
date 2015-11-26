@@ -17,7 +17,7 @@ Data Access Module
 """
 
 import re
-from pypeg2 import word, attr, List, some, parse as peg_parse
+from pypeg2 import word, attr, List, maybe_some, parse as peg_parse
 
 
 FIELD_NAME = attr(u'field_name', word)
@@ -111,7 +111,7 @@ class BetweenExpression(Expr):
 
 
 class ExpressionList(List):
-    grammar = some([EqualsExpression, BetweenExpression])
+    grammar = maybe_some([EqualsExpression, BetweenExpression])
 
     def __str__(self):
         return ' and '.join(map(str, self))
