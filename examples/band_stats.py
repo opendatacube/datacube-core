@@ -25,7 +25,7 @@ import rasterio
 from datacube.index import index_connect
 from datacube.ui import parse_expressions
 from datacube.gdf import make_storage_unit, group_storage_units_by_location
-from datacube.storage.cubeaccess.core import StorageUnitStack, StorageUnitVariableProxy
+from datacube.storage.access.core import StorageUnitStack, StorageUnitVariableProxy
 
 
 def ndv_to_nan(a, ndv=-999):

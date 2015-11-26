@@ -55,7 +55,7 @@ def _expand_index(coord, slice_):
 def normalize_index(coord, index):
     """
     Fill in None fields of slice or Range object
-    :param coord: datacube.cubeaccess.core.Coordinate
+    :param coord: datacube.access.core.Coordinate
     :type index: slice | Range
     :rtype slice | Range
 

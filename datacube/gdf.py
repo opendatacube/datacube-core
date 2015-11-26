@@ -21,8 +21,8 @@ from __future__ import absolute_import, division
 import numpy
 
 from .model import Range
-from .storage.cubeaccess.core import Coordinate, Variable, StorageUnitStack
-from .storage.cubeaccess.storage import NetCDF4StorageUnit
+from .storage.access.core import Coordinate, Variable, StorageUnitStack
+from .storage.access.storage import NetCDF4StorageUnit
 from .index import index_connect
 
 
