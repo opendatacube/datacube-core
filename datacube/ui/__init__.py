@@ -15,6 +15,5 @@
 """
 User Interface Utilities
 """
-
-
-from _query_parser import parse_expressions
+from __future__ import absolute_import
+from ._query_parser import parse_expressions, UnknownFieldException

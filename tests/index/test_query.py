@@ -9,7 +9,7 @@ import pytest
 from datacube.index.fields import to_expressions
 from datacube.index.postgres._fields import SimpleDocField, RangeDocField, RangeBetweenExpression, EqualsExpression
 from datacube.model import Range
-from datacube.scripts.search_tool import parse_expressions, UnknownFieldException
+from datacube.ui import parse_expressions, UnknownFieldException
 
 _sat_field = SimpleDocField('satellite', {}, None)
 _sens_field = SimpleDocField('sensor', {}, None)
