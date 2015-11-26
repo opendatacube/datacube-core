@@ -29,8 +29,9 @@ DATASET = Table(
     #   - May be null if the dataset was not ingested (provenance-only)
     Column('metadata_path', String, nullable=True, unique=True),
 
-    Column('added', DateTime(timezone=True), server_default=func.now()),
-
+    # When it was added and by whom.
+    Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
+    Column('added_by', String, server_default=func.session_user(), nullable=False),
 )
 
 # Link datasets to their source datasets.
@@ -44,8 +45,6 @@ DATASET_SOURCE = Table(
     #       of each type.
     Column('classifier', String, nullable=False),
     Column('source_dataset_ref', None, ForeignKey(DATASET.c.id), nullable=False),
-
-    Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
 
     UniqueConstraint('dataset_ref', 'classifier'),
     UniqueConstraint('source_dataset_ref', 'dataset_ref'),

@@ -29,6 +29,10 @@ STORAGE_TYPE = Table(
     # See "_EXAMPLE_STORAGE_TYPE_DESCRIPTOR" below
     Column('descriptor', postgres.JSONB, nullable=False),
 
+    # When it was added and by whom.
+    Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
+    Column('added_by', String, server_default=func.session_user(), nullable=False),
+
     UniqueConstraint('driver', 'name'),
 )
 
@@ -76,6 +80,10 @@ STORAGE_MAPPING = Table(
     #   interpolation: cubic
     # See "_EXAMPLE_DATASET_TYPE_MEASUREMENTS" below.
     Column('measurements', postgres.JSONB),
+
+    # When it was added and by whom.
+    Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
+    Column('added_by', String, server_default=func.session_user(), nullable=False),
 
     UniqueConstraint('storage_type_ref', 'name'),
 )
