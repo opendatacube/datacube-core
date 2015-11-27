@@ -8,7 +8,6 @@ import logging
 from collections import namedtuple
 
 import numpy as np
-import yaml
 
 _LOG = logging.getLogger(__name__)
 
@@ -187,6 +186,60 @@ class Dataset(object):
             raise ValueError('Only eo docs are supported at the moment (provided {})'.format(metadata_type))
 
         return Dataset(metadata_type, metadata_doc, metadata_path)
+
+
+class Collection(object):
+    def __init__(self,
+                 name,
+                 match=DatasetMatcher({}),
+                 dataset_id_offset=('id',),
+                 dataset_label_offset=('ga_label',),
+                 dataset_creation_time_offset=('creation_dt',),
+                 dataset_search_fields={},
+                 storage_unit_search_fields={},
+                 dataset_measurements_offset={}):
+        """
+        Collection of datasets & storage.
+        """
+        # Name of collection. Unique.
+        self.name = name
+
+        # Match datasets that should belong to this collection.
+        self.match = match
+
+        # UUID for a dataset. Always unique.
+        self.dataset_id_offset = dataset_id_offset
+
+        # The dataset "label" is the logical identifier for a dataset.
+        #
+        # -> Multiple datasets may arrive with the same label, but only the 'latest' will be returned by default
+        #    in searches.
+        #
+        # Use case: reprocessing a dataset.
+        # -> When reprocessing a dataset, the new dataset should be produced with the same label as the old one.
+        # -> Because you probably don't want both datasets returned from typical searches. (they are the same data)
+        # -> When ingested, this reprocessed dataset will be the only one visible to typical searchers.
+        # -> But the old dataset will still exist in the database for provenance & historical record.
+        #       -> Existing higher-level/derived datasets will still link to the old dataset they were processed
+        #          from, even if it's not the latest.
+        #
+        # An example label used by GA (called "dataset_ids" on historical systems):
+        #      -> Eg. "LS7_ETM_SYS_P31_GALPGS01-002_114_73_20050107"
+        #
+        # But the collection owner can use any string to label their datasets.
+        self.dataset_label_offset = dataset_label_offset
+
+        # datetime the dataset was processed/created.
+        self.dataset_creation_time_offset = dataset_creation_time_offset
+
+        self.dataset_search_fields = dataset_search_fields
+        self.storage_unit_search_fields = storage_unit_search_fields
+
+        # Where to find a dict of measurements/bands in the dataset.
+        #  -> Dict key is measurement/band id,
+        #  -> Dict value is object with fields depending on the storage driver.
+        #     (such as path to band file, offset within file etc.)
+        self.dataset_measurements_offset = dataset_measurements_offset
 
 
 class VariableAlreadyExists(Exception):
