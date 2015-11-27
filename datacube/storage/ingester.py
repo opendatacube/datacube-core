@@ -126,6 +126,7 @@ def crazy_band_tiler(band_info, input_filename, storage_spec, time_value, datase
 
         _LOG.debug((os.getcwd(), output_filename))
 
-        append_to_netcdf(tile_spec, im, output_filename, storage_spec, band_info, time_value, input_filename)
+        append_to_netcdf(tile_spec, im.ReadAsArray(), output_filename, storage_spec, band_info, time_value,
+                         input_filename)
         _LOG.debug(im)
         yield output_filename

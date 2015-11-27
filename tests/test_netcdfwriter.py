@@ -96,7 +96,7 @@ def test_create_sample_netcdf_from_gdalds(tmpdir, example_gdal_path):
 
     tile_spec = tilespec_from_gdaldataset(dataset)
 
-    append_to_netcdf(tile_spec, dataset, filename, storage_spec, band_info, datetime(2008, 5, 5, 0, 24),
+    append_to_netcdf(tile_spec, dataset.ReadAsArray(), filename, storage_spec, band_info, datetime(2008, 5, 5, 0, 24),
                      input_filename="")
 
     # Perform some basic checks

@@ -143,11 +143,7 @@ class NetCDFWriter(object):
         out_band[time_index, :, :] = nparray
         src_filename[time_index] = "Raw Array"
 
-    def append_gdal_tile(self, gdal_dataset, band_info, storage_type, time_value, input_filename):
-        """
-
-        :return:
-        """
+    def append_slice(self, np_array, band_info, storage_type, time_value, input_filename):
         varname = band_info.varname
         if varname in self.nco.variables:
             raise VariableAlreadyExists('Error writing to {}: variable {} already exists and will not be '
@@ -162,7 +158,7 @@ class NetCDFWriter(object):
 
         time_index = self.find_or_create_time_index(time_value)
 
-        out_band[time_index, :, :] = gdal_dataset.ReadAsArray()
+        out_band[time_index, :, :] = np_array
         src_filename[time_index] = input_filename
 
     def _create_variables(self, tile_spec):
@@ -187,11 +183,12 @@ class NetCDFWriter(object):
         return newvar, src_filename
 
 
-def append_to_netcdf(tile_spec, gdal_dataset, netcdf_path, storage_type, band_info, time_value, input_filename=""):
+def append_to_netcdf(tile_spec, np_array, netcdf_path, storage_type, band_info, time_value, input_filename=""):
     """
     Append a raster slice to a new or existing NetCDF file
 
-    :param gdal_dataset: dataset to read the slice from
+    :param tile_spec
+    :param np_array: data array to add to netcdf
     :param netcdf_path: pathname to output netcdf file
     :param input_spec:
     :param bandname:
@@ -200,6 +197,5 @@ def append_to_netcdf(tile_spec, gdal_dataset, netcdf_path, storage_type, band_in
     """
     ncfile = NetCDFWriter(netcdf_path, tile_spec)
 
-    ncfile.append_gdal_tile(gdal_dataset, band_info, storage_type,
-                            time_value, input_filename)
+    ncfile.append_slice(np_array, band_info, storage_type, time_value, input_filename)
     ncfile.close()
