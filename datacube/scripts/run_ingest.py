@@ -23,8 +23,7 @@ CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 def cli(verbose, dataset, log_queries):
     config.init_logging(verbosity_level=verbose, log_queries=log_queries)
 
-    for dataset_path in dataset:
-        ingest(Path(dataset_path))
+    ingest([Path(dataset_path) for dataset_path in dataset])
 
 
 if __name__ == '__main__':
