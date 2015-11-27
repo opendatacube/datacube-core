@@ -22,7 +22,7 @@ import numpy
 
 from .model import Range
 from .storage.access.core import Coordinate, Variable, StorageUnitStack
-from .storage.access.backends import NetCDF4StorageUnit
+from .storage.access.backends import NetCDF4StorageUnit, GeoTifStorageUnit
 from .index import index_connect
 
 
@@ -39,7 +39,11 @@ def make_storage_unit(su):
                                 dimensions=attrs['dimensions'],
                                 units=attrs.get('units', None))
                  for name, attrs in su.descriptor['measurements'].items()}
-    return NetCDF4StorageUnit(su.filepath, coordinates=coordinates, variables=variables)
+    cls = {
+        'NetCDF CF': NetCDF4StorageUnit,
+        'GeoTiff': GeoTifStorageUnit
+    }[su.storage_mapping.storage_type.driver]
+    return cls(su.filepath, coordinates=coordinates, variables=variables)
 
 
 def group_storage_units_by_location(sus):
