@@ -98,7 +98,6 @@ def test_index_storage_unit(index, db):
         {'storage_type': 'descriptor'}
     )
     db.ensure_storage_mapping(
-        'NetCDF CF',
         'test_storage_type',
         'Test storage mapping',
         'location1', '/tmp/some/loc', {}, [], {}

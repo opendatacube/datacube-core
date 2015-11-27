@@ -194,13 +194,12 @@ class PostgresDb(object):
             )
         ).fetchall()
 
-    def ensure_storage_mapping(self, driver, storage_type_name, name, location_name, location_offset,
+    def ensure_storage_mapping(self, storage_type_name, name, location_name, location_offset,
                                dataset_metadata, data_measurements_key, measurements):
         self._connection.execute(
             STORAGE_MAPPING.insert().values(
                 storage_type_ref=select([STORAGE_TYPE.c.id]).where(
-                    and_(STORAGE_TYPE.c.driver == driver,
-                         STORAGE_TYPE.c.name == storage_type_name)
+                    STORAGE_TYPE.c.name == storage_type_name
                 ),
                 name=name,
                 dataset_metadata=dataset_metadata,

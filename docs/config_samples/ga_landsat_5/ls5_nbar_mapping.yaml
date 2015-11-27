@@ -1,6 +1,5 @@
 
 name: LS5 NBAR
-driver: NetCDF CF
 
 # Any datasets matching these metadata properties.
 match:

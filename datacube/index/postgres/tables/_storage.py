@@ -24,7 +24,7 @@ STORAGE_TYPE = Table(
     Column('driver', String, nullable=False),
 
     # A name/label for this type (eg. '30m bands'). Specified by users.
-    Column('name', String, nullable=False),
+    Column('name', String, nullable=False, unique=True),
 
     # See "_EXAMPLE_STORAGE_TYPE_DESCRIPTOR" below
     Column('descriptor', postgres.JSONB, nullable=False),
@@ -33,7 +33,6 @@ STORAGE_TYPE = Table(
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
     Column('added_by', String, server_default=func.current_user(), nullable=False),
 
-    UniqueConstraint('driver', 'name'),
 )
 
 # Map a dataset type to how we will store it (storage_type and each measurement/band).

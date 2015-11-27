@@ -144,7 +144,6 @@ class StorageMappingResource(object):
         with self._db.begin() as transaction:
             for mapping in storage_mappings:
                 self._db.ensure_storage_mapping(
-                    driver,
                     mapping['name'],
                     name,
                     mapping['location_name'],
