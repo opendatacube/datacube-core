@@ -7,7 +7,7 @@ from __future__ import absolute_import
 import logging
 
 from datacube.config import LocalConfig
-from ._datasets import DatasetResource
+from ._datasets import DatasetResource, CollectionResource
 from ._storage import StorageUnitResource, StorageMappingResource, StorageTypeResource
 from .postgres import PostgresDb
 
@@ -33,6 +33,7 @@ class Index(object):
         """
         self._db = db
 
+        self.collections = CollectionResource(db)
         self.datasets = DatasetResource(db)
         self.storage_types = StorageTypeResource(db)
         self.mappings = StorageMappingResource(db, self.storage_types, local_config)

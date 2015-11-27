@@ -7,7 +7,7 @@ from __future__ import absolute_import
 import copy
 import logging
 
-from datacube.model import Dataset
+from datacube.model import Dataset, Collection
 from .fields import to_expressions
 
 _LOG = logging.getLogger(__name__)
@@ -56,6 +56,24 @@ def _ensure_dataset(db, dataset_doc, path=None):
             db.insert_dataset_source(classifier, dataset_id, source_dataset_id)
 
     return dataset_id
+
+
+class CollectionResource(object):
+    def __init__(self, db):
+        """
+        :type db: datacube.index.postgres._api.PostgresDb
+        """
+        self._db = db
+
+    def get_for_dataset_doc(self, metadata_doc):
+        return self._db.get_collection_for_doc(metadata_doc)
+
+    def _make(self, query_result):
+        """
+        :rtype list[datacube.model.Dataset]
+        """
+        return (Dataset(dataset.metadata_type, dataset.metadata, dataset.metadata_path)
+                for dataset in query_result)
 
 
 class DatasetResource(object):
