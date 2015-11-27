@@ -194,7 +194,7 @@ class PostgresDb(object):
             )
         ).fetchall()
 
-    def ensure_storage_mapping(self, storage_type_name, name, location_name, location_offset,
+    def ensure_storage_mapping(self, storage_type_name, name, location_name, file_path_template,
                                dataset_metadata, data_measurements_key, measurements):
         self._connection.execute(
             STORAGE_MAPPING.insert().values(
@@ -206,7 +206,7 @@ class PostgresDb(object):
                 dataset_measurements_key=data_measurements_key,
                 measurements=measurements,
                 location_name=location_name,
-                location_offset=location_offset,
+                file_path_template=file_path_template,
             )
         )
 

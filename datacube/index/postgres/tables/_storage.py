@@ -50,7 +50,7 @@ STORAGE_MAPPING = Table(
     Column('location_name', String, nullable=False),
 
     # The offset relative to location where the storage units should be stored. Specified by users.
-    Column('location_offset', String, nullable=False),
+    Column('file_path_template', String, nullable=False),
 
     # Match any datasets whose metadata is a superset of this.
     # See "_EXAMPLE_DATASETS_MATCHING" below

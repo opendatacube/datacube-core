@@ -64,7 +64,7 @@ def store(storage_mappings, dataset):
                 # TODO: Use the correct mapping
                 storage_mappings[0],
                 unit_descriptor,
-                mapping.location_offset('file://'+path)
+                mapping.local_path_to_location_offset('file://' + path)
             )
             for path, unit_descriptor in created_storage_units.items()
             ]

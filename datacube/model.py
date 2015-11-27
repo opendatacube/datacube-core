@@ -80,7 +80,7 @@ class StorageMapping(object):
         #: :type: int
         self.id_ = id_
 
-    def location_offset(self, filepath):
+    def local_path_to_location_offset(self, filepath):
         assert filepath.startswith(self.location)
         return filepath[len(self.location):]
 
@@ -94,7 +94,7 @@ class StorageMapping(object):
 
     def __repr__(self):
         return ('StorageMapping<storage_type={!r},'
-                ' id_={!r},...,location_offset={!r}>'
+                ' id_={!r},...,location={!r}>'
                 .format(self.storage_type, self.id_, self.resolve_location('')))
 
 

@@ -147,7 +147,7 @@ class StorageMappingResource(object):
                     mapping['name'],
                     name,
                     mapping['location_name'],
-                    mapping['location_offset'],
+                    mapping['file_path_template'],
                     dataset_metadata,
                     # The offset within an eodataset to find a band list.
                     ['image', 'bands'],
@@ -162,7 +162,7 @@ class StorageMappingResource(object):
             mapping['measurements'],
             mapping['dataset_measurements_key'],
             self._host_config.location_mappings[mapping['location_name']],
-            mapping['location_offset'],
+            mapping['file_path_template'],
             id_=mapping['id']
         )
 

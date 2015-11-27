@@ -20,7 +20,7 @@ sample_mapping = {
                 'summary': 'These files are experimental, short lived, and the format will change.',
                 'title': 'Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE'},
             'location_name': 'testdata',
-            'location_offset': '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc',
+            'file_path_template': '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc',
             'measurements': {
                 '10': {'dtype': 'int16',
                        'nodata': -999,

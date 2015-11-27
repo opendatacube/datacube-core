@@ -46,7 +46,7 @@ _STORAGE_MAPPING = {
 
             'name': '30m_bands',
             'location_name': 'eotiles',
-            'location_offset': '/location_offset/file.nc',
+            'file_path_template': '/file_path_template/file.nc',
             'measurements': {
                 '1': {'dtype': 'int16',
                       'fill_value': -999,
@@ -120,7 +120,7 @@ def test_add_storage_type(index, local_config):
     mapping = storage_mappings[0]
     assert mapping.name == 'LS5 NBAR'
 
-    assert mapping.storage_pattern == local_config.location_mappings['eotiles'] + '/location_offset/file.nc'
+    assert mapping.storage_pattern == local_config.location_mappings['eotiles'] + '/file_path_template/file.nc'
     assert mapping.match.metadata == _STORAGE_MAPPING['match']['metadata']
     assert mapping.measurements == _STORAGE_MAPPING['storage'][0]['measurements']
 

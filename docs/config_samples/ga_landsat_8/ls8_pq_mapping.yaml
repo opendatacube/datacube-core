@@ -14,7 +14,7 @@ match:
 storage:
     - name: 25m_bands
       location_name: eotiles
-      location_offset: '{platform[code]}_{instrument[name]}_PQ_{lons[0]}_{lats[0]}_{creation_dt:%Y-%m-%dT%H-%M-%S.%f}.nc'
+      file_path_template: '{platform[code]}_{instrument[name]}_PQ_{lons[0]}_{lats[0]}_{creation_dt:%Y-%m-%dT%H-%M-%S.%f}.nc'
       global_attributes:
         title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
         summary: These files are experimental, short lived, and the format will change.
