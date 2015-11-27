@@ -6,11 +6,12 @@ import numpy as np
 import netCDF4
 from osgeo import gdal
 import pytest
+import rasterio
 
 from datacube.storage.netcdf_writer import NetCDFWriter, append_to_netcdf
 from datacube.model import TileSpec
 from datacube.storage.ingester import SimpleObject
-from datacube.storage.utils import tilespec_from_gdaldataset
+from datacube.storage.utils import tilespec_from_riodataset
 
 
 def test_create_single_time_netcdf_from_numpy_arrays(tmpdir):
@@ -48,6 +49,10 @@ def test_create_single_time_netcdf_from_numpy_arrays(tmpdir):
     assert len(nco.variables['time']) == 1
     assert len(nco.variables['longitude']) == 4000
     assert len(nco.variables['latitude']) == 2000
+    assert nco.variables['latitude'][0] == -29
+    assert abs(nco.variables['latitude'][-1] - -29.9995) < 0.0000001
+    assert nco.variables['longitude'][0] == 151
+    assert nco.variables['longitude'][-1] == 151.99975
 
 
 @pytest.mark.xfail
@@ -59,7 +64,7 @@ def test_create_multi_time_netcdf_from_numpy_arrays(tmpdir):
                  'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
                  'AUTHORITY["EPSG","4326"]]'
     extents = [[151.0, -29.0], [151.0, -30.0], [152.0, -30.0], [152.0, -29.0]]
-    tile_spec = TestTileSpec(2000, 4000, 2, geotransform, projection, extents)
+    tile_spec = TileSpec(2000, 4000, projection, geotransform, extents)
 
     chunking = {'t': 1, 'y': 100, 'x': 100}
     dates = [datetime(2008, m, 1) for m in [1, 2, 3]]
@@ -83,20 +88,24 @@ def test_create_multi_time_netcdf_from_numpy_arrays(tmpdir):
     assert len(nco.variables['time']) == 3
     assert len(nco.variables['longitude']) == 4000
     assert len(nco.variables['latitude']) == 2000
+    assert nco.variables['latitude'][0] == -29
+    assert nco.variables['latitude'][-1] == -29.99975
+    assert nco.variables['longitude'][0] == 151
+    assert nco.variables['longitude'][-1] == 151.99975
 
 
 def test_create_sample_netcdf_from_gdalds(tmpdir, example_gdal_path):
     filename = str(tmpdir.join('testfile_gdal.nc'))
 
-    dataset = gdal.Open(example_gdal_path)
-    bandname = '10'
+    dataset = rasterio.open(example_gdal_path)
 
     band_info = SimpleObject(varname='B10', dtype='int16', nodata=-999)
     storage_spec = {'chunking': {'x': 100, 'y': 100, 't': 1}}
 
-    tile_spec = tilespec_from_gdaldataset(dataset)
+    tile_spec = tilespec_from_riodataset(dataset)
+    tile_spec.data = dataset.read(1)
 
-    append_to_netcdf(tile_spec, dataset.ReadAsArray(), filename, storage_spec, band_info, datetime(2008, 5, 5, 0, 24),
+    append_to_netcdf(tile_spec, filename, storage_spec, band_info, datetime(2008, 5, 5, 0, 24),
                      input_filename="")
 
     # Perform some basic checks

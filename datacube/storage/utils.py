@@ -123,6 +123,12 @@ def tilespec_from_gdaldataset(gdal_ds, global_attrs=None):
     return TileSpec(nlats, nlons, projection, geotransform, extents, global_attrs)
 
 
+def tilespec_from_riodataset(rio, global_attrs=None):
+    projection = rio.crs_wkt
+    width, height = rio.width, rio.height
+    return TileSpec(height, width, projection, rio.affine.to_gdal(), rio.bounds, global_attrs)
+
+
 def ensure_path_exists(filename):
     file_dir = Path(filename).parent
     if not file_dir.exists:

@@ -74,7 +74,7 @@ class NetCDFWriter(object):
         lat[:] = lats
 
     def _set_crs(self, tile_spec):
-        projection = osr.SpatialReference(tile_spec.projection)
+        projection = osr.SpatialReference(str(tile_spec.projection))
         assert projection.IsGeographic()
         crso = self.nco.createVariable('crs', 'i4')
         crso.long_name = projection.GetAttrValue('GEOGCS')  # "Lon/Lat Coords in WGS84"
@@ -143,7 +143,7 @@ class NetCDFWriter(object):
         out_band[time_index, :, :] = nparray
         src_filename[time_index] = "Raw Array"
 
-    def append_slice(self, np_array, band_info, storage_type, time_value, input_filename):
+    def append_slice(self, np_array, storage_type, band_info, time_value, input_filename):
         varname = band_info.varname
         if varname in self.nco.variables:
             raise VariableAlreadyExists('Error writing to {}: variable {} already exists and will not be '
@@ -183,7 +183,7 @@ class NetCDFWriter(object):
         return newvar, src_filename
 
 
-def append_to_netcdf(tile_spec, np_array, netcdf_path, storage_type, band_info, time_value, input_filename=""):
+def append_to_netcdf(tile_spec, netcdf_path, storage_type, band_info, time_value, input_filename=""):
     """
     Append a raster slice to a new or existing NetCDF file
 
@@ -197,5 +197,5 @@ def append_to_netcdf(tile_spec, np_array, netcdf_path, storage_type, band_info, 
     """
     ncfile = NetCDFWriter(netcdf_path, tile_spec)
 
-    ncfile.append_slice(np_array, band_info, storage_type, time_value, input_filename)
+    ncfile.append_slice(tile_spec.data, storage_type, band_info, time_value, input_filename)
     ncfile.close()

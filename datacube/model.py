@@ -195,36 +195,36 @@ class VariableAlreadyExists(Exception):
 
 class TileSpec(object):
     """
-    Defines a Storage Tile/Storage Unit, it's projection, location, extents, resolution, and global attributes
+    Defines a Storage Tile/Storage Unit, it's projection, location, resolution, and global attributes
 
     """
 
     lats = []
     lons = []
 
-    def __init__(self, nlats, nlons, projection, geotransform, extents, global_attrs=None):
+    def __init__(self, nlats, nlons, projection, geotransform, data=None, global_attrs=None):
         self.projection = projection
         self.geotransform = geotransform
         self.lons = np.arange(nlons) * geotransform[1] + geotransform[0]
         self.lats = np.arange(nlats) * geotransform[5] + geotransform[3]
-        self.extents = extents
+        self.data = data
         self.global_attrs = global_attrs or {}
 
     @property
     def lat_min(self):
-        return min(y for x, y in self.extents)
+        return min(self.lats)
 
     @property
     def lat_max(self):
-        return max(y for x, y in self.extents)
+        return max(self.lats)
 
     @property
     def lon_min(self):
-        return min(x for x, y in self.extents)
+        return min(self.lons)
 
     @property
     def lon_max(self):
-        return max(x for x, y in self.extents)
+        return max(self.lons)
 
     @property
     def lat_res(self):
