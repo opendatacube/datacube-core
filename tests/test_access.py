@@ -125,17 +125,17 @@ def test_storage_unit_stack():
 def test_geotif_storage_unit():
     from datacube.storage.access.backends import GeoTifStorageUnit
 
-    su = GeoTifStorageUnit(DATA_DIR+'/test.tif')
+    su = GeoTifStorageUnit.from_file(DATA_DIR+'/test.tif')
     assert set(su.coordinates.keys()) == ({'x', 'y'})
-    assert su.variables['2'].nodata == -999
+    assert su.variables['layer2'].nodata == -999
 
     # floating point dodge... am I doing something wrong?
-    data = su.get('2', x=Range(144.5, 144.7-0.00001), y=Range(-35.5, -35.2-0.00001))
+    data = su.get('layer2', x=Range(144.5, 144.7-0.00001), y=Range(-35.5, -35.2-0.00001))
     assert len(data.coords['x']) == 800
     assert len(data.coords['y']) == 600
     assert (data.values == 2).all()
 
-    data = su.get('1', x=slice(500), y=slice(1400, None))
+    data = su.get('layer1', x=slice(500), y=slice(1400, None))
     assert len(data.coords['x']) == 500
     assert len(data.coords['y']) == 600
     assert (data.values == 1).all()

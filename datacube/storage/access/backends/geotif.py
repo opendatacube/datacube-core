@@ -22,29 +22,38 @@ from ..core import Coordinate, Variable, StorageUnitBase
 
 
 class GeoTifStorageUnit(StorageUnitBase):
-    def __init__(self, filepath, other=None):
+    def __init__(self, filepath, variables, coordinates, attributes=None):
+        """
+        :param variables: variables in the SU
+        :param coordinates: coordinates in the SU
+        """
+        self._filepath = filepath
+        self.coordinates = coordinates
+        self.variables = variables
+        self.attributes = attributes or {}
+
+    @classmethod
+    def from_file(cls, filepath):
+        with rasterio.open(filepath) as dataset:
+            t = dataset.get_transform()
+            coordinates = {
+                'x': Coordinate(numpy.float64, t[0], t[0] + (dataset.width - 1) * t[1], dataset.width, '1'),
+                'y': Coordinate(numpy.float64, t[3], t[3] + (dataset.height - 1) * t[5], dataset.height, '1')
+            }
+
+        def band2var(i):
+            return Variable(dataset.dtypes[i], dataset.nodatavals[i], ('y', 'x'), '1')
+        variables = {'layer%d' % (i + 1): band2var(i) for i in range(dataset.count)}
+
+        return cls(filepath, variables=variables, coordinates=coordinates)
+
+    @classmethod
+    def from_other(cls, filepath, other):
         """
         :param other: template to copy coords/variables from (to speed up loading)
         :type other: GeoTifStorageUnit
         """
-        self._filepath = filepath
-        if not other:
-            with rasterio.open(self._filepath) as dataset:
-                t = self._transform = dataset.get_transform()
-                self._projection = str(dataset.crs_wkt)
-                self.coordinates = {
-                    'x': Coordinate(numpy.float64, t[0], t[0]+(dataset.width-1)*t[1], dataset.width, '1'),
-                    'y': Coordinate(numpy.float64, t[3], t[3]+(dataset.height-1)*t[5], dataset.height, '1')
-                }
-
-            def band2var(i):
-                return Variable(dataset.dtypes[i], dataset.nodatavals[i], ('y', 'x'), '1')
-            self.variables = {str(i+1): band2var(i) for i in range(dataset.count)}
-        else:
-            self._transform = other._transform  # pylint: disable=protected-access
-            self._projection = other._projection  # pylint: disable=protected-access
-            self.coordinates = other.coordinates
-            self.variables = other.variables
+        return cls(filepath, variables=other.variables, coordinates=other.coordinates)
 
     def _get_coord(self, name):
         coord = self.coordinates[name]
@@ -52,6 +61,7 @@ class GeoTifStorageUnit(StorageUnitBase):
         return data
 
     def _fill_data(self, name, index, dest):
+        layer = int(name[5:])
         with rasterio.open(self._filepath) as dataset:
-            dataset.read(int(name), out=dest,
+            dataset.read(layer, out=dest,
                          window=((index[0].start, index[0].stop), (index[1].start, index[1].stop)))
