@@ -61,8 +61,7 @@ def store(storage_mappings, dataset):
         result += [
             StorageUnit(
                 [dataset.id],
-                # TODO: Use the correct mapping
-                storage_mappings[0],
+                mapping,
                 unit_descriptor,
                 mapping.local_path_to_location_offset('file://' + path)
             )
