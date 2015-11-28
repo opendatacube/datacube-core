@@ -59,3 +59,5 @@ from (
          ur_lat float8, ur_lon float8
          )
   ) foo;
+
+create index on agdc.dataset ((metadata->'_agdc_legacy'));
