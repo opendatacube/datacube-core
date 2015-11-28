@@ -15,7 +15,7 @@ select 1,
     'geospatial_lat_max', y_index+1,
     'geospatial_lat_min', y_index,
     'geospatial_lon_max', x_index+1,
-    'geospatial_lon_min', y_index
+    'geospatial_lon_min', x_index
   ),
   'coordinates', json_build_object(
     'latitude', json_build_object(
