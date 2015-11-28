@@ -1,25 +1,4 @@
 
-SELECT dblink_connect('agdcv1' ,'hostaddr=130.56.244.225 port=6432 user=cube_user password=GAcube0 dbname=hypercube_v0');
-
-SELECT dblink_open('agdcv1', 'dataset', 'select
-            d.dataset_id,
-            a.acquisition_id,
-             d.dataset_path,
-             pl.level_name,
-             s.satellite_name,
-             sens.sensor_name,
-             d.datetime_processed,
-             a.start_datetime,
-             a.end_datetime,
-             a.ll_lat, a.ll_lon, a.lr_lat, a.lr_lon, a.ul_lat, a.ul_lon, a.ur_lat, a.ur_lon
-         from dataset d
-             natural inner join acquisition a
-             natural inner join satellite s
-             natural inner join sensor sens
-             natural inner join processing_level pl
-        where a.satellite_id = 1 and d.level_id = 2;');
-
-
 insert into agdc.dataset(id, metadata_type, metadata_path, metadata)
 select uuid, 'eo', dataset_path,
   json_build_object(
@@ -47,7 +26,24 @@ select uuid, 'eo', dataset_path,
   )::jsonb
 from (
     select uuid_generate_v4() as uuid, *
-    from dblink_fetch('agdcv1', 'dataset', 1) as (
+    from dblink('hostaddr=130.56.244.225 port=6432 user=cube_user password=GAcube0 dbname=hypercube_v0',
+                'select
+            d.dataset_id,
+            a.acquisition_id,
+             d.dataset_path,
+             pl.level_name,
+             s.satellite_name,
+             sens.sensor_name,
+             d.datetime_processed,
+             a.start_datetime,
+             a.end_datetime,
+             a.ll_lat, a.ll_lon, a.lr_lat, a.lr_lon, a.ul_lat, a.ul_lon, a.ur_lat, a.ur_lon
+         from dataset d
+             natural inner join acquisition a
+             natural inner join satellite s
+             natural inner join sensor sens
+             natural inner join processing_level pl
+        where a.satellite_id = 1 and d.level_id = 2;') as (
          dataset_id int,
          acquisition_id int,
          dataset_path text,
@@ -63,5 +59,3 @@ from (
          ur_lat float8, ur_lon float8
          )
   ) foo;
-
-select dblink_close('agdcv1', 'dataset');
