@@ -94,7 +94,7 @@ select 1,
     from public.tile t
         natural inner join dataset d
         natural inner join acquisition a
-where d.level_id = 2 and a.satellite_id = 1;') as (
+where d.level_id = 2 and a.satellite_id = 1 and t.tile_class_id in (1,3);') as (
       tile_pathname text,
       ctime timestamp,
       x_index int,
