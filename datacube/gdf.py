@@ -21,7 +21,7 @@ from __future__ import absolute_import, division
 import numpy
 
 from .model import Range
-from .storage.access.core import Coordinate, Variable, StorageUnitStack
+from .storage.access.core import Coordinate, Variable, StorageUnitStack, StorageUnitDimensionProxy
 from .storage.access.backends import NetCDF4StorageUnit, GeoTifStorageUnit
 from .index import index_connect
 
@@ -36,14 +36,19 @@ def make_storage_unit(su):
                    for name, attrs in su.descriptor['coordinates'].items()}
     variables = {name: Variable(dtype=numpy.dtype(attrs['dtype']),
                                 nodata=attrs['nodata'],
-                                dimensions=attrs['dimensions'],
+                                dimensions=tuple(attrs['dimensions']),
                                 units=attrs.get('units', None))
                  for name, attrs in su.descriptor['measurements'].items()}
-    cls = {
-        'NetCDF CF': NetCDF4StorageUnit,
-        'GeoTiff': GeoTifStorageUnit
-    }[su.storage_mapping.storage_type.driver]
-    return cls(su.filepath, coordinates=coordinates, variables=variables)
+
+    if su.storage_mapping.storage_type.driver == 'NetCDF CF':
+        return NetCDF4StorageUnit(su.filepath, coordinates=coordinates, variables=variables)
+
+    if su.storage_mapping.storage_type.driver == 'GeoTiff':
+        result = GeoTifStorageUnit(su.filepath, coordinates=coordinates, variables=variables)
+        time = numpy.datetime64(su.descriptor['extents']['time_min'])
+        return StorageUnitDimensionProxy(result, ('time', time, float, 'seconds since 1970'))
+
+    raise RuntimeError('unsupported storage unit access driver %s' % su.storage_mapping.storage_type.driver)
 
 
 def group_storage_units_by_location(sus):
