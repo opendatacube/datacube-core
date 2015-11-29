@@ -5,7 +5,7 @@ pytest
 pytest-cov
 mock
 pep8
-pylint
+pylint==1.5
 
 # Install the remaining from setup.py:
 -e .
