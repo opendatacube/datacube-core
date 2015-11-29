@@ -70,4 +70,4 @@ def example_ls5_dataset(tmpdir):
 
 
 def test_ls5_dataset(example_ls5_dataset):
-    assert 0
+    assert False

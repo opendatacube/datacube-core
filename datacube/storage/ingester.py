@@ -5,10 +5,11 @@ This module extracts tile regions from a supplied dataset, and creates and write
 from __future__ import absolute_import, division, print_function
 
 import logging
+from affine import Affine
 
 import numpy
 import rasterio
-import rasterio.warp
+from rasterio.warp import transform_bounds
 import rasterio.coords
 
 from datacube.model import TileSpec
@@ -46,7 +47,7 @@ def create_tiles(src_ds, tile_size, tile_res, tile_crs, tile_dtype=None):
     """
     tile_dtype = tile_dtype or src_ds.dtypes[0]
 
-    bounds = rasterio.warp.transform_bounds(src_crs=src_ds.crs, dst_crs=tile_crs, *src_ds.bounds)
+    bounds = transform_bounds(src_ds.crs, tile_crs, *src_ds.bounds)
     bounds = expand_bounds(bounds, tile_size)
 
     width = int(tile_size['x'] / tile_res['x'])
@@ -54,7 +55,8 @@ def create_tiles(src_ds, tile_size, tile_res, tile_crs, tile_dtype=None):
 
     for y in range(bounds.top, bounds.bottom + 1):
         for x in range(bounds.left, bounds.right + 1):
-            tile_transform = [x * tile_size['x'], tile_res['x'], 0.0, y * tile_size['y'], 0.0, tile_res['y']]
+            tile_transform = Affine.from_gdal(x * tile_size['x'], tile_res['x'], 0.0,
+                                              y * tile_size['y'], 0.0, tile_res['y'])
             dst_region = numpy.full((height, width), -999, dtype=tile_dtype)
 
             rasterio.warp.reproject(rasterio.band(src_ds, 1), dst_region, dst_transform=tile_transform,
@@ -95,20 +97,19 @@ class ImportFromNDArraysNotSupported(Exception):
     """Can only currently import from single layer rasters"""
 
 
-def crazy_band_tiler(band_info, input_filename, storage_spec, time_value, dataset_metadata):
+def crazy_band_tiler(measurement_descriptor, input_filename, storage_spec, time_value, dataset_metadata):
     input_filename = str(input_filename)
 
     src_ds = rasterio.open(input_filename)
     if src_ds.count > 1:
         raise ImportFromNDArraysNotSupported
 
-    _LOG.debug("Ingesting: %s %s", band_info, input_filename)
+    _LOG.debug("Ingesting: %s %s", measurement_descriptor, input_filename)
     for im, transform in create_tiles(src_ds,
                                       storage_spec['tile_size'],
                                       storage_spec['resolution'],
                                       tile_crs=str(storage_spec['projection']['spatial_ref'])):
-        nlats = storage_spec['tile_size']['y']
-        nlons = storage_spec['tile_size']['x']
+        nlats, nlons = im.shape
         proj = str(storage_spec['projection']['spatial_ref'])
 
         tile_spec = TileSpec(nlats, nlons, proj, transform, data=im)
@@ -118,7 +119,7 @@ def crazy_band_tiler(band_info, input_filename, storage_spec, time_value, datase
 
         _LOG.debug("Adding extracted tile to %s", output_filename)
 
-        append_to_netcdf(tile_spec, output_filename, storage_spec, band_info, time_value,
+        append_to_netcdf(tile_spec, output_filename, storage_spec, measurement_descriptor, time_value,
                          input_filename)
         _LOG.debug(im)
         yield output_filename

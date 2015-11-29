@@ -233,3 +233,6 @@ class TileSpec(object):
     @property
     def lon_res(self):
         return self.geotransform[1]
+
+    def __repr__(self):
+        return repr(self.__dict__)

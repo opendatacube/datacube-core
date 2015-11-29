@@ -143,17 +143,17 @@ class NetCDFWriter(object):
         out_band[time_index, :, :] = nparray
         src_filename[time_index] = "Raw Array"
 
-    def append_slice(self, np_array, storage_type, band_info, time_value, input_filename):
-        varname = band_info.varname
+    def append_slice(self, np_array, storage_type, measurement_descriptor, time_value, input_filename):
+        varname = measurement_descriptor.varname
         if varname in self.nco.variables:
             raise VariableAlreadyExists('Error writing to {}: variable {} already exists and will not be '
                                         'overwritten.'.format(self.netcdf_path, varname))
 
         chunking = storage_type['chunking']
         chunksizes = [chunking[dim] for dim in ['t', 'y', 'x']]
-        dtype = band_info.dtype
-        nodata = getattr(band_info, 'nodata', None)
-        units = getattr(band_info, 'units', None)
+        dtype = measurement_descriptor.dtype
+        nodata = getattr(measurement_descriptor, 'nodata', None)
+        units = getattr(measurement_descriptor, 'units', None)
         out_band, src_filename = self._create_data_variable(varname, dtype, chunksizes, nodata, units)
 
         time_index = self.find_or_create_time_index(time_value)
@@ -183,7 +183,7 @@ class NetCDFWriter(object):
         return newvar, src_filename
 
 
-def append_to_netcdf(tile_spec, netcdf_path, storage_type, band_info, time_value, input_filename=""):
+def append_to_netcdf(tile_spec, netcdf_path, storage_type, measurement_descriptor, time_value, input_filename=""):
     """
     Append a raster slice to a new or existing NetCDF file
 
@@ -197,5 +197,5 @@ def append_to_netcdf(tile_spec, netcdf_path, storage_type, band_info, time_value
     """
     ncfile = NetCDFWriter(netcdf_path, tile_spec)
 
-    ncfile.append_slice(tile_spec.data, storage_type, band_info, time_value, input_filename)
+    ncfile.append_slice(tile_spec.data, storage_type, measurement_descriptor, time_value, input_filename)
     ncfile.close()
