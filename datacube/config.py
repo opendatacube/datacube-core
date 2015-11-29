@@ -7,7 +7,7 @@ from __future__ import absolute_import
 import logging
 import os
 
-from .compat import SafeConfigParser, NoOptionError
+from . import compat
 
 
 # Config locations in order. Properties found in latter locations override former.
@@ -53,8 +53,7 @@ class LocalConfig(object):
         :type paths: list[str]
         :rtype: LocalConfig
         """
-        config = SafeConfigParser()
-        config.read_string(_DEFAULT_CONF)
+        config = compat.read_config(_DEFAULT_CONF)
         config.read([p for p in paths if p])
         return LocalConfig(config)
 
@@ -80,14 +79,14 @@ class LocalConfig(object):
     def db_username(self):
         try:
             return self._prop('db_username')
-        except NoOptionError:
+        except compat.NoOptionError:
             return None
 
     @property
     def db_port(self):
         try:
             return self._prop('db_port')
-        except NoOptionError:
+        except compat.NoOptionError:
             return None
 
 

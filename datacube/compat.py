@@ -21,7 +21,15 @@ if not PY2:
     # Lazy range function
     range = range
 
-    from configparser import SafeConfigParser, NoOptionError
+    import configparser
+    NoOptionError = configparser.NoOptionError
+
+    def read_config(default_text=None):
+        config = configparser.ConfigParser()
+        if default_text:
+            config.read_string(default_text)
+        return config
+
 else:
     text_type = unicode
     string_types = (str, unicode)
@@ -32,7 +40,15 @@ else:
     # Lazy range function
     range = xrange
 
-    from ConfigParser import SafeConfigParser, NoOptionError
+    import ConfigParser
+    from io import StringIO
+    NoOptionError = ConfigParser.NoOptionError
+
+    def read_config(default_text=None):
+        config = ConfigParser.SafeConfigParser()
+        if default_text:
+            config.readfp(StringIO(default_text))
+        return config
 
 
 def with_metaclass(meta, *bases):
