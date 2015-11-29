@@ -6,10 +6,10 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import os
-from datacube import compat
 
 from osgeo import gdal, gdalconst, osr
 
+from datacube import compat
 from datacube.storage.utils import tilespec_from_gdaldataset, ensure_path_exists
 from .netcdf_writer import append_to_netcdf
 

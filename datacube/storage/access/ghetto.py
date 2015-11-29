@@ -17,11 +17,11 @@
 Minimal implementations for when a dependency is not available
 """
 
-
 from __future__ import absolute_import, division, print_function
 
-import numpy
 from collections import OrderedDict
+
+import numpy
 
 
 class DataArray(object):
