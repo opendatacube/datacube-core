@@ -34,8 +34,8 @@ def test_get_field():
                 'storage_unit': {
                     'lat': {
                         'type': 'float-range',
-                        'max': [['extents', 'geospatial_lat_max']],
-                        'min': [['extents', 'geospatial_lat_min']],
+                        'max_offset': [['extents', 'geospatial_lat_max']],
+                        'min_offset': [['extents', 'geospatial_lat_min']],
                     },
                 }
             }
@@ -44,7 +44,11 @@ def test_get_field():
 
     _assert_same(
         collection.get('eo', 'dataset', 'satellite'),
-        SimpleDocField('satellite', {'offset': ['platform', 'code']}, DATASET.c.metadata)
+        SimpleDocField(
+            'satellite',
+            DATASET.c.metadata,
+            offset=['platform', 'code']
+        )
     )
 
     assert collection.get('eo', 'dataset', 'wrong-field') is None
@@ -53,12 +57,9 @@ def test_get_field():
         collection.get('eo', 'storage_unit', 'lat'),
         FloatRangeDocField(
             'lat',
-            {
-                'type': 'float-range',
-                'max': [['extents', 'geospatial_lat_max']],
-                'min': [['extents', 'geospatial_lat_min']],
-            },
-            STORAGE_UNIT.c.descriptor
+            STORAGE_UNIT.c.descriptor,
+            max_offset=[['extents', 'geospatial_lat_max']],
+            min_offset=[['extents', 'geospatial_lat_min']],
         )
     )
 
@@ -68,9 +69,9 @@ def test_has_defaults():
 
     _assert_same(
         collection.get('eo', 'dataset', 'id'),
-        NativeField('id', {}, DATASET.c.id)
+        NativeField('id', DATASET.c.id)
     )
     _assert_same(
         collection.get('eo', 'storage_unit', 'path'),
-        NativeField('path', {}, STORAGE_UNIT.c.path)
+        NativeField('path', STORAGE_UNIT.c.path)
     )

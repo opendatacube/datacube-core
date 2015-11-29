@@ -28,9 +28,8 @@ class PgField(Field):
     a JSONB column.
     """
 
-    def __init__(self, name, descriptor, alchemy_column):
+    def __init__(self, name, alchemy_column):
         super(PgField, self).__init__(name)
-        self.descriptor = descriptor
         # The underlying SQLAlchemy column. (eg. DATASET.c.metadata)
         self.alchemy_column = alchemy_column
 
@@ -79,6 +78,7 @@ class PgField(Field):
 
 
 class NativeField(PgField):
+
     @property
     def alchemy_expression(self):
         return self.alchemy_column
@@ -93,14 +93,14 @@ class SimpleDocField(PgField):
     A field with a single value (eg. String, int)
     """
 
+    def __init__(self, name, alchemy_column, offset=None):
+        super(SimpleDocField, self).__init__(name, alchemy_column)
+        self.offset = offset
+
     @property
     def alchemy_casted_type(self):
         # Default no cast: string
         return None
-
-    @property
-    def offset(self):
-        return self.descriptor['offset']
 
     @property
     def alchemy_expression(self):
@@ -126,17 +126,14 @@ class RangeDocField(PgField):
     values in the document.
     """
 
+    def __init__(self, name, alchemy_column, min_offset=None, max_offset=None):
+        super(RangeDocField, self).__init__(name, alchemy_column)
+        self.min_offset = min_offset
+        self.max_offset = max_offset
+
     @property
     def alchemy_create_range(self):
         raise NotImplementedError('range type')
-
-    @property
-    def min_offsets(self):
-        return self.descriptor['min']
-
-    @property
-    def max_offsets(self):
-        return self.descriptor['max']
 
     @property
     def alchemy_casted_type(self):
@@ -159,8 +156,8 @@ class RangeDocField(PgField):
     @property
     def alchemy_expression(self):
         return self.alchemy_create_range(
-            self._get_expr(self.min_offsets, func.least, self.alchemy_casted_type),
-            self._get_expr(self.max_offsets, func.greatest, self.alchemy_casted_type),
+            self._get_expr(self.min_offset, func.least, self.alchemy_casted_type),
+            self._get_expr(self.max_offset, func.greatest, self.alchemy_casted_type),
             # Inclusive on both sides.
             '[]'
         )
@@ -246,16 +243,16 @@ class FieldCollection(object):
                 DATASET.c.metadata,
                 # Native search fields.
                 {
-                    'id': NativeField('id', {}, DATASET.c.id),
-                    'metadata_path': NativeField('metadata_path', {}, DATASET.c.metadata_path)
+                    'id': NativeField('id', DATASET.c.id),
+                    'metadata_path': NativeField('metadata_path', DATASET.c.metadata_path)
                 }
             ),
             'storage_unit': (
                 STORAGE_UNIT.c.descriptor,
                 # Native search fields.
                 {
-                    'id': NativeField('id', {}, STORAGE_UNIT.c.id),
-                    'path': NativeField('path', {}, STORAGE_UNIT.c.path)
+                    'id': NativeField('id', STORAGE_UNIT.c.id),
+                    'path': NativeField('path', STORAGE_UNIT.c.path)
                 }
             ),
         }
@@ -315,12 +312,12 @@ def _parse_fields(doc, table_column):
             'lat': {
                 # Field type & properties.
                 'type': 'float-range',
-                'min': [
+                'min_offset': [
                     # Offsets within a dataset document for this field.
                     ['extent', 'coord', 'ul', 'lat'],
                     ['extent', 'coord', 'll', 'lat']
                 ],
-                'max': [
+                'max_offset': [
                     ['extent', 'coord', 'ur', 'lat'],
                     ['extent', 'coord', 'lr', 'lat']
                 ]
@@ -332,12 +329,28 @@ def _parse_fields(doc, table_column):
     """
 
     def _get_field(name, descriptor, column):
+        """
+
+        :type name: str
+        :type descriptor: dict
+        :param column: SQLAlchemy table column
+        :rtype: PgField
+        """
         type_map = {
             'float-range': FloatRangeDocField,
             'datetime-range': DateRangeDocField,
             'string': SimpleDocField
         }
-        type_name = descriptor.get('type') or 'string'
-        return type_map.get(type_name)(name, descriptor, column)
+        type_name = descriptor.pop('type', 'string')
+
+        field_class = type_map.get(type_name)
+        try:
+            return field_class(name, column, **descriptor)
+        except TypeError as e:
+            raise RuntimeError(
+                'Field {name} has unexpected argument for a {type}'.format(
+                    name=name, type=type_name
+                ), e
+            )
 
     return {name: _get_field(name, descriptor, table_column) for name, descriptor in doc.items()}

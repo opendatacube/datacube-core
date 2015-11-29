@@ -15,26 +15,26 @@ eo:
             offset: [product_type]
         lat:
             type: float-range
-            max:
+            max_offset:
             - [extent, coord, ur, lat]
             - [extent, coord, lr, lat]
-            min:
+            min_offset:
             - [extent, coord, ul, lat]
             - [extent, coord, ll, lat]
         lon:
             type: float-range
-            max:
+            max_offset:
             - [extent, coord, ul, lon]
             - [extent, coord, ur, lon]
-            min:
+            min_offset:
             - [extent, coord, ll, lon]
             - [extent, coord, lr, lon]
         # Acquisition time.
 #        time:
 #            type: datetime-range
-#            min:
+#            min_offset:
 #            - [extent, from_dt]
-#            max:
+#            max_offset:
 #            - [extent, to_dt]
 
         # Ground Station Identifier (eg. 'ASA')
@@ -46,17 +46,17 @@ eo:
         # Path/row (specific to Landsat).
         sat_path:
             type: float-range
-            min:
+            min_offset:
             - [image, satellite_ref_point_start, x]
-            max:
+            max_offset:
             - [image, satellite_ref_point_end, x]
             # If an end is not specified, use the start.
             - [image, satellite_ref_point_start, x]
         sat_row:
             type: float-range
-            min:
+            min_offset:
             - [image, satellite_ref_point_start, y]
-            max:
+            max_offset:
             - [image, satellite_ref_point_end, y]
             # If an end is not specified, use the start.
             - [image, satellite_ref_point_start, y]
@@ -64,19 +64,19 @@ eo:
     storage_unit:
 #        time:
 #            type: datetime-range
-#            min:
+#            min_offset:
 #            - [extents, time_min]
-#            max:
+#            max_offset:
 #            - [extents, time_max]
         lat:
             type: float-range
-            min:
+            min_offset:
             - [extents, geospatial_lat_min]
-            max:
+            max_offset:
             - [extents, geospatial_lat_max]
         lon:
             type: float-range
-            min:
+            min_offset:
             - [extents, geospatial_lon_min]
-            max:
+            max_offset:
             - [extents, geospatial_lon_max]
