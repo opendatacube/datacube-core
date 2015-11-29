@@ -4,8 +4,9 @@ Ingest data from the command-line.
 """
 from __future__ import absolute_import
 
-import click
 from pathlib import Path
+
+import click
 
 from datacube import config
 from datacube.ingest import ingest

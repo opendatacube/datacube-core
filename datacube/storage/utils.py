@@ -3,15 +3,12 @@
 Utility functions used in storage access
 """
 from __future__ import absolute_import, division, print_function
-import functools
-import logging
-import os
-import subprocess
 
-import click
+import logging
+from pathlib import Path
+
 from osgeo import osr, gdal
 import numpy as np
-from pathlib import Path
 from datacube.model import TileSpec
 
 _LOG = logging.getLogger(__name__)

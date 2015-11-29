@@ -6,7 +6,6 @@ from __future__ import absolute_import
 
 import logging
 import os
-from io import StringIO
 
 from .compat import SafeConfigParser, NoOptionError
 
@@ -55,7 +54,7 @@ class LocalConfig(object):
         :rtype: LocalConfig
         """
         config = SafeConfigParser()
-        config.readfp(StringIO(_DEFAULT_CONF))
+        config.read_string(_DEFAULT_CONF)
         config.read([p for p in paths if p])
         return LocalConfig(config)
 

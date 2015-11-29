@@ -7,9 +7,9 @@ from __future__ import absolute_import
 
 import functools
 from collections import defaultdict
+from pathlib import Path
 
 import yaml
-from pathlib import Path
 from psycopg2.extras import NumericRange
 from sqlalchemy import cast, Index, TIMESTAMP
 from sqlalchemy import func
