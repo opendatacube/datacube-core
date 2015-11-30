@@ -56,15 +56,6 @@ STORAGE_MAPPING = Table(
     # See "_EXAMPLE_DATASETS_MATCHING" below
     Column('dataset_metadata', postgres.JSONB, nullable=False),
 
-    # Where in the dataset metadata to find a dictionary of measurements.
-    # For EO datasets this is "bands".
-    # (Non-EO dataset types may have different document structures.)
-    #
-    # It expects to find a dictionary, where:
-    #       - keys are band ids.
-    #       - each value is a dictionary containing measurement information.
-    Column('dataset_measurements_key', postgres.ARRAY(String), nullable=False),
-
     # Storage config for each measurement.
     # The expected values depend on the storage driver (eg. NetCDF).
     #

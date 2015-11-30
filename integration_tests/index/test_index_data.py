@@ -114,7 +114,6 @@ def test_index_storage_unit(index, db):
                 name="test_mapping",
                 match=None,
                 measurements={},
-                dataset_measurements_offset=None,
                 location="file://g/data",
                 filename_pattern="foo.nc",
                 id_=mapping['id']

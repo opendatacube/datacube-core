@@ -42,8 +42,7 @@ class StorageType(object):
 
 
 class StorageMapping(object):
-    def __init__(self, storage_type, name, match,
-                 measurements, dataset_measurements_offset,
+    def __init__(self, storage_type, name, match, measurements,
                  location, filename_pattern, id_=None):
         # Which datasets to match.
         #: :type: DatasetMatcher
@@ -60,11 +59,6 @@ class StorageMapping(object):
         # (key is measurement id, value is a doc understood by the storage driver)
         #: :type: dict
         self.measurements = measurements
-
-        # The offset within a dataset document to find a matching set of measuremnts.
-        # (they should have at least a path field in the dataset)
-        #: :type: str
-        self.dataset_measurements_offset = dataset_measurements_offset
 
         # The location where the storage units should be stored.
         #: :type: str
