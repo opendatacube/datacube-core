@@ -92,6 +92,12 @@ STORAGE_UNIT = Table(
     Column('id', BigInteger, primary_key=True, autoincrement=True),
     Column('storage_mapping_ref', None, ForeignKey(STORAGE_MAPPING.c.id), nullable=False),
 
+    # The collection it belongs to.
+    # This isn't normalised: it could be read from the linked datasets.
+    #
+    # It's a performance optimisation: we can create per-collection indexes.
+    Column('collection_ref', None, ForeignKey(_dataset.COLLECTION.c.id), nullable=False),
+
     # See "_EXAMPLE_STORAGE_DESCRIPTOR" below.
     Column('descriptor', postgres.JSONB, nullable=False),
 
