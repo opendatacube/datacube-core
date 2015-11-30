@@ -183,8 +183,7 @@ class DatasetOffsets(object):
                  uuid_field,
                  label_field,
                  creation_time_field,
-                 measurements_dict,
-                 ):
+                 measurements_dict):
         # UUID for a dataset. Always unique.
         #: :type: tuple[string]
         self.uuid_field = uuid_field
