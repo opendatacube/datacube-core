@@ -27,10 +27,12 @@ class SimpleObject(object):
 def expand_bounds(bounds, tile_size):
     xs = (bounds[0], bounds[2])
     ys = (bounds[1], bounds[3])
+
     left = int(min(x // tile_size['x'] for x in xs))
-    top = int(min(y // tile_size['y'] for y in ys))
+    bottom = int(min(y // tile_size['y'] for y in ys))
+
     right = int(max(x // tile_size['x'] for x in xs))
-    bottom = int(max(y // tile_size['y'] for y in ys))
+    top = int(max(y // tile_size['y'] for y in ys))
     return rasterio.coords.BoundingBox(left, bottom, right, top)
 
 
@@ -48,13 +50,13 @@ def create_tiles(src_ds, tile_size, tile_res, tile_crs, tile_dtype=None):
     tile_dtype = tile_dtype or src_ds.dtypes[0]
 
     bounds = transform_bounds(src_ds.crs, tile_crs, *src_ds.bounds)
-    bounds = expand_bounds(bounds, tile_size)
+    outer_bounds = expand_bounds(bounds, tile_size)
 
     width = int(tile_size['x'] / tile_res['x'])
     height = int(tile_size['y'] / tile_res['y'])
 
-    for y in range(bounds.top, bounds.bottom + 1):
-        for x in range(bounds.left, bounds.right + 1):
+    for y in range(outer_bounds.top, outer_bounds.bottom + 1):
+        for x in range(outer_bounds.left, outer_bounds.right + 1):
             tile_transform = Affine.from_gdal(x * tile_size['x'], tile_res['x'], 0.0,
                                               y * tile_size['y'], 0.0, tile_res['y'])
             dst_region = numpy.full((height, width), -999, dtype=tile_dtype)
