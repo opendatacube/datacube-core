@@ -44,9 +44,11 @@ def make_storage_unit(su):
         return NetCDF4StorageUnit(su.filepath, coordinates=coordinates, variables=variables)
 
     if su.storage_mapping.storage_type.driver == 'GeoTiff':
+        from datetime import datetime
+        from dateutil import parser
         result = GeoTifStorageUnit(su.filepath, coordinates=coordinates, variables=variables)
-        time = numpy.datetime64(su.descriptor['extents']['time_min'])
-        return StorageUnitDimensionProxy(result, ('time', time, float, 'seconds since 1970'))
+        time = (parser.parse(su.descriptor['extents']['time_min']) - datetime.utcfromtimestamp(0)).total_seconds()
+        return StorageUnitDimensionProxy(result, ('time', time, numpy.float64, 'seconds since 1970'))
 
     raise RuntimeError('unsupported storage unit access driver %s' % su.storage_mapping.storage_type.driver)
 
