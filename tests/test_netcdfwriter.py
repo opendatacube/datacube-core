@@ -2,9 +2,9 @@ from __future__ import print_function, absolute_import
 
 from datetime import datetime
 
+from affine import Affine
 import numpy as np
 import netCDF4
-from osgeo import gdal
 import pytest
 import rasterio
 
@@ -17,13 +17,13 @@ from datacube.storage.utils import tilespec_from_riodataset
 def test_create_single_time_netcdf_from_numpy_arrays(tmpdir):
     filename = str(tmpdir.join('testfile_np.nc'))
 
-    geotransform = (151.0, 0.00025, 0.0, -29.0, 0.0, -0.0005)
+    affine = Affine.from_gdal(151.0, 0.00025, 0.0, -29.0, 0.0, -0.0005)
     projection = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
                  'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
                  'AUTHORITY["EPSG","4326"]]'
     extents = [[151.0, -29.0], [151.0, -30.0], [152.0, -30.0], [152.0, -29.0]]
     global_attrs = {'test_attribute': 'test_value'}
-    tile_spec = TileSpec(2000, 4000, projection, geotransform, extents, global_attrs=global_attrs)
+    tile_spec = TileSpec(2000, 4000, projection, affine, extents, global_attrs=global_attrs)
 
     chunking = {'t': 1, 'y': 100, 'x': 100}
     date = datetime(2008, 1, 1)
@@ -59,12 +59,12 @@ def test_create_single_time_netcdf_from_numpy_arrays(tmpdir):
 def test_create_multi_time_netcdf_from_numpy_arrays(tmpdir):
     filename = str(tmpdir.join('testfile_np.nc'))
 
-    geotransform = (151.0, 0.00025, 0.0, -29.0, 0.0, -0.0005)
+    affine = Affine.from_gdal(151.0, 0.00025, 0.0, -29.0, 0.0, -0.0005)
     projection = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
                  'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
                  'AUTHORITY["EPSG","4326"]]'
     extents = [[151.0, -29.0], [151.0, -30.0], [152.0, -30.0], [152.0, -29.0]]
-    tile_spec = TileSpec(2000, 4000, projection, geotransform, extents)
+    tile_spec = TileSpec(2000, 4000, projection, affine, extents)
 
     chunking = {'t': 1, 'y': 100, 'x': 100}
     dates = [datetime(2008, m, 1) for m in [1, 2, 3]]

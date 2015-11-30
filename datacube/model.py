@@ -202,11 +202,11 @@ class TileSpec(object):
     lats = []
     lons = []
 
-    def __init__(self, nlats, nlons, projection, geotransform, data=None, global_attrs=None):
+    def __init__(self, nlats, nlons, projection, affine, data=None, global_attrs=None):
         self.projection = projection
-        self.geotransform = geotransform
-        self.lons = np.arange(nlons) * geotransform[1] + geotransform[0]
-        self.lats = np.arange(nlats) * geotransform[5] + geotransform[3]
+        self._affine = affine
+        self.lons = np.arange(nlons) * affine.a + affine.c
+        self.lats = np.arange(nlats) * affine.e + affine.f
         self.data = data
         self.global_attrs = global_attrs or {}
 
@@ -228,11 +228,11 @@ class TileSpec(object):
 
     @property
     def lat_res(self):
-        return self.geotransform[5]
+        return self._affine.e
 
     @property
     def lon_res(self):
-        return self.geotransform[1]
+        return self._affine.a
 
     def __repr__(self):
         return repr(self.__dict__)
