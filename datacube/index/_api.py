@@ -51,4 +51,7 @@ class Index(object):
             self._add_default_collection()
 
     def _add_default_collection(self):
-        self.collections.add(yaml.load(_DEFAULT_COLLECTIONS_FILE.open('r')))
+        collection_descriptors = yaml.load(_DEFAULT_COLLECTIONS_FILE.open('r'))
+        self.collections.add(collection_descriptors)
+        # Names of added collections
+        return list(collection_descriptors.keys())

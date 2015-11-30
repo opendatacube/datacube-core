@@ -49,7 +49,7 @@ _telemetry_dataset = {
 }
 
 
-def test_index_dataset(index, db, local_config):
+def test_index_dataset(index, db, local_config, default_collection):
     """
     :type index: datacube.index._api.Index
     :type db: datacube.index.postgres._api.PostgresDb
@@ -86,7 +86,7 @@ def test_index_dataset(index, db, local_config):
     assert not db.contains_dataset(_telemetry_uuid)
 
 
-def test_index_storage_unit(index, db):
+def test_index_storage_unit(index, db, default_collection):
 
     # Setup foreign keys for our storage unit.
     was_inserted = db.insert_dataset(

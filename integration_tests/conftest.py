@@ -39,6 +39,16 @@ def index(db, local_config):
     return Index(db, local_config)
 
 
+@pytest.fixture
+def default_collection(index):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    """
+    names = index._add_default_collection()
+    return index.collections.get_by_name(names)
+
+
 def create_empty_geotiff(path):
     metadata = {'count': 1,
                 'crs': 'EPSG:28355',

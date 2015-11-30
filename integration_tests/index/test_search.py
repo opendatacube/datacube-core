@@ -5,6 +5,7 @@ Module
 from __future__ import absolute_import
 
 import datetime
+from pathlib import Path
 
 _telemetry_uuid = '4ec8fe97-e8b9-11e4-87ff-1040f381a756'
 _telemetry_dataset = {
@@ -40,13 +41,16 @@ _telemetry_dataset = {
 }
 
 
-def test_search_dataset_equals(index, db):
+def test_search_dataset_equals(index, db, default_collection):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    """
     # Setup foreign keys for our storage unit.
     was_inserted = db.insert_dataset(
         _telemetry_dataset,
         _telemetry_uuid,
-        '/tmp/test/' + _telemetry_uuid,
-        'satellite_telemetry_data'
+        Path('/tmp/test/' + _telemetry_uuid)
     )
     assert was_inserted
 
@@ -73,13 +77,16 @@ def test_search_dataset_equals(index, db):
     assert len(datasets) == 0
 
 
-def test_search_dataset_ranges(index, db):
+def test_search_dataset_ranges(index, db, default_collection):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    """
     # Setup foreign keys for our storage unit.
     was_inserted = db.insert_dataset(
         _telemetry_dataset,
         _telemetry_uuid,
-        '/tmp/test/' + _telemetry_uuid,
-        'satellite_telemetry_data'
+        Path('/tmp/test/' + _telemetry_uuid)
     )
     assert was_inserted
 
