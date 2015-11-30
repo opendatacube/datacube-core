@@ -5,6 +5,9 @@ Access methods for indexing datasets & storage units.
 from __future__ import absolute_import
 
 import logging
+from pathlib import Path
+
+import yaml
 
 from datacube.config import LocalConfig
 from ._datasets import DatasetResource, CollectionResource
@@ -12,6 +15,8 @@ from ._storage import StorageUnitResource, StorageMappingResource, StorageTypeRe
 from .postgres import PostgresDb
 
 _LOG = logging.getLogger(__name__)
+
+_DEFAULT_COLLECTIONS_FILE = Path(__file__).parent.joinpath('default-collections.yaml')
 
 
 def connect(local_config=LocalConfig.find()):
@@ -38,3 +43,9 @@ class Index(object):
         self.storage_types = StorageTypeResource(db)
         self.mappings = StorageMappingResource(db, self.storage_types, local_config)
         self.storage = StorageUnitResource(db, self.mappings)
+
+    def init_db(self, with_default_collection=True):
+        is_new = self._db.init()
+
+        if is_new and with_default_collection:
+            self.collections.add(yaml.load(_DEFAULT_COLLECTIONS_FILE.open('r')))

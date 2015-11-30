@@ -32,10 +32,12 @@ def database():
 
 
 @database.command('init', help='Initialise the database')
-def database_init():
-    db = PostgresDb.from_config()
+@click.option('--no-default-collection', is_flag=True, help="Don't add a default collection.")
+def database_init(no_default_collection):
+    api = index_connect()
+
     _LOG.info('Initialising database...')
-    was_created = db.init()
+    was_created = api.init_db(with_default_collection=not no_default_collection)
     if was_created:
         _LOG.info('Done.')
     else:

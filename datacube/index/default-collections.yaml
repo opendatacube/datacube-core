@@ -1,10 +1,12 @@
-# A default/example collection.
-# 'eo': Earth Observation datasets.
-#
-# This collection expects metadata produced by the eo-datasets library:
-# (or of similar structure)
-# https://github.com/GeoscienceAustralia/eo-datasets
 eo:
+    description: |
+        Earth Observation datasets.
+
+        Default collection accepting datasets produced by the eodatasets library.
+        (or of similar structure)
+
+        https://github.com/GeoscienceAustralia/eo-datasets
+
     # What datasets should we include in this collection?
     match:
         # Match datasets by their metadata fields.
@@ -12,7 +14,9 @@ eo:
         # If this is a subset of the dataset's metadata, it's a match.
         #
         # Match all datasets (no properties specified)
-        dataset: {}
+        metadata: {}
+        # Low match priority because it's the default.
+        priority: 999
 
     dataset:
         # Where to find certain fields in dataset objects:

@@ -43,21 +43,6 @@ class PgField(Field):
     def postgres_index_type(self):
         return 'btree'
 
-    def as_alchemy_index(self, prefix):
-        """
-        Build an SQLAlchemy index for this field.
-
-        :type prefix: str
-        """
-        return Index(
-            'ix_field_{prefix}_{name}'.format(
-                prefix=prefix.lower(),
-                name=self.name.lower(),
-            ),
-            self.alchemy_expression,
-            postgresql_using=self.postgres_index_type
-        )
-
     def __eq__(self, value):
         """
         :rtype: Expression
@@ -76,7 +61,8 @@ class NativeField(PgField):
     def alchemy_expression(self):
         return self.alchemy_column
 
-    def as_alchemy_index(self, prefix):
+    @property
+    def postgres_index_type(self):
         # Don't add extra indexes for native fields.
         return None
 

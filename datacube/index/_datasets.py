@@ -7,6 +7,8 @@ from __future__ import absolute_import
 import copy
 import logging
 
+import cachetools
+
 from datacube.model import Dataset, Collection, DatasetMatcher
 from .fields import to_expressions
 
@@ -64,6 +66,33 @@ class CollectionResource(object):
         :type db: datacube.index.postgres._api.PostgresDb
         """
         self._db = db
+
+    def add(self, descriptor):
+        """
+        :type descriptor: dict
+        """
+        for name, d in descriptor.items():
+            dataset = d['dataset']
+            storage_unit = d['storage_unit']
+            match = d['match']
+            self._db.add_collection(
+                name=name,
+                description=d['description'],
+                dataset_metadata=match['metadata'],
+                match_priority=int(match['priority']),
+                dataset_id_offset=dataset['id_offset'],
+                dataset_label_offset=dataset['label_offset'],
+                dataset_creation_dt_offset=dataset['creation_dt_offset'],
+                dataset_measurements_offset=dataset['measurements_offset'],
+                # TODO: Validate
+                dataset_search_fields=dataset['search_fields'],
+                # TODO: Validate
+                storage_unit_search_fields=storage_unit['search_fields']
+            )
+
+    @cachetools.cached(cachetools.TTLCache(100, 60))
+    def get(self, id_):
+        return self._make(self._db.get_collection(id_))
 
     def get_for_dataset_doc(self, metadata_doc):
         """

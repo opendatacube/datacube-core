@@ -7,16 +7,14 @@ from __future__ import absolute_import
 import datetime
 import json
 import logging
-from collections import defaultdict
 
 import numpy
-from sqlalchemy import create_engine, select, text, bindparam, exists, and_
+from sqlalchemy import create_engine, select, text, bindparam, exists, and_, Index
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.url import URL as EngineUrl
 from sqlalchemy.exc import IntegrityError
 
 from datacube.config import LocalConfig
-
 from . import tables
 from ._fields import parse_fields, NativeField
 from .tables import DATASET, DATASET_SOURCE, STORAGE_TYPE, \
@@ -70,32 +68,7 @@ class PostgresDb(object):
 
         :return: If it was newly created.
         """
-        is_new = tables.ensure_db(self._connection, self._engine)
-
-        # Index fields within documents.
-        # TODO: Support rerunning this on existing databases (ie. check if each index exists first).
-        if is_new:
-
-            views = defaultdict(list)
-            for metadata_type, doc_type, field in self._fields.items():
-                _LOG.debug('Creating index: %s', field.name)
-                index = field.as_alchemy_index(prefix=metadata_type + '_' + doc_type)
-                if index is not None:
-                    index.create(self._engine)
-
-                views['{}_{}'.format(metadata_type, doc_type)].append(field)
-
-            # Create a view of all our search fields (for debugging convenience).
-            for view_name, fields in views.items():
-                self._engine.execute(
-                    tables.View(
-                        view_name,
-                        select(
-                            [field.alchemy_expression.label(field.name) for field in fields]
-                        )
-                    )
-                )
-        return is_new
+        return tables.ensure_db(self._connection, self._engine)
 
     def begin(self):
         """
@@ -111,7 +84,7 @@ class PostgresDb(object):
         """
         return _BegunTransaction(self._connection)
 
-    def insert_dataset(self, metadata_doc, dataset_id, path, metadata_type):
+    def insert_dataset(self, metadata_doc, dataset_id, path, metadata_type, collection_id=None):
         """
         Insert dataset if not already indexed.
         :type metadata_doc: dict
@@ -121,6 +94,12 @@ class PostgresDb(object):
         :return: whether it was inserted
         :rtype: bool
         """
+        if collection_id is None:
+            collection_result = self.get_collection_for_doc(metadata_doc)
+            if not collection_result:
+                raise RuntimeError('No collection matches dataset')
+            collection_id = collection_result['id']
+
         try:
             ret = self._connection.execute(
                 # Insert if not exists.
@@ -128,14 +107,14 @@ class PostgresDb(object):
                 #      connection inserts the same dataset in the time between the subquery and the main query.
                 #      This is ok for our purposes.)
                 DATASET.insert().from_select(
-                    ['id', 'metadata_type', 'metadata_path', 'metadata'],
+                    ['id', 'collection_ref', 'metadata_path', 'metadata'],
                     select([
-                        bindparam('id'), bindparam('metadata_type'), bindparam('metadata_path'),
+                        bindparam('id'), bindparam('collection_ref'), bindparam('metadata_path'),
                         bindparam('metadata', type_=JSONB)
                     ]).where(~exists(select([DATASET.c.id]).where(DATASET.c.id == bindparam('id'))))
                 ),
                 id=dataset_id,
-                metadata_type=metadata_type,
+                collection_ref=collection_id,
                 # TODO: Does a single path make sense? Or a separate 'locations' table?
                 metadata_path=str(path) if path else None,
                 metadata=metadata_doc
@@ -170,12 +149,12 @@ class PostgresDb(object):
     def get_storage_type(self, storage_type_id):
         return self._connection.execute(
             STORAGE_TYPE.select().where(STORAGE_TYPE.c.id == storage_type_id)
-        ).fetchone()
+        ).first()
 
     def get_storage_mapping(self, storage_mapping_id):
         return self._connection.execute(
             STORAGE_MAPPING.select().where(STORAGE_MAPPING.c.id == storage_mapping_id)
-        ).fetchone()
+        ).first()
 
     def get_storage_mappings(self, dataset_metadata):
         """
@@ -303,7 +282,7 @@ class PostgresDb(object):
     def get_collection_for_doc(self, metadata_doc):
         """
         :type metadata_doc: dict
-        :rtype: dict
+        :rtype: dict or None
         """
         return self._connection.execute(
             COLLECTION.select().where(
@@ -311,7 +290,77 @@ class PostgresDb(object):
             ).order_by(
                 COLLECTION.c.match_priority.asc()
             ).limit(1)
-        ).fetchone()
+        ).first()
+
+    def get_collection(self, id_):
+        return self._connection.execute(
+            COLLECTION.select().where(COLLECTION.c.id == id_)
+        ).first()
+
+    def add_collection(self, name, description,
+                       dataset_metadata, match_priority,
+                       dataset_id_offset, dataset_label_offset,
+                       dataset_creation_dt_offset, dataset_measurements_offset,
+                       dataset_search_fields,
+                       storage_unit_search_fields):
+        res = self._connection.execute(
+            COLLECTION.insert().values(
+                name=name,
+                description=description,
+                dataset_metadata=dataset_metadata,
+                match_priority=match_priority,
+                dataset_id_offset=dataset_id_offset,
+                dataset_label_offset=dataset_label_offset,
+                dataset_creation_dt_offset=dataset_creation_dt_offset,
+                dataset_measurements_offset=dataset_measurements_offset,
+                dataset_search_fields=dataset_search_fields,
+                storage_unit_search_fields=storage_unit_search_fields
+            )
+        )
+
+        collection_id = res.inserted_primary_key[0]
+        collection_result = self.get_collection(collection_id)
+
+        # Initialise search fields.
+        _setup_collection_fields(
+            self._engine, name, 'dataset', self.get_dataset_fields(collection_result),
+            DATASET.c.collection_ref == collection_id
+        )
+        _setup_collection_fields(
+            self._engine, name, 'storage_unit', self.get_storage_unit_fields(collection_result),
+            STORAGE_UNIT.c.collection_ref == collection_id
+        )
+
+
+def _setup_collection_fields(engine, collection_prefix, doc_prefix, fields, where_expression):
+    prefix = '{}_{}'.format(collection_prefix.lower(), doc_prefix.lower())
+
+    # Create indexes for the search fields.
+    for field in fields.values():
+        index_type = field.postgres_index_type
+        if index_type:
+            _LOG.debug('Creating index: %s', field.name)
+            Index(
+                'ix_field_{prefix}_{name}'.format(
+                    prefix=prefix.lower(),
+                    name=field.name.lower(),
+                ),
+                field.alchemy_expression,
+                postgres_where=where_expression,
+                postgresql_using=index_type,
+                # Don't lock the table (in the future we'll allow indexing new fields...)
+                postgresql_concurrently=True
+            ).create(engine)
+
+    # Create a view of search fields (for debugging convenience).
+    engine.execute(
+        tables.View(
+            prefix,
+            select(
+                [field.alchemy_expression.label(field.name) for field in fields.values()]
+            ).where(where_expression)
+        )
+    )
 
 
 def _to_json(o):
