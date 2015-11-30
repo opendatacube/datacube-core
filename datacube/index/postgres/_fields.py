@@ -238,8 +238,9 @@ def parse_fields(doc, table_column):
             }
         }
 
+    :param table_column: SQLAlchemy jsonb column for the document we're reading fields from.
     :type doc: dict
-    :rtype: dict[str, Field]
+    :rtype: dict[str, PgField]
     """
 
     def _get_field(name, descriptor, column):
