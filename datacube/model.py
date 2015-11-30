@@ -148,10 +148,7 @@ class Collection(object):
                  name,
                  description,
                  match,
-                 dataset_id_offset,
-                 dataset_label_offset,
-                 dataset_creation_time_offset,
-                 dataset_measurements_offset,
+                 dataset_offsets,
                  dataset_search_fields,
                  storage_unit_search_fields,
                  id_=None):
@@ -168,8 +165,29 @@ class Collection(object):
         # Match datasets that should belong to this collection.
         self.match = match
 
+        #: :type: DatasetOffsets
+        self.dataset_offsets = dataset_offsets
+
+        #: :type: dict[str, Field]
+        self.dataset_search_fields = dataset_search_fields
+        #: :type: dict[str, Field]
+        self.storage_unit_search_fields = storage_unit_search_fields
+
+
+class DatasetOffsets(object):
+    """
+    Where to find certain fields in dataset metadata.
+    """
+
+    def __init__(self,
+                 uuid_field,
+                 label_field,
+                 creation_time_field,
+                 measurements_dict,
+                 ):
         # UUID for a dataset. Always unique.
-        self.dataset_id_offset = dataset_id_offset
+        #: :type: tuple[string]
+        self.uuid_field = uuid_field
 
         # The dataset "label" is the logical identifier for a dataset.
         #
@@ -188,21 +206,19 @@ class Collection(object):
         #      -> Eg. "LS7_ETM_SYS_P31_GALPGS01-002_114_73_20050107"
         #
         # But the collection owner can use any string to label their datasets.
-        self.dataset_label_offset = dataset_label_offset
+        #: :type: tuple[string]
+        self.label_field = label_field
 
         # datetime the dataset was processed/created.
-        self.dataset_creation_time_offset = dataset_creation_time_offset
-
-        #: :type: dict[str, Field]
-        self.dataset_search_fields = dataset_search_fields
-        #: :type: dict[str, Field]
-        self.storage_unit_search_fields = storage_unit_search_fields
+        #: :type: tuple[string]
+        self.creation_time_field = creation_time_field
 
         # Where to find a dict of measurements/bands in the dataset.
         #  -> Dict key is measurement/band id,
         #  -> Dict value is object with fields depending on the storage driver.
         #     (such as path to band file, offset within file etc.)
-        self.dataset_measurements_offset = dataset_measurements_offset
+        #: :type: tuple[string]
+        self.measurements_dict = measurements_dict
 
 
 class VariableAlreadyExists(Exception):

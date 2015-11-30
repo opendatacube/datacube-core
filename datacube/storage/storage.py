@@ -20,6 +20,7 @@ def store(storage_mappings, dataset):
     :return:
     """
     _LOG.info('%s mappings for dataset %s', len(storage_mappings), dataset.id)
+    collection = dataset.collection
 
     result = []
     for mapping in storage_mappings:
@@ -33,7 +34,7 @@ def store(storage_mappings, dataset):
             raise RuntimeError('URI protocol is not supported (yet): %s' % mapping.storage_pattern)
         storage_type.descriptor["filename_format"] = mapping.storage_pattern[7:]
 
-        dataset_measurements = _get_doc_offset(dataset.collection.dataset_measurements_offset, dataset.metadata_doc)
+        dataset_measurements = _get_doc_offset(collection.dataset_offsets.measurements_dict, dataset.metadata_doc)
         for measurement_id, measurement_descriptor in mapping.measurements.items():
             # Get the corresponding measurement/band from the dataset.
             band_descriptor = dataset_measurements[measurement_id]

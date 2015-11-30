@@ -9,7 +9,7 @@ import logging
 
 import cachetools
 
-from datacube.model import Dataset, Collection, DatasetMatcher
+from datacube.model import Dataset, Collection, DatasetMatcher, DatasetOffsets
 from .fields import to_expressions
 
 _LOG = logging.getLogger(__name__)
@@ -121,10 +121,12 @@ class CollectionResource(object):
             query_row['name'],
             query_row['description'],
             DatasetMatcher(query_row['dataset_metadata']),
-            dataset_id_offset=query_row['dataset_id_offset'],
-            dataset_label_offset=query_row['dataset_label_offset'],
-            dataset_creation_time_offset=query_row['dataset_creation_dt_offset'],
-            dataset_measurements_offset=query_row['dataset_measurements_offset'],
+            DatasetOffsets(
+                uuid_field=query_row['dataset_id_offset'],
+                label_field=query_row['dataset_label_offset'],
+                creation_time_field=query_row['dataset_creation_dt_offset'],
+                measurements_dict=query_row['dataset_measurements_offset'],
+            ),
             dataset_search_fields=self._db.get_dataset_fields(query_row),
             storage_unit_search_fields=self._db.get_storage_unit_fields(query_row),
             id_=query_row['id'],
