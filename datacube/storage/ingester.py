@@ -25,14 +25,30 @@ class SimpleObject(object):
 
 
 def expand_bounds(bounds, tile_size):
-    xs = (bounds[0], bounds[2])
-    ys = (bounds[1], bounds[3])
+    """
+    Expand the bounds to a multiple of the tile size
 
-    left = int(min(x // tile_size['x'] for x in xs))
-    bottom = int(min(y // tile_size['y'] for y in ys))
+    Requires positive x and negative y
 
-    right = int(max(x // tile_size['x'] for x in xs))
-    top = int(max(y // tile_size['y'] for y in ys))
+    :param bounds: iterable with left, bottom, right, top
+    :param tile_size: dict with 'x' and 'y'
+    :return:
+    """
+    left, bottom, right, top = bounds
+    x = tile_size['x']
+    y = tile_size['y']
+
+    if x <= 0:
+        raise ValueError("Tiles must have a positive x size")
+    if y >= 0:
+        raise ValueError("Tiles must have a negative y size")
+
+    left = (left // x) * x
+    right = ((right // x) * x) + x
+
+    top = (top // y) * y
+    bottom = ((bottom // y) * y) + y
+
     return rasterio.coords.BoundingBox(left, bottom, right, top)
 
 
@@ -55,10 +71,10 @@ def create_tiles(src_ds, tile_size, tile_res, tile_crs, tile_dtype=None):
     width = int(tile_size['x'] / tile_res['x'])
     height = int(tile_size['y'] / tile_res['y'])
 
-    for y in range(outer_bounds.top, outer_bounds.bottom + 1):
-        for x in range(outer_bounds.left, outer_bounds.right + 1):
-            tile_transform = Affine.from_gdal(x * tile_size['x'], tile_res['x'], 0.0,
-                                              y * tile_size['y'], 0.0, tile_res['y'])
+    for y in numpy.arange(outer_bounds.top, outer_bounds.bottom, tile_size['y']):
+        for x in numpy.arange(outer_bounds.left, outer_bounds.right, tile_size['x']):
+            tile_transform = Affine.from_gdal(x, tile_res['x'], 0.0,
+                                              y, 0.0, tile_res['y'])
             dst_region = numpy.full((height, width), -999, dtype=tile_dtype)
 
             rasterio.warp.reproject(rasterio.band(src_ds, 1), dst_region, dst_transform=tile_transform,
@@ -123,5 +139,5 @@ def crazy_band_tiler(measurement_descriptor, input_filename, storage_spec, time_
 
         append_to_netcdf(tile_spec, output_filename, storage_spec, measurement_descriptor, time_value,
                          input_filename)
-        _LOG.debug(im)
+        _LOG.debug("Wrote %s to %s", measurement_descriptor.__dict__, output_filename)
         yield output_filename
