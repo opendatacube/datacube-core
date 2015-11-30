@@ -19,7 +19,7 @@ def _ensure_dataset(db, dataset_doc, path=None):
     """
     Ensure a dataset is in the index (add it if needed).
 
-    :type db: PostgresDb
+    :type db: datacube.index.postgres._api.PostgresDb
     :type dataset_doc: dict
     :type path: pathlib.Path
     :returns: The dataset_id if we ingested it.
@@ -33,11 +33,9 @@ def _ensure_dataset(db, dataset_doc, path=None):
     indexable_doc = copy.deepcopy(dataset_doc)
     # Clear source datasets: We store them separately.
     indexable_doc['lineage']['source_datasets'] = None
-    # For now everything is 'eo'
-    metadata_type = 'eo'
 
     _LOG.info('Indexing %s @ %s', dataset_id, path)
-    was_inserted = db.insert_dataset(indexable_doc, dataset_id, path, metadata_type)
+    was_inserted = db.insert_dataset(indexable_doc, dataset_id, path)
 
     if not was_inserted:
         # No need to index sources: the dataset already existed.
@@ -181,7 +179,7 @@ class DatasetResource(object):
         """
         :rtype list[datacube.model.Dataset]
         """
-        return (Dataset(dataset.metadata_type, dataset.metadata, dataset.metadata_path)
+        return (Dataset(dataset.collection_ref, dataset.metadata, dataset.metadata_path)
                 for dataset in query_result)
 
     def search(self, *expressions, **query):
