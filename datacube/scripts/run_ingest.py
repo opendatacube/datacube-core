@@ -7,9 +7,9 @@ from __future__ import absolute_import
 from pathlib import Path
 
 import click
-
-from datacube import config
+from datacube import config, index
 from datacube.ingest import ingest
+
 
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 
@@ -23,7 +23,9 @@ CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 def cli(verbose, dataset, log_queries):
     config.init_logging(verbosity_level=verbose, log_queries=log_queries)
 
-    ingest([Path(dataset_path) for dataset_path in dataset])
+    i = index.index_connect()
+    for dataset_path in dataset:
+        ingest(Path(dataset_path), index=i)
 
 
 if __name__ == '__main__':
