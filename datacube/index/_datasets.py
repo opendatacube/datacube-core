@@ -104,9 +104,13 @@ class CollectionResource(object):
     def get_for_dataset_doc(self, metadata_doc):
         """
         :type metadata_doc: dict
-        :rtype: datacube.model.Collection
+        :rtype: datacube.model.Collection or None
         """
-        return self._make(self._db.get_collection_for_doc(metadata_doc))
+        collection_res = self._db.get_collection_for_doc(metadata_doc)
+        if collection_res is None:
+            return None
+
+        return self._make(collection_res)
 
     def _make_many(self, query_rows):
         return (self._make(c) for c in query_rows)

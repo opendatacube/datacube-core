@@ -87,13 +87,16 @@ def test_index_dataset(index, db, local_config, default_collection):
 
 
 def test_index_storage_unit(index, db, default_collection):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    """
 
     # Setup foreign keys for our storage unit.
     was_inserted = db.insert_dataset(
         _telemetry_dataset,
         _telemetry_uuid,
-        '/tmp/test/' + _telemetry_uuid,
-        'satellite_telemetry_data'
+        Path('/tmp/test/' + _telemetry_uuid)
     )
     assert was_inserted
     db.ensure_storage_type(
@@ -104,7 +107,7 @@ def test_index_storage_unit(index, db, default_collection):
     db.ensure_storage_mapping(
         'test_storage_type',
         'Test storage mapping',
-        'location1', '/tmp/some/loc', {}, [], {}
+        'location1', '/tmp/some/loc', {}, []
     )
     mapping = db._connection.execute(STORAGE_MAPPING.select()).first()
 

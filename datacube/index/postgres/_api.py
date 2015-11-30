@@ -17,6 +17,7 @@ from sqlalchemy.engine.url import URL as EngineUrl
 from sqlalchemy.exc import IntegrityError
 
 from datacube.config import LocalConfig
+from datacube.index.postgres.tables._core import SCHEMA_NAME
 from . import tables
 from ._fields import parse_fields, NativeField
 from .tables import DATASET, DATASET_SOURCE, STORAGE_TYPE, \
@@ -195,11 +196,12 @@ class PostgresDb(object):
             raise ValueError('Storage unit must be linked to at least one dataset.')
 
         unit_id = self._connection.execute(
-            STORAGE_UNIT.insert().returning(STORAGE_UNIT.c.id),
-            collection_ref=select([DATASET.c.collection_ref]).where(DATASET.c.id == dataset_ids[0]),
-            storage_mapping_ref=storage_mapping_id,
-            descriptor=descriptor,
-            path=path
+            STORAGE_UNIT.insert().values(
+                collection_ref=select([DATASET.c.collection_ref]).where(DATASET.c.id == dataset_ids[0]),
+                storage_mapping_ref=storage_mapping_id,
+                descriptor=descriptor,
+                path=path
+            ).returning(STORAGE_UNIT.c.id),
         ).scalar()
 
         self._connection.execute(
@@ -331,11 +333,11 @@ class PostgresDb(object):
 
         # Initialise search fields.
         _setup_collection_fields(
-            self._engine, name, 'dataset', self.get_dataset_fields(collection_result),
+            self._connection, name, 'dataset', self.get_dataset_fields(collection_result),
             DATASET.c.collection_ref == collection_id
         )
         _setup_collection_fields(
-            self._engine, name, 'storage_unit', self.get_storage_unit_fields(collection_result),
+            self._connection, name, 'storage_unit', self.get_storage_unit_fields(collection_result),
             STORAGE_UNIT.c.collection_ref == collection_id
         )
 
@@ -343,35 +345,47 @@ class PostgresDb(object):
         return self._connection.execute(COLLECTION.select()).fetchall()
 
 
-def _setup_collection_fields(engine, collection_prefix, doc_prefix, fields, where_expression):
-    prefix = '{}_{}'.format(collection_prefix.lower(), doc_prefix.lower())
+def _pg_exists(conn, name):
+    """
+    Does a postgres object exist?
+    """
+    return bool(conn.execute("SELECT to_regclass(%s)", name))
+
+
+def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_expression):
+    name = '{}_{}'.format(collection_prefix.lower(), doc_prefix.lower())
 
     # Create indexes for the search fields.
     for field in fields.values():
         index_type = field.postgres_index_type
         if index_type:
             _LOG.debug('Creating index: %s', field.name)
-            Index(
-                'ix_field_{prefix}_{name}'.format(
-                    prefix=prefix.lower(),
-                    name=field.name.lower(),
-                ),
-                field.alchemy_expression,
-                postgres_where=where_expression,
-                postgresql_using=index_type,
-                # Don't lock the table (in the future we'll allow indexing new fields...)
-                postgresql_concurrently=True
-            ).create(engine)
+            index_name = 'ix_field_{prefix}_{field_name}'.format(
+                prefix=name.lower(),
+                field_name=field.name.lower()
+            )
+
+            if not _pg_exists(conn, index_name):
+                Index(
+                    index_name,
+                    field.alchemy_expression,
+                    postgres_where=where_expression,
+                    postgresql_using=index_type,
+                    # Don't lock the table (in the future we'll allow indexing new fields...)
+                    postgresql_concurrently=True
+                ).create(conn)
 
     # Create a view of search fields (for debugging convenience).
-    engine.execute(
-        tables.View(
-            prefix,
-            select(
-                [field.alchemy_expression.label(field.name) for field in fields.values()]
-            ).where(where_expression)
+    view_name = '{}.{}'.format(SCHEMA_NAME, name)
+    if not _pg_exists(conn, view_name):
+        conn.execute(
+            tables.View(
+                name,
+                select(
+                    [field.alchemy_expression.label(field.name) for field in fields.values()]
+                ).where(where_expression)
+            )
         )
-    )
 
 
 def _to_json(o):

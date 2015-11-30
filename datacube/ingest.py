@@ -56,6 +56,10 @@ def _dataset_from_path(index, path):
         raise ValueError('Only yaml metadata is supported at the moment (provided {})'.format(metadata_path.suffix))
 
     collection = index.collections.get_for_dataset_doc(metadata_doc)
+    if not collection:
+        _LOG.debug('Failed match on dataset doc %r', metadata_doc)
+        raise ValueError('No collection matched for dataset.')
+
     _LOG.info('Matched collection %r (%s)', collection.name, collection.id_)
     return model.Dataset(collection, metadata_doc, metadata_path)
 
