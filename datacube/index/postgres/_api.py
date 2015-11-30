@@ -1,4 +1,6 @@
 # coding=utf-8
+# We often have one-arg-per column, so these checks aren't so useful.
+# pylint: disable=too-many-arguments,too-many-public-methods
 """
 Lower-level database access.
 """

@@ -48,4 +48,7 @@ class Index(object):
         is_new = self._db.init()
 
         if is_new and with_default_collection:
-            self.collections.add(yaml.load(_DEFAULT_COLLECTIONS_FILE.open('r')))
+            self._add_default_collection()
+
+    def _add_default_collection(self):
+        self.collections.add(yaml.load(_DEFAULT_COLLECTIONS_FILE.open('r')))
