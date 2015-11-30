@@ -153,16 +153,19 @@ class Collection(object):
     def __init__(self,
                  name,
                  description,
-                 match=DatasetMatcher({}),
-                 dataset_id_offset=('id',),
-                 dataset_label_offset=('ga_label',),
-                 dataset_creation_time_offset=('creation_dt',),
-                 dataset_measurements_offset={},
-                 dataset_search_fields={},
-                 storage_unit_search_fields={}):
+                 match,
+                 dataset_id_offset,
+                 dataset_label_offset,
+                 dataset_creation_time_offset,
+                 dataset_measurements_offset,
+                 dataset_search_fields,
+                 storage_unit_search_fields,
+                 id_=None):
         """
         Collection of datasets & storage.
         """
+        self.id_ = id_
+
         # Name of collection. Unique.
         self.name = name
 
@@ -196,7 +199,9 @@ class Collection(object):
         # datetime the dataset was processed/created.
         self.dataset_creation_time_offset = dataset_creation_time_offset
 
+        #: :type: dict[str, Field]
         self.dataset_search_fields = dataset_search_fields
+        #: :type: dict[str, Field]
         self.storage_unit_search_fields = storage_unit_search_fields
 
         # Where to find a dict of measurements/bands in the dataset.

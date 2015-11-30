@@ -186,7 +186,7 @@ class PostgresDb(object):
             )
         )
 
-    def add_storage_unit(self, path, collection_id, dataset_ids, descriptor, storage_mapping_id):
+    def add_storage_unit(self, path, dataset_ids, descriptor, storage_mapping_id):
         if not dataset_ids:
             raise ValueError('Storage unit must be linked to at least one dataset.')
 
@@ -334,6 +334,9 @@ class PostgresDb(object):
             self._engine, name, 'storage_unit', self.get_storage_unit_fields(collection_result),
             STORAGE_UNIT.c.collection_ref == collection_id
         )
+
+    def get_all_collections(self):
+        return self._connection.execute(COLLECTION.select()).fetchall()
 
 
 def _setup_collection_fields(engine, collection_prefix, doc_prefix, fields, where_expression):

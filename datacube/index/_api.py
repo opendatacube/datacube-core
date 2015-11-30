@@ -38,11 +38,11 @@ class Index(object):
         """
         self._db = db
 
-        self.collections = CollectionResource(db)
-        self.datasets = DatasetResource(db)
+        self.collections = CollectionResource(db, local_config)
+        self.datasets = DatasetResource(db, local_config, self.collections)
         self.storage_types = StorageTypeResource(db)
         self.mappings = StorageMappingResource(db, self.storage_types, local_config)
-        self.storage = StorageUnitResource(db, self.mappings)
+        self.storage = StorageUnitResource(db, self.mappings, self.collections, local_config)
 
     def init_db(self, with_default_collection=True):
         is_new = self._db.init()

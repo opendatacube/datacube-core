@@ -15,13 +15,18 @@ _LOG = logging.getLogger(__name__)
 
 
 class StorageUnitResource(object):
-    def __init__(self, db, storage_mapping_resource):
+    def __init__(self, db, storage_mapping_resource, collection_resource, local_config):
         """
         :type db: datacube.index.postgres._api.PostgresDb
-        :type storage_mapping_resource:
+        :type storage_mapping_resource: StorageMappingResource
+        :type collection_resource: CollectionResource
+        :type local_config: datacube.config.LocalConfig
         """
         self._db = db
-        self.storage_mappings = storage_mapping_resource
+        self._storage_mapping_resource = storage_mapping_resource
+        self._collection_resource = collection_resource
+
+        self._config = local_config
 
     def get(self, id_):
         raise RuntimeError('TODO: implement')
@@ -30,8 +35,8 @@ class StorageUnitResource(object):
         """
         :type storage_units: list[datacube.model.StorageUnit]
         """
-        for unit in storage_units:
-            with self._db.begin() as transaction:
+        with self._db.begin() as transaction:
+            for unit in storage_units:
                 unit_id = self._db.add_storage_unit(
                     unit.path,
                     unit.dataset_ids,
@@ -46,20 +51,31 @@ class StorageUnitResource(object):
         """
         return self.add_many([storage_unit])
 
-    def get_field(self, name):
+    def get_field(self, name, collection_name=None):
         """
         :type name: str
+        :param collection_name: Collection to search, or None for default
         :rtype: datacube.index.fields.Field
         """
-        return self._db.get_storage_field('eo', name)
+        if collection_name is None:
+            collection_name = self._config.default_collection_name
 
-    def get_field_with_fallback(self, name):
+        collection = self._collection_resource.get_by_name(collection_name)
+        return collection.storage_unit_search_fields.get(name)
+
+    def get_field_with_fallback(self, name, collection_name=None):
         """
         :type name: str
         :rtype: datacube.index.fields.Field
+        :param collection_name: Collection to search, or None for default
         """
-        val = self.get_field(name)
-        return val if val is not None else self._db.get_dataset_field('eo', name)
+        if collection_name is None:
+            collection_name = self._config.default_collection_name
+
+        collection = self._collection_resource.get_by_name(collection_name)
+        val = collection.storage_unit_search_fields.get(name)
+
+        return val if val is not None else collection.dataset_search_fields.get(name)
 
     def search(self, *expressions, **query):
         """
@@ -85,7 +101,7 @@ class StorageUnitResource(object):
         return (StorageUnit(
             # TODO: move dataset ids out of this class?
             [],
-            self.storage_mappings.get(su['storage_mapping_ref']),
+            self._storage_mapping_resource.get(su['storage_mapping_ref']),
             su['descriptor'],
             su['path']
         ) for su in query_results)
@@ -124,6 +140,8 @@ class StorageMappingResource(object):
     def __init__(self, db, storage_type_resource, host_config):
         """
         :type db: datacube.index.postgres._api.PostgresDb
+        :type storage_type_resource: StorageTypeResource
+        :type host_config: datacube.config.LocalConfig
         """
         self._db = db
         self._storage_types = storage_type_resource

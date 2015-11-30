@@ -61,11 +61,13 @@ def _ensure_dataset(db, dataset_doc, path=None):
 
 
 class CollectionResource(object):
-    def __init__(self, db):
+    def __init__(self, db, user_config):
         """
         :type db: datacube.index.postgres._api.PostgresDb
         """
         self._db = db
+
+        self._collections_by_name = None
 
     def add(self, descriptor):
         """
@@ -94,6 +96,13 @@ class CollectionResource(object):
     def get(self, id_):
         return self._make(self._db.get_collection(id_))
 
+    def get_by_name(self, name):
+        if self._collections_by_name is None:
+            # Collections rarely change, there's very few, and we access them often, so fetch them all.
+            self._collections_by_name = {c.name: c for c in self._make(self._db.get_all_collections())}
+
+        return self._collections_by_name.get(name)
+
     def get_for_dataset_doc(self, metadata_doc):
         """
         :type metadata_doc: dict
@@ -116,16 +125,21 @@ class CollectionResource(object):
                 dataset_measurements_offset=collection['dataset_measurements_offset'],
                 dataset_search_fields=self._db.get_dataset_fields(collection),
                 storage_unit_search_fields=self._db.get_storage_unit_fields(collection),
+                id_=collection['id'],
             ) for collection in query_result
         )
 
 
 class DatasetResource(object):
-    def __init__(self, db):
+    def __init__(self, db, user_config, collection_resource):
         """
         :type db: datacube.index.postgres._api.PostgresDb
+        :type user_config: datacube.config.LocalConfig
+        :type collection_resource: CollectionResource
         """
         self._db = db
+        self._config = user_config
+        self._collection_resource = collection_resource
 
     def get(self, id_):
         raise RuntimeError('TODO: implement')
@@ -149,12 +163,16 @@ class DatasetResource(object):
         with self._db.begin() as transaction:
             return _ensure_dataset(self._db, dataset.metadata_doc, path=dataset.metadata_path)
 
-    def get_field(self, name):
+    def get_field(self, name, collection_name=None):
         """
         :type name: str
         :rtype: datacube.index.fields.Field
         """
-        return self._db.get_dataset_field('eo', name)
+        if collection_name is None:
+            collection_name = self._config.default_collection_name
+
+        collection = self._collection_resource.get_by_name(collection_name)
+        return collection.dataset_search_fields.get(name)
 
     def _make(self, query_result):
         """
