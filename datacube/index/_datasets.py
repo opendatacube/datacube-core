@@ -99,34 +99,35 @@ class CollectionResource(object):
     def get_by_name(self, name):
         if self._collections_by_name is None:
             # Collections rarely change, there's very few, and we access them often, so fetch them all.
-            self._collections_by_name = {c.name: c for c in self._make(self._db.get_all_collections())}
+            self._collections_by_name = {c.name: c for c in self._make_many(self._db.get_all_collections())}
 
         return self._collections_by_name.get(name)
 
     def get_for_dataset_doc(self, metadata_doc):
         """
         :type metadata_doc: dict
-        :rtype list[datacube.model.Collection]
+        :rtype: datacube.model.Collection
         """
         return self._make(self._db.get_collection_for_doc(metadata_doc))
 
-    def _make(self, query_result):
+    def _make_many(self, query_rows):
+        return (self._make(c) for c in query_rows)
+
+    def _make(self, query_row):
         """
         :rtype list[datacube.model.Collection]
         """
-        return (
-            Collection(
-                collection['name'],
-                collection['description'],
-                DatasetMatcher(collection['dataset_metadata']),
-                dataset_id_offset=collection['dataset_id_offset'],
-                dataset_label_offset=collection['dataset_label_offset'],
-                dataset_creation_time_offset=collection['dataset_creation_dt_offset'],
-                dataset_measurements_offset=collection['dataset_measurements_offset'],
-                dataset_search_fields=self._db.get_dataset_fields(collection),
-                storage_unit_search_fields=self._db.get_storage_unit_fields(collection),
-                id_=collection['id'],
-            ) for collection in query_result
+        return Collection(
+            query_row['name'],
+            query_row['description'],
+            DatasetMatcher(query_row['dataset_metadata']),
+            dataset_id_offset=query_row['dataset_id_offset'],
+            dataset_label_offset=query_row['dataset_label_offset'],
+            dataset_creation_time_offset=query_row['dataset_creation_dt_offset'],
+            dataset_measurements_offset=query_row['dataset_measurements_offset'],
+            dataset_search_fields=self._db.get_dataset_fields(query_row),
+            storage_unit_search_fields=self._db.get_storage_unit_fields(query_row),
+            id_=query_row['id'],
         )
 
 
