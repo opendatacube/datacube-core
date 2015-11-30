@@ -84,21 +84,24 @@ class PostgresDb(object):
         """
         return _BegunTransaction(self._connection)
 
-    def insert_dataset(self, metadata_doc, dataset_id, path, metadata_type, collection_id=None):
+    def insert_dataset(self, metadata_doc, dataset_id, path, collection_id=None):
         """
         Insert dataset if not already indexed.
         :type metadata_doc: dict
         :type dataset_id: str or uuid.UUID
         :type path: pathlib.Path
-        :type metadata_type: str
         :return: whether it was inserted
         :rtype: bool
         """
         if collection_id is None:
             collection_result = self.get_collection_for_doc(metadata_doc)
             if not collection_result:
+                _LOG.debug('Attempted failed match on doc %r', metadata_doc)
                 raise RuntimeError('No collection matches dataset')
             collection_id = collection_result['id']
+            _LOG.debug('Matched collection %r', collection_id)
+        else:
+            _LOG.debug('Using provided collection %r', collection_id)
 
         try:
             ret = self._connection.execute(
