@@ -169,9 +169,9 @@ class Collection(object):
         self.dataset_offsets = dataset_offsets
 
         #: :type: dict[str, Field]
-        self.dataset_search_fields = dataset_search_fields
+        self.dataset_fields = dataset_search_fields
         #: :type: dict[str, Field]
-        self.storage_unit_search_fields = storage_unit_search_fields
+        self.storage_fields = storage_unit_search_fields
 
 
 class DatasetOffsets(object):

@@ -216,30 +216,34 @@ class PostgresDb(object):
     def get_storage_units(self):
         return self._connection.execute(STORAGE_UNIT.select()).fetchall()
 
-    _NATIVE_DATASET_FIELDS = {
-        'id': NativeField('id', DATASET.c.id),
-        'metadata_path': NativeField('metadata_path', DATASET.c.metadata_path)
-    }
-
-    _NATIVE_STORAGE_FIELDS = {
-        'id': NativeField('id', STORAGE_UNIT.c.id),
-        'path': NativeField('path', STORAGE_UNIT.c.path)
-    }
-
     def get_dataset_fields(self, collection_result):
-        fields = self._NATIVE_DATASET_FIELDS.copy()
-        fields.update(parse_fields(
-            collection_result['dataset_search_fields'],
-            DATASET.c.metadata
-        ))
+        # Native fields (hard-coded into the schema)
+        fields = {
+            'id': NativeField('id', collection_result['id'], DATASET.c.id),
+            'metadata_path': NativeField('metadata_path', collection_result['id'], DATASET.c.metadata_path)
+        }
+        fields.update(
+            parse_fields(
+                collection_result['dataset_search_fields'],
+                collection_result['id'],
+                DATASET.c.metadata
+            )
+        )
         return fields
 
     def get_storage_unit_fields(self, collection_result):
-        fields = self._NATIVE_STORAGE_FIELDS.copy()
-        fields.update(parse_fields(
-            collection_result['storage_unit_search_fields'],
-            DATASET.c.metadata
-        ))
+        # Native fields (hard-coded into the schema)
+        fields = {
+            'id': NativeField('id', collection_result['id'], STORAGE_UNIT.c.id),
+            'path': NativeField('path', collection_result['id'], STORAGE_UNIT.c.path)
+        }
+        fields.update(
+            parse_fields(
+                collection_result['storage_unit_search_fields'],
+                collection_result['id'],
+                DATASET.c.metadata
+            )
+        )
         return fields
 
     def search_datasets(self, expressions, select_fields=None):
@@ -251,7 +255,7 @@ class PostgresDb(object):
         return self._search_docs(
             expressions,
             select_fields=select_fields,
-            select_table=DATASET
+            collection_field=DATASET.c.collection_ref
         )
 
     def search_storage_units(self, expressions, select_fields=None):
@@ -271,19 +275,34 @@ class PostgresDb(object):
         return self._search_docs(
             expressions,
             select_fields=select_fields,
-            select_table=STORAGE_UNIT,
+            collection_field=STORAGE_UNIT.c.collection_ref,
             from_expression=from_expression
         )
 
-    def _search_docs(self, expressions, select_fields=None, select_table=None, from_expression=None):
-        select_fields = [f.alchemy_expression for f in select_fields] if select_fields else [select_table]
+    def _search_docs(self, expressions, select_fields=None, collection_field=None, from_expression=None):
+        select_fields = [f.alchemy_expression for f in select_fields] if select_fields else [collection_field.table]
+
+        # We currently only allow one collection to be queried (our indexes are per-collection)
+        queried_collections = set([e.field.collection_id for e in expressions])
+        if len(queried_collections) > 1:
+            raise ValueError(
+                'Currently only one collection can be queried at a time. (Tried %r)' % queried_collections
+            )
+        if not queried_collections:
+            raise ValueError(
+                'No collections specified for query.'
+            )
+        queried_collection = queried_collections.pop()
 
         if from_expression is None:
-            from_expression = select_table
+            from_expression = collection_field.table
 
         results = self._connection.execute(
             select(select_fields).select_from(from_expression).where(
-                and_(*[expression.alchemy_expression for expression in expressions])
+                and_(
+                    collection_field == queried_collection,
+                    *[expression.alchemy_expression for expression in expressions]
+                )
             )
         )
         for result in results:
@@ -305,6 +324,11 @@ class PostgresDb(object):
     def get_collection(self, id_):
         return self._connection.execute(
             COLLECTION.select().where(COLLECTION.c.id == id_)
+        ).first()
+
+    def get_collection_by_name(self, name):
+        return self._connection.execute(
+            COLLECTION.select().where(COLLECTION.c.name == name)
         ).first()
 
     def add_collection(self, name, description,

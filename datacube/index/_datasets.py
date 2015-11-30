@@ -65,11 +65,10 @@ class CollectionResource(object):
         """
         self._db = db
 
-        self._collections_by_name = None
-
     def add(self, descriptor):
         """
         :type descriptor: dict
+        :rtype: list[datacube.model.Collection]
         """
         for name, d in descriptor.items():
             dataset = d['dataset']
@@ -89,17 +88,18 @@ class CollectionResource(object):
                 # TODO: Validate
                 storage_unit_search_fields=storage_unit['search_fields']
             )
+        return [self.get_by_name(name) for name in descriptor.keys()]
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def get(self, id_):
         return self._make(self._db.get_collection(id_))
 
+    @cachetools.cached(cachetools.TTLCache(100, 60))
     def get_by_name(self, name):
-        if self._collections_by_name is None:
-            # Collections rarely change, there's very few, and we access them often, so fetch them all.
-            self._collections_by_name = {c.name: c for c in self._make_many(self._db.get_all_collections())}
-
-        return self._collections_by_name.get(name)
+        collection = self._db.get_collection_by_name(name)
+        if not collection:
+            return None
+        return self._make(collection)
 
     def get_for_dataset_doc(self, metadata_doc):
         """
@@ -177,7 +177,7 @@ class DatasetResource(object):
             collection_name = self._config.default_collection_name
 
         collection = self._collection_resource.get_by_name(collection_name)
-        return collection.dataset_search_fields.get(name)
+        return collection.dataset_fields.get(name)
 
     def _make(self, query_result):
         """

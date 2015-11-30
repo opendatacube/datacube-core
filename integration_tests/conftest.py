@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 import rasterio
+import yaml
 
 from datacube.config import LocalConfig
 from datacube.index._api import Index
@@ -37,17 +38,19 @@ def db(local_config):
 
 @pytest.fixture
 def index(db, local_config):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    """
     return Index(db, local_config)
 
 
 @pytest.fixture
 def default_collection(index):
     """
-    :type db: datacube.index.postgres._api.PostgresDb
     :type index: datacube.index._api.Index
     """
-    names = index._add_default_collection()
-    return index.collections.get_by_name(names[0])
+    collections = index._add_default_collection()
+    return collections[0]
 
 
 def create_empty_geotiff(path):
@@ -78,6 +81,15 @@ def example_ls5_dataset(tmpdir):
         create_empty_geotiff(str(path))
 
     return Path(str(dataset_dir))
+
+
+@pytest.fixture
+def telemetry_collection(index):
+    """
+    :type index: datacube.index._api.Index
+    """
+    parsed = yaml.load(Path(__file__).parent.joinpath('telemetry-collection.yaml').open('r'))
+    return index.collections.add(parsed)[0]
 
 
 def test_ls5_dataset(example_ls5_dataset):

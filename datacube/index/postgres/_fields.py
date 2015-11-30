@@ -8,7 +8,7 @@ from __future__ import absolute_import
 import functools
 
 from psycopg2.extras import NumericRange
-from sqlalchemy import cast, Index, TIMESTAMP
+from sqlalchemy import cast, TIMESTAMP
 from sqlalchemy import func
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
@@ -22,8 +22,10 @@ class PgField(Field):
     a JSONB column.
     """
 
-    def __init__(self, name, alchemy_column):
+    def __init__(self, name, collection_id, alchemy_column):
         super(PgField, self).__init__(name)
+        self.collection_id = collection_id
+
         # The underlying SQLAlchemy column. (eg. DATASET.c.metadata)
         self.alchemy_column = alchemy_column
 
@@ -72,8 +74,8 @@ class SimpleDocField(PgField):
     A field with a single value (eg. String, int)
     """
 
-    def __init__(self, name, alchemy_column, offset=None):
-        super(SimpleDocField, self).__init__(name, alchemy_column)
+    def __init__(self, name, collection_id, alchemy_column, offset=None):
+        super(SimpleDocField, self).__init__(name, collection_id, alchemy_column)
         self.offset = offset
 
     @property
@@ -105,8 +107,8 @@ class RangeDocField(PgField):
     values in the document.
     """
 
-    def __init__(self, name, alchemy_column, min_offset=None, max_offset=None):
-        super(RangeDocField, self).__init__(name, alchemy_column)
+    def __init__(self, name, collection_id, alchemy_column, min_offset=None, max_offset=None):
+        super(RangeDocField, self).__init__(name, collection_id, alchemy_column)
         self.min_offset = min_offset
         self.max_offset = max_offset
 
@@ -214,11 +216,12 @@ class EqualsExpression(PgExpression):
         return self.field.alchemy_expression == self.value
 
 
-def parse_fields(doc, table_column):
+def parse_fields(doc, collection_id, table_column):
     """
     Parse a field spec document into objects.
 
     Example document:
+    :param collection_id:
     ::
 
         {
@@ -243,7 +246,7 @@ def parse_fields(doc, table_column):
     :rtype: dict[str, PgField]
     """
 
-    def _get_field(name, descriptor, column):
+    def _get_field(name, collection_id, descriptor, column):
         """
 
         :type name: str
@@ -260,7 +263,7 @@ def parse_fields(doc, table_column):
 
         field_class = type_map.get(type_name)
         try:
-            return field_class(name, column, **descriptor)
+            return field_class(name, collection_id, column, **descriptor)
         except TypeError as e:
             raise RuntimeError(
                 'Field {name} has unexpected argument for a {type}'.format(
@@ -268,4 +271,4 @@ def parse_fields(doc, table_column):
                 ), e
             )
 
-    return {name: _get_field(name, descriptor, table_column) for name, descriptor in doc.items()}
+    return {name: _get_field(name, collection_id, descriptor, table_column) for name, descriptor in doc.items()}
