@@ -156,7 +156,6 @@ class StorageMappingResource(object):
         """
         # TODO: Validate doc (Against JSON Schema?)
         name = descriptor['name']
-        driver = descriptor['driver']
         dataset_metadata = descriptor['match']['metadata']
         storage_mappings = descriptor['storage']
         with self._db.begin() as transaction:
