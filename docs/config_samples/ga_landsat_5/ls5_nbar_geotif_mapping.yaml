@@ -4,6 +4,7 @@ name: LS5 NBAR V1
 # Any datasets matching these metadata properties.
 match:
   metadata:
+    dont_match_me: 'bro'
 
 # Store them using storage definitions '30m_bands' and '15m_bands':
 storage:
