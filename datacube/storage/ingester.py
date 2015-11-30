@@ -104,15 +104,15 @@ def crazy_band_tiler(measurement_descriptor, input_filename, storage_spec, time_
     if src_ds.count > 1:
         raise ImportFromNDArraysNotSupported
 
+    tile_crs = str(storage_spec['projection']['spatial_ref']).strip()
     _LOG.debug("Ingesting: %s %s", measurement_descriptor, input_filename)
     for im, transform in create_tiles(src_ds,
                                       storage_spec['tile_size'],
                                       storage_spec['resolution'],
-                                      tile_crs=str(storage_spec['projection']['spatial_ref'])):
+                                      tile_crs=tile_crs):
         nlats, nlons = im.shape
-        proj = str(storage_spec['projection']['spatial_ref'])
 
-        tile_spec = TileSpec(nlats, nlons, proj, transform, data=im)
+        tile_spec = TileSpec(nlats, nlons, tile_crs, transform, data=im)
 
         output_filename = generate_filename(storage_spec['filename_format'], dataset_metadata, tile_spec)
         ensure_path_exists(output_filename)
