@@ -152,18 +152,21 @@ class Dataset(object):
 class Collection(object):
     def __init__(self,
                  name,
+                 description,
                  match=DatasetMatcher({}),
                  dataset_id_offset=('id',),
                  dataset_label_offset=('ga_label',),
                  dataset_creation_time_offset=('creation_dt',),
+                 dataset_measurements_offset={},
                  dataset_search_fields={},
-                 storage_unit_search_fields={},
-                 dataset_measurements_offset={}):
+                 storage_unit_search_fields={}):
         """
         Collection of datasets & storage.
         """
         # Name of collection. Unique.
         self.name = name
+
+        self.description = description
 
         # Match datasets that should belong to this collection.
         self.match = match

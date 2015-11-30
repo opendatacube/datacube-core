@@ -6,10 +6,7 @@ Build and index fields within documents.
 from __future__ import absolute_import
 
 import functools
-from collections import defaultdict
-from pathlib import Path
 
-import yaml
 from psycopg2.extras import NumericRange
 from sqlalchemy import cast, Index, TIMESTAMP
 from sqlalchemy import func
@@ -17,9 +14,6 @@ from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 
 from datacube.index.fields import Expression, Field
-from datacube.index.postgres.tables import DATASET, STORAGE_UNIT
-
-DEFAULT_FIELDS_FILE = Path(__file__).parent.joinpath('document-fields.yaml')
 
 
 class PgField(Field):
@@ -78,7 +72,6 @@ class PgField(Field):
 
 
 class NativeField(PgField):
-
     @property
     def alchemy_expression(self):
         return self.alchemy_column
@@ -235,72 +228,7 @@ class EqualsExpression(PgExpression):
         return self.field.alchemy_expression == self.value
 
 
-class FieldCollection(object):
-    def __init__(self):
-        # Supported document types:
-        self.document_types = {
-            'dataset': (
-                DATASET.c.metadata,
-                # Native search fields.
-                {
-                    'id': NativeField('id', DATASET.c.id),
-                    'metadata_path': NativeField('metadata_path', DATASET.c.metadata_path)
-                }
-            ),
-            'storage_unit': (
-                STORAGE_UNIT.c.descriptor,
-                # Native search fields.
-                {
-                    'id': NativeField('id', STORAGE_UNIT.c.id),
-                    'path': NativeField('path', STORAGE_UNIT.c.path)
-                }
-            ),
-        }
-
-        # Three-level dict: metadata_type, doc_type, field_info
-        # eg. 'eo' -> 'dataset' -> 'lat'
-        #  or 'eo' -> 'storage' -> time
-        self.docs = defaultdict(self._metadata_type_defaults)
-
-    def _metadata_type_defaults(self):
-        return dict([(name, default[1].copy()) for name, default in self.document_types.items()])
-
-    def load_from_file(self, path_):
-        """
-        :type path_: pathlib.Path
-        """
-        self.load_from_doc(yaml.load(path_.open('r')))
-
-    def load_from_doc(self, doc):
-        """
-        :type doc: dict
-        """
-        for metadata_type, doc_types in doc.items():
-            for doc_type, fields in doc_types.items():
-                table_field, defaults = self.document_types.get(doc_type)
-                if table_field is None:
-                    raise RuntimeError('Unknown document type %r. Expected one of %r' %
-                                       (doc_type, self.document_types.keys()))
-
-                self.docs[metadata_type][doc_type].update(_parse_fields(fields, table_field))
-
-    def items(self):
-        for metadata_type, doc_types in self.docs.items():
-            for doc_type, fields in doc_types.items():
-                for name, field in fields.items():
-                    yield (metadata_type, doc_type, field)
-
-    def get(self, metadata_type, document_type, name):
-        """
-        :type metadata_type: str
-        :type document_type: str
-        :type name: str
-        :rtype: datacube.index.fields.Field
-        """
-        return self.docs[metadata_type][document_type].get(name)
-
-
-def _parse_fields(doc, table_column):
+def parse_fields(doc, table_column):
     """
     Parse a field spec document into objects.
 

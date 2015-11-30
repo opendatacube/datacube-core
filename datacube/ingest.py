@@ -55,7 +55,7 @@ def _dataset_from_path(index, path):
     else:
         raise ValueError('Only yaml metadata is supported at the moment (provided {})'.format(metadata_path.suffix))
 
-    collection = index.collections.get_for_dataset(metadata_doc)
+    collection = index.collections.get_for_dataset_doc(metadata_doc)
     return model.Dataset(collection, metadata_doc, metadata_path)
 
 

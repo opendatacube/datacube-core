@@ -16,10 +16,11 @@ from sqlalchemy.engine.url import URL as EngineUrl
 from sqlalchemy.exc import IntegrityError
 
 from datacube.config import LocalConfig
+
 from . import tables
-from ._fields import FieldCollection, DEFAULT_FIELDS_FILE
+from ._fields import parse_fields, NativeField
 from .tables import DATASET, DATASET_SOURCE, STORAGE_TYPE, \
-    STORAGE_MAPPING, STORAGE_UNIT, DATASET_STORAGE
+    STORAGE_MAPPING, STORAGE_UNIT, DATASET_STORAGE, COLLECTION
 
 PGCODE_UNIQUE_CONSTRAINT = '23505'
 
@@ -38,10 +39,6 @@ class PostgresDb(object):
     def __init__(self, engine, connection):
         self._engine = engine
         self._connection = connection
-
-        # These are currently hardcoded and so will not change. We may store them in the DB eventually.
-        self._fields = FieldCollection()
-        self._fields.load_from_file(DEFAULT_FIELDS_FILE)
 
     @classmethod
     def connect(cls, hostname, database, username=None, port=None):
@@ -230,11 +227,31 @@ class PostgresDb(object):
     def get_storage_units(self):
         return self._connection.execute(STORAGE_UNIT.select()).fetchall()
 
-    def get_dataset_field(self, metadata_type, name):
-        return self._fields.get(metadata_type, 'dataset', name)
+    _NATIVE_DATASET_FIELDS = {
+        'id': NativeField('id', DATASET.c.id),
+        'metadata_path': NativeField('metadata_path', DATASET.c.metadata_path)
+    }
 
-    def get_storage_field(self, metadata_type, name):
-        return self._fields.get(metadata_type, 'storage_unit', name)
+    _NATIVE_STORAGE_FIELDS = {
+        'id': NativeField('id', STORAGE_UNIT.c.id),
+        'path': NativeField('path', STORAGE_UNIT.c.path)
+    }
+
+    def get_dataset_fields(self, collection_result):
+        fields = self._NATIVE_DATASET_FIELDS.copy()
+        fields.update(parse_fields(
+            collection_result['dataset_search_fields'],
+            DATASET.c.metadata
+        ))
+        return fields
+
+    def get_storage_unit_fields(self, collection_result):
+        fields = self._NATIVE_STORAGE_FIELDS.copy()
+        fields.update(parse_fields(
+            collection_result['storage_unit_search_fields'],
+            DATASET.c.metadata
+        ))
+        return fields
 
     def search_datasets(self, expressions, select_fields=None):
         """
@@ -282,6 +299,19 @@ class PostgresDb(object):
         )
         for result in results:
             yield result
+
+    def get_collection_for_doc(self, metadata_doc):
+        """
+        :type metadata_doc: dict
+        :rtype: dict
+        """
+        return self._connection.execute(
+            COLLECTION.select().where(
+                COLLECTION.c.dataset_metadata.contained_by(metadata_doc)
+            ).order_by(
+                COLLECTION.c.match_priority.asc()
+            ).limit(1)
+        ).fetchone()
 
 
 def _to_json(o):

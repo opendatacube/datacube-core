@@ -7,7 +7,7 @@ from __future__ import absolute_import
 import copy
 import logging
 
-from datacube.model import Dataset, Collection
+from datacube.model import Dataset, Collection, DatasetMatcher
 from .fields import to_expressions
 
 _LOG = logging.getLogger(__name__)
@@ -66,14 +66,29 @@ class CollectionResource(object):
         self._db = db
 
     def get_for_dataset_doc(self, metadata_doc):
-        return self._db.get_collection_for_doc(metadata_doc)
+        """
+        :type metadata_doc: dict
+        :rtype list[datacube.model.Collection]
+        """
+        return self._make(self._db.get_collection_for_doc(metadata_doc))
 
     def _make(self, query_result):
         """
-        :rtype list[datacube.model.Dataset]
+        :rtype list[datacube.model.Collection]
         """
-        return (Dataset(dataset.metadata_type, dataset.metadata, dataset.metadata_path)
-                for dataset in query_result)
+        return (
+            Collection(
+                collection['name'],
+                collection['description'],
+                DatasetMatcher(collection['dataset_metadata']),
+                dataset_id_offset=collection['dataset_id_offset'],
+                dataset_label_offset=collection['dataset_label_offset'],
+                dataset_creation_time_offset=collection['dataset_creation_dt_offset'],
+                dataset_measurements_offset=collection['dataset_measurements_offset'],
+                dataset_search_fields=self._db.get_dataset_fields(collection),
+                storage_unit_search_fields=self._db.get_storage_unit_fields(collection),
+            ) for collection in query_result
+        )
 
 
 class DatasetResource(object):
