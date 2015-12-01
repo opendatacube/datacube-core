@@ -8,6 +8,8 @@ from __future__ import absolute_import
 
 import datetime
 
+from pathlib import Path
+
 from datacube.index.postgres import PostgresDb
 from datacube.index.postgres.tables import STORAGE_MAPPING, STORAGE_UNIT
 from datacube.index.postgres.tables._storage import DATASET_STORAGE
@@ -47,7 +49,11 @@ _telemetry_dataset = {
 }
 
 
-def test_index_dataset(db, local_config):
+def test_index_dataset(index, db, local_config, default_collection):
+    """
+    :type index: datacube.index._api.Index
+    :type db: datacube.index.postgres._api.PostgresDb
+    """
 
     assert not db.contains_dataset(_telemetry_uuid)
 
@@ -55,8 +61,7 @@ def test_index_dataset(db, local_config):
         was_inserted = db.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,
-            '/tmp/test/' + _telemetry_uuid,
-            'satellite_telemetry_data'
+            Path('/tmp/test/' + _telemetry_uuid)
         )
 
         assert was_inserted
@@ -66,8 +71,7 @@ def test_index_dataset(db, local_config):
         was_inserted = db.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,
-            '/tmp/test/' + _telemetry_uuid,
-            'satellite_telemetry_data'
+            Path('/tmp/test/' + _telemetry_uuid)
         )
         assert not was_inserted
         assert db.contains_dataset(_telemetry_uuid)
@@ -82,14 +86,17 @@ def test_index_dataset(db, local_config):
     assert not db.contains_dataset(_telemetry_uuid)
 
 
-def test_index_storage_unit(index, db):
+def test_index_storage_unit(index, db, default_collection):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    """
 
     # Setup foreign keys for our storage unit.
     was_inserted = db.insert_dataset(
         _telemetry_dataset,
         _telemetry_uuid,
-        '/tmp/test/' + _telemetry_uuid,
-        'satellite_telemetry_data'
+        Path('/tmp/test/' + _telemetry_uuid)
     )
     assert was_inserted
     db.ensure_storage_type(
@@ -100,7 +107,7 @@ def test_index_storage_unit(index, db):
     db.ensure_storage_mapping(
         'test_storage_type',
         'Test storage mapping',
-        'location1', '/tmp/some/loc', {}, [], {}
+        'location1', '/tmp/some/loc', {}, []
     )
     mapping = db._connection.execute(STORAGE_MAPPING.select()).first()
 
@@ -114,7 +121,6 @@ def test_index_storage_unit(index, db):
                 name="test_mapping",
                 match=None,
                 measurements={},
-                dataset_measurements_offset=None,
                 location="file://g/data",
                 filename_pattern="foo.nc",
                 id_=mapping['id']

@@ -56,15 +56,6 @@ STORAGE_MAPPING = Table(
     # See "_EXAMPLE_DATASETS_MATCHING" below
     Column('dataset_metadata', postgres.JSONB, nullable=False),
 
-    # Where in the dataset metadata to find a dictionary of measurements.
-    # For EO datasets this is "bands".
-    # (Non-EO dataset types may have different document structures.)
-    #
-    # It expects to find a dictionary, where:
-    #       - keys are band ids.
-    #       - each value is a dictionary containing measurement information.
-    Column('dataset_measurements_key', postgres.ARRAY(String), nullable=False),
-
     # Storage config for each measurement.
     # The expected values depend on the storage driver (eg. NetCDF).
     #
@@ -91,6 +82,12 @@ STORAGE_UNIT = Table(
     'storage_unit', _core.METADATA,
     Column('id', BigInteger, primary_key=True, autoincrement=True),
     Column('storage_mapping_ref', None, ForeignKey(STORAGE_MAPPING.c.id), nullable=False),
+
+    # The collection it belongs to.
+    # This isn't normalised: it could be read from the linked datasets.
+    #
+    # It's a performance optimisation: we can create per-collection indexes.
+    Column('collection_ref', None, ForeignKey(_dataset.COLLECTION.c.id), nullable=False),
 
     # See "_EXAMPLE_STORAGE_DESCRIPTOR" below.
     Column('descriptor', postgres.JSONB, nullable=False),

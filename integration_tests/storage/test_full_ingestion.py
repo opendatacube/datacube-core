@@ -60,7 +60,7 @@ sample_storage_type = {
     'tile_size': {'x': 1.0, 'y': -1.0}}
 
 
-def test_full_ingestion(index, example_ls5_dataset):
+def test_full_ingestion(index, default_collection, example_ls5_dataset):
     """
 
     :param db:

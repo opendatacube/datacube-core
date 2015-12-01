@@ -6,20 +6,14 @@ Build and index fields within documents.
 from __future__ import absolute_import
 
 import functools
-from collections import defaultdict
-from pathlib import Path
 
-import yaml
 from psycopg2.extras import NumericRange
-from sqlalchemy import cast, Index, TIMESTAMP
+from sqlalchemy import cast, TIMESTAMP
 from sqlalchemy import func
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 
 from datacube.index.fields import Expression, Field
-from datacube.index.postgres.tables import DATASET, STORAGE_UNIT
-
-DEFAULT_FIELDS_FILE = Path(__file__).parent.joinpath('document-fields.yaml')
 
 
 class PgField(Field):
@@ -28,8 +22,10 @@ class PgField(Field):
     a JSONB column.
     """
 
-    def __init__(self, name, alchemy_column):
+    def __init__(self, name, collection_id, alchemy_column):
         super(PgField, self).__init__(name)
+        self.collection_id = collection_id
+
         # The underlying SQLAlchemy column. (eg. DATASET.c.metadata)
         self.alchemy_column = alchemy_column
 
@@ -49,21 +45,6 @@ class PgField(Field):
     def postgres_index_type(self):
         return 'btree'
 
-    def as_alchemy_index(self, prefix):
-        """
-        Build an SQLAlchemy index for this field.
-
-        :type prefix: str
-        """
-        return Index(
-            'ix_field_{prefix}_{name}'.format(
-                prefix=prefix.lower(),
-                name=self.name.lower(),
-            ),
-            self.alchemy_expression,
-            postgresql_using=self.postgres_index_type
-        )
-
     def __eq__(self, value):
         """
         :rtype: Expression
@@ -78,12 +59,20 @@ class PgField(Field):
 
 
 class NativeField(PgField):
+    """
+    Fields hard-coded into the schema. (not user configurable)
+    """
+
+    def __init__(self, name, collection_id, alchemy_column, alchemy_expression=None):
+        super(NativeField, self).__init__(name, collection_id, alchemy_column)
+        self._expression = alchemy_expression
 
     @property
     def alchemy_expression(self):
-        return self.alchemy_column
+        return self._expression or self.alchemy_column
 
-    def as_alchemy_index(self, prefix):
+    @property
+    def postgres_index_type(self):
         # Don't add extra indexes for native fields.
         return None
 
@@ -93,8 +82,8 @@ class SimpleDocField(PgField):
     A field with a single value (eg. String, int)
     """
 
-    def __init__(self, name, alchemy_column, offset=None):
-        super(SimpleDocField, self).__init__(name, alchemy_column)
+    def __init__(self, name, collection_id, alchemy_column, offset=None):
+        super(SimpleDocField, self).__init__(name, collection_id, alchemy_column)
         self.offset = offset
 
     @property
@@ -126,8 +115,8 @@ class RangeDocField(PgField):
     values in the document.
     """
 
-    def __init__(self, name, alchemy_column, min_offset=None, max_offset=None):
-        super(RangeDocField, self).__init__(name, alchemy_column)
+    def __init__(self, name, collection_id, alchemy_column, min_offset=None, max_offset=None):
+        super(RangeDocField, self).__init__(name, collection_id, alchemy_column)
         self.min_offset = min_offset
         self.max_offset = max_offset
 
@@ -235,76 +224,12 @@ class EqualsExpression(PgExpression):
         return self.field.alchemy_expression == self.value
 
 
-class FieldCollection(object):
-    def __init__(self):
-        # Supported document types:
-        self.document_types = {
-            'dataset': (
-                DATASET.c.metadata,
-                # Native search fields.
-                {
-                    'id': NativeField('id', DATASET.c.id),
-                    'metadata_path': NativeField('metadata_path', DATASET.c.metadata_path)
-                }
-            ),
-            'storage_unit': (
-                STORAGE_UNIT.c.descriptor,
-                # Native search fields.
-                {
-                    'id': NativeField('id', STORAGE_UNIT.c.id),
-                    'path': NativeField('path', STORAGE_UNIT.c.path)
-                }
-            ),
-        }
-
-        # Three-level dict: metadata_type, doc_type, field_info
-        # eg. 'eo' -> 'dataset' -> 'lat'
-        #  or 'eo' -> 'storage' -> time
-        self.docs = defaultdict(self._metadata_type_defaults)
-
-    def _metadata_type_defaults(self):
-        return dict([(name, default[1].copy()) for name, default in self.document_types.items()])
-
-    def load_from_file(self, path_):
-        """
-        :type path_: pathlib.Path
-        """
-        self.load_from_doc(yaml.load(path_.open('r')))
-
-    def load_from_doc(self, doc):
-        """
-        :type doc: dict
-        """
-        for metadata_type, doc_types in doc.items():
-            for doc_type, fields in doc_types.items():
-                table_field, defaults = self.document_types.get(doc_type)
-                if table_field is None:
-                    raise RuntimeError('Unknown document type %r. Expected one of %r' %
-                                       (doc_type, self.document_types.keys()))
-
-                self.docs[metadata_type][doc_type].update(_parse_fields(fields, table_field))
-
-    def items(self):
-        for metadata_type, doc_types in self.docs.items():
-            for doc_type, fields in doc_types.items():
-                for name, field in fields.items():
-                    yield (metadata_type, doc_type, field)
-
-    def get(self, metadata_type, document_type, name):
-        """
-        :type metadata_type: str
-        :type document_type: str
-        :type name: str
-        :rtype: datacube.index.fields.Field
-        """
-        return self.docs[metadata_type][document_type].get(name)
-
-
-def _parse_fields(doc, table_column):
+def parse_fields(doc, collection_id, table_column):
     """
     Parse a field spec document into objects.
 
     Example document:
+    :param collection_id:
     ::
 
         {
@@ -324,11 +249,12 @@ def _parse_fields(doc, table_column):
             }
         }
 
+    :param table_column: SQLAlchemy jsonb column for the document we're reading fields from.
     :type doc: dict
-    :rtype: dict[str, Field]
+    :rtype: dict[str, PgField]
     """
 
-    def _get_field(name, descriptor, column):
+    def _get_field(name, collection_id, descriptor, column):
         """
 
         :type name: str
@@ -345,7 +271,7 @@ def _parse_fields(doc, table_column):
 
         field_class = type_map.get(type_name)
         try:
-            return field_class(name, column, **descriptor)
+            return field_class(name, collection_id, column, **descriptor)
         except TypeError as e:
             raise RuntimeError(
                 'Field {name} has unexpected argument for a {type}'.format(
@@ -353,4 +279,4 @@ def _parse_fields(doc, table_column):
                 ), e
             )
 
-    return {name: _get_field(name, descriptor, table_column) for name, descriptor in doc.items()}
+    return {name: _get_field(name, collection_id, descriptor, table_column) for name, descriptor in doc.items()}

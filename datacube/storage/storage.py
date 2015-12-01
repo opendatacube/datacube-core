@@ -5,6 +5,10 @@ Create/store dataset data into storage units based on the provided storage mappi
 from __future__ import absolute_import
 
 import logging
+
+import dateutil.parser
+
+from datacube import compat
 from datacube.model import StorageUnit
 from datacube.storage.ingester import crazy_band_tiler, SimpleObject
 from datacube.storage.netcdf_indexer import index_netcdfs
@@ -20,6 +24,7 @@ def store(storage_mappings, dataset):
     :return:
     """
     _LOG.info('%s mappings for dataset %s', len(storage_mappings), dataset.id)
+    collection = dataset.collection
 
     result = []
     for mapping in storage_mappings:
@@ -33,14 +38,13 @@ def store(storage_mappings, dataset):
             raise RuntimeError('URI protocol is not supported (yet): %s' % mapping.storage_pattern)
         storage_type.descriptor["filename_format"] = mapping.storage_pattern[7:]
 
-        dataset_measurements = _get_doc_offset(mapping.dataset_measurements_offset, dataset.metadata_doc)
+        dataset_measurements = collection.dataset_reader(dataset.metadata_doc).measurements_dict
         for measurement_id, measurement_descriptor in mapping.measurements.items():
             # Get the corresponding measurement/band from the dataset.
             band_descriptor = dataset_measurements[measurement_id]
 
             # The path of a band is relative to the dataset path.
-            dataset_path = dataset.metadata_path.parent
-            band_path = dataset_path.joinpath(band_descriptor['path'])
+            band_path = dataset.metadata_path.parent.joinpath(band_descriptor['path'])
 
             _LOG.debug('Band path: %s', band_path)
             assert band_path.exists()
@@ -50,7 +54,10 @@ def store(storage_mappings, dataset):
             for filename in crazy_band_tiler(SimpleObject(**measurement_descriptor),  # TODO: Use actual classes
                                              input_filename=str(band_path),
                                              storage_spec=storage_type.descriptor,
-                                             time_value=dataset.metadata_doc['extent']['center_dt'],
+                                             # TODO: Use doc fields, rather than parsing manually.
+                                             time_value=_as_datetime(
+                                                 dataset.metadata_doc['extent']['center_dt']
+                                             ),
                                              dataset_metadata=dataset.metadata_doc):
                 storage_unit_filenames.add(filename)
 
@@ -71,21 +78,7 @@ def store(storage_mappings, dataset):
     return result
 
 
-def _get_doc_offset(offset, document):
-    """
-    :type offset: list[str]
-    :type document: dict
-
-    >>> _get_doc_offset(['a'], {'a': 4})
-    4
-    >>> _get_doc_offset(['a', 'b'], {'a': {'b': 4}})
-    4
-    >>> _get_doc_offset(['a'], {})
-    Traceback (most recent call last):
-    ...
-    KeyError: 'a'
-    """
-    value = document
-    for key in offset:
-        value = value[key]
-    return value
+def _as_datetime(field):
+    if isinstance(field, compat.string_types):
+        return dateutil.parser.parse(field)
+    return field

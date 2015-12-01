@@ -5,11 +5,11 @@ SQL Alchemy table definitions.
 from __future__ import absolute_import
 
 from ._core import ensure_db, View
-from ._dataset import DATASET, DATASET_SOURCE
+from ._dataset import DATASET, DATASET_SOURCE, COLLECTION
 from ._storage import STORAGE_UNIT, STORAGE_MAPPING, STORAGE_TYPE, DATASET_STORAGE
 
 __all__ = [
     'ensure_db', 'View',
-    'DATASET', 'DATASET_SOURCE',
+    'DATASET', 'DATASET_SOURCE', 'COLLECTION',
     'STORAGE_UNIT', 'STORAGE_MAPPING', 'STORAGE_TYPE', 'DATASET_STORAGE'
 ]

@@ -8,7 +8,6 @@ import logging
 from collections import namedtuple
 
 import numpy as np
-import yaml
 
 _LOG = logging.getLogger(__name__)
 
@@ -43,8 +42,7 @@ class StorageType(object):
 
 
 class StorageMapping(object):
-    def __init__(self, storage_type, name, match,
-                 measurements, dataset_measurements_offset,
+    def __init__(self, storage_type, name, match, measurements,
                  location, filename_pattern, id_=None):
         # Which datasets to match.
         #: :type: DatasetMatcher
@@ -61,11 +59,6 @@ class StorageMapping(object):
         # (key is measurement id, value is a doc understood by the storage driver)
         #: :type: dict
         self.measurements = measurements
-
-        # The offset within a dataset document to find a matching set of measuremnts.
-        # (they should have at least a path field in the dataset)
-        #: :type: str
-        self.dataset_measurements_offset = dataset_measurements_offset
 
         # The location where the storage units should be stored.
         #: :type: str
@@ -126,45 +119,20 @@ class StorageUnit(object):
         return filepath[7:]
 
 
-# TODO: move this and from_path() to a separate dataset-loader module ...?
-def _expected_metadata_path(dataset_path):
-    """
-    Get the path where we expect a metadata file for this dataset.
-
-    (only supports eo metadata docs at the moment)
-
-    :type dataset_path: Path
-    :returns doc_type and path to file.
-    :rtype: str, Path
-    """
-
-    # - A dataset directory expects file 'ga-metadata.yaml'.
-    # - A dataset file expects a sibling file with suffix '.ga-md.yaml'.
-
-    if dataset_path.is_dir():
-        return 'eo', dataset_path.joinpath('ga-metadata.yaml')
-
-    if dataset_path.is_file():
-        return 'eo', dataset_path
-
-    raise ValueError('Unhandled path type for %r' % dataset_path)
-
-
 class Dataset(object):
-    def __init__(self, metadata_type, metadata_doc, metadata_path):
+    def __init__(self, collection, metadata_doc, metadata_path):
         """
         A dataset on disk.
 
-        :param metadata_type: Type of metadata doc (only 'eo' currently supported, format as produced by eodatasets)
-        :type metadata_type: str
+        :type collection: Collection
         :param metadata_doc: the document (typically a parsed json/yaml)
         :type metadata_doc: dict
         :param metadata_path:
         :type metadata_path: Path
         """
         super(Dataset, self).__init__()
-        #: :type: str
-        self.metadata_type = metadata_type
+        #: :type: Collection
+        self.collection = collection
         #: :type: dict
         self.metadata_doc = metadata_doc
         #: :type: pathlib.Path
@@ -174,19 +142,93 @@ class Dataset(object):
     def id(self):
         return self.metadata_doc['id']
 
-    @classmethod
-    def from_path(cls, path):
-        metadata_type, metadata_path = _expected_metadata_path(path)
-        if not metadata_path:
-            raise ValueError('No supported metadata docs found for dataset {}'.format(path))
 
-        # We only support eo datasets docs at the moment (yaml)
-        if metadata_type == 'eo':
-            metadata_doc = yaml.load(open(str(metadata_path), 'r'))
-        else:
-            raise ValueError('Only eo docs are supported at the moment (provided {})'.format(metadata_type))
+class Collection(object):
+    def __init__(self,
+                 name,
+                 description,
+                 match,
+                 dataset_offsets,
+                 dataset_search_fields,
+                 storage_unit_search_fields,
+                 id_=None):
+        """
+        Collection of datasets & storage.
+        """
+        self.id_ = id_
 
-        return Dataset(metadata_type, metadata_doc, metadata_path)
+        # Name of collection. Unique.
+        self.name = name
+
+        self.description = description
+
+        # Match datasets that should belong to this collection.
+        self.match = match
+
+        #: :type: DatasetOffsets
+        self.dataset_offsets = dataset_offsets
+
+        #: :type: dict[str, Field]
+        self.dataset_fields = dataset_search_fields
+        #: :type: dict[str, Field]
+        self.storage_fields = storage_unit_search_fields
+
+    def dataset_reader(self, dataset_doc):
+        return _DocReader(self.dataset_offsets.__dict__, dataset_doc)
+
+
+class DatasetOffsets(object):
+    """
+    Where to find certain fields in dataset metadata.
+    """
+
+    def __init__(self,
+                 uuid_field,
+                 label_field,
+                 creation_time_field,
+                 measurements_dict,
+                 sources):
+        # UUID for a dataset. Always unique.
+        #: :type: tuple[string]
+        self.uuid_field = uuid_field
+
+        # The dataset "label" is the logical identifier for a dataset.
+        #
+        # -> Multiple datasets may arrive with the same label, but only the 'latest' will be returned by default
+        #    in searches.
+        #
+        # Use case: reprocessing a dataset.
+        # -> When reprocessing a dataset, the new dataset should be produced with the same label as the old one.
+        # -> Because you probably don't want both datasets returned from typical searches. (they are the same data)
+        # -> When ingested, this reprocessed dataset will be the only one visible to typical searchers.
+        # -> But the old dataset will still exist in the database for provenance & historical record.
+        #       -> Existing higher-level/derived datasets will still link to the old dataset they were processed
+        #          from, even if it's not the latest.
+        #
+        # An example label used by GA (called "dataset_ids" on historical systems):
+        #      -> Eg. "LS7_ETM_SYS_P31_GALPGS01-002_114_73_20050107"
+        #
+        # But the collection owner can use any string to label their datasets.
+        #: :type: tuple[string]
+        self.label_field = label_field
+
+        # datetime the dataset was processed/created.
+        #: :type: tuple[string]
+        self.creation_time_field = creation_time_field
+
+        # Where to find a dict of measurements/bands in the dataset.
+        #  -> Dict key is measurement/band id,
+        #  -> Dict value is object with fields depending on the storage driver.
+        #     (such as path to band file, offset within file etc.)
+        #: :type: tuple[string]
+        self.measurements_dict = measurements_dict
+
+        # Where to find a dict of embedded source datasets
+        #  -> The dict is of form: classifier->source_dataset_doc
+        #  -> 'classifier' is how to classify/identify the relationship (usually the type of source it was eg. 'nbar').
+        #      An arbitrary string, but you should be consistent between datasets (to query relationships).
+        #: :type: tuple[string]
+        self.sources = sources
 
 
 class VariableAlreadyExists(Exception):
@@ -236,3 +278,82 @@ class TileSpec(object):
 
     def __repr__(self):
         return repr(self.__dict__)
+
+
+def _get_doc_offset(offset, document):
+    """
+    :type offset: list[str]
+    :type document: dict
+
+    >>> _get_doc_offset(['a'], {'a': 4})
+    4
+    >>> _get_doc_offset(['a', 'b'], {'a': {'b': 4}})
+    4
+    >>> _get_doc_offset(['a'], {})
+    Traceback (most recent call last):
+    ...
+    KeyError: 'a'
+    """
+    value = document
+    for key in offset:
+        value = value[key]
+    return value
+
+
+def _set_doc_offset(offset, document, value):
+    """
+    :type offset: list[str]
+    :type document: dict
+
+    >>> doc = {'a': 4}
+    >>> _set_doc_offset(['a'], doc, 5)
+    >>> doc
+    {'a': 5}
+    >>> doc = {'a': {'b': 4}}
+    >>> _set_doc_offset(['a', 'b'], doc, 'c')
+    >>> doc
+    {'a': {'b': 'c'}}
+    """
+    read_offset = offset[:-1]
+    sub_doc = _get_doc_offset(read_offset, document)
+    sub_doc[offset[-1]] = value
+
+
+class _DocReader(object):
+    def __init__(self, field_offsets, doc):
+        """
+        :type field_offsets: dict[str,list[str]]
+        :type doc: dict
+        >>> d = _DocReader({'lat': ['extent', 'lat']}, doc={'extent': {'lat': 4}})
+        >>> d.lat
+        4
+        >>> d.lat = 5
+        >>> d._doc
+        {'extent': {'lat': 5}}
+        >>> d.lon
+        Traceback (most recent call last):
+        ...
+        ValueError: Unknown field 'lon'. Expected one of ['lat']
+        """
+        self.__dict__['_field_offsets'] = field_offsets
+        self.__dict__['_doc'] = doc
+
+    def __getattr__(self, name):
+        offset = self._field_offsets.get(name)
+        if offset is None:
+            raise ValueError(
+                'Unknown field %r. Expected one of %r' % (
+                    name, list(self._field_offsets.keys())
+                )
+            )
+        return _get_doc_offset(offset, self._doc)
+
+    def __setattr__(self, name, val):
+        offset = self._field_offsets.get(name)
+        if offset is None:
+            raise ValueError(
+                'Unknown field %r. Expected one of %r' % (
+                    name, list(self._field_offsets.keys())
+                )
+            )
+        return _set_doc_offset(offset, self._doc, val)

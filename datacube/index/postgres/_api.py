@@ -1,4 +1,6 @@
 # coding=utf-8
+# We often have one-arg-per column, so these checks aren't so useful.
+# pylint: disable=too-many-arguments,too-many-public-methods
 """
 Lower-level database access.
 """
@@ -7,19 +9,19 @@ from __future__ import absolute_import
 import datetime
 import json
 import logging
-from collections import defaultdict
 
 import numpy
-from sqlalchemy import create_engine, select, text, bindparam, exists, and_
+from sqlalchemy import create_engine, select, text, bindparam, exists, and_, Index
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.url import URL as EngineUrl
 from sqlalchemy.exc import IntegrityError
 
 from datacube.config import LocalConfig
+from datacube.index.postgres.tables._core import SCHEMA_NAME
 from . import tables
-from ._fields import FieldCollection, DEFAULT_FIELDS_FILE
+from ._fields import parse_fields, NativeField
 from .tables import DATASET, DATASET_SOURCE, STORAGE_TYPE, \
-    STORAGE_MAPPING, STORAGE_UNIT, DATASET_STORAGE
+    STORAGE_MAPPING, STORAGE_UNIT, DATASET_STORAGE, COLLECTION
 
 PGCODE_UNIQUE_CONSTRAINT = '23505'
 
@@ -38,10 +40,6 @@ class PostgresDb(object):
     def __init__(self, engine, connection):
         self._engine = engine
         self._connection = connection
-
-        # These are currently hardcoded and so will not change. We may store them in the DB eventually.
-        self._fields = FieldCollection()
-        self._fields.load_from_file(DEFAULT_FIELDS_FILE)
 
     @classmethod
     def connect(cls, hostname, database, username=None, port=None):
@@ -73,32 +71,7 @@ class PostgresDb(object):
 
         :return: If it was newly created.
         """
-        is_new = tables.ensure_db(self._connection, self._engine)
-
-        # Index fields within documents.
-        # TODO: Support rerunning this on existing databases (ie. check if each index exists first).
-        if is_new:
-
-            views = defaultdict(list)
-            for metadata_type, doc_type, field in self._fields.items():
-                _LOG.debug('Creating index: %s', field.name)
-                index = field.as_alchemy_index(prefix=metadata_type + '_' + doc_type)
-                if index is not None:
-                    index.create(self._engine)
-
-                views['{}_{}'.format(metadata_type, doc_type)].append(field)
-
-            # Create a view of all our search fields (for debugging convenience).
-            for view_name, fields in views.items():
-                self._engine.execute(
-                    tables.View(
-                        view_name,
-                        select(
-                            [field.alchemy_expression.label(field.name) for field in fields]
-                        )
-                    )
-                )
-        return is_new
+        return tables.ensure_db(self._connection, self._engine)
 
     def begin(self):
         """
@@ -114,16 +87,25 @@ class PostgresDb(object):
         """
         return _BegunTransaction(self._connection)
 
-    def insert_dataset(self, metadata_doc, dataset_id, path, metadata_type):
+    def insert_dataset(self, metadata_doc, dataset_id, path=None, collection_id=None):
         """
         Insert dataset if not already indexed.
         :type metadata_doc: dict
         :type dataset_id: str or uuid.UUID
         :type path: pathlib.Path
-        :type metadata_type: str
         :return: whether it was inserted
         :rtype: bool
         """
+        if collection_id is None:
+            collection_result = self.get_collection_for_doc(metadata_doc)
+            if not collection_result:
+                _LOG.debug('Attempted failed match on doc %r', metadata_doc)
+                raise RuntimeError('No collection matches dataset')
+            collection_id = collection_result['id']
+            _LOG.debug('Matched collection %r', collection_id)
+        else:
+            _LOG.debug('Using provided collection %r', collection_id)
+
         try:
             ret = self._connection.execute(
                 # Insert if not exists.
@@ -131,14 +113,14 @@ class PostgresDb(object):
                 #      connection inserts the same dataset in the time between the subquery and the main query.
                 #      This is ok for our purposes.)
                 DATASET.insert().from_select(
-                    ['id', 'metadata_type', 'metadata_path', 'metadata'],
+                    ['id', 'collection_ref', 'metadata_path', 'metadata'],
                     select([
-                        bindparam('id'), bindparam('metadata_type'), bindparam('metadata_path'),
+                        bindparam('id'), bindparam('collection_ref'), bindparam('metadata_path'),
                         bindparam('metadata', type_=JSONB)
                     ]).where(~exists(select([DATASET.c.id]).where(DATASET.c.id == bindparam('id'))))
                 ),
                 id=dataset_id,
-                metadata_type=metadata_type,
+                collection_ref=collection_id,
                 # TODO: Does a single path make sense? Or a separate 'locations' table?
                 metadata_path=str(path) if path else None,
                 metadata=metadata_doc
@@ -173,12 +155,17 @@ class PostgresDb(object):
     def get_storage_type(self, storage_type_id):
         return self._connection.execute(
             STORAGE_TYPE.select().where(STORAGE_TYPE.c.id == storage_type_id)
-        ).fetchone()
+        ).first()
 
     def get_storage_mapping(self, storage_mapping_id):
         return self._connection.execute(
             STORAGE_MAPPING.select().where(STORAGE_MAPPING.c.id == storage_mapping_id)
-        ).fetchone()
+        ).first()
+
+    def get_dataset(self, dataset_id):
+        return self._connection.execute(
+            DATASET.select().where(DATASET.c.id == dataset_id)
+        ).first()
 
     def get_storage_mappings(self, dataset_metadata):
         """
@@ -195,7 +182,7 @@ class PostgresDb(object):
         ).fetchall()
 
     def ensure_storage_mapping(self, storage_type_name, name, location_name, file_path_template,
-                               dataset_metadata, data_measurements_key, measurements):
+                               dataset_metadata, measurements):
         self._connection.execute(
             STORAGE_MAPPING.insert().values(
                 storage_type_ref=select([STORAGE_TYPE.c.id]).where(
@@ -203,7 +190,6 @@ class PostgresDb(object):
                 ),
                 name=name,
                 dataset_metadata=dataset_metadata,
-                dataset_measurements_key=data_measurements_key,
                 measurements=measurements,
                 location_name=location_name,
                 file_path_template=file_path_template,
@@ -211,11 +197,16 @@ class PostgresDb(object):
         )
 
     def add_storage_unit(self, path, dataset_ids, descriptor, storage_mapping_id):
+        if not dataset_ids:
+            raise ValueError('Storage unit must be linked to at least one dataset.')
+
         unit_id = self._connection.execute(
-            STORAGE_UNIT.insert().returning(STORAGE_UNIT.c.id),
-            storage_mapping_ref=storage_mapping_id,
-            descriptor=descriptor,
-            path=path
+            STORAGE_UNIT.insert().values(
+                collection_ref=select([DATASET.c.collection_ref]).where(DATASET.c.id == dataset_ids[0]),
+                storage_mapping_ref=storage_mapping_id,
+                descriptor=descriptor,
+                path=path
+            ).returning(STORAGE_UNIT.c.id),
         ).scalar()
 
         self._connection.execute(
@@ -230,11 +221,41 @@ class PostgresDb(object):
     def get_storage_units(self):
         return self._connection.execute(STORAGE_UNIT.select()).fetchall()
 
-    def get_dataset_field(self, metadata_type, name):
-        return self._fields.get(metadata_type, 'dataset', name)
+    def get_dataset_fields(self, collection_result):
+        # Native fields (hard-coded into the schema)
+        fields = {
+            'id': NativeField('id', None, DATASET.c.id),
+            'metadata_path': NativeField('metadata_path', None, DATASET.c.metadata_path),
+            'collection': NativeField(
+                'collection',
+                None, COLLECTION.c.name
+            )
+        }
+        # noinspection PyTypeChecker
+        fields.update(
+            parse_fields(
+                collection_result['dataset_search_fields'],
+                collection_result['id'],
+                DATASET.c.metadata
+            )
+        )
+        return fields
 
-    def get_storage_field(self, metadata_type, name):
-        return self._fields.get(metadata_type, 'storage_unit', name)
+    def get_storage_unit_fields(self, collection_result):
+        # Native fields (hard-coded into the schema)
+        fields = {
+            'id': NativeField('id', collection_result['id'], STORAGE_UNIT.c.id),
+            'path': NativeField('path', collection_result['id'], STORAGE_UNIT.c.path)
+        }
+        # noinspection PyTypeChecker
+        fields.update(
+            parse_fields(
+                collection_result['storage_unit_search_fields'],
+                collection_result['id'],
+                DATASET.c.metadata
+            )
+        )
+        return fields
 
     def search_datasets(self, expressions, select_fields=None):
         """
@@ -244,8 +265,8 @@ class PostgresDb(object):
         """
         return self._search_docs(
             expressions,
+            primary_table=DATASET,
             select_fields=select_fields,
-            select_table=DATASET
         )
 
     def search_storage_units(self, expressions, select_fields=None):
@@ -254,34 +275,178 @@ class PostgresDb(object):
         :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
         :rtype: dict
         """
-        from_expression = STORAGE_UNIT
-
-        # Join to datasets if we're querying by a dataset field.
-        referenced_tables = set([expression.field.alchemy_column.table for expression in expressions])
-        _LOG.debug('Searching fields from tables: %s', ', '.join([t.name for t in referenced_tables]))
-        if DATASET in referenced_tables:
-            from_expression = from_expression.join(DATASET_STORAGE).join(DATASET)
-
         return self._search_docs(
             expressions,
-            select_fields=select_fields,
-            select_table=STORAGE_UNIT,
-            from_expression=from_expression
+            primary_table=STORAGE_UNIT,
+            select_fields=select_fields
         )
 
-    def _search_docs(self, expressions, select_fields=None, select_table=None, from_expression=None):
-        select_fields = [f.alchemy_expression for f in select_fields] if select_fields else [select_table]
+    def _search_docs(self, expressions, primary_table, select_fields=None):
+        """
 
-        if from_expression is None:
-            from_expression = select_table
+        :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
+        :type select_fields: tuple[datacube.index.postgres._fields.PgField]
+        :param primary_table: SQLAlchemy table
+        :return:
+        """
+        select_fields = [f.alchemy_expression for f in select_fields] if select_fields else [primary_table]
+
+        join_tables, raw_expressions = _prepare_expressions(expressions, primary_table)
+
+        from_expression = primary_table
+        for table in join_tables:
+            from_expression = from_expression.join(table)
+
+        if __debug__:
+            _LOG.debug('Using joined tables: %s', ', '.join([t.name for t in join_tables]))
 
         results = self._connection.execute(
             select(select_fields).select_from(from_expression).where(
-                and_(*[expression.alchemy_expression for expression in expressions])
+                and_(*raw_expressions)
             )
         )
         for result in results:
             yield result
+
+    def get_collection_for_doc(self, metadata_doc):
+        """
+        :type metadata_doc: dict
+        :rtype: dict or None
+        """
+        return self._connection.execute(
+            COLLECTION.select().where(
+                COLLECTION.c.dataset_metadata.contained_by(metadata_doc)
+            ).order_by(
+                COLLECTION.c.match_priority.asc()
+            ).limit(1)
+        ).first()
+
+    def get_collection(self, id_):
+        return self._connection.execute(
+            COLLECTION.select().where(COLLECTION.c.id == id_)
+        ).first()
+
+    def get_collection_by_name(self, name):
+        return self._connection.execute(
+            COLLECTION.select().where(COLLECTION.c.name == name)
+        ).first()
+
+    def add_collection(self, name, description,
+                       dataset_metadata, match_priority,
+                       dataset_id_offset, dataset_label_offset,
+                       dataset_creation_dt_offset, dataset_measurements_offset,
+                       dataset_sources_offset,
+                       dataset_search_fields,
+                       storage_unit_search_fields):
+        res = self._connection.execute(
+            COLLECTION.insert().values(
+                name=name,
+                description=description,
+                dataset_metadata=dataset_metadata,
+                match_priority=match_priority,
+                dataset_id_offset=dataset_id_offset,
+                dataset_label_offset=dataset_label_offset,
+                dataset_creation_dt_offset=dataset_creation_dt_offset,
+                dataset_measurements_offset=dataset_measurements_offset,
+                dataset_sources_offset=dataset_sources_offset,
+                dataset_search_fields=dataset_search_fields,
+                storage_unit_search_fields=storage_unit_search_fields
+            )
+        )
+
+        collection_id = res.inserted_primary_key[0]
+        collection_result = self.get_collection(collection_id)
+
+        # Initialise search fields.
+        _setup_collection_fields(
+            self._connection, name, 'dataset', self.get_dataset_fields(collection_result),
+            DATASET.c.collection_ref == collection_id
+        )
+        _setup_collection_fields(
+            self._connection, name, 'storage_unit', self.get_storage_unit_fields(collection_result),
+            STORAGE_UNIT.c.collection_ref == collection_id
+        )
+
+    def get_all_collections(self):
+        return self._connection.execute(COLLECTION.select()).fetchall()
+
+
+def _pg_exists(conn, name):
+    """
+    Does a postgres object exist?
+    """
+    return bool(conn.execute("SELECT to_regclass(%s)", name))
+
+
+def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_expression):
+    name = '{}_{}'.format(collection_prefix.lower(), doc_prefix.lower())
+
+    # Create indexes for the search fields.
+    for field in fields.values():
+        index_type = field.postgres_index_type
+        if index_type:
+            _LOG.debug('Creating index: %s', field.name)
+            index_name = 'ix_field_{prefix}_{field_name}'.format(
+                prefix=name.lower(),
+                field_name=field.name.lower()
+            )
+
+            if not _pg_exists(conn, index_name):
+                Index(
+                    index_name,
+                    field.alchemy_expression,
+                    postgres_where=where_expression,
+                    postgresql_using=index_type,
+                    # Don't lock the table (in the future we'll allow indexing new fields...)
+                    postgresql_concurrently=True
+                ).create(conn)
+
+    # Create a view of search fields (for debugging convenience).
+    view_name = '{}.{}'.format(SCHEMA_NAME, name)
+    if not _pg_exists(conn, view_name):
+        conn.execute(
+            tables.View(
+                name,
+                select(
+                    [field.alchemy_expression.label(field.name) for field in fields.values()]
+                ).where(where_expression)
+            )
+        )
+
+
+def _prepare_expressions(expressions, primary_table):
+    """
+    :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
+    :param primary_table: SQLAlchemy table
+    """
+    # We currently only allow one collection to be queried (our indexes are per-collection)
+    collection_references = set()
+    join_tables = set()
+    for expression in expressions:
+        field = expression.field
+
+        table = field.alchemy_column.table
+        if table != primary_table:
+            join_tables.add(table)
+
+        collection_id = field.collection_id
+        if collection_id:
+            collection_references.add((table, collection_id))
+
+    unique_collections = set([c[1] for c in collection_references])
+    if len(unique_collections) > 1:
+        raise ValueError(
+            'Currently only one collection can be queried at a time. (Tried %r)' % collection_references
+        )
+
+    raw_expressions = [expression.alchemy_expression for expression in expressions]
+
+    # We may have multiple references: storage.collection_ref and dataset.collection_ref.
+    # We want to include all, to ensure the indexes are used.
+    for from_table, queried_collection in collection_references:
+        raw_expressions.insert(0, from_table.c.collection_ref == queried_collection)
+
+    return join_tables, raw_expressions
 
 
 def _to_json(o):

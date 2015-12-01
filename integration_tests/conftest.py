@@ -5,16 +5,18 @@ Common methods for index integration tests.
 from __future__ import absolute_import
 
 import os
+import shutil
+from pathlib import Path
 
 import pytest
-from pathlib import Path
 import rasterio
+import yaml
 
 from datacube.config import LocalConfig
 from datacube.index._api import Index
 from datacube.index.postgres import PostgresDb
-from datacube.index.postgres.tables._core import METADATA, ensure_db
-import shutil
+from datacube.index.postgres.tables._core import ensure_db, SCHEMA_NAME
+
 
 @pytest.fixture
 def local_config(tmpdir):
@@ -29,14 +31,26 @@ def local_config(tmpdir):
 def db(local_config):
     db = PostgresDb.from_config(local_config)
     # Drop and recreate tables so our tests have a clean db.
-    METADATA.drop_all(db._engine)
+    db._connection.execute('drop schema if exists %s cascade;' % SCHEMA_NAME)
     ensure_db(db._connection, db._engine)
     return db
 
 
 @pytest.fixture
 def index(db, local_config):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    """
     return Index(db, local_config)
+
+
+@pytest.fixture
+def default_collection(index):
+    """
+    :type index: datacube.index._api.Index
+    """
+    collections = index._add_default_collection()
+    return collections[0]
 
 
 def create_empty_geotiff(path):
@@ -67,6 +81,15 @@ def example_ls5_dataset(tmpdir):
         create_empty_geotiff(str(path))
 
     return Path(str(dataset_dir))
+
+
+@pytest.fixture
+def telemetry_collection(index):
+    """
+    :type index: datacube.index._api.Index
+    """
+    parsed = yaml.load(Path(__file__).parent.joinpath('telemetry-collection.yaml').open('r'))
+    return index.collections.add(parsed)[0]
 
 
 def test_ls5_dataset(example_ls5_dataset):

@@ -25,6 +25,10 @@ _DEFAULT_CONF = u"""
 db_hostname:
 db_database: datacube
 
+[collection]
+# The default collection when none is specified (such as in searches)
+default: eo
+
 [locations]
 # Where to reach storage locations from the current machine.
 #  -> Location names (here 'eotiles') are arbitrary, but correspond to names used in the
@@ -58,7 +62,10 @@ class LocalConfig(object):
         return LocalConfig(config)
 
     def _prop(self, key, section='datacube'):
-        return self._config.get(section, key)
+        try:
+            return self._config.get(section, key)
+        except compat.NoOptionError:
+            return None
 
     @property
     def db_hostname(self):
@@ -76,18 +83,16 @@ class LocalConfig(object):
         return dict(self._config.items('locations'))
 
     @property
+    def default_collection_name(self):
+        return self._prop('default', section='collection')
+
+    @property
     def db_username(self):
-        try:
-            return self._prop('db_username')
-        except compat.NoOptionError:
-            return None
+        return self._prop('db_username')
 
     @property
     def db_port(self):
-        try:
-            return self._prop('db_port')
-        except compat.NoOptionError:
-            return None
+        return self._prop('db_port')
 
 
 def init_logging(verbosity_level=0, log_queries=False):

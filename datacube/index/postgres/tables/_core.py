@@ -39,8 +39,7 @@ class View(Executable, ClauseElement):
 
 @compiles(View)
 def visit_create_view(element, compiler, **kw):
-    return "CREATE VIEW %s.%s AS %s" % (
-        SCHEMA_NAME,
+    return "CREATE VIEW %s AS %s" % (
         element.name,
         compiler.process(element.select, literal_binds=True)
     )

@@ -5,13 +5,15 @@ This module extracts tile regions from a supplied dataset, and creates and write
 from __future__ import absolute_import, division, print_function
 
 import logging
-from affine import Affine
 
+import affine
+import dateutil.parser
 import numpy
 import rasterio
-from rasterio.warp import transform_bounds
 import rasterio.coords
+from rasterio.warp import transform_bounds
 
+from datacube import compat
 from datacube.model import TileSpec
 from datacube.storage.utils import ensure_path_exists
 from .netcdf_writer import append_to_netcdf
@@ -73,8 +75,8 @@ def create_tiles(src_ds, tile_size, tile_res, tile_crs, tile_dtype=None):
 
     for y in numpy.arange(outer_bounds.top, outer_bounds.bottom, tile_size['y']):
         for x in numpy.arange(outer_bounds.left, outer_bounds.right, tile_size['x']):
-            tile_transform = Affine.from_gdal(x, tile_res['x'], 0.0,
-                                              y, 0.0, tile_res['y'])
+            tile_transform = affine.Affine.from_gdal(x, tile_res['x'], 0.0,
+                                                     y, 0.0, tile_res['y'])
             dst_region = numpy.full((height, width), -999, dtype=tile_dtype)
 
             rasterio.warp.reproject(rasterio.band(src_ds, 1), dst_region, dst_transform=tile_transform,
@@ -107,6 +109,13 @@ def make_input_specs(ingest_config, storage_configs, eodataset):
 
 def generate_filename(filename_format, eodataset, tile_spec):
     merged = eodataset.copy()
+
+    # Until we can use parsed dataset fields:
+    if isinstance(merged['creation_dt'], compat.string_types):
+        merged['creation_dt'] = dateutil.parser.parse(merged['creation_dt'])
+    if isinstance(merged['extent']['center_dt'], compat.string_types):
+        merged['extent']['center_dt'] = dateutil.parser.parse(merged['extent']['center_dt'])
+
     merged.update(tile_spec.__dict__)
     return filename_format.format(**merged)
 
