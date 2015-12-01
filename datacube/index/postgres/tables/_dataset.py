@@ -5,8 +5,7 @@ Tables for indexing the datasets which were ingested into the AGDC.
 from __future__ import absolute_import
 
 import logging
-
-from sqlalchemy import ForeignKey, UniqueConstraint, CheckConstraint
+from sqlalchemy import ForeignKey, UniqueConstraint, CheckConstraint, SmallInteger
 from sqlalchemy import Table, Column, Integer, String, DateTime
 from sqlalchemy.dialects import postgres
 from sqlalchemy.sql import func
@@ -17,7 +16,7 @@ _LOG = logging.getLogger(__name__)
 
 COLLECTION = Table(
     'collection', _core.METADATA,
-    Column('id', Integer, primary_key=True, autoincrement=True),
+    Column('id', SmallInteger, primary_key=True, autoincrement=True),
 
     Column('name', String, unique=True, nullable=False),
     # A human-readable, potentially multi-line, description for display on the UI.
