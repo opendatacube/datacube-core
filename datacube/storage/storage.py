@@ -40,8 +40,7 @@ def store(storage_mappings, dataset):
             band_descriptor = dataset_measurements[measurement_id]
 
             # The path of a band is relative to the dataset path.
-            dataset_path = dataset.metadata_path.parent
-            band_path = dataset_path.joinpath(band_descriptor['path'])
+            band_path = dataset.metadata_path.parent.joinpath(band_descriptor['path'])
 
             _LOG.debug('Band path: %s', band_path)
             assert band_path.exists()
