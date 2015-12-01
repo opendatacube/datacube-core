@@ -219,9 +219,14 @@ class PostgresDb(object):
     def get_dataset_fields(self, collection_result):
         # Native fields (hard-coded into the schema)
         fields = {
-            'id': NativeField('id', collection_result['id'], DATASET.c.id),
-            'metadata_path': NativeField('metadata_path', collection_result['id'], DATASET.c.metadata_path)
+            'id': NativeField('id', None, DATASET.c.id),
+            'metadata_path': NativeField('metadata_path', None, DATASET.c.metadata_path),
+            'collection': NativeField(
+                'collection',
+                None, COLLECTION.c.name
+            )
         }
+        # noinspection PyTypeChecker
         fields.update(
             parse_fields(
                 collection_result['dataset_search_fields'],
@@ -237,6 +242,7 @@ class PostgresDb(object):
             'id': NativeField('id', collection_result['id'], STORAGE_UNIT.c.id),
             'path': NativeField('path', collection_result['id'], STORAGE_UNIT.c.path)
         }
+        # noinspection PyTypeChecker
         fields.update(
             parse_fields(
                 collection_result['storage_unit_search_fields'],
@@ -254,8 +260,8 @@ class PostgresDb(object):
         """
         return self._search_docs(
             expressions,
+            primary_table=DATASET,
             select_fields=select_fields,
-            collection_field=DATASET.c.collection_ref
         )
 
     def search_storage_units(self, expressions, select_fields=None):
@@ -264,45 +270,34 @@ class PostgresDb(object):
         :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
         :rtype: dict
         """
-        from_expression = STORAGE_UNIT
-
-        # Join to datasets if we're querying by a dataset field.
-        referenced_tables = set([expression.field.alchemy_column.table for expression in expressions])
-        _LOG.debug('Searching fields from tables: %s', ', '.join([t.name for t in referenced_tables]))
-        if DATASET in referenced_tables:
-            from_expression = from_expression.join(DATASET_STORAGE).join(DATASET)
-
         return self._search_docs(
             expressions,
-            select_fields=select_fields,
-            collection_field=STORAGE_UNIT.c.collection_ref,
-            from_expression=from_expression
+            primary_table=STORAGE_UNIT,
+            select_fields=select_fields
         )
 
-    def _search_docs(self, expressions, select_fields=None, collection_field=None, from_expression=None):
-        select_fields = [f.alchemy_expression for f in select_fields] if select_fields else [collection_field.table]
+    def _search_docs(self, expressions, primary_table, select_fields=None):
+        """
 
-        # We currently only allow one collection to be queried (our indexes are per-collection)
-        queried_collections = set([e.field.collection_id for e in expressions])
-        if len(queried_collections) > 1:
-            raise ValueError(
-                'Currently only one collection can be queried at a time. (Tried %r)' % queried_collections
-            )
-        if not queried_collections:
-            raise ValueError(
-                'No collections specified for query.'
-            )
-        queried_collection = queried_collections.pop()
+        :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
+        :type select_fields: tuple[datacube.index.postgres._fields.PgField]
+        :param primary_table: SQLAlchemy table
+        :return:
+        """
+        select_fields = [f.alchemy_expression for f in select_fields] if select_fields else [primary_table]
 
-        if from_expression is None:
-            from_expression = collection_field.table
+        join_tables, raw_expressions = _prepare_expressions(expressions, primary_table)
+
+        from_expression = primary_table
+        for table in join_tables:
+            from_expression = from_expression.join(table)
+
+        if __debug__:
+            _LOG.debug('Using joined tables: %s', ', '.join([t.name for t in join_tables]))
 
         results = self._connection.execute(
             select(select_fields).select_from(from_expression).where(
-                and_(
-                    collection_field == queried_collection,
-                    *[expression.alchemy_expression for expression in expressions]
-                )
+                and_(*raw_expressions)
             )
         )
         for result in results:
@@ -410,6 +405,41 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_
                 ).where(where_expression)
             )
         )
+
+
+def _prepare_expressions(expressions, primary_table):
+    """
+    :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
+    :param primary_table: SQLAlchemy table
+    """
+    # We currently only allow one collection to be queried (our indexes are per-collection)
+    collection_references = set()
+    join_tables = set()
+    for expression in expressions:
+        field = expression.field
+
+        table = field.alchemy_column.table
+        if table != primary_table:
+            join_tables.add(table)
+
+        collection_id = field.collection_id
+        if collection_id:
+            collection_references.add((table, collection_id))
+
+    unique_collections = set([c[1] for c in collection_references])
+    if len(unique_collections) > 1:
+        raise ValueError(
+            'Currently only one collection can be queried at a time. (Tried %r)' % collection_references
+        )
+
+    raw_expressions = [expression.alchemy_expression for expression in expressions]
+
+    # We may have multiple references: storage.collection_ref and dataset.collection_ref.
+    # We want to include all, to ensure the indexes are used.
+    for from_table, queried_collection in collection_references:
+        raw_expressions.insert(0, from_table.c.collection_ref == queried_collection)
+
+    return join_tables, raw_expressions
 
 
 def _to_json(o):

@@ -59,9 +59,17 @@ class PgField(Field):
 
 
 class NativeField(PgField):
+    """
+    Fields hard-coded into the schema. (not user configurable)
+    """
+
+    def __init__(self, name, collection_id, alchemy_column, alchemy_expression=None):
+        super(NativeField, self).__init__(name, collection_id, alchemy_column)
+        self._expression = alchemy_expression
+
     @property
     def alchemy_expression(self):
-        return self.alchemy_column
+        return self._expression or self.alchemy_column
 
     @property
     def postgres_index_type(self):

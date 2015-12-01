@@ -28,6 +28,7 @@ def test_get_field():
         fields['satellite'],
         SimpleDocField(
             'satellite',
+            1,
             DATASET.c.metadata,
             offset=['platform', 'code']
         )
@@ -39,11 +40,12 @@ def test_get_field():
             'max_offset': [['extents', 'geospatial_lat_max']],
             'min_offset': [['extents', 'geospatial_lat_min']],
         },
-    }, 1, STORAGE_UNIT.c.descriptor)
+    }, 2, STORAGE_UNIT.c.descriptor)
     _assert_same(
         storage_fields['lat'],
         FloatRangeDocField(
             'lat',
+            2,
             STORAGE_UNIT.c.descriptor,
             max_offset=[['extents', 'geospatial_lat_max']],
             min_offset=[['extents', 'geospatial_lat_min']],

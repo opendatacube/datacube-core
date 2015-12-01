@@ -115,6 +115,25 @@ def test_search_dataset_ranges(index, db, default_collection):
     assert datasets[0].id == _telemetry_uuid
 
 
+def test_search_globally(index, db, telemetry_collection):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    :type telemetry_collection: datacube.model.Collection
+    """
+    # Insert dataset. It should be matched to the telemetry collection.
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid,
+        Path('/tmp/test/' + _telemetry_uuid)
+    )
+    assert was_inserted
+
+    # No expressions means get all.
+    results = list(index.datasets.search())
+    assert len(results) == 1
+
+
 def test_searches_only_collection(index, db, default_collection, telemetry_collection):
     """
     :type db: datacube.index.postgres._api.PostgresDb
@@ -131,18 +150,18 @@ def test_searches_only_collection(index, db, default_collection, telemetry_colle
     assert was_inserted
 
     # No results on the default collection.
-    default_f = default_collection.dataset_fields.get
+    default_field = default_collection.dataset_fields.get
     datasets = index.datasets.search_eager(
-        default_f('satellite') == 'LANDSAT_8',
-        default_f('sensor') == 'OLI_TIRS'
+        default_field('satellite') == 'LANDSAT_8',
+        default_field('sensor') == 'OLI_TIRS'
     )
     assert len(datasets) == 0
 
     # One result in the telemetry collection.
-    telemetry_f = telemetry_collection.dataset_fields.get
+    telemetry_field = telemetry_collection.dataset_fields.get
     datasets = index.datasets.search_eager(
-        telemetry_f('satellite') == 'LANDSAT_8',
-        telemetry_f('sensor') == 'OLI_TIRS',
+        telemetry_field('satellite') == 'LANDSAT_8',
+        telemetry_field('sensor') == 'OLI_TIRS',
     )
     assert len(datasets) == 1
     assert datasets[0].id == _telemetry_uuid
@@ -150,6 +169,43 @@ def test_searches_only_collection(index, db, default_collection, telemetry_colle
     # An error if you mix collections (although we may support this in the future):
     with pytest.raises(ValueError):
         index.datasets.search_eager(
-            default_f('satellite') == 'LANDSAT_8',
-            telemetry_f('sensor') == 'OLI_TIRS',
+            default_field('satellite') == 'LANDSAT_8',
+            telemetry_field('sensor') == 'OLI_TIRS',
         )
+
+    field = index.datasets.get_field
+    # Specify explicit collection and a parameter.
+    results = index.datasets.search_eager(
+        field('collection') == 'landsat_telemetry',
+        telemetry_field('satellite') == 'LANDSAT_8'
+    )
+    assert len(results) == 1
+
+
+def test_fetch_all_of_collection(index, db, default_collection, telemetry_collection):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    :type default_collection: datacube.model.Collection
+    :type telemetry_collection: datacube.model.Collection
+    """
+    # Insert dataset. It should be matched to the telemetry collection.
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid,
+        Path('/tmp/test/' + _telemetry_uuid)
+    )
+    assert was_inserted
+
+    field = index.datasets.get_field
+
+    # Get every dataset in the collection
+    results = index.datasets.search_eager(
+        field('collection') == 'landsat_telemetry'
+    )
+    assert len(results) == 1
+
+    results = index.datasets.search_eager(
+        field('collection') == 'eo'
+    )
+    assert len(results) == 0
