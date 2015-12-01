@@ -17,7 +17,7 @@ from sqlalchemy.engine.url import URL as EngineUrl
 from sqlalchemy.exc import IntegrityError
 
 from datacube.config import LocalConfig
-from datacube.index.postgres.tables._core import SCHEMA_NAME
+from datacube.index.postgres.tables._core import schema_qualified
 from . import tables
 from ._fields import parse_fields, NativeField
 from .tables import DATASET, DATASET_SOURCE, STORAGE_TYPE, \
@@ -402,7 +402,7 @@ def _pg_exists(conn, name):
     """
     Does a postgres object exist?
     """
-    return bool(conn.execute("SELECT to_regclass(%s)", name))
+    return conn.execute("SELECT to_regclass(%s)", name).scalar() is not None
 
 
 def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_expression):
@@ -421,7 +421,7 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_
                 field_name=field.name.lower()
             )
 
-            if not _pg_exists(conn, index_name):
+            if not _pg_exists(conn, schema_qualified(index_name)):
                 Index(
                     index_name,
                     field.alchemy_expression,
@@ -432,11 +432,11 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_
                 ).create(conn)
 
     # Create a view of search fields (for debugging convenience).
-    view_name = '{}.{}'.format(SCHEMA_NAME, name)
+    view_name = schema_qualified(name)
     if not _pg_exists(conn, view_name):
         conn.execute(
             tables.View(
-                name,
+                view_name,
                 select(
                     [field.alchemy_expression.label(field.name) for field in fields.values()]
                 ).where(where_expression)

@@ -20,6 +20,14 @@ SCHEMA_NAME = 'agdc'
 METADATA = MetaData(naming_convention=SQL_NAMING_CONVENTIONS, schema=SCHEMA_NAME)
 
 
+def schema_qualified(name):
+    """
+    >>> schema_qualified('dataset')
+    'agdc.dataset'
+    """
+    return '{}.{}'.format(SCHEMA_NAME, name)
+
+
 def ensure_db(connection, engine):
     is_new = False
     if not engine.dialect.has_schema(connection, SCHEMA_NAME):

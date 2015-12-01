@@ -143,3 +143,17 @@ def test_add_storage_type(index, local_config):
     }, '/tmp/other.yaml')
     storage_mappings = index.mappings.get_for_dataset(dataset)
     assert len(storage_mappings) == 0
+
+
+def test_collection_indexes_views_exist(db, telemetry_collection):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type telemetry_collection: datacube.model.Collection
+    """
+    # Ensure indexes were created for the telemetry collection (following the naming conventions):
+    val = db._connection.execute("SELECT to_regclass('agdc.ix_field_landsat_telemetry_dataset_satellite')").scalar()
+    assert val == 'agdc.ix_field_landsat_telemetry_dataset_satellite'
+
+    # Ensure view was created (following naming conventions)
+    val = db._connection.execute("SELECT to_regclass('agdc.landsat_telemetry_dataset')").scalar()
+    assert val == 'agdc.landsat_telemetry_dataset'
