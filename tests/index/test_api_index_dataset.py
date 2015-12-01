@@ -5,6 +5,7 @@ from __future__ import absolute_import
 import datetime
 
 from datacube.index._datasets import _ensure_dataset
+from datacube.model import Collection, DatasetOffsets, DatasetMatcher
 
 _nbar_uuid = 'f2f12372-8366-11e5-817e-1040f381a756'
 _ortho_uuid = '5cf41d98-eda9-11e4-8a8e-1040f381a756'
@@ -115,6 +116,20 @@ _EXAMPLE_NBAR = {
     }
 }
 
+_EXAMPLE_COLLECTION = Collection(
+    'eo', 'Earth Observation Collection',
+    DatasetMatcher({}),
+    DatasetOffsets(
+        uuid_field=['id'],
+        label_field=['ga_label'],
+        creation_time_field=['creation_dt'],
+        measurements_dict=['image', 'bands'],
+        sources=['lineage', 'source_datasets']
+    ),
+    dataset_search_fields=[],
+    storage_unit_search_fields=[]
+)
+
 
 class MockDb(object):
     def __init__(self):
@@ -134,9 +149,18 @@ class MockDb(object):
         self.dataset_source.add((classifier, dataset_id, source_dataset_id))
 
 
+class MockCollectionResource(object):
+    def __init__(self, collection):
+        self.collection = collection
+
+    def get_for_dataset_doc(self, metadata_doc):
+        return self.collection
+
+
 def test_index_dataset():
     mock_db = MockDb()
-    _ensure_dataset(mock_db, _EXAMPLE_NBAR)
+    mock_coll_res = MockCollectionResource(_EXAMPLE_COLLECTION)
+    _ensure_dataset(mock_db, mock_coll_res, _EXAMPLE_NBAR)
 
     ids = {d[0]['id'] for d in mock_db.dataset}
     assert ids == {_nbar_uuid, _ortho_uuid, _telemetry_uuid}
@@ -155,8 +179,9 @@ def test_index_dataset():
 
 def test_index_already_ingested_dataset():
     mock_db = MockDb()
+    mock_coll_res = MockCollectionResource(_EXAMPLE_COLLECTION)
     mock_db.already_ingested = {_nbar_uuid}
-    _ensure_dataset(mock_db, _EXAMPLE_NBAR)
+    _ensure_dataset(mock_db, mock_coll_res, _EXAMPLE_NBAR)
 
     # Nothing ingested, because we reported the first as already ingested.
     assert len(mock_db.dataset) == 0
@@ -166,8 +191,9 @@ def test_index_already_ingested_dataset():
 
 def test_index_already_ingested_source_dataset():
     mock_db = MockDb()
+    mock_coll_res = MockCollectionResource(_EXAMPLE_COLLECTION)
     mock_db.already_ingested = {_ortho_uuid, _telemetry_uuid}
-    _ensure_dataset(mock_db, _EXAMPLE_NBAR)
+    _ensure_dataset(mock_db, mock_coll_res, _EXAMPLE_NBAR)
 
     # Only the first dataset ingested
     assert len(mock_db.dataset) == 1
@@ -178,9 +204,10 @@ def test_index_already_ingested_source_dataset():
 
 def test_index_two_levels_already_ingested():
     mock_db = MockDb()
+    mock_coll_res = MockCollectionResource(_EXAMPLE_COLLECTION)
     # RAW was already ingested.
     mock_db.already_ingested = {_telemetry_uuid}
-    _ensure_dataset(mock_db, _EXAMPLE_NBAR)
+    _ensure_dataset(mock_db, mock_coll_res, _EXAMPLE_NBAR)
 
     ids = {d[0]['id'] for d in mock_db.dataset}
     assert ids == {_nbar_uuid, _ortho_uuid}

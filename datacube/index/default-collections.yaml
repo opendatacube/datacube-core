@@ -53,6 +53,13 @@ eo:
         #     (such as path to band file, offset within file etc.)
         measurements_offset: ['image', 'bands']
 
+
+        # Where to find a dict of embedded source datasets
+        #  -> The dict is of form: classifier->source_dataset_doc
+        #  -> 'classifier' is how to classify/identify the relationship (usually the type of source it was eg. 'nbar').
+        #      An arbitrary string, but you should be consistent between datasets (to query relationships).
+        sources_offset: ['lineage', 'source_datasets']
+
         # Fields that we want indexed and searchable in the documents.
         # (the keys/names are arbitrary, but are specified by users when searching)
         search_fields:

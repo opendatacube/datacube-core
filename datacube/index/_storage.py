@@ -186,5 +186,8 @@ class StorageMappingResource(object):
         return self._make_storage_mapping(mapping)
 
     def get_for_dataset(self, dataset):
-        mappings = self._db.get_storage_mappings(dataset.metadata_doc)
+        return self.get_for_dataset_doc(dataset.metadata_doc)
+
+    def get_for_dataset_doc(self, dataset_doc):
+        mappings = self._db.get_storage_mappings(dataset_doc)
         return [self._make_storage_mapping(mapping) for mapping in mappings]

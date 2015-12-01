@@ -13,6 +13,7 @@ landsat_telemetry:
         creation_dt_offset: ['creation_dt']
         label_offset: ['ga_label']
         measurements_offset: ['image', 'bands']
+        sources_offset: ['lineage', 'source_datasets']
         search_fields:
             satellite:
                 offset: [platform, code]

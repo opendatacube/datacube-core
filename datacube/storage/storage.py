@@ -5,6 +5,9 @@ Create/store dataset data into storage units based on the provided storage mappi
 from __future__ import absolute_import
 
 import logging
+
+import dateutil.parser
+
 from datacube.model import StorageUnit
 from datacube.storage.ingester import crazy_band_tiler, SimpleObject
 from datacube.storage.netcdf_indexer import index_netcdfs
@@ -34,7 +37,7 @@ def store(storage_mappings, dataset):
             raise RuntimeError('URI protocol is not supported (yet): %s' % mapping.storage_pattern)
         storage_type.descriptor["filename_format"] = mapping.storage_pattern[7:]
 
-        dataset_measurements = _get_doc_offset(collection.dataset_offsets.measurements_dict, dataset.metadata_doc)
+        dataset_measurements = collection.dataset_reader(dataset.metadata_doc).measurements_dict
         for measurement_id, measurement_descriptor in mapping.measurements.items():
             # Get the corresponding measurement/band from the dataset.
             band_descriptor = dataset_measurements[measurement_id]
@@ -50,7 +53,10 @@ def store(storage_mappings, dataset):
             for filename in crazy_band_tiler(SimpleObject(**measurement_descriptor),  # TODO: Use actual classes
                                              input_filename=str(band_path),
                                              storage_spec=storage_type.descriptor,
-                                             time_value=dataset.metadata_doc['extent']['center_dt'],
+                                             # TODO: Use doc fields, rather than parsing manually.
+                                             time_value=dateutil.parser.parse(
+                                                 dataset.metadata_doc['extent']['center_dt']
+                                             ),
                                              dataset_metadata=dataset.metadata_doc):
                 storage_unit_filenames.add(filename)
 
@@ -69,23 +75,3 @@ def store(storage_mappings, dataset):
             ]
 
     return result
-
-
-def _get_doc_offset(offset, document):
-    """
-    :type offset: list[str]
-    :type document: dict
-
-    >>> _get_doc_offset(['a'], {'a': 4})
-    4
-    >>> _get_doc_offset(['a', 'b'], {'a': {'b': 4}})
-    4
-    >>> _get_doc_offset(['a'], {})
-    Traceback (most recent call last):
-    ...
-    KeyError: 'a'
-    """
-    value = document
-    for key in offset:
-        value = value[key]
-    return value

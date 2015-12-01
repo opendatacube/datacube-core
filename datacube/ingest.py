@@ -55,13 +55,7 @@ def _dataset_from_path(index, path):
     else:
         raise ValueError('Only yaml metadata is supported at the moment (provided {})'.format(metadata_path.suffix))
 
-    collection = index.collections.get_for_dataset_doc(metadata_doc)
-    if not collection:
-        _LOG.debug('Failed match on dataset doc %r', metadata_doc)
-        raise ValueError('No collection matched for dataset.')
-
-    _LOG.info('Matched collection %r (%s)', collection.name, collection.id_)
-    return model.Dataset(collection, metadata_doc, metadata_path)
+    return metadata_doc, metadata_path
 
 
 def ingest(path, index=None):
@@ -72,12 +66,9 @@ def ingest(path, index=None):
     """
     index = index or index_connect()
 
-    dataset = _dataset_from_path(index, path)
+    metadata_doc, metadata_path = _dataset_from_path(index, path)
 
-    if not index.datasets.has(dataset):
-        was_indexed = index.datasets.add(dataset)
-        if was_indexed:
-            _LOG.info('Indexed %s', path)
+    dataset = index.datasets.add(metadata_doc, metadata_path)
 
     _write_missing_storage_units(index, dataset)
 

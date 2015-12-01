@@ -162,6 +162,11 @@ class PostgresDb(object):
             STORAGE_MAPPING.select().where(STORAGE_MAPPING.c.id == storage_mapping_id)
         ).first()
 
+    def get_dataset(self, dataset_id):
+        return self._connection.execute(
+            DATASET.select().where(DATASET.c.id == dataset_id)
+        ).first()
+
     def get_storage_mappings(self, dataset_metadata):
         """
         Find any storage mappings that match the given dataset.
@@ -330,6 +335,7 @@ class PostgresDb(object):
                        dataset_metadata, match_priority,
                        dataset_id_offset, dataset_label_offset,
                        dataset_creation_dt_offset, dataset_measurements_offset,
+                       dataset_sources_offset,
                        dataset_search_fields,
                        storage_unit_search_fields):
         res = self._connection.execute(
@@ -342,6 +348,7 @@ class PostgresDb(object):
                 dataset_label_offset=dataset_label_offset,
                 dataset_creation_dt_offset=dataset_creation_dt_offset,
                 dataset_measurements_offset=dataset_measurements_offset,
+                dataset_sources_offset=dataset_sources_offset,
                 dataset_search_fields=dataset_search_fields,
                 storage_unit_search_fields=storage_unit_search_fields
             )

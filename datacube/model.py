@@ -173,6 +173,9 @@ class Collection(object):
         #: :type: dict[str, Field]
         self.storage_fields = storage_unit_search_fields
 
+    def dataset_reader(self, dataset_doc):
+        return _DocReader(self.dataset_offsets.__dict__, dataset_doc)
+
 
 class DatasetOffsets(object):
     """
@@ -183,7 +186,8 @@ class DatasetOffsets(object):
                  uuid_field,
                  label_field,
                  creation_time_field,
-                 measurements_dict):
+                 measurements_dict,
+                 sources):
         # UUID for a dataset. Always unique.
         #: :type: tuple[string]
         self.uuid_field = uuid_field
@@ -218,6 +222,13 @@ class DatasetOffsets(object):
         #     (such as path to band file, offset within file etc.)
         #: :type: tuple[string]
         self.measurements_dict = measurements_dict
+
+        # Where to find a dict of embedded source datasets
+        #  -> The dict is of form: classifier->source_dataset_doc
+        #  -> 'classifier' is how to classify/identify the relationship (usually the type of source it was eg. 'nbar').
+        #      An arbitrary string, but you should be consistent between datasets (to query relationships).
+        #: :type: tuple[string]
+        self.sources = sources
 
 
 class VariableAlreadyExists(Exception):
@@ -267,3 +278,82 @@ class TileSpec(object):
 
     def __repr__(self):
         return repr(self.__dict__)
+
+
+def _get_doc_offset(offset, document):
+    """
+    :type offset: list[str]
+    :type document: dict
+
+    >>> _get_doc_offset(['a'], {'a': 4})
+    4
+    >>> _get_doc_offset(['a', 'b'], {'a': {'b': 4}})
+    4
+    >>> _get_doc_offset(['a'], {})
+    Traceback (most recent call last):
+    ...
+    KeyError: 'a'
+    """
+    value = document
+    for key in offset:
+        value = value[key]
+    return value
+
+
+def _set_doc_offset(offset, document, value):
+    """
+    :type offset: list[str]
+    :type document: dict
+
+    >>> doc = {'a': 4}
+    >>> _set_doc_offset(['a'], doc, 5)
+    >>> doc
+    {'a': 5}
+    >>> doc = {'a': {'b': 4}}
+    >>> _set_doc_offset(['a', 'b'], doc, 'c')
+    >>> doc
+    {'a': {'b': 'c'}}
+    """
+    read_offset = offset[:-1]
+    sub_doc = _get_doc_offset(read_offset, document)
+    sub_doc[offset[-1]] = value
+
+
+class _DocReader(object):
+    def __init__(self, field_offsets, doc):
+        """
+        :type field_offsets: dict[str,list[str]]
+        :type doc: dict
+        >>> d = _DocReader({'lat': ['extent', 'lat']}, doc={'extent': {'lat': 4}})
+        >>> d.lat
+        4
+        >>> d.lat = 5
+        >>> d._doc
+        {'extent': {'lat': 5}}
+        >>> d.lon
+        Traceback (most recent call last):
+        ...
+        ValueError: Unknown field 'lon'. Expected one of ['lat']
+        """
+        self.__dict__['_field_offsets'] = field_offsets
+        self.__dict__['_doc'] = doc
+
+    def __getattr__(self, name):
+        offset = self._field_offsets.get(name)
+        if offset is None:
+            raise ValueError(
+                'Unknown field %r. Expected one of %r' % (
+                    name, list(self._field_offsets.keys())
+                )
+            )
+        return _get_doc_offset(offset, self._doc)
+
+    def __setattr__(self, name, val):
+        offset = self._field_offsets.get(name)
+        if offset is None:
+            raise ValueError(
+                'Unknown field %r. Expected one of %r' % (
+                    name, list(self._field_offsets.keys())
+                )
+            )
+        return _set_doc_offset(offset, self._doc, val)

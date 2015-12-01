@@ -31,6 +31,7 @@ COLLECTION = Table(
     Column('dataset_label_offset', postgres.ARRAY(String), nullable=False),
     Column('dataset_creation_dt_offset', postgres.ARRAY(String), nullable=False),
     Column('dataset_measurements_offset', postgres.ARRAY(String), nullable=False),
+    Column('dataset_sources_offset', postgres.ARRAY(String), nullable=False),
 
     # Description of fields within metadata to search by.
     # See the example in ../eo-collection.yaml in dataset.search_fields
