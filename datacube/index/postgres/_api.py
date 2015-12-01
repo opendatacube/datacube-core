@@ -87,7 +87,7 @@ class PostgresDb(object):
         """
         return _BegunTransaction(self._connection)
 
-    def insert_dataset(self, metadata_doc, dataset_id, path, collection_id=None):
+    def insert_dataset(self, metadata_doc, dataset_id, path=None, collection_id=None):
         """
         Insert dataset if not already indexed.
         :type metadata_doc: dict

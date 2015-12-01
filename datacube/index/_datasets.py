@@ -216,7 +216,7 @@ class DatasetResource(object):
         return Dataset(
             self._collection_resource.get(dataset_res.collection_ref),
             dataset_res.metadata,
-            Path(dataset_res.metadata_path)
+            Path(dataset_res.metadata_path) if dataset_res.metadata_path else None
         )
 
     def _make_many(self, query_result):

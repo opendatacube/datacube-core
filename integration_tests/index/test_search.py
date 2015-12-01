@@ -125,7 +125,7 @@ def test_search_globally(index, db, telemetry_collection):
     was_inserted = db.insert_dataset(
         _telemetry_dataset,
         _telemetry_uuid,
-        Path('/tmp/test/' + _telemetry_uuid)
+        # Path is optional.
     )
     assert was_inserted
 
@@ -209,3 +209,4 @@ def test_fetch_all_of_collection(index, db, default_collection, telemetry_collec
         field('collection') == 'eo'
     )
     assert len(results) == 0
+
