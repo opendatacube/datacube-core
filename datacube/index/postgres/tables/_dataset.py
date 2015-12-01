@@ -20,6 +20,7 @@ COLLECTION = Table(
     Column('id', Integer, primary_key=True, autoincrement=True),
 
     Column('name', String, unique=True, nullable=False),
+    # A human-readable, potentially multi-line, description for display on the UI.
     Column('description', String),
 
     # Match any datasets whose metadata is a superset of this document.

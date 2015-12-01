@@ -4,6 +4,8 @@ Module
 """
 from __future__ import absolute_import
 
+import copy
+
 from datacube.model import Dataset
 
 
@@ -127,7 +129,11 @@ def test_add_storage_type(index, local_config):
     storage_type = mapping.storage_type
     assert storage_type.name == '30m_bands'
     assert storage_type.driver == 'NetCDF CF'
-    assert storage_type.descriptor == _STORAGE_TYPE
+
+    expected_descriptor = copy.deepcopy(_STORAGE_TYPE)
+    expected_descriptor.pop('name')
+    expected_descriptor.pop('driver')
+    assert storage_type.descriptor == expected_descriptor
 
     # A different dataset should not match our storage types
     dataset = Dataset('eo', {

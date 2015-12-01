@@ -119,6 +119,7 @@ def test_index_storage_unit(index, db, default_collection):
                 # Yikes:
                 storage_type=None,
                 name="test_mapping",
+                description=None,
                 match=None,
                 measurements={},
                 location="file://g/data",

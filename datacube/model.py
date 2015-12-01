@@ -23,7 +23,7 @@ class DatasetMatcher(object):
 
 
 class StorageType(object):
-    def __init__(self, driver, name, descriptor, id_=None):
+    def __init__(self, driver, name, description, descriptor, id_=None):
         # Name of the storage driver. 'NetCDF CF', 'GeoTiff' etc.
         #: :type: str
         self.driver = driver
@@ -31,6 +31,9 @@ class StorageType(object):
         # Name for this config (specified by users)
         #: :type: str
         self.name = name
+        # A human-readable, potentially multi-line, description for display on the UI.
+        #: :type: str
+        self.description = description
 
         # A definition of the storage (understood by the storage driver)
         #: :type: dict
@@ -42,7 +45,8 @@ class StorageType(object):
 
 
 class StorageMapping(object):
-    def __init__(self, storage_type, name, match, measurements,
+    def __init__(self, storage_type, name, description,
+                 match, measurements,
                  location, filename_pattern, id_=None):
         # Which datasets to match.
         #: :type: DatasetMatcher
@@ -54,6 +58,10 @@ class StorageMapping(object):
         # A name for the mapping (specified by users). (unique to the storage type)
         #: :type: str
         self.name = name
+
+        # A human-readable, potentially multi-line, description for display on the UI.
+        #: :type: str
+        self.description = description
 
         # A dictionary of the measurements to store
         # (key is measurement id, value is a doc understood by the storage driver)

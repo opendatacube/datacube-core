@@ -25,6 +25,8 @@ STORAGE_TYPE = Table(
 
     # A name/label for this type (eg. '30m bands'). Specified by users.
     Column('name', String, nullable=False, unique=True),
+    # A human-readable, potentially multi-line, description for display on the UI.
+    Column('description', String),
 
     # See "_EXAMPLE_STORAGE_TYPE_DESCRIPTOR" below
     Column('descriptor', postgres.JSONB, nullable=False),
@@ -45,6 +47,8 @@ STORAGE_MAPPING = Table(
 
     # A name/label for this mapping (eg. 'LS7 NBAR'). Specified by users.
     Column('name', String, nullable=False),
+    # A human-readable, potentially multi-line, description for display on the UI.
+    Column('description', String),
 
     # The name of the location where the storage units should be stored. Specified by users.
     Column('location_name', String, nullable=False),

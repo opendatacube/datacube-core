@@ -4,6 +4,7 @@ API for storage indexing, access and search.
 """
 from __future__ import absolute_import
 
+import copy
 import logging
 
 import cachetools
@@ -120,6 +121,7 @@ class StorageTypeResource(object):
         return StorageType(
             storage_type['driver'],
             storage_type['name'],
+            storage_type['description'],
             storage_type['descriptor'],
             id_=storage_type['id']
         )
@@ -131,9 +133,17 @@ class StorageTypeResource(object):
         :type descriptor: dict
         """
         # TODO: Validate (Against JSON Schema?)
-        name = descriptor['name']
-        driver = descriptor['driver']
-        self._db.ensure_storage_type(driver, name, descriptor)
+        descriptor = copy.deepcopy(descriptor)
+        name = descriptor.pop('name')
+        driver = descriptor.pop('driver')
+        description = descriptor.pop('description', None)
+
+        self._db.ensure_storage_type(
+            driver,
+            name,
+            descriptor,
+            description=description
+        )
 
 
 class StorageMappingResource(object):
@@ -166,13 +176,15 @@ class StorageMappingResource(object):
                     mapping['location_name'],
                     mapping['file_path_template'],
                     dataset_metadata,
-                    mapping['measurements']
+                    mapping['measurements'],
+                    description=descriptor.get('description')
                 )
 
     def _make_storage_mapping(self, mapping):
         return StorageMapping(
             self._storage_types.get(mapping['storage_type_ref']),
             mapping['name'],
+            mapping['description'],
             DatasetMatcher(mapping['dataset_metadata']),
             mapping['measurements'],
             self._host_config.location_mappings[mapping['location_name']],

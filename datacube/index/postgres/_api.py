@@ -143,12 +143,13 @@ class PostgresDb(object):
             source_dataset_ref=source_dataset_id
         )
 
-    def ensure_storage_type(self, driver, name, descriptor):
+    def ensure_storage_type(self, driver, name, descriptor, description=None):
         # TODO: Update them if they already exist. This will do for now.
         self._connection.execute(
             STORAGE_TYPE.insert(),
             driver=driver,
             name=name,
+            description=description,
             descriptor=descriptor
         )
 
@@ -181,14 +182,17 @@ class PostgresDb(object):
             )
         ).fetchall()
 
-    def ensure_storage_mapping(self, storage_type_name, name, location_name, file_path_template,
-                               dataset_metadata, measurements):
+    def ensure_storage_mapping(self, storage_type_name,
+                               name, location_name, file_path_template,
+                               dataset_metadata, measurements,
+                               description=None):
         self._connection.execute(
             STORAGE_MAPPING.insert().values(
                 storage_type_ref=select([STORAGE_TYPE.c.id]).where(
                     STORAGE_TYPE.c.name == storage_type_name
                 ),
                 name=name,
+                description=description,
                 dataset_metadata=dataset_metadata,
                 measurements=measurements,
                 location_name=location_name,
@@ -352,13 +356,15 @@ class PostgresDb(object):
             COLLECTION.select().where(COLLECTION.c.name == name)
         ).first()
 
-    def add_collection(self, name, description,
+    def add_collection(self,
+                       name,
                        dataset_metadata, match_priority,
                        dataset_id_offset, dataset_label_offset,
                        dataset_creation_dt_offset, dataset_measurements_offset,
                        dataset_sources_offset,
                        dataset_search_fields,
-                       storage_unit_search_fields):
+                       storage_unit_search_fields,
+                       description=None):
         res = self._connection.execute(
             COLLECTION.insert().values(
                 name=name,

@@ -3,6 +3,7 @@
 #
 
 name: 25m_bands
+description: 25 metre, 1 degree EO NetCDF storage unit.
 driver: NetCDF CF
 
 projection:
