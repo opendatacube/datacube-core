@@ -1,6 +1,18 @@
 
 [MESSAGES CONTROL]
-disable=no-self-use,star-args,duplicate-code,unused-argument,missing-docstring,no-member,unused-variable,unused-import,locally-disabled,no-name-in-module,fixme,no-value-for-parameter
+disable=no-self-use,
+    star-args,
+    duplicate-code,
+    unused-argument,
+    missing-docstring,
+    no-member,
+    unused-variable,
+    unused-import,
+    locally-disabled,
+    no-name-in-module,
+    fixme,
+    no-value-for-parameter,
+    file-ignored
 
 [BASIC]
 
