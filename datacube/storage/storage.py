@@ -8,6 +8,7 @@ import logging
 
 import dateutil.parser
 
+from datacube import compat
 from datacube.model import StorageUnit
 from datacube.storage.ingester import crazy_band_tiler, SimpleObject
 from datacube.storage.netcdf_indexer import index_netcdfs
@@ -54,7 +55,7 @@ def store(storage_mappings, dataset):
                                              input_filename=str(band_path),
                                              storage_spec=storage_type.descriptor,
                                              # TODO: Use doc fields, rather than parsing manually.
-                                             time_value=dateutil.parser.parse(
+                                             time_value=_as_datetime(
                                                  dataset.metadata_doc['extent']['center_dt']
                                              ),
                                              dataset_metadata=dataset.metadata_doc):
@@ -75,3 +76,9 @@ def store(storage_mappings, dataset):
             ]
 
     return result
+
+
+def _as_datetime(field):
+    if isinstance(field, compat.string_types):
+        return dateutil.parser.parse(field)
+    return field

@@ -13,6 +13,7 @@ import rasterio
 import rasterio.coords
 from rasterio.warp import transform_bounds
 
+from datacube import compat
 from datacube.model import TileSpec
 from datacube.storage.utils import ensure_path_exists
 from .netcdf_writer import append_to_netcdf
@@ -108,7 +109,13 @@ def make_input_specs(ingest_config, storage_configs, eodataset):
 
 def generate_filename(filename_format, eodataset, tile_spec):
     merged = eodataset.copy()
-    merged['creation_dt'] = dateutil.parser.parse(merged['creation_dt'])
+
+    # Until we can use parsed dataset fields:
+    if isinstance(merged['creation_dt'], compat.string_types):
+        merged['creation_dt'] = dateutil.parser.parse(merged['creation_dt'])
+    if isinstance(merged['extent']['center_dt'], compat.string_types):
+        merged['extent']['center_dt'] = dateutil.parser.parse(merged['extent']['center_dt'])
+
     merged.update(tile_spec.__dict__)
     return filename_format.format(**merged)
 
