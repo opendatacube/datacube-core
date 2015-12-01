@@ -6,7 +6,7 @@ from __future__ import absolute_import
 
 import logging
 
-from sqlalchemy import ForeignKey, UniqueConstraint
+from sqlalchemy import ForeignKey, UniqueConstraint, CheckConstraint
 from sqlalchemy import Table, Column, Integer, String, DateTime
 from sqlalchemy.dialects import postgres
 from sqlalchemy.sql import func
@@ -40,6 +40,9 @@ COLLECTION = Table(
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
     Column('added_by', String, server_default=func.current_user(), nullable=False),
+
+    # Name must be alphanumeric + underscores.
+    CheckConstraint(r"name ~* '^\w+$'", name='alphanumeric_name'),
 )
 
 DATASET = Table(
