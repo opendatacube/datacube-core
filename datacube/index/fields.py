@@ -14,8 +14,9 @@ class Field(object):
     A searchable field within a dataset/storage metadata document.
     """
 
-    def __init__(self, name):
+    def __init__(self, name, description):
         self.name = name
+        self.description = description
 
     def __eq__(self, value):
         """

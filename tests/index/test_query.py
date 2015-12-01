@@ -11,9 +11,9 @@ from datacube.index.postgres._fields import SimpleDocField, RangeDocField, Range
 from datacube.model import Range
 from datacube.ui import parse_expressions, UnknownFieldException
 
-_sat_field = SimpleDocField('satellite', {}, None)
-_sens_field = SimpleDocField('sensor', {}, None)
-_lat_field = RangeDocField('lat', {}, None)
+_sat_field = SimpleDocField('satellite', None, None, None)
+_sens_field = SimpleDocField('sensor', None, None, None)
+_lat_field = RangeDocField('lat', None, None, None)
 _fields = {
     'satellite': _sat_field,
     'sensor': _sens_field,

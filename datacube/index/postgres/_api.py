@@ -224,10 +224,21 @@ class PostgresDb(object):
     def get_dataset_fields(self, collection_result):
         # Native fields (hard-coded into the schema)
         fields = {
-            'id': NativeField('id', None, DATASET.c.id),
-            'metadata_path': NativeField('metadata_path', None, DATASET.c.metadata_path),
+            'id': NativeField(
+                'id',
+                None,
+                None,
+                DATASET.c.id
+            ),
+            'metadata_path': NativeField(
+                'metadata_path',
+                'Path to metadata file',
+                None,
+                DATASET.c.metadata_path
+            ),
             'collection': NativeField(
                 'collection',
+                'Name of collection',
                 None, COLLECTION.c.name
             )
         }
@@ -244,8 +255,18 @@ class PostgresDb(object):
     def get_storage_unit_fields(self, collection_result):
         # Native fields (hard-coded into the schema)
         fields = {
-            'id': NativeField('id', collection_result['id'], STORAGE_UNIT.c.id),
-            'path': NativeField('path', collection_result['id'], STORAGE_UNIT.c.path)
+            'id': NativeField(
+                'id',
+                None,
+                collection_result['id'],
+                STORAGE_UNIT.c.id
+            ),
+            'path': NativeField(
+                'path',
+                'Path to storage file',
+                collection_result['id'],
+                STORAGE_UNIT.c.path
+            )
         }
         # noinspection PyTypeChecker
         fields.update(
@@ -379,6 +400,9 @@ def _pg_exists(conn, name):
 
 
 def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_expression):
+    """
+    Create indexes and views for a collection's search fields.
+    """
     name = '{}_{}'.format(collection_prefix.lower(), doc_prefix.lower())
 
     # Create indexes for the search fields.

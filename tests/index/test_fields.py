@@ -17,6 +17,7 @@ def _assert_same(obj1, obj2):
 def test_get_field():
     fields = parse_fields({
         'satellite': {
+            'description': 'Satellite',
             'offset': ['platform', 'code']
         },
         'sensor': {
@@ -27,7 +28,7 @@ def test_get_field():
     _assert_same(
         fields['satellite'],
         SimpleDocField(
-            'satellite',
+            'satellite', 'Satellite',
             1,
             DATASET.c.metadata,
             offset=['platform', 'code']
@@ -44,7 +45,7 @@ def test_get_field():
     _assert_same(
         storage_fields['lat'],
         FloatRangeDocField(
-            'lat',
+            'lat', None,
             2,
             STORAGE_UNIT.c.descriptor,
             max_offset=[['extents', 'geospatial_lat_max']],

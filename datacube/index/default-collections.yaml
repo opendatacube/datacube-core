@@ -65,13 +65,23 @@ eo:
         search_fields:
             # When no 'type' is specified, it defaults to String.
             satellite:
+                description: Satellite code
+
                 offset: [platform, code]
+
             sensor:
+                description: Sensor code
+
                 offset: [instrument, name]
+
             product:
+                description: Product code
+
                 offset: [product_type]
 
             lat:
+                description: Latitude range
+
                 type: float-range
                 max_offset:
                 - [extent, coord, ur, lat]
@@ -79,7 +89,10 @@ eo:
                 min_offset:
                 - [extent, coord, ul, lat]
                 - [extent, coord, ll, lat]
+
             lon:
+                description: Longitude range
+
                 type: float-range
                 max_offset:
                 - [extent, coord, ul, lon]
@@ -87,22 +100,26 @@ eo:
                 min_offset:
                 - [extent, coord, ll, lon]
                 - [extent, coord, lr, lon]
-            # Acquisition time.
+
     #        time:
+    #            description: Acquisition time
+    #
     #            type: datetime-range
     #            min_offset:
     #            - [extent, from_dt]
     #            max_offset:
     #            - [extent, to_dt]
 
-            # Ground Station Identifier (eg. 'ASA')
             gsi:
+                description: Ground Station Identifier (eg. ASA)
                 offset: [acquisition, groundstation, code]
             orbit:
+                description: Orbit number
                 offset: [acquisition, platform_orbit]
 
-            # Path/row (specific to Landsat).
             sat_path:
+                description: Landsat path
+
                 type: float-range
                 min_offset:
                 - [image, satellite_ref_point_start, x]
@@ -110,7 +127,10 @@ eo:
                 - [image, satellite_ref_point_end, x]
                 # If an end is not specified, use the start.
                 - [image, satellite_ref_point_start, x]
+
             sat_row:
+                description: Landsat row
+
                 type: float-range
                 min_offset:
                 - [image, satellite_ref_point_start, y]
@@ -124,18 +144,24 @@ eo:
         # (the keys/names are arbitrary, but are specified by users when searching)
         search_fields:
     #        time:
+    #            description: Acquisition time
+    #
     #            type: datetime-range
     #            min_offset:
     #            - [extents, time_min]
     #            max_offset:
     #            - [extents, time_max]
             lat:
+                description: Latitude range
+
                 type: float-range
                 min_offset:
                 - [extents, geospatial_lat_min]
                 max_offset:
                 - [extents, geospatial_lat_max]
             lon:
+                description: Longitude range
+
                 type: float-range
                 min_offset:
                 - [extents, geospatial_lon_min]
