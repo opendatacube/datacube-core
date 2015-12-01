@@ -11,7 +11,7 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-
+#: pylint: disable=too-many-locals
 """
 Example showing usage of search api and data access api to calculate some band time statistics
 """
@@ -22,10 +22,10 @@ import click
 import numpy
 import rasterio
 
-from datacube.index import index_connect
-from datacube.ui import parse_expressions
 from datacube.gdf import make_storage_unit, group_storage_units_by_location
+from datacube.index import index_connect
 from datacube.storage.access.core import StorageUnitStack, StorageUnitVariableProxy
+from datacube.ui import parse_expressions
 
 
 def ndv_to_nan(a, ndv=-999):
@@ -53,8 +53,8 @@ def get_descriptors(*query):
     result = []
     for key in nbars:
         result.append({
-        'NBAR': StorageUnitStack(sorted(nbars[key], key=lambda su: su.coordinates['time'].begin), 'time'),
-        'PQ': StorageUnitStack(sorted(pqs[key], key=lambda su: su.coordinates['time'].begin), 'time')
+            'NBAR': StorageUnitStack(sorted(nbars[key], key=lambda su: su.coordinates['time'].begin), 'time'),
+            'PQ': StorageUnitStack(sorted(pqs[key], key=lambda su: su.coordinates['time'].begin), 'time')
         })
     return result
 
@@ -63,7 +63,7 @@ def get_descriptors(*query):
 @click.argument('expression', nargs=-1)
 @click.option('--band', multiple=True, help="bands to calculate statistics on",
               type=click.Choice(['blue', 'green', 'red', 'nir', 'ir1', 'ir2']))
-#@click.option('--percentile', type=int, multiple=True)
+# @click.option('--percentile', type=int, multiple=True)
 @click.option('--mean', is_flag=True, help="calculate mean of the specified bands")
 def main(expression, band, **features):
     """
@@ -75,13 +75,17 @@ def main(expression, band, **features):
         return
 
     # map bands to meaningfull names
-    LS57varmap = {'blue': 'band_10',
-                  'green': 'band_20',
-                  'red': 'band_30',
-                  'nir': 'band_40',
-                  'ir1': 'band_50',
-                  'ir2': 'band_70'}
-    PQAvarmap = {'pqa': 'band_pixelquality'}
+    ls57_var_map = {
+        'blue': 'band_10',
+        'green': 'band_20',
+        'red': 'band_30',
+        'nir': 'band_40',
+        'ir1': 'band_50',
+        'ir2': 'band_70'
+    }
+    pqa_var_map = {
+        'pqa': 'band_pixelquality'
+    }
 
     index = index_connect()
     query = parse_expressions(index.storage.get_field_with_fallback, *expression)
@@ -89,15 +93,15 @@ def main(expression, band, **features):
     # get the data
     descriptors = get_descriptors(*query)
 
-    N = 200
+    n = 200
 
     # split the work across time stacks
     for descriptor in descriptors:
-        nbars = StorageUnitVariableProxy(descriptor['NBAR'], LS57varmap)
-        pqas = StorageUnitVariableProxy(descriptor['PQ'], PQAvarmap)
+        nbars = StorageUnitVariableProxy(descriptor['NBAR'], ls57_var_map)
+        pqas = StorageUnitVariableProxy(descriptor['PQ'], pqa_var_map)
 
         nbands = len(stats) * len(band)
-        name = "%s_%s.tif"%(nbars.coordinates['longitude'].begin, nbars.coordinates['latitude'].end)
+        name = "%s_%s.tif" % (nbars.coordinates['longitude'].begin, nbars.coordinates['latitude'].end)
         with rasterio.open(name, 'w', driver='GTiff',
                            width=nbars.coordinates['longitude'].length,
                            height=nbars.coordinates['latitude'].length,
@@ -106,9 +110,9 @@ def main(expression, band, **features):
                            nodata=-999,
                            INTERLEAVE="BAND", COMPRESS="LZW", TILED="YES") as raster:
             for band_idx, b in enumerate(band):
-                for lat in range(0, nbars.coordinates['latitude'].length, N):
-                    band_num = band_idx*len(stats)+1
-                    chunk = dict(latitude=slice(lat, lat + N))
+                for lat in range(0, nbars.coordinates['latitude'].length, n):
+                    band_num = band_idx * len(stats) + 1
+                    chunk = dict(latitude=slice(lat, lat + n))
 
                     # TODO: use requested portion of the data, not the whole tile
                     pqa_mask = ls_pqa_mask(pqas.get('pqa', **chunk).values)
@@ -117,7 +121,7 @@ def main(expression, band, **features):
                     data[pqa_mask] = numpy.nan
 
                     for stat in stats:
-                        result = getattr(numpy, 'nan'+stat)(data, axis=0)
+                        result = getattr(numpy, 'nan' + stat)(data, axis=0)
                         raster.write(result.astype('int16'), indexes=band_num,
                                      window=((lat, lat + result.shape[0]), (0, result.shape[1])))
                         band_num += 1

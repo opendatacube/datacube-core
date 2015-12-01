@@ -1,8 +1,10 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-from datacube import gdf
 import pprint
+
+from datacube import gdf
+
 
 def main():
     data_request = {
@@ -26,6 +28,7 @@ def main():
 
     data = goo.get_data(data_request)
     pp.pprint(data)
+
 
 if __name__ == '__main__':
     main()

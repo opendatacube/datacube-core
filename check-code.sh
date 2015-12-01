@@ -5,7 +5,7 @@ set -eu
 
 # Check all files other than 'compat.py'.
 #   -> compat.py contains both Python 2 and 3 syntax, so will fail lint checks.
-export py_files=$( find datacube -iname '*.py' -not -iname 'compat.py' )
+export py_files="$( find datacube -iname '*.py' -not -iname 'compat.py' ) examples/*.py"
 
 pylint --reports no ${py_files}
 # Tentatively replaced by pylint: 
