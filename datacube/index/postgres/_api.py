@@ -158,6 +158,11 @@ class PostgresDb(object):
             STORAGE_TYPE.select().where(STORAGE_TYPE.c.id == storage_type_id)
         ).first()
 
+    def get_storage_type_by_name(self, name):
+        return self._connection.execute(
+            STORAGE_TYPE.select().where(STORAGE_TYPE.c.name == name)
+        ).first()
+
     def get_storage_mapping(self, storage_mapping_id):
         return self._connection.execute(
             STORAGE_MAPPING.select().where(STORAGE_MAPPING.c.id == storage_mapping_id)
@@ -354,6 +359,20 @@ class PostgresDb(object):
     def get_collection_by_name(self, name):
         return self._connection.execute(
             COLLECTION.select().where(COLLECTION.c.name == name)
+        ).first()
+
+    def get_storage_mapping_by_name(self, storage_type_name, name):
+        return self._connection.execute(
+            select(
+                [STORAGE_MAPPING]
+            ).select_from(
+                STORAGE_MAPPING.join(STORAGE_TYPE)
+            ).where(
+                and_(
+                    STORAGE_MAPPING.c.name == name,
+                    STORAGE_TYPE.c.name == storage_type_name
+                )
+            )
         ).first()
 
     def add_collection(self,

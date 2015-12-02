@@ -6,16 +6,18 @@ from __future__ import absolute_import
 
 import copy
 
+import pytest
+
 from datacube.model import Dataset
 
 
 _STORAGE_TYPE = {
+    'name': '30m_bands',
     'driver': 'NetCDF CF',
     'base_path': '/short/v10/dra547/tmp/7/',
     'chunking': {'t': 1, 'x': 500, 'y': 500},
     'dimension_order': ['t', 'y', 'x'],
     'filename_format': '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_{creation_dt:%Y-%m-%dT%H-%M-%S.%f}.nc',
-    'name': '30m_bands',
     'projection': {
         'spatial_ref': 'GEOGCS["WGS 84",\n'
                        '    DATUM["WGS_1984",\n'
@@ -32,8 +34,22 @@ _STORAGE_TYPE = {
     'tile_size': {'x': 1.0, 'y': -1.0}
 }
 
-_STORAGE_MAPPING = {
+_15M_STORAGE_TYPE = {
+    'name': '15m_bands',
     'driver': 'NetCDF CF',
+    'base_path': '/short/v10/dra547/tmp/5/',
+    'chunking': {'t': 1, 'x': 500, 'y': 500},
+    'dimension_order': ['t', 'y', 'x'],
+    'filename_format': '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_{creation_dt:%Y-%m-%dT%H-%M-%S.%f}.nc',
+    'projection': {
+        'spatial_ref': 'epsg:1234'
+    },
+    'resolution': {'x': 0.00015, 'y': -0.00015},
+    'tile_size': {'x': 1.0, 'y': -1.0}
+}
+
+
+_STORAGE_MAPPING = {
     'name': 'LS5 NBAR',
     'match': {
         'metadata':
@@ -46,7 +62,7 @@ _STORAGE_MAPPING = {
     'storage': [
         {
 
-            'name': '30m_bands',
+            'name': _STORAGE_TYPE['name'],
             'location_name': 'eotiles',
             'file_path_template': '/file_path_template/file.nc',
             'measurements': {
@@ -105,7 +121,7 @@ _DATASET_METADATA = {
 def test_add_storage_type(index, local_config):
     """
     :type local_config: datacube.config.LocalConfig
-    :return:
+    :type index: datacube.index._api.Index
     """
     dataset = Dataset('eo', _DATASET_METADATA, '/tmp/somepath.yaml')
 
@@ -143,6 +159,56 @@ def test_add_storage_type(index, local_config):
     }, '/tmp/other.yaml')
     storage_mappings = index.mappings.get_for_dataset(dataset)
     assert len(storage_mappings) == 0
+
+
+def test_idempotent_add_type(index, local_config):
+    """
+    :type local_config: datacube.config.LocalConfig
+    :type index: datacube.index._api.Index
+    """
+    index.storage_types.add(_STORAGE_TYPE)
+    # Second time, no effect, because it's equal.
+    index.storage_types.add(_STORAGE_TYPE)
+
+    # But if we add the same type (name) with differing properties we should get an error:
+    different_storage_type = copy.deepcopy(_STORAGE_TYPE)
+    different_storage_type['base_path'] = '/tmp/new_base_path'
+    with pytest.raises(ValueError):
+        index.storage_types.add(different_storage_type)
+
+
+def test_idempotent_add_mapping(index, local_config):
+    """
+    :type local_config: datacube.config.LocalConfig
+    :type index: datacube.index._api.Index
+    """
+    index.storage_types.add(_STORAGE_TYPE)
+
+    index.mappings.add(_STORAGE_MAPPING)
+    # Second time, no effect, because it's equal.
+    index.mappings.add(_STORAGE_MAPPING)
+
+    # We can add new type mappings without issue.
+    index.storage_types.add(_15M_STORAGE_TYPE)
+    different_storage_mapping = copy.deepcopy(_STORAGE_MAPPING)
+    different_storage_mapping['storage'].append(
+        {
+            'name': _15M_STORAGE_TYPE['name'],
+            'location_name': 'eotiles',
+            'file_path_template': '/file_path_template/file2.nc',
+            'measurements': {},
+        }
+    )
+    index.mappings.add(different_storage_mapping)
+    mapping = index.mappings.get_by_name(_15M_STORAGE_TYPE['name'], _STORAGE_MAPPING['name'])
+    assert str(mapping.filename_pattern) == '/file_path_template/file2.nc'
+    assert mapping.measurements == {}
+
+    # But if we add the same mapping with differing properties we should get an error:
+    different_storage_mapping = copy.deepcopy(_STORAGE_MAPPING)
+    different_storage_mapping['storage'][0]['location_name'] = 'new_location'
+    with pytest.raises(ValueError):
+        index.mappings.add(different_storage_mapping)
 
 
 def test_collection_indexes_views_exist(db, telemetry_collection):

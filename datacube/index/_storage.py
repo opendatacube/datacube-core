@@ -138,12 +138,24 @@ class StorageTypeResource(object):
         driver = descriptor.pop('driver')
         description = descriptor.pop('description', None)
 
-        self._db.ensure_storage_type(
-            driver,
-            name,
-            descriptor,
-            description=description
-        )
+        existing = self._db.get_storage_type_by_name(name)
+        if existing:
+            # They've passed us the same storage type again. Make sure it matches what we have:
+            _check_field_equivalence(
+                [
+                    ('driver', existing.driver, driver),
+                    ('description', existing.description, description),
+                    ('descriptor', existing.descriptor, descriptor)
+                ],
+                'Storage type {}'.format(name)
+            )
+        else:
+            self._db.ensure_storage_type(
+                driver,
+                name,
+                descriptor,
+                description=description
+            )
 
 
 class StorageMappingResource(object):
@@ -168,19 +180,41 @@ class StorageMappingResource(object):
         name = descriptor['name']
         dataset_metadata = descriptor['match']['metadata']
         storage_mappings = descriptor['storage']
+        description = descriptor.get('description')
+
         with self._db.begin() as transaction:
             for mapping in storage_mappings:
-                self._db.ensure_storage_mapping(
-                    mapping['name'],
-                    name,
-                    mapping['location_name'],
-                    mapping['file_path_template'],
-                    dataset_metadata,
-                    mapping['measurements'],
-                    description=descriptor.get('description')
-                )
+                location_name = mapping['location_name']
+                file_path_template = mapping['file_path_template']
+                measurements_doc = mapping['measurements']
+                storage_type_name = mapping['name']
 
-    def _make_storage_mapping(self, mapping):
+                existing = self._db.get_storage_mapping_by_name(storage_type_name, name)
+                if existing:
+                    # They've passed us the same storage mapping again. Make sure it matches what we have:
+                    _check_field_equivalence(
+                        [
+                            ('location_name', location_name, existing.location_name),
+                            ('file_path_template', file_path_template, existing.file_path_template),
+                            ('measurements', measurements_doc, existing.measurements)
+                        ],
+                        'Storage mapping {}->{}'.format(storage_type_name, name)
+                    )
+                else:
+                    self._db.ensure_storage_mapping(
+                        storage_type_name,
+                        name,
+                        location_name,
+                        file_path_template,
+                        dataset_metadata,
+                        measurements_doc,
+                        description=description
+                    )
+
+    def _make(self, mapping):
+        """
+        :rtype: datacube.model.StorageMapping
+        """
         return StorageMapping(
             self._storage_types.get(mapping['storage_type_ref']),
             mapping['name'],
@@ -194,12 +228,58 @@ class StorageMappingResource(object):
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def get(self, id_):
+        """
+        :rtype: datacube.model.StorageMapping
+        """
         mapping = self._db.get_storage_mapping(id_)
-        return self._make_storage_mapping(mapping)
+        return self._make(mapping)
 
     def get_for_dataset(self, dataset):
+        """
+        :rtype: list[datacube.model.StorageMapping]
+        """
         return self.get_for_dataset_doc(dataset.metadata_doc)
 
     def get_for_dataset_doc(self, dataset_doc):
-        mappings = self._db.get_storage_mappings(dataset_doc)
-        return [self._make_storage_mapping(mapping) for mapping in mappings]
+        """
+        :rtype: list[datacube.model.StorageMapping]
+        """
+        return [self._make(mapping) for mapping in self._db.get_storage_mappings(dataset_doc)]
+
+    def get_by_name(self, storage_type_name, name):
+        """
+        :rtype: datacube.model.StorageMapping
+        """
+        mapping_res = self._db.get_storage_mapping_by_name(storage_type_name, name)
+        if not mapping_res:
+            return None
+        return self._make(mapping_res)
+
+
+def _check_field_equivalence(fields, name):
+    """
+    :type fields: list[(str, object, object)]
+    :type name: str
+
+    >>> _check_field_equivalence([('f1', 1, 1)], 'letters')
+    >>> _check_field_equivalence([('f1', 1, 1), ('f2', 1, 1)], 'letters')
+    >>> _check_field_equivalence([('f1', 1, 2)], 'Letters')
+    Traceback (most recent call last):
+    ...
+    ValueError: Letters differs from stored (f1)
+    >>> _check_field_equivalence([('f1', 'a', 'b'), ('f2', 'c', 'd')], 'Letters')
+    Traceback (most recent call last):
+    ...
+    ValueError: Letters differs from stored (f1, f2)
+    """
+    comparison_errors = {}
+    for key, val1, val2 in fields:
+        if val1 != val2:
+            comparison_errors[key] = (val1, val2)
+    if comparison_errors:
+        raise ValueError(
+            '{} differs from stored ({})'.format(
+                name,
+                ', '.join(sorted(comparison_errors.keys()))
+            )
+        )
