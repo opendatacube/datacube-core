@@ -105,10 +105,10 @@ create or replace function pg_temp.index_v1datasets(satellite int, level int) re
 language plpgsql
 as $$
 begin
-  insert into agdc.dataset (id, metadata_type, metadata_path, metadata)
+  insert into agdc.dataset (id, collection_ref, metadata_path, metadata)
     select
       uuid,
-      'eo',
+      (select id from agdc.collection where name = 'eo'),
       dataset_path,
       json_build_object(
           'id', uuid,
@@ -138,15 +138,17 @@ begin
          ) foo;
 end $$;
 
-
-create or replace function pg_temp.index_v1tiles(mapping int, satellite int, level int, measurements json)
-  returns void
+drop function pg_temp.index_v1tiles(mapping int, satellite integer, level integer, measurements jsonb);
+create or replace function pg_temp.index_v1tiles(mapping smallint, satellite integer, level integer, measurements jsonb)
+  returns table(id integer, descriptor jsonb)
 language plpgsql
 as $$
 begin
-  insert into agdc.storage_unit (storage_mapping_ref, path, descriptor)
+  return query
+  insert into agdc.storage_unit (storage_mapping_ref, collection_ref, path, descriptor)
     select
       mapping,
+      (select agdc.collection.id from agdc.collection where name = 'eo'),
       regexp_replace(tile_pathname, '.+pixel/', ''),
       json_build_object(
           '_agdc_legacy', json_build_object(
@@ -178,101 +180,59 @@ begin
           ),
           'measurements', measurements
       ) :: jsonb
-    from pg_temp.v1tiles(satellite, level);
+    from pg_temp.v1tiles(satellite, level)
+    returning agdc.storage_unit.id, agdc.storage_unit.descriptor;
 end $$;
 
-
-create or replace function pg_temp.link_dataset_storage() returns void
-language plpgsql
-as $$
-begin
-insert into agdc.dataset_storage (dataset_ref, storage_unit_ref)
-  select
-    (d.metadata ->> 'id') :: uuid,
-    t.id
-  from
-    agdc.storage_unit t join agdc.dataset d on (d.metadata -> '_agdc_legacy') = (t.descriptor -> '_agdc_legacy')
-  where
-    t.id not in (select storage_unit_ref from agdc.dataset_storage);
-end$$;
-
+create temp table config(name text, satellite int, level int, measurements jsonb);
+insert into config values ('LS5 NBAR V1', 1, 2, '{"layer1":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
+                                   "layer2":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
+                                   "layer3":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
+                                   "layer4":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
+                                   "layer5":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
+                                   "layer6":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]}}'::jsonb);
+insert into config values ('LS5 PQA V1', 1, 3, '{"layer1":{"dtype":"int16","dimensions":["latitude","longitude"]}}'::jsonb);
 
 do
 $$
 declare
-  satellite             int := 1;
-  --LS5
-  level                 int := 2;
-  -- NBAR
-  ls5_nbar_measurements json := '{
-    "layer1": {
-      "dtype": "int16",
-      "nodata": -999,
-      "dimensions": [
-        "latitude",
-        "longitude"
-      ]
-    },
-    "layer2": {
-      "dtype": "int16",
-      "nodata": -999,
-      "dimensions": [
-        "latitude",
-        "longitude"
-      ]
-    },
-    "layer3": {
-      "dtype": "int16",
-      "nodata": -999,
-      "dimensions": [
-        "latitude",
-        "longitude"
-      ]
-    },
-    "layer4": {
-      "dtype": "int16",
-      "nodata": -999,
-      "dimensions": [
-        "latitude",
-        "longitude"
-      ]
-    },
-    "layer5": {
-      "dtype": "int16",
-      "nodata": -999,
-      "dimensions": [
-        "latitude",
-        "longitude"
-      ]
-    },
-    "layer6": {
-      "dtype": "int16",
-      "nodata": -999,
-      "dimensions": [
-        "latitude",
-        "longitude"
-      ]
-    }
-  }' :: json;
-  mapping_id            int;
+  mapping_name text;
+  satellite int;
+  level int;
+  measurements jsonb;
+  mapping_id smallint;
 begin
-  perform pg_temp.index_v1datasets(satellite, level);
+
+  -- check 'eo' collection exists
+  -- check '25m_bands_geotif' exists
+
+for mapping_name, satellite, level, measurements in select * from config loop
 
   insert into agdc.storage_mapping (storage_type_ref, name, location_name, file_path_template,
-                                    dataset_measurements_key, dataset_metadata)
+                                    measurements,dataset_metadata)
   select
     st.id,
-    'LS5 NBAR V1',
+    mapping_name,
     'v1tiles',
     'not_used.tif',
-    '{image, bands}',
+    '{}' :: jsonb,
     '{"dont_match_me":"bro"}' :: jsonb
   from agdc.storage_type st
   where st.name = '25m_bands_geotif'
-  returning id
+  returning agdc.storage_mapping.id
   into mapping_id;
 
-  perform pg_temp.index_v1tiles(mapping_id, satellite, level, ls5_nbar_measurements);
-  perform pg_temp.link_dataset_storage();
-  -- TODO: link datasets
+  RAISE NOTICE  'indexing % datasets', mapping_name;
+  perform pg_temp.index_v1datasets(satellite, level);
+
+  RAISE NOTICE  'indexing % tiles', mapping_name;
+  insert into agdc.dataset_storage (dataset_ref, storage_unit_ref)
+    select
+      (d.metadata ->> 'id') :: uuid,
+      t.id
+    from
+      pg_temp.index_v1tiles(mapping_id, satellite, level, measurements) t
+      join agdc.dataset d on (d.metadata -> '_agdc_legacy') = (t.descriptor -> '_agdc_legacy');
+
+end loop;
 end$$;
