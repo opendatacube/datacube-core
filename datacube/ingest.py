@@ -60,6 +60,8 @@ def _dataset_from_path(index, path):
 
 def ingest(path, index=None):
     """
+    Add a dataset to the index and then create storage units from it
+
     :type index: datacube.index._api.Index
     :type path: pathlib.Path
     :rtype: datacube.model.Dataset
