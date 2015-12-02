@@ -63,3 +63,32 @@ def to_expressions(get_field, **query):
     :rtype: list[Expression]
     """
     return [_to_expression(get_field, name, value) for name, value in query.items()]
+
+
+def check_field_equivalence(fields, name):
+    """
+    :type fields: list[(str, object, object)]
+    :type name: str
+
+    >>> check_field_equivalence([('f1', 1, 1)], 'letters')
+    >>> check_field_equivalence([('f1', 1, 1), ('f2', 1, 1)], 'letters')
+    >>> check_field_equivalence([('f1', 1, 2)], 'Letters')
+    Traceback (most recent call last):
+    ...
+    ValueError: Letters differs from stored (f1)
+    >>> check_field_equivalence([('f1', 'a', 'b'), ('f2', 'c', 'd')], 'Letters')
+    Traceback (most recent call last):
+    ...
+    ValueError: Letters differs from stored (f1, f2)
+    """
+    comparison_errors = {}
+    for key, val1, val2 in fields:
+        if val1 != val2:
+            comparison_errors[key] = (val1, val2)
+    if comparison_errors:
+        raise ValueError(
+            '{} differs from stored ({})'.format(
+                name,
+                ', '.join(sorted(comparison_errors.keys()))
+            )
+        )

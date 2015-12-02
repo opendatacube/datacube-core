@@ -84,12 +84,17 @@ def example_ls5_dataset(tmpdir):
 
 
 @pytest.fixture
-def telemetry_collection(index):
+def telemetry_collection_doc():
+    return yaml.load(Path(__file__).parent.joinpath('telemetry-collection.yaml').open('r'))
+
+
+@pytest.fixture
+def telemetry_collection(index, telemetry_collection_doc):
     """
     :type index: datacube.index._api.Index
+    :type telemetry_collection_doc: dict
     """
-    parsed = yaml.load(Path(__file__).parent.joinpath('telemetry-collection.yaml').open('r'))
-    return index.collections.add(parsed)[0]
+    return index.collections.add(telemetry_collection_doc)[0]
 
 
 @pytest.fixture

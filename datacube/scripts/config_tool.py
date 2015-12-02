@@ -12,7 +12,6 @@ import yaml
 
 from datacube import config
 from datacube.index import index_connect
-from datacube.index.postgres import PostgresDb
 
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 
@@ -42,6 +41,22 @@ def database_init(no_default_collection):
         _LOG.info('Done.')
     else:
         _LOG.info('Nothing to do.')
+
+
+@cli.group()
+def collections():
+    pass
+
+
+@database.command('add')
+@click.argument('yaml_file',
+                type=click.Path(exists=True, readable=True, writable=False),
+                nargs=-1)
+def collection_refresh(yaml_file):
+    api = index_connect()
+
+    for descriptor_path in yaml_file:
+        api.collections.add(_parse_doc(descriptor_path))
 
 
 @cli.group(help='Storage types')

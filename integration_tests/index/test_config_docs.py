@@ -10,7 +10,6 @@ import pytest
 
 from datacube.model import Dataset
 
-
 _STORAGE_TYPE = {
     'name': '30m_bands',
     'driver': 'NetCDF CF',
@@ -47,7 +46,6 @@ _15M_STORAGE_TYPE = {
     'resolution': {'x': 0.00015, 'y': -0.00015},
     'tile_size': {'x': 1.0, 'y': -1.0}
 }
-
 
 _STORAGE_MAPPING = {
     'name': 'LS5 NBAR',
@@ -223,3 +221,20 @@ def test_collection_indexes_views_exist(db, telemetry_collection):
     # Ensure view was created (following naming conventions)
     val = db._connection.execute("SELECT to_regclass('agdc.landsat_telemetry_dataset')").scalar()
     assert val == 'agdc.landsat_telemetry_dataset'
+
+
+def test_idempotent_add_collection(index, telemetry_collection, telemetry_collection_doc):
+    """
+    :type telemetry_collection: datacube.model.Collection
+    :type index: datacube.index._api.Index
+    """
+    # Re-add should have no effect, because it's equal to the current one.
+    index.collections.add(telemetry_collection_doc)
+
+    # But if we add the same collection with differing properties we should get an error:
+    different_telemetry_collection = copy.deepcopy(telemetry_collection_doc)
+    different_telemetry_collection['landsat_telemetry']['match']['metadata']['ga_label'] = 'something'
+    with pytest.raises(ValueError):
+        index.collections.add(different_telemetry_collection)
+
+        # TODO: Support for adding/changing search fields?

@@ -11,7 +11,7 @@ from pathlib import Path
 import cachetools
 
 from datacube.model import Dataset, Collection, DatasetMatcher, DatasetOffsets
-from .fields import to_expressions
+from . import fields
 
 _LOG = logging.getLogger(__name__)
 
@@ -91,24 +91,54 @@ class CollectionResource(object):
         :rtype: list[datacube.model.Collection]
         """
         for name, d in descriptor.items():
-            dataset = d['dataset']
-            storage_unit = d['storage_unit']
-            match = d['match']
-            self._db.add_collection(
-                name=name,
-                description=d['description'],
-                dataset_metadata=match['metadata'],
-                match_priority=int(match['priority']),
-                dataset_id_offset=dataset['id_offset'],
-                dataset_label_offset=dataset['label_offset'],
-                dataset_creation_dt_offset=dataset['creation_dt_offset'],
-                dataset_measurements_offset=dataset['measurements_offset'],
-                dataset_sources_offset=dataset['sources_offset'],
-                # TODO: Validate
-                dataset_search_fields=dataset['search_fields'],
-                # TODO: Validate
-                storage_unit_search_fields=storage_unit['search_fields']
-            )
+            # This column duplication is getting out of hand:
+            description = d['description']
+            dataset_metadata = d['match']['metadata']
+            match_priority = int(d['match']['priority'])
+            d_id_offset = d['dataset']['id_offset']
+            d_label_offset = d['dataset']['label_offset']
+            d_creation_offset = d['dataset']['creation_dt_offset']
+            d_measurements_offset = d['dataset']['measurements_offset']
+            d_sources_offset = d['dataset']['sources_offset']
+            d_search_fields = d['dataset']['search_fields']
+            s_search_fields = d['storage_unit']['search_fields']
+
+            existing = self._db.get_collection_by_name(name)
+            if existing:
+                # They've passed us the same collection again. Make sure it matches what we have:
+                # TODO: Support for adding/updating search fields?
+                fields.check_field_equivalence(
+                    [
+                        ('description', existing.description, description),
+                        ('match.metadata', existing.dataset_metadata, dataset_metadata),
+                        ('match.priority', existing.match_priority, match_priority),
+                        ('dataset.id_offset', existing.dataset_id_offset, d_id_offset),
+                        ('dataset.label_offset', existing.dataset_label_offset, d_label_offset),
+                        ('dataset.creation_dt_offset', existing.dataset_creation_dt_offset, d_creation_offset),
+                        ('dataset.measurements_offset', existing.dataset_measurements_offset, d_measurements_offset),
+                        ('dataset.sources_offset', existing.dataset_sources_offset, d_sources_offset),
+                        ('dataset.search_offset', existing.dataset_search_fields, d_search_fields),
+                        ('storage_unit.search_offset', existing.storage_unit_search_fields, s_search_fields)
+                    ],
+                    'Collection {}'.format(name)
+                )
+            else:
+                self._db.add_collection(
+                    name=name,
+                    description=description,
+                    dataset_metadata=dataset_metadata,
+                    match_priority=match_priority,
+                    dataset_id_offset=d_id_offset,
+                    dataset_label_offset=d_label_offset,
+                    dataset_creation_dt_offset=d_creation_offset,
+                    dataset_measurements_offset=d_measurements_offset,
+                    dataset_sources_offset=d_sources_offset,
+                    # TODO: Validate
+                    dataset_search_fields=d_search_fields,
+                    # TODO: Validate
+                    storage_unit_search_fields=s_search_fields
+                )
+
         return [self.get_by_name(name) for name in descriptor.keys()]
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
@@ -231,7 +261,7 @@ class DatasetResource(object):
         :type expressions: tuple[datacube.index.fields.PgExpression]
         :rtype list[datacube.model.Dataset]
         """
-        query_exprs = tuple(to_expressions(self.get_field, **query))
+        query_exprs = tuple(fields.to_expressions(self.get_field, **query))
         return self._make_many(self._db.search_datasets((expressions + query_exprs)))
 
     def search_eager(self, *expressions, **query):
