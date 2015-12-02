@@ -176,9 +176,9 @@ class Collection(object):
         #: :type: DatasetOffsets
         self.dataset_offsets = dataset_offsets
 
-        #: :type: dict[str, Field]
+        #: :type: dict[str, datacube.index.fields.Field]
         self.dataset_fields = dataset_search_fields
-        #: :type: dict[str, Field]
+        #: :type: dict[str, datacube.index.fields.Field]
         self.storage_fields = storage_unit_search_fields
 
     def dataset_reader(self, dataset_doc):

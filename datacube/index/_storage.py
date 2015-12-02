@@ -6,6 +6,7 @@ from __future__ import absolute_import
 
 import copy
 import logging
+from pathlib import Path
 
 import cachetools
 
@@ -104,7 +105,9 @@ class StorageUnitResource(object):
             [],
             self._storage_mapping_resource.get(su['storage_mapping_ref']),
             su['descriptor'],
-            su['path']
+            # An offset from the location (ie. a URL fragment):
+            su['path'],
+            id_=su['id']
         ) for su in query_results)
 
 
@@ -118,6 +121,9 @@ class StorageTypeResource(object):
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def get(self, id_):
         storage_type = self._db.get_storage_type(id_)
+        if not storage_type:
+            return None
+
         return StorageType(
             storage_type['driver'],
             storage_type['name'],
@@ -232,6 +238,8 @@ class StorageMappingResource(object):
         :rtype: datacube.model.StorageMapping
         """
         mapping = self._db.get_storage_mapping(id_)
+        if not mapping:
+            return None
         return self._make(mapping)
 
     def get_for_dataset(self, dataset):

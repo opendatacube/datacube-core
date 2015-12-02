@@ -210,3 +210,118 @@ def test_fetch_all_of_collection(index, db, default_collection, telemetry_collec
     )
     assert len(results) == 0
 
+
+# Storage searching:
+
+def test_search_storage_star(index, db, default_collection, ls5_nbar_mapping):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    :type ls5_nbar_mapping: datacube.model.StorageMapping
+    """
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid,
+        Path('/tmp/test/' + _telemetry_uuid)
+    )
+    assert was_inserted
+
+    assert len(index.storage.search_eager()) == 0
+
+    db.add_storage_unit(
+        '/tmp/something.tif',
+        [_telemetry_uuid],
+        {'test': 'test'},
+        ls5_nbar_mapping.id_
+    )
+
+    assert len(index.storage.search_eager()) == 1
+
+
+def test_search_storage_by_dataset(index, db, default_collection, ls5_nbar_mapping):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    :type ls5_nbar_mapping: datacube.model.StorageMapping
+    :type default_collection: datacube.model.Collection
+    """
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid,
+        Path('/tmp/test/' + _telemetry_uuid)
+    )
+    assert was_inserted
+
+    unit_id = db.add_storage_unit(
+        '/tmp/something.tif',
+        [_telemetry_uuid],
+        {'test': 'test'},
+        ls5_nbar_mapping.id_
+    )
+    dfield = default_collection.dataset_fields.get
+
+    # Search by the linked dataset properties.
+    storages = index.storage.search_eager(
+        dfield('satellite') == 'LANDSAT_8',
+        dfield('sensor') == 'OLI_TIRS'
+    )
+    assert len(storages) == 1
+    assert storages[0].id_ == unit_id
+
+    # When fields don't match the dataset it shouldn't be returned.
+    storages = index.storage.search_eager(
+        dfield('satellite') == 'LANDSAT_7'
+    )
+    assert len(storages) == 0
+
+
+def test_search_storage_by_both_fields(index, db, default_collection, ls5_nbar_mapping):
+    """
+    Search storage using both storage and dataset fields.
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    :type ls5_nbar_mapping: datacube.model.StorageMapping
+    :type default_collection: datacube.model.Collection
+    """
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid,
+        Path('/tmp/test/' + _telemetry_uuid)
+    )
+    assert was_inserted
+
+    unit_id = db.add_storage_unit(
+        '/tmp/something.tif',
+        [_telemetry_uuid],
+        {
+            'extents': {
+                'geospatial_lat_min': 120,
+                'geospatial_lat_max': 140
+            }
+        },
+        ls5_nbar_mapping.id_
+    )
+    latitude = default_collection.storage_fields['lat']
+    ds_satellite = default_collection.dataset_fields['satellite']
+
+    # Search by the storage properties only
+    storages = index.storage.search_eager(
+        latitude.between(100, 150)
+    )
+    assert len(storages) == 1
+    assert storages[0].id_ == unit_id
+
+    # Don't return on a mismatch
+    storages = index.storage.search_eager(
+        latitude.between(150, 160)
+    )
+    assert len(storages) == 0
+
+    # Search by both dataset and storage fields.
+    storages = index.storage.search_eager(
+        ds_satellite == 'LANDSAT_8',
+        latitude.between(100, 150)
+
+    )
+    assert len(storages) == 1
+    assert storages[0].id_ == unit_id

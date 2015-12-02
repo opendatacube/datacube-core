@@ -92,5 +92,67 @@ def telemetry_collection(index):
     return index.collections.add(parsed)[0]
 
 
-def test_ls5_dataset(example_ls5_dataset):
-    assert False
+@pytest.fixture
+def storage_type_30m(index, db):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    """
+    id_ = db.ensure_storage_type(
+        driver='NetCDF CF',
+        name='30m_bands',
+        descriptor={
+            'base_path': '/short/v10/dra547/tmp/7/',
+            'chunking': {'t': 1, 'x': 500, 'y': 500},
+            'dimension_order': ['t', 'y', 'x'],
+            'filename_format': '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_{creation_dt:%Y-%m-%dT%H-%M-%S.%f}.nc',
+            'projection': {
+                'spatial_ref': 'GEOGCS["WGS 84",\n'
+                               '    DATUM["WGS_1984",\n'
+                               '        SPHEROID["WGS 84",6378137,298.257223563,\n'
+                               '            AUTHORITY["EPSG","7030"]],\n'
+                               '        AUTHORITY["EPSG","6326"]],\n'
+                               '    PRIMEM["Greenwich",0,\n'
+                               '        AUTHORITY["EPSG","8901"]],\n'
+                               '    UNIT["degree",0.0174532925199433,\n'
+                               '        AUTHORITY["EPSG","9122"]],\n'
+                               '    AUTHORITY["EPSG","4326"]]\n'
+            },
+            'resolution': {'x': 0.00025, 'y': -0.00025},
+            'tile_size': {'x': 1.0, 'y': -1.0}
+        }
+    )
+    return index.storage_types.get(id_)
+
+
+@pytest.fixture
+def ls5_nbar_mapping(db, index, storage_type_30m):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    :type storage_type_30m: datacube.model.StorageType
+    :rtype: datacube.model.StorageMapping
+    """
+    id_ = db.ensure_storage_mapping(
+        storage_type_name=storage_type_30m.name,
+        name='ls5_nbar',
+        description='Test LS5 Nbar 30m bands',
+        location_name='eotiles',
+        file_path_template='/file_path_template/file.nc',
+        dataset_metadata={},
+        measurements={
+            '1': {'dtype': 'int16',
+                  'fill_value': -999,
+                  'resampling_method': 'cubic',
+                  'varname': 'band_1'},
+            '2': {'dtype': 'int16',
+                  'fill_value': -999,
+                  'resampling_method': 'cubic',
+                  'varname': 'band_2'},
+            '3': {'dtype': 'int16',
+                  'fill_value': -999,
+                  'resampling_method': 'cubic',
+                  'varname': 'band_3'},
+        },
+    )
+    return index.mappings.get(id_)
