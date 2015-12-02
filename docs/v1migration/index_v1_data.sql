@@ -191,7 +191,22 @@ insert into config values ('LS5 NBAR V1', 1, 2, '{"layer1":{"dtype":"int16","nod
                                    "layer4":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
                                    "layer5":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
                                    "layer6":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]}}'::jsonb);
+insert into config values ('LS7 NBAR V1', 2, 2, '{"layer1":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
+                                   "layer2":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
+                                   "layer3":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
+                                   "layer4":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
+                                   "layer5":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
+                                   "layer6":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]}}'::jsonb);
+insert into config values ('LS8 NBAR V1', 3, 2, '{"layer1":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
+                                   "layer2":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
+                                   "layer3":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
+                                   "layer4":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
+                                   "layer5":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
+                                   "layer6":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
+                                   "layer7":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]}}'::jsonb);
 insert into config values ('LS5 PQA V1', 1, 3, '{"layer1":{"dtype":"int16","dimensions":["latitude","longitude"]}}'::jsonb);
+insert into config values ('LS7 PQA V1', 2, 3, '{"layer1":{"dtype":"int16","dimensions":["latitude","longitude"]}}'::jsonb);
+insert into config values ('LS8 PQA V1', 3, 3, '{"layer1":{"dtype":"int16","dimensions":["latitude","longitude"]}}'::jsonb);
 
 do
 $$
