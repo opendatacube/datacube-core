@@ -98,7 +98,11 @@ def add_mappings(yaml_file):
     dm = index_connect()
 
     for descriptor_path in yaml_file:
-        dm.mappings.add(_parse_doc(descriptor_path))
+        try:
+            dm.mappings.add(_parse_doc(descriptor_path))
+        except KeyError as ke:
+            _LOG.error('Unable to add invalid storage mapping file: %s', descriptor_path)
+            _LOG.exception(ke)
 
 
 @mappings.command('template', help='Print an example YAML template')
