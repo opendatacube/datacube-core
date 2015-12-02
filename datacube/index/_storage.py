@@ -62,7 +62,7 @@ class StorageUnitResource(object):
             collection_name = self._config.default_collection_name
 
         collection = self._collection_resource.get_by_name(collection_name)
-        return collection.storage_unit_search_fields.get(name)
+        return collection.storage_fields.get(name)
 
     def get_field_with_fallback(self, name, collection_name=None):
         """
@@ -74,9 +74,9 @@ class StorageUnitResource(object):
             collection_name = self._config.default_collection_name
 
         collection = self._collection_resource.get_by_name(collection_name)
-        val = collection.storage_unit_search_fields.get(name)
+        val = collection.storage_fields.get(name)
 
-        return val if val is not None else collection.dataset_search_fields.get(name)
+        return val if val is not None else collection.dataset_fields.get(name)
 
     def search(self, *expressions, **query):
         """
