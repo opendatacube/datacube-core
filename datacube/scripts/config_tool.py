@@ -43,12 +43,12 @@ def database_init(no_default_collection):
         _LOG.info('Nothing to do.')
 
 
-@cli.group()
+@cli.group(help='Dataset collections')
 def collections():
     pass
 
 
-@database.command('add')
+@collections.command('add')
 @click.argument('yaml_file',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
