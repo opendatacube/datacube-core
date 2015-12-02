@@ -138,7 +138,6 @@ begin
          ) foo;
 end $$;
 
-drop function pg_temp.index_v1tiles(mapping int, satellite integer, level integer, measurements jsonb);
 create or replace function pg_temp.index_v1tiles(mapping smallint, satellite integer, level integer, measurements jsonb)
   returns table(id integer, descriptor jsonb)
 language plpgsql
