@@ -124,12 +124,13 @@ class ImportFromNDArraysNotSupported(Exception):
     """Can only currently import from single layer rasters"""
 
 
-def storage_unit_tiler(measurement_descriptor, input_filename, storage_spec, time_value, dataset_metadata):
+def storage_unit_tiler(measurement_descriptor, input_filename, storage_type, time_value,
+                       dataset_metadata):
     """
 
     :param measurement_descriptor:
-    :param input_filename:
-    :param storage_spec:
+    :type input_filename:
+    :type storage_type: datacube.model.StorageType
     :param time_value:
     :param dataset_metadata:
     :return:
@@ -141,22 +142,22 @@ def storage_unit_tiler(measurement_descriptor, input_filename, storage_spec, tim
     if src_ds.count > 1:
         raise ImportFromNDArraysNotSupported
 
-    tile_crs = str(storage_spec['projection']['spatial_ref']).strip()
+    projection = storage_type.projection
     _LOG.debug("Ingesting: %s %s", measurement_descriptor, input_filename)
     for im, transform in create_tiles(src_ds,
-                                      storage_spec['tile_size'],
-                                      storage_spec['resolution'],
-                                      tile_crs=tile_crs):
+                                      storage_type.tile_size,
+                                      storage_type.resolution,
+                                      storage_type.projection):
         nlats, nlons = im.shape
 
-        tile_spec = TileSpec(nlats, nlons, tile_crs, transform, data=im)
+        tile_spec = TileSpec(nlats, nlons, projection, transform, data=im)
 
-        output_filename = generate_filename(storage_spec['filename_format'], dataset_metadata, tile_spec)
+        output_filename = generate_filename(storage_type.filename_format, dataset_metadata, tile_spec)
         ensure_path_exists(output_filename)
 
         _LOG.debug("Adding extracted tile to %s", output_filename)
 
-        append_to_netcdf(tile_spec, output_filename, storage_spec, measurement_descriptor, time_value,
+        append_to_netcdf(tile_spec, output_filename, storage_type, measurement_descriptor, time_value,
                          input_filename)
         _LOG.debug("Wrote %s to %s", measurement_descriptor.__dict__, output_filename)
         yield output_filename

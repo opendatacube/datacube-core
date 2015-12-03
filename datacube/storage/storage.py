@@ -41,19 +41,19 @@ def store(storage_mappings, dataset):
         dataset_measurements = collection.dataset_reader(dataset.metadata_doc).measurements_dict
         for measurement_id, measurement_descriptor in mapping.measurements.items():
             # Get the corresponding measurement/band from the dataset.
-            band_descriptor = dataset_measurements[measurement_id]
+            dataset_measurement_descriptor = dataset_measurements[measurement_id]
 
             # The path of a band is relative to the dataset path.
-            band_path = dataset.metadata_path.parent.joinpath(band_descriptor['path'])
+            input_filename = dataset.metadata_path.parent.joinpath(dataset_measurement_descriptor['path'])
 
-            _LOG.debug('Band path: %s', band_path)
-            assert band_path.exists()
+            _LOG.debug('Input filename: %s', input_filename)
+            assert input_filename.exists()
 
             # How to store this band/measurement:
             _LOG.debug('Measurement descriptor: %r', measurement_descriptor)
             for filename in storage_unit_tiler(SimpleObject(**measurement_descriptor),  # TODO: Use actual classes
-                                               input_filename=band_path,
-                                               storage_spec=storage_type.descriptor,
+                                               input_filename=input_filename,
+                                               storage_type=storage_type,
                                                # TODO: Use doc fields, rather than parsing manually.
                                                time_value=_as_datetime(
                                                    dataset.metadata_doc['extent']['center_dt']
