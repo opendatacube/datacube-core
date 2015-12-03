@@ -142,10 +142,6 @@ class StorageUnitVariableProxy(StorageUnitBase):
         return getattr(self._storage_unit, item)
 
     @property
-    def coordinates(self):
-        return self._storage_unit.coordinates
-
-    @property
     def variables(self):
         return {self._old2new[name]: value
                 for name, value in self._storage_unit.variables.items()
@@ -233,7 +229,10 @@ class StorageUnitStack(StorageUnitBase):
                                                  storage_units[-1].coordinates[stack_dim].end,
                                                  sum(su.coordinates[stack_dim].length for su in storage_units),
                                                  storage_units[0].coordinates[stack_dim].units)
-        self.variables = reduce_(lambda a, b: a.update(b) or a, (su.variables for su in storage_units), {})
+        # TODO: merge attributes
+
+    def __getattr__(self, item):
+        return getattr(self._storage_units[0], item)
 
     def _get_coord_index(self, index):
         idx = 0
@@ -297,7 +296,7 @@ class StorageUnitStack(StorageUnitBase):
     @staticmethod
     def check_consistent(storage_units, stack_dim):
         first_coord = storage_units[0].coordinates
-        all_vars = dict()
+        first_vars = storage_units[0].variables
 
         if stack_dim not in first_coord:
             raise KeyError("dimension to stack along is missing")
@@ -308,8 +307,5 @@ class StorageUnitStack(StorageUnitBase):
                         for k in first_coord if k != stack_dim)):
                 raise RuntimeError("inconsistent coordinates")
 
-            for var in all_vars:
-                if var in su.variables and all_vars[var] != su.variables[var]:
-                    raise RuntimeError("inconsistent variables")
-
-            all_vars.update(su.variables)
+            if first_vars != su.variables:
+                raise RuntimeError("inconsistent variables")
