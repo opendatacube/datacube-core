@@ -126,6 +126,9 @@ class StorageUnit(object):
         assert filepath.startswith('file://')
         return filepath[7:]
 
+    def __str__(self):
+        return "StorageUnit <type={m.name}, path={path}>".format(path=self.path, m=self.storage_mapping)
+
 
 class Dataset(object):
     def __init__(self, collection, metadata_doc, metadata_path):

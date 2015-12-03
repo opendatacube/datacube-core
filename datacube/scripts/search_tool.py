@@ -38,8 +38,8 @@ def datasets(expression):
 def units(expression):
     i = index_connect()
 
-    for d in i.storage.search(*parse_expressions(i.storage.get_field_with_fallback, *expression)):
-        print(repr(d))
+    for su in i.storage.search(*parse_expressions(i.storage.get_field_with_fallback, *expression)):
+        print(str(su))
 
 
 if __name__ == '__main__':
