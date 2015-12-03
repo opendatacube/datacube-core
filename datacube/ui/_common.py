@@ -12,7 +12,7 @@ import yaml
 
 _DOCUMENT_SUFFIX_TYPES = ('.yaml', '.yml', '.json')
 # Both compressed (*.gz) and uncompressed.
-_ALL_SUPPORTED_DOC_SUFFIXES = tuple(map(lambda a: a[0] + a[1], product(_DOCUMENT_SUFFIX_TYPES, ('', '.gz'))))
+_ALL_SUPPORTED_DOC_SUFFIXES = tuple(a[0] + a[1] for a in product(_DOCUMENT_SUFFIX_TYPES, ('', '.gz')))
 
 
 def is_supported_document_type(path):
