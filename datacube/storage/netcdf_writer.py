@@ -84,6 +84,22 @@ class NetCDFWriter(object):
         crso.inverse_flattening = projection.GetInvFlattening()
         return crso
 
+    def _create_crs_albers(self, tile_spec):
+        # http://spatialreference.org/ref/epsg/gda94-australian-albers/html/
+        # http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/cf-conventions.html#appendix-grid-mappings
+        projection = osr.SpatialReference(str(tile_spec.projection))
+        assert projection.GetAttrValue('PROJECTION') == 'Albers_Conic_Equal_Area'
+        crs = self.nco.createVariable('albers_conical_equal_area')
+        crs.standard_parallel_1 = projection.GetProjParm('standard_parallel_1')
+        crs.standard_parallel_2 = projection.GetProjParm('standard_parallel_2')
+        crs.longitude_of_central_meridian = projection.GetProjParm('longitude_of_center')
+        crs.latitude_of_projection_origin = projection.GetProjParm('latitude_of_center')
+        crs.false_easting = projection.GetProjParm('false_easting')
+        crs.false_northing = projection.GetProjParm('false_northing')
+        crs.grid_mapping_name = "albers_conical_equal_area"
+        crs.long_name = projection.GetAttrValue('PROJCS')
+        return crs
+
     def _set_global_attributes(self, tile_spec):
         """
 
@@ -152,7 +168,7 @@ class NetCDFWriter(object):
             raise VariableAlreadyExists('Error writing to {}: variable {} already exists and will not be '
                                         'overwritten.'.format(self.netcdf_path, varname))
 
-        chunking = storage_type['chunking']
+        chunking = storage_type.chunking
         chunksizes = [chunking[dim] for dim in ['t', 'y', 'x']]
         dtype = measurement_descriptor.dtype
         nodata = getattr(measurement_descriptor, 'nodata', None)
@@ -193,6 +209,7 @@ def append_to_netcdf(tile_spec, netcdf_path, storage_type, measurement_descripto
     :param tile_spec
     :param np_array: data array to add to netcdf
     :param netcdf_path: pathname to output netcdf file
+    :type storage_type: datacube.model.StorageType
     :param input_spec:
     :param bandname:
     :param input_filename: used for metadata only
