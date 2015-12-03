@@ -101,14 +101,14 @@ dataset:
             - [extent, coord, ll, lon]
             - [extent, coord, lr, lon]
 
-#        time:
-#            description: Acquisition time
-#
-#            type: datetime-range
-#            min_offset:
-#            - [extent, from_dt]
-#            max_offset:
-#            - [extent, to_dt]
+        time:
+            description: Acquisition time
+
+            type: datetime-range
+            min_offset:
+            - [extent, from_dt]
+            max_offset:
+            - [extent, to_dt]
 
         gsi:
             description: Ground Station Identifier (eg. ASA)
@@ -143,14 +143,14 @@ storage_unit:
     # Fields that we want indexed and searchable in the documents.
     # (the keys/names are arbitrary, but are specified by users when searching)
     search_fields:
-#        time:
-#            description: Acquisition time
-#
-#            type: datetime-range
-#            min_offset:
-#            - [extents, time_min]
-#            max_offset:
-#            - [extents, time_max]
+        time:
+            description: Acquisition time
+
+            type: datetime-range
+            min_offset:
+            - [extents, time_min]
+            max_offset:
+            - [extents, time_max]
         lat:
             description: Latitude range
 

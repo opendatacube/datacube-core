@@ -102,7 +102,7 @@ class BetweenExpression(Expr):
     ]
 
     def __str__(self):
-        return '{!r} < {} < {!r}'.format(self.low_value, self.field_name, self.high_values)
+        return '{!r} < {} < {!r}'.format(self.low_value, self.field_name, self.high_value)
 
     def query_repr(self, get_field):
         return get_field(self.field_name).between(

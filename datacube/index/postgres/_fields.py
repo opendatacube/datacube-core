@@ -7,8 +7,9 @@ from __future__ import absolute_import
 
 import functools
 
-from psycopg2.extras import NumericRange
-from sqlalchemy import cast, TIMESTAMP
+import pytz
+from psycopg2.extras import NumericRange, DateTimeTZRange
+from sqlalchemy import cast
 from sqlalchemy import func
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
@@ -124,8 +125,7 @@ class RangeDocField(PgField):
     def alchemy_create_range(self):
         raise NotImplementedError('range type')
 
-    @property
-    def alchemy_casted_type(self):
+    def alchemy_parse_value(self, value):
         # Default no cast: string
         return None
 
@@ -133,11 +133,10 @@ class RangeDocField(PgField):
     def postgres_index_type(self):
         return 'gist'
 
-    def _get_expr(self, doc_offsets, agg_function, casted_type):
+    def _get_expr(self, doc_offsets, agg_function, parse_value):
         fields = [self.alchemy_column[offset].astext for offset in doc_offsets]
 
-        if casted_type:
-            fields = [cast(field, casted_type) for field in fields]
+        fields = [parse_value(field) for field in fields]
 
         # If there's multiple fields, we aggregate them (eg. "min()"). Otherwise use the one.
         return agg_function(*fields) if len(fields) > 1 else fields[0]
@@ -145,8 +144,8 @@ class RangeDocField(PgField):
     @property
     def alchemy_expression(self):
         return self.alchemy_create_range(
-            self._get_expr(self.min_offset, func.least, self.alchemy_casted_type),
-            self._get_expr(self.max_offset, func.greatest, self.alchemy_casted_type),
+            self._get_expr(self.min_offset, func.least, self.alchemy_parse_value),
+            self._get_expr(self.max_offset, func.greatest, self.alchemy_parse_value),
             # Inclusive on both sides.
             '[]'
         )
@@ -157,33 +156,47 @@ class RangeDocField(PgField):
         """
         raise NotImplementedError('range equals expression')
 
-    def between(self, low, high):
-        """
-        :rtype: Expression
-        """
-        return RangeBetweenExpression(self, low, high)
-
 
 class FloatRangeDocField(RangeDocField):
-    @property
-    def alchemy_casted_type(self):
-        return postgres.NUMERIC
+    def alchemy_parse_value(self, value):
+        return cast(value, postgres.NUMERIC)
 
     @property
     def alchemy_create_range(self):
         # Call the postgres 'numrange()' function, hinting to SQLAlchemy that it returns a NUMRANGE.
         return functools.partial(func.numrange, type_=NUMRANGE)
 
+    def between(self, low, high):
+        """
+        :rtype: Expression
+        """
+        return RangeBetweenExpression(self, low, high, _range_class=NumericRange)
+
 
 class DateRangeDocField(RangeDocField):
-    @property
-    def alchemy_casted_type(self):
-        return TIMESTAMP(timezone=True)
+    def alchemy_parse_value(self, value):
+        return func.agdc.common_timestamp(value)
 
     @property
     def alchemy_create_range(self):
         # Call the postgres 'tstzrange()' function, hinting to SQLAlchemy that it returns a TSTZRANGE.
         return functools.partial(func.tstzrange, type_=TSTZRANGE)
+
+    def _default_utc(self, d):
+        if d.tzinfo is None:
+            return d.replace(tzinfo=pytz.UTC)
+        return d
+
+    def between(self, low, high):
+        """
+        :rtype: Expression
+        """
+        return RangeBetweenExpression(
+            self,
+            self._default_utc(low),
+            self._default_utc(high),
+            _range_class=DateTimeTZRange
+        )
 
 
 class PgExpression(Expression):
@@ -202,15 +215,16 @@ class PgExpression(Expression):
 
 
 class RangeBetweenExpression(PgExpression):
-    def __init__(self, field, low_value, high_value):
+    def __init__(self, field, low_value, high_value, _range_class):
         super(RangeBetweenExpression, self).__init__(field)
         self.low_value = low_value
         self.high_value = high_value
+        self._range_class = _range_class
 
     @property
     def alchemy_expression(self):
         return self.field.alchemy_expression.overlaps(
-            NumericRange(self.low_value, self.high_value)
+            self._range_class(self.low_value, self.high_value)
         )
 
 

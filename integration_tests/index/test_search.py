@@ -24,7 +24,8 @@ _telemetry_dataset = {
     },
     # We're unlikely to have extent info for a raw dataset, we'll use it for search tests.
     'extent': {
-        'center_dt': datetime.datetime(2014, 7, 26, 23, 49, 0, 343853),
+        'from_dt': datetime.datetime(2014, 7, 26, 23, 48, 0, 343853),
+        'to_dt': datetime.datetime(2014, 7, 26, 23, 52, 0, 343853),
         'coord': {
             'll': {'lat': -31.33333, 'lon': 149.78434},
             'lr': {'lat': -31.37116, 'lon': 152.20094},
@@ -94,14 +95,32 @@ def test_search_dataset_ranges(index, db, default_collection):
 
     # In the lat bounds.
     datasets = index.datasets.search_eager(
-        field('lat').between(-30.5, -29.5)
+        field('lat').between(-30.5, -29.5),
+        field('time').between(
+            datetime.datetime(2014, 7, 26, 23, 0, 0),
+            datetime.datetime(2014, 7, 26, 23, 59, 0)
+        )
     )
     assert len(datasets) == 1
     assert datasets[0].id == _telemetry_uuid
 
     # Out of the lat bounds.
     datasets = index.datasets.search_eager(
-        field('lat').between(28, 32)
+        field('lat').between(28, 32),
+        field('time').between(
+            datetime.datetime(2014, 7, 26, 23, 48, 0),
+            datetime.datetime(2014, 7, 26, 23, 50, 0)
+        )
+    )
+    assert len(datasets) == 0
+
+    # Out of the time bounds
+    datasets = index.datasets.search_eager(
+        field('lat').between(-30.5, -29.5),
+        field('time').between(
+            datetime.datetime(2014, 7, 26, 21, 48, 0),
+            datetime.datetime(2014, 7, 26, 21, 50, 0)
+        )
     )
     assert len(datasets) == 0
 

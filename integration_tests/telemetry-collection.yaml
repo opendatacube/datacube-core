@@ -23,12 +23,12 @@ dataset:
             offset: [product_type]
 
         # Acquisition time.
-#        time:
-#            type: datetime-range
-#            min_offset:
-#            - [extent, from_dt]
-#            max_offset:
-#            - [extent, to_dt]
+        time:
+            type: datetime-range
+            min_offset:
+            - [extent, from_dt]
+            max_offset:
+            - [extent, to_dt]
 
         # Ground Station Identifier (eg. 'ASA')
         gsi:
