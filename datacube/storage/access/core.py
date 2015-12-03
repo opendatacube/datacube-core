@@ -37,18 +37,6 @@ Coordinate = namedtuple('Coordinate', ('dtype', 'begin', 'end', 'length', 'units
 Variable = namedtuple('Variable', ('dtype', 'nodata', 'dimensions', 'units'))
 
 
-def is_consistent_coords(coord1, coord2):
-    return coord1.dtype == coord2.dtype and (coord1.begin > coord1.end) == (coord2.begin > coord2.end)
-
-
-def comp_dict(d1, d2, p):
-    return len(d1) == len(d2) and all(k in d2 and p(d1[k], d2[k]) for k in d1)
-
-
-def is_consistent_coord_set(coords1, coords2):
-    return comp_dict(coords1, coords2, is_consistent_coords)
-
-
 class StorageUnitBase(object):
     """
     :type coordinates: dict[str, Coordinate]
@@ -150,6 +138,9 @@ class StorageUnitVariableProxy(StorageUnitBase):
         self._new2old = varmap
         self._old2new = {name: key for key, name in varmap.items()}
 
+    def __getattr__(self, item):
+        return getattr(self._storage_unit, item)
+
     @property
     def coordinates(self):
         return self._storage_unit.coordinates
@@ -190,6 +181,9 @@ class StorageUnitDimensionProxy(StorageUnitBase):
         def expand_var(var):
             return Variable(var.dtype, var.nodata, self._dimensions + var.dimensions, var.units)
         self.variables = {name: expand_var(var) for name, var in storage_unit.variables.items()}
+
+    def __getattr__(self, item):
+        return getattr(self._storage_unit, item)
 
     def coord_slice(self, dim, range_=None):
         if dim in self._dimensions:
