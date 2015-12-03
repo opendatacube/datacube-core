@@ -298,7 +298,7 @@ class TileSpec(object):
     Defines a Storage Tile/Storage Unit, it's projection, location, resolution, and global attributes
 
     >>> from affine import Affine
-    >>> t = TileSpec(4000, 4000, "fake_projection", Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0))
+    >>> t = TileSpec("fake_projection", Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0), 4000, 4000)
     >>> t.lat_min, t.lat_max
     (-30.0, -29.0)
     >>> t.lon_min, t.lon_max
@@ -314,7 +314,9 @@ class TileSpec(object):
     lats = []
     lons = []
 
-    def __init__(self, nlats, nlons, projection, affine, data=None, global_attrs=None):
+    def __init__(self, projection, affine, nlats=None, nlons=None, data=None, global_attrs=None):
+        if not nlats or not nlons:
+            self.nlats, self.nlons = data.shape
         self.projection = projection
         self._affine = affine
         self.lons = np.arange(nlons) * affine.a + affine.c

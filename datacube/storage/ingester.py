@@ -10,8 +10,6 @@ import affine
 import dateutil.parser
 import numpy
 import rasterio
-import rasterio.coords
-from rasterio.warp import transform_bounds
 
 from datacube import compat
 from datacube.model import TileSpec
@@ -67,7 +65,7 @@ def create_tiles(src_ds, tile_size, tile_res, tile_crs, tile_dtype=None):
     """
     tile_dtype = tile_dtype or src_ds.dtypes[0]
 
-    bounds = transform_bounds(src_ds.crs, tile_crs, *src_ds.bounds)
+    bounds = rasterio.warp.transform_bounds(src_ds.crs, tile_crs, *src_ds.bounds)
     outer_bounds = expand_bounds(bounds, tile_size)
 
     width = int(tile_size['x'] / tile_res['x'])
@@ -132,25 +130,20 @@ def storage_unit_tiler(measurement_descriptor, input_filename, storage_type, tim
     :type input_filename:
     :type storage_type: datacube.model.StorageType
     :param time_value:
-    :param dataset_metadata:
+    :param dataset_metadata: Only used for making the output filename
     :return:
     """
-
-    input_filename = str(input_filename)
-
     src_ds = rasterio.open(input_filename)
     if src_ds.count > 1:
         raise ImportFromNDArraysNotSupported
 
     projection = storage_type.projection
     _LOG.debug("Ingesting: %s %s", measurement_descriptor, input_filename)
-    for im, transform in create_tiles(src_ds,
-                                      storage_type.tile_size,
-                                      storage_type.resolution,
-                                      storage_type.projection):
-        nlats, nlons = im.shape
-
-        tile_spec = TileSpec(nlats, nlons, projection, transform, data=im)
+    for data, transform in create_tiles(src_ds,
+                                        storage_type.tile_size,
+                                        storage_type.resolution,
+                                        storage_type.projection):
+        tile_spec = TileSpec(projection, transform, data=data)
 
         output_filename = generate_filename(storage_type.filename_format, dataset_metadata, tile_spec)
         ensure_path_exists(output_filename)

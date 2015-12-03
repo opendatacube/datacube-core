@@ -26,7 +26,7 @@ class NetCDFWriter(object):
     """
 
     def __init__(self, netcdf_path, tile_spec):
-
+        netcdf_path = str(netcdf_path)
         if not os.path.isfile(netcdf_path):
             self.nco = netCDF4.Dataset(netcdf_path, 'w')
 

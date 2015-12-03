@@ -120,13 +120,13 @@ def tilespec_from_gdaldataset(gdal_ds, global_attrs=None):
     nlats, nlons = gdal_ds.RasterYSize, gdal_ds.RasterXSize
     geotransform = gdal_ds.GetGeoTransform()
     extents = get_dataset_extent(gdal_ds)
-    return TileSpec(nlats, nlons, projection, geotransform, extents, global_attrs)
+    return TileSpec(projection, geotransform, nlats, nlons, extents, global_attrs)
 
 
 def tilespec_from_riodataset(rio, global_attrs=None):
     projection = rio.crs_wkt
     width, height = rio.width, rio.height
-    return TileSpec(height, width, projection, rio.affine, rio.bounds, global_attrs)
+    return TileSpec(projection, rio.affine, height, width, rio.bounds, global_attrs)
 
 
 def ensure_path_exists(filename):
