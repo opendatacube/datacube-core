@@ -89,26 +89,29 @@ class NetCDFWriter(object):
 
         :type tile_spec: datacube.model.TileSpec
         """
-        self.nco.spatial_coverage = "1.000000 degrees grid"  # FIXME: Don't hard code
+        # ACDD Metadata (Recommended)
+        self.nco.geospatial_bounds = "POLYGON(({0} {2},{0} {3},{1} {3},{1} {2},{0} {2})".format(tile_spec.lon_min,
+                                                                                                tile_spec.lon_max,
+                                                                                                tile_spec.lat_min,
+                                                                                                tile_spec.lat_max)
+        self.nco.geospatial_bounds_crs = "EPSG:4326"
         self.nco.geospatial_lat_min = tile_spec.lat_min
         self.nco.geospatial_lat_max = tile_spec.lat_max
         self.nco.geospatial_lat_units = "degrees_north"
-        self.nco.geospatial_lat_resolution = tile_spec.lat_res
+        self.nco.geospatial_lat_resolution = "{} degrees".format(abs(tile_spec.lat_res))
         self.nco.geospatial_lon_min = tile_spec.lon_min
         self.nco.geospatial_lon_max = tile_spec.lon_max
         self.nco.geospatial_lon_units = "degrees_east"
-        self.nco.geospatial_lon_resolution = tile_spec.lon_res
+        self.nco.geospatial_lon_resolution = "{} degrees".format(abs(tile_spec.lon_res))
+        self.nco.date_created = datetime.today().isoformat()
+        self.nco.history = "NetCDF-CF file created by agdc-v2 at {:%Y%m%d}.".format(datetime.utcnow())
 
-        creation_date = datetime.utcnow()
-        self.nco.history = "NetCDF-CF file created by agdc-v2 at {:%Y%m%d}.".format(creation_date)
+        # Follow ACDD and CF Conventions
+        self.nco.Conventions = 'CF-1.6, ACDD-1.3'
 
-        # Attributes from Storage Mapping
+        # Attributes from Dataset. For NCI Reqs MUST contain at least title, summary, source, product_version
         for name, value in tile_spec.global_attrs.items():
             self.nco.setncattr(name, value)
-
-        # Attributes for NCI Compliance
-        self.nco.date_created = datetime.today().isoformat()
-        self.nco.Conventions = 'CF-1.6'
 
     def find_or_create_time_index(self, insertion_time):
         """
