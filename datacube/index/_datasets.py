@@ -25,26 +25,22 @@ def _ensure_dataset(db, collection_resource, dataset_doc, path=None):
     :type collection_resource: CollectionResource
     :type path: pathlib.Path
     :returns: The dataset_id if we ingested it.
-    :rtype: uuid.UUID or None
+    :rtype: uuid.UUID
     """
 
-    dataset, source_datasets = _prepare_single(collection_resource, dataset_doc, db, path)
-
-    if dataset is None:
-        # Wasn't inserted (already existed).
-        return None
+    was_inserted, dataset, source_datasets = _prepare_single(collection_resource, dataset_doc, db, path)
 
     dataset_id = dataset.uuid_field
+
+    if not was_inserted:
+        # Already existed.
+        return dataset_id
 
     if source_datasets:
         # Get source datasets & index them.
         sources = {}
         for classifier, source_dataset in source_datasets.items():
-            source_id = _ensure_dataset(db, collection_resource, source_dataset)
-            if source_id is None:
-                # Was already indexed.
-                continue
-            sources[classifier] = source_id
+            sources[classifier] = _ensure_dataset(db, collection_resource, source_dataset)
 
         # Link to sources.
         for classifier, source_dataset_id in sources.items():
@@ -72,10 +68,8 @@ def _prepare_single(collection_resource, dataset_doc, db, path):
 
     _LOG.info('Indexing %s @ %s', dataset_id, path)
     was_inserted = db.insert_dataset(indexable_doc, dataset_id, path)
-    if not was_inserted:
-        return None, None
 
-    return dataset, source_datasets
+    return was_inserted, dataset, source_datasets
 
 
 class CollectionResource(object):
