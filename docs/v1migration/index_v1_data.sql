@@ -138,7 +138,7 @@ begin
          ) foo;
 end $$;
 
-create or replace function pg_temp.index_v1tiles(mapping smallint, satellite integer, level integer, measurements jsonb)
+create or replace function pg_temp.index_v1tiles(mapping smallint, satellite integer, level integer)
   returns table(id integer, descriptor jsonb)
 language plpgsql
 as $$
@@ -176,36 +176,41 @@ begin
                   'dtype', 'float64',
                   'units', 'degrees_east',
                   'length', 4000)
-          ),
-          'measurements', measurements
+          )
       ) :: jsonb
     from pg_temp.v1tiles(satellite, level)
     returning agdc.storage_unit.id, agdc.storage_unit.descriptor;
 end $$;
 
 create temp table config(name text, satellite int, level int, measurements jsonb);
-insert into config values ('LS5 NBAR V1', 1, 2, '{"layer1":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
-                                   "layer2":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
-                                   "layer3":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
-                                   "layer4":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
-                                   "layer5":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
-                                   "layer6":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]}}'::jsonb);
-insert into config values ('LS7 NBAR V1', 2, 2, '{"layer1":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
-                                   "layer2":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
-                                   "layer3":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
-                                   "layer4":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
-                                   "layer5":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
-                                   "layer6":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]}}'::jsonb);
-insert into config values ('LS8 NBAR V1', 3, 2, '{"layer1":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
-                                   "layer2":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
-                                   "layer3":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
-                                   "layer4":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
-                                   "layer5":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
-                                   "layer6":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]},
-                                   "layer7":{"dtype":"int16","nodata":-999,"dimensions":["latitude","longitude"]}}'::jsonb);
-insert into config values ('LS5 PQA V1', 1, 3, '{"layer1":{"dtype":"int16","dimensions":["latitude","longitude"]}}'::jsonb);
-insert into config values ('LS7 PQA V1', 2, 3, '{"layer1":{"dtype":"int16","dimensions":["latitude","longitude"]}}'::jsonb);
-insert into config values ('LS8 PQA V1', 3, 3, '{"layer1":{"dtype":"int16","dimensions":["latitude","longitude"]}}'::jsonb);
+insert into config values ('LS5 NBAR V1', 1, 2, '{
+                                    "10":{"dtype":"int16","nodata":-999,"varname":"layer1"},
+                                    "20":{"dtype":"int16","nodata":-999,"varname":"layer2"},
+                                    "30":{"dtype":"int16","nodata":-999,"varname":"layer3"},
+                                    "40":{"dtype":"int16","nodata":-999,"varname":"layer4"},
+                                    "50":{"dtype":"int16","nodata":-999,"varname":"layer5"},
+                                    "70":{"dtype":"int16","nodata":-999,"varname":"layer6"}
+                                    }'::jsonb);
+insert into config values ('LS7 NBAR V1', 2, 2, '{
+                                    "10":{"dtype":"int16","nodata":-999,"varname":"layer1"},
+                                    "20":{"dtype":"int16","nodata":-999,"varname":"layer2"},
+                                    "30":{"dtype":"int16","nodata":-999,"varname":"layer3"},
+                                    "40":{"dtype":"int16","nodata":-999,"varname":"layer4"},
+                                    "50":{"dtype":"int16","nodata":-999,"varname":"layer5"},
+                                    "70":{"dtype":"int16","nodata":-999,"varname":"layer6"}
+                                    }'::jsonb);
+insert into config values ('LS8 NBAR V1', 3, 2, '{
+                                    "1":{"dtype":"int16","nodata":-999,"varname":"layer1"},
+                                    "2":{"dtype":"int16","nodata":-999,"varname":"layer2"},
+                                    "3":{"dtype":"int16","nodata":-999,"varname":"layer3"},
+                                    "4":{"dtype":"int16","nodata":-999,"varname":"layer4"},
+                                    "5":{"dtype":"int16","nodata":-999,"varname":"layer5"},
+                                    "6":{"dtype":"int16","nodata":-999,"varname":"layer6"},
+                                    "7":{"dtype":"int16","nodata":-999,"varname":"layer7"}
+                                    }'::jsonb);
+insert into config values ('LS5 PQA V1', 1, 3, '{"1":{"dtype":"int16","varname":"layer1"}}'::jsonb);
+insert into config values ('LS7 PQA V1', 2, 3, '{"1":{"dtype":"int16","varname":"layer1"}}'::jsonb);
+insert into config values ('LS8 PQA V1', 3, 3, '{"1":{"dtype":"int16","varname":"layer1"}}'::jsonb);
 
 do
 $$
@@ -223,13 +228,13 @@ begin
 for mapping_name, satellite, level, measurements in select * from config loop
 
   insert into agdc.storage_mapping (storage_type_ref, name, location_name, file_path_template,
-                                    measurements,dataset_metadata)
+                                    measurements, dataset_metadata)
   select
     st.id,
     mapping_name,
     'v1tiles',
     'not_used.tif',
-    '{}' :: jsonb,
+    measurements,
     '{"dont_match_me":"bro"}' :: jsonb
   from agdc.storage_type st
   where st.name = '25m_bands_geotif'
@@ -245,7 +250,7 @@ for mapping_name, satellite, level, measurements in select * from config loop
       (d.metadata ->> 'id') :: uuid,
       t.id
     from
-      pg_temp.index_v1tiles(mapping_id, satellite, level, measurements) t
+      pg_temp.index_v1tiles(mapping_id, satellite, level) t
       join agdc.dataset d on (d.metadata -> '_agdc_legacy') = (t.descriptor -> '_agdc_legacy');
 
 end loop;
