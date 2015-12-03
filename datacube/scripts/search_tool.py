@@ -29,7 +29,7 @@ def datasets(expression):
     i = index_connect()
 
     for d in i.datasets.search(*parse_expressions(i.datasets.get_field, *expression)):
-        print(repr(d))
+        print(str(d))
 
 
 @cli.command(help='Storage units')

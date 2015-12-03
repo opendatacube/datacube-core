@@ -150,6 +150,10 @@ class Dataset(object):
     def id(self):
         return self.metadata_doc['id']
 
+    def __str__(self):
+        return ("Dataset <platform={doc[platform][code]}, instrument={doc[instrument][name]},"
+                " id={doc[id]}, acquisition={doc[acquisition][aos]}>".format(doc=self.metadata_doc))
+
 
 class Collection(object):
     def __init__(self,
