@@ -247,6 +247,18 @@ class TileSpec(object):
     """
     Defines a Storage Tile/Storage Unit, it's projection, location, resolution, and global attributes
 
+    >>> from affine import Affine
+    >>> t = TileSpec(4000, 4000, "fake_projection", Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0))
+    >>> t.lat_min, t.lat_max
+    (-30.0, -29.0)
+    >>> t.lon_min, t.lon_max
+    (151.0, 152.0)
+    >>> t.lats
+    array([-29.     , -29.00025, -29.0005 , ..., -29.99925, -29.9995 ,
+           -29.99975])
+    >>> t.lons
+    array([ 151.     ,  151.00025,  151.0005 , ...,  151.99925,  151.9995 ,
+            151.99975])
     """
 
     lats = []
@@ -257,24 +269,26 @@ class TileSpec(object):
         self._affine = affine
         self.lons = np.arange(nlons) * affine.a + affine.c
         self.lats = np.arange(nlats) * affine.e + affine.f
+        self.lat_extents = (nlats * affine.e + affine.f, affine.f)
+        self.lon_extents = (nlons * affine.a + affine.c, affine.c)
         self.data = data
         self.global_attrs = global_attrs or {}
 
     @property
     def lat_min(self):
-        return min(self.lats)
+        return min(self.lat_extents)
 
     @property
     def lat_max(self):
-        return max(self.lats)
+        return max(self.lat_extents)
 
     @property
     def lon_min(self):
-        return min(self.lons)
+        return min(self.lon_extents)
 
     @property
     def lon_max(self):
-        return max(self.lons)
+        return max(self.lon_extents)
 
     @property
     def lat_res(self):
