@@ -18,6 +18,7 @@ from datacube.index.postgres import PostgresDb
 from datacube.index.postgres.tables._core import ensure_db, SCHEMA_NAME
 
 _TELEMETRY_COLLECTION_DESCRIPTOR = Path(__file__).parent.joinpath('telemetry-collection.yaml')
+_EXAMPLE_LS5_NBAR = Path(__file__).parent.joinpath('example-ls5-nbar.yaml')
 
 
 @pytest.fixture
@@ -63,7 +64,7 @@ def create_empty_geotiff(path):
 def example_ls5_dataset(tmpdir):
     # Based on LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302
     dataset_dir = tmpdir.mkdir('ls5_dataset')
-    shutil.copy(os.path.join(os.path.dirname(__file__), 'agdc-metadata.yaml'), str(dataset_dir))
+    shutil.copy(str(_EXAMPLE_LS5_NBAR), str(dataset_dir.join('agdc-metadata.yaml')))
 
     # Write geotiffs
     geotiff_name = "LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B{}0.tif"
