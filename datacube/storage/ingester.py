@@ -75,8 +75,8 @@ def create_tiles(src_ds, tile_size, tile_res, tile_crs, tile_dtype=None):
 
     for y in numpy.arange(outer_bounds.top, outer_bounds.bottom, tile_size['y']):
         for x in numpy.arange(outer_bounds.left, outer_bounds.right, tile_size['x']):
-            tile_transform = affine.Affine.from_gdal(x, tile_res['x'], 0.0,
-                                                     y, 0.0, tile_res['y'])
+            tile_transform = affine.Affine(tile_res['x'], 0.0, x,
+                                           0.0, tile_res['y'], y)
             dst_region = numpy.full((height, width), -999, dtype=tile_dtype)
 
             rasterio.warp.reproject(rasterio.band(src_ds, 1), dst_region, dst_transform=tile_transform,
