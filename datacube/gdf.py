@@ -29,7 +29,7 @@ from .index import index_connect
 def get_storage_unit_transform(su):
     storage_type = su.attributes['storage_type']
     return [su.coordinates['longitude'].begin, storage_type['resolution']['x'], 0.0,
-            su.coordinates['latitude'].begin, 0.0, su.storage_type['resolution']['y']]
+            su.coordinates['latitude'].begin, 0.0, storage_type['resolution']['y']]
 
 
 def get_storage_unit_projection(su):

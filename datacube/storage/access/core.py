@@ -23,7 +23,6 @@ from collections import namedtuple
 
 import sys
 
-from functools import reduce as reduce_
 import numpy
 
 from .indexing import make_index, index_shape, normalize_index, Range
