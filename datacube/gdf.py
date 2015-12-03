@@ -28,17 +28,24 @@ from .index import index_connect
 
 def make_storage_unit(su):
     """convert search result into StorageUnit object"""
+    def map_dims(dims):
+        # TODO: remove this hack
+        mapping = {'t': 'time', 'y': 'latitude', 'x': 'longitude'}
+        return tuple(mapping[dim] for dim in dims)
     coordinates = {name: Coordinate(dtype=numpy.dtype(attrs['dtype']),
                                     begin=attrs['begin'],
                                     end=attrs['end'],
                                     length=attrs['length'],
                                     units=attrs.get('units', None))
                    for name, attrs in su.descriptor['coordinates'].items()}
-    variables = {name: Variable(dtype=numpy.dtype(attrs['dtype']),
-                                nodata=attrs['nodata'],
-                                dimensions=tuple(attrs['dimensions']),
-                                units=attrs.get('units', None))
-                 for name, attrs in su.descriptor['measurements'].items()}
+    variables = {
+        attrs['varname']: Variable(
+            dtype=numpy.dtype(attrs['dtype']),
+            nodata=attrs.get('nodata', None),
+            dimensions=map_dims(su.storage_mapping.storage_type.descriptor['dimension_order']),
+            units=attrs.get('units', None))
+        for attrs in su.storage_mapping.measurements.values()
+    }
 
     if su.storage_mapping.storage_type.driver == 'NetCDF CF':
         return NetCDF4StorageUnit(su.filepath, coordinates=coordinates, variables=variables)

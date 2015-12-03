@@ -69,6 +69,5 @@ def read_netcdf_structure(filename):
     extents['time_max'] = netCDF4.num2date(ncsu.coordinates['time'].end, time_units)
 
     coordinates = namedtuples2dicts(ncsu.coordinates)
-    variables = namedtuples2dicts(ncsu.variables)
 
-    return dict(coordinates=coordinates, measurements=variables, extents=extents)
+    return dict(coordinates=coordinates, extents=extents)
