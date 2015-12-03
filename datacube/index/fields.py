@@ -44,6 +44,12 @@ class Expression(object):
         return self.__dict__ == other.__dict__
 
 
+class OrExpression(Expression):
+    def __init__(self, *exprs):
+        super(OrExpression, self).__init__()
+        self.exprs = exprs
+
+
 def _to_expression(get_field, name, value):
     field = get_field(name)
     if field is None:
@@ -51,6 +57,8 @@ def _to_expression(get_field, name, value):
 
     if isinstance(value, Range):
         return field.between(value.begin, value.end)
+    if isinstance(value, list):
+        return OrExpression(*[_to_expression(get_field, name, val) for val in value])
     else:
         return field == value
 
