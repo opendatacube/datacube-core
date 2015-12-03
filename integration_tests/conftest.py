@@ -63,7 +63,7 @@ def create_empty_geotiff(path):
 def example_ls5_dataset(tmpdir):
     # Based on LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302
     dataset_dir = tmpdir.mkdir('ls5_dataset')
-    shutil.copy(os.path.join(os.path.dirname(__file__), 'ga-metadata.yaml'), str(dataset_dir))
+    shutil.copy(os.path.join(os.path.dirname(__file__), 'agdc-metadata.yaml'), str(dataset_dir))
 
     # Write geotiffs
     geotiff_name = "LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B{}0.tif"
