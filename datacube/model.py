@@ -31,6 +31,7 @@ class StorageType(object):
         # Name for this config (specified by users)
         #: :type: str
         self.name = name
+
         # A human-readable, potentially multi-line, description for display on the UI.
         #: :type: str
         self.description = description
@@ -42,6 +43,48 @@ class StorageType(object):
         # Database primary key
         #: :type: int
         self.id_ = id_
+
+    @property
+    def projection(self):
+        return str(self.descriptor['projection']['spatial_ref']).strip()
+
+    @property
+    def tile_size(self):
+        """
+
+        :return: dict of form {'x': , 'y': }
+        """
+        return self.descriptor['tile_size']
+
+    @property
+    def resolution(self):
+        """
+
+        :return: dict of form {'x': , 'y': }
+        """
+        return self.descriptor['resolution']
+
+    @property
+    def chunking(self):
+        return self.descriptor['chunking']
+
+    @property
+    def filename_format(self):
+        return self.descriptor['filename_format']
+
+
+class MappedStorageType(StorageType):
+    pass
+
+
+class StorageTypeDescriptor(object):
+    def __init__(self, projection, tile_size, resolution, dimension_order, chunking, filename_format):
+        self.projection = projection
+        self.tile_size = tile_size
+        self.resolution = resolution
+        self.dimension_order = dimension_order
+        self.chunking = chunking
+        self.filename_format = filename_format
 
 
 class StorageMapping(object):
