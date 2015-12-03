@@ -7,8 +7,7 @@ from __future__ import absolute_import
 import logging
 from pathlib import Path
 
-import yaml
-
+from datacube import ui
 from datacube.config import LocalConfig
 from ._datasets import DatasetResource, CollectionResource
 from ._storage import StorageUnitResource, StorageMappingResource, StorageTypeResource
@@ -48,8 +47,5 @@ class Index(object):
         is_new = self._db.init()
 
         if is_new and with_default_collection:
-            self._add_default_collection()
-
-    def _add_default_collection(self):
-        collection_descriptors = yaml.load(_DEFAULT_COLLECTIONS_FILE.open('r'))
-        return self.collections.add(collection_descriptors)
+            for _, collection_doc in ui.read_documents(_DEFAULT_COLLECTIONS_FILE):
+                self.collections.add(collection_doc)

@@ -233,7 +233,7 @@ def test_idempotent_add_collection(index, telemetry_collection, telemetry_collec
 
     # But if we add the same collection with differing properties we should get an error:
     different_telemetry_collection = copy.deepcopy(telemetry_collection_doc)
-    different_telemetry_collection['landsat_telemetry']['match']['metadata']['ga_label'] = 'something'
+    different_telemetry_collection['match']['metadata']['ga_label'] = 'something'
     with pytest.raises(ValueError):
         index.collections.add(different_telemetry_collection)
 

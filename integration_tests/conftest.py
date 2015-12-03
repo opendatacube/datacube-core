@@ -10,12 +10,14 @@ from pathlib import Path
 
 import pytest
 import rasterio
-import yaml
 
+from datacube import ui
 from datacube.config import LocalConfig
-from datacube.index._api import Index
+from datacube.index._api import Index, _DEFAULT_COLLECTIONS_FILE
 from datacube.index.postgres import PostgresDb
 from datacube.index.postgres.tables._core import ensure_db, SCHEMA_NAME
+
+_TELEMETRY_COLLECTION_DESCRIPTOR = Path(__file__).parent.joinpath('telemetry-collection.yaml')
 
 
 @pytest.fixture
@@ -42,15 +44,6 @@ def index(db, local_config):
     :type db: datacube.index.postgres._api.PostgresDb
     """
     return Index(db, local_config)
-
-
-@pytest.fixture
-def default_collection(index):
-    """
-    :type index: datacube.index._api.Index
-    """
-    collections = index._add_default_collection()
-    return collections[0]
 
 
 def create_empty_geotiff(path):
@@ -84,8 +77,21 @@ def example_ls5_dataset(tmpdir):
 
 
 @pytest.fixture
+def default_collection_doc():
+    return list(ui.read_documents(_DEFAULT_COLLECTIONS_FILE))[0][1]
+
+
+@pytest.fixture
+def default_collection(index, default_collection_doc):
+    """
+    :type index: datacube.index._api.Index
+    """
+    return index.collections.add(default_collection_doc)
+
+
+@pytest.fixture
 def telemetry_collection_doc():
-    return yaml.load(Path(__file__).parent.joinpath('telemetry-collection.yaml').open('r'))
+    return list(ui.read_documents(_TELEMETRY_COLLECTION_DESCRIPTOR))[0][1]
 
 
 @pytest.fixture
@@ -94,7 +100,7 @@ def telemetry_collection(index, telemetry_collection_doc):
     :type index: datacube.index._api.Index
     :type telemetry_collection_doc: dict
     """
-    return index.collections.add(telemetry_collection_doc)[0]
+    return index.collections.add(telemetry_collection_doc)
 
 
 @pytest.fixture
