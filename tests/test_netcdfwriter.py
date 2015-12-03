@@ -9,7 +9,7 @@ import pytest
 import rasterio
 
 from datacube.storage.netcdf_writer import NetCDFWriter, append_to_netcdf
-from datacube.model import TileSpec
+from datacube.model import TileSpec, StorageType
 from datacube.storage.ingester import SimpleObject
 from datacube.storage.utils import tilespec_from_riodataset
 
@@ -101,11 +101,12 @@ def test_create_sample_netcdf_from_gdalds(tmpdir, example_gdal_path):
 
     band_info = SimpleObject(varname='B10', dtype='int16', nodata=-999)
     storage_spec = {'chunking': {'x': 100, 'y': 100, 't': 1}}
+    storage_type = StorageType('NetCDF-CF', 'mock_storage_type', 'for testing', storage_spec)
 
     tile_spec = tilespec_from_riodataset(dataset)
     tile_spec.data = dataset.read(1)
 
-    append_to_netcdf(tile_spec, filename, storage_spec, band_info, datetime(2008, 5, 5, 0, 24),
+    append_to_netcdf(tile_spec, filename, storage_type, band_info, datetime(2008, 5, 5, 0, 24),
                      input_filename="")
 
     # Perform some basic checks
