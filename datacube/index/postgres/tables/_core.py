@@ -4,10 +4,11 @@ Core SQL schema settings.
 """
 from __future__ import absolute_import
 
-from sqlalchemy import MetaData
+from sqlalchemy import MetaData, TIMESTAMP
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.schema import CreateSchema
 from sqlalchemy.sql.expression import Executable, ClauseElement
+from sqlalchemy.sql.functions import GenericFunction
 
 SQL_NAMING_CONVENTIONS = {
     "ix": 'ix_%(column_0_label)s',
@@ -31,10 +32,10 @@ def schema_qualified(name):
 def ensure_db(connection, engine):
     is_new = False
     if not engine.dialect.has_schema(connection, SCHEMA_NAME):
-        engine.execute(CreateSchema(SCHEMA_NAME))
         is_new = True
-
-    METADATA.create_all(engine)
+        engine.execute(CreateSchema(SCHEMA_NAME))
+        engine.execute(_FUNCTIONS)
+        METADATA.create_all(engine)
 
     return is_new
 
@@ -51,3 +52,21 @@ def visit_create_view(element, compiler, **kw):
         element.name,
         compiler.process(element.select, literal_binds=True)
     )
+
+
+_FUNCTIONS = """
+create or replace function %s.common_timestamp(text)
+returns timestamp with time zone as $$
+select ($1)::timestamp at time zone 'utc';
+$$ language sql immutable returns null on null input;
+""" % SCHEMA_NAME
+
+
+# Register the function with SQLAlchemhy.
+# pylint: disable=too-many-ancestors
+class CommonTimestamp(GenericFunction):
+    type = TIMESTAMP(timezone=True)
+    package = 'agdc'
+    identifier = 'common_timestamp'
+
+    name = '%s.common_timestamp' % SCHEMA_NAME

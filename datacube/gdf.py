@@ -26,12 +26,25 @@ from .storage.access.backends import NetCDF4StorageUnit, GeoTifStorageUnit
 from .index import index_connect
 
 
+def get_storage_unit_transform(su):
+    storage_type = su.attributes['storage_type']
+    return [su.coordinates['longitude'].begin, storage_type['resolution']['x'], 0.0,
+            su.coordinates['latitude'].begin, 0.0, storage_type['resolution']['y']]
+
+
+def get_storage_unit_projection(su):
+    storage_type = su.attributes['storage_type']
+    return storage_type['projection']['spatial_ref']
+
+
 def make_storage_unit(su):
     """convert search result into StorageUnit object"""
     def map_dims(dims):
         # TODO: remove this hack
         mapping = {'t': 'time', 'y': 'latitude', 'x': 'longitude'}
         return tuple(mapping[dim] for dim in dims)
+
+    storage_type = su.storage_mapping.storage_type.descriptor
     coordinates = {name: Coordinate(dtype=numpy.dtype(attrs['dtype']),
                                     begin=attrs['begin'],
                                     end=attrs['end'],
@@ -42,17 +55,20 @@ def make_storage_unit(su):
         attrs['varname']: Variable(
             dtype=numpy.dtype(attrs['dtype']),
             nodata=attrs.get('nodata', None),
-            dimensions=map_dims(su.storage_mapping.storage_type.descriptor['dimension_order']),
+            dimensions=map_dims(storage_type['dimension_order']),
             units=attrs.get('units', None))
         for attrs in su.storage_mapping.measurements.values()
     }
+    attributes = {
+        'storage_type': storage_type
+    }
 
     if su.storage_mapping.storage_type.driver == 'NetCDF CF':
-        return NetCDF4StorageUnit(su.filepath, coordinates=coordinates, variables=variables)
+        return NetCDF4StorageUnit(su.filepath, coordinates=coordinates, variables=variables, attributes=attributes)
 
     if su.storage_mapping.storage_type.driver == 'GeoTiff':
         from datetime import datetime
-        result = GeoTifStorageUnit(su.filepath, coordinates=coordinates, variables=variables)
+        result = GeoTifStorageUnit(su.filepath, coordinates=coordinates, variables=variables, attributes=attributes)
         time = datetime.strptime(su.descriptor['extents']['time_min'], '%Y-%m-%dT%H:%M:%S.%f')
         time = (time - datetime.utcfromtimestamp(0)).total_seconds()
         return StorageUnitDimensionProxy(result, ('time', time, numpy.float64, 'seconds since 1970'))
