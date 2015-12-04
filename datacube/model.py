@@ -336,7 +336,7 @@ class TileSpec(object):
 
             wgs84 = osr.SpatialReference()
             wgs84.ImportFromEPSG(4326)
-            transform = osr.CoordinateTransformation(projection, wgs84)
+            transform = osr.CoordinateTransformation(sr, wgs84)
             self.extents = transform.TransformPoints(self.extents)
 
     @property

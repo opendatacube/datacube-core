@@ -104,7 +104,7 @@ class NetCDFWriter(object):
     def _create_albers_crs(self, projection):
         # http://spatialreference.org/ref/epsg/gda94-australian-albers/html/
         # http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/cf-conventions.html#appendix-grid-mappings
-        crs = self.nco.createVariable('albers_conical_equal_area')
+        crs = self.nco.createVariable('albers_conical_equal_area', 'i4')
         crs.standard_parallel_1 = projection.GetProjParm('standard_parallel_1')
         crs.standard_parallel_2 = projection.GetProjParm('standard_parallel_2')
         crs.longitude_of_central_meridian = projection.GetProjParm('longitude_of_center')
