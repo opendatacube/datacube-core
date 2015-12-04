@@ -3,10 +3,8 @@
 Core classes used across modules.
 """
 from __future__ import absolute_import
-
 import logging
 from collections import namedtuple
-
 import numpy as np
 from osgeo import osr
 
@@ -317,16 +315,21 @@ class TileSpec(object):
     def __init__(self, projection, affine, height, width, global_attrs=None):
         self.projection = projection
         self.affine = affine
-        sr = osr.SpatialReference(projection)
-        x1, x2 = width * affine.a + affine.c, affine.c
-        y1, y2 = height * affine.e + affine.f, affine.f
+        self.global_attrs = global_attrs or {}
+
+        self.extents = [(0, 0), (0, height), (width, height), (width, 0)]
+        affine.itransform(self.extents)
+
+        if not affine.is_rectilinear:
+            raise RuntimeError("rotation and/or shear are not supported")
+
         xs = np.arange(width) * affine.a + affine.c
         ys = np.arange(height) * affine.e + affine.f
+
+        sr = osr.SpatialReference(projection)
         if sr.IsGeographic():
             self.lons = xs
             self.lats = ys
-            self.lat_extents = (y1, y2)
-            self.lon_extents = (x1, x2)
         elif sr.IsProjected():
             self.xs = xs
             self.ys = ys
@@ -334,25 +337,23 @@ class TileSpec(object):
             wgs84 = osr.SpatialReference()
             wgs84.ImportFromEPSG(4326)
             transform = osr.CoordinateTransformation(projection, wgs84)
-
-            self.lat_extents, self.lon_extents = zip(*transform.TransformPoints([(x1, y1), (x2, y2)]))
-        self.global_attrs = global_attrs or {}
+            self.extents = transform.TransformPoints(self.extents)
 
     @property
     def lat_min(self):
-        return min(self.lat_extents)
+        return min(ll[1] for ll in self.extents)
 
     @property
     def lat_max(self):
-        return max(self.lat_extents)
+        return max(ll[1] for ll in self.extents)
 
     @property
     def lon_min(self):
-        return min(self.lon_extents)
+        return min(ll[0] for ll in self.extents)
 
     @property
     def lon_max(self):
-        return max(self.lon_extents)
+        return max(ll[0] for ll in self.extents)
 
     @property
     def lat_res(self):
