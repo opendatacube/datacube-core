@@ -61,19 +61,18 @@ def test_albers_goo(tmpdir):
 
     # Perform some basic checks
     nco = netCDF4.Dataset(filename)
-    for var in ('crs', 'time', 'longitude', 'latitude', 'B1', 'B2', 'time'):
+    for var in ('albers_conic_equal_area', 'time', 'x', 'y', 'B1', 'B2', 'time'):
         assert var in nco.variables
     for k, v in global_attrs.items():
         assert getattr(nco, k) == v
 
     assert len(nco.variables['time']) == 1
-    assert len(nco.variables['longitude']) == 4000
-    assert len(nco.variables['latitude']) == 2000
-    assert nco.variables['latitude'][0] == -29
-    assert abs(nco.variables['latitude'][-1] - -29.9995) < 0.0000001
-    assert nco.variables['longitude'][0] == 151
-    assert nco.variables['longitude'][-1] == 151.99975
-
+    assert len(nco.variables['x']) == 4000
+    assert len(nco.variables['y']) == 2000
+    # assert nco.variables['latitude'][0] == -29
+    # assert abs(nco.variables['latitude'][-1] - -29.9995) < 0.0000001
+    # assert nco.variables['longitude'][0] == 151
+    # assert nco.variables['longitude'][-1] == 151.99975
 
 
 def test_create_single_time_netcdf_from_numpy_arrays(tmpdir):
@@ -102,7 +101,7 @@ def test_create_single_time_netcdf_from_numpy_arrays(tmpdir):
 
     # Perform some basic checks
     nco = netCDF4.Dataset(filename)
-    for var in ('crs', 'time', 'longitude', 'latitude', 'B1', 'B2', 'time'):
+    for var in ('latitude_longitude', 'time', 'longitude', 'latitude', 'B1', 'B2', 'time'):
         assert var in nco.variables
     for k, v in global_attrs.items():
         assert getattr(nco, k) == v
@@ -134,7 +133,7 @@ def test_create_sample_netcdf_from_gdalds(tmpdir, example_gdal_path):
 
     # Perform some basic checks
     nco = netCDF4.Dataset(filename)
-    for var in ('crs', 'time', 'longitude', 'latitude', 'B10', 'time'):
+    for var in ('latitude_longitude', 'time', 'longitude', 'latitude', 'B10', 'time'):
         assert var in nco.variables
 
     assert len(nco.variables['time']) == 1

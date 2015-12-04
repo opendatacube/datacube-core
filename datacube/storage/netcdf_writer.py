@@ -19,6 +19,13 @@ _LOG = logging.getLogger(__name__)
 EPOCH = datetime(1970, 1, 1, 0, 0, 0)
 
 
+def _grid_mapping_name(projection):
+    if projection.IsGeographic():
+        return 'latitude_longitude'
+    elif projection.IsProjected():
+        return projection.GetAttrValue('PROJECTION').lower()
+
+
 class NetCDFWriter(object):
     """
     Base class for creating a NetCDF file based upon GeoTIFF data.
@@ -64,13 +71,11 @@ class NetCDFWriter(object):
     def _create_spatial_variables(self, tile_spec):
         projection = osr.SpatialReference(str(tile_spec.projection))
         if projection.IsGeographic():
-            crs = self._create_geo_crs(projection)
+            self._create_geo_crs(projection)
             self._create_geo_variables(tile_spec)
-            return crs
         elif projection.IsProjected():
-            crs = self._create_proj_crs(projection)
+            self._create_proj_crs(projection)
             self._create_proj_variables(tile_spec, projection.GetAttrValue('UNIT'))
-            return crs
         else:
             raise Exception("Unknown projection")
 
@@ -93,9 +98,9 @@ class NetCDFWriter(object):
         lat[:] = tile_spec.lats
 
     def _create_geo_crs(self, projection):
-        crs = self.nco.createVariable('crs', 'i4')
+        crs = self.nco.createVariable(_grid_mapping_name(projection), 'i4')
         crs.long_name = projection.GetAttrValue('GEOGCS')  # "Lon/Lat Coords in WGS84"
-        crs.grid_mapping_name = "latitude_longitude"
+        crs.grid_mapping_name = _grid_mapping_name(projection)
         crs.longitude_of_prime_meridian = 0.0
         crs.semi_major_axis = projection.GetSemiMajor()
         crs.inverse_flattening = projection.GetInvFlattening()
@@ -104,19 +109,20 @@ class NetCDFWriter(object):
     def _create_albers_crs(self, projection):
         # http://spatialreference.org/ref/epsg/gda94-australian-albers/html/
         # http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/cf-conventions.html#appendix-grid-mappings
-        crs = self.nco.createVariable('albers_conical_equal_area', 'i4')
+        crs = self.nco.createVariable(_grid_mapping_name(projection), 'i4')
         crs.standard_parallel_1 = projection.GetProjParm('standard_parallel_1')
         crs.standard_parallel_2 = projection.GetProjParm('standard_parallel_2')
         crs.longitude_of_central_meridian = projection.GetProjParm('longitude_of_center')
         crs.latitude_of_projection_origin = projection.GetProjParm('latitude_of_center')
         crs.false_easting = projection.GetProjParm('false_easting')
         crs.false_northing = projection.GetProjParm('false_northing')
-        crs.grid_mapping_name = "albers_conical_equal_area"
+        crs.grid_mapping_name = _grid_mapping_name(projection)
         crs.long_name = projection.GetAttrValue('PROJCS')
         return crs
 
     def _create_proj_crs(self, projection):
-        assert projection.GetAttrValue('PROJECTION') == 'Albers_Conic_Equal_Area'
+        if _grid_mapping_name(projection) != 'albers_conic_equal_area':
+            raise RuntimeError('%s projection is not supported' % _grid_mapping_name(projection))
         return self._create_albers_crs(projection)
 
     def _create_proj_variables(self, tile_spec, units):
@@ -201,6 +207,20 @@ class NetCDFWriter(object):
 
         return index
 
+    def append_time_slice(self, varname, data, time, input_filename="Raw Array"):
+        out_band = self.nco.variables[varname]
+        src_filename = self.nco.variables[varname + "_src_filenames"]
+        time_index = self.find_or_create_time_index(time)
+        out_band[time_index, :, :] = data
+        src_filename[time_index] = input_filename
+
+    def ensure_variable(self, varname, dtype, chunksizes, ndv=None, units=None):
+        if varname in self.nco.variables:
+            # TODO: check that var matches
+            return
+
+        self._create_data_variable(varname, dtype, chunksizes, ndv, units)
+
     def append_np_array(self, time, nparray, varname, dtype, ndv, chunking, units):
         if varname in self.nco.variables:
             out_band = self.nco.variables[varname]
@@ -232,11 +252,14 @@ class NetCDFWriter(object):
         out_band[time_index, :, :] = np_array
         src_filename[time_index] = input_filename
 
-    def _create_data_variable(self, varname, dtype, chunksizes, ndv, units):
-        newvar = self.nco.createVariable(varname, dtype, ('time', 'latitude', 'longitude'),
+    def _create_data_variable(self, varname, dtype, chunksizes, ndv=None, units=None):
+        projection = osr.SpatialReference(str(self._tile_spec.projection))
+        dimensions = ('time', 'latitude', 'longitude') if projection.IsGeographic() else ('time', 'y', 'x')
+
+        newvar = self.nco.createVariable(varname, dtype, dimensions,
                                          zlib=True, chunksizes=chunksizes,
                                          fill_value=ndv)
-        newvar.grid_mapping = 'crs'
+        newvar.grid_mapping = _grid_mapping_name(projection)
         newvar.set_auto_maskandscale(False)
 
         if units:
