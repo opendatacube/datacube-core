@@ -16,4 +16,11 @@
 User Interface Utilities
 """
 from __future__ import absolute_import
+
+from ._common import read_documents, is_supported_document_type
 from ._query_parser import parse_expressions, UnknownFieldException
+
+__all__ = [
+    'read_documents', 'is_supported_document_type',
+    'parse_expressions', 'UnknownFieldException',
+]

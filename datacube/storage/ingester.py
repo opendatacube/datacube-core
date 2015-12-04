@@ -124,7 +124,17 @@ class ImportFromNDArraysNotSupported(Exception):
     """Can only currently import from single layer rasters"""
 
 
-def crazy_band_tiler(measurement_descriptor, input_filename, storage_spec, time_value, dataset_metadata):
+def storage_unit_tiler(measurement_descriptor, input_filename, storage_spec, time_value, dataset_metadata):
+    """
+
+    :param measurement_descriptor:
+    :param input_filename:
+    :param storage_spec:
+    :param time_value:
+    :param dataset_metadata:
+    :return:
+    """
+
     input_filename = str(input_filename)
 
     src_ds = rasterio.open(input_filename)

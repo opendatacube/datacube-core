@@ -10,13 +10,16 @@ import datetime
 import json
 import logging
 
+from functools import reduce as reduce_
+
 import numpy
-from sqlalchemy import create_engine, select, text, bindparam, exists, and_, Index
+from sqlalchemy import create_engine, select, text, bindparam, exists, and_, or_, Index
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.url import URL as EngineUrl
 from sqlalchemy.exc import IntegrityError
 
 from datacube.config import LocalConfig
+from datacube.index.fields import OrExpression
 from datacube.index.postgres.tables._core import schema_qualified
 from . import tables
 from ._fields import parse_fields, NativeField
@@ -136,22 +139,24 @@ class PostgresDb(object):
         return bool(self._connection.execute(select([DATASET.c.id]).where(DATASET.c.id == dataset_id)).fetchone())
 
     def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
-        self._connection.execute(
+        res = self._connection.execute(
             DATASET_SOURCE.insert(),
             classifier=classifier,
             dataset_ref=dataset_id,
             source_dataset_ref=source_dataset_id
         )
+        return res.inserted_primary_key[0]
 
     def ensure_storage_type(self, driver, name, descriptor, description=None):
         # TODO: Update them if they already exist. This will do for now.
-        self._connection.execute(
+        res = self._connection.execute(
             STORAGE_TYPE.insert(),
             driver=driver,
             name=name,
             description=description,
             descriptor=descriptor
         )
+        return res.inserted_primary_key[0]
 
     def get_storage_type(self, storage_type_id):
         return self._connection.execute(
@@ -191,7 +196,7 @@ class PostgresDb(object):
                                name, location_name, file_path_template,
                                dataset_metadata, measurements,
                                description=None):
-        self._connection.execute(
+        res = self._connection.execute(
             STORAGE_MAPPING.insert().values(
                 storage_type_ref=select([STORAGE_TYPE.c.id]).where(
                     STORAGE_TYPE.c.name == storage_type_name
@@ -204,6 +209,7 @@ class PostgresDb(object):
                 file_path_template=file_path_template,
             )
         )
+        return res.inserted_primary_key[0]
 
     def add_storage_unit(self, path, dataset_ids, descriptor, storage_mapping_id):
         if not dataset_ids:
@@ -282,7 +288,7 @@ class PostgresDb(object):
             parse_fields(
                 collection_result['storage_unit_search_fields'],
                 collection_result['id'],
-                DATASET.c.metadata
+                STORAGE_UNIT.c.descriptor
             )
         )
         return fields
@@ -321,14 +327,7 @@ class PostgresDb(object):
         """
         select_fields = [f.alchemy_expression for f in select_fields] if select_fields else [primary_table]
 
-        join_tables, raw_expressions = _prepare_expressions(expressions, primary_table)
-
-        from_expression = primary_table
-        for table in join_tables:
-            from_expression = from_expression.join(table)
-
-        if __debug__:
-            _LOG.debug('Using joined tables: %s', ', '.join([t.name for t in join_tables]))
+        from_expression, raw_expressions = _prepare_expressions(expressions, primary_table)
 
         results = self._connection.execute(
             select(select_fields).select_from(from_expression).where(
@@ -463,6 +462,13 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_
         )
 
 
+_JOIN_REQUIREMENTS = {
+    # To join dataset to storage unit, use this table.
+    (DATASET, STORAGE_UNIT): DATASET_STORAGE,
+    (STORAGE_UNIT, DATASET): DATASET_STORAGE
+}
+
+
 def _prepare_expressions(expressions, primary_table):
     """
     :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
@@ -471,14 +477,19 @@ def _prepare_expressions(expressions, primary_table):
     # We currently only allow one collection to be queried (our indexes are per-collection)
     collection_references = set()
     join_tables = set()
-    for expression in expressions:
-        field = expression.field
 
+    def tables_referenced(expression):
+        if isinstance(expression, OrExpression):
+            return reduce_(lambda a, b: a | b, (tables_referenced(expr) for expr in expression.exprs), set())
+
+        field = expression.field
         table = field.alchemy_column.table
+        collection_id = field.collection_id
+        return {(table, collection_id)}
+
+    for table, collection_id in reduce_(lambda a, b: a | b, (tables_referenced(expr) for expr in expressions), set()):
         if table != primary_table:
             join_tables.add(table)
-
-        collection_id = field.collection_id
         if collection_id:
             collection_references.add((table, collection_id))
 
@@ -488,14 +499,27 @@ def _prepare_expressions(expressions, primary_table):
             'Currently only one collection can be queried at a time. (Tried %r)' % collection_references
         )
 
-    raw_expressions = [expression.alchemy_expression for expression in expressions]
+    def raw_expr(expression):
+        if isinstance(expression, OrExpression):
+            return or_(raw_expr(expr) for expr in expression.exprs)
+        return expression.alchemy_expression
+
+    raw_expressions = [raw_expr(expression) for expression in expressions]
 
     # We may have multiple references: storage.collection_ref and dataset.collection_ref.
     # We want to include all, to ensure the indexes are used.
     for from_table, queried_collection in collection_references:
         raw_expressions.insert(0, from_table.c.collection_ref == queried_collection)
 
-    return join_tables, raw_expressions
+    from_expression = primary_table
+    for table in join_tables:
+        # Do we need any middle-men tables to join our tables?
+        join_requirement = _JOIN_REQUIREMENTS.get((primary_table, table), None)
+        if join_requirement is not None:
+            from_expression = from_expression.join(join_requirement)
+        from_expression = from_expression.join(table)
+
+    return from_expression, raw_expressions
 
 
 def _to_json(o):

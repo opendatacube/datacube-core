@@ -11,7 +11,7 @@ from pathlib import Path
 import cachetools
 
 from datacube.model import Dataset, Collection, DatasetMatcher, DatasetOffsets
-from .fields import to_expressions
+from . import fields
 
 _LOG = logging.getLogger(__name__)
 
@@ -25,26 +25,22 @@ def _ensure_dataset(db, collection_resource, dataset_doc, path=None):
     :type collection_resource: CollectionResource
     :type path: pathlib.Path
     :returns: The dataset_id if we ingested it.
-    :rtype: uuid.UUID or None
+    :rtype: uuid.UUID
     """
 
-    dataset, source_datasets = _prepare_single(collection_resource, dataset_doc, db, path)
-
-    if dataset is None:
-        # Wasn't inserted (already existed).
-        return None
+    was_inserted, dataset, source_datasets = _prepare_single(collection_resource, dataset_doc, db, path)
 
     dataset_id = dataset.uuid_field
+
+    if not was_inserted:
+        # Already existed.
+        return dataset_id
 
     if source_datasets:
         # Get source datasets & index them.
         sources = {}
         for classifier, source_dataset in source_datasets.items():
-            source_id = _ensure_dataset(db, collection_resource, source_dataset)
-            if source_id is None:
-                # Was already indexed.
-                continue
-            sources[classifier] = source_id
+            sources[classifier] = _ensure_dataset(db, collection_resource, source_dataset)
 
         # Link to sources.
         for classifier, source_dataset_id in sources.items():
@@ -72,10 +68,8 @@ def _prepare_single(collection_resource, dataset_doc, db, path):
 
     _LOG.info('Indexing %s @ %s', dataset_id, path)
     was_inserted = db.insert_dataset(indexable_doc, dataset_id, path)
-    if not was_inserted:
-        return None, None
 
-    return dataset, source_datasets
+    return was_inserted, dataset, source_datasets
 
 
 class CollectionResource(object):
@@ -88,28 +82,57 @@ class CollectionResource(object):
     def add(self, descriptor):
         """
         :type descriptor: dict
-        :rtype: list[datacube.model.Collection]
+        :rtype: datacube.model.Collection
         """
-        for name, d in descriptor.items():
-            dataset = d['dataset']
-            storage_unit = d['storage_unit']
-            match = d['match']
+        # This column duplication is getting out of hand:
+        name = descriptor['name']
+        description = descriptor['description']
+        dataset_metadata = descriptor['match']['metadata']
+        match_priority = int(descriptor['match']['priority'])
+        d_id_offset = descriptor['dataset']['id_offset']
+        d_label_offset = descriptor['dataset']['label_offset']
+        d_creation_offset = descriptor['dataset']['creation_dt_offset']
+        d_measurements_offset = descriptor['dataset']['measurements_offset']
+        d_sources_offset = descriptor['dataset']['sources_offset']
+        d_search_fields = descriptor['dataset']['search_fields']
+        s_search_fields = descriptor['storage_unit']['search_fields']
+
+        existing = self._db.get_collection_by_name(name)
+        if existing:
+            # They've passed us the same collection again. Make sure it matches what we have:
+            # TODO: Support for adding/updating search fields?
+            fields.check_field_equivalence(
+                [
+                    ('description', existing.description, description),
+                    ('match.metadata', existing.dataset_metadata, dataset_metadata),
+                    ('match.priority', existing.match_priority, match_priority),
+                    ('dataset.id_offset', existing.dataset_id_offset, d_id_offset),
+                    ('dataset.label_offset', existing.dataset_label_offset, d_label_offset),
+                    ('dataset.creation_dt_offset', existing.dataset_creation_dt_offset, d_creation_offset),
+                    ('dataset.measurements_offset', existing.dataset_measurements_offset, d_measurements_offset),
+                    ('dataset.sources_offset', existing.dataset_sources_offset, d_sources_offset),
+                    ('dataset.search_offset', existing.dataset_search_fields, d_search_fields),
+                    ('storage_unit.search_offset', existing.storage_unit_search_fields, s_search_fields)
+                ],
+                'Collection {}'.format(name)
+            )
+        else:
             self._db.add_collection(
                 name=name,
-                description=d['description'],
-                dataset_metadata=match['metadata'],
-                match_priority=int(match['priority']),
-                dataset_id_offset=dataset['id_offset'],
-                dataset_label_offset=dataset['label_offset'],
-                dataset_creation_dt_offset=dataset['creation_dt_offset'],
-                dataset_measurements_offset=dataset['measurements_offset'],
-                dataset_sources_offset=dataset['sources_offset'],
+                description=description,
+                dataset_metadata=dataset_metadata,
+                match_priority=match_priority,
+                dataset_id_offset=d_id_offset,
+                dataset_label_offset=d_label_offset,
+                dataset_creation_dt_offset=d_creation_offset,
+                dataset_measurements_offset=d_measurements_offset,
+                dataset_sources_offset=d_sources_offset,
                 # TODO: Validate
-                dataset_search_fields=dataset['search_fields'],
+                dataset_search_fields=d_search_fields,
                 # TODO: Validate
-                storage_unit_search_fields=storage_unit['search_fields']
+                storage_unit_search_fields=s_search_fields
             )
-        return [self.get_by_name(name) for name in descriptor.keys()]
+        return self.get_by_name(name)
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def get(self, id_):
@@ -231,7 +254,7 @@ class DatasetResource(object):
         :type expressions: tuple[datacube.index.fields.PgExpression]
         :rtype list[datacube.model.Dataset]
         """
-        query_exprs = tuple(to_expressions(self.get_field, **query))
+        query_exprs = tuple(fields.to_expressions(self.get_field, **query))
         return self._make_many(self._db.search_datasets((expressions + query_exprs)))
 
     def search_eager(self, *expressions, **query):

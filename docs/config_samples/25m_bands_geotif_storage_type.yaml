@@ -26,5 +26,4 @@ resolution:
 chunking:
     x: 4000
     y: 1
-    t: 1
-dimension_order: ['t', 'y', 'x']
+dimension_order: ['y', 'x']

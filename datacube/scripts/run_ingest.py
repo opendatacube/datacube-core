@@ -17,14 +17,14 @@ CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 @click.command(help="Ingest datasets into the Data Cube.", context_settings=CLICK_SETTINGS)
 @click.option('--verbose', '-v', count=True, help="Use multiple times for more verbosity")
 @click.option('--log-queries', is_flag=True, help="Print database queries.")
-@click.argument('dataset',
+@click.argument('datasets',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
-def cli(verbose, dataset, log_queries):
+def cli(verbose, datasets, log_queries):
     config.init_logging(verbosity_level=verbose, log_queries=log_queries)
 
     i = index.index_connect()
-    for dataset_path in dataset:
+    for dataset_path in datasets:
         ingest(Path(dataset_path), index=i)
 
 

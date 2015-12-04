@@ -58,7 +58,7 @@ DATASET = Table(
     # Location of ingested metadata file (yaml?).
     #   - Individual file paths can be calculated relative to this.
     #   - May be null if the dataset was not ingested (provenance-only)
-    Column('metadata_path', String, nullable=True, unique=True),
+    Column('metadata_path', String, nullable=True, unique=False),
 
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),

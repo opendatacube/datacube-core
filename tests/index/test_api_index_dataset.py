@@ -199,7 +199,11 @@ def test_index_already_ingested_source_dataset():
     assert len(mock_db.dataset) == 1
     assert mock_db.dataset[0][1] == _nbar_uuid
 
-    assert len(mock_db.dataset_source) == 0
+    # It should have been linked to the ortho.
+    assert len(mock_db.dataset_source) == 1
+    assert mock_db.dataset_source == {
+        ('ortho', _nbar_uuid, _ortho_uuid),
+    }
 
 
 def test_index_two_levels_already_ingested():
@@ -215,9 +219,10 @@ def test_index_two_levels_already_ingested():
     # Two datasets (the telemetry data already ingested)
     assert len(mock_db.dataset) == 2
 
-    # Our two datasets should be linked together
-    # Nbar -> Ortho
-    assert len(mock_db.dataset_source) == 1
+    # Our three datasets should be linked together
+    # Nbar -> Ortho -> Telemetry
+    assert len(mock_db.dataset_source) == 2
     assert mock_db.dataset_source == {
         ('ortho', _nbar_uuid, _ortho_uuid),
+        ('satellite_telemetry_data', _ortho_uuid, _telemetry_uuid)
     }

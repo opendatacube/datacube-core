@@ -25,21 +25,21 @@ def cli(verbose, log_queries):
 @cli.command(help='Datasets')
 @click.argument('expression',
                 nargs=-1)
-def dataset(expression):
+def datasets(expression):
     i = index_connect()
 
     for d in i.datasets.search(*parse_expressions(i.datasets.get_field, *expression)):
-        print(repr(d))
+        print(str(d))
 
 
 @cli.command(help='Storage units')
 @click.argument('expression',
                 nargs=-1)
-def unit(expression):
+def units(expression):
     i = index_connect()
 
-    for d in i.storage.search(*parse_expressions(i.storage.get_field_with_fallback, *expression)):
-        print(repr(d))
+    for su in i.storage.search(*parse_expressions(i.storage.get_field_with_fallback, *expression)):
+        print(str(su))
 
 
 if __name__ == '__main__':

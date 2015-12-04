@@ -52,7 +52,7 @@ Create a basic user configuration in `~/.datacube.conf`; For example:
     db_password:
     
     [locations]
-    gdata: file:///gdata/datacube
+    eotiles: file:///datacube/eotiles
 
 
 ### Create the datacube database in PostgreSQL

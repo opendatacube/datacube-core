@@ -23,7 +23,6 @@ from collections import namedtuple
 
 import sys
 
-from functools import reduce as reduce_
 import numpy
 
 from .indexing import make_index, index_shape, normalize_index, Range
@@ -35,18 +34,6 @@ except ImportError:
 
 Coordinate = namedtuple('Coordinate', ('dtype', 'begin', 'end', 'length', 'units'))
 Variable = namedtuple('Variable', ('dtype', 'nodata', 'dimensions', 'units'))
-
-
-def is_consistent_coords(coord1, coord2):
-    return coord1.dtype == coord2.dtype and (coord1.begin > coord1.end) == (coord2.begin > coord2.end)
-
-
-def comp_dict(d1, d2, p):
-    return len(d1) == len(d2) and all(k in d2 and p(d1[k], d2[k]) for k in d1)
-
-
-def is_consistent_coord_set(coords1, coords2):
-    return comp_dict(coords1, coords2, is_consistent_coords)
 
 
 class StorageUnitBase(object):
@@ -150,9 +137,8 @@ class StorageUnitVariableProxy(StorageUnitBase):
         self._new2old = varmap
         self._old2new = {name: key for key, name in varmap.items()}
 
-    @property
-    def coordinates(self):
-        return self._storage_unit.coordinates
+    def __getattr__(self, item):
+        return getattr(self._storage_unit, item)
 
     @property
     def variables(self):
@@ -190,6 +176,9 @@ class StorageUnitDimensionProxy(StorageUnitBase):
         def expand_var(var):
             return Variable(var.dtype, var.nodata, self._dimensions + var.dimensions, var.units)
         self.variables = {name: expand_var(var) for name, var in storage_unit.variables.items()}
+
+    def __getattr__(self, item):
+        return getattr(self._storage_unit, item)
 
     def coord_slice(self, dim, range_=None):
         if dim in self._dimensions:
@@ -239,7 +228,10 @@ class StorageUnitStack(StorageUnitBase):
                                                  storage_units[-1].coordinates[stack_dim].end,
                                                  sum(su.coordinates[stack_dim].length for su in storage_units),
                                                  storage_units[0].coordinates[stack_dim].units)
-        self.variables = reduce_(lambda a, b: a.update(b) or a, (su.variables for su in storage_units), {})
+        # TODO: merge attributes
+
+    def __getattr__(self, item):
+        return getattr(self._storage_units[0], item)
 
     def _get_coord_index(self, index):
         idx = 0
@@ -303,7 +295,7 @@ class StorageUnitStack(StorageUnitBase):
     @staticmethod
     def check_consistent(storage_units, stack_dim):
         first_coord = storage_units[0].coordinates
-        all_vars = dict()
+        first_vars = storage_units[0].variables
 
         if stack_dim not in first_coord:
             raise KeyError("dimension to stack along is missing")
@@ -314,8 +306,5 @@ class StorageUnitStack(StorageUnitBase):
                         for k in first_coord if k != stack_dim)):
                 raise RuntimeError("inconsistent coordinates")
 
-            for var in all_vars:
-                if var in su.variables and all_vars[var] != su.variables[var]:
-                    raise RuntimeError("inconsistent variables")
-
-            all_vars.update(su.variables)
+            if first_vars != su.variables:
+                raise RuntimeError("inconsistent variables")

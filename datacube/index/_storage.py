@@ -9,8 +9,8 @@ import logging
 
 import cachetools
 
-from datacube.index.fields import to_expressions
 from datacube.model import StorageUnit, StorageType, DatasetMatcher, StorageMapping
+from . import fields
 
 _LOG = logging.getLogger(__name__)
 
@@ -84,7 +84,7 @@ class StorageUnitResource(object):
         :type query: dict[str,str|float|datacube.model.Range]
         :rtype list[datacube.model.StorageUnit]
         """
-        query_exprs = tuple(to_expressions(self.get_field_with_fallback, **query))
+        query_exprs = tuple(fields.to_expressions(self.get_field_with_fallback, **query))
         return self._make(self._db.search_storage_units((expressions + query_exprs)))
 
     def search_eager(self, *expressions, **query):
@@ -104,7 +104,9 @@ class StorageUnitResource(object):
             [],
             self._storage_mapping_resource.get(su['storage_mapping_ref']),
             su['descriptor'],
-            su['path']
+            # An offset from the location (ie. a URL fragment):
+            su['path'],
+            id_=su['id']
         ) for su in query_results)
 
 
@@ -118,6 +120,9 @@ class StorageTypeResource(object):
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def get(self, id_):
         storage_type = self._db.get_storage_type(id_)
+        if not storage_type:
+            return None
+
         return StorageType(
             storage_type['driver'],
             storage_type['name'],
@@ -141,7 +146,7 @@ class StorageTypeResource(object):
         existing = self._db.get_storage_type_by_name(name)
         if existing:
             # They've passed us the same storage type again. Make sure it matches what we have:
-            _check_field_equivalence(
+            fields.check_field_equivalence(
                 [
                     ('driver', existing.driver, driver),
                     ('description', existing.description, description),
@@ -192,7 +197,7 @@ class StorageMappingResource(object):
                 existing = self._db.get_storage_mapping_by_name(storage_type_name, name)
                 if existing:
                     # They've passed us the same storage mapping again. Make sure it matches what we have:
-                    _check_field_equivalence(
+                    fields.check_field_equivalence(
                         [
                             ('location_name', location_name, existing.location_name),
                             ('file_path_template', file_path_template, existing.file_path_template),
@@ -232,6 +237,8 @@ class StorageMappingResource(object):
         :rtype: datacube.model.StorageMapping
         """
         mapping = self._db.get_storage_mapping(id_)
+        if not mapping:
+            return None
         return self._make(mapping)
 
     def get_for_dataset(self, dataset):
@@ -254,32 +261,3 @@ class StorageMappingResource(object):
         if not mapping_res:
             return None
         return self._make(mapping_res)
-
-
-def _check_field_equivalence(fields, name):
-    """
-    :type fields: list[(str, object, object)]
-    :type name: str
-
-    >>> _check_field_equivalence([('f1', 1, 1)], 'letters')
-    >>> _check_field_equivalence([('f1', 1, 1), ('f2', 1, 1)], 'letters')
-    >>> _check_field_equivalence([('f1', 1, 2)], 'Letters')
-    Traceback (most recent call last):
-    ...
-    ValueError: Letters differs from stored (f1)
-    >>> _check_field_equivalence([('f1', 'a', 'b'), ('f2', 'c', 'd')], 'Letters')
-    Traceback (most recent call last):
-    ...
-    ValueError: Letters differs from stored (f1, f2)
-    """
-    comparison_errors = {}
-    for key, val1, val2 in fields:
-        if val1 != val2:
-            comparison_errors[key] = (val1, val2)
-    if comparison_errors:
-        raise ValueError(
-            '{} differs from stored ({})'.format(
-                name,
-                ', '.join(sorted(comparison_errors.keys()))
-            )
-        )

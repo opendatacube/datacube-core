@@ -6,13 +6,12 @@ from __future__ import absolute_import
 
 import logging
 import sys
+from pathlib import Path
 
 import click
-import yaml
 
-from datacube import config
+from datacube import config, ui
 from datacube.index import index_connect
-from datacube.index.postgres import PostgresDb
 
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 
@@ -44,20 +43,36 @@ def database_init(no_default_collection):
         _LOG.info('Nothing to do.')
 
 
+@cli.group(help='Dataset collections')
+def collections():
+    pass
+
+
+@collections.command('add')
+@click.argument('files',
+                type=click.Path(exists=True, readable=True, writable=False),
+                nargs=-1)
+def collection_add(files):
+    api = index_connect()
+
+    for descriptor_path, parsed_doc in _read_docs(files):
+        api.collections.add(parsed_doc)
+
+
 @cli.group(help='Storage types')
 def storage():
     pass
 
 
 @storage.command('add')
-@click.argument('yaml_file',
+@click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
-def add_storage(yaml_file):
+def add_storage(files):
     dm = index_connect()
 
-    for descriptor_path in yaml_file:
-        dm.storage_types.add(_parse_doc(descriptor_path))
+    for descriptor_path, parsed_doc in _read_docs(files):
+        dm.storage_types.add(parsed_doc)
 
 
 @storage.command('template', help='Print an example YAML template')
@@ -76,14 +91,18 @@ def mappings():
 
 
 @mappings.command('add')
-@click.argument('yaml_file',
+@click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
-def add_mappings(yaml_file):
+def add_mappings(files):
     dm = index_connect()
 
-    for descriptor_path in yaml_file:
-        dm.mappings.add(_parse_doc(descriptor_path))
+    for descriptor_path, parsed_doc in _read_docs(files):
+        try:
+            dm.mappings.add(parsed_doc)
+        except KeyError as ke:
+            _LOG.error('Unable to add invalid storage mapping file: %s', descriptor_path)
+            _LOG.exception(ke)
 
 
 @mappings.command('template', help='Print an example YAML template')
@@ -96,8 +115,8 @@ def list_mappings():
     sys.stderr.write('TODO: list mappings\n')
 
 
-def _parse_doc(file_path):
-    return yaml.load(open(file_path, 'r'))
+def _read_docs(paths):
+    return ui.read_documents(*(Path(f) for f in paths))
 
 
 if __name__ == '__main__':
