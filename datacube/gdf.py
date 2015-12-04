@@ -18,7 +18,10 @@ GDF Trial backward compatibility
 
 from __future__ import absolute_import, division
 
+import itertools
+import uuid
 import numpy
+import dask
 
 from .model import Range
 from .storage.access.core import Coordinate, Variable, StorageUnitStack, StorageUnitDimensionProxy
@@ -291,36 +294,101 @@ class GDF(object):
         """
         if descriptor:
             query = {key: descriptor[key] for key in ('satellite', 'sensor', 'product') if key in descriptor}
-            reqrange = {dim: Range(*data['range']) for dim, data in descriptor['dimensions'].items()}
-            query.update(reqrange)
-            # TODO: talk to Jeremy about this
-            hack = {
-                'lon': 'longitude',
-                'lat': 'latitude'
-            }
-            reqrange = {hack[dim]: data for dim, data in reqrange.items()}
+            if 'dimensions' in descriptor:
+                reqrange = {dim: Range(*data['range']) for dim, data in descriptor['dimensions'].items()}
+                query.update(reqrange)
+                # TODO: talk to Jeremy about this
+                hack = {
+                    'lon': 'longitude',
+                    'lat': 'latitude'
+                }
+                reqrange = {hack[dim]: data for dim, data in reqrange.items()}
+            else:
+                reqrange = {}
         else:
             query = reqrange = {}
 
         data_response = {'arrays': {}}
-        stacks = {}
-        for (ptype, stype, loc), stack in get_descriptors(**query).items():
-            # if ptype != descriptor['storage_type']:
-            #     continue
-            if any(max(stack.coordinates[dim].begin, stack.coordinates[dim].end) < range_.begin or
-                   min(stack.coordinates[dim].begin, stack.coordinates[dim].end) > range_.end
-                   for dim, range_ in reqrange.items()):
-                continue
 
-            stacks[(ptype, stype, loc)] = stack
+        index = index_connect()
+        sus = index.storage.search(**query)
 
-        if not all(stacks.keys()[0][2] == x[2] for x in stacks):
-            raise RuntimeError('Cross boundary queries are not supported (yet)')
+        storage_units_by_type = {}
+        for su in sus:
+            stype = su.storage_mapping.match.metadata['platform']['code'] + '_' + \
+                    su.storage_mapping.match.metadata['instrument']['name']
+            ptype = su.storage_mapping.match.metadata['product_type']
+            #key = (stype, ptype)
+            # TODO: group by storage type also?
+            storage_units_by_type.setdefault(stype, {}).setdefault(ptype, []).append(make_storage_unit(su))
 
-        for key, stack in stacks.items():
+        if (len(storage_units_by_type)):
+            raise RuntimeError('Data must come from a single storage')
+
+        for stype, products in storage_units_by_type.items():
+            dask_dict = {}
+            for ptype, storage_units in products.items():
+                dask_dict.update(get_dask(storage_units))  #TODO: check var names are unique accross products
+
             for var in stack.variables:
                 if var in descriptor['variables']:
                     data_response['arrays'][var] = stack.get(var, **reqrange)
                     data_response['dimensions'] = stack.variables[var].dimensions
 
         return data_response
+
+
+    def get_dask(self, storage_units, variables=None):
+        """
+        Create a dask array to call the underlying storage units
+        :return dict of dask arrays.
+        """
+        if not len(storage_units):
+            return {}
+
+        sample = storage_units[0]
+        variables = variables or [v_name for v_name, v in sample.variables.items() if len(v.dimensions) == 3]
+        if not len(variables):
+            return {}
+
+        data = {}
+        chunksize = {}
+        nodata = {}
+        dsk_id = str(uuid.uuid1())  #unique name of the requested object
+        dims = ('longitude', 'latitude', 'time')  #hardcoded for now
+        dim_vals = {}
+        for dim in dims:
+            dim_vals[dim] = sorted(set(storage_unit.coordinates[dim].begin for storage_unit in storage_units))
+        for storage_unit in storage_units:
+            dsk_index = tuple()
+            for dim in dims:
+                ordinal = dim_vals[dim].index(storage_unit.coordinates[dim].begin)
+                dsk_index += (ordinal,)
+            for var_name, var in storage_unit.variables.items():
+                if var_name in variables:
+                    nodata[var_name] = var.nodata
+                    var_dsk_id = '{}_{}'.format(dsk_id, var_name)
+                    var_dsk_index = (var_dsk_id,) + dsk_index
+                    data.setdefault(var_name, {})[var_dsk_index] = (storage_unit.get, storage_unit, var_name)
+                    chunksize.setdefault(var_name, {})[var_dsk_index] = [storage_unit.coordinates[dim].length for dim in dims]
+
+        def nodataFunc(shape, dtype, fill):
+            return numpy.empty(shape.dtype).fill(fill)
+
+        da_dict = {}
+        for var_name in variables:
+            var_dsk_id = '{}_{}'.format(dsk_id, var_name)
+            var_dsk_index = (var_dsk_id,)
+            all_dsk_keys = set(itertools.product(var_dsk_index, *tuple(range(len(vals)) for vals in dim_vals.values())))
+            data_dsk_keys = data[var_name].viewkeys()
+            missing_dsk_keys = all_dsk_keys - data_dsk_keys
+            for key in missing_dsk_keys:
+                shape = tuple(c.length for c in sample.coordinates.values())
+                dtype = sample.variables[var_name].dtype
+                nodata = sample.variables[var_name].nodata
+                data[var_name][key] = (nodataFunc, shape, dtype, nodata)
+            chunks = [c.length for c in sample.coordinates.values()]
+            shape = [coord.length * len(dim_vals[dim_name]) for dim_name, coord in sample.coordinates.items()]
+            da_dict[var_name] = dask.DaskArray(data[var_name], var_dsk_index, chunks, shape)
+
+        return da_dict
