@@ -7,6 +7,7 @@ from __future__ import absolute_import
 import logging
 import os.path
 from datetime import datetime
+from itertools import chain
 
 import netCDF4
 from osgeo import osr
@@ -159,10 +160,8 @@ class NetCDFWriter(object):
         :type tile_spec: datacube.model.TileSpec
         """
         # ACDD Metadata (Recommended)
-        self.nco.geospatial_bounds = "POLYGON(({0} {2},{0} {3},{1} {3},{1} {2},{0} {2})".format(tile_spec.lon_min,
-                                                                                                tile_spec.lon_max,
-                                                                                                tile_spec.lat_min,
-                                                                                                tile_spec.lat_max)
+        extents = chain(tile_spec.extents, [tile_spec.extents[0]])
+        self.nco.geospatial_bounds = "POLYGON((" + ", ".join("{0} {1}".format(*p) for p in extents) + "))"
         self.nco.geospatial_bounds_crs = "EPSG:4326"
         self.nco.geospatial_lat_min = tile_spec.lat_min
         self.nco.geospatial_lat_max = tile_spec.lat_max
