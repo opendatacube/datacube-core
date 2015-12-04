@@ -9,13 +9,13 @@ import logging
 import affine
 import dateutil.parser
 import numpy
-import rasterio
+import rasterio.warp
 
 import datacube.compat
 
 from datacube.model import TileSpec
 from datacube.storage.utils import ensure_path_exists
-from .netcdf_writer import append_to_netcdf
+from .netcdf_writer import NetCDFWriter
 
 _LOG = logging.getLogger(__name__)
 
@@ -143,15 +143,16 @@ def storage_unit_tiler(measurement_descriptor, input_filename, storage_type, tim
                                              storage_type.tile_size,
                                              storage_type.resolution,
                                              storage_type.projection):
-        tile_spec = TileSpec(storage_type.projection, tile_transform, data=data)
+        tile_spec = TileSpec(storage_type.projection, tile_transform, data.shape[1], data.shape[0])
 
         output_filename = generate_filename(storage_type.filename_format, dataset_metadata, tile_spec)
         ensure_path_exists(output_filename)
 
         _LOG.debug("Adding extracted slice to %s", output_filename)
 
-        append_to_netcdf(tile_spec, output_filename, storage_type, measurement_descriptor, time_value,
-                         input_filename)
+        ncfile = NetCDFWriter(output_filename, tile_spec)
+        ncfile.append_slice(data, storage_type, measurement_descriptor, time_value, input_filename)
+        ncfile.close()
 
         _LOG.debug("Wrote %s to %s", measurement_descriptor.__dict__, output_filename)
         yield output_filename

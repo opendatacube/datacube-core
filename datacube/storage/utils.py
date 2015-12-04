@@ -108,25 +108,10 @@ def namedtuples2dicts(namedtuples):
     return {k: dict(vars(v)) for k, v in namedtuples.items()}
 
 
-def tilespec_from_gdaldataset(gdal_ds, global_attrs=None):
-    """
-    Create a TileSpec pulling all required attributes from an open gdal dataset
-
-    :param gdal_ds:
-    :param global_attrs:
-    :rtype: TileSpec
-    """
-    projection = gdal_ds.GetProjection()
-    nlats, nlons = gdal_ds.RasterYSize, gdal_ds.RasterXSize
-    geotransform = gdal_ds.GetGeoTransform()
-    extents = get_dataset_extent(gdal_ds)
-    return TileSpec(projection, geotransform, nlats, nlons, extents, global_attrs)
-
-
 def tilespec_from_riodataset(rio, global_attrs=None):
     projection = rio.crs_wkt
     width, height = rio.width, rio.height
-    return TileSpec(str(projection), rio.affine, height, width, rio.bounds, global_attrs)
+    return TileSpec(str(projection), rio.affine, height, width, global_attrs)
 
 
 def ensure_path_exists(filename):

@@ -314,9 +314,7 @@ class TileSpec(object):
             151.99975])
     """
 
-    def __init__(self, projection, affine, height=None, width=None, data=None, global_attrs=None):
-        if not height or not width:
-            self.nlats, self.nlons = data.shape
+    def __init__(self, projection, affine, height, width, global_attrs=None):
         self.projection = projection
         self.affine = affine
         sr = osr.SpatialReference(projection)
@@ -338,8 +336,6 @@ class TileSpec(object):
             transform = osr.CoordinateTransformation(projection, wgs84)
 
             self.lat_extents, self.lon_extents = zip(*transform.TransformPoints([(x1, y1), (x2, y2)]))
-
-        self.data = data
         self.global_attrs = global_attrs or {}
 
     @property

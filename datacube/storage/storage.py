@@ -52,7 +52,7 @@ def store(storage_mappings, dataset):
             # How to store this band/measurement:
             _LOG.debug('Measurement descriptor: %r', measurement_descriptor)
             for filename in storage_unit_tiler(SimpleObject(**measurement_descriptor),  # TODO: Use actual classes
-                                               input_filename=input_filename,
+                                               input_filename=str(input_filename),
                                                storage_type=storage_type,
                                                # TODO: Use doc fields, rather than parsing manually.
                                                time_value=_as_datetime(

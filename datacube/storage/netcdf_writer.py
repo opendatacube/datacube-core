@@ -233,22 +233,3 @@ class NetCDFWriter(object):
         src_filename = self.nco.createVariable(varname + "_src_filenames", str, 'time')
         src_filename.long_name = 'Source filename from data import'
         return newvar, src_filename
-
-
-def append_to_netcdf(tile_spec, netcdf_path, storage_type, measurement_descriptor, time_value, input_filename=""):
-    """
-    Append a raster slice to a new or existing NetCDF file
-
-    :param tile_spec
-    :param np_array: data array to add to netcdf
-    :param netcdf_path: pathname to output netcdf file
-    :type storage_type: datacube.model.StorageType
-    :param input_spec:
-    :param bandname:
-    :param input_filename: used for metadata only
-    :return:
-    """
-    ncfile = NetCDFWriter(netcdf_path, tile_spec)
-
-    ncfile.append_slice(tile_spec.data, storage_type, measurement_descriptor, time_value, input_filename)
-    ncfile.close()
