@@ -5,7 +5,6 @@ from datetime import datetime
 from affine import Affine
 import numpy as np
 import netCDF4
-import pytest
 import rasterio
 
 from datacube.storage.netcdf_writer import NetCDFWriter
@@ -17,7 +16,7 @@ from datacube.storage.utils import tilespec_from_riodataset
 def test_create_single_time_netcdf_from_numpy_arrays(tmpdir):
     filename = str(tmpdir.join('testfile_np.nc'))
 
-    affine = Affine.from_gdal(151.0, 0.00025, 0.0, -29.0, 0.0, -0.0005)
+    affine = Affine(0.00025, 0.0, 151.0, 0.0, -0.0005, -29.0)
     projection = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
                  'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
                  'AUTHORITY["EPSG","4326"]]'
