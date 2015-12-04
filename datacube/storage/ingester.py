@@ -79,7 +79,7 @@ def create_tiles(src_ds, tile_size, tile_res, tile_crs, tile_dtype=None):
             dst_region = numpy.full((height, width), -999, dtype=tile_dtype)
 
             rasterio.warp.reproject(rasterio.band(src_ds, 1), dst_region, dst_transform=tile_transform,
-                                    dst_crs=tile_crs)
+                                    dst_crs=tile_crs, NUM_THREADS=4)
             yield dst_region, tile_transform
 
 
