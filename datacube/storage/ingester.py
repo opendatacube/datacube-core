@@ -11,7 +11,8 @@ import dateutil.parser
 import numpy
 import rasterio
 
-from datacube import compat
+import datacube.compat
+
 from datacube.model import TileSpec
 from datacube.storage.utils import ensure_path_exists
 from .netcdf_writer import append_to_netcdf
@@ -109,9 +110,9 @@ def generate_filename(filename_format, eodataset, tile_spec):
     merged = eodataset.copy()
 
     # Until we can use parsed dataset fields:
-    if isinstance(merged['creation_dt'], compat.string_types):
+    if isinstance(merged['creation_dt'], datacube.compat.string_types):
         merged['creation_dt'] = dateutil.parser.parse(merged['creation_dt'])
-    if isinstance(merged['extent']['center_dt'], compat.string_types):
+    if isinstance(merged['extent']['center_dt'], datacube.compat.string_types):
         merged['extent']['center_dt'] = dateutil.parser.parse(merged['extent']['center_dt'])
 
     merged.update(tile_spec.__dict__)
@@ -137,20 +138,20 @@ def storage_unit_tiler(measurement_descriptor, input_filename, storage_type, tim
     if src_ds.count > 1:
         raise ImportFromNDArraysNotSupported
 
-    projection = storage_type.projection
     _LOG.debug("Ingesting: %s %s", measurement_descriptor, input_filename)
-    for data, transform in create_tiles(src_ds,
-                                        storage_type.tile_size,
-                                        storage_type.resolution,
-                                        storage_type.projection):
-        tile_spec = TileSpec(projection, transform, data=data)
+    for data, tile_transform in create_tiles(src_ds,
+                                             storage_type.tile_size,
+                                             storage_type.resolution,
+                                             storage_type.projection):
+        tile_spec = TileSpec(storage_type.projection, tile_transform, data=data)
 
         output_filename = generate_filename(storage_type.filename_format, dataset_metadata, tile_spec)
         ensure_path_exists(output_filename)
 
-        _LOG.debug("Adding extracted tile to %s", output_filename)
+        _LOG.debug("Adding extracted slice to %s", output_filename)
 
         append_to_netcdf(tile_spec, output_filename, storage_type, measurement_descriptor, time_value,
                          input_filename)
+
         _LOG.debug("Wrote %s to %s", measurement_descriptor.__dict__, output_filename)
         yield output_filename

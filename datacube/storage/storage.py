@@ -30,7 +30,7 @@ def store(storage_mappings, dataset):
     for mapping in storage_mappings:
         storage_unit_filenames = set()
         storage_type = mapping.storage_type
-        if storage_type.driver != 'NetCDF CF':
+        if mapping.storage_type.driver != 'NetCDF CF':
             raise RuntimeError('Unknown storage driver')
 
         # TODO: hack? tiler takes way too many params as it is...
@@ -43,7 +43,7 @@ def store(storage_mappings, dataset):
             # Get the corresponding measurement/band from the dataset.
             dataset_measurement_descriptor = dataset_measurements[measurement_id]
 
-            # The path of a band is relative to the dataset path.
+            # The path of an input file is relative to the dataset path.
             input_filename = dataset.metadata_path.parent.joinpath(dataset_measurement_descriptor['path'])
 
             _LOG.debug('Input filename: %s', input_filename)
@@ -58,7 +58,7 @@ def store(storage_mappings, dataset):
                                                time_value=_as_datetime(
                                                    dataset.metadata_doc['extent']['center_dt']
                                                ),
-                                               dataset_metadata=dataset.metadata_doc):
+                                               dataset_metadata=dataset.metadata_doc):  # Just for making out filename
                 storage_unit_filenames.add(filename)
 
         _LOG.debug('Storage type description: %r', storage_type.descriptor)

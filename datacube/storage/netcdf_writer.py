@@ -30,26 +30,24 @@ class NetCDFWriter(object):
         if not os.path.isfile(netcdf_path):
             self.nco = netCDF4.Dataset(netcdf_path, 'w')
 
-            self._set_crs(tile_spec)
+            self._create_spatial_variables(tile_spec)
             self._set_global_attributes(tile_spec)
-            self._create_variables(tile_spec)
+            self._create_variables()
         else:
             self.nco = netCDF4.Dataset(netcdf_path, 'a')
+            # TODO assert the tile_spec actually matches this netcdf file
         self._tile_spec = tile_spec
         self.netcdf_path = netcdf_path
 
     def close(self):
         self.nco.close()
 
-    def _create_standard_dimensions(self, lats, lons):
+    def _create_time_dimension(self):
         """
-        Creates latitude, longitude and time dimension
+        Create time dimension
 
         Time is unlimited
-        Latitude and longitude are given the values in lats,lons
         """
-        self.nco.createDimension('longitude', len(lons))
-        self.nco.createDimension('latitude', len(lats))
         self.nco.createDimension('time', None)
         timeo = self.nco.createVariable('time', 'double', 'time')
         timeo.units = 'seconds since 1970-01-01 00:00:00'
@@ -58,36 +56,48 @@ class NetCDFWriter(object):
         timeo.calendar = 'standard'
         timeo.axis = "T"
 
-        lon = self.nco.createVariable('longitude', 'double', 'longitude')
-        lon.units = 'degrees_east'
-        lon.standard_name = 'longitude'
-        lon.long_name = 'longitude'
-        lon.axis = "X"
-
-        lat = self.nco.createVariable('latitude', 'double', 'latitude')
-        lat.units = 'degrees_north'
-        lat.standard_name = 'latitude'
-        lat.long_name = 'latitude'
-        lat.axis = "Y"
-
-        lon[:] = lons
-        lat[:] = lats
-
-    def _set_crs(self, tile_spec):
+    def _create_spatial_variables(self, tile_spec):
         projection = osr.SpatialReference(str(tile_spec.projection))
-        assert projection.IsGeographic()
-        crso = self.nco.createVariable('crs', 'i4')
-        crso.long_name = projection.GetAttrValue('GEOGCS')  # "Lon/Lat Coords in WGS84"
-        crso.grid_mapping_name = "latitude_longitude"  # TODO support other projections
-        crso.longitude_of_prime_meridian = 0.0
-        crso.semi_major_axis = projection.GetSemiMajor()
-        crso.inverse_flattening = projection.GetInvFlattening()
-        return crso
+        if projection.IsGeographic():
+            crs = self._create_geocrs(projection)
+            self.nco.createDimension('longitude', len(tile_spec.nlons))
+            self.nco.createDimension('latitude', len(tile_spec.nlats))
 
-    def _create_crs_albers(self, tile_spec):
+            lon = self.nco.createVariable('longitude', 'double', 'longitude')
+            lon.units = 'degrees_east'
+            lon.standard_name = 'longitude'
+            lon.long_name = 'longitude'
+            lon.axis = "X"
+
+            lat = self.nco.createVariable('latitude', 'double', 'latitude')
+            lat.units = 'degrees_north'
+            lat.standard_name = 'latitude'
+            lat.long_name = 'latitude'
+            lat.axis = "Y"
+
+            lon[:] = tile_spec.lons
+            lat[:] = tile_spec.lats
+            return crs
+        elif projection.IsProjected():
+            crs = self._create_crs_albers(projection, tile_spec)
+            return crs
+        else:
+            raise Exception("Unknown projection")
+
+
+    def _create_geocrs(self, projection):
+        crs = self.nco.createVariable('crs', 'i4')
+        crs.long_name = projection.GetAttrValue('GEOGCS')  # "Lon/Lat Coords in WGS84"
+        crs.grid_mapping_name = "latitude_longitude"
+        crs.longitude_of_prime_meridian = 0.0
+        crs.semi_major_axis = projection.GetSemiMajor()
+        crs.inverse_flattening = projection.GetInvFlattening()
+        return crs
+
+
+    def _create_crs_albers(self, projection, tile_spec):
         # http://spatialreference.org/ref/epsg/gda94-australian-albers/html/
         # http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/cf-conventions.html#appendix-grid-mappings
-        projection = osr.SpatialReference(str(tile_spec.projection))
         assert projection.GetAttrValue('PROJECTION') == 'Albers_Conic_Equal_Area'
         crs = self.nco.createVariable('albers_conical_equal_area')
         crs.standard_parallel_1 = projection.GetProjParm('standard_parallel_1')
@@ -98,7 +108,34 @@ class NetCDFWriter(object):
         crs.false_northing = projection.GetProjParm('false_northing')
         crs.grid_mapping_name = "albers_conical_equal_area"
         crs.long_name = projection.GetAttrValue('PROJCS')
+
+        wgs84 = osr.SpatialReference()
+        wgs84.ImportFromEPSG(4326)
+
+        to_wgs84 = osr.CoordinateTransformation(projection, wgs84)
+        lats, lons, _ = zip(*to_wgs84.TransformPoint(x, y) for y in tile_spec.ys for x in tile_spec.xs)
+
+        lats_var = self.nco.createVariable('lat', 'double', ('y', 'x'))
+        lats_var.long_name = 'latitude coordinate'
+        lats_var.standard_name = 'latitude'
+        lats_var.units = 'degrees north'
+        lats_var[:] = lats_var
+
+        lons_var = self.nco.createVariable('lon', 'double', ('y', 'x'))
+        lons_var.long_name = 'longitude coordinate'
+        lons_var.standard_name = 'longitude'
+        lons_var.units = 'degrees east'
+        lons_var[:] = lons_var
+
+        xvar = self.nco.createVariable('x', 'double')
+        xvar.long_name = 'x coordinate of projection'
+        xvar.units = projection.GetAttrValue('UNIT')
+        xvar.standard_name = 'projection_x_coordinate'
+        xvar[:] = tile_spec.xs
+
         return crs
+
+
 
     def _set_global_attributes(self, tile_spec):
         """
@@ -180,8 +217,8 @@ class NetCDFWriter(object):
         out_band[time_index, :, :] = np_array
         src_filename[time_index] = input_filename
 
-    def _create_variables(self, tile_spec):
-        self._create_standard_dimensions(tile_spec.lats, tile_spec.lons)
+    def _create_variables(self):
+        self._create_time_dimension()
 
         # Create Variable Length Variable to store extra metadata
         extra_meta = self.nco.createVariable('extra_metadata', str, 'time')

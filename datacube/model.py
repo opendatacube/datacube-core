@@ -8,6 +8,7 @@ import logging
 from collections import namedtuple
 
 import numpy as np
+from osgeo import osr
 
 _LOG = logging.getLogger(__name__)
 
@@ -311,20 +312,34 @@ class TileSpec(object):
             151.99975])
     """
 
-    lats = []
-    lons = []
-
-    def __init__(self, projection, affine, nlats=None, nlons=None, data=None, global_attrs=None):
-        if not nlats or not nlons:
+    def __init__(self, projection, affine, height=None, width=None, data=None, global_attrs=None):
+        if not height or not width:
             self.nlats, self.nlons = data.shape
         self.projection = projection
-        self._affine = affine
-        self.lons = np.arange(nlons) * affine.a + affine.c
-        self.lats = np.arange(nlats) * affine.e + affine.f
-        self.lat_extents = (nlats * affine.e + affine.f, affine.f)
-        self.lon_extents = (nlons * affine.a + affine.c, affine.c)
+        self.affine = affine
+        sr = osr.SpatialReference(projection)
+        x1, x2 = width * affine.a + affine.c, affine.c
+        y1, y2 = height * affine.e + affine.f, affine.f
+        xs = np.arange(width) * affine.a + affine.c
+        ys = np.arange(height) * affine.e + affine.f
+        if sr.IsGeographic():
+            self.lons = xs
+            self.lats = ys
+            self.lat_extents = (y1, y2)
+            self.lon_extents = (x1, x2)
+        elif sr.IsProjected():
+            self.xs = xs
+            self.ys = ys
+
+            wgs84 = osr.SpatialReference()
+            wgs84.ImportFromEPSG(4326)
+            transform = osr.CoordinateTransformation(projection, wgs84)
+
+            self.lat_extents, self.lon_extents = zip(*transform.TransformPoints([(x1, y1),(x2, y2)]))
+
         self.data = data
         self.global_attrs = global_attrs or {}
+
 
     @property
     def lat_min(self):
@@ -344,11 +359,11 @@ class TileSpec(object):
 
     @property
     def lat_res(self):
-        return self._affine.e
+        return self.affine.e
 
     @property
     def lon_res(self):
-        return self._affine.a
+        return self.affine.a
 
     def __repr__(self):
         return repr(self.__dict__)
