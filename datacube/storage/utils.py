@@ -126,7 +126,7 @@ def tilespec_from_gdaldataset(gdal_ds, global_attrs=None):
 def tilespec_from_riodataset(rio, global_attrs=None):
     projection = rio.crs_wkt
     width, height = rio.width, rio.height
-    return TileSpec(projection, rio.affine, height, width, rio.bounds, global_attrs)
+    return TileSpec(str(projection), rio.affine, height, width, rio.bounds, global_attrs)
 
 
 def ensure_path_exists(filename):

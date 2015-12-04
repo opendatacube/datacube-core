@@ -299,7 +299,9 @@ class TileSpec(object):
     Defines a Storage Tile/Storage Unit, it's projection, location, resolution, and global attributes
 
     >>> from affine import Affine
-    >>> t = TileSpec("fake_projection", Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0), 4000, 4000)
+    >>> wgs84 = osr.SpatialReference()
+    >>> r = wgs84.ImportFromEPSG(4326)
+    >>> t = TileSpec(wgs84.ExportToWkt(), Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0), 4000, 4000)
     >>> t.lat_min, t.lat_max
     (-30.0, -29.0)
     >>> t.lon_min, t.lon_max
@@ -335,11 +337,10 @@ class TileSpec(object):
             wgs84.ImportFromEPSG(4326)
             transform = osr.CoordinateTransformation(projection, wgs84)
 
-            self.lat_extents, self.lon_extents = zip(*transform.TransformPoints([(x1, y1),(x2, y2)]))
+            self.lat_extents, self.lon_extents = zip(*transform.TransformPoints([(x1, y1), (x2, y2)]))
 
         self.data = data
         self.global_attrs = global_attrs or {}
-
 
     @property
     def lat_min(self):

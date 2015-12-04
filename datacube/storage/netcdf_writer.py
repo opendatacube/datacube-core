@@ -60,8 +60,8 @@ class NetCDFWriter(object):
         projection = osr.SpatialReference(str(tile_spec.projection))
         if projection.IsGeographic():
             crs = self._create_geocrs(projection)
-            self.nco.createDimension('longitude', len(tile_spec.nlons))
-            self.nco.createDimension('latitude', len(tile_spec.nlats))
+            self.nco.createDimension('longitude', len(tile_spec.lons))
+            self.nco.createDimension('latitude', len(tile_spec.lats))
 
             lon = self.nco.createVariable('longitude', 'double', 'longitude')
             lon.units = 'degrees_east'
@@ -84,7 +84,6 @@ class NetCDFWriter(object):
         else:
             raise Exception("Unknown projection")
 
-
     def _create_geocrs(self, projection):
         crs = self.nco.createVariable('crs', 'i4')
         crs.long_name = projection.GetAttrValue('GEOGCS')  # "Lon/Lat Coords in WGS84"
@@ -93,7 +92,6 @@ class NetCDFWriter(object):
         crs.semi_major_axis = projection.GetSemiMajor()
         crs.inverse_flattening = projection.GetInvFlattening()
         return crs
-
 
     def _create_crs_albers(self, projection, tile_spec):
         # http://spatialreference.org/ref/epsg/gda94-australian-albers/html/
@@ -113,7 +111,7 @@ class NetCDFWriter(object):
         wgs84.ImportFromEPSG(4326)
 
         to_wgs84 = osr.CoordinateTransformation(projection, wgs84)
-        lats, lons, _ = zip(*to_wgs84.TransformPoint(x, y) for y in tile_spec.ys for x in tile_spec.xs)
+        lats, lons, _ = zip(*[to_wgs84.TransformPoint(x, y) for y in tile_spec.ys for x in tile_spec.xs])
 
         lats_var = self.nco.createVariable('lat', 'double', ('y', 'x'))
         lats_var.long_name = 'latitude coordinate'
@@ -134,8 +132,6 @@ class NetCDFWriter(object):
         xvar[:] = tile_spec.xs
 
         return crs
-
-
 
     def _set_global_attributes(self, tile_spec):
         """
