@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import netCDF4
 
-from datacube.ingest import ingest
+from datacube.ingest import index_datasets, store_datasets
 
 
 sample_mapping = {
@@ -59,6 +59,41 @@ sample_storage_type = {
     'resolution': {'x': 0.00025, 'y': -0.00025},
     'tile_size': {'x': 1.0, 'y': -1.0}}
 
+albers_storage_type = {
+    'chunking': {'t': 1, 'x': 500, 'y': 500},
+    'dimension_order': ['t', 'y', 'x'],
+    'driver': 'NetCDF CF',
+    'name': '1deg_tiles',
+    'projection': {
+        'spatial_ref':
+            """PROJCS["GDA94 / Australian Albers",
+                    GEOGCS["GDA94",
+                        DATUM["Geocentric_Datum_of_Australia_1994",
+                            SPHEROID["GRS 1980",6378137,298.257222101,
+                                AUTHORITY["EPSG","7019"]],
+                            TOWGS84[0,0,0,0,0,0,0],
+                            AUTHORITY["EPSG","6283"]],
+                        PRIMEM["Greenwich",0,
+                            AUTHORITY["EPSG","8901"]],
+                        UNIT["degree",0.01745329251994328,
+                            AUTHORITY["EPSG","9122"]],
+                        AUTHORITY["EPSG","4283"]],
+                    UNIT["metre",1,
+                        AUTHORITY["EPSG","9001"]],
+                    PROJECTION["Albers_Conic_Equal_Area"],
+                    PARAMETER["standard_parallel_1",-18],
+                    PARAMETER["standard_parallel_2",-36],
+                    PARAMETER["latitude_of_center",0],
+                    PARAMETER["longitude_of_center",132],
+                    PARAMETER["false_easting",0],
+                    PARAMETER["false_northing",0],
+                    AUTHORITY["EPSG","3577"],
+                    AXIS["Easting",EAST],
+                    AXIS["Northing",NORTH]]"""
+    },
+    'resolution': {'x': 25, 'y': -25},
+    'tile_size': {'x': 100000, 'y': -100000}}
+
 
 def test_full_ingestion(index, default_collection, example_ls5_dataset):
     """
@@ -68,18 +103,19 @@ def test_full_ingestion(index, default_collection, example_ls5_dataset):
     """
     # Load a storage config
     index.storage_types.add(sample_storage_type)
+    # index.storage_types.add(albers_storage_type)
 
     # Load a mapping config
     index.mappings.add(sample_mapping)
 
     # Run Ingest on a dataset
-    ingest(example_ls5_dataset, index)
+    datasets = index_datasets(example_ls5_dataset, index)
+    store_datasets(datasets, index)
 
     # Check dataset is indexed
     datasets = index.datasets.search_eager()
     assert len(datasets) == 1
     assert datasets[0].id == 'bbf3e21c-82b0-11e5-9ba1-a0000100fe80'
-
 
     # Check storage units are indexed and written
     sus = index.storage.search_eager()

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import click
 from datacube import config, index
-from datacube.ingest import ingest
+from datacube.ingest import index_datasets, store_datasets
 
 
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -23,9 +23,12 @@ CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 def cli(verbose, datasets, log_queries):
     config.init_logging(verbosity_level=verbose, log_queries=log_queries)
 
+    datasets = []
     i = index.index_connect()
     for dataset_path in datasets:
-        ingest(Path(dataset_path), index=i)
+        datasets += index_datasets(Path(dataset_path), index=i)
+
+    store_datasets(datasets, index=i)
 
 
 if __name__ == '__main__':
