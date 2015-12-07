@@ -93,6 +93,5 @@ def store_datasets_with_mapping(datasets, storage_mapping, index=None):
     """
     index = index or index_connect()
 
-    for dataset in datasets:
-        storage_units = storage.store([storage_mapping], dataset)
-        index.storage.add_many(storage_units)
+    storage_units = storage.store_datasets_with_mapping(datasets, storage_mapping)
+    index.storage.add_many(storage_units)

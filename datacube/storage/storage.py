@@ -16,6 +16,13 @@ from datacube.storage.netcdf_indexer import index_netcdfs
 _LOG = logging.getLogger(__name__)
 
 
+def store_datasets_with_mapping(datasets, storage_mapping):
+    storage_units = []
+    for dataset in datasets:
+        storage_units += store([storage_mapping], dataset)
+    return storage_units
+
+
 def store(storage_mappings, dataset):
     """
 
