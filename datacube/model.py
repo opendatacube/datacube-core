@@ -169,7 +169,9 @@ class StorageUnit(object):
         return filepath[7:]
 
     def __str__(self):
-        return "StorageUnit <type={m.name}, path={path}>".format(path=self.path, m=self.storage_mapping)
+        return "StorageUnit <type={m.name}/{t.name}, path={path}>".format(path=self.path,
+                                                                          t=self.storage_mapping.storage_type,
+                                                                          m=self.storage_mapping)
 
 
 class Dataset(object):
