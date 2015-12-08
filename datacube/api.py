@@ -19,9 +19,12 @@ GDF Trial backward compatibility
 from __future__ import absolute_import, division
 
 import itertools
+import operator
 import uuid
 import numpy
-import dask
+import dask.array as da
+import xray
+from sympy.physics.unitsystems import dimensions
 
 from .model import Range
 from .storage.access.core import Coordinate, Variable, StorageUnitStack, StorageUnitDimensionProxy
@@ -108,8 +111,21 @@ def get_descriptors(**query):
 
     return result
 
+def rangeToSelector(ranges, reverse_sort):
+    return dict((c, slice(*sorted(r, reverse=reverse_sort[c]))) for c, r in ranges.items())
+    #return dict((c, slice(min(r.begin, r.end), max(r.begin, r.end))) for c, r in ranges.items())
+    #return dict((c, slice(r.begin, r.end)) for c, r in ranges.items())
 
-class GDF(object):
+
+def noDataFunc(shape, dtype, fill):
+    arr = numpy.empty(shape, dtype)
+    if fill is None:
+        fill = numpy.NaN
+    arr.fill(fill)
+    return arr
+
+
+class API(object):
     def get_descriptor(self, descriptor=None):
         """
         query_parameter = \
@@ -267,7 +283,7 @@ class GDF(object):
         Function to return composite in-memory arrays
         data_request = \
         {
-        'storage_type': 'LS5TM',
+        'satellite': 'LANDSAT_8',
         'variables': ('B30', 'B40','PQ'), # Note that we won't necessarily have PQ in the same storage unit
         'dimensions': {
              'x': {
@@ -315,8 +331,10 @@ class GDF(object):
             ]
         }
         """
+        variables = None
         if descriptor:
             query = {key: descriptor[key] for key in ('satellite', 'sensor', 'product') if key in descriptor}
+            variables = descriptor.get('variables', None)
             if 'dimensions' in descriptor:
                 reqrange = {dim: Range(*data['range']) for dim, data in descriptor['dimensions'].items()}
                 query.update(reqrange)
@@ -331,8 +349,6 @@ class GDF(object):
         else:
             query = reqrange = {}
 
-        data_response = {'arrays': {}}
-
         index = index_connect()
         sus = index.storage.search(**query)
 
@@ -345,73 +361,104 @@ class GDF(object):
             # TODO: group by storage type also?
             storage_units_by_type.setdefault(stype, {}).setdefault(ptype, []).append(make_storage_unit(su))
 
-        if (len(storage_units_by_type)):
+        if (len(storage_units_by_type) > 1):
             raise RuntimeError('Data must come from a single storage')
 
+        data_response = {'arrays': {}}
         for stype, products in storage_units_by_type.items():
-            dask_dict = {}
-            for ptype, storage_units in products.items():
-                dask_dict.update(get_dask(storage_units))  #TODO: check var names are unique accross products
+            #TODO: check var names are unique accross products
+            # for ptype, storage_units in products.items():
+            #     pass
 
-            for var in stack.variables:
-                if var in descriptor['variables']:
-                    data_response['arrays'][var] = stack.get(var, **reqrange)
-                    data_response['dimensions'] = stack.variables[var].dimensions
-
+            storage_units = list(itertools.chain(*products.values()))
+            dask_dict = self._get_data_from_storage_units(storage_units, variables, reqrange)
+            data_response.update(dask_dict)
         return data_response
 
-
-    def get_dask(self, storage_units, variables=None):
-        """
-        Create a dask array to call the underlying storage units
-        :return dict of dask arrays.
-        """
+    def _get_data_from_storage_units(self, storage_units, variables=None, reqrange={}):
         if not len(storage_units):
             return {}
 
-        sample = storage_units[0]
-        variables = variables or [v_name for v_name, v in sample.variables.items() if len(v.dimensions) == 3]
-        if not len(variables):
-            return {}
-
-        data = {}
-        chunksize = {}
-        nodata = {}
-        dsk_id = str(uuid.uuid1())  #unique name of the requested object
-        dims = ('longitude', 'latitude', 'time')  #hardcoded for now
-        dim_vals = {}
-        for dim in dims:
-            dim_vals[dim] = sorted(set(storage_unit.coordinates[dim].begin for storage_unit in storage_units))
+        variables_by_dimensions = {}
         for storage_unit in storage_units:
-            dsk_index = tuple()
-            for dim in dims:
+            for var_name, v in storage_unit.variables.items():
+                if variables is None or var_name in variables:
+                    variables_by_dimensions.setdefault(v.dimensions, {}).setdefault(var_name, []).append(storage_unit)
+
+        dimension_group = {}
+        for dimensions, sus_by_variable in variables_by_dimensions.items():
+            dimension_group[dimensions] = self._get_data_by_variable(sus_by_variable, dimensions, reqrange)
+        if len(dimension_group) == 1:
+            return dimension_group.values()[0]
+        return dimension_group
+
+    def _get_data_by_variable(self, storage_units_by_variable, dimensions, reqrange):
+        dimension_group_reponse = {
+            'dimensions': dimensions,
+            'arrays': {},
+            'indices': [],
+            'element_sizes': [],
+            'coordinate_reference_systems': []
+        }
+        dim_vals = {}
+        reverse_sort = {}
+        sus_with_dims = set(itertools.chain(*storage_units_by_variable.values()))
+        sample = list(sus_with_dims)[0]
+        for dim in dimensions:
+            # Get the start value of the storage unit so we can sort them
+            # Some dims are stored upside down (eg Latitude), so sort the tiles consistant with the bounding box order
+            reverse_sort[dim] = sample.coordinates[dim].begin > sample.coordinates[dim].end
+            dim_vals[dim] = sorted(set(su.coordinates[dim].begin for su in sus_with_dims), reverse=reverse_sort[dim])
+        sus_size = {}
+        coord_lists = {}
+        for su in sus_with_dims:
+            for dim in dimensions:
+                ordinal = dim_vals[dim].index(su.coordinates[dim].begin)
+                sus_size.setdefault(dim, [None] * len(dim_vals[dim]))[ordinal] = su.coordinates[dim].length
+                coord_list = coord_lists.setdefault(dim, [None] * len(dim_vals[dim]))
+                if coord_list[ordinal] is None:
+                    coord_list[ordinal] = su.get_coord(dim)
+
+        selectors = rangeToSelector(reqrange, reverse_sort)
+        coord_labels = {}
+        for dim in dimensions:
+            coord_labels[dim] = list(itertools.chain(*[x[0] for x in coord_lists[dim]]))
+        for var_name, sus in storage_units_by_variable.items():
+            xray_data_array = self._get_array(sus, var_name, dimensions, dim_vals, sus_size, coord_labels)
+            cropped = xray_data_array.sel(**selectors)
+            dimension_group_reponse['arrays'][var_name] = cropped
+        x = dimension_group_reponse['arrays'][dimension_group_reponse['arrays'].keys()[0]]
+        dimension_group_reponse['indices'] = [x.coords[dim].values for dim in dimensions]
+        return dimension_group_reponse
+
+    def _get_array(self, storage_units, var_name, dimensions, dim_vals, chunksize, coord_labels):
+        """
+        Create a dask array to call the underlying storage units
+        :return dask array.
+        """
+        dsk_id = str(uuid.uuid1())  #unique name for the requested dask
+        dsk = {}
+        sample = storage_units[0]
+        dtype = sample.variables[var_name].dtype
+        nodata = sample.variables[var_name].nodata
+
+        for storage_unit in storage_units:
+            dsk_index = (dsk_id,) # Dask is indexed by a tuple of ("Name", x-index pos, y-index pos, z-index pos, ...)
+            for dim in dimensions:
                 ordinal = dim_vals[dim].index(storage_unit.coordinates[dim].begin)
                 dsk_index += (ordinal,)
-            for var_name, var in storage_unit.variables.items():
-                if var_name in variables:
-                    nodata[var_name] = var.nodata
-                    var_dsk_id = '{}_{}'.format(dsk_id, var_name)
-                    var_dsk_index = (var_dsk_id,) + dsk_index
-                    data.setdefault(var_name, {})[var_dsk_index] = (storage_unit.get, storage_unit, var_name)
-                    chunksize.setdefault(var_name, {})[var_dsk_index] = [storage_unit.coordinates[dim].length for dim in dims]
+            dsk[dsk_index] = (storage_unit.get, var_name)
 
-        def nodataFunc(shape, dtype, fill):
-            return numpy.empty(shape.dtype).fill(fill)
-
-        da_dict = {}
-        for var_name in variables:
-            var_dsk_id = '{}_{}'.format(dsk_id, var_name)
-            var_dsk_index = (var_dsk_id,)
-            all_dsk_keys = set(itertools.product(var_dsk_index, *tuple(range(len(vals)) for vals in dim_vals.values())))
-            data_dsk_keys = data[var_name].viewkeys()
-            missing_dsk_keys = all_dsk_keys - data_dsk_keys
-            for key in missing_dsk_keys:
-                shape = tuple(c.length for c in sample.coordinates.values())
-                dtype = sample.variables[var_name].dtype
-                nodata = sample.variables[var_name].nodata
-                data[var_name][key] = (nodataFunc, shape, dtype, nodata)
-            chunks = [c.length for c in sample.coordinates.values()]
-            shape = [coord.length * len(dim_vals[dim_name]) for dim_name, coord in sample.coordinates.items()]
-            da_dict[var_name] = dask.DaskArray(data[var_name], var_dsk_index, chunks, shape)
-
-        return da_dict
+        dsk_index = (dsk_id,)
+        all_dsk_keys = set(itertools.product(dsk_index, *tuple(range(len(dim_vals[dim])) for dim in dimensions)))
+        data_dsk_keys = dsk.viewkeys()
+        missing_dsk_keys = all_dsk_keys - data_dsk_keys
+        for key in missing_dsk_keys:
+            coords = list(key)[1:]
+            shape = tuple(operator.getitem(chunksize[dim], i) for dim, i in zip(dimensions, coords))
+            dsk[key] = (noDataFunc, shape, dtype, nodata)
+        chunks = tuple(tuple(chunksize[dim]) for dim in dimensions)
+        dask_array = da.Array(dsk, dsk_id, chunks)
+        coords = [(dim,coord_labels[dim]) for dim in dimensions]
+        xray_data_array = xray.DataArray(dask_array, coords=coords)
+        return xray_data_array

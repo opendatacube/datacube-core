@@ -22,7 +22,7 @@ import click
 import numpy
 import rasterio
 
-from datacube.gdf import make_storage_unit, group_storage_units_by_location
+from datacube.api import make_storage_unit, group_storage_units_by_location
 from datacube.index import index_connect
 from datacube.storage.access.core import StorageUnitStack, StorageUnitVariableProxy
 from datacube.ui import parse_expressions
