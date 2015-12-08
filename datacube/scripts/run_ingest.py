@@ -23,12 +23,12 @@ CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 def cli(verbose, datasets, log_queries):
     config.init_logging(verbosity_level=verbose, log_queries=log_queries)
 
-    datasets = []
+    indexed_datasets = []
     i = index.index_connect()
     for dataset_path in datasets:
-        datasets += index_datasets(Path(dataset_path), index=i)
+        indexed_datasets += index_datasets(Path(dataset_path), index=i)
 
-    store_datasets(datasets, index=i)
+    store_datasets(indexed_datasets, index=i)
 
 
 if __name__ == '__main__':
