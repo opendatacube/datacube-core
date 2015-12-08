@@ -149,35 +149,35 @@ def store_datasets_with_mapping(datasets, mapping):
     tile_res = storage_type.descriptor['resolution']['y'], storage_type.descriptor['resolution']['x']
 
     for tile_index, datasets in _grid_datasets(datasets, storage_type.projection, tile_size).items():
-        tile_transform = _get_tile_transform(tile_index, tile_size, tile_res)
-        tile_spec = TileSpec(storage_type.projection, tile_transform,
-                             width=int(tile_size[1] / abs(tile_res[1])),
-                             height=int(tile_size[0] / abs(tile_res[0])))
-        output_filename = generate_filename(mapping.storage_pattern[7:], datasets[0].metadata_doc, tile_spec)
-        ensure_path_exists(output_filename)
-
-        _LOG.debug("Adding extracted slice to %s", output_filename)
-
         datasets.sort(key=_dataset_time)
 
-        ncfile = NetCDFWriter(output_filename, tile_spec)
-        ncfile.append_time_slices(_dataset_time(dataset) for dataset in datasets)
+        tile_spec = TileSpec(storage_type.projection,
+                             _get_tile_transform(tile_index, tile_size, tile_res),
+                             width=int(tile_size[1] / abs(tile_res[1])),
+                             height=int(tile_size[0] / abs(tile_res[0])))
+        yield _create_storage_unit(tile_index, datasets, mapping, tile_spec, storage_type.chunking)
 
-        for measurement_id, measurement_descriptor in mapping.measurements.items():
-            var, src_filename_var = _create_data_variable(ncfile, measurement_descriptor, storage_type.chunking)
 
-            sources = (DatasetSource(dataset, measurement_id) for dataset in datasets)
-            reproject_datasets(sources,
-                               var,
-                               tile_transform,
-                               storage_type.projection,
-                               measurement_descriptor.get('nodata', None),
-                               resampling=_map_resampling(measurement_descriptor['resampling_method']))
+def _create_storage_unit(tile_index, datasets, mapping, tile_spec, chunking):
+    # TODO: this needs to be better defined...
+    output_filename = generate_filename(mapping.storage_pattern[7:], datasets[0].metadata_doc, tile_spec)
+    ensure_path_exists(output_filename)
+    _LOG.debug("Adding extracted slice to %s", output_filename)
 
-            # TODO: flush the var to disk?
-        ncfile.close()
-        index_netcdfs([output_filename])
-        yield StorageUnit([dataset.id for dataset in datasets],
-                          mapping,
-                          index_netcdfs([output_filename])[output_filename],  # TODO: don't do this
-                          mapping.local_path_to_location_offset('file://' + output_filename))
+    ncfile = NetCDFWriter(output_filename, tile_spec)
+    ncfile.append_time_slices(_dataset_time(dataset) for dataset in datasets)
+    for measurement_id, measurement_descriptor in mapping.measurements.items():
+        var, src_filename_var = _create_data_variable(ncfile, measurement_descriptor, chunking)
+
+        sources = (DatasetSource(dataset, measurement_id) for dataset in datasets)
+        reproject_datasets(sources,
+                           var,
+                           tile_spec.affine,
+                           tile_spec.projection,
+                           measurement_descriptor.get('nodata', None),
+                           resampling=_map_resampling(measurement_descriptor['resampling_method']))
+    ncfile.close()
+    return StorageUnit([dataset.id for dataset in datasets],
+                       mapping,
+                       index_netcdfs([output_filename])[output_filename],  # TODO: don't do this
+                       mapping.local_path_to_location_offset('file://' + output_filename))
