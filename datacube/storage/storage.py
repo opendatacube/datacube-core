@@ -6,11 +6,12 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 
-import dateutil.parser
 from contextlib import contextmanager
 
+import dateutil.parser
 import numpy
 import rasterio.warp
+
 from rasterio.warp import RESAMPLING
 from rasterio.coords import BoundingBox
 from affine import Affine
