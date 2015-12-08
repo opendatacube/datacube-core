@@ -1,21 +1,35 @@
 
+
 -- run as admin once
 create extension postgres_fdw;
 
+-- Run psql with '-v' options to specify these args.
 create server agdcv1_database
 foreign data wrapper postgres_fdw
-options (host '130.56.244.225', port '5432', dbname 'hypercube_v0');
+options (host :foreign_host, port '5432', dbname :foreign_db);
 
-create user mapping for gxr547
+create user mapping for current_user
 server agdcv1_database
-options ( user 'cube_user', password 'GAcube0');
+options ( user :foreign_user );
 
-grant usage on foreign server agdcv1_database to gxr547;
+-- grant usage on foreign server agdcv1_database to current_user;
 
 -- user code
 create index on agdc.dataset ((metadata->'_agdc_legacy'));
 
-create or replace function pg_temp.v1datasets(satellite int, level int)
+
+create or replace function pg_temp.normalise_sat_name(name text)
+  returns text as $$
+select replace(upper(name), '-', '_');
+$$ language sql immutable returns null on null input;
+
+create or replace function pg_temp.normalise_sensor_name(name text)
+  returns text as $$
+select replace(upper(name), '+', '');
+$$ language sql immutable returns null on null input;
+
+
+create or replace function pg_temp.v1datasets(satellite text, level text)
   returns table(
   dataset_id int,
   acquisition_id int,
@@ -53,7 +67,7 @@ begin
                              natural inner join satellite s
                              natural inner join sensor sens
                              natural inner join processing_level pl
-                        where a.satellite_id = ' || satellite ||  'and d.level_id = ' || level || ';') as (
+                        where s.satellite_name = ''' || satellite || ''' and pl.level_name = ''' || level || ''';') as (
                  dataset_id int,
                  acquisition_id int,
                  dataset_path text,
@@ -71,7 +85,7 @@ begin
 end $$;
 
 
-create or replace function pg_temp.v1tiles(satellite int, level int)
+create or replace function pg_temp.v1tiles(satellite text, level text)
   returns table(
   tile_pathname text,
   ctime timestamp,
@@ -88,8 +102,10 @@ begin
                from public.tile t
                    natural inner join dataset d
                    natural inner join acquisition a
-               where a.satellite_id = ' || satellite || 'and
-                     d.level_id = ' || level || ' and
+                   natural inner join satellite s
+                   natural inner join processing_level pl
+               where s.satellite_name = ''' || satellite || ''' and
+                     pl.level_name = ''' || level || ''' and
                      t.tile_class_id in (1,3);') as (
         tile_pathname text,
         ctime timestamp,
@@ -101,7 +117,8 @@ begin
 end $$;
 
 
-create or replace function pg_temp.index_v1datasets(satellite int, level int) returns void
+create or replace function pg_temp.index_v1datasets(satellite text, level text)
+  returns void
 language plpgsql
 as $$
 begin
@@ -111,17 +128,17 @@ begin
       (select id from agdc.collection where name = 'eo'),
       dataset_path,
       json_build_object(
-          'id', uuid,
-          'ga_label', regexp_replace(dataset_path, '.+/', ''),
-          'product_type', level_name,
-          'creation_dt', datetime_processed,
-          'platform', json_build_object('code', satellite_name),
-          'instrument', json_build_object('name', sensor_name),
-          '_agdc_legacy', json_build_object(
+              'id', uuid,
+              'ga_label', regexp_replace(dataset_path, '.+/', ''),
+              'product_type', lower(level_name),
+              'creation_dt', datetime_processed,
+              'platform', json_build_object('code', pg_temp.normalise_sat_name(satellite_name)),
+              'instrument', json_build_object('name', pg_temp.normalise_sensor_name(sensor_name)),
+              '_agdc_legacy', json_build_object(
               'acquisition_id', acquisition_id,
               'dataset_id', dataset_id
           ),
-          'extent', json_build_object(
+              'extent', json_build_object(
               'coord', json_build_object(
                   'ul', json_build_object('lat', ul_lat, 'lon', ul_lon),
                   'ur', json_build_object('lat', ur_lat, 'lon', ur_lon),
@@ -138,7 +155,7 @@ begin
          ) foo;
 end $$;
 
-create or replace function pg_temp.index_v1tiles(mapping smallint, satellite integer, level integer)
+create or replace function pg_temp.index_v1tiles(mapping smallint, satellite text, level text)
   returns table(id integer, descriptor jsonb)
 language plpgsql
 as $$
@@ -182,24 +199,34 @@ begin
     returning agdc.storage_unit.id, agdc.storage_unit.descriptor;
 end $$;
 
-create temp table config(name text, satellite int, level int, measurements jsonb);
-insert into config values ('LS5 NBAR V1', 1, 2, '{
+create temp table config (
+  id             serial primary key,
+  mapping_name   text,
+  satellite_name text,
+  level_name     text,
+  source_level   text,
+  measurements   jsonb
+);
+insert into config (mapping_name, satellite_name, level_name, source_level, measurements)
+values
+  -- These products must be in order, from lower level to higher level, as we link higher level datasets to their source as we go.
+  ('LS5 NBAR V1', 'Landsat-5', 'NBAR', null, '{
                                     "10":{"dtype":"int16","nodata":-999,"varname":"layer1"},
                                     "20":{"dtype":"int16","nodata":-999,"varname":"layer2"},
                                     "30":{"dtype":"int16","nodata":-999,"varname":"layer3"},
                                     "40":{"dtype":"int16","nodata":-999,"varname":"layer4"},
                                     "50":{"dtype":"int16","nodata":-999,"varname":"layer5"},
                                     "70":{"dtype":"int16","nodata":-999,"varname":"layer6"}
-                                    }'::jsonb);
-insert into config values ('LS7 NBAR V1', 2, 2, '{
+                                    }' :: jsonb),
+  ('LS7 NBAR V1', 'Landsat-7', 'NBAR', null, '{
                                     "10":{"dtype":"int16","nodata":-999,"varname":"layer1"},
                                     "20":{"dtype":"int16","nodata":-999,"varname":"layer2"},
                                     "30":{"dtype":"int16","nodata":-999,"varname":"layer3"},
                                     "40":{"dtype":"int16","nodata":-999,"varname":"layer4"},
                                     "50":{"dtype":"int16","nodata":-999,"varname":"layer5"},
                                     "70":{"dtype":"int16","nodata":-999,"varname":"layer6"}
-                                    }'::jsonb);
-insert into config values ('LS8 NBAR V1', 3, 2, '{
+                                    }' :: jsonb),
+  ('LS8 NBAR V1', 'Landsat-8', 'NBAR', null, '{
                                     "1":{"dtype":"int16","nodata":-999,"varname":"layer1"},
                                     "2":{"dtype":"int16","nodata":-999,"varname":"layer2"},
                                     "3":{"dtype":"int16","nodata":-999,"varname":"layer3"},
@@ -207,25 +234,29 @@ insert into config values ('LS8 NBAR V1', 3, 2, '{
                                     "5":{"dtype":"int16","nodata":-999,"varname":"layer5"},
                                     "6":{"dtype":"int16","nodata":-999,"varname":"layer6"},
                                     "7":{"dtype":"int16","nodata":-999,"varname":"layer7"}
-                                    }'::jsonb);
-insert into config values ('LS5 PQA V1', 1, 3, '{"1":{"dtype":"int16","varname":"layer1"}}'::jsonb);
-insert into config values ('LS7 PQA V1', 2, 3, '{"1":{"dtype":"int16","varname":"layer1"}}'::jsonb);
-insert into config values ('LS8 PQA V1', 3, 3, '{"1":{"dtype":"int16","varname":"layer1"}}'::jsonb);
+                                    }' :: jsonb),
+  ('LS5 PQA V1', 'Landsat-5', 'PQA', 'NBAR', '{"1":{"dtype":"int16","varname":"layer1"}}' :: jsonb),
+  ('LS7 PQA V1', 'Landsat-7', 'PQA', 'NBAR', '{"1":{"dtype":"int16","varname":"layer1"}}' :: jsonb),
+  ('LS8 PQA V1', 'Landsat-8', 'PQA', 'NBAR', '{"1":{"dtype":"int16","varname":"layer1"}}' :: jsonb);
 
 do
 $$
 declare
-  mapping_name text;
-  satellite int;
-  level int;
-  measurements jsonb;
-  mapping_id smallint;
+  id                int;
+  mapping_name      text;
+  satellite_name    text;
+  level_name        text;
+  source_level_name text;
+  measurements      jsonb;
+  mapping_id        smallint;
 begin
 
   -- check 'eo' collection exists
   -- check '25m_bands_geotif' exists
 
-for mapping_name, satellite, level, measurements in select * from config loop
+  for id, mapping_name, satellite_name, level_name, source_level_name, measurements in select *
+                                                                                       from config
+                                                                                       order by id asc loop
 
   insert into agdc.storage_mapping (storage_type_ref, name, location_name, file_path_template,
                                     measurements, dataset_metadata)
@@ -242,7 +273,7 @@ for mapping_name, satellite, level, measurements in select * from config loop
   into mapping_id;
 
   RAISE NOTICE  'indexing % datasets', mapping_name;
-  perform pg_temp.index_v1datasets(satellite, level);
+    perform pg_temp.index_v1datasets(satellite_name, level_name);
 
   RAISE NOTICE  'indexing % tiles', mapping_name;
   insert into agdc.dataset_storage (dataset_ref, storage_unit_ref)
@@ -250,8 +281,25 @@ for mapping_name, satellite, level, measurements in select * from config loop
       (d.metadata ->> 'id') :: uuid,
       t.id
     from
-      pg_temp.index_v1tiles(mapping_id, satellite, level) t
+      pg_temp.index_v1tiles(mapping_id, satellite_name, level_name) t
       join agdc.dataset d on (d.metadata -> '_agdc_legacy') = (t.descriptor -> '_agdc_legacy');
 
+    if source_level_name is not null
+    then
+      raise notice 'linking % tiles to %', level_name, source_level_name;
+      -- Link dataset to source datasets (with the same acquisition id)
+      insert into agdc.dataset_source (classifier, dataset_ref, source_dataset_ref)
+        select
+          source_d.metadata ->> 'product_type',
+          derived_d.id,
+          source_d.id
+        from agdc.dataset derived_d
+          inner join agdc.dataset source_d on (
+            source_d.metadata->'_agdc_legacy'->>'acquisition_id' = derived_d.metadata->'_agdc_legacy' ->> 'acquisition_id'
+            )
+        where derived_d.metadata->>'product_type' = lower(level_name) and
+              source_d.metadata ->> 'product_type' = lower(source_level_name) and
+              source_d.metadata->'platform'->>'code' = pg_temp.normalise_sat_name(satellite_name);
+    end if;
 end loop;
 end$$;
