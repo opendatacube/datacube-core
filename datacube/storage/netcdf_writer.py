@@ -207,6 +207,14 @@ class NetCDFWriter(object):
 
         return index
 
+    def append_time_slices(self, time_values):
+        times = self.nco.variables['time']
+        start_idx = times.size
+        for val in time_values:
+            start_datetime_delta = val - EPOCH
+            times[times.size] = start_datetime_delta.total_seconds()
+        return list(range(start_idx, times.size))
+
     def append_time_slice(self, varname, data, time, input_filename="Raw Array"):
         out_band = self.nco.variables[varname]
         src_filename = self.nco.variables[varname + "_src_filenames"]
@@ -217,9 +225,8 @@ class NetCDFWriter(object):
     def ensure_variable(self, varname, dtype, chunksizes, ndv=None, units=None):
         if varname in self.nco.variables:
             # TODO: check that var matches
-            return
-
-        self._create_data_variable(varname, dtype, chunksizes, ndv, units)
+            return self.nco.variables[varname], self.nco.variables[varname + "_src_filenames"]
+        return self._create_data_variable(varname, dtype, chunksizes, ndv, units)
 
     def append_np_array(self, time, nparray, varname, dtype, ndv, chunking, units):
         if varname in self.nco.variables:
