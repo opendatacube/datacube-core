@@ -4,7 +4,4 @@ Storage of datasets
 """
 from __future__ import absolute_import
 
-from .storage import store
-
-
-__all__ = ['store']
+from .storage import store_datasets_with_mapping

@@ -25,12 +25,13 @@ import sys
 
 import numpy
 
-from .indexing import make_index, index_shape, normalize_index, Range
-
 try:
     from xray import DataArray
 except ImportError:
     from .ghetto import DataArray
+
+from .indexing import make_index, index_shape, normalize_index, Range
+
 
 Coordinate = namedtuple('Coordinate', ('dtype', 'begin', 'end', 'length', 'units'))
 Variable = namedtuple('Variable', ('dtype', 'nodata', 'dimensions', 'units'))

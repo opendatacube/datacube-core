@@ -39,13 +39,13 @@ def _expected_metadata_path(dataset_path):
     raise ValueError('Unhandled path type for %r' % dataset_path)
 
 
-def ingest(path, index=None):
+def index_datasets(path, index=None):
     """
-    Add a dataset to the index and then create storage units from it
+    Discover datasets in path and add them to the index
 
-    :type index: datacube.index._api.Index
     :type path: pathlib.Path
-    :rtype: datacube.model.Dataset
+    :type index: datacube.index._api.Index
+    :rtype: list[datacube.model.Dataset]
     """
     index = index or index_connect()
 
@@ -53,24 +53,45 @@ def ingest(path, index=None):
     if not metadata_path or not metadata_path.exists():
         raise ValueError('No supported metadata docs found for dataset {}'.format(path))
 
-    for metadata_path, metadata_doc in ui.read_documents(metadata_path):
-        dataset = index.datasets.add(metadata_doc, metadata_path)
+    datasets = [index.datasets.add(metadata_doc, metadata_path)
+                for metadata_path, metadata_doc
+                in ui.read_documents(metadata_path)]
+    _LOG.info('Indexed datasets %s', path)
+    return datasets
 
-        _write_missing_storage_units(index, dataset)
 
-        _LOG.info('Completed dataset %s', path)
-
-
-def _write_missing_storage_units(index, dataset):
+def store_datasets(datasets, index=None):
     """
-    Ensure all storage units have been written for the dataset.
+    Find matching mappings for datasets
+    Create storage units for datasets as per the mappings
+    Add storage units to the index
+
+    :type datasets: list[datacube.model.Dataset]
     :type index: datacube.index._api.Index
-    :type dataset: datacube.model.Dataset
     """
-    # TODO: Query for missing storage units, not all storage units.
-    storage_mappings = index.mappings.get_for_dataset(dataset)
-    _LOG.info('%s applicable storage mapping(s)', len(storage_mappings))
-    _LOG.debug('Storage mappings: %s', storage_mappings)
-    if storage_mappings:
-        storage_units = storage.store(storage_mappings, dataset)
-        index.storage.add_many(storage_units)
+    index = index or index_connect()
+
+    storage_mappings = {}
+    for dataset in datasets:
+        for storage_mapping in index.mappings.get_for_dataset(dataset):
+            storage_mappings.setdefault(storage_mapping.id_, []).append(dataset)
+
+    for storage_mapping_id, datasets in storage_mappings.items():
+        storage_mapping = index.mappings.get(storage_mapping_id)
+        _LOG.info('Using %s to store %s datasets', storage_mapping, datasets)
+        store_datasets_with_mapping(datasets, storage_mapping, index)
+
+
+def store_datasets_with_mapping(datasets, storage_mapping, index=None):
+    """
+    Create storage units for datasets using storage_mapping
+    Add storage units to the index
+
+    :type datasets: list[datacube.model.Dataset]
+    :type storage_mapping: datacube.model.StorageMapping
+    :type index: datacube.index._api.Index
+    """
+    index = index or index_connect()
+
+    storage_units = storage.store_datasets_with_mapping(datasets, storage_mapping)
+    index.storage.add_many(storage_units)

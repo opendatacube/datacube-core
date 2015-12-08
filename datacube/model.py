@@ -3,11 +3,10 @@
 Core classes used across modules.
 """
 from __future__ import absolute_import
-
 import logging
 from collections import namedtuple
-
 import numpy as np
+from osgeo import osr
 
 _LOG = logging.getLogger(__name__)
 
@@ -31,6 +30,7 @@ class StorageType(object):
         # Name for this config (specified by users)
         #: :type: str
         self.name = name
+
         # A human-readable, potentially multi-line, description for display on the UI.
         #: :type: str
         self.description = description
@@ -42,6 +42,48 @@ class StorageType(object):
         # Database primary key
         #: :type: int
         self.id_ = id_
+
+    @property
+    def projection(self):
+        return str(self.descriptor['projection']['spatial_ref']).strip()
+
+    @property
+    def tile_size(self):
+        """
+
+        :return: dict of form {'x': , 'y': }
+        """
+        return self.descriptor['tile_size']
+
+    @property
+    def resolution(self):
+        """
+
+        :return: dict of form {'x': , 'y': }
+        """
+        return self.descriptor['resolution']
+
+    @property
+    def chunking(self):
+        return self.descriptor['chunking']
+
+    @property
+    def filename_format(self):
+        return self.descriptor['filename_format']
+
+
+class MappedStorageType(StorageType):
+    pass
+
+
+class StorageTypeDescriptor(object):
+    def __init__(self, projection, tile_size, resolution, dimension_order, chunking, filename_format):
+        self.projection = projection
+        self.tile_size = tile_size
+        self.resolution = resolution
+        self.dimension_order = dimension_order
+        self.chunking = chunking
+        self.filename_format = filename_format
 
 
 class StorageMapping(object):
@@ -127,7 +169,9 @@ class StorageUnit(object):
         return filepath[7:]
 
     def __str__(self):
-        return "StorageUnit <type={m.name}, path={path}>".format(path=self.path, m=self.storage_mapping)
+        return "StorageUnit <type={m.name}/{t.name}, path={path}>".format(path=self.path,
+                                                                          t=self.storage_mapping.storage_type,
+                                                                          m=self.storage_mapping)
 
 
 class Dataset(object):
@@ -255,7 +299,9 @@ class TileSpec(object):
     Defines a Storage Tile/Storage Unit, it's projection, location, resolution, and global attributes
 
     >>> from affine import Affine
-    >>> t = TileSpec(4000, 4000, "fake_projection", Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0))
+    >>> wgs84 = osr.SpatialReference()
+    >>> r = wgs84.ImportFromEPSG(4326)
+    >>> t = TileSpec(wgs84.ExportToWkt(), Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0), 4000, 4000)
     >>> t.lat_min, t.lat_max
     (-30.0, -29.0)
     >>> t.lon_min, t.lon_max
@@ -268,42 +314,56 @@ class TileSpec(object):
             151.99975])
     """
 
-    lats = []
-    lons = []
-
-    def __init__(self, nlats, nlons, projection, affine, data=None, global_attrs=None):
+    def __init__(self, projection, affine, height, width, global_attrs=None):
         self.projection = projection
-        self._affine = affine
-        self.lons = np.arange(nlons) * affine.a + affine.c
-        self.lats = np.arange(nlats) * affine.e + affine.f
-        self.lat_extents = (nlats * affine.e + affine.f, affine.f)
-        self.lon_extents = (nlons * affine.a + affine.c, affine.c)
-        self.data = data
+        self.affine = affine
         self.global_attrs = global_attrs or {}
+
+        self.extents = [(0, 0), (0, height), (width, height), (width, 0)]
+        affine.itransform(self.extents)
+
+        if not affine.is_rectilinear:
+            raise RuntimeError("rotation and/or shear are not supported")
+
+        xs = np.arange(width) * affine.a + affine.c
+        ys = np.arange(height) * affine.e + affine.f
+
+        sr = osr.SpatialReference(projection)
+        if sr.IsGeographic():
+            self.lons = xs
+            self.lats = ys
+        elif sr.IsProjected():
+            self.xs = xs
+            self.ys = ys
+
+            wgs84 = osr.SpatialReference()
+            wgs84.ImportFromEPSG(4326)
+            transform = osr.CoordinateTransformation(sr, wgs84)
+            self.extents = transform.TransformPoints(self.extents)
 
     @property
     def lat_min(self):
-        return min(self.lat_extents)
+        return min(ll[1] for ll in self.extents)
 
     @property
     def lat_max(self):
-        return max(self.lat_extents)
+        return max(ll[1] for ll in self.extents)
 
     @property
     def lon_min(self):
-        return min(self.lon_extents)
+        return min(ll[0] for ll in self.extents)
 
     @property
     def lon_max(self):
-        return max(self.lon_extents)
+        return max(ll[0] for ll in self.extents)
 
     @property
     def lat_res(self):
-        return self._affine.e
+        return self.affine.e
 
     @property
     def lon_res(self):
-        return self._affine.a
+        return self.affine.a
 
     def __repr__(self):
         return repr(self.__dict__)
