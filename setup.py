@@ -30,6 +30,8 @@ setup(name='agdc-v2',
           'psycopg2',
           'pytz',
           'gdal',
+          'dask',
+          'xray',
       ],
       tests_require=[
           'pytest',

@@ -24,7 +24,6 @@ import uuid
 import numpy
 import dask.array as da
 import xray
-from sympy.physics.unitsystems import dimensions
 
 from .model import Range
 from .storage.access.core import Coordinate, Variable, StorageUnitStack, StorageUnitDimensionProxy
@@ -44,26 +43,28 @@ def get_storage_unit_projection(su):
 
 
 def make_storage_unit(su):
-    """convert search result into StorageUnit object"""
+    """convert search result into StorageUnit object
+    :param su: database index storage unit
+    """
     def map_dims(dims):
         # TODO: remove this hack
         mapping = {'t': 'time', 'y': 'latitude', 'x': 'longitude'}
         return tuple(mapping[dim] for dim in dims)
 
     storage_type = su.storage_mapping.storage_type.descriptor
-    coordinates = {name: Coordinate(dtype=numpy.dtype(attrs['dtype']),
-                                    begin=attrs['begin'],
-                                    end=attrs['end'],
-                                    length=attrs['length'],
-                                    units=attrs.get('units', None))
-                   for name, attrs in su.descriptor['coordinates'].items()}
+    coordinates = {name: Coordinate(dtype=numpy.dtype(attributes['dtype']),
+                                    begin=attributes['begin'],
+                                    end=attributes['end'],
+                                    length=attributes['length'],
+                                    units=attributes.get('units', None))
+                   for name, attributes in su.descriptor['coordinates'].items()}
     variables = {
-        attrs['varname']: Variable(
-            dtype=numpy.dtype(attrs['dtype']),
-            nodata=attrs.get('nodata', None),
+        attributes['varname']: Variable(
+            dtype=numpy.dtype(attributes['dtype']),
+            nodata=attributes.get('nodata', None),
             dimensions=map_dims(storage_type['dimension_order']),
-            units=attrs.get('units', None))
-        for attrs in su.storage_mapping.measurements.values()
+            units=attributes.get('units', None))
+        for attributes in su.storage_mapping.measurements.values()
     }
     attributes = {
         'storage_type': storage_type
@@ -106,18 +107,17 @@ def get_descriptors(**query):
     result = {}
     for key, sus in storage_units_by_type.items():
         stacks = group_storage_units_by_location(sus)
-        for loc, sus in stacks.items():
-            result[key+(loc,)] = StorageUnitStack(sorted(sus, key=lambda su: su.coordinates['time'].begin), 'time')
+        for loc, sus_grp in stacks.items():
+            result[key+(loc,)] = StorageUnitStack(sorted(sus_grp, key=lambda s: s.coordinates['time'].begin), 'time')
 
     return result
 
-def rangeToSelector(ranges, reverse_sort):
+
+def range_to_selector(ranges, reverse_sort):
     return dict((c, slice(*sorted(r, reverse=reverse_sort[c]))) for c, r in ranges.items())
-    #return dict((c, slice(min(r.begin, r.end), max(r.begin, r.end))) for c, r in ranges.items())
-    #return dict((c, slice(r.begin, r.end)) for c, r in ranges.items())
 
 
-def noDataFunc(shape, dtype, fill):
+def no_data_block(shape, dtype, fill):
     arr = numpy.empty(shape, dtype)
     if fill is None:
         fill = numpy.NaN
@@ -128,6 +128,7 @@ def noDataFunc(shape, dtype, fill):
 class API(object):
     def get_descriptor(self, descriptor=None):
         """
+        :param descriptor:
         query_parameter = \
         {
         'storage_types':
@@ -281,6 +282,7 @@ class API(object):
     def get_data(self, descriptor):
         """
         Function to return composite in-memory arrays
+        :param descriptor:
         data_request = \
         {
         'satellite': 'LANDSAT_8',
@@ -357,16 +359,15 @@ class API(object):
             stype = su.storage_mapping.match.metadata['platform']['code'] + '_' + \
                     su.storage_mapping.match.metadata['instrument']['name']
             ptype = su.storage_mapping.match.metadata['product_type']
-            #key = (stype, ptype)
             # TODO: group by storage type also?
             storage_units_by_type.setdefault(stype, {}).setdefault(ptype, []).append(make_storage_unit(su))
 
-        if (len(storage_units_by_type) > 1):
+        if len(storage_units_by_type) > 1:
             raise RuntimeError('Data must come from a single storage')
 
         data_response = {'arrays': {}}
         for stype, products in storage_units_by_type.items():
-            #TODO: check var names are unique accross products
+            # TODO: check var names are unique accross products
             # for ptype, storage_units in products.items():
             #     pass
 
@@ -375,7 +376,9 @@ class API(object):
             data_response.update(dask_dict)
         return data_response
 
-    def _get_data_from_storage_units(self, storage_units, variables=None, reqrange={}):
+    def _get_data_from_storage_units(self, storage_units, variables=None, reqrange=None):
+        if not reqrange:
+            reqrange = {}
         if not len(storage_units):
             return {}
 
@@ -419,16 +422,20 @@ class API(object):
                 if coord_list[ordinal] is None:
                     coord_list[ordinal] = su.get_coord(dim)
 
-        selectors = rangeToSelector(reqrange, reverse_sort)
+        selectors = range_to_selector(reqrange, reverse_sort)
         coord_labels = {}
         for dim in dimensions:
             coord_labels[dim] = list(itertools.chain(*[x[0] for x in coord_lists[dim]]))
         for var_name, sus in storage_units_by_variable.items():
             xray_data_array = self._get_array(sus, var_name, dimensions, dim_vals, sus_size, coord_labels)
             cropped = xray_data_array.sel(**selectors)
+            # TODO: add array_range selector
+            # subset = cropped.isel(**iselectors)
             dimension_group_reponse['arrays'][var_name] = cropped
         x = dimension_group_reponse['arrays'][dimension_group_reponse['arrays'].keys()[0]]
         dimension_group_reponse['indices'] = [x.coords[dim].values for dim in dimensions]
+        dimension_group_reponse['element_sizes'] = list(x.shape)
+        dimension_group_reponse['coordinate_reference_systems'] = list(x.shape)
         return dimension_group_reponse
 
     def _get_array(self, storage_units, var_name, dimensions, dim_vals, chunksize, coord_labels):
@@ -436,14 +443,14 @@ class API(object):
         Create a dask array to call the underlying storage units
         :return dask array.
         """
-        dsk_id = str(uuid.uuid1())  #unique name for the requested dask
+        dsk_id = str(uuid.uuid1())  # unique name for the requested dask
         dsk = {}
         sample = storage_units[0]
         dtype = sample.variables[var_name].dtype
         nodata = sample.variables[var_name].nodata
 
         for storage_unit in storage_units:
-            dsk_index = (dsk_id,) # Dask is indexed by a tuple of ("Name", x-index pos, y-index pos, z-index pos, ...)
+            dsk_index = (dsk_id,)   # Dask is indexed by a tuple of ("Name", x-index pos, y-index pos, z-index pos, ...)
             for dim in dimensions:
                 ordinal = dim_vals[dim].index(storage_unit.coordinates[dim].begin)
                 dsk_index += (ordinal,)
@@ -456,9 +463,9 @@ class API(object):
         for key in missing_dsk_keys:
             coords = list(key)[1:]
             shape = tuple(operator.getitem(chunksize[dim], i) for dim, i in zip(dimensions, coords))
-            dsk[key] = (noDataFunc, shape, dtype, nodata)
+            dsk[key] = (no_data_block, shape, dtype, nodata)
         chunks = tuple(tuple(chunksize[dim]) for dim in dimensions)
         dask_array = da.Array(dsk, dsk_id, chunks)
-        coords = [(dim,coord_labels[dim]) for dim in dimensions]
+        coords = [(dim, coord_labels[dim]) for dim in dimensions]
         xray_data_array = xray.DataArray(dask_array, coords=coords)
         return xray_data_array
