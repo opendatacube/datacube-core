@@ -9,8 +9,12 @@ import rasterio
 
 from datacube.storage.netcdf_writer import NetCDFWriter
 from datacube.model import TileSpec, StorageType
-from datacube.storage.ingester import SimpleObject
 from datacube.storage.utils import tilespec_from_riodataset
+
+
+class SimpleObject(object):
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
 
 
 def test_albers_goo(tmpdir):
