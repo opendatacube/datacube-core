@@ -8,6 +8,7 @@ import logging
 
 from contextlib import contextmanager
 from itertools import groupby
+import json
 
 import dateutil.parser
 import numpy
@@ -48,6 +49,7 @@ def _dataset_bounds(dataset):
 def _dataset_projection(dataset):
     projection = dataset.metadata_doc['grid_spatial']['projection']
 
+    # TODO: really need CRS specified properly in agdc-metadata.yaml
     if projection['datum'] == 'GDA94':
         return {'init': 'EPSG:283' + str(abs(projection['zone']))}
 
@@ -69,6 +71,7 @@ def _grid_datasets(datasets, grid_proj, grid_size):
 
         for y in range(int(bounds.bottom//grid_size[0]), int(bounds.top//grid_size[0])+1):
             for x in range(int(bounds.left//grid_size[1]), int(bounds.right//grid_size[1])+1):
+                # TODO: need to cull false positives
                 tiles.setdefault((y, x), []).append(dataset)
 
     return tiles
@@ -189,12 +192,17 @@ def _create_storage_unit(tile_index, datasets, mapping, tile_spec, chunking):
     # TODO: filename pattern needs to be better defined...
     output_filename = generate_filename(mapping.storage_pattern[7:], datasets[0].metadata_doc, tile_spec)
     ensure_path_exists(output_filename)
-    _LOG.debug("Adding extracted slice to %s", output_filename)
+    _LOG.debug("Creating %s", output_filename)
 
     dataset_groups = [(key, list(group)) for key, group in groupby(datasets, _dataset_time)]
 
     ncfile = NetCDFWriter(output_filename, tile_spec, len(dataset_groups))
     ncfile.set_time_values(group[0] for group in dataset_groups)
+
+    for index, (time, group) in enumerate(dataset_groups):
+        if len(group) > 1:
+            _LOG.debug("Mosaicing multiple datasets %s@%s: %s", tile_index, time, group)
+        # TODO: ncfile.extra_meta = json.dumps(group[0].metadata_doc)
 
     _fill_storage_unit(ncfile, dataset_groups, mapping.measurements, tile_spec, chunking)
 
@@ -218,3 +226,4 @@ def _fill_storage_unit(ncfile, dataset_groups, measurements, tile_spec, chunking
                          getattr(var, '_FillValue', None),
                          resampling=_map_resampling(measurement_descriptor['resampling_method']))
             var[index] = buffer_
+            # TODO: src_filename_var[index] = foo... is it needed??
