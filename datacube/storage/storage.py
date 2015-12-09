@@ -112,7 +112,7 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
                                     NUM_THREADS=4)
 
     def copyto_fuser(dest, src):
-        numpy.copyto(dest, src, where=(buffer_ != dst_nodata))
+        numpy.copyto(dest, src, where=(src != dst_nodata))
 
     fuse_func = fuse_func or copyto_fuser
 
@@ -214,6 +214,6 @@ def _fill_storage_unit(ncfile, dataset_groups, measurements, tile_spec, chunking
                          buffer_,
                          tile_spec.affine,
                          tile_spec.projection,
-                         getattr(var, '_Fill_Value', None),
+                         getattr(var, '_FillValue', None),
                          resampling=_map_resampling(measurement_descriptor['resampling_method']))
             var[index] = buffer_
