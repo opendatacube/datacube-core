@@ -116,11 +116,12 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
 
     fuse_func = fuse_func or copyto_fuser
 
-    if len(sources) == 0:
-        return destination
-
     if len(sources) == 1:
         reproject(sources[0], destination)
+        return destination
+
+    destination.fill(dst_nodata)
+    if len(sources) == 0:
         return destination
 
     buffer_ = numpy.empty(destination.shape, dtype=destination.dtype)
