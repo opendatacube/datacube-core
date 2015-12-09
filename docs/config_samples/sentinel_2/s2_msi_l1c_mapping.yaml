@@ -1,0 +1,109 @@
+
+name: S2A L1C
+
+# Any datasets matching these metadata properties.
+match:
+    metadata:
+        platform:
+            code: SENTINEL_2A
+        instrument:
+            name: MSI
+        product_type: S2MSI1C
+
+# Store them using storage definitions '30m_bands' and '15m_bands':
+storage:
+    - name: 10m_bands
+      location_name: eotiles
+      file_path_template: '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc'
+      global_attributes:
+        title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
+        summary: These files are experimental, short lived, and the format will change.
+        source: This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/
+        product_version: '0.0.0'
+        license: Creative Commons Attribution 4.0 International CC BY 4.0
+      measurements:
+        '02':
+            dtype: int16
+            nodata: -999
+            resampling_method: cubic
+            varname: band_02
+        '03':
+            dtype: int16
+            nodata: -999
+            resampling_method: cubic
+            varname: band_03
+        '04':
+            dtype: int16
+            nodata: -999
+            resampling_method: cubic
+            varname: band_04
+        '08':
+            dtype: int16
+            nodata: -999
+            resampling_method: cubic
+            varname: band_08
+    - name: 20m_bands
+      location_name: eotiles
+      file_path_template: '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc'
+      global_attributes:
+        title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
+        summary: These files are experimental, short lived, and the format will change.
+        source: This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/
+        product_version: '0.0.0'
+        license: Creative Commons Attribution 4.0 International CC BY 4.0
+      measurements:
+        '05':
+            dtype: int16
+            nodata: -999
+            resampling_method: cubic
+            varname: band_05
+        '06':
+            dtype: int16
+            nodata: -999
+            resampling_method: cubic
+            varname: band_06
+        '07':
+            dtype: int16
+            nodata: -999
+            resampling_method: cubic
+            varname: band_07
+        '11':
+            dtype: int16
+            nodata: -999
+            resampling_method: cubic
+            varname: band_11
+        '12':
+            dtype: int16
+            nodata: -999
+            resampling_method: cubic
+            varname: band_12
+        '8A':
+            dtype: int16
+            nodata: -999
+            resampling_method: cubic
+            varname: band_8A
+    - name: 60m_bands
+      location_name: eotiles
+      file_path_template: '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc'
+      global_attributes:
+        title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
+        summary: These files are experimental, short lived, and the format will change.
+        source: This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/
+        product_version: '0.0.0'
+        license: Creative Commons Attribution 4.0 International CC BY 4.0
+      measurements:
+        '01':
+            dtype: int16
+            nodata: -999
+            resampling_method: cubic
+            varname: band_01
+        '09':
+            dtype: int16
+            nodata: -999
+            resampling_method: cubic
+            varname: band_09
+        '10':
+            dtype: int16
+            nodata: -999
+            resampling_method: cubic
+            varname: band_10
