@@ -4,12 +4,30 @@ Ingest data from the command-line.
 """
 from __future__ import absolute_import
 
-import yaml
 import uuid
 import logging
 from xml.etree import ElementTree
 from pathlib import Path
+import yaml
 import click
+
+
+def get_geo_ref_points(root):
+    nrows = int(root.findall('./*/Tile_Geocoding/Size[@resolution="10"]/NROWS')[0].text)
+    ncols = int(root.findall('./*/Tile_Geocoding/Size[@resolution="10"]/NCOLS')[0].text)
+
+    ulx = int(root.findall('./*/Tile_Geocoding/Geoposition[@resolution="10"]/ULX')[0].text)
+    uly = int(root.findall('./*/Tile_Geocoding/Geoposition[@resolution="10"]/ULY')[0].text)
+
+    xdim = int(root.findall('./*/Tile_Geocoding/Geoposition[@resolution="10"]/XDIM')[0].text)
+    ydim = int(root.findall('./*/Tile_Geocoding/Geoposition[@resolution="10"]/YDIM')[0].text)
+
+    return {
+        'ul': {'x': ulx, 'y': uly},
+        'ur': {'x': ulx + ncols * abs(xdim), 'y': uly},
+        'll': {'x': ulx, 'y': uly - nrows * abs(ydim)},
+        'lr': {'x': ulx + ncols * abs(xdim), 'y': uly - nrows * abs(ydim)},
+    }
 
 
 def prepare_dataset(path):
@@ -36,15 +54,6 @@ def prepare_dataset(path):
         datum = cs_name.split('/')[0].strip()
         zone = cs_name.split('/')[1][-3:]
 
-        nrows = int(root.findall('./*/Tile_Geocoding/Size[@resolution="10"]/NROWS')[0].text)
-        ncols = int(root.findall('./*/Tile_Geocoding/Size[@resolution="10"]/NCOLS')[0].text)
-
-        ulx = int(root.findall('./*/Tile_Geocoding/Geoposition[@resolution="10"]/ULX')[0].text)
-        uly = int(root.findall('./*/Tile_Geocoding/Geoposition[@resolution="10"]/ULY')[0].text)
-
-        xdim = int(root.findall('./*/Tile_Geocoding/Geoposition[@resolution="10"]/XDIM')[0].text)
-        ydim = int(root.findall('./*/Tile_Geocoding/Geoposition[@resolution="10"]/YDIM')[0].text)
-
         documents.append({
             'id': str(uuid.uuid4()),
             'ga_label': granule_id.split('__')[0],
@@ -58,19 +67,15 @@ def prepare_dataset(path):
             'format': {'name': 'JPEG2000'},
             'grid_spatial': {
                 'projection': {
-                    'geo_ref_points': {
-                        'ul': {'x': ulx, 'y': uly},
-                        'ur': {'x': ulx+ncols*abs(xdim), 'y': uly},
-                        'll': {'x': ulx, 'y': uly-nrows*abs(ydim)},
-                        'lr': {'x': ulx+ncols*abs(xdim), 'y': uly-nrows*abs(ydim)},
-                    },
+                    'geo_ref_points': get_geo_ref_points(root),
                     'datum': datum,
                     'zone': zone,
                     'code': cs_code,
                 }
             },
             'image': {
-                'bands': {image[-2:]: {'path': str(Path('GRANULE', granule_id, 'IMG_DATA', image+'.jp2'))} for image in images}
+                'bands': {image[-2:]: {'path': str(Path('GRANULE', granule_id, 'IMG_DATA', image+'.jp2'))}
+                          for image in images}
             },
             'lineage': {'source_datasets': {}},
         })
@@ -85,14 +90,15 @@ def main(datasets):
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
 
     for dataset in datasets:
-        dataset = Path(dataset)
-        if dataset.is_dir():
-            dataset = dataset.joinpath(dataset.stem.replace('PRD_MSIL1C', 'MTD_SAFL1C')+'.xml')
-        if dataset.suffix != '.xml':
+        path = Path(dataset)
+
+        if path.is_dir():
+            path = Path(path.joinpath(path.stem.replace('PRD_MSIL1C', 'MTD_SAFL1C')+'.xml'))
+        if path.suffix != '.xml':
             raise RuntimeError('want xml')
 
-        logging.info("Processing %s" % dataset)
-        documents = prepare_dataset(dataset)
+        logging.info("Processing %s", path)
+        documents = prepare_dataset(path)
 
         logging.info("Found %s datasets", len(documents))
         with open(str(dataset.parent.joinpath('agdc-metadata.yaml')), 'w') as stream:
