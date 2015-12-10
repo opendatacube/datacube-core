@@ -16,6 +16,9 @@ setup(name='agdc-v2',
       },
       scripts=[
       ],
+      setup_requires=[
+          'pytest-runner'
+      ],
       install_requires=[
           'click',
           'pathlib',
@@ -33,6 +36,7 @@ setup(name='agdc-v2',
       ],
       tests_require=[
           'pytest',
+          'pytest-cov',
           'mock'
       ],
       url='https://github.com/data-cube/agdc-v2',
