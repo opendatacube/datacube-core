@@ -141,12 +141,13 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
 
 class DatasetSource(object):
     def __init__(self, dataset, measurement_id):
-        dataset_measurements = dataset.collection.dataset_reader(dataset.metadata_doc).measurements_dict
-        dataset_measurement_descriptor = dataset_measurements[measurement_id]
+        dataset_measurement_descriptor = dataset.metadata.measurements_dict[measurement_id]
         self._filename = str(dataset.metadata_path.parent.joinpath(dataset_measurement_descriptor['path']))
+        self._band_id = 1  # TODO: store band id in the MD doc
         self.transform = None
         self.projection = None
         self.nodata = None
+        self.format = dataset.format
 
     @contextmanager
     def open(self):
@@ -154,8 +155,8 @@ class DatasetSource(object):
             with rasterio.open(self._filename) as src:
                 self.transform = src.affine
                 self.projection = src.crs
-                self.nodata = src.nodatavals[0] or 0  # TODO: sentinel 2 hack
-                yield rasterio.band(src, 1)  # TODO: this magically works for H8 netcdf
+                self.nodata = src.nodatavals[0] or (0 if self.format == 'JPEG200' else None)  # TODO: sentinel 2 hack
+                yield rasterio.band(src, self._band_id)  # TODO: this magically works for H8 netcdf
         finally:
             src.close()
 
