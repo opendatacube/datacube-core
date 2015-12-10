@@ -3,6 +3,7 @@ branches:
   only:
     - master
     - develop
+    - ga/milestone1
 
 language: python
 python:
