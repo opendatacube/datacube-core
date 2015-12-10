@@ -1,8 +1,8 @@
 # Australian Geoscience Data Cube v2
 
-Milestone 1 | [![Build Status](https://travis-ci.org/data-cube/agdc-v2.svg?branch=ga%2Fmilestone1)](https://travis-ci.org/data-cube/agdc-v2) | [![Coverage Status](https://coveralls.io/repos/data-cube/agdc-v2/badge.svg?branch=ga%2Fmilestone1&service=github)](https://coveralls.io/github/data-cube/agdc-v2?branch=ga%2Fmilestone1) | [![Documentation Status - Milestone 1](https://readthedocs.org/projects/agdc-v2/badge/?version=ga-milestone1)](http://agdc-v2.readthedocs.org/en/ga-milestone1/?badge=ga-milestone1)
----: | :--- | :--- | :---
-Develop | [![Build Status - Develop](https://travis-ci.org/data-cube/agdc-v2.svg?branch=develop)](https://travis-ci.org/data-cube/agdc-v2) | [![Coverage Status](https://coveralls.io/repos/data-cube/agdc-v2/badge.svg?branch=develop&service=github)](https://coveralls.io/github/data-cube/agdc-v2?branch=develop) | [![Documentation Status - Develop](https://readthedocs.org/projects/agdc-v2/badge/?version=develop)](https://readthedocs.org/projects/agdc-v2/?badge=develop)
+[![Build Status](https://travis-ci.org/data-cube/agdc-v2.svg?branch=ga%2Fmilestone1)](https://travis-ci.org/data-cube/agdc-v2)
+[![Coverage Status](https://coveralls.io/repos/data-cube/agdc-v2/badge.svg?branch=ga%2Fmilestone1&service=github)](https://coveralls.io/github/data-cube/agdc-v2?branch=ga%2Fmilestone1)
+[![Documentation Status - Milestone 1](https://readthedocs.org/projects/agdc-v2/badge/?version=ga-milestone1)](http://agdc-v2.readthedocs.org/en/ga-milestone1/?badge=ga-milestone1)
 
 Overview
 ========
