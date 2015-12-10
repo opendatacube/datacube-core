@@ -33,6 +33,7 @@ setup(name='agdc-v2',
       ],
       tests_require=[
           'pytest',
+          'mock'
       ],
       url='https://github.com/data-cube/agdc-v2',
       author='AGDC Collaboration',
