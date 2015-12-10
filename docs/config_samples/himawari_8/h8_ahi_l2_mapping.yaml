@@ -1,0 +1,44 @@
+
+name: H8 AHI BRF
+
+# Any datasets matching these metadata properties.
+match:
+    metadata:
+        platform:
+            code: HIMAWARI_8
+        instrument:
+            name: AHI
+        product_type: BRF
+
+# Store them using storage definitions '30m_bands' and '15m_bands':
+storage:
+    - name: 1km_bands
+      location_name: eotiles
+      file_path_template: '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc'
+      global_attributes:
+        title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
+        summary: These files are experimental, short lived, and the format will change.
+        source: This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/
+        product_version: '0.0.0'
+        license: Creative Commons Attribution 4.0 International CC BY 4.0
+      measurements:
+        '01':
+            dtype: float32
+            nodata: 1e10
+            resampling_method: cubic
+            varname: band_01
+        '02':
+            dtype: float32
+            nodata: 1e10
+            resampling_method: cubic
+            varname: band_02
+        '03':
+            dtype: float32
+            nodata: 1e10
+            resampling_method: cubic
+            varname: band_03
+        '04':
+            dtype: float32
+            nodata: 1e10
+            resampling_method: cubic
+            varname: band_04

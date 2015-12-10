@@ -49,6 +49,10 @@ def _dataset_bounds(dataset):
 def _dataset_projection(dataset):
     projection = dataset.metadata_doc['grid_spatial']['projection']
 
+    crs = projection.get('spatial_reference', None)
+    if crs:
+        return crs
+
     # TODO: really need CRS specified properly in agdc-metadata.yaml
     if projection['datum'] == 'GDA94':
         return {'init': 'EPSG:283' + str(abs(projection['zone']))}
@@ -151,7 +155,7 @@ class DatasetSource(object):
                 self.transform = src.affine
                 self.projection = src.crs
                 self.nodata = src.nodatavals[0] or 0  # TODO: sentinel 2 hack
-                yield rasterio.band(src, 1)
+                yield rasterio.band(src, 1)  # TODO: this magically works for H8 netcdf
         finally:
             src.close()
 

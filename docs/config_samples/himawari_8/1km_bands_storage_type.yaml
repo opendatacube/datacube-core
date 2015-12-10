@@ -1,0 +1,31 @@
+#
+# Sample Storage Configuration
+#
+
+name: 1km_bands
+description: 1km metre, 10 degree EO NetCDF storage unit.
+driver: NetCDF CF
+
+projection:
+    spatial_ref: |
+        GEOGCS["WGS 84",
+            DATUM["WGS_1984",
+                SPHEROID["WGS 84",6378137,298.257223563,
+                    AUTHORITY["EPSG","7030"]],
+                AUTHORITY["EPSG","6326"]],
+            PRIMEM["Greenwich",0,
+                AUTHORITY["EPSG","8901"]],
+            UNIT["degree",0.0174532925199433,
+                AUTHORITY["EPSG","9122"]],
+            AUTHORITY["EPSG","4326"]]
+tile_size:
+        x: 10.0
+        y: -10.0
+resolution:
+        x: 0.01
+        y: -0.01
+chunking:
+    x: 250
+    y: 250
+    t: 1
+dimension_order: ['t', 'y', 'x']
