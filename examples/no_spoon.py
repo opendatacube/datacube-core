@@ -27,10 +27,10 @@ def get_data(datasets,
               for key, group in groupby(datasets, group_func)]
 
     shape = (len(groups),
-             (bounds.right - bounds.left) / abs(resolution[0]),
-             (bounds.top - bounds.bottom) / abs(resolution[1]))
+             (bounds.top - bounds.bottom) / abs(resolution[1]),
+             (bounds.right - bounds.left) / abs(resolution[0]))
     transform = Affine(resolution[0], 0.0, bounds.right if resolution[0] < 0 else bounds.left,
-                       0.0, resolution[1], bounds.bottom if resolution[1] < 0 else bounds.bottom)
+                       0.0, resolution[1], bounds.top if resolution[1] < 0 else bounds.bottom)
 
     result = numpy.empty(shape, dtype=numpy.int16)
     for index, (key, sources) in enumerate(groups):
