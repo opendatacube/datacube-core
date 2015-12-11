@@ -77,7 +77,7 @@ def prepare_dataset(path):
                 'from_dt': sensing_time,
                 'to_dt': sensing_time,
                 'center_dt': sensing_time,
-                'coords': get_coords(geo_ref_points, spatial_ref),
+                'coord': get_coords(geo_ref_points, spatial_ref),
             },
             'format': {'name': 'JPEG2000'},
             'grid_spatial': {

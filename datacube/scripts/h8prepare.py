@@ -17,7 +17,6 @@ import click
 def get_projection(proj, extent):
     left, bottom, right, top = [int(x) for x in
                                 rasterio.warp.transform_bounds({'init': 'EPSG:4326'}, proj, *extent)]
-
     return {
         'spatial_reference': proj,
         'geo_ref_points': {
@@ -38,46 +37,89 @@ def get_coords(left, bottom, right, top):
     }
 
 
-def prepare_dataset(path):
-    extent = 110, -40, 155, 3
-    band_re = re.compile('.*-P1S-ABOM_BRF_B(.*)-PRJ.*_(500|1000|2000)-HIMAWARI8-AHI.nc')
-    images = {}
-    for image in path.glob('*-P1S-ABOM_BRF_*-HIMAWARI8-AHI.nc'):
-        match = band_re.match(str(image)).groups()
-        images['%s_%s' % match] = str(image)
-    first = netCDF4.Dataset(str(images['01_1000']))
-    times = first['time']
+def get_skeleton(path, prod, bands, extent):
+    image = netCDF4.Dataset(path)
+    times = image['time']
     sensing_time = str(netCDF4.num2date(times[0], units=times.units, calendar=times.calendar))
 
-    return [{
+    if 'geostationary' in image.variables:
+        projection = str(image['geostationary'].spatial_ref)
+    else:
+        projection = str(image['geostationary_satellite'].spatial_ref)
+
+    return {
         'id': str(uuid.uuid4()),
-        'ga_label': str(first.id),
-        'ga_level': str(first.processing_level),
-        'product_type': 'BRF',
-        'creation_dt': str(first.date_created),
+        'ga_label': str(image.id),
+        'ga_level': str(image.processing_level),
+        'product_type': prod,
+        'creation_dt': str(image.date_created),
         'platform': {'code': 'HIMAWARI_8'},
-        'instrument': {'name': str(first.instrument)},
+        'instrument': {'name': str(image.instrument)},
         # 'acquisition': {'groundstation': {'code': station}},
         'extent': {
-            'coords': get_coords(*extent),
+            'coord': get_coords(*extent),
             'from_dt': sensing_time,
             'to_dt': sensing_time,
             'center_dt': sensing_time
         },
         'format': {'name': 'NetCDF4'},
         'grid_spatial': {
-            'projection': get_projection(str(first['geostationary'].spatial_ref), extent)
+            'projection': get_projection(projection, extent)
         },
         'image': {
-            'bands': {
-                name: {
-                    'path': image,
-                    'layer': 'channel_00' + name[:2] + '_brf',
-                } for name, image in images.items()
-            }
+            'bands': bands
         },
         'lineage': {'source_datasets': {}},
-    }]
+    }
+
+
+def get_ang_dataset(path, extent):
+    band_re = re.compile('.*-P1S-ABOM_GEOM_(.*)-PRJ.*_(500|1000|2000)-HIMAWARI8-AHI.nc')
+    images = {}
+    for image in path.glob('*-P1S-ABOM_GEOM_*-HIMAWARI8-AHI.nc'):
+        match = band_re.match(str(image)).groups()
+        images['%s_%s' % match] = {
+            'path': str(image),
+            'layer': 'solar_zenith_angle',
+        }
+    return get_skeleton(str(images['SOLAR_2000']['path']), 'GEOM_SOLAR', images, extent)
+
+
+def get_obs_dataset(path, extent):
+    band_re = re.compile('.*-P1S-ABOM_OBS_B(.*)-PRJ.*_(500|1000|2000)-HIMAWARI8-AHI.nc')
+    images = {}
+    for image in path.glob('*-P1S-ABOM_OBS_*-HIMAWARI8-AHI.nc'):
+        match = band_re.match(str(image)).groups()
+        images['%s_%s' % match] = {
+            'path': str(image),
+            'layer': 'channel_00' + match[0] + '_scaled_radiance',
+        }
+    return get_skeleton(str(images['01_2000']['path']), 'OBS', images, extent)
+
+
+def get_brf_dataset(path, extent):
+    extent = 110, -40, 155, 3
+    band_re = re.compile('.*-P1S-ABOM_BRF_B(.*)-PRJ.*_(500|1000|2000)-HIMAWARI8-AHI.nc')
+    images = {}
+    for image in path.glob('*-P1S-ABOM_BRF_*-HIMAWARI8-AHI.nc'):
+        match = band_re.match(str(image)).groups()
+        images['%s_%s' % match] = {
+            'path': str(image),
+            'layer': 'channel_00' + match[0] + '_brf',
+        }
+    return get_skeleton(str(images['01_2000']['path']), 'BRF', images, extent)
+
+
+def prepare_dataset(path):
+    extent = 110, -40, 155, 3
+    ang = get_ang_dataset(path, extent)
+    obs = get_obs_dataset(path, extent)
+    brf = get_brf_dataset(path, extent)
+    brf['lineage']['source_datasets'] = {
+        ang['id']: ang,
+        obs['id']: obs
+    }
+    return [brf]
 
 
 @click.command(help="Prepare Himawari 8 dataset for ingestion into the Data Cube.")
