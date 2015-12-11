@@ -22,22 +22,22 @@ storage:
         product_version: '0.0.0'
         license: Creative Commons Attribution 4.0 International CC BY 4.0
       measurements:
-        '01':
+        '01_1000':
             dtype: float32
             nodata: 1e10
             resampling_method: cubic
             varname: band_01
-        '02':
+        '02_1000':
             dtype: float32
             nodata: 1e10
             resampling_method: cubic
             varname: band_02
-        '03':
+        '03_1000':
             dtype: float32
             nodata: 1e10
             resampling_method: cubic
             varname: band_03
-        '04':
+        '04_1000':
             dtype: float32
             nodata: 1e10
             resampling_method: cubic

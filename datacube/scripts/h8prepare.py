@@ -40,12 +40,15 @@ def get_coords(left, bottom, right, top):
 
 def prepare_dataset(path):
     extent = 110, -40, 155, 3
-    band_re = re.compile('.*ABOM_BRF_B([0-9][0-9]).*')
-    images = {band_re.match(str(image)).groups()[0]: str(image)
-              for image in path.glob('*-ABOM_BRF_*1000-HIMAWARI8-AHI.nc')}
-    first = netCDF4.Dataset(str(images['01']))
+    band_re = re.compile('.*-P1S-ABOM_BRF_B(.*)-PRJ.*_(500|1000|2000)-HIMAWARI8-AHI.nc')
+    images = {}
+    for image in path.glob('*-P1S-ABOM_BRF_*-HIMAWARI8-AHI.nc'):
+        match = band_re.match(str(image)).groups()
+        images['%s_%s' % match] = str(image)
+    first = netCDF4.Dataset(str(images['01_1000']))
     times = first['time']
     sensing_time = str(netCDF4.num2date(times[0], units=times.units, calendar=times.calendar))
+
     return [{
         'id': str(uuid.uuid4()),
         'ga_label': str(first.id),
@@ -69,7 +72,7 @@ def prepare_dataset(path):
             'bands': {
                 name: {
                     'path': image,
-                    'layer': 'channel_00' + name + '_brf',
+                    'layer': 'channel_00' + name[:2] + '_brf',
                 } for name, image in images.items()
             }
         },
