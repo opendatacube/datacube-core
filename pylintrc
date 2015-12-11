@@ -14,6 +14,8 @@ disable=no-self-use,
     no-value-for-parameter,
     file-ignored
 
+enable=python3
+
 [BASIC]
 
 # List of builtins function names that should not be used, separated by a comma
