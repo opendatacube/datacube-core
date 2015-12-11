@@ -18,12 +18,14 @@ GDF Trial backward compatibility
 
 from __future__ import absolute_import, division
 
+import datetime
 import itertools
 import operator
 import uuid
 import numpy
 import dask.array as da
 import xray
+import rasterio.warp
 
 from .model import Range
 from .storage.access.core import Coordinate, Variable, StorageUnitStack, StorageUnitDimensionProxy
@@ -113,8 +115,23 @@ def get_descriptors(**query):
     return result
 
 
-def range_to_selector(ranges, reverse_sort):
+def datetime_to_timestamp(dt):
+    if isinstance(dt, datetime.datetime) or isinstance(dt, datetime.date):
+        epoch = datetime.datetime.utcfromtimestamp(0)
+        return (dt - epoch).total_seconds()
+    return dt
+
+
+def dimension_ranges_to_selector(dimension_ranges, reverse_sort):
+    ranges = dict((dim_name, dim['range']) for dim_name, dim in dimension_ranges.items())
+    # if 'time' in ranges:
+    #     ranges['time'] = tuple(datetime_to_timestamp(r) for r in ranges['time'])
     return dict((c, slice(*sorted(r, reverse=reverse_sort[c]))) for c, r in ranges.items())
+
+
+def dimension_ranges_to_iselector(dimension_ranges):
+    array_ranges = dict((dim_name, dim['array_range']) for dim_name, dim in dimension_ranges.items() if 'array_range' in dim)
+    return dict((c, slice(*r)) for c, r in array_ranges.items())
 
 
 def no_data_block(shape, dtype, fill):
@@ -125,14 +142,140 @@ def no_data_block(shape, dtype, fill):
     return arr
 
 
+def _convert_descriptor_to_query(descriptor=None):
+    descriptor = descriptor or {}
+
+    query = {key: descriptor[key] for key in ('satellite', 'sensor', 'product') if key in descriptor}
+    variables = descriptor.get('variables', None)
+    dimension_ranges = descriptor.get('dimensions', {}).copy()
+    input_coord = {'left': None, 'bottom': None, 'right': None, 'top': None}
+    input_crs = None
+    mapped_vars = {}
+    for dim, data in dimension_ranges.items():
+        # Convert any known dimension CRS
+        if dim in ['latitude', 'lat', 'y']:
+            input_crs = input_crs or data.get('crs', 'EPSG:4326')
+            input_coord['top'] = data['range'][0]
+            input_coord['bottom'] = data['range'][1]
+            mapped_vars['lat'] = dim
+        elif dim in ['longitude', 'lon', 'long', 'x']:
+            input_crs = input_crs or data.get('crs', 'EPSG:4326')
+            input_coord['left'] = data['range'][0]
+            input_coord['right'] = data['range'][1]
+            mapped_vars['lon'] = dim
+        elif dim in ['time']:
+            # TODO: Handle time formatting strings & other CRS's
+            # Assume dateime object or seconds since UNIX epoch 1970-01-01 for now...
+            data['range'] = (datetime_to_timestamp(data['range'][0]), datetime_to_timestamp(data['range'][1]))
+        else:
+            # Assume the search function will sort it out, add it to the query
+            query[dim] = Range(*data['range'])
+
+    search_crs = 'EPSG:4326'  # TODO: look up storage index CRS for collection
+    if all(v is not None for v in input_coord.values()):
+        left, bottom, right, top = rasterio.warp.transform_bounds(input_crs, search_crs, **input_coord)
+        query['lat'] = Range(bottom, top)
+        query['lon'] = Range(left, right)
+        dimension_ranges[mapped_vars['lat']]['range'] = (top, bottom)
+        dimension_ranges[mapped_vars['lon']]['range'] = (left, right)
+
+    return query, variables, dimension_ranges
+
+
+class StorageUnitCollection(object):
+    def __init__(self, storage_units=None):
+        self._storage_units = storage_units or []
+
+    def append(self, storage_unit):
+        self._storage_units.append(storage_unit)
+
+    def get_variables(self):
+        vars = {}
+        for storage_unit in self._storage_units:
+            for variable_name, variable in storage_unit.variables.items():
+                if len(variable.dimensions) == 3:
+                    vars[variable_name] = variable
+        return vars
+
+    def get_variables_by_group(self):
+        vars = {}
+        for storage_unit in self._storage_units:
+            for variable_name, variable in storage_unit.variables.items():
+                vars.setdefault(variable.dimensions, {})[variable_name] = variable
+        return vars
+
+    def group_by_dimensions(self):
+        dimension_group = {}
+        for storage_unit in self._storage_units:
+            dim_groups = list(set(variable.dimensions for variable in storage_unit.variables.values()))
+            for dims in dim_groups:
+                dimension_group.setdefault(dims, StorageUnitCollection()).append(storage_unit)
+        return dimension_group
+
+    def get_dimension_bounds(self, dimensions, dimension_ranges):
+        """
+        Get the min, max and array width of each dimension
+        :param dimensions: a list of dimension names
+        :param dimension_ranges: a dict of the ranges of any cropping that needs to occur {'dim_name': (min,max)}
+        :return: {
+                    'result_max': (<for each dim>),
+                    'result_min': (<for each dim>),
+                    'result_shape': (<for each dim>),
+                 }
+        """
+        result = {
+            'result_max': tuple(),
+            'result_min': tuple(),
+            'result_shape': tuple(),
+        }
+        for dim in dimensions:
+            result_max = self.get_max(dim)
+            result_min = self.get_min(dim)
+            result_length = self.get_length(dim)
+            if dim in dimension_ranges:
+                lower_bounds = min(dimension_ranges[dim]['range'])
+                upper_bounds = max(dimension_ranges[dim]['range'])
+                unit_width = (result_max - result_min) / float(result_length)
+                if lower_bounds > result_min:
+                    result_length -= int((lower_bounds - result_min) / unit_width)
+                    result_min = lower_bounds
+                if upper_bounds < result_max:
+                    result_length -= int((result_max - upper_bounds) / unit_width)
+                    result_max = upper_bounds
+            result['result_max'] += (result_max,)
+            result['result_min'] += (result_min,)
+            result['result_shape'] += (result_length,)
+        return result
+
+    def get_length(self, dim):
+        length_index = {}
+        for storage_unit in self._storage_units:
+            index = storage_unit.coordinates[dim].begin
+            length_index[index] = storage_unit.coordinates[dim].length
+        return sum(length_index.values())
+
+    def get_min(self, dim):
+        return min((min([storage_unit.coordinates[dim].begin, storage_unit.coordinates[dim].end]) for storage_unit in self._storage_units if dim in storage_unit.coordinates))
+
+    def get_max(self, dim):
+        return max((max([storage_unit.coordinates[dim].begin, storage_unit.coordinates[dim].end]) for storage_unit in self._storage_units if dim in storage_unit.coordinates))
+
+
 class API(object):
-    def get_descriptor(self, descriptor=None):
+    def get_descriptor(self, descriptor_request=None):
         """
         :param descriptor:
         query_parameter = \
         {
-        'storage_types':
-            ['LS5TM', 'LS7ETM', 'LS8OLITIRS'],
+        'storage_types': [ {
+                'satellite': 'LANDSAT_8',
+                'sensor': 'OLI_TIRS',
+                'product': 'EODS_NBAR',
+            }, {
+                'satellite': 'LANDSAT_8',
+                'sensor': 'OLI_TIRS',
+                'product': 'EODS_NBAR',
+            } ],
         'dimensions': {
              'x': {
                    'range': (140, 142),
@@ -218,65 +361,67 @@ class API(object):
                  }
             }
         """
-        if descriptor:
-            query = {key: descriptor[key] for key in ('satellite', 'sensor', 'product') if key in descriptor}
-            query.update({dim: Range(*data['range']) for dim, data in descriptor['dimensions'].items()})
-        else:
-            query = {}
+        query, _, dimension_ranges = _convert_descriptor_to_query(descriptor_request)
 
-        stacks = get_descriptors(**query)
+        index = index_connect()
+        sus = index.storage.search(**query)
+
+        storage_units_by_type = {}
+        for su in sus:
+            stype = su.storage_mapping.match.metadata['platform']['code'] + '_' + \
+                    su.storage_mapping.match.metadata['instrument']['name']
+            #ptype = su.storage_mapping.match.metadata['product_type']
+            storage_units_by_type.setdefault(stype, StorageUnitCollection()).append(make_storage_unit(su))
+
+        # result = {}
+        # for key, sus in storage_units_by_type.items():
+        #     stacks = group_storage_units_by_location(sus)
+        #     for loc, sus_grp in stacks.items():
+        #         result[key+(loc,)] = StorageUnitStack(sorted(sus_grp, key=lambda s: s.coordinates['time'].begin), 'time')
+
+        # For each storage type
+            # Dimension Group -> variables
+            # Dimension Group -> storage units
+            # For each Dimension Group
+                # set dim
+                # for each dimension
+                    # calc min
+                    # calc max
+                    # calc length (for result_length)
+                # for each var
+                    # set var name
+                    # set datatype
+                    # set no data val
+                # for each storage unit
+                    # set extents, shape
 
         descriptor = {}
-        for (ptype, stype, loc), stack in stacks.items():
-            result = descriptor.setdefault(ptype, {
-                'storage_units': {},
-                'variables': {},
-                'result_min': None,
-                'result_max': None,
-                'dimensions': None,
-                'result_shape': None
-            })
-            for name, var in stack.variables.items():
-                if len(var.dimensions) == 3:
-                    result['variables'][name] = {
+        for stype, storage_units in storage_units_by_type.items():
+            # Group by dimension
+            storage_units_by_dimensions = storage_units.group_by_dimensions()
+            for dimensions, grouped_storage_units in storage_units_by_dimensions.items():
+                if len(dimensions) != 3:
+                    continue
+
+                result = descriptor.setdefault(stype, {
+                    'dimensions': dimensions,
+                    'storage_units': {},
+                    'variables': {},
+                    'result_min': None,
+                    'result_max': None,
+                    'result_shape': None,
+                    'buffer_size': None,
+                    'irregular_indices': None,
+                })
+
+                result.update(grouped_storage_units.get_dimension_bounds(dimensions, dimension_ranges))
+
+                variables = grouped_storage_units.get_variables()
+                for var_name, var in variables.items():
+                    result['variables'][var_name] = {
                         'datatype': var.dtype,
-                        'nodata_value': var.nodata
+                        'nodata': var.nodata,
                     }
-                    result['dimensions'] = var.dimensions
-
-            storage_min = tuple(min(stack.coordinates[dim].begin,
-                                    stack.coordinates[dim].end) for dim in result['dimensions'])
-            storage_max = tuple(max(stack.coordinates[dim].begin,
-                                    stack.coordinates[dim].end) for dim in result['dimensions'])
-            storage_shape = tuple(stack.coordinates[dim].length for dim in result['dimensions'])
-
-            result['storage_units'][storage_min] = {
-                'storage_min': storage_min,
-                'storage_max': storage_max,
-                'storage_shape': storage_shape,
-                'storage_unit': stack
-            }
-
-            if not result['result_min']:
-                result['result_min'] = storage_min
-                result['result_max'] = storage_max
-                result['result_shape'] = storage_shape
-
-            for idx, dim in enumerate(result['dimensions']):
-                if storage_min[idx] < result['result_min'][idx]:
-                    result['result_min'] = (result['result_min'][:idx] +
-                                            (storage_min[idx] + 2,) +
-                                            result['result_min'][idx + 1:])
-                    result['result_shape'] = (result['result_shape'][:idx] +
-                                              (result['result_shape'][idx] + storage_shape[idx],) +
-                                              result['result_shape'][idx + 1:])
-                if storage_max[idx] > result['result_max'][idx]:
-                    result['result_max'] = (result['result_max'][:idx] +
-                                            (storage_max[idx],) +
-                                            result['result_max'][idx + 1:])
-                    result['result_shape'] = (result['result_shape'][:idx] +
-                                              (result['result_shape'][idx] + storage_shape[idx],) +
-                                              result['result_shape'][idx + 1:])
         return descriptor
 
     def get_data(self, descriptor):
@@ -333,24 +478,8 @@ class API(object):
             ]
         }
         """
-        variables = None
-        if descriptor:
-            query = {key: descriptor[key] for key in ('satellite', 'sensor', 'product') if key in descriptor}
-            variables = descriptor.get('variables', None)
-            if 'dimensions' in descriptor:
-                reqrange = {dim: Range(*data['range']) for dim, data in descriptor['dimensions'].items()}
-                query.update(reqrange)
-                # TODO: talk to Jeremy about this
-                hack = {
-                    'lon': 'longitude',
-                    'lat': 'latitude'
-                }
-                reqrange = {hack[dim]: data for dim, data in reqrange.items()}
-            else:
-                reqrange = {}
-        else:
-            query = reqrange = {}
 
+        query, variables, dimension_ranges = _convert_descriptor_to_query(descriptor)
         index = index_connect()
         sus = index.storage.search(**query)
 
@@ -372,13 +501,13 @@ class API(object):
             #     pass
 
             storage_units = list(itertools.chain(*products.values()))
-            dask_dict = self._get_data_from_storage_units(storage_units, variables, reqrange)
+            dask_dict = self._get_data_from_storage_units(storage_units, variables, dimension_ranges)
             data_response.update(dask_dict)
         return data_response
 
-    def _get_data_from_storage_units(self, storage_units, variables=None, reqrange=None):
-        if not reqrange:
-            reqrange = {}
+    def _get_data_from_storage_units(self, storage_units, variables=None, dimension_ranges=None):
+        if not dimension_ranges:
+            dimension_ranges = {}
         if not len(storage_units):
             return {}
 
@@ -390,12 +519,12 @@ class API(object):
 
         dimension_group = {}
         for dimensions, sus_by_variable in variables_by_dimensions.items():
-            dimension_group[dimensions] = self._get_data_by_variable(sus_by_variable, dimensions, reqrange)
+            dimension_group[dimensions] = self._get_data_by_variable(sus_by_variable, dimensions, dimension_ranges)
         if len(dimension_group) == 1:
             return dimension_group.values()[0]
         return dimension_group
 
-    def _get_data_by_variable(self, storage_units_by_variable, dimensions, reqrange):
+    def _get_data_by_variable(self, storage_units_by_variable, dimensions, dimension_ranges):
         dimension_group_reponse = {
             'dimensions': dimensions,
             'arrays': {},
@@ -422,21 +551,43 @@ class API(object):
                 if coord_list[ordinal] is None:
                     coord_list[ordinal] = su.get_coord(dim)
 
-        selectors = range_to_selector(reqrange, reverse_sort)
         coord_labels = {}
         for dim in dimensions:
             coord_labels[dim] = list(itertools.chain(*[x[0] for x in coord_lists[dim]]))
+        if 'time' in dimensions:
+            coord_labels['time'] = [datetime.datetime.fromtimestamp(c) for c in coord_labels['time']]
+            if 'time' in dimension_ranges and 'range' in dimension_ranges['time']:
+                dimension_ranges['time']['range'] = tuple(datetime.datetime.fromtimestamp(t) for t in dimension_ranges['time']['range'])
+        selectors = dimension_ranges_to_selector(dimension_ranges, reverse_sort)
+        iselectors = dimension_ranges_to_iselector(dimension_ranges)
+
         for var_name, sus in storage_units_by_variable.items():
             xray_data_array = self._get_array(sus, var_name, dimensions, dim_vals, sus_size, coord_labels)
             cropped = xray_data_array.sel(**selectors)
-            # TODO: add array_range selector
-            # subset = cropped.isel(**iselectors)
-            dimension_group_reponse['arrays'][var_name] = cropped
+            subset = cropped.isel(**iselectors)
+            dimension_group_reponse['arrays'][var_name] = subset
         x = dimension_group_reponse['arrays'][dimension_group_reponse['arrays'].keys()[0]]
         dimension_group_reponse['indices'] = [x.coords[dim].values for dim in dimensions]
         dimension_group_reponse['element_sizes'] = list(x.shape)
         dimension_group_reponse['coordinate_reference_systems'] = list(x.shape)
         return dimension_group_reponse
+
+    def _create_response(self, storage_units_by_variable, dimensions, request, reverse_sort):
+        """
+
+        :param storage_units_by_variable: a
+        :param dimensions: list of dimension names
+        :param request: The request descriptor containing the ranges of the desired dimensions
+        :param reverse_sort: a dict[dim_name] -> bool of iif the dimension should be inversed
+        :return: dict containing the response data
+            {
+                'arrays': ...,
+                'indices': ...,
+                'element_sizes': ...,
+                'coordinate_reference_systems': ...,
+                'dimensions': ...
+            }
+        """
 
     def _get_array(self, storage_units, var_name, dimensions, dim_vals, chunksize, coord_labels):
         """
