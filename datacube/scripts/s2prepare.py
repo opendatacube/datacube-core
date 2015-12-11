@@ -116,11 +116,13 @@ def main(datasets):
 
         logging.info("Processing %s", path)
         documents = prepare_dataset(path)
-
-        yaml_path = str(path.parent.joinpath('agdc-metadata.yaml'))
-        logging.info("Writing %s datasets into %s", len(documents), yaml_path)
-        with open(yaml_path, 'w') as stream:
-            yaml.dump_all(documents, stream)
+        if documents:
+            yaml_path = str(path.parent.joinpath('agdc-metadata.yaml'))
+            logging.info("Writing %s dataset(s) into %s", len(documents), yaml_path)
+            with open(yaml_path, 'w') as stream:
+                yaml.dump_all(documents, stream)
+        else:
+            logging.info("No datasets discovered. Bye!")
 
 
 if __name__ == "__main__":

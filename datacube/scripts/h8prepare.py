@@ -82,6 +82,8 @@ def get_ang_dataset(path, extent):
             'path': str(image),
             'layer': 'solar_zenith_angle',
         }
+    if not images:
+        return None
     return get_skeleton(str(images['SOLAR_2000']['path']), 'GEOM_SOLAR', images, extent)
 
 
@@ -94,6 +96,8 @@ def get_obs_dataset(path, extent):
             'path': str(image),
             'layer': 'channel_00' + match[0] + '_scaled_radiance',
         }
+    if not images:
+        return None
     return get_skeleton(str(images['01_2000']['path']), 'OBS', images, extent)
 
 
@@ -107,18 +111,19 @@ def get_brf_dataset(path, extent):
             'path': str(image),
             'layer': 'channel_00' + match[0] + '_brf',
         }
+    if not images:
+        return None
     return get_skeleton(str(images['01_2000']['path']), 'BRF', images, extent)
 
 
 def prepare_dataset(path):
     extent = 110, -40, 155, 3
+    brf = get_brf_dataset(path, extent)
+    if not brf:
+        return []
     ang = get_ang_dataset(path, extent)
     obs = get_obs_dataset(path, extent)
-    brf = get_brf_dataset(path, extent)
-    brf['lineage']['source_datasets'] = {
-        ang['id']: ang,
-        obs['id']: obs
-    }
+    brf['lineage']['source_datasets'] = {ds['id'] for ds in [ang, obs] if ds}
     return [brf]
 
 
@@ -134,11 +139,13 @@ def main(datasets):
 
         logging.info("Processing %s", path)
         documents = prepare_dataset(path)
-
-        yaml_path = str(path.joinpath('agdc-metadata.yaml'))
-        logging.info("Writing %s datasets into %s", len(documents), yaml_path)
-        with open(yaml_path, 'w') as stream:
-            yaml.dump_all(documents, stream)
+        if documents:
+            yaml_path = str(path.joinpath('agdc-metadata.yaml'))
+            logging.info("Writing %s dataset(s) into %s", len(documents), yaml_path)
+            with open(yaml_path, 'w') as stream:
+                yaml.dump_all(documents, stream)
+        else:
+            logging.info("No datasets discovered. Bye!")
 
 
 if __name__ == "__main__":
