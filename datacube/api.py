@@ -28,7 +28,7 @@ import xray
 import rasterio.warp
 
 from .model import Range
-from .storage.access.core import Coordinate, Variable, StorageUnitStack, StorageUnitDimensionProxy
+from .storage.access.core import Coordinate, Variable, StorageUnitDimensionProxy
 from .storage.access.backends import NetCDF4StorageUnit, GeoTifStorageUnit
 from .index import index_connect
 
@@ -85,36 +85,6 @@ def make_storage_unit(su):
     raise RuntimeError('unsupported storage unit access driver %s' % su.storage_mapping.storage_type.driver)
 
 
-def group_storage_units_by_location(sus):
-    dims = ('longitude', 'latitude')
-    stacks = {}
-    for su in sus:
-        stacks.setdefault(tuple(su.coordinates[dim].begin for dim in dims), []).append(su)
-    return stacks
-
-
-def get_descriptors(**query):
-    index = index_connect()
-    sus = index.storage.search(**query)
-
-    storage_units_by_type = {}
-    for su in sus:
-        stype = su.storage_mapping.match.metadata['platform']['code'] + '_' + \
-                su.storage_mapping.match.metadata['instrument']['name']
-        ptype = su.storage_mapping.match.metadata['product_type']
-        key = (stype, ptype)
-        # TODO: group by storage type also?
-        storage_units_by_type.setdefault(key, []).append(make_storage_unit(su))
-
-    result = {}
-    for key, sus in storage_units_by_type.items():
-        stacks = group_storage_units_by_location(sus)
-        for loc, sus_grp in stacks.items():
-            result[key+(loc,)] = StorageUnitStack(sorted(sus_grp, key=lambda s: s.coordinates['time'].begin), 'time')
-
-    return result
-
-
 def datetime_to_timestamp(dt):
     if isinstance(dt, datetime.datetime) or isinstance(dt, datetime.date):
         epoch = datetime.datetime.utcfromtimestamp(0)
@@ -129,8 +99,8 @@ def dimension_ranges_to_selector(dimension_ranges, reverse_sort):
     return dict((c, slice(*sorted(r, reverse=reverse_sort[c]))) for c, r in ranges.items())
 
 
-def dimension_ranges_to_iselector(dimension_ranges):
-    array_ranges = dict((dim_name, dim['array_range']) for dim_name, dim in dimension_ranges.items() if 'array_range' in dim)
+def dimension_ranges_to_iselector(dim_ranges):
+    array_ranges = dict((dim_name, dim['array_range']) for dim_name, dim in dim_ranges.items() if 'array_range' in dim)
     return dict((c, slice(*r)) for c, r in array_ranges.items())
 
 
@@ -146,7 +116,7 @@ def _convert_descriptor_to_query(descriptor=None):
     descriptor = descriptor or {}
 
     query = {key: descriptor[key] for key in ('satellite', 'sensor', 'product') if key in descriptor}
-    variables = descriptor.get('variables', None)
+    variables = descriptor.get('variables', [])
     dimension_ranges = descriptor.get('dimensions', {}).copy()
     input_coord = {'left': None, 'bottom': None, 'right': None, 'top': None}
     input_crs = None
@@ -183,26 +153,31 @@ def _convert_descriptor_to_query(descriptor=None):
 
 
 class StorageUnitCollection(object):
+    """Holds a list of storage units for some convenience functions"""
+
     def __init__(self, storage_units=None):
         self._storage_units = storage_units or []
 
     def append(self, storage_unit):
         self._storage_units.append(storage_unit)
 
+    def get_storage_units(self):
+        return self._storage_units
+
     def get_variables(self):
-        vars = {}
+        variables = {}
         for storage_unit in self._storage_units:
             for variable_name, variable in storage_unit.variables.items():
                 if len(variable.dimensions) == 3:
-                    vars[variable_name] = variable
-        return vars
+                    variables[variable_name] = variable
+        return variables
 
     def get_variables_by_group(self):
-        vars = {}
+        variables = {}
         for storage_unit in self._storage_units:
             for variable_name, variable in storage_unit.variables.items():
-                vars.setdefault(variable.dimensions, {})[variable_name] = variable
-        return vars
+                variables.setdefault(variable.dimensions, {})[variable_name] = variable
+        return variables
 
     def group_by_dimensions(self):
         dimension_group = {}
@@ -255,16 +230,25 @@ class StorageUnitCollection(object):
         return sum(length_index.values())
 
     def get_min(self, dim):
-        return min((min([storage_unit.coordinates[dim].begin, storage_unit.coordinates[dim].end]) for storage_unit in self._storage_units if dim in storage_unit.coordinates))
+        return min(
+            (min([storage_unit.coordinates[dim].begin, storage_unit.coordinates[dim].end])
+                for storage_unit in self._storage_units if dim in storage_unit.coordinates)
+        )
 
     def get_max(self, dim):
-        return max((max([storage_unit.coordinates[dim].begin, storage_unit.coordinates[dim].end]) for storage_unit in self._storage_units if dim in storage_unit.coordinates))
+        return max(
+            (max([storage_unit.coordinates[dim].begin, storage_unit.coordinates[dim].end])
+                for storage_unit in self._storage_units if dim in storage_unit.coordinates)
+        )
 
 
 class API(object):
+    def __init__(self, index=None):
+        self.index = index or index_connect()
+
     def get_descriptor(self, descriptor_request=None):
         """
-        :param descriptor:
+        :param descriptor_request:
         query_parameter = \
         {
         'storage_types': [ {
@@ -363,37 +347,14 @@ class API(object):
         """
         query, _, dimension_ranges = _convert_descriptor_to_query(descriptor_request)
 
-        index = index_connect()
-        sus = index.storage.search(**query)
+        sus = self.index.storage.search(**query)
 
         storage_units_by_type = {}
         for su in sus:
             stype = su.storage_mapping.match.metadata['platform']['code'] + '_' + \
                     su.storage_mapping.match.metadata['instrument']['name']
-            #ptype = su.storage_mapping.match.metadata['product_type']
+            # ptype = su.storage_mapping.match.metadata['product_type']
             storage_units_by_type.setdefault(stype, StorageUnitCollection()).append(make_storage_unit(su))
-
-        # result = {}
-        # for key, sus in storage_units_by_type.items():
-        #     stacks = group_storage_units_by_location(sus)
-        #     for loc, sus_grp in stacks.items():
-        #         result[key+(loc,)] = StorageUnitStack(sorted(sus_grp, key=lambda s: s.coordinates['time'].begin), 'time')
-
-        # For each storage type
-            # Dimension Group -> variables
-            # Dimension Group -> storage units
-            # For each Dimension Group
-                # set dim
-                # for each dimension
-                    # calc min
-                    # calc max
-                    # calc length (for result_length)
-                # for each var
-                    # set var name
-                    # set datatype
-                    # set no data val
-                # for each storage unit
-                    # set extents, shape
 
         descriptor = {}
         for stype, storage_units in storage_units_by_type.items():
@@ -422,6 +383,14 @@ class API(object):
                         'datatype': var.dtype,
                         'nodata': var.nodata,
                     }
+
+                for storage_unit in grouped_storage_units.get_storage_units():
+                    result['storage_units']['storage_min'] = tuple(min(storage_unit.coordinates[dim])
+                                                                   for dim in dimensions)
+                    result['storage_units']['storage_max'] = tuple(max(storage_unit.coordinates[dim])
+                                                                   for dim in dimensions)
+                    result['storage_units']['storage_shape'] = tuple(storage_unit.coordinates[dim].length
+                                                                     for dim in dimensions)
         return descriptor
 
     def get_data(self, descriptor):
@@ -480,8 +449,7 @@ class API(object):
         """
 
         query, variables, dimension_ranges = _convert_descriptor_to_query(descriptor)
-        index = index_connect()
-        sus = index.storage.search(**query)
+        sus = self.index.storage.search(**query)
 
         storage_units_by_type = {}
         for su in sus:
@@ -554,10 +522,12 @@ class API(object):
         coord_labels = {}
         for dim in dimensions:
             coord_labels[dim] = list(itertools.chain(*[x[0] for x in coord_lists[dim]]))
+        # TODO: Move handling of timestamps down to the storage level
         if 'time' in dimensions:
             coord_labels['time'] = [datetime.datetime.fromtimestamp(c) for c in coord_labels['time']]
             if 'time' in dimension_ranges and 'range' in dimension_ranges['time']:
-                dimension_ranges['time']['range'] = tuple(datetime.datetime.fromtimestamp(t) for t in dimension_ranges['time']['range'])
+                dimension_ranges['time']['range'] = tuple(datetime.datetime.fromtimestamp(t)
+                                                          for t in dimension_ranges['time']['range'])
         selectors = dimension_ranges_to_selector(dimension_ranges, reverse_sort)
         iselectors = dimension_ranges_to_iselector(dimension_ranges)
 
@@ -572,24 +542,25 @@ class API(object):
         dimension_group_reponse['coordinate_reference_systems'] = list(x.shape)
         return dimension_group_reponse
 
-    def _create_response(self, storage_units_by_variable, dimensions, request, reverse_sort):
-        """
+    # def _create_response(self, storage_units_by_variable, dimensions, request, reverse_sort):
+    #     """
+    #
+    #     :param storage_units_by_variable: a
+    #     :param dimensions: list of dimension names
+    #     :param request: The request descriptor containing the ranges of the desired dimensions
+    #     :param reverse_sort: a dict[dim_name] -> bool of iif the dimension should be inversed
+    #     :return: dict containing the response data
+    #         {
+    #             'arrays': ...,
+    #             'indices': ...,
+    #             'element_sizes': ...,
+    #             'coordinate_reference_systems': ...,
+    #             'dimensions': ...
+    #         }
+    #     """
 
-        :param storage_units_by_variable: a
-        :param dimensions: list of dimension names
-        :param request: The request descriptor containing the ranges of the desired dimensions
-        :param reverse_sort: a dict[dim_name] -> bool of iif the dimension should be inversed
-        :return: dict containing the response data
-            {
-                'arrays': ...,
-                'indices': ...,
-                'element_sizes': ...,
-                'coordinate_reference_systems': ...,
-                'dimensions': ...
-            }
-        """
-
-    def _get_array(self, storage_units, var_name, dimensions, dim_vals, chunksize, coord_labels):
+    @staticmethod
+    def _get_array(storage_units, var_name, dimensions, dim_vals, chunksize, coord_labels):
         """
         Create a dask array to call the underlying storage units
         :return dask array.
