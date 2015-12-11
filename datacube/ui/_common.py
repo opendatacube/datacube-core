@@ -6,8 +6,8 @@ from __future__ import absolute_import
 
 import gzip
 import json
-import pathlib
 from itertools import product
+import pathlib
 
 import yaml
 
