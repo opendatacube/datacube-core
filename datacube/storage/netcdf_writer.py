@@ -39,19 +39,19 @@ class NetCDFWriter(object):
 
     def __init__(self, netcdf_path, tile_spec, time_length=None):
         netcdf_path = str(netcdf_path)
-        if not os.path.isfile(netcdf_path):
-            self.nco = netCDF4.Dataset(netcdf_path, 'w')
+        if os.path.isfile(netcdf_path):
+            raise RuntimeError('file already exists')
 
-            self._create_time_dimension(time_length)
-            self._create_spatial_variables(tile_spec)
-            self._set_global_attributes(tile_spec)
+        self.nco = netCDF4.Dataset(netcdf_path, 'w')
 
-            # Create Variable Length Variable to store extra metadata
-            extra_meta = self.nco.createVariable('extra_metadata', str, 'time')
-            extra_meta.long_name = 'Extra source metadata'
-        else:
-            self.nco = netCDF4.Dataset(netcdf_path, 'a')
-            # TODO assert the tile_spec actually matches this netcdf file
+        self._create_time_dimension(time_length)
+        self._create_spatial_variables(tile_spec)
+        self._set_global_attributes(tile_spec)
+
+        # Create Variable Length Variable to store extra metadata
+        extra_meta = self.nco.createVariable('extra_metadata', str, 'time')
+        extra_meta.long_name = 'Extra source metadata'
+
         self._tile_spec = tile_spec
         self.netcdf_path = netcdf_path
 
