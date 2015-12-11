@@ -10,6 +10,7 @@ from xml.etree import ElementTree
 from pathlib import Path
 import yaml
 import click
+from osgeo import osr
 
 
 def get_geo_ref_points(root):
@@ -30,13 +31,21 @@ def get_geo_ref_points(root):
     }
 
 
+def get_coords(geo_ref_points, spatial_ref):
+    t = osr.CoordinateTransformation(spatial_ref, spatial_ref.CloneGeogCS())
+
+    def transform(p):
+        lon, lat, z = t.TransformPoint(p['x'], p['y'])
+        return {'lon': lon, 'lat': lat}
+    return {key: transform(p) for key, p in geo_ref_points.items()}
+
+
 def prepare_dataset(path):
     root = ElementTree.parse(str(path)).getroot()
 
     level = root.findall('./*/Product_Info/PROCESSING_LEVEL')[0].text
     product_type = root.findall('./*/Product_Info/PRODUCT_TYPE')[0].text
     ct_time = root.findall('./*/Product_Info/GENERATION_TIME')[0].text
-    # platform = root.findall('./*/Product_Info/Datatake/SPACECRAFT_NAME')[0].text
 
     granules = {granule.get('granuleIdentifier'): [imid.text for imid in granule.findall('IMAGE_ID')] for granule in
                 root.findall('./*/Product_Info/Product_Organisation/Granule_List/Granules')}
@@ -49,10 +58,11 @@ def prepare_dataset(path):
 
         station = root.findall('./*/Archiving_Info/ARCHIVING_CENTRE')[0].text
 
-        cs_name = root.findall('./*/Tile_Geocoding/HORIZONTAL_CS_NAME')[0].text
         cs_code = root.findall('./*/Tile_Geocoding/HORIZONTAL_CS_CODE')[0].text
-        datum = cs_name.split('/')[0].strip()
-        zone = cs_name.split('/')[1][-3:]
+        spatial_ref = osr.SpatialReference()
+        spatial_ref.SetFromUserInput(cs_code)
+
+        geo_ref_points = get_geo_ref_points(root)
 
         documents.append({
             'id': str(uuid.uuid4()),
@@ -63,19 +73,26 @@ def prepare_dataset(path):
             'platform': {'code': 'SENTINEL_2A'},
             'instrument': {'name': 'MSI'},
             'acquisition': {'groundstation': {'code': station}},
-            'extent': {'from_dt': sensing_time, 'to_dt': sensing_time, 'center_dt': sensing_time},
+            'extent': {
+                'from_dt': sensing_time,
+                'to_dt': sensing_time,
+                'center_dt': sensing_time,
+                'coords': get_coords(geo_ref_points, spatial_ref),
+            },
             'format': {'name': 'JPEG2000'},
             'grid_spatial': {
                 'projection': {
-                    'geo_ref_points': get_geo_ref_points(root),
-                    'datum': datum,
-                    'zone': zone,
-                    'code': cs_code,
+                    'geo_ref_points': geo_ref_points,
+                    'spatial_reference': spatial_ref.ExportToWkt(),
                 }
             },
             'image': {
-                'bands': {image[-2:]: {'path': str(Path('GRANULE', granule_id, 'IMG_DATA', image+'.jp2'))}
-                          for image in images}
+                'bands': {
+                    image[-2:]: {
+                        'path': str(Path('GRANULE', granule_id, 'IMG_DATA', image + '.jp2')),
+                        'layer': 1,
+                    } for image in images
+                }
             },
             'lineage': {'source_datasets': {}},
         })
@@ -100,8 +117,9 @@ def main(datasets):
         logging.info("Processing %s", path)
         documents = prepare_dataset(path)
 
-        logging.info("Found %s datasets", len(documents))
-        with open(str(dataset.parent.joinpath('agdc-metadata.yaml')), 'w') as stream:
+        yaml_path = str(path.parent.joinpath('agdc-metadata.yaml'))
+        logging.info("Writing %s datasets into %s", len(documents), yaml_path)
+        with open(yaml_path, 'w') as stream:
             yaml.dump_all(documents, stream)
 
 
