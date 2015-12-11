@@ -57,3 +57,4 @@ docs/_build/
 # PyBuilder
 target/
 .idea/
+examples/notebooks/.ipynb_checkpoints/datacube_api_example-checkpoint.ipynb
