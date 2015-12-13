@@ -76,10 +76,9 @@ def make_storage_unit(su):
         return NetCDF4StorageUnit(su.filepath, coordinates=coordinates, variables=variables, attributes=attributes)
 
     if su.storage_mapping.storage_type.driver == 'GeoTiff':
-        from datetime import datetime
         result = GeoTifStorageUnit(su.filepath, coordinates=coordinates, variables=variables, attributes=attributes)
-        time = datetime.strptime(su.descriptor['extents']['time_min'], '%Y-%m-%dT%H:%M:%S.%f')
-        time = (time - datetime.utcfromtimestamp(0)).total_seconds()
+        time = datetime.datetime.strptime(su.descriptor['extents']['time_min'], '%Y-%m-%dT%H:%M:%S.%f')
+        time = (time - datetime.datetime.utcfromtimestamp(0)).total_seconds()
         return StorageUnitDimensionProxy(result, ('time', time, numpy.float64, 'seconds since 1970'))
 
     raise RuntimeError('unsupported storage unit access driver %s' % su.storage_mapping.storage_type.driver)
@@ -232,13 +231,13 @@ class StorageUnitCollection(object):
     def get_min(self, dim):
         return min(
             (min([storage_unit.coordinates[dim].begin, storage_unit.coordinates[dim].end])
-                for storage_unit in self._storage_units if dim in storage_unit.coordinates)
+             for storage_unit in self._storage_units if dim in storage_unit.coordinates)
         )
 
     def get_max(self, dim):
         return max(
             (max([storage_unit.coordinates[dim].begin, storage_unit.coordinates[dim].end])
-                for storage_unit in self._storage_units if dim in storage_unit.coordinates)
+             for storage_unit in self._storage_units if dim in storage_unit.coordinates)
         )
 
 

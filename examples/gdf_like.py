@@ -3,11 +3,11 @@ from __future__ import print_function
 
 import datetime
 import pprint
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 # import dask
 import xray
 import xray.plot
-import numpy
+# import numpy
 
 from datacube import api
 
@@ -74,7 +74,7 @@ def main():
     pp.pprint(rgb)
 
     #rgb_scaled = (rgb - rgb.min()) / float(rgb.max() - rgb.min())
-    plt.imshow(rgb)
+    #plt.imshow(rgb)
     pp.pprint(rgb)
 
 if __name__ == '__main__':
