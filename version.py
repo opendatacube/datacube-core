@@ -15,6 +15,8 @@ Refer to PEP440: https://www.python.org/dev/peps/pep-0440
 This script is derived from https://github.com/Changaco/version.py
 """
 
+from __future__ import absolute_import, print_function
+
 import re
 from os.path import dirname, isdir, join
 from subprocess import CalledProcessError, check_output
@@ -22,8 +24,8 @@ from subprocess import CalledProcessError, check_output
 PREFIX = 'datacube-'
 
 GIT_TAG_PATTERN = re.compile(r'\btag: %s([0-9][^,]*)\b' % PREFIX)
-VERSION_PATTERN = re.compile('^Version: (.+)$', re.M)
-NUMERIC = re.compile('^\d+$')
+VERSION_PATTERN = re.compile(r'^Version: (.+)$', re.M)
+NUMERIC = re.compile(r'^\d+$')
 
 
 def get_version():

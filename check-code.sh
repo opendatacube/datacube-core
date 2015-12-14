@@ -3,7 +3,7 @@
 
 set -eu
 
-pylint --reports no datacube examples/*.py
+pylint --reports no datacube examples/*.py version.py
 
 # Run tests, taking coverage.
 # Users can specify extra folders as arguments.
