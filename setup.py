@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 version = '0.0.0'
 
-setup(name='agdc-v2',
+setup(name='datacube',
       version=version,
       packages=find_packages(
           exclude=('tests', 'tests.*', 'examples',
