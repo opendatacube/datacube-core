@@ -9,6 +9,7 @@ import os.path
 from datetime import datetime
 from itertools import chain
 
+from dateutil.tz import tzutc
 import netCDF4
 from osgeo import osr
 
@@ -16,7 +17,10 @@ from datacube.model import VariableAlreadyExists
 
 _LOG = logging.getLogger(__name__)
 
-EPOCH = datetime(1970, 1, 1, 0, 0, 0)
+
+def _seconds_since_1970(dt):
+    epoch = datetime(1970, 1, 1, 0, 0, 0, tzinfo=tzutc() if dt.tzinfo else None)
+    return (dt - epoch).total_seconds()
 
 
 def _grid_mapping_name(projection):
@@ -33,34 +37,32 @@ class NetCDFWriter(object):
     Sub-classes will create the NetCDF in different structures.
     """
 
-    def __init__(self, netcdf_path, tile_spec):
+    def __init__(self, netcdf_path, tile_spec, time_length=None):
         netcdf_path = str(netcdf_path)
-        if not os.path.isfile(netcdf_path):
-            self.nco = netCDF4.Dataset(netcdf_path, 'w')
+        if os.path.isfile(netcdf_path):
+            raise RuntimeError('file already exists')
 
-            self._create_time_dimension()
-            self._create_spatial_variables(tile_spec)
-            self._set_global_attributes(tile_spec)
+        self.nco = netCDF4.Dataset(netcdf_path, 'w')
 
-            # Create Variable Length Variable to store extra metadata
-            extra_meta = self.nco.createVariable('extra_metadata', str, 'time')
-            extra_meta.long_name = 'Extra source metadata'
-        else:
-            self.nco = netCDF4.Dataset(netcdf_path, 'a')
-            # TODO assert the tile_spec actually matches this netcdf file
+        self._create_time_dimension(time_length)
+        self._create_spatial_variables(tile_spec)
+        self._set_global_attributes(tile_spec)
+
+        # Create Variable Length Variable to store extra metadata
+        extra_meta = self.nco.createVariable('extra_metadata', str, 'time')
+        extra_meta.long_name = 'Extra source metadata'
+
         self._tile_spec = tile_spec
         self.netcdf_path = netcdf_path
 
     def close(self):
         self.nco.close()
 
-    def _create_time_dimension(self):
+    def _create_time_dimension(self, time_length):
         """
         Create time dimension
-
-        Time is unlimited
         """
-        self.nco.createDimension('time', None)
+        self.nco.createDimension('time', time_length)
         timeo = self.nco.createVariable('time', 'double', 'time')
         timeo.units = 'seconds since 1970-01-01 00:00:00'
         timeo.standard_name = 'time'
@@ -190,30 +192,24 @@ class NetCDFWriter(object):
     def find_or_create_time_index(self, insertion_time):
         """
         Only allow a single time index at the moment
-        :param insertion_time:
+        :type insertion_time: datetime
         :return:
         """
         times = self.nco.variables['time']
 
         if len(times) == 0:
             _LOG.debug('Inserting time %s', insertion_time)
-            start_datetime_delta = insertion_time - EPOCH
-            _LOG.debug('stored time value %s', start_datetime_delta.total_seconds())
             index = len(times)
-            # Save as next coordinate in file
-            times[index] = start_datetime_delta.total_seconds()
+            times[index] = _seconds_since_1970(insertion_time)
         else:
             index = netCDF4.date2index(insertion_time, times)  # Blow up for a different time
 
         return index
 
-    def append_time_slices(self, time_values):
+    def set_time_values(self, time_values):
         times = self.nco.variables['time']
-        start_idx = times.size
-        for val in time_values:
-            start_datetime_delta = val - EPOCH
-            times[times.size] = start_datetime_delta.total_seconds()
-        return list(range(start_idx, times.size))
+        for idx, val in enumerate(time_values):
+            times[idx] = _seconds_since_1970(val)
 
     def append_time_slice(self, varname, data, time, input_filename="Raw Array"):
         out_band = self.nco.variables[varname]

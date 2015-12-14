@@ -7,6 +7,8 @@ from __future__ import absolute_import, division, print_function
 import logging
 
 from contextlib import contextmanager
+from itertools import groupby
+import json
 
 import dateutil.parser
 import numpy
@@ -46,9 +48,22 @@ def _dataset_bounds(dataset):
 
 def _dataset_projection(dataset):
     projection = dataset.metadata_doc['grid_spatial']['projection']
-    # TODO: projection stuff properly
-    assert projection['datum'] == 'GDA94'
-    return {'init': 'EPSG:283' + str(abs(projection['zone']))}
+
+    crs = projection.get('spatial_reference', None)
+    if crs:
+        return crs
+
+    # TODO: really need CRS specified properly in agdc-metadata.yaml
+    if projection['datum'] == 'GDA94':
+        return {'init': 'EPSG:283' + str(abs(projection['zone']))}
+
+    if projection['datum'] == 'WGS84':
+        if projection['zone'][-1] == 'S':
+            return {'init': 'EPSG:327' + str(abs(int(projection['zone'][:-1])))}
+        else:
+            return {'init': 'EPSG:326' + str(abs(int(projection['zone'][:-1])))}
+
+    raise RuntimeError('Cant figure out the projection: %s %s' % (projection['datum'], projection['zone']))
 
 
 def _grid_datasets(datasets, grid_proj, grid_size):
@@ -60,6 +75,7 @@ def _grid_datasets(datasets, grid_proj, grid_size):
 
         for y in range(int(bounds.bottom//grid_size[0]), int(bounds.top//grid_size[0])+1):
             for x in range(int(bounds.left//grid_size[1]), int(bounds.right//grid_size[1])+1):
+                # TODO: need to cull false positives
                 tiles.setdefault((y, x), []).append(dataset)
 
     return tiles
@@ -68,7 +84,7 @@ def _grid_datasets(datasets, grid_proj, grid_size):
 def _dataset_time(dataset):
     center_dt = dataset.metadata_doc['extent']['center_dt']
     if isinstance(center_dt, compat.string_types):
-        return dateutil.parser.parse(center_dt)
+        center_dt = dateutil.parser.parse(center_dt)
     return center_dt
 
 
@@ -87,12 +103,12 @@ def _create_data_variable(ncfile, measurement_descriptor, chunking):
     return ncfile.ensure_variable(varname, dtype, chunksizes, nodata, units)
 
 
-def reproject_datasets(sources, destination, dst_transform, dst_projection, dst_nodata, resampling=RESAMPLING.nearest):
-    buffer_ = numpy.empty(destination.shape[1:], dtype=destination.dtype)
-    for index, source in enumerate(sources):
+def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata,
+                 resampling=RESAMPLING.nearest, fuse_func=None):
+    def reproject(source, dest):
         with source.open() as src:
             rasterio.warp.reproject(src,
-                                    buffer_,
+                                    dest,
                                     src_transform=source.transform,
                                     src_crs=source.projection,
                                     src_nodata=source.nodata,
@@ -101,17 +117,37 @@ def reproject_datasets(sources, destination, dst_transform, dst_projection, dst_
                                     dst_nodata=dst_nodata,
                                     resampling=resampling,
                                     NUM_THREADS=4)
-            destination[index] = buffer_
+
+    def copyto_fuser(dest, src):
+        numpy.copyto(dest, src, where=(src != dst_nodata))
+
+    fuse_func = fuse_func or copyto_fuser
+
+    if len(sources) == 1:
+        reproject(sources[0], destination)
+        return destination
+
+    destination.fill(dst_nodata)
+    if len(sources) == 0:
+        return destination
+
+    buffer_ = numpy.empty(destination.shape, dtype=destination.dtype)
+    for source in sources:
+        reproject(source, buffer_)
+        fuse_func(destination, buffer_)
+
+    return destination
 
 
 class DatasetSource(object):
     def __init__(self, dataset, measurement_id):
-        dataset_measurements = dataset.collection.dataset_reader(dataset.metadata_doc).measurements_dict
-        dataset_measurement_descriptor = dataset_measurements[measurement_id]
+        dataset_measurement_descriptor = dataset.metadata.measurements_dict[measurement_id]
         self._filename = str(dataset.metadata_path.parent.joinpath(dataset_measurement_descriptor['path']))
+        self._band_id = 1  # TODO: store band id in the MD doc
         self.transform = None
         self.projection = None
         self.nodata = None
+        self.format = dataset.format
 
     @contextmanager
     def open(self):
@@ -119,8 +155,8 @@ class DatasetSource(object):
             with rasterio.open(self._filename) as src:
                 self.transform = src.affine
                 self.projection = src.crs
-                self.nodata = src.nodatavals[0]
-                yield rasterio.band(src, 1)
+                self.nodata = src.nodatavals[0] or (0 if self.format == 'JPEG200' else None)  # TODO: sentinel 2 hack
+                yield rasterio.band(src, self._band_id)  # TODO: this magically works for H8 netcdf
         finally:
             src.close()
 
@@ -148,9 +184,8 @@ def store_datasets_with_mapping(datasets, mapping):
     tile_size = abs(storage_type.descriptor['tile_size']['y']), abs(storage_type.descriptor['tile_size']['x'])
     tile_res = storage_type.descriptor['resolution']['y'], storage_type.descriptor['resolution']['x']
 
+    datasets.sort(key=_dataset_time)
     for tile_index, datasets in _grid_datasets(datasets, storage_type.projection, tile_size).items():
-        datasets.sort(key=_dataset_time)
-
         tile_spec = TileSpec(storage_type.projection,
                              _get_tile_transform(tile_index, tile_size, tile_res),
                              width=int(tile_size[1] / abs(tile_res[1])),
@@ -159,25 +194,41 @@ def store_datasets_with_mapping(datasets, mapping):
 
 
 def _create_storage_unit(tile_index, datasets, mapping, tile_spec, chunking):
-    # TODO: this needs to be better defined...
+    # TODO: filename pattern needs to be better defined...
     output_filename = generate_filename(mapping.storage_pattern[7:], datasets[0].metadata_doc, tile_spec)
     ensure_path_exists(output_filename)
-    _LOG.debug("Adding extracted slice to %s", output_filename)
+    _LOG.debug("Creating %s", output_filename)
 
-    ncfile = NetCDFWriter(output_filename, tile_spec)
-    ncfile.append_time_slices(_dataset_time(dataset) for dataset in datasets)
-    for measurement_id, measurement_descriptor in mapping.measurements.items():
-        var, src_filename_var = _create_data_variable(ncfile, measurement_descriptor, chunking)
+    dataset_groups = [(key, list(group)) for key, group in groupby(datasets, _dataset_time)]
 
-        sources = (DatasetSource(dataset, measurement_id) for dataset in datasets)
-        reproject_datasets(sources,
-                           var,
-                           tile_spec.affine,
-                           tile_spec.projection,
-                           measurement_descriptor.get('nodata', None),
-                           resampling=_map_resampling(measurement_descriptor['resampling_method']))
+    ncfile = NetCDFWriter(output_filename, tile_spec, len(dataset_groups))
+    ncfile.set_time_values(group[0] for group in dataset_groups)
+
+    for index, (time, group) in enumerate(dataset_groups):
+        if len(group) > 1:
+            _LOG.debug("Mosaicing multiple datasets %s@%s: %s", tile_index, time, group)
+        # TODO: ncfile.extra_meta = json.dumps(group[0].metadata_doc)
+
+    _fill_storage_unit(ncfile, dataset_groups, mapping.measurements, tile_spec, chunking)
+
     ncfile.close()
     return StorageUnit([dataset.id for dataset in datasets],
                        mapping,
                        index_netcdfs([output_filename])[output_filename],  # TODO: don't do this
                        mapping.local_path_to_location_offset('file://' + output_filename))
+
+
+def _fill_storage_unit(ncfile, dataset_groups, measurements, tile_spec, chunking):
+    for measurement_id, measurement_descriptor in measurements.items():
+        var, src_filename_var = _create_data_variable(ncfile, measurement_descriptor, chunking)
+
+        buffer_ = numpy.empty(var.shape[1:], dtype=var.dtype)
+        for index, (time_value, time_group) in enumerate(dataset_groups):
+            fuse_sources([DatasetSource(dataset, measurement_id) for dataset in time_group],
+                         buffer_,
+                         tile_spec.affine,
+                         tile_spec.projection,
+                         getattr(var, '_FillValue', None),
+                         resampling=_map_resampling(measurement_descriptor['resampling_method']))
+            var[index] = buffer_
+            # TODO: src_filename_var[index] = foo... is it needed??

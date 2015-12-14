@@ -13,8 +13,6 @@
 # serve to show the default.
 
 from __future__ import absolute_import
-import sys
-import os
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -259,3 +257,26 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
+
+
+# Mock modules that need native libraries.
+# See: http://read-the-docs.readthedocs.org/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
+NATIVE_MODULES = [
+    'numpy',
+    'rasterio',
+    'netcdf4',
+    'psycopg2',
+    'gdal',
+]
+
+import sys
+from mock import Mock as MagicMock
+
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+        return Mock()
+
+
+sys.modules.update((mod_name, Mock()) for mod_name in NATIVE_MODULES)

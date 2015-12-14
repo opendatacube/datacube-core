@@ -17,10 +17,10 @@ User Interface Utilities
 """
 from __future__ import absolute_import
 
-from ._common import read_documents, is_supported_document_type
+from ._common import read_documents, is_supported_document_type, get_metadata_path
 from ._query_parser import parse_expressions, UnknownFieldException
 
 __all__ = [
-    'read_documents', 'is_supported_document_type',
+    'read_documents', 'is_supported_document_type', 'get_metadata_path',
     'parse_expressions', 'UnknownFieldException',
 ]

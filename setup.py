@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
 from setuptools import setup, find_packages
+from version import get_version
 
-version = '0.0.0'
-
-setup(name='agdc-v2',
-      version=version,
+setup(name='datacube',
+      version=get_version(),
       packages=find_packages(
           exclude=('tests', 'tests.*', 'examples',
                    'integration_tests', 'integration_tests.*')
@@ -15,6 +14,9 @@ setup(name='agdc-v2',
           '': ['*.yaml'],
       },
       scripts=[
+      ],
+      setup_requires=[
+          'pytest-runner'
       ],
       install_requires=[
           'click',
@@ -35,6 +37,8 @@ setup(name='agdc-v2',
       ],
       tests_require=[
           'pytest',
+          'pytest-cov',
+          'mock'
       ],
       url='https://github.com/data-cube/agdc-v2',
       author='AGDC Collaboration',

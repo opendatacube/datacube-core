@@ -197,9 +197,17 @@ class Dataset(object):
     def id(self):
         return self.metadata_doc['id']
 
+    @property
+    def format(self):
+        return self.metadata_doc['format']['name']
+
     def __str__(self):
         return ("Dataset <platform={doc[platform][code]}, instrument={doc[instrument][name]},"
                 " id={doc[id]}, acquisition={doc[acquisition][aos]}>".format(doc=self.metadata_doc))
+
+    @property
+    def metadata(self):
+        return self.collection.dataset_reader(self.metadata_doc)
 
 
 class Collection(object):

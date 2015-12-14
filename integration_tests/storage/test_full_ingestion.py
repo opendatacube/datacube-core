@@ -30,15 +30,11 @@ sample_mapping = {
                 '20': {'dtype': 'int16',
                        'nodata': -999,
                        'resampling_method': 'cubic',
-                       'varname': 'band_20'},
-                '30': {'dtype': 'int16',
-                       'nodata': -999,
-                       'resampling_method': 'cubic',
-                       'varname': 'band_30'}},
+                       'varname': 'band_20'}},
             'name': '1deg_tiles'}]}
 
 sample_storage_type = {
-    'chunking': {'t': 1, 'x': 500, 'y': 500},
+    'chunking': {'t': 1, 'x': 400, 'y': 400},
     'dimension_order': ['t', 'y', 'x'],
     'driver': 'NetCDF CF',
     'name': '1deg_tiles',
@@ -56,11 +52,11 @@ sample_storage_type = {
                     AUTHORITY["EPSG","9122"]],
                 AUTHORITY["EPSG","4326"]]
             """},
-    'resolution': {'x': 0.00025, 'y': -0.00025},
+    'resolution': {'x': 0.0025, 'y': -0.0025},
     'tile_size': {'x': 1.0, 'y': -1.0}}
 
 albers_storage_type = {
-    'chunking': {'t': 1, 'x': 500, 'y': 500},
+    'chunking': {'t': 1, 'x': 400, 'y': 400},
     'dimension_order': ['t', 'y', 'x'],
     'driver': 'NetCDF CF',
     'name': '100km_tiles',
@@ -91,7 +87,7 @@ albers_storage_type = {
                     AXIS["Easting",EAST],
                     AXIS["Northing",NORTH]]"""
     },
-    'resolution': {'x': 25, 'y': -25},
+    'resolution': {'x': 250, 'y': -250},
     'tile_size': {'x': 100000, 'y': -100000}}
 
 albers_mapping = {
@@ -119,11 +115,7 @@ albers_mapping = {
                 '20': {'dtype': 'int16',
                        'nodata': -999,
                        'resampling_method': 'cubic',
-                       'varname': 'band_20'},
-                '30': {'dtype': 'int16',
-                       'nodata': -999,
-                       'resampling_method': 'cubic',
-                       'varname': 'band_30'}},
+                       'varname': 'band_20'}},
             'name': '100km_tiles'}]}
 
 
@@ -156,9 +148,9 @@ def test_full_ingestion(index, default_collection, example_ls5_dataset):
     latlon = [su for su in sus if su.storage_mapping.name == sample_mapping['name']]
     assert len(latlon) == 12
     with netCDF4.Dataset(latlon[0].filepath) as nco:
-        assert nco.variables['band_10'].shape == (1, 4000, 4000)
+        assert nco.variables['band_10'].shape == (1, 400, 400)
 
     albers = [su for su in sus if su.storage_mapping.name == albers_mapping['name']]
     assert len(albers) == 16
     with netCDF4.Dataset(albers[0].filepath) as nco:
-        assert nco.variables['band_10'].shape == (1, 4000, 4000)
+        assert nco.variables['band_10'].shape == (1, 400, 400)
