@@ -15,9 +15,9 @@ from datacube import api
 def compare_descriptor_with_data(descriptor, data):
     print("Dimension names match: {}".format(descriptor['LANDSAT_8_OLI_TIRS']['dimensions'] == data['dimensions']))
 
-    for d in zip(data['dimensions'], data['element_sizes'], descriptor['LANDSAT_8_OLI_TIRS']['result_shape']):
+    for d in zip(data['dimensions'], data['size'], descriptor['LANDSAT_8_OLI_TIRS']['result_shape']):
         print("  Dimension: {}\tSize:\t{}\t{}".format(*d))
-    print("Sizes match: {}".format(data['element_sizes'] == descriptor['LANDSAT_8_OLI_TIRS']['result_shape']))
+    print("Sizes match: {}".format(data['size'] == descriptor['LANDSAT_8_OLI_TIRS']['result_shape']))
 
     for (dim, da, de) in zip(data['dimensions'], data['indices'], descriptor['LANDSAT_8_OLI_TIRS']['result_min']):
         print("  Dimension: {}\tStart:\t{}\t{}".format(dim, da[0], de))
