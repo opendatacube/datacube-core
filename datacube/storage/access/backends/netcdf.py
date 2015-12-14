@@ -26,6 +26,7 @@ from ..indexing import Range, range_to_index, normalize_index
 
 _GLOBAL_LOCK = threading.Lock()
 
+
 def _open_dataset(filepath):
     return nc4.Dataset(filepath, mode='r', clobber=False, diskless=False, persist=False, format='NETCDF4')
 
@@ -67,15 +68,15 @@ class NetCDF4StorageUnit(StorageUnitBase):
         index = normalize_index(coord, index)
 
         if isinstance(index, slice):
-            with  _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.filepath)) as ncds:
+            with _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.filepath)) as ncds:
                 return ncds[dim][index], index
 
         if isinstance(index, Range):
-            with  _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.filepath)) as ncds:
+            with _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.filepath)) as ncds:
                 data = ncds[dim][:]
                 index = range_to_index(data, index)
                 return data[index], index
 
     def _fill_data(self, name, index, dest):
-        with  _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.filepath)) as ncds:
+        with _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.filepath)) as ncds:
             numpy.copyto(dest, ncds[name][index])
