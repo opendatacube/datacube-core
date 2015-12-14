@@ -169,11 +169,11 @@ class StorageUnitCollection(object):
             index = tuple(storage_unit.coordinates[dim].begin for dim in dimensions)
             stats[index] = {
                 'storage_min': tuple(min(storage_unit.coordinates[dim].begin, storage_unit.coordinates[dim].end)
-                                          for dim in dimensions),
+                                     for dim in dimensions),
                 'storage_max': tuple(max(storage_unit.coordinates[dim].begin, storage_unit.coordinates[dim].end)
-                                          for dim in dimensions),
+                                     for dim in dimensions),
                 'storage_shape': tuple(storage_unit.coordinates[dim].length for dim in dimensions),
-                'storage_path': storage_unit._filepath
+                'storage_path': storage_unit.filepath
             }
         return stats
 
@@ -211,6 +211,7 @@ class StorageUnitCollection(object):
                     'result_shape': (<for each dim>),
                  }
         """
+
         result = {
             'result_max': tuple(),
             'result_min': tuple(),
@@ -335,24 +336,25 @@ def _get_dask_for_storage_units(storage_units, var_name, dimensions, dim_vals, d
     return dsk
 
 
-def _get_array(storage_units, var_name, dimensions, dim_vals, chunksize, coord_labels):  # TODO: PEP8
+def _get_array(storage_units, var_name, dimensions, dim_props):  # TODO: PEP8
     """
     Create an xray.DataArray
     :return xray.DataArray
     """
     dsk_id = str(uuid.uuid1())  # unique name for the requested dask
-    dsk = _get_dask_for_storage_units(storage_units, var_name, dimensions, dim_vals, dsk_id)
-    nodata_dsk = make_nodata_func(storage_units, var_name, dimensions, chunksize)
+    dsk = _get_dask_for_storage_units(storage_units, var_name, dimensions, dim_props['dim_vals'], dsk_id)
+    nodata_dsk = make_nodata_func(storage_units, var_name, dimensions, dim_props['sus_size'])
 
-    all_dsk_keys = set(itertools.product((dsk_id,), *tuple(range(len(dim_vals[dim])) for dim in dimensions)))
-    data_dsk_keys = dsk.viewkeys()
-    missing_dsk_keys = all_dsk_keys - data_dsk_keys
+    all_dsk_keys = set(itertools.product((dsk_id,), *tuple(range(len(dim_props['dim_vals'][dim]))
+                                                           for dim in dimensions)))
+    missing_dsk_keys = all_dsk_keys - dsk.viewkeys()
 
     for key in missing_dsk_keys:
         dsk[key] = nodata_dsk(key)
-    chunks = tuple(tuple(chunksize[dim]) for dim in dimensions)
+
+    chunks = tuple(tuple(dim_props['sus_size'][dim]) for dim in dimensions)
     dask_array = da.Array(dsk, dsk_id, chunks)
-    coords = [(dim, coord_labels[dim]) for dim in dimensions]
+    coords = [(dim, dim_props['coord_labels'][dim]) for dim in dimensions]
     xray_data_array = xray.DataArray(dask_array, coords=coords)
     return xray_data_array
 
@@ -380,8 +382,7 @@ def _get_data_by_variable(storage_units_by_variable, dimensions, dimension_range
 
     xrays = {}
     for var_name, storage_units in storage_units_by_variable.items():
-        xray_data_array = _get_array(storage_units, var_name, dimensions,
-                                     dim_props['dim_vals'], dim_props['sus_size'], dim_props['coord_labels'])
+        xray_data_array = _get_array(storage_units, var_name, dimensions, dim_props)
         cropped = xray_data_array.sel(**selectors)
         subset = cropped.isel(**iselectors)
         xrays[var_name] = subset

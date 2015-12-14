@@ -36,7 +36,7 @@ class NetCDF4StorageUnit(StorageUnitBase):
         :param variables: variables in the SU
         :param coordinates: coordinates in the SU
         """
-        self._filepath = filepath
+        self.filepath = filepath
         self.coordinates = coordinates
         self.variables = variables
         self.attributes = attributes or {}
@@ -67,15 +67,15 @@ class NetCDF4StorageUnit(StorageUnitBase):
         index = normalize_index(coord, index)
 
         if isinstance(index, slice):
-            with  _GLOBAL_LOCK, contextlib.closing(_open_dataset(self._filepath)) as ncds:
+            with  _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.filepath)) as ncds:
                 return ncds[dim][index], index
 
         if isinstance(index, Range):
-            with  _GLOBAL_LOCK, contextlib.closing(_open_dataset(self._filepath)) as ncds:
+            with  _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.filepath)) as ncds:
                 data = ncds[dim][:]
                 index = range_to_index(data, index)
                 return data[index], index
 
     def _fill_data(self, name, index, dest):
-        with  _GLOBAL_LOCK, contextlib.closing(_open_dataset(self._filepath)) as ncds:
+        with  _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.filepath)) as ncds:
             numpy.copyto(dest, ncds[name][index])
