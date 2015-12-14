@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
 from setuptools import setup, find_packages
-
-version = '0.0.0'
+from version import get_version
 
 setup(name='datacube',
-      version=version,
+      version=get_version(),
       packages=find_packages(
           exclude=('tests', 'tests.*', 'examples',
                    'integration_tests', 'integration_tests.*')
