@@ -241,9 +241,125 @@ class StorageUnitCollection(object):
         )
 
 
+def _get_dimension_properties(sus_with_dims, dimensions, dim_vals):
+    sus_size = {}
+    coord_lists = {}
+    for su in sus_with_dims:
+        for dim in dimensions:
+            ordinal = dim_vals[dim].index(su.coordinates[dim].begin)
+            sus_size.setdefault(dim, [None] * len(dim_vals[dim]))[ordinal] = su.coordinates[dim].length
+            coord_list = coord_lists.setdefault(dim, [None] * len(dim_vals[dim]))
+            if coord_list[ordinal] is None:
+                coord_list[ordinal] = su.get_coord(dim)
+    coord_labels = {}
+    for dim in dimensions:
+        coord_labels[dim] = list(itertools.chain(*[x[0] for x in coord_lists[dim]]))
+    return coord_labels, sus_size
+
+
+def _create_response(xrays, dimensions):
+    """
+    :param xrays: a dict of xray.DataArrays
+    :param dimensions: list of dimension names
+    :return: dict containing the response data
+        {
+            'arrays': ...,
+            'indices': ...,
+            'element_sizes': ...,
+            'coordinate_reference_systems': ...,
+            'dimensions': ...
+        }
+    """
+    sample_xray = xrays.values()[0]
+    reponse = {
+        'dimensions': dimensions,
+        'arrays': xrays,
+        'indices': [sample_xray.coords[dim].values for dim in dimensions],
+        'element_sizes': list(sample_xray.shape),
+        'coordinate_reference_systems': []  # TODO: CRS
+    }
+    return reponse
+
+
+def _get_array(storage_units, var_name, dimensions, dim_vals, chunksize, coord_labels):
+    """
+    Create a dask array to call the underlying storage units
+    :return dask array.
+    """
+    dsk_id = str(uuid.uuid1())  # unique name for the requested dask
+    dsk = {}
+    sample = storage_units[0]
+    dtype = sample.variables[var_name].dtype
+    nodata = sample.variables[var_name].nodata
+
+    for storage_unit in storage_units:
+        dsk_index = (dsk_id,)   # Dask is indexed by a tuple of ("Name", x-index pos, y-index pos, z-index pos, ...)
+        for dim in dimensions:
+            ordinal = dim_vals[dim].index(storage_unit.coordinates[dim].begin)
+            dsk_index += (ordinal,)
+        dsk[dsk_index] = (storage_unit.get, var_name)
+
+    dsk_index = (dsk_id,)
+    all_dsk_keys = set(itertools.product(dsk_index, *tuple(range(len(dim_vals[dim])) for dim in dimensions)))
+    data_dsk_keys = dsk.viewkeys()
+    missing_dsk_keys = all_dsk_keys - data_dsk_keys
+    for key in missing_dsk_keys:
+        coords = list(key)[1:]
+        shape = tuple(operator.getitem(chunksize[dim], i) for dim, i in zip(dimensions, coords))
+        dsk[key] = (no_data_block, shape, dtype, nodata)
+    chunks = tuple(tuple(chunksize[dim]) for dim in dimensions)
+    dask_array = da.Array(dsk, dsk_id, chunks)
+    coords = [(dim, coord_labels[dim]) for dim in dimensions]
+    xray_data_array = xray.DataArray(dask_array, coords=coords)
+    return xray_data_array
+
+
+def _get_data_by_variable(storage_units_by_variable, dimensions, dimension_ranges):
+    dim_vals = {}
+    reverse_sort = {}
+    sus_with_dims = set(itertools.chain(*storage_units_by_variable.values()))
+    sample = list(sus_with_dims)[0]
+    for dim in dimensions:
+        # Get the start value of the storage unit so we can sort them
+        # Some dims are stored upside down (eg Latitude), so sort the tiles consistant with the bounding box order
+        reverse_sort[dim] = sample.coordinates[dim].begin > sample.coordinates[dim].end
+        dim_vals[dim] = sorted(set(su.coordinates[dim].begin for su in sus_with_dims), reverse=reverse_sort[dim])
+    coord_labels, sus_size = _get_dimension_properties(sus_with_dims, dimensions, dim_vals)
+
+    # TODO: Move handling of timestamps down to the storage level
+    if 'time' in dimensions:
+        coord_labels['time'] = [datetime.datetime.fromtimestamp(c) for c in coord_labels['time']]
+        if 'time' in dimension_ranges and 'range' in dimension_ranges['time']:
+            dimension_ranges['time']['range'] = tuple(datetime.datetime.fromtimestamp(t)
+                                                      for t in dimension_ranges['time']['range'])
+    selectors = dimension_ranges_to_selector(dimension_ranges, reverse_sort)
+    iselectors = dimension_ranges_to_iselector(dimension_ranges)
+
+    xrays = {}
+    for var_name, sus in storage_units_by_variable.items():
+        xray_data_array = _get_array(sus, var_name, dimensions, dim_vals, sus_size, coord_labels)
+        cropped = xray_data_array.sel(**selectors)
+        subset = cropped.isel(**iselectors)
+        xrays[var_name] = subset
+    return _create_response(xrays, dimensions)
+
+
 class API(object):
     def __init__(self, index=None):
         self.index = index or index_connect()
+
+    def _get_storage_units(self, descriptor_request):
+        query, variables, dimension_ranges = _convert_descriptor_to_query(descriptor_request)
+
+        sus = self.index.storage.search(**query)
+
+        storage_units_by_type = {}
+        for su in sus:
+            stype = su.storage_mapping.match.metadata['platform']['code'] + '_' + \
+                    su.storage_mapping.match.metadata['instrument']['name']
+            # ptype = su.storage_mapping.match.metadata['product_type']
+            storage_units_by_type.setdefault(stype, StorageUnitCollection()).append(make_storage_unit(su))
+        return storage_units_by_type, query, variables, dimension_ranges
 
     def get_descriptor(self, descriptor_request=None):
         """
@@ -344,22 +460,24 @@ class API(object):
                  }
             }
         """
-        query, _, dimension_ranges = _convert_descriptor_to_query(descriptor_request)
+        # query, _, dimension_ranges = _convert_descriptor_to_query(descriptor_request)
+        #
+        # sus = self.index.storage.search(**query)
+        #
+        # storage_units_by_type = {}
+        # for su in sus:
+        #     stype = su.storage_mapping.match.metadata['platform']['code'] + '_' + \
+        #             su.storage_mapping.match.metadata['instrument']['name']
+        #     # ptype = su.storage_mapping.match.metadata['product_type']
+        #     storage_units_by_type.setdefault(stype, StorageUnitCollection()).append(make_storage_unit(su))
 
-        sus = self.index.storage.search(**query)
-
-        storage_units_by_type = {}
-        for su in sus:
-            stype = su.storage_mapping.match.metadata['platform']['code'] + '_' + \
-                    su.storage_mapping.match.metadata['instrument']['name']
-            # ptype = su.storage_mapping.match.metadata['product_type']
-            storage_units_by_type.setdefault(stype, StorageUnitCollection()).append(make_storage_unit(su))
-
+        storage_units_by_type, query, _, dimension_ranges = self._get_storage_units(descriptor_request)
         descriptor = {}
         for stype, storage_units in storage_units_by_type.items():
             # Group by dimension
             storage_units_by_dimensions = storage_units.group_by_dimensions()
             for dimensions, grouped_storage_units in storage_units_by_dimensions.items():
+                # TODO: Either filter our undesired variables or return everything
                 if len(dimensions) != 3:
                     continue
 
@@ -384,9 +502,11 @@ class API(object):
                     }
 
                 for storage_unit in grouped_storage_units.get_storage_units():
-                    result['storage_units']['storage_min'] = tuple(min(storage_unit.coordinates[dim])
+                    result['storage_units']['storage_min'] = tuple(min(storage_unit.coordinates[dim].begin,
+                                                                       storage_unit.coordinates[dim].end)
                                                                    for dim in dimensions)
-                    result['storage_units']['storage_max'] = tuple(max(storage_unit.coordinates[dim])
+                    result['storage_units']['storage_max'] = tuple(max(storage_unit.coordinates[dim].begin,
+                                                                       storage_unit.coordinates[dim].end)
                                                                    for dim in dimensions)
                     result['storage_units']['storage_shape'] = tuple(storage_unit.coordinates[dim].length
                                                                      for dim in dimensions)
@@ -486,107 +606,7 @@ class API(object):
 
         dimension_group = {}
         for dimensions, sus_by_variable in variables_by_dimensions.items():
-            dimension_group[dimensions] = self._get_data_by_variable(sus_by_variable, dimensions, dimension_ranges)
+            dimension_group[dimensions] = _get_data_by_variable(sus_by_variable, dimensions, dimension_ranges)
         if len(dimension_group) == 1:
             return dimension_group.values()[0]
         return dimension_group
-
-    def _get_data_by_variable(self, storage_units_by_variable, dimensions, dimension_ranges):
-        dimension_group_reponse = {
-            'dimensions': dimensions,
-            'arrays': {},
-            'indices': [],
-            'element_sizes': [],
-            'coordinate_reference_systems': []
-        }
-        dim_vals = {}
-        reverse_sort = {}
-        sus_with_dims = set(itertools.chain(*storage_units_by_variable.values()))
-        sample = list(sus_with_dims)[0]
-        for dim in dimensions:
-            # Get the start value of the storage unit so we can sort them
-            # Some dims are stored upside down (eg Latitude), so sort the tiles consistant with the bounding box order
-            reverse_sort[dim] = sample.coordinates[dim].begin > sample.coordinates[dim].end
-            dim_vals[dim] = sorted(set(su.coordinates[dim].begin for su in sus_with_dims), reverse=reverse_sort[dim])
-        sus_size = {}
-        coord_lists = {}
-        for su in sus_with_dims:
-            for dim in dimensions:
-                ordinal = dim_vals[dim].index(su.coordinates[dim].begin)
-                sus_size.setdefault(dim, [None] * len(dim_vals[dim]))[ordinal] = su.coordinates[dim].length
-                coord_list = coord_lists.setdefault(dim, [None] * len(dim_vals[dim]))
-                if coord_list[ordinal] is None:
-                    coord_list[ordinal] = su.get_coord(dim)
-
-        coord_labels = {}
-        for dim in dimensions:
-            coord_labels[dim] = list(itertools.chain(*[x[0] for x in coord_lists[dim]]))
-        # TODO: Move handling of timestamps down to the storage level
-        if 'time' in dimensions:
-            coord_labels['time'] = [datetime.datetime.fromtimestamp(c) for c in coord_labels['time']]
-            if 'time' in dimension_ranges and 'range' in dimension_ranges['time']:
-                dimension_ranges['time']['range'] = tuple(datetime.datetime.fromtimestamp(t)
-                                                          for t in dimension_ranges['time']['range'])
-        selectors = dimension_ranges_to_selector(dimension_ranges, reverse_sort)
-        iselectors = dimension_ranges_to_iselector(dimension_ranges)
-
-        for var_name, sus in storage_units_by_variable.items():
-            xray_data_array = self._get_array(sus, var_name, dimensions, dim_vals, sus_size, coord_labels)
-            cropped = xray_data_array.sel(**selectors)
-            subset = cropped.isel(**iselectors)
-            dimension_group_reponse['arrays'][var_name] = subset
-        x = dimension_group_reponse['arrays'][dimension_group_reponse['arrays'].keys()[0]]
-        dimension_group_reponse['indices'] = [x.coords[dim].values for dim in dimensions]
-        dimension_group_reponse['element_sizes'] = list(x.shape)
-        dimension_group_reponse['coordinate_reference_systems'] = list(x.shape)
-        return dimension_group_reponse
-
-    # def _create_response(self, storage_units_by_variable, dimensions, request, reverse_sort):
-    #     """
-    #
-    #     :param storage_units_by_variable: a
-    #     :param dimensions: list of dimension names
-    #     :param request: The request descriptor containing the ranges of the desired dimensions
-    #     :param reverse_sort: a dict[dim_name] -> bool of iif the dimension should be inversed
-    #     :return: dict containing the response data
-    #         {
-    #             'arrays': ...,
-    #             'indices': ...,
-    #             'element_sizes': ...,
-    #             'coordinate_reference_systems': ...,
-    #             'dimensions': ...
-    #         }
-    #     """
-
-    @staticmethod
-    def _get_array(storage_units, var_name, dimensions, dim_vals, chunksize, coord_labels):
-        """
-        Create a dask array to call the underlying storage units
-        :return dask array.
-        """
-        dsk_id = str(uuid.uuid1())  # unique name for the requested dask
-        dsk = {}
-        sample = storage_units[0]
-        dtype = sample.variables[var_name].dtype
-        nodata = sample.variables[var_name].nodata
-
-        for storage_unit in storage_units:
-            dsk_index = (dsk_id,)   # Dask is indexed by a tuple of ("Name", x-index pos, y-index pos, z-index pos, ...)
-            for dim in dimensions:
-                ordinal = dim_vals[dim].index(storage_unit.coordinates[dim].begin)
-                dsk_index += (ordinal,)
-            dsk[dsk_index] = (storage_unit.get, var_name)
-
-        dsk_index = (dsk_id,)
-        all_dsk_keys = set(itertools.product(dsk_index, *tuple(range(len(dim_vals[dim])) for dim in dimensions)))
-        data_dsk_keys = dsk.viewkeys()
-        missing_dsk_keys = all_dsk_keys - data_dsk_keys
-        for key in missing_dsk_keys:
-            coords = list(key)[1:]
-            shape = tuple(operator.getitem(chunksize[dim], i) for dim, i in zip(dimensions, coords))
-            dsk[key] = (no_data_block, shape, dtype, nodata)
-        chunks = tuple(tuple(chunksize[dim]) for dim in dimensions)
-        dask_array = da.Array(dsk, dsk_id, chunks)
-        coords = [(dim, coord_labels[dim]) for dim in dimensions]
-        xray_data_array = xray.DataArray(dask_array, coords=coords)
-        return xray_data_array
