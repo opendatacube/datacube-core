@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # coding=utf-8
 """
 Configure the Data Cube from the command-line.

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # coding=utf-8
 """
 Ingest data from the command-line.
