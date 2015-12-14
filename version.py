@@ -38,9 +38,13 @@ def get_version():
     git_dir = join(package_dir, '.git')
 
     if isdir(git_dir):
-        cmd = 'git --git-dir={} describe --tags --match {}[0-9]* --dirty'.format(git_dir, PREFIX)
+        cmd = [
+            'git',
+            '--git-dir', git_dir,
+            'describe', '--tags', '--match', PREFIX + '[0-9]*', '--dirty'
+        ]
         try:
-            git_version = check_output(cmd.split()).decode().strip()[len(PREFIX):]
+            git_version = check_output(cmd).decode().strip()[len(PREFIX):]
         except CalledProcessError:
             raise RuntimeError('Unable to get version number from git tags')
         components = git_version.split('-')
