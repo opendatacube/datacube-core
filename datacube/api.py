@@ -345,9 +345,9 @@ def _get_array(storage_units, var_name, dimensions, dim_props):  # TODO: PEP8
     dsk = _get_dask_for_storage_units(storage_units, var_name, dimensions, dim_props['dim_vals'], dsk_id)
     nodata_dsk = make_nodata_func(storage_units, var_name, dimensions, dim_props['sus_size'])
 
-    all_dsk_keys = set(itertools.product((dsk_id,), *tuple(range(len(dim_props['dim_vals'][dim]))
+    all_dsk_keys = set(itertools.product((dsk_id,), *list(range(len(dim_props['dim_vals'][dim]))
                                                            for dim in dimensions)))
-    missing_dsk_keys = all_dsk_keys - dsk.viewkeys()
+    missing_dsk_keys = all_dsk_keys - set(dsk.keys())
 
     for key in missing_dsk_keys:
         dsk[key] = nodata_dsk(key)
