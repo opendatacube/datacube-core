@@ -6,12 +6,14 @@ Configure the Data Cube from the command-line.
 from __future__ import absolute_import
 
 import logging
+import os
 import sys
 from pathlib import Path
 
 import click
 
 from datacube import config, ui
+from datacube.config import LocalConfig
 from datacube.index import index_connect
 
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -47,6 +49,25 @@ def database_init(no_default_collection):
 @cli.group(help='Dataset collections')
 def collections():
     pass
+
+
+@cli.command('check', help='Verify & view current configuration.')
+def check():
+    c = LocalConfig.find()
+
+    _LOG.info('Host: %s:%s', c.db_hostname or 'localhost', c.db_port or '5432')
+    _LOG.info('Database: %s', c.db_database)
+    # Windows users need to use py3 for getlogin().
+    _LOG.info('User: %s', c.db_username or os.getlogin())
+
+    _LOG.info('\n')
+    _LOG.info('Attempting connect')
+    try:
+        index_connect(local_config=c)
+        _LOG.info('Success.')
+    #: pylint: disable=broad-except
+    except Exception:
+        _LOG.exception('Connection error')
 
 
 @collections.command('add')
