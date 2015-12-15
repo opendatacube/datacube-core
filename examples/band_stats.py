@@ -27,12 +27,20 @@ from rasterio.coords import BoundingBox
 
 from affine import Affine
 
-from datacube.gdf import make_storage_unit, group_storage_units_by_location
+from datacube.api import make_storage_unit
 from datacube.index import index_connect
 from datacube.storage.access.core import StorageUnitStack, StorageUnitVariableProxy
 from datacube.ui import parse_expressions
 
 from datacube.storage.storage import fuse_sources, _dataset_time, DatasetSource, RESAMPLING
+
+
+def group_storage_units_by_location(sus):
+    dims = ('longitude', 'latitude')
+    stacks = {}
+    for su in sus:
+        stacks.setdefault(tuple(su.coordinates[dim].begin for dim in dims), []).append(su)
+    return stacks
 
 
 def ndv_to_nan(a, ndv=-999):
