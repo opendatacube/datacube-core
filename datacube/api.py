@@ -336,13 +336,7 @@ def _get_dask_for_storage_units(storage_units, var_name, dimensions, dim_vals, d
     return dsk
 
 
-def _get_array(storage_units, var_name, dimensions, dim_props):  # TODO: PEP8
-    """
-    Create an xray.DataArray
-    :return xray.DataArray
-    """
-    dsk_id = str(uuid.uuid1())  # unique name for the requested dask
-    dsk = _get_dask_for_storage_units(storage_units, var_name, dimensions, dim_props['dim_vals'], dsk_id)
+def _fill_in_dask_blanks(dsk, storage_units, var_name, dimensions, dim_props, dsk_id):
     nodata_dsk = make_nodata_func(storage_units, var_name, dimensions, dim_props['sus_size'])
 
     all_dsk_keys = set(itertools.product((dsk_id,), *[[i for i, _ in enumerate(dim_props['dim_vals'][dim])]
@@ -351,6 +345,17 @@ def _get_array(storage_units, var_name, dimensions, dim_props):  # TODO: PEP8
 
     for key in missing_dsk_keys:
         dsk[key] = nodata_dsk(key)
+    return dsk
+
+
+def _get_array(storage_units, var_name, dimensions, dim_props):  # TODO: PEP8
+    """
+    Create an xray.DataArray
+    :return xray.DataArray
+    """
+    dsk_id = str(uuid.uuid1())  # unique name for the requested dask
+    dsk = _get_dask_for_storage_units(storage_units, var_name, dimensions, dim_props['dim_vals'], dsk_id)
+    _fill_in_dask_blanks(dsk, storage_units, var_name, dimensions, dim_props, dsk_id)
 
     chunks = tuple(tuple(dim_props['sus_size'][dim]) for dim in dimensions)
     dask_array = da.Array(dsk, dsk_id, chunks)
