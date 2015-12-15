@@ -91,6 +91,10 @@ class LocalConfig(object):
         return self._prop('db_username')
 
     @property
+    def db_password(self):
+        return self._prop('db_password')
+
+    @property
     def db_port(self):
         return self._prop('db_port')
 

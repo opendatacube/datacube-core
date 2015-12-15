@@ -9,7 +9,6 @@ from __future__ import absolute_import
 import datetime
 import json
 import logging
-
 from functools import reduce as reduce_
 
 import numpy
@@ -45,9 +44,13 @@ class PostgresDb(object):
         self._connection = connection
 
     @classmethod
-    def connect(cls, hostname, database, username=None, port=None):
+    def connect(cls, hostname, database, username=None, password=None, port=None):
         _engine = create_engine(
-            EngineUrl('postgresql', host=hostname, database=database, username=username, port=port),
+            EngineUrl(
+                'postgresql',
+                host=hostname, database=database, port=port,
+                username=username, password=password,
+            ),
             echo=False,
             # 'AUTOCOMMIT' here means READ-COMMITTED isolation level with autocommit on.
             # When a transaction is needed we will do an explicit begin/commit.
@@ -65,6 +68,7 @@ class PostgresDb(object):
             config.db_hostname,
             config.db_database,
             config.db_username,
+            config.db_password,
             config.db_port
         )
 
