@@ -7,7 +7,7 @@ from __future__ import absolute_import
 
 import functools
 
-import pytz
+from dateutil import tz
 from psycopg2.extras import NumericRange, DateTimeTZRange
 from sqlalchemy import cast
 from sqlalchemy import func
@@ -184,7 +184,7 @@ class DateRangeDocField(RangeDocField):
 
     def _default_utc(self, d):
         if d.tzinfo is None:
-            return d.replace(tzinfo=pytz.UTC)
+            return d.replace(tzinfo=tz.UTC)
         return d
 
     def between(self, low, high):

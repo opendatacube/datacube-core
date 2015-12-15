@@ -30,7 +30,6 @@ setup(name='datacube',
           'netcdf4',
           'pypeg2',
           'psycopg2',
-          'pytz',
           'gdal',
       ],
       tests_require=[
