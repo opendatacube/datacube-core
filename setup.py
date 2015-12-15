@@ -33,6 +33,7 @@ setup(name='datacube',
           'pytz',
           'gdal',
           'dask',
+          'toolz',
           'xray',
       ],
       tests_require=[
