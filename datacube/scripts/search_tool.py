@@ -63,7 +63,11 @@ def printable_dt(val):
     """
     :type val: datetime.datetime
     """
-    return val.astimezone(tz.tzutc()).isoformat()
+    # Default to UTC.
+    if val.tzinfo is None:
+        return val.replace(tzinfo=tz.tzutc()).isoformat()
+    else:
+        return val.astimezone(tz.tzutc()).isoformat()
 
 
 @printable.register(Range)
