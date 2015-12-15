@@ -143,7 +143,7 @@ class DatasetSource(object):
     def __init__(self, dataset, measurement_id):
         dataset_measurement_descriptor = dataset.metadata.measurements_dict[measurement_id]
         self._filename = str(dataset.metadata_path.parent.joinpath(dataset_measurement_descriptor['path']))
-        self._band_id = 1  # TODO: store band id in the MD doc
+        self._band_id = dataset_measurement_descriptor.get('layer', 1)  # TODO: store band id in the MD doc
         self.transform = None
         self.projection = None
         self.nodata = None
@@ -164,7 +164,6 @@ class DatasetSource(object):
 def _map_resampling(name):
     return {
         'nearest': RESAMPLING.nearest,
-        'near': RESAMPLING.nearest,
         'cubic': RESAMPLING.cubic,
         'bilinear': RESAMPLING.bilinear,
         'cubic_spline': RESAMPLING.cubic_spline,

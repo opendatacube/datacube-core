@@ -123,7 +123,7 @@ def prepare_dataset(path):
         return []
     ang = get_ang_dataset(path, extent)
     obs = get_obs_dataset(path, extent)
-    brf['lineage']['source_datasets'] = {ds['id']:ds for ds in [ang, obs] if ds}
+    brf['lineage']['source_datasets'] = {ds['id']: ds for ds in [ang, obs] if ds}
     return [brf]
 
 
