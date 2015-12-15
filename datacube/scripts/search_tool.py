@@ -9,11 +9,11 @@ from __future__ import print_function
 import csv
 import datetime
 import sys
-from functools import singledispatch
 
 import click
 from dateutil import tz
 from psycopg2._range import Range
+from singledispatch import singledispatch
 
 from datacube import config
 from datacube.index import index_connect
