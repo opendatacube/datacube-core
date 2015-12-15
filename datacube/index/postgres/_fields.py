@@ -184,7 +184,7 @@ class DateRangeDocField(RangeDocField):
 
     def _default_utc(self, d):
         if d.tzinfo is None:
-            return d.replace(tzinfo=tz.UTC)
+            return d.replace(tzinfo=tz.tzutc())
         return d
 
     def between(self, low, high):
