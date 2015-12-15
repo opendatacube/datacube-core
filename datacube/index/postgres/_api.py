@@ -325,7 +325,10 @@ class PostgresDb(object):
         :param primary_table: SQLAlchemy table
         :return:
         """
-        select_fields = [f.alchemy_expression for f in select_fields] if select_fields else [primary_table]
+        select_fields = [
+            f.alchemy_expression.label(f.name)
+            for f in select_fields
+            ] if select_fields else [primary_table]
 
         from_expression, raw_expressions = _prepare_expressions(expressions, primary_table)
 

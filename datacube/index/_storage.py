@@ -58,11 +58,7 @@ class StorageUnitResource(object):
         :param collection_name: Collection to search, or None for default
         :rtype: datacube.index.fields.Field
         """
-        if collection_name is None:
-            collection_name = self._config.default_collection_name
-
-        collection = self._collection_resource.get_by_name(collection_name)
-        return collection.storage_fields.get(name)
+        return self.get_fields().get(name)
 
     def get_field_with_fallback(self, name, collection_name=None):
         """
@@ -78,6 +74,16 @@ class StorageUnitResource(object):
 
         return val if val is not None else collection.dataset_fields.get(name)
 
+    def get_fields(self, collection_name=None):
+        """
+        :type collection_name: str
+        :rtype: dict[str, datacube.index.fields.Field]
+        """
+        if collection_name is None:
+            collection_name = self._config.default_collection_name
+        collection = self._collection_resource.get_by_name(collection_name)
+        return collection.storage_fields
+
     def search(self, *expressions, **query):
         """
         :type expressions: tuple[datacube.index.fields.PgExpression]
@@ -86,6 +92,17 @@ class StorageUnitResource(object):
         """
         query_exprs = tuple(fields.to_expressions(self.get_field_with_fallback, **query))
         return self._make(self._db.search_storage_units((expressions + query_exprs)))
+
+    def search_summaries(self, *expressions, **query):
+        query_exprs = tuple(fields.to_expressions(self.get_field_with_fallback, **query))
+
+        return (
+            dict(fs) for fs in
+            self._db.search_storage_units(
+                (expressions + query_exprs),
+                select_fields=tuple(self.get_fields().values())
+            )
+        )
 
     def search_eager(self, *expressions, **query):
         """

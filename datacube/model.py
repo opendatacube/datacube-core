@@ -202,8 +202,7 @@ class Dataset(object):
         return self.metadata_doc['format']['name']
 
     def __str__(self):
-        return ("Dataset <platform={doc[platform][code]}, instrument={doc[instrument][name]},"
-                " id={doc[id]}, acquisition={doc[acquisition][aos]}>".format(doc=self.metadata_doc))
+        return "Dataset <id={id}, path={path}>".format(id=self.id, path=self.metadata_path)
 
     @property
     def metadata(self):

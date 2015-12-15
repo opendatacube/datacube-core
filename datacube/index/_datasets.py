@@ -226,11 +226,17 @@ class DatasetResource(object):
         :type name: str
         :rtype: datacube.index.fields.Field
         """
+        return self.get_fields(collection_name).get(name)
+
+    def get_fields(self, collection_name=None):
+        """
+        :type collection_name: str
+        :rtype: dict[str, datacube.index.fields.Field]
+        """
         if collection_name is None:
             collection_name = self._config.default_collection_name
-
         collection = self._collection_resource.get_by_name(collection_name)
-        return collection.dataset_fields.get(name)
+        return collection.dataset_fields
 
     def _make(self, dataset_res):
         """
@@ -256,6 +262,17 @@ class DatasetResource(object):
         """
         query_exprs = tuple(fields.to_expressions(self.get_field, **query))
         return self._make_many(self._db.search_datasets((expressions + query_exprs)))
+
+    def search_summaries(self, *expressions, **query):
+        query_exprs = tuple(fields.to_expressions(self.get_field, **query))
+
+        return (
+            dict(fs) for fs in
+            self._db.search_datasets(
+                (expressions + query_exprs),
+                select_fields=tuple(self.get_fields().values())
+            )
+        )
 
     def search_eager(self, *expressions, **query):
         """
