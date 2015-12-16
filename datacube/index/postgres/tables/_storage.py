@@ -50,7 +50,10 @@ STORAGE_MAPPING = Table(
     #   nodata: -999
     #   interpolation: cubic
     # See "_EXAMPLE_DATASET_TYPE_MEASUREMENTS" below.
-    Column('measurements', postgres.JSONB),
+    Column('measurements', postgres.JSONB, nullable=False),
+
+    # region of integrest for this mapping
+    Column('roi', postgres.JSONB),
 
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),

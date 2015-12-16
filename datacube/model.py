@@ -82,7 +82,7 @@ class StorageTypeDescriptor(object):
 class StorageMapping(object):
     def __init__(self, storage_type, name, description,
                  match, measurements,
-                 location, filename_pattern, id_=None):
+                 location, filename_pattern, roi, id_=None):
         # Which datasets to match.
         #: :type: DatasetMatcher
         self.match = match
@@ -102,6 +102,10 @@ class StorageMapping(object):
         # (key is measurement id, value is a doc understood by the storage driver)
         #: :type: dict
         self.measurements = measurements
+
+        # ROI for this mapping
+        #: :type: dict
+        self.roi = roi
 
         # The location where the storage units should be stored.
         #: :type: str

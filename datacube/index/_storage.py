@@ -149,6 +149,7 @@ class StorageMappingResource(object):
         name = descriptor['name']
         dataset_metadata = descriptor['match']['metadata']
         description = descriptor.get('description')
+        roi = descriptor.get('roi')
 
         with self._db.begin() as transaction:
             location_name = descriptor['location_name']
@@ -164,7 +165,8 @@ class StorageMappingResource(object):
                         ('location_name', location_name, existing.location_name),
                         ('file_path_template', file_path_template, existing.file_path_template),
                         ('measurements', measurements_doc, existing.measurements),
-                        ('storage_type', storage_type, existing.storage_type)
+                        ('storage_type', storage_type, existing.storage_type),
+                        ('roi', roi, existing.roi)
                     ],
                     'Storage mapping {}'.format(name)
                 )
@@ -176,7 +178,8 @@ class StorageMappingResource(object):
                     dataset_metadata,
                     measurements_doc,
                     storage_type,
-                    description=description
+                    description=description,
+                    roi=roi
                 )
 
     def _make(self, mapping):
@@ -184,13 +187,14 @@ class StorageMappingResource(object):
         :rtype: datacube.model.StorageMapping
         """
         return StorageMapping(
-            StorageType(mapping['storage_type']),
-            mapping['name'],
-            mapping['description'],
-            DatasetMatcher(mapping['dataset_metadata']),
-            mapping['measurements'],
-            self._host_config.location_mappings[mapping['location_name']],
-            mapping['file_path_template'],
+            storage_type=StorageType(mapping['storage_type']),
+            name=mapping['name'],
+            description=mapping['description'],
+            match=DatasetMatcher(mapping['dataset_metadata']),
+            measurements=mapping['measurements'],
+            location=self._host_config.location_mappings[mapping['location_name']],
+            filename_pattern=mapping['file_path_template'],
+            roi=mapping['roi'],
             id_=mapping['id']
         )
 

@@ -177,6 +177,7 @@ class PostgresDb(object):
     def ensure_storage_mapping(self,
                                name, location_name, file_path_template,
                                dataset_metadata, measurements, storage_type,
+                               roi=None,
                                description=None):
         res = self._connection.execute(
             STORAGE_MAPPING.insert().values(
@@ -187,6 +188,7 @@ class PostgresDb(object):
                 location_name=location_name,
                 storage_type=storage_type,
                 file_path_template=file_path_template,
+                roi=roi,
             )
         )
         return res.inserted_primary_key[0]
