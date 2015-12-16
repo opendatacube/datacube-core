@@ -126,7 +126,7 @@ def test_create_sample_netcdf_from_gdalds(tmpdir, example_gdal_path):
 
     band_info = SimpleObject(varname='B10', dtype='int16', nodata=-999)
     storage_spec = {'chunking': {'x': 100, 'y': 100, 't': 1}}
-    storage_type = StorageType('NetCDF-CF', 'mock_storage_type', 'for testing', storage_spec)
+    storage_type = StorageType(storage_spec)
 
     tile_spec = tilespec_from_riodataset(dataset)
     tile_spec.data = dataset.read(1)

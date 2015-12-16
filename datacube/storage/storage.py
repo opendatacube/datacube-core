@@ -8,7 +8,6 @@ import logging
 
 from contextlib import contextmanager
 from itertools import groupby
-import json
 
 import dateutil.parser
 import numpy

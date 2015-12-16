@@ -5,7 +5,7 @@ Tables for indexing the storage of a dataset in a reprojected or new form.
 (ie. What NetCDF files do I have of this dataset?)
 """
 from __future__ import absolute_import
-from sqlalchemy import ForeignKey, UniqueConstraint, BigInteger, SmallInteger
+from sqlalchemy import ForeignKey, SmallInteger
 from sqlalchemy import Table, Column, Integer, String, DateTime
 from sqlalchemy.dialects import postgres
 from sqlalchemy.sql import func
@@ -13,39 +13,14 @@ from sqlalchemy.sql import func
 from . import _core
 from . import _dataset
 
-# Modern equivalent of 'tile_type' (how to store on disk)
-# -> Serialises to 'storage_config.yaml' documents
-STORAGE_TYPE = Table(
-    'storage_type', _core.METADATA,
-    Column('id', SmallInteger, primary_key=True, autoincrement=True),
-
-    # The storage "driver" to use: eg. 'NetCDF CF', 'GeoTIFF'...
-    Column('driver', String, nullable=False),
-
-    # A name/label for this type (eg. '30m bands'). Specified by users.
-    Column('name', String, nullable=False, unique=True),
-    # A human-readable, potentially multi-line, description for display on the UI.
-    Column('description', String),
-
-    # See "_EXAMPLE_STORAGE_TYPE_DESCRIPTOR" below
-    Column('descriptor', postgres.JSONB, nullable=False),
-
-    # When it was added and by whom.
-    Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
-    Column('added_by', String, server_default=func.current_user(), nullable=False),
-
-)
-
 # Map a dataset type to how we will store it (storage_type and each measurement/band).
 STORAGE_MAPPING = Table(
     'storage_mapping', _core.METADATA,
     Column('id', SmallInteger, primary_key=True, autoincrement=True),
 
-    # The storage type to use.
-    Column('storage_type_ref', ForeignKey(STORAGE_TYPE.c.id), nullable=False),
-
     # A name/label for this mapping (eg. 'LS7 NBAR'). Specified by users.
     Column('name', String, nullable=False),
+
     # A human-readable, potentially multi-line, description for display on the UI.
     Column('description', String),
 
@@ -54,6 +29,9 @@ STORAGE_MAPPING = Table(
 
     # The offset relative to location where the storage units should be stored. Specified by users.
     Column('file_path_template', String, nullable=False),
+
+    # The storage type to use.
+    Column('storage_type', postgres.JSONB, nullable=False),
 
     # Match any datasets whose metadata is a superset of this.
     # See "_EXAMPLE_DATASETS_MATCHING" below
@@ -77,8 +55,6 @@ STORAGE_MAPPING = Table(
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
     Column('added_by', String, server_default=func.current_user(), nullable=False),
-
-    UniqueConstraint('storage_type_ref', 'name'),
 )
 
 STORAGE_UNIT = Table(

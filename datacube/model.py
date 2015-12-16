@@ -22,30 +22,18 @@ class DatasetMatcher(object):
 
 
 class StorageType(object):
-    def __init__(self, driver, name, description, descriptor, id_=None):
-        # Name of the storage driver. 'NetCDF CF', 'GeoTiff' etc.
-        #: :type: str
-        self.driver = driver
-
-        # Name for this config (specified by users)
-        #: :type: str
-        self.name = name
-
-        # A human-readable, potentially multi-line, description for display on the UI.
-        #: :type: str
-        self.description = description
-
+    def __init__(self, descriptor, id_=None):
         # A definition of the storage (understood by the storage driver)
         #: :type: dict
         self.descriptor = descriptor
 
-        # Database primary key
-        #: :type: int
-        self.id_ = id_
+    @property
+    def driver(self):
+        return self.descriptor['driver']
 
     @property
     def projection(self):
-        return str(self.descriptor['projection']['spatial_ref']).strip()
+        return str(self.descriptor['crs']).strip()
 
     @property
     def tile_size(self):
@@ -70,10 +58,6 @@ class StorageType(object):
     @property
     def filename_format(self):
         return self.descriptor['filename_format']
-
-
-class MappedStorageType(StorageType):
-    pass
 
 
 class StorageTypeDescriptor(object):

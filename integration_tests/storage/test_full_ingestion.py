@@ -4,42 +4,36 @@ import netCDF4
 
 from datacube.ingest import index_datasets, store_datasets
 
-
 sample_mapping = {
     'driver': 'NetCDF CF',
     'match': {'metadata': {'instrument': {'name': 'TM'},
                            'platform': {'code': 'LANDSAT_5'},
                            'product_type': 'EODS_NBAR'}},
     'name': 'LS5 NBAR',
-    'storage': [
-        {
-            'global_attributes': {
-                'license': 'Creative Commons Attribution 4.0 International CC BY 4.0',
-                'product_version': '0.0.0',
-                'source': 'This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/',
-                'summary': 'These files are experimental, short lived, and the format will change.',
-                'title': 'Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE'},
-            'location_name': 'testdata',
-            'file_path_template': '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_'
-                                  '{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc',
-            'measurements': {
-                '10': {'dtype': 'int16',
-                       'nodata': -999,
-                       'resampling_method': 'cubic',
-                       'varname': 'band_10'},
-                '20': {'dtype': 'int16',
-                       'nodata': -999,
-                       'resampling_method': 'cubic',
-                       'varname': 'band_20'}},
-            'name': '1deg_tiles'}]}
 
-sample_storage_type = {
-    'chunking': {'t': 1, 'x': 400, 'y': 400},
-    'dimension_order': ['t', 'y', 'x'],
-    'driver': 'NetCDF CF',
-    'name': '1deg_tiles',
-    'projection': {
-        'spatial_ref':
+    'global_attributes': {
+        'license': 'Creative Commons Attribution 4.0 International CC BY 4.0',
+        'product_version': '0.0.0',
+        'source': 'This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/',
+        'summary': 'These files are experimental, short lived, and the format will change.',
+        'title': 'Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE'},
+    'location_name': 'testdata',
+    'file_path_template': '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_'
+                          '{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc',
+    'measurements': {
+        '10': {'dtype': 'int16',
+               'nodata': -999,
+               'resampling_method': 'cubic',
+               'varname': 'band_10'},
+        '20': {'dtype': 'int16',
+               'nodata': -999,
+               'resampling_method': 'cubic',
+               'varname': 'band_20'}},
+    'storage': {
+        'chunking': {'t': 1, 'x': 400, 'y': 400},
+        'dimension_order': ['t', 'y', 'x'],
+        'driver': 'NetCDF CF',
+        'crs':
             """
            GEOGCS["WGS 84",
                 DATUM["WGS_1984",
@@ -51,17 +45,42 @@ sample_storage_type = {
                 UNIT["degree",0.0174532925199433,
                     AUTHORITY["EPSG","9122"]],
                 AUTHORITY["EPSG","4326"]]
-            """},
-    'resolution': {'x': 0.0025, 'y': -0.0025},
-    'tile_size': {'x': 1.0, 'y': -1.0}}
+            """,
+        'resolution': {'x': 0.0025, 'y': -0.0025},
+        'tile_size': {'x': 1.0, 'y': -1.0}
+    }
+}
 
-albers_storage_type = {
-    'chunking': {'t': 1, 'x': 400, 'y': 400},
-    'dimension_order': ['t', 'y', 'x'],
+albers_mapping = {
     'driver': 'NetCDF CF',
-    'name': '100km_tiles',
-    'projection': {
-        'spatial_ref':
+    'match': {'metadata': {'instrument': {'name': 'TM'},
+                           'platform': {'code': 'LANDSAT_5'},
+                           'product_type': 'EODS_NBAR'}},
+    'name': 'LS5 NBAR Albers',
+    'global_attributes': {
+        'license': 'Creative Commons Attribution 4.0 International CC BY 4.0',
+        'product_version': '0.0.0',
+        'source': 'This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/',
+        'summary': 'These files are experimental, short lived, and the format will change.',
+        'title': 'Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE'},
+    'location_name': 'testdata',
+    'file_path_template': '{platform[code]}_{instrument[name]}_{xs[0]}_{ys[0]}_'
+                          '{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc',
+    'measurements': {
+        '10': {'dtype': 'int16',
+               'nodata': -999,
+               'resampling_method': 'cubic',
+               'varname': 'band_10'},
+        '20': {'dtype': 'int16',
+               'nodata': -999,
+               'resampling_method': 'cubic',
+               'varname': 'band_20'}
+    },
+    'storage': {
+        'chunking': {'t': 1, 'x': 400, 'y': 400},
+        'dimension_order': ['t', 'y', 'x'],
+        'driver': 'NetCDF CF',
+        'crs':
             """PROJCS["GDA94 / Australian Albers",
                     GEOGCS["GDA94",
                         DATUM["Geocentric_Datum_of_Australia_1994",
@@ -85,38 +104,11 @@ albers_storage_type = {
                     PARAMETER["false_northing",0],
                     AUTHORITY["EPSG","3577"],
                     AXIS["Easting",EAST],
-                    AXIS["Northing",NORTH]]"""
-    },
-    'resolution': {'x': 250, 'y': -250},
-    'tile_size': {'x': 100000, 'y': -100000}}
-
-albers_mapping = {
-    'driver': 'NetCDF CF',
-    'match': {'metadata': {'instrument': {'name': 'TM'},
-                           'platform': {'code': 'LANDSAT_5'},
-                           'product_type': 'EODS_NBAR'}},
-    'name': 'LS5 NBAR Albers',
-    'storage': [
-        {
-            'global_attributes': {
-                'license': 'Creative Commons Attribution 4.0 International CC BY 4.0',
-                'product_version': '0.0.0',
-                'source': 'This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/',
-                'summary': 'These files are experimental, short lived, and the format will change.',
-                'title': 'Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE'},
-            'location_name': 'testdata',
-            'file_path_template': '{platform[code]}_{instrument[name]}_{xs[0]}_{ys[0]}_'
-                                  '{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc',
-            'measurements': {
-                '10': {'dtype': 'int16',
-                       'nodata': -999,
-                       'resampling_method': 'cubic',
-                       'varname': 'band_10'},
-                '20': {'dtype': 'int16',
-                       'nodata': -999,
-                       'resampling_method': 'cubic',
-                       'varname': 'band_20'}},
-            'name': '100km_tiles'}]}
+                    AXIS["Northing",NORTH]]""",
+        'resolution': {'x': 250, 'y': -250},
+        'tile_size': {'x': 100000, 'y': -100000}
+    }
+}
 
 
 def test_full_ingestion(index, default_collection, example_ls5_dataset):
@@ -126,8 +118,8 @@ def test_full_ingestion(index, default_collection, example_ls5_dataset):
     :return:
     """
     # Load a storage config
-    index.storage_types.add(sample_storage_type)
-    index.storage_types.add(albers_storage_type)
+    #index.storage_types.add(sample_storage_type)
+    #index.storage_types.add(albers_storage_type)
 
     # Load a mapping config
     index.mappings.add(sample_mapping)

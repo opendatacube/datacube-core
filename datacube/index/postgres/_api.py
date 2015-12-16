@@ -22,8 +22,7 @@ from datacube.index.fields import OrExpression
 from datacube.index.postgres.tables._core import schema_qualified
 from . import tables
 from ._fields import parse_fields, NativeField
-from .tables import DATASET, DATASET_SOURCE, STORAGE_TYPE, \
-    STORAGE_MAPPING, STORAGE_UNIT, DATASET_STORAGE, COLLECTION
+from .tables import DATASET, DATASET_SOURCE, STORAGE_MAPPING, STORAGE_UNIT, DATASET_STORAGE, COLLECTION
 
 PGCODE_UNIQUE_CONSTRAINT = '23505'
 
@@ -151,27 +150,6 @@ class PostgresDb(object):
         )
         return res.inserted_primary_key[0]
 
-    def ensure_storage_type(self, driver, name, descriptor, description=None):
-        # TODO: Update them if they already exist. This will do for now.
-        res = self._connection.execute(
-            STORAGE_TYPE.insert(),
-            driver=driver,
-            name=name,
-            description=description,
-            descriptor=descriptor
-        )
-        return res.inserted_primary_key[0]
-
-    def get_storage_type(self, storage_type_id):
-        return self._connection.execute(
-            STORAGE_TYPE.select().where(STORAGE_TYPE.c.id == storage_type_id)
-        ).first()
-
-    def get_storage_type_by_name(self, name):
-        return self._connection.execute(
-            STORAGE_TYPE.select().where(STORAGE_TYPE.c.name == name)
-        ).first()
-
     def get_storage_mapping(self, storage_mapping_id):
         return self._connection.execute(
             STORAGE_MAPPING.select().where(STORAGE_MAPPING.c.id == storage_mapping_id)
@@ -196,20 +174,18 @@ class PostgresDb(object):
             )
         ).fetchall()
 
-    def ensure_storage_mapping(self, storage_type_name,
+    def ensure_storage_mapping(self,
                                name, location_name, file_path_template,
-                               dataset_metadata, measurements,
+                               dataset_metadata, measurements, storage_type,
                                description=None):
         res = self._connection.execute(
             STORAGE_MAPPING.insert().values(
-                storage_type_ref=select([STORAGE_TYPE.c.id]).where(
-                    STORAGE_TYPE.c.name == storage_type_name
-                ),
                 name=name,
                 description=description,
                 dataset_metadata=dataset_metadata,
                 measurements=measurements,
                 location_name=location_name,
+                storage_type=storage_type,
                 file_path_template=file_path_template,
             )
         )
@@ -367,18 +343,9 @@ class PostgresDb(object):
             COLLECTION.select().where(COLLECTION.c.name == name)
         ).first()
 
-    def get_storage_mapping_by_name(self, storage_type_name, name):
+    def get_storage_mapping_by_name(self, name):
         return self._connection.execute(
-            select(
-                [STORAGE_MAPPING]
-            ).select_from(
-                STORAGE_MAPPING.join(STORAGE_TYPE)
-            ).where(
-                and_(
-                    STORAGE_MAPPING.c.name == name,
-                    STORAGE_TYPE.c.name == storage_type_name
-                )
-            )
+            STORAGE_MAPPING.select().where(STORAGE_MAPPING.c.name == name)
         ).first()
 
     def add_collection(self,

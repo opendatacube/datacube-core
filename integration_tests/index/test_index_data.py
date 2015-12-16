@@ -99,15 +99,10 @@ def test_index_storage_unit(index, db, default_collection):
         Path('/tmp/test/' + _telemetry_uuid)
     )
     assert was_inserted
-    db.ensure_storage_type(
-        'NetCDF CF',
-        'test_storage_type',
-        {'storage_type': 'descriptor'}
-    )
     db.ensure_storage_mapping(
-        'test_storage_type',
         'Test storage mapping',
-        'location1', '/tmp/some/loc', {}, []
+        'location1', '/tmp/some/loc',
+        {}, {}, {}
     )
     mapping = db._connection.execute(STORAGE_MAPPING.select()).first()
 
@@ -117,7 +112,7 @@ def test_index_storage_unit(index, db, default_collection):
             [_telemetry_uuid],
             StorageMapping(
                 # Yikes:
-                storage_type=None,
+                storage_type={},
                 name="test_mapping",
                 description=None,
                 match=None,
