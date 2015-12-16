@@ -65,12 +65,12 @@ def _dataset_projection(dataset):
     raise RuntimeError('Cant figure out the projection: %s %s' % (projection['datum'], projection['zone']))
 
 
-def _grid_datasets(datasets, grid_proj, grid_size):
+def _grid_datasets(datasets, bounds_override, grid_proj, grid_size):
     tiles = {}
     for dataset in datasets:
-        bounds = BoundingBox(*rasterio.warp.transform_bounds(_dataset_projection(dataset),
-                                                             grid_proj,
-                                                             *_dataset_bounds(dataset)))
+        bounds = bounds_override or BoundingBox(*rasterio.warp.transform_bounds(_dataset_projection(dataset),
+                                                                                grid_proj,
+                                                                                *_dataset_bounds(dataset)))
 
         for y in range(int(bounds.bottom//grid_size[1]), int(bounds.top//grid_size[1])+1):
             for x in range(int(bounds.left//grid_size[0]), int(bounds.right//grid_size[0])+1):
@@ -172,6 +172,10 @@ def _map_resampling(name):
     }[name.lower()]
 
 
+def _roi_to_bounds(roi, dims):
+    return BoundingBox(roi[dims[0]][0], roi[dims[1]][0], roi[dims[0]][1], roi[dims[1]][1])
+
+
 def store_datasets_with_mapping(datasets, mapping):
     storage_type = mapping.storage_type
     if storage_type.driver != 'NetCDF CF':
@@ -184,7 +188,8 @@ def store_datasets_with_mapping(datasets, mapping):
     tile_res = storage_type.resolution
 
     datasets.sort(key=_dataset_time)
-    for tile_index, datasets in _grid_datasets(datasets, storage_type.projection, tile_size).items():
+    bounds = mapping.roi and _roi_to_bounds(mapping.roi, storage_type.spatial_dimensions)
+    for tile_index, datasets in _grid_datasets(datasets, bounds, storage_type.projection, tile_size).items():
         tile_spec = TileSpec(storage_type.projection,
                              _get_tile_transform(tile_index, tile_size, tile_res),
                              width=int(tile_size[0] / abs(tile_res[0])),
