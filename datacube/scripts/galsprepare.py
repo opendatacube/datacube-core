@@ -66,7 +66,7 @@ def prep_dataset(fields, path):
         'id': str(uuid.uuid4()),
         'processing_level': fields["level"],
         'product_type': fields["type"],
-        # 'creation_dt':  str(first.date_created),
+        'creation_dt':  str(aos),
         'platform': {'code': "LANDSAT_" + fields["vehicle"][2]},
         'instrument': {'name': fields["instrument"]},
         'acquisition': {
@@ -79,7 +79,7 @@ def prep_dataset(fields, path):
         'extent': {
             'from_dt': str(start_time),
             'to_dt': str(end_time),
-            'center_dt': str(start_time + (end_time - start_time) / 2)
+            'center_dt': str(start_time + (end_time - start_time) // 2)
         },
         'format': {'name': 'GeoTiff'},
         'grid_spatial': {
