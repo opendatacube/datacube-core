@@ -47,7 +47,10 @@ def store_datasets(datasets, index=None):
 
     storage_mappings = {}
     for dataset in datasets:
-        for storage_mapping in index.mappings.get_for_dataset(dataset):
+        dataset_storage_mappings = index.mappings.get_for_dataset(dataset)
+        if not dataset_storage_mappings:
+            _LOG.warning('No mappings found for %s dataset', dataset)
+        for storage_mapping in dataset_storage_mappings:
             storage_mappings.setdefault(storage_mapping.id_, []).append(dataset)
 
     for storage_mapping_id, datasets in storage_mappings.items():
