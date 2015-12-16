@@ -3,7 +3,7 @@
 #
 
 name: 1km_bands
-description: 1km metre, 10 degree EO NetCDF storage unit.
+description: 1km, 10 degree EO NetCDF storage unit.
 driver: NetCDF CF
 
 projection:
