@@ -119,6 +119,7 @@ def test_index_storage_unit(index, db, default_collection):
                 measurements={},
                 location="file://g/data",
                 filename_pattern="foo.nc",
+                roi=None,
                 id_=mapping['id']
             ),
             {'test': 'descriptor'},
