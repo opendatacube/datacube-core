@@ -1,0 +1,80 @@
+
+name: LS5 NBAR
+description: 25 metre, 1 degree EO NetCDF storage unit
+
+# Any datasets matching these metadata properties.
+match:
+    metadata:
+        platform:
+            code: LANDSAT_5
+        instrument:
+            name: TM
+        product_type: EODS_NBAR
+
+location_name: eotiles
+
+file_path_template: '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc'
+
+global_attributes:
+    title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
+    summary: These files are experimental, short lived, and the format will change.
+    source: This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/
+    product_version: '0.0.0'
+    license: Creative Commons Attribution 4.0 International CC BY 4.0
+
+storage:
+    driver: NetCDF CF
+    crs: |
+        GEOGCS["WGS 84",
+            DATUM["WGS_1984",
+                SPHEROID["WGS 84",6378137,298.257223563,
+                    AUTHORITY["EPSG","7030"]],
+                AUTHORITY["EPSG","6326"]],
+            PRIMEM["Greenwich",0,
+                AUTHORITY["EPSG","8901"]],
+            UNIT["degree",0.0174532925199433,
+                AUTHORITY["EPSG","9122"]],
+            AUTHORITY["EPSG","4326"]]
+    tile_size:
+        x: 1.0
+        y: -1.0
+    resolution:
+        x: 0.00025
+        y: -0.00025
+    chunking:
+        x: 500
+        y: 500
+        t: 1
+    dimension_order: ['t', 'y', 'x']
+
+measurements:
+    '10':
+        dtype: int16
+        nodata: -999
+        resampling_method: cubic
+        varname: band_10
+    '20':
+        dtype: int16
+        nodata: -999
+        resampling_method: cubic
+        varname: band_20
+    '30':
+        dtype: int16
+        nodata: -999
+        resampling_method: cubic
+        varname: band_30
+    '40':
+        dtype: int16
+        nodata: -999
+        resampling_method: cubic
+        varname: band_40
+    '50':
+        dtype: int16
+        nodata: -999
+        resampling_method: cubic
+        varname: band_50
+    '70':
+        dtype: int16
+        nodata: -999
+        resampling_method: cubic
+        varname: band_70
