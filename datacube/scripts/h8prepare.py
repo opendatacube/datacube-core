@@ -10,15 +10,23 @@ import re
 from pathlib import Path
 import yaml
 import netCDF4
-import rasterio.warp
 import click
 
 
-def get_projection(proj, extent):
-    left, bottom, right, top = [int(x) for x in
-                                rasterio.warp.transform_bounds({'init': 'EPSG:4326'}, proj, *extent)]
+def get_projection(image):
+    if 'geostationary' in image.variables:
+        projection = str(image['geostationary'].spatial_ref)
+        transform = image['geostationary'].GeoTransform
+    else:
+        projection = str(image['geostationary_satellite'].spatial_ref)
+        transform = image['geostationary_satellite'].GeoTransform
+
+    left = transform[0].item()
+    bottom = transform[3].item()
+    right = left + transform[1].item()*image['x'].size
+    top = bottom + transform[5].item()*image['y'].size
     return {
-        'spatial_reference': proj,
+        'spatial_reference': projection,
         'geo_ref_points': {
             'ul': {'x': left, 'y': top},
             'ur': {'x': right, 'y': top},
@@ -28,7 +36,11 @@ def get_projection(proj, extent):
         }
 
 
-def get_coords(left, bottom, right, top):
+def get_extent(image):
+    left = float(image.getncattr('geospatial_lon_min'))
+    bottom = float(image.getncattr('geospatial_lat_min'))
+    right = float(image.getncattr('geospatial_lon_max'))
+    top = float(image.getncattr('geospatial_lat_max'))
     return {
         'ul': {'lon': left, 'lat': top},
         'ur': {'lon': right, 'lat': top},
@@ -37,34 +49,28 @@ def get_coords(left, bottom, right, top):
     }
 
 
-def get_skeleton(path, prod, bands, extent):
+def get_skeleton(path, prod, bands):
     image = netCDF4.Dataset(path)
     times = image['time']
     sensing_time = str(netCDF4.num2date(times[0], units=times.units, calendar=times.calendar))
 
-    if 'geostationary' in image.variables:
-        projection = str(image['geostationary'].spatial_ref)
-    else:
-        projection = str(image['geostationary_satellite'].spatial_ref)
-
     return {
         'id': str(uuid.uuid4()),
-        'ga_label': str(image.id),
-        'ga_level': str(image.processing_level),
+        'processing_level': str(image.processing_level),
         'product_type': prod,
         'creation_dt': str(image.date_created),
         'platform': {'code': 'HIMAWARI_8'},
         'instrument': {'name': str(image.instrument)},
         # 'acquisition': {'groundstation': {'code': station}},
         'extent': {
-            'coord': get_coords(*extent),
+            'coord': get_extent(image),
             'from_dt': sensing_time,
             'to_dt': sensing_time,
             'center_dt': sensing_time
         },
         'format': {'name': 'NetCDF4'},
         'grid_spatial': {
-            'projection': get_projection(projection, extent)
+            'projection': get_projection(image)
         },
         'image': {
             'bands': bands
@@ -73,7 +79,7 @@ def get_skeleton(path, prod, bands, extent):
     }
 
 
-def get_ang_dataset(path, extent):
+def get_ang_dataset(path):
     band_re = re.compile('.*-P1S-ABOM_GEOM_(.*)-PRJ.*_(500|1000|2000)-HIMAWARI8-AHI.nc')
     images = {}
     for image in path.glob('*-P1S-ABOM_GEOM_*-HIMAWARI8-AHI.nc'):
@@ -84,10 +90,10 @@ def get_ang_dataset(path, extent):
         }
     if not images:
         return None
-    return get_skeleton(str(images['SOLAR_2000']['path']), 'GEOM_SOLAR', images, extent)
+    return get_skeleton(str(images['SOLAR_2000']['path']), 'GEOM_SOLAR', images)
 
 
-def get_obs_dataset(path, extent):
+def get_obs_dataset(path):
     band_re = re.compile('.*-P1S-ABOM_OBS_B(.*)-PRJ.*_(500|1000|2000)-HIMAWARI8-AHI.nc')
     images = {}
     for image in path.glob('*-P1S-ABOM_OBS_*-HIMAWARI8-AHI.nc'):
@@ -98,10 +104,10 @@ def get_obs_dataset(path, extent):
         }
     if not images:
         return None
-    return get_skeleton(str(images['01_2000']['path']), 'OBS', images, extent)
+    return get_skeleton(str(images['01_2000']['path']), 'OBS', images)
 
 
-def get_brf_dataset(path, extent):
+def get_brf_dataset(path):
     band_re = re.compile('.*-P1S-ABOM_BRF_B(.*)-PRJ.*_(500|1000|2000)-HIMAWARI8-AHI.nc')
     images = {}
     for image in path.glob('*-P1S-ABOM_BRF_*-HIMAWARI8-AHI.nc'):
@@ -112,16 +118,15 @@ def get_brf_dataset(path, extent):
         }
     if not images:
         return None
-    return get_skeleton(str(images['01_2000']['path']), 'BRF', images, extent)
+    return get_skeleton(str(images['01_2000']['path']), 'BRF', images)
 
 
 def prepare_dataset(path):
-    extent = 110, -40, 155, 3
-    brf = get_brf_dataset(path, extent)
+    brf = get_brf_dataset(path)
     if not brf:
         return []
-    ang = get_ang_dataset(path, extent)
-    obs = get_obs_dataset(path, extent)
+    ang = get_ang_dataset(path)
+    obs = get_obs_dataset(path)
     brf['lineage']['source_datasets'] = {ds['id']: ds for ds in [ang, obs] if ds}
     return [brf]
 
