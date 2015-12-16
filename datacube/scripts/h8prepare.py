@@ -102,7 +102,6 @@ def get_obs_dataset(path, extent):
 
 
 def get_brf_dataset(path, extent):
-    extent = 110, -40, 155, 3
     band_re = re.compile('.*-P1S-ABOM_BRF_B(.*)-PRJ.*_(500|1000|2000)-HIMAWARI8-AHI.nc')
     images = {}
     for image in path.glob('*-P1S-ABOM_BRF_*-HIMAWARI8-AHI.nc'):
