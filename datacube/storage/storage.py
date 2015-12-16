@@ -148,6 +148,8 @@ class DatasetSource(object):
         self.projection = None
         self.nodata = None
         self.format = dataset.format
+        if self.format == 'NetCDF4':
+            self._band_id = 1  # TODO: this magically works for H8 netcdf
 
     @contextmanager
     def open(self):
@@ -155,8 +157,8 @@ class DatasetSource(object):
             with rasterio.open(self._filename) as src:
                 self.transform = src.affine
                 self.projection = src.crs
-                self.nodata = src.nodatavals[0] or (0 if self.format == 'JPEG200' else None)  # TODO: sentinel 2 hack
-                yield rasterio.band(src, self._band_id)  # TODO: this magically works for H8 netcdf
+                self.nodata = src.nodatavals[0] or (0 if self.format == 'JPEG2000' else None)  # TODO: sentinel 2 hack
+                yield rasterio.band(src, self._band_id)
         finally:
             src.close()
 
