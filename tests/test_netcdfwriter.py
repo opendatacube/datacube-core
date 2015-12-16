@@ -11,6 +11,10 @@ from datacube.storage.netcdf_writer import NetCDFWriter
 from datacube.model import TileSpec, StorageType
 from datacube.storage.utils import tilespec_from_riodataset
 
+GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
+           'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
+           'AUTHORITY["EPSG","4326"]]'
+
 
 class SimpleObject(object):
     def __init__(self, **kwargs):
@@ -49,7 +53,7 @@ def test_albers_goo(tmpdir):
     global_attrs = {'test_attribute': 'test_value'}
     tile_spec = TileSpec(projection, affine, 2000, 4000, global_attrs=global_attrs)
 
-    chunking = {'t': 1, 'y': 100, 'x': 100}
+    chunking = [('time', 1), ('y', 100), ('x', 100)]
     date = datetime(2008, 1, 1)
     ops = [(date, band) for band in [1, 2]]
 
@@ -82,14 +86,11 @@ def test_albers_goo(tmpdir):
 def test_create_single_time_netcdf_from_numpy_arrays(tmpdir):
     filename = str(tmpdir.join('testfile_np.nc'))
 
-    affine = Affine(0.00025, 0.0, 151.0, 0.0, -0.0005, -29.0)
-    projection = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
-                 'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
-                 'AUTHORITY["EPSG","4326"]]'
     global_attrs = {'test_attribute': 'test_value'}
-    tile_spec = TileSpec(projection, affine, 2000, 4000, global_attrs=global_attrs)
+    affine = Affine(0.00025, 0.0, 151.0, 0.0, -0.0005, -29.0)
+    tile_spec = TileSpec(GEO_PROJ, affine, 2000, 4000, global_attrs=global_attrs)
 
-    chunking = {'t': 1, 'y': 100, 'x': 100}
+    chunking = [('time', 1), ('latitude', 100), ('longitude', 100)]
     date = datetime(2008, 1, 1)
     ops = [(date, band) for band in [1, 2]]
 
@@ -125,7 +126,9 @@ def test_create_sample_netcdf_from_gdalds(tmpdir, example_gdal_path):
     dataset = rasterio.open(example_gdal_path)
 
     band_info = SimpleObject(varname='B10', dtype='int16', nodata=-999)
-    storage_spec = {'chunking': {'x': 100, 'y': 100, 't': 1}}
+    storage_spec = {'chunking': {'longitude': 100, 'latitude': 100, 'time': 1},
+                    'dimension_order': ['time', 'latitude', 'longitude'],
+                    'crs': GEO_PROJ}
     storage_type = StorageType(storage_spec)
 
     tile_spec = tilespec_from_riodataset(dataset)

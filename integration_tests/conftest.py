@@ -115,8 +115,8 @@ def ls5_nbar_mapping(db, index):
     id_ = db.ensure_storage_mapping(
         storage_type={
             'driver': 'NetCDF CF',
-            'chunking': {'t': 1, 'x': 500, 'y': 500},
-            'dimension_order': ['t', 'y', 'x'],
+            'chunking': {'time': 1, 'latitude': 400, 'longitude': 400},
+            'dimension_order': ['time', 'latitude', 'longitude'],
             'crs': 'GEOGCS["WGS 84",\n'
                    '    DATUM["WGS_1984",\n'
                    '        SPHEROID["WGS 84",6378137,298.257223563,\n'
@@ -127,8 +127,8 @@ def ls5_nbar_mapping(db, index):
                    '    UNIT["degree",0.0174532925199433,\n'
                    '        AUTHORITY["EPSG","9122"]],\n'
                    '    AUTHORITY["EPSG","4326"]]\n',
-            'resolution': {'x': 0.00025, 'y': -0.00025},
-            'tile_size': {'x': 1.0, 'y': -1.0}
+            'resolution': {'longitude': 0.00025, 'latitude': -0.00025},
+            'tile_size': {'longitude': 1.0, 'latitude': 1.0}
         },
         name='ls5_nbar',
         description='Test LS5 Nbar 30m bands',

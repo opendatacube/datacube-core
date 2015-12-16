@@ -30,8 +30,8 @@ sample_mapping = {
                'resampling_method': 'cubic',
                'varname': 'band_20'}},
     'storage': {
-        'chunking': {'t': 1, 'x': 400, 'y': 400},
-        'dimension_order': ['t', 'y', 'x'],
+        'chunking': {'time': 1, 'longitude': 400, 'latitude': 400},
+        'dimension_order': ['time', 'latitude', 'longitude'],
         'driver': 'NetCDF CF',
         'crs':
             """
@@ -46,8 +46,8 @@ sample_mapping = {
                     AUTHORITY["EPSG","9122"]],
                 AUTHORITY["EPSG","4326"]]
             """,
-        'resolution': {'x': 0.0025, 'y': -0.0025},
-        'tile_size': {'x': 1.0, 'y': -1.0}
+        'resolution': {'longitude': 0.0025, 'latitude': -0.0025},
+        'tile_size': {'longitude': 1.0, 'latitude': 1.0}
     }
 }
 
@@ -77,8 +77,8 @@ albers_mapping = {
                'varname': 'band_20'}
     },
     'storage': {
-        'chunking': {'t': 1, 'x': 400, 'y': 400},
-        'dimension_order': ['t', 'y', 'x'],
+        'chunking': {'time': 1, 'y': 400, 'x': 400},
+        'dimension_order': ['time', 'y', 'x'],
         'driver': 'NetCDF CF',
         'crs':
             """PROJCS["GDA94 / Australian Albers",
@@ -106,7 +106,7 @@ albers_mapping = {
                     AXIS["Easting",EAST],
                     AXIS["Northing",NORTH]]""",
         'resolution': {'x': 250, 'y': -250},
-        'tile_size': {'x': 100000, 'y': -100000}
+        'tile_size': {'x': 100000, 'y': 100000}
     }
 }
 
@@ -117,10 +117,6 @@ def test_full_ingestion(index, default_collection, example_ls5_dataset):
     :param db:
     :return:
     """
-    # Load a storage config
-    #index.storage_types.add(sample_storage_type)
-    #index.storage_types.add(albers_storage_type)
-
     # Load a mapping config
     index.mappings.add(sample_mapping)
     index.mappings.add(albers_mapping)

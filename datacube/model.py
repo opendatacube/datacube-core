@@ -36,24 +36,33 @@ class StorageType(object):
         return str(self.descriptor['crs']).strip()
 
     @property
+    def spatial_dimensions(self):
+        sr = osr.SpatialReference(self.projection)
+        if sr.IsGeographic():
+            return 'longitude', 'latitude'
+        elif sr.IsProjected():
+            return 'x', 'y'
+
+    @property
     def tile_size(self):
         """
-
-        :return: dict of form {'x': , 'y': }
+        :return: tuple(x size, y size)
         """
-        return self.descriptor['tile_size']
+        tile_size = self.descriptor['tile_size']
+        return [tile_size[dim] for dim in self.spatial_dimensions]
 
     @property
     def resolution(self):
         """
-
-        :return: dict of form {'x': , 'y': }
+        :return: tuple(x res, y res)
         """
-        return self.descriptor['resolution']
+        res = self.descriptor['resolution']
+        return [res[dim] for dim in self.spatial_dimensions]
 
     @property
     def chunking(self):
-        return self.descriptor['chunking']
+        chunks = self.descriptor['chunking']
+        return [(dim, chunks[dim]) for dim in self.descriptor['dimension_order']]
 
     @property
     def filename_format(self):
