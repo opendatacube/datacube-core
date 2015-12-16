@@ -301,7 +301,7 @@ def _create_response(xrays, dimensions):
     """
     sample_xray = xrays.values()[0]
     reponse = {
-        'dimensions': dimensions,
+        'dimensions': list(dimensions),
         'arrays': xrays,
         'indices': [sample_xray.coords[dim].values for dim in dimensions],
         'element_sizes': [(abs(sample_xray.coords[dim].values[0] - sample_xray.coords[dim].values[-1]) /
@@ -348,7 +348,7 @@ def _fill_in_dask_blanks(dsk, storage_units, var_name, dimensions, dim_props, ds
     return dsk
 
 
-def _get_array(storage_units, var_name, dimensions, dim_props):  # TODO: PEP8
+def _get_array(storage_units, var_name, dimensions, dim_props):
     """
     Create an xray.DataArray
     :return xray.DataArray
@@ -547,8 +547,8 @@ class API(object):
                     'result_min': None,
                     'result_max': None,
                     'result_shape': None,
-                    'buffer_size': None,
-                    'irregular_indices': None,
+                    'buffer_size': None,        # TODO: Include chunk size
+                    'irregular_indices': None,  # TODO: Add irregular indices
                 })
                 result.update(grouped_storage_units.get_dimension_bounds(dimensions, dimension_ranges))
 
