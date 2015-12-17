@@ -13,12 +13,12 @@ from datacube.index.postgres._fields import SimpleDocField, RangeBetweenExpressi
 from datacube.model import Range
 from datacube.ui import parse_expressions, UnknownFieldException
 
-_sat_field = SimpleDocField('satellite', None, None, None)
-_sens_field = SimpleDocField('sensor', None, None, None)
+_sat_field = SimpleDocField('platform', None, None, None)
+_sens_field = SimpleDocField('instrument', None, None, None)
 _lat_field = FloatRangeDocField('lat', None, None, None)
 _fields = {
-    'satellite': _sat_field,
-    'sensor': _sens_field,
+    'platform': _sat_field,
+    'instrument': _sens_field,
     'lat': _lat_field
 }
 
@@ -27,12 +27,12 @@ def test_parse_expression():
     assert [EqualsExpression(
         _sat_field,
         4
-    )] == parse_expressions(_fields.get, 'satellite = 4')
+    )] == parse_expressions(_fields.get, 'platform = 4')
 
     assert [EqualsExpression(
         _sat_field,
         'LANDSAT_8'
-    )] == parse_expressions(_fields.get, 'satellite = "LANDSAT_8"')
+    )] == parse_expressions(_fields.get, 'platform = "LANDSAT_8"')
 
     between_exp = [RangeBetweenExpression(_lat_field, 4, 6, _range_class=NumericRange)]
     assert between_exp == parse_expressions(_fields.get, '4<lat<6')
@@ -42,7 +42,7 @@ def test_parse_expression():
 def test_parse_multiple_expressions():
     # Multiple expressions in one command-line statement.
     # Mixed whitespace:
-    between_exp = parse_expressions(_fields.get, 'satellite=LS8 -4<lat<23.5 sensor="OTHER"')
+    between_exp = parse_expressions(_fields.get, 'platform=LS8 -4<lat<23.5 instrument="OTHER"')
     assert between_exp == [
         EqualsExpression(
             _sat_field,
@@ -57,7 +57,7 @@ def test_parse_multiple_expressions():
 
 
 def test_build_query_expressions():
-    assert [EqualsExpression(_sat_field, "LANDSAT_8")] == to_expressions(_fields.get, satellite="LANDSAT_8")
+    assert [EqualsExpression(_sat_field, "LANDSAT_8")] == to_expressions(_fields.get, platform="LANDSAT_8")
     assert [
                RangeBetweenExpression(_lat_field, 4, 23.0, _range_class=NumericRange)
            ] == to_expressions(_fields.get, lat=Range(4, 23))

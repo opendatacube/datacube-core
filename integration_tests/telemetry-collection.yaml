@@ -15,9 +15,9 @@ dataset:
     measurements_offset: ['image', 'bands']
     sources_offset: ['lineage', 'source_datasets']
     search_fields:
-        satellite:
+        platform:
             offset: [platform, code]
-        sensor:
+        instrument:
             offset: [instrument, name]
         product:
             offset: [product_type]

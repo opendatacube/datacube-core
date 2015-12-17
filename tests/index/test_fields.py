@@ -16,19 +16,19 @@ def _assert_same(obj1, obj2):
 
 def test_get_field():
     fields = parse_fields({
-        'satellite': {
+        'platform': {
             'description': 'Satellite',
             'offset': ['platform', 'code']
         },
-        'sensor': {
+        'instrument': {
             'offset': ['instrument', 'name']
         }
     }, 1, DATASET.c.metadata)
 
     _assert_same(
-        fields['satellite'],
+        fields['platform'],
         SimpleDocField(
-            'satellite', 'Satellite',
+            'platform', 'Satellite',
             1,
             DATASET.c.metadata,
             offset=['platform', 'code']

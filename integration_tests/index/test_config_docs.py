@@ -215,8 +215,8 @@ def test_collection_indexes_views_exist(db, telemetry_collection):
     :type telemetry_collection: datacube.model.Collection
     """
     # Ensure indexes were created for the telemetry collection (following the naming conventions):
-    val = db._connection.execute("SELECT to_regclass('agdc.ix_field_landsat_telemetry_dataset_satellite')").scalar()
-    assert val == 'agdc.ix_field_landsat_telemetry_dataset_satellite'
+    val = db._connection.execute("SELECT to_regclass('agdc.ix_field_landsat_telemetry_dataset_platform')").scalar()
+    assert val == 'agdc.ix_field_landsat_telemetry_dataset_platform'
 
     # Ensure view was created (following naming conventions)
     val = db._connection.execute("SELECT to_regclass('agdc.landsat_telemetry_dataset')").scalar()

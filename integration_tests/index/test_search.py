@@ -59,22 +59,22 @@ def test_search_dataset_equals(index, db, default_collection):
     field = index.datasets.get_field
 
     datasets = index.datasets.search_eager(
-        field('satellite') == 'LANDSAT_8',
+        field('platform') == 'LANDSAT_8',
     )
     assert len(datasets) == 1
     assert datasets[0].id == _telemetry_uuid
 
     datasets = index.datasets.search_eager(
-        field('satellite') == 'LANDSAT_8',
-        field('sensor') == 'OLI_TIRS',
+        field('platform') == 'LANDSAT_8',
+        field('instrument') == 'OLI_TIRS',
     )
     assert len(datasets) == 1
     assert datasets[0].id == _telemetry_uuid
 
     # Wrong sensor name
     datasets = index.datasets.search_eager(
-        field('satellite') == 'LANDSAT-8',
-        field('sensor') == 'TM',
+        field('platform') == 'LANDSAT-8',
+        field('instrument') == 'TM',
     )
     assert len(datasets) == 0
 
@@ -171,16 +171,16 @@ def test_searches_only_collection(index, db, default_collection, telemetry_colle
     # No results on the default collection.
     default_field = default_collection.dataset_fields.get
     datasets = index.datasets.search_eager(
-        default_field('satellite') == 'LANDSAT_8',
-        default_field('sensor') == 'OLI_TIRS'
+        default_field('platform') == 'LANDSAT_8',
+        default_field('instrument') == 'OLI_TIRS'
     )
     assert len(datasets) == 0
 
     # One result in the telemetry collection.
     telemetry_field = telemetry_collection.dataset_fields.get
     datasets = index.datasets.search_eager(
-        telemetry_field('satellite') == 'LANDSAT_8',
-        telemetry_field('sensor') == 'OLI_TIRS',
+        telemetry_field('platform') == 'LANDSAT_8',
+        telemetry_field('instrument') == 'OLI_TIRS',
     )
     assert len(datasets) == 1
     assert datasets[0].id == _telemetry_uuid
@@ -188,15 +188,15 @@ def test_searches_only_collection(index, db, default_collection, telemetry_colle
     # An error if you mix collections (although we may support this in the future):
     with pytest.raises(ValueError):
         index.datasets.search_eager(
-            default_field('satellite') == 'LANDSAT_8',
-            telemetry_field('sensor') == 'OLI_TIRS',
+            default_field('platform') == 'LANDSAT_8',
+            telemetry_field('instrument') == 'OLI_TIRS',
         )
 
     field = index.datasets.get_field
     # Specify explicit collection and a parameter.
     results = index.datasets.search_eager(
         field('collection') == 'landsat_telemetry',
-        telemetry_field('satellite') == 'LANDSAT_8'
+        telemetry_field('platform') == 'LANDSAT_8'
     )
     assert len(results) == 1
 
@@ -281,15 +281,15 @@ def test_search_storage_by_dataset(index, db, default_collection, ls5_nbar_mappi
 
     # Search by the linked dataset properties.
     storages = index.storage.search_eager(
-        dfield('satellite') == 'LANDSAT_8',
-        dfield('sensor') == 'OLI_TIRS'
+        dfield('platform') == 'LANDSAT_8',
+        dfield('instrument') == 'OLI_TIRS'
     )
     assert len(storages) == 1
     assert storages[0].id_ == unit_id
 
     # When fields don't match the dataset it shouldn't be returned.
     storages = index.storage.search_eager(
-        dfield('satellite') == 'LANDSAT_7'
+        dfield('platform') == 'LANDSAT_7'
     )
     assert len(storages) == 0
 
@@ -321,7 +321,7 @@ def test_search_storage_by_both_fields(index, db, default_collection, ls5_nbar_m
         ls5_nbar_mapping.id_
     )
     latitude = default_collection.storage_fields['lat']
-    ds_satellite = default_collection.dataset_fields['satellite']
+    ds_satellite = default_collection.dataset_fields['platform']
 
     # Search by the storage properties only
     storages = index.storage.search_eager(
