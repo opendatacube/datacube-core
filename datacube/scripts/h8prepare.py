@@ -25,6 +25,10 @@ def get_projection(image):
     bottom = transform[3].item()
     right = left + transform[1].item()*image['x'].size
     top = bottom + transform[5].item()*image['y'].size
+    if left > right:
+        left, right = right, left
+    if bottom > top:
+        bottom, top = top, bottom
     return {
         'spatial_reference': projection,
         'geo_ref_points': {

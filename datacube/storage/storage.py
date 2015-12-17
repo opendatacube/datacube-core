@@ -11,9 +11,10 @@ from itertools import groupby
 
 import dateutil.parser
 import numpy
-import rasterio.warp
 
-from rasterio.warp import RESAMPLING
+from osgeo import ogr, osr
+import rasterio.warp
+from rasterio.warp import RESAMPLING, transform_bounds
 from rasterio.coords import BoundingBox
 from affine import Affine
 from datacube.storage.utils import ensure_path_exists
@@ -50,32 +51,64 @@ def _dataset_projection(dataset):
 
     crs = projection.get('spatial_reference', None)
     if crs:
-        return crs
+        return str(crs)
 
     # TODO: really need CRS specified properly in agdc-metadata.yaml
     if projection['datum'] == 'GDA94':
-        return {'init': 'EPSG:283' + str(abs(projection['zone']))}
+        return 'EPSG:283' + str(abs(projection['zone']))
 
     if projection['datum'] == 'WGS84':
         if projection['zone'][-1] == 'S':
-            return {'init': 'EPSG:327' + str(abs(int(projection['zone'][:-1])))}
+            return 'EPSG:327' + str(abs(int(projection['zone'][:-1])))
         else:
-            return {'init': 'EPSG:326' + str(abs(int(projection['zone'][:-1])))}
+            return 'EPSG:326' + str(abs(int(projection['zone'][:-1])))
 
     raise RuntimeError('Cant figure out the projection: %s %s' % (projection['datum'], projection['zone']))
+
+
+def _poly_from_bounds(left, bottom, right, top, segments=None):
+    ring = ogr.Geometry(ogr.wkbLinearRing)
+    ring.AddPoint(left, bottom)
+    ring.AddPoint(left, top)
+    ring.AddPoint(right, top)
+    ring.AddPoint(right, bottom)
+    ring.AddPoint(left, bottom)
+    if segments:
+        ring.Segmentize(2*(right+top-left-bottom)/segments)
+    poly = ogr.Geometry(ogr.wkbPolygon)
+    poly.AddGeometry(ring)
+    return poly
+
+
+def _check_intersect(tile_index, tile_size, tile_crs, dataset_bounds, dataset_crs):
+    tile_sr = osr.SpatialReference()
+    tile_sr.SetFromUserInput(tile_crs)
+    dataset_sr = osr.SpatialReference()
+    dataset_sr.SetFromUserInput(dataset_crs)
+    transform = osr.CoordinateTransformation(tile_sr, dataset_sr)
+
+    tile_poly = _poly_from_bounds(tile_index[0]*tile_size[0],
+                                  tile_index[1]*tile_size[1],
+                                  (tile_index[0]+1)*tile_size[0],
+                                  (tile_index[1]+1)*tile_size[1],
+                                  32)
+    tile_poly.Transform(transform)
+
+    return tile_poly.Intersects(_poly_from_bounds(*dataset_bounds))
 
 
 def _grid_datasets(datasets, bounds_override, grid_proj, grid_size):
     tiles = {}
     for dataset in datasets:
-        bounds = bounds_override or BoundingBox(*rasterio.warp.transform_bounds(_dataset_projection(dataset),
-                                                                                grid_proj,
-                                                                                *_dataset_bounds(dataset)))
+        dataset_proj = _dataset_projection(dataset)
+        dataset_bounds = _dataset_bounds(dataset)
+        bounds = bounds_override or BoundingBox(*transform_bounds(dataset_proj, grid_proj, *dataset_bounds))
 
         for y in range(int(bounds.bottom//grid_size[1]), int(bounds.top//grid_size[1])+1):
             for x in range(int(bounds.left//grid_size[0]), int(bounds.right//grid_size[0])+1):
-                # TODO: need to cull false positives
-                tiles.setdefault((x, y), []).append(dataset)
+                tile_index = (x, y)
+                if _check_intersect(tile_index, grid_size, grid_proj, dataset_bounds, dataset_proj):
+                    tiles.setdefault(tile_index, []).append(dataset)
 
     return tiles
 

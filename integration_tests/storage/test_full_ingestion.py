@@ -139,6 +139,6 @@ def test_full_ingestion(index, default_collection, example_ls5_dataset):
         assert nco.variables['band_10'].shape == (1, 400, 400)
 
     albers = [su for su in sus if su.storage_mapping.name == albers_mapping['name']]
-    assert len(albers) == 16
+    assert len(albers) == 12
     with netCDF4.Dataset(albers[0].filepath) as nco:
         assert nco.variables['band_10'].shape == (1, 400, 400)
