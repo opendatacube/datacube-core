@@ -8,7 +8,6 @@ import functools
 import gzip
 import json
 import logging
-import pathlib
 from itertools import product
 
 import click
