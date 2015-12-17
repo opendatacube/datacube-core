@@ -10,7 +10,6 @@ import pytest
 
 from datacube.model import Dataset
 
-
 _15M_STORAGE_TYPE = {
     'name': '15m_bands',
     'driver': 'NetCDF CF',
@@ -103,6 +102,43 @@ _DATASET_METADATA = {
         },
     }
 }
+
+
+def test_get_for_dataset(index, local_config):
+    """
+    :type local_config: datacube.config.LocalConfig
+    :type index: datacube.index._api.Index
+    """
+    dataset = Dataset(None, _DATASET_METADATA, '/tmp/somepath.yaml')
+
+    storage_mappings = index.mappings.get_for_dataset(dataset)
+    assert len(storage_mappings) == 0
+
+    index.mappings.add(_STORAGE_MAPPING)
+
+    # The properties of the dataset should match.
+    storage_mappings = index.mappings.get_for_dataset(dataset)
+    assert len(storage_mappings) == 1
+
+    mapping = storage_mappings[0]
+    assert mapping.name == 'LS5 NBAR'
+
+    assert mapping.storage_pattern == local_config.location_mappings['eotiles'] + '/file_path_template/file.nc'
+    assert mapping.match.metadata == _STORAGE_MAPPING['match']['metadata']
+    assert mapping.measurements == _STORAGE_MAPPING['measurements']
+
+    storage_type = mapping.storage_type
+    assert storage_type.driver == 'NetCDF CF'
+    assert storage_type.descriptor == _STORAGE_MAPPING['storage']
+
+    # A different dataset should not match our storage types
+    dataset = Dataset(None, {
+        'instrument': {'name': 'OLI'},
+        'platform': {'code': 'LANDSAT_8'},
+        'product_type': 'NBAR'
+    }, '/tmp/other.yaml')
+    storage_mappings = index.mappings.get_for_dataset(dataset)
+    assert len(storage_mappings) == 0
 
 
 def test_idempotent_add_mapping(index, local_config):
