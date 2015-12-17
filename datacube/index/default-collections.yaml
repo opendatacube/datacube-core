@@ -64,13 +64,13 @@ dataset:
     # (the keys/names are arbitrary, but are specified by users when searching)
     search_fields:
         # When no 'type' is specified, it defaults to String.
-        satellite:
-            description: Satellite code
+        platform:
+            description: Platform code
 
             offset: [platform, code]
 
-        sensor:
-            description: Sensor code
+        instrument:
+            description: Instrument name
 
             offset: [instrument, name]
 
