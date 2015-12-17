@@ -12,7 +12,7 @@ from pathlib import Path
 
 import click
 
-from datacube import config, ui
+from datacube import ui
 from datacube.config import LocalConfig
 from datacube.index import index_connect
 
@@ -22,10 +22,9 @@ _LOG = logging.getLogger(__name__)
 
 
 @click.group(help="Configure the Data Cube", context_settings=CLICK_SETTINGS)
-@click.option('--verbose', '-v', count=True, help="Use multiple times for more verbosity")
-@click.option('--log-queries', is_flag=True, help="Print database queries.")
+@ui.common_cli_options
 def cli(verbose, log_queries):
-    config.init_logging(verbosity_level=verbose, log_queries=log_queries)
+    pass
 
 
 @cli.group()

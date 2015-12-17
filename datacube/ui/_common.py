@@ -4,11 +4,15 @@ Common methods for UI code.
 """
 from __future__ import absolute_import
 
+import functools
 import gzip
 import json
-from itertools import product
+import logging
 import pathlib
+from itertools import product
 
+import click
+import pkg_resources
 import yaml
 
 _DOCUMENT_SUFFIX_TYPES = ('.yaml', '.yml', '.json')
@@ -106,3 +110,57 @@ def read_documents(*paths):
         else:
             raise ValueError('Unknown document type for {}; expected one of {!r}.'
                              .format(path.name, _ALL_SUPPORTED_DOC_SUFFIXES))
+
+
+def _print_version(ctx, param, value):
+    if not value or ctx.resilient_parsing:
+        return
+
+    #: pylint: disable=not-callable
+    version = pkg_resources.require('datacube')[0].version
+    click.echo(
+        '{prog}, version {version}'.format(
+            prog='Data Cube',
+            version=version
+        )
+    )
+    ctx.exit()
+
+
+def compose(*functions):
+    """
+    >>> compose(
+    ...     lambda x: x+1,
+    ...     lambda y: y+2
+    ... )(1)
+    4
+    """
+
+    def compose2(f, g):
+        return lambda x: f(g(x))
+
+    return functools.reduce(compose2, functions, lambda x: x)
+
+
+def _init_logging(ctx, param, value):
+    logging_level = logging.WARN - 10 * value
+    logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging_level)
+    logging.getLogger('datacube').setLevel(logging_level)
+
+
+def _log_queries(ctx, param, value):
+    if value:
+        logging.getLogger('sqlalchemy.engine').setLevel('INFO')
+
+# This is a function, so it's valid to be lowercase.
+#: pylint: disable=invalid-name
+common_cli_options = compose(
+    click.option('--version', is_flag=True,
+                 callback=_print_version, expose_value=False, is_eager=True),
+    click.option('--verbose', '-v', count=True, callback=_init_logging,
+                 expose_value=False,
+                 help="Use multiple times for more verbosity"),
+    click.option('--log-queries', is_flag=True, callback=_log_queries,
+                 expose_value=False,
+                 help="Print database queries.")
+)

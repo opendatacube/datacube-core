@@ -4,11 +4,9 @@ User configuration.
 """
 from __future__ import absolute_import
 
-import logging
 import os
 
 from . import compat
-
 
 # Config locations in order. Properties found in latter locations override former.
 DEFAULT_CONF_PATHS = (
@@ -97,11 +95,3 @@ class LocalConfig(object):
     @property
     def db_port(self):
         return self._prop('db_port')
-
-
-def init_logging(verbosity_level=0, log_queries=False):
-    logging_level = logging.WARN - 10 * verbosity_level
-    logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging_level)
-    logging.getLogger('datacube').setLevel(logging_level)
-    if log_queries:
-        logging.getLogger('sqlalchemy.engine').setLevel('INFO')

@@ -15,40 +15,36 @@ from dateutil import tz
 from psycopg2._range import Range
 from singledispatch import singledispatch
 
-from datacube import config
+from datacube import ui
 from datacube.index import index_connect
-from datacube.ui import parse_expressions
 
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
 @click.group(help="Search the Data Cube", context_settings=CLICK_SETTINGS)
-@click.option('--verbose', '-v', count=True, help="Use multiple times for more verbosity")
-@click.option('--log-queries', is_flag=True, help="Print database queries.")
+@ui.common_cli_options
 def cli(verbose, log_queries):
-    config.init_logging(verbosity_level=verbose, log_queries=log_queries)
+    pass
 
 
 @cli.command(help='Datasets')
-@click.argument('expression',
-                nargs=-1)
+@click.argument('expression', nargs=-1)
 def datasets(expression):
     i = index_connect()
     write_csv(
         i.datasets.get_fields(),
-        i.datasets.search_summaries(*parse_expressions(i.datasets.get_field, *expression)),
+        i.datasets.search_summaries(*ui.parse_expressions(i.datasets.get_field, *expression)),
         sys.stdout
     )
 
 
 @cli.command(help='Storage units')
-@click.argument('expression',
-                nargs=-1)
+@click.argument('expression', nargs=-1)
 def units(expression):
     i = index_connect()
     write_csv(
         i.storage.get_fields(),
-        i.storage.search_summaries(*parse_expressions(i.storage.get_field_with_fallback, *expression)),
+        i.storage.search_summaries(*ui.parse_expressions(i.storage.get_field_with_fallback, *expression)),
         sys.stdout
     )
 
