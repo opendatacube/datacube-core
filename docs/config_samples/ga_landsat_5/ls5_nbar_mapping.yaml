@@ -1,5 +1,6 @@
 
 name: LS5 NBAR
+description: LS5 NBAR 25 metre, 1 degree tile
 
 # Any datasets matching these metadata properties.
 match:
@@ -8,54 +9,72 @@ match:
             code: LANDSAT_5
         instrument:
             name: TM
-        product_type: EODS_NBAR
+        product_type: NBAR
 
-# Store them using storage definitions '30m_bands' and '15m_bands':
+location_name: eotiles
+
+file_path_template: '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_NBAR_{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc'
+
+global_attributes:
+    title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
+    summary: These files are experimental, short lived, and the format will change.
+    source: This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/
+    product_version: '0.0.0'
+    license: Creative Commons Attribution 4.0 International CC BY 4.0
+
 storage:
-    - name: 25m_bands
-      location_name: eotiles
-      file_path_template: '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc'
-      global_attributes:
-        title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
-        summary: These files are experimental, short lived, and the format will change.
-        source: This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/
-        product_version: '0.0.0'
-        license: Creative Commons Attribution 4.0 International CC BY 4.0
-      measurements:
-        '10':
-            dtype: int16
-            nodata: -999
-            resampling_method: cubic
-            varname: band_10
-        '20':
-            dtype: int16
-            nodata: -999
-            resampling_method: cubic
-            varname: band_20
-        '30':
-            dtype: int16
-            nodata: -999
-            resampling_method: cubic
-            varname: band_30
-        '40':
-            dtype: int16
-            nodata: -999
-            resampling_method: cubic
-            varname: band_40
-        '50':
-            dtype: int16
-            nodata: -999
-            resampling_method: cubic
-            varname: band_50
-        '70':
-            dtype: int16
-            nodata: -999
-            resampling_method: cubic
-            varname: band_70
-#    - name: 15m_band
-#      measurements:
-#        '8':
-#            dtype: int16
-#            nodata: -999
-#            units: '1'
-#            resampling_method: linear
+    driver: NetCDF CF
+    crs: |
+        GEOGCS["WGS 84",
+            DATUM["WGS_1984",
+                SPHEROID["WGS 84",6378137,298.257223563,
+                    AUTHORITY["EPSG","7030"]],
+                AUTHORITY["EPSG","6326"]],
+            PRIMEM["Greenwich",0,
+                AUTHORITY["EPSG","8901"]],
+            UNIT["degree",0.0174532925199433,
+                AUTHORITY["EPSG","9122"]],
+            AUTHORITY["EPSG","4326"]]
+    tile_size:
+        longitude: 1.0
+        latitude:  1.0
+    resolution:
+        longitude: 0.00025
+        latitude: -0.00025
+    chunking:
+        longitude: 500
+        latitude:  500
+        time: 1
+    dimension_order: ['time', 'latitude', 'longitude']
+
+measurements:
+    '10':
+        dtype: int16
+        nodata: -999
+        resampling_method: cubic
+        varname: band_10
+    '20':
+        dtype: int16
+        nodata: -999
+        resampling_method: cubic
+        varname: band_20
+    '30':
+        dtype: int16
+        nodata: -999
+        resampling_method: cubic
+        varname: band_30
+    '40':
+        dtype: int16
+        nodata: -999
+        resampling_method: cubic
+        varname: band_40
+    '50':
+        dtype: int16
+        nodata: -999
+        resampling_method: cubic
+        varname: band_50
+    '70':
+        dtype: int16
+        nodata: -999
+        resampling_method: cubic
+        varname: band_70

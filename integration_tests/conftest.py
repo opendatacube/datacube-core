@@ -105,40 +105,7 @@ def telemetry_collection(index, telemetry_collection_doc):
 
 
 @pytest.fixture
-def storage_type_30m(index, db):
-    """
-    :type db: datacube.index.postgres._api.PostgresDb
-    :type index: datacube.index._api.Index
-    """
-    id_ = db.ensure_storage_type(
-        driver='NetCDF CF',
-        name='30m_bands',
-        descriptor={
-            'base_path': '/short/v10/dra547/tmp/7/',
-            'chunking': {'t': 1, 'x': 500, 'y': 500},
-            'dimension_order': ['t', 'y', 'x'],
-            'filename_format': '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_{creation_dt:%Y-%m-%dT%H-%M-%S.%f}.nc',
-            'projection': {
-                'spatial_ref': 'GEOGCS["WGS 84",\n'
-                               '    DATUM["WGS_1984",\n'
-                               '        SPHEROID["WGS 84",6378137,298.257223563,\n'
-                               '            AUTHORITY["EPSG","7030"]],\n'
-                               '        AUTHORITY["EPSG","6326"]],\n'
-                               '    PRIMEM["Greenwich",0,\n'
-                               '        AUTHORITY["EPSG","8901"]],\n'
-                               '    UNIT["degree",0.0174532925199433,\n'
-                               '        AUTHORITY["EPSG","9122"]],\n'
-                               '    AUTHORITY["EPSG","4326"]]\n'
-            },
-            'resolution': {'x': 0.00025, 'y': -0.00025},
-            'tile_size': {'x': 1.0, 'y': -1.0}
-        }
-    )
-    return index.storage_types.get(id_)
-
-
-@pytest.fixture
-def ls5_nbar_mapping(db, index, storage_type_30m):
+def ls5_nbar_mapping(db, index):
     """
     :type db: datacube.index.postgres._api.PostgresDb
     :type index: datacube.index._api.Index
@@ -146,7 +113,23 @@ def ls5_nbar_mapping(db, index, storage_type_30m):
     :rtype: datacube.model.StorageMapping
     """
     id_ = db.ensure_storage_mapping(
-        storage_type_name=storage_type_30m.name,
+        storage_type={
+            'driver': 'NetCDF CF',
+            'chunking': {'time': 1, 'latitude': 400, 'longitude': 400},
+            'dimension_order': ['time', 'latitude', 'longitude'],
+            'crs': 'GEOGCS["WGS 84",\n'
+                   '    DATUM["WGS_1984",\n'
+                   '        SPHEROID["WGS 84",6378137,298.257223563,\n'
+                   '            AUTHORITY["EPSG","7030"]],\n'
+                   '        AUTHORITY["EPSG","6326"]],\n'
+                   '    PRIMEM["Greenwich",0,\n'
+                   '        AUTHORITY["EPSG","8901"]],\n'
+                   '    UNIT["degree",0.0174532925199433,\n'
+                   '        AUTHORITY["EPSG","9122"]],\n'
+                   '    AUTHORITY["EPSG","4326"]]\n',
+            'resolution': {'longitude': 0.00025, 'latitude': -0.00025},
+            'tile_size': {'longitude': 1.0, 'latitude': 1.0}
+        },
         name='ls5_nbar',
         description='Test LS5 Nbar 30m bands',
         location_name='eotiles',

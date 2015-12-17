@@ -66,8 +66,7 @@ def prepare_dataset(path):
 
         documents.append({
             'id': str(uuid.uuid4()),
-            'ga_label': granule_id.split('__')[0],
-            'ga_level': level.replace('Level-', 'L'),
+            'processing_level': level.replace('Level-', 'L'),
             'product_type': product_type,
             'creation_dt': ct_time,
             'platform': {'code': 'SENTINEL_2A'},

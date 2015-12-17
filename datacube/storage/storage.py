@@ -8,13 +8,13 @@ import logging
 
 from contextlib import contextmanager
 from itertools import groupby
-import json
 
 import dateutil.parser
 import numpy
-import rasterio.warp
 
-from rasterio.warp import RESAMPLING
+from osgeo import ogr, osr
+import rasterio.warp
+from rasterio.warp import RESAMPLING, transform_bounds
 from rasterio.coords import BoundingBox
 from affine import Affine
 from datacube.storage.utils import ensure_path_exists
@@ -51,32 +51,64 @@ def _dataset_projection(dataset):
 
     crs = projection.get('spatial_reference', None)
     if crs:
-        return crs
+        return str(crs)
 
     # TODO: really need CRS specified properly in agdc-metadata.yaml
     if projection['datum'] == 'GDA94':
-        return {'init': 'EPSG:283' + str(abs(projection['zone']))}
+        return 'EPSG:283' + str(abs(projection['zone']))
 
     if projection['datum'] == 'WGS84':
         if projection['zone'][-1] == 'S':
-            return {'init': 'EPSG:327' + str(abs(int(projection['zone'][:-1])))}
+            return 'EPSG:327' + str(abs(int(projection['zone'][:-1])))
         else:
-            return {'init': 'EPSG:326' + str(abs(int(projection['zone'][:-1])))}
+            return 'EPSG:326' + str(abs(int(projection['zone'][:-1])))
 
     raise RuntimeError('Cant figure out the projection: %s %s' % (projection['datum'], projection['zone']))
 
 
-def _grid_datasets(datasets, grid_proj, grid_size):
+def _poly_from_bounds(left, bottom, right, top, segments=None):
+    ring = ogr.Geometry(ogr.wkbLinearRing)
+    ring.AddPoint(left, bottom)
+    ring.AddPoint(left, top)
+    ring.AddPoint(right, top)
+    ring.AddPoint(right, bottom)
+    ring.AddPoint(left, bottom)
+    if segments:
+        ring.Segmentize(2*(right+top-left-bottom)/segments)
+    poly = ogr.Geometry(ogr.wkbPolygon)
+    poly.AddGeometry(ring)
+    return poly
+
+
+def _check_intersect(tile_index, tile_size, tile_crs, dataset_bounds, dataset_crs):
+    tile_sr = osr.SpatialReference()
+    tile_sr.SetFromUserInput(tile_crs)
+    dataset_sr = osr.SpatialReference()
+    dataset_sr.SetFromUserInput(dataset_crs)
+    transform = osr.CoordinateTransformation(tile_sr, dataset_sr)
+
+    tile_poly = _poly_from_bounds(tile_index[0]*tile_size[0],
+                                  tile_index[1]*tile_size[1],
+                                  (tile_index[0]+1)*tile_size[0],
+                                  (tile_index[1]+1)*tile_size[1],
+                                  32)
+    tile_poly.Transform(transform)
+
+    return tile_poly.Intersects(_poly_from_bounds(*dataset_bounds))
+
+
+def _grid_datasets(datasets, bounds_override, grid_proj, grid_size):
     tiles = {}
     for dataset in datasets:
-        bounds = BoundingBox(*rasterio.warp.transform_bounds(_dataset_projection(dataset),
-                                                             grid_proj,
-                                                             *_dataset_bounds(dataset)))
+        dataset_proj = _dataset_projection(dataset)
+        dataset_bounds = _dataset_bounds(dataset)
+        bounds = bounds_override or BoundingBox(*transform_bounds(dataset_proj, grid_proj, *dataset_bounds))
 
-        for y in range(int(bounds.bottom//grid_size[0]), int(bounds.top//grid_size[0])+1):
-            for x in range(int(bounds.left//grid_size[1]), int(bounds.right//grid_size[1])+1):
-                # TODO: need to cull false positives
-                tiles.setdefault((y, x), []).append(dataset)
+        for y in range(int(bounds.bottom//grid_size[1]), int(bounds.top//grid_size[1])+1):
+            for x in range(int(bounds.left//grid_size[0]), int(bounds.right//grid_size[0])+1):
+                tile_index = (x, y)
+                if _check_intersect(tile_index, grid_size, grid_proj, dataset_bounds, dataset_proj):
+                    tiles.setdefault(tile_index, []).append(dataset)
 
     return tiles
 
@@ -89,18 +121,17 @@ def _dataset_time(dataset):
 
 
 def _get_tile_transform(tile_index, tile_size, tile_res):
-    x = (tile_index[1] + (1 if tile_res[1] < 0 else 0)) * tile_size[1]
-    y = (tile_index[0] + (1 if tile_res[0] < 0 else 0)) * tile_size[0]
-    return Affine(tile_res[1], 0.0, x, 0.0, tile_res[0], y)
+    x = (tile_index[0] + (1 if tile_res[0] < 0 else 0)) * tile_size[0]
+    y = (tile_index[1] + (1 if tile_res[1] < 0 else 0)) * tile_size[1]
+    return Affine(tile_res[0], 0.0, x, 0.0, tile_res[1], y)
 
 
 def _create_data_variable(ncfile, measurement_descriptor, chunking):
     varname = measurement_descriptor['varname']
-    chunksizes = [chunking[dim] for dim in ['t', 'y', 'x']]
     dtype = measurement_descriptor['dtype']
     nodata = measurement_descriptor.get('nodata', None)
     units = measurement_descriptor.get('units', None)
-    return ncfile.ensure_variable(varname, dtype, chunksizes, nodata, units)
+    return ncfile.ensure_variable(varname, dtype, chunking, nodata, units)
 
 
 def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata,
@@ -174,6 +205,10 @@ def _map_resampling(name):
     }[name.lower()]
 
 
+def _roi_to_bounds(roi, dims):
+    return BoundingBox(roi[dims[0]][0], roi[dims[1]][0], roi[dims[0]][1], roi[dims[1]][1])
+
+
 def store_datasets_with_mapping(datasets, mapping):
     storage_type = mapping.storage_type
     if storage_type.driver != 'NetCDF CF':
@@ -182,19 +217,20 @@ def store_datasets_with_mapping(datasets, mapping):
     if not mapping.storage_pattern.startswith('file://'):
         raise RuntimeError('URI protocol is not supported (yet): %s' % mapping.storage_pattern)
 
-    tile_size = abs(storage_type.descriptor['tile_size']['y']), abs(storage_type.descriptor['tile_size']['x'])
-    tile_res = storage_type.descriptor['resolution']['y'], storage_type.descriptor['resolution']['x']
+    tile_size = storage_type.tile_size
+    tile_res = storage_type.resolution
 
     datasets.sort(key=_dataset_time)
-    for tile_index, datasets in _grid_datasets(datasets, storage_type.projection, tile_size).items():
+    bounds = mapping.roi and _roi_to_bounds(mapping.roi, storage_type.spatial_dimensions)
+    for tile_index, datasets in _grid_datasets(datasets, bounds, storage_type.projection, tile_size).items():
         tile_spec = TileSpec(storage_type.projection,
                              _get_tile_transform(tile_index, tile_size, tile_res),
-                             width=int(tile_size[1] / abs(tile_res[1])),
-                             height=int(tile_size[0] / abs(tile_res[0])))
-        yield _create_storage_unit(tile_index, datasets, mapping, tile_spec, storage_type.chunking)
+                             width=int(tile_size[0] / abs(tile_res[0])),
+                             height=int(tile_size[1] / abs(tile_res[1])))
+        yield _create_storage_unit(tile_index, datasets, mapping, tile_spec)
 
 
-def _create_storage_unit(tile_index, datasets, mapping, tile_spec, chunking):
+def _create_storage_unit(tile_index, datasets, mapping, tile_spec):
     # TODO: filename pattern needs to be better defined...
     output_filename = generate_filename(mapping.storage_pattern[7:], datasets[0].metadata_doc, tile_spec)
     ensure_path_exists(output_filename)
@@ -210,7 +246,7 @@ def _create_storage_unit(tile_index, datasets, mapping, tile_spec, chunking):
             _LOG.debug("Mosaicing multiple datasets %s@%s: %s", tile_index, time, group)
         # TODO: ncfile.extra_meta = json.dumps(group[0].metadata_doc)
 
-    _fill_storage_unit(ncfile, dataset_groups, mapping.measurements, tile_spec, chunking)
+    _fill_storage_unit(ncfile, dataset_groups, mapping.measurements, tile_spec, mapping.storage_type.chunking)
 
     ncfile.close()
     return StorageUnit([dataset.id for dataset in datasets],

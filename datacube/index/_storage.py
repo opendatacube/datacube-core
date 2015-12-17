@@ -127,68 +127,15 @@ class StorageUnitResource(object):
         ) for su in query_results)
 
 
-class StorageTypeResource(object):
-    def __init__(self, db):
-        """
-        :type db: datacube.index.postgres._api.PostgresDb
-        """
-        self._db = db
-
-    @cachetools.cached(cachetools.TTLCache(100, 60))
-    def get(self, id_):
-        storage_type = self._db.get_storage_type(id_)
-        if not storage_type:
-            return None
-
-        return StorageType(
-            storage_type['driver'],
-            storage_type['name'],
-            storage_type['description'],
-            storage_type['descriptor'],
-            id_=storage_type['id']
-        )
-
-    def add(self, descriptor):
-        """
-        Ensure a storage type is in the index (add it if needed).
-
-        :type descriptor: dict
-        """
-        # TODO: Validate (Against JSON Schema?)
-        descriptor = copy.deepcopy(descriptor)
-        name = descriptor.pop('name')
-        driver = descriptor.pop('driver')
-        description = descriptor.pop('description', None)
-
-        existing = self._db.get_storage_type_by_name(name)
-        if existing:
-            # They've passed us the same storage type again. Make sure it matches what we have:
-            fields.check_field_equivalence(
-                [
-                    ('driver', existing.driver, driver),
-                    ('description', existing.description, description),
-                    ('descriptor', existing.descriptor, descriptor)
-                ],
-                'Storage type {}'.format(name)
-            )
-        else:
-            self._db.ensure_storage_type(
-                driver,
-                name,
-                descriptor,
-                description=description
-            )
-
-
 class StorageMappingResource(object):
-    def __init__(self, db, storage_type_resource, host_config):
+    def __init__(self, db, host_config):
         """
         :type db: datacube.index.postgres._api.PostgresDb
         :type storage_type_resource: StorageTypeResource
         :type host_config: datacube.config.LocalConfig
         """
         self._db = db
-        self._storage_types = storage_type_resource
+        # self._storage_types = storage_type_resource
         self._host_config = host_config
 
     def add(self, descriptor):
@@ -201,50 +148,53 @@ class StorageMappingResource(object):
         # TODO: Validate doc (Against JSON Schema?)
         name = descriptor['name']
         dataset_metadata = descriptor['match']['metadata']
-        storage_mappings = descriptor['storage']
         description = descriptor.get('description')
+        roi = descriptor.get('roi')
 
         with self._db.begin() as transaction:
-            for mapping in storage_mappings:
-                location_name = mapping['location_name']
-                file_path_template = mapping['file_path_template']
-                measurements_doc = mapping['measurements']
-                storage_type_name = mapping['name']
+            location_name = descriptor['location_name']
+            file_path_template = descriptor['file_path_template']
+            measurements_doc = descriptor['measurements']
+            storage_type = descriptor['storage']
 
-                existing = self._db.get_storage_mapping_by_name(storage_type_name, name)
-                if existing:
-                    # They've passed us the same storage mapping again. Make sure it matches what we have:
-                    fields.check_field_equivalence(
-                        [
-                            ('location_name', location_name, existing.location_name),
-                            ('file_path_template', file_path_template, existing.file_path_template),
-                            ('measurements', measurements_doc, existing.measurements)
-                        ],
-                        'Storage mapping {}->{}'.format(storage_type_name, name)
-                    )
-                else:
-                    self._db.ensure_storage_mapping(
-                        storage_type_name,
-                        name,
-                        location_name,
-                        file_path_template,
-                        dataset_metadata,
-                        measurements_doc,
-                        description=description
-                    )
+            existing = self._db.get_storage_mapping_by_name(name)
+            if existing:
+                # They've passed us the same storage mapping again. Make sure it matches what we have:
+                fields.check_field_equivalence(
+                    [
+                        ('location_name', location_name, existing.location_name),
+                        ('file_path_template', file_path_template, existing.file_path_template),
+                        ('measurements', measurements_doc, existing.measurements),
+                        ('storage_type', storage_type, existing.storage_type),
+                        ('roi', roi, existing.roi)
+                    ],
+                    'Storage mapping {}'.format(name)
+                )
+            else:
+                self._db.ensure_storage_mapping(
+                    name,
+                    location_name,
+                    file_path_template,
+                    dataset_metadata,
+                    measurements_doc,
+                    storage_type,
+                    description=description,
+                    roi=roi
+                )
 
     def _make(self, mapping):
         """
         :rtype: datacube.model.StorageMapping
         """
         return StorageMapping(
-            self._storage_types.get(mapping['storage_type_ref']),
-            mapping['name'],
-            mapping['description'],
-            DatasetMatcher(mapping['dataset_metadata']),
-            mapping['measurements'],
-            self._host_config.location_mappings[mapping['location_name']],
-            mapping['file_path_template'],
+            storage_type=StorageType(mapping['storage_type']),
+            name=mapping['name'],
+            description=mapping['description'],
+            match=DatasetMatcher(mapping['dataset_metadata']),
+            measurements=mapping['measurements'],
+            location=self._host_config.location_mappings[mapping['location_name']],
+            filename_pattern=mapping['file_path_template'],
+            roi=mapping['roi'],
             id_=mapping['id']
         )
 

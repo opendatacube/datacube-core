@@ -218,19 +218,18 @@ class NetCDFWriter(object):
         out_band[time_index, :, :] = data
         src_filename[time_index] = input_filename
 
-    def ensure_variable(self, varname, dtype, chunksizes, ndv=None, units=None):
+    def ensure_variable(self, varname, dtype, chunking, ndv=None, units=None):
         if varname in self.nco.variables:
             # TODO: check that var matches
             return self.nco.variables[varname], self.nco.variables[varname + "_src_filenames"]
-        return self._create_data_variable(varname, dtype, chunksizes, ndv, units)
+        return self._create_data_variable(varname, dtype, chunking, ndv, units)
 
     def append_np_array(self, time, nparray, varname, dtype, ndv, chunking, units):
         if varname in self.nco.variables:
             out_band = self.nco.variables[varname]
             src_filename = self.nco.variables[varname + "_src_filenames"]
         else:
-            chunksizes = [chunking[dim] for dim in ['t', 'y', 'x']]
-            out_band, src_filename = self._create_data_variable(varname, dtype, chunksizes, ndv, units)
+            out_band, src_filename = self._create_data_variable(varname, dtype, chunking, ndv, units)
 
         time_index = self.find_or_create_time_index(time)
 
@@ -243,22 +242,20 @@ class NetCDFWriter(object):
             raise VariableAlreadyExists('Error writing to {}: variable {} already exists and will not be '
                                         'overwritten.'.format(self.netcdf_path, varname))
 
-        chunking = storage_type.chunking
-        chunksizes = [chunking[dim] for dim in ['t', 'y', 'x']]
         dtype = measurement_descriptor.dtype
         nodata = getattr(measurement_descriptor, 'nodata', None)
         units = getattr(measurement_descriptor, 'units', None)
-        out_band, src_filename = self._create_data_variable(varname, dtype, chunksizes, nodata, units)
+        out_band, src_filename = self._create_data_variable(varname, dtype, storage_type.chunking, nodata, units)
 
         time_index = self.find_or_create_time_index(time_value)
 
         out_band[time_index, :, :] = np_array
         src_filename[time_index] = input_filename
 
-    def _create_data_variable(self, varname, dtype, chunksizes, ndv=None, units=None):
+    def _create_data_variable(self, varname, dtype, chunking, ndv=None, units=None):
         projection = osr.SpatialReference(str(self._tile_spec.projection))
-        dimensions = ('time', 'latitude', 'longitude') if projection.IsGeographic() else ('time', 'y', 'x')
-
+        dimensions = [c[0] for c in chunking]
+        chunksizes = [c[1] for c in chunking]
         newvar = self.nco.createVariable(varname, dtype, dimensions,
                                          zlib=True, chunksizes=chunksizes,
                                          fill_value=ndv)
