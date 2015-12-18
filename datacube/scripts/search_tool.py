@@ -17,7 +17,6 @@ from psycopg2._range import Range
 from singledispatch import singledispatch
 
 from datacube import ui
-from datacube.index import index_connect
 
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 
@@ -71,7 +70,7 @@ OUTPUT_FORMATS = {
 
 
 @click.group(help="Search the Data Cube", context_settings=CLICK_SETTINGS)
-@ui.common_cli_options
+@ui.global_cli_options
 @click.option('-f',
               type=click.Choice(OUTPUT_FORMATS.keys()),
               default='pretty', show_default=True,
@@ -83,23 +82,23 @@ def cli(ctx, f):
 
 @cli.command(help='Datasets')
 @click.argument('expression', nargs=-1)
+@ui.pass_index
 @click.pass_context
-def datasets(ctx, expression):
-    i = index_connect()
+def datasets(ctx, index, expression):
     ctx.obj['write_results'](
-        i.datasets.get_fields(),
-        i.datasets.search_summaries(*ui.parse_expressions(i.datasets.get_field, *expression))
+        index.datasets.get_fields(),
+        index.datasets.search_summaries(*ui.parse_expressions(index.datasets.get_field, *expression))
     )
 
 
 @cli.command(help='Storage units')
 @click.argument('expression', nargs=-1)
+@ui.pass_index
 @click.pass_context
-def units(ctx, expression):
-    i = index_connect()
+def units(ctx, index, expression):
     ctx.obj['write_results'](
-        i.storage.get_fields(),
-        i.storage.search_summaries(*ui.parse_expressions(i.storage.get_field_with_fallback, *expression))
+        index.storage.get_fields(),
+        index.storage.search_summaries(*ui.parse_expressions(index.storage.get_field_with_fallback, *expression))
     )
 
 
@@ -139,5 +138,4 @@ def printable_r(val):
 
 
 if __name__ == '__main__':
-    #: pylint: disable=unexpected-keyword-arg
-    cli(obj={})
+    cli()
