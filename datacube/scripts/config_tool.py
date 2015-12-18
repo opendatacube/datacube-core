@@ -12,7 +12,7 @@ from pathlib import Path
 
 import click
 
-from datacube import ui
+from datacube.ui import click as ui
 from datacube.index import index_connect
 
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])

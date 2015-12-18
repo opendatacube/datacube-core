@@ -16,7 +16,8 @@ from dateutil import tz
 from psycopg2._range import Range
 from singledispatch import singledispatch
 
-from datacube import ui
+from datacube.ui import click as ui
+from datacube.ui.expression import parse_expressions
 
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 
@@ -87,7 +88,7 @@ def cli(ctx, f):
 def datasets(ctx, index, expression):
     ctx.obj['write_results'](
         index.datasets.get_fields(),
-        index.datasets.search_summaries(*ui.parse_expressions(index.datasets.get_field, *expression))
+        index.datasets.search_summaries(*parse_expressions(index.datasets.get_field, *expression))
     )
 
 
@@ -98,7 +99,7 @@ def datasets(ctx, index, expression):
 def units(ctx, index, expression):
     ctx.obj['write_results'](
         index.storage.get_fields(),
-        index.storage.search_summaries(*ui.parse_expressions(index.storage.get_field_with_fallback, *expression))
+        index.storage.search_summaries(*parse_expressions(index.storage.get_field_with_fallback, *expression))
     )
 
 

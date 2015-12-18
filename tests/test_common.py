@@ -6,7 +6,7 @@ from __future__ import absolute_import
 
 import pytest
 
-from datacube.ui._common import get_metadata_path, _find_any_metadata_suffix
+from datacube.ui.common import get_metadata_path, _find_any_metadata_suffix
 from . import util
 
 
