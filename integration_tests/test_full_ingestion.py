@@ -1,8 +1,9 @@
 from __future__ import absolute_import
 
 import netCDF4
+from click.testing import CliRunner
 
-from datacube.ingest import index_datasets, store_datasets
+import datacube.scripts.run_ingest
 
 sample_mapping = {
     'driver': 'NetCDF CF',
@@ -111,7 +112,7 @@ albers_mapping = {
 }
 
 
-def test_full_ingestion(index, default_collection, example_ls5_dataset):
+def test_full_ingestion(global_integration_cli_args, index, default_collection, example_ls5_dataset):
     """
 
     :param db:
@@ -121,9 +122,19 @@ def test_full_ingestion(index, default_collection, example_ls5_dataset):
     index.mappings.add(sample_mapping)
     index.mappings.add(albers_mapping)
 
-    # Run Ingest on a dataset
-    datasets = index_datasets(example_ls5_dataset, index)
-    store_datasets(datasets, index)
+    # Run Ingest script on a dataset
+    opts = list(global_integration_cli_args)
+    opts.extend(
+        [
+            str(example_ls5_dataset)
+        ]
+    )
+    result = CliRunner().invoke(
+        datacube.scripts.run_ingest.cli,
+        opts
+    )
+    print(result.output)
+    assert result.exit_code == 0
 
     # Check dataset is indexed
     datasets = index.datasets.search_eager()
