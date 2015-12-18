@@ -157,7 +157,7 @@ common_cli_options = compose(
     click.option('--version', is_flag=True,
                  callback=_print_version, expose_value=False, is_eager=True),
     click.option('--verbose', '-v', count=True, callback=_init_logging,
-                 expose_value=False,
+                 is_eager=True, expose_value=False,
                  help="Use multiple times for more verbosity"),
     click.option('--log-queries', is_flag=True, callback=_log_queries,
                  expose_value=False,
