@@ -45,24 +45,6 @@ def compose(*functions):
     return functools.reduce(compose2, functions, lambda x: x)
 
 
-class LocalConfgParamType(click.ParamType):
-    name = 'config'
-
-    def convert(self, value, param, ctx):
-        if value:
-            if not os.path.exists(value):
-                raise ValueError('Config path does not exist: {}' % value)
-
-            paths = (value,)
-        else:
-            paths = config.DEFAULT_CONF_PATHS
-
-        return config.LocalConfig.find(paths=paths)
-
-
-LOCAL_CONFIG = LocalConfgParamType()
-
-
 def _init_logging(ctx, param, value):
     logging_level = logging.WARN - 10 * value
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging_level)
@@ -75,10 +57,20 @@ def _log_queries(ctx, param, value):
 
 
 def _set_config(ctx, param, value):
+    if value:
+        if not any(os.path.exists(p) for p in value):
+            raise ValueError('No specified config paths exist: {}' % value)
+
+        paths = value
+    else:
+        paths = config.DEFAULT_CONF_PATHS
+
+    parsed_config = config.LocalConfig.find(paths=paths)
+
     if not ctx.obj:
         ctx.obj = {}
 
-    ctx.obj['config'] = value
+    ctx.obj['config'] = parsed_config
 
 
 # This is a function, so it's valid to be lowercase.
@@ -89,7 +81,7 @@ global_cli_options = compose(
     click.option('--verbose', '-v', count=True, callback=_init_logging,
                  is_eager=True, expose_value=False,
                  help="Use multiple times for more verbosity"),
-    click.option('--config', '-C', type=LOCAL_CONFIG, default='',
+    click.option('--config', '-C', multiple=True, default='',
                  callback=_set_config, expose_value=False),
     click.option('--log-queries', is_flag=True, callback=_log_queries,
                  expose_value=False,

@@ -5,9 +5,13 @@ Module
 from __future__ import absolute_import
 
 import datetime
+import itertools
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
+
+import datacube.scripts.search_tool
 
 _telemetry_uuid = '4ec8fe97-e8b9-11e4-87ff-1040f381a756'
 _telemetry_dataset = {
@@ -344,3 +348,34 @@ def test_search_storage_by_both_fields(index, db, default_collection, ls5_nbar_m
     )
     assert len(storages) == 1
     assert storages[0].id_ == unit_id
+
+
+def test_search_cli(global_integration_cli_args, db, default_collection, ls5_nbar_mapping):
+    """
+    Search datasets using the cli.
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type integration_config_paths: tuple[str]
+    :type ls5_nbar_mapping: datacube.model.StorageMapping
+    :type default_collection: datacube.model.Collection
+    """
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid,
+        Path('/tmp/test/' + _telemetry_uuid)
+    )
+    assert was_inserted
+
+    opts = list(global_integration_cli_args)
+    opts.extend(
+        [
+            'datasets'
+        ]
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        datacube.scripts.search_tool.cli,
+        opts
+    )
+
+    assert result.exit_code == 0

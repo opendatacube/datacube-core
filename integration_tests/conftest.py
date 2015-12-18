@@ -4,6 +4,7 @@ Common methods for index integration tests.
 """
 from __future__ import absolute_import
 
+import itertools
 import os
 import shutil
 from pathlib import Path
@@ -17,17 +18,43 @@ from datacube.index._api import Index, _DEFAULT_COLLECTIONS_FILE
 from datacube.index.postgres import PostgresDb
 from datacube.index.postgres.tables._core import ensure_db, SCHEMA_NAME
 
+_SINGLE_RUN_CONFIG_TEMPLATE = """
+[locations]
+testdata: file://{test_tile_folder}
+"""
+
+INTEGRATION_DEFAULT_CONFIG_FILE = Path(__file__).parent.joinpath('agdcintegration.conf')
+
 _TELEMETRY_COLLECTION_DESCRIPTOR = Path(__file__).parent.joinpath('telemetry-collection.yaml')
 _EXAMPLE_LS5_NBAR = Path(__file__).parent.joinpath('example-ls5-nbar.yaml')
 
 
 @pytest.fixture
-def local_config(tmpdir):
-    default = os.path.join(os.path.split(os.path.realpath(__file__))[0], 'agdcintegration.conf')
-    user = os.path.expanduser('~/.datacube_integration.conf')
-    config = LocalConfig.find([default, user])
-    config._config.set('locations', u'testdata', 'file://' + str(tmpdir.mkdir('testdata')))
-    return config
+def integration_config_paths(tmpdir):
+    test_tile_folder = str(tmpdir.mkdir('testdata'))
+    run_config_file = tmpdir.mkdir('config').join('test-run.conf')
+    run_config_file.write(
+        _SINGLE_RUN_CONFIG_TEMPLATE.format(test_tile_folder=test_tile_folder)
+    )
+    return (
+        str(INTEGRATION_DEFAULT_CONFIG_FILE),
+        str(run_config_file),
+        os.path.expanduser('~/.datacube_integration.conf')
+    )
+
+
+@pytest.fixture
+def global_integration_cli_args(integration_config_paths):
+    """
+    The first arguments to pass to a cli command for integration test configuration.
+    """
+    # List of a config files in order.
+    return list(itertools.chain(*(('--config', f) for f in integration_config_paths)))
+
+
+@pytest.fixture
+def local_config(integration_config_paths):
+    return LocalConfig.find(integration_config_paths)
 
 
 @pytest.fixture
