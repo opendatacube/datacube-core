@@ -19,7 +19,7 @@ def namedtuples2dicts(namedtuples):
     :param namedtuples: dict of namedtuples
     :return: dict of dicts
     """
-    return {k: dict(vars(v)) for k, v in namedtuples.items()}
+    return {k: dict(v._asdict()) for k, v in namedtuples.items()}
 
 
 def tilespec_from_riodataset(rio, global_attrs=None):
