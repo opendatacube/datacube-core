@@ -26,7 +26,7 @@ def cli():
     pass
 
 
-@cli.group()
+@cli.group(help='Initialise the database')
 def database():
     pass
 
