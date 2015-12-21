@@ -79,7 +79,9 @@ Storage Mapping
 ---------------
 .. code-block:: yaml
 
-    name: LS5 PQ
+
+    name: LS5 NBAR
+    description: LS5 NBAR 25 metre, 1 degree tile
 
     # Any datasets matching these metadata properties.
     match:
@@ -88,64 +90,22 @@ Storage Mapping
                 code: LANDSAT_5
             instrument:
                 name: TM
-            product_type: PQ
+            product_type: NBAR
+
+    location_name: eotiles
+
+    file_path_template: '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_NBAR_{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc'
+
+    global_attributes:
+        title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
+        summary: These files are experimental, short lived, and the format will change.
+        source: This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/
+        product_version: '0.0.0'
+        license: Creative Commons Attribution 4.0 International CC BY 4.0
 
     storage:
-        - name: 25m_bands
-          location_name: eotiles
-          file_path_template: '{platform[code]}_{instrument[name]}_PQ_{lons[0]}_{lats[0]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc'
-          global_attributes:
-            title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
-            summary: These files are experimental, short lived, and the format will change.
-            source: This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/
-            product_version: '0.0.0'
-            license: Creative Commons Attribution 4.0 International CC BY 4.0
-          measurements:
-            '1111111111111100':
-                dtype: int16
-                resampling_method: nearest
-                varname: band_pixelquality
-
-name
-    Name of the storage mapping. Must be unique.
-
-match/metadata
-    TODO
-
-storage
-    name
-        Name of the `Storage Type`_ to use.
-
-    location_name
-        Name of the location where the storage units go.
-
-    file_path_template
-        File path pattern defining the name of the storage unit files.
-            - TODO: list available substitutions
-
-    measurements
-        Mapping of the input measurement names as specified in `Dataset Metadata`_ to the per-measurement ingestion parameters
-
-        dtype
-            Data type to store the data in.
-
-        resampling_method
-            Resampling method. One of  nearest, cubic, bilinear, cubic_spline, lanczos, average.
-
-        varname
-            Name of the NetCDF variable to store the data in.
-
-
-Storage Type
-------------
-.. code-block:: yaml
-
-    name: 25m_bands
-    description: 25 metre, 1 degree EO NetCDF storage unit.
-    driver: NetCDF CF
-
-    projection:
-        spatial_ref: |
+        driver: NetCDF CF
+        crs: |
             GEOGCS["WGS 84",
                 DATUM["WGS_1984",
                     SPHEROID["WGS 84",6378137,298.257223563,
@@ -156,45 +116,98 @@ Storage Type
                 UNIT["degree",0.0174532925199433,
                     AUTHORITY["EPSG","9122"]],
                 AUTHORITY["EPSG","4326"]]
-    tile_size:
-            x: 1.0
-            y: 1.0
-    resolution:
-            x: 0.00025
-            y: -0.00025
-    chunking:
-        x: 500
-        y: 500
-        t: 1
-    dimension_order: ['t', 'y', 'x']
+        tile_size:
+            longitude: 1.0
+            latitude:  1.0
+        resolution:
+            longitude: 0.00025
+            latitude: -0.00025
+        chunking:
+            longitude: 500
+            latitude:  500
+            time: 1
+        dimension_order: ['time', 'latitude', 'longitude']
+
+    roi:
+        longitude: [110, 120]
+        latitude: [10, 20]
+
+    measurements:
+        '10':
+            dtype: int16
+            nodata: -999
+            resampling_method: cubic
+            varname: band_10
+        '20':
+            dtype: int16
+            nodata: -999
+            resampling_method: cubic
+            varname: band_20
+
 
 name
-    Name of the storage type. Must be unique.
+    Name of the storage mapping. Must be unique.
 
-driver
-    Storage type format. Currently only NetCDF CF is supported
+description
+    Description of the storage mapping.
 
-projection/spatial_ref
-    WKT defining the spatial reference for the data to be stored in.
-        - TODO: should it just be called 'spatial_reference'?
+location_name
+    Name of the location where the storage units go. See `Runtime Config`_.
 
-tile_size
-    Size of the tiles for the data to be stored in specified in projection units.
-        - TODO: Use 'latitude' and 'longitude' if the projection is geographic, else use 'x' and 'y'
+file_path_template
+    File path pattern defining the name of the storage unit files.
+        - TODO: list available substitutions
 
-resolution
-    Resolution for the data to be stored in specified in projection units.
-    Negative values flip the axis.
-        - TODO: Use 'latitude' and 'longitude' if the projection is geographic, else use 'x' and 'y'
-        - TODO: 't' should be 'time'
+match/metadata
+    TODO
 
-chunking
-    Size of the internal NetCDF chunks in 'pixels'.
+global_attributes
+    TODO: list useful attributes
 
-dimension_order
-    Order of the dimensions for the data to be stored in.
-        - TODO: currently ignored. Is it really needed?
-        - TODO: Use 'latitude' and 'longitude' if the projection is geographic, else use 'x' and 'y'
+storage
+    driver
+        Storage type format. Currently only 'NetCDF CF' is supported
+
+    crs
+        WKT defining the coordinate reference system for the data to be stored in.
+            - TODO: support EPSG codes?
+
+    tile_size
+        Size of the tiles for the data to be stored in specified in projection units.
+            - Use 'latitude' and 'longitude' if the projection is geographic, else use 'x' and 'y'
+
+    resolution
+        Resolution for the data to be stored in specified in projection units.
+        Negative values flip the axis.
+            - Use 'latitude' and 'longitude' if the projection is geographic, else use 'x' and 'y'
+
+    chunking
+        Size of the internal NetCDF chunks in 'pixels'.
+
+    dimension_order
+        Order of the dimensions for the data to be stored in.
+            - Use 'latitude' and 'longitude' if the projection is geographic, else use 'x' and 'y'
+            - TODO: currently ignored. Is it really needed?
+
+roi (optional)
+    Define region of interest for the subset of the data to be ingested
+    Currently only bounding box specified in projection units is supported
+
+measurements
+    Mapping of the input measurement names as specified in `Dataset Metadata`_ to the per-measurement ingestion parameters
+
+    dtype
+        Data type to store the data in. One of (u)int(8,16,32,64), float32, float64
+
+    resampling_method
+        Resampling method. One of  nearest, cubic, bilinear, cubic_spline, lanczos, average.
+
+    varname
+        Name of the NetCDF variable to store the data in.
+
+    nodata (optional)
+        No data value
+
 
 Runtime Config
 --------------
