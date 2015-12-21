@@ -12,7 +12,8 @@ from pathlib import Path
 
 import click
 
-from datacube.ui import click as ui
+from datacube.ui.click import global_cli_options, pass_index, pass_config
+from datacube.ui import read_documents
 from datacube.index import index_connect
 
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -21,7 +22,7 @@ _LOG = logging.getLogger(__name__)
 
 
 @click.group(help="Configure the Data Cube", context_settings=CLICK_SETTINGS)
-@ui.global_cli_options
+@global_cli_options
 def cli():
     pass
 
@@ -33,7 +34,7 @@ def database():
 
 @database.command('init', help='Initialise the database')
 @click.option('--no-default-collection', is_flag=True, help="Don't add a default collection.")
-@ui.pass_index
+@pass_index
 def database_init(index, no_default_collection):
 
     _LOG.info('Initialising database...')
@@ -50,7 +51,7 @@ def collections():
 
 
 @cli.command('check', help='Verify & view current configuration.')
-@ui.pass_config
+@pass_config
 def check(config):
     _LOG.info('Host: %s:%s', config.db_hostname or 'localhost', config.db_port or '5432')
     _LOG.info('Database: %s', config.db_database)
@@ -71,7 +72,7 @@ def check(config):
 @click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
-@ui.pass_index
+@pass_index
 def collection_add(index, files):
 
     for descriptor_path, parsed_doc in _read_docs(files):
@@ -87,7 +88,7 @@ def storage():
 @click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
-@ui.pass_index
+@pass_index
 def add_storage(index, files):
 
     for descriptor_path, parsed_doc in _read_docs(files):
@@ -113,8 +114,9 @@ def mappings():
 @click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
-@ui.pass_index
-def add_mappings(index, files):
+@pass_index
+@click.pass_context
+def add_mappings(ctx, index, files):
 
     for descriptor_path, parsed_doc in _read_docs(files):
         try:
@@ -135,7 +137,7 @@ def list_mappings():
 
 
 def _read_docs(paths):
-    return ui.read_documents(*(Path(f) for f in paths))
+    return read_documents(*(Path(f) for f in paths))
 
 
 if __name__ == '__main__':
