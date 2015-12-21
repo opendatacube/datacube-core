@@ -31,13 +31,21 @@ def schema_qualified(name):
 
 def ensure_db(connection, engine):
     is_new = False
-    if not engine.dialect.has_schema(connection, SCHEMA_NAME):
+    if not has_schema(engine, connection):
         is_new = True
         engine.execute(CreateSchema(SCHEMA_NAME))
         engine.execute(_FUNCTIONS)
         METADATA.create_all(engine)
 
     return is_new
+
+
+def has_schema(engine, connection):
+    return engine.dialect.has_schema(connection, SCHEMA_NAME)
+
+
+def drop_db(connection):
+    connection.execute('drop schema if exists %s cascade;' % SCHEMA_NAME)
 
 
 class View(Executable, ClauseElement):

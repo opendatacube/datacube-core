@@ -16,7 +16,7 @@ from datacube import ui
 from datacube.config import LocalConfig
 from datacube.index._api import Index, _DEFAULT_COLLECTIONS_FILE
 from datacube.index.postgres import PostgresDb
-from datacube.index.postgres.tables._core import ensure_db, SCHEMA_NAME
+from datacube.index.postgres.tables._core import ensure_db, drop_db
 
 _SINGLE_RUN_CONFIG_TEMPLATE = """
 [locations]
@@ -61,7 +61,7 @@ def local_config(integration_config_paths):
 def db(local_config):
     db = PostgresDb.from_config(local_config)
     # Drop and recreate tables so our tests have a clean db.
-    db._connection.execute('drop schema if exists %s cascade;' % SCHEMA_NAME)
+    drop_db(db._connection)
     ensure_db(db._connection, db._engine)
     return db
 

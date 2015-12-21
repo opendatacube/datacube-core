@@ -10,6 +10,7 @@ from pathlib import Path
 from click.testing import CliRunner
 
 import datacube.scripts.config_tool
+from datacube.index.postgres.tables._core import drop_db, has_schema
 
 _LOG = logging.getLogger(__name__)
 
@@ -101,3 +102,43 @@ def test_config_check(global_integration_cli_args, local_config):
     assert host_line in result.output
     user_line = ('User: ' + local_config.db_username)
     assert user_line in result.output
+
+
+def test_db_init_noop(global_integration_cli_args, local_config):
+    # Run on an existing database.
+    opts = list(global_integration_cli_args)
+    opts.extend(
+        [
+            '-v', 'database', 'init'
+        ]
+    )
+    runner = CliRunner()
+    result = runner.invoke(
+        datacube.scripts.config_tool.cli,
+        opts
+    )
+    assert result.exit_code == 0
+    assert 'Nothing to do.' in result.output
+
+
+def test_db_init(global_integration_cli_args, db, local_config):
+    drop_db(db._connection)
+
+    assert not has_schema(db._engine, db._connection)
+
+    # Run on an empty database.
+    opts = list(global_integration_cli_args)
+    opts.extend(
+        [
+            '-v', 'database', 'init'
+        ]
+    )
+    runner = CliRunner()
+    result = runner.invoke(
+        datacube.scripts.config_tool.cli,
+        opts
+    )
+    assert result.exit_code == 0
+    assert 'Done.' in result.output
+
+    assert has_schema(db._engine, db._connection)

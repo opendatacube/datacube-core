@@ -48,3 +48,5 @@ class Index(object):
         if is_new and with_default_collection:
             for _, collection_doc in ui.read_documents(_DEFAULT_COLLECTIONS_FILE):
                 self.collections.add(collection_doc)
+
+        return is_new

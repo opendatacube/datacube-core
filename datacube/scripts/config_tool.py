@@ -37,12 +37,12 @@ def database():
 @click.option('--no-default-collection', is_flag=True, help="Don't add a default collection.")
 @pass_index
 def database_init(index, no_default_collection):
-    _LOG.info('Initialising database...')
+    echo('Initialising database...')
     was_created = index.init_db(with_default_collection=not no_default_collection)
     if was_created:
-        _LOG.info('Done.')
+        echo('Done.')
     else:
-        _LOG.info('Nothing to do.')
+        echo('Nothing to do.')
 
 
 @cli.group(help='Dataset collections')
