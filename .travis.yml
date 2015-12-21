@@ -1,4 +1,8 @@
 language: python
+git:
+  # We need a deeper depth for 'git descibe' to ensure
+  # we can reach the last tagged version.
+  depth: 99999
 
 python:
   - "2.7"
