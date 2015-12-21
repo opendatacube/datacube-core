@@ -4,8 +4,9 @@ Module
 """
 from __future__ import absolute_import
 
+import csv
 import datetime
-import itertools
+import io
 from pathlib import Path
 
 import pytest
@@ -298,11 +299,45 @@ def test_search_storage_by_dataset(index, db, default_collection, ls5_nbar_mappi
     assert len(storages) == 0
 
 
-def test_search_storage_by_both_fields(index, db, default_collection, ls5_nbar_mapping):
+def test_search_cli_basic(global_integration_cli_args, db, default_collection, ls5_nbar_mapping):
+    """
+    Search datasets using the cli.
+    :type global_integration_cli_args: tuple[str]
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type ls5_nbar_mapping: datacube.model.StorageMapping
+    :type default_collection: datacube.model.Collection
+    """
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid,
+        Path('/tmp/test/' + _telemetry_uuid)
+    )
+    assert was_inserted
+
+    opts = list(global_integration_cli_args)
+    opts.extend(
+        [
+            # No search arguments: return all datasets.
+            'datasets'
+        ]
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        datacube.scripts.search_tool.cli,
+        opts
+    )
+    assert str(_telemetry_uuid) in result.output
+    assert str(default_collection.name) in result.output
+
+    assert result.exit_code == 0
+
+
+def test_search_storage_by_both_fields(global_integration_cli_args, db, default_collection, ls5_nbar_mapping):
     """
     Search storage using both storage and dataset fields.
     :type db: datacube.index.postgres._api.PostgresDb
-    :type index: datacube.index._api.Index
+    :type global_integration_cli_args: tuple[str]
     :type ls5_nbar_mapping: datacube.model.StorageMapping
     :type default_collection: datacube.model.Collection
     """
@@ -324,58 +359,35 @@ def test_search_storage_by_both_fields(index, db, default_collection, ls5_nbar_m
         },
         ls5_nbar_mapping.id_
     )
-    latitude = default_collection.storage_fields['lat']
-    ds_satellite = default_collection.dataset_fields['platform']
 
-    # Search by the storage properties only
-    storages = index.storage.search_eager(
-        latitude.between(100, 150)
-    )
-    assert len(storages) == 1
-    assert storages[0].id_ == unit_id
+    rows = _cli_csv_search(['units', '100<lat<150'], global_integration_cli_args)
+    assert len(rows) == 1
+    assert rows[0]['id'] == str(unit_id)
 
     # Don't return on a mismatch
-    storages = index.storage.search_eager(
-        latitude.between(150, 160)
-    )
-    assert len(storages) == 0
+    rows = _cli_csv_search(['units', '150<lat<160'], global_integration_cli_args)
+    assert len(rows) == 0
 
     # Search by both dataset and storage fields.
-    storages = index.storage.search_eager(
-        ds_satellite == 'LANDSAT_8',
-        latitude.between(100, 150)
-
-    )
-    assert len(storages) == 1
-    assert storages[0].id_ == unit_id
+    rows = _cli_csv_search(['units', 'platform=LANDSAT_8', '100<lat<150'], global_integration_cli_args)
+    assert len(rows) == 1
+    assert rows[0]['id'] == str(unit_id)
 
 
-def test_search_cli(global_integration_cli_args, db, default_collection, ls5_nbar_mapping):
-    """
-    Search datasets using the cli.
-    :type db: datacube.index.postgres._api.PostgresDb
-    :type integration_config_paths: tuple[str]
-    :type ls5_nbar_mapping: datacube.model.StorageMapping
-    :type default_collection: datacube.model.Collection
-    """
-    was_inserted = db.insert_dataset(
-        _telemetry_dataset,
-        _telemetry_uuid,
-        Path('/tmp/test/' + _telemetry_uuid)
-    )
-    assert was_inserted
+def _cli_csv_search(args, global_integration_cli_args):
+    global_opts = list(global_integration_cli_args)
+    global_opts.extend(['-f', 'csv'])
+    result = _cli_search(args, global_opts)
+    assert result.exit_code == 0
+    return list(csv.DictReader(io.StringIO(result.output)))
 
+
+def _cli_search(args, global_integration_cli_args):
     opts = list(global_integration_cli_args)
-    opts.extend(
-        [
-            'datasets'
-        ]
-    )
-
+    opts.extend(args)
     runner = CliRunner()
     result = runner.invoke(
         datacube.scripts.search_tool.cli,
         opts
     )
-
-    assert result.exit_code == 0
+    return result
