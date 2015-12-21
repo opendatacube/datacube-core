@@ -1,0 +1,255 @@
+
+name: S2A L1C 12.5m Albers
+
+# Any datasets matching these metadata properties.
+match:
+    metadata:
+        platform:
+            code: SENTINEL_2A
+        instrument:
+            name: MSI
+        product_type: S2MSI1C
+
+
+location_name: eotiles
+file_path_template: '{platform[code]}_{instrument[name]}_12m_alb_{xs[0]}_{ys[0]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc'
+global_attributes:
+  title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
+  summary: These files are experimental, short lived, and the format will change.
+  source: This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/
+  product_version: '0.0.0'
+  license: Creative Commons Attribution 4.0 International CC BY 4.0
+
+storage:
+    driver: NetCDF CF
+    crs: |
+        PROJCS["GDA94 / Australian Albers",
+        GEOGCS["GDA94",
+            DATUM["Geocentric_Datum_of_Australia_1994",
+                SPHEROID["GRS 1980",6378137,298.257222101,
+                    AUTHORITY["EPSG","7019"]],
+                TOWGS84[0,0,0,0,0,0,0],
+                AUTHORITY["EPSG","6283"]],
+            PRIMEM["Greenwich",0,
+                AUTHORITY["EPSG","8901"]],
+            UNIT["degree",0.01745329251994328,
+                AUTHORITY["EPSG","9122"]],
+            AUTHORITY["EPSG","4283"]],
+        UNIT["metre",1,
+            AUTHORITY["EPSG","9001"]],
+        PROJECTION["Albers_Conic_Equal_Area"],
+        PARAMETER["standard_parallel_1",-18],
+        PARAMETER["standard_parallel_2",-36],
+        PARAMETER["latitude_of_center",0],
+        PARAMETER["longitude_of_center",132],
+        PARAMETER["false_easting",0],
+        PARAMETER["false_northing",0],
+        AUTHORITY["EPSG","3577"],
+        AXIS["Easting",EAST],
+        AXIS["Northing",NORTH]]
+    tile_size:
+        x: 100000
+        y: 100000
+    resolution:
+        x: 12.5
+        y: -12.5
+    chunking:
+        x: 500
+        y: 500
+        time: 1
+    dimension_order: ['time', 'x', 'y']
+
+measurements:
+    '02':
+        dtype: int16
+        nodata: -999
+        resampling_method: cubic
+        varname: band_02
+    '03':
+        dtype: int16
+        nodata: -999
+        resampling_method: cubic
+        varname: band_03
+    '04':
+        dtype: int16
+        nodata: -999
+        resampling_method: cubic
+        varname: band_04
+    '08':
+        dtype: int16
+        nodata: -999
+        resampling_method: cubic
+        varname: band_08
+
+---
+
+name: S2A L1C 25m Albers
+
+# Any datasets matching these metadata properties.
+match:
+    metadata:
+        platform:
+            code: SENTINEL_2A
+        instrument:
+            name: MSI
+        product_type: S2MSI1C
+
+
+location_name: eotiles
+file_path_template: '{platform[code]}_{instrument[name]}_25m_alb_{xs[0]}_{ys[0]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc'
+global_attributes:
+  title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
+  summary: These files are experimental, short lived, and the format will change.
+  source: This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/
+  product_version: '0.0.0'
+  license: Creative Commons Attribution 4.0 International CC BY 4.0
+
+storage:
+    driver: NetCDF CF
+    crs: |
+        PROJCS["GDA94 / Australian Albers",
+        GEOGCS["GDA94",
+            DATUM["Geocentric_Datum_of_Australia_1994",
+                SPHEROID["GRS 1980",6378137,298.257222101,
+                    AUTHORITY["EPSG","7019"]],
+                TOWGS84[0,0,0,0,0,0,0],
+                AUTHORITY["EPSG","6283"]],
+            PRIMEM["Greenwich",0,
+                AUTHORITY["EPSG","8901"]],
+            UNIT["degree",0.01745329251994328,
+                AUTHORITY["EPSG","9122"]],
+            AUTHORITY["EPSG","4283"]],
+        UNIT["metre",1,
+            AUTHORITY["EPSG","9001"]],
+        PROJECTION["Albers_Conic_Equal_Area"],
+        PARAMETER["standard_parallel_1",-18],
+        PARAMETER["standard_parallel_2",-36],
+        PARAMETER["latitude_of_center",0],
+        PARAMETER["longitude_of_center",132],
+        PARAMETER["false_easting",0],
+        PARAMETER["false_northing",0],
+        AUTHORITY["EPSG","3577"],
+        AXIS["Easting",EAST],
+        AXIS["Northing",NORTH]]
+    tile_size:
+        x: 100000
+        y: 100000
+    resolution:
+        x: 25
+        y: -25
+    chunking:
+        x: 500
+        y: 500
+        time: 1
+    dimension_order: ['time', 'x', 'y']
+
+measurements:
+  '05':
+      dtype: int16
+      nodata: -999
+      resampling_method: cubic
+      varname: band_05
+  '06':
+      dtype: int16
+      nodata: -999
+      resampling_method: cubic
+      varname: band_06
+  '07':
+      dtype: int16
+      nodata: -999
+      resampling_method: cubic
+      varname: band_07
+  '11':
+      dtype: int16
+      nodata: -999
+      resampling_method: cubic
+      varname: band_11
+  '12':
+      dtype: int16
+      nodata: -999
+      resampling_method: cubic
+      varname: band_12
+  '8A':
+      dtype: int16
+      nodata: -999
+      resampling_method: cubic
+      varname: band_8A
+
+---
+
+
+name: S2A L1C 50m Albers
+
+# Any datasets matching these metadata properties.
+match:
+    metadata:
+        platform:
+            code: SENTINEL_2A
+        instrument:
+            name: MSI
+        product_type: S2MSI1C
+
+location_name: eotiles
+file_path_template: '{platform[code]}_{instrument[name]}_50m_alb_{xs[0]}_{ys[0]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc'
+global_attributes:
+  title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
+  summary: These files are experimental, short lived, and the format will change.
+  source: This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/
+  product_version: '0.0.0'
+  license: Creative Commons Attribution 4.0 International CC BY 4.0
+
+storage:
+    driver: NetCDF CF
+    crs: |
+        PROJCS["GDA94 / Australian Albers",
+        GEOGCS["GDA94",
+            DATUM["Geocentric_Datum_of_Australia_1994",
+                SPHEROID["GRS 1980",6378137,298.257222101,
+                    AUTHORITY["EPSG","7019"]],
+                TOWGS84[0,0,0,0,0,0,0],
+                AUTHORITY["EPSG","6283"]],
+            PRIMEM["Greenwich",0,
+                AUTHORITY["EPSG","8901"]],
+            UNIT["degree",0.01745329251994328,
+                AUTHORITY["EPSG","9122"]],
+            AUTHORITY["EPSG","4283"]],
+        UNIT["metre",1,
+            AUTHORITY["EPSG","9001"]],
+        PROJECTION["Albers_Conic_Equal_Area"],
+        PARAMETER["standard_parallel_1",-18],
+        PARAMETER["standard_parallel_2",-36],
+        PARAMETER["latitude_of_center",0],
+        PARAMETER["longitude_of_center",132],
+        PARAMETER["false_easting",0],
+        PARAMETER["false_northing",0],
+        AUTHORITY["EPSG","3577"],
+        AXIS["Easting",EAST],
+        AXIS["Northing",NORTH]]
+    tile_size:
+        x: 100000
+        y: 100000
+    resolution:
+        x: 50
+        y: -50
+    chunking:
+        x: 500
+        y: 500
+        time: 1
+    dimension_order: ['time', 'x', 'y']
+
+measurements:
+  '01':
+      dtype: int16
+      nodata: -999
+      resampling_method: cubic
+      varname: band_01
+  '09':
+      dtype: int16
+      nodata: -999
+      resampling_method: cubic
+      varname: band_09
+  '10':
+      dtype: int16
+      nodata: -999
+      resampling_method: cubic
+      varname: band_10
