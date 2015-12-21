@@ -185,7 +185,8 @@ class DatasetSource(object):
     @contextmanager
     def open(self):
         try:
-            with rasterio.open(self._filename) as src:
+            _LOG.debug("openening %s:%s", self._filename, self._band_id)
+            with rasterio.open(self._filename, driver='JP2OpenJPEG') as src:
                 self.transform = src.affine
                 self.projection = src.crs
                 self.nodata = src.nodatavals[0] or (0 if self.format == 'JPEG2000' else None)  # TODO: sentinel 2 hack
@@ -209,7 +210,54 @@ def _roi_to_bounds(roi, dims):
     return BoundingBox(roi[dims[0]][0], roi[dims[1]][0], roi[dims[0]][1], roi[dims[1]][1])
 
 
+def create_storage_unit(tile_index, datasets, mapping):
+    """
+    Create storage unit at tile_index for datasets using mapping
+
+    :type tile_index: tuple[int, int]
+    :type datasets:  list[datacube.model.Dataset]
+    :type mapping:  datacube.model.StorageMapping
+    :rtype: datacube.model.StorageUnit
+    """
+    storage_type = mapping.storage_type
+
+    tile_size = storage_type.tile_size
+    tile_res = storage_type.resolution
+    tile_spec = TileSpec(storage_type.projection,
+                         _get_tile_transform(tile_index, tile_size, tile_res),
+                         width=int(tile_size[0] / abs(tile_res[0])),
+                         height=int(tile_size[1] / abs(tile_res[1])))
+    return _create_storage_unit(tile_index, datasets, mapping, tile_spec)
+
+
+def tile_datasets_with_mapping(datasets, mapping):
+    """
+    compute indexes of tiles covering the datasets, as well as
+    which datasets comprise which tiles
+
+    :type datasets:  list[datacube.model.Dataset]
+    :type mapping:  datacube.model.StorageMapping
+    :rtype: dict[tuple[int, int], list[datacube.model.Dataset]]
+    """
+    storage_type = mapping.storage_type
+    bounds = mapping.roi and _roi_to_bounds(mapping.roi, storage_type.spatial_dimensions)
+    return _grid_datasets(datasets, bounds, storage_type.projection, storage_type.tile_size)
+
+
 def store_datasets_with_mapping(datasets, mapping):
+    """
+    Create storage units for datasets using mapping
+
+    :type datasets:  list[datacube.model.Dataset]
+    :type mapping:  datacube.model.StorageMapping
+    :rtype: datacube.model.StorageUnit
+    """
+    datasets.sort(key=_dataset_time)
+    for tile_index, datasets in tile_datasets_with_mapping(datasets, mapping).items():
+        yield create_storage_unit(tile_index, datasets, mapping)
+
+
+def _create_storage_unit(tile_index, datasets, mapping, tile_spec):
     storage_type = mapping.storage_type
     if storage_type.driver != 'NetCDF CF':
         raise RuntimeError('Storage driver is not supported (yet): %s' % storage_type.driver)
@@ -217,20 +265,6 @@ def store_datasets_with_mapping(datasets, mapping):
     if not mapping.storage_pattern.startswith('file://'):
         raise RuntimeError('URI protocol is not supported (yet): %s' % mapping.storage_pattern)
 
-    tile_size = storage_type.tile_size
-    tile_res = storage_type.resolution
-
-    datasets.sort(key=_dataset_time)
-    bounds = mapping.roi and _roi_to_bounds(mapping.roi, storage_type.spatial_dimensions)
-    for tile_index, datasets in _grid_datasets(datasets, bounds, storage_type.projection, tile_size).items():
-        tile_spec = TileSpec(storage_type.projection,
-                             _get_tile_transform(tile_index, tile_size, tile_res),
-                             width=int(tile_size[0] / abs(tile_res[0])),
-                             height=int(tile_size[1] / abs(tile_res[1])))
-        yield _create_storage_unit(tile_index, datasets, mapping, tile_spec)
-
-
-def _create_storage_unit(tile_index, datasets, mapping, tile_spec):
     # TODO: filename pattern needs to be better defined...
     output_filename = generate_filename(mapping.storage_pattern[7:], datasets[0].metadata_doc, tile_spec)
     ensure_path_exists(output_filename)
@@ -243,10 +277,10 @@ def _create_storage_unit(tile_index, datasets, mapping, tile_spec):
 
     for index, (time, group) in enumerate(dataset_groups):
         if len(group) > 1:
-            _LOG.debug("Mosaicing multiple datasets %s@%s: %s", tile_index, time, group)
+            _LOG.warning("Mosaicing multiple datasets %s@%s: %s", tile_index, time, group)
         # TODO: ncfile.extra_meta = json.dumps(group[0].metadata_doc)
 
-    _fill_storage_unit(ncfile, dataset_groups, mapping.measurements, tile_spec, mapping.storage_type.chunking)
+    _fill_storage_unit(ncfile, dataset_groups, mapping.measurements, tile_spec, storage_type.chunking)
 
     ncfile.close()
     return StorageUnit([dataset.id for dataset in datasets],
