@@ -122,8 +122,9 @@ def add_mappings(ctx, index, files):
         try:
             index.mappings.add(parsed_doc)
         except KeyError as ke:
-            _LOG.error('Unable to add invalid storage mapping file: %s', descriptor_path)
             _LOG.exception(ke)
+            _LOG.error('Invalid mapping document: %s', descriptor_path)
+            ctx.exit(1)
 
 
 @mappings.command('template', help='Print an example YAML template')
