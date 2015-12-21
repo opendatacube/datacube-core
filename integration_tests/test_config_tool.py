@@ -74,3 +74,30 @@ def test_error_returned_on_invalid(global_integration_cli_args, db):
         )
         assert result.exit_code != 0, "Success return code for invalid document."
         assert db.count_mappings() == 0, "Invalid document was added to DB"
+
+
+def test_config_check(global_integration_cli_args, local_config):
+    """
+    :type global_integration_cli_args: tuple[str]
+    :type local_config: datacube.config.LocalConfig
+    """
+
+    # This is not a very thorough check, we just check to see that
+    # it prints something vaguely related and does not error-out.
+    opts = list(global_integration_cli_args)
+    opts.extend(
+        [
+            '-v', 'check'
+        ]
+    )
+    runner = CliRunner()
+    result = runner.invoke(
+        datacube.scripts.config_tool.cli,
+        opts
+    )
+    print(result.output)
+    assert result.exit_code == 0
+    host_line = ('Host: ' + local_config.db_hostname)
+    assert host_line in result.output
+    user_line = ('User: ' + local_config.db_username)
+    assert user_line in result.output

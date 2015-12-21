@@ -86,7 +86,14 @@ class LocalConfig(object):
 
     @property
     def db_username(self):
-        return self._prop('db_username')
+        if os.name == 'posix':
+            import pwd
+            default_username = pwd.getpwuid(os.geteuid()).pw_name
+        else:
+            # No default on Windows
+            default_username = None
+
+        return self._prop('db_username') or default_username
 
     @property
     def db_password(self):
@@ -94,4 +101,4 @@ class LocalConfig(object):
 
     @property
     def db_port(self):
-        return self._prop('db_port')
+        return self._prop('db_port') or '5432'

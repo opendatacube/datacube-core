@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 import click
+from click import echo
 
 from datacube.index import index_connect
 from datacube.ui import read_documents
@@ -52,19 +53,20 @@ def collections():
 @cli.command('check', help='Verify & view current configuration.')
 @pass_config
 def check(config):
-    _LOG.info('Host: %s:%s', config.db_hostname or 'localhost', config.db_port or '5432')
-    _LOG.info('Database: %s', config.db_database)
-    # Windows users need to use py3 for getlogin().
-    _LOG.info('User: %s', config.db_username or os.getlogin())
+    echo('Host: {}:{}'.format(config.db_hostname or 'localhost', config.db_port or '5432'))
+    echo('Database: {}'.format(config.db_database))
+    echo('User: {}'.format(config.db_username or os.getlogin()))
 
-    _LOG.info('\n')
-    _LOG.info('Attempting connect')
+    echo('\n')
+    echo('Attempting connect')
     try:
         index_connect(local_config=config)
-        _LOG.info('Success.')
+        echo('Success.')
     #: pylint: disable=broad-except
     except Exception:
-        _LOG.exception('Connection error')
+        _LOG.exception("Connection error")
+        echo('Connection error', file=sys.stderr)
+        click.get_current_context().exit(1)
 
 
 @collections.command('add')
