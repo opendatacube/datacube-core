@@ -1,27 +1,23 @@
 
-name: LS5 PQ
-description: LS5 PQ 25 metre, 1 degree tile
+name: S2A L1C 60m
 
+# Any datasets matching these metadata properties.
 match:
     metadata:
         platform:
-            code: LANDSAT_5
+            code: SENTINEL_2A
         instrument:
-            name: TM
-        product_type: PQ
-
+            name: MSI
+        product_type: S2MSI1C
 
 location_name: eotiles
-
-file_path_template: '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_NBAR_{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc'
-
+file_path_template: '{platform[code]}_{instrument[name]}_10m_{lons[0]}_{lats[0]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc'
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
   summary: These files are experimental, short lived, and the format will change.
   source: This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/
   product_version: '0.0.0'
   license: Creative Commons Attribution 4.0 International CC BY 4.0
-
 storage:
     driver: NetCDF CF
     crs: |
@@ -48,7 +44,18 @@ storage:
     dimension_order: ['time', 'latitude', 'longitude']
 
 measurements:
-  'PQ':
+  '01':
       dtype: int16
-      resampling_method: nearest
-      varname: band_pixelquality
+      nodata: -999
+      resampling_method: cubic
+      varname: band_01
+  '09':
+      dtype: int16
+      nodata: -999
+      resampling_method: cubic
+      varname: band_09
+  '10':
+      dtype: int16
+      nodata: -999
+      resampling_method: cubic
+      varname: band_10

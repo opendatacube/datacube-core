@@ -7,7 +7,8 @@ match:
     dont_match_me: 'bro'
 
 location_name: v1tiles
-location_offset: 'todo.tif'
+file_path_template: 'todo.tif'
+
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
   summary: These files are experimental, short lived, and the format will change.

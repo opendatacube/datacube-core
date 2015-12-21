@@ -30,7 +30,7 @@ def test_add_example_mapping_docs(global_integration_cli_args, db):
         opts = list(global_integration_cli_args)
         opts.extend(
             [
-                'mappings', 'add',
+                '-v', 'mappings', 'add',
                 str(mapping_path)
             ]
         )
