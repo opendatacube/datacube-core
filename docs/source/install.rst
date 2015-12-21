@@ -37,6 +37,11 @@ Download the latest version of the software from the `repository <https://github
 
     python setup.py install
 
+
+It may be useful to use conda to install binary packages.
+
+    conda install psycopg2 gdal libgdal hdf5 rasterio netcdf4 libnetcdf pandas
+
 .. note::
 
     Usage of virtual environment is recommended
