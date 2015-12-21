@@ -228,3 +228,6 @@ class StorageMappingResource(object):
         if not mapping_res:
             return None
         return self._make(mapping_res)
+
+    def count(self):
+        return self._db.count_mappings()

@@ -12,7 +12,7 @@ import logging
 from functools import reduce as reduce_
 
 import numpy
-from sqlalchemy import create_engine, select, text, bindparam, exists, and_, or_, Index
+from sqlalchemy import create_engine, select, text, bindparam, exists, and_, or_, Index, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.url import URL as EngineUrl
 from sqlalchemy.exc import IntegrityError
@@ -390,6 +390,9 @@ class PostgresDb(object):
 
     def get_all_collections(self):
         return self._connection.execute(COLLECTION.select()).fetchall()
+
+    def count_mappings(self):
+        return self._connection.execute(select([func.count()]).select_from(STORAGE_MAPPING)).scalar()
 
 
 def _pg_exists(conn, name):
