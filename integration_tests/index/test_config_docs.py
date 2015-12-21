@@ -156,6 +156,8 @@ def test_idempotent_add_mapping(index, local_config):
     with pytest.raises(ValueError):
         index.mappings.add(different_storage_mapping)
 
+    assert index.mappings.get_by_name(_STORAGE_MAPPING['name']) is not None
+
 
 def test_collection_indexes_views_exist(db, telemetry_collection):
     """

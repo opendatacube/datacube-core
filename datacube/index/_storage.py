@@ -220,11 +220,11 @@ class StorageMappingResource(object):
         """
         return [self._make(mapping) for mapping in self._db.get_storage_mappings(dataset_doc)]
 
-    def get_by_name(self, storage_type_name, name):
+    def get_by_name(self, name):
         """
         :rtype: datacube.model.StorageMapping
         """
-        mapping_res = self._db.get_storage_mapping_by_name(storage_type_name, name)
+        mapping_res = self._db.get_storage_mapping_by_name(name)
         if not mapping_res:
             return None
         return self._make(mapping_res)
