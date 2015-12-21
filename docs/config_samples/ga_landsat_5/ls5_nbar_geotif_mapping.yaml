@@ -6,45 +6,46 @@ match:
   metadata:
     dont_match_me: 'bro'
 
-# Store them using storage definitions '30m_bands' and '15m_bands':
+location_name: v1tiles
+location_offset: 'todo.tif'
+global_attributes:
+  title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
+  summary: These files are experimental, short lived, and the format will change.
+  source: This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/
+  product_version: '0.0.0'
+  license: Creative Commons Attribution 4.0 International CC BY 4.0
+
 storage:
-    - name: 25m_bands_geotif
-      location_name: v1tiles
-      location_offset: 'todo.tif'
-      global_attributes:
-        title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
-        summary: These files are experimental, short lived, and the format will change.
-        source: This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/
-        product_version: '0.0.0'
-        license: Creative Commons Attribution 4.0 International CC BY 4.0
-      measurements:
-        '10':
-            dtype: int16
-            nodata: -999
-            resampling_method: cubic
-            layer: 1
-        '20':
-            dtype: int16
-            nodata: -999
-            resampling_method: cubic
-            layer: 2
-        '30':
-            dtype: int16
-            nodata: -999
-            resampling_method: cubic
-            layer: 3
-        '40':
-            dtype: int16
-            nodata: -999
-            resampling_method: cubic
-            layer: 4
-        '50':
-            dtype: int16
-            nodata: -999
-            resampling_method: cubic
-            layer: 5
-        '70':
-            dtype: int16
-            nodata: -999
-            resampling_method: cubic
-            layer: 6
+    driver: GeoTiff
+
+measurements:
+  '10':
+      dtype: int16
+      nodata: -999
+      resampling_method: cubic
+      layer: 1
+  '20':
+      dtype: int16
+      nodata: -999
+      resampling_method: cubic
+      layer: 2
+  '30':
+      dtype: int16
+      nodata: -999
+      resampling_method: cubic
+      layer: 3
+  '40':
+      dtype: int16
+      nodata: -999
+      resampling_method: cubic
+      layer: 4
+  '50':
+      dtype: int16
+      nodata: -999
+      resampling_method: cubic
+      layer: 5
+  '70':
+      dtype: int16
+      nodata: -999
+      resampling_method: cubic
+      layer: 6
