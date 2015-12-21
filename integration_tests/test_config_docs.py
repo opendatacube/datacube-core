@@ -16,6 +16,10 @@ _LOG = logging.getLogger(__name__)
 MAPPING_EXAMPLE_DOCS = Path(__file__).parent.parent. \
     joinpath('docs', 'config_samples').glob('**/*mapping.yaml')
 
+# Documents that shouldn't be accepted as mapping docs.
+INVALID_MAPPING_DOCS = Path(__file__).parent.parent. \
+    joinpath('docs', 'config_samples').glob('**/*metadata*.yaml')
+
 
 def test_add_example_mapping_docs(global_integration_cli_args, db):
     """
@@ -45,3 +49,28 @@ def test_add_example_mapping_docs(global_integration_cli_args, db):
         mappings_count = db.count_mappings()
         assert mappings_count > existing_mappings, "Mapping document was not added: " + str(mapping_path)
         existing_mappings = mappings_count
+
+
+def test_error_returned_on_invalid(global_integration_cli_args, db):
+    """
+    :type global_integration_cli_args: tuple[str]
+    :type db: datacube.index.postgres._api.PostgresDb
+    """
+    assert db.count_mappings() == 0
+
+    for mapping_path in INVALID_MAPPING_DOCS:
+        opts = list(global_integration_cli_args)
+        opts.extend(
+            [
+                '-v', 'mappings', 'add',
+                str(mapping_path)
+            ]
+        )
+        print(opts)
+        runner = CliRunner()
+        result = runner.invoke(
+            datacube.scripts.config_tool.cli,
+            opts
+        )
+        assert result.exit_code != 0, "Success return code for invalid document."
+        assert db.count_mappings() == 0, "Invalid document was added to DB"
