@@ -1,5 +1,6 @@
 
 name: S2A L1C 20m
+description: 20 metre, 1 degree EO NetCDF storage unit.
 
 # Any datasets matching these metadata properties.
 match:
@@ -37,8 +38,8 @@ storage:
         longitude: 1.0
         latitude:  1.0
     resolution:
-        longitude: 0.00025
-        latitude: -0.00025
+        longitude: 0.0002
+        latitude: -0.0002
     chunking:
         longitude: 500
         latitude:  500
