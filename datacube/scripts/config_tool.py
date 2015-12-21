@@ -12,9 +12,9 @@ from pathlib import Path
 
 import click
 
-from datacube.ui.click import global_cli_options, pass_index, pass_config
-from datacube.ui import read_documents
 from datacube.index import index_connect
+from datacube.ui import read_documents
+from datacube.ui.click import global_cli_options, pass_index, pass_config
 
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 
@@ -36,7 +36,6 @@ def database():
 @click.option('--no-default-collection', is_flag=True, help="Don't add a default collection.")
 @pass_index
 def database_init(index, no_default_collection):
-
     _LOG.info('Initialising database...')
     was_created = index.init_db(with_default_collection=not no_default_collection)
     if was_created:
@@ -74,35 +73,8 @@ def check(config):
                 nargs=-1)
 @pass_index
 def collection_add(index, files):
-
     for descriptor_path, parsed_doc in _read_docs(files):
         index.collections.add(parsed_doc)
-
-
-@cli.group(help='Storage types')
-def storage():
-    pass
-
-
-@storage.command('add')
-@click.argument('files',
-                type=click.Path(exists=True, readable=True, writable=False),
-                nargs=-1)
-@pass_index
-def add_storage(index, files):
-
-    for descriptor_path, parsed_doc in _read_docs(files):
-        index.storage_types.add(parsed_doc)
-
-
-@storage.command('template', help='Print an example YAML template')
-def template_storage():
-    sys.stderr.write('TODO: Print an example storage-type template\n')
-
-
-@storage.command('list')
-def list_storage():
-    sys.stderr.write('TODO: list storage types\n')
 
 
 @cli.group(help='Dataset-storage mappings')
@@ -117,7 +89,6 @@ def mappings():
 @pass_index
 @click.pass_context
 def add_mappings(ctx, index, files):
-
     for descriptor_path, parsed_doc in _read_docs(files):
         try:
             index.mappings.add(parsed_doc)
@@ -125,11 +96,6 @@ def add_mappings(ctx, index, files):
             _LOG.exception(ke)
             _LOG.error('Invalid mapping document: %s', descriptor_path)
             ctx.exit(1)
-
-
-@mappings.command('template', help='Print an example YAML template')
-def template_mappings():
-    sys.stderr.write('TODO: Print an example dataset-storage mapping template\n')
 
 
 @mappings.command('list')
