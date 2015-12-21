@@ -229,5 +229,11 @@ class StorageMappingResource(object):
             return None
         return self._make(mapping_res)
 
+    def get_all(self):
+        """
+        :rtype: list[datacube.model.StorageMapping]
+        """
+        return [self._make(mapping) for mapping in self._db.get_all_storage_mappings()]
+
     def count(self):
         return self._db.count_mappings()

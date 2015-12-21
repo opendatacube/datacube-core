@@ -174,6 +174,12 @@ class PostgresDb(object):
             )
         ).fetchall()
 
+    def get_all_storage_mappings(self):
+        return self._connection.execute(
+            STORAGE_MAPPING.select()
+        ).fetchall()
+
+
     def ensure_storage_mapping(self,
                                name, location_name, file_path_template,
                                dataset_metadata, measurements, storage_type,

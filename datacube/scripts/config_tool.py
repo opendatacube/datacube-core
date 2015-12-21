@@ -101,8 +101,10 @@ def add_mappings(ctx, index, files):
 
 
 @mappings.command('list')
-def list_mappings():
-    sys.stderr.write('TODO: list mappings\n')
+@pass_index
+def list_mappings(index):
+    for mapping in index.mappings.get_all():
+        echo("{m.id_:2d}. {m.name:15}: {m.description!s}".format(m=mapping))
 
 
 def _read_docs(paths):
