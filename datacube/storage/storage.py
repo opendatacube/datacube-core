@@ -250,12 +250,16 @@ def create_storage_unit(tile_index, datasets, mapping, filename):
     finally:
         try:
             os.unlink(tmpfilename)
-        except:
+        except OSError:
             pass
 
+    # TODO: move 'hardcoded' coordinate specs (name, units, etc) into tile_spec
+    # TODO: then we can pull the descriptor out of the tile_spec
+    # TODO: and netcdf writer will be more generic
+    su_descriptor = index_netcdfs([filename[7:]])[filename[7:]]
     return StorageUnit([dataset.id for dataset in datasets],
                        mapping,
-                       index_netcdfs([filename[7:]])[filename[7:]],  # TODO: don't do this
+                       su_descriptor,
                        mapping.local_path_to_location_offset(filename))
 
 
