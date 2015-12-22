@@ -16,7 +16,7 @@ _15M_STORAGE_TYPE = {
     'base_path': '/short/v10/dra547/tmp/5/',
     'chunking': {'t': 1, 'x': 500, 'y': 500},
     'dimension_order': ['t', 'y', 'x'],
-    'filename_format': '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_{creation_dt:%Y-%m-%dT%H-%M-%S.%f}.nc',
+    'filename_format': '{platform[code]}_{instrument[name]}_{tile_index[0]}_{tile_index[1]}_{start_time:%Y-%m-%dT%H-%M-%S.%f}.nc',
     'projection': {
         'spatial_ref': 'epsg:1234'
     },

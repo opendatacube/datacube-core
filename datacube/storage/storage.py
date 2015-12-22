@@ -27,17 +27,21 @@ from datacube.storage.netcdf_indexer import index_netcdfs
 _LOG = logging.getLogger(__name__)
 
 
-def generate_filename(filename_format, eodataset, tile_spec):
-    merged = eodataset.copy()
+def _parse_time(time):
+    if isinstance(time, compat.string_types):
+        return dateutil.parser.parse(time)
+    return time
 
-    # Until we can use parsed dataset fields:
-    if isinstance(merged['creation_dt'], compat.string_types):
-        merged['creation_dt'] = dateutil.parser.parse(merged['creation_dt'])
-    if isinstance(merged['extent']['center_dt'], compat.string_types):
-        merged['extent']['center_dt'] = dateutil.parser.parse(merged['extent']['center_dt'])
 
-    merged.update(tile_spec.__dict__)
-    return filename_format.format(**merged)
+def generate_filename(tile_index, mapping, datasets):
+    merged = {
+        'tile_index': tile_index,
+        'start_time': _parse_time(datasets[0].metadata_doc['extent']['from_dt']),
+        'end_time': _parse_time(datasets[-1].metadata_doc['extent']['to_dt']),
+    }
+    merged.update(mapping.match.metadata)
+
+    return mapping.storage_pattern.format(**merged)
 
 
 def _dataset_bounds(dataset):
@@ -210,13 +214,14 @@ def _roi_to_bounds(roi, dims):
     return BoundingBox(roi[dims[0]][0], roi[dims[1]][0], roi[dims[0]][1], roi[dims[1]][1])
 
 
-def create_storage_unit(tile_index, datasets, mapping):
+def create_storage_unit(tile_index, datasets, mapping, filename):
     """
     Create storage unit at tile_index for datasets using mapping
 
     :type tile_index: tuple[int, int]
     :type datasets:  list[datacube.model.Dataset]
     :type mapping:  datacube.model.StorageMapping
+    :type filename:  str
     :rtype: datacube.model.StorageUnit
     """
     storage_type = mapping.storage_type
@@ -227,7 +232,7 @@ def create_storage_unit(tile_index, datasets, mapping):
                          _get_tile_transform(tile_index, tile_size, tile_res),
                          width=int(tile_size[0] / abs(tile_res[0])),
                          height=int(tile_size[1] / abs(tile_res[1])))
-    return _create_storage_unit(tile_index, datasets, mapping, tile_spec)
+    return _create_storage_unit(tile_index, datasets, mapping, tile_spec, filename)
 
 
 def tile_datasets_with_mapping(datasets, mapping):
@@ -252,12 +257,6 @@ def store_datasets_with_mapping(datasets, mapping):
     :type mapping:  datacube.model.StorageMapping
     :rtype: datacube.model.StorageUnit
     """
-    datasets.sort(key=_dataset_time)
-    for tile_index, datasets in tile_datasets_with_mapping(datasets, mapping).items():
-        yield create_storage_unit(tile_index, datasets, mapping)
-
-
-def _create_storage_unit(tile_index, datasets, mapping, tile_spec):
     storage_type = mapping.storage_type
     if storage_type.driver != 'NetCDF CF':
         raise RuntimeError('Storage driver is not supported (yet): %s' % storage_type.driver)
@@ -265,8 +264,13 @@ def _create_storage_unit(tile_index, datasets, mapping, tile_spec):
     if not mapping.storage_pattern.startswith('file://'):
         raise RuntimeError('URI protocol is not supported (yet): %s' % mapping.storage_pattern)
 
-    # TODO: filename pattern needs to be better defined...
-    output_filename = generate_filename(mapping.storage_pattern[7:], datasets[0].metadata_doc, tile_spec)
+    datasets.sort(key=_dataset_time)
+    for tile_index, datasets in tile_datasets_with_mapping(datasets, mapping).items():
+        filename = generate_filename(tile_index, mapping, datasets)
+        yield create_storage_unit(tile_index, datasets, mapping, filename[7:])
+
+
+def _create_storage_unit(tile_index, datasets, mapping, tile_spec, output_filename):
     ensure_path_exists(output_filename)
     _LOG.debug("Creating %s", output_filename)
 
@@ -280,7 +284,7 @@ def _create_storage_unit(tile_index, datasets, mapping, tile_spec):
             _LOG.warning("Mosaicing multiple datasets %s@%s: %s", tile_index, time, group)
         # TODO: ncfile.extra_meta = json.dumps(group[0].metadata_doc)
 
-    _fill_storage_unit(ncfile, dataset_groups, mapping.measurements, tile_spec, storage_type.chunking)
+    _fill_storage_unit(ncfile, dataset_groups, mapping.measurements, tile_spec, mapping.storage_type.chunking)
 
     ncfile.close()
     return StorageUnit([dataset.id for dataset in datasets],

@@ -12,7 +12,7 @@ match:
 
 
 location_name: eotiles
-file_path_template: '{platform[code]}_{instrument[name]}_12m_alb_{xs[0]}_{ys[0]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc'
+file_path_template: '{platform[code]}_{instrument[name]}_12m_alb_{tile_index[0]}_{tile_index[1]}_{start_time:%Y-%m-%dT%H-%M-%S.%f}.nc'
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
   summary: These files are experimental, short lived, and the format will change.
@@ -96,7 +96,7 @@ match:
 
 
 location_name: eotiles
-file_path_template: '{platform[code]}_{instrument[name]}_25m_alb_{xs[0]}_{ys[0]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc'
+file_path_template: '{platform[code]}_{instrument[name]}_25m_alb_{tile_index[0]}_{tile_index[1]}_{start_time:%Y-%m-%dT%H-%M-%S.%f}.nc'
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
   summary: These files are experimental, short lived, and the format will change.
@@ -190,7 +190,7 @@ match:
         product_type: S2MSI1C
 
 location_name: eotiles
-file_path_template: '{platform[code]}_{instrument[name]}_50m_alb_{xs[0]}_{ys[0]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S.%f}.nc'
+file_path_template: '{platform[code]}_{instrument[name]}_50m_alb_{tile_index[0]}_{tile_index[1]}_{start_time:%Y-%m-%dT%H-%M-%S.%f}.nc'
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
   summary: These files are experimental, short lived, and the format will change.

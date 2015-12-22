@@ -11,7 +11,7 @@ match:
             name: OLI_TIRS
         product_type: EODS_NBAR
 location_name: eotiles
-file_path_template: '{platform[code]}_{instrument[name]}_{lons[0]}_{lats[0]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S
+file_path_template: '{platform[code]}_{instrument[name]}_{tile_index[0]}_{tile_index[1]}_{extent[center_dt]:%Y-%m-%dT%H-%M-%S
 .%f}.nc'
 
 global_attributes:
