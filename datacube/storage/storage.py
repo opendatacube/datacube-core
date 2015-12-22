@@ -8,6 +8,8 @@ import logging
 
 from contextlib import contextmanager
 from itertools import groupby
+import os.path
+import tempfile
 
 import dateutil.parser
 import numpy
@@ -225,6 +227,11 @@ def create_storage_unit(tile_index, datasets, mapping, filename):
     :rtype: datacube.model.StorageUnit
     """
     storage_type = mapping.storage_type
+    if storage_type.driver != 'NetCDF CF':
+        raise RuntimeError('Storage driver is not supported (yet): %s' % storage_type.driver)
+
+    if not filename.startswith('file://'):
+        raise RuntimeError('URI protocol is not supported (yet): %s' % mapping.storage_pattern)
 
     tile_size = storage_type.tile_size
     tile_res = storage_type.resolution
@@ -232,7 +239,24 @@ def create_storage_unit(tile_index, datasets, mapping, filename):
                          _get_tile_transform(tile_index, tile_size, tile_res),
                          width=int(tile_size[0] / abs(tile_res[0])),
                          height=int(tile_size[1] / abs(tile_res[1])))
-    return _create_storage_unit(tile_index, datasets, mapping, tile_spec, filename)
+
+    if os.path.isfile(filename):
+        raise RuntimeError('file already exists: %s' % filename)
+
+    tmpfile, tmpfilename = tempfile.mkstemp()
+    try:
+        _create_storage_unit(tile_index, datasets, mapping, tile_spec, tmpfilename)
+        os.rename(tmpfilename, filename[7:])
+    finally:
+        try:
+            os.unlink(tmpfilename)
+        except:
+            pass
+
+    return StorageUnit([dataset.id for dataset in datasets],
+                       mapping,
+                       index_netcdfs([filename[7:]])[filename[7:]],  # TODO: don't do this
+                       mapping.local_path_to_location_offset(filename))
 
 
 def tile_datasets_with_mapping(datasets, mapping):
@@ -257,26 +281,16 @@ def store_datasets_with_mapping(datasets, mapping):
     :type mapping:  datacube.model.StorageMapping
     :rtype: datacube.model.StorageUnit
     """
-    storage_type = mapping.storage_type
-    if storage_type.driver != 'NetCDF CF':
-        raise RuntimeError('Storage driver is not supported (yet): %s' % storage_type.driver)
-
-    if not mapping.storage_pattern.startswith('file://'):
-        raise RuntimeError('URI protocol is not supported (yet): %s' % mapping.storage_pattern)
-
     datasets.sort(key=_dataset_time)
     for tile_index, datasets in tile_datasets_with_mapping(datasets, mapping).items():
         filename = generate_filename(tile_index, mapping, datasets)
-        yield create_storage_unit(tile_index, datasets, mapping, filename[7:])
+        yield create_storage_unit(tile_index, datasets, mapping, filename)
 
 
-def _create_storage_unit(tile_index, datasets, mapping, tile_spec, output_filename):
-    ensure_path_exists(output_filename)
-    _LOG.debug("Creating %s", output_filename)
-
+def _create_storage_unit(tile_index, datasets, mapping, tile_spec, filename):
     dataset_groups = [(key, list(group)) for key, group in groupby(datasets, _dataset_time)]
 
-    ncfile = NetCDFWriter(output_filename, tile_spec, len(dataset_groups))
+    ncfile = NetCDFWriter(filename, tile_spec, len(dataset_groups))
     ncfile.set_time_values(group[0] for group in dataset_groups)
 
     for index, (time, group) in enumerate(dataset_groups):
@@ -287,10 +301,6 @@ def _create_storage_unit(tile_index, datasets, mapping, tile_spec, output_filena
     _fill_storage_unit(ncfile, dataset_groups, mapping.measurements, tile_spec, mapping.storage_type.chunking)
 
     ncfile.close()
-    return StorageUnit([dataset.id for dataset in datasets],
-                       mapping,
-                       index_netcdfs([output_filename])[output_filename],  # TODO: don't do this
-                       mapping.local_path_to_location_offset('file://' + output_filename))
 
 
 def _fill_storage_unit(ncfile, dataset_groups, measurements, tile_spec, chunking):

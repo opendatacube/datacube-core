@@ -5,7 +5,6 @@ Create netCDF4 Storage Units and write data to them
 from __future__ import absolute_import
 
 import logging
-import os.path
 from datetime import datetime
 from itertools import chain
 
@@ -39,8 +38,6 @@ class NetCDFWriter(object):
 
     def __init__(self, netcdf_path, tile_spec, time_length=None):
         netcdf_path = str(netcdf_path)
-        if os.path.isfile(netcdf_path):
-            raise RuntimeError('file already exists')
 
         self.nco = netCDF4.Dataset(netcdf_path, 'w')
 
