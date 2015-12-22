@@ -34,6 +34,26 @@ def index_datasets(path, index=None):
     return datasets
 
 
+def find_mappings(datasets, index=None):
+    """
+    Find matching mappings for datasets
+
+    :type datasets: list[datacube.model.Dataset]
+    :type index: datacube.index._api.Index
+    :rtype dict[int, list[datacube.model.Dataset]]
+    """
+    index = index or index_connect()
+
+    storage_mappings = {}
+    for dataset in datasets:
+        dataset_storage_mappings = index.mappings.get_for_dataset(dataset)
+        if not dataset_storage_mappings:
+            _LOG.warning('No mappings found for %s dataset', dataset)
+        for storage_mapping in dataset_storage_mappings:
+            storage_mappings.setdefault(storage_mapping.id_, []).append(dataset)
+    return storage_mappings
+
+
 def store_datasets(datasets, index=None):
     """
     Find matching mappings for datasets
@@ -45,13 +65,7 @@ def store_datasets(datasets, index=None):
     """
     index = index or index_connect()
 
-    storage_mappings = {}
-    for dataset in datasets:
-        dataset_storage_mappings = index.mappings.get_for_dataset(dataset)
-        if not dataset_storage_mappings:
-            _LOG.warning('No mappings found for %s dataset', dataset)
-        for storage_mapping in dataset_storage_mappings:
-            storage_mappings.setdefault(storage_mapping.id_, []).append(dataset)
+    storage_mappings = find_mappings(datasets, index)
 
     for storage_mapping_id, datasets in storage_mappings.items():
         storage_mapping = index.mappings.get(storage_mapping_id)
