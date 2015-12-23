@@ -38,6 +38,7 @@ def _parse_time(time):
 def generate_filename(tile_index, mapping, datasets):
     merged = {
         'tile_index': tile_index,
+        'mapping_id': mapping.id_,
         'start_time': _parse_time(datasets[0].metadata_doc['extent']['from_dt']),
         'end_time': _parse_time(datasets[-1].metadata_doc['extent']['to_dt']),
     }
