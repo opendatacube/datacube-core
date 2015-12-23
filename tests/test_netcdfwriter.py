@@ -4,6 +4,7 @@ from datetime import datetime
 
 from affine import Affine
 import numpy as np
+import numpy.testing as npt
 import netCDF4
 import rasterio
 
@@ -114,10 +115,10 @@ def test_create_single_time_netcdf_from_numpy_arrays(tmpdir):
     assert len(nco.variables['time']) == 1
     assert len(nco.variables['longitude']) == 4000
     assert len(nco.variables['latitude']) == 2000
-    assert nco.variables['latitude'][0] == -29
-    assert abs(nco.variables['latitude'][-1] - -29.9995) < 0.0000001
-    assert nco.variables['longitude'][0] == 151
-    assert nco.variables['longitude'][-1] == 151.99975
+    npt.assert_almost_equal(nco.variables['latitude'][0], -29.00025)
+    npt.assert_almost_equal(nco.variables['latitude'][-1], -29.99975)
+    npt.assert_almost_equal(nco.variables['longitude'][0], 151.000125)
+    npt.assert_almost_equal(nco.variables['longitude'][-1], 151.999875)
 
 
 def test_create_sample_netcdf_from_gdalds(tmpdir, example_gdal_path):
@@ -147,10 +148,10 @@ def test_create_sample_netcdf_from_gdalds(tmpdir, example_gdal_path):
     assert len(nco.variables['longitude']) == 4000
     assert len(nco.variables['latitude']) == 4000
     assert len(nco.variables['B10']) == 1
-    assert nco.variables['latitude'][0] == -29
-    assert nco.variables['latitude'][-1] == -29.99975
-    assert nco.variables['longitude'][0] == 151
-    assert nco.variables['longitude'][-1] == 151.99975
+    npt.assert_almost_equal(nco.variables['latitude'][0], -29.000125)
+    npt.assert_almost_equal(nco.variables['latitude'][-1], -29.999875)
+    npt.assert_almost_equal(nco.variables['longitude'][0], 151.000125)
+    npt.assert_almost_equal(nco.variables['longitude'][-1], 151.999875)
 
     assert nco.variables['B10'].shape == (1, 4000, 4000)
 

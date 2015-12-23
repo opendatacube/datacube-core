@@ -2,7 +2,7 @@
 """
 Core classes used across modules.
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, division
 import logging
 from collections import namedtuple
 import numpy as np
@@ -311,11 +311,11 @@ class TileSpec(object):
     >>> t.lon_min, t.lon_max
     (151.0, 152.0)
     >>> t.lats
-    array([-29.     , -29.00025, -29.0005 , ..., -29.99925, -29.9995 ,
-           -29.99975])
+    array([-29.000125, -29.000375, -29.000625, ..., -29.999375, -29.999625,
+           -29.999875])
     >>> t.lons
-    array([ 151.     ,  151.00025,  151.0005 , ...,  151.99925,  151.9995 ,
-            151.99975])
+    array([ 151.000125,  151.000375,  151.000625, ...,  151.999375,
+            151.999625,  151.999875])
     """
 
     def __init__(self, projection, affine, height, width, global_attrs=None):
@@ -329,8 +329,8 @@ class TileSpec(object):
         if not affine.is_rectilinear:
             raise RuntimeError("rotation and/or shear are not supported")
 
-        xs = np.arange(width) * affine.a + affine.c
-        ys = np.arange(height) * affine.e + affine.f
+        xs = np.arange(width) * affine.a + affine.c + affine.a / 2
+        ys = np.arange(height) * affine.e + affine.f + affine.e / 2
 
         sr = osr.SpatialReference(projection)
         if sr.IsGeographic():
