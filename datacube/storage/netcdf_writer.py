@@ -37,9 +37,19 @@ class NetCDFWriter(object):
     """
 
     def __init__(self, netcdf_path, tile_spec, time_length=None):
+        """
+
+        :param netcdf_path:
+        :type tile_spec:  datacube.model.TileSpec
+        :param time_length:
+        :return:
+        """
         netcdf_path = str(netcdf_path)
 
         self.nco = netCDF4.Dataset(netcdf_path, 'w')
+
+        self._tile_spec = tile_spec
+        self.netcdf_path = netcdf_path
 
         self._create_time_dimension(time_length)
         self._create_spatial_variables(tile_spec)
@@ -48,9 +58,6 @@ class NetCDFWriter(object):
         # Create Variable Length Variable to store extra metadata
         extra_meta = self.nco.createVariable('extra_metadata', str, 'time')
         extra_meta.long_name = 'Extra source metadata'
-
-        self._tile_spec = tile_spec
-        self.netcdf_path = netcdf_path
 
     def close(self):
         self.nco.close()
@@ -103,7 +110,12 @@ class NetCDFWriter(object):
         crs.longitude_of_prime_meridian = 0.0
         crs.semi_major_axis = projection.GetSemiMajor()
         crs.inverse_flattening = projection.GetInvFlattening()
+        crs.spatial_ref = projection.ExportToWkt()  # GDAL variable
+        crs.GeoTransform = self._gdal_geotransform()  # GDAL variable
         return crs
+
+    def _gdal_geotransform(self):
+        return " ".join(format(c, "g") for c in self._tile_spec.affine.to_gdal())
 
     def _create_albers_crs(self, projection):
         # http://spatialreference.org/ref/epsg/gda94-australian-albers/html/
@@ -117,6 +129,8 @@ class NetCDFWriter(object):
         crs.false_northing = projection.GetProjParm('false_northing')
         crs.grid_mapping_name = _grid_mapping_name(projection)
         crs.long_name = projection.GetAttrValue('PROJCS')
+        crs.spatial_ref = projection.ExportToWkt()  # GDAL variable
+        crs.GeoTransform = self._gdal_geotransform()  # GDAL variable
         return crs
 
     def _create_proj_crs(self, projection):
