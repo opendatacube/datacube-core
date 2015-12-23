@@ -233,6 +233,8 @@ def create_storage_unit(tile_index, datasets, mapping, filename):
     if not filename.startswith('file://'):
         raise RuntimeError('URI protocol is not supported (yet): %s' % mapping.storage_pattern)
 
+    filename = filename[7:]
+
     tile_size = storage_type.tile_size
     tile_res = storage_type.resolution
     tile_spec = TileSpec(storage_type.projection,
@@ -243,10 +245,10 @@ def create_storage_unit(tile_index, datasets, mapping, filename):
     if os.path.isfile(filename):
         raise RuntimeError('file already exists: %s' % filename)
 
-    tmpfile, tmpfilename = tempfile.mkstemp()
+    tmpfile, tmpfilename = tempfile.mkstemp(dir=os.path.dirname(filename))
     try:
         _create_storage_unit(tile_index, datasets, mapping, tile_spec, tmpfilename)
-        os.rename(tmpfilename, filename[7:])
+        os.rename(tmpfilename, filename)
     finally:
         try:
             os.unlink(tmpfilename)
@@ -256,11 +258,11 @@ def create_storage_unit(tile_index, datasets, mapping, filename):
     # TODO: move 'hardcoded' coordinate specs (name, units, etc) into tile_spec
     # TODO: then we can pull the descriptor out of the tile_spec
     # TODO: and netcdf writer will be more generic
-    su_descriptor = index_netcdfs([filename[7:]])[filename[7:]]
+    su_descriptor = index_netcdfs([filename])[filename]
     return StorageUnit([dataset.id for dataset in datasets],
                        mapping,
                        su_descriptor,
-                       mapping.local_path_to_location_offset(filename))
+                       mapping.local_path_to_location_offset('file://'+filename))
 
 
 def tile_datasets_with_mapping(datasets, mapping):
