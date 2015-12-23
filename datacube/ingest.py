@@ -5,6 +5,8 @@ Ingest datasets into the agdc.
 from __future__ import absolute_import
 
 import os
+import sys
+import signal
 import logging
 from multiprocessing import Pool
 
@@ -90,6 +92,25 @@ def _cleanup_storage_units_task(task):
         pass
 
 
+def _init_worker(*args):
+    signal.signal(signal.SIGTERM, lambda s, f: sys.exit(0))
+
+
+def _run_parallel_tasks(func, tasks, workers):
+    pool = Pool(processes=workers, initializer=_init_worker)
+    try:
+        result = list(pool.imap_unordered(func, tasks))
+    except:
+        pool.terminate()
+        raise
+    else:
+        pool.close()
+    finally:
+        pool.join()
+
+    return result
+
+
 def store_datasets_with_mapping(datasets, storage_mapping, index=None, workers=0):
     """
     Create storage units for datasets using storage_mapping
@@ -106,12 +127,12 @@ def store_datasets_with_mapping(datasets, storage_mapping, index=None, workers=0
 
     try:
         if workers:
-            pool = Pool(processes=workers)
-            storage_units = list(pool.imap_unordered(_create_storage_unit_task, tasks))
+            storage_units = _run_parallel_tasks(_create_storage_unit_task, tasks, workers)
         else:
             storage_units = [_create_storage_unit_task(task) for task in tasks]
 
         index.storage.add_many(storage_units)
-    except:  # pylint: disable=bare-except
+    except:
         for task in tasks:
             _cleanup_storage_units_task(task)
+        raise
