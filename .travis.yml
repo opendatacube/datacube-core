@@ -12,8 +12,8 @@ python:
 sudo: false
 
 cache:
-  - apt
-  - pip
+  directories:
+    - $HOME/.cache/pip
 
 # Install required packages
 addons:
