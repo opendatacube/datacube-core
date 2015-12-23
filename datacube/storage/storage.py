@@ -19,7 +19,6 @@ import rasterio.warp
 from rasterio.warp import RESAMPLING, transform_bounds
 from rasterio.coords import BoundingBox
 from affine import Affine
-from datacube.storage.utils import ensure_path_exists
 from .netcdf_writer import NetCDFWriter
 
 from datacube import compat
@@ -35,7 +34,7 @@ def _parse_time(time):
     return time
 
 
-def generate_filename(tile_index, mapping, datasets):
+def generate_filename(tile_index, datasets, mapping):
     merged = {
         'tile_index': tile_index,
         'mapping_id': mapping.id_,
@@ -275,23 +274,10 @@ def tile_datasets_with_mapping(datasets, mapping):
     :type mapping:  datacube.model.StorageMapping
     :rtype: dict[tuple[int, int], list[datacube.model.Dataset]]
     """
+    datasets.sort(key=_dataset_time)
     storage_type = mapping.storage_type
     bounds = mapping.roi and _roi_to_bounds(mapping.roi, storage_type.spatial_dimensions)
     return _grid_datasets(datasets, bounds, storage_type.projection, storage_type.tile_size)
-
-
-def store_datasets_with_mapping(datasets, mapping):
-    """
-    Create storage units for datasets using mapping
-
-    :type datasets:  list[datacube.model.Dataset]
-    :type mapping:  datacube.model.StorageMapping
-    :rtype: datacube.model.StorageUnit
-    """
-    datasets.sort(key=_dataset_time)
-    for tile_index, datasets in tile_datasets_with_mapping(datasets, mapping).items():
-        filename = generate_filename(tile_index, mapping, datasets)
-        yield create_storage_unit(tile_index, datasets, mapping, filename)
 
 
 def _create_storage_unit(tile_index, datasets, mapping, tile_spec, filename):

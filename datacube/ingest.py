@@ -4,7 +4,9 @@ Ingest datasets into the agdc.
 """
 from __future__ import absolute_import
 
+import os
 import logging
+from multiprocessing import Pool
 
 from datacube import ui
 from . import storage
@@ -54,7 +56,7 @@ def find_mappings(datasets, index=None):
     return storage_mappings
 
 
-def store_datasets(datasets, index=None):
+def store_datasets(datasets, index=None, workers=0):
     """
     Find matching mappings for datasets
     Create storage units for datasets as per the mappings
@@ -70,10 +72,25 @@ def store_datasets(datasets, index=None):
     for storage_mapping_id, datasets in storage_mappings.items():
         storage_mapping = index.mappings.get(storage_mapping_id)
         _LOG.info('Using %s to store %s datasets', storage_mapping, datasets)
-        store_datasets_with_mapping(datasets, storage_mapping, index)
+        store_datasets_with_mapping(datasets, storage_mapping, index=index, workers=workers)
 
 
-def store_datasets_with_mapping(datasets, storage_mapping, index=None):
+def _create_storage_unit_task(task):
+    tile_index, storage_mapping, datasets = task
+    filename = storage.generate_filename(tile_index, datasets, storage_mapping)
+    return storage.create_storage_unit(tile_index, datasets, storage_mapping, filename)
+
+
+def _cleanup_storage_units_task(task):
+    tile_index, storage_mapping, datasets = task
+    filename = storage.generate_filename(tile_index, datasets, storage_mapping)
+    try:
+        os.unlink(filename)
+    except OSError:
+        pass
+
+
+def store_datasets_with_mapping(datasets, storage_mapping, index=None, workers=0):
     """
     Create storage units for datasets using storage_mapping
     Add storage units to the index
@@ -84,5 +101,17 @@ def store_datasets_with_mapping(datasets, storage_mapping, index=None):
     """
     index = index or index_connect()
 
-    storage_units = storage.store_datasets_with_mapping(datasets, storage_mapping)
-    index.storage.add_many(storage_units)
+    tasks = [(tile_index, storage_mapping, datasets) for
+             tile_index, datasets in storage.tile_datasets_with_mapping(datasets, storage_mapping).items()]
+
+    try:
+        if workers:
+            pool = Pool(processes=workers)
+            storage_units = list(pool.imap_unordered(_create_storage_unit_task, tasks))
+        else:
+            storage_units = [_create_storage_unit_task(task) for task in tasks]
+
+        index.storage.add_many(storage_units)
+    except:  # pylint: disable=bare-except
+        for task in tasks:
+            _cleanup_storage_units_task(task)
