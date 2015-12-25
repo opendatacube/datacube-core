@@ -248,6 +248,7 @@ def create_storage_unit(tile_index, datasets, mapping, filename):
     tmpfile, tmpfilename = tempfile.mkstemp(dir=os.path.dirname(filename))
     try:
         _create_storage_unit(tile_index, datasets, mapping, tile_spec, tmpfilename)
+        os.close(tmpfile)
         os.rename(tmpfilename, filename)
     finally:
         try:
