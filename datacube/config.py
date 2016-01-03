@@ -86,10 +86,10 @@ class LocalConfig(object):
 
     @property
     def db_username(self):
-        if os.name == 'posix':
+        try:
             import pwd
             default_username = pwd.getpwuid(os.geteuid()).pw_name
-        else:
+        except ImportError:
             # No default on Windows
             default_username = None
 
