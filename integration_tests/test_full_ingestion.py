@@ -126,7 +126,8 @@ def test_full_ingestion(global_integration_cli_args, index, default_collection, 
     opts = list(global_integration_cli_args)
     opts.extend(
         [
-            str(example_ls5_dataset)
+            str(example_ls5_dataset),
+            '-v', '-v'
         ]
     )
     result = CliRunner().invoke(

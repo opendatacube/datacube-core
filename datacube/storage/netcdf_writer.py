@@ -17,6 +17,19 @@ from datacube.model import VariableAlreadyExists
 _LOG = logging.getLogger(__name__)
 
 
+def _create_variable_params(measurement_descriptor):
+    identical_keys = 'varname zlib complevel shuffle fletcher32 contiguous'
+    mapped_keys = {'dtype': 'datatype', 'nodata': 'fill_value'}
+    params = {key: measurement_descriptor[key] for key in identical_keys.split() if key in measurement_descriptor}
+    for mdkey, cvparam in mapped_keys.items():
+        params[cvparam] = measurement_descriptor[mdkey]
+
+    if 'varname' not in params:
+        raise Exception('Invalid measurement configuration', measurement_descriptor)
+
+    return params
+
+
 def _seconds_since_1970(dt):
     epoch = datetime(1970, 1, 1, 0, 0, 0, tzinfo=tzutc() if dt.tzinfo else None)
     return (dt - epoch).total_seconds()
@@ -229,18 +242,20 @@ class NetCDFWriter(object):
         out_band[time_index, :, :] = data
         src_filename[time_index] = input_filename
 
-    def ensure_variable(self, varname, dtype, chunking, ndv=None, units=None):
+    def ensure_variable(self, measurement_descriptor, chunking):
+        varname = measurement_descriptor['varname']
         if varname in self.nco.variables:
             # TODO: check that var matches
             return self.nco.variables[varname], self.nco.variables[varname + "_src_filenames"]
-        return self._create_data_variable(varname, dtype, chunking, ndv, units)
+        return self._create_data_variable(measurement_descriptor, chunking=chunking)
 
-    def append_np_array(self, time, nparray, varname, dtype, ndv, chunking, units):
-        if varname in self.nco.variables:
+    def append_np_array(self, time, nparray, measurement_descriptor, chunking, units):
+        varname = measurement_descriptor.varname
+        if measurement_descriptor.varname in self.nco.variables:
             out_band = self.nco.variables[varname]
             src_filename = self.nco.variables[varname + "_src_filenames"]
         else:
-            out_band, src_filename = self._create_data_variable(varname, dtype, chunking, ndv, units)
+            out_band, src_filename = self._create_data_variable(measurement_descriptor, chunking, units)
 
         time_index = self.find_or_create_time_index(time)
 
@@ -253,29 +268,26 @@ class NetCDFWriter(object):
             raise VariableAlreadyExists('Error writing to {}: variable {} already exists and will not be '
                                         'overwritten.'.format(self.netcdf_path, varname))
 
-        dtype = measurement_descriptor.dtype
-        nodata = getattr(measurement_descriptor, 'nodata', None)
-        units = getattr(measurement_descriptor, 'units', None)
-        out_band, src_filename = self._create_data_variable(varname, dtype, storage_type.chunking, nodata, units)
+        out_band, src_filename = self._create_data_variable(measurement_descriptor, storage_type.chunking)
 
         time_index = self.find_or_create_time_index(time_value)
 
         out_band[time_index, :, :] = np_array
         src_filename[time_index] = input_filename
 
-    def _create_data_variable(self, varname, dtype, chunking, ndv=None, units=None):
+    def _create_data_variable(self, measurement_descriptor, chunking, units=None):
+        params = _create_variable_params(measurement_descriptor)
+        params['dimensions'] = [c[0] for c in chunking]
+        params['chunksizes'] = [c[1] for c in chunking]
+        newvar = self.nco.createVariable(**params)
+
         projection = osr.SpatialReference(str(self._tile_spec.projection))
-        dimensions = [c[0] for c in chunking]
-        chunksizes = [c[1] for c in chunking]
-        newvar = self.nco.createVariable(varname, dtype, dimensions,
-                                         zlib=True, chunksizes=chunksizes,
-                                         fill_value=ndv)
         newvar.grid_mapping = _grid_mapping_name(projection)
         newvar.set_auto_maskandscale(False)
 
         if units:
             newvar.units = units
 
-        src_filename = self.nco.createVariable(varname + "_src_filenames", str, 'time')
+        src_filename = self.nco.createVariable(measurement_descriptor['varname'] + "_src_filenames", str, 'time')
         src_filename.long_name = 'Source filename from data import'
         return newvar, src_filename

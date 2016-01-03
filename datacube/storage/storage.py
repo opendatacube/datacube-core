@@ -133,11 +133,7 @@ def _get_tile_transform(tile_index, tile_size, tile_res):
 
 
 def _create_data_variable(ncfile, measurement_descriptor, chunking):
-    varname = measurement_descriptor['varname']
-    dtype = measurement_descriptor['dtype']
-    nodata = measurement_descriptor.get('nodata', None)
-    units = measurement_descriptor.get('units', None)
-    return ncfile.ensure_variable(varname, dtype, chunking, nodata, units)
+    return ncfile.ensure_variable(measurement_descriptor, chunking)
 
 
 def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata,

@@ -17,9 +17,12 @@ GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.25722
            'AUTHORITY["EPSG","4326"]]'
 
 
-class SimpleObject(object):
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
+class SimpleObject(dict):
+    def __getattr__(self, name):
+        if name in self:
+            return self[name]
+        else:
+            raise AttributeError("No such attribute: " + name)
 
 
 def test_albers_goo(tmpdir):
@@ -64,8 +67,9 @@ def test_albers_goo(tmpdir):
         data = np.empty([2000, 4000])
         data[:] = band
         bandname = 'B%s' % band
+        measurement_descriptor = SimpleObject(varname=bandname, dtype='int16', nodata=-999)
 
-        ncfile.append_np_array(date, data, bandname, 'int16', -999, chunking, '1')
+        ncfile.append_np_array(date, data, measurement_descriptor, chunking, '1')
     ncfile.close()
 
     # Perform some basic checks
@@ -102,7 +106,9 @@ def test_create_single_time_netcdf_from_numpy_arrays(tmpdir):
         data[:] = band
         bandname = 'B%s' % band
 
-        ncfile.append_np_array(date, data, bandname, 'int16', -999, chunking, '1')
+        measurement_descriptor = SimpleObject(varname=bandname, dtype='int16', nodata=-999)
+
+        ncfile.append_np_array(date, data, measurement_descriptor, chunking, '1')
     ncfile.close()
 
     # Perform some basic checks
@@ -126,7 +132,7 @@ def test_create_sample_netcdf_from_gdalds(tmpdir, example_gdal_path):
 
     dataset = rasterio.open(example_gdal_path)
 
-    band_info = SimpleObject(varname='B10', dtype='int16', nodata=-999)
+    measurement_descriptor = SimpleObject(varname='B10', dtype='int16', nodata=-999)
     storage_spec = {'chunking': {'longitude': 100, 'latitude': 100, 'time': 1},
                     'dimension_order': ['time', 'latitude', 'longitude'],
                     'crs': GEO_PROJ}
@@ -136,7 +142,7 @@ def test_create_sample_netcdf_from_gdalds(tmpdir, example_gdal_path):
     tile_spec.data = dataset.read(1)
 
     ncfile = NetCDFWriter(filename, tile_spec)
-    ncfile.append_slice(dataset.read(1), storage_type, band_info, datetime(2008, 5, 5, 0, 24), input_filename="")
+    ncfile.append_slice(dataset.read(1), storage_type, measurement_descriptor, datetime(2008, 5, 5, 0, 24), input_filename="")
     ncfile.close()
 
     # Perform some basic checks
