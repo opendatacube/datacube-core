@@ -22,13 +22,14 @@ import datetime
 import itertools
 import operator
 import uuid
+import copy
 import numpy
 import dask.array as da
 import xray
 import rasterio.warp
 
 from .model import Range
-from .storage.access.core import Coordinate, Variable, StorageUnitDimensionProxy
+from .storage.access.core import Coordinate, Variable, StorageUnitDimensionProxy, StorageUnitBase
 from .storage.access.backends import NetCDF4StorageUnit, GeoTifStorageUnit
 from .index import index_connect
 
@@ -71,6 +72,7 @@ def make_storage_unit(su):
     attributes = {
         'storage_type': storage_type
     }
+    attributes.update(su.storage_mapping.match.metadata)
 
     if su.storage_mapping.storage_type.driver == 'NetCDF CF':
         return NetCDF4StorageUnit(su.filepath, coordinates=coordinates, variables=variables, attributes=attributes)
@@ -236,6 +238,9 @@ class StorageUnitCollection(object):
             result['result_shape'] += (result_length,)
         return result
 
+    def get_resolution(self):
+        return set(storage_unit.attributes['storage_type']['resolution'] for storage_unit in self._storage_units)
+
     def get_length(self, dim):
         length_index = {}
         for storage_unit in self._storage_units:
@@ -280,9 +285,9 @@ def _get_dimension_properties(storage_units, dimensions):
             coord_list = coord_lists.setdefault(dim, [None] * dim_val_len)
             # We only need the coords once, so don't open up every file if we don't need to - su.get_coord()
             if coord_list[ordinal] is None:
-                coord_list[ordinal] = su.get_coord(dim)
+                coord_list[ordinal], _ = su.get_coord(dim)
     for dim in dimensions:
-        dim_props['coord_labels'][dim] = list(itertools.chain(*[x[0] for x in coord_lists[dim]]))
+        dim_props['coord_labels'][dim] = list(itertools.chain(*coord_lists[dim]))
     return dim_props
 
 
@@ -394,6 +399,63 @@ def _get_data_by_variable(storage_units_by_variable, dimensions, dimension_range
     return _create_response(xrays, dimensions)
 
 
+def _stratify_storage_unit(storage_unit, dimension):
+    """
+    Creates a new series of storage units for every index along an irregular dimension that must be merged together
+    :param storage_unit: A storage unit
+    :param dimension: The name of the irregular dimension to stratify
+    :return: storage_units: list of storage_unit-like objects that point to an underlying storage unit at a particular
+     value, one for each value of the irregular dimension
+    """
+    coord, index = storage_unit.get_coord(dimension)
+    if len(coord) > 1:
+        return [IrregularStorageUnitSlice(storage_unit, dimension, i) for i, c in enumerate(coord)]
+    return [storage_unit]
+
+
+def _stratify_irregular_dimension(storage_units, dimension):
+    """
+    Creates a new series of storage units for every index along an irregular dimension that must be merged together
+    :param storage_units:
+    :param dimension:
+    :return: storage_units: list of storage_unit-like objects that point to an underlying storage unit at a particular
+     value, one for each value of the irregular dimension
+    """
+    stratified_storage_units = [_stratify_storage_unit(storage_unit, dimension) for storage_unit in storage_units]
+    return list(itertools.chain(*stratified_storage_units))
+
+
+class IrregularStorageUnitSlice(StorageUnitBase):
+    """ Storage Unit interface for accessing another Storage unit at a defined coordinate  """
+    def __init__(self, parent, dimension, index):
+        self._parent = parent
+        self._sliced_coordinate = dimension
+        self._index = index
+        self.coordinates = copy.copy(parent.coordinates)
+        real_dim = self.coordinates[dimension]
+        self._cached_coord, _ = parent.get_coord(dimension, index=slice(self._index, self._index + 1))
+        fake_dim = Coordinate(dtype=real_dim.dtype,
+                              begin=self._cached_coord[0],
+                              end=self._cached_coord[0],
+                              length=1,
+                              units=real_dim.units)
+        self.coordinates[dimension] = fake_dim
+        self.variables = parent.variables
+        self.filepath = parent.filepath
+
+    def get_coord(self, name, index=None):
+        if name == self._sliced_coordinate:
+            return self._cached_coord, slice(0, 1, 1)
+        return self._parent.get_coord(name, index)
+
+    def _fill_data(self, name, index, dest):
+        var = self.variables[name]
+        shape = [self.coordinates[dim].length for dim in var.dimensions]
+        dim_i = var.dimensions.index(self._sliced_coordinate)
+        data = self._parent.get(name)
+        return data.isel(**{self._sliced_coordinate:dim_i})
+
+
 def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges=None):
     if not dimension_ranges:
         dimension_ranges = {}
@@ -425,8 +487,9 @@ class API(object):
 
         storage_units_by_type = {}
         for su in sus:
-            stype = su.storage_mapping.match.metadata['platform']['code'] + '_' + \
-                    su.storage_mapping.match.metadata['instrument']['name']
+            # stype = su.storage_mapping.match.metadata['platform']['code'] + '_' + \
+            #         su.storage_mapping.match.metadata['instrument']['name']
+            stype = su.storage_mapping.name
             # ptype = su.storage_mapping.match.metadata['product_type']
             storage_units_by_type.setdefault(stype, StorageUnitCollection()).append(make_storage_unit(su))
         return storage_units_by_type, query, variables, dimension_ranges
@@ -620,22 +683,27 @@ class API(object):
 
         storage_units_by_type = {}
         for su in sus:
-            stype = su.storage_mapping.match.metadata['platform']['code'] + '_' + \
-                    su.storage_mapping.match.metadata['instrument']['name']
-            ptype = su.storage_mapping.match.metadata['product_type']
+            # stype = su.storage_mapping.match.metadata['platform']['code'] + '_' + \
+            #         su.storage_mapping.match.metadata['instrument']['name']
+            stype = su.storage_mapping.name
+            # ptype = su.storage_mapping.match.metadata['product_type']
             # TODO: group by storage type also?
-            storage_units_by_type.setdefault(stype, {}).setdefault(ptype, []).append(make_storage_unit(su))
+            # storage_units_by_type.setdefault(stype, {}).setdefault(ptype, []).append(make_storage_unit(su))
+            storage_units_by_type.setdefault(stype, []).append(make_storage_unit(su))
 
         if len(storage_units_by_type) > 1:
             raise RuntimeError('Data must come from a single storage')
 
         data_response = {'arrays': {}}
-        for stype, products in storage_units_by_type.items():
+        # for stype, products in storage_units_by_type.items():
+        for stype, storage_units in storage_units_by_type.items():
             # TODO: check var names are unique accross products
             # for ptype, storage_units in products.items():
             #     pass
 
-            storage_units = list(itertools.chain(*products.values()))
-            dask_dict = _get_data_from_storage_units(storage_units, variables, dimension_ranges)
-            data_response.update(dask_dict)
+            # storage_units = list(itertools.chain(*products.values()))
+
+            storage_units = _stratify_irregular_dimension(storage_units, 'time')
+            storage_data = _get_data_from_storage_units(storage_units, variables, dimension_ranges)
+            data_response.update(storage_data)
         return data_response
