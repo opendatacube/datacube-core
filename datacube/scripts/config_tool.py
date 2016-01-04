@@ -55,7 +55,7 @@ def collections():
 def check(config):
     echo('Host: {}:{}'.format(config.db_hostname or 'localhost', config.db_port or '5432'))
     echo('Database: {}'.format(config.db_database))
-    echo('User: {}'.format(config.db_username or os.getlogin()))
+    echo('User: {}'.format(config.db_username))
 
     echo('\n')
     echo('Attempting connect')

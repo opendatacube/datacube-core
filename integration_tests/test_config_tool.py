@@ -98,9 +98,9 @@ def test_config_check(global_integration_cli_args, local_config):
     )
     print(result.output)
     assert result.exit_code == 0
-    host_line = ('Host: ' + local_config.db_hostname)
+    host_line = 'Host: {}'.format(local_config.db_hostname)
     assert host_line in result.output
-    user_line = ('User: ' + local_config.db_username)
+    user_line = 'User: {}'.format(local_config.db_username)
     assert user_line in result.output
 
 
