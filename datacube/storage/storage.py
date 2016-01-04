@@ -188,7 +188,7 @@ class DatasetSource(object):
     def open(self):
         try:
             _LOG.debug("openening %s:%s", self._filename, self._band_id)
-            with rasterio.open(self._filename, driver='JP2OpenJPEG') as src:
+            with rasterio.open(self._filename) as src:
                 self.transform = src.affine
                 self.projection = src.crs
                 self.nodata = src.nodatavals[0] or (0 if self.format == 'JPEG2000' else None)  # TODO: sentinel 2 hack
