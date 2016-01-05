@@ -298,7 +298,7 @@ class VariableAlreadyExists(Exception):
 
 class TileSpec(object):
     """
-    Defines a Storage Tile/Storage Unit, it's projection, location, resolution, and global attributes
+    Defines a single Storage Unit, its CRS, location, resolution, and global attributes
 
     >>> from affine import Affine
     >>> wgs84 = osr.SpatialReference()
@@ -314,12 +314,22 @@ class TileSpec(object):
     >>> t.lons
     array([ 151.000125,  151.000375,  151.000625, ...,  151.999375,
             151.999625,  151.999875])
+
+
+    :param crs: WKT representation of the coordinate reference system
+    :type crs: str
+    :param affine: Affine transformation defining the location of the storage unit
+    :type affine: affine.Affine
+    :param global_attrs: Extra attributes to store in each storage unit
+    :type global_attrs: dict
     """
 
-    def __init__(self, projection, affine, height, width, global_attrs=None):
-        self.projection = projection
+    def __init__(self, crs, affine, height, width, global_attrs=None):
+        self.projection = crs
         self.affine = affine
         self.global_attrs = global_attrs or {}
+        self.height = height
+        self.width = width
 
         self.extents = [(0, 0), (0, height), (width, height), (width, 0)]
         affine.itransform(self.extents)
@@ -330,17 +340,17 @@ class TileSpec(object):
         xs = np.arange(width) * affine.a + affine.c + affine.a / 2
         ys = np.arange(height) * affine.e + affine.f + affine.e / 2
 
-        sr = osr.SpatialReference(projection)
-        if sr.IsGeographic():
+        self.crs = osr.SpatialReference(crs)
+        if self.crs.IsGeographic():
             self.lons = xs
             self.lats = ys
-        elif sr.IsProjected():
+        elif self.crs.IsProjected():
             self.xs = xs
             self.ys = ys
 
             wgs84 = osr.SpatialReference()
             wgs84.ImportFromEPSG(4326)
-            transform = osr.CoordinateTransformation(sr, wgs84)
+            transform = osr.CoordinateTransformation(self.crs, wgs84)
             self.extents = transform.TransformPoints(self.extents)
 
     @property

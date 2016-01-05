@@ -132,10 +132,6 @@ def _get_tile_transform(tile_index, tile_size, tile_res):
     return Affine(tile_res[0], 0.0, x, 0.0, tile_res[1], y)
 
 
-def _create_data_variable(ncfile, measurement_descriptor, chunking):
-    return ncfile.ensure_variable(measurement_descriptor, chunking)
-
-
 def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata,
                  resampling=RESAMPLING.nearest, fuse_func=None):
     def reproject(source, dest):
@@ -295,7 +291,7 @@ def _create_storage_unit(tile_index, datasets, mapping, tile_spec, filename):
 
 def _fill_storage_unit(ncfile, dataset_groups, measurements, tile_spec, chunking):
     for measurement_id, measurement_descriptor in measurements.items():
-        var, src_filename_var = _create_data_variable(ncfile, measurement_descriptor, chunking)
+        var = ncfile.ensure_variable(measurement_descriptor, chunking)
 
         buffer_ = numpy.empty(var.shape[1:], dtype=var.dtype)
         for index, (time_value, time_group) in enumerate(dataset_groups):
@@ -306,4 +302,3 @@ def _fill_storage_unit(ncfile, dataset_groups, measurements, tile_spec, chunking
                          getattr(var, '_FillValue', None),
                          resampling=_map_resampling(measurement_descriptor['resampling_method']))
             var[index] = buffer_
-            # TODO: src_filename_var[index] = foo... is it needed??

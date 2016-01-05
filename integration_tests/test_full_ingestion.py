@@ -135,6 +135,7 @@ def test_full_ingestion(global_integration_cli_args, index, default_collection, 
         opts
     )
     print(result.output)
+    assert not result.exception
     assert result.exit_code == 0
 
     # Check dataset is indexed

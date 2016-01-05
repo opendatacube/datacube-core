@@ -122,6 +122,9 @@ def store_datasets_with_mapping(datasets, storage_mapping, index=None, workers=0
     """
     index = index or index_connect()
 
+    # :type tile_index: (x,y)
+    # Each task is an entire storage unit, safe to run tasks in parallel
+
     tasks = [(tile_index, storage_mapping, datasets) for
              tile_index, datasets in storage.tile_datasets_with_mapping(datasets, storage_mapping).items()]
 
