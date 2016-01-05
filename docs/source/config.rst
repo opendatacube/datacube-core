@@ -1,8 +1,16 @@
 Configuration Files
 ===================
 
+.. _dataset-metadata-doc:
+
 Dataset Metadata
 ----------------
+Dataset Metadata is a document that defines critical metadata of the dataset such as:
+    - measurements
+    - platform and sensor names
+    - geospatial extents and projection
+    - acquisition time
+
 .. code-block:: yaml
 
     id: 4678bf44-82b5-11e5-9264-a0000100fe80
@@ -75,8 +83,19 @@ Dataset Metadata
         source_datasets: {}
 
 
+.. _storage-mapping-doc:
+
 Storage Mapping
 ---------------
+Storage Mapping is a document that defines the way an input dataset is stored inside the datacube.
+
+It controls things like:
+    - which measurements are stored
+    - what projection the data is stored in
+    - what resolution the data is stored in
+    - how data is tiled
+    - where the data is stored
+
 .. code-block:: yaml
 
 
@@ -179,6 +198,7 @@ storage
     resolution
         Resolution for the data to be stored in specified in projection units.
         Negative values flip the axis.
+
             - Use 'latitude' and 'longitude' if the projection is geographic, else use 'x' and 'y'
 
     chunking
@@ -208,9 +228,12 @@ measurements
     nodata (optional)
         No data value
 
+.. _runtime-config-doc:
 
 Runtime Config
 --------------
+Runtime Config document specifies various runtime configuration options such as: database connection parameters and location mappings
+
 .. code-block:: text
 
     [datacube]

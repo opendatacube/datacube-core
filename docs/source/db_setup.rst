@@ -28,6 +28,8 @@ Datacube looks for configuration file in ~/.datacube.conf::
     #  -> We may eventually support remote protocols (http, S3, etc) to lazily fetch remote data.
     swanky_tiles: file:///data/tiles/swanky
 
+See also :ref:`runtime-config-doc`
+
 Create the Database Schema
 --------------------------
 :ref:`datacube-config-tool` can create and populate the datacube schema (agdc)::
