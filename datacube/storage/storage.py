@@ -210,11 +210,13 @@ def _roi_to_bounds(roi, dims):
 
 def create_storage_unit(tile_index, datasets, mapping, filename):
     """
-    Create storage unit at tile_index for datasets using mapping
+    Create storage unit at `tile_index` for datasets using mapping
 
+    :param tile_index: X,Y index of the storage unit
     :type tile_index: tuple[int, int]
     :type datasets:  list[datacube.model.Dataset]
     :type mapping:  datacube.model.StorageMapping
+    :param filename: URI specifying filename, must be file:// for now
     :type filename:  str
     :rtype: datacube.model.StorageUnit
     """
@@ -274,17 +276,20 @@ def tile_datasets_with_mapping(datasets, mapping):
 
 
 def _create_storage_unit(tile_index, datasets, mapping, tile_spec, filename):
-    dataset_groups = [(key, list(group)) for key, group in groupby(datasets, _dataset_time)]
+    datasets_grouped_by_time = [(time, list(group))
+                                for time, group in groupby(datasets, _dataset_time)]
 
-    ncfile = NetCDFWriter(filename, tile_spec, len(dataset_groups))
-    ncfile.set_time_values(group[0] for group in dataset_groups)
+    ncfile = NetCDFWriter(filename, tile_spec, len(datasets_grouped_by_time))
+    ncfile.create_time_values(group[0] for group in datasets_grouped_by_time)
 
-    for index, (time, group) in enumerate(dataset_groups):
+    for time_index, (time, group) in enumerate(datasets_grouped_by_time):
+        ncfile.add_source_metadata(time_index, (dataset.metadata_doc for dataset in group))
+
         if len(group) > 1:
             _LOG.warning("Mosaicing multiple datasets %s@%s: %s", tile_index, time, group)
-        # TODO: ncfile.extra_meta = json.dumps(group[0].metadata_doc)
 
-    _fill_storage_unit(ncfile, dataset_groups, mapping.measurements, tile_spec, mapping.storage_type.chunking)
+    _fill_storage_unit(ncfile, datasets_grouped_by_time, mapping.measurements, tile_spec,
+                       mapping.storage_type.chunking)
 
     ncfile.close()
 
@@ -294,11 +299,11 @@ def _fill_storage_unit(ncfile, dataset_groups, measurements, tile_spec, chunking
         var = ncfile.ensure_variable(measurement_descriptor, chunking)
 
         buffer_ = numpy.empty(var.shape[1:], dtype=var.dtype)
-        for index, (time_value, time_group) in enumerate(dataset_groups):
+        for time_index, (time_value, time_group) in enumerate(dataset_groups):
             fuse_sources([DatasetSource(dataset, measurement_id) for dataset in time_group],
                          buffer_,
                          tile_spec.affine,
                          tile_spec.projection,
                          getattr(var, '_FillValue', None),
                          resampling=_map_resampling(measurement_descriptor['resampling_method']))
-            var[index] = buffer_
+            var[time_index] = buffer_

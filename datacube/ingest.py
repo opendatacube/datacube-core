@@ -77,13 +77,13 @@ def store_datasets(datasets, index=None, workers=0):
         store_datasets_with_mapping(datasets, storage_mapping, index=index, workers=workers)
 
 
-def _create_storage_unit_task(task):
+def create_storage_unit(task):
     tile_index, storage_mapping, datasets = task
     filename = storage.generate_filename(tile_index, datasets, storage_mapping)
     return storage.create_storage_unit(tile_index, datasets, storage_mapping, filename)
 
 
-def _cleanup_storage_units_task(task):
+def remove_storage_unit(task):
     tile_index, storage_mapping, datasets = task
     filename = storage.generate_filename(tile_index, datasets, storage_mapping)
     try:
@@ -130,12 +130,12 @@ def store_datasets_with_mapping(datasets, storage_mapping, index=None, workers=0
 
     try:
         if workers:
-            storage_units = _run_parallel_tasks(_create_storage_unit_task, tasks, workers)
+            storage_units = _run_parallel_tasks(create_storage_unit, tasks, workers)
         else:
-            storage_units = [_create_storage_unit_task(task) for task in tasks]
+            storage_units = [create_storage_unit(task) for task in tasks]
 
         index.storage.add_many(storage_units)
     except:
         for task in tasks:
-            _cleanup_storage_units_task(task)
+            remove_storage_unit(task)
         raise

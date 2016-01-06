@@ -11,6 +11,7 @@ from itertools import chain
 from dateutil.tz import tzutc
 import netCDF4
 from osgeo import osr
+import yaml
 
 from datacube.model import VariableAlreadyExists
 
@@ -70,8 +71,8 @@ class NetCDFWriter(object):
         self._set_global_attributes(tile_spec)
 
         # Create Variable Length Variable to store extra metadata
-        extra_meta = self.nco.createVariable('extra_metadata', str, 'time')
-        extra_meta.long_name = 'Extra source metadata'
+        self._extra_meta = self.nco.createVariable('extra_metadata', str, 'time')
+        self._extra_meta.long_name = 'Detailed '
 
     def close(self):
         self.nco.close()
@@ -230,7 +231,7 @@ class NetCDFWriter(object):
 
         return index
 
-    def set_time_values(self, time_values):
+    def create_time_values(self, time_values):
         times = self.nco.variables['time']
         for idx, val in enumerate(time_values):
             times[idx] = _seconds_since_1970(val)
@@ -269,6 +270,16 @@ class NetCDFWriter(object):
         time_index = self.find_or_create_time_index(time_value)
 
         destination_variable[time_index, :, :] = np_array
+
+    def add_source_metadata(self, time_index, metadata_docs):
+        """
+        Save YAML metadata documents into the `extra_metadata` variable
+
+        :type time_index: int
+        :param metadata_docs: List of metadata docs for this timestamp
+        :type metadata_docs: list
+        """
+        self._extra_meta[time_index] = yaml.safe_dump_all(metadata_docs)
 
     def _create_data_variable(self, measurement_descriptor, chunking, units=None):
         params = _create_variable_params(measurement_descriptor)
