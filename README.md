@@ -7,74 +7,66 @@
 Overview
 ========
 
-The Australian Geoscience Data Cube provides an integrated gridded data analysis environment for decades of analysis ready earth observation satellite and related data from multiple satellite and other acquisition systems.
+The Australian Geoscience Data Cube provides an integrated gridded data analysis environment for decades of analysis 
+ready earth observation satellite and related data from multiple satellite and other acquisition systems.
 
-In 2014, Geoscience Australia, CSIRO and the NCI established the Australian Geoscience Data Cube, building on earlier work of Geoscience Australia and expanding it to include additional earth observation satellite and other gridded data collections (e.g. MODIS, DEM) in order to expand the range of integrated data analysis capabilities that were available. The complete software stack and petabytes of EO are deployed at the NCI petascale computing facility for use by NCI users.
+In 2014, Geoscience Australia, CSIRO and the NCI established the Australian Geoscience Data Cube, building on earlier 
+work of Geoscience Australia and expanding it to include additional earth observation satellite and other gridded data 
+collections (e.g. MODIS, DEM) in order to expand the range of integrated data analysis capabilities that were 
+available. The complete software stack and petabytes of EO are deployed at the NCI petascale computing facility for 
+use by NCI users.
 
-__The current AGDC v2 implementation is intended as a working prototype__ for a cohesive, sustainable framework for large-scale multidimensional data management for geoscientific data. This public development release is intended to foster broader collaboration on the design and implementation. It is not intended for operational use.
+__The current AGDC v2 implementation is intended as a working prototype__ for a cohesive, sustainable framework for 
+large-scale multidimensional data management for geoscientific data. This public development release is intended to 
+foster broader collaboration on the design and implementation. It is not intended for operational use.
 
 Requirements
 ============
 
 ### System
 * PostgreSQL 9.4 or greater
-* Python 2.7
+* Python 2.7+ or Python 3.4+
 
-See [requirements.txt](requirements.txt) for required python modules.
+General usage
+=============
+See the [user guide](http://agdc-v2.readthedocs.org/en/ga-milestone1/?badge=ga-milestone1) for installation &amp; 
+usage of the datacube.
 
-Installation
-============
+Developer setup
+===============
 
-1. Clone repository from GitHub
+1. Clone:
+
     * `git clone https://github.com/data-cube/agdc-v2.git`
-2. Install python requirements
-    * `pip install -r requirements.txt`
-3. Install AGDC-v2
-    * `python setup.py install`
-
-Setup
-=====
-
-### User configuration
-
-Create a basic user configuration in `~/.datacube.conf`; For example:
-
-    [datacube]
-    db_hostname: localhost
-    db_database: datacube
-    db_username:
-    db_password:
     
-    [locations]
-    eotiles: file:///datacube/eotiles
+2. Install the native libraries for [GDAL](http://www.gdal.org/) &amp; NetCDF4.
+    * This depends on your OS.
+      * Eg. `yum install gdal`
+        
+3. Install Python dependencies:
 
-
-### Create the datacube database in PostgreSQL
-
-    $ createdb datacube
-    $ datacube-config database init
-
-### Load sample **Storage Type** configuration documents
-
-    $ datacube-config storage add docs/config_samples/*_type.yaml
+    `python setup.py develop`
     
-### Load sample **Storage Mapping** configuration documents
-
-    $ datacube-config mappings add docs/config_samples/*/*_mapping.yaml
-
-
-### Ingest some data
-
-    $ datacube-ingest -h
-    Usage: datacube-ingest-script.py [OPTIONS] [DATASET]...
+    Note that the versions must match between GDAL's Python bindings and the native GDAL library. If you receive
+    a gdal error when installing dependencies, you may need to install a specific version first:
+     
+     eg. `pip install gdal==2.0.1`
     
-      Ingest datasets into the Data Cube.
+4. Run unit tests + PyLint
+
+    `./check-code.sh` 
     
-    Options:
-      -v, --verbose  Use multiple times for more verbosity
-      --log-queries  Print database queries.
-      -h, --help     Show this message and exit.
-      
-    $ datacube-ingest dataset-description.yaml
+    (this script approximates what is run by Travis. You can alternatively run `py.test` yourself)
+    
+5.  **(or)** Run all tests, including integration tests.
+
+   `./check-code.sh integration_tests`
+    
+   * Assumes a password-less Postgres database running on localhost called `agdcintegration`
+     * Otherwise copy `integration_tests/agdcintegration.conf` to `~/.datacube_integration.conf` and edit to customise.
+        
+
+
+
 
 
