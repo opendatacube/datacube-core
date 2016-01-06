@@ -12,7 +12,6 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-from __future__ import absolute_import
 import os
 import sys
 
@@ -20,11 +19,12 @@ import sys
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('../..'))
-print(sys.path)
+
 
 from version import get_version
 __version = get_version()
+
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
 # -- General configuration ------------------------------------------------
 
@@ -36,6 +36,7 @@ __version = get_version()
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.viewcode',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -51,7 +52,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'AGDC'
+project = u'Australian Geoscience Data Cube'
 copyright = u'2016, Geoscience Australia, CSIRO, NCI'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -59,7 +60,7 @@ copyright = u'2016, Geoscience Australia, CSIRO, NCI'
 # built documents.
 #
 # The short X.Y version.
-version = '2.0'
+version = __version
 # The full version, including alpha/beta/rc tags.
 release = __version
 
@@ -106,7 +107,10 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+if on_rtd:
+    html_theme = 'default'
+else:
+    html_theme = 'alabaster'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -266,24 +270,24 @@ texinfo_documents = [
 #texinfo_no_detailmenu = False
 
 
-# Mock modules that need native libraries.
-# See: http://read-the-docs.readthedocs.org/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
-NATIVE_MODULES = [
-    'numpy',
-    'rasterio',
-    'netcdf4',
-    'psycopg2',
-    'gdal',
-]
+if on_rtd:
+    # Mock modules that need native libraries.
+    # See: http://read-the-docs.readthedocs.org/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
+    NATIVE_MODULES = [
+        'numpy',
+        'rasterio',
+        'netcdf4',
+        'psycopg2',
+        'gdal',
+    ]
 
-import sys
-from mock import Mock as MagicMock
-
-
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name):
-        return Mock()
+    from mock import Mock as MagicMock
 
 
-sys.modules.update((mod_name, Mock()) for mod_name in NATIVE_MODULES)
+    class Mock(MagicMock):
+        @classmethod
+        def __getattr__(cls, name):
+            return Mock()
+
+
+    sys.modules.update((mod_name, Mock()) for mod_name in NATIVE_MODULES)
