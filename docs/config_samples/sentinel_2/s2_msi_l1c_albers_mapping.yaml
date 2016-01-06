@@ -57,7 +57,7 @@ storage:
         x: 500
         y: 500
         time: 1
-    dimension_order: ['time', 'x', 'y']
+    dimension_order: ['time', 'y', 'x']
 
 measurements:
     '02':
@@ -141,7 +141,7 @@ storage:
         x: 500
         y: 500
         time: 1
-    dimension_order: ['time', 'x', 'y']
+    dimension_order: ['time', 'y', 'x']
 
 measurements:
   '05':
@@ -235,7 +235,7 @@ storage:
         x: 500
         y: 500
         time: 1
-    dimension_order: ['time', 'x', 'y']
+    dimension_order: ['time', 'y', 'x']
 
 measurements:
   '01':
