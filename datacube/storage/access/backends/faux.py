@@ -26,8 +26,11 @@ class FauxStorageUnit(StorageUnitBase):
     def __init__(self, coordinates, variables):
         self.coordinates = coordinates
         self.variables = variables
+        self.coodinate_values = {}
 
     def _get_coord(self, name):
+        if self.coodinate_values.has_key(name):
+            return self.coodinate_values[name]
         coord = self.coordinates[name]
         data = numpy.linspace(coord.begin, coord.end, coord.length, dtype=coord.dtype)
         return data

@@ -14,17 +14,16 @@ from datacube import api
 
 
 def compare_descriptor_with_data(descriptor, data):
-    print("Dimension names match: {}".format(descriptor['LANDSAT_8_OLI_TIRS']['dimensions'] == data['dimensions']))
+    print("Dimension names match: {}".format(list(descriptor['dimensions']) == data['dimensions']))
 
-    for d in zip(data['dimensions'], data['size'], descriptor['LANDSAT_8_OLI_TIRS']['result_shape']):
+    for d in zip(data['dimensions'], data['size'], descriptor['result_shape']):
         print("  Dimension: {}\tSize:\t{}\t{}".format(*d))
-    print("Sizes match: {}".format(data['size'] == descriptor['LANDSAT_8_OLI_TIRS']['result_shape']))
+    print("Sizes match: {}".format(data['size'] == descriptor['result_shape']))
 
-    for (dim, da, de) in zip(data['dimensions'], data['indices'], descriptor['LANDSAT_8_OLI_TIRS']['result_min']):
-        print("  Dimension: {}\tStart:\t{}\t{}".format(dim, da[0], de))
-    for (dim, da, de) in zip(data['dimensions'], data['indices'], descriptor['LANDSAT_8_OLI_TIRS']['result_max']):
-        print("  Dimension: {}\tEnd:\t{}\t{}".format(dim, da[-1], de))
-
+    for dim, de in zip(descriptor['dimensions'], descriptor['result_min']):
+        print("  Dimension: {}\tStart:\t{}\t{}".format(dim, data['indices'][dim][0], de))
+    for dim, de in zip(descriptor['dimensions'], descriptor['result_max']):
+        print("  Dimension: {}\tEnd:\t{}\t{}".format(dim, data['indices'][dim][-1], de))
 
 def create_rgb(data):
     band_1 = data['arrays']['band_1']
@@ -59,10 +58,10 @@ def main():
         'variables': ('band_1', 'band_4', 'band_6'),
         'dimensions': {
             'longitude': {
-                'range': (148, 150.25),
+                'range': (148, 149),
             },
             'latitude': {
-                'range': (-36.1, -35),
+                'range': (-36.1, -35.1),
             },
             'time': {
                 'range': (datetime.datetime(2000, 8, 1), datetime.datetime(2015, 8, 1, 9, 50, 23))
@@ -79,11 +78,12 @@ def main():
     # data_request['dimensions']['latitude']['array_range'] = (3000, 5000)
 
     # dask.set_options(get=dask.async.get_sync)
-    data = goo.get_data(data_request)
+    data = goo.get_data(data_request, descriptor['LS8 NBAR']['storage_units'])
     pp.pprint(data)
 
-    compare_descriptor_with_data(descriptor, data)
+    compare_descriptor_with_data(descriptor['LS8 NBAR'], data)
 
+    print('Mean value of all cells is: {}'.format(float(data['arrays']['band_1'].mean())))
     # rgb = create_rgb(data)
     # pp.pprint(rgb)
 

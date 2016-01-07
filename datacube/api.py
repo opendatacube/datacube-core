@@ -23,6 +23,8 @@ import itertools
 import operator
 import uuid
 import copy
+
+import functools
 import numpy
 import dask.array as da
 import xray
@@ -30,8 +32,42 @@ import rasterio.warp
 
 from .model import Range
 from .storage.access.core import Coordinate, Variable, StorageUnitDimensionProxy, StorageUnitBase
-from .storage.access.backends import NetCDF4StorageUnit, GeoTifStorageUnit
+from .storage.access.backends import NetCDF4StorageUnit, GeoTifStorageUnit, FauxStorageUnit
 from .index import index_connect
+
+
+class NDArrayProxy(object):
+    def __init__(self, storage_unit, var_name):
+        self._storage_unit = storage_unit
+        self._var_name = var_name
+
+    @property
+    def ndim(self):
+        return len(self._storage_unit.coordinates)
+
+    @property
+    def size(self):
+        return functools.reduce(operator.mul, [coord.length for coord in self._storage_unit.coordinates])
+
+    @property
+    def dtype(self):
+        return self._storage_unit.variables[self._var_name].dtype
+
+    @property
+    def shape(self):
+        return tuple(coord.length for coord in self._storage_unit.coordinates)
+
+    def __len__(self):
+        return self.shape[0]
+
+    def __array__(self, dtype=None):
+        return self._storage_unit.get(self._var_name)
+
+    def __getitem__(self, key):
+        return self._storage_unit.get_chunk(self._var_name, key)
+
+    def __repr__(self):
+        return '%s(array=%r)' % (type(self).__name__, self.shape)
 
 
 def get_storage_unit_transform(su):
@@ -45,15 +81,11 @@ def get_storage_unit_projection(su):
     return storage_type['projection']['spatial_ref']
 
 
-def make_storage_unit(su):
+def make_storage_unit(su, is_diskless=False):
     """convert search result into StorageUnit object
     :param su: database index storage unit
+    :param is_diskless: Use a cached object for the source of data, rather than the file
     """
-    def map_dims(dims):
-        # TODO: remove this hack
-        mapping = {'t': 'time', 'y': 'latitude', 'x': 'longitude'}
-        return tuple(mapping[dim] for dim in dims)
-
     storage_type = su.storage_mapping.storage_type.descriptor
     coordinates = {name: Coordinate(dtype=numpy.dtype(attributes['dtype']),
                                     begin=attributes['begin'],
@@ -65,7 +97,7 @@ def make_storage_unit(su):
         attributes['varname']: Variable(
             dtype=numpy.dtype(attributes['dtype']),
             nodata=attributes.get('nodata', None),
-            dimensions=map_dims(storage_type['dimension_order']),
+            dimensions=storage_type['dimension_order'],
             units=attributes.get('units', None))
         for attributes in su.storage_mapping.measurements.values()
     }
@@ -73,6 +105,24 @@ def make_storage_unit(su):
         'storage_type': storage_type
     }
     attributes.update(su.storage_mapping.match.metadata)
+
+    if is_diskless:
+        faux = FauxStorageUnit(coordinates=coordinates, variables=variables)
+        faux.filepath = su.filepath
+        faux.attributes = attributes
+        # TODO: Retrive from database instead of opening file
+
+        irregular_dim_names = ['time', 't']  # TODO: Use irregular flag from database instead
+        irregular_dims = [name for name, coord in coordinates.items()
+                          if name in irregular_dim_names and coord.length > 2]
+
+        if irregular_dims and su.storage_mapping.storage_type.driver == 'NetCDF CF':
+            real_su = NetCDF4StorageUnit(su.filepath,
+                                         coordinates=coordinates, variables=variables, attributes=attributes)
+            for coord in irregular_dims:
+                coord_values, _ = real_su.get_coord(coord)
+                faux.coodinate_values[coord] = coord_values
+        return faux
 
     if su.storage_mapping.storage_type.driver == 'NetCDF CF':
         return NetCDF4StorageUnit(su.filepath, coordinates=coordinates, variables=variables, attributes=attributes)
@@ -187,78 +237,13 @@ class StorageUnitCollection(object):
                     variables[variable_name] = variable
         return variables
 
-    def get_variables_by_group(self):
-        variables = {}
-        for storage_unit in self._storage_units:
-            for variable_name, variable in storage_unit.variables.items():
-                variables.setdefault(variable.dimensions, {})[variable_name] = variable
-        return variables
-
     def group_by_dimensions(self):
         dimension_group = {}
         for storage_unit in self._storage_units:
-            dim_groups = list(set(variable.dimensions for variable in storage_unit.variables.values()))
+            dim_groups = list(set(tuple(variable.dimensions) for variable in storage_unit.variables.values()))
             for dims in dim_groups:
                 dimension_group.setdefault(dims, StorageUnitCollection()).append(storage_unit)
         return dimension_group
-
-    def get_dimension_bounds(self, dimensions, dimension_ranges):
-        """
-        Get the min, max and array width of each dimension
-        :param dimensions: a list of dimension names
-        :param dimension_ranges: a dict of the ranges of any cropping that needs to occur {'dim_name': (min,max)}
-        :return: {
-                    'result_max': (<for each dim>),
-                    'result_min': (<for each dim>),
-                    'result_shape': (<for each dim>),
-                 }
-        """
-
-        result = {
-            'result_max': tuple(),
-            'result_min': tuple(),
-            'result_shape': tuple(),
-        }
-        for dim in dimensions:
-            result_max = self.get_max(dim)
-            result_min = self.get_min(dim)
-            result_length = self.get_length(dim)
-            if dim in dimension_ranges:
-                lower_bounds = min(dimension_ranges[dim]['range'])
-                upper_bounds = max(dimension_ranges[dim]['range'])
-                unit_width = (result_max - result_min) / float(result_length)
-                if lower_bounds > result_min:
-                    result_length -= int((lower_bounds - result_min) / unit_width)
-                    result_min = lower_bounds
-                if upper_bounds < result_max:
-                    result_length -= int((result_max - upper_bounds) / unit_width)
-                    result_max = upper_bounds
-            result['result_max'] += (result_max,)
-            result['result_min'] += (result_min,)
-            result['result_shape'] += (result_length,)
-        return result
-
-    def get_resolution(self):
-        return set(storage_unit.attributes['storage_type']['resolution'] for storage_unit in self._storage_units)
-
-    def get_length(self, dim):
-        length_index = {}
-        for storage_unit in self._storage_units:
-            index = storage_unit.coordinates[dim].begin
-            length_index[index] = storage_unit.coordinates[dim].length
-        return sum(length_index.values())
-
-    def get_min(self, dim):
-        return min(
-            (min([storage_unit.coordinates[dim].begin, storage_unit.coordinates[dim].end])
-             for storage_unit in self._storage_units if dim in storage_unit.coordinates)
-        )
-
-    def get_max(self, dim):
-        return max(
-            (max([storage_unit.coordinates[dim].begin, storage_unit.coordinates[dim].end])
-             for storage_unit in self._storage_units if dim in storage_unit.coordinates)
-        )
 
 
 def _get_dimension_properties(storage_units, dimensions):
@@ -308,7 +293,7 @@ def _create_response(xrays, dimensions):
     reponse = {
         'dimensions': list(dimensions),
         'arrays': xrays,
-        'indices': [sample_xray.coords[dim].values for dim in dimensions],
+        'indices': dict((dim, sample_xray.coords[dim].values) for dim in dimensions),
         'element_sizes': [(abs(sample_xray.coords[dim].values[0] - sample_xray.coords[dim].values[-1]) /
                            float(sample_xray.coords[dim].size)) for dim in dimensions],
         'size': sample_xray.shape,
@@ -330,6 +315,11 @@ def make_nodata_func(storage_units, var_name, dimensions, chunksize):
     return make_nodata_dask
 
 
+def get_chunked_data_func(storage_unit, var_name):
+    # TODO: Provide dask array to chunked NetCDF calls
+    return NDArrayProxy(storage_unit, var_name)
+
+
 def _get_dask_for_storage_units(storage_units, var_name, dimensions, dim_vals, dsk_id):
     dsk = {}
     for storage_unit in storage_units:
@@ -337,7 +327,9 @@ def _get_dask_for_storage_units(storage_units, var_name, dimensions, dim_vals, d
         for dim in dimensions:
             ordinal = dim_vals[dim].index(storage_unit.coordinates[dim].begin)
             dsk_index += (ordinal,)
+        # TODO: Wrap in a chunked dask for sub-file dask chunks
         dsk[dsk_index] = (storage_unit.get, var_name)
+        # dsk[dsk_index] = (get_chunked_data_func, storage_unit, var_name)
     return dsk
 
 
@@ -450,10 +442,10 @@ class IrregularStorageUnitSlice(StorageUnitBase):
 
     def _fill_data(self, name, index, dest):
         var = self.variables[name]
-        shape = [self.coordinates[dim].length for dim in var.dimensions]
+        #shape = [self.coordinates[dim].length for dim in var.dimensions]
         dim_i = var.dimensions.index(self._sliced_coordinate)
         data = self._parent.get(name)
-        return data.isel(**{self._sliced_coordinate:dim_i})
+        numpy.copyto(dest, data.isel(**{self._sliced_coordinate: dim_i}).data)
 
 
 def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges=None):
@@ -466,7 +458,8 @@ def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges
     for storage_unit in storage_units:
         for var_name, v in storage_unit.variables.items():
             if variables is None or var_name in variables:
-                variables_by_dimensions.setdefault(v.dimensions, {}).setdefault(var_name, []).append(storage_unit)
+                dims = tuple(v.dimensions)
+                variables_by_dimensions.setdefault(dims, {}).setdefault(var_name, []).append(storage_unit)
 
     dimension_group = {}
     for dimensions, sus_by_variable in variables_by_dimensions.items():
@@ -474,6 +467,17 @@ def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges
     if len(dimension_group) == 1:
         return dimension_group.values()[0]
     return dimension_group
+
+def get_result_stats(storage_units, dimension_ranges):
+    strata_storage_units = _stratify_irregular_dimension(storage_units, 'time')
+    storage_data = _get_data_from_storage_units(strata_storage_units, None, dimension_ranges)
+    example = storage_data['arrays'][storage_data['arrays'].keys()[0]]
+    result = {
+        'result_shape': example.shape,
+        'result_min': tuple(example[dim].min().item() for dim in example.dims),
+        'result_max': tuple(example[dim].max().item() for dim in example.dims),
+    }
+    return result
 
 
 class API(object):
@@ -491,10 +495,11 @@ class API(object):
             #         su.storage_mapping.match.metadata['instrument']['name']
             stype = su.storage_mapping.name
             # ptype = su.storage_mapping.match.metadata['product_type']
-            storage_units_by_type.setdefault(stype, StorageUnitCollection()).append(make_storage_unit(su))
+            unit = make_storage_unit(su, is_diskless=True)
+            storage_units_by_type.setdefault(stype, StorageUnitCollection()).append(unit)
         return storage_units_by_type, query, variables, dimension_ranges
 
-    def get_descriptor(self, descriptor_request=None):
+    def get_descriptor(self, descriptor_request=None, include_storage_units=True):
         """
         :param descriptor_request:
         query_parameter = \
@@ -526,7 +531,8 @@ class API(object):
         'polygon': '<some kind of text representation of a polygon for PostGIS to sort out>'
                     # We won't be doing this in the pilot
         }
-        descriptor = {
+        :param include_storage_units: Include the list of storage units
+        :return: descriptor = {
             'LS5TM': { # storage_type identifier
                  'dimensions': ['x', 'y', 't'],
                  'variables': { # These will be the variables which can be accessed as arrays
@@ -604,26 +610,27 @@ class API(object):
                     continue
 
                 result = descriptor.setdefault(stype, {
-                    'dimensions': dimensions,
+                    'dimensions': list(dimensions),
                     'storage_units': {},
                     'variables': {},
                     'result_min': None,
                     'result_max': None,
                     'result_shape': None,
-                    'buffer_size': None,        # TODO: Include chunk size
                     'irregular_indices': None,  # TODO: Add irregular indices
                 })
-                result.update(grouped_storage_units.get_dimension_bounds(dimensions, dimension_ranges))
+                # result.update(grouped_storage_units.get_dimension_bounds(dimensions, dimension_ranges))
 
                 for var_name, var in grouped_storage_units.get_variables().items():
                     result['variables'][var_name] = {
-                        'datatype': var.dtype,
-                        'nodata': var.nodata,
+                        'datatype_name': var.dtype,
+                        'nodata_value': var.nodata,
                     }
-                result['storage_units'] = grouped_storage_units.get_storage_unit_stats(dimensions)
+                if include_storage_units:
+                    result['storage_units'] = grouped_storage_units.get_storage_unit_stats(dimensions)
+                result.update(get_result_stats(grouped_storage_units.get_storage_units(), dimension_ranges))
         return descriptor
 
-    def get_data(self, descriptor):
+    def get_data(self, descriptor, storage_units=None):
         """
         Function to return composite in-memory arrays
         :param descriptor:
@@ -652,7 +659,8 @@ class API(object):
         'polygon': '<some kind of text representation of a polygon for PostGIS to sort out>'
                     # We won't be doing this in the pilot
         }
-        data_response = \
+        :param storage_units:
+        :return: data_response = \
         {
         'dimensions': ['x', 'y', 't'],
         'arrays': { # All of these will have the same shape
@@ -679,17 +687,23 @@ class API(object):
         """
 
         query, variables, dimension_ranges = _convert_descriptor_to_query(descriptor)
-        sus = self.index.storage.search(**query)
 
         storage_units_by_type = {}
-        for su in sus:
-            # stype = su.storage_mapping.match.metadata['platform']['code'] + '_' + \
-            #         su.storage_mapping.match.metadata['instrument']['name']
-            stype = su.storage_mapping.name
-            # ptype = su.storage_mapping.match.metadata['product_type']
-            # TODO: group by storage type also?
-            # storage_units_by_type.setdefault(stype, {}).setdefault(ptype, []).append(make_storage_unit(su))
-            storage_units_by_type.setdefault(stype, []).append(make_storage_unit(su))
+        if storage_units:
+            # TODO: Convert filenames into storage units
+            stype = 'Requested Storage'
+            storage_units_by_type[stype] = [NetCDF4StorageUnit.from_file(su['storage_path'])
+                                            for su in storage_units.values()]
+        else:
+            sus = self.index.storage.search(**query)
+            for su in sus:
+                # stype = su.storage_mapping.match.metadata['platform']['code'] + '_' + \
+                #         su.storage_mapping.match.metadata['instrument']['name']
+                stype = su.storage_mapping.name
+                # ptype = su.storage_mapping.match.metadata['product_type']
+                # TODO: group by storage type also?
+                # storage_units_by_type.setdefault(stype, {}).setdefault(ptype, []).append(make_storage_unit(su))
+                storage_units_by_type.setdefault(stype, []).append(make_storage_unit(su))
 
         if len(storage_units_by_type) > 1:
             raise RuntimeError('Data must come from a single storage')

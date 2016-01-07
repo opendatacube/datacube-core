@@ -80,3 +80,7 @@ class NetCDF4StorageUnit(StorageUnitBase):
     def _fill_data(self, name, index, dest):
         with _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.filepath)) as ncds:
             numpy.copyto(dest, ncds[name][index])
+
+    def get_chunk(self, name, index):
+        with _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.filepath)) as ncds:
+            return ncds[name][index]

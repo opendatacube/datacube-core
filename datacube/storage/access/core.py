@@ -71,6 +71,16 @@ class StorageUnitBase(object):
 
         return DataArray(dest, coords=coords, dims=var.dimensions)
 
+    def get_chunk(self, name, index):
+        """
+        Returns a numpy-array-like object of the requested index
+        :param name: name of the variable
+        :param index: integer indexing
+        :return: numpy-array-like object
+        """
+        full_array = self.get(name)
+        return full_array[index].data
+
     def coord_slice(self, dim, range_=None):
         """
         Convert label index into integer index for a specific coordinate
