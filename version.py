@@ -9,6 +9,7 @@ Eg. ::
 
     datacube-0.1.0
     datacube-0.2.0.dev1
+    datacube-0.2.0+9f43bbc
 
 Refer to PEP440: https://www.python.org/dev/peps/pep-0440
 
@@ -37,6 +38,8 @@ def get_version():
     pkg_info_file = join(package_dir, 'PKG-INFO')
 
     if isdir(git_dir):
+        # Ask git for an annotated version number
+        # (eg. "datacube-0.0.0-651-gcf335a9-dirty")
         cmd = [
             'git',
             '--git-dir', git_dir,
@@ -60,13 +63,13 @@ def get_version():
             version = VERSION_PATTERN.search(f.read()).group(1)
     elif not GIT_ARCHIVE_REF_NAMES.startswith('$'):
         # Return the version if it has been injected into the file by git-archive
-        version = GIT_TAG_PATTERN.search(GIT_ARCHIVE_REF_NAMES)
-        if version:
-            return version.group(1)
+        version_match = GIT_TAG_PATTERN.search(GIT_ARCHIVE_REF_NAMES)
+        if version_match:
+            version = version_match.group(1)
         else:
             # Otherwise this is not a release: just use the commit hash.
-            # We can't get the last tagged version from git-archive, so we'll jus t use 0.0.0.
-            return '0.0.0+' + GIT_ARCHIVE_COMMIT_HASH
+            # We can't get the last tagged version from git-archive, so we'll use 0.0.0.
+            version = '0.0.0+' + GIT_ARCHIVE_COMMIT_HASH
     else:
         raise RuntimeError('Unknown version: Not a git repository, a python dist tarball or a git-created archive.')
 
