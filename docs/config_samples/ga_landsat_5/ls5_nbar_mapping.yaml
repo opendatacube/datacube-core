@@ -48,8 +48,13 @@ storage:
     dimension_order: ['time', 'latitude', 'longitude']
 
 default_measurement: &MEASUREMENT_DEFAULTS
+  # data settings
   dtype: int16
   nodata: -999
+  #
+  units: 1
+  
+  # compression settings
   resampling_method: cubic
   zlib: True
   complevel: 4
@@ -61,18 +66,30 @@ measurements:
     '10':
         <<: *MEASUREMENT_DEFAULTS
         varname: band_10
+        wavelength: 0.45 - 0.52 micrometers
+        colour: Blue
     '20':
         <<: *MEASUREMENT_DEFAULTS
         varname: band_20
+        wavelength: 0.52 - 0.60 micrometers
+        colour: Green
     '30':
         <<: *MEASUREMENT_DEFAULTS
         varname: band_30
+        wavelength: 0.63 - 0.69 micrometers
+        colour: Red
     '40':
         <<: *MEASUREMENT_DEFAULTS
         varname: band_40
+        wavelength: 0.77 - 0.90 micrometers
+        colour: Near Infrared
     '50':
         <<: *MEASUREMENT_DEFAULTS
         varname: band_50
+        wavelength: 1.55 - 1.75 micrometers
+        colour: Short-wave Infrared
     '70':
         <<: *MEASUREMENT_DEFAULTS
         varname: band_70
+        wavelength: 2.09 - 2.35 micrometers
+        colour: Short-wave Infrared
