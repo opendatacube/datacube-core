@@ -47,18 +47,15 @@ class NetCDFWriter(object):
     """
     Create NetCDF4 Storage Units, with CF Compliant metadata.
 
-    At the moment the compliance depends on what is passed in to this class,
-    internal checks are not performed.
+    At the moment compliance depends on what is passed in to this class
+    as internal compliance checks are not performed.
 
-
-    :param netcdf_path: File path at which to create this NetCDF file
-    :type netcdf_path: str
-    :param tile_spec: Storage Unit definition
-    :type tile_spec:  datacube.model.TileSpec
-    :param time_length: The number of time values allowed to be stored. Unlimited by default.
+    :param str netcdf_path: File path at which to create this NetCDF file
+    :param datacube.model.TileSpec tile_spec: Storage Unit definition
+    :param num_times: The number of time values allowed to be stored. Unlimited by default.
     """
 
-    def __init__(self, netcdf_path, tile_spec, time_length=None):
+    def __init__(self, netcdf_path, tile_spec, num_times=None):
         netcdf_path = str(netcdf_path)
 
         self.nco = netCDF4.Dataset(netcdf_path, 'w')
@@ -66,7 +63,7 @@ class NetCDFWriter(object):
         self.tile_spec = tile_spec
         self.netcdf_path = netcdf_path
 
-        self._create_time_dimension(time_length)
+        self._create_time_dimension(num_times)
         self._create_spatial_variables(tile_spec)
         self._set_global_attributes(tile_spec)
 
