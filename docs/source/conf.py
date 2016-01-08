@@ -21,6 +21,8 @@ import sys
 sys.path.insert(0, os.path.abspath('../..'))
 print(sys.path)
 
+# Test Import
+import datacube
 
 from version import get_version
 __version = get_version()
@@ -280,6 +282,8 @@ if on_rtd:
         'netcdf4',
         'psycopg2',
         'gdal',
+        'dateutil',
+        'pathlib',
     ]
 
     from mock import Mock as MagicMock
