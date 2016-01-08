@@ -6,11 +6,9 @@ from affine import Affine
 import numpy as np
 import numpy.testing as npt
 import netCDF4
-import rasterio
 
 from datacube.storage.netcdf_writer import NetCDFWriter
 from datacube.model import TileSpec, StorageType
-from datacube.storage.utils import tilespec_from_riodataset
 
 GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
            'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
@@ -69,7 +67,8 @@ def test_albers_goo(tmpdir):
         bandname = 'B%s' % band
         measurement_descriptor = SimpleObject(varname=bandname, dtype='int16', nodata=-999)
 
-        ncfile.append_np_array(date, data, measurement_descriptor, chunking, '1')
+        var = ncfile.ensure_variable(measurement_descriptor, chunking)
+        var[0] = data
     ncfile.close()
 
     # Perform some basic checks
@@ -82,13 +81,9 @@ def test_albers_goo(tmpdir):
     assert len(nco.variables['time']) == 1
     assert len(nco.variables['x']) == 4000
     assert len(nco.variables['y']) == 2000
-    # assert nco.variables['latitude'][0] == -29
-    # assert abs(nco.variables['latitude'][-1] - -29.9995) < 0.0000001
-    # assert nco.variables['longitude'][0] == 151
-    # assert nco.variables['longitude'][-1] == 151.99975
 
 
-def test_create_single_time_netcdf_from_numpy_arrays(tmpdir):
+def test_create_netcdf(tmpdir):
     filename = str(tmpdir.join('testfile_np.nc'))
 
     global_attrs = {'test_attribute': 'test_value'}
@@ -101,64 +96,35 @@ def test_create_single_time_netcdf_from_numpy_arrays(tmpdir):
 
     ncfile = NetCDFWriter(filename, tile_spec)
 
-    for date, band in ops:
+    for index, (date, band) in enumerate(ops):
         data = np.empty([2000, 4000])
         data[:] = band
         bandname = 'B%s' % band
 
         measurement_descriptor = SimpleObject(varname=bandname, dtype='int16', nodata=-999)
 
-        ncfile.append_np_array(date, data, measurement_descriptor, chunking, '1')
+        var = ncfile.ensure_variable(measurement_descriptor, chunking)
+        var[index] = data
+
     ncfile.close()
 
     # Perform some basic checks
-    nco = netCDF4.Dataset(filename)
-    for var in ('latitude_longitude', 'time', 'longitude', 'latitude', 'B1', 'B2', 'time'):
-        assert var in nco.variables
-    for k, v in global_attrs.items():
-        assert getattr(nco, k) == v
+    with netCDF4.Dataset(filename) as nco:
+        for var in ('latitude_longitude', 'time', 'longitude', 'latitude', 'B1', 'B2', 'time'):
+            assert var in nco.variables
+        for k, v in global_attrs.items():
+            assert getattr(nco, k) == v
 
-    assert len(nco.variables['time']) == 1
-    assert len(nco.variables['longitude']) == 4000
-    assert len(nco.variables['latitude']) == 2000
-    npt.assert_almost_equal(nco.variables['latitude'][0], -29.00025)
-    npt.assert_almost_equal(nco.variables['latitude'][-1], -29.99975)
-    npt.assert_almost_equal(nco.variables['longitude'][0], 151.000125)
-    npt.assert_almost_equal(nco.variables['longitude'][-1], 151.999875)
+        assert len(nco.variables['time']) == 2
+        assert len(nco.variables['longitude']) == 4000
+        assert len(nco.variables['latitude']) == 2000
+        npt.assert_almost_equal(nco.variables['latitude'][0], -29.00025)
+        npt.assert_almost_equal(nco.variables['latitude'][-1], -29.99975)
+        npt.assert_almost_equal(nco.variables['longitude'][0], 151.000125)
+        npt.assert_almost_equal(nco.variables['longitude'][-1], 151.999875)
+
+        assert nco.variables['B1'].shape == (2, 2000, 4000)
 
 
-def test_create_sample_netcdf_from_gdalds(tmpdir, example_gdal_path):
-    filename = str(tmpdir.join('testfile_gdal.nc'))
 
-    dataset = rasterio.open(example_gdal_path)
 
-    measurement_descriptor = SimpleObject(varname='B10', dtype='int16', nodata=-999)
-    storage_spec = {'chunking': {'longitude': 100, 'latitude': 100, 'time': 1},
-                    'dimension_order': ['time', 'latitude', 'longitude'],
-                    'crs': GEO_PROJ}
-    storage_type = StorageType(storage_spec)
-
-    tile_spec = tilespec_from_riodataset(dataset)
-    tile_spec.data = dataset.read(1)
-
-    ncfile = NetCDFWriter(filename, tile_spec)
-    ncfile.append_slice(dataset.read(1), storage_type, measurement_descriptor, datetime(2008, 5, 5, 0, 24), input_filename="")
-    ncfile.close()
-
-    # Perform some basic checks
-    nco = netCDF4.Dataset(filename)
-    for var in ('latitude_longitude', 'time', 'longitude', 'latitude', 'B10', 'time'):
-        assert var in nco.variables
-
-    assert len(nco.variables['time']) == 1
-    assert len(nco.variables['longitude']) == 4000
-    assert len(nco.variables['latitude']) == 4000
-    assert len(nco.variables['B10']) == 1
-    npt.assert_almost_equal(nco.variables['latitude'][0], -29.000125)
-    npt.assert_almost_equal(nco.variables['latitude'][-1], -29.999875)
-    npt.assert_almost_equal(nco.variables['longitude'][0], 151.000125)
-    npt.assert_almost_equal(nco.variables['longitude'][-1], 151.999875)
-
-    assert nco.variables['B10'].shape == (1, 4000, 4000)
-
-    nco.close()

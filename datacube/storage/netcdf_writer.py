@@ -233,40 +233,12 @@ class NetCDFWriter(object):
         for idx, val in enumerate(time_values):
             times[idx] = _seconds_since_1970(val)
 
-    def append_time_slice(self, varname, data, time):
-        destination_variable = self.nco.variables[varname]
-        time_index = self.find_or_create_time_index(time)
-        destination_variable[time_index, :, :] = data
-
     def ensure_variable(self, measurement_descriptor, chunking):
         varname = measurement_descriptor['varname']
         if varname in self.nco.variables:
             # TODO: check that var matches
             return self.nco.variables[varname]
         return self._create_data_variable(measurement_descriptor, chunking=chunking)
-
-    def append_np_array(self, time, nparray, measurement_descriptor, chunking, units):
-        varname = measurement_descriptor.varname
-        if measurement_descriptor.varname in self.nco.variables:
-            destination_variable = self.nco.variables[varname]
-        else:
-            destination_variable = self._create_data_variable(measurement_descriptor, chunking, units)
-
-        time_index = self.find_or_create_time_index(time)
-
-        destination_variable[time_index, :, :] = nparray
-
-    def append_slice(self, np_array, storage_type, measurement_descriptor, time_value, input_filename):
-        varname = measurement_descriptor.varname
-        if varname in self.nco.variables:
-            raise VariableAlreadyExists('Error writing to {}: variable {} already exists and will not be '
-                                        'overwritten.'.format(self.netcdf_path, varname))
-
-        destination_variable = self._create_data_variable(measurement_descriptor, storage_type.chunking)
-
-        time_index = self.find_or_create_time_index(time_value)
-
-        destination_variable[time_index, :, :] = np_array
 
     def add_source_metadata(self, time_index, metadata_docs):
         """
