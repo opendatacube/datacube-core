@@ -72,7 +72,7 @@ def get_skeleton(path, prod, bands):
             'to_dt': sensing_time,
             'center_dt': sensing_time
         },
-        'format': {'name': 'NetCDF4'},
+        'format': {'name': 'NETCDF'},
         'grid_spatial': {
             'projection': get_projection(image)
         },
