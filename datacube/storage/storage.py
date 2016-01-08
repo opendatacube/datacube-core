@@ -172,22 +172,17 @@ class DatasetSource(object):
     def __init__(self, dataset, measurement_id):
         dataset_measurement_descriptor = dataset.metadata.measurements_dict[measurement_id]
         self._filename = str(dataset.metadata_path.parent.joinpath(dataset_measurement_descriptor['path']))
-        self._band_id = dataset_measurement_descriptor.get('layer', 1)  # TODO: store band id in the MD doc
+        self._band_id = dataset_measurement_descriptor.get('layer', 1)
         self.transform = None
         self.projection = None
         self.nodata = None
         self.format = dataset.format
-        if self.format == 'NetCDF4':
-            self._band_id = 1  # TODO: this magically works for H8 netcdf
 
     @contextmanager
     def open(self):
         if self.format in ('GeoTiff', 'JPEG2000'):
             filename = self._filename
             bandnumber = self._band_id
-        elif self.format == 'NetCDF4':
-            filename = '%s:"%s":%s' % ('NETCDF', self._filename, self._band_id)
-            bandnumber = 1
         else:
             filename = '%s:"%s":%s' % (self.format, self._filename, self._band_id)
             bandnumber = 1
