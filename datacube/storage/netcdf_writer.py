@@ -127,7 +127,7 @@ class NetCDFWriter(object):
         return crs_var
 
     def _gdal_geotransform(self):
-        return " ".join(format(c, "g") for c in self.tile_spec.affine.to_gdal())
+        return self.tile_spec.affine.to_gdal()
 
     def _create_albers_crs(self, crs):
         # http://spatialreference.org/ref/epsg/gda94-australian-albers/html/

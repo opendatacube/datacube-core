@@ -127,4 +127,7 @@ def test_create_netcdf(tmpdir):
 
 
 
+        # Check GDAL Attributes
+        assert np.allclose(nco.variables['latitude_longitude'].GeoTransform, affine.to_gdal())
+        assert nco.variables['latitude_longitude'].spatial_ref == GEO_PROJ
 
