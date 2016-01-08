@@ -101,8 +101,8 @@ def test_index_storage_unit(index, db, default_collection):
     assert was_inserted
     db.ensure_storage_mapping(
         'Test storage mapping',
-        'location1', '/tmp/some/loc',
-        {}, {}, {}
+        {},
+        {},
     )
     mapping = db._connection.execute(STORAGE_MAPPING.select()).first()
 

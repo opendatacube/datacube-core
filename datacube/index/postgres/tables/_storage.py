@@ -19,41 +19,13 @@ STORAGE_MAPPING = Table(
     Column('id', SmallInteger, primary_key=True, autoincrement=True),
 
     # A name/label for this mapping (eg. 'LS7 NBAR'). Specified by users.
-    Column('name', String, nullable=False),
-
-    # A human-readable, potentially multi-line, description for display on the UI.
-    Column('description', String),
-
-    # The name of the location where the storage units should be stored. Specified by users.
-    Column('location_name', String, nullable=False),
-
-    # The offset relative to location where the storage units should be stored. Specified by users.
-    Column('file_path_template', String, nullable=False),
-
-    # The storage type to use.
-    Column('storage_type', postgres.JSONB, nullable=False),
+    Column('name', String, unique=True, nullable=False),
 
     # Match any datasets whose metadata is a superset of this.
     # See "_EXAMPLE_DATASETS_MATCHING" below
     Column('dataset_metadata', postgres.JSONB, nullable=False),
 
-    # Storage config for each measurement.
-    # The expected values depend on the storage driver (eg. NetCDF).
-    #
-    # Eg.
-    # '10':
-    #   dtype: int16
-    #   nodata: -999
-    #   interpolation: nearest
-    # '20':
-    #   dtype: int16
-    #   nodata: -999
-    #   interpolation: cubic
-    # See "_EXAMPLE_DATASET_TYPE_MEASUREMENTS" below.
-    Column('measurements', postgres.JSONB, nullable=False),
-
-    # region of integrest for this mapping
-    Column('roi', postgres.JSONB),
+    Column('descriptor', postgres.JSONB, nullable=False),
 
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),

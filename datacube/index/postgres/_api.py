@@ -180,20 +180,14 @@ class PostgresDb(object):
         ).fetchall()
 
     def ensure_storage_mapping(self,
-                               name, location_name, file_path_template,
-                               dataset_metadata, measurements, storage_type,
-                               roi=None,
-                               description=None):
+                               name,
+                               dataset_metadata,
+                               descriptor):
         res = self._connection.execute(
             STORAGE_MAPPING.insert().values(
                 name=name,
-                description=description,
                 dataset_metadata=dataset_metadata,
-                measurements=measurements,
-                location_name=location_name,
-                storage_type=storage_type,
-                file_path_template=file_path_template,
-                roi=roi,
+                descriptor=descriptor
             )
         )
         return res.inserted_primary_key[0]

@@ -148,54 +148,39 @@ class StorageMappingResource(object):
         # TODO: Validate doc (Against JSON Schema?)
         name = descriptor['name']
         dataset_metadata = descriptor['match']['metadata']
-        description = descriptor.get('description')
-        roi = descriptor.get('roi')
 
         with self._db.begin() as transaction:
-            location_name = descriptor['location_name']
-            file_path_template = descriptor['file_path_template']
-            measurements_doc = descriptor['measurements']
-            storage_type = descriptor['storage']
-
             existing = self._db.get_storage_mapping_by_name(name)
             if existing:
                 # They've passed us the same storage mapping again. Make sure it matches what we have:
                 fields.check_field_equivalence(
                     [
-                        ('location_name', location_name, existing.location_name),
-                        ('file_path_template', file_path_template, existing.file_path_template),
-                        ('measurements', measurements_doc, existing.measurements),
-                        ('storage_type', storage_type, existing.storage_type),
-                        ('roi', roi, existing.roi)
+                        ('descriptor', descriptor, existing.descriptor)
                     ],
                     'Storage mapping {}'.format(name)
                 )
             else:
                 self._db.ensure_storage_mapping(
                     name,
-                    location_name,
-                    file_path_template,
                     dataset_metadata,
-                    measurements_doc,
-                    storage_type,
-                    description=description,
-                    roi=roi
+                    descriptor
                 )
 
-    def _make(self, mapping):
+    def _make(self, mapping_record):
         """
         :rtype: datacube.model.StorageMapping
         """
+        descriptor = mapping_record['descriptor']
         return StorageMapping(
-            storage_type=StorageType(mapping['storage_type']),
-            name=mapping['name'],
-            description=mapping['description'],
-            match=DatasetMatcher(mapping['dataset_metadata']),
-            measurements=mapping['measurements'],
-            location=self._host_config.location_mappings[mapping['location_name']],
-            filename_pattern=mapping['file_path_template'],
-            roi=mapping['roi'],
-            id_=mapping['id']
+            storage_type=StorageType(descriptor['storage']),
+            name=mapping_record['name'],
+            description=descriptor.get('description'),
+            match=DatasetMatcher(mapping_record['dataset_metadata']),
+            measurements=descriptor['measurements'],
+            location=self._host_config.location_mappings[descriptor['location_name']],
+            filename_pattern=descriptor['file_path_template'],
+            roi=descriptor.get('roi'),
+            id_=mapping_record['id']
         )
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
