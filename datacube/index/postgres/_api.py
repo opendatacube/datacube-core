@@ -179,7 +179,6 @@ class PostgresDb(object):
             STORAGE_MAPPING.select()
         ).fetchall()
 
-
     def ensure_storage_mapping(self,
                                name, location_name, file_path_template,
                                dataset_metadata, measurements, storage_type,
@@ -245,10 +244,12 @@ class PostgresDb(object):
                 None, COLLECTION.c.name
             )
         }
+        dataset_search_fields = collection_result['descriptor']['dataset']['search_fields']
+
         # noinspection PyTypeChecker
         fields.update(
             parse_fields(
-                collection_result['dataset_search_fields'],
+                dataset_search_fields,
                 collection_result['id'],
                 DATASET.c.metadata
             )
@@ -271,10 +272,12 @@ class PostgresDb(object):
                 STORAGE_UNIT.c.path
             )
         }
+        unit_search_fields = collection_result['descriptor']['storage_unit']['search_fields']
+
         # noinspection PyTypeChecker
         fields.update(
             parse_fields(
-                collection_result['storage_unit_search_fields'],
+                unit_search_fields,
                 collection_result['id'],
                 STORAGE_UNIT.c.descriptor
             )
@@ -358,26 +361,15 @@ class PostgresDb(object):
 
     def add_collection(self,
                        name,
-                       dataset_metadata, match_priority,
-                       dataset_id_offset, dataset_label_offset,
-                       dataset_creation_dt_offset, dataset_measurements_offset,
-                       dataset_sources_offset,
-                       dataset_search_fields,
-                       storage_unit_search_fields,
-                       description=None):
+                       dataset_metadata,
+                       match_priority,
+                       descriptor):
         res = self._connection.execute(
             COLLECTION.insert().values(
                 name=name,
-                description=description,
                 dataset_metadata=dataset_metadata,
                 match_priority=match_priority,
-                dataset_id_offset=dataset_id_offset,
-                dataset_label_offset=dataset_label_offset,
-                dataset_creation_dt_offset=dataset_creation_dt_offset,
-                dataset_measurements_offset=dataset_measurements_offset,
-                dataset_sources_offset=dataset_sources_offset,
-                dataset_search_fields=dataset_search_fields,
-                storage_unit_search_fields=storage_unit_search_fields
+                descriptor=descriptor
             )
         )
 

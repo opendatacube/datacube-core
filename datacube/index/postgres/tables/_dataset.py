@@ -19,24 +19,12 @@ COLLECTION = Table(
     Column('id', SmallInteger, primary_key=True, autoincrement=True),
 
     Column('name', String, unique=True, nullable=False),
-    # A human-readable, potentially multi-line, description for display on the UI.
-    Column('description', String),
 
     # Match any datasets whose metadata is a superset of this document.
     Column('dataset_metadata', postgres.JSONB, nullable=False),
     Column('match_priority', Integer, nullable=False, default=999),
 
-    # Where to find certain fields in dataset metadata.
-    Column('dataset_id_offset', postgres.ARRAY(String), nullable=False),
-    Column('dataset_label_offset', postgres.ARRAY(String), nullable=False),
-    Column('dataset_creation_dt_offset', postgres.ARRAY(String), nullable=False),
-    Column('dataset_measurements_offset', postgres.ARRAY(String), nullable=False),
-    Column('dataset_sources_offset', postgres.ARRAY(String), nullable=False),
-
-    # Description of fields within metadata to search by.
-    # See the example in ../eo-collection.yaml in dataset.search_fields
-    Column('dataset_search_fields', postgres.JSONB, nullable=False),
-    Column('storage_unit_search_fields', postgres.JSONB, nullable=False),
+    Column('descriptor', postgres.JSONB, nullable=False),
 
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),

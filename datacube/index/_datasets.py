@@ -89,13 +89,6 @@ class CollectionResource(object):
         description = descriptor['description']
         dataset_metadata = descriptor['match']['metadata']
         match_priority = int(descriptor['match']['priority'])
-        d_id_offset = descriptor['dataset']['id_offset']
-        d_label_offset = descriptor['dataset']['label_offset']
-        d_creation_offset = descriptor['dataset']['creation_dt_offset']
-        d_measurements_offset = descriptor['dataset']['measurements_offset']
-        d_sources_offset = descriptor['dataset']['sources_offset']
-        d_search_fields = descriptor['dataset']['search_fields']
-        s_search_fields = descriptor['storage_unit']['search_fields']
 
         existing = self._db.get_collection_by_name(name)
         if existing:
@@ -103,34 +96,19 @@ class CollectionResource(object):
             # TODO: Support for adding/updating search fields?
             fields.check_field_equivalence(
                 [
-                    ('description', existing.description, description),
+                    ('description', existing.descriptor['description'], description),
                     ('match.metadata', existing.dataset_metadata, dataset_metadata),
                     ('match.priority', existing.match_priority, match_priority),
-                    ('dataset.id_offset', existing.dataset_id_offset, d_id_offset),
-                    ('dataset.label_offset', existing.dataset_label_offset, d_label_offset),
-                    ('dataset.creation_dt_offset', existing.dataset_creation_dt_offset, d_creation_offset),
-                    ('dataset.measurements_offset', existing.dataset_measurements_offset, d_measurements_offset),
-                    ('dataset.sources_offset', existing.dataset_sources_offset, d_sources_offset),
-                    ('dataset.search_offset', existing.dataset_search_fields, d_search_fields),
-                    ('storage_unit.search_offset', existing.storage_unit_search_fields, s_search_fields)
+                    ('descriptor', existing.descriptor, descriptor)
                 ],
                 'Collection {}'.format(name)
             )
         else:
             self._db.add_collection(
                 name=name,
-                description=description,
                 dataset_metadata=dataset_metadata,
                 match_priority=match_priority,
-                dataset_id_offset=d_id_offset,
-                dataset_label_offset=d_label_offset,
-                dataset_creation_dt_offset=d_creation_offset,
-                dataset_measurements_offset=d_measurements_offset,
-                dataset_sources_offset=d_sources_offset,
-                # TODO: Validate
-                dataset_search_fields=d_search_fields,
-                # TODO: Validate
-                storage_unit_search_fields=s_search_fields
+                descriptor=descriptor
             )
         return self.get_by_name(name)
 
@@ -163,16 +141,18 @@ class CollectionResource(object):
         """
         :rtype list[datacube.model.Collection]
         """
+        descriptor = query_row['descriptor']
+        dataset_ = descriptor['dataset']
         return Collection(
             query_row['name'],
-            query_row['description'],
+            descriptor['description'],
             DatasetMatcher(query_row['dataset_metadata']),
             DatasetOffsets(
-                uuid_field=query_row['dataset_id_offset'],
-                label_field=query_row['dataset_label_offset'],
-                creation_time_field=query_row['dataset_creation_dt_offset'],
-                measurements_dict=query_row['dataset_measurements_offset'],
-                sources=query_row['dataset_sources_offset'],
+                uuid_field=dataset_['id_offset'],
+                label_field=dataset_['label_offset'],
+                creation_time_field=dataset_['creation_dt_offset'],
+                measurements_dict=dataset_['measurements_offset'],
+                sources=dataset_['sources_offset'],
             ),
             dataset_search_fields=self._db.get_dataset_fields(query_row),
             storage_unit_search_fields=self._db.get_storage_unit_fields(query_row),
