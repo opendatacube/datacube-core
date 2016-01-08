@@ -182,13 +182,23 @@ class DatasetSource(object):
 
     @contextmanager
     def open(self):
+        if self.format in ('GeoTiff', 'JPEG2000'):
+            filename = self._filename
+            bandnumber = self._band_id
+        elif self.format == 'NetCDF4':
+            filename = '%s:"%s":%s' % ('NETCDF', self._filename, self._band_id)
+            bandnumber = 1
+        else:
+            filename = '%s:"%s":%s' % (self.format, self._filename, self._band_id)
+            bandnumber = 1
+
         try:
-            _LOG.debug("openening %s:%s", self._filename, self._band_id)
-            with rasterio.open(self._filename) as src:
+            _LOG.debug("openening %s, band %s", filename, bandnumber)
+            with rasterio.open(filename) as src:
                 self.transform = src.affine
                 self.projection = src.crs
                 self.nodata = src.nodatavals[0] or (0 if self.format == 'JPEG2000' else None)  # TODO: sentinel 2 hack
-                yield rasterio.band(src, self._band_id)
+                yield rasterio.band(src, bandnumber)
         finally:
             src.close()
 
