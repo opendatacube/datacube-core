@@ -277,13 +277,17 @@ if on_rtd:
     # Mock modules that need native libraries.
     # See: http://read-the-docs.readthedocs.org/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
     NATIVE_MODULES = [
-        'numpy',
+#        'numpy',
         'rasterio',
         'netcdf4',
-        'psycopg2',
-        'gdal',
-        'dateutil',
-        'pathlib',
+#        'psycopg2',
+        'pypeg2',
+        'osgeo',
+        'rasterio.warp',
+        'cachetools',
+        'rasterio.coords',
+        'netCDF4',
+
     ]
 
     from mock import Mock as MagicMock
