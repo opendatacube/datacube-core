@@ -133,8 +133,7 @@ class NetCDFWriter(object):
         # http://spatialreference.org/ref/epsg/gda94-australian-albers/html/
         # http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/cf-conventions.html#appendix-grid-mappings
         crs_var = self.nco.createVariable(_grid_mapping_name(crs), 'i4')
-        crs_var.standard_parallel_1 = crs.GetProjParm('standard_parallel_1')
-        crs_var.standard_parallel_2 = crs.GetProjParm('standard_parallel_2')
+        crs_var.standard_parallel = (crs.GetProjParm('standard_parallel_1'), crs.GetProjParm('standard_parallel_2'))
         crs_var.longitude_of_central_meridian = crs.GetProjParm('longitude_of_center')
         crs_var.latitude_of_projection_origin = crs.GetProjParm('latitude_of_center')
         crs_var.false_easting = crs.GetProjParm('false_easting')
