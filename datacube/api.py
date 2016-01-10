@@ -442,7 +442,6 @@ class IrregularStorageUnitSlice(StorageUnitBase):
 
     def _fill_data(self, name, index, dest):
         var = self.variables[name]
-        #shape = [self.coordinates[dim].length for dim in var.dimensions]
         dim_i = var.dimensions.index(self._sliced_coordinate)
         data = self._parent.get(name)
         numpy.copyto(dest, data.isel(**{self._sliced_coordinate: dim_i}).data)
@@ -697,26 +696,15 @@ class API(object):
         else:
             sus = self.index.storage.search(**query)
             for su in sus:
-                # stype = su.storage_mapping.match.metadata['platform']['code'] + '_' + \
-                #         su.storage_mapping.match.metadata['instrument']['name']
                 stype = su.storage_mapping.name
-                # ptype = su.storage_mapping.match.metadata['product_type']
-                # TODO: group by storage type also?
-                # storage_units_by_type.setdefault(stype, {}).setdefault(ptype, []).append(make_storage_unit(su))
                 storage_units_by_type.setdefault(stype, []).append(make_storage_unit(su))
 
         if len(storage_units_by_type) > 1:
             raise RuntimeError('Data must come from a single storage')
 
         data_response = {'arrays': {}}
-        # for stype, products in storage_units_by_type.items():
         for stype, storage_units in storage_units_by_type.items():
             # TODO: check var names are unique accross products
-            # for ptype, storage_units in products.items():
-            #     pass
-
-            # storage_units = list(itertools.chain(*products.values()))
-
             storage_units = _stratify_irregular_dimension(storage_units, 'time')
             storage_data = _get_data_from_storage_units(storage_units, variables, dimension_ranges)
             data_response.update(storage_data)
