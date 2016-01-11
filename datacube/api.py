@@ -467,15 +467,27 @@ def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges
         return dimension_group.values()[0]
     return dimension_group
 
+
+def to_single_value(data_array):
+    if data_array.size != 1:
+        return data_array
+    if isinstance(data_array.values, numpy.ndarray):
+        return data_array.item()
+    return data_array.values
+
+
 def get_result_stats(storage_units, dimension_ranges):
     strata_storage_units = _stratify_irregular_dimension(storage_units, 'time')
     storage_data = _get_data_from_storage_units(strata_storage_units, None, dimension_ranges)
     example = storage_data['arrays'][storage_data['arrays'].keys()[0]]
     result = {
         'result_shape': example.shape,
-        'result_min': tuple(example[dim].min().item() for dim in example.dims),
-        'result_max': tuple(example[dim].max().item() for dim in example.dims),
+        'result_min': tuple(to_single_value(example[dim].min()) for dim in example.dims),
+        'result_max': tuple(to_single_value(example[dim].max()) for dim in example.dims),
     }
+    irregular_dim_names = ['time', 't']  # TODO: Use irregular flag from database instead
+    result['irregular_dims'] = dict((dim, example[dim].values)
+                                    for dim in example.dims if dim in irregular_dim_names)
     return result
 
 
