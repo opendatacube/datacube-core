@@ -6,6 +6,7 @@ from affine import Affine
 import numpy as np
 import numpy.testing as npt
 import netCDF4
+import pytest
 
 from datacube.storage.netcdf_writer import NetCDFWriter
 from datacube.model import TileSpec, StorageType
@@ -14,20 +15,7 @@ GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.25722
            'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
            'AUTHORITY["EPSG","4326"]]'
 
-
-class SimpleObject(dict):
-    def __getattr__(self, name):
-        if name in self:
-            return self[name]
-        else:
-            raise AttributeError("No such attribute: " + name)
-
-
-def test_albers_goo(tmpdir):
-    filename = str(tmpdir.join('testfile_np.nc'))
-
-    affine = Affine(25.0, 0.0, 100000, 0.0, -25, 100000)
-    projection = """PROJCS["GDA94 / Australian Albers",
+ALBERS_PROJ = """PROJCS["GDA94 / Australian Albers",
                         GEOGCS["GDA94",
                             DATUM["Geocentric_Datum_of_Australia_1994",
                                 SPHEROID["GRS 1980",6378137,298.257222101,
@@ -52,67 +40,46 @@ def test_albers_goo(tmpdir):
                         AXIS["Easting",EAST],
                         AXIS["Northing",NORTH]]"""
 
-    global_attrs = {'test_attribute': 'test_value'}
-    tile_spec = TileSpec(projection, affine, 2000, 4000, global_attrs=global_attrs)
 
-    chunking = [('time', 1), ('y', 100), ('x', 100)]
-    date = datetime(2008, 1, 1)
-    ops = [(date, band) for band in [1, 2]]
-
-    ncfile = NetCDFWriter(filename, tile_spec)
-
-    for date, band in ops:
-        data = np.empty([2000, 4000])
-        data[:] = band
-        bandname = 'B%s' % band
-        measurement_descriptor = SimpleObject(varname=bandname, dtype='int16', nodata=-999)
-
-        var = ncfile.ensure_variable(measurement_descriptor, chunking)
-        var[0] = data
-    ncfile.close()
-
-    # Perform some basic checks
-    nco = netCDF4.Dataset(filename)
-    for var in ('albers_conic_equal_area', 'time', 'x', 'y', 'B1', 'B2', 'time'):
-        assert var in nco.variables
-    for k, v in global_attrs.items():
-        assert getattr(nco, k) == v
-
-    assert len(nco.variables['time']) == 1
-    assert len(nco.variables['x']) == 4000
-    assert len(nco.variables['y']) == 2000
+GLOBAL_ATTRS = {'test_attribute': 'test_value'}
 
 
-def test_create_netcdf(tmpdir):
+@pytest.fixture
+def tmpnetcdf_filename(tmpdir):
     filename = str(tmpdir.join('testfile_np.nc'))
 
-    global_attrs = {'test_attribute': 'test_value'}
-    affine = Affine(0.00025, 0.0, 151.0, 0.0, -0.0005, -29.0)
-    tile_spec = TileSpec(GEO_PROJ, affine, 2000, 4000, global_attrs=global_attrs)
+    return filename
 
-    chunking = [('time', 1), ('latitude', 100), ('longitude', 100)]
-    date = datetime(2008, 1, 1)
-    ops = [(date, band) for band in [1, 2]]
 
-    ncfile = NetCDFWriter(filename, tile_spec)
+def test_create_albers_projection_netcdf(tmpnetcdf_filename):
+    affine = Affine(25.0, 0.0, 100000, 0.0, -25, 100000)
+    chunking = [('time', 1), ('y', 100), ('x', 100)]
 
-    for index, (date, band) in enumerate(ops):
-        data = np.empty([2000, 4000])
-        data[:] = band
-        bandname = 'B%s' % band
-
-        measurement_descriptor = SimpleObject(varname=bandname, dtype='int16', nodata=-999)
-
-        var = ncfile.ensure_variable(measurement_descriptor, chunking)
-        var[index] = data
-
-    ncfile.close()
+    build_test_netcdf(tmpnetcdf_filename, affine, ALBERS_PROJ, chunking)
 
     # Perform some basic checks
-    with netCDF4.Dataset(filename) as nco:
+    with netCDF4.Dataset(tmpnetcdf_filename) as nco:
+        for var in ('albers_conic_equal_area', 'time', 'x', 'y', 'B1', 'B2', 'time'):
+            assert var in nco.variables
+        for k, v in GLOBAL_ATTRS.items():
+            assert getattr(nco, k) == v
+
+        assert len(nco.variables['time']) == 2
+        assert len(nco.variables['x']) == 4000
+        assert len(nco.variables['y']) == 2000
+
+
+def test_create_epsg4326_netcdf(tmpnetcdf_filename):
+    affine = Affine(0.00025, 0.0, 151.0, 0.0, -0.0005, -29.0)
+    chunking = [('time', 1), ('latitude', 100), ('longitude', 100)]
+
+    build_test_netcdf(tmpnetcdf_filename, affine, GEO_PROJ, chunking)
+
+    # Perform some basic checks
+    with netCDF4.Dataset(tmpnetcdf_filename) as nco:
         for var in ('latitude_longitude', 'time', 'longitude', 'latitude', 'B1', 'B2', 'time'):
             assert var in nco.variables
-        for k, v in global_attrs.items():
+        for k, v in GLOBAL_ATTRS.items():
             assert getattr(nco, k) == v
 
         assert len(nco.variables['time']) == 2
@@ -125,9 +92,56 @@ def test_create_netcdf(tmpdir):
 
         assert nco.variables['B1'].shape == (2, 2000, 4000)
 
-
-
         # Check GDAL Attributes
         assert np.allclose(nco.variables['latitude_longitude'].GeoTransform, affine.to_gdal())
         assert nco.variables['latitude_longitude'].spatial_ref == GEO_PROJ
 
+
+def test_extra_measurement_attrs(tmpnetcdf_filename):
+    affine = Affine(0.00025, 0.0, 151.0, 0.0, -0.0005, -29.0)
+    chunking = [('time', 1), ('latitude', 100), ('longitude', 100)]
+
+    def extended_measurement_descriptor(**attrs):
+        if attrs['varname'] == 'B1':
+            attrs['attrs'] = {
+                'wavelength': '55 meters',
+                'colour': 'Blue'
+            }
+        else:
+            attrs['attrs'] = {
+                'wavelength': '65 meters',
+                'colour': 'Green'
+            }
+
+        return attrs
+
+    build_test_netcdf(tmpnetcdf_filename, affine, GEO_PROJ, chunking,
+                      make_measurement_descriptor=extended_measurement_descriptor)
+
+    print(tmpnetcdf_filename)
+    with netCDF4.Dataset(tmpnetcdf_filename) as nco:
+        var = nco.variables['B1']
+        assert var.wavelength == '55 meters'
+        assert var.colour == 'Blue'
+
+        var = nco.variables['B2']
+        assert var.wavelength == '65 meters'
+        assert var.colour == 'Green'
+
+
+def build_test_netcdf(filename, affine, projection, chunking, make_measurement_descriptor=dict):
+    tile_spec = TileSpec(projection, affine, 2000, 4000, global_attrs=GLOBAL_ATTRS)
+
+    ops = [(datetime(2008, band, 1), band) for band in [1, 2]]
+
+    ncfile = NetCDFWriter(filename, tile_spec)
+
+    for index, (date, band) in enumerate(ops):
+        data = np.empty([2000, 4000])
+        data[:] = band
+        bandname = 'B%s' % band
+        measurement_descriptor = make_measurement_descriptor(varname=bandname, dtype='int16', nodata=-999)
+
+        var = ncfile.ensure_variable(measurement_descriptor, chunking)
+        var[index] = data
+    ncfile.close()

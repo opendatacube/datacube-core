@@ -18,7 +18,7 @@ from datacube.model import VariableAlreadyExists
 _LOG = logging.getLogger(__name__)
 
 
-def _create_variable_params(measurement_descriptor):
+def _create_variable_from_measurement_descriptor(measurement_descriptor):
     identical_keys = 'varname zlib complevel shuffle fletcher32 contiguous'
     mapped_keys = {'dtype': 'datatype', 'nodata': 'fill_value'}
     params = {key: measurement_descriptor[key] for key in identical_keys.split() if key in measurement_descriptor}
@@ -26,7 +26,7 @@ def _create_variable_params(measurement_descriptor):
         params[cvparam] = measurement_descriptor[mdkey]
 
     if 'varname' not in params:
-        raise Exception('Invalid measurement configuration', measurement_descriptor)
+        raise ValueError("'varname' must be specified in 'measurement_descriptor'", measurement_descriptor)
 
     return params
 
@@ -250,13 +250,21 @@ class NetCDFWriter(object):
         self._extra_meta[time_index] = yaml.safe_dump_all(metadata_docs)
 
     def _create_data_variable(self, measurement_descriptor, chunking, units=None):
-        params = _create_variable_params(measurement_descriptor)
+        params = _create_variable_from_measurement_descriptor(measurement_descriptor)
         params['dimensions'] = [c[0] for c in chunking]
         params['chunksizes'] = [c[1] for c in chunking]
         data_var = self.nco.createVariable(**params)
 
         data_var.grid_mapping = _grid_mapping_name(self.tile_spec.crs)
         data_var.set_auto_maskandscale(False)
+
+        # Copy extra attributes from the measurement descriptor onto the netcdf variable
+        if 'attrs' in measurement_descriptor:
+            for name, value in measurement_descriptor['attrs'].items():
+                # Unicode or str, that is the netcdf4 question
+                data_var.setncattr(str(name), str(value))
+
+                # Everywhere else is str, so this can be too
 
         if units:
             data_var.units = units

@@ -66,30 +66,36 @@ measurements:
     '10':
         <<: *MEASUREMENT_DEFAULTS
         varname: band_10
-        wavelength: 0.45 - 0.52 micrometers
-        colour: Blue
+        attrs:
+            wavelength: 0.45 - 0.52 micrometers
+            colour: Blue
     '20':
         <<: *MEASUREMENT_DEFAULTS
         varname: band_20
-        wavelength: 0.52 - 0.60 micrometers
-        colour: Green
+        attrs:
+            wavelength: 0.52 - 0.60 micrometers
+            colour: Green
     '30':
         <<: *MEASUREMENT_DEFAULTS
         varname: band_30
-        wavelength: 0.63 - 0.69 micrometers
-        colour: Red
+        attrs:
+            wavelength: 0.63 - 0.69 micrometers
+            colour: Red
     '40':
         <<: *MEASUREMENT_DEFAULTS
         varname: band_40
-        wavelength: 0.77 - 0.90 micrometers
-        colour: Near Infrared
+        attrs:
+            wavelength: 0.77 - 0.90 micrometers
+            colour: Near Infrared
     '50':
         <<: *MEASUREMENT_DEFAULTS
         varname: band_50
-        wavelength: 1.55 - 1.75 micrometers
-        colour: Short-wave Infrared
+        attrs:
+            wavelength: 1.55 - 1.75 micrometers
+            colour: Short-wave Infrared
     '70':
         <<: *MEASUREMENT_DEFAULTS
         varname: band_70
-        wavelength: 2.09 - 2.35 micrometers
-        colour: Short-wave Infrared
+        attrs:
+            wavelength: 2.09 - 2.35 micrometers
+            colour: Short-wave Infrared
