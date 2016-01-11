@@ -24,6 +24,7 @@ addons:
     - libnetcdf-dev
     - libproj-dev
     - libgdal1-dev
+    - libudunits2-dev
 
 before_install:
   # Create a database for the integration tests.
@@ -33,7 +34,7 @@ install:
   - export CPLUS_INCLUDE_PATH="/usr/include/gdal"
   - export C_INCLUDE_PATH="/usr/include/gdal"
   - pip install --upgrade pip
-  - pip install pytest pytest-cov mock pep8 pylint==1.5 coveralls gdal==1.10.0
+  - pip install pytest pytest-cov mock pep8 pylint==1.5 coveralls gdal==1.10.0 compliance-checker
   - pip install .
 
 script:
