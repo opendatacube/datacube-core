@@ -3,8 +3,6 @@
 Common datatypes for DB drivers.
 """
 from __future__ import absolute_import
-
-
 # For the search API.
 from datacube.model import Range
 
@@ -73,30 +71,80 @@ def to_expressions(get_field, **query):
     return [_to_expression(get_field, name, value) for name, value in query.items()]
 
 
-def check_field_equivalence(fields, name):
+def check_doc_unchanged(original, new, doc_name):
     """
-    :type fields: list[(str, object, object)]
-    :type name: str
+    Complain if any fields have been modified on a document.
+    :param original:
+    :param new:
+    :param doc_name:
+    :return:
+    >>> check_doc_unchanged({'a': 1}, {'a': 1}, 'Letters')
+    >>> check_doc_unchanged({'a': 1}, {'a': 2}, 'Letters')
+    Traceback (most recent call last):
+    ...
+    ValueError: Letters differs from stored (a: 1!=2)
+    >>> check_doc_unchanged({'a': {'b': 1}}, {'a': {'b': 2}}, 'Letters')
+    Traceback (most recent call last):
+    ...
+    ValueError: Letters differs from stored (a.b: 1!=2)
+    """
+    changes = get_doc_changes(original, new)
 
-    >>> check_field_equivalence([('f1', 1, 1)], 'letters')
-    >>> check_field_equivalence([('f1', 1, 1), ('f2', 1, 1)], 'letters')
-    >>> check_field_equivalence([('f1', 1, 2)], 'Letters')
-    Traceback (most recent call last):
-    ...
-    ValueError: Letters differs from stored (f1)
-    >>> check_field_equivalence([('f1', 'a', 'b'), ('f2', 'c', 'd')], 'Letters')
-    Traceback (most recent call last):
-    ...
-    ValueError: Letters differs from stored (f1, f2)
-    """
-    comparison_errors = {}
-    for key, val1, val2 in fields:
-        if val1 != val2:
-            comparison_errors[key] = (val1, val2)
-    if comparison_errors:
+    if changes:
         raise ValueError(
             '{} differs from stored ({})'.format(
-                name,
-                ', '.join(sorted(comparison_errors.keys()))
+                doc_name,
+                ', '.join(['{}: {!r}!={!r}'.format('.'.join(offset), v1, v2) for offset, v1, v2 in changes])
             )
         )
+
+
+def get_doc_changes(original, new, base_prefix=()):
+    """
+    Return a list of changed fields between
+    two dict structures.
+
+    :type original: dict
+    :rtype: list[(tuple, object, object)]
+
+
+    >>> get_doc_changes({}, {})
+    []
+    >>> get_doc_changes({'a': 1}, {'a': 1})
+    []
+    >>> get_doc_changes({'a': {'b': 1}}, {'a': {'b': 1}})
+    []
+    >>> get_doc_changes({'a': 1}, {'a': 2})
+    [(('a',), 1, 2)]
+    >>> get_doc_changes({'a': 1}, {'a': 2})
+    [(('a',), 1, 2)]
+    >>> get_doc_changes({'a': 1}, {'b': 1})
+    [(('a',), 1, None), (('b',), None, 1)]
+    >>> get_doc_changes({'a': {'b': 1}}, {'a': {'b': 2}})
+    [(('a', 'b'), 1, 2)]
+    >>> get_doc_changes({}, {'b': 1})
+    [(('b',), None, 1)]
+    """
+    changed_fields = []
+    if original == new:
+        return changed_fields
+
+    all_keys = set(original.keys()).union(new.keys())
+
+    for key in all_keys:
+        key_prefix = base_prefix + (key,)
+
+        original_val = original.get(key)
+        new_val = new.get(key)
+
+        if original_val == new_val:
+            continue
+
+        if isinstance(original_val, dict):
+            changed_fields.extend(get_doc_changes(original_val, new_val, key_prefix))
+        else:
+            changed_fields.append(
+                (key_prefix, original_val, new_val)
+            )
+
+    return sorted(changed_fields)

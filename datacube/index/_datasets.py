@@ -94,13 +94,10 @@ class CollectionResource(object):
         if existing:
             # They've passed us the same collection again. Make sure it matches what we have:
             # TODO: Support for adding/updating search fields?
-            fields.check_field_equivalence(
-                [
-                    ('description', existing.descriptor['description'], description),
-                    ('match.metadata', existing.dataset_metadata, dataset_metadata),
-                    ('match.priority', existing.match_priority, match_priority),
-                    ('descriptor', existing.descriptor, descriptor)
-                ],
+            # They've passed us the same storage mapping again. Make sure it matches what is stored.
+            fields.check_doc_unchanged(
+                existing.descriptor,
+                descriptor,
                 'Collection {}'.format(name)
             )
         else:

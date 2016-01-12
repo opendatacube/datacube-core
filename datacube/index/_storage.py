@@ -152,11 +152,10 @@ class StorageMappingResource(object):
         with self._db.begin() as transaction:
             existing = self._db.get_storage_mapping_by_name(name)
             if existing:
-                # They've passed us the same storage mapping again. Make sure it matches what we have:
-                fields.check_field_equivalence(
-                    [
-                        ('descriptor', descriptor, existing.descriptor)
-                    ],
+                # They've passed us the same storage mapping again. Make sure it matches what is stored.
+                fields.check_doc_unchanged(
+                    existing.descriptor,
+                    descriptor,
                     'Storage mapping {}'.format(name)
                 )
             else:
