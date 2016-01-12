@@ -292,10 +292,6 @@ class DatasetOffsets(object):
         self.sources = sources
 
 
-class VariableAlreadyExists(Exception):
-    pass
-
-
 class TileSpec(object):
     """
     Defines a single Storage Unit, its CRS, location, resolution, and global attributes

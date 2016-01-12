@@ -13,10 +13,7 @@ import netCDF4
 from osgeo import osr
 import yaml
 
-from datacube.model import VariableAlreadyExists
-
 _LOG = logging.getLogger(__name__)
-
 
 def _create_variable_from_measurement_descriptor(measurement_descriptor):
     identical_keys = 'varname zlib complevel shuffle fletcher32 contiguous'
