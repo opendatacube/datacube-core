@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+import six
+
 import netCDF4
 from click.testing import CliRunner
 
@@ -150,8 +152,26 @@ def test_full_ingestion(global_integration_cli_args, index, default_collection, 
     assert len(latlon) == 12
     with netCDF4.Dataset(latlon[0].filepath) as nco:
         assert nco.variables['band_10'].shape == (1, 400, 400)
+        check_cf_compliance(nco)
 
     albers = [su for su in sus if su.storage_mapping.name == albers_mapping['name']]
     assert len(albers) == 12
     with netCDF4.Dataset(albers[0].filepath) as nco:
         assert nco.variables['band_10'].shape == (1, 400, 400)
+        check_cf_compliance(nco)
+
+
+def check_cf_compliance(dataset):
+    # At the moment the compliance-checker is only compatible with Python 2
+    if not six.PY2:
+        return
+
+    from compliance_checker.runner import CheckSuite, ComplianceChecker
+    NORMAL_CRITERIA = 2
+
+    cs = CheckSuite()
+    cs.load_all_available_checkers()
+    score_groups = cs.run(dataset, 'cf')
+
+    groups = ComplianceChecker.stdout_output(cs, score_groups, verbose=1, limit=NORMAL_CRITERIA)
+    assert cs.passtree(groups, limit=NORMAL_CRITERIA)
