@@ -16,13 +16,18 @@ import yaml
 _LOG = logging.getLogger(__name__)
 DATASET_YAML_MAX_SIZE = 30000
 
-def _create_variable_from_measurement_descriptor(measurement_descriptor):
-    """Make parameters for calling netcdf4.createVariable"""
-    identical_keys = 'varname zlib complevel shuffle fletcher32 contiguous'
-    mapped_keys = {'dtype': 'datatype', 'nodata': 'fill_value'}
-    params = {key: measurement_descriptor[key] for key in identical_keys.split() if key in measurement_descriptor}
-    for mdkey, cvparam in mapped_keys.items():
-        params[cvparam] = measurement_descriptor[mdkey]
+def map_measurement_descriptor_parameters(measurement_descriptor):
+    """Map measurement descriptor parameters to netcdf variable parameters"""
+    md_to_netcdf = {'dtype': 'datatype',
+                    'nodata': 'fill_value',
+                    'varname': 'varname',
+                    'zlib': 'zlib',
+                    'complevel': 'complevel',
+                    'shuffle': 'shuffle',
+                    'fletcher32': 'fletcher32',
+                    'contiguous': 'contiguous'}
+    params = {ncparam: measurement_descriptor[mdkey]
+              for mdkey, ncparam in md_to_netcdf.items() if mdkey in measurement_descriptor}
 
     if 'varname' not in params:
         raise ValueError("'varname' must be specified in 'measurement_descriptor'", measurement_descriptor)
@@ -249,8 +254,8 @@ class NetCDFWriter(object):
         """
         self._extra_meta[time_index] = yaml.safe_dump_all(metadata_docs)
 
-    def _create_data_variable(self, measurement_descriptor, chunking, units=None):
-        params = _create_variable_from_measurement_descriptor(measurement_descriptor)
+    def _create_data_variable(self, measurement_descriptor, chunking):
+        params = map_measurement_descriptor_parameters(measurement_descriptor)
         params['dimensions'] = [c[0] for c in chunking]
         params['chunksizes'] = [c[1] for c in chunking]
         data_var = self.nco.createVariable(**params)
