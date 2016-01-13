@@ -22,7 +22,6 @@ STORAGE_MAPPING = Table(
     Column('name', String, unique=True, nullable=False),
 
     # Match any datasets whose metadata is a superset of this.
-    # See "_EXAMPLE_DATASETS_MATCHING" below
     Column('dataset_metadata', postgres.JSONB, nullable=False),
 
     Column('descriptor', postgres.JSONB, nullable=False),
@@ -38,12 +37,11 @@ STORAGE_UNIT = Table(
     Column('storage_mapping_ref', None, ForeignKey(STORAGE_MAPPING.c.id), nullable=False),
 
     # The collection it belongs to.
-    # This isn't normalised: it could be read from the linked datasets.
-    #
-    # It's a performance optimisation: we can create per-collection indexes.
+    # Denormalised.
+    #  - it could be read from the linked datasets instead
+    #  - allows per-collection indexes.
     Column('collection_ref', None, ForeignKey(_dataset.COLLECTION.c.id), nullable=False),
 
-    # See "_EXAMPLE_STORAGE_DESCRIPTOR" below.
     Column('descriptor', postgres.JSONB, nullable=False),
 
     Column('path', String, unique=True, nullable=False),
