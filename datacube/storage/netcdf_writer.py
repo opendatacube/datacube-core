@@ -266,7 +266,7 @@ class NetCDFWriter(object):
 
                 # Everywhere else is str, so this can be too
 
-        if units:
-            data_var.units = units
+        units = measurement_descriptor.get('units', '1')
+        data_var.units = units
 
         return data_var
