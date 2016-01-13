@@ -116,7 +116,7 @@ class NetCDFWriter(object):
         lat[:] = tile_spec.lats
 
     def _create_geo_crs(self, crs):
-        crs_var = self.nco.createVariable(_grid_mapping_name(crs), 'i4')
+        crs_var = self.nco.createVariable('crs', 'i4')
         crs_var.long_name = crs.GetAttrValue('GEOGCS')  # "Lon/Lat Coords in WGS84"
         crs_var.grid_mapping_name = _grid_mapping_name(crs)
         crs_var.longitude_of_prime_meridian = 0.0
@@ -132,13 +132,13 @@ class NetCDFWriter(object):
     def _create_albers_crs(self, crs):
         # http://spatialreference.org/ref/epsg/gda94-australian-albers/html/
         # http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/cf-conventions.html#appendix-grid-mappings
-        crs_var = self.nco.createVariable(_grid_mapping_name(crs), 'i4')
+        crs_var = self.nco.createVariable('crs', 'i4')
         crs_var.standard_parallel = (crs.GetProjParm('standard_parallel_1'), crs.GetProjParm('standard_parallel_2'))
         crs_var.longitude_of_central_meridian = crs.GetProjParm('longitude_of_center')
         crs_var.latitude_of_projection_origin = crs.GetProjParm('latitude_of_center')
         crs_var.false_easting = crs.GetProjParm('false_easting')
         crs_var.false_northing = crs.GetProjParm('false_northing')
-        crs_var.grid_mapping_name = _grid_mapping_name(crs)
+        crs_var.grid_mapping_name = 'crs'
         crs_var.long_name = crs.GetAttrValue('PROJCS')
         crs_var.spatial_ref = crs.ExportToWkt()  # GDAL variable
         crs_var.GeoTransform = self._gdal_geotransform()  # GDAL variable
@@ -255,7 +255,7 @@ class NetCDFWriter(object):
         params['chunksizes'] = [c[1] for c in chunking]
         data_var = self.nco.createVariable(**params)
 
-        data_var.grid_mapping = _grid_mapping_name(self.tile_spec.crs)
+        data_var.grid_mapping = 'crs'
         data_var.set_auto_maskandscale(False)
 
         # Copy extra attributes from the measurement descriptor onto the netcdf variable

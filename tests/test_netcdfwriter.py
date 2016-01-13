@@ -59,7 +59,7 @@ def test_create_albers_projection_netcdf(tmpnetcdf_filename):
 
     # Perform some basic checks
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
-        for var in ('albers_conic_equal_area', 'time', 'x', 'y', 'B1', 'B2', 'time'):
+        for var in ('crs', 'time', 'x', 'y', 'B1', 'B2', 'time'):
             assert var in nco.variables
         for k, v in GLOBAL_ATTRS.items():
             assert getattr(nco, k) == v
@@ -77,7 +77,7 @@ def test_create_epsg4326_netcdf(tmpnetcdf_filename):
 
     # Perform some basic checks
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
-        for var in ('latitude_longitude', 'time', 'longitude', 'latitude', 'B1', 'B2', 'time'):
+        for var in ('crs', 'time', 'longitude', 'latitude', 'B1', 'B2', 'time'):
             assert var in nco.variables
         for k, v in GLOBAL_ATTRS.items():
             assert getattr(nco, k) == v
@@ -93,8 +93,8 @@ def test_create_epsg4326_netcdf(tmpnetcdf_filename):
         assert nco.variables['B1'].shape == (2, 2000, 4000)
 
         # Check GDAL Attributes
-        assert np.allclose(nco.variables['latitude_longitude'].GeoTransform, affine.to_gdal())
-        assert nco.variables['latitude_longitude'].spatial_ref == GEO_PROJ
+        assert np.allclose(nco.variables['crs'].GeoTransform, affine.to_gdal())
+        assert nco.variables['crs'].spatial_ref == GEO_PROJ
 
 
 def test_extra_measurement_attrs(tmpnetcdf_filename):
