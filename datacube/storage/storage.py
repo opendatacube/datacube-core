@@ -180,7 +180,7 @@ class DatasetSource(object):
 
     @contextmanager
     def open(self):
-        if self.format in ('GeoTiff', 'JPEG2000'):
+        if self.format in ('GeoTiff', 'JPEG2000', 'AIG'):
             filename = self._filename
             bandnumber = self._band_id
         else:
