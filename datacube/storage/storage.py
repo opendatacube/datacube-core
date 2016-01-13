@@ -180,12 +180,14 @@ class DatasetSource(object):
 
     @contextmanager
     def open(self):
-        if self.format in ('GeoTiff', 'JPEG2000', 'AIG'):
+        for nasty_format in ('netcdf', 'hdf'):
+            if nasty_format in self.format.lower():
+                filename = '%s:"%s":%s' % (self.format, self._filename, self._band_id)
+                bandnumber = 1
+                break
+        else:
             filename = self._filename
             bandnumber = self._band_id
-        else:
-            filename = '%s:"%s":%s' % (self.format, self._filename, self._band_id)
-            bandnumber = 1
 
         try:
             _LOG.debug("openening %s, band %s", filename, bandnumber)
