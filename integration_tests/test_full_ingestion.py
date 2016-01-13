@@ -5,7 +5,7 @@ from click.testing import CliRunner
 
 import datacube.scripts.run_ingest
 
-sample_mapping = {
+geog_mapping = {
     'driver': 'NetCDF CF',
     'match': {'metadata': {'instrument': {'name': 'TM'},
                            'platform': {'code': 'LANDSAT_5'},
@@ -119,7 +119,7 @@ def test_full_ingestion(global_integration_cli_args, index, default_collection, 
     :return:
     """
     # Load a mapping config
-    index.mappings.add(sample_mapping)
+    index.mappings.add(geog_mapping)
     index.mappings.add(albers_mapping)
 
     # Run Ingest script on a dataset
@@ -146,7 +146,7 @@ def test_full_ingestion(global_integration_cli_args, index, default_collection, 
     # Check storage units are indexed and written
     sus = index.storage.search_eager()
 
-    latlon = [su for su in sus if su.storage_mapping.name == sample_mapping['name']]
+    latlon = [su for su in sus if su.storage_mapping.name == geog_mapping['name']]
     assert len(latlon) == 12
     with netCDF4.Dataset(latlon[0].filepath) as nco:
         assert nco.variables['band_10'].shape == (1, 400, 400)
