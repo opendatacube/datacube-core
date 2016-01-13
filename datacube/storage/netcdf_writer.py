@@ -14,8 +14,10 @@ from osgeo import osr
 import yaml
 
 _LOG = logging.getLogger(__name__)
+DATASET_YAML_MAX_SIZE = 30000
 
 def _create_variable_from_measurement_descriptor(measurement_descriptor):
+    """Make parameters for calling netcdf4.createVariable"""
     identical_keys = 'varname zlib complevel shuffle fletcher32 contiguous'
     mapped_keys = {'dtype': 'datatype', 'nodata': 'fill_value'}
     params = {key: measurement_descriptor[key] for key in identical_keys.split() if key in measurement_descriptor}
@@ -65,8 +67,9 @@ class NetCDFWriter(object):
         self._set_global_attributes(tile_spec)
 
         # Create Variable Length Variable to store extra metadata
-        self._extra_meta = self.nco.createVariable('extra_metadata', str, 'time')
-        self._extra_meta.long_name = 'Detailed '
+        self.nco.createDimension('nchar', size=DATASET_YAML_MAX_SIZE)
+        self._extra_meta = self.nco.createVariable('extra_metadata', 'S1', ('time', 'nchar'))
+        self._extra_meta.long_name = 'Detailed source dataset information'
 
     def close(self):
         self.nco.close()
