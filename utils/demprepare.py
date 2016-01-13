@@ -28,16 +28,18 @@ def get_projection(img):
 
 def prepare_dataset(path):
     documents = []
-    for dsfilename in list(path.glob('[ew][01][0-9][0-9][sn][0-9][0-9]dems'))[:10]:
-        format_ = None
-        creation_dt = datetime.fromtimestamp(dsfilename.stat().st_ctime).isoformat()
-        im = rasterio.open(str(dsfilename))
+    for dspath in path.glob('[ew][01][0-9][0-9][sn][0-9][0-9]dem[sh]'):
+        dspath_str = str(dspath)
+        product_type = 'DEM-' + dspath_str[-1].upper()
+        band_name = 'dem' + dspath_str[-1].lower()
+        creation_dt = datetime.fromtimestamp(dspath.stat().st_ctime).isoformat()
+        im = rasterio.open(dspath_str)
         documents.append({
             'id': str(uuid.uuid4()),
             #'processing_level': level.replace('Level-', 'L'),
-            'product_type': 'DEM-S',
+            'product_type': product_type,
             'creation_dt': creation_dt,
-            'platform': {'code': 'SRTM_PLATFORM'},
+            'platform': {'code': 'ENDEAVOUR'},
             'instrument': {'name': 'SRTM'},
             #'acquisition': {'groundstation': {'code': station}},
             'extent': {
@@ -52,11 +54,12 @@ def prepare_dataset(path):
             },
             'image': {
                 'bands': {
-                        'dems': {
-                            'path': str(dsfilename)
+                        band_name: {
+                            'path': dspath_str
                         }
                     }
             },
+            # TODO: provenance chain is DSM -> DEM -> DEM-S -> DEM-H
             'lineage': {'source_datasets': {}},
         })
     return documents
