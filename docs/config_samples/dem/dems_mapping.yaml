@@ -49,8 +49,8 @@ storage:
 
 measurements:
   'dems':
-      dtype: int16
-      resampling_method: nearest
+      dtype: float32
+      resampling_method: cubic
       varname: dems
       nodata: -999
 
