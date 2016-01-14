@@ -252,7 +252,7 @@ class NetCDFWriter(object):
         :param metadata_docs: List of metadata docs for this timestamp
         :type metadata_docs: list
         """
-        self._extra_meta[time_index] = yaml.safe_dump_all(metadata_docs)
+        self._extra_meta[time_index] = netCDF4.stringtochar(yaml.safe_dump_all(metadata_docs))
 
     def _create_data_variable(self, measurement_descriptor, chunking):
         params = map_measurement_descriptor_parameters(measurement_descriptor)
