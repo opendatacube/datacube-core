@@ -107,5 +107,5 @@ measurements:
   'demh':
       dtype: float32
       resampling_method: cubic
-      varname: dems
+      varname: demh
       nodata: -999
