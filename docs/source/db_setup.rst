@@ -21,12 +21,17 @@ Datacube looks for configuration file in ~/.datacube.conf::
     db_hostname:
     db_database: datacube
 
+    # Credentials are optional: you might have other PG authentication configured.
+    # db_username:
+    # db_password:
+
     [locations]
     # Where to reach storage locations from the current machine.
     #  -> Location names are arbitrary, but correspond to names used in the
     #     storage mapping files.
     #  -> We may eventually support remote protocols (http, S3, etc) to lazily fetch remote data.
-    swanky_tiles: file:///data/tiles/swanky
+    eotiles: file:///short/public/democube/
+    v1tiles: file:///g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/
 
 See also :ref:`runtime-config-doc`
 
