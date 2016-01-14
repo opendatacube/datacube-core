@@ -61,9 +61,8 @@ class NetCDF4StorageUnit(StorageUnitBase):
             for name, var in ncds.variables.items():
                 dims = var.dimensions
                 units = getattr(var, 'units', None)
-                grid_mapping_name = getattr(var, 'grid_mapping_name', None)
-                if grid_mapping_name:
-                    grid_mappings[grid_mapping_name] = getattr(var, 'spatial_ref', None)
+                if hasattr(var, 'grid_mapping_name') and hasattr(var, 'spatial_ref'):
+                    grid_mappings[getattr(var, 'grid_mapping_name', None)] = getattr(var, 'spatial_ref', None)
                 if len(dims) == 1 and name == dims[0]:
                     coordinates[name] = Coordinate(dtype=numpy.dtype(var.dtype),
                                                    begin=var[0].item(), end=var[-1].item(),

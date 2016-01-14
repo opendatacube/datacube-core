@@ -81,13 +81,34 @@ def get_storage_unit_projection(su):
     return storage_type['projection']['spatial_ref']
 
 
+def make_in_memory_storage_unit(su, coordinates, variables, attributes, crs):
+    faux = MemoryStorageUnit(filepath=su.filepath,
+                             coordinates=coordinates,
+                             variables=variables,
+                             attributes=attributes,
+                             crs=crs)
+
+    # TODO: Retrive from database instead of opening file
+    irregular_dim_names = ['time', 't']  # TODO: Use irregular flag from database instead
+    irregular_dims = [name for name, coord in coordinates.items()
+                      if name in irregular_dim_names and coord.length > 2]
+
+    if irregular_dims and su.storage_mapping.storage_type.driver == 'NetCDF CF':
+        real_su = NetCDF4StorageUnit(su.filepath,
+                                     coordinates=coordinates, variables=variables, attributes=attributes)
+        for coord in irregular_dims:
+            coord_values, _ = real_su.get_coord(coord)
+            faux.coodinate_values[coord] = coord_values
+    return faux
+
+
 def make_storage_unit(su, is_diskless=False):
     """convert search result into StorageUnit object
     :param su: database index storage unit
     :param is_diskless: Use a cached object for the source of data, rather than the file
     """
     storage_type = su.storage_mapping.storage_type.descriptor
-    crs = dict((dim, su.descriptor['coordinates'][dim].get('units', None))  for dim in storage_type['dimension_order'])
+    crs = dict((dim, su.descriptor['coordinates'][dim].get('units', None)) for dim in storage_type['dimension_order'])
     for dim in crs.keys():
         if dim in su.storage_mapping.storage_type.spatial_dimensions:
             crs[dim] = storage_type['crs']
@@ -111,22 +132,11 @@ def make_storage_unit(su, is_diskless=False):
     attributes.update(su.storage_mapping.match.metadata)
 
     if is_diskless:
-        faux = MemoryStorageUnit(coordinates=coordinates, variables=variables, crs=crs)
-        faux.filepath = su.filepath
-        faux.attributes = attributes
-        # TODO: Retrive from database instead of opening file
-
-        irregular_dim_names = ['time', 't']  # TODO: Use irregular flag from database instead
-        irregular_dims = [name for name, coord in coordinates.items()
-                          if name in irregular_dim_names and coord.length > 2]
-
-        if irregular_dims and su.storage_mapping.storage_type.driver == 'NetCDF CF':
-            real_su = NetCDF4StorageUnit(su.filepath,
-                                         coordinates=coordinates, variables=variables, attributes=attributes)
-            for coord in irregular_dims:
-                coord_values, _ = real_su.get_coord(coord)
-                faux.coodinate_values[coord] = coord_values
-        return faux
+        return make_in_memory_storage_unit(su,
+                                           coordinates=coordinates,
+                                           variables=variables,
+                                           attributes=attributes,
+                                           crs=crs)
 
     if su.storage_mapping.storage_type.driver == 'NetCDF CF':
         return NetCDF4StorageUnit(su.filepath, coordinates=coordinates, variables=variables, attributes=attributes)
@@ -280,32 +290,37 @@ def _get_dimension_properties(storage_units, dimensions):
     return dim_props
 
 
-def _create_response(xrays, dimensions, storage_units):
+def _get_extra_properties(storage_units, dimensions):
+    sample_su_crs = list(storage_units)[0].get_crs()
+    extra_properties = {
+        'coordinate_reference_systems': [sample_su_crs[dim] for dim in dimensions],
+    }
+    return extra_properties
+
+
+def _create_response(xrays, dimensions, extra_properties):
     """
     :param xrays: a dict of xray.DataArrays
     :param dimensions: list of dimension names
-    :param storage_units: list of storage_units
     :return: dict containing the response data
         {
             'arrays': ...,
             'indices': ...,
             'element_sizes': ...,
-            'coordinate_reference_systems': ...,
             'dimensions': ...
         }
     """
     sample_xray = xrays.values()[0]
-    sample_su_crs = storage_units[0].get_crs()
-    reponse = {
+    response = {
         'dimensions': list(dimensions),
         'arrays': xrays,
         'indices': dict((dim, sample_xray.coords[dim].values) for dim in dimensions),
         'element_sizes': [(abs(sample_xray.coords[dim].values[0] - sample_xray.coords[dim].values[-1]) /
                            float(sample_xray.coords[dim].size)) for dim in dimensions],
         'size': sample_xray.shape,
-        'coordinate_reference_systems': [sample_su_crs[dim] for dim in dimensions],
     }
-    return reponse
+    response.update(extra_properties)
+    return response
 
 
 def make_nodata_func(storage_units, var_name, dimensions, chunksize):
@@ -394,7 +409,8 @@ def _get_data_by_variable(storage_units_by_variable, dimensions, dimension_range
         cropped = xray_data_array.sel(**selectors)
         subset = cropped.isel(**iselectors)
         xrays[var_name] = subset
-    return  _create_response(xrays, dimensions, storage_units)
+    extra_properties = _get_extra_properties(sus_with_dims, dimensions)
+    return _create_response(xrays, dimensions, extra_properties)
 
 
 def _stratify_storage_unit(storage_unit, dimension):
@@ -424,10 +440,12 @@ def _stratify_irregular_dimension(storage_units, dimension):
 
 
 class MemoryStorageUnit(FauxStorageUnit):
-    def __init__(self, coordinates, variables, coodinate_values=None, crs=None):
+    def __init__(self, coordinates, variables, attributes=None, coodinate_values=None, crs=None, filepath=None):
         super(MemoryStorageUnit, self).__init__(coordinates, variables)
         self.crs = crs or {}
         self.coodinate_values = coodinate_values or {}
+        self.attributes = attributes or {}
+        self.filepath = filepath
 
     def _get_coord(self, name):
         if name in self.coodinate_values:
@@ -509,7 +527,7 @@ def to_single_value(data_array):
 
 def get_result_stats(storage_units, dimension_ranges):
     strata_storage_units = _stratify_irregular_dimension(storage_units, 'time')
-    storage_data = _get_data_from_storage_units(strata_storage_units, None, dimension_ranges)
+    storage_data = _get_data_from_storage_units(strata_storage_units, dimension_ranges)
     example = storage_data['arrays'][storage_data['arrays'].keys()[0]]
     result = {
         'result_shape': example.shape,
