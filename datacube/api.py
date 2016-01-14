@@ -310,7 +310,7 @@ def _create_response(xrays, dimensions, extra_properties):
             'dimensions': ...
         }
     """
-    sample_xray = xrays.values()[0]
+    sample_xray = list(xrays.values())[0]
     response = {
         'dimensions': list(dimensions),
         'arrays': xrays,
@@ -513,7 +513,7 @@ def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges
     for dimensions, sus_by_variable in variables_by_dimensions.items():
         dimension_group[dimensions] = _get_data_by_variable(sus_by_variable, dimensions, dimension_ranges)
     if len(dimension_group) == 1:
-        return dimension_group.values()[0]
+        return list(dimension_group.values())[0]
     return dimension_group
 
 
@@ -527,8 +527,8 @@ def to_single_value(data_array):
 
 def get_result_stats(storage_units, dimension_ranges):
     strata_storage_units = _stratify_irregular_dimension(storage_units, 'time')
-    storage_data = _get_data_from_storage_units(strata_storage_units, dimension_ranges)
-    example = storage_data['arrays'][storage_data['arrays'].keys()[0]]
+    storage_data = _get_data_from_storage_units(strata_storage_units, dimension_ranges=dimension_ranges)
+    example = storage_data['arrays'][list(storage_data['arrays'].keys())[0]]
     result = {
         'result_shape': example.shape,
         'result_min': tuple(to_single_value(example[dim].min()) for dim in example.dims),

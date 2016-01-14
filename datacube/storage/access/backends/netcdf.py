@@ -82,7 +82,7 @@ class NetCDF4StorageUnit(StorageUnitBase):
                 if standard_name in ['latitude', 'longitude'] and 'latitude_longitude' in grid_mappings:
                     crs[real_name] = grid_mappings['latitude_longitude']
                 elif standard_name in ['projection_x_coordinate', 'projection_y_coordinate']:
-                    crs[real_name] = grid_mappings[grid_mappings.keys()[0]]
+                    crs[real_name] = grid_mappings[list(grid_mappings.keys())[0]]
         return cls(filepath, variables=variables, coordinates=coordinates, attributes=attributes, crs=crs)
 
     def get_coord(self, dim, index=None):
