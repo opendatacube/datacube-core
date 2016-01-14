@@ -87,6 +87,10 @@ def make_storage_unit(su, is_diskless=False):
     :param is_diskless: Use a cached object for the source of data, rather than the file
     """
     storage_type = su.storage_mapping.storage_type.descriptor
+    crs = dict((dim, su.descriptor['coordinates'][dim].get('units', None))  for dim in storage_type['dimension_order'])
+    for dim in crs.keys():
+        if dim in su.storage_mapping.storage_type.spatial_dimensions:
+            crs[dim] = storage_type['crs']
     coordinates = {name: Coordinate(dtype=numpy.dtype(attributes['dtype']),
                                     begin=attributes['begin'],
                                     end=attributes['end'],
@@ -107,7 +111,7 @@ def make_storage_unit(su, is_diskless=False):
     attributes.update(su.storage_mapping.match.metadata)
 
     if is_diskless:
-        faux = FauxStorageUnit(coordinates=coordinates, variables=variables)
+        faux = MemoryStorageUnit(coordinates=coordinates, variables=variables, crs=crs)
         faux.filepath = su.filepath
         faux.attributes = attributes
         # TODO: Retrive from database instead of opening file
@@ -276,10 +280,11 @@ def _get_dimension_properties(storage_units, dimensions):
     return dim_props
 
 
-def _create_response(xrays, dimensions):
+def _create_response(xrays, dimensions, storage_units):
     """
     :param xrays: a dict of xray.DataArrays
     :param dimensions: list of dimension names
+    :param storage_units: list of storage_units
     :return: dict containing the response data
         {
             'arrays': ...,
@@ -290,6 +295,7 @@ def _create_response(xrays, dimensions):
         }
     """
     sample_xray = xrays.values()[0]
+    sample_su_crs = storage_units[0].get_crs()
     reponse = {
         'dimensions': list(dimensions),
         'arrays': xrays,
@@ -297,7 +303,7 @@ def _create_response(xrays, dimensions):
         'element_sizes': [(abs(sample_xray.coords[dim].values[0] - sample_xray.coords[dim].values[-1]) /
                            float(sample_xray.coords[dim].size)) for dim in dimensions],
         'size': sample_xray.shape,
-        'coordinate_reference_systems': []  # TODO: CRS
+        'coordinate_reference_systems': [sample_su_crs[dim] for dim in dimensions],
     }
     return reponse
 
@@ -388,7 +394,7 @@ def _get_data_by_variable(storage_units_by_variable, dimensions, dimension_range
         cropped = xray_data_array.sel(**selectors)
         subset = cropped.isel(**iselectors)
         xrays[var_name] = subset
-    return _create_response(xrays, dimensions)
+    return  _create_response(xrays, dimensions, storage_units)
 
 
 def _stratify_storage_unit(storage_unit, dimension):
@@ -417,6 +423,28 @@ def _stratify_irregular_dimension(storage_units, dimension):
     return list(itertools.chain(*stratified_storage_units))
 
 
+class MemoryStorageUnit(FauxStorageUnit):
+    def __init__(self, coordinates, variables, coodinate_values=None, crs=None):
+        super(MemoryStorageUnit, self).__init__(coordinates, variables)
+        self.crs = crs or {}
+        self.coodinate_values = coodinate_values or {}
+
+    def _get_coord(self, name):
+        if name in self.coodinate_values:
+            return self.coodinate_values[name]
+        return super(MemoryStorageUnit, self)._get_coord(name)
+
+    def get_crs(self):
+        crs = dict((dim, {'reference_system_unit': coord.units}) for dim, coord in self.coordinates.items())
+        for coord, value in self.crs.items():
+            if isinstance(coord, tuple):  # Flatten grid_mappings into per-coord units
+                for c in coord:
+                    crs[c]['reference_system_definition'] = value
+            else:
+                crs[coord]['reference_system_definition'] = value
+        return crs
+
+
 class IrregularStorageUnitSlice(StorageUnitBase):
     """ Storage Unit interface for accessing another Storage unit at a defined coordinate  """
     def __init__(self, parent, dimension, index):
@@ -434,6 +462,9 @@ class IrregularStorageUnitSlice(StorageUnitBase):
         self.coordinates[dimension] = fake_dim
         self.variables = parent.variables
         self.filepath = parent.filepath
+
+    def get_crs(self):
+        return self._parent.get_crs()
 
     def get_coord(self, name, index=None):
         if name == self._sliced_coordinate:
@@ -629,8 +660,6 @@ class API(object):
                     'result_shape': None,
                     'irregular_indices': None,  # TODO: Add irregular indices
                 })
-                # result.update(grouped_storage_units.get_dimension_bounds(dimensions, dimension_ranges))
-
                 for var_name, var in grouped_storage_units.get_variables().items():
                     result['variables'][var_name] = {
                         'datatype_name': var.dtype,
@@ -719,5 +748,6 @@ class API(object):
             # TODO: check var names are unique accross products
             storage_units = _stratify_irregular_dimension(storage_units, 'time')
             storage_data = _get_data_from_storage_units(storage_units, variables, dimension_ranges)
+
             data_response.update(storage_data)
         return data_response

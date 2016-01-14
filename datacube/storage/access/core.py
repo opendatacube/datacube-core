@@ -41,6 +41,7 @@ class StorageUnitBase(object):
     """
     :type coordinates: dict[str, Coordinate]
     :type variables: dict[str, Variable]
+    :type crs: dict[str, str]
     """
 
     def get(self, name, dest=None, **kwargs):
@@ -80,6 +81,13 @@ class StorageUnitBase(object):
         """
         full_array = self.get(name)
         return full_array[index].data
+
+    def get_crs(self):
+        """
+        Returns a dict of the reference systems for the coordinates
+        :return: dict
+        """
+        return {}
 
     def coord_slice(self, dim, range_=None):
         """

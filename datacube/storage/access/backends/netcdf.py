@@ -32,7 +32,7 @@ def _open_dataset(filepath):
 
 
 class NetCDF4StorageUnit(StorageUnitBase):
-    def __init__(self, filepath, variables, coordinates, attributes=None):
+    def __init__(self, filepath, variables, coordinates, attributes=None, crs=None):
         """
         :param variables: variables in the SU
         :param coordinates: coordinates in the SU
@@ -41,27 +41,50 @@ class NetCDF4StorageUnit(StorageUnitBase):
         self.coordinates = coordinates
         self.variables = variables
         self.attributes = attributes or {}
+        self.crs = crs or {}
+
+    def get_crs(self):
+        # Use units for sensible default
+        crs = dict((dim, {'reference_system_unit': coord.units}) for dim, coord in self.coordinates.items())
+        for coord, value in self.crs.items():
+            crs[coord]['reference_system_definition'] = value
+        return crs
 
     @classmethod
     def from_file(cls, filepath):
         coordinates = {}
         variables = {}
+        grid_mappings = {}
+        standard_names = {}
         with _GLOBAL_LOCK, contextlib.closing(_open_dataset(filepath)) as ncds:
             attributes = {k: getattr(ncds, k) for k in ncds.ncattrs()}
             for name, var in ncds.variables.items():
                 dims = var.dimensions
                 units = getattr(var, 'units', None)
+                grid_mapping_name = getattr(var, 'grid_mapping_name', None)
+                if grid_mapping_name:
+                    grid_mappings[grid_mapping_name] = getattr(var, 'spatial_ref', None)
                 if len(dims) == 1 and name == dims[0]:
                     coordinates[name] = Coordinate(dtype=numpy.dtype(var.dtype),
                                                    begin=var[0].item(), end=var[-1].item(),
                                                    length=var.shape[0], units=units)
+                    standard_name = getattr(var, 'standard_name', None)
+                    if standard_name:
+                        standard_names[standard_name] = name
                 else:
                     ndv = (getattr(var, '_FillValue', None) or
                            getattr(var, 'missing_value', None) or
                            getattr(var, 'fill_value', None))
                     ndv = ndv.item() if ndv else None
                     variables[name] = Variable(numpy.dtype(var.dtype), ndv, var.dimensions, units)
-        return cls(filepath, variables=variables, coordinates=coordinates, attributes=attributes)
+        crs = {}
+        if grid_mappings:
+            for standard_name, real_name in standard_names.items():
+                if standard_name in ['latitude', 'longitude'] and 'latitude_longitude' in grid_mappings:
+                    crs[real_name] = grid_mappings['latitude_longitude']
+                elif standard_name in ['projection_x_coordinate', 'projection_y_coordinate']:
+                    crs[real_name] = grid_mappings[grid_mappings.keys()[0]]
+        return cls(filepath, variables=variables, coordinates=coordinates, attributes=attributes, crs=crs)
 
     def get_coord(self, dim, index=None):
         coord = self.coordinates[dim]
