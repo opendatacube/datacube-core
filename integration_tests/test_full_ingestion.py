@@ -116,7 +116,13 @@ albers_mapping = {
 
 def test_full_ingestion(global_integration_cli_args, index, default_collection, example_ls5_dataset):
     """
+    Loads two storage configuration then ingests a sample Landsat 5 scene
 
+    One storage configuration specifies Australian Albers Equal Area Projection,
+    the other is simple latitude/longitude.
+
+    The input dataset should be recorded, two sets of netcdf storage units should be created
+    and recorded in the database.
     :param db:
     :return:
     """
@@ -150,15 +156,14 @@ def test_full_ingestion(global_integration_cli_args, index, default_collection, 
 
     latlon = [su for su in sus if su.storage_mapping.name == geog_mapping['name']]
     assert len(latlon) == 12
-    with netCDF4.Dataset(latlon[0].filepath) as nco:
-        assert nco.variables['band_10'].shape == (1, 400, 400)
-        check_cf_compliance(nco)
-
     albers = [su for su in sus if su.storage_mapping.name == albers_mapping['name']]
     assert len(albers) == 12
-    with netCDF4.Dataset(albers[0].filepath) as nco:
-        assert nco.variables['band_10'].shape == (1, 400, 400)
-        check_cf_compliance(nco)
+
+    for su_path in (latlon[0], albers[0]):
+        with netCDF4.Dataset(su_path) as nco:
+            assert nco.variables['band_10'].shape == (1, 400, 400)
+            check_cf_compliance(nco)
+            check_dataset_metadata_in_su(nco, example_ls5_dataset)
 
 
 def check_cf_compliance(dataset):
@@ -175,3 +180,11 @@ def check_cf_compliance(dataset):
 
     groups = ComplianceChecker.stdout_output(cs, score_groups, verbose=1, limit=NORMAL_CRITERIA)
     assert cs.passtree(groups, limit=NORMAL_CRITERIA)
+
+
+def check_dataset_metadata_in_su(nco, dataset_dir):
+    assert len(nco.variables['extra_metadata']) == 0
+    nco_metadata = netCDF4.chartostring(nco.variables['extra_metadata'][0])
+    with open(dataset_dir.join('agdc-metadata.yaml')) as f:
+        orig_metadata = f.read()
+    assert nco_metadata == orig_metadata
