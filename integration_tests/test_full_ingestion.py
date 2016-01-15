@@ -2,8 +2,9 @@ from __future__ import absolute_import
 
 import six
 
-import netCDF4
 from click.testing import CliRunner
+import netCDF4
+import yaml
 
 import datacube.scripts.run_ingest
 
@@ -159,8 +160,8 @@ def test_full_ingestion(global_integration_cli_args, index, default_collection, 
     albers = [su for su in sus if su.storage_mapping.name == albers_mapping['name']]
     assert len(albers) == 12
 
-    for su_path in (latlon[0], albers[0]):
-        with netCDF4.Dataset(su_path) as nco:
+    for su in (latlon[0], albers[0]):
+        with netCDF4.Dataset(su.filepath) as nco:
             assert nco.variables['band_10'].shape == (1, 400, 400)
             check_cf_compliance(nco)
             check_dataset_metadata_in_su(nco, example_ls5_dataset)
@@ -183,8 +184,9 @@ def check_cf_compliance(dataset):
 
 
 def check_dataset_metadata_in_su(nco, dataset_dir):
-    assert len(nco.variables['extra_metadata']) == 0
-    nco_metadata = netCDF4.chartostring(nco.variables['extra_metadata'][0])
-    with open(dataset_dir.join('agdc-metadata.yaml')) as f:
+    assert len(nco.variables['extra_metadata']) == 1  # 1 time slice
+    stored_metadata = str(netCDF4.chartostring(nco.variables['extra_metadata'][0]))
+    ds_filename = dataset_dir / 'agdc-metadata.yaml'
+    with ds_filename.open() as f:
         orig_metadata = f.read()
-    assert nco_metadata == orig_metadata
+    assert yaml.load_safe(stored_metadata) == yaml.load_safe(orig_metadata)
