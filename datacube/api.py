@@ -491,9 +491,9 @@ class IrregularStorageUnitSlice(StorageUnitBase):
 
     def _fill_data(self, name, index, dest):
         var = self.variables[name]
-        dim_i = var.dimensions.index(self._sliced_coordinate)
-        data = self._parent.get(name)
-        numpy.copyto(dest, data.isel(**{self._sliced_coordinate: dim_i}).data)
+        subset_slice = {self._sliced_coordinate:slice(self._index, self._index+1)}
+        data = self._parent.get(name, **subset_slice)
+        numpy.copyto(dest, data.data)
 
 
 def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges=None):
@@ -676,7 +676,7 @@ class API(object):
                     'result_min': None,
                     'result_max': None,
                     'result_shape': None,
-                    'irregular_indices': None,  # TODO: Add irregular indices
+                    'irregular_indices': None,
                 })
                 for var_name, var in grouped_storage_units.get_variables().items():
                     result['variables'][var_name] = {
@@ -748,7 +748,6 @@ class API(object):
 
         storage_units_by_type = {}
         if storage_units:
-            # TODO: Convert filenames into storage units
             stype = 'Requested Storage'
             storage_units_by_type[stype] = [NetCDF4StorageUnit.from_file(su['storage_path'])
                                             for su in storage_units.values()]
