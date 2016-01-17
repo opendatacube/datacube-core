@@ -1,5 +1,5 @@
 
-name: S2A L1C 12.5m Albers
+name: s2a_l1c_12h_albers
 
 # Any datasets matching these metadata properties.
 match:
@@ -83,7 +83,7 @@ measurements:
 
 ---
 
-name: S2A L1C 25m Albers
+name: s2a_l1c_25m_albers
 
 # Any datasets matching these metadata properties.
 match:
@@ -178,7 +178,7 @@ measurements:
 ---
 
 
-name: S2A L1C 50m Albers
+name: s2a_l1c_50m_albers
 
 # Any datasets matching these metadata properties.
 match:

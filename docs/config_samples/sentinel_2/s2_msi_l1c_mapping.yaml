@@ -1,5 +1,5 @@
 
-name: S2A L1C 10m
+name: s2a_l1c_10m
 
 # Any datasets matching these metadata properties.
 match:
@@ -70,7 +70,7 @@ measurements:
 ---
 
 
-name: S2A L1C 20m
+name: s2a_l1c_20m
 
 # Any datasets matching these metadata properties.
 match:
@@ -151,7 +151,7 @@ measurements:
 ---
 
 
-name: S2A L1C 60m
+name: s2a_l1c_60m
 
 # Any datasets matching these metadata properties.
 match:

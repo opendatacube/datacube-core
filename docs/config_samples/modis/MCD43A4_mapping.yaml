@@ -1,5 +1,5 @@
 
-name: MCD43A4
+name: modis_mcd42a4
 description: MODIS 500 metre, 10 degree tile
 
 # Any datasets matching these metadata properties.

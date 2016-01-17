@@ -5,7 +5,7 @@ Tables for indexing the storage of a dataset in a reprojected or new form.
 (ie. What NetCDF files do I have of this dataset?)
 """
 from __future__ import absolute_import
-from sqlalchemy import ForeignKey, SmallInteger
+from sqlalchemy import ForeignKey, SmallInteger, CheckConstraint
 from sqlalchemy import Table, Column, Integer, String, DateTime
 from sqlalchemy.dialects import postgres
 from sqlalchemy.sql import func
@@ -29,6 +29,9 @@ STORAGE_MAPPING = Table(
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
     Column('added_by', String, server_default=func.current_user(), nullable=False),
+
+    # Name must be alphanumeric + underscores.
+    CheckConstraint(r"name ~* '^\w+$'", name='alphanumeric_name'),
 )
 
 STORAGE_UNIT = Table(

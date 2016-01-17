@@ -12,7 +12,7 @@ geog_mapping = {
     'match': {'metadata': {'instrument': {'name': 'TM'},
                            'platform': {'code': 'LANDSAT_5'},
                            'product_type': 'EODS_NBAR'}},
-    'name': 'LS5 NBAR',
+    'name': 'ls5_nbar',
 
     'global_attributes': {
         'license': 'Creative Commons Attribution 4.0 International CC BY 4.0',
@@ -59,7 +59,7 @@ albers_mapping = {
     'match': {'metadata': {'instrument': {'name': 'TM'},
                            'platform': {'code': 'LANDSAT_5'},
                            'product_type': 'EODS_NBAR'}},
-    'name': 'LS5 NBAR Albers',
+    'name': 'ls5_nbar_albers',
     'global_attributes': {
         'license': 'Creative Commons Attribution 4.0 International CC BY 4.0',
         'product_version': '0.0.0',

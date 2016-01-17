@@ -100,7 +100,7 @@ def test_index_storage_unit(index, db, default_collection):
     )
     assert was_inserted
     db.ensure_storage_mapping(
-        'Test storage mapping',
+        'test_storage_mapping',
         {},
         {},
     )
@@ -113,7 +113,7 @@ def test_index_storage_unit(index, db, default_collection):
             StorageMapping(
                 # Yikes:
                 storage_type={},
-                name="test_mapping",
+                name='test_storage_mapping',
                 description=None,
                 match=None,
                 measurements={},

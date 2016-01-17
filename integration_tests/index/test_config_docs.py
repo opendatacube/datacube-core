@@ -25,7 +25,7 @@ _15M_STORAGE_TYPE = {
 }
 
 _STORAGE_MAPPING = {
-    'name': 'LS5 NBAR',
+    'name': 'ls5_nbar',
     'match': {
         'metadata':
             {
@@ -121,7 +121,7 @@ def test_get_for_dataset(index, local_config):
     assert len(storage_mappings) == 1
 
     mapping = storage_mappings[0]
-    assert mapping.name == 'LS5 NBAR'
+    assert mapping.name == 'ls5_nbar'
 
     assert mapping.storage_pattern == local_config.location_mappings['eotiles'] + '/file_path_template/file.nc'
     assert mapping.match.metadata == _STORAGE_MAPPING['match']['metadata']
