@@ -1,71 +1,52 @@
-# whitelist
-branches:
-  only:
-    - master
-    - develop
-    - ga/milestone1
-
 language: python
+git:
+  # We need a deeper depth for 'git descibe' to ensure
+  # we can reach the last tagged version.
+  depth: 99999
+
 python:
   - "2.7"
+  - "3.5"
 
 # Use the new travis docker based infrastructure
 sudo: false
 
+cache:
+  directories:
+    - $HOME/.cache/pip
+
 # Install required packages
 addons:
-  postgresql: "9.3"
+  postgresql: "9.4"
   apt:
     packages:
-# libhdf4-alt-dev is not available on travis CI. It would appear this package is not required by tests at this time
-# TODO: Check if this dependency is truly required
-#    - libhdf4-alt-dev
     - libhdf5-serial-dev
     - libnetcdf-dev
-# libgdal-dev has a packaging conflict on travis ci which causes it to uninstall postgis.
-# TODO: Check if this dependency is truly required
-#    - libgdal-dev
+    - libproj-dev
+    - libgdal1-dev
+    - libudunits2-dev
 
-# Command to install miniconda to build test environment
 before_install:
-  # Python and packages
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
-    else
-      wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-    fi
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - hash -r
-  - conda config --set always_yes yes --set changeps1 no
-  # Add Jess Robertson (CSIRO) binstar channel to get custom builds for some utilities
-  - conda config --add channels jesserobertson
-  - conda update -q conda
-  # Useful for debugging any issues with conda
-  - conda info -a
-  # Test databases and data
-  - wget https://github.com/data-cube/agdc-v2-data/raw/master/sample_dbs/gdf_modis_20150710.backup
-  - wget https://github.com/data-cube/agdc-v2-data/raw/master/sample_dbs/gdf_landsat_20150710.backup
-  # TODO: Add download of test data when available in a suitable size
-  - cd gdf_database
-  # Travis logs will show a WARNING regarding the "gdf_modis" does not exist, and Error regarding SCHEMA topology
-  # These are to be expected and can be safely ignored. It is a consequence of restoring a backup after creating an empty
-  # database that ensures the database setup scripts are working
-  - ./gdf_db_setup.sh
-  - ./create_db_from_backup.sh gdf_test_modis ../gdf_modis_20150710.backup
-  - ./create_db_from_backup.sh gdf_test_ls ../gdf_landsat_20150710.backup
-  - cd ..
+  # Create a database for the integration tests.
+  - createdb agdcintegration
 
 install:
-  - conda create -q -n test-agdc python=$TRAVIS_PYTHON_VERSION nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2 coverage python-coveralls pep8 pylint
-  - source activate test-agdc
-  - python setup.py install
+  - export CPLUS_INCLUDE_PATH="/usr/include/gdal"
+  - export C_INCLUDE_PATH="/usr/include/gdal"
+  - pip install --upgrade pip
+  - pip install pytest pytest-cov mock pep8 pylint==1.5 coveralls gdal==1.10.0 compliance-checker
+  - pip install .
 
-# Command to run tests
 script:
-#  - pep8 --filename=*.py --max-line-length 120 analytics analytics_utils execution_engine gdf gdf_database gdf_tests utils
-#  - pylint analytics analytics_utils execution_engine gdf gdf_database gdf_tests utils --reports no
-  - coverage run -m unittest discover gdf_tests
+  - ./check-code.sh integration_tests
 
 after_success:
   - coveralls
+
+notifications:
+  slack:
+    on_success: change
+    on_failure: always
+    on_pull_requests: false
+    rooms:
+      secure: SCM9YZ215qZnDHHQrbgWQtaKa46ZgtsEbg8XPqdyhQdMnhXDQkNA8aJIFHaPNKs2MRfqXEz1dTigjAr7OlxlvENKdVXJDGvccaJlLWX6WckfkPinWE1nvEIR18MME4jEDp06jGww+eqBU0xniHGNa66EABiQml41XQTO3lHFzwAdx0uqG5o0irqkDGqeKW1QrZ++nUwx5W+0CJGNZO06yTIUQp6B8wfMnmaoVUUjw2xuQqUdub4TbnpGlj5T8yLbKayaMjlfGbznq7VcM+2hrT0vnKOZSu5qPBlmA7DYq9IGN3sFFa095WtRfstHGOWAHgDljgm0K/EJWAW7Pv7uAmx30I9RPA1sNq1ZxVJ4RwH5ZebRiaBVh43ik5l/vNrr4wZNLeRhgGUiCxEHrix5ZNahZAv/LDZrddRyspDLmgXsCb+ExPsHwamhieVAvjB24aDL8tj8Es1A75Ai1mtcCwuYGHQzeDAlTGP5XdJQWrpcySFkouMg85DPSNz++YSBzgNR+z7pPH7Hxc01ofplXB10AMMP0IgDyZNJ2JjqttDjrMKTrfXsakEb66mXBsJDg9qBPWV5R6GOcGVBMo1JnGWFoD9IGihTWdyxv7+TEZ/w+F8hyErqFzVkMwER/BwYiT/euIVIm/ZEgRpISwZmNWTg6tXo+M5WUZtQGGmAERI=

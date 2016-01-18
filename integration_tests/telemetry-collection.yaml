@@ -1,0 +1,59 @@
+name: landsat_telemetry
+description: Landsat telemetry data
+
+# What datasets should we include in this collection?
+match:
+    metadata:
+        product_type: 'satellite_telemetry_data'
+    # Higher priority than the default
+    priority: 10
+
+dataset:
+    id_offset: ['id']
+    creation_dt_offset: ['creation_dt']
+    label_offset: ['ga_label']
+    measurements_offset: ['image', 'bands']
+    sources_offset: ['lineage', 'source_datasets']
+    search_fields:
+        platform:
+            offset: [platform, code]
+        instrument:
+            offset: [instrument, name]
+        product:
+            offset: [product_type]
+
+        # Acquisition time.
+        time:
+            type: datetime-range
+            min_offset:
+            - [extent, from_dt]
+            max_offset:
+            - [extent, to_dt]
+
+        # Ground Station Identifier (eg. 'ASA')
+        gsi:
+            offset: [acquisition, groundstation, code]
+        orbit:
+            offset: [acquisition, platform_orbit]
+
+        # Path/row (specific to Landsat).
+        sat_path:
+            type: float-range
+            min_offset:
+            - [image, satellite_ref_point_start, x]
+            max_offset:
+            - [image, satellite_ref_point_end, x]
+            # If an end is not specified, use the start.
+            - [image, satellite_ref_point_start, x]
+        sat_row:
+            type: float-range
+            min_offset:
+            - [image, satellite_ref_point_start, y]
+            max_offset:
+            - [image, satellite_ref_point_end, y]
+            # If an end is not specified, use the start.
+            - [image, satellite_ref_point_start, y]
+storage_unit:
+    # Telemetry is raw data and not stored in units.
+    search_fields: {}
+

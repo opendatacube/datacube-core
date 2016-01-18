@@ -1,0 +1,24 @@
+id: fba15ab4-6bd8-11e5-a08b-a0000100fe80
+
+ga_level: P54
+product_type: NBAR
+platform: LANDSAT_7
+instrument: TM
+
+storage:
+    - name: foo
+      bands:
+        '10':
+            dtype: int16
+            nodata: -999
+            interpolation: nearest
+        '20':
+            dtype: int16
+            nodata: -999
+            interpolation: cubic
+    - name: bar
+      bands:
+        '8':
+            dtype: int16
+            nodata: -999
+            interpolation: linear

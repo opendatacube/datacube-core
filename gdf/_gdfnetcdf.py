@@ -37,14 +37,13 @@ Created on Jun 9, 2015
 from __future__ import absolute_import
 import logging
 from datetime import datetime
+from osgeo import gdal, osr
 
 import netCDF4
 import numpy as np
-from osgeo import gdal, osr
 
 from ._gdfutils import log_multiline
 
-# Only needed for testing
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)  # Logging level for this module
@@ -149,7 +148,8 @@ class GDFNetCDF(object):
                 dimension: Dimension tag (e.g. X, Y, T, etc.)
                 dimension_config: Nested dict containing storage configuration from GDF.storage_config['<storage_type>']
                 index: index for storage unit
-                dimension_index_vector: Numpy array of index values for irregular dimension (e.g. time) or None for unlimited irregular dimension
+                dimension_index_vector: Numpy array of index values for irregular dimension (e.g. time)
+                                        or None for unlimited irregular dimension
             """
 
             logger.debug('dimension = %s', dimension)
@@ -160,7 +160,7 @@ class GDFNetCDF(object):
             if dimension_config['indexing_type'] == 'regular' and not dimension_index_vector:
                 element_size = dimension_config['dimension_element_size']
                 dimension_min = index * dimension_config['dimension_extent'] + dimension_config[
-                    'dimension_origin'] + element_size / 2.0  # Half pixel to account for netCDF centre of pixel reference
+                    'dimension_origin'] + element_size / 2.0  # Half pixel for netcdf centre of pixel reference
                 dimension_max = dimension_min + dimension_config['dimension_extent']
 
                 dimension_index_vector = np.around(np.arange(dimension_min, dimension_max, element_size),

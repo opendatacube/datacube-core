@@ -1,7 +1,6 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-*$py.class
 
 # C extensions
 *.so
@@ -43,6 +42,7 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *,cover
+.hypothesis
 
 # Translations
 *.mo
@@ -56,6 +56,6 @@ docs/_build/
 
 # PyBuilder
 target/
-
-# pycharm project files
 .idea/
+examples/notebooks/.ipynb_checkpoints/datacube_api_example-checkpoint.ipynb
+examples/notebooks/.ipynb_checkpoints/

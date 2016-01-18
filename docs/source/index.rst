@@ -15,6 +15,9 @@ Contents:
 
    install
    db_setup
+   ingest
+   config
+   tools
    developer
    license
 

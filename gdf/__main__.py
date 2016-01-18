@@ -84,7 +84,7 @@ def main():
 #                                               'Y': {'range': (-36.0, -35.968)}
 #                                               }
 #                                }
-# #                                              'T': {'range': (1262304000.0, 1267401599.999999)}, # 2010-01-01 00:00:00.0 - 2010-02-28 23:59:59.999999
+# #      'T': {'range': (1262304000.0, 1267401599.999999)}, # 2010-01-01 00:00:00.0 - 2010-02-28 23:59:59.999999
 #     d = g.get_data(data_request_descriptor)
 #     t1 = datetime.now()
 #     print 'Finishing 128 x 128 single-cell, dual-band selection at %s (Elapsed time %s)' % (t1, t1 - t0)
@@ -98,7 +98,7 @@ def main():
 #                                               'Y': {'range': (-36.0, -35.744)}
 #                                               }
 #                                }
-# #                                              'T': {'range': (1262304000.0, 1267401599.999999)}, # 2010-01-01 00:00:00.0 - 2010-02-28 23:59:59.999999
+# #     'T': {'range': (1262304000.0, 1267401599.999999)}, # 2010-01-01 00:00:00.0 - 2010-02-28 23:59:59.999999
 #     d = g.get_data(data_request_descriptor)
 #     t1 = datetime.now()
 #     print 'Finishing 1024 x 1024 single-cell, dual-band selection at %s (Elapsed time %s)' % (t1, t1 - t0)

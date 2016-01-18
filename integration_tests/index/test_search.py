@@ -1,0 +1,393 @@
+# coding=utf-8
+"""
+Module
+"""
+from __future__ import absolute_import
+
+import csv
+import datetime
+import io
+from pathlib import Path
+
+import pytest
+from click.testing import CliRunner
+
+import datacube.scripts.search_tool
+
+_telemetry_uuid = '4ec8fe97-e8b9-11e4-87ff-1040f381a756'
+_telemetry_dataset = {
+    'product_type': 'satellite_telemetry_data',
+    'checksum_path': 'package.sha1',
+    'id': _telemetry_uuid,
+    'ga_label': 'LS8_OLITIRS_STD-MD_P00_LC81160740742015089ASA00_'
+                '116_074_20150330T022553Z20150330T022657',
+
+    'ga_level': 'P00',
+    'size_bytes': 637660782,
+    'platform': {
+        'code': 'LANDSAT_8'
+    },
+    # We're unlikely to have extent info for a raw dataset, we'll use it for search tests.
+    'extent': {
+        'from_dt': datetime.datetime(2014, 7, 26, 23, 48, 0, 343853),
+        'to_dt': datetime.datetime(2014, 7, 26, 23, 52, 0, 343853),
+        'coord': {
+            'll': {'lat': -31.33333, 'lon': 149.78434},
+            'lr': {'lat': -31.37116, 'lon': 152.20094},
+            'ul': {'lat': -29.23394, 'lon': 149.85216},
+            'ur': {'lat': -29.26873, 'lon': 152.21782}
+        }
+    },
+    'creation_dt': datetime.datetime(2015, 4, 22, 6, 32, 4),
+    'instrument': {'name': 'OLI_TIRS'},
+    'format': {
+        'name': 'MD'
+    },
+    'lineage': {
+        'source_datasets': {}
+    }
+}
+
+
+def test_search_dataset_equals(index, db, default_collection):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    """
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid,
+        Path('/tmp/test/' + _telemetry_uuid)
+    )
+    assert was_inserted
+
+    field = index.datasets.get_field
+
+    datasets = index.datasets.search_eager(
+        field('platform') == 'LANDSAT_8',
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == _telemetry_uuid
+
+    datasets = index.datasets.search_eager(
+        field('platform') == 'LANDSAT_8',
+        field('instrument') == 'OLI_TIRS',
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == _telemetry_uuid
+
+    # Wrong sensor name
+    datasets = index.datasets.search_eager(
+        field('platform') == 'LANDSAT-8',
+        field('instrument') == 'TM',
+    )
+    assert len(datasets) == 0
+
+
+def test_search_dataset_ranges(index, db, default_collection):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    """
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid,
+        Path('/tmp/test/' + _telemetry_uuid)
+    )
+    assert was_inserted
+
+    field = index.datasets.get_field
+
+    # In the lat bounds.
+    datasets = index.datasets.search_eager(
+        field('lat').between(-30.5, -29.5),
+        field('time').between(
+            datetime.datetime(2014, 7, 26, 23, 0, 0),
+            datetime.datetime(2014, 7, 26, 23, 59, 0)
+        )
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == _telemetry_uuid
+
+    # Out of the lat bounds.
+    datasets = index.datasets.search_eager(
+        field('lat').between(28, 32),
+        field('time').between(
+            datetime.datetime(2014, 7, 26, 23, 48, 0),
+            datetime.datetime(2014, 7, 26, 23, 50, 0)
+        )
+    )
+    assert len(datasets) == 0
+
+    # Out of the time bounds
+    datasets = index.datasets.search_eager(
+        field('lat').between(-30.5, -29.5),
+        field('time').between(
+            datetime.datetime(2014, 7, 26, 21, 48, 0),
+            datetime.datetime(2014, 7, 26, 21, 50, 0)
+        )
+    )
+    assert len(datasets) == 0
+
+    # A dataset that overlaps but is not fully contained by the search bounds.
+    # TODO: Do we want overlap as the default behaviour?
+    # Should we distinguish between 'contains' and 'overlaps'?
+    datasets = index.datasets.search_eager(
+        field('lat').between(-40, -30)
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == _telemetry_uuid
+
+
+def test_search_globally(index, db, telemetry_collection):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    :type telemetry_collection: datacube.model.Collection
+    """
+    # Insert dataset. It should be matched to the telemetry collection.
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid,
+        # Path is optional.
+    )
+    assert was_inserted
+
+    # No expressions means get all.
+    results = list(index.datasets.search())
+    assert len(results) == 1
+
+
+def test_searches_only_collection(index, db, default_collection, telemetry_collection):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    :type default_collection: datacube.model.Collection
+    :type telemetry_collection: datacube.model.Collection
+    """
+    # Insert dataset. It should be matched to the telemetry collection.
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid,
+        Path('/tmp/test/' + _telemetry_uuid)
+    )
+    assert was_inserted
+
+    # No results on the default collection.
+    default_field = default_collection.dataset_fields.get
+    datasets = index.datasets.search_eager(
+        default_field('platform') == 'LANDSAT_8',
+        default_field('instrument') == 'OLI_TIRS'
+    )
+    assert len(datasets) == 0
+
+    # One result in the telemetry collection.
+    telemetry_field = telemetry_collection.dataset_fields.get
+    datasets = index.datasets.search_eager(
+        telemetry_field('platform') == 'LANDSAT_8',
+        telemetry_field('instrument') == 'OLI_TIRS',
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == _telemetry_uuid
+
+    # An error if you mix collections (although we may support this in the future):
+    with pytest.raises(ValueError):
+        index.datasets.search_eager(
+            default_field('platform') == 'LANDSAT_8',
+            telemetry_field('instrument') == 'OLI_TIRS',
+        )
+
+    field = index.datasets.get_field
+    # Specify explicit collection and a parameter.
+    results = index.datasets.search_eager(
+        field('collection') == 'landsat_telemetry',
+        telemetry_field('platform') == 'LANDSAT_8'
+    )
+    assert len(results) == 1
+
+
+def test_fetch_all_of_collection(index, db, default_collection, telemetry_collection):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    :type default_collection: datacube.model.Collection
+    :type telemetry_collection: datacube.model.Collection
+    """
+    # Insert dataset. It should be matched to the telemetry collection.
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid,
+        Path('/tmp/test/' + _telemetry_uuid)
+    )
+    assert was_inserted
+
+    field = index.datasets.get_field
+
+    # Get every dataset in the collection
+    results = index.datasets.search_eager(
+        field('collection') == 'landsat_telemetry'
+    )
+    assert len(results) == 1
+
+    results = index.datasets.search_eager(
+        field('collection') == 'eo'
+    )
+    assert len(results) == 0
+
+
+# Storage searching:
+
+def test_search_storage_star(index, db, default_collection, ls5_nbar_mapping):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    :type ls5_nbar_mapping: datacube.model.StorageMapping
+    """
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid,
+        Path('/tmp/test/' + _telemetry_uuid)
+    )
+    assert was_inserted
+
+    assert len(index.storage.search_eager()) == 0
+
+    db.add_storage_unit(
+        '/tmp/something.tif',
+        [_telemetry_uuid],
+        {'test': 'test'},
+        ls5_nbar_mapping.id_
+    )
+
+    assert len(index.storage.search_eager()) == 1
+
+
+def test_search_storage_by_dataset(index, db, default_collection, ls5_nbar_mapping):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    :type ls5_nbar_mapping: datacube.model.StorageMapping
+    :type default_collection: datacube.model.Collection
+    """
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid,
+        Path('/tmp/test/' + _telemetry_uuid)
+    )
+    assert was_inserted
+
+    unit_id = db.add_storage_unit(
+        '/tmp/something.tif',
+        [_telemetry_uuid],
+        {'test': 'test'},
+        ls5_nbar_mapping.id_
+    )
+    dfield = default_collection.dataset_fields.get
+
+    # Search by the linked dataset properties.
+    storages = index.storage.search_eager(
+        dfield('platform') == 'LANDSAT_8',
+        dfield('instrument') == 'OLI_TIRS'
+    )
+    assert len(storages) == 1
+    assert storages[0].id_ == unit_id
+
+    # When fields don't match the dataset it shouldn't be returned.
+    storages = index.storage.search_eager(
+        dfield('platform') == 'LANDSAT_7'
+    )
+    assert len(storages) == 0
+
+
+def test_search_cli_basic(global_integration_cli_args, db, default_collection, ls5_nbar_mapping):
+    """
+    Search datasets using the cli.
+    :type global_integration_cli_args: tuple[str]
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type ls5_nbar_mapping: datacube.model.StorageMapping
+    :type default_collection: datacube.model.Collection
+    """
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid,
+        Path('/tmp/test/' + _telemetry_uuid)
+    )
+    assert was_inserted
+
+    opts = list(global_integration_cli_args)
+    opts.extend(
+        [
+            # No search arguments: return all datasets.
+            'datasets'
+        ]
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        datacube.scripts.search_tool.cli,
+        opts
+    )
+    assert str(_telemetry_uuid) in result.output
+    assert str(default_collection.name) in result.output
+
+    assert result.exit_code == 0
+
+
+def test_search_storage_by_both_fields(global_integration_cli_args, db, default_collection, ls5_nbar_mapping):
+    """
+    Search storage using both storage and dataset fields.
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type global_integration_cli_args: tuple[str]
+    :type ls5_nbar_mapping: datacube.model.StorageMapping
+    :type default_collection: datacube.model.Collection
+    """
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid,
+        Path('/tmp/test/' + _telemetry_uuid)
+    )
+    assert was_inserted
+
+    unit_id = db.add_storage_unit(
+        '/tmp/something.tif',
+        [_telemetry_uuid],
+        {
+            'extents': {
+                'geospatial_lat_min': 120,
+                'geospatial_lat_max': 140
+            }
+        },
+        ls5_nbar_mapping.id_
+    )
+
+    rows = _cli_csv_search(['units', '100<lat<150'], global_integration_cli_args)
+    assert len(rows) == 1
+    assert rows[0]['id'] == str(unit_id)
+
+    # Don't return on a mismatch
+    rows = _cli_csv_search(['units', '150<lat<160'], global_integration_cli_args)
+    assert len(rows) == 0
+
+    # Search by both dataset and storage fields.
+    rows = _cli_csv_search(['units', 'platform=LANDSAT_8', '100<lat<150'], global_integration_cli_args)
+    assert len(rows) == 1
+    assert rows[0]['id'] == str(unit_id)
+
+
+def _cli_csv_search(args, global_integration_cli_args):
+    global_opts = list(global_integration_cli_args)
+    global_opts.extend(['-f', 'csv'])
+    result = _cli_search(args, global_opts)
+    assert result.exit_code == 0
+    return list(csv.DictReader(io.StringIO(result.output)))
+
+
+def _cli_search(args, global_integration_cli_args):
+    opts = list(global_integration_cli_args)
+    opts.extend(args)
+    runner = CliRunner()
+    result = runner.invoke(
+        datacube.scripts.search_tool.cli,
+        opts
+    )
+    return result

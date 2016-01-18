@@ -32,13 +32,14 @@ Created on 12/03/2015
 
 @author: Alex Ip
 
-Tests for the gdf._CommandLineArgs.py module.
+Tests for the gdf_tests._CommandLineArgs.py module.
 """
 from __future__ import absolute_import
 
 import sys
 import unittest
-from gdf._arguments import CommandLineArgs
+
+from gdf import CommandLineArgs
 
 
 #
@@ -56,7 +57,7 @@ class TestCommandLineArgs(unittest.TestCase):
     Unit tests for utility functions.
     """
 
-    MODULE = 'gdf._arguments'
+    MODULE = 'gdf_tests._arguments'
     SUITE = 'TestCommandLineArgs'
 
     TEST_ARG_DESCRIPTOR = {'test': {'short_flag': '-t',

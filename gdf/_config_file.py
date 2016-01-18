@@ -43,6 +43,7 @@ from ._gdfutils import log_multiline
 
 logger = logging.getLogger(__name__)
 
+
 class ConfigFile(object):
 
     def _parse_config_file(self):

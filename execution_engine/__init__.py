@@ -148,8 +148,8 @@ class ExecutionEngine(object):
             pprint(self.cache[data_key]['array_dimensions'])
             dim = self.cache[data_key]['array_dimensions'].index(task.values()[0]['dimension'][0])
 
-            array_result['array_result'][key] = np.apply_along_axis(lambda x: func(x[x != no_data_value]), dim,
-                                                                   array_data)
+            array_result['array_result'][key] = np.apply_along_axis(lambda x:
+                                                                    func(x[x != no_data_value]), dim, array_data)
 
             array_result['array_indices'] = copy.deepcopy(array_desc['array_indices'])
             array_result['array_dimensions'] = copy.deepcopy(array_result['array_output']['dimensions_order'])
@@ -165,7 +165,7 @@ class ExecutionEngine(object):
                 task.values()[0]['array_output']['dimensions_order'][0])
             print('dim =', dim)
 
-            # to fix bug in gdf
+            # to fix bug in gdf_tests
             # size = self.cache[data_key]['array_result'].values()[0].shape[dim]
             # print 'size =', size
             # out = np.empty([size])

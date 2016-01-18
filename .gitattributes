@@ -1,0 +1,14 @@
+* text=auto
+
+version.py  export-subst
+
+*.sh text eol=lf
+*.bash text eol=lf
+*.pbs text eol=lf
+
+*.egg binary
+*.jpg binary
+*.hdr binary
+*.bin binary
+*.tif binary
+

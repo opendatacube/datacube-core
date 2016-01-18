@@ -9,48 +9,39 @@ These installation instructions are tested on:
 Required software
 -----------------
 
-PostgreSQL and PostGIS::
+PostgreSQL::
 
-    apt-get install postgresql-9.3 postgresql-client-9.3 postgresql-contrib-9.3 postgresql-9.3-postgis-2.1 postgresql-9.3-postgis-2.1-scripts
+    apt-get install postgresql-9.4 postgresql-client-9.4 postgresql-contrib-9.4
 
-HDF4, HDF5, and netCDF4::
+HDF5, and netCDF4::
 
-   apt-get install libhdf4-alt-dev libhdf5-serial-dev libnetcdf-dev
-
-.. note::
-
-    Using libhdf4-alt-dev for compatibility with GDAL
+   apt-get install libhdf5-serial-dev libnetcdf-dev
 
 GDAL::
 
-    apt-get install libgdal-dev
+    apt-get install libgdal1-dev
 
 Optional packages (useful utilities, docs)::
 
-    apt-get install postgresql-doc-9.3 libhdf4-doc  libhdf5-doc netcdf-doc libgdal-doc
-    apt-get install hdf4-tools hdf5-tools netcdf-bin gdal-bin pgadmin3
+    apt-get install postgresql-doc-9.4 libhdf5-doc netcdf-doc libgdal1-doc
+    apt-get install hdf5-tools netcdf-bin gdal-bin pgadmin3
 
 
 
 Python and packages
 -------------------
 
-.. attention::
+Python 2.7 and 3.4 are supported.
 
-    Python 2.7 is required.
+Download the latest version of the software from the `repository <https://github.com/data-cube/agdc-v2>`_ and install it::
 
-Anaconda Python 2.7
-^^^^^^^^^^^^^^^^^^^
+    python setup.py install
 
-Download `MiniConda <https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh>`_ and install it::
 
-    bash Miniconda-latest-Linux-x86_64.sh
+It may be useful to use conda to install binary packages.
+
+    conda install psycopg2 gdal libgdal hdf5 rasterio netcdf4 libnetcdf pandas
 
 .. note::
 
-    You can use the full Anaconda installation if you prefer, it will have some packages by default.
-
-Use conda to install the required Python packages::
-
-    conda install nose pip sphinx numpy scipy matplotlib gdal netCDF4 numexpr psycopg2
-
+    Usage of virtual environment is recommended

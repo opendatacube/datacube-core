@@ -1,32 +1,46 @@
-from __future__ import absolute_import
 #!/usr/bin/env python
 
-from distutils.core import setup
+from setuptools import setup, find_packages
+from version import get_version
 
-version = '0.0.0'
-
-setup(name='agdc-v2',
-      version=version,
-      packages=[
-          'gdf',
-          'analytics',
-          'analytics_utils',
-          'execution_engine',
-      ],
+setup(name='datacube',
+      version=get_version(),
+      packages=find_packages(
+          exclude=('tests', 'tests.*', 'examples',
+                   'integration_tests', 'integration_tests.*')
+      ),
       package_data={
-          'gdf': ['gdf_default.conf']
+          'gdf_tests': ['gdf_default.conf'],
+          '': ['*.yaml'],
       },
       scripts=[
       ],
-      requires=[
+      setup_requires=[
+          'pytest-runner'
+      ],
+      install_requires=[
+          'click',
+          'pathlib',
+          'pyyaml',
+          'sqlalchemy',
+          'python-dateutil',
+          'cachetools',
+          'numpy',
+          'rasterio',
+          'singledispatch',
+          'netcdf4',
+          'pypeg2',
           'psycopg2',
           'gdal',
-          'numexpr',
-          'numpy',
-          'matplotlib',
-          'netcdf4',
-          'scipy',
-          'pytz'
+          'dask',
+          'setuptools',
+          'toolz',
+          'xray',
+      ],
+      tests_require=[
+          'pytest',
+          'pytest-cov',
+          'mock'
       ],
       url='https://github.com/data-cube/agdc-v2',
       author='AGDC Collaboration',
@@ -34,5 +48,12 @@ setup(name='agdc-v2',
       maintainer_email='',
       description='AGDC v2',
       long_description='Australian Geoscience Data Cube v2',
-      license='Apache License 2.0'
+      license='Apache License 2.0',
+      entry_points={
+          'console_scripts': [
+              'datacube-ingest = datacube.scripts.run_ingest:cli',
+              'datacube-config = datacube.scripts.config_tool:cli',
+              'datacube-search = datacube.scripts.search_tool:cli'
+          ]
+      },
       )

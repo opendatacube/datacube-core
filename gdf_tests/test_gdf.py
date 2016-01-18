@@ -32,12 +32,15 @@ Created on 12/03/2015
 
 @author: Alex Ip
 
-Tests for the gdf._GDF.py module.
+Tests for the gdf_tests._GDF.py module.
 """
 from __future__ import absolute_import
 
 import unittest
+import inspect
+
 import os
+
 from gdf import GDF
 
 
@@ -99,8 +102,7 @@ class TestGDF(unittest.TestCase):
         """
         test_gdf = GDF()  # Test default configuration
 
-        assert test_gdf.code_root == os.path.abspath(os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), 'gdf')), 'Code root is incorrect'
+        assert test_gdf.code_root == os.path.abspath(os.path.dirname(inspect.getfile(GDF))), 'Code root is incorrect'
         assert len(test_gdf.config_files) == 1, 'Default config path list should have one entry'
         assert test_gdf.config_files[0] == os.path.abspath(os.path.join(
             test_gdf.code_root, GDF.DEFAULT_CONFIG_FILE)), 'Default config path is incorrect'

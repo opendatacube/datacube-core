@@ -32,11 +32,13 @@ Created on 12/03/2015
 
 @author: Alex Ip
 
-Tests for the gdf._ConfigFile.py module.
+Tests for the gdf_tests._ConfigFile.py module.
 """
 from __future__ import absolute_import
-import os
 import unittest
+import inspect
+
+import os
 
 from gdf._config_file import ConfigFile
 
@@ -56,7 +58,7 @@ class TestConfigFile(unittest.TestCase):
     Unit tests for utility functions.
     """
 
-    MODULE = 'gdf._config_file'
+    MODULE = 'gdf_tests._config_file'
     SUITE = 'TestConfigFile'
 
     def test_ConfigFile(self):
@@ -64,8 +66,8 @@ class TestConfigFile(unittest.TestCase):
         Test ConfigFile constructor
         """
 
-        # Default config file should be ../gdf/gdf_default.conf
-        default_config_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'gdf', 'gdf_default.conf')
+        # Default config file should be ../gdf_tests/gdf_default.conf
+        default_config_file = os.path.join(os.path.dirname(inspect.getfile(ConfigFile)), 'gdf_default.conf')
 
         config_file_object = ConfigFile(default_config_file)
 
