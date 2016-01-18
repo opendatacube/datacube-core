@@ -126,8 +126,8 @@ _EXAMPLE_COLLECTION = Collection(
         measurements_dict=['image', 'bands'],
         sources=['lineage', 'source_datasets']
     ),
-    dataset_search_fields=[],
-    storage_unit_search_fields=[]
+    dataset_search_fields={},
+    storage_unit_search_fields={}
 )
 
 
