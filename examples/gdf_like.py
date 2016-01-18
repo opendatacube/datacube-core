@@ -54,7 +54,7 @@ def create_rgb(data):
 def main():
     data_request = {
         'platform': 'LANDSAT_8',
-        'product': 'EODS_NBAR',
+        'product': 'NBAR',
         'variables': ('band_1', 'band_4', 'band_6'),
         'dimensions': {
             'longitude': {

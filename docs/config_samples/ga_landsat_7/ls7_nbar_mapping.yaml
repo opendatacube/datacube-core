@@ -9,7 +9,7 @@ match:
             code: LANDSAT_7
         instrument:
             name: ETM
-        product_type: EODS_NBAR
+        product_type: NBAR
 
 
 location_name: eotiles

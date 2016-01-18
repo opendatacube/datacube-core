@@ -5,7 +5,7 @@
 id: 4678bf44-82b5-11e5-9264-a0000100fe80
 ga_label: LS5_TM_NBAR_P54_GANBAR01-002_090_085_19900403
 ga_level: P54
-product_type: EODS_NBAR
+product_type: NBAR
 creation_dt: 2015-03-22 01:37:41
 checksum_path: package.sha1
 platform:
