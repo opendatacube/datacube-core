@@ -9,7 +9,7 @@ match:
             code: LANDSAT_8
         instrument:
             name: OLI_TIRS
-        product_type: EODS_PQ
+        product_type: PQ
 
 location_name: eotiles
 file_path_template: '{platform[code]}_{instrument[name]}_PQ_{tile_index[0]}_{tile_index[1]}_{start_time:%Y-%m-%dT%H-%M-%S.%f}.nc'
@@ -46,7 +46,7 @@ storage:
     dimension_order: ['time', 'latitude', 'longitude']
 
 measurements:
-  '1111111111111100':
+  'PQ':
       dtype: int16
       resampling_method: nearest
       varname: band_pixelquality

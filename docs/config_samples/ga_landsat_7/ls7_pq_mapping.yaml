@@ -9,7 +9,7 @@ match:
             code: LANDSAT_7
         instrument:
             name: ETM
-        product_type: EODS_PQ
+        product_type: PQ
 
 
 location_name: eotiles
@@ -48,7 +48,7 @@ storage:
     dimension_order: ['time', 'latitude', 'longitude']
 
 measurements:
-  '1111111111111100':
+  'PQ':
       dtype: int16
       resampling_method: nearest
       varname: band_pixelquality
