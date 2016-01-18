@@ -110,8 +110,8 @@ def check_dataset_metadata_in_su(nco, dataset_dir):
     ds_filename = dataset_dir / 'agdc-metadata.yaml'
     with ds_filename.open() as f:
         orig_metadata = f.read()
-    stored = sanitise_mapping_configs(yaml.safe_load(stored_metadata))
-    original = sanitise_mapping_configs(yaml.safe_load(orig_metadata))
+    stored = make_pgsqljson_match_yaml_load(yaml.safe_load(stored_metadata))
+    original = make_pgsqljson_match_yaml_load(yaml.safe_load(orig_metadata))
     assert stored == original
 
 
@@ -184,11 +184,11 @@ def shrink_mapping(mapping, variables):
     return mapping
 
 
-def sanitise_mapping_configs(data):
-    """Recursively turn all dates into strings and replace 'None' with {}"""
+def make_pgsqljson_match_yaml_load(data):
+    """Un-munge YAML data passed through PostgreSQL JSON"""
     for key, value in data.items():
         if isinstance(value, dict):
-            data[key] = sanitise_mapping_configs(value)
+            data[key] = make_pgsqljson_match_yaml_load(value)
         elif isinstance(value, datetime):
             data[key] = value.strftime(JSON_DATE_FORMAT)
         elif value is None:
