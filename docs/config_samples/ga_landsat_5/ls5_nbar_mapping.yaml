@@ -51,8 +51,6 @@ default_measurement: &MEASUREMENT_DEFAULTS
   # data settings
   dtype: int16
   nodata: -999
-  #
-  units: 1
   
   # compression settings
   resampling_method: cubic
