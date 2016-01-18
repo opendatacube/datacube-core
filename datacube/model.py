@@ -133,9 +133,7 @@ class StorageMapping(object):
         return self.resolve_location(self.filename_pattern)
 
     def __repr__(self):
-        return ('StorageMapping<storage_type={!r},'
-                ' id_={!r},...,location={!r}>'
-                .format(self.storage_type, self.id_, self.resolve_location('')))
+        return 'StorageMapping<name={!r}, id_={!r}>'.format(self.name, self.id_)
 
 
 class StorageUnit(object):
@@ -198,6 +196,9 @@ class Dataset(object):
 
     def __str__(self):
         return "Dataset <id={id}, path={path}>".format(id=self.id, path=self.metadata_path)
+
+    def __repr__(self):
+        return self.__str__()
 
     @property
     def metadata(self):
