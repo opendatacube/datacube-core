@@ -183,7 +183,7 @@ class DatasetResource(object):
         """
         return self._db.contains_dataset(dataset.id)
 
-    def add(self, metadata_doc, metadata_path):
+    def add(self, metadata_doc, metadata_path=None):
         """
         Ensure a dataset is in the index. Add it if not present.
         :type metadata_doc: dict
