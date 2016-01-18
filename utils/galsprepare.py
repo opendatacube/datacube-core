@@ -58,8 +58,7 @@ def prep_dataset(fields, path):
     end_time = parser.parse(doc.findall("./EXEXTENT/TEMPORALEXTENTTO")[0].text)
 
     images = {band_name(im_path): {
-        'path': str(im_path),
-        'layer': 1,
+        'path': str(im_path)
     } for im_path in path.glob('scene01/*.tif')}
 
     return {

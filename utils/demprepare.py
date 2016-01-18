@@ -28,11 +28,11 @@ def get_projection(img):
 
 def prepare_dataset(path):
     documents = []
+    creation_dt = datetime.fromtimestamp(path.stat().st_ctime).isoformat()
     for dspath in path.glob('[ew][01][0-9][0-9][sn][0-9][0-9]dem[sh]'):
         dspath_str = str(dspath)
         product_type = 'DEM-' + dspath_str[-1].upper()
         band_name = 'dem' + dspath_str[-1].lower()
-        creation_dt = datetime.fromtimestamp(dspath.stat().st_ctime).isoformat()
         im = rasterio.open(dspath_str)
         documents.append({
             'id': str(uuid.uuid4()),
