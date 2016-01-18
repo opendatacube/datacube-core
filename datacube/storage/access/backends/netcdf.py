@@ -65,7 +65,7 @@ class NetCDF4StorageUnit(StorageUnitBase):
                     grid_mappings[getattr(var, 'grid_mapping_name', None)] = getattr(var, 'spatial_ref', None)
                 if len(dims) == 1 and name == dims[0]:
                     coordinates[name] = Coordinate(dtype=numpy.dtype(var.dtype),
-                                                   begin=var[0].item(), end=var[-1].item(),
+                                                   begin=var[0].item(), end=var[var.size-1].item(),
                                                    length=var.shape[0], units=units)
                     standard_name = getattr(var, 'standard_name', None)
                     if standard_name:
