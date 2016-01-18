@@ -25,7 +25,10 @@ TEST_STORAGE_NUM_MEASUREMENTS = 2
 GEOGRAPHIC_VARS = ('latitude', 'longitude')
 PROJECTED_VARS = ('x', 'y')
 
+EXAMPLE_LS5_DATASET_ID = 'bbf3e21c-82b0-11e5-9ba1-a0000100fe80'
+
 EXPECTED_STORAGE_UNIT_DATA_SHAPE = (1, 40, 40)
+EXPECTED_NUMBER_OF_STORAGE_UNITS = 12
 
 JSON_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
@@ -34,13 +37,13 @@ COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
 
 def test_full_ingestion(global_integration_cli_args, index, default_collection, example_ls5_dataset):
     """
-    Loads two storage configuration then ingests a sample Landsat 5 scene
+    Loads two storage mapping configurations, then ingests a sample Landsat 5 scene
 
     One storage configuration specifies Australian Albers Equal Area Projection,
-    the other is simple latitude/longitude.
+    the other is simply latitude/longitude.
 
-    The input dataset should be recorded, two sets of netcdf storage units should be created
-    and recorded in the database.
+    The input dataset should be recorded in the index, and two sets of netcdf storage units
+    should be created on disk and recorded in the index.
     :param db:
     :return:
     """
@@ -66,26 +69,27 @@ def test_full_ingestion(global_integration_cli_args, index, default_collection, 
     assert not result.exception
     assert result.exit_code == 0
 
-    # Check dataset is indexed
-    datasets = index.datasets.search_eager()
-    assert len(datasets) == 1
-    assert datasets[0].id == 'bbf3e21c-82b0-11e5-9ba1-a0000100fe80'
+    ensure_dataset_is_indexed(index)
 
     # Check storage units are indexed and written
     sus = index.storage.search_eager()
+    latlon_storageunits = [su for su in sus if su.storage_mapping.name == LS5_NBAR_NAME]
+    assert len(latlon_storageunits) == EXPECTED_NUMBER_OF_STORAGE_UNITS
 
-    latlon = [su for su in sus if su.storage_mapping.name == LS5_NBAR_NAME]
-    assert len(latlon) == 12
-    albers = [su for su in sus if su.storage_mapping.name == LS5_NBAR_ALBERS_NAME]
-    assert len(albers) == 12
+    albers_storageunits = [su for su in sus if su.storage_mapping.name == LS5_NBAR_ALBERS_NAME]
+    assert len(albers_storageunits) == EXPECTED_NUMBER_OF_STORAGE_UNITS
 
-    for su in (latlon[0], albers[0]):
+    for su in (latlon_storageunits[0], albers_storageunits[0]):
         with netCDF4.Dataset(su.filepath) as nco:
             check_data_shape(nco)
             check_cf_compliance(nco)
             check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset)
         check_open_with_xray(su.filepath)
 
+def ensure_dataset_is_indexed(index):
+    datasets = index.datasets.search_eager()
+    assert len(datasets) == 1
+    assert datasets[0].id == EXAMPLE_LS5_DATASET_ID
 
 def check_data_shape(nco):
     assert nco.variables['band_10'].shape == EXPECTED_STORAGE_UNIT_DATA_SHAPE
