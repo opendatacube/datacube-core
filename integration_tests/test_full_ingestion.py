@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from pathlib import Path
 
 import six
 
@@ -7,6 +8,19 @@ import netCDF4
 import yaml
 
 import datacube.scripts.run_ingest
+
+PROJECT_ROOT = Path(__file__).parents[1]
+CONFIG_SAMPLES =  PROJECT_ROOT / 'docs/config_samples/'
+LS5_SAMPLES = CONFIG_SAMPLES / 'ga_landsat_5/'
+LS5_NBAR_MAPPING = LS5_SAMPLES / 'ls5_nbar_mapping.yaml'
+LS5_NBAR_NAME = 'LS5 NBAR'
+LS5_NBAR_ALBERS_MAPPING = LS5_SAMPLES / 'ls5_nbar_mapping_albers.yaml'
+LS5_NBAR_ALBERS_NAME = 'LS5 NBAR Albers'
+
+TEST_STORAGE_SHRINK_FACTOR = 100
+TEST_STORAGE_NUM_MEASUREMENTS = 2
+GEOGRAPHIC_VARS = ('latitude', 'longitude')
+PROJECTED_VARS = ('x', 'y')
 
 geog_mapping = {
     'driver': 'NetCDF CF',
@@ -128,8 +142,8 @@ def test_full_ingestion(global_integration_cli_args, index, default_collection, 
     :return:
     """
     # Load a mapping config
-    index.mappings.add(geog_mapping)
-    index.mappings.add(albers_mapping)
+    index.mappings.add(load_test_mapping(LS5_NBAR_MAPPING))
+    index.mappings.add(load_test_mapping(LS5_NBAR_ALBERS_MAPPING))
 
     # Run Ingest script on a dataset
     opts = list(global_integration_cli_args)
@@ -155,21 +169,27 @@ def test_full_ingestion(global_integration_cli_args, index, default_collection, 
     # Check storage units are indexed and written
     sus = index.storage.search_eager()
 
-    latlon = [su for su in sus if su.storage_mapping.name == geog_mapping['name']]
+    latlon = [su for su in sus if su.storage_mapping.name == LS5_NBAR_NAME]
     assert len(latlon) == 12
-    albers = [su for su in sus if su.storage_mapping.name == albers_mapping['name']]
+    albers = [su for su in sus if su.storage_mapping.name == LS5_NBAR_ALBERS_NAME]
     assert len(albers) == 12
 
     for su in (latlon[0], albers[0]):
         with netCDF4.Dataset(su.filepath) as nco:
-            assert nco.variables['band_10'].shape == (1, 400, 400)
+            check_data_shape(nco)
             check_cf_compliance(nco)
             check_dataset_metadata_in_su(nco, example_ls5_dataset)
+        check_open_with_xray(su.filepath)
+
+
+def check_data_shape(nco):
+    assert nco.variables['band_10'].shape == (1, 400, 400)
 
 
 def check_cf_compliance(dataset):
     # At the moment the compliance-checker is only compatible with Python 2
     if not six.PY2:
+        #TODO Add Warning or fix for Python 3
         return
 
     from compliance_checker.runner import CheckSuite, ComplianceChecker
@@ -189,4 +209,73 @@ def check_dataset_metadata_in_su(nco, dataset_dir):
     ds_filename = dataset_dir / 'agdc-metadata.yaml'
     with ds_filename.open() as f:
         orig_metadata = f.read()
-    assert yaml.load_safe(stored_metadata) == yaml.load_safe(orig_metadata)
+    assert yaml.safe_load(stored_metadata) == yaml.safe_load(orig_metadata)
+
+
+def check_open_with_xray(filename):
+    import xray
+    xray.open_dataset(filename)
+
+
+def test_shrink_mapping():
+    mapping = load_mapping_file(LS5_NBAR_MAPPING)
+    mapping = alter_mapping_config_for_testing(mapping)
+    assert len(mapping['measurements']) <= TEST_STORAGE_NUM_MEASUREMENTS
+    for var in GEOGRAPHIC_VARS:
+        assert abs(mapping['storage']['resolution'][var]) == 0.025
+        assert mapping['storage']['chunking'][var] == 5
+
+
+def test_load_mapping():
+    mapping_config = load_mapping_file(LS5_NBAR_ALBERS_MAPPING)
+    assert mapping_config
+    assert 'name' in mapping_config
+    assert 'storage' in mapping_config
+    assert 'match' in mapping_config
+
+
+def load_test_mapping(filename):
+    mapping_config = load_mapping_file(filename)
+    return alter_mapping_config_for_testing(mapping_config)
+
+
+def load_mapping_file(filename):
+    with open(str(filename)) as f:
+        return yaml.safe_load(f)
+
+
+def alter_mapping_config_for_testing(mapping):
+    mapping = limit_num_measurements(mapping)
+    mapping = use_test_storage(mapping)
+    if is_geog_mapping(mapping):
+        return shrink_mapping(mapping, GEOGRAPHIC_VARS)
+    else:
+        return shrink_mapping(mapping, PROJECTED_VARS)
+
+
+def limit_num_measurements(mapping):
+    measurements = mapping['measurements']
+    if len(measurements) <= TEST_STORAGE_NUM_MEASUREMENTS:
+        return mapping
+    else:
+        measurements_to_delete = sorted(measurements)[TEST_STORAGE_NUM_MEASUREMENTS:]
+        for key in measurements_to_delete:
+            del measurements[key]
+        return mapping
+
+
+def use_test_storage(mapping):
+    mapping['location_name'] = 'testdata'
+    return mapping
+
+
+def is_geog_mapping(mapping):
+    return 'latitude' in mapping['storage']['resolution']
+
+
+def shrink_mapping(mapping, variables):
+    storage = mapping['storage']
+    for var in variables:
+        storage['resolution'][var] = storage['resolution'][var] * TEST_STORAGE_SHRINK_FACTOR
+        storage['chunking'][var] = storage['chunking'][var] / TEST_STORAGE_SHRINK_FACTOR
+    return mapping
