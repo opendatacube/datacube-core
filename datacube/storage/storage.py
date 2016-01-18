@@ -227,6 +227,9 @@ def create_storage_unit(tile_index, datasets, mapping, filename):
     :type filename:  str
     :rtype: datacube.model.StorageUnit
     """
+    if not datasets:
+        raise RuntimeError('Shall not create empty StorageUnit%s %s' % (tile_index, filename))
+
     storage_type = mapping.storage_type
     if storage_type.driver != 'NetCDF CF':
         raise RuntimeError('Storage driver is not supported (yet): %s' % storage_type.driver)
@@ -246,6 +249,7 @@ def create_storage_unit(tile_index, datasets, mapping, filename):
     if os.path.isfile(filename):
         raise RuntimeError('file already exists: %s' % filename)
 
+    _LOG.info("Creating Storage Unit %s", filename)
     tmpfile, tmpfilename = tempfile.mkstemp(dir=os.path.dirname(filename))
     try:
         _create_storage_unit(tile_index, datasets, mapping, tile_spec, tmpfilename)
