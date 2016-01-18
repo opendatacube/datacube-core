@@ -9,7 +9,7 @@ match:
             code: LANDSAT_5
         instrument:
             name: TM
-        product_type: NBAR
+        product_type: EODS_NBAR
 
 location_name: eotiles
 
