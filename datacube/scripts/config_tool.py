@@ -15,9 +15,8 @@ from click import echo
 
 from datacube.index import index_connect
 from datacube.ui import read_documents
-from datacube.ui.click import global_cli_options, pass_index, pass_config
+from datacube.ui.click import global_cli_options, pass_index, pass_config, CLICK_SETTINGS
 
-CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 _LOG = logging.getLogger(__name__)
 

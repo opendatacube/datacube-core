@@ -10,9 +10,8 @@ from pathlib import Path
 import click
 
 from datacube.ui import click as ui
+from datacube.ui.click import CLICK_SETTINGS
 from datacube.ingest import index_datasets, store_datasets
-
-CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
 @click.command(help="Ingest datasets into the Data Cube.", context_settings=CLICK_SETTINGS)

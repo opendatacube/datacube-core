@@ -17,9 +17,8 @@ from psycopg2._range import Range
 from singledispatch import singledispatch
 
 from datacube.ui import click as ui
+from datacube.ui.click import CLICK_SETTINGS
 from datacube.ui.expression import parse_expressions
-
-CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
 def printable_values(d):

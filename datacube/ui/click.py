@@ -15,6 +15,9 @@ from datacube import config
 from datacube.index import index_connect
 
 
+CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
+
+
 def _print_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
