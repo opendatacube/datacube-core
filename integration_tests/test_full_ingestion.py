@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from datetime import datetime
 from pathlib import Path
 
 import six
@@ -21,6 +22,10 @@ TEST_STORAGE_SHRINK_FACTOR = 100
 TEST_STORAGE_NUM_MEASUREMENTS = 2
 GEOGRAPHIC_VARS = ('latitude', 'longitude')
 PROJECTED_VARS = ('x', 'y')
+
+EXPECTED_STORAGE_UNIT_DATA_SHAPE = (1, 40, 40)
+
+JSON_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
 geog_mapping = {
     'driver': 'NetCDF CF',
@@ -183,7 +188,7 @@ def test_full_ingestion(global_integration_cli_args, index, default_collection, 
 
 
 def check_data_shape(nco):
-    assert nco.variables['band_10'].shape == (1, 400, 400)
+    assert nco.variables['band_10'].shape == EXPECTED_STORAGE_UNIT_DATA_SHAPE
 
 
 def check_cf_compliance(dataset):
@@ -209,7 +214,9 @@ def check_dataset_metadata_in_su(nco, dataset_dir):
     ds_filename = dataset_dir / 'agdc-metadata.yaml'
     with ds_filename.open() as f:
         orig_metadata = f.read()
-    assert yaml.safe_load(stored_metadata) == yaml.safe_load(orig_metadata)
+    stored = sanitise_mapping_configs(yaml.safe_load(stored_metadata))
+    original = sanitise_mapping_configs(yaml.safe_load(orig_metadata))
+    assert stored == original
 
 
 def check_open_with_xray(filename):
@@ -279,3 +286,15 @@ def shrink_mapping(mapping, variables):
         storage['resolution'][var] = storage['resolution'][var] * TEST_STORAGE_SHRINK_FACTOR
         storage['chunking'][var] = storage['chunking'][var] / TEST_STORAGE_SHRINK_FACTOR
     return mapping
+
+
+def sanitise_mapping_configs(data):
+    """Recursively turn all dates into strings and replace 'None' with {}"""
+    for key, value in data.items():
+        if isinstance(value, dict):
+            data[key] = sanitise_mapping_configs(value)
+        elif isinstance(value, datetime):
+            data[key] = value.strftime(JSON_DATE_FORMAT)
+        elif value is None:
+            data[key] = {}
+    return data
