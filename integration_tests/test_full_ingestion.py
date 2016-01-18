@@ -146,6 +146,8 @@ def test_full_ingestion(global_integration_cli_args, index, default_collection, 
     :param db:
     :return:
     """
+    assert default_collection  # default_collection has been added to database by fixture
+
     # Load a mapping config
     index.mappings.add(load_test_mapping(LS5_NBAR_MAPPING))
     index.mappings.add(load_test_mapping(LS5_NBAR_ALBERS_MAPPING))
