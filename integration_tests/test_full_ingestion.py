@@ -6,6 +6,7 @@ import six
 
 from click.testing import CliRunner
 import netCDF4
+import numpy as np
 import yaml
 
 import datacube.scripts.run_ingest
@@ -79,7 +80,7 @@ def test_full_ingestion(global_integration_cli_args, index, default_collection, 
         with netCDF4.Dataset(su.filepath) as nco:
             check_data_shape(nco)
             check_cf_compliance(nco)
-            check_dataset_metadata_in_su(nco, example_ls5_dataset)
+            check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset)
         check_open_with_xray(su.filepath)
 
 
@@ -104,9 +105,10 @@ def check_cf_compliance(dataset):
     assert cs.passtree(groups, limit=NORMAL_CRITERIA)
 
 
-def check_dataset_metadata_in_su(nco, dataset_dir):
+def check_dataset_metadata_in_storage_unit(nco, dataset_dir):
     assert len(nco.variables['extra_metadata']) == 1  # 1 time slice
-    stored_metadata = str(netCDF4.chartostring(nco.variables['extra_metadata'][0]))
+    stored_metadata = netCDF4.chartostring(nco.variables['extra_metadata'][0])
+    stored_metadata = str(np.char.decode(stored_metadata))
     ds_filename = dataset_dir / 'agdc-metadata.yaml'
     with ds_filename.open() as f:
         orig_metadata = f.read()
