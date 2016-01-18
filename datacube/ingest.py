@@ -38,26 +38,6 @@ def index_datasets(path, index=None):
     return datasets
 
 
-def find_mappings(datasets, index=None):
-    """
-    Find matching mappings for datasets
-
-    :type datasets: list[datacube.model.Dataset]
-    :type index: datacube.index._api.Index
-    :rtype dict[int, list[datacube.model.Dataset]]
-    """
-    index = index or index_connect()
-
-    storage_mappings = {}
-    for dataset in datasets:
-        dataset_storage_mappings = index.mappings.get_for_dataset(dataset)
-        if not dataset_storage_mappings:
-            _LOG.warning('No mappings found for %s dataset', dataset)
-        for storage_mapping in dataset_storage_mappings:
-            storage_mappings.setdefault(storage_mapping.id_, []).append(dataset)
-    return storage_mappings
-
-
 def store_datasets(datasets, index=None, workers=0):
     """
     Find matching mappings for datasets
@@ -77,38 +57,24 @@ def store_datasets(datasets, index=None, workers=0):
         store_datasets_with_mapping(datasets, storage_mapping, index=index, workers=workers)
 
 
-def create_storage_unit(task):
-    tile_index, storage_mapping, datasets = task
-    filename = storage.generate_filename(tile_index, datasets, storage_mapping)
-    return storage.create_storage_unit(tile_index, datasets, storage_mapping, filename)
+def find_mappings(datasets, index=None):
+    """
+    Find matching mappings for datasets
 
+    :type datasets: list[datacube.model.Dataset]
+    :type index: datacube.index._api.Index
+    :rtype dict[int, list[datacube.model.Dataset]]
+    """
+    index = index or index_connect()
 
-def remove_storage_unit(task):
-    tile_index, storage_mapping, datasets = task
-    filename = storage.generate_filename(tile_index, datasets, storage_mapping)
-    try:
-        os.unlink(filename)
-    except OSError:
-        pass
-
-
-def _init_worker(*args):
-    signal.signal(signal.SIGTERM, lambda s, f: sys.exit(0))
-
-
-def _run_parallel_tasks(func, tasks, workers):
-    pool = Pool(processes=workers, initializer=_init_worker)
-    try:
-        result = list(pool.imap_unordered(func, tasks))
-    except:
-        pool.terminate()
-        raise
-    else:
-        pool.close()
-    finally:
-        pool.join()
-
-    return result
+    storage_mappings = {}
+    for dataset in datasets:
+        dataset_storage_mappings = index.mappings.get_for_dataset(dataset)
+        if not dataset_storage_mappings:
+            _LOG.warning('No mappings found for %s dataset', dataset)
+        for storage_mapping in dataset_storage_mappings:
+            storage_mappings.setdefault(storage_mapping.id_, []).append(dataset)
+    return storage_mappings
 
 
 def store_datasets_with_mapping(datasets, storage_mapping, index=None, workers=0):
@@ -139,3 +105,37 @@ def store_datasets_with_mapping(datasets, storage_mapping, index=None, workers=0
         for task in tasks:
             remove_storage_unit(task)
         raise
+
+
+def create_storage_unit(task):
+    tile_index, storage_mapping, datasets = task
+    filename = storage.generate_filename(tile_index, datasets, storage_mapping)
+    return storage.create_storage_unit(tile_index, datasets, storage_mapping, filename)
+
+
+def _run_parallel_tasks(func, tasks, workers):
+    pool = Pool(processes=workers, initializer=_init_worker)
+    try:
+        result = list(pool.imap_unordered(func, tasks))
+    except:
+        pool.terminate()
+        raise
+    else:
+        pool.close()
+    finally:
+        pool.join()
+
+    return result
+
+
+def remove_storage_unit(task):
+    tile_index, storage_mapping, datasets = task
+    filename = storage.generate_filename(tile_index, datasets, storage_mapping)
+    try:
+        os.unlink(filename)
+    except OSError:
+        pass
+
+
+def _init_worker(*args):
+    signal.signal(signal.SIGTERM, lambda s, f: sys.exit(0))
