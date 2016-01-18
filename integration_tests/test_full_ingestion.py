@@ -3,6 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 import six
+import warnings
 
 from click.testing import CliRunner
 import netCDF4
@@ -27,6 +28,8 @@ PROJECTED_VARS = ('x', 'y')
 EXPECTED_STORAGE_UNIT_DATA_SHAPE = (1, 40, 40)
 
 JSON_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
+
+COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
 
 
 def test_full_ingestion(global_integration_cli_args, index, default_collection, example_ls5_dataset):
@@ -89,20 +92,22 @@ def check_data_shape(nco):
 
 
 def check_cf_compliance(dataset):
-    # At the moment the compliance-checker is only compatible with Python 2
     if not six.PY2:
-        #TODO Add Warning or fix for Python 3
+        warnings.warn('compliance_checker non-functional in Python 3. Skipping NetCDF-CF Compliance Checks')
         return
 
-    from compliance_checker.runner import CheckSuite, ComplianceChecker
-    NORMAL_CRITERIA = 2
+    try:
+        from compliance_checker.runner import CheckSuite, ComplianceChecker
+    except ImportError:
+        warnings.warn('compliance_checker unavailable, skipping NetCDF-CF Compliance Checks')
+        return
 
     cs = CheckSuite()
     cs.load_all_available_checkers()
     score_groups = cs.run(dataset, 'cf')
 
-    groups = ComplianceChecker.stdout_output(cs, score_groups, verbose=1, limit=NORMAL_CRITERIA)
-    assert cs.passtree(groups, limit=NORMAL_CRITERIA)
+    groups = ComplianceChecker.stdout_output(cs, score_groups, verbose=1, limit=COMPLIANCE_CHECKER_NORMAL_LIMIT)
+    assert cs.passtree(groups, limit=COMPLIANCE_CHECKER_NORMAL_LIMIT)
 
 
 def check_dataset_metadata_in_storage_unit(nco, dataset_dir):
