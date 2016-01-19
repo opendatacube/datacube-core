@@ -7,5 +7,5 @@ pylint --reports no datacube examples/*.py version.py
 
 # Run tests, taking coverage.
 # Users can specify extra folders as arguments.
-py.test --cov datacube datacube examples tests $@
+py.test --cov datacube --durations=5 datacube examples tests $@
 

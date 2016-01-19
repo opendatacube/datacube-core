@@ -43,7 +43,8 @@ def test_add_example_mapping_docs(global_integration_cli_args, db):
         runner = CliRunner()
         result = runner.invoke(
             datacube.scripts.config_tool.cli,
-            opts
+            opts,
+            catch_exceptions=False
         )
         print(result.output)
         assert result.exit_code == 0

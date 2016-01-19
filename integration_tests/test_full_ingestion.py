@@ -63,7 +63,8 @@ def test_full_ingestion(global_integration_cli_args, index, default_collection, 
     )
     result = CliRunner().invoke(
         datacube.scripts.run_ingest.cli,
-        opts
+        opts,
+        catch_exceptions=False
     )
     print(result.output)
     assert not result.exception
