@@ -1,0 +1,113 @@
+"$schema": "http://json-schema.org/draft-04/schema#"
+description: Schema for storage mapping files.
+type: object
+properties:
+    name:
+        type: string
+        # Alphanumeric or underscore
+        pattern: '^\w+$'
+    description:
+        type: string
+    storage:
+        "$ref": "#/definitions/storage"
+    file_path_template:
+        type: string
+    location_name:
+        type: string
+    match:
+        type: object
+        properties:
+            metadata:
+                type: object
+            roi:
+                # TODO: ?
+                type: object
+        required:
+            - metadata
+    measurements:
+        type: object
+        additionalProperties: false
+        # Each property is a measurement. Ensure they are alphanumeric+underscores.
+        patternProperties:
+            '^\w+$':
+                "$ref": "#/definitions/measurement"
+    global_attributes:
+        type: object
+
+required:
+    - name
+    - storage
+    - file_path_template
+    - location_name
+    - match
+additionalProperties: false
+
+# Some people define default objects for reference elsewhere in the document.
+patternProperties:
+    'default_\w+':
+        tpye: object
+
+definitions:
+    dtype:
+        enum: ["float16", "float32", "float64",
+               "int8", "int16", "int32", "int64",
+               "uint8", "uint16", "uint32", "uint64"]
+    measurement:
+        type: object
+        additionalProperties: false
+        properties:
+            dtype:
+                "$ref": "#/definitions/dtype"
+            nodata:
+                type: number
+            resampling_method:
+                enum: ['cubic', 'nearest']
+            #
+            # Driver specific fields.
+            #   -> Each of these could be written as a separate jsonschema object definition,
+            #      but the validation error messages when using these features (eg. anyOf) are
+            #      not very user friendly.
+
+            # Used by NetCDF mappings
+            varname:
+                # Alphanumeric or underscore
+                pattern: '^\w+$'
+            fill_value:
+                type: number
+            zlib:
+                type: boolean
+            fletcher32:
+                type: boolean
+            contiguous:
+                type: boolean
+            complevel:
+                type: number
+            attrs:
+                # TODO: Enforce specific attributes?
+                type: object
+            shuffle:
+                type: boolean
+
+            # Used by GeoTIFF mappings
+            layer:
+                type: number
+
+    storage:
+        type: object
+        properties:
+            chunking:
+                # TODO: Expand
+                type: object
+            crs:
+                type: string
+            dimension_order:
+                # TODO: Expand
+                type: array
+            driver:
+                enum: ['NetCDF CF', 'GeoTiff']
+            resolution:
+                # TODO: Expand
+                type: object
+            tile_size:
+                # TODO: Expand
+                type: object

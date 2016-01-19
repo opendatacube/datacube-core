@@ -4,15 +4,30 @@ API for storage indexing, access and search.
 """
 from __future__ import absolute_import
 
-import copy
 import logging
+import pathlib
 
 import cachetools
+import jsonschema
+import yaml
 
+from datacube.index.fields import InvalidDocException
 from datacube.model import StorageUnit, StorageType, DatasetMatcher, StorageMapping
 from . import fields
 
+MAPPING_SCHEMA_PATH = pathlib.Path(__file__).parent.joinpath('mapping-schema.yaml')
+
 _LOG = logging.getLogger(__name__)
+
+
+def _ensure_valid(descriptor):
+    try:
+        jsonschema.validate(
+            descriptor,
+            yaml.safe_load(MAPPING_SCHEMA_PATH.open('r'))
+        )
+    except jsonschema.ValidationError as e:
+        raise InvalidDocException(e.message)
 
 
 class StorageUnitResource(object):
@@ -131,11 +146,9 @@ class StorageMappingResource(object):
     def __init__(self, db, host_config):
         """
         :type db: datacube.index.postgres._api.PostgresDb
-        :type storage_type_resource: StorageTypeResource
         :type host_config: datacube.config.LocalConfig
         """
         self._db = db
-        # self._storage_types = storage_type_resource
         self._host_config = host_config
 
     def add(self, descriptor):
@@ -145,7 +158,8 @@ class StorageMappingResource(object):
 
         :type descriptor: dict
         """
-        # TODO: Validate doc (Against JSON Schema?)
+        _ensure_valid(descriptor)
+
         name = descriptor['name']
         dataset_metadata = descriptor['match']['metadata']
 
@@ -170,6 +184,7 @@ class StorageMappingResource(object):
         :rtype: datacube.model.StorageMapping
         """
         descriptor = mapping_record['descriptor']
+        _match = descriptor.get('match')
         return StorageMapping(
             storage_type=StorageType(descriptor['storage']),
             name=mapping_record['name'],
@@ -178,7 +193,7 @@ class StorageMappingResource(object):
             measurements=descriptor['measurements'],
             location=self._host_config.location_mappings[descriptor['location_name']],
             filename_pattern=descriptor['file_path_template'],
-            roi=descriptor.get('roi'),
+            roi=_match.get('roi') if _match else None,
             id_=mapping_record['id']
         )
 

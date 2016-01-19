@@ -9,6 +9,9 @@ match:
         instrument:
             name: AHI
         product_type: BRF
+    roi:
+      longitude: [110, 155]
+      latitude: [-40, 3]
 
 location_name: eotiles
 file_path_template: '{platform[code]}_{instrument[name]}_{tile_index[0]}_{tile_index[1]}_{start_time:%Y-%m-%dT%H-%M-%S.%f}.nc'
@@ -19,10 +22,6 @@ global_attributes:
   source: This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/
   product_version: '0.0.0'
   license: Creative Commons Attribution 4.0 International CC BY 4.0
-
-roi:
-  longitude: [110, 155]
-  latitude: [-40, 3]
 
 storage:
   driver: NetCDF CF
@@ -53,21 +52,22 @@ storage:
 measurements:
   '01_1000':
       dtype: float32
-      nodata: 1e10
+      # 1e10
+      nodata: 10000000000
       resampling_method: cubic
       varname: band_01
   '02_1000':
       dtype: float32
-      nodata: 1e10
+      nodata: 10000000000
       resampling_method: cubic
       varname: band_02
   '03_1000':
       dtype: float32
-      nodata: 1e10
+      nodata: 10000000000
       resampling_method: cubic
       varname: band_03
   '04_1000':
       dtype: float32
-      nodata: 1e10
+      nodata: 10000000000
       resampling_method: cubic
       varname: band_04

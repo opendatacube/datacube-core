@@ -9,6 +9,9 @@ match:
         instrument:
             name: AHI
         product_type: BRF
+    roi:
+      x: [-2700000, 2800000]
+      y: [-4550000,  300000]
 
 location_name: eotiles
 file_path_template: '{platform[code]}_{instrument[name]}_{product_type}_{tile_index[0]}_{tile_index[1]}_alb_{start_time:%Y-%m-%dT%H-%M-%S.%f}.nc'
@@ -20,9 +23,6 @@ global_attributes:
   product_version: '0.0.0'
   license: Creative Commons Attribution 4.0 International CC BY 4.0
 
-roi:
-  x: [-2700000, 2800000]
-  y: [-4550000,  300000]
 
 storage:
   driver: NetCDF CF
@@ -67,21 +67,22 @@ storage:
 measurements:
   '01_1000':
       dtype: float32
-      nodata: 1e10
+      # 1e10
+      nodata: 10000000000
       resampling_method: cubic
       varname: band_01
   '02_1000':
       dtype: float32
-      nodata: 1e10
+      nodata: 10000000000
       resampling_method: cubic
       varname: band_02
   '03_1000':
       dtype: float32
-      nodata: 1e10
+      nodata: 10000000000
       resampling_method: cubic
       varname: band_03
   '04_1000':
       dtype: float32
-      nodata: 1e10
+      nodata: 10000000000
       resampling_method: cubic
       varname: band_04
