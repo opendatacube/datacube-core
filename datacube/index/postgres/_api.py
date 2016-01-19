@@ -135,9 +135,10 @@ class PostgresDb(object):
                 #      connection inserts the same dataset in the time between the subquery and the main query.
                 #      This is ok for our purposes.)
                 DATASET.insert().from_select(
-                    ['id', 'collection_ref', 'metadata'],
+                    ['id', 'collection_ref', 'metadata_type_ref', 'metadata'],
                     select([
                         bindparam('id'), bindparam('collection_ref'),
+                        select([COLLECTION.c.metadata_type_ref]).where(COLLECTION.c.id == bindparam('collection_ref')),
                         bindparam('metadata', type_=JSONB)
                     ]).where(~exists(select([DATASET.c.id]).where(DATASET.c.id == bindparam('id'))))
                 ),

@@ -39,11 +39,10 @@ STORAGE_UNIT = Table(
     Column('id', Integer, primary_key=True, autoincrement=True),
     Column('storage_mapping_ref', None, ForeignKey(STORAGE_MAPPING.c.id), nullable=False),
 
-    # The collection it belongs to.
-    # Denormalised.
-    #  - it could be read from the linked datasets instead
-    #  - allows per-collection indexes.
+    # These should match the linked datasets.
+    #  -> They are duplicated here so that we can define indexes on this table based on them.
     Column('collection_ref', None, ForeignKey(_dataset.COLLECTION.c.id), nullable=False),
+    Column('metadata_type_ref', None, ForeignKey(_dataset.METADATA_TYPE.c.id), nullable=False),
 
     Column('descriptor', postgres.JSONB, nullable=False),
 

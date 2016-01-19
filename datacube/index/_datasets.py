@@ -66,7 +66,7 @@ def _prepare_single(collection_resource, dataset_doc, db):
     dataset_id = dataset.uuid_field
 
     _LOG.info('Indexing %s', dataset_id)
-    was_inserted = db.insert_dataset(indexable_doc, dataset_id)
+    was_inserted = db.insert_dataset(indexable_doc, dataset_id, collection_id=collection.id_)
 
     return was_inserted, dataset, source_datasets
 

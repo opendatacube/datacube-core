@@ -15,7 +15,7 @@ from .postgres import PostgresDb
 
 _LOG = logging.getLogger(__name__)
 
-_DEFAULT_COLLECTIONS_FILE = Path(__file__).parent.joinpath('default-collections.yaml')
+_DEFAULT_COLLECTIONS_FILE = Path(__file__).parent.joinpath('default-metadata-types.yaml')
 
 
 def connect(local_config=LocalConfig.find()):
