@@ -13,7 +13,7 @@ from pathlib import Path
 from datacube.index.postgres import PostgresDb
 from datacube.index.postgres.tables import STORAGE_MAPPING, STORAGE_UNIT
 from datacube.index.postgres.tables._storage import DATASET_STORAGE
-from datacube.model import StorageUnit, StorageMapping
+from datacube.model import StorageUnit, StorageType
 
 _telemetry_uuid = '4ec8fe97-e8b9-11e4-87ff-1040f381a756'
 _telemetry_dataset = {
@@ -110,9 +110,8 @@ def test_index_storage_unit(index, db, default_collection):
     index.storage.add(
         StorageUnit(
             [_telemetry_uuid],
-            StorageMapping(
+            StorageType(
                 # Yikes:
-                storage_type={},
                 name='test_storage_mapping',
                 description=None,
                 match=None,
@@ -120,6 +119,7 @@ def test_index_storage_unit(index, db, default_collection):
                 location="file://g/data",
                 filename_pattern="foo.nc",
                 roi=None,
+                definition={},
                 id_=mapping['id']
             ),
             {'test': 'descriptor'},

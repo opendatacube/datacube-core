@@ -15,9 +15,9 @@ import datacube.scripts.run_ingest
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES =  PROJECT_ROOT / 'docs/config_samples/'
 LS5_SAMPLES = CONFIG_SAMPLES / 'ga_landsat_5/'
-LS5_NBAR_MAPPING = LS5_SAMPLES / 'ls5_nbar_mapping.yaml'
+LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_nbar_mapping.yaml'
 LS5_NBAR_NAME = 'ls5_nbar'
-LS5_NBAR_ALBERS_MAPPING = LS5_SAMPLES / 'ls5_nbar_mapping_albers.yaml'
+LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_nbar_mapping_albers.yaml'
 LS5_NBAR_ALBERS_NAME = 'ls5_nbar_albers'
 
 TEST_STORAGE_SHRINK_FACTOR = 100
@@ -50,8 +50,8 @@ def test_full_ingestion(global_integration_cli_args, index, default_collection, 
     assert default_collection  # default_collection has been added to database by fixture
 
     # Load a mapping config
-    index.mappings.add(load_test_mapping(LS5_NBAR_MAPPING))
-    index.mappings.add(load_test_mapping(LS5_NBAR_ALBERS_MAPPING))
+    index.mappings.add(load_test_storage_config(LS5_NBAR_STORAGE_TYPE))
+    index.mappings.add(load_test_storage_config(LS5_NBAR_ALBERS_STORAGE_TYPE))
 
     # Run Ingest script on a dataset
     opts = list(global_integration_cli_args)
@@ -74,10 +74,10 @@ def test_full_ingestion(global_integration_cli_args, index, default_collection, 
 
     # Check storage units are indexed and written
     sus = index.storage.search_eager()
-    latlon_storageunits = [su for su in sus if su.storage_mapping.name == LS5_NBAR_NAME]
+    latlon_storageunits = [su for su in sus if su.storage_type.name == LS5_NBAR_NAME]
     assert len(latlon_storageunits) == EXPECTED_NUMBER_OF_STORAGE_UNITS
 
-    albers_storageunits = [su for su in sus if su.storage_mapping.name == LS5_NBAR_ALBERS_NAME]
+    albers_storageunits = [su for su in sus if su.storage_type.name == LS5_NBAR_ALBERS_NAME]
     assert len(albers_storageunits) == EXPECTED_NUMBER_OF_STORAGE_UNITS
 
     for su in (latlon_storageunits[0], albers_storageunits[0]):
@@ -132,68 +132,68 @@ def check_open_with_xray(filename):
     xray.open_dataset(filename)
 
 
-def test_shrink_mapping():
-    mapping = load_mapping_file(LS5_NBAR_MAPPING)
-    mapping = alter_mapping_config_for_testing(mapping)
-    assert len(mapping['measurements']) <= TEST_STORAGE_NUM_MEASUREMENTS
+def test_shrink_storage_type():
+    storage_type = load_storage_type_file(LS5_NBAR_STORAGE_TYPE)
+    storage_type = alter_storage_type_for_testing(storage_type)
+    assert len(storage_type['measurements']) <= TEST_STORAGE_NUM_MEASUREMENTS
     for var in GEOGRAPHIC_VARS:
-        assert abs(mapping['storage']['resolution'][var]) == 0.025
-        assert mapping['storage']['chunking'][var] == 5
+        assert abs(storage_type['storage']['resolution'][var]) == 0.025
+        assert storage_type['storage']['chunking'][var] == 5
 
 
-def test_load_mapping():
-    mapping_config = load_mapping_file(LS5_NBAR_ALBERS_MAPPING)
-    assert mapping_config
-    assert 'name' in mapping_config
-    assert 'storage' in mapping_config
-    assert 'match' in mapping_config
+def test_load_storage_type():
+    storage_type = load_storage_type_file(LS5_NBAR_ALBERS_STORAGE_TYPE)
+    assert storage_type
+    assert 'name' in storage_type
+    assert 'storage' in storage_type
+    assert 'match' in storage_type
 
 
-def load_test_mapping(filename):
-    mapping_config = load_mapping_file(filename)
-    return alter_mapping_config_for_testing(mapping_config)
+def load_test_storage_config(filename):
+    storage_type = load_storage_type_file(filename)
+    return alter_storage_type_for_testing(storage_type)
 
 
-def load_mapping_file(filename):
+def load_storage_type_file(filename):
     with open(str(filename)) as f:
         return yaml.safe_load(f)
 
 
-def alter_mapping_config_for_testing(mapping):
-    mapping = limit_num_measurements(mapping)
-    mapping = use_test_storage(mapping)
-    if is_geog_mapping(mapping):
-        return shrink_mapping(mapping, GEOGRAPHIC_VARS)
+def alter_storage_type_for_testing(storage_type):
+    storage_type = limit_num_measurements(storage_type)
+    storage_type = use_test_storage(storage_type)
+    if is_geogaphic_storage_type(storage_type):
+        return shrink_storage_type(storage_type, GEOGRAPHIC_VARS)
     else:
-        return shrink_mapping(mapping, PROJECTED_VARS)
+        return shrink_storage_type(storage_type, PROJECTED_VARS)
 
 
-def limit_num_measurements(mapping):
-    measurements = mapping['measurements']
+def limit_num_measurements(storage_type):
+    measurements = storage_type['measurements']
     if len(measurements) <= TEST_STORAGE_NUM_MEASUREMENTS:
-        return mapping
+        return storage_type
     else:
         measurements_to_delete = sorted(measurements)[TEST_STORAGE_NUM_MEASUREMENTS:]
         for key in measurements_to_delete:
             del measurements[key]
-        return mapping
+        return storage_type
 
 
-def use_test_storage(mapping):
-    mapping['location_name'] = 'testdata'
-    return mapping
+def use_test_storage(storage_type):
+    storage_type['location_name'] = 'testdata'
+    return storage_type
 
 
-def is_geog_mapping(mapping):
-    return 'latitude' in mapping['storage']['resolution']
+def is_geogaphic_storage_type(storage_type):
+    return 'latitude' in storage_type['storage']['resolution']
 
 
-def shrink_mapping(mapping, variables):
-    storage = mapping['storage']
+def shrink_storage_type(storage_type, variables):
+    storage = storage_type['storage']
     for var in variables:
         storage['resolution'][var] = storage['resolution'][var] * TEST_STORAGE_SHRINK_FACTOR
         storage['chunking'][var] = storage['chunking'][var] / TEST_STORAGE_SHRINK_FACTOR
-    return mapping
+    return storage_type
 
 
 def make_pgsqljson_match_yaml_load(data):

@@ -53,7 +53,7 @@ def store_datasets(datasets, index=None, workers=0):
     for storage_mapping_id, datasets in storage_mappings.items():
         storage_mapping = index.mappings.get(storage_mapping_id)
         _LOG.info('Using %s to store %s datasets', storage_mapping, datasets)
-        store_datasets_with_mapping(datasets, storage_mapping, index=index, workers=workers)
+        store_datasets_with_storage_type(datasets, storage_mapping, index=index, workers=workers)
 
 
 def find_mappings(datasets, index=None):
@@ -76,13 +76,13 @@ def find_mappings(datasets, index=None):
     return storage_mappings
 
 
-def store_datasets_with_mapping(datasets, storage_mapping, index=None, workers=0):
+def store_datasets_with_storage_type(datasets, storage_type, index=None, workers=0):
     """
     Create storage units for datasets using storage_mapping
     Add storage units to the index
 
     :type datasets: list[datacube.model.Dataset]
-    :type storage_mapping: datacube.model.StorageMapping
+    :type storage_type: datacube.model.StorageType
     :type index: datacube.index._api.Index
     """
     index = index or index_connect()
@@ -90,8 +90,8 @@ def store_datasets_with_mapping(datasets, storage_mapping, index=None, workers=0
     # :type tile_index: (x,y)
     # Each task is an entire storage unit, safe to run tasks in parallel
 
-    tasks = [(tile_index, storage_mapping, datasets) for
-             tile_index, datasets in storage.tile_datasets_with_mapping(datasets, storage_mapping).items()]
+    tasks = [(tile_index, storage_type, datasets) for
+             tile_index, datasets in storage.tile_datasets_with_storage_type(datasets, storage_type).items()]
 
     try:
         if workers:

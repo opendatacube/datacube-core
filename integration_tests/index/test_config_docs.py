@@ -111,25 +111,24 @@ def test_get_for_dataset(index, local_config):
     """
     dataset = Dataset(None, _DATASET_METADATA, '/tmp/somepath.yaml')
 
-    storage_mappings = index.mappings.get_for_dataset(dataset)
-    assert len(storage_mappings) == 0
+    storage_types = index.mappings.get_for_dataset(dataset)
+    assert len(storage_types) == 0
 
     index.mappings.add(_STORAGE_MAPPING)
 
     # The properties of the dataset should match.
-    storage_mappings = index.mappings.get_for_dataset(dataset)
-    assert len(storage_mappings) == 1
+    storage_types = index.mappings.get_for_dataset(dataset)
+    assert len(storage_types) == 1
 
-    mapping = storage_mappings[0]
-    assert mapping.name == 'ls5_nbar'
+    storage_type = storage_types[0]
+    assert storage_type.name == 'ls5_nbar'
 
-    assert mapping.storage_pattern == local_config.location_mappings['eotiles'] + '/file_path_template/file.nc'
-    assert mapping.match.metadata == _STORAGE_MAPPING['match']['metadata']
-    assert mapping.measurements == _STORAGE_MAPPING['measurements']
+    assert storage_type.storage_pattern == local_config.location_mappings['eotiles'] + '/file_path_template/file.nc'
+    assert storage_type.match.metadata == _STORAGE_MAPPING['match']['metadata']
+    assert storage_type.measurements == _STORAGE_MAPPING['measurements']
 
-    storage_type = mapping.storage_type
     assert storage_type.driver == 'NetCDF CF'
-    assert storage_type.descriptor == _STORAGE_MAPPING['storage']
+    assert storage_type.definition == _STORAGE_MAPPING['storage']
 
     # A different dataset should not match our storage types
     dataset = Dataset(None, {
@@ -137,8 +136,8 @@ def test_get_for_dataset(index, local_config):
         'platform': {'code': 'LANDSAT_8'},
         'product_type': 'NBAR'
     }, '/tmp/other.yaml')
-    storage_mappings = index.mappings.get_for_dataset(dataset)
-    assert len(storage_mappings) == 0
+    storage_types = index.mappings.get_for_dataset(dataset)
+    assert len(storage_types) == 0
 
 
 def test_idempotent_add_mapping(index, local_config):

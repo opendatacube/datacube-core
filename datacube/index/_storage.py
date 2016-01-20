@@ -12,7 +12,7 @@ import jsonschema
 import yaml
 
 from datacube.index.fields import InvalidDocException
-from datacube.model import StorageUnit, StorageType, DatasetMatcher, StorageMapping
+from datacube.model import StorageUnit, StorageType, DatasetMatcher
 from . import fields
 
 MAPPING_SCHEMA_PATH = pathlib.Path(__file__).parent.joinpath('mapping-schema.yaml')
@@ -57,7 +57,7 @@ class StorageUnitResource(object):
                     unit.path,
                     unit.dataset_ids,
                     unit.descriptor,
-                    unit.storage_mapping.id_,
+                    unit.storage_type.id_,
                 )
                 _LOG.debug('Indexed unit %s @ %s', unit_id, unit.path)
 
@@ -181,7 +181,7 @@ class StorageMappingResource(object):
 
     def _make(self, mapping_record):
         """
-        :rtype: datacube.model.StorageMapping
+        :rtype: datacube.model.StorageType
         """
         descriptor = mapping_record['descriptor']
         _match = descriptor.get('match')
@@ -191,8 +191,8 @@ class StorageMappingResource(object):
             raise Exception("Invalid configuration, storage mapping '{}' references unknown location '{}'".format(
                 mapping_record['name'], descriptor['location_name']))
 
-        return StorageMapping(
-            storage_type=StorageType(descriptor['storage']),
+        return StorageType(
+            definition=descriptor['storage'],
             name=mapping_record['name'],
             description=descriptor.get('description'),
             match=DatasetMatcher(mapping_record['dataset_metadata']),

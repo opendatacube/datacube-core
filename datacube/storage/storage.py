@@ -36,18 +36,17 @@ RESAMPLING_METHODS = {
 }
 
 
-def tile_datasets_with_mapping(datasets, mapping):
+def tile_datasets_with_storage_type(datasets, storage_type):
     """
     compute indexes of tiles covering the datasets, as well as
     which datasets comprise which tiles
 
     :type datasets:  list[datacube.model.Dataset]
-    :type mapping:  datacube.model.StorageMapping
+    :type storage_type:  datacube.model.StorageType
     :rtype: dict[tuple[int, int], list[datacube.model.Dataset]]
     """
     datasets = sort_datasets_by_time(datasets)
-    storage_type = mapping.storage_type
-    bounds_override = mapping.roi and _roi_to_bounds(mapping.roi, storage_type.spatial_dimensions)
+    bounds_override = storage_type.roi and _roi_to_bounds(storage_type.roi, storage_type.spatial_dimensions)
     return _grid_datasets(datasets, bounds_override, storage_type.projection, storage_type.tile_size)
 
 
@@ -140,7 +139,7 @@ def _poly_from_bounds(left, bottom, right, top, segments=None):
     return poly
 
 
-def create_storage_unit(tile_index, datasets, mapping, filename):
+def create_storage_unit(tile_index, datasets, storage_type, filename):
     """
     Create storage unit at `tile_index` for datasets using mapping
 
@@ -148,7 +147,7 @@ def create_storage_unit(tile_index, datasets, mapping, filename):
     :param tile_index: X,Y index of the storage unit
     :type tile_index: tuple[int, int]
     :type datasets:  list[datacube.model.Dataset]
-    :type mapping:  datacube.model.StorageMapping
+    :type storage_type:  datacube.model.StorageType
     :param filename: URI specifying filename, must be file:// (for now)
     :type filename:  str
     :rtype: datacube.model.StorageUnit
@@ -156,12 +155,11 @@ def create_storage_unit(tile_index, datasets, mapping, filename):
     if not datasets:
         raise ValueError('Shall not create empty StorageUnit%s %s' % (tile_index, filename))
 
-    storage_type = mapping.storage_type
     if storage_type.driver != 'NetCDF CF':
         raise ValueError('Storage driver is not supported (yet): %s' % storage_type.driver)
 
     if not filename.startswith('file://'):
-        raise ValueError('URI protocol is not supported (yet): %s' % mapping.storage_pattern)
+        raise ValueError('URI protocol is not supported (yet): %s' % storage_type.storage_pattern)
 
     filename = filename[7:]
 
@@ -178,7 +176,7 @@ def create_storage_unit(tile_index, datasets, mapping, filename):
     _LOG.info("Creating Storage Unit %s", filename)
     tmpfile, tmpfilename = tempfile.mkstemp(dir=os.path.dirname(filename))
     try:
-        _write_storage_unit_to_disk(tile_index, datasets, mapping, tile_spec, tmpfilename)
+        _write_storage_unit_to_disk(tile_index, datasets, storage_type, tile_spec, tmpfilename)
         os.close(tmpfile)
         os.rename(tmpfilename, filename)
     finally:
@@ -192,9 +190,9 @@ def create_storage_unit(tile_index, datasets, mapping, filename):
     # TODO: and netcdf writer will be more generic
     su_descriptor = index_netcdfs([filename])[filename]
     return StorageUnit([dataset.id for dataset in datasets],
-                       mapping,
+                       storage_type,
                        su_descriptor,
-                       mapping.local_path_to_location_offset('file://' + filename))
+                       storage_type.local_path_to_location_offset('file://' + filename))
 
 
 def _get_tile_transform(tile_index, tile_size, tile_res):
@@ -203,7 +201,7 @@ def _get_tile_transform(tile_index, tile_size, tile_res):
     return Affine(tile_res[0], 0.0, x, 0.0, tile_res[1], y)
 
 
-def _write_storage_unit_to_disk(tile_index, datasets, mapping, tile_spec, filename):
+def _write_storage_unit_to_disk(tile_index, datasets, storage_type, tile_spec, filename):
     datasets_grouped_by_time = [(time, list(group))
                                 for time, group in groupby(datasets, _dataset_time)]
 
@@ -216,8 +214,8 @@ def _write_storage_unit_to_disk(tile_index, datasets, mapping, tile_spec, filena
         if len(group) > 1:
             _LOG.warning("Mosaicing multiple datasets %s@%s: %s", tile_index, time, group)
 
-    _fill_storage_unit(ncfile, datasets_grouped_by_time, mapping.measurements, tile_spec,
-                       mapping.storage_type.chunking)
+    _fill_storage_unit(ncfile, datasets_grouped_by_time, storage_type.measurements, tile_spec,
+                       storage_type.chunking)
 
     ncfile.close()
 

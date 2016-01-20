@@ -93,7 +93,7 @@ def make_in_memory_storage_unit(su, coordinates, variables, attributes, crs):
     irregular_dims = [name for name, coord in coordinates.items()
                       if name in irregular_dim_names and coord.length > 2]
 
-    if irregular_dims and su.storage_mapping.storage_type.driver == 'NetCDF CF':
+    if irregular_dims and su.storage_type.driver == 'NetCDF CF':
         real_su = NetCDF4StorageUnit(su.filepath,
                                      coordinates=coordinates, variables=variables, attributes=attributes)
         for coord in irregular_dims:
@@ -107,10 +107,10 @@ def make_storage_unit(su, is_diskless=False):
     :param su: database index storage unit
     :param is_diskless: Use a cached object for the source of data, rather than the file
     """
-    storage_type = su.storage_mapping.storage_type.descriptor
+    storage_type = su.storage_type.definition
     crs = dict((dim, su.descriptor['coordinates'][dim].get('units', None)) for dim in storage_type['dimension_order'])
     for dim in crs.keys():
-        if dim in su.storage_mapping.storage_type.spatial_dimensions:
+        if dim in su.storage_type.spatial_dimensions:
             crs[dim] = storage_type['crs']
     coordinates = {name: Coordinate(dtype=numpy.dtype(attributes['dtype']),
                                     begin=attributes['begin'],
@@ -124,12 +124,12 @@ def make_storage_unit(su, is_diskless=False):
             nodata=attributes.get('nodata', None),
             dimensions=storage_type['dimension_order'],
             units=attributes.get('units', None))
-        for attributes in su.storage_mapping.measurements.values()
+        for attributes in su.storage_type.measurements.values()
     }
     attributes = {
         'storage_type': storage_type
     }
-    attributes.update(su.storage_mapping.match.metadata)
+    attributes.update(su.storage_type.match.metadata)
 
     if is_diskless:
         return make_in_memory_storage_unit(su,
@@ -138,16 +138,16 @@ def make_storage_unit(su, is_diskless=False):
                                            attributes=attributes,
                                            crs=crs)
 
-    if su.storage_mapping.storage_type.driver == 'NetCDF CF':
+    if su.storage_type.driver == 'NetCDF CF':
         return NetCDF4StorageUnit(su.filepath, coordinates=coordinates, variables=variables, attributes=attributes)
 
-    if su.storage_mapping.storage_type.driver == 'GeoTiff':
+    if su.storage_type.driver == 'GeoTiff':
         result = GeoTifStorageUnit(su.filepath, coordinates=coordinates, variables=variables, attributes=attributes)
         time = datetime.datetime.strptime(su.descriptor['extents']['time_min'], '%Y-%m-%dT%H:%M:%S.%f')
         time = (time - datetime.datetime.utcfromtimestamp(0)).total_seconds()
         return StorageUnitDimensionProxy(result, ('time', time, numpy.float64, 'seconds since 1970'))
 
-    raise RuntimeError('unsupported storage unit access driver %s' % su.storage_mapping.storage_type.driver)
+    raise RuntimeError('unsupported storage unit access driver %s' % su.storage_type.driver)
 
 
 def datetime_to_timestamp(dt):
@@ -553,7 +553,7 @@ class API(object):
         for su in sus:
             # stype = su.storage_mapping.match.metadata['platform']['code'] + '_' + \
             #         su.storage_mapping.match.metadata['instrument']['name']
-            stype = su.storage_mapping.name
+            stype = su.storage_type.name
             # ptype = su.storage_mapping.match.metadata['product_type']
             unit = make_storage_unit(su, is_diskless=True)
             storage_units_by_type.setdefault(stype, StorageUnitCollection()).append(unit)
@@ -754,7 +754,7 @@ class API(object):
         else:
             sus = self.index.storage.search(**query)
             for su in sus:
-                stype = su.storage_mapping.name
+                stype = su.storage_type.name
                 storage_units_by_type.setdefault(stype, []).append(make_storage_unit(su))
 
         if len(storage_units_by_type) > 1:

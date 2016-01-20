@@ -132,12 +132,12 @@ def telemetry_collection(index, telemetry_collection_doc):
 
 
 @pytest.fixture
-def ls5_nbar_mapping(db, index):
+def ls5_nbar_storage_type(db, index):
     """
     :type db: datacube.index.postgres._api.PostgresDb
     :type index: datacube.index._api.Index
     :type storage_type_30m: datacube.model.StorageType
-    :rtype: datacube.model.StorageMapping
+    :rtype: datacube.model.StorageType
     """
     id_ = db.ensure_storage_mapping(
         name='ls5_nbar',

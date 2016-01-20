@@ -26,10 +26,57 @@ class DatasetMatcher(object):
 
 
 class StorageType(object):
-    def __init__(self, definition, id_=None):
-        # A definition of the storage (understood by the storage driver)
+    def __init__(self, name, description,
+                 match, measurements,
+                 location, filename_pattern, roi, definition, id_=None):
+        # Which datasets to match.
+        #: :type: DatasetMatcher
+        self.match = match
+
+        # A unique name for the storage type (specified by users)
+        #: :type: str
+        self.name = name
+
+        # A human-readable, potentially multi-line, description for display on the UI.
+        #: :type: str
+        self.description = description
+
+        # A dictionary of the measurements to store
+        # (key is measurement id, value is a doc understood by the storage driver)
         #: :type: dict
+        self.measurements = measurements
+
+        # (Optional) Limited ROI for this storage type
+        #: :type: dict
+        self.roi = roi
+
+        # The storage location where the storage units should be stored.
+        # Defined in the users configuration file.
+        #: :type: str
+        self.location = location
+
+        # Storage Unit filename pattern
+        # TODO: define pattern expansion rules
+        #: :type: str
+        self.filename_pattern = filename_pattern
+
         self.definition = definition
+
+        # Database primary key
+        #: :type: int
+        self.id_ = id_
+
+    def local_path_to_location_offset(self, filepath):
+        assert filepath.startswith(self.location)
+        return filepath[len(self.location):]
+
+    def resolve_location(self, offset):
+        # We can't use urlparse.urljoin() because it takes a relative path, not a path inside the base.
+        return '/'.join(s.strip('/') for s in (self.location, offset))
+
+    @property
+    def storage_pattern(self):
+        return self.resolve_location(self.filename_pattern)
 
     @property
     def driver(self):
@@ -76,71 +123,17 @@ class StorageType(object):
     def filename_format(self):
         return self.definition['filename_format']
 
-
-class StorageMapping(object):
-    def __init__(self, storage_type, name, description,
-                 match, measurements,
-                 location, filename_pattern, roi, id_=None):
-        # Which datasets to match.
-        #: :type: DatasetMatcher
-        self.match = match
-
-        #: :type: StorageType
-        self.storage_type = storage_type
-
-        # A name for the mapping (specified by users). (unique to the storage type)
-        #: :type: str
-        self.name = name
-
-        # A human-readable, potentially multi-line, description for display on the UI.
-        #: :type: str
-        self.description = description
-
-        # A dictionary of the measurements to store
-        # (key is measurement id, value is a doc understood by the storage driver)
-        #: :type: dict
-        self.measurements = measurements
-
-        # ROI for this mapping
-        #: :type: dict
-        self.roi = roi
-
-        # The location where the storage units should be stored.
-        #: :type: str
-        self.location = location
-
-        # Storage Unit filename pattern
-        # TODO: define pattern expansion rules
-        #: :type: str
-        self.filename_pattern = filename_pattern
-
-        # Database primary key
-        #: :type: int
-        self.id_ = id_
-
-    def local_path_to_location_offset(self, filepath):
-        assert filepath.startswith(self.location)
-        return filepath[len(self.location):]
-
-    def resolve_location(self, offset):
-        # We can't use urlparse.urljoin() because it takes a relative path, not a path inside the base.
-        return '/'.join(s.strip('/') for s in (self.location, offset))
-
-    @property
-    def storage_pattern(self):
-        return self.resolve_location(self.filename_pattern)
-
     def __repr__(self):
         return 'StorageMapping<name={!r}, id_={!r}>'.format(self.name, self.id_)
 
 
 class StorageUnit(object):
-    def __init__(self, dataset_ids, storage_mapping, descriptor, path, id_=None):
+    def __init__(self, dataset_ids, storage_type, descriptor, path, id_=None):
         #: :type: list[uuid.UUID]
         self.dataset_ids = dataset_ids
 
-        #: :type: StorageMapping
-        self.storage_mapping = storage_mapping
+        #: :type: StorageType
+        self.storage_type = storage_type
 
         # A descriptor for this segment. (parameters etc)
         # A 'document' understandable by the storage driver. Properties inside may be queried by users.
@@ -157,15 +150,15 @@ class StorageUnit(object):
 
     @property
     def filepath(self):
-        filepath = self.storage_mapping.resolve_location(self.path)
+        filepath = self.storage_type.resolve_location(self.path)
         assert filepath.startswith('file://')
         return filepath[7:]
 
     def __str__(self):
-        return "StorageUnit <type={m.name}, path={path}>".format(path=self.path, m=self.storage_mapping)
+        return "StorageUnit <type={m.name}, path={path}>".format(path=self.path, m=self.storage_type)
 
     def __repr__(self):
-        return "StorageUnit({!r}, {!r}, {!r}, {!r}, {!r})".format(self.dataset_ids, self.storage_mapping,
+        return "StorageUnit({!r}, {!r}, {!r}, {!r}, {!r})".format(self.dataset_ids, self.storage_type,
                                                                   self.descriptor, self.path, self.id_)
 
 

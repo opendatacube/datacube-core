@@ -237,11 +237,11 @@ def test_fetch_all_of_collection(index, db, default_collection, telemetry_collec
 
 # Storage searching:
 
-def test_search_storage_star(index, db, default_collection, ls5_nbar_mapping):
+def test_search_storage_star(index, db, default_collection, ls5_nbar_storage_type):
     """
     :type db: datacube.index.postgres._api.PostgresDb
     :type index: datacube.index._api.Index
-    :type ls5_nbar_mapping: datacube.model.StorageMapping
+    :type ls5_nbar_storage_type: datacube.model.StorageType
     """
     was_inserted = db.insert_dataset(
         _telemetry_dataset,
@@ -256,17 +256,17 @@ def test_search_storage_star(index, db, default_collection, ls5_nbar_mapping):
         '/tmp/something.tif',
         [_telemetry_uuid],
         {'test': 'test'},
-        ls5_nbar_mapping.id_
+        ls5_nbar_storage_type.id_
     )
 
     assert len(index.storage.search_eager()) == 1
 
 
-def test_search_storage_by_dataset(index, db, default_collection, ls5_nbar_mapping):
+def test_search_storage_by_dataset(index, db, default_collection, ls5_nbar_storage_type):
     """
     :type db: datacube.index.postgres._api.PostgresDb
     :type index: datacube.index._api.Index
-    :type ls5_nbar_mapping: datacube.model.StorageMapping
+    :type ls5_nbar_storage_type: datacube.model.StorageType
     :type default_collection: datacube.model.Collection
     """
     was_inserted = db.insert_dataset(
@@ -280,7 +280,7 @@ def test_search_storage_by_dataset(index, db, default_collection, ls5_nbar_mappi
         '/tmp/something.tif',
         [_telemetry_uuid],
         {'test': 'test'},
-        ls5_nbar_mapping.id_
+        ls5_nbar_storage_type.id_
     )
     dfield = default_collection.dataset_fields.get
 
@@ -299,12 +299,12 @@ def test_search_storage_by_dataset(index, db, default_collection, ls5_nbar_mappi
     assert len(storages) == 0
 
 
-def test_search_cli_basic(global_integration_cli_args, db, default_collection, ls5_nbar_mapping):
+def test_search_cli_basic(global_integration_cli_args, db, default_collection, ls5_nbar_storage_type):
     """
     Search datasets using the cli.
     :type global_integration_cli_args: tuple[str]
     :type db: datacube.index.postgres._api.PostgresDb
-    :type ls5_nbar_mapping: datacube.model.StorageMapping
+    :type ls5_nbar_storage_type: datacube.model.StorageType
     :type default_collection: datacube.model.Collection
     """
     was_inserted = db.insert_dataset(
@@ -333,12 +333,12 @@ def test_search_cli_basic(global_integration_cli_args, db, default_collection, l
     assert result.exit_code == 0
 
 
-def test_search_storage_by_both_fields(global_integration_cli_args, db, default_collection, ls5_nbar_mapping):
+def test_search_storage_by_both_fields(global_integration_cli_args, db, default_collection, ls5_nbar_storage_type):
     """
     Search storage using both storage and dataset fields.
     :type db: datacube.index.postgres._api.PostgresDb
     :type global_integration_cli_args: tuple[str]
-    :type ls5_nbar_mapping: datacube.model.StorageMapping
+    :type ls5_nbar_storage_type: datacube.model.StorageType
     :type default_collection: datacube.model.Collection
     """
     was_inserted = db.insert_dataset(
@@ -357,7 +357,7 @@ def test_search_storage_by_both_fields(global_integration_cli_args, db, default_
                 'geospatial_lat_max': 140
             }
         },
-        ls5_nbar_mapping.id_
+        ls5_nbar_storage_type.id_
     )
 
     rows = _cli_csv_search(['units', '100<lat<150'], global_integration_cli_args)
