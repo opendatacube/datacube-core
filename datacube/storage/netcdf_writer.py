@@ -41,6 +41,15 @@ def _seconds_since_1970(dt):
     return (dt - epoch).total_seconds()
 
 
+def create_netcdf_writer(netcdf_path, tile_spec, num_times=None):
+    if tile_spec.crs.IsGeographic():
+        return GeographicNetCDFWriter(netcdf_path, tile_spec, num_times)
+    elif tile_spec.crs.IsProjected():
+        return ProjectedNetCDFWriter(netcdf_path, tile_spec, num_times)
+    else:
+        raise RuntimeError("Unknown projection")
+
+
 class NetCDFWriter(object):
     """
     Create NetCDF4 Storage Units, with CF Compliant metadata.
@@ -62,7 +71,7 @@ class NetCDFWriter(object):
         self.netcdf_path = netcdf_path
 
         self._create_time_dimension(num_times)
-        write_crs_coords_to_nco(self.nco, tile_spec)
+        self._create_crs_coords_and_variables()
         self._set_global_attributes(tile_spec)
 
         # Create Variable Length Variable to store extra metadata
@@ -84,6 +93,15 @@ class NetCDFWriter(object):
         timeo.long_name = 'Time, unix time-stamp'
         timeo.calendar = 'standard'
         timeo.axis = "T"
+
+    def _create_crs_coords_and_variables(self):
+        self.validate_crs_arguments()
+
+        self.create_crs_variable()
+        self.create_coordinate_variables()
+
+    def validate_crs_arguments(self):
+        pass
 
     def _set_global_attributes(self, tile_spec):
         """
@@ -174,31 +192,8 @@ class NetCDFWriter(object):
         return data_var
 
 
-def write_crs_coords_to_nco(nco, tile_spec):
-    if tile_spec.crs.IsGeographic():
-        return GeographicCRS(nco, tile_spec)
-    elif tile_spec.crs.IsProjected():
-        return AlbersCRS(nco, tile_spec)
-    else:
-        raise RuntimeError("Unknown projection")
-
-
-class NetCDFCRSWriter(object):
-    def __init__(self, nco, tile_spec):
-        self.nco = nco
-        self.tile_spec = tile_spec
-
-        self.validate_arguments()
-
-        self.create_crs_variable()
-        self.create_coordinate_variables()
-
-    def validate_arguments(self):
-        pass
-
-
-class AlbersCRS(NetCDFCRSWriter):
-    def validate_arguments(self):
+class ProjectedNetCDFWriter(NetCDFWriter):
+    def validate_crs_arguments(self):
         grid_mapping_name = _grid_mapping_name(self.tile_spec.crs)
 
         if grid_mapping_name != 'albers_conic_equal_area':
@@ -265,7 +260,7 @@ class AlbersCRS(NetCDFCRSWriter):
         lons_var[:] = lons_var
 
 
-class GeographicCRS(NetCDFCRSWriter):
+class GeographicNetCDFWriter(NetCDFWriter):
     def create_crs_variable(self):
         crs = self.tile_spec.crs
         crs_var = self.nco.createVariable('crs', 'i4')

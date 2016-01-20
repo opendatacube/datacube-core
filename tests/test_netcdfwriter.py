@@ -8,8 +8,8 @@ import numpy.testing as npt
 import netCDF4
 import pytest
 
-from datacube.storage.netcdf_writer import NetCDFWriter
 from datacube.model import TileSpec
+from datacube.storage.netcdf_writer import create_netcdf_writer
 
 GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
            'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
@@ -146,7 +146,7 @@ def build_test_netcdf(filename, affine, projection, chunking, make_measurement_d
 
     ops = [(datetime(2008, band, 1), band) for band in [1, 2]]
 
-    ncwriter = NetCDFWriter(filename, tile_spec)
+    ncwriter = create_netcdf_writer(filename, tile_spec)
 
     for index, (date, band) in enumerate(ops):
         data = np.empty([2000, 4000])

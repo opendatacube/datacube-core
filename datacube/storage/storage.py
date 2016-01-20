@@ -20,10 +20,10 @@ from rasterio.coords import BoundingBox
 
 from affine import Affine
 
-from .netcdf_writer import NetCDFWriter
 from datacube import compat
 from datacube.model import StorageUnit, TileSpec
 from datacube.storage.netcdf_indexer import index_netcdfs
+from datacube.storage.netcdf_writer import create_netcdf_writer
 
 _LOG = logging.getLogger(__name__)
 
@@ -215,16 +215,16 @@ def _warn_about_mosaiced_datasets(datasets_grouped_by_time, tile_index):
 
 
 def write_storage_unit_to_disk(datasets_grouped_by_time, storage_type, tile_spec, filename):
-    ncfile = NetCDFWriter(filename, tile_spec, len(datasets_grouped_by_time))
-    ncfile.create_time_values(time for time, _ in datasets_grouped_by_time)
+    ncwriter = create_netcdf_writer(filename, tile_spec, len(datasets_grouped_by_time))
+    ncwriter.create_time_values(time for time, _ in datasets_grouped_by_time)
 
     for time_index, (_, group) in enumerate(datasets_grouped_by_time):
-        ncfile.add_source_metadata(time_index, (dataset.metadata_doc for dataset in group))
+        ncwriter.add_source_metadata(time_index, (dataset.metadata_doc for dataset in group))
 
-    _fill_storage_unit(ncfile, datasets_grouped_by_time, storage_type.measurements, tile_spec,
+    _fill_storage_unit(ncwriter, datasets_grouped_by_time, storage_type.measurements, tile_spec,
                        storage_type.chunking)
 
-    ncfile.close()
+    ncwriter.close()
 
 
 def _fill_storage_unit(ncfile, datasets_grouped_by_time, measurements, tile_spec, chunking):
