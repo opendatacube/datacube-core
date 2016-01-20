@@ -26,18 +26,18 @@ class DatasetMatcher(object):
 
 
 class StorageType(object):
-    def __init__(self, descriptor, id_=None):
+    def __init__(self, definition, id_=None):
         # A definition of the storage (understood by the storage driver)
         #: :type: dict
-        self.descriptor = descriptor
+        self.definition = definition
 
     @property
     def driver(self):
-        return self.descriptor['driver']
+        return self.definition['driver']
 
     @property
     def projection(self):
-        return str(self.descriptor['crs']).strip()
+        return str(self.definition['crs']).strip()
 
     @property
     def spatial_dimensions(self):
@@ -56,7 +56,7 @@ class StorageType(object):
         """
         :return: tuple(x size, y size)
         """
-        tile_size = self.descriptor['tile_size']
+        tile_size = self.definition['tile_size']
         return [tile_size[dim] for dim in self.spatial_dimensions]
 
     @property
@@ -64,27 +64,17 @@ class StorageType(object):
         """
         :return: tuple(x res, y res)
         """
-        res = self.descriptor['resolution']
+        res = self.definition['resolution']
         return [res[dim] for dim in self.spatial_dimensions]
 
     @property
     def chunking(self):
-        chunks = self.descriptor['chunking']
-        return [(dim, chunks[dim]) for dim in self.descriptor['dimension_order']]
+        chunks = self.definition['chunking']
+        return [(dim, chunks[dim]) for dim in self.definition['dimension_order']]
 
     @property
     def filename_format(self):
-        return self.descriptor['filename_format']
-
-
-class StorageTypeDescriptor(object):
-    def __init__(self, projection, tile_size, resolution, dimension_order, chunking, filename_format):
-        self.projection = projection
-        self.tile_size = tile_size
-        self.resolution = resolution
-        self.dimension_order = dimension_order
-        self.chunking = chunking
-        self.filename_format = filename_format
+        return self.definition['filename_format']
 
 
 class StorageMapping(object):
