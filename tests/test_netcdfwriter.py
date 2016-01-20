@@ -44,7 +44,7 @@ ALBERS_PROJ = """PROJCS["GDA94 / Australian Albers",
 GLOBAL_ATTRS = {'test_attribute': 'test_value'}
 
 DATA_VARIABLES = ('B1', 'B2')
-LAT_LON_COORDINATES = ('lat', 'lon')
+LAT_LON_COORDINATES = ('latitude', 'longitude')
 PROJECTED_COORDINATES = ('x', 'y')
 COMMON_VARIABLES = ('crs', 'time')
 
