@@ -10,9 +10,8 @@ import signal
 import logging
 from multiprocessing import Pool
 
-from datacube import ui
-from . import storage
-from .index import index_connect
+from datacube import ui, storage
+from datacube.index import index_connect
 
 _LOG = logging.getLogger(__name__)
 

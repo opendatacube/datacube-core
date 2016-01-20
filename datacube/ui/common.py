@@ -12,9 +12,13 @@ from itertools import product
 import yaml
 
 
-_DOCUMENT_SUFFIX_TYPES = ('.yaml', '.yml', '.json')
+_DOCUMENT_EXTENSIONS = ('.yaml', '.yml', '.json')
+_COMPRESSION_EXTENSIONS = ('', '.gz')
+
 # Both compressed (*.gz) and uncompressed.
-_ALL_SUPPORTED_DOC_SUFFIXES = tuple(a[0] + a[1] for a in product(_DOCUMENT_SUFFIX_TYPES, ('', '.gz')))
+_ALL_SUPPORTED_EXTENSIONS = tuple(doc_type + compression_type
+                                  for doc_type in _DOCUMENT_EXTENSIONS
+                                  for compression_type in _COMPRESSION_EXTENSIONS)
 
 
 def is_supported_document_type(path):
@@ -34,7 +38,7 @@ def is_supported_document_type(path):
     >>> is_supported_document_type(Path('/tmp/something.tif.gz'))
     False
     """
-    return any([str(path).lower().endswith(suffix) for suffix in _ALL_SUPPORTED_DOC_SUFFIXES])
+    return any([str(path).lower().endswith(suffix) for suffix in _ALL_SUPPORTED_EXTENSIONS])
 
 
 def get_metadata_path(dataset_path):
@@ -106,5 +110,5 @@ def read_documents(*paths):
             yield path, json.load(opener(str(path), 'r'))
         else:
             raise ValueError('Unknown document type for {}; expected one of {!r}.'
-                             .format(path.name, _ALL_SUPPORTED_DOC_SUFFIXES))
+                             .format(path.name, _ALL_SUPPORTED_EXTENSIONS))
 

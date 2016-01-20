@@ -5,6 +5,7 @@ Core classes used across modules.
 from __future__ import absolute_import, division
 import logging
 from collections import namedtuple
+
 import numpy as np
 from osgeo import osr
 
@@ -19,6 +20,9 @@ class DatasetMatcher(object):
         # Match by exact metadata properties (a subset of the metadata doc)
         #: :type: dict
         self.metadata = metadata
+
+    def __repr__(self):
+        return "DatasetMatcher(metadata={!r})".format(self.metadata)
 
 
 class StorageType(object):
@@ -37,6 +41,10 @@ class StorageType(object):
 
     @property
     def spatial_dimensions(self):
+        """
+        Latitude/Longitude or X/Y
+        :rtype: tuple
+        """
         sr = osr.SpatialReference(self.projection)
         if sr.IsGeographic():
             return 'longitude', 'latitude'
@@ -166,6 +174,10 @@ class StorageUnit(object):
     def __str__(self):
         return "StorageUnit <type={m.name}, path={path}>".format(path=self.path, m=self.storage_mapping)
 
+    def __repr__(self):
+        return "StorageUnit({!r}, {!r}, {!r}, {!r}, {!r})".format(self.dataset_ids, self.storage_mapping,
+                                                                  self.descriptor, self.path, self.id_)
+
 
 class Dataset(object):
     def __init__(self, collection, metadata_doc, metadata_path):
@@ -178,7 +190,6 @@ class Dataset(object):
         :param metadata_path:
         :type metadata_path: Path
         """
-        super(Dataset, self).__init__()
         #: :type: Collection
         self.collection = collection
         #: :type: dict
@@ -237,6 +248,12 @@ class Collection(object):
 
     def dataset_reader(self, dataset_doc):
         return _DocReader(self.dataset_offsets.__dict__, dataset_doc)
+
+    def __str__(self):
+        return "Collection <id={id}, name={name}>".format(id=self.id_, name=self.name)
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class DatasetOffsets(object):
