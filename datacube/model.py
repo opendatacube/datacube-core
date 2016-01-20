@@ -18,6 +18,28 @@ _LOG = logging.getLogger(__name__)
 Range = namedtuple('Range', ('begin', 'end'))
 
 
+def _uri_to_local_path(local_uri):
+    """
+    :type local_uri: str
+    :rtype: pathlib.Path
+
+    >>> str(_uri_to_local_path('file:///tmp/something.txt'))
+    '/tmp/something.txt'
+    >>> _uri_to_local_path(None)
+    >>> _uri_to_local_path('ftp://example.com/tmp/something.txt')
+    Traceback (most recent call last):
+    ...
+    ValueError: Only file URIs currently supported. Tried 'ftp'.
+    """
+    if not local_uri:
+        return None
+
+    components = parse_url(local_uri)
+    if components.scheme != 'file':
+        raise ValueError('Only file URIs currently supported. Tried %r.' % components.scheme)
+
+    return Path(components.path)
+
 # Match datasets. (for mapping to storage)
 class DatasetMatcher(object):
     def __init__(self, metadata):
@@ -153,10 +175,9 @@ class StorageUnit(object):
         self.id_ = id_
 
     @property
-    def filepath(self):
-        filepath = self.storage_type.resolve_location(self.path)
-        assert filepath.startswith('file://')
-        return filepath[7:]
+    def local_path(self):
+        file_uri = self.storage_type.resolve_location(self.path)
+        return _uri_to_local_path(file_uri)
 
     def __str__(self):
         return "StorageUnit <type={m.name}, path={path}>".format(path=self.path, m=self.storage_type)
@@ -200,13 +221,8 @@ class Dataset(object):
         ...
         ValueError: Only file URIs currently supported. Tried 'ftp'.
         """
-        if not self.local_uri:
-            return None
-        components = parse_url(self.local_uri)
-        if components.scheme != 'file':
-            raise ValueError('Only file URIs currently supported. Tried %r.' % components.scheme)
+        return _uri_to_local_path(self.local_uri)
 
-        return Path(components.path)
 
     @property
     def id(self):

@@ -28,16 +28,20 @@ _GLOBAL_LOCK = threading.Lock()
 
 
 def _open_dataset(filepath):
-    return nc4.Dataset(filepath, mode='r', clobber=False, diskless=False, persist=False, format='NETCDF4')
+    """
+    :type filepath: pathlib.Path
+    """
+    return nc4.Dataset(str(filepath), mode='r', clobber=False, diskless=False, persist=False, format='NETCDF4')
 
 
 class NetCDF4StorageUnit(StorageUnitBase):
-    def __init__(self, filepath, variables, coordinates, attributes=None, crs=None):
+    def __init__(self, file_path, variables, coordinates, attributes=None, crs=None):
         """
         :param variables: variables in the SU
         :param coordinates: coordinates in the SU
+        :type file_path: pathlib.Path
         """
-        self.filepath = filepath
+        self.file_path = file_path
         self.coordinates = coordinates
         self.variables = variables
         self.attributes = attributes or {}
@@ -51,12 +55,12 @@ class NetCDF4StorageUnit(StorageUnitBase):
         return crs
 
     @classmethod
-    def from_file(cls, filepath):
+    def from_file(cls, file_path):
         coordinates = {}
         variables = {}
         grid_mappings = {}
         standard_names = {}
-        with _GLOBAL_LOCK, contextlib.closing(_open_dataset(filepath)) as ncds:
+        with _GLOBAL_LOCK, contextlib.closing(_open_dataset(file_path)) as ncds:
             attributes = {k: getattr(ncds, k) for k in ncds.ncattrs()}
             for name, var in ncds.variables.items():
                 dims = var.dimensions
@@ -83,26 +87,26 @@ class NetCDF4StorageUnit(StorageUnitBase):
                     crs[real_name] = grid_mappings['latitude_longitude']
                 elif standard_name in ['projection_x_coordinate', 'projection_y_coordinate']:
                     crs[real_name] = grid_mappings[list(grid_mappings.keys())[0]]
-        return cls(filepath, variables=variables, coordinates=coordinates, attributes=attributes, crs=crs)
+        return cls(file_path, variables=variables, coordinates=coordinates, attributes=attributes, crs=crs)
 
     def get_coord(self, dim, index=None):
         coord = self.coordinates[dim]
         index = normalize_index(coord, index)
 
         if isinstance(index, slice):
-            with _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.filepath)) as ncds:
+            with _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.file_path)) as ncds:
                 return ncds[dim][index], index
 
         if isinstance(index, Range):
-            with _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.filepath)) as ncds:
+            with _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.file_path)) as ncds:
                 data = ncds[dim][:]
                 index = range_to_index(data, index)
                 return data[index], index
 
     def _fill_data(self, name, index, dest):
-        with _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.filepath)) as ncds:
+        with _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.file_path)) as ncds:
             numpy.copyto(dest, ncds[name][index])
 
     def get_chunk(self, name, index):
-        with _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.filepath)) as ncds:
+        with _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.file_path)) as ncds:
             return ncds[name][index]

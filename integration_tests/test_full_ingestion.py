@@ -81,11 +81,11 @@ def test_full_ingestion(global_integration_cli_args, index, default_collection, 
     assert len(albers_storageunits) == EXPECTED_NUMBER_OF_STORAGE_UNITS
 
     for su in (latlon_storageunits[0], albers_storageunits[0]):
-        with netCDF4.Dataset(su.filepath) as nco:
+        with netCDF4.Dataset(str(su.local_path)) as nco:
             check_data_shape(nco)
             check_cf_compliance(nco)
             check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset)
-        check_open_with_xray(su.filepath)
+        check_open_with_xray(su.local_path)
 
 def ensure_dataset_is_indexed(index):
     datasets = index.datasets.search_eager()
@@ -127,9 +127,9 @@ def check_dataset_metadata_in_storage_unit(nco, dataset_dir):
     assert stored == original
 
 
-def check_open_with_xray(filename):
+def check_open_with_xray(file_path):
     import xray
-    xray.open_dataset(filename)
+    xray.open_dataset(str(file_path))
 
 
 def test_shrink_storage_type():

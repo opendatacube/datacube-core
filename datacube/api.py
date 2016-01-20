@@ -82,7 +82,7 @@ def get_storage_unit_projection(su):
 
 
 def make_in_memory_storage_unit(su, coordinates, variables, attributes, crs):
-    faux = MemoryStorageUnit(filepath=su.filepath,
+    faux = MemoryStorageUnit(filepath=su.local_path,
                              coordinates=coordinates,
                              variables=variables,
                              attributes=attributes,
@@ -94,7 +94,7 @@ def make_in_memory_storage_unit(su, coordinates, variables, attributes, crs):
                       if name in irregular_dim_names and coord.length > 2]
 
     if irregular_dims and su.storage_type.driver == 'NetCDF CF':
-        real_su = NetCDF4StorageUnit(su.filepath,
+        real_su = NetCDF4StorageUnit(su.local_path,
                                      coordinates=coordinates, variables=variables, attributes=attributes)
         for coord in irregular_dims:
             coord_values, _ = real_su.get_coord(coord)
@@ -139,10 +139,10 @@ def make_storage_unit(su, is_diskless=False):
                                            crs=crs)
 
     if su.storage_type.driver == 'NetCDF CF':
-        return NetCDF4StorageUnit(su.filepath, coordinates=coordinates, variables=variables, attributes=attributes)
+        return NetCDF4StorageUnit(su.local_path, coordinates=coordinates, variables=variables, attributes=attributes)
 
     if su.storage_type.driver == 'GeoTiff':
-        result = GeoTifStorageUnit(su.filepath, coordinates=coordinates, variables=variables, attributes=attributes)
+        result = GeoTifStorageUnit(su.local_path, coordinates=coordinates, variables=variables, attributes=attributes)
         time = datetime.datetime.strptime(su.descriptor['extents']['time_min'], '%Y-%m-%dT%H:%M:%S.%f')
         time = (time - datetime.datetime.utcfromtimestamp(0)).total_seconds()
         return StorageUnitDimensionProxy(result, ('time', time, numpy.float64, 'seconds since 1970'))
@@ -239,7 +239,7 @@ class StorageUnitCollection(object):
                 'storage_max': tuple(max(storage_unit.coordinates[dim].begin, storage_unit.coordinates[dim].end)
                                      for dim in dimensions),
                 'storage_shape': tuple(storage_unit.coordinates[dim].length for dim in dimensions),
-                'storage_path': storage_unit.filepath
+                'storage_path': str(storage_unit.local_path)
             }
         return stats
 
@@ -479,7 +479,7 @@ class IrregularStorageUnitSlice(StorageUnitBase):
                               units=real_dim.units)
         self.coordinates[dimension] = fake_dim
         self.variables = parent.variables
-        self.filepath = parent.filepath
+        self.filepath = parent.local_path
 
     def get_crs(self):
         return self._parent.get_crs()
