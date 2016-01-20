@@ -52,4 +52,3 @@ def test_get_field():
             min_offset=[['extents', 'geospatial_lat_min']],
         )
     )
-

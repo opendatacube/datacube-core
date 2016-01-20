@@ -3,6 +3,8 @@
 
 set -eu
 
+pep8 tests integration_tests --max-line-length 120
+
 pylint --reports no datacube examples/*.py version.py
 
 # Run tests, taking coverage.

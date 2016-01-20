@@ -1,19 +1,19 @@
 from __future__ import absolute_import
+
+import warnings
 from datetime import datetime
 from pathlib import Path
 
-import six
-import warnings
-
-from click.testing import CliRunner
 import netCDF4
 import numpy as np
+import six
 import yaml
+from click.testing import CliRunner
 
 import datacube.scripts.run_ingest
 
 PROJECT_ROOT = Path(__file__).parents[1]
-CONFIG_SAMPLES =  PROJECT_ROOT / 'docs/config_samples/'
+CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
 LS5_SAMPLES = CONFIG_SAMPLES / 'ga_landsat_5/'
 LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_nbar_mapping.yaml'
 LS5_NBAR_NAME = 'ls5_nbar'
@@ -87,10 +87,12 @@ def test_full_ingestion(global_integration_cli_args, index, default_collection, 
             check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset)
         check_open_with_xray(su.local_path)
 
+
 def ensure_dataset_is_indexed(index):
     datasets = index.datasets.search_eager()
     assert len(datasets) == 1
     assert datasets[0].id == EXAMPLE_LS5_DATASET_ID
+
 
 def check_data_shape(nco):
     assert nco.variables['band_10'].shape == EXPECTED_STORAGE_UNIT_DATA_SHAPE
