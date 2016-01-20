@@ -16,6 +16,7 @@ import yaml
 _LOG = logging.getLogger(__name__)
 DATASET_YAML_MAX_SIZE = 30000
 
+
 def map_measurement_descriptor_parameters(measurement_descriptor):
     """Map measurement descriptor parameters to netcdf variable parameters"""
     md_to_netcdf = {'dtype': 'datatype',
@@ -40,13 +41,6 @@ def _seconds_since_1970(dt):
     return (dt - epoch).total_seconds()
 
 
-def _grid_mapping_name(crs):
-    if crs.IsGeographic():
-        return 'latitude_longitude'
-    elif crs.IsProjected():
-        return crs.GetAttrValue('PROJECTION').lower()
-
-
 class NetCDFWriter(object):
     """
     Create NetCDF4 Storage Units, with CF Compliant metadata.
@@ -68,7 +62,7 @@ class NetCDFWriter(object):
         self.netcdf_path = netcdf_path
 
         self._create_time_dimension(num_times)
-        self._create_spatial_variables(tile_spec)
+        write_crs_coords_to_nco(self.nco, tile_spec)
         self._set_global_attributes(tile_spec)
 
         # Create Variable Length Variable to store extra metadata
@@ -90,104 +84,6 @@ class NetCDFWriter(object):
         timeo.long_name = 'Time, unix time-stamp'
         timeo.calendar = 'standard'
         timeo.axis = "T"
-
-    def _create_spatial_variables(self, tile_spec):
-        crs = tile_spec.crs
-        if crs.IsGeographic():
-            self._create_geo_crs(crs)
-            self._create_geo_variables(tile_spec)
-        elif crs.IsProjected():
-            self._create_proj_crs(crs)
-            self._create_proj_variables(tile_spec, crs.GetAttrValue('UNIT'))
-        else:
-            raise Exception("Unknown projection")
-
-    def _create_geo_variables(self, tile_spec):
-        self.nco.createDimension('longitude', len(tile_spec.lons))
-        self.nco.createDimension('latitude', len(tile_spec.lats))
-
-        lon = self.nco.createVariable('longitude', 'double', 'longitude')
-        lon.units = 'degrees_east'
-        lon.standard_name = 'longitude'
-        lon.long_name = 'longitude'
-        lon.axis = "X"
-        lon[:] = tile_spec.lons
-
-        lat = self.nco.createVariable('latitude', 'double', 'latitude')
-        lat.units = 'degrees_north'
-        lat.standard_name = 'latitude'
-        lat.long_name = 'latitude'
-        lat.axis = "Y"
-        lat[:] = tile_spec.lats
-
-    def _create_geo_crs(self, crs):
-        crs_var = self.nco.createVariable('crs', 'i4')
-        crs_var.long_name = crs.GetAttrValue('GEOGCS')  # "Lon/Lat Coords in WGS84"
-        crs_var.grid_mapping_name = _grid_mapping_name(crs)
-        crs_var.longitude_of_prime_meridian = 0.0
-        crs_var.semi_major_axis = crs.GetSemiMajor()
-        crs_var.inverse_flattening = crs.GetInvFlattening()
-        crs_var.spatial_ref = crs.ExportToWkt()  # GDAL variable
-        crs_var.GeoTransform = self._gdal_geotransform()  # GDAL variable
-        return crs_var
-
-    def _gdal_geotransform(self):
-        return self.tile_spec.affine.to_gdal()
-
-    def _create_albers_crs(self, crs):
-        # http://spatialreference.org/ref/epsg/gda94-australian-albers/html/
-        # http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/cf-conventions.html#appendix-grid-mappings
-        crs_var = self.nco.createVariable('crs', 'i4')
-        crs_var.standard_parallel = (crs.GetProjParm('standard_parallel_1'), crs.GetProjParm('standard_parallel_2'))
-        crs_var.longitude_of_central_meridian = crs.GetProjParm('longitude_of_center')
-        crs_var.latitude_of_projection_origin = crs.GetProjParm('latitude_of_center')
-        crs_var.false_easting = crs.GetProjParm('false_easting')
-        crs_var.false_northing = crs.GetProjParm('false_northing')
-        crs_var.grid_mapping_name = 'crs'
-        crs_var.long_name = crs.GetAttrValue('PROJCS')
-        crs_var.spatial_ref = crs.ExportToWkt()  # GDAL variable
-        crs_var.GeoTransform = self._gdal_geotransform()  # GDAL variable
-        return crs_var
-
-    def _create_proj_crs(self, crs):
-        if _grid_mapping_name(crs) != 'albers_conic_equal_area':
-            raise RuntimeError('%s CRS is not supported' % _grid_mapping_name(crs))
-        return self._create_albers_crs(crs)
-
-    def _create_proj_variables(self, tile_spec, units):
-        self.nco.createDimension('x', tile_spec.width)
-        self.nco.createDimension('y', tile_spec.height)
-
-        xvar = self.nco.createVariable('x', 'double', 'x')
-        xvar.long_name = 'x coordinate of projection'
-        xvar.units = units
-        xvar.standard_name = 'projection_x_coordinate'
-        xvar[:] = tile_spec.xs
-
-        yvar = self.nco.createVariable('y', 'double', 'y')
-        yvar.long_name = 'y coordinate of projection'
-        yvar.units = units
-        yvar.standard_name = 'projection_y_coordinate'
-        yvar[:] = tile_spec.ys
-
-    def _create_proj_geo_variables(self, projection, tile_spec):
-        wgs84 = osr.SpatialReference()
-        wgs84.ImportFromEPSG(4326)
-        to_wgs84 = osr.CoordinateTransformation(projection, wgs84)
-
-        lats, lons, _ = zip(*[to_wgs84.TransformPoint(x, y) for y in tile_spec.ys for x in tile_spec.xs])
-
-        lats_var = self.nco.createVariable('lat', 'double', ('y', 'x'))
-        lats_var.long_name = 'latitude coordinate'
-        lats_var.standard_name = 'latitude'
-        lats_var.units = 'degrees north'
-        lats_var[:] = lats_var
-
-        lons_var = self.nco.createVariable('lon', 'double', ('y', 'x'))
-        lons_var.long_name = 'longitude coordinate'
-        lons_var.standard_name = 'longitude'
-        lons_var.units = 'degrees east'
-        lons_var[:] = lons_var
 
     def _set_global_attributes(self, tile_spec):
         """
@@ -276,3 +172,129 @@ class NetCDFWriter(object):
         data_var.units = units
 
         return data_var
+
+
+def write_crs_coords_to_nco(nco, tile_spec):
+    if tile_spec.crs.IsGeographic():
+        return GeographicCRS(nco, tile_spec)
+    elif tile_spec.crs.IsProjected():
+        if _grid_mapping_name(tile_spec.crs) != 'albers_conic_equal_area':
+            raise RuntimeError('%s CRS is not supported' % _grid_mapping_name(tile_spec.crs))
+        return AlbersCRS(nco, tile_spec)
+    else:
+        raise RuntimeError("Unknown projection")
+
+
+class NetCDFCRSWriter(object):
+    def __init__(self, nco, tile_spec):
+        self.nco = nco
+        self.tile_spec = tile_spec
+
+        self.create_crs_variable()
+        self.create_coordinate_variables()
+
+
+class AlbersCRS(NetCDFCRSWriter):
+    def create_crs_variable(self):
+        crs = self.tile_spec.crs
+        # http://spatialreference.org/ref/epsg/gda94-australian-albers/html/
+        # http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/cf-conventions.html#appendix-grid-mappings
+        crs_var = self.nco.createVariable('crs', 'i4')
+        crs_var.standard_parallel = (crs.GetProjParm('standard_parallel_1'),
+                                     crs.GetProjParm('standard_parallel_2'))
+        crs_var.longitude_of_central_meridian = crs.GetProjParm('longitude_of_center')
+        crs_var.latitude_of_projection_origin = crs.GetProjParm('latitude_of_center')
+        crs_var.false_easting = crs.GetProjParm('false_easting')
+        crs_var.false_northing = crs.GetProjParm('false_northing')
+        crs_var.grid_mapping_name = 'crs'
+        crs_var.long_name = crs.GetAttrValue('PROJCS')
+        crs_var.spatial_ref = crs.ExportToWkt()  # GDAL variable
+        crs_var.GeoTransform = _gdal_geotransform(self.tile_spec)  # GDAL variable
+        return crs_var
+
+    def create_coordinate_variables(self):
+        self.create_x_y_variables()
+        # self.create_lat_lon_variables()
+
+    def create_x_y_variables(self):
+        nco = self.nco
+        tile_spec = self.tile_spec
+        nco.createDimension('x', tile_spec.width)
+        nco.createDimension('y', tile_spec.height)
+
+        xvar = nco.createVariable('x', 'double', 'x')
+        xvar.long_name = 'x coordinate of projection'
+        xvar.units = tile_spec.crs.GetAttrValue('UNIT')
+        xvar.standard_name = 'projection_x_coordinate'
+        xvar[:] = tile_spec.xs
+
+        yvar = nco.createVariable('y', 'double', 'y')
+        yvar.long_name = 'y coordinate of projection'
+        yvar.units = tile_spec.crs.GetAttrValue('UNIT')
+        yvar.standard_name = 'projection_y_coordinate'
+        yvar[:] = tile_spec.ys
+
+    def create_lat_lon_variables(self):
+        wgs84 = osr.SpatialReference()
+        wgs84.ImportFromEPSG(4326)
+        to_wgs84 = osr.CoordinateTransformation(self.tile_spec.crs, wgs84)
+
+        lats, lons, _ = zip(*[to_wgs84.TransformPoint(x, y)
+                              for y in self.tile_spec.ys
+                              for x in self.tile_spec.xs])
+
+        lats_var = self.nco.createVariable('lat', 'double', ('y', 'x'))
+        lats_var.long_name = 'latitude coordinate'
+        lats_var.standard_name = 'latitude'
+        lats_var.units = 'degrees north'
+        lats_var[:] = lats_var
+
+        lons_var = self.nco.createVariable('lon', 'double', ('y', 'x'))
+        lons_var.long_name = 'longitude coordinate'
+        lons_var.standard_name = 'longitude'
+        lons_var.units = 'degrees east'
+        lons_var[:] = lons_var
+
+
+class GeographicCRS(NetCDFCRSWriter):
+    def create_crs_variable(self):
+        crs = self.tile_spec.crs
+        crs_var = self.nco.createVariable('crs', 'i4')
+        crs_var.long_name = crs.GetAttrValue('GEOGCS')  # "Lon/Lat Coords in WGS84"
+        crs_var.grid_mapping_name = _grid_mapping_name(crs)
+        crs_var.longitude_of_prime_meridian = 0.0
+        crs_var.semi_major_axis = crs.GetSemiMajor()
+        crs_var.inverse_flattening = crs.GetInvFlattening()
+        crs_var.spatial_ref = crs.ExportToWkt()  # GDAL variable
+        crs_var.GeoTransform = _gdal_geotransform(self.tile_spec)  # GDAL variable
+        return crs_var
+
+    def create_coordinate_variables(self):
+        tile_spec = self.tile_spec
+        self.nco.createDimension('longitude', len(tile_spec.lons))
+        self.nco.createDimension('latitude', len(tile_spec.lats))
+
+        lon = self.nco.createVariable('longitude', 'double', 'longitude')
+        lon.units = 'degrees_east'
+        lon.standard_name = 'longitude'
+        lon.long_name = 'longitude'
+        lon.axis = "X"
+        lon[:] = tile_spec.lons
+
+        lat = self.nco.createVariable('latitude', 'double', 'latitude')
+        lat.units = 'degrees_north'
+        lat.standard_name = 'latitude'
+        lat.long_name = 'latitude'
+        lat.axis = "Y"
+        lat[:] = tile_spec.lats
+
+
+def _gdal_geotransform(tile_spec):
+    return tile_spec.affine.to_gdal()
+
+
+def _grid_mapping_name(crs):
+    if crs.IsGeographic():
+        return 'latitude_longitude'
+    elif crs.IsProjected():
+        return crs.GetAttrValue('PROJECTION').lower()
