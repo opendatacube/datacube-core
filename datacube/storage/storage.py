@@ -15,6 +15,7 @@ import numpy
 from osgeo import ogr, osr
 import rasterio.warp
 from rasterio.warp import RESAMPLING, transform_bounds
+
 from rasterio.coords import BoundingBox
 
 from affine import Affine
@@ -176,7 +177,9 @@ def create_storage_unit(tile_index, datasets, storage_type, filename):
     _LOG.info("Creating Storage Unit %s", filename)
     tmpfile, tmpfilename = tempfile.mkstemp(dir=os.path.dirname(filename))
     try:
-        _write_storage_unit_to_disk(tile_index, datasets, storage_type, tile_spec, tmpfilename)
+        datasets_grouped_by_time = _group_datasets_by_time(datasets)
+        _warn_about_mosaiced_datasets(datasets_grouped_by_time, tile_index)
+        write_storage_unit_to_disk(datasets_grouped_by_time, storage_type, tile_spec, tmpfilename)
         os.close(tmpfile)
         os.rename(tmpfilename, filename)
     finally:
@@ -201,18 +204,22 @@ def _get_tile_transform(tile_index, tile_size, tile_res):
     return Affine(tile_res[0], 0.0, x, 0.0, tile_res[1], y)
 
 
-def _write_storage_unit_to_disk(tile_index, datasets, storage_type, tile_spec, filename):
-    datasets_grouped_by_time = [(time, list(group))
-                                for time, group in groupby(datasets, _dataset_time)]
+def _group_datasets_by_time(datasets):
+    return [(time, list(group)) for time, group in groupby(datasets, _dataset_time)]
 
-    ncfile = NetCDFWriter(filename, tile_spec, len(datasets_grouped_by_time))
-    ncfile.create_time_values(group[0] for group in datasets_grouped_by_time)
 
-    for time_index, (time, group) in enumerate(datasets_grouped_by_time):
-        ncfile.add_source_metadata(time_index, (dataset.metadata_doc for dataset in group))
-
+def _warn_about_mosaiced_datasets(datasets_grouped_by_time, tile_index):
+    for time, group in datasets_grouped_by_time:
         if len(group) > 1:
             _LOG.warning("Mosaicing multiple datasets %s@%s: %s", tile_index, time, group)
+
+
+def write_storage_unit_to_disk(datasets_grouped_by_time, storage_type, tile_spec, filename):
+    ncfile = NetCDFWriter(filename, tile_spec, len(datasets_grouped_by_time))
+    ncfile.create_time_values(time for time, _ in datasets_grouped_by_time)
+
+    for time_index, (_, group) in enumerate(datasets_grouped_by_time):
+        ncfile.add_source_metadata(time_index, (dataset.metadata_doc for dataset in group))
 
     _fill_storage_unit(ncfile, datasets_grouped_by_time, storage_type.measurements, tile_spec,
                        storage_type.chunking)
@@ -220,18 +227,18 @@ def _write_storage_unit_to_disk(tile_index, datasets, storage_type, tile_spec, f
     ncfile.close()
 
 
-def _fill_storage_unit(ncfile, dataset_groups, measurements, tile_spec, chunking):
+def _fill_storage_unit(ncfile, datasets_grouped_by_time, measurements, tile_spec, chunking):
     for measurement_id, measurement_descriptor in measurements.items():
         var = ncfile.ensure_variable(measurement_descriptor, chunking)
 
         buffer_ = numpy.empty(var.shape[1:], dtype=var.dtype)
-        for time_index, (time_value, time_group) in enumerate(dataset_groups):
-            fuse_sources([DatasetSource(dataset, measurement_id) for dataset in time_group],
-                         buffer_,
-                         tile_spec.affine,
-                         tile_spec.projection,
-                         getattr(var, '_FillValue', None),
-                         resampling=_map_resampling(measurement_descriptor['resampling_method']))
+        for time_index, (_, time_group) in enumerate(datasets_grouped_by_time):
+            buffer_ = fuse_sources([DatasetSource(dataset, measurement_id) for dataset in time_group],
+                                   buffer_,
+                                   tile_spec.affine,
+                                   tile_spec.projection,
+                                   getattr(var, '_FillValue', None),
+                                   resampling=_map_resampling(measurement_descriptor['resampling_method']))
             var[time_index] = buffer_
 
 
