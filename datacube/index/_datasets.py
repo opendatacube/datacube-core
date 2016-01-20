@@ -6,7 +6,6 @@ from __future__ import absolute_import
 
 import copy
 import logging
-from pathlib import Path
 
 import cachetools
 
@@ -16,7 +15,7 @@ from . import fields
 _LOG = logging.getLogger(__name__)
 
 
-def _ensure_dataset(db, collection_resource, dataset_doc, path=None):
+def _ensure_dataset(db, collection_resource, dataset_doc):
     """
     Ensure a dataset is in the index (add it if needed).
 
@@ -28,7 +27,7 @@ def _ensure_dataset(db, collection_resource, dataset_doc, path=None):
     :rtype: uuid.UUID
     """
 
-    was_inserted, dataset, source_datasets = _prepare_single(collection_resource, dataset_doc, db, path)
+    was_inserted, dataset, source_datasets = _prepare_single(collection_resource, dataset_doc, db)
 
     dataset_id = dataset.uuid_field
 
@@ -49,7 +48,7 @@ def _ensure_dataset(db, collection_resource, dataset_doc, path=None):
     return dataset_id
 
 
-def _prepare_single(collection_resource, dataset_doc, db, path):
+def _prepare_single(collection_resource, dataset_doc, db):
     collection = collection_resource.get_for_dataset_doc(dataset_doc)
     if not collection:
         _LOG.debug('Failed match on dataset doc %r', dataset_doc)
@@ -66,8 +65,8 @@ def _prepare_single(collection_resource, dataset_doc, db, path):
 
     dataset_id = dataset.uuid_field
 
-    _LOG.info('Indexing %s @ %s', dataset_id, path)
-    was_inserted = db.insert_dataset(indexable_doc, dataset_id, path)
+    _LOG.info('Indexing %s', dataset_id)
+    was_inserted = db.insert_dataset(indexable_doc, dataset_id)
 
     return was_inserted, dataset, source_datasets
 
@@ -86,7 +85,6 @@ class CollectionResource(object):
         """
         # This column duplication is getting out of hand:
         name = descriptor['name']
-        description = descriptor['description']
         dataset_metadata = descriptor['match']['metadata']
         match_priority = int(descriptor['match']['priority'])
 
@@ -183,15 +181,24 @@ class DatasetResource(object):
         """
         return self._db.contains_dataset(dataset.id)
 
-    def add(self, metadata_doc, metadata_path=None):
+    def add(self, metadata_doc, metadata_path=None, uri=None):
         """
         Ensure a dataset is in the index. Add it if not present.
+
+        A file path or URI should be specified if available.
+
         :type metadata_doc: dict
         :type metadata_path: pathlib.Path
+        :type uri: str
         :rtype: datacube.model.Dataset
         """
         with self._db.begin() as transaction:
-            dataset_id = _ensure_dataset(self._db, self._collection_resource, metadata_doc, path=metadata_path)
+            dataset_id = _ensure_dataset(self._db, self._collection_resource, metadata_doc)
+
+            if metadata_path or uri:
+                if uri is None:
+                    uri = metadata_path.absolute().as_uri()
+                self._db.ensure_dataset_location(dataset_id, uri)
 
         if not dataset_id:
             return None
@@ -222,7 +229,7 @@ class DatasetResource(object):
         return Dataset(
             self._collection_resource.get(dataset_res.collection_ref),
             dataset_res.metadata,
-            Path(dataset_res.metadata_path) if dataset_res.metadata_path else None
+            dataset_res.local_uri
         )
 
     def _make_many(self, query_result):

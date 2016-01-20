@@ -3,11 +3,15 @@
 Core classes used across modules.
 """
 from __future__ import absolute_import, division
+
 import logging
 from collections import namedtuple
+from pathlib import Path
 
 import numpy as np
 from osgeo import osr
+
+from datacube.compat import parse_url
 
 _LOG = logging.getLogger(__name__)
 
@@ -163,22 +167,46 @@ class StorageUnit(object):
 
 
 class Dataset(object):
-    def __init__(self, collection, metadata_doc, metadata_path):
+    def __init__(self, collection, metadata_doc, local_uri):
         """
         A dataset on disk.
 
         :type collection: Collection
         :param metadata_doc: the document (typically a parsed json/yaml)
         :type metadata_doc: dict
-        :param metadata_path:
-        :type metadata_path: Path
+        :param local_uri: A URI to access this dataset locally.
+        :type local_uri: str
         """
         #: :type: Collection
         self.collection = collection
         #: :type: dict
         self.metadata_doc = metadata_doc
-        #: :type: pathlib.Path
-        self.metadata_path = metadata_path
+
+        self.local_uri = local_uri
+
+    @property
+    def local_path(self):
+        """
+        A path to this dataset on the local filesystem (if available).
+
+        :rtype: pathlib.Path
+
+        >>> str(Dataset(None, None, 'file:///tmp/something.txt').local_path)
+        '/tmp/something.txt'
+        >>> # No URI -> Return None
+        >>> Dataset(None, None, None).local_path
+        >>> Dataset(None, None, 'ftp://example.com/tmp/something.txt').local_path
+        Traceback (most recent call last):
+        ...
+        ValueError: Only file URIs currently supported. Tried 'ftp'.
+        """
+        if not self.local_uri:
+            return None
+        components = parse_url(self.local_uri)
+        if components.scheme != 'file':
+            raise ValueError('Only file URIs currently supported. Tried %r.' % components.scheme)
+
+        return Path(components.path)
 
     @property
     def id(self):
@@ -189,7 +217,7 @@ class Dataset(object):
         return self.metadata_doc['format']['name']
 
     def __str__(self):
-        return "Dataset <id={id}, path={path}>".format(id=self.id, path=self.metadata_path)
+        return "Dataset <id={id}>".format(id=self.id)
 
     def __repr__(self):
         return self.__str__()

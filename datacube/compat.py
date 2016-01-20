@@ -30,6 +30,7 @@ if not PY2:
             config.read_string(default_text)
         return config
 
+    from urllib.parse import urlparse as parse_url
 else:
     text_type = unicode
     string_types = (str, unicode)
@@ -50,6 +51,7 @@ else:
             config.readfp(StringIO(default_text))
         return config
 
+    from urlparse import urlparse as parse_url
 
 def with_metaclass(meta, *bases):
     class metaclass(meta):

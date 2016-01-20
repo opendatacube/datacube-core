@@ -20,9 +20,25 @@ from sqlalchemy.exc import IntegrityError
 from datacube.config import LocalConfig
 from datacube.index.fields import OrExpression
 from datacube.index.postgres.tables._core import schema_qualified
+from datacube.index.postgres.tables._dataset import DATASET_LOCATION
 from . import tables
 from ._fields import parse_fields, NativeField
 from .tables import DATASET, DATASET_SOURCE, STORAGE_MAPPING, STORAGE_UNIT, DATASET_STORAGE, COLLECTION
+
+_DATASET_SELECT_FIELDS = (
+    DATASET,
+    # The most recent file uri. We may want more advanced path selection in the future...
+    select([
+        DATASET_LOCATION.c.uri_scheme + ':' + DATASET_LOCATION.c.uri_body
+    ]).where(
+        and_(
+            DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
+            DATASET_LOCATION.c.uri_scheme == 'file'
+        )
+    ).order_by(
+        DATASET_LOCATION.c.added.desc()
+    ).limit(1).label('local_uri')
+)
 
 PGCODE_UNIQUE_CONSTRAINT = '23505'
 
@@ -93,7 +109,7 @@ class PostgresDb(object):
         """
         return _BegunTransaction(self._connection)
 
-    def insert_dataset(self, metadata_doc, dataset_id, path=None, collection_id=None):
+    def insert_dataset(self, metadata_doc, dataset_id, collection_id=None):
         """
         Insert dataset if not already indexed.
         :type metadata_doc: dict
@@ -119,24 +135,34 @@ class PostgresDb(object):
                 #      connection inserts the same dataset in the time between the subquery and the main query.
                 #      This is ok for our purposes.)
                 DATASET.insert().from_select(
-                    ['id', 'collection_ref', 'metadata_path', 'metadata'],
+                    ['id', 'collection_ref', 'metadata'],
                     select([
-                        bindparam('id'), bindparam('collection_ref'), bindparam('metadata_path'),
+                        bindparam('id'), bindparam('collection_ref'),
                         bindparam('metadata', type_=JSONB)
                     ]).where(~exists(select([DATASET.c.id]).where(DATASET.c.id == bindparam('id'))))
                 ),
                 id=dataset_id,
                 collection_ref=collection_id,
-                # TODO: Does a single path make sense? Or a separate 'locations' table?
-                metadata_path=str(path) if path else None,
                 metadata=metadata_doc
             )
             return ret.rowcount > 0
         except IntegrityError as e:
             if e.orig.pgcode == PGCODE_UNIQUE_CONSTRAINT:
-                _LOG.info('Duplicate dataset, not inserting: %s @ %s', dataset_id, path)
+                _LOG.info('Duplicate dataset, not inserting: %s', dataset_id)
                 # We're still going to raise it, because the transaction will have been invalidated.
             raise
+
+    def ensure_dataset_location(self, dataset_id, uri):
+        # TODO: Insert only if not exists
+        comp = uri.split(':')
+        scheme = comp[0]
+        body = ':'.join(comp[1:])
+        self._connection.execute(
+            DATASET_LOCATION.insert(),
+            dataset_ref=dataset_id,
+            uri_scheme=scheme,
+            uri_body=body,
+        )
 
     def contains_dataset(self, dataset_id):
         return bool(self._connection.execute(select([DATASET.c.id]).where(DATASET.c.id == dataset_id)).fetchone())
@@ -157,7 +183,7 @@ class PostgresDb(object):
 
     def get_dataset(self, dataset_id):
         return self._connection.execute(
-            DATASET.select().where(DATASET.c.id == dataset_id)
+            select(_DATASET_SELECT_FIELDS).where(DATASET.c.id == dataset_id)
         ).first()
 
     def get_storage_mappings(self, dataset_metadata):
@@ -226,12 +252,6 @@ class PostgresDb(object):
                 None,
                 DATASET.c.id
             ),
-            'metadata_path': NativeField(
-                'metadata_path',
-                'Path to metadata file',
-                None,
-                DATASET.c.metadata_path
-            ),
             'collection': NativeField(
                 'collection',
                 'Name of collection',
@@ -284,6 +304,11 @@ class PostgresDb(object):
         :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
         :rtype: dict
         """
+        select_fields = [
+            f.alchemy_expression.label(f.name)
+            for f in select_fields
+            ] if select_fields else _DATASET_SELECT_FIELDS
+
         return self._search_docs(
             expressions,
             primary_table=DATASET,
@@ -296,6 +321,11 @@ class PostgresDb(object):
         :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
         :rtype: dict
         """
+        select_fields = [
+            f.alchemy_expression.label(f.name)
+            for f in select_fields
+            ] if select_fields else [STORAGE_UNIT]
+
         return self._search_docs(
             expressions,
             primary_table=STORAGE_UNIT,
@@ -306,15 +336,9 @@ class PostgresDb(object):
         """
 
         :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
-        :type select_fields: tuple[datacube.index.postgres._fields.PgField]
         :param primary_table: SQLAlchemy table
         :return:
         """
-        select_fields = [
-            f.alchemy_expression.label(f.name)
-            for f in select_fields
-            ] if select_fields else [primary_table]
-
         from_expression, raw_expressions = _prepare_expressions(expressions, primary_table)
 
         results = self._connection.execute(

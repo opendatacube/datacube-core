@@ -137,12 +137,12 @@ class MockDb(object):
         self.dataset_source = set()
         self.already_ingested = set()
 
-    def insert_dataset(self, metadata_doc, dataset_id, path, collection_id=None):
+    def insert_dataset(self, metadata_doc, dataset_id, collection_id=None):
         # Will we pretend this one was already ingested?
         if dataset_id in self.already_ingested:
             return False
 
-        self.dataset.append((metadata_doc, dataset_id, path, collection_id))
+        self.dataset.append((metadata_doc, dataset_id, collection_id))
         return True
 
     def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):

@@ -49,7 +49,7 @@ _telemetry_dataset = {
 }
 
 
-def test_index_dataset(index, db, local_config, default_collection):
+def test_index_dataset_in_transactions(index, db, local_config, default_collection):
     """
     :type index: datacube.index._api.Index
     :type db: datacube.index.postgres._api.PostgresDb
@@ -60,8 +60,7 @@ def test_index_dataset(index, db, local_config, default_collection):
     with db.begin() as transaction:
         was_inserted = db.insert_dataset(
             _telemetry_dataset,
-            _telemetry_uuid,
-            Path('/tmp/test/' + _telemetry_uuid)
+            _telemetry_uuid
         )
 
         assert was_inserted
@@ -70,8 +69,7 @@ def test_index_dataset(index, db, local_config, default_collection):
         # Insert again. It should be ignored.
         was_inserted = db.insert_dataset(
             _telemetry_dataset,
-            _telemetry_uuid,
-            Path('/tmp/test/' + _telemetry_uuid)
+            _telemetry_uuid
         )
         assert not was_inserted
         assert db.contains_dataset(_telemetry_uuid)
@@ -86,6 +84,22 @@ def test_index_dataset(index, db, local_config, default_collection):
     assert not db.contains_dataset(_telemetry_uuid)
 
 
+def test_index_dataset_with_location(index, default_collection):
+    """
+    :type index: datacube.index._api.Index
+    :type default_collection: datacube.model.Collection
+    """
+    dataset = index.datasets.add(
+        _telemetry_dataset,
+        metadata_path=Path('/tmp/something.yaml')
+    )
+
+    assert dataset.id == _telemetry_uuid
+    assert dataset.collection.id_ == default_collection.id_
+
+    assert dataset.local_path == Path('/tmp/something.yaml')
+
+
 def test_index_storage_unit(index, db, default_collection):
     """
     :type db: datacube.index.postgres._api.PostgresDb
@@ -95,8 +109,7 @@ def test_index_storage_unit(index, db, default_collection):
     # Setup foreign keys for our storage unit.
     was_inserted = db.insert_dataset(
         _telemetry_dataset,
-        _telemetry_uuid,
-        Path('/tmp/test/' + _telemetry_uuid)
+        _telemetry_uuid
     )
     assert was_inserted
     db.ensure_storage_mapping(

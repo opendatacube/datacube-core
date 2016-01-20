@@ -56,8 +56,7 @@ def test_search_dataset_equals(index, db, default_collection):
     """
     was_inserted = db.insert_dataset(
         _telemetry_dataset,
-        _telemetry_uuid,
-        Path('/tmp/test/' + _telemetry_uuid)
+        _telemetry_uuid
     )
     assert was_inserted
 
@@ -91,8 +90,7 @@ def test_search_dataset_ranges(index, db, default_collection):
     """
     was_inserted = db.insert_dataset(
         _telemetry_dataset,
-        _telemetry_uuid,
-        Path('/tmp/test/' + _telemetry_uuid)
+        _telemetry_uuid
     )
     assert was_inserted
 
@@ -148,8 +146,7 @@ def test_search_globally(index, db, telemetry_collection):
     # Insert dataset. It should be matched to the telemetry collection.
     was_inserted = db.insert_dataset(
         _telemetry_dataset,
-        _telemetry_uuid,
-        # Path is optional.
+        _telemetry_uuid
     )
     assert was_inserted
 
@@ -168,8 +165,7 @@ def test_searches_only_collection(index, db, default_collection, telemetry_colle
     # Insert dataset. It should be matched to the telemetry collection.
     was_inserted = db.insert_dataset(
         _telemetry_dataset,
-        _telemetry_uuid,
-        Path('/tmp/test/' + _telemetry_uuid)
+        _telemetry_uuid
     )
     assert was_inserted
 
@@ -216,8 +212,7 @@ def test_fetch_all_of_collection(index, db, default_collection, telemetry_collec
     # Insert dataset. It should be matched to the telemetry collection.
     was_inserted = db.insert_dataset(
         _telemetry_dataset,
-        _telemetry_uuid,
-        Path('/tmp/test/' + _telemetry_uuid)
+        _telemetry_uuid
     )
     assert was_inserted
 
@@ -245,8 +240,7 @@ def test_search_storage_star(index, db, default_collection, ls5_nbar_storage_typ
     """
     was_inserted = db.insert_dataset(
         _telemetry_dataset,
-        _telemetry_uuid,
-        Path('/tmp/test/' + _telemetry_uuid)
+        _telemetry_uuid
     )
     assert was_inserted
 
@@ -271,8 +265,7 @@ def test_search_storage_by_dataset(index, db, default_collection, ls5_nbar_stora
     """
     was_inserted = db.insert_dataset(
         _telemetry_dataset,
-        _telemetry_uuid,
-        Path('/tmp/test/' + _telemetry_uuid)
+        _telemetry_uuid
     )
     assert was_inserted
 
@@ -309,8 +302,7 @@ def test_search_cli_basic(global_integration_cli_args, db, default_collection, l
     """
     was_inserted = db.insert_dataset(
         _telemetry_dataset,
-        _telemetry_uuid,
-        Path('/tmp/test/' + _telemetry_uuid)
+        _telemetry_uuid
     )
     assert was_inserted
 
@@ -343,8 +335,7 @@ def test_search_storage_by_both_fields(global_integration_cli_args, db, default_
     """
     was_inserted = db.insert_dataset(
         _telemetry_dataset,
-        _telemetry_uuid,
-        Path('/tmp/test/' + _telemetry_uuid)
+        _telemetry_uuid
     )
     assert was_inserted
 

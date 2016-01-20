@@ -296,7 +296,7 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
 class DatasetSource(object):
     def __init__(self, dataset, measurement_id):
         dataset_measurement_descriptor = dataset.metadata.measurements_dict[measurement_id]
-        self._filename = str(dataset.metadata_path.parent.joinpath(dataset_measurement_descriptor['path']))
+        self._filename = str(dataset.local_path.parent.joinpath(dataset_measurement_descriptor['path']))
         self._band_id = dataset_measurement_descriptor.get('layer', 1)
         self.transform = None
         self.projection = None

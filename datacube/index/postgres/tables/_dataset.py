@@ -5,7 +5,7 @@ Tables for indexing the datasets which were ingested into the AGDC.
 from __future__ import absolute_import
 
 import logging
-from sqlalchemy import ForeignKey, UniqueConstraint, CheckConstraint, SmallInteger
+from sqlalchemy import ForeignKey, UniqueConstraint, CheckConstraint, SmallInteger, BigInteger
 from sqlalchemy import Table, Column, Integer, String, DateTime
 from sqlalchemy.dialects import postgres
 from sqlalchemy.sql import func
@@ -43,14 +43,31 @@ DATASET = Table(
 
     Column('metadata', postgres.JSONB, index=True, nullable=False),
 
-    # Location of ingested metadata file (yaml?).
-    #   - Individual file paths can be calculated relative to this.
-    #   - May be null if the dataset was not ingested (provenance-only)
-    Column('metadata_path', String, nullable=True, unique=False),
+    # When it was added and by whom.
+    Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
+    Column('added_by', String, server_default=func.current_user(), nullable=False),
+)
+
+DATASET_LOCATION = Table(
+    'dataset_location', _core.METADATA,
+    Column('id', Integer, primary_key=True, autoincrement=True),
+    Column('dataset_ref', None, ForeignKey(DATASET.c.id), nullable=False),
+
+    # The base URI to find the dataset.
+    #
+    # All paths in the dataset metadata can be computed relative to this.
+    # (it is often the path of the source metadata file)
+    #
+    # eg 'file:///g/data/datasets/LS8_NBAR/agdc-metadata.yaml' or 'ftp://eo.something.com/dataset'
+    # 'file' is a scheme, '///g/data/datasets/LS8_NBAR/agdc-metadata.yaml' is a body.
+    Column('uri_scheme', String, nullable=False),
+    Column('uri_body', String, nullable=False),
 
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
     Column('added_by', String, server_default=func.current_user(), nullable=False),
+
+    UniqueConstraint('dataset_ref', 'uri_scheme', 'uri_body'),
 )
 
 # Link datasets to their source datasets.
