@@ -185,13 +185,19 @@ class StorageMappingResource(object):
         """
         descriptor = mapping_record['descriptor']
         _match = descriptor.get('match')
+        if descriptor['location_name'] in self._host_config.location_mappings:
+            location = self._host_config.location_mappings[descriptor['location_name']]
+        else:
+            raise Exception("Invalid configuration, storage mapping '{}' references unknown location '{}'".format(
+                mapping_record['name'], descriptor['location_name']))
+
         return StorageMapping(
             storage_type=StorageType(descriptor['storage']),
             name=mapping_record['name'],
             description=descriptor.get('description'),
             match=DatasetMatcher(mapping_record['dataset_metadata']),
             measurements=descriptor['measurements'],
-            location=self._host_config.location_mappings[descriptor['location_name']],
+            location=location,
             filename_pattern=descriptor['file_path_template'],
             roi=_match.get('roi') if _match else None,
             id_=mapping_record['id']
