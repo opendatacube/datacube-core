@@ -178,8 +178,6 @@ def write_crs_coords_to_nco(nco, tile_spec):
     if tile_spec.crs.IsGeographic():
         return GeographicCRS(nco, tile_spec)
     elif tile_spec.crs.IsProjected():
-        if _grid_mapping_name(tile_spec.crs) != 'albers_conic_equal_area':
-            raise RuntimeError('%s CRS is not supported' % _grid_mapping_name(tile_spec.crs))
         return AlbersCRS(nco, tile_spec)
     else:
         raise RuntimeError("Unknown projection")
@@ -190,11 +188,22 @@ class NetCDFCRSWriter(object):
         self.nco = nco
         self.tile_spec = tile_spec
 
+        self.validate_arguments()
+
         self.create_crs_variable()
         self.create_coordinate_variables()
 
+    def validate_arguments(self):
+        pass
+
 
 class AlbersCRS(NetCDFCRSWriter):
+    def validate_arguments(self):
+        grid_mapping_name = _grid_mapping_name(self.tile_spec.crs)
+
+        if grid_mapping_name != 'albers_conic_equal_area':
+            raise ValueError('{} CRS is not supported'.format(grid_mapping_name))
+
     def create_crs_variable(self):
         crs = self.tile_spec.crs
         # http://spatialreference.org/ref/epsg/gda94-australian-albers/html/
