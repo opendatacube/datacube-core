@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Ingest datasets into the agdc.
+Ingest datasets into the AGDC.
 """
 from __future__ import absolute_import
 
@@ -41,22 +41,27 @@ def store_datasets(datasets, index=None, workers=0):
     """
     Create any necessary storage units for the given datasets.
 
+    Find matching storage_types for datasets
+    Create storage units for datasets according to the storage_type
+    Add storage units to the index
+
     :type datasets: list[datacube.model.Dataset]
     :type index: datacube.index._api.Index
     """
     index = index or index_connect()
 
-    storage_types = find_storage_types(datasets, index)
+    storage_types = find_storage_types_for_datasets(datasets, index)
 
     for storage_type_id, datasets in storage_types.items():
         storage_type = index.storage.types.get(storage_type_id)
         _LOG.info('Using %s to store %s datasets', storage_type, datasets)
-        store_datasets_with_storage_type(datasets, storage_type, index=index, workers=workers)
+        storage_units = create_storage_units(datasets, storage_type, workers=workers)
+        index.storage.add_many(storage_units)
 
 
-def find_storage_types(datasets, index=None):
+def find_storage_types_for_datasets(datasets, index=None):
     """
-    Find matching storage types for datasets
+    Find matching storage_types for datasets
 
     :type datasets: list[datacube.model.Dataset]
     :type index: datacube.index._api.Index
@@ -74,17 +79,14 @@ def find_storage_types(datasets, index=None):
     return storage_types
 
 
-def store_datasets_with_storage_type(datasets, storage_type, index=None, workers=0):
+def create_storage_units(datasets, storage_type, workers=0):
     """
     Create storage units for datasets using storage_type
     Add storage units to the index
 
     :type datasets: list[datacube.model.Dataset]
     :type storage_type: datacube.model.StorageType
-    :type index: datacube.index._api.Index
     """
-    index = index or index_connect()
-
     # :type tile_index: (x,y)
     # Each task is an entire storage unit, safe to run tasks in parallel
 
@@ -97,7 +99,7 @@ def store_datasets_with_storage_type(datasets, storage_type, index=None, workers
         else:
             storage_units = [_create_storage_unit(task) for task in tasks]
 
-        index.storage.add_many(storage_units)
+        return storage_units
     except:
         for task in tasks:
             _remove_storage_unit(task)
