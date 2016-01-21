@@ -67,6 +67,7 @@ def find_storage_types_for_datasets(datasets, index=None):
     :type index: datacube.index._api.Index
     :rtype dict[int, list[datacube.model.Dataset]]
     """
+    # TODO: Move to storage-types/storage-mappings
     index = index or index_connect()
 
     storage_types = {}
@@ -109,7 +110,8 @@ def create_storage_units(datasets, storage_type, workers=0):
 def _create_storage_unit(task):
     tile_index, storage_type, datasets = task
     filename = storage.generate_filename(tile_index, datasets, storage_type)
-    return storage.create_storage_unit_from_datasets(tile_index, datasets, storage_type, filename)
+    storage.create_storage_unit_from_datasets(tile_index, datasets, storage_type, filename)
+    return storage.in_memory_storage_unit_from_file(filename, datasets, storage_type)
 
 
 def _run_parallel_tasks(func, tasks, workers):

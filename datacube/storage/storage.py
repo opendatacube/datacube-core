@@ -14,7 +14,6 @@ import dateutil.parser
 import numpy
 from osgeo import ogr, osr
 import rasterio.warp
-
 from rasterio.warp import RESAMPLING, transform_bounds
 
 from rasterio.coords import BoundingBox
@@ -23,7 +22,7 @@ from affine import Affine
 
 from datacube import compat
 from datacube.model import StorageUnit, TileSpec
-from datacube.storage.netcdf_indexer import index_netcdfs, read_netcdf_structure
+from datacube.storage.netcdf_indexer import read_netcdf_structure
 from datacube.storage.netcdf_writer import create_netcdf_writer
 
 _LOG = logging.getLogger(__name__)
@@ -141,7 +140,7 @@ def _poly_from_bounds(left, bottom, right, top, segments=None):
     return poly
 
 
-def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output_filename):
+def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output_uri):
     """
     Create storage unit at `tile_index` for datasets using mapping
 
@@ -150,21 +149,17 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
     :type tile_index: tuple[int, int]
     :type datasets:  list[datacube.model.Dataset]
     :type storage_type:  datacube.model.StorageType
-    :param output_filename: URI specifying filename, must be file:// (for now)
+    :param output_uri: URI specifying filename, must be file:// (for now)
     :type output_filename:  str
     :rtype: datacube.model.StorageUnit
     """
     if not datasets:
-        raise ValueError('Shall not create empty StorageUnit%s %s' % (tile_index, output_filename))
+        raise ValueError('Shall not create empty StorageUnit%s %s' % (tile_index, output_uri))
 
     if storage_type.driver != 'NetCDF CF':
         raise ValueError('Storage driver is not supported (yet): %s' % storage_type.driver)
 
-    if not output_filename.startswith('file://'):
-        raise ValueError('URI protocol is not supported (yet): %s' % storage_type.storage_pattern)
-
-    output_filename = output_filename[7:]
-
+    output_filename = _uri_to_filename(output_uri)
 
     if os.path.isfile(output_filename):
         raise RuntimeError('file already exists: %s' % output_filename)
@@ -184,15 +179,15 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
         except OSError:
             pass
 
-    # TODO: move 'hardcoded' coordinate specs (name, units, etc) into tile_spec
-    # TODO: then we can pull the descriptor out of the tile_spec
-    # TODO: and netcdf writer will be more generic
-    su_descriptor = read_netcdf_structure(output_filename)
-    dataset_ids = [dataset.id for dataset in datasets]
-    return StorageUnit(dataset_ids,
-                       storage_type,
-                       su_descriptor,
-                       storage_type.local_path_to_location_offset('file://' + output_filename))
+            # TODO: move 'hardcoded' coordinate specs (name, units, etc) into tile_spec
+            # TODO: then we can pull the descriptor out of the tile_spec
+            # TODO: and netcdf writer will be more generic
+
+
+def _uri_to_filename(uri):
+    if not uri.startswith('file://'):
+        raise ValueError('Full URI protocol is not supported (yet): %s' % uri)
+    return uri[7:]
 
 
 def _make_tile_spec(storage_type, tile_index):
@@ -221,35 +216,45 @@ def _warn_if_mosaiced_datasets(datasets_grouped_by_time, tile_index):
 
 
 def write_storage_unit_to_disk(datasets_grouped_by_time, storage_type, tile_spec, filename):
-    ncwriter = create_netcdf_writer(filename, tile_spec, len(datasets_grouped_by_time))
-    ncwriter.create_time_values(time for time, _ in datasets_grouped_by_time)
+    su_writer = create_netcdf_writer(filename, tile_spec, len(datasets_grouped_by_time))
+    su_writer.create_time_values(time for time, _ in datasets_grouped_by_time)
 
     for time_index, (_, group) in enumerate(datasets_grouped_by_time):
-        ncwriter.add_source_metadata(time_index, (dataset.metadata_doc for dataset in group))
+        su_writer.add_source_metadata(time_index, (dataset.metadata_doc for dataset in group))
 
-    _fill_storage_unit(ncwriter, datasets_grouped_by_time, storage_type.measurements, tile_spec,
+    _fill_storage_unit(su_writer, datasets_grouped_by_time, storage_type.measurements, tile_spec,
                        storage_type.chunking)
 
-    ncwriter.close()
+    su_writer.close()
 
 
-def _fill_storage_unit(ncfile, datasets_grouped_by_time, measurements, tile_spec, chunking):
+def _fill_storage_unit(su_writer, datasets_grouped_by_time, measurements, tile_spec, chunking):
     for measurement_id, measurement_descriptor in measurements.items():
-        var = ncfile.ensure_variable(measurement_descriptor, chunking)
+        output_var = su_writer.ensure_variable(measurement_descriptor, chunking)
 
-        buffer_ = numpy.empty(var.shape[1:], dtype=var.dtype)
+        buffer_ = numpy.empty(output_var.shape[1:], dtype=output_var.dtype)
         for time_index, (_, time_group) in enumerate(datasets_grouped_by_time):
             buffer_ = fuse_sources([DatasetSource(dataset, measurement_id) for dataset in time_group],
                                    buffer_,
                                    tile_spec.affine,
                                    tile_spec.projection,
-                                   getattr(var, '_FillValue', None),
-                                   resampling=_map_resampling(measurement_descriptor['resampling_method']))
-            var[time_index] = buffer_
+                                   getattr(output_var, '_FillValue', None),
+                                   resampling=_rasterio_resampling_method(measurement_descriptor))
+            output_var[time_index] = buffer_
 
 
-def _map_resampling(name):
-    return RESAMPLING_METHODS[name.lower()]
+def _rasterio_resampling_method(measurement_descriptor):
+    return RESAMPLING_METHODS[measurement_descriptor['resampling_method'].lower()]
+
+
+def in_memory_storage_unit_from_file(uri, datasets, storage_type):
+    filename = _uri_to_filename(uri)
+    su_descriptor = read_netcdf_structure(filename)
+    dataset_ids = [dataset.id for dataset in datasets]
+    return StorageUnit(dataset_ids,
+                       storage_type,
+                       su_descriptor,
+                       storage_type.local_path_to_location_offset('file://' + filename))
 
 
 def generate_filename(tile_index, datasets, mapping):
