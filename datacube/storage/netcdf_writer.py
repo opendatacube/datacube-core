@@ -79,6 +79,12 @@ class NetCDFWriter(object):
         self._extra_meta = self.nco.createVariable('extra_metadata', 'S1', ('time', 'nchar'))
         self._extra_meta.long_name = 'Detailed source dataset information'
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *optional_exception_arguments):
+        self.close()
+
     def close(self):
         self.nco.close()
 

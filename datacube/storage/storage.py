@@ -216,16 +216,16 @@ def _warn_if_mosaiced_datasets(datasets_grouped_by_time, tile_index):
 
 
 def write_storage_unit_to_disk(datasets_grouped_by_time, storage_type, tile_spec, filename):
-    su_writer = create_netcdf_writer(filename, tile_spec, len(datasets_grouped_by_time))
-    su_writer.create_time_values(time for time, _ in datasets_grouped_by_time)
+    with create_netcdf_writer(filename, tile_spec, len(datasets_grouped_by_time)) as su_writer:
 
-    for time_index, (_, group) in enumerate(datasets_grouped_by_time):
-        su_writer.add_source_metadata(time_index, (dataset.metadata_doc for dataset in group))
+        su_writer.create_time_values(time for time, _ in datasets_grouped_by_time)
 
-    _fill_storage_unit(su_writer, datasets_grouped_by_time, storage_type.measurements, tile_spec,
-                       storage_type.chunking)
+        for time_index, (_, group) in enumerate(datasets_grouped_by_time):
+            su_writer.add_source_metadata(time_index, (dataset.metadata_doc for dataset in group))
 
-    su_writer.close()
+        _fill_storage_unit(su_writer, datasets_grouped_by_time, storage_type.measurements, tile_spec,
+                           storage_type.chunking)
+
 
 
 def _fill_storage_unit(su_writer, datasets_grouped_by_time, measurements, tile_spec, chunking):
