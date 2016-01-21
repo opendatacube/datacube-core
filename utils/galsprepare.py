@@ -13,6 +13,7 @@ import yaml
 from dateutil import parser
 import rasterio.warp
 import click
+from osgeo import osr
 
 _STATIONS = {'023': 'TKSC', '022': 'SGS', '010': 'GNC', '011': 'HOA',
              '012': 'HEOC', '013': 'IKR', '014': 'KIS', '015': 'LGS',
@@ -50,6 +51,21 @@ def get_projection(path):
         }
 
 
+def get_coords(geo_ref_points, spatial_ref):
+    spatial_ref = osr.SpatialReference(spatial_ref)
+    t = osr.CoordinateTransformation(spatial_ref, spatial_ref.CloneGeogCS())
+
+    def transform(p):
+        lon, lat, z = t.TransformPoint(p['x'], p['y'])
+        return {'lon': lon, 'lat': lat}
+    return {key: transform(p) for key, p in geo_ref_points.items()}
+
+
+def populate_coord(doc):
+    proj = doc['grid_spatial']['projection']
+    doc['extent']['coord'] = get_coords(proj['geo_ref_points'], proj['spatial_reference'])
+
+
 def prep_dataset(fields, path):
     doc = ElementTree.parse(str(path.joinpath('metadata.xml')))
     aos = parser.parse(doc.findall("./ACQUISITIONINFORMATION/EVENT/AOS")[0].text)
@@ -61,7 +77,7 @@ def prep_dataset(fields, path):
         'path': str(im_path)
     } for im_path in path.glob('scene01/*.tif')}
 
-    return {
+    doc = {
         'id': str(uuid.uuid4()),
         'processing_level': fields["level"],
         'product_type': fields["type"],
@@ -91,6 +107,8 @@ def prep_dataset(fields, path):
         },
         'lineage': {'source_datasets': {}}
     }
+    populate_coord(doc)
+    return doc
 
 
 def dataset_folder(fields):

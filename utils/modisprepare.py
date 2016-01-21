@@ -10,8 +10,23 @@ from xml.etree import ElementTree
 from pathlib import Path
 import yaml
 import click
-from osgeo import gdal
+from osgeo import gdal, osr
 from dateutil import parser
+
+
+def get_coords(geo_ref_points, spatial_ref):
+    spatial_ref = osr.SpatialReference(spatial_ref)
+    t = osr.CoordinateTransformation(spatial_ref, spatial_ref.CloneGeogCS())
+
+    def transform(p):
+        lon, lat, z = t.TransformPoint(p['x'], p['y'])
+        return {'lon': lon, 'lat': lat}
+    return {key: transform(p) for key, p in geo_ref_points.items()}
+
+
+def populate_coord(doc):
+    proj = doc['grid_spatial']['projection']
+    doc['extent']['coord'] = get_coords(proj['geo_ref_points'], proj['spatial_reference'])
 
 
 def fill_image_data(doc, granule_path):
@@ -89,6 +104,7 @@ def prepare_dataset(path):
         }
         documents.append(doc)
         fill_image_data(doc, str(path.parent.joinpath(granule)))
+        populate_coord(doc)
     return documents
 
 

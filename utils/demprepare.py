@@ -11,6 +11,7 @@ import yaml
 import click
 import rasterio
 from datetime import datetime
+from osgeo import osr
 
 
 def get_projection(img):
@@ -26,6 +27,21 @@ def get_projection(img):
     }
 
 
+def get_coords(geo_ref_points, spatial_ref):
+    spatial_ref = osr.SpatialReference(spatial_ref)
+    t = osr.CoordinateTransformation(spatial_ref, spatial_ref.CloneGeogCS())
+
+    def transform(p):
+        lon, lat, z = t.TransformPoint(p['x'], p['y'])
+        return {'lon': lon, 'lat': lat}
+    return {key: transform(p) for key, p in geo_ref_points.items()}
+
+
+def populate_coord(doc):
+    proj = doc['grid_spatial']['projection']
+    doc['extent']['coord'] = get_coords(proj['geo_ref_points'], proj['spatial_reference'])
+
+
 def prepare_dataset(path):
     documents = []
     creation_dt = datetime.fromtimestamp(path.stat().st_ctime).isoformat()
@@ -34,7 +50,7 @@ def prepare_dataset(path):
         product_type = 'DEM-' + dspath_str[-1].upper()
         band_name = 'dem' + dspath_str[-1].lower()
         im = rasterio.open(dspath_str)
-        documents.append({
+        doc = {
             'id': str(uuid.uuid4()),
             #'processing_level': level.replace('Level-', 'L'),
             'product_type': product_type,
@@ -61,7 +77,9 @@ def prepare_dataset(path):
             },
             # TODO: provenance chain is DSM -> DEM -> DEM-S -> DEM-H
             'lineage': {'source_datasets': {}},
-        })
+        }
+        populate_coord(doc)
+        documents.append(doc)
     return documents
 
 @click.command(help="Prepare DEM-S datasets for ingestion into the Data Cube.")
