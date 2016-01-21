@@ -8,6 +8,7 @@ import logging
 from collections import namedtuple
 from pathlib import Path
 
+from affine import Affine
 import numpy as np
 from osgeo import osr
 
@@ -226,7 +227,6 @@ class Dataset(object):
         """
         return _uri_to_local_path(self.local_uri)
 
-
     @property
     def id(self):
         return self.metadata_doc['id']
@@ -380,6 +380,7 @@ class TileSpec(object):
     :param global_attrs: Extra attributes to store in each storage unit
     :type global_attrs: dict
     """
+
     def __init__(self, raw_crs, affine, height, width, global_attrs=None):
         self.projection = raw_crs
         self.affine = affine
@@ -409,6 +410,15 @@ class TileSpec(object):
             transform = osr.CoordinateTransformation(self.crs, wgs84)
             self.extents = transform.TransformPoints(self.extents)
 
+    @classmethod
+    def create_from_storage_type_and_index(cls, storage_type, tile_index):
+        tile_size = storage_type.tile_size
+        tile_res = storage_type.resolution
+        return cls(storage_type.projection,
+                   _get_tile_transform(tile_index, tile_size, tile_res),
+                   width=int(tile_size[0] / abs(tile_res[0])),
+                   height=int(tile_size[1] / abs(tile_res[1])))
+
     @property
     def lat_min(self):
         return min(ll[1] for ll in self.extents)
@@ -435,6 +445,12 @@ class TileSpec(object):
 
     def __repr__(self):
         return repr(self.__dict__)
+
+
+def _get_tile_transform(tile_index, tile_size, tile_res):
+    x = (tile_index[0] + (1 if tile_res[0] < 0 else 0)) * tile_size[0]
+    y = (tile_index[1] + (1 if tile_res[1] < 0 else 0)) * tile_size[1]
+    return Affine(tile_res[0], 0.0, x, 0.0, tile_res[1], y)
 
 
 def _get_doc_offset(offset, document):

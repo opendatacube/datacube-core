@@ -20,8 +20,6 @@ from rasterio.warp import RESAMPLING, transform_bounds
 
 from rasterio.coords import BoundingBox
 
-from affine import Affine
-
 from datacube import compat
 from datacube.model import StorageUnit, TileSpec
 from datacube.storage.netcdf_indexer import read_netcdf_structure
@@ -205,7 +203,7 @@ class GroupDatasetsByTimeDataProvider(object):
     def __init__(self, datasets, tile_index, storage_type):
         self.datasets_grouped_by_time = _group_datasets_by_time(datasets)
         self._warn_if_mosaiced_datasets(tile_index)
-        self.tile_spec = _make_tile_spec(storage_type, tile_index)
+        self.tile_spec = TileSpec.create_from_storage_type_and_index(storage_type, tile_index)
         self.storage_type = storage_type
 
     def _warn_if_mosaiced_datasets(self, tile_index):
@@ -243,21 +241,6 @@ class GroupDatasetsByTimeDataProvider(object):
 
 def _group_datasets_by_time(datasets):
     return [(time, list(group)) for time, group in groupby(datasets, _dataset_time)]
-
-
-def _make_tile_spec(storage_type, tile_index):
-    tile_size = storage_type.tile_size
-    tile_res = storage_type.resolution
-    return TileSpec(storage_type.projection,
-                    _get_tile_transform(tile_index, tile_size, tile_res),
-                    width=int(tile_size[0] / abs(tile_res[0])),
-                    height=int(tile_size[1] / abs(tile_res[1])))
-
-
-def _get_tile_transform(tile_index, tile_size, tile_res):
-    x = (tile_index[0] + (1 if tile_res[0] < 0 else 0)) * tile_size[0]
-    y = (tile_index[1] + (1 if tile_res[1] < 0 else 0)) * tile_size[1]
-    return Affine(tile_res[0], 0.0, x, 0.0, tile_res[1], y)
 
 
 def _rasterio_resampling_method(measurement_descriptor):
