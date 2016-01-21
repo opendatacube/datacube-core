@@ -26,3 +26,6 @@ metadata_type: eo
 
 match:
     metadata:
+        product_level: P00
+    priority: 50
+

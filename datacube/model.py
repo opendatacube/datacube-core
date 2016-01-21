@@ -40,7 +40,7 @@ def _uri_to_local_path(local_uri):
 
     return Path(components.path)
 
-# Match datasets. (for mapping to storage)
+
 class DatasetMatcher(object):
     def __init__(self, metadata):
         # Match by exact metadata properties (a subset of the metadata doc)
@@ -200,6 +200,9 @@ class Dataset(object):
         """
         #: :type: Collection
         self.collection = collection
+
+        self.metadata_type = collection.metadata_type if collection else None
+
         #: :type: dict
         self.metadata_doc = metadata_doc
 
@@ -240,31 +243,17 @@ class Dataset(object):
 
     @property
     def metadata(self):
-        return self.collection.dataset_reader(self.metadata_doc)
+        return self.metadata_type.dataset_reader(self.metadata_doc)
 
 
-class Collection(object):
+class MetadataType(object):
     def __init__(self,
                  name,
-                 description,
-                 match,
                  dataset_offsets,
                  dataset_search_fields,
                  storage_unit_search_fields,
                  id_=None):
-        """
-        Collection of datasets & storage.
-        """
-        self.id_ = id_
-
-        # Name of collection. Unique.
         self.name = name
-
-        self.description = description
-
-        # Match datasets that should belong to this collection.
-        self.match = match
-
         #: :type: DatasetOffsets
         self.dataset_offsets = dataset_offsets
 
@@ -273,8 +262,36 @@ class Collection(object):
         #: :type: dict[str, datacube.index.fields.Field]
         self.storage_fields = storage_unit_search_fields
 
+        self.id_ = id_
+
     def dataset_reader(self, dataset_doc):
         return _DocReader(self.dataset_offsets.__dict__, dataset_doc)
+
+
+class Collection(object):
+    def __init__(self,
+                 name,
+                 match,
+                 metadata_type,
+                 id_=None):
+        """
+        Collection of datasets & storage.
+
+        :type metadata_type: MetadataType
+        :type match: DatasetMatcher
+        :type name: str
+        :type description: str
+        """
+        self.id_ = id_
+
+        # Name of collection. Unique.
+        self.name = name
+
+        # Match datasets that should belong to this collection.
+        self.match = match
+
+        # All datasets in a collection must have the same metadata_type.
+        self.metadata_type = metadata_type
 
     def __str__(self):
         return "Collection <id={id}, name={name}>".format(id=self.id_, name=self.name)
@@ -357,16 +374,15 @@ class TileSpec(object):
             151.999625,  151.999875])
 
 
-    :param crs: WKT representation of the coordinate reference system
-    :type crs: str
+    :param raw_crs: WKT representation of the coordinate reference system
+    :type raw_crs: str
     :param affine: Affine transformation defining the location of the storage unit
     :type affine: affine.Affine
     :param global_attrs: Extra attributes to store in each storage unit
     :type global_attrs: dict
     """
-
-    def __init__(self, crs, affine, height, width, global_attrs=None):
-        self.projection = crs
+    def __init__(self, raw_crs, affine, height, width, global_attrs=None):
+        self.projection = raw_crs
         self.affine = affine
         self.global_attrs = global_attrs or {}
         self.height = height
@@ -381,7 +397,7 @@ class TileSpec(object):
         xs = np.arange(width) * affine.a + affine.c + affine.a / 2
         ys = np.arange(height) * affine.e + affine.f + affine.e / 2
 
-        self.crs = osr.SpatialReference(crs)
+        self.crs = osr.SpatialReference(raw_crs)
         if self.crs.IsGeographic():
             self.lons = xs
             self.lats = ys

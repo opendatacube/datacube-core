@@ -168,9 +168,10 @@ def test_searches_only_collection(index, db, default_collection, telemetry_colle
         _telemetry_uuid
     )
     assert was_inserted
+    metadata_type = default_collection.metadata_type
 
     # No results on the default collection.
-    default_field = default_collection.dataset_fields.get
+    default_field = metadata_type.dataset_fields.get
     datasets = index.datasets.search_eager(
         default_field('platform') == 'LANDSAT_8',
         default_field('instrument') == 'OLI_TIRS'
@@ -178,7 +179,7 @@ def test_searches_only_collection(index, db, default_collection, telemetry_colle
     assert len(datasets) == 0
 
     # One result in the telemetry collection.
-    telemetry_field = telemetry_collection.dataset_fields.get
+    telemetry_field = metadata_type.dataset_fields.get
     datasets = index.datasets.search_eager(
         telemetry_field('platform') == 'LANDSAT_8',
         telemetry_field('instrument') == 'OLI_TIRS',
@@ -263,6 +264,7 @@ def test_search_storage_by_dataset(index, db, default_collection, ls5_nbar_stora
     :type ls5_nbar_storage_type: datacube.model.StorageType
     :type default_collection: datacube.model.Collection
     """
+    metadata_type = default_collection.metadata_type
     was_inserted = db.insert_dataset(
         _telemetry_dataset,
         _telemetry_uuid
@@ -275,7 +277,7 @@ def test_search_storage_by_dataset(index, db, default_collection, ls5_nbar_stora
         {'test': 'test'},
         ls5_nbar_storage_type.id_
     )
-    dfield = default_collection.dataset_fields.get
+    dfield = metadata_type.dataset_fields.get
 
     # Search by the linked dataset properties.
     storages = index.storage.search_eager(
@@ -379,6 +381,7 @@ def _cli_search(args, global_integration_cli_args):
     runner = CliRunner()
     result = runner.invoke(
         datacube.scripts.search_tool.cli,
-        opts
+        opts,
+        catch_exceptions=False
     )
     return result

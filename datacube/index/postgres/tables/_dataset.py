@@ -21,7 +21,7 @@ METADATA_TYPE = Table(
 
     Column('name', String, unique=True, nullable=False),
 
-    Column('descriptor', postgres.JSONB, nullable=False),
+    Column('definition', postgres.JSONB, nullable=False),
 
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
@@ -44,7 +44,7 @@ COLLECTION = Table(
     Column('dataset_metadata', postgres.JSONB, nullable=False),
     Column('match_priority', Integer, nullable=False, default=999),
 
-    # Column('descriptor', postgres.JSONB, nullable=False),
+    Column('definition', postgres.JSONB, nullable=False),
 
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
@@ -59,7 +59,7 @@ DATASET = Table(
     Column('id', postgres.UUID, primary_key=True),
 
     Column('metadata_type_ref', None, ForeignKey(METADATA_TYPE.c.id), nullable=False),
-    Column('collection_ref', None, ForeignKey(METADATA_TYPE.c.id), nullable=False),
+    Column('collection_ref', None, ForeignKey(COLLECTION.c.id), nullable=False),
 
     Column('metadata', postgres.JSONB, index=True, nullable=False),
 
@@ -89,7 +89,6 @@ DATASET_LOCATION = Table(
 
     UniqueConstraint('dataset_ref', 'uri_scheme', 'uri_body'),
 )
-
 
 # Link datasets to their source datasets.
 DATASET_SOURCE = Table(

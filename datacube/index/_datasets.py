@@ -9,7 +9,8 @@ import logging
 
 import cachetools
 
-from datacube.model import Dataset, Collection, DatasetMatcher, DatasetOffsets
+from datacube.index.fields import InvalidDocException
+from datacube.model import Dataset, Collection, DatasetMatcher, DatasetOffsets, MetadataType
 from . import fields
 
 _LOG = logging.getLogger(__name__)
@@ -22,7 +23,6 @@ def _ensure_dataset(db, collection_resource, dataset_doc):
     :type db: datacube.index.postgres._api.PostgresDb
     :type dataset_doc: dict
     :type collection_resource: CollectionResource
-    :type path: pathlib.Path
     :returns: The dataset_id if we ingested it.
     :rtype: uuid.UUID
     """
@@ -57,7 +57,7 @@ def _prepare_single(collection_resource, dataset_doc, db):
     _LOG.info('Matched collection %r (%s)', collection.name, collection.id_)
 
     indexable_doc = copy.deepcopy(dataset_doc)
-    dataset = collection.dataset_reader(indexable_doc)
+    dataset = collection.metadata_type.dataset_reader(indexable_doc)
 
     source_datasets = dataset.sources
     # Clear source datasets: We store them separately.
@@ -71,31 +71,102 @@ def _prepare_single(collection_resource, dataset_doc, db):
     return was_inserted, dataset, source_datasets
 
 
-class CollectionResource(object):
+class MetadataTypeResource(object):
     def __init__(self, db, user_config):
         """
         :type db: datacube.index.postgres._api.PostgresDb
         """
         self._db = db
 
-    def add(self, descriptor):
+    def add(self, definition):
         """
-        :type descriptor: dict
+        :type definition: dict
+        :rtype: datacube.model.MetadataType
+        """
+        # This column duplication is getting out of hand:
+        name = definition['name']
+
+        existing = self._db.get_metadata_type_by_name(name)
+        if existing:
+            # They've passed us the same one again. Make sure it matches what is stored.
+            # TODO: Support for adding/updating search fields?
+            fields.check_doc_unchanged(
+                existing.definition,
+                definition,
+                'Metadata Type {}'.format(name)
+            )
+        else:
+            self._db.add_metadata_type(
+                name=name,
+                definition=definition
+            )
+        return self.get_by_name(name)
+
+    @cachetools.cached(cachetools.TTLCache(100, 60))
+    def get(self, id_):
+        return self._make(self._db.get_metadata_type(id_))
+
+    @cachetools.cached(cachetools.TTLCache(100, 60))
+    def get_by_name(self, name):
+        record = self._db.get_metadata_type_by_name(name)
+        if not record:
+            return None
+        return self._make(record)
+
+    def _make_many(self, query_rows):
+        return (self._make(c) for c in query_rows)
+
+    def _make(self, query_row):
+        """
+        :rtype list[datacube.model.Collection]
+        """
+        definition = query_row['definition']
+        dataset_ = definition['dataset']
+        return MetadataType(
+            query_row['name'],
+            DatasetOffsets(
+                uuid_field=dataset_['id_offset'],
+                label_field=dataset_['label_offset'],
+                creation_time_field=dataset_['creation_dt_offset'],
+                measurements_dict=dataset_['measurements_offset'],
+                sources=dataset_['sources_offset'],
+            ),
+            dataset_search_fields=self._db.get_dataset_fields(query_row),
+            storage_unit_search_fields=self._db.get_storage_unit_fields(query_row),
+            id_=query_row['id']
+        )
+
+
+class CollectionResource(object):
+    def __init__(self, db, user_config, metadata_type_resource):
+        """
+        :type db: datacube.index.postgres._api.PostgresDb
+        :type metadata_type_resource: MetadataTypeResource
+        """
+        self._db = db
+        self.metadata_type_resource = metadata_type_resource
+
+    def add(self, definition):
+        """
+        :type definition: dict
         :rtype: datacube.model.Collection
         """
         # This column duplication is getting out of hand:
-        name = descriptor['name']
-        dataset_metadata = descriptor['match']['metadata']
-        match_priority = int(descriptor['match']['priority'])
+        name = definition['name']
+        dataset_metadata = definition['match']['metadata']
+        match_priority = int(definition['match']['priority'])
+        metadata_type = self.metadata_type_resource.get_by_name(definition['metadata_type'])
+
+        if not metadata_type:
+            raise InvalidDocException('Unkown metadata type: %r' % definition['metadata_type'])
 
         existing = self._db.get_collection_by_name(name)
         if existing:
-            # They've passed us the same collection again. Make sure it matches what we have:
-            # TODO: Support for adding/updating search fields?
-            # They've passed us the same storage mapping again. Make sure it matches what is stored.
+            # TODO: Support for adding/updating match rules?
+            # They've passed us the same collection again. Make sure it matches what is stored.
             fields.check_doc_unchanged(
-                existing.descriptor,
-                descriptor,
+                existing.definition,
+                definition,
                 'Collection {}'.format(name)
             )
         else:
@@ -103,9 +174,14 @@ class CollectionResource(object):
                 name=name,
                 dataset_metadata=dataset_metadata,
                 match_priority=match_priority,
-                descriptor=descriptor
+                metadata_type_id=metadata_type.id_,
+                definition=definition
             )
         return self.get_by_name(name)
+
+    def add_many(self, definitions):
+        for definition in definitions:
+            self.add(definition)
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def get(self, id_):
@@ -136,21 +212,10 @@ class CollectionResource(object):
         """
         :rtype list[datacube.model.Collection]
         """
-        descriptor = query_row['descriptor']
-        dataset_ = descriptor['dataset']
         return Collection(
             query_row['name'],
-            descriptor['description'],
             DatasetMatcher(query_row['dataset_metadata']),
-            DatasetOffsets(
-                uuid_field=dataset_['id_offset'],
-                label_field=dataset_['label_offset'],
-                creation_time_field=dataset_['creation_dt_offset'],
-                measurements_dict=dataset_['measurements_offset'],
-                sources=dataset_['sources_offset'],
-            ),
-            dataset_search_fields=self._db.get_dataset_fields(query_row),
-            storage_unit_search_fields=self._db.get_storage_unit_fields(query_row),
+            metadata_type=self.metadata_type_resource.get(query_row['metadata_type_ref']),
             id_=query_row['id'],
         )
 
@@ -220,7 +285,7 @@ class DatasetResource(object):
         if collection_name is None:
             collection_name = self._config.default_collection_name
         collection = self._collection_resource.get_by_name(collection_name)
-        return collection.dataset_fields
+        return collection.metadata_type.dataset_fields
 
     def _make(self, dataset_res):
         """

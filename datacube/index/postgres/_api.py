@@ -20,7 +20,7 @@ from sqlalchemy.exc import IntegrityError
 from datacube.config import LocalConfig
 from datacube.index.fields import OrExpression
 from datacube.index.postgres.tables._core import schema_qualified
-from datacube.index.postgres.tables._dataset import DATASET_LOCATION
+from datacube.index.postgres.tables._dataset import DATASET_LOCATION, METADATA_TYPE
 from . import tables
 from ._fields import parse_fields, NativeField
 from .tables import DATASET, DATASET_SOURCE, STORAGE_MAPPING, STORAGE_UNIT, DATASET_STORAGE, COLLECTION
@@ -129,6 +129,7 @@ class PostgresDb(object):
             _LOG.debug('Using provided collection %r', collection_id)
 
         try:
+            collection_ref = bindparam('collection_ref')
             ret = self._connection.execute(
                 # Insert if not exists.
                 #     (there's still a tiny chance of a race condition: It will throw an integrity error if another
@@ -137,8 +138,12 @@ class PostgresDb(object):
                 DATASET.insert().from_select(
                     ['id', 'collection_ref', 'metadata_type_ref', 'metadata'],
                     select([
-                        bindparam('id'), bindparam('collection_ref'),
-                        select([COLLECTION.c.metadata_type_ref]).where(COLLECTION.c.id == bindparam('collection_ref')),
+                        bindparam('id'), collection_ref,
+                        select([
+                            COLLECTION.c.metadata_type_ref
+                        ]).where(
+                            COLLECTION.c.id == collection_ref
+                        ).label('metadata_type_ref'),
                         bindparam('metadata', type_=JSONB)
                     ]).where(~exists(select([DATASET.c.id]).where(DATASET.c.id == bindparam('id'))))
                 ),
@@ -223,15 +228,26 @@ class PostgresDb(object):
         if not dataset_ids:
             raise ValueError('Storage unit must be linked to at least one dataset.')
 
+        # Get the collection/metadata-type for this storage unit.
+        # We assume all datasets are of the same collection. (TODO: Revise when 'product type' concept is added)
+        matched_collection = select([
+            DATASET.c.collection_ref, DATASET.c.metadata_type_ref
+        ]).where(
+            DATASET.c.id == dataset_ids[0]
+        ).cte('matched_collection')
+
+        # Add the storage unit
         unit_id = self._connection.execute(
             STORAGE_UNIT.insert().values(
-                collection_ref=select([DATASET.c.collection_ref]).where(DATASET.c.id == dataset_ids[0]),
+                collection_ref=select([matched_collection.c.collection_ref]),
+                metadata_type_ref=select([matched_collection.c.metadata_type_ref]),
                 storage_mapping_ref=storage_mapping_id,
                 descriptor=descriptor,
                 path=path
             ).returning(STORAGE_UNIT.c.id),
         ).scalar()
 
+        # Link the storage unit to the datasets.
         self._connection.execute(
             DATASET_STORAGE.insert(),
             [
@@ -259,7 +275,7 @@ class PostgresDb(object):
                 None, COLLECTION.c.name
             )
         }
-        dataset_search_fields = collection_result['descriptor']['dataset']['search_fields']
+        dataset_search_fields = collection_result['definition']['dataset']['search_fields']
 
         # noinspection PyTypeChecker
         fields.update(
@@ -287,7 +303,7 @@ class PostgresDb(object):
                 STORAGE_UNIT.c.path
             )
         }
-        unit_search_fields = collection_result['descriptor']['storage_unit']['search_fields']
+        unit_search_fields = collection_result['definition']['storage_unit']['search_fields']
 
         # noinspection PyTypeChecker
         fields.update(
@@ -368,9 +384,19 @@ class PostgresDb(object):
             COLLECTION.select().where(COLLECTION.c.id == id_)
         ).first()
 
+    def get_metadata_type(self, id_):
+        return self._connection.execute(
+            METADATA_TYPE.select().where(METADATA_TYPE.c.id == id_)
+        ).first()
+
     def get_collection_by_name(self, name):
         return self._connection.execute(
             COLLECTION.select().where(COLLECTION.c.name == name)
+        ).first()
+
+    def get_metadata_type_by_name(self, name):
+        return self._connection.execute(
+            METADATA_TYPE.select().where(METADATA_TYPE.c.name == name)
         ).first()
 
     def get_storage_mapping_by_name(self, name):
@@ -382,27 +408,37 @@ class PostgresDb(object):
                        name,
                        dataset_metadata,
                        match_priority,
-                       descriptor):
+                       metadata_type_id,
+                       definition):
         res = self._connection.execute(
             COLLECTION.insert().values(
                 name=name,
                 dataset_metadata=dataset_metadata,
+                metadata_type_ref=metadata_type_id,
                 match_priority=match_priority,
-                descriptor=descriptor
+                definition=definition
             )
         )
+        return res.inserted_primary_key[0]
 
-        collection_id = res.inserted_primary_key[0]
-        collection_result = self.get_collection(collection_id)
+    def add_metadata_type(self, name, definition):
+        res = self._connection.execute(
+            METADATA_TYPE.insert().values(
+                name=name,
+                definition=definition
+            )
+        )
+        type_id = res.inserted_primary_key[0]
+        record = self.get_metadata_type(type_id)
 
         # Initialise search fields.
         _setup_collection_fields(
-            self._connection, name, 'dataset', self.get_dataset_fields(collection_result),
-            DATASET.c.collection_ref == collection_id
+            self._connection, name, 'dataset', self.get_dataset_fields(record),
+            DATASET.c.metadata_type_ref == type_id
         )
         _setup_collection_fields(
-            self._connection, name, 'storage_unit', self.get_storage_unit_fields(collection_result),
-            STORAGE_UNIT.c.collection_ref == collection_id
+            self._connection, name, 'storage_unit', self.get_storage_unit_fields(record),
+            STORAGE_UNIT.c.metadata_type_ref == type_id
         )
 
     def get_all_collections(self):

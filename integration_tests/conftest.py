@@ -14,7 +14,7 @@ import rasterio
 
 from datacube import ui
 from datacube.config import LocalConfig
-from datacube.index._api import Index, _DEFAULT_COLLECTIONS_FILE
+from datacube.index._api import Index, _DEFAULT_COLLECTIONS_PATH, _DEFAULT_METADATA_TYPES_PATH
 from datacube.index.postgres import PostgresDb
 from datacube.index.postgres.tables._core import ensure_db, drop_db
 
@@ -106,11 +106,21 @@ def example_ls5_dataset(tmpdir):
 
 @pytest.fixture
 def default_collection_doc():
-    return list(ui.read_documents(_DEFAULT_COLLECTIONS_FILE))[0][1]
+    return list(ui.read_documents(_DEFAULT_COLLECTIONS_PATH))[0][1]
 
 
 @pytest.fixture
-def default_collection(index, default_collection_doc):
+def default_metadata_type_doc():
+    return list(ui.read_documents(_DEFAULT_METADATA_TYPES_PATH))[0][1]
+
+
+@pytest.fixture
+def default_metadata_type(index, default_metadata_type_doc):
+    return index.metadata_types.add(default_metadata_type_doc)
+
+
+@pytest.fixture
+def default_collection(index, default_collection_doc, default_metadata_type):
     """
     :type index: datacube.index._api.Index
     """
@@ -136,7 +146,6 @@ def ls5_nbar_storage_type(db, index):
     """
     :type db: datacube.index.postgres._api.PostgresDb
     :type index: datacube.index._api.Index
-    :type storage_type_30m: datacube.model.StorageType
     :rtype: datacube.model.StorageType
     """
     id_ = db.ensure_storage_mapping(

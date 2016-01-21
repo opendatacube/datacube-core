@@ -96,6 +96,8 @@ def test_index_dataset_with_location(index, default_collection):
 
     assert dataset.id == _telemetry_uuid
     assert dataset.collection.id_ == default_collection.id_
+    assert dataset.collection.id_ == default_collection.id_
+    assert dataset.metadata_type.id_ == default_collection.metadata_type.id_
 
     assert dataset.local_path == Path('/tmp/something.yaml')
 
@@ -124,7 +126,6 @@ def test_index_storage_unit(index, db, default_collection):
         StorageUnit(
             [_telemetry_uuid],
             StorageType(
-                # Yikes:
                 name='test_storage_mapping',
                 description=None,
                 match=None,

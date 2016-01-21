@@ -22,6 +22,16 @@ INVALID_MAPPING_DOCS = Path(__file__).parent.parent. \
     joinpath('docs', 'config_samples').glob('**/*metadata*.yaml')
 
 
+def _run_cli(cli_method, opts, catch_exceptions=False):
+    runner = CliRunner()
+    result = runner.invoke(
+        cli_method,
+        opts,
+        catch_exceptions=catch_exceptions
+    )
+    return result
+
+
 def test_add_example_mapping_docs(global_integration_cli_args, db):
     """
     Add example mapping docs, to ensure they're valid and up-to-date.
@@ -39,14 +49,10 @@ def test_add_example_mapping_docs(global_integration_cli_args, db):
                 str(mapping_path)
             ]
         )
-        print(opts)
-        runner = CliRunner()
-        result = runner.invoke(
+        result = _run_cli(
             datacube.scripts.config_tool.cli,
-            opts,
-            catch_exceptions=False
+            opts
         )
-        print(result.output)
         assert result.exit_code == 0
         mappings_count = db.count_mappings()
         assert mappings_count > existing_mappings, "Mapping document was not added: " + str(mapping_path)
@@ -68,11 +74,12 @@ def test_error_returned_on_invalid(global_integration_cli_args, db):
                 str(mapping_path)
             ]
         )
-        print(opts)
-        runner = CliRunner()
-        result = runner.invoke(
+
+        result = _run_cli(
             datacube.scripts.config_tool.cli,
-            opts
+            opts,
+            # TODO: Make this false when the cli is updated to print errors (rather than uncaught exceptions).
+            catch_exceptions=True
         )
         assert result.exit_code != 0, "Success return code for invalid document."
         assert db.count_mappings() == 0, "Invalid document was added to DB"
@@ -92,12 +99,10 @@ def test_config_check(global_integration_cli_args, local_config):
             '-v', 'check'
         ]
     )
-    runner = CliRunner()
-    result = runner.invoke(
+    result = _run_cli(
         datacube.scripts.config_tool.cli,
         opts
     )
-    print(result.output)
     assert result.exit_code == 0
     host_line = 'Host: {}'.format(local_config.db_hostname)
     assert host_line in result.output
@@ -113,8 +118,7 @@ def test_db_init_noop(global_integration_cli_args, local_config):
             '-v', 'database', 'init'
         ]
     )
-    runner = CliRunner()
-    result = runner.invoke(
+    result = _run_cli(
         datacube.scripts.config_tool.cli,
         opts
     )
@@ -134,11 +138,8 @@ def test_db_init(global_integration_cli_args, db, local_config):
             '-v', 'database', 'init'
         ]
     )
-    runner = CliRunner()
-    result = runner.invoke(
-        datacube.scripts.config_tool.cli,
-        opts
-    )
+    cli_method = datacube.scripts.config_tool.cli
+    result = _run_cli(cli_method, opts)
     assert result.exit_code == 0
     assert 'Done.' in result.output
 

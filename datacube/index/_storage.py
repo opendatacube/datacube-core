@@ -85,9 +85,10 @@ class StorageUnitResource(object):
             collection_name = self._config.default_collection_name
 
         collection = self._collection_resource.get_by_name(collection_name)
-        val = collection.storage_fields.get(name)
+        metadata_type = collection.metadata_type
+        val = metadata_type.storage_fields.get(name)
 
-        return val if val is not None else collection.dataset_fields.get(name)
+        return val if val is not None else metadata_type.dataset_fields.get(name)
 
     def get_fields(self, collection_name=None):
         """
@@ -97,7 +98,7 @@ class StorageUnitResource(object):
         if collection_name is None:
             collection_name = self._config.default_collection_name
         collection = self._collection_resource.get_by_name(collection_name)
-        return collection.storage_fields
+        return collection.metadata_type.storage_fields
 
     def search(self, *expressions, **query):
         """
