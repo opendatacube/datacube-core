@@ -53,7 +53,7 @@ def skip_variable(var):
 
 def read_netcdf_structure(filename):
     """
-    Read a netcdf4 file and return a dicts describing its coordinates and variables
+    Read a netcdf4 file and return a dict describing its coordinates and variables
 
     :param filename:
     :return:

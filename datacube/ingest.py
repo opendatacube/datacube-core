@@ -109,7 +109,7 @@ def create_storage_units(datasets, storage_type, workers=0):
 def _create_storage_unit(task):
     tile_index, storage_type, datasets = task
     filename = storage.generate_filename(tile_index, datasets, storage_type)
-    return storage.create_storage_unit(tile_index, datasets, storage_type, filename)
+    return storage.create_storage_unit_from_datasets(tile_index, datasets, storage_type, filename)
 
 
 def _run_parallel_tasks(func, tasks, workers):

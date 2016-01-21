@@ -14,6 +14,7 @@ import dateutil.parser
 import numpy
 from osgeo import ogr, osr
 import rasterio.warp
+
 from rasterio.warp import RESAMPLING, transform_bounds
 
 from rasterio.coords import BoundingBox
@@ -22,7 +23,7 @@ from affine import Affine
 
 from datacube import compat
 from datacube.model import StorageUnit, TileSpec
-from datacube.storage.netcdf_indexer import index_netcdfs
+from datacube.storage.netcdf_indexer import index_netcdfs, read_netcdf_structure
 from datacube.storage.netcdf_writer import create_netcdf_writer
 
 _LOG = logging.getLogger(__name__)
@@ -140,7 +141,7 @@ def _poly_from_bounds(left, bottom, right, top, segments=None):
     return poly
 
 
-def create_storage_unit(tile_index, datasets, storage_type, filename):
+def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output_filename):
     """
     Create storage unit at `tile_index` for datasets using mapping
 
@@ -149,39 +150,34 @@ def create_storage_unit(tile_index, datasets, storage_type, filename):
     :type tile_index: tuple[int, int]
     :type datasets:  list[datacube.model.Dataset]
     :type storage_type:  datacube.model.StorageType
-    :param filename: URI specifying filename, must be file:// (for now)
-    :type filename:  str
+    :param output_filename: URI specifying filename, must be file:// (for now)
+    :type output_filename:  str
     :rtype: datacube.model.StorageUnit
     """
     if not datasets:
-        raise ValueError('Shall not create empty StorageUnit%s %s' % (tile_index, filename))
+        raise ValueError('Shall not create empty StorageUnit%s %s' % (tile_index, output_filename))
 
     if storage_type.driver != 'NetCDF CF':
         raise ValueError('Storage driver is not supported (yet): %s' % storage_type.driver)
 
-    if not filename.startswith('file://'):
+    if not output_filename.startswith('file://'):
         raise ValueError('URI protocol is not supported (yet): %s' % storage_type.storage_pattern)
 
-    filename = filename[7:]
+    output_filename = output_filename[7:]
 
-    tile_size = storage_type.tile_size
-    tile_res = storage_type.resolution
-    tile_spec = TileSpec(storage_type.projection,
-                         _get_tile_transform(tile_index, tile_size, tile_res),
-                         width=int(tile_size[0] / abs(tile_res[0])),
-                         height=int(tile_size[1] / abs(tile_res[1])))
 
-    if os.path.isfile(filename):
-        raise RuntimeError('file already exists: %s' % filename)
+    if os.path.isfile(output_filename):
+        raise RuntimeError('file already exists: %s' % output_filename)
 
-    _LOG.info("Creating Storage Unit %s", filename)
-    tmpfile, tmpfilename = tempfile.mkstemp(dir=os.path.dirname(filename))
+    _LOG.info("Creating Storage Unit %s", output_filename)
+    tmpfile, tmpfilename = tempfile.mkstemp(dir=os.path.dirname(output_filename))
     try:
         datasets_grouped_by_time = _group_datasets_by_time(datasets)
-        _warn_about_mosaiced_datasets(datasets_grouped_by_time, tile_index)
+        _warn_if_mosaiced_datasets(datasets_grouped_by_time, tile_index)
+        tile_spec = _make_tile_spec(storage_type, tile_index)
         write_storage_unit_to_disk(datasets_grouped_by_time, storage_type, tile_spec, tmpfilename)
         os.close(tmpfile)
-        os.rename(tmpfilename, filename)
+        os.rename(tmpfilename, output_filename)
     finally:
         try:
             os.unlink(tmpfilename)
@@ -191,11 +187,21 @@ def create_storage_unit(tile_index, datasets, storage_type, filename):
     # TODO: move 'hardcoded' coordinate specs (name, units, etc) into tile_spec
     # TODO: then we can pull the descriptor out of the tile_spec
     # TODO: and netcdf writer will be more generic
-    su_descriptor = index_netcdfs([filename])[filename]
-    return StorageUnit([dataset.id for dataset in datasets],
+    su_descriptor = read_netcdf_structure(output_filename)
+    dataset_ids = [dataset.id for dataset in datasets]
+    return StorageUnit(dataset_ids,
                        storage_type,
                        su_descriptor,
-                       storage_type.local_path_to_location_offset('file://' + filename))
+                       storage_type.local_path_to_location_offset('file://' + output_filename))
+
+
+def _make_tile_spec(storage_type, tile_index):
+    tile_size = storage_type.tile_size
+    tile_res = storage_type.resolution
+    return TileSpec(storage_type.projection,
+                    _get_tile_transform(tile_index, tile_size, tile_res),
+                    width=int(tile_size[0] / abs(tile_res[0])),
+                    height=int(tile_size[1] / abs(tile_res[1])))
 
 
 def _get_tile_transform(tile_index, tile_size, tile_res):
@@ -208,7 +214,7 @@ def _group_datasets_by_time(datasets):
     return [(time, list(group)) for time, group in groupby(datasets, _dataset_time)]
 
 
-def _warn_about_mosaiced_datasets(datasets_grouped_by_time, tile_index):
+def _warn_if_mosaiced_datasets(datasets_grouped_by_time, tile_index):
     for time, group in datasets_grouped_by_time:
         if len(group) > 1:
             _LOG.warning("Mosaicing multiple datasets %s@%s: %s", tile_index, time, group)
