@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 import rasterio
+import yaml
 
 from datacube import ui
 from datacube.config import LocalConfig
@@ -29,6 +30,8 @@ _TELEMETRY_COLLECTION_DEF_PATH = Path(__file__).parent.joinpath('telemetry-colle
 _ANCILLARY_COLLECTION_DEF_PATH = Path(__file__).parent.joinpath('ancillary-collection.yaml')
 
 _EXAMPLE_LS5_NBAR = Path(__file__).parent.joinpath('example-ls5-nbar.yaml')
+_TELEMETRY_COLLECTION_DESCRIPTOR = Path(__file__).parent.joinpath('telemetry-collection.yaml')
+_EXAMPLE_LS5_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('example-ls5-nbar.yaml')
 
 
 @pytest.fixture
@@ -76,6 +79,23 @@ def index(db, local_config):
     return Index(db, local_config)
 
 
+@pytest.fixture
+def example_ls5_dataset(tmpdir):
+    # Based on LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302
+    dataset_dir = tmpdir.mkdir('ls5_dataset')
+    shutil.copy(str(_EXAMPLE_LS5_NBAR_DATASET_FILE), str(dataset_dir.join('agdc-metadata.yaml')))
+
+    # Write geotiffs
+    geotiff_name = "LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B{}0.tif"
+    scene_dir = dataset_dir.mkdir('product').mkdir('scene01')
+    scene_dir.join('report.txt').write('Example')
+    for num in (1, 2, 3):
+        path = scene_dir.join(geotiff_name.format(num))
+        create_empty_geotiff(str(path))
+
+    return Path(str(dataset_dir))
+
+
 def create_empty_geotiff(path):
     metadata = {'count': 1,
                 'crs': 'EPSG:28355',
@@ -87,23 +107,6 @@ def create_empty_geotiff(path):
                 'width': 9721}
     with rasterio.open(path, 'w', **metadata) as dst:
         pass
-
-
-@pytest.fixture
-def example_ls5_dataset(tmpdir):
-    # Based on LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302
-    dataset_dir = tmpdir.mkdir('ls5_dataset')
-    shutil.copy(str(_EXAMPLE_LS5_NBAR), str(dataset_dir.join('agdc-metadata.yaml')))
-
-    # Write geotiffs
-    geotiff_name = "LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B{}0.tif"
-    scene_dir = dataset_dir.mkdir('product').mkdir('scene01')
-    scene_dir.join('report.txt').write('Example')
-    for num in (1, 2, 3):
-        path = scene_dir.join(geotiff_name.format(num))
-        create_empty_geotiff(str(path))
-
-    return Path(str(dataset_dir))
 
 
 @pytest.fixture
@@ -158,51 +161,145 @@ def ancillary_collection(index, ancillary_collection_docs):
 
 
 @pytest.fixture
-def ls5_nbar_storage_type(db, index):
+def indexed_ls5_nbar_storage_type(db, index):
     """
     :type db: datacube.index.postgres._api.PostgresDb
     :type index: datacube.index._api.Index
     :rtype: datacube.model.StorageType
     """
-    id_ = db.ensure_storage_type(
-        name='ls5_nbar',
-        dataset_metadata={},
-        descriptor={
-            'description': 'Test LS5 Nbar 30m bands',
-            'location_name': 'eotiles',
-            'file_path_template': '/file_path_template/file.nc',
-            'dataset_metadata': {},
-            'measurements': {
-                '1': {'dtype': 'int16',
-                      'nodata': -999,
-                      'resampling_method': 'cubic',
-                      'varname': 'band_1'},
-                '2': {'dtype': 'int16',
-                      'nodata': -999,
-                      'resampling_method': 'cubic',
-                      'varname': 'band_2'},
-                '3': {'dtype': 'int16',
-                      'nodata': -999,
-                      'resampling_method': 'cubic',
-                      'varname': 'band_3'},
-            },
-            'storage': {
-                'driver': 'NetCDF CF',
-                'chunking': {'time': 1, 'latitude': 400, 'longitude': 400},
-                'dimension_order': ['time', 'latitude', 'longitude'],
-                'crs': 'GEOGCS["WGS 84",\n'
-                       '    DATUM["WGS_1984",\n'
-                       '        SPHEROID["WGS 84",6378137,298.257223563,\n'
-                       '            AUTHORITY["EPSG","7030"]],\n'
-                       '        AUTHORITY["EPSG","6326"]],\n'
-                       '    PRIMEM["Greenwich",0,\n'
-                       '        AUTHORITY["EPSG","8901"]],\n'
-                       '    UNIT["degree",0.0174532925199433,\n'
-                       '        AUTHORITY["EPSG","9122"]],\n'
-                       '    AUTHORITY["EPSG","4326"]]\n',
-                'resolution': {'longitude': 0.00025, 'latitude': -0.00025},
-                'tile_size': {'longitude': 1.0, 'latitude': 1.0}
-            }
-        }
-    )
-    return index.storage.types.get(id_)
+    storage_type = load_test_storage_config(LS5_NBAR_STORAGE_TYPE)
+
+    index.storage.types.add(storage_type)
+    return index.mappings.get_by_name(storage_type['name'])
+
+
+@pytest.fixture
+def example_ls5_nbar_metadata_doc():
+    return load_yaml_file(_EXAMPLE_LS5_NBAR_DATASET_FILE)
+
+
+@pytest.fixture
+def indexed_ls5_nbar_albers_storage_type(db, index):
+    storage_type = load_test_storage_config(LS5_NBAR_ALBERS_STORAGE_TYPE)
+
+    index.mappings.add(storage_type)
+    return index.mappings.get_by_name(storage_type['name'])
+
+
+PROJECT_ROOT = Path(__file__).parents[1]
+CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
+LS5_SAMPLES = CONFIG_SAMPLES / 'ga_landsat_5/'
+LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_nbar_mapping.yaml'
+LS5_NBAR_NAME = 'ls5_nbar'
+LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_nbar_mapping_albers.yaml'
+LS5_NBAR_ALBERS_NAME = 'ls5_nbar_albers'
+
+TEST_STORAGE_SHRINK_FACTOR = 100
+TEST_STORAGE_NUM_MEASUREMENTS = 2
+GEOGRAPHIC_VARS = ('latitude', 'longitude')
+PROJECTED_VARS = ('x', 'y')
+
+EXAMPLE_LS5_DATASET_ID = 'bbf3e21c-82b0-11e5-9ba1-a0000100fe80'
+
+
+def test_shrink_storage_type():
+    storage_type = load_yaml_file(LS5_NBAR_STORAGE_TYPE)
+    storage_type = alter_storage_type_for_testing(storage_type)
+    assert len(storage_type['measurements']) <= TEST_STORAGE_NUM_MEASUREMENTS
+    for var in GEOGRAPHIC_VARS:
+        assert abs(storage_type['storage']['resolution'][var]) == 0.025
+        assert storage_type['storage']['chunking'][var] == 5
+
+
+def test_load_storage_type():
+    storage_type = load_yaml_file(LS5_NBAR_ALBERS_STORAGE_TYPE)
+    assert storage_type
+    assert 'name' in storage_type
+    assert 'storage' in storage_type
+    assert 'match' in storage_type
+
+
+def load_test_storage_config(filename):
+    storage_type = load_yaml_file(filename)
+    return alter_storage_type_for_testing(storage_type)
+
+
+def load_yaml_file(filename):
+    with open(str(filename)) as f:
+        return yaml.safe_load(f)
+
+
+def alter_storage_type_for_testing(storage_type):
+    storage_type = limit_num_measurements(storage_type)
+    storage_type = use_test_storage(storage_type)
+    if is_geogaphic(storage_type):
+        return shrink_storage_type(storage_type, GEOGRAPHIC_VARS)
+    else:
+        return shrink_storage_type(storage_type, PROJECTED_VARS)
+
+
+def limit_num_measurements(storage_type):
+    measurements = storage_type['measurements']
+    if len(measurements) <= TEST_STORAGE_NUM_MEASUREMENTS:
+        return storage_type
+    else:
+        measurements_to_delete = sorted(measurements)[TEST_STORAGE_NUM_MEASUREMENTS:]
+        for key in measurements_to_delete:
+            del measurements[key]
+        return storage_type
+
+
+def use_test_storage(storage_type):
+    storage_type['location_name'] = 'testdata'
+    return storage_type
+
+
+def is_geogaphic(storage_type):
+    return 'latitude' in storage_type['storage']['resolution']
+
+
+def shrink_storage_type(storage_type, variables):
+    storage = storage_type['storage']
+    for var in variables:
+        storage['resolution'][var] = storage['resolution'][var] * TEST_STORAGE_SHRINK_FACTOR
+        storage['chunking'][var] = storage['chunking'][var] / TEST_STORAGE_SHRINK_FACTOR
+    return storage_type
+
+
+OLD = {
+    'description': 'Test LS5 Nbar 30m bands',
+    'location_name': 'eotiles',
+    'file_path_template': '/file_path_template/file.nc',
+    'dataset_metadata': {},
+    'measurements': {
+        '1': {'dtype': 'int16',
+              'nodata': -999,
+              'resampling_method': 'cubic',
+              'varname': 'band_1'},
+        '2': {'dtype': 'int16',
+              'nodata': -999,
+              'resampling_method': 'cubic',
+              'varname': 'band_2'},
+        '3': {'dtype': 'int16',
+              'nodata': -999,
+              'resampling_method': 'cubic',
+              'varname': 'band_3'},
+    },
+    'storage': {
+        'driver': 'NetCDF CF',
+        'chunking': {'time': 1, 'latitude': 400, 'longitude': 400},
+        'dimension_order': ['time', 'latitude', 'longitude'],
+        'crs': 'GEOGCS["WGS 84",\n'
+               '    DATUM["WGS_1984",\n'
+               '        SPHEROID["WGS 84",6378137,298.257223563,\n'
+               '            AUTHORITY["EPSG","7030"]],\n'
+               '        AUTHORITY["EPSG","6326"]],\n'
+               '    PRIMEM["Greenwich",0,\n'
+               '        AUTHORITY["EPSG","8901"]],\n'
+               '    UNIT["degree",0.0174532925199433,\n'
+               '        AUTHORITY["EPSG","9122"]],\n'
+               '    AUTHORITY["EPSG","4326"]]\n',
+        'resolution': {'longitude': 0.00025, 'latitude': -0.00025},
+        'tile_size': {'longitude': 1.0, 'latitude': 1.0}
+    }
+}

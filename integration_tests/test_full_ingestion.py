@@ -4,28 +4,27 @@ import warnings
 from datetime import datetime
 from pathlib import Path
 
+import six
 import netCDF4
 import numpy as np
-import six
+import pytest
+
 import yaml
 from click.testing import CliRunner
 
 import datacube.scripts.run_ingest
+from .conftest import LS5_NBAR_NAME, LS5_NBAR_ALBERS_NAME, EXAMPLE_LS5_DATASET_ID
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
 LS5_SAMPLES = CONFIG_SAMPLES / 'ga_landsat_5/'
 LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_nbar_mapping.yaml'
-LS5_NBAR_NAME = 'ls5_nbar'
 LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_nbar_mapping_albers.yaml'
-LS5_NBAR_ALBERS_NAME = 'ls5_nbar_albers'
 
 TEST_STORAGE_SHRINK_FACTOR = 100
 TEST_STORAGE_NUM_MEASUREMENTS = 2
 GEOGRAPHIC_VARS = ('latitude', 'longitude')
 PROJECTED_VARS = ('x', 'y')
-
-EXAMPLE_LS5_DATASET_ID = 'bbf3e21c-82b0-11e5-9ba1-a0000100fe80'
 
 EXPECTED_STORAGE_UNIT_DATA_SHAPE = (1, 40, 40)
 EXPECTED_NUMBER_OF_STORAGE_UNITS = 12
@@ -35,7 +34,10 @@ JSON_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
 
 
-def test_full_ingestion(global_integration_cli_args, index, default_collection, example_ls5_dataset):
+@pytest.mark.usefixtures('default_collection',
+                         'indexed_ls5_nbar_storage_type',
+                         'indexed_ls5_nbar_albers_storage_type')
+def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset):
     """
     Loads two storage mapping configurations, then ingests a sample Landsat 5 scene
 
@@ -44,14 +46,7 @@ def test_full_ingestion(global_integration_cli_args, index, default_collection, 
 
     The input dataset should be recorded in the index, and two sets of netcdf storage units
     should be created on disk and recorded in the index.
-    :param db:
-    :return:
     """
-    assert default_collection  # default_collection has been added to database by fixture
-
-    # Load a mapping config
-    index.storage.types.add(load_test_storage_config(LS5_NBAR_STORAGE_TYPE))
-    index.storage.types.add(load_test_storage_config(LS5_NBAR_ALBERS_STORAGE_TYPE))
 
     # Run Ingest script on a dataset
     opts = list(global_integration_cli_args)
@@ -132,70 +127,6 @@ def check_dataset_metadata_in_storage_unit(nco, dataset_dir):
 def check_open_with_xray(file_path):
     import xray
     xray.open_dataset(str(file_path))
-
-
-def test_shrink_storage_type():
-    storage_type = load_storage_type_file(LS5_NBAR_STORAGE_TYPE)
-    storage_type = alter_storage_type_for_testing(storage_type)
-    assert len(storage_type['measurements']) <= TEST_STORAGE_NUM_MEASUREMENTS
-    for var in GEOGRAPHIC_VARS:
-        assert abs(storage_type['storage']['resolution'][var]) == 0.025
-        assert storage_type['storage']['chunking'][var] == 5
-
-
-def test_load_storage_type():
-    storage_type = load_storage_type_file(LS5_NBAR_ALBERS_STORAGE_TYPE)
-    assert storage_type
-    assert 'name' in storage_type
-    assert 'storage' in storage_type
-    assert 'match' in storage_type
-
-
-def load_test_storage_config(filename):
-    storage_type = load_storage_type_file(filename)
-    return alter_storage_type_for_testing(storage_type)
-
-
-def load_storage_type_file(filename):
-    with open(str(filename)) as f:
-        return yaml.safe_load(f)
-
-
-def alter_storage_type_for_testing(storage_type):
-    storage_type = limit_num_measurements(storage_type)
-    storage_type = use_test_storage(storage_type)
-    if is_geogaphic_storage_type(storage_type):
-        return shrink_storage_type(storage_type, GEOGRAPHIC_VARS)
-    else:
-        return shrink_storage_type(storage_type, PROJECTED_VARS)
-
-
-def limit_num_measurements(storage_type):
-    measurements = storage_type['measurements']
-    if len(measurements) <= TEST_STORAGE_NUM_MEASUREMENTS:
-        return storage_type
-    else:
-        measurements_to_delete = sorted(measurements)[TEST_STORAGE_NUM_MEASUREMENTS:]
-        for key in measurements_to_delete:
-            del measurements[key]
-        return storage_type
-
-
-def use_test_storage(storage_type):
-    storage_type['location_name'] = 'testdata'
-    return storage_type
-
-
-def is_geogaphic_storage_type(storage_type):
-    return 'latitude' in storage_type['storage']['resolution']
-
-
-def shrink_storage_type(storage_type, variables):
-    storage = storage_type['storage']
-    for var in variables:
-        storage['resolution'][var] = storage['resolution'][var] * TEST_STORAGE_SHRINK_FACTOR
-        storage['chunking'][var] = storage['chunking'][var] / TEST_STORAGE_SHRINK_FACTOR
-    return storage_type
 
 
 def make_pgsqljson_match_yaml_load(data):
