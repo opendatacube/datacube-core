@@ -29,7 +29,7 @@ class FauxStorageUnit(StorageUnitBase):
 
     def _get_coord(self, name):
         coord = self.coordinates[name]
-        data = numpy.linspace(coord.begin, coord.end, coord.length, dtype=coord.dtype)
+        data = numpy.linspace(coord.begin, coord.end, coord.length).astype(coord.dtype)
         return data
 
     def _fill_data(self, name, index, dest):
