@@ -7,7 +7,6 @@ from __future__ import absolute_import, division, print_function
 import logging
 from contextlib import contextmanager
 from itertools import groupby
-from functools import partial
 import os.path
 import tempfile
 
@@ -170,16 +169,9 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
     _LOG.info("Creating Storage Unit %s", output_filename)
     tmpfile, tmpfilename = tempfile.mkstemp(dir=os.path.dirname(output_filename))
     try:
-        datasets_grouped_by_time = _group_datasets_by_time(datasets)
-        _warn_if_mosaiced_datasets(datasets_grouped_by_time, tile_index)
-        tile_spec = _make_tile_spec(storage_type, tile_index)
+        data_provider = GroupDatasetsByTimeDataProvider(datasets, tile_index, storage_type)
 
-        data_writer = partial(_fill_storage_unit_from_grouped_datasets,
-                              datasets_grouped_by_time=datasets_grouped_by_time,
-                              tile_spec=tile_spec,
-                              storage_type=storage_type)
-
-        write_storage_unit_to_disk(tmpfilename, tile_spec, datasets_grouped_by_time, data_writer)
+        write_storage_unit_to_disk(tmpfilename, data_provider)
         os.close(tmpfile)
         os.rename(tmpfilename, output_filename)
     finally:
@@ -199,6 +191,60 @@ def _uri_to_filename(uri):
     return uri[7:]
 
 
+def write_storage_unit_to_disk(filename, data_provider):
+    with create_netcdf_writer(filename, data_provider.tile_spec) as su_writer:
+        su_writer.create_time_values(data_provider.get_time_values())
+
+        for time_index, docs in data_provider.get_metadata_documents():
+            su_writer.add_source_metadata(time_index, docs)
+
+        data_provider.write_data_to_storage_unit(su_writer)
+
+
+class GroupDatasetsByTimeDataProvider(object):
+    def __init__(self, datasets, tile_index, storage_type):
+        self.datasets_grouped_by_time = _group_datasets_by_time(datasets)
+        self._warn_if_mosaiced_datasets(tile_index)
+        self.tile_spec = _make_tile_spec(storage_type, tile_index)
+        self.storage_type = storage_type
+
+    def _warn_if_mosaiced_datasets(self, tile_index):
+        for time, group in self.datasets_grouped_by_time:
+            if len(group) > 1:
+                _LOG.warning("Mosaicing multiple datasets %s@%s: %s", tile_index, time, group)
+
+    def get_number_of_times(self):
+        return len(self.datasets_grouped_by_time)
+
+    def get_time_values(self):
+        return [time for time, _ in self.datasets_grouped_by_time]
+
+    def get_metadata_documents(self):
+
+        for time_index, (_, group) in enumerate(self.datasets_grouped_by_time):
+            yield time_index, (dataset.metadata_doc for dataset in group)
+
+    def write_data_to_storage_unit(self, su_writer):
+        measurements = self.storage_type.measurements
+        chunking = self.storage_type.chunking
+        for measurement_id, measurement_descriptor in measurements.items():
+            output_var = su_writer.ensure_variable(measurement_descriptor, chunking)
+
+            buffer_ = numpy.empty(output_var.shape[1:], dtype=output_var.dtype)
+            for time_index, (_, time_group) in enumerate(self.datasets_grouped_by_time):
+                buffer_ = fuse_sources([DatasetSource(dataset, measurement_id) for dataset in time_group],
+                                       buffer_,
+                                       self.tile_spec.affine,
+                                       self.tile_spec.projection,
+                                       getattr(output_var, '_FillValue', None),
+                                       resampling=_rasterio_resampling_method(measurement_descriptor))
+                output_var[time_index] = buffer_
+
+
+def _group_datasets_by_time(datasets):
+    return [(time, list(group)) for time, group in groupby(datasets, _dataset_time)]
+
+
 def _make_tile_spec(storage_type, tile_index):
     tile_size = storage_type.tile_size
     tile_res = storage_type.resolution
@@ -212,43 +258,6 @@ def _get_tile_transform(tile_index, tile_size, tile_res):
     x = (tile_index[0] + (1 if tile_res[0] < 0 else 0)) * tile_size[0]
     y = (tile_index[1] + (1 if tile_res[1] < 0 else 0)) * tile_size[1]
     return Affine(tile_res[0], 0.0, x, 0.0, tile_res[1], y)
-
-
-def _group_datasets_by_time(datasets):
-    return [(time, list(group)) for time, group in groupby(datasets, _dataset_time)]
-
-
-def _warn_if_mosaiced_datasets(datasets_grouped_by_time, tile_index):
-    for time, group in datasets_grouped_by_time:
-        if len(group) > 1:
-            _LOG.warning("Mosaicing multiple datasets %s@%s: %s", tile_index, time, group)
-
-
-def write_storage_unit_to_disk(filename, tile_spec, datasets_grouped_by_time, data_writer):
-    with create_netcdf_writer(filename, tile_spec, len(datasets_grouped_by_time)) as su_writer:
-        su_writer.create_time_values(time for time, _ in datasets_grouped_by_time)
-
-        for time_index, (_, group) in enumerate(datasets_grouped_by_time):
-            su_writer.add_source_metadata(time_index, (dataset.metadata_doc for dataset in group))
-
-        data_writer(su_writer)
-        
-
-def _fill_storage_unit_from_grouped_datasets(su_writer, datasets_grouped_by_time, tile_spec, storage_type):
-    measurements = storage_type.measurements
-    chunking = storage_type.chunking
-    for measurement_id, measurement_descriptor in measurements.items():
-        output_var = su_writer.ensure_variable(measurement_descriptor, chunking)
-
-        buffer_ = numpy.empty(output_var.shape[1:], dtype=output_var.dtype)
-        for time_index, (_, time_group) in enumerate(datasets_grouped_by_time):
-            buffer_ = fuse_sources([DatasetSource(dataset, measurement_id) for dataset in time_group],
-                                   buffer_,
-                                   tile_spec.affine,
-                                   tile_spec.projection,
-                                   getattr(output_var, '_FillValue', None),
-                                   resampling=_rasterio_resampling_method(measurement_descriptor))
-            output_var[time_index] = buffer_
 
 
 def _rasterio_resampling_method(measurement_descriptor):

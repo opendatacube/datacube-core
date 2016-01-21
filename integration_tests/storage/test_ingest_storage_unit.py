@@ -24,13 +24,12 @@ def ingestable_storage_unit(index, example_ls5_nbar_metadata_doc, tmpdir, indexe
                       Path(str(tmpdir))
                       )
 
-    create_storage_unit_from_datasets(tile_index, [dataset], indexed_ls5_nbar_storage_type, filename)
+    # create_storage_unit_from_datasets(tile_index, [dataset], indexed_ls5_nbar_storage_type, filename)
 
-    create_storage_unit_from_array(storage_type, tile_index, nparray, filename)
+    # create_storage_unit_from_array(storage_type, tile_index, nparray, filename)
 
     return filename
 
 
 def test_ingest_storage_unit(ingestable_storage_unit):
-
     process_storage_unit(ingestable_storage_unit)

@@ -41,11 +41,11 @@ def _seconds_since_1970(dt):
     return (dt - epoch).total_seconds()
 
 
-def create_netcdf_writer(netcdf_path, tile_spec, num_times=None):
+def create_netcdf_writer(netcdf_path, tile_spec):
     if tile_spec.crs.IsGeographic():
-        return GeographicNetCDFWriter(netcdf_path, tile_spec, num_times)
+        return GeographicNetCDFWriter(netcdf_path, tile_spec)
     elif tile_spec.crs.IsProjected():
-        return ProjectedNetCDFWriter(netcdf_path, tile_spec, num_times)
+        return ProjectedNetCDFWriter(netcdf_path, tile_spec)
     else:
         raise RuntimeError("Unknown projection")
 
@@ -62,7 +62,7 @@ class NetCDFWriter(object):
     :param num_times: The number of time values allowed to be stored. Unlimited by default.
     """
 
-    def __init__(self, netcdf_path, tile_spec, num_times=None):
+    def __init__(self, netcdf_path, tile_spec):
         netcdf_path = str(netcdf_path)
 
         self.nco = netCDF4.Dataset(netcdf_path, 'w')
@@ -70,14 +70,8 @@ class NetCDFWriter(object):
         self.tile_spec = tile_spec
         self.netcdf_path = netcdf_path
 
-        self._create_time_dimension(num_times)
         self._create_crs_coords_and_variables()
         self._set_global_attributes(tile_spec)
-
-        # Create Variable Length Variable to store extra metadata
-        self.nco.createDimension('nchar', size=DATASET_YAML_MAX_SIZE)
-        self._extra_meta = self.nco.createVariable('extra_metadata', 'S1', ('time', 'nchar'))
-        self._extra_meta.long_name = 'Detailed source dataset information'
 
     def __enter__(self):
         return self
@@ -87,18 +81,6 @@ class NetCDFWriter(object):
 
     def close(self):
         self.nco.close()
-
-    def _create_time_dimension(self, time_length):
-        """
-        Create time dimension
-        """
-        self.nco.createDimension('time', time_length)
-        timeo = self.nco.createVariable('time', 'double', 'time')
-        timeo.units = 'seconds since 1970-01-01 00:00:00'
-        timeo.standard_name = 'time'
-        timeo.long_name = 'Time, unix time-stamp'
-        timeo.calendar = 'standard'
-        timeo.axis = "T"
 
     def _create_crs_coords_and_variables(self):
         self.validate_crs_arguments()
@@ -153,9 +135,22 @@ class NetCDFWriter(object):
         return index
 
     def create_time_values(self, time_values):
+        self._create_time_dimension(len(time_values))
         times = self.nco.variables['time']
         for idx, val in enumerate(time_values):
             times[idx] = _seconds_since_1970(val)
+
+    def _create_time_dimension(self, time_length):
+        """
+        Create time dimension
+        """
+        self.nco.createDimension('time', time_length)
+        timeo = self.nco.createVariable('time', 'double', 'time')
+        timeo.units = 'seconds since 1970-01-01 00:00:00'
+        timeo.standard_name = 'time'
+        timeo.long_name = 'Time, unix time-stamp'
+        timeo.calendar = 'standard'
+        timeo.axis = "T"
 
     def ensure_variable(self, measurement_descriptor, chunking):
         varname = measurement_descriptor['varname']
@@ -172,8 +167,15 @@ class NetCDFWriter(object):
         :param metadata_docs: List of metadata docs for this timestamp
         :type metadata_docs: list
         """
+        if 'extra_metadata' not in self.nco.variables:
+            self._create_extra_metadata_variable()
         yaml_str = yaml.safe_dump_all(metadata_docs)
-        self._extra_meta[time_index] = netCDF4.stringtoarr(yaml_str, DATASET_YAML_MAX_SIZE)
+        self.nco.variables['extra_metadata'][time_index] = netCDF4.stringtoarr(yaml_str, DATASET_YAML_MAX_SIZE)
+
+    def _create_extra_metadata_variable(self):
+        self.nco.createDimension('nchar', size=DATASET_YAML_MAX_SIZE)
+        extra_metadata_variable = self.nco.createVariable('extra_metadata', 'S1', ('time', 'nchar'))
+        extra_metadata_variable.long_name = 'Detailed source dataset information'
 
     def _create_data_variable(self, measurement_descriptor, chunking):
         params = map_measurement_descriptor_parameters(measurement_descriptor)

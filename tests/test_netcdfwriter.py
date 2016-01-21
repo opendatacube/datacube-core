@@ -48,6 +48,9 @@ LAT_LON_COORDINATES = ('latitude', 'longitude')
 PROJECTED_COORDINATES = ('x', 'y')
 COMMON_VARIABLES = ('crs', 'time')
 
+DATA_WIDTH = 400
+DATA_HEIGHT = 200
+
 
 @pytest.fixture
 def tmpnetcdf_filename(tmpdir):
@@ -72,15 +75,17 @@ def test_create_albers_projection_netcdf(tmpnetcdf_filename):
             assert getattr(nco, k) == v
 
         assert len(nco.variables['time']) == 2
-        assert len(nco.variables['x']) == 4000
-        assert len(nco.variables['y']) == 2000
+        assert len(nco.variables['x']) == DATA_WIDTH
+        assert len(nco.variables['y']) == DATA_HEIGHT
 
         for varname in PROJECTED_COORDINATES:
             assert nco.variables[varname].standard_name == 'projection_%s_coordinate' % varname
 
 
 def test_create_epsg4326_netcdf(tmpnetcdf_filename):
-    affine = Affine(0.00025, 0.0, 151.0, 0.0, -0.0005, -29.0)
+    X_RES = 1.0/DATA_WIDTH
+    Y_RES = -1.0/DATA_HEIGHT
+    affine = Affine(X_RES, 0.0, 151.0, 0.0, Y_RES, -29.0)
     chunking = [('time', 1), ('latitude', 100), ('longitude', 100)]
 
     build_test_netcdf(tmpnetcdf_filename, affine, GEO_PROJ, chunking)
@@ -95,14 +100,14 @@ def test_create_epsg4326_netcdf(tmpnetcdf_filename):
             assert getattr(nco, k) == v
 
         assert len(nco.variables['time']) == 2
-        assert len(nco.variables['longitude']) == 4000
-        assert len(nco.variables['latitude']) == 2000
-        npt.assert_almost_equal(nco.variables['latitude'][0], -29.00025)
-        npt.assert_almost_equal(nco.variables['latitude'][-1], -29.99975)
-        npt.assert_almost_equal(nco.variables['longitude'][0], 151.000125)
-        npt.assert_almost_equal(nco.variables['longitude'][-1], 151.999875)
+        assert len(nco.variables['longitude']) == DATA_WIDTH
+        assert len(nco.variables['latitude']) == DATA_HEIGHT
+        npt.assert_almost_equal(nco.variables['longitude'][0], 151 + X_RES / 2)
+        npt.assert_almost_equal(nco.variables['longitude'][-1], 152 - X_RES / 2)
+        npt.assert_almost_equal(nco.variables['latitude'][0], -29 + Y_RES / 2)
+        npt.assert_almost_equal(nco.variables['latitude'][-1], -30 - Y_RES / 2)
 
-        assert nco.variables['B1'].shape == (2, 2000, 4000)
+        assert nco.variables['B1'].shape == (2, DATA_HEIGHT, DATA_WIDTH)
 
         # Check GDAL Attributes
         assert np.allclose(nco.variables['crs'].GeoTransform, affine.to_gdal())
@@ -142,18 +147,21 @@ def test_extra_measurement_attrs(tmpnetcdf_filename):
 
 
 def build_test_netcdf(filename, affine, projection, chunking, make_measurement_descriptor=dict):
-    tile_spec = TileSpec(projection, affine, 2000, 4000, global_attrs=GLOBAL_ATTRS)
+    tile_spec = TileSpec(projection, affine, DATA_HEIGHT, DATA_WIDTH, global_attrs=GLOBAL_ATTRS)
 
-    ops = [(datetime(2008, band, 1), band) for band in [1, 2]]
+    dates = [datetime(2008, month, 1) for month in (1, 2)]
+    ops = [(band, time_index) for band in (1,2) for time_index in (0,1)]
 
     ncwriter = create_netcdf_writer(filename, tile_spec)
 
-    for index, (date, band) in enumerate(ops):
-        data = np.empty([2000, 4000])
+    ncwriter.create_time_values(dates)
+
+    for band, time_index in ops:
+        data = np.empty([DATA_HEIGHT, DATA_WIDTH])
         data[:] = band
         bandname = 'B%s' % band
         measurement_descriptor = make_measurement_descriptor(varname=bandname, dtype='int16', nodata=-999)
 
         var = ncwriter.ensure_variable(measurement_descriptor, chunking)
-        var[index] = data
+        var[time_index] = data
     ncwriter.close()
