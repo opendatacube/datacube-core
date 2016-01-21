@@ -7,13 +7,16 @@ from __future__ import absolute_import, division, print_function
 import logging
 from contextlib import contextmanager
 from itertools import groupby
+from functools import partial
 import os.path
 import tempfile
 
 import dateutil.parser
 import numpy
+
 from osgeo import ogr, osr
 import rasterio.warp
+
 from rasterio.warp import RESAMPLING, transform_bounds
 
 from rasterio.coords import BoundingBox
@@ -170,7 +173,13 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
         datasets_grouped_by_time = _group_datasets_by_time(datasets)
         _warn_if_mosaiced_datasets(datasets_grouped_by_time, tile_index)
         tile_spec = _make_tile_spec(storage_type, tile_index)
-        write_storage_unit_to_disk(datasets_grouped_by_time, storage_type, tile_spec, tmpfilename)
+
+        data_writer = partial(_fill_storage_unit_from_grouped_datasets,
+                              datasets_grouped_by_time=datasets_grouped_by_time,
+                              tile_spec=tile_spec,
+                              storage_type=storage_type)
+
+        write_storage_unit_to_disk(tmpfilename, tile_spec, datasets_grouped_by_time, data_writer)
         os.close(tmpfile)
         os.rename(tmpfilename, output_filename)
     finally:
@@ -215,20 +224,19 @@ def _warn_if_mosaiced_datasets(datasets_grouped_by_time, tile_index):
             _LOG.warning("Mosaicing multiple datasets %s@%s: %s", tile_index, time, group)
 
 
-def write_storage_unit_to_disk(datasets_grouped_by_time, storage_type, tile_spec, filename):
+def write_storage_unit_to_disk(filename, tile_spec, datasets_grouped_by_time, data_writer):
     with create_netcdf_writer(filename, tile_spec, len(datasets_grouped_by_time)) as su_writer:
-
         su_writer.create_time_values(time for time, _ in datasets_grouped_by_time)
 
         for time_index, (_, group) in enumerate(datasets_grouped_by_time):
             su_writer.add_source_metadata(time_index, (dataset.metadata_doc for dataset in group))
 
-        _fill_storage_unit(su_writer, datasets_grouped_by_time, storage_type.measurements, tile_spec,
-                           storage_type.chunking)
+        data_writer(su_writer)
+        
 
-
-
-def _fill_storage_unit(su_writer, datasets_grouped_by_time, measurements, tile_spec, chunking):
+def _fill_storage_unit_from_grouped_datasets(su_writer, datasets_grouped_by_time, tile_spec, storage_type):
+    measurements = storage_type.measurements
+    chunking = storage_type.chunking
     for measurement_id, measurement_descriptor in measurements.items():
         output_var = su_writer.ensure_variable(measurement_descriptor, chunking)
 
