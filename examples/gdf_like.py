@@ -7,7 +7,7 @@ import pprint
 # import matplotlib.pyplot as plt
 # import dask
 import xray
-import xray.plot
+#import xray.plot
 # import numpy
 
 from datacube import api
