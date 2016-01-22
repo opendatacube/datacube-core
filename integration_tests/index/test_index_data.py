@@ -11,7 +11,7 @@ import datetime
 from pathlib import Path
 
 from datacube.index.postgres import PostgresDb
-from datacube.index.postgres.tables import STORAGE_MAPPING, STORAGE_UNIT
+from datacube.index.postgres.tables import STORAGE_TYPE, STORAGE_UNIT
 from datacube.index.postgres.tables._storage import DATASET_STORAGE
 from datacube.model import StorageUnit, StorageType
 
@@ -114,12 +114,12 @@ def test_index_storage_unit(index, db, default_collection):
         _telemetry_uuid
     )
     assert was_inserted
-    db.ensure_storage_mapping(
+    db.ensure_storage_type(
         'test_storage_mapping',
         {},
         {},
     )
-    mapping = db._connection.execute(STORAGE_MAPPING.select()).first()
+    mapping = db._connection.execute(STORAGE_TYPE.select()).first()
 
     # Add storage unit
     index.storage.add(
@@ -146,7 +146,7 @@ def test_index_storage_unit(index, db, default_collection):
     unit = units[0]
     assert unit['descriptor'] == {'test': 'descriptor'}
     assert unit['path'] == '/test/offset'
-    assert unit['storage_mapping_ref'] == mapping['id']
+    assert unit['storage_type_ref'] == mapping['id']
 
     # Dataset and storage should have been linked.
     d_ss = db._connection.execute(DATASET_STORAGE.select()).fetchall()

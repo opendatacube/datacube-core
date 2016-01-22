@@ -1,5 +1,5 @@
 "$schema": "http://json-schema.org/draft-04/schema#"
-description: Schema for storage mapping files.
+description: Schema for storage types.
 type: object
 properties:
     name:
@@ -70,7 +70,7 @@ definitions:
             #      but the validation error messages when using these features (eg. anyOf) are
             #      not very user friendly.
 
-            # Used by NetCDF mappings
+            # Used by NetCDF types
             varname:
                 # Alphanumeric or underscore
                 pattern: '^\w+$'
@@ -88,7 +88,7 @@ definitions:
             shuffle:
                 type: boolean
 
-            # Used by GeoTIFF mappings
+            # Used by GeoTIFF types
             layer:
                 type: number
 

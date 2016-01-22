@@ -10,7 +10,7 @@ from pathlib import Path
 from datacube import ui
 from datacube.config import LocalConfig
 from ._datasets import DatasetResource, CollectionResource, MetadataTypeResource
-from ._storage import StorageUnitResource, StorageMappingResource
+from ._storage import StorageUnitResource, StorageTypeResource
 from .postgres import PostgresDb
 
 _LOG = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ class Index(object):
         self.metadata_types = MetadataTypeResource(db, local_config)
         self.collections = CollectionResource(db, local_config, self.metadata_types)
         self.datasets = DatasetResource(db, local_config, self.collections)
-        self.mappings = StorageMappingResource(db, local_config)
+        self.mappings = StorageTypeResource(db, local_config)
         self.storage = StorageUnitResource(db, self.mappings, self.collections, local_config)
 
     def init_db(self, with_default_collection=True):

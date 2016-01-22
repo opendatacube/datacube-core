@@ -38,7 +38,7 @@ def test_add_example_mapping_docs(global_integration_cli_args, db):
     :type global_integration_cli_args: tuple[str]
     :type db: datacube.index.postgres._api.PostgresDb
     """
-    existing_mappings = db.count_mappings()
+    existing_mappings = db.count_storage_types()
     print('{} mappings'.format(existing_mappings))
     for mapping_path in MAPPING_EXAMPLE_DOCS:
         print('Adding mapping {}'.format(mapping_path))
@@ -54,7 +54,7 @@ def test_add_example_mapping_docs(global_integration_cli_args, db):
             opts
         )
         assert result.exit_code == 0
-        mappings_count = db.count_mappings()
+        mappings_count = db.count_storage_types()
         assert mappings_count > existing_mappings, "Mapping document was not added: " + str(mapping_path)
         existing_mappings = mappings_count
 
@@ -64,7 +64,7 @@ def test_error_returned_on_invalid(global_integration_cli_args, db):
     :type global_integration_cli_args: tuple[str]
     :type db: datacube.index.postgres._api.PostgresDb
     """
-    assert db.count_mappings() == 0
+    assert db.count_storage_types() == 0
 
     for mapping_path in INVALID_MAPPING_DOCS:
         opts = list(global_integration_cli_args)
@@ -82,7 +82,7 @@ def test_error_returned_on_invalid(global_integration_cli_args, db):
             catch_exceptions=True
         )
         assert result.exit_code != 0, "Success return code for invalid document."
-        assert db.count_mappings() == 0, "Invalid document was added to DB"
+        assert db.count_storage_types() == 0, "Invalid document was added to DB"
 
 
 def test_config_check(global_integration_cli_args, local_config):

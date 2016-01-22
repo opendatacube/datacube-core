@@ -28,7 +28,7 @@ Datacube looks for configuration file in ~/.datacube.conf::
     [locations]
     # Where to reach storage locations from the current machine.
     #  -> Location names are arbitrary, but correspond to names used in the
-    #     storage mapping files.
+    #     storage type files.
     #  -> We may eventually support remote protocols (http, S3, etc) to lazily fetch remote data.
     eotiles: file:///short/public/democube/
     v1tiles: file:///g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/

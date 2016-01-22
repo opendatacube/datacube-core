@@ -78,7 +78,7 @@ def collection_add(index, files):
         index.collections.add(parsed_doc)
 
 
-@cli.group(help='Dataset-storage mappings')
+@cli.group(help='Dataset-storage types')
 def mappings():
     pass
 

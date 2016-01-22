@@ -551,12 +551,8 @@ class API(object):
 
         storage_units_by_type = {}
         for su in sus:
-            # stype = su.storage_mapping.match.metadata['platform']['code'] + '_' + \
-            #         su.storage_mapping.match.metadata['instrument']['name']
-            stype = su.storage_type.name
-            # ptype = su.storage_mapping.match.metadata['product_type']
             unit = make_storage_unit(su, is_diskless=True)
-            storage_units_by_type.setdefault(stype, StorageUnitCollection()).append(unit)
+            storage_units_by_type.setdefault(su.storage_type.name, StorageUnitCollection()).append(unit)
         return storage_units_by_type, query, variables, dimension_ranges
 
     def get_descriptor(self, descriptor_request=None, include_storage_units=True):

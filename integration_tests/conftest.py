@@ -164,7 +164,7 @@ def ls5_nbar_storage_type(db, index):
     :type index: datacube.index._api.Index
     :rtype: datacube.model.StorageType
     """
-    id_ = db.ensure_storage_mapping(
+    id_ = db.ensure_storage_type(
         name='ls5_nbar',
         dataset_metadata={},
         descriptor={

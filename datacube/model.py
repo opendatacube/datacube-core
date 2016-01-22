@@ -150,7 +150,7 @@ class StorageType(object):
         return self.definition['filename_format']
 
     def __repr__(self):
-        return 'StorageMapping<name={!r}, id_={!r}>'.format(self.name, self.id_)
+        return 'StorageType<name={!r}, id_={!r}>'.format(self.name, self.id_)
 
 
 class StorageUnit(object):

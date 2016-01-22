@@ -14,8 +14,8 @@ from . import _core
 from . import _dataset
 
 # Map a dataset type to how we will store it (storage_type and each measurement/band).
-STORAGE_MAPPING = Table(
-    'storage_mapping', _core.METADATA,
+STORAGE_TYPE = Table(
+    'storage_type', _core.METADATA,
     Column('id', SmallInteger, primary_key=True, autoincrement=True),
 
     # A name/label for this mapping (eg. 'LS7 NBAR'). Specified by users.
@@ -37,7 +37,7 @@ STORAGE_MAPPING = Table(
 STORAGE_UNIT = Table(
     'storage_unit', _core.METADATA,
     Column('id', Integer, primary_key=True, autoincrement=True),
-    Column('storage_mapping_ref', None, ForeignKey(STORAGE_MAPPING.c.id), nullable=False),
+    Column('storage_type_ref', None, ForeignKey(STORAGE_TYPE.c.id), nullable=False),
 
     # These should match the linked datasets.
     #  -> They are duplicated here so that we can define indexes on this table based on them.

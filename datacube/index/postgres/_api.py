@@ -23,7 +23,7 @@ from datacube.index.postgres.tables._core import schema_qualified
 from datacube.index.postgres.tables._dataset import DATASET_LOCATION, METADATA_TYPE
 from . import tables
 from ._fields import parse_fields, NativeField
-from .tables import DATASET, DATASET_SOURCE, STORAGE_MAPPING, STORAGE_UNIT, DATASET_STORAGE, COLLECTION
+from .tables import DATASET, DATASET_SOURCE, STORAGE_TYPE, STORAGE_UNIT, DATASET_STORAGE, COLLECTION
 
 _DATASET_SELECT_FIELDS = (
     DATASET,
@@ -182,9 +182,9 @@ class PostgresDb(object):
         )
         return res.inserted_primary_key[0]
 
-    def get_storage_mapping(self, storage_mapping_id):
+    def get_storage_type(self, storage_type_id):
         return self._connection.execute(
-            STORAGE_MAPPING.select().where(STORAGE_MAPPING.c.id == storage_mapping_id)
+            STORAGE_TYPE.select().where(STORAGE_TYPE.c.id == storage_type_id)
         ).first()
 
     def get_dataset(self, dataset_id):
@@ -192,31 +192,31 @@ class PostgresDb(object):
             select(_DATASET_SELECT_FIELDS).where(DATASET.c.id == dataset_id)
         ).first()
 
-    def get_storage_mappings(self, dataset_metadata):
+    def get_storage_types(self, dataset_metadata):
         """
-        Find any storage mappings that match the given dataset.
+        Find any storage types that match the given dataset.
 
         :type dataset_metadata: dict
         :rtype: dict
         """
-        # Find any storage mappings whose 'dataset_metadata' document is a subset of the metadata.
+        # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
         return self._connection.execute(
-            STORAGE_MAPPING.select().where(
-                STORAGE_MAPPING.c.dataset_metadata.contained_by(dataset_metadata)
+            STORAGE_TYPE.select().where(
+                STORAGE_TYPE.c.dataset_metadata.contained_by(dataset_metadata)
             )
         ).fetchall()
 
-    def get_all_storage_mappings(self):
+    def get_all_storage_types(self):
         return self._connection.execute(
-            STORAGE_MAPPING.select()
+            STORAGE_TYPE.select()
         ).fetchall()
 
-    def ensure_storage_mapping(self,
-                               name,
-                               dataset_metadata,
-                               descriptor):
+    def ensure_storage_type(self,
+                            name,
+                            dataset_metadata,
+                            descriptor):
         res = self._connection.execute(
-            STORAGE_MAPPING.insert().values(
+            STORAGE_TYPE.insert().values(
                 name=name,
                 dataset_metadata=dataset_metadata,
                 descriptor=descriptor
@@ -224,7 +224,7 @@ class PostgresDb(object):
         )
         return res.inserted_primary_key[0]
 
-    def add_storage_unit(self, path, dataset_ids, descriptor, storage_mapping_id):
+    def add_storage_unit(self, path, dataset_ids, descriptor, storage_type_id):
         if not dataset_ids:
             raise ValueError('Storage unit must be linked to at least one dataset.')
 
@@ -241,7 +241,7 @@ class PostgresDb(object):
             STORAGE_UNIT.insert().values(
                 collection_ref=select([matched_collection.c.collection_ref]),
                 metadata_type_ref=select([matched_collection.c.metadata_type_ref]),
-                storage_mapping_ref=storage_mapping_id,
+                storage_type_ref=storage_type_id,
                 descriptor=descriptor,
                 path=path
             ).returning(STORAGE_UNIT.c.id),
@@ -402,9 +402,9 @@ class PostgresDb(object):
             METADATA_TYPE.select().where(METADATA_TYPE.c.name == name)
         ).first()
 
-    def get_storage_mapping_by_name(self, name):
+    def get_storage_type_by_name(self, name):
         return self._connection.execute(
-            STORAGE_MAPPING.select().where(STORAGE_MAPPING.c.name == name)
+            STORAGE_TYPE.select().where(STORAGE_TYPE.c.name == name)
         ).first()
 
     def add_collection(self,
@@ -447,8 +447,8 @@ class PostgresDb(object):
     def get_all_collections(self):
         return self._connection.execute(COLLECTION.select()).fetchall()
 
-    def count_mappings(self):
-        return self._connection.execute(select([func.count()]).select_from(STORAGE_MAPPING)).scalar()
+    def count_storage_types(self):
+        return self._connection.execute(select([func.count()]).select_from(STORAGE_TYPE)).scalar()
 
 
 def _pg_exists(conn, name):
