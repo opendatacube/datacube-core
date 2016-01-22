@@ -19,13 +19,5 @@ match:
     # We match all datasets (no properties specified) at an extremely low priority.
     metadata: {}
     priority: 9999
----
-name: landsat_telemetry
-description: Landsat telemetry data
-metadata_type: eo
 
-match:
-    metadata:
-        product_level: P00
-    priority: 50
 

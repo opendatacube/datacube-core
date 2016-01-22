@@ -23,9 +23,9 @@ class PgField(Field):
     a JSONB column.
     """
 
-    def __init__(self, name, description, collection_id, alchemy_column):
+    def __init__(self, name, description, metadata_type_id, alchemy_column):
         super(PgField, self).__init__(name, description)
-        self.collection_id = collection_id
+        self.metadata_type_id = metadata_type_id
 
         # The underlying SQLAlchemy column. (eg. DATASET.c.metadata)
         self.alchemy_column = alchemy_column
@@ -64,8 +64,8 @@ class NativeField(PgField):
     Fields hard-coded into the schema. (not user configurable)
     """
 
-    def __init__(self, name, description, collection_id, alchemy_column, alchemy_expression=None):
-        super(NativeField, self).__init__(name, description, collection_id, alchemy_column)
+    def __init__(self, name, description, metadata_type_id, alchemy_column, alchemy_expression=None):
+        super(NativeField, self).__init__(name, description, metadata_type_id, alchemy_column)
         self._expression = alchemy_expression
 
     @property
@@ -83,8 +83,8 @@ class SimpleDocField(PgField):
     A field with a single value (eg. String, int)
     """
 
-    def __init__(self, name, description, collection_id, alchemy_column, offset=None):
-        super(SimpleDocField, self).__init__(name, description, collection_id, alchemy_column)
+    def __init__(self, name, description, metadata_type_id, alchemy_column, offset=None):
+        super(SimpleDocField, self).__init__(name, description, metadata_type_id, alchemy_column)
         self.offset = offset
 
     @property
@@ -116,8 +116,8 @@ class RangeDocField(PgField):
     values in the document.
     """
 
-    def __init__(self, name, description, collection_id, alchemy_column, min_offset=None, max_offset=None):
-        super(RangeDocField, self).__init__(name, description, collection_id, alchemy_column)
+    def __init__(self, name, description, metadata_type_id, alchemy_column, min_offset=None, max_offset=None):
+        super(RangeDocField, self).__init__(name, description, metadata_type_id, alchemy_column)
         self.min_offset = min_offset
         self.max_offset = max_offset
 
@@ -238,12 +238,12 @@ class EqualsExpression(PgExpression):
         return self.field.alchemy_expression == self.value
 
 
-def parse_fields(doc, collection_id, table_column):
+def parse_fields(doc, metadata_type_id, table_column):
     """
     Parse a field spec document into objects.
 
     Example document:
-    :param collection_id:
+    :param metadata_type_id:
     ::
 
         {
@@ -268,7 +268,7 @@ def parse_fields(doc, collection_id, table_column):
     :rtype: dict[str, PgField]
     """
 
-    def _get_field(name, collection_id, descriptor, column):
+    def _get_field(name, metadata_type_id, descriptor, column):
         """
 
         :type name: str
@@ -286,7 +286,7 @@ def parse_fields(doc, collection_id, table_column):
 
         field_class = type_map.get(type_name)
         try:
-            return field_class(name, description, collection_id, column, **descriptor)
+            return field_class(name, description, metadata_type_id, column, **descriptor)
         except TypeError as e:
             raise RuntimeError(
                 'Field {name} has unexpected argument for a {type}'.format(
@@ -294,4 +294,4 @@ def parse_fields(doc, collection_id, table_column):
                 ), e
             )
 
-    return {name: _get_field(name, collection_id, descriptor, table_column) for name, descriptor in doc.items()}
+    return {name: _get_field(name, metadata_type_id, descriptor, table_column) for name, descriptor in doc.items()}

@@ -23,9 +23,11 @@ _SINGLE_RUN_CONFIG_TEMPLATE = """
 testdata: file://{test_tile_folder}
 """
 
-INTEGRATION_DEFAULT_CONFIG_FILE = Path(__file__).parent.joinpath('agdcintegration.conf')
+INTEGRATION_DEFAULT_CONFIG_PATH = Path(__file__).parent.joinpath('agdcintegration.conf')
 
-_TELEMETRY_COLLECTION_DESCRIPTOR = Path(__file__).parent.joinpath('telemetry-collection.yaml')
+_TELEMETRY_COLLECTION_DEF_PATH = Path(__file__).parent.joinpath('telemetry-collection.yaml')
+_ANCILLARY_COLLECTION_DEF_PATH = Path(__file__).parent.joinpath('ancillary-collection.yaml')
+
 _EXAMPLE_LS5_NBAR = Path(__file__).parent.joinpath('example-ls5-nbar.yaml')
 
 
@@ -37,7 +39,7 @@ def integration_config_paths(tmpdir):
         _SINGLE_RUN_CONFIG_TEMPLATE.format(test_tile_folder=test_tile_folder)
     )
     return (
-        str(INTEGRATION_DEFAULT_CONFIG_FILE),
+        str(INTEGRATION_DEFAULT_CONFIG_PATH),
         str(run_config_file),
         os.path.expanduser('~/.datacube_integration.conf')
     )
@@ -129,16 +131,30 @@ def default_collection(index, default_collection_doc, default_metadata_type):
 
 @pytest.fixture
 def telemetry_collection_doc():
-    return list(ui.read_documents(_TELEMETRY_COLLECTION_DESCRIPTOR))[0][1]
+    return list(ui.read_documents(_TELEMETRY_COLLECTION_DEF_PATH))[0][1]
 
 
 @pytest.fixture
-def telemetry_collection(index, telemetry_collection_doc):
+def ancillary_collection_docs():
+    return [doc for (path, doc) in ui.read_documents(_ANCILLARY_COLLECTION_DEF_PATH)]
+
+
+@pytest.fixture
+def telemetry_collection(index, default_metadata_type, telemetry_collection_doc):
     """
     :type index: datacube.index._api.Index
     :type telemetry_collection_doc: dict
     """
     return index.collections.add(telemetry_collection_doc)
+
+
+@pytest.fixture
+def ancillary_collection(index, ancillary_collection_docs):
+    """
+    :type index: datacube.index._api.Index
+    :type ancillary_collection_docs: list[dict]
+    """
+    return index.collections.add(ancillary_collection_docs[0])
 
 
 @pytest.fixture

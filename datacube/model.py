@@ -280,7 +280,6 @@ class Collection(object):
         :type metadata_type: MetadataType
         :type match: DatasetMatcher
         :type name: str
-        :type description: str
         """
         self.id_ = id_
 
@@ -302,18 +301,18 @@ class Collection(object):
 
 class DatasetOffsets(object):
     """
-    Where to find certain fields in dataset metadata.
+    Where to find certain mandatory fields in dataset metadata.
     """
 
     def __init__(self,
-                 uuid_field,
-                 label_field,
-                 creation_time_field,
-                 measurements_dict,
-                 sources):
+                 uuid_field=None,
+                 label_field=None,
+                 creation_time_field=None,
+                 measurements_dict=None,
+                 sources=None):
         # UUID for a dataset. Always unique.
         #: :type: tuple[string]
-        self.uuid_field = uuid_field
+        self.uuid_field = uuid_field or ('id',)
 
         # The dataset "label" is the logical identifier for a dataset.
         #
@@ -333,25 +332,25 @@ class DatasetOffsets(object):
         #
         # But the collection owner can use any string to label their datasets.
         #: :type: tuple[string]
-        self.label_field = label_field
+        self.label_field = label_field or ('label',)
 
         # datetime the dataset was processed/created.
         #: :type: tuple[string]
-        self.creation_time_field = creation_time_field
+        self.creation_time_field = creation_time_field or ('creation_dt',)
 
         # Where to find a dict of measurements/bands in the dataset.
         #  -> Dict key is measurement/band id,
         #  -> Dict value is object with fields depending on the storage driver.
         #     (such as path to band file, offset within file etc.)
         #: :type: tuple[string]
-        self.measurements_dict = measurements_dict
+        self.measurements_dict = measurements_dict or ('measurements',)
 
         # Where to find a dict of embedded source datasets
         #  -> The dict is of form: classifier->source_dataset_doc
         #  -> 'classifier' is how to classify/identify the relationship (usually the type of source it was eg. 'nbar').
         #      An arbitrary string, but you should be consistent between datasets (to query relationships).
         #: :type: tuple[string]
-        self.sources = sources
+        self.sources = sources or ('lineage', 'source_datasets')
 
 
 class TileSpec(object):

@@ -9,6 +9,7 @@ import logging
 
 import cachetools
 
+from datacube import compat
 from datacube.index.fields import InvalidDocException
 from datacube.model import Dataset, Collection, DatasetMatcher, DatasetOffsets, MetadataType
 from . import fields
@@ -125,11 +126,11 @@ class MetadataTypeResource(object):
         return MetadataType(
             query_row['name'],
             DatasetOffsets(
-                uuid_field=dataset_['id_offset'],
-                label_field=dataset_['label_offset'],
-                creation_time_field=dataset_['creation_dt_offset'],
-                measurements_dict=dataset_['measurements_offset'],
-                sources=dataset_['sources_offset'],
+                uuid_field=dataset_.get('id_offset'),
+                label_field=dataset_.get('label_offset'),
+                creation_time_field=dataset_.get('creation_dt_offset'),
+                measurements_dict=dataset_.get('measurements_offset'),
+                sources=dataset_.get('sources_offset'),
             ),
             dataset_search_fields=self._db.get_dataset_fields(query_row),
             storage_unit_search_fields=self._db.get_storage_unit_fields(query_row),
@@ -155,7 +156,15 @@ class CollectionResource(object):
         name = definition['name']
         dataset_metadata = definition['match']['metadata']
         match_priority = int(definition['match']['priority'])
-        metadata_type = self.metadata_type_resource.get_by_name(definition['metadata_type'])
+        metadata_type = definition['metadata_type']
+
+        # They either specified the name of a metadata type, or specified a metadata type.
+        # Is it a name?
+        if isinstance(metadata_type, compat.string_types):
+            metadata_type = self.metadata_type_resource.get_by_name(metadata_type)
+        else:
+            # Otherwise they embedded a document, add it if needed:
+            metadata_type = self.metadata_type_resource.add(metadata_type)
 
         if not metadata_type:
             raise InvalidDocException('Unkown metadata type: %r' % definition['metadata_type'])
@@ -180,6 +189,9 @@ class CollectionResource(object):
         return self.get_by_name(name)
 
     def add_many(self, definitions):
+        """
+        :type definitions: list[dict]
+        """
         for definition in definitions:
             self.add(definition)
 

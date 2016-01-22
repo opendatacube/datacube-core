@@ -7,7 +7,6 @@ from __future__ import absolute_import
 import csv
 import datetime
 import io
-from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
@@ -168,39 +167,48 @@ def test_searches_only_collection(index, db, default_collection, telemetry_colle
         _telemetry_uuid
     )
     assert was_inserted
-    metadata_type = default_collection.metadata_type
 
+    assert default_collection.metadata_type.id_ == telemetry_collection.metadata_type.id_
+
+    metadata_type = telemetry_collection.metadata_type
+    assert index.datasets.search_eager()
     # No results on the default collection.
-    default_field = metadata_type.dataset_fields.get
+    f = metadata_type.dataset_fields.get
     datasets = index.datasets.search_eager(
-        default_field('platform') == 'LANDSAT_8',
-        default_field('instrument') == 'OLI_TIRS'
+        collection=default_collection.name,
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS'
     )
     assert len(datasets) == 0
 
     # One result in the telemetry collection.
-    telemetry_field = metadata_type.dataset_fields.get
     datasets = index.datasets.search_eager(
-        telemetry_field('platform') == 'LANDSAT_8',
-        telemetry_field('instrument') == 'OLI_TIRS',
+        collection=telemetry_collection.name,
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS',
     )
     assert len(datasets) == 1
     assert datasets[0].id == _telemetry_uuid
 
-    # An error if you mix collections (although we may support this in the future):
+    # One result when no collection specified.
+    datasets = index.datasets.search_eager(
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS',
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == _telemetry_uuid
+
+
+def test_cannot_search_multiple_metadata_types(index, db, default_collection, ancillary_collection):
+    f = default_collection.metadata_type.dataset_fields.get
+    ancillary_f = ancillary_collection.metadata_type.dataset_fields.get
+
+    # An error if you mix metadata types (although we may support this in the future):
     with pytest.raises(ValueError):
         index.datasets.search_eager(
-            default_field('platform') == 'LANDSAT_8',
-            telemetry_field('instrument') == 'OLI_TIRS',
+            f('platform') == 'LANDSAT_8',
+            ancillary_f('name') == 'LO8BPF2014',
         )
-
-    field = index.datasets.get_field
-    # Specify explicit collection and a parameter.
-    results = index.datasets.search_eager(
-        field('collection') == 'landsat_telemetry',
-        telemetry_field('platform') == 'LANDSAT_8'
-    )
-    assert len(results) == 1
 
 
 def test_fetch_all_of_collection(index, db, default_collection, telemetry_collection):

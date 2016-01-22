@@ -164,13 +164,13 @@ def test_collection_indexes_views_exist(db, telemetry_collection):
     :type db: datacube.index.postgres._api.PostgresDb
     :type telemetry_collection: datacube.model.Collection
     """
-    # Ensure indexes were created for the telemetry collection (following the naming conventions):
-    val = db._connection.execute("SELECT to_regclass('agdc.ix_field_landsat_telemetry_dataset_platform')").scalar()
-    assert val == 'agdc.ix_field_landsat_telemetry_dataset_platform'
+    # Ensure indexes were created for the eo metadata type (following the naming conventions):
+    val = db._connection.execute("SELECT to_regclass('agdc.ix_field_eo_dataset_platform')").scalar()
+    assert val == 'agdc.ix_field_eo_dataset_platform'
 
     # Ensure view was created (following naming conventions)
-    val = db._connection.execute("SELECT to_regclass('agdc.landsat_telemetry_dataset')").scalar()
-    assert val == 'agdc.landsat_telemetry_dataset'
+    val = db._connection.execute("SELECT to_regclass('agdc.eo_dataset')").scalar()
+    assert val == 'agdc.eo_dataset'
 
 
 def test_idempotent_add_collection(index, telemetry_collection, telemetry_collection_doc):

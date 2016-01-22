@@ -303,16 +303,19 @@ class PostgresDb(object):
                 STORAGE_UNIT.c.path
             )
         }
-        unit_search_fields = collection_result['definition']['storage_unit']['search_fields']
+        storage_unit_def = collection_result['definition'].get('storage_unit')
+        if storage_unit_def and 'search_fields' in storage_unit_def:
+            unit_search_fields = storage_unit_def['search_fields']
 
-        # noinspection PyTypeChecker
-        fields.update(
-            parse_fields(
-                unit_search_fields,
-                collection_result['id'],
-                STORAGE_UNIT.c.descriptor
+            # noinspection PyTypeChecker
+            fields.update(
+                parse_fields(
+                    unit_search_fields,
+                    collection_result['id'],
+                    STORAGE_UNIT.c.descriptor
+                )
             )
-        )
+
         return fields
 
     def search_datasets(self, expressions, select_fields=None):
@@ -506,29 +509,31 @@ def _prepare_expressions(expressions, primary_table):
     :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
     :param primary_table: SQLAlchemy table
     """
-    # We currently only allow one collection to be queried (our indexes are per-collection)
-    collection_references = set()
+    # We currently only allow one metadata to be queried at a time (our indexes are per-type)
+    metadata_type_references = set()
     join_tables = set()
 
     def tables_referenced(expression):
         if isinstance(expression, OrExpression):
             return reduce_(lambda a, b: a | b, (tables_referenced(expr) for expr in expression.exprs), set())
 
+        #: :type: datacube.index.postgres._fields.PgField
         field = expression.field
         table = field.alchemy_column.table
-        collection_id = field.collection_id
-        return {(table, collection_id)}
+        metadata_type_id = field.metadata_type_id
+        return {(table, metadata_type_id)}
 
-    for table, collection_id in reduce_(lambda a, b: a | b, (tables_referenced(expr) for expr in expressions), set()):
+    for table, metadata_type_id in reduce_(lambda a, b: a | b, (tables_referenced(expr) for expr in expressions),
+                                           set()):
         if table != primary_table:
             join_tables.add(table)
-        if collection_id:
-            collection_references.add((table, collection_id))
+        if metadata_type_id:
+            metadata_type_references.add((table, metadata_type_id))
 
-    unique_collections = set([c[1] for c in collection_references])
-    if len(unique_collections) > 1:
+    unique_metadata_types = set([c[1] for c in metadata_type_references])
+    if len(unique_metadata_types) > 1:
         raise ValueError(
-            'Currently only one collection can be queried at a time. (Tried %r)' % collection_references
+            'Currently only one metadata type can be queried at a time. (Tried %r)' % metadata_type_references
         )
 
     def raw_expr(expression):
@@ -538,10 +543,10 @@ def _prepare_expressions(expressions, primary_table):
 
     raw_expressions = [raw_expr(expression) for expression in expressions]
 
-    # We may have multiple references: storage.collection_ref and dataset.collection_ref.
+    # We may have multiple references: storage.metadata_type_ref and dataset.metadata_type_ref.
     # We want to include all, to ensure the indexes are used.
-    for from_table, queried_collection in collection_references:
-        raw_expressions.insert(0, from_table.c.collection_ref == queried_collection)
+    for from_table, queried_metadata_type in metadata_type_references:
+        raw_expressions.insert(0, from_table.c.metadata_type_ref == queried_metadata_type)
 
     from_expression = primary_table
     for table in join_tables:
