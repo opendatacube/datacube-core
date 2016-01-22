@@ -60,8 +60,10 @@ definitions:
                 "$ref": "#/definitions/dtype"
             nodata:
                 type: number
+            units:
+                type: string
             resampling_method:
-                enum: ['cubic', 'nearest']
+                enum: ['nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average']
             #
             # Driver specific fields.
             #   -> Each of these could be written as a separate jsonschema object definition,
@@ -72,8 +74,6 @@ definitions:
             varname:
                 # Alphanumeric or underscore
                 pattern: '^\w+$'
-            fill_value:
-                type: number
             zlib:
                 type: boolean
             fletcher32:
