@@ -117,7 +117,7 @@ def test_rejects_invalid_docs(invalid_mapping_update):
 @pytest.mark.parametrize("valid_mapping_measurmemnt", [
     {},
     # With the optional properties
-    {'fill_value': -999},
+    {'nodata': -999},
 ])
 def test_accepts_valid_measurements(valid_mapping_measurmemnt):
     mapping = deepcopy(mapping_with_only_mandatory_fields)
