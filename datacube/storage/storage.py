@@ -211,14 +211,10 @@ class GroupDatasetsByTimeDataProvider(object):
             if len(group) > 1:
                 _LOG.warning("Mosaicing multiple datasets %s@%s: %s", tile_index, time, group)
 
-    def get_number_of_times(self):
-        return len(self.datasets_grouped_by_time)
-
     def get_time_values(self):
         return [time for time, _ in self.datasets_grouped_by_time]
 
     def get_metadata_documents(self):
-
         for time_index, (_, group) in enumerate(self.datasets_grouped_by_time):
             yield time_index, (dataset.metadata_doc for dataset in group)
 

@@ -4,6 +4,7 @@ Ingest datasets into the AGDC.
 """
 from __future__ import absolute_import
 
+from collections import defaultdict
 import os
 import sys
 import signal
@@ -63,6 +64,8 @@ def find_storage_types_for_datasets(datasets, index=None):
     """
     Find matching storage_types for datasets
 
+    Return a dictionary, keys are storage_type_ids, values are a list of datasets
+
     :type datasets: list[datacube.model.Dataset]
     :type index: datacube.index._api.Index
     :rtype dict[int, list[datacube.model.Dataset]]
@@ -70,13 +73,13 @@ def find_storage_types_for_datasets(datasets, index=None):
     # TODO: Move to storage-types/storage-mappings
     index = index or index_connect()
 
-    storage_types = {}
+    storage_types = defaultdict(list)
     for dataset in datasets:
-        matching_types = index.storage.types.get_for_dataset(dataset)
-        if not matching_types:
-            _LOG.warning('No storage types found for %s dataset', dataset)
-        for storage_type in matching_types:
-            storage_types.setdefault(storage_type.id_, []).append(dataset)
+        dataset_storage_types = index.storage.types.get_for_dataset(dataset)
+        if not dataset_storage_types:
+            raise RuntimeError('No storage types found for %s dataset', dataset)
+        for storage_type in dataset_storage_types:
+            storage_types[storage_type.id_].append(dataset)
     return storage_types
 
 
