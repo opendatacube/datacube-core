@@ -33,7 +33,12 @@ if __name__ == '__main__':
 
 def process_storage_unit(filename, index):
     nco = open_storage_unit(filename)
-    datasets = pull_datasets_from_storage_unit(nco)
+    datasets = list(pull_datasets_from_storage_unit(nco))
+
+    if len(datasets) == 0:
+        raise RuntimeError("No datasets found in storage unit {}. Unable to ingest.".format(filename))
+    elif len(datasets) > 1:
+        raise RuntimeError("Multiple datasets found in storage unit {}. Unable to ingest.".format(filename))
 
     add_datasets_to_index(datasets, index)
 
@@ -49,7 +54,9 @@ def open_storage_unit(path):
 
 
 def pull_datasets_from_storage_unit(storage_unit):
-    raw_datasets = storage_unit['extra_metadata']
+    if 'extra_metadata' not in storage_unit.variables:
+        raise StopIteration
+    raw_datasets = storage_unit.variables['extra_metadata']
     for parsed_doc in yaml.safe_load_all(raw_datasets):
         yield parsed_doc
 
