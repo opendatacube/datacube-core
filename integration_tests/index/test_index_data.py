@@ -119,7 +119,7 @@ def test_index_storage_unit(index, db, default_collection):
         {},
         {},
     )
-    mapping = db._connection.execute(STORAGE_TYPE.select()).first()
+    storage_type = db._connection.execute(STORAGE_TYPE.select()).first()
 
     # Add storage unit
     index.storage.add(
@@ -134,7 +134,7 @@ def test_index_storage_unit(index, db, default_collection):
                 filename_pattern="foo.nc",
                 roi=None,
                 definition={},
-                id_=mapping['id']
+                id_=storage_type['id']
             ),
             {'test': 'descriptor'},
             '/test/offset'
@@ -146,7 +146,7 @@ def test_index_storage_unit(index, db, default_collection):
     unit = units[0]
     assert unit['descriptor'] == {'test': 'descriptor'}
     assert unit['path'] == '/test/offset'
-    assert unit['storage_type_ref'] == mapping['id']
+    assert unit['storage_type_ref'] == storage_type['id']
 
     # Dataset and storage should have been linked.
     d_ss = db._connection.execute(DATASET_STORAGE.select()).fetchall()

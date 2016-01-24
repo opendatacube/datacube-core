@@ -50,8 +50,8 @@ def test_full_ingestion(global_integration_cli_args, index, default_collection, 
     assert default_collection  # default_collection has been added to database by fixture
 
     # Load a mapping config
-    index.mappings.add(load_test_storage_config(LS5_NBAR_STORAGE_TYPE))
-    index.mappings.add(load_test_storage_config(LS5_NBAR_ALBERS_STORAGE_TYPE))
+    index.storage.types.add(load_test_storage_config(LS5_NBAR_STORAGE_TYPE))
+    index.storage.types.add(load_test_storage_config(LS5_NBAR_ALBERS_STORAGE_TYPE))
 
     # Run Ingest script on a dataset
     opts = list(global_integration_cli_args)

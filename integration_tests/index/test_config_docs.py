@@ -112,13 +112,13 @@ def test_get_for_dataset(index, local_config):
     """
     dataset = Dataset(None, _DATASET_METADATA, '/tmp/somepath.yaml')
 
-    storage_types = index.mappings.get_for_dataset(dataset)
+    storage_types = index.storage.types.get_for_dataset(dataset)
     assert len(storage_types) == 0
 
-    index.mappings.add(_STORAGE_MAPPING)
+    index.storage.types.add(_STORAGE_MAPPING)
 
     # The properties of the dataset should match.
-    storage_types = index.mappings.get_for_dataset(dataset)
+    storage_types = index.storage.types.get_for_dataset(dataset)
     assert len(storage_types) == 1
 
     storage_type = storage_types[0]
@@ -137,7 +137,7 @@ def test_get_for_dataset(index, local_config):
         'platform': {'code': 'LANDSAT_8'},
         'product_type': 'NBAR'
     }, '/tmp/other.yaml')
-    storage_types = index.mappings.get_for_dataset(dataset)
+    storage_types = index.storage.types.get_for_dataset(dataset)
     assert len(storage_types) == 0
 
 
@@ -146,17 +146,17 @@ def test_idempotent_add_mapping(index, local_config):
     :type local_config: datacube.config.LocalConfig
     :type index: datacube.index._api.Index
     """
-    index.mappings.add(_STORAGE_MAPPING)
+    index.storage.types.add(_STORAGE_MAPPING)
     # Second time, no effect, because it's equal.
-    index.mappings.add(_STORAGE_MAPPING)
+    index.storage.types.add(_STORAGE_MAPPING)
 
     # But if we add the same mapping with differing properties we should get an error:
     different_storage_mapping = copy.deepcopy(_STORAGE_MAPPING)
     different_storage_mapping['location_name'] = 'new_location'
     with pytest.raises(ValueError):
-        index.mappings.add(different_storage_mapping)
+        index.storage.types.add(different_storage_mapping)
 
-    assert index.mappings.get_by_name(_STORAGE_MAPPING['name']) is not None
+    assert index.storage.types.get_by_name(_STORAGE_MAPPING['name']) is not None
 
 
 def test_collection_indexes_views_exist(db, telemetry_collection):

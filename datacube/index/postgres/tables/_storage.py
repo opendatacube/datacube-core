@@ -18,7 +18,7 @@ STORAGE_TYPE = Table(
     'storage_type', _core.METADATA,
     Column('id', SmallInteger, primary_key=True, autoincrement=True),
 
-    # A name/label for this mapping (eg. 'LS7 NBAR'). Specified by users.
+    # A name/label for this storage type (eg. 'ls7_nbar'). Specified by users.
     Column('name', String, unique=True, nullable=False),
 
     # Match any datasets whose metadata is a superset of this.

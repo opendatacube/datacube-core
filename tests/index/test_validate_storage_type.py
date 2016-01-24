@@ -11,7 +11,7 @@ import pytest
 from datacube.index._storage import _ensure_valid
 from datacube.index.fields import InvalidDocException
 
-mapping_with_only_mandatory_fields = {
+only_mandatory_fields = {
     'name': 'ls7_nbar',
     'file_path_template': '{platform[code]}_{instrument[name]}_{tile_index[0]}_{tile_index[1]}_'
                           '{start_time:%Y-%m-%dT%H-%M-%S.%f}.nc',
@@ -68,28 +68,28 @@ mapping_with_only_mandatory_fields = {
 }
 
 
-@pytest.mark.parametrize("valid_mapping_update", [
+@pytest.mark.parametrize("valid_storage_type_update", [
     {},
     {'match': {'metadata': {'anything': 'anything'}}},
     # With the optional properties
     {'global_attributes': {'anything': 'anything'}},
     {'description': 'Some string'},
 ])
-def test_accepts_valid_mappings(valid_mapping_update):
-    mapping = deepcopy(mapping_with_only_mandatory_fields)
-    mapping.update(valid_mapping_update)
+def test_accepts_valid_docs(valid_storage_type_update):
+    doc = deepcopy(only_mandatory_fields)
+    doc.update(valid_storage_type_update)
     # Should have no errors.
-    _ensure_valid(mapping)
+    _ensure_valid(doc)
 
 
-def test_incomplete_mapping_invalid():
+def test_incomplete_storage_type_invalid():
     # Invalid: An empty doc.
     with pytest.raises(InvalidDocException) as e:
         _ensure_valid({})
 
 
 # Changes to the above dict that should render it invalid.
-@pytest.mark.parametrize("invalid_mapping_update", [
+@pytest.mark.parametrize("invalid_storage_type_update", [
     # Mandatory
     {'name': None},
     {'file_path_template': None},
@@ -107,23 +107,23 @@ def test_incomplete_mapping_invalid():
     {'mappings': {}},
     {'mappings': ''}
 ])
-def test_rejects_invalid_docs(invalid_mapping_update):
-    mapping = deepcopy(mapping_with_only_mandatory_fields)
-    mapping.update(invalid_mapping_update)
+def test_rejects_invalid_docs(invalid_storage_type_update):
+    mapping = deepcopy(only_mandatory_fields)
+    mapping.update(invalid_storage_type_update)
     with pytest.raises(InvalidDocException) as e:
         _ensure_valid(mapping)
 
 
-@pytest.mark.parametrize("valid_mapping_measurmemnt", [
+@pytest.mark.parametrize("valid_storage_type_measurement", [
     {},
     # With the optional properties
     {'nodata': -999},
 ])
-def test_accepts_valid_measurements(valid_mapping_measurmemnt):
-    mapping = deepcopy(mapping_with_only_mandatory_fields)
+def test_accepts_valid_measurements(valid_storage_type_measurement):
+    mapping = deepcopy(only_mandatory_fields)
     mapping['measurements'].update(
         {
-            '10': valid_mapping_measurmemnt
+            '10': valid_storage_type_measurement
         }
     )
     # Should have no errors.
@@ -131,7 +131,7 @@ def test_accepts_valid_measurements(valid_mapping_measurmemnt):
 
 
 # Changes to the above dict that should render it invalid.
-@pytest.mark.parametrize("invalid_mapping_measurement", [
+@pytest.mark.parametrize("invalid_storage_type_measurement", [
     # nodata must be numeric
     {'nodata': '-999'},
     # Limited dtype options
@@ -146,11 +146,11 @@ def test_accepts_valid_measurements(valid_mapping_measurmemnt):
     {'varname': 'white space'},
     {'varname': '%chars%'},
 ])
-def test_rejects_invalid_measurements(invalid_mapping_measurement):
-    mapping = deepcopy(mapping_with_only_mandatory_fields)
+def test_rejects_invalid_measurements(invalid_storage_type_measurement):
+    mapping = deepcopy(only_mandatory_fields)
     mapping['measurements'].update(
         {
-            '10': invalid_mapping_measurement
+            '10': invalid_storage_type_measurement
         }
     )
     with pytest.raises(InvalidDocException) as e:

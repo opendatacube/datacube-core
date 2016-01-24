@@ -51,15 +51,15 @@ def collections():
 
 @cli.command('check', help='Verify & view current configuration.')
 @pass_config
-def check(config):
-    echo('Host: {}:{}'.format(config.db_hostname or 'localhost', config.db_port or '5432'))
-    echo('Database: {}'.format(config.db_database))
-    echo('User: {}'.format(config.db_username))
+def check(config_file):
+    echo('Host: {}:{}'.format(config_file.db_hostname or 'localhost', config_file.db_port or '5432'))
+    echo('Database: {}'.format(config_file.db_database))
+    echo('User: {}'.format(config_file.db_username))
 
     echo('\n')
     echo('Attempting connect')
     try:
-        index_connect(local_config=config)
+        index_connect(local_config=config_file)
         echo('Success.')
     #: pylint: disable=broad-except
     except Exception:
@@ -78,32 +78,35 @@ def collection_add(index, files):
         index.collections.add(parsed_doc)
 
 
-@cli.group(help='Dataset-storage types')
-def mappings():
+@cli.group(help='Storage types')
+def storage():
     pass
 
 
-@mappings.command('add')
+@storage.command('add')
 @click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
 @pass_index
 @click.pass_context
-def add_mappings(ctx, index, files):
+def add_storage_types(ctx, index, files):
     for descriptor_path, parsed_doc in _read_docs(files):
         try:
-            index.mappings.add(parsed_doc)
+            index.storage.types.add(parsed_doc)
         except KeyError as ke:
             _LOG.exception(ke)
-            _LOG.error('Invalid mapping document: %s', descriptor_path)
+            _LOG.error('Invalid storage type definition: %s', descriptor_path)
             ctx.exit(1)
 
 
-@mappings.command('list')
+@storage.command('list')
 @pass_index
-def list_mappings(index):
-    for mapping in index.mappings.get_all():
-        echo("{m.id_:2d}. {m.name:15}: {m.description!s}".format(m=mapping))
+def list_storage_types(index):
+    """
+    :type index: datacube.index._api.Index
+    """
+    for storage_type in index.storage.types.get_all():
+        echo("{m.id_:2d}. {m.name:15}: {m.description!s}".format(m=storage_type))
 
 
 def _read_docs(paths):

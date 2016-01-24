@@ -73,7 +73,7 @@ def _set_config(ctx, param, value):
     if not ctx.obj:
         ctx.obj = {}
 
-    ctx.obj['config'] = parsed_config
+    ctx.obj['config_file'] = parsed_config
 
 
 # This is a function, so it's valid to be lowercase.
@@ -84,7 +84,7 @@ global_cli_options = compose(
     click.option('--verbose', '-v', count=True, callback=_init_logging,
                  is_eager=True, expose_value=False,
                  help="Use multiple times for more verbosity"),
-    click.option('--config', '-C', multiple=True, default='',
+    click.option('--config_file', '-C', multiple=True, default='',
                  callback=_set_config, expose_value=False),
     click.option('--log-queries', is_flag=True, callback=_log_queries,
                  expose_value=False,
@@ -96,7 +96,7 @@ def pass_config(f):
     """Get a datacube config as the first argument. """
 
     def new_func(*args, **kwargs):
-        config_ = click.get_current_context().obj['config']
+        config_ = click.get_current_context().obj['config_file']
         return f(config_, *args, **kwargs)
 
     return functools.update_wrapper(new_func, f)
@@ -106,7 +106,7 @@ def pass_index(f):
     """Get a connection to the index as the first argument. """
 
     def new_func(*args, **kwargs):
-        index = index_connect(click.get_current_context().obj['config'])
+        index = index_connect(click.get_current_context().obj['config_file'])
         return f(index, *args, **kwargs)
 
     return functools.update_wrapper(new_func, f)

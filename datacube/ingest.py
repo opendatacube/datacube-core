@@ -39,26 +39,24 @@ def index_datasets(path, index=None):
 
 def store_datasets(datasets, index=None, workers=0):
     """
-    Find matching mappings for datasets
-    Create storage units for datasets as per the mappings
-    Add storage units to the index
+    Create any necessary storage units for the given datasets.
 
     :type datasets: list[datacube.model.Dataset]
     :type index: datacube.index._api.Index
     """
     index = index or index_connect()
 
-    storage_mappings = find_mappings(datasets, index)
+    storage_types = find_storage_types(datasets, index)
 
-    for storage_mapping_id, datasets in storage_mappings.items():
-        storage_mapping = index.mappings.get(storage_mapping_id)
-        _LOG.info('Using %s to store %s datasets', storage_mapping, datasets)
-        store_datasets_with_storage_type(datasets, storage_mapping, index=index, workers=workers)
+    for storage_type_id, datasets in storage_types.items():
+        storage_type = index.storage.types.get(storage_type_id)
+        _LOG.info('Using %s to store %s datasets', storage_type, datasets)
+        store_datasets_with_storage_type(datasets, storage_type, index=index, workers=workers)
 
 
-def find_mappings(datasets, index=None):
+def find_storage_types(datasets, index=None):
     """
-    Find matching mappings for datasets
+    Find matching storage types for datasets
 
     :type datasets: list[datacube.model.Dataset]
     :type index: datacube.index._api.Index
@@ -66,19 +64,19 @@ def find_mappings(datasets, index=None):
     """
     index = index or index_connect()
 
-    storage_mappings = {}
+    storage_types = {}
     for dataset in datasets:
-        dataset_storage_mappings = index.mappings.get_for_dataset(dataset)
-        if not dataset_storage_mappings:
-            _LOG.warning('No mappings found for %s dataset', dataset)
-        for storage_mapping in dataset_storage_mappings:
-            storage_mappings.setdefault(storage_mapping.id_, []).append(dataset)
-    return storage_mappings
+        matching_types = index.storage.types.get_for_dataset(dataset)
+        if not matching_types:
+            _LOG.warning('No storage types found for %s dataset', dataset)
+        for storage_type in matching_types:
+            storage_types.setdefault(storage_type.id_, []).append(dataset)
+    return storage_types
 
 
 def store_datasets_with_storage_type(datasets, storage_type, index=None, workers=0):
     """
-    Create storage units for datasets using storage_mapping
+    Create storage units for datasets using storage_type
     Add storage units to the index
 
     :type datasets: list[datacube.model.Dataset]
@@ -95,21 +93,21 @@ def store_datasets_with_storage_type(datasets, storage_type, index=None, workers
 
     try:
         if workers:
-            storage_units = _run_parallel_tasks(create_storage_unit, tasks, workers)
+            storage_units = _run_parallel_tasks(_create_storage_unit, tasks, workers)
         else:
-            storage_units = [create_storage_unit(task) for task in tasks]
+            storage_units = [_create_storage_unit(task) for task in tasks]
 
         index.storage.add_many(storage_units)
     except:
         for task in tasks:
-            remove_storage_unit(task)
+            _remove_storage_unit(task)
         raise
 
 
-def create_storage_unit(task):
-    tile_index, storage_mapping, datasets = task
-    filename = storage.generate_filename(tile_index, datasets, storage_mapping)
-    return storage.create_storage_unit(tile_index, datasets, storage_mapping, filename)
+def _create_storage_unit(task):
+    tile_index, storage_type, datasets = task
+    filename = storage.generate_filename(tile_index, datasets, storage_type)
+    return storage.create_storage_unit(tile_index, datasets, storage_type, filename)
 
 
 def _run_parallel_tasks(func, tasks, workers):
@@ -127,9 +125,9 @@ def _run_parallel_tasks(func, tasks, workers):
     return result
 
 
-def remove_storage_unit(task):
-    tile_index, storage_mapping, datasets = task
-    filename = storage.generate_filename(tile_index, datasets, storage_mapping)
+def _remove_storage_unit(task):
+    tile_index, storage_type, datasets = task
+    filename = storage.generate_filename(tile_index, datasets, storage_type)
     try:
         os.unlink(filename)
     except OSError:

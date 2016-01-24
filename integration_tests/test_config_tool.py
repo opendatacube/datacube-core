@@ -32,7 +32,7 @@ def _run_cli(cli_method, opts, catch_exceptions=False):
     return result
 
 
-def test_add_example_mapping_docs(global_integration_cli_args, db):
+def test_add_example_storage_types(global_integration_cli_args, db):
     """
     Add example mapping docs, to ensure they're valid and up-to-date.
     :type global_integration_cli_args: tuple[str]
@@ -45,7 +45,7 @@ def test_add_example_mapping_docs(global_integration_cli_args, db):
         opts = list(global_integration_cli_args)
         opts.extend(
             [
-                '-v', 'mappings', 'add',
+                '-v', 'storage', 'add',
                 str(mapping_path)
             ]
         )
@@ -70,7 +70,7 @@ def test_error_returned_on_invalid(global_integration_cli_args, db):
         opts = list(global_integration_cli_args)
         opts.extend(
             [
-                '-v', 'mappings', 'add',
+                '-v', 'storage', 'add',
                 str(mapping_path)
             ]
         )

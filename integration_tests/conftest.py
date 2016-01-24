@@ -51,7 +51,7 @@ def global_integration_cli_args(integration_config_paths):
     The first arguments to pass to a cli command for integration test configuration.
     """
     # List of a config files in order.
-    return list(itertools.chain(*(('--config', f) for f in integration_config_paths)))
+    return list(itertools.chain(*(('--config_file', f) for f in integration_config_paths)))
 
 
 @pytest.fixture
@@ -205,4 +205,4 @@ def ls5_nbar_storage_type(db, index):
             }
         }
     )
-    return index.mappings.get(id_)
+    return index.storage.types.get(id_)

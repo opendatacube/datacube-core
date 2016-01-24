@@ -42,8 +42,7 @@ class Index(object):
         self.metadata_types = MetadataTypeResource(db, local_config)
         self.collections = CollectionResource(db, local_config, self.metadata_types)
         self.datasets = DatasetResource(db, local_config, self.collections)
-        self.mappings = StorageTypeResource(db, local_config)
-        self.storage = StorageUnitResource(db, self.mappings, self.collections, local_config)
+        self.storage = StorageUnitResource(db, StorageTypeResource(db, local_config), self.collections, local_config)
 
     def init_db(self, with_default_collection=True):
         is_new = self._db.init()

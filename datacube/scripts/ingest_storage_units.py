@@ -13,7 +13,7 @@ from datacube.model import StorageUnit
 from datacube.storage.netcdf_indexer import index_netcdfs
 from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS
-from datacube.ingest import find_mappings
+from datacube.ingest import find_storage_types
 
 
 @click.command(help="Ingest storage units into the Data Cube.", context_settings=CLICK_SETTINGS)
@@ -37,7 +37,7 @@ def process_storage_unit(filename, index):
 
     add_datasets_to_index(datasets, index)
 
-    storage_mappings = find_mappings(datasets, index)
+    storage_mappings = find_storage_types(datasets, index)
 
     storage_unit = create_storage_unit(datasets, storage_mappings, filename)
 

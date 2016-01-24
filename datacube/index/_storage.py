@@ -39,7 +39,7 @@ class StorageUnitResource(object):
         :type local_config: datacube.config.LocalConfig
         """
         self._db = db
-        self._storage_type_resource = storage_type_resource
+        self.types = storage_type_resource
         self._collection_resource = collection_resource
 
         self._config = local_config
@@ -135,7 +135,7 @@ class StorageUnitResource(object):
         return (StorageUnit(
             # TODO: move dataset ids out of this class?
             [],
-            self._storage_type_resource.get(su['storage_type_ref']),
+            self.types.get(su['storage_type_ref']),
             su['descriptor'],
             # An offset from the location (ie. a URL fragment):
             su['path'],
