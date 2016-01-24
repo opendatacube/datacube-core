@@ -83,11 +83,11 @@ Dataset Metadata is a document that defines critical metadata of the dataset suc
         source_datasets: {}
 
 
-.. _storage-mapping-doc:
+.. _storage-type-doc:
 
-Storage Mapping
----------------
-Storage Mapping is a document that defines the way an input dataset is stored inside the datacube.
+Storage Type
+------------
+A Storage Type is a document that defines the way an input dataset is stored inside the Data Cube.
 
 It controls things like:
     - which measurements are stored
@@ -99,7 +99,7 @@ It controls things like:
 .. code-block:: yaml
 
 
-    name: LS5 NBAR
+    name: ls5_nbar
     description: LS5 NBAR 25 metre, 1 degree tile
 
     # Any datasets matching these metadata properties.
@@ -165,10 +165,11 @@ It controls things like:
 
 
 name
-    Name of the storage mapping. Must be unique.
+    Name of the storage type. It's used as a human-readable identifer. Must be unique and consist of
+    alphanumeric characters and/or underscores.
 
 description
-    Description of the storage mapping.
+    A human-readable description of the storage type.
 
 location_name
     Name of the location where the storage units go. See `Runtime Config`_.
@@ -236,7 +237,7 @@ Runtime Config document specifies various runtime configuration options such as:
 
 .. code-block:: text
 
-    [datacube]
+    [Data Cube]
     db_hostname: 130.56.244.227
     db_database: democube
     db_username: cube_user
