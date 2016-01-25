@@ -6,8 +6,8 @@ import datetime
 import pprint
 # import matplotlib.pyplot as plt
 # import dask
-import xray
-#import xray.plot
+import xarray
+# import xarray.plot
 # import numpy
 
 from datacube import api

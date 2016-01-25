@@ -36,7 +36,7 @@ setup(name='datacube',
           'dask',
           'setuptools',
           'toolz',
-          'xray',
+          'xarray',
       ],
       tests_require=[
           'pytest',

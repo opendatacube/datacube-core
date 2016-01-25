@@ -27,7 +27,7 @@ import copy
 import functools
 import numpy
 import dask.array as da
-import xray
+import xarray
 import rasterio.warp
 
 from .model import Range
@@ -299,9 +299,9 @@ def _get_extra_properties(storage_units, dimensions):
     return extra_properties
 
 
-def _create_response(xrays, dimensions, extra_properties):
+def _create_response(xarrays, dimensions, extra_properties):
     """
-    :param xrays: a dict of xray.DataArrays
+    :param xarrays: a dict of xarray.DataArrays
     :param dimensions: list of dimension names
     :return: dict containing the response data
         {
@@ -311,14 +311,14 @@ def _create_response(xrays, dimensions, extra_properties):
             'dimensions': ...
         }
     """
-    sample_xray = list(xrays.values())[0]
+    sample_xarray = list(xarrays.values())[0]
     response = {
         'dimensions': list(dimensions),
-        'arrays': xrays,
-        'indices': dict((dim, sample_xray.coords[dim].values) for dim in dimensions),
-        'element_sizes': [(abs(sample_xray.coords[dim].values[0] - sample_xray.coords[dim].values[-1]) /
-                           float(sample_xray.coords[dim].size)) for dim in dimensions],
-        'size': sample_xray.shape,
+        'arrays': xarrays,
+        'indices': dict((dim, sample_xarray.coords[dim].values) for dim in dimensions),
+        'element_sizes': [(abs(sample_xarray.coords[dim].values[0] - sample_xarray.coords[dim].values[-1]) /
+                           float(sample_xarray.coords[dim].size)) for dim in dimensions],
+        'size': sample_xarray.shape,
     }
     response.update(extra_properties)
     return response
@@ -369,8 +369,8 @@ def _fill_in_dask_blanks(dsk, storage_units, var_name, dimensions, dim_props, ds
 
 def _get_array(storage_units, var_name, dimensions, dim_props):
     """
-    Create an xray.DataArray
-    :return xray.DataArray
+    Create an xarray.DataArray
+    :return xarray.DataArray
     """
     dsk_id = str(uuid.uuid1())  # unique name for the requested dask
     dsk = _get_dask_for_storage_units(storage_units, var_name, dimensions, dim_props['dim_vals'], dsk_id)
@@ -379,8 +379,8 @@ def _get_array(storage_units, var_name, dimensions, dim_props):
     chunks = tuple(tuple(dim_props['sus_size'][dim]) for dim in dimensions)
     dask_array = da.Array(dsk, dsk_id, chunks)
     coords = [(dim, dim_props['coord_labels'][dim]) for dim in dimensions]
-    xray_data_array = xray.DataArray(dask_array, coords=coords)
-    return xray_data_array
+    xarray_data_array = xarray.DataArray(dask_array, coords=coords)
+    return xarray_data_array
 
 
 def _fix_custom_dimensions(dimensions, dim_props):
@@ -404,14 +404,14 @@ def _get_data_by_variable(storage_units_by_variable, dimensions, dimension_range
     selectors = dimension_ranges_to_selector(dim_props['dimension_ranges'], dim_props['reverse'])
     iselectors = dimension_ranges_to_iselector(dim_props['dimension_ranges'])
 
-    xrays = {}
+    xarrays = {}
     for var_name, storage_units in storage_units_by_variable.items():
-        xray_data_array = _get_array(storage_units, var_name, dimensions, dim_props)
-        cropped = xray_data_array.sel(**selectors)
+        xarray_data_array = _get_array(storage_units, var_name, dimensions, dim_props)
+        cropped = xarray_data_array.sel(**selectors)
         subset = cropped.isel(**iselectors)
-        xrays[var_name] = subset
+        xarrays[var_name] = subset
     extra_properties = _get_extra_properties(sus_with_dims, dimensions)
-    return _create_response(xrays, dimensions, extra_properties)
+    return _create_response(xarrays, dimensions, extra_properties)
 
 
 def _stratify_storage_unit(storage_unit, dimension):

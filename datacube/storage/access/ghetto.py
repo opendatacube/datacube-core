@@ -26,7 +26,7 @@ import numpy
 
 class DataArray(object):
     """
-    Fake DataArray to make xray dependency optional
+    Fake DataArray to make xarray dependency optional
     """
     def __init__(self, data, coords=None, dims=None, attrs=None):
         self.values = data

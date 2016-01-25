@@ -23,7 +23,7 @@ import sys
 import numpy
 
 try:
-    from xray import DataArray
+    from xarray import DataArray
 except ImportError:
     from .ghetto import DataArray
 

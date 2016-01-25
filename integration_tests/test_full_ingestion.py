@@ -82,7 +82,6 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset)
             check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset)
         check_open_with_xray(su.local_path)
 
-
 def ensure_dataset_is_indexed(index):
     datasets = index.datasets.search_eager()
     assert len(datasets) == 1
@@ -125,8 +124,15 @@ def check_dataset_metadata_in_storage_unit(nco, dataset_dir):
 
 
 def check_open_with_xray(file_path):
-    import xray
-    xray.open_dataset(str(file_path))
+    import xarray
+    xarray.open_dataset(str(file_path))
+
+
+def check_open_with_api(index):
+    import datacube.api
+    api = datacube.api.API(index)
+    descriptor = api.get_descriptor({})
+    data = api.get_data()
 
 
 def make_pgsqljson_match_yaml_load(data):
