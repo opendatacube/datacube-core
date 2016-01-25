@@ -19,7 +19,7 @@ PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
 LS5_SAMPLES = CONFIG_SAMPLES / 'ga_landsat_5/'
 LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_nbar_mapping.yaml'
-LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_nbar_mapping_albers.yaml'
+LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_albers.yaml'
 
 TEST_STORAGE_SHRINK_FACTOR = 100
 TEST_STORAGE_NUM_MEASUREMENTS = 2

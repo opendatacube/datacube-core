@@ -33,6 +33,21 @@ _EXAMPLE_LS5_NBAR = Path(__file__).parent.joinpath('example-ls5-nbar.yaml')
 _TELEMETRY_COLLECTION_DESCRIPTOR = Path(__file__).parent.joinpath('telemetry-collection.yaml')
 _EXAMPLE_LS5_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('example-ls5-nbar.yaml')
 
+PROJECT_ROOT = Path(__file__).parents[1]
+CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
+LS5_SAMPLES = CONFIG_SAMPLES / 'ga_landsat_5/'
+LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_nbar_mapping.yaml'
+LS5_NBAR_NAME = 'ls5_nbar'
+LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_albers.yaml'
+LS5_NBAR_ALBERS_NAME = 'ls5_nbar_albers'
+
+TEST_STORAGE_SHRINK_FACTOR = 100
+TEST_STORAGE_NUM_MEASUREMENTS = 2
+GEOGRAPHIC_VARS = ('latitude', 'longitude')
+PROJECTED_VARS = ('x', 'y')
+
+EXAMPLE_LS5_DATASET_ID = 'bbf3e21c-82b0-11e5-9ba1-a0000100fe80'
+
 
 @pytest.fixture
 def integration_config_paths(tmpdir):
@@ -168,66 +183,37 @@ def indexed_ls5_nbar_storage_type(db, index):
     :type index: datacube.index._api.Index
     :rtype: datacube.model.StorageType
     """
-    storage_type = load_test_storage_config(LS5_NBAR_STORAGE_TYPE)
+    storage_types = load_test_storage_config(LS5_NBAR_STORAGE_TYPE)
 
-    index.storage.types.add(storage_type)
-    return index.storage.types.get_by_name(storage_type['name'])
+    for storage_type in storage_types:
+        index.storage.types.add(storage_type)
+
+    return index.storage.types.get_by_name(LS5_NBAR_NAME)
 
 
 @pytest.fixture
 def example_ls5_nbar_metadata_doc():
-    return load_yaml_file(_EXAMPLE_LS5_NBAR_DATASET_FILE)
+    return load_yaml_file(_EXAMPLE_LS5_NBAR_DATASET_FILE)[0]
 
 
 @pytest.fixture
 def indexed_ls5_nbar_albers_storage_type(db, index):
-    storage_type = load_test_storage_config(LS5_NBAR_ALBERS_STORAGE_TYPE)
+    storage_types = load_test_storage_config(LS5_NBAR_ALBERS_STORAGE_TYPE)
 
-    index.storage.types.add(storage_type)
-    return index.storage.types.get_by_name(storage_type['name'])
+    for storage_type in storage_types:
+        index.storage.types.add(storage_type)
 
-
-PROJECT_ROOT = Path(__file__).parents[1]
-CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
-LS5_SAMPLES = CONFIG_SAMPLES / 'ga_landsat_5/'
-LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_nbar_mapping.yaml'
-LS5_NBAR_NAME = 'ls5_nbar'
-LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_nbar_mapping_albers.yaml'
-LS5_NBAR_ALBERS_NAME = 'ls5_nbar_albers'
-
-TEST_STORAGE_SHRINK_FACTOR = 100
-TEST_STORAGE_NUM_MEASUREMENTS = 2
-GEOGRAPHIC_VARS = ('latitude', 'longitude')
-PROJECTED_VARS = ('x', 'y')
-
-EXAMPLE_LS5_DATASET_ID = 'bbf3e21c-82b0-11e5-9ba1-a0000100fe80'
-
-
-def test_shrink_storage_type():
-    storage_type = load_yaml_file(LS5_NBAR_STORAGE_TYPE)
-    storage_type = alter_storage_type_for_testing(storage_type)
-    assert len(storage_type['measurements']) <= TEST_STORAGE_NUM_MEASUREMENTS
-    for var in GEOGRAPHIC_VARS:
-        assert abs(storage_type['storage']['resolution'][var]) == 0.025
-        assert storage_type['storage']['chunking'][var] == 5
-
-
-def test_load_storage_type():
-    storage_type = load_yaml_file(LS5_NBAR_ALBERS_STORAGE_TYPE)
-    assert storage_type
-    assert 'name' in storage_type
-    assert 'storage' in storage_type
-    assert 'match' in storage_type
+    return index.storage.types.get_by_name(LS5_NBAR_ALBERS_NAME)
 
 
 def load_test_storage_config(filename):
-    storage_type = load_yaml_file(filename)
-    return alter_storage_type_for_testing(storage_type)
+    storage_types = load_yaml_file(filename)
+    return [alter_storage_type_for_testing(storage_type) for storage_type in storage_types]
 
 
 def load_yaml_file(filename):
     with open(str(filename)) as f:
-        return yaml.safe_load(f)
+        return list(yaml.safe_load_all(f))
 
 
 def alter_storage_type_for_testing(storage_type):
