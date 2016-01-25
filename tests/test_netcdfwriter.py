@@ -9,7 +9,7 @@ import netCDF4
 import pytest
 
 from datacube.model import TileSpec
-from datacube.storage.netcdf_writer import create_netcdf_writer
+from datacube.storage.netcdf_writer import create_netcdf_writer, map_measurement_descriptor_parameters
 
 GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
            'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
@@ -164,3 +164,9 @@ def build_test_netcdf(filename, affine, projection, chunking, make_measurement_d
         var = ncwriter.ensure_variable(measurement_descriptor, chunking)
         var[time_index] = data
     ncwriter.close()
+
+
+def test_bad_measurement_descriptor():
+    missing_varname = {}
+    with pytest.raises(ValueError):
+        map_measurement_descriptor_parameters(missing_varname)

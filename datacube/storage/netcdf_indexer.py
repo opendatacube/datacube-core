@@ -47,10 +47,6 @@ def index_netcdfs(filenames):
     return files_descriptions
 
 
-def skip_variable(var):
-    return not hasattr(var, 'units')
-
-
 def read_netcdf_structure(filename):
     """
     Read a netcdf4 file and return a dict describing its coordinates and variables

@@ -118,22 +118,6 @@ class NetCDFWriter(object):
         for name, value in tile_spec.global_attrs.items():
             self.nco.setncattr(name, value)
 
-    def find_or_create_time_index(self, insertion_time):
-        """
-        :type insertion_time: datetime
-        :return:
-        """
-        times = self.nco.variables['time']
-
-        if len(times) == 0:
-            _LOG.debug('Inserting time %s', insertion_time)
-            index = len(times)
-            times[index] = _seconds_since_1970(insertion_time)
-        else:
-            index = netCDF4.date2index(insertion_time, times)  # Blow up for a different time
-
-        return index
-
     def create_time_values(self, time_values):
         self._create_time_dimension(len(time_values))
         times = self.nco.variables['time']
