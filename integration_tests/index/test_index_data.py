@@ -89,9 +89,10 @@ def test_index_dataset_with_location(index, default_collection):
     :type index: datacube.index._api.Index
     :type default_collection: datacube.model.Collection
     """
+    PATH = '/tmp/something.yaml'
     dataset = index.datasets.add(
         _telemetry_dataset,
-        metadata_path=Path('/tmp/something.yaml')
+        metadata_path=Path(PATH)
     )
 
     assert dataset.id == _telemetry_uuid
@@ -99,7 +100,7 @@ def test_index_dataset_with_location(index, default_collection):
     assert dataset.collection.id_ == default_collection.id_
     assert dataset.metadata_type.id_ == default_collection.metadata_type.id_
 
-    assert dataset.local_path == Path('/tmp/something.yaml')
+    assert dataset.local_path.absolute() == Path(PATH).absolute()
 
 
 def test_index_storage_unit(index, db, default_collection):

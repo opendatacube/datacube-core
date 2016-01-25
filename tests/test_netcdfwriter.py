@@ -40,7 +40,6 @@ ALBERS_PROJ = """PROJCS["GDA94 / Australian Albers",
                         AXIS["Easting",EAST],
                         AXIS["Northing",NORTH]]"""
 
-
 GLOBAL_ATTRS = {'test_attribute': 'test_value'}
 
 DATA_VARIABLES = ('B1', 'B2')
@@ -83,8 +82,8 @@ def test_create_albers_projection_netcdf(tmpnetcdf_filename):
 
 
 def test_create_epsg4326_netcdf(tmpnetcdf_filename):
-    X_RES = 1.0/DATA_WIDTH
-    Y_RES = -1.0/DATA_HEIGHT
+    X_RES = 1.0 / DATA_WIDTH
+    Y_RES = -1.0 / DATA_HEIGHT
     affine = Affine(X_RES, 0.0, 151.0, 0.0, Y_RES, -29.0)
     chunking = [('time', 1), ('latitude', 100), ('longitude', 100)]
 
@@ -150,7 +149,7 @@ def build_test_netcdf(filename, affine, projection, chunking, make_measurement_d
     tile_spec = TileSpec(projection, affine, DATA_HEIGHT, DATA_WIDTH, global_attrs=GLOBAL_ATTRS)
 
     dates = [datetime(2008, month, 1) for month in (1, 2)]
-    ops = [(band, time_index) for band in (1,2) for time_index in (0,1)]
+    ops = [(band, time_index) for band in (1, 2) for time_index in (0, 1)]
 
     ncwriter = create_netcdf_writer(filename, tile_spec)
 

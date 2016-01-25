@@ -6,8 +6,9 @@ from __future__ import absolute_import, division
 
 import logging
 from collections import namedtuple
-from pathlib import Path
+import os
 
+from pathlib import Path
 from affine import Affine
 import numpy as np
 from osgeo import osr
@@ -21,16 +22,17 @@ Range = namedtuple('Range', ('begin', 'end'))
 
 def _uri_to_local_path(local_uri):
     """
+    Platform dependent URI to Path
     :type local_uri: str
     :rtype: pathlib.Path
 
-    >>> str(_uri_to_local_path('file:///tmp/something.txt'))
-    '/tmp/something.txt'
-    >>> _uri_to_local_path(None)
-    >>> _uri_to_local_path('ftp://example.com/tmp/something.txt')
-    Traceback (most recent call last):
-    ...
-    ValueError: Only file URIs currently supported. Tried 'ftp'.
+    For example on Unix:
+    'file:///tmp/something.txt' -> '/tmp/something.txt'
+
+    On Windows:
+    'file:///C:/tmp/something.txt' -> 'C:\\tmp\\test.tmp'
+
+    Only supports file:// schema URIs
     """
     if not local_uri:
         return None
@@ -39,7 +41,16 @@ def _uri_to_local_path(local_uri):
     if components.scheme != 'file':
         raise ValueError('Only file URIs currently supported. Tried %r.' % components.scheme)
 
-    return Path(components.path)
+    path = _cross_platform_path(components.path)
+
+    return Path(path)
+
+
+def _cross_platform_path(path):
+    if os.name == 'nt':
+        return path[1:]
+    else:
+        return path
 
 
 class DatasetMatcher(object):
@@ -93,9 +104,10 @@ class StorageType(object):
         #: :type: int
         self.id_ = id_
 
-    def local_path_to_location_offset(self, filepath):
-        assert filepath.startswith(self.location)
-        return filepath[len(self.location):]
+    def local_uri_to_location_relative_path(self, uri):
+        if not uri.startswith(self.location):
+            raise ValueError('Not a local URI: %s', uri)
+        return uri[len(self.location):]
 
     def resolve_location(self, offset):
         # We can't use urlparse.urljoin() because it takes a relative path, not a path inside the base.
@@ -215,15 +227,6 @@ class Dataset(object):
         A path to this dataset on the local filesystem (if available).
 
         :rtype: pathlib.Path
-
-        >>> str(Dataset(None, None, 'file:///tmp/something.txt').local_path)
-        '/tmp/something.txt'
-        >>> # No URI -> Return None
-        >>> Dataset(None, None, None).local_path
-        >>> Dataset(None, None, 'ftp://example.com/tmp/something.txt').local_path
-        Traceback (most recent call last):
-        ...
-        ValueError: Only file URIs currently supported. Tried 'ftp'.
         """
         return _uri_to_local_path(self.local_uri)
 

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from datacube.model import Dataset, TileSpec
+from datacube.model import TileSpec
 from datacube.storage import write_storage_unit_to_disk
 from datacube.scripts.ingest_storage_units import process_storage_unit
 
@@ -17,10 +17,13 @@ class SingleTimeEmptyDataProvider(object):
     def __init__(self, storage_type, tile_index):
         self.tile_spec = TileSpec.create_from_storage_type_and_index(storage_type, tile_index)
         self.storage_type = storage_type
+
     def get_metadata_documents(self):
         return []
+
     def get_time_values(self):
         return [datetime(2000, 1, 1)]
+
     def write_data_to_storage_unit(self, su_writer):
         for _, measurement_descriptor in self.storage_type.measurements.items():
             out_var = su_writer.ensure_variable(measurement_descriptor, self.storage_type.chunking)
@@ -41,6 +44,7 @@ def ingestable_storage_unit(index, tmpdir, indexed_ls5_nbar_storage_type,
     return filename
 
 
+@pytest.skip
 def test_ingest_storage_unit(ingestable_storage_unit, index):
     assert Path(ingestable_storage_unit).exists()
     process_storage_unit(ingestable_storage_unit, index)

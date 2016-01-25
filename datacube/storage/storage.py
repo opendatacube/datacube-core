@@ -21,7 +21,7 @@ from rasterio.warp import RESAMPLING, transform_bounds
 from rasterio.coords import BoundingBox
 
 from datacube import compat
-from datacube.model import StorageUnit, TileSpec
+from datacube.model import StorageUnit, TileSpec, _uri_to_local_path
 from datacube.storage.netcdf_indexer import read_netcdf_structure
 from datacube.storage.netcdf_writer import create_netcdf_writer
 
@@ -159,19 +159,20 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
     if storage_type.driver != 'NetCDF CF':
         raise ValueError('Storage driver is not supported (yet): %s' % storage_type.driver)
 
-    output_filename = _uri_to_filename(output_uri)
+    output_filename = _uri_to_local_path(output_uri)
 
-    if os.path.isfile(output_filename):
+    if output_filename.exists():
         raise RuntimeError('file already exists: %s' % output_filename)
 
     _LOG.info("Creating Storage Unit %s", output_filename)
-    tmpfile, tmpfilename = tempfile.mkstemp(dir=os.path.dirname(output_filename))
+
+    tmpfile, tmpfilename = tempfile.mkstemp(dir=str(output_filename.parent))
     try:
         data_provider = GroupDatasetsByTimeDataProvider(datasets, tile_index, storage_type)
 
         write_storage_unit_to_disk(tmpfilename, data_provider)
         os.close(tmpfile)
-        os.rename(tmpfilename, output_filename)
+        os.rename(tmpfilename, str(output_filename))
     finally:
         try:
             os.unlink(tmpfilename)
@@ -181,12 +182,6 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
             # TODO: move 'hardcoded' coordinate specs (name, units, etc) into tile_spec
             # TODO: then we can pull the descriptor out of the tile_spec
             # TODO: and netcdf writer will be more generic
-
-
-def _uri_to_filename(uri):
-    if not uri.startswith('file://'):
-        raise ValueError('Full URI protocol is not supported (yet): %s' % uri)
-    return uri[7:]
 
 
 def write_storage_unit_to_disk(filename, data_provider):
@@ -244,13 +239,13 @@ def _rasterio_resampling_method(measurement_descriptor):
 
 
 def in_memory_storage_unit_from_file(uri, datasets, storage_type):
-    filename = _uri_to_filename(uri)
+    filename = _uri_to_local_path(uri)
     su_descriptor = read_netcdf_structure(filename)
     dataset_ids = [dataset.id for dataset in datasets]
     return StorageUnit(dataset_ids,
                        storage_type,
                        su_descriptor,
-                       storage_type.local_path_to_location_offset('file://' + filename))
+                       storage_type.local_uri_to_location_relative_path(filename.as_uri()))
 
 
 def generate_filename(tile_index, datasets, mapping):
@@ -335,5 +330,12 @@ class DatasetSource(object):
                 self.projection = src.crs
                 self.nodata = src.nodatavals[0] or (0 if self.format == 'JPEG2000' else None)  # TODO: sentinel 2 hack
                 yield rasterio.band(src, bandnumber)
+        except Exception as e:
+            _LOG.error("Error opening source dataset: %s", filename)
+            raise e
         finally:
-            src.close()
+            try:
+                src.close()
+            except UnboundLocalError:
+                # Dataset was never opened
+                pass

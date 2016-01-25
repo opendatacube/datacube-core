@@ -21,7 +21,7 @@ from datacube.index.postgres.tables._core import ensure_db, drop_db
 
 _SINGLE_RUN_CONFIG_TEMPLATE = """
 [locations]
-testdata: file://{test_tile_folder}
+testdata: {test_tile_folder}
 """
 
 INTEGRATION_DEFAULT_CONFIG_PATH = Path(__file__).parent.joinpath('agdcintegration.conf')
@@ -37,6 +37,7 @@ _EXAMPLE_LS5_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('example-ls5-nba
 @pytest.fixture
 def integration_config_paths(tmpdir):
     test_tile_folder = str(tmpdir.mkdir('testdata'))
+    test_tile_folder = Path(test_tile_folder).as_uri()
     run_config_file = tmpdir.mkdir('config').join('test-run.conf')
     run_config_file.write(
         _SINGLE_RUN_CONFIG_TEMPLATE.format(test_tile_folder=test_tile_folder)
