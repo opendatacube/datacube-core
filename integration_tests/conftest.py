@@ -171,7 +171,7 @@ def indexed_ls5_nbar_storage_type(db, index):
     storage_type = load_test_storage_config(LS5_NBAR_STORAGE_TYPE)
 
     index.storage.types.add(storage_type)
-    return index.mappings.get_by_name(storage_type['name'])
+    return index.storage.types.get_by_name(storage_type['name'])
 
 
 @pytest.fixture
@@ -183,8 +183,8 @@ def example_ls5_nbar_metadata_doc():
 def indexed_ls5_nbar_albers_storage_type(db, index):
     storage_type = load_test_storage_config(LS5_NBAR_ALBERS_STORAGE_TYPE)
 
-    index.mappings.add(storage_type)
-    return index.mappings.get_by_name(storage_type['name'])
+    index.storage.types.add(storage_type)
+    return index.storage.types.get_by_name(storage_type['name'])
 
 
 PROJECT_ROOT = Path(__file__).parents[1]
