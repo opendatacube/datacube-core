@@ -490,6 +490,8 @@ class PostgresDb(object):
                     DATASET_URI_FIELD
                 ]).where(
                     DATASET_LOCATION.c.dataset_ref == dataset_id
+                ).order_by(
+                    DATASET_LOCATION.c.added.desc()
                 )
             ).fetchall()
             ]
