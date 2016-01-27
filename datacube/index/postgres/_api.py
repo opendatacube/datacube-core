@@ -214,12 +214,12 @@ class PostgresDb(object):
     def ensure_storage_type(self,
                             name,
                             dataset_metadata,
-                            descriptor):
+                            definition):
         res = self._connection.execute(
             STORAGE_TYPE.insert().values(
                 name=name,
                 dataset_metadata=dataset_metadata,
-                descriptor=descriptor
+                definition=definition
             )
         )
         return res.inserted_primary_key[0]

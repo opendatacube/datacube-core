@@ -24,7 +24,7 @@ STORAGE_TYPE = Table(
     # Match any datasets whose metadata is a superset of this.
     Column('dataset_metadata', postgres.JSONB, nullable=False),
 
-    Column('descriptor', postgres.JSONB, nullable=False),
+    Column('definition', postgres.JSONB, nullable=False),
 
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),

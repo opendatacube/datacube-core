@@ -157,54 +157,54 @@ class StorageTypeResource(object):
         self._db = db
         self._host_config = host_config
 
-    def add(self, descriptor):
+    def add(self, definition):
         """
         Take a parsed storage definition file and ensure it's in the index.
         (update if needed)
 
-        :type descriptor: dict
+        :type definition: dict
         """
-        _ensure_valid(descriptor)
+        _ensure_valid(definition)
 
-        name = descriptor['name']
-        dataset_metadata = descriptor['match']['metadata']
+        name = definition['name']
+        dataset_metadata = definition['match']['metadata']
 
         with self._db.begin() as transaction:
             existing = self._db.get_storage_type_by_name(name)
             if existing:
                 # They've passed us the same storage mapping again. Make sure it matches what is stored.
                 fields.check_doc_unchanged(
-                    existing.descriptor,
-                    descriptor,
+                    existing.definition,
+                    definition,
                     'Storage type {}'.format(name)
                 )
             else:
                 self._db.ensure_storage_type(
                     name,
                     dataset_metadata,
-                    descriptor
+                    definition
                 )
 
     def _make(self, record):
         """
         :rtype: datacube.model.StorageType
         """
-        descriptor = record['descriptor']
-        _match = descriptor.get('match')
-        if descriptor['location_name'] in self._host_config.location_mappings:
-            location = self._host_config.location_mappings[descriptor['location_name']]
+        definition = record['definition']
+        _match = definition.get('match')
+        if definition['location_name'] in self._host_config.location_mappings:
+            location = self._host_config.location_mappings[definition['location_name']]
         else:
             raise Exception("Invalid configuration, storage type '{}' references unknown location '{}'".format(
-                record['name'], descriptor['location_name']))
+                record['name'], definition['location_name']))
 
         return StorageType(
-            definition=descriptor['storage'],
+            definition=definition['storage'],
             name=record['name'],
-            description=descriptor.get('description'),
+            description=definition.get('description'),
             match=DatasetMatcher(record['dataset_metadata']),
-            measurements=descriptor['measurements'],
+            measurements=definition['measurements'],
             location=location,
-            filename_pattern=descriptor['file_path_template'],
+            filename_pattern=definition['file_path_template'],
             roi=_match.get('roi') if _match else None,
             id_=record['id']
         )
