@@ -333,9 +333,3 @@ class DatasetSource(object):
         except Exception as e:
             _LOG.error("Error opening source dataset: %s", filename)
             raise e
-        finally:
-            try:
-                src.close()
-            except UnboundLocalError:
-                # Dataset was never opened
-                pass
