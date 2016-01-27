@@ -7,10 +7,12 @@ from __future__ import absolute_import
 import gzip
 import json
 
-from itertools import product
-
 import yaml
 
+try:
+    from yaml import CSafeLoader as SafeLoader
+except ImportError:
+    from yaml import SafeLoader
 
 _DOCUMENT_EXTENSIONS = ('.yaml', '.yml', '.json')
 _COMPRESSION_EXTENSIONS = ('', '.gz')
@@ -104,11 +106,10 @@ def read_documents(*paths):
             opener = gzip.open
 
         if suffix in ('.yaml', '.yml'):
-            for parsed_doc in yaml.safe_load_all(opener(str(path), 'r')):
+            for parsed_doc in yaml.load_all(opener(str(path), 'r'), Loader=SafeLoader):
                 yield path, parsed_doc
         elif suffix == '.json':
             yield path, json.load(opener(str(path), 'r'))
         else:
             raise ValueError('Unknown document type for {}; expected one of {!r}.'
                              .format(path.name, _ALL_SUPPORTED_EXTENSIONS))
-

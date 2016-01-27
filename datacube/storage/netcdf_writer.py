@@ -13,6 +13,11 @@ import netCDF4
 from osgeo import osr
 import yaml
 
+try:
+    from yaml import CSafeDumper as SafeDumper
+except ImportError:
+    from yaml import SafeDumper
+
 _LOG = logging.getLogger(__name__)
 DATASET_YAML_MAX_SIZE = 30000
 
@@ -153,7 +158,7 @@ class NetCDFWriter(object):
         """
         if 'extra_metadata' not in self.nco.variables:
             self._create_extra_metadata_variable()
-        yaml_str = yaml.safe_dump_all(metadata_docs)
+        yaml_str = yaml.dump_all(metadata_docs, Dumper=SafeDumper)
         self.nco.variables['extra_metadata'][time_index] = netCDF4.stringtoarr(yaml_str, DATASET_YAML_MAX_SIZE)
 
     def _create_extra_metadata_variable(self):

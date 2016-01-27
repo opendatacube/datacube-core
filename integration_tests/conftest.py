@@ -12,6 +12,10 @@ from pathlib import Path
 import pytest
 import rasterio
 import yaml
+try:
+    from yaml import CSafeLoader as SafeLoader
+except ImportError:
+    from yaml import SafeLoader
 
 from datacube import ui
 from datacube.config import LocalConfig
@@ -213,7 +217,7 @@ def load_test_storage_config(filename):
 
 def load_yaml_file(filename):
     with open(str(filename)) as f:
-        return list(yaml.safe_load_all(f))
+        return list(yaml.load_all(f, Loader=SafeLoader))
 
 
 def alter_storage_type_for_testing(storage_type):

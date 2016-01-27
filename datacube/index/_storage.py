@@ -11,6 +11,11 @@ import cachetools
 import jsonschema
 import yaml
 
+try:
+    from yaml import CSafeLoader as SafeLoader
+except ImportError:
+    from yaml import SafeLoader
+
 from datacube.index.fields import InvalidDocException
 from datacube.model import StorageUnit, StorageType, DatasetMatcher
 from . import fields
@@ -24,7 +29,7 @@ def _ensure_valid(descriptor):
     try:
         jsonschema.validate(
             descriptor,
-            yaml.safe_load(MAPPING_SCHEMA_PATH.open('r'))
+            yaml.load(MAPPING_SCHEMA_PATH.open('r'), Loader=SafeLoader)
         )
     except jsonschema.ValidationError as e:
         raise InvalidDocException(e.message)
