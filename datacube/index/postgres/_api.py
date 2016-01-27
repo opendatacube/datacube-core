@@ -177,15 +177,26 @@ class PostgresDb(object):
             raise
 
     def ensure_dataset_location(self, dataset_id, uri):
-
+        scheme, body = _split_uri(uri)
         # Insert if not exists.
         #     (there's still a tiny chance of a race condition: It will throw an integrity error if another
-        #      connection inserts the same dataset in the time between the subquery and the main query.
+        #      connection inserts the same location in the time between the subquery and the main query.
         #      This is ok for our purposes.)
-        scheme, body = _split_uri(uri)
-
         self._connection.execute(
-            DATASET_LOCATION.insert(),
+            DATASET_LOCATION.insert().from_select(
+                ['dataset_ref', 'uri_scheme', 'uri_body'],
+                select([
+                    bindparam('dataset_ref'), bindparam('uri_scheme'), bindparam('uri_body'),
+                ]).where(
+                    ~exists(select([DATASET_LOCATION.c.id]).where(
+                        and_(
+                            DATASET_LOCATION.c.dataset_ref == bindparam('dataset_ref'),
+                            DATASET_LOCATION.c.uri_scheme == bindparam('uri_scheme'),
+                            DATASET_LOCATION.c.uri_body == bindparam('uri_body'),
+                        ),
+                    ))
+                )
+            ),
             dataset_ref=dataset_id,
             uri_scheme=scheme,
             uri_body=body,
