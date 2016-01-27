@@ -16,7 +16,7 @@ For For Python 2.7 and Python 3.5
 2. Ensure **pip** is installed::
 
     cd C:\Python27
-    python -m ensurepi
+    python -m ensurepip
 
 3. Install python virtualenv::
 
