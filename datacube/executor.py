@@ -20,10 +20,14 @@ class SerialExecutor(object):
 
 
 def get_executor(workers=None):
+    if not workers:
+        return SerialExecutor()
+
     try:
         from ipyparallel import Client
         rc = Client()
         return rc.load_balanced_view()
+
     except (ImportError, IOError):
         from multiprocessing import Pool
         return Pool()

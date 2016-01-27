@@ -29,11 +29,7 @@ def cli(index, datasets, workers, no_storage):
     for dataset_path in datasets:
         indexed_datasets += index_datasets(Path(dataset_path), index=index)
 
-    if workers:
-        executor = get_executor()
-    else:
-        executor = SerialExecutor()
-
+    executor = get_executor(workers)
     if not no_storage:
         store_datasets(indexed_datasets, index=index, executor=executor)
 
