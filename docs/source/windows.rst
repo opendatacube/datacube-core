@@ -55,14 +55,30 @@ Install these packages by running in your ``Downloads`` directory::
 
     pip install *.whl
 
-Extra instructions for installing Compliance Checker
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-pip install cf_units
-Download and install udunits2 from gohlke
-Edit site-packages/cf_units/etc/site.cfg with path to udunits2.dll which should be venv/share/udunits/udunits2.dll
-
 .. note::
-    **For 3.5 only** ::
+    **For 3.5 only**
+
+    If there are problems loading libraries. Try::
 
         cp site-packages/matplotlib/msvcp140.dll site-packages/osgeo/
+
+PostgreSQL Portable
+-------------------
+
+An easy to install version of PostgreSQL can be downloaded from http://sourceforge.net/projects/postgresqlportable/ . It can install and run as an unprivileged windows user.
+
+It helps to add `PostgreSQLPortable\App\PgSQL\bin` to your `%PATH%` to make PostgreSQL
+admin commands like `dropdb`, `createdb` and `psql` more easily available.
+
+
+
+Extra instructions for installing Compliance Checker
+----------------------------------------------------
+::
+
+    pip install cf_units
+
+- Download and install udunits2 from gohlke
+
+- Edit `site-packages/cf_units/etc/site.cfg` with path to udunits2.dll which should be `venv/share/udunits/udunits2.dll`
+
