@@ -13,6 +13,8 @@ from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS
 from datacube.ingest import index_datasets, store_datasets
 
+from datacube.executor import SerialExecutor, get_executor
+
 
 @click.command(help="Ingest datasets into the Data Cube.", context_settings=CLICK_SETTINGS)
 @ui.global_cli_options
@@ -27,8 +29,13 @@ def cli(index, datasets, workers, no_storage):
     for dataset_path in datasets:
         indexed_datasets += index_datasets(Path(dataset_path), index=index)
 
+    if workers:
+        executor = get_executor()
+    else:
+        executor = SerialExecutor()
+
     if not no_storage:
-        store_datasets(indexed_datasets, index=index, workers=workers)
+        store_datasets(indexed_datasets, index=index, executor=executor)
 
 
 if __name__ == '__main__':

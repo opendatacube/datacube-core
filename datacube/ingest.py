@@ -12,6 +12,7 @@ import logging
 from multiprocessing import Pool
 
 from datacube import ui, storage
+from datacube.executor import SerialExecutor
 from datacube.index import index_connect
 
 _LOG = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ def index_datasets(path, index=None):
     return datasets
 
 
-def store_datasets(datasets, index=None, workers=0):
+def store_datasets(datasets, index=None, executor=SerialExecutor()):
     """
     Create any necessary storage units for the given datasets.
 
@@ -56,7 +57,7 @@ def store_datasets(datasets, index=None, workers=0):
     for storage_type_id, datasets in storage_types.items():
         storage_type = index.storage.types.get(storage_type_id)
         _LOG.info('Using %s to store %s datasets', storage_type, datasets)
-        storage_units = create_storage_units(datasets, storage_type, workers=workers)
+        storage_units = create_storage_units(datasets, storage_type, executor=executor)
         index.storage.add_many(storage_units)
 
 
@@ -83,7 +84,7 @@ def find_storage_types_for_datasets(datasets, index=None):
     return storage_types
 
 
-def create_storage_units(datasets, storage_type, workers=0):
+def create_storage_units(datasets, storage_type, executor=SerialExecutor()):
     """
     Create storage units for datasets using storage_type
     Add storage units to the index
@@ -98,11 +99,7 @@ def create_storage_units(datasets, storage_type, workers=0):
              tile_index, datasets in storage.tile_datasets_with_storage_type(datasets, storage_type).items()]
 
     try:
-        if workers:
-            storage_units = _run_parallel_tasks(_create_storage_unit, tasks, workers)
-        else:
-            storage_units = [_create_storage_unit(task) for task in tasks]
-
+        storage_units = executor.map(_create_storage_unit, tasks)
         return storage_units
     except:
         for task in tasks:
@@ -117,21 +114,6 @@ def _create_storage_unit(task):
     return storage.in_memory_storage_unit_from_file(filename, datasets, storage_type)
 
 
-def _run_parallel_tasks(func, tasks, workers):
-    pool = Pool(processes=workers, initializer=_init_worker)
-    try:
-        result = list(pool.imap_unordered(func, tasks))
-    except:
-        pool.terminate()
-        raise
-    else:
-        pool.close()
-    finally:
-        pool.join()
-
-    return result
-
-
 def _remove_storage_unit(task):
     tile_index, storage_type, datasets = task
     filename = storage.generate_filename(tile_index, datasets, storage_type)
@@ -139,7 +121,3 @@ def _remove_storage_unit(task):
         os.unlink(filename)
     except OSError:
         pass
-
-
-def _init_worker(*args):
-    signal.signal(signal.SIGTERM, lambda s, f: sys.exit(0))
