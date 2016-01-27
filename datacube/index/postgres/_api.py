@@ -25,11 +25,12 @@ from . import tables
 from ._fields import parse_fields, NativeField
 from .tables import DATASET, DATASET_SOURCE, STORAGE_TYPE, STORAGE_UNIT, DATASET_STORAGE, COLLECTION
 
+DATASET_URI_FIELD = DATASET_LOCATION.c.uri_scheme + ':' + DATASET_LOCATION.c.uri_body
 _DATASET_SELECT_FIELDS = (
     DATASET,
     # The most recent file uri. We may want more advanced path selection in the future...
     select([
-        DATASET_LOCATION.c.uri_scheme + ':' + DATASET_LOCATION.c.uri_body
+        DATASET_URI_FIELD
     ]).where(
         and_(
             DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
@@ -43,6 +44,23 @@ _DATASET_SELECT_FIELDS = (
 PGCODE_UNIQUE_CONSTRAINT = '23505'
 
 _LOG = logging.getLogger(__name__)
+
+
+def _split_uri(uri):
+    """
+    Split the scheme and the remainder of the URI.
+
+    >>> _split_uri('http://test.com/something.txt')
+    ('http', '//test.com/something.txt')
+    >>> _split_uri('eods:LS7_ETM_SYS_P31_GALPGS01-002_101_065_20160127')
+    ('eods', 'LS7_ETM_SYS_P31_GALPGS01-002_101_065_20160127')
+    >>> _split_uri('file://rhe-test-dev.prod.lan/data/fromASA/LANDSAT-7.89274.S4A2C1D3R3')
+    ('file', '//rhe-test-dev.prod.lan/data/fromASA/LANDSAT-7.89274.S4A2C1D3R3')
+    """
+    comp = uri.split(':')
+    scheme = comp[0]
+    body = ':'.join(comp[1:])
+    return scheme, body
 
 
 class PostgresDb(object):
@@ -159,10 +177,13 @@ class PostgresDb(object):
             raise
 
     def ensure_dataset_location(self, dataset_id, uri):
-        # TODO: Insert only if not exists
-        comp = uri.split(':')
-        scheme = comp[0]
-        body = ':'.join(comp[1:])
+
+        # Insert if not exists.
+        #     (there's still a tiny chance of a race condition: It will throw an integrity error if another
+        #      connection inserts the same dataset in the time between the subquery and the main query.
+        #      This is ok for our purposes.)
+        scheme, body = _split_uri(uri)
+
         self._connection.execute(
             DATASET_LOCATION.insert(),
             dataset_ref=dataset_id,
@@ -449,6 +470,18 @@ class PostgresDb(object):
 
     def count_storage_types(self):
         return self._connection.execute(select([func.count()]).select_from(STORAGE_TYPE)).scalar()
+
+    def get_locations(self, dataset_id):
+        return [
+            record[0]
+            for record in self._connection.execute(
+                select([
+                    DATASET_URI_FIELD
+                ]).where(
+                    DATASET_LOCATION.c.dataset_ref == dataset_id
+                )
+            ).fetchall()
+            ]
 
 
 def _pg_exists(conn, name):

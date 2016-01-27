@@ -299,6 +299,13 @@ class DatasetResource(object):
         collection = self._collection_resource.get_by_name(collection_name)
         return collection.metadata_type.dataset_fields
 
+    def get_locations(self, dataset):
+        """
+        :type dataset: datacube.model.Dataset
+        :rtype: list[str]
+        """
+        return self._db.get_locations(dataset.id)
+
     def _make(self, dataset_res):
         """
         :rtype datacube.model.Dataset

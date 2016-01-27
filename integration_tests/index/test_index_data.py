@@ -89,10 +89,11 @@ def test_index_dataset_with_location(index, default_collection):
     :type index: datacube.index._api.Index
     :type default_collection: datacube.model.Collection
     """
-    PATH = '/tmp/something.yaml'
+    first_file = '/tmp/first/something.yaml'
+    second_file = '/tmp/second/something.yaml'
     dataset = index.datasets.add(
         _telemetry_dataset,
-        metadata_path=Path(PATH)
+        metadata_path=Path(first_file)
     )
 
     assert dataset.id == _telemetry_uuid
@@ -100,7 +101,27 @@ def test_index_dataset_with_location(index, default_collection):
     assert dataset.collection.id_ == default_collection.id_
     assert dataset.metadata_type.id_ == default_collection.metadata_type.id_
 
-    assert dataset.local_path.absolute() == Path(PATH).absolute()
+    assert dataset.local_path.absolute() == Path(first_file).absolute()
+
+    # Ingesting again should have no effect.
+    index.datasets.add(
+        _telemetry_dataset,
+        metadata_path=Path(first_file)
+    )
+    locations = index.datasets.get_locations(dataset)
+    assert len(locations) == 1
+
+    # Ingesting with a new path should add the second one too.
+    dataset = index.datasets.add(
+        _telemetry_dataset,
+        uri=Path(second_file).as_uri()
+    )
+    locations = index.datasets.get_locations(dataset)
+    assert len(locations) == 2
+    # Newest to oldest.
+    assert locations == [Path(second_file).absolute().as_uri(), Path(first_file).absolute().as_uri()]
+    # And the second one is newer, so it should be returned as the default local path:
+    assert dataset.local_path.absolute() == Path(second_file).absolute()
 
 
 def test_index_storage_unit(index, db, default_collection):
