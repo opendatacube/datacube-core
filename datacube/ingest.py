@@ -6,10 +6,7 @@ from __future__ import absolute_import
 
 from collections import defaultdict
 import os
-import sys
-import signal
 import logging
-from multiprocessing import Pool
 
 from datacube import ui, storage
 from datacube.executor import SerialExecutor
