@@ -10,43 +10,6 @@ from .access.backends import NetCDF4StorageUnit
 from .utils import namedtuples2dicts
 
 
-def index_netcdfs(filenames):
-    """
-    Create an index of a list of netcdf files
-
-    Returns a list of the following structure describing each file:
-    {  # Must store entire file, can't handle a slice of a file
-        'filename': '/path/to/filename1.nc',
-        'coordinates': {
-            'latitude': {
-                'dtype': 'float32',
-                'begin': '0',  # inclusive
-                'end': '4000',  # inclusive
-                'length': '4000'
-            },
-            ...
-        },
-        'variables': {
-            'band1': {
-                'dtype': 'float32',
-                'ndv': '-999',
-                'dimensions': ['time', 'latitude', 'longitude']  # order matters
-            },
-            ...
-        }
-    }
-
-    :param filenames:
-    :return: list of file description dicts
-    """
-    files_descriptions = {}
-
-    for filename in filenames:
-        files_descriptions[filename] = read_netcdf_structure(filename)
-
-    return files_descriptions
-
-
 def read_netcdf_structure(filename):
     """
     Read a netcdf4 file and return a dict describing its coordinates and variables

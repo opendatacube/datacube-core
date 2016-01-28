@@ -10,7 +10,7 @@ import netCDF4
 import yaml
 
 from datacube.model import StorageUnit
-from datacube.storage.netcdf_indexer import index_netcdfs
+from datacube.storage.netcdf_indexer import read_netcdf_structure
 from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS
 from datacube.ingest import find_storage_types_for_datasets
@@ -67,7 +67,7 @@ def add_datasets_to_index(datasets, index):
 
 
 def create_in_memory_storage_unit(datasets, storage_type, filename):
-    su_descriptor = index_netcdfs([filename])[filename]
+    su_descriptor = read_netcdf_structure(filename)
     return StorageUnit([dataset.id for dataset in datasets],
                        storage_type,
                        su_descriptor,
