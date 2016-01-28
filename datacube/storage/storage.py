@@ -187,10 +187,16 @@ def write_storage_unit_to_disk(filename, data_provider):
         for time_index, docs in data_provider.get_metadata_documents():
             su_writer.add_source_metadata(time_index, docs)
 
-        data_provider.write_data_to_storage_unit(su_writer)
+        for measurement_descriptor, chunking, data in data_provider.get_measurements():
+            output_var = su_writer.ensure_variable(measurement_descriptor, chunking)
+            for time_index, buffer_ in enumerate(data):
+                output_var[time_index] = buffer_
 
 
 class GroupDatasetsByTimeDataProvider(object):
+    """
+    :type storage_type: datacube.model.StorageType
+    """
     def __init__(self, datasets, tile_index, storage_type):
         self.datasets_grouped_by_time = _group_datasets_by_time(datasets)
         self._warn_if_mosaiced_datasets(tile_index)
@@ -209,21 +215,25 @@ class GroupDatasetsByTimeDataProvider(object):
         for time_index, (_, group) in enumerate(self.datasets_grouped_by_time):
             yield time_index, (dataset.metadata_doc for dataset in group)
 
-    def write_data_to_storage_unit(self, su_writer):
+    def _fused_data(self, measurement_id):
+        measurement_descriptor = self.storage_type.measurements[measurement_id]
+        shape = self.tile_spec.height, self.tile_spec.width
+        buffer_ = numpy.empty(shape, dtype=measurement_descriptor['dtype'])
+        nodata = measurement_descriptor.get('nodata')
+        for time_index, (_, time_group) in enumerate(self.datasets_grouped_by_time):
+            buffer_ = fuse_sources([DatasetSource(dataset, measurement_id) for dataset in time_group],
+                                   buffer_,
+                                   self.tile_spec.affine,
+                                   self.tile_spec.projection,
+                                   nodata,
+                                   resampling=_rasterio_resampling_method(measurement_descriptor))
+            yield buffer_
+
+    def get_measurements(self):
         measurements = self.storage_type.measurements
         chunking = self.storage_type.chunking
         for measurement_id, measurement_descriptor in measurements.items():
-            output_var = su_writer.ensure_variable(measurement_descriptor, chunking)
-
-            buffer_ = numpy.empty(output_var.shape[1:], dtype=output_var.dtype)
-            for time_index, (_, time_group) in enumerate(self.datasets_grouped_by_time):
-                buffer_ = fuse_sources([DatasetSource(dataset, measurement_id) for dataset in time_group],
-                                       buffer_,
-                                       self.tile_spec.affine,
-                                       self.tile_spec.projection,
-                                       getattr(output_var, '_FillValue', None),
-                                       resampling=_rasterio_resampling_method(measurement_descriptor))
-                output_var[time_index] = buffer_
+            yield measurement_descriptor, chunking, self._fused_data(measurement_id)
 
 
 def _group_datasets_by_time(datasets):
