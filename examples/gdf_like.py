@@ -38,11 +38,11 @@ def create_rgb(data):
     band_4_scaled = (band_4_mean - band_4_mean.min()) / float(band_4_mean.max() - band_4_mean.min())
     band_6_scaled = (band_6_mean - band_6_mean.min()) / float(band_6_mean.max() - band_6_mean.min())
 
-    rgb = xray.concat([band_6_scaled, band_4_scaled, band_1_scaled], 'color')
+    rgb = xarray.concat([band_6_scaled, band_4_scaled, band_1_scaled], 'color')
 
     # plt.imshow(dd)
     # pp.pprint(band_4.mean(axis=0).shape)
-    # rgb = xray.concat([band_6.mean(axis=0), band_4.mean(axis=0), band_1.mean(axis=0)], 'color')
+    # rgb = xarray.concat([band_6.mean(axis=0), band_4.mean(axis=0), band_1.mean(axis=0)], 'color')
     rgb = rgb.transpose('latitude', 'longitude', 'color')
     # rgb = numpy.stack([band_6.mean(axis=0), band_4.mean(axis=0), band_1.mean(axis=0)], axis=-1)
 
@@ -54,7 +54,7 @@ def create_rgb(data):
 def main():
     data_request = {
         'platform': 'LANDSAT_8',
-        'product': 'NBAR',
+        # 'product': 'EODS NBAR',
         'variables': ('band_1', 'band_4', 'band_6'),
         'dimensions': {
             'longitude': {
@@ -64,7 +64,8 @@ def main():
                 'range': (-36.1, -35.1),
             },
             'time': {
-                'range': (datetime.datetime(2000, 8, 1), datetime.datetime(2015, 8, 1, 9, 50, 23))
+                'range': (datetime.datetime(2015, 2, 19),
+                          datetime.datetime(2015, 2, 22, 9, 50, 23))
             }
         }
     }

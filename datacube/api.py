@@ -376,8 +376,9 @@ def _get_array(storage_units, var_name, dimensions, dim_props):
     dsk = _get_dask_for_storage_units(storage_units, var_name, dimensions, dim_props['dim_vals'], dsk_id)
     _fill_in_dask_blanks(dsk, storage_units, var_name, dimensions, dim_props, dsk_id)
 
+    dtype = storage_units[0].variables[var_name].dtype
     chunks = tuple(tuple(dim_props['sus_size'][dim]) for dim in dimensions)
-    dask_array = da.Array(dsk, dsk_id, chunks)
+    dask_array = da.Array(dsk, dsk_id, chunks, dtype=dtype)
     coords = [(dim, dim_props['coord_labels'][dim]) for dim in dimensions]
     xarray_data_array = xarray.DataArray(dask_array, coords=coords)
     return xarray_data_array
@@ -536,8 +537,8 @@ def get_result_stats(storage_units, dimension_ranges):
         'result_max': tuple(to_single_value(example[dim].max()) for dim in example.dims),
     }
     irregular_dim_names = ['time', 't']  # TODO: Use irregular flag from database instead
-    result['irregular_dims'] = dict((dim, example[dim].values)
-                                    for dim in example.dims if dim in irregular_dim_names)
+    result['irregular_indices'] = dict((dim, example[dim].values)
+                                       for dim in example.dims if dim in irregular_dim_names)
     return result
 
 
@@ -765,3 +766,9 @@ class API(object):
 
             data_response.update(storage_data)
         return data_response
+
+
+if __name__ == '__main__':
+    api = API()
+    descriptor = api.get_descriptor()
+    print(descriptor)
