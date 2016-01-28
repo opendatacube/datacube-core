@@ -240,7 +240,7 @@ class StorageUnitCollection(object):
                 'storage_max': tuple(max(storage_unit.coordinates[dim].begin, storage_unit.coordinates[dim].end)
                                      for dim in dimensions),
                 'storage_shape': tuple(storage_unit.coordinates[dim].length for dim in dimensions),
-                'storage_path': str(storage_unit.local_path)
+                'storage_path': str(storage_unit.filepath)
             }
         return stats
 
@@ -481,7 +481,7 @@ class IrregularStorageUnitSlice(StorageUnitBase):
                               units=real_dim.units)
         self.coordinates[dimension] = fake_dim
         self.variables = parent.variables
-        self.filepath = parent.local_path
+        self.filepath = parent.filepath
 
     def get_crs(self):
         return self._parent.get_crs()
