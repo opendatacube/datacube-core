@@ -3,14 +3,22 @@ AGDC Database Setup
 
 .. attention::
 
-    You must have a properly configured postgres installation for this to work. If you have a fresh install of postgres on Ubuntu then you will need to configure the postgres user password to `complete the postgres setup <https://help.ubuntu.com/community/PostgreSQL>`_
+    You must have a properly configured Postgres installation for this to work. If you have a fresh install of Postgres
+    on Ubuntu then you may want to configure the ``postgres`` user password to `complete the postgres setup <https://help.ubuntu.com/community/PostgreSQL>`
 
 
 Create Database
 ---------------
+
+If you have existing Postgres authentication:
 ::
 
     createdb datacube
+
+or specify connection details manually:
+
+::
+    createdb -h <hostname> -U <username> datacube
 
 Create Configuration File
 -------------------------

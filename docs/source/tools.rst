@@ -34,8 +34,16 @@ datacube-ingest
 
     Usage: datacube-ingest [OPTIONS] [DATASETS]...
 
-      Ingest datasets into the Data Cube.
+        Ingest datasets into the Data Cube.
 
+    Options:
+      --version
+      -v, --verbose           Use multiple times for more verbosity
+      -C, --config_file TEXT
+      --log-queries           Print database queries.
+      --workers INTEGER
+      --no-storage            Don't create storage units
+      -h, --help              Show this message and exit.
 .. _datacube-search-tool:
 
 datacube-search
@@ -46,6 +54,14 @@ datacube-search
     Usage: datacube-search [OPTIONS] COMMAND [ARGS]...
 
       Search the Data Cube
+
+    Options:
+      --version
+      -v, --verbose           Use multiple times for more verbosity
+      -C, --config_file TEXT
+      --log-queries           Print database queries.
+      -f [csv|pretty]         Output format  [default: pretty]
+      -h, --help              Show this message and exit.
 
     Commands:
       datasets  Datasets

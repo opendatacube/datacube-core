@@ -168,7 +168,7 @@ name
     Name of the storage type. It's used as a human-readable identifer. Must be unique and consist of
     alphanumeric characters and/or underscores.
 
-description
+description (optional)
     A human-readable description of the storage type.
 
 location_name
@@ -247,4 +247,4 @@ Runtime Config document specifies various runtime configuration options such as:
     v1tiles: file:///g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/
 
 locations
-    Mapping of location names to URI's
+    Mapping of location names to URI prefixes. How to reach each location from the current machine.
