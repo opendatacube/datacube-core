@@ -1,0 +1,18 @@
+# .coveragerc to control coverage.py (and pytest-cov)
+[run]
+branch = False
+
+[report]
+# Regexes for lines to exclude from consideration
+exclude_lines = 
+    # Have to re-enable the standard pragma
+
+    # Don't complain about missing debug-only code:
+    pragma: no cover
+    def __repr__
+
+    # Don't complain if non-runnable code isn't run:
+    if 0:
+    if __name__ == .__main__.:
+
+
