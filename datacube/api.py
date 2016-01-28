@@ -31,7 +31,8 @@ import xray
 import rasterio.warp
 
 from .model import Range
-from .storage.access.core import Coordinate, Variable, StorageUnitDimensionProxy, StorageUnitBase
+from .storage.access.core import StorageUnitDimensionProxy, StorageUnitBase
+from datacube.model import Coordinate, Variable
 from .storage.access.backends import NetCDF4StorageUnit, GeoTifStorageUnit, FauxStorageUnit
 from .index import index_connect
 

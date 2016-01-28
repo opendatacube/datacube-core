@@ -18,6 +18,8 @@ from datacube.compat import parse_url
 _LOG = logging.getLogger(__name__)
 
 Range = namedtuple('Range', ('begin', 'end'))
+Coordinate = namedtuple('Coordinate', ('dtype', 'begin', 'end', 'length', 'units'))
+Variable = namedtuple('Variable', ('dtype', 'nodata', 'dimensions', 'units'))
 
 
 def _uri_to_local_path(local_uri):

@@ -18,7 +18,8 @@ from __future__ import absolute_import, division, print_function
 import numpy
 import rasterio
 
-from ..core import Coordinate, Variable, StorageUnitBase
+from ..core import StorageUnitBase
+from datacube.model import Coordinate, Variable
 
 
 class GeoTifStorageUnit(StorageUnitBase):

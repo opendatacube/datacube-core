@@ -21,7 +21,8 @@ import threading
 import numpy
 import netCDF4 as nc4
 
-from ..core import Coordinate, Variable, StorageUnitBase
+from ..core import StorageUnitBase
+from datacube.model import Coordinate, Variable
 from ..indexing import Range, range_to_index, normalize_index
 
 _GLOBAL_LOCK = threading.Lock()

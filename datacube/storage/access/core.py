@@ -17,12 +17,9 @@
 Core classes used to access data
 """
 
-
 from __future__ import absolute_import, division, print_function
-from collections import namedtuple
 
 import sys
-
 import numpy
 
 try:
@@ -30,11 +27,8 @@ try:
 except ImportError:
     from .ghetto import DataArray
 
+from datacube.model import Coordinate, Variable
 from .indexing import make_index, index_shape, normalize_index, Range
-
-
-Coordinate = namedtuple('Coordinate', ('dtype', 'begin', 'end', 'length', 'units'))
-Variable = namedtuple('Variable', ('dtype', 'nodata', 'dimensions', 'units'))
 
 
 class StorageUnitBase(object):
