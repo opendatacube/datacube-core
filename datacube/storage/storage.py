@@ -179,10 +179,6 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
         except OSError:
             pass
 
-            # TODO: move 'hardcoded' coordinate specs (name, units, etc) into tile_spec
-            # TODO: then we can pull the descriptor out of the tile_spec
-            # TODO: and netcdf writer will be more generic
-
 
 def write_storage_unit_to_disk(filename, data_provider):
     with create_netcdf_writer(filename, data_provider.tile_spec) as su_writer:
