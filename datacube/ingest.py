@@ -107,12 +107,7 @@ def create_storage_units(datasets, storage_type, executor=SerialExecutor()):
 def _create_storage_unit(task):
     tile_index, storage_type, datasets = task
     filename = storage.generate_filename(tile_index, datasets, storage_type)
-    storage.create_storage_unit_from_datasets(tile_index, datasets, storage_type, filename)
-
-    # TODO: move 'hardcoded' coordinate specs (name, units, etc) into tile_spec
-    # TODO: then we can pull the descriptor out of the tile_spec
-    # TODO: and netcdf writer will be more generic
-    return storage.in_memory_storage_unit_from_file(filename, datasets, storage_type)
+    return storage.create_storage_unit_from_datasets(tile_index, datasets, storage_type, filename)
 
 
 def _remove_storage_unit(task):

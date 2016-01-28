@@ -5,15 +5,16 @@ Ingest storage units from the command-line.
 """
 from __future__ import absolute_import
 
-import click
 import netCDF4
 import yaml
+import click
 
 from datacube.model import StorageUnit
-from datacube.storage.netcdf_indexer import read_netcdf_structure
 from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS
 from datacube.ingest import find_storage_types_for_datasets
+from datacube.storage.access.backends import NetCDF4StorageUnit
+from datacube.storage.utils import namedtuples2dicts
 
 
 @click.command(help="Ingest storage units into the Data Cube.", context_settings=CLICK_SETTINGS)
@@ -29,6 +30,28 @@ def cli(index, storage_units):
 
 if __name__ == '__main__':
     cli()
+
+
+def read_netcdf_structure(filename):
+    """
+    Read a netcdf4 file and return a dict describing its coordinates and variables
+
+    :param filename:
+    :return:
+    """
+    ncsu = NetCDF4StorageUnit.from_file(filename)
+
+    extents = {k: ncsu.attributes[k] for k in
+               [u'geospatial_lat_max', u'geospatial_lat_min', u'geospatial_lon_max', u'geospatial_lon_min']}
+
+    time_units = ncsu.coordinates[u'time'].units
+
+    extents['time_min'] = netCDF4.num2date(ncsu.coordinates['time'].begin, time_units)
+    extents['time_max'] = netCDF4.num2date(ncsu.coordinates['time'].end, time_units)
+
+    coordinates = namedtuples2dicts(ncsu.coordinates)
+
+    return dict(coordinates=coordinates, extents=extents)
 
 
 def process_storage_unit(filename, index):

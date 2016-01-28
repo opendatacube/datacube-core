@@ -415,6 +415,22 @@ class TileSpec(object):
             transform = osr.CoordinateTransformation(self.crs, wgs84)
             self.extents = transform.TransformPoints(self.extents)
 
+    @property
+    def coordinates(self):
+        crs = self.crs
+        if crs.IsGeographic():
+            return {
+                'latitude': Coordinate(self.lats.dtype, self.lats[0], self.lats[-1], self.lats.size, 'degrees_north'),
+                'longitude': Coordinate(self.lons.dtype, self.lons[0], self.lons[-1], self.lons.size, 'degrees_east')
+            }
+        elif crs.IsProjected():
+            units = crs.GetAttrValue('UNIT')
+            return {
+                'x': Coordinate(self.xs.dtype, self.xs[0], self.xs[-1], self.xs.size, units),
+                'y': Coordinate(self.ys.dtype, self.ys[0], self.ys[-1], self.ys.size, units)
+            }
+
+
     @classmethod
     def create_from_storage_type_and_index(cls, storage_type, tile_index):
         tile_size = storage_type.tile_size

@@ -8,7 +8,6 @@ import logging
 from datetime import datetime
 from itertools import chain
 
-from dateutil.tz import tzutc
 import netCDF4
 from osgeo import osr
 import yaml
@@ -17,6 +16,8 @@ try:
     from yaml import CSafeDumper as SafeDumper
 except ImportError:
     from yaml import SafeDumper
+
+from datacube.storage.utils import datetime_to_seconds_since_1970
 
 _LOG = logging.getLogger(__name__)
 DATASET_YAML_MAX_SIZE = 30000
@@ -39,11 +40,6 @@ def map_measurement_descriptor_parameters(measurement_descriptor):
         raise ValueError("'varname' must be specified in 'measurement_descriptor'", measurement_descriptor)
 
     return params
-
-
-def _seconds_since_1970(dt):
-    epoch = datetime(1970, 1, 1, 0, 0, 0, tzinfo=tzutc() if dt.tzinfo else None)
-    return (dt - epoch).total_seconds()
 
 
 def create_netcdf_writer(netcdf_path, tile_spec):
@@ -127,7 +123,7 @@ class NetCDFWriter(object):
         self._create_time_dimension(len(time_values))
         times = self.nco.variables['time']
         for idx, val in enumerate(time_values):
-            times[idx] = _seconds_since_1970(val)
+            times[idx] = datetime_to_seconds_since_1970(val)
 
     def _create_time_dimension(self, time_length):
         """
