@@ -81,6 +81,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset)
             check_cf_compliance(nco)
             check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset)
         check_open_with_xray(su.local_path)
+    check_open_with_api(index)
 
 
 def ensure_dataset_is_indexed(index):
