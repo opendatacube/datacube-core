@@ -82,6 +82,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset)
             check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset)
         check_open_with_xray(su.local_path)
 
+
 def ensure_dataset_is_indexed(index):
     datasets = index.datasets.search_eager()
     assert len(datasets) == 1
