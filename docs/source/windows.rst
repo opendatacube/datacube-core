@@ -18,9 +18,9 @@ For For Python 2.7 and Python 3.5
     cd C:\Python27
     python -m ensurepip
 
-3. Install python virtualenv::
+3. Upgrade and Install python virtualenv::
 
-    Scripts\pip install virtualenv
+    python -m pip install --upgrade pip setuptools virtualenv
 
 4. Create an AGDC virtualenv::
 
