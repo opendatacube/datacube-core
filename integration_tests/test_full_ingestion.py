@@ -134,7 +134,10 @@ def check_open_with_api(index):
     import datacube.api
     api = datacube.api.API(index)
     descriptor = api.get_descriptor({})
-    data = api.get_data()
+    assert 'ls5_nbar' in descriptor
+    storage_units = descriptor['ls5_nbar']['storage_units']
+    query = {'variables': ['band_10']}
+    data = api.get_data(query, storage_units=storage_units)
 
 
 def make_pgsqljson_match_yaml_load(data):
