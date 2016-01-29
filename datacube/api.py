@@ -768,7 +768,11 @@ class API(object):
         return data_response
 
 
+def main():
+    agdc_api = API()
+    desc = agdc_api.get_descriptor()
+    print(desc)
+
+
 if __name__ == '__main__':
-    api = API()
-    descriptor = api.get_descriptor()
-    print(descriptor)
+    main()
