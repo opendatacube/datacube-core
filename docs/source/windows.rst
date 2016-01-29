@@ -50,6 +50,7 @@ The following may also be useful:
 - matplotlib
 - pyzmq
 - udunits2
+- pandas
 
 Install these packages by running in your ``Downloads`` directory::
 
