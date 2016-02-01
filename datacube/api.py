@@ -114,12 +114,7 @@ def make_storage_unit(su, is_diskless=False):
     for dim in crs.keys():
         if dim in su.storage_type.spatial_dimensions:
             crs[dim] = storage_type['crs']
-    coordinates = {name: Coordinate(dtype=numpy.dtype(attributes['dtype']),
-                                    begin=attributes['begin'],
-                                    end=attributes['end'],
-                                    length=attributes['length'],
-                                    units=attributes.get('units', None))
-                   for name, attributes in su.descriptor['coordinates'].items()}
+    coordinates = su.coordinates
     variables = {
         attributes['varname']: Variable(
             dtype=numpy.dtype(attributes['dtype']),
