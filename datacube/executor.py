@@ -24,10 +24,10 @@ def get_executor(workers=None):
         return SerialExecutor()
 
     try:
-        from ipyparallel import Client
-        rc = Client()
+        import ipyparallel
+        rc = ipyparallel.Client()
         return rc.load_balanced_view()
 
-    except (ImportError, IOError):
+    except (ImportError, IOError, ipyparallel.TimeoutError):
         from multiprocessing import Pool
         return Pool()
