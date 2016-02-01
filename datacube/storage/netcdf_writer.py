@@ -68,10 +68,9 @@ class NetCDFWriter(object):
 
         self.nco = netCDF4.Dataset(netcdf_path, 'w')
 
-        self.tile_spec = tile_spec
         self.netcdf_path = netcdf_path
 
-        self._create_crs_coords_and_variables()
+        self._create_crs_coords_and_variables(tile_spec)
         self._set_global_attributes(tile_spec)
 
     def __enter__(self):
@@ -83,13 +82,13 @@ class NetCDFWriter(object):
     def close(self):
         self.nco.close()
 
-    def _create_crs_coords_and_variables(self):
-        self.validate_crs_arguments()
+    def _create_crs_coords_and_variables(self, tile_spec):
+        self.validate_crs_arguments(tile_spec)
 
-        self.create_crs_variable()
-        self.create_coordinate_variables()
+        self.create_crs_variable(tile_spec)
+        self.create_coordinate_variables(tile_spec)
 
-    def validate_crs_arguments(self):
+    def validate_crs_arguments(self, tile_spec):
         pass
 
     def _set_global_attributes(self, tile_spec):
@@ -186,14 +185,14 @@ class NetCDFWriter(object):
 
 
 class ProjectedNetCDFWriter(NetCDFWriter):
-    def validate_crs_arguments(self):
-        grid_mapping_name = _grid_mapping_name(self.tile_spec.crs)
+    def validate_crs_arguments(self, tile_spec):
+        grid_mapping_name = _grid_mapping_name(tile_spec.crs)
 
         if grid_mapping_name != 'albers_conic_equal_area':
             raise ValueError('{} CRS is not supported'.format(grid_mapping_name))
 
-    def create_crs_variable(self):
-        crs = self.tile_spec.crs
+    def create_crs_variable(self, tile_spec):
+        crs = tile_spec.crs
         # http://spatialreference.org/ref/epsg/gda94-australian-albers/html/
         # http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/cf-conventions.html#appendix-grid-mappings
         crs_var = self.nco.createVariable('crs', 'i4')
@@ -206,16 +205,15 @@ class ProjectedNetCDFWriter(NetCDFWriter):
         crs_var.grid_mapping_name = 'crs'
         crs_var.long_name = crs.GetAttrValue('PROJCS')
         crs_var.spatial_ref = crs.ExportToWkt()  # GDAL variable
-        crs_var.GeoTransform = _gdal_geotransform(self.tile_spec)  # GDAL variable
+        crs_var.GeoTransform = _gdal_geotransform(tile_spec)  # GDAL variable
         return crs_var
 
-    def create_coordinate_variables(self):
-        self.create_x_y_variables()
-        # self.create_lat_lon_variables()
+    def create_coordinate_variables(self, tile_spec):
+        self.create_x_y_variables(tile_spec)
+        # self.create_lat_lon_variables(tile_spec)
 
-    def create_x_y_variables(self):
+    def create_x_y_variables(self, tile_spec):
         nco = self.nco
-        tile_spec = self.tile_spec
         nco.createDimension('x', tile_spec.width)
         nco.createDimension('y', tile_spec.height)
 
@@ -231,14 +229,14 @@ class ProjectedNetCDFWriter(NetCDFWriter):
         yvar.standard_name = 'projection_y_coordinate'
         yvar[:] = tile_spec.ys
 
-    def create_lat_lon_variables(self):
+    def create_lat_lon_variables(self, tile_spec):
         wgs84 = osr.SpatialReference()
         wgs84.ImportFromEPSG(4326)
-        to_wgs84 = osr.CoordinateTransformation(self.tile_spec.crs, wgs84)
+        to_wgs84 = osr.CoordinateTransformation(tile_spec.crs, wgs84)
 
         lats, lons, _ = zip(*[to_wgs84.TransformPoint(x, y)
-                              for y in self.tile_spec.ys
-                              for x in self.tile_spec.xs])
+                              for y in tile_spec.ys
+                              for x in tile_spec.xs])
 
         lats_var = self.nco.createVariable('lat', 'double', ('y', 'x'))
         lats_var.long_name = 'latitude coordinate'
@@ -254,8 +252,8 @@ class ProjectedNetCDFWriter(NetCDFWriter):
 
 
 class GeographicNetCDFWriter(NetCDFWriter):
-    def create_crs_variable(self):
-        crs = self.tile_spec.crs
+    def create_crs_variable(self, tile_spec):
+        crs = tile_spec.crs
         crs_var = self.nco.createVariable('crs', 'i4')
         crs_var.long_name = crs.GetAttrValue('GEOGCS')  # "Lon/Lat Coords in WGS84"
         crs_var.grid_mapping_name = _grid_mapping_name(crs)
@@ -263,11 +261,10 @@ class GeographicNetCDFWriter(NetCDFWriter):
         crs_var.semi_major_axis = crs.GetSemiMajor()
         crs_var.inverse_flattening = crs.GetInvFlattening()
         crs_var.spatial_ref = crs.ExportToWkt()  # GDAL variable
-        crs_var.GeoTransform = _gdal_geotransform(self.tile_spec)  # GDAL variable
+        crs_var.GeoTransform = _gdal_geotransform(tile_spec)  # GDAL variable
         return crs_var
 
-    def create_coordinate_variables(self):
-        tile_spec = self.tile_spec
+    def create_coordinate_variables(self, tile_spec):
         self.nco.createDimension('longitude', len(tile_spec.lons))
         self.nco.createDimension('latitude', len(tile_spec.lats))
 
