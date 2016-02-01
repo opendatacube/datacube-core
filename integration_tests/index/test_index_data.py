@@ -111,15 +111,18 @@ def test_index_dataset_with_location(index, default_collection):
     locations = index.datasets.get_locations(dataset)
     assert len(locations) == 1
 
+    first_as_uri = Path(first_file).absolute().as_uri()
+    second_as_uri = Path(second_file).absolute().as_uri()
+
     # Ingesting with a new path should add the second one too.
     dataset = index.datasets.add(
         _telemetry_dataset,
-        uri=Path(second_file).as_uri()
+        uri=second_as_uri
     )
     locations = index.datasets.get_locations(dataset)
     assert len(locations) == 2
     # Newest to oldest.
-    assert locations == [Path(second_file).absolute().as_uri(), Path(first_file).absolute().as_uri()]
+    assert locations == [second_as_uri, first_as_uri]
     # And the second one is newer, so it should be returned as the default local path:
     assert dataset.local_path.absolute() == Path(second_file).absolute()
 
