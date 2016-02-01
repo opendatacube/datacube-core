@@ -10,7 +10,7 @@ import os
 
 from pathlib import Path
 from affine import Affine
-import numpy as np
+import numpy
 from osgeo import osr
 
 from datacube.compat import parse_url
@@ -124,7 +124,7 @@ class StorageType(object):
         return self.definition['driver']
 
     @property
-    def projection(self):
+    def crs(self):
         return str(self.definition['crs']).strip()
 
     @property
@@ -133,7 +133,7 @@ class StorageType(object):
         Latitude/Longitude or X/Y
         :rtype: tuple
         """
-        sr = osr.SpatialReference(self.projection)
+        sr = osr.SpatialReference(self.crs)
         if sr.IsGeographic():
             return 'longitude', 'latitude'
         elif sr.IsProjected():
@@ -387,7 +387,6 @@ class TileSpec(object):
     """
 
     def __init__(self, raw_crs, affine, height, width, global_attrs=None):
-        self.projection = raw_crs
         self.affine = affine
         self.global_attrs = global_attrs or {}
         self.height = height
@@ -399,8 +398,8 @@ class TileSpec(object):
         if not affine.is_rectilinear:
             raise RuntimeError("rotation and/or shear are not supported")
 
-        xs = np.arange(width) * affine.a + affine.c + affine.a / 2
-        ys = np.arange(height) * affine.e + affine.f + affine.e / 2
+        xs = numpy.arange(width) * affine.a + affine.c + affine.a / 2
+        ys = numpy.arange(height) * affine.e + affine.f + affine.e / 2
 
         self.crs = osr.SpatialReference(raw_crs)
         if self.crs.IsGeographic():
@@ -435,7 +434,7 @@ class TileSpec(object):
     def create_from_storage_type_and_index(cls, storage_type, tile_index):
         tile_size = storage_type.tile_size
         tile_res = storage_type.resolution
-        return cls(storage_type.projection,
+        return cls(storage_type.crs,
                    _get_tile_transform(tile_index, tile_size, tile_res),
                    width=int(tile_size[0] / abs(tile_res[0])),
                    height=int(tile_size[1] / abs(tile_res[1])))

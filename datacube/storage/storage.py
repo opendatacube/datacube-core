@@ -48,7 +48,7 @@ def tile_datasets_with_storage_type(datasets, storage_type):
     """
     datasets = sort_datasets_by_time(datasets)
     bounds_override = storage_type.roi and _roi_to_bounds(storage_type.roi, storage_type.spatial_dimensions)
-    return _grid_datasets(datasets, bounds_override, storage_type.projection, storage_type.tile_size)
+    return _grid_datasets(datasets, bounds_override, storage_type.crs, storage_type.tile_size)
 
 
 def sort_datasets_by_time(datasets):
@@ -220,6 +220,7 @@ def write_storage_unit_to_disk(filename, data_provider):
 class GroupDatasetsByTimeDataProvider(object):
     """
     :type storage_type: datacube.model.StorageType
+    :type tile_spec: datacube.model.TileSpec
     """
     def __init__(self, datasets, tile_index, storage_type):
         self.datasets_grouped_by_time = _group_datasets_by_time(datasets)
@@ -248,7 +249,7 @@ class GroupDatasetsByTimeDataProvider(object):
             buffer_ = fuse_sources([DatasetSource(dataset, measurement_id) for dataset in time_group],
                                    buffer_,
                                    self.tile_spec.affine,
-                                   self.tile_spec.projection,
+                                   self.storage_type.crs,
                                    nodata,
                                    resampling=_rasterio_resampling_method(measurement_descriptor))
             yield buffer_
@@ -293,7 +294,7 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
             rasterio.warp.reproject(src,
                                     dest,
                                     src_transform=source.transform,
-                                    src_crs=source.projection,
+                                    src_crs=source.crs,
                                     src_nodata=source.nodata,
                                     dst_transform=dst_transform,
                                     dst_crs=dst_projection,
@@ -328,7 +329,7 @@ class DatasetSource(object):
         self._filename = str(dataset.local_path.parent.joinpath(dataset_measurement_descriptor['path']))
         self._band_id = dataset_measurement_descriptor.get('layer', 1)
         self.transform = None
-        self.projection = None
+        self.crs = None
         self.nodata = None
         self.format = dataset.format
 
@@ -347,7 +348,7 @@ class DatasetSource(object):
             _LOG.debug("openening %s, band %s", filename, bandnumber)
             with rasterio.open(filename) as src:
                 self.transform = src.affine
-                self.projection = src.crs
+                self.crs = src.crs
                 self.nodata = src.nodatavals[0] or (0 if self.format == 'JPEG2000' else None)  # TODO: sentinel 2 hack
                 yield rasterio.band(src, bandnumber)
         except Exception as e:
