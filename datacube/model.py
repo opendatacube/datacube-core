@@ -7,12 +7,15 @@ from __future__ import absolute_import, division
 import logging
 from collections import namedtuple
 import os
-
 from pathlib import Path
-from affine import Affine
-import numpy
-from osgeo import osr
 
+import numpy
+import dateutil.parser
+from affine import Affine
+from osgeo import osr
+from rasterio.coords import BoundingBox
+
+from datacube import compat
 from datacube.compat import parse_url
 
 _LOG = logging.getLogger(__name__)
@@ -239,6 +242,39 @@ class Dataset(object):
     @property
     def format(self):
         return self.metadata_doc['format']['name']
+
+    @property
+    def time(self):
+        center_dt = self.metadata_doc['extent']['center_dt']
+        if isinstance(center_dt, compat.string_types):
+            center_dt = dateutil.parser.parse(center_dt)
+        return center_dt
+
+    @property
+    def bounds(self):
+        geo_ref_points = self.metadata_doc['grid_spatial']['projection']['geo_ref_points']
+        return BoundingBox(geo_ref_points['ll']['x'], geo_ref_points['ll']['y'],
+                           geo_ref_points['ur']['x'], geo_ref_points['ur']['y'])
+
+    @property
+    def crs(self):
+        projection = self.metadata_doc['grid_spatial']['projection']
+
+        crs = projection.get('spatial_reference', None)
+        if crs:
+            return str(crs)
+
+        # TODO: really need CRS specified properly in agdc-metadata.yaml
+        if projection['datum'] == 'GDA94':
+            return 'EPSG:283' + str(abs(projection['zone']))
+
+        if projection['datum'] == 'WGS84':
+            if projection['zone'][-1] == 'S':
+                return 'EPSG:327' + str(abs(int(projection['zone'][:-1])))
+            else:
+                return 'EPSG:326' + str(abs(int(projection['zone'][:-1])))
+
+        raise RuntimeError('Cant figure out the projection: %s %s' % (projection['datum'], projection['zone']))
 
     def __str__(self):
         return "Dataset <id={id}>".format(id=self.id)

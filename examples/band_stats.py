@@ -32,7 +32,7 @@ from datacube.index import index_connect
 from datacube.storage.access.core import StorageUnitStack, StorageUnitVariableProxy
 from datacube.ui import parse_expressions
 
-from datacube.storage.storage import fuse_sources, _dataset_time, DatasetSource, RESAMPLING
+from datacube.storage.storage import fuse_sources, DatasetSource, RESAMPLING
 
 
 def group_storage_units_by_location(sus):
@@ -113,7 +113,7 @@ def do_no_spoon(stats, bands, query, index):
                         resolution=(0.00025, -0.00025),
                         crs={'init': 'EPSG:4326'},
                         nodata=None,
-                        group_func=_dataset_time)
+                        group_func=lambda ds: ds.time)
 
     pqa = get('pqa')
     nbands = len(stats) * len(bands)

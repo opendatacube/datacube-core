@@ -5,20 +5,17 @@ Create/store dataset data into storage units based on the provided storage mappi
 from __future__ import absolute_import, division, print_function
 
 import logging
+import tempfile
+import os.path
 from contextlib import contextmanager
 from itertools import groupby
-import os.path
-import tempfile
 
 import dateutil.parser
 import numpy
-
 from osgeo import ogr, osr
 import rasterio.warp
-
-from rasterio.warp import RESAMPLING, transform_bounds
-
 from rasterio.coords import BoundingBox
+from rasterio.warp import RESAMPLING, transform_bounds
 
 from datacube import compat
 from datacube.model import StorageUnit, TileSpec, Coordinate, _uri_to_local_path
@@ -52,15 +49,8 @@ def tile_datasets_with_storage_type(datasets, storage_type):
 
 
 def sort_datasets_by_time(datasets):
-    datasets.sort(key=_dataset_time)
+    datasets.sort(key=lambda ds: ds.time)
     return datasets
-
-
-def _dataset_time(dataset):
-    center_dt = dataset.metadata_doc['extent']['center_dt']
-    if isinstance(center_dt, compat.string_types):
-        center_dt = dateutil.parser.parse(center_dt)
-    return center_dt
 
 
 def _roi_to_bounds(roi, dims):
@@ -70,8 +60,8 @@ def _roi_to_bounds(roi, dims):
 def _grid_datasets(datasets, bounds_override, grid_proj, grid_size):
     tiles = {}
     for dataset in datasets:
-        dataset_proj = _dataset_projection_to_epsg_ref(dataset)
-        dataset_bounds = _dataset_bounds(dataset)
+        dataset_proj = dataset.crs
+        dataset_bounds = dataset.bounds
         bounds = bounds_override or BoundingBox(*transform_bounds(dataset_proj, grid_proj, *dataset_bounds))
 
         for y in range(int(bounds.bottom // grid_size[1]), int(bounds.top // grid_size[1]) + 1):
@@ -81,32 +71,6 @@ def _grid_datasets(datasets, bounds_override, grid_proj, grid_size):
                     tiles.setdefault(tile_index, []).append(dataset)
 
     return tiles
-
-
-def _dataset_projection_to_epsg_ref(dataset):
-    projection = dataset.metadata_doc['grid_spatial']['projection']
-
-    crs = projection.get('spatial_reference', None)
-    if crs:
-        return str(crs)
-
-    # TODO: really need CRS specified properly in agdc-metadata.yaml
-    if projection['datum'] == 'GDA94':
-        return 'EPSG:283' + str(abs(projection['zone']))
-
-    if projection['datum'] == 'WGS84':
-        if projection['zone'][-1] == 'S':
-            return 'EPSG:327' + str(abs(int(projection['zone'][:-1])))
-        else:
-            return 'EPSG:326' + str(abs(int(projection['zone'][:-1])))
-
-    raise RuntimeError('Cant figure out the projection: %s %s' % (projection['datum'], projection['zone']))
-
-
-def _dataset_bounds(dataset):
-    geo_ref_points = dataset.metadata_doc['grid_spatial']['projection']['geo_ref_points']
-    return BoundingBox(geo_ref_points['ll']['x'], geo_ref_points['ll']['y'],
-                       geo_ref_points['ur']['x'], geo_ref_points['ur']['y'])
 
 
 def _check_intersect(tile_index, tile_size, tile_crs, dataset_bounds, dataset_crs):
@@ -262,7 +226,7 @@ class GroupDatasetsByTimeDataProvider(object):
 
 
 def _group_datasets_by_time(datasets):
-    return [(time, list(group)) for time, group in groupby(datasets, _dataset_time)]
+    return [(time, list(group)) for time, group in groupby(datasets, lambda ds: ds.time)]
 
 
 def _rasterio_resampling_method(measurement_descriptor):
@@ -273,8 +237,8 @@ def generate_filename(tile_index, datasets, mapping):
     merged = {
         'tile_index': tile_index,
         'mapping_id': mapping.id_,
-        'start_time': _parse_time(datasets[0].metadata_doc['extent']['from_dt']),
-        'end_time': _parse_time(datasets[-1].metadata_doc['extent']['to_dt']),
+        'start_time': _parse_time(datasets[0].time),
+        'end_time': _parse_time(datasets[-1].time),
     }
     merged.update(mapping.match.metadata)
 
