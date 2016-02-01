@@ -53,9 +53,9 @@ def create_rgb(data):
 
 def main():
     data_request = {
-        'platform': 'LANDSAT_8',
+        # 'platform': 'LANDSAT_8',
         # 'product': 'EODS NBAR',
-        'variables': ('band_1', 'band_4', 'band_6'),
+        'variables': ('band_10', 'band_40', 'band_60'),
         'dimensions': {
             'longitude': {
                 'range': (148, 149),
@@ -63,10 +63,10 @@ def main():
             'latitude': {
                 'range': (-36.1, -35.1),
             },
-            'time': {
-                'range': (datetime.datetime(2015, 2, 19),
-                          datetime.datetime(2015, 2, 22, 9, 50, 23))
-            }
+            # 'time': {
+            #     'range': (datetime.datetime(2015, 2, 19),
+            #               datetime.datetime(2015, 2, 22, 9, 50, 23))
+            # }
         }
     }
 
@@ -79,12 +79,12 @@ def main():
     # data_request['dimensions']['latitude']['array_range'] = (3000, 5000)
 
     # dask.set_options(get=dask.async.get_sync)
-    data = goo.get_data(data_request, descriptor['LS8 NBAR']['storage_units'])
+    data = goo.get_data(data_request, descriptor['ls5_nbar']['storage_units'])
     pp.pprint(data)
 
-    compare_descriptor_with_data(descriptor['LS8 NBAR'], data)
+    compare_descriptor_with_data(descriptor['ls5_nbar'], data)
 
-    print('Mean value of all cells is: {}'.format(float(data['arrays']['band_1'].mean())))
+    print('Mean value of all cells is: {}'.format(float(data['arrays']['band_10'].mean())))
     # rgb = create_rgb(data)
     # pp.pprint(rgb)
 

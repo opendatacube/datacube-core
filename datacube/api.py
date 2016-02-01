@@ -36,54 +36,55 @@ from datacube.model import Coordinate, Variable
 from .storage.access.backends import NetCDF4StorageUnit, GeoTifStorageUnit, FauxStorageUnit
 from .index import index_connect
 
-
-class NDArrayProxy(object):
-    def __init__(self, storage_unit, var_name):
-        self._storage_unit = storage_unit
-        self._var_name = var_name
-
-    @property
-    def ndim(self):
-        return len(self._storage_unit.coordinates)
-
-    @property
-    def size(self):
-        return functools.reduce(operator.mul, [coord.length for coord in self._storage_unit.coordinates])
-
-    @property
-    def dtype(self):
-        return self._storage_unit.variables[self._var_name].dtype
-
-    @property
-    def shape(self):
-        return tuple(coord.length for coord in self._storage_unit.coordinates)
-
-    def __len__(self):
-        return self.shape[0]
-
-    def __array__(self, dtype=None):
-        return self._storage_unit.get(self._var_name)
-
-    def __getitem__(self, key):
-        return self._storage_unit.get_chunk(self._var_name, key)
-
-    def __repr__(self):
-        return '%s(array=%r)' % (type(self).__name__, self.shape)
-
-
-def get_storage_unit_transform(su):
-    storage_type = su.attributes['storage_type']
-    return [su.coordinates['longitude'].begin, storage_type['resolution']['x'], 0.0,
-            su.coordinates['latitude'].begin, 0.0, storage_type['resolution']['y']]
+# TODO: Move into storage.access.StorageUnitBase
+# class NDArrayProxy(object):
+#     def __init__(self, storage_unit, var_name):
+#         self._storage_unit = storage_unit
+#         self._var_name = var_name
+#
+#     @property
+#     def ndim(self):
+#         return len(self._storage_unit.coordinates)
+#
+#     @property
+#     def size(self):
+#         return functools.reduce(operator.mul, [coord.length for coord in self._storage_unit.coordinates])
+#
+#     @property
+#     def dtype(self):
+#         return self._storage_unit.variables[self._var_name].dtype
+#
+#     @property
+#     def shape(self):
+#         return tuple(coord.length for coord in self._storage_unit.coordinates)
+#
+#     def __len__(self):
+#         return self.shape[0]
+#
+#     def __array__(self, dtype=None):
+#         return self._storage_unit.get(self._var_name)
+#
+#     def __getitem__(self, key):
+#         return self._storage_unit.get_chunk(self._var_name, key)
+#
+#     def __repr__(self):
+#         return '%s(array=%r)' % (type(self).__name__, self.shape)
 
 
-def get_storage_unit_projection(su):
-    storage_type = su.attributes['storage_type']
-    return storage_type['projection']['spatial_ref']
+# TODO: Confirm that we don't need this code
+# def get_storage_unit_transform(su):
+#     storage_type = su.attributes['storage_type']
+#     return [su.coordinates['longitude'].begin, storage_type['resolution']['x'], 0.0,
+#             su.coordinates['latitude'].begin, 0.0, storage_type['resolution']['y']]
+#
+#
+# def get_storage_unit_projection(su):
+#     storage_type = su.attributes['storage_type']
+#     return storage_type['projection']['spatial_ref']
 
 
 def make_in_memory_storage_unit(su, coordinates, variables, attributes, crs):
-    faux = MemoryStorageUnit(filepath=su.local_path,
+    faux = MemoryStorageUnit(file_path=su.local_path,
                              coordinates=coordinates,
                              variables=variables,
                              attributes=attributes,
@@ -240,7 +241,7 @@ class StorageUnitCollection(object):
                 'storage_max': tuple(max(storage_unit.coordinates[dim].begin, storage_unit.coordinates[dim].end)
                                      for dim in dimensions),
                 'storage_shape': tuple(storage_unit.coordinates[dim].length for dim in dimensions),
-                'storage_path': str(storage_unit.filepath)
+                'storage_path': str(storage_unit.file_path)
             }
         return stats
 
@@ -317,7 +318,8 @@ def _create_response(xarrays, dimensions, extra_properties):
         'arrays': xarrays,
         'indices': dict((dim, sample_xarray.coords[dim].values) for dim in dimensions),
         'element_sizes': [(abs(sample_xarray.coords[dim].values[0] - sample_xarray.coords[dim].values[-1]) /
-                           float(sample_xarray.coords[dim].size)) for dim in dimensions],
+                           float(sample_xarray.coords[dim].size)) if sample_xarray.coords[dim].size > 0 else 0
+                          for dim in dimensions],
         'size': sample_xarray.shape,
     }
     response.update(extra_properties)
@@ -337,9 +339,9 @@ def make_nodata_func(storage_units, var_name, dimensions, chunksize):
     return make_nodata_dask
 
 
-def get_chunked_data_func(storage_unit, var_name):
-    # TODO: Provide dask array to chunked NetCDF calls
-    return NDArrayProxy(storage_unit, var_name)
+# def get_chunked_data_func(storage_unit, var_name):
+#     # TODO: Provide dask array to chunked NetCDF calls
+#     return NDArrayProxy(storage_unit, var_name)
 
 
 def _get_dask_for_storage_units(storage_units, var_name, dimensions, dim_vals, dsk_id):
@@ -442,12 +444,12 @@ def _stratify_irregular_dimension(storage_units, dimension):
 
 
 class MemoryStorageUnit(FauxStorageUnit):
-    def __init__(self, coordinates, variables, attributes=None, coodinate_values=None, crs=None, filepath=None):
+    def __init__(self, coordinates, variables, attributes=None, coodinate_values=None, crs=None, file_path=None):
         super(MemoryStorageUnit, self).__init__(coordinates, variables)
         self.crs = crs or {}
         self.coodinate_values = coodinate_values or {}
         self.attributes = attributes or {}
-        self.filepath = filepath
+        self.file_path = file_path
 
     def _get_coord(self, name):
         if name in self.coodinate_values:
@@ -481,7 +483,7 @@ class IrregularStorageUnitSlice(StorageUnitBase):
                               units=real_dim.units)
         self.coordinates[dimension] = fake_dim
         self.variables = parent.variables
-        self.filepath = parent.filepath
+        self.file_path = parent.file_path
 
     def get_crs(self):
         return self._parent.get_crs()
@@ -533,8 +535,10 @@ def get_result_stats(storage_units, dimension_ranges):
     example = storage_data['arrays'][list(storage_data['arrays'].keys())[0]]
     result = {
         'result_shape': example.shape,
-        'result_min': tuple(to_single_value(example[dim].min()) for dim in example.dims),
-        'result_max': tuple(to_single_value(example[dim].max()) for dim in example.dims),
+        'result_min': tuple(to_single_value(example[dim].min()) if example[dim].size > 0 else numpy.NaN
+                            for dim in example.dims),
+        'result_max': tuple(to_single_value(example[dim].max()) if example[dim].size > 0 else numpy.NaN
+                            for dim in example.dims),
     }
     irregular_dim_names = ['time', 't']  # TODO: Use irregular flag from database instead
     result['irregular_indices'] = dict((dim, example[dim].values)

@@ -133,11 +133,17 @@ def check_open_with_xray(file_path):
 def check_open_with_api(index):
     import datacube.api
     api = datacube.api.API(index)
-    descriptor = api.get_descriptor({})
+    descriptor = api.get_descriptor()
     assert 'ls5_nbar' in descriptor
     storage_units = descriptor['ls5_nbar']['storage_units']
-    query = {'variables': ['band_10']}
+    query = {
+        'variables': ['band_10'],
+        'dimensions': {
+            'latitude': {'range': (-34, -35)},
+            'longitude': {'range': (149, 150)}}
+    }
     data = api.get_data(query, storage_units=storage_units)
+    assert data['arrays']['band_10'].size
 
 
 def make_pgsqljson_match_yaml_load(data):
