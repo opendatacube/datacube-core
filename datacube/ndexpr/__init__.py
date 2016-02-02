@@ -26,6 +26,7 @@
 
 # pylint: disable=too-many-statements, too-many-branches, expression-not-assigned, too-many-locals,
 # pylint: disable=too-many-return-statements, protected-access, undefined-variable, too-many-public-methods
+# pylint: disable=consider-using-enumerate
 
 from __future__ import absolute_import
 from __future__ import print_function
@@ -34,11 +35,11 @@ import operator
 import inspect
 import sys
 import ctypes
+from pprint import pprint
 import numpy as np
 import xarray as xr
 from xarray import ufuncs
 from scipy import ndimage
-from pprint import pprint
 import matplotlib.pyplot as plt
 
 from pyparsing import Literal, CaselessLiteral, Word, Combine, Group,\

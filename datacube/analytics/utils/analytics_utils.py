@@ -21,14 +21,16 @@
 #
 # ------------------------------------------------------------------------------
 
+# pylint: disable=consider-using-enumerate
+
 from __future__ import absolute_import
 from __future__ import print_function
 import math
+import csv
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import ndimage
 from scipy.io import netcdf
-import csv
 from osgeo import gdal, osr
 import xarray
 
