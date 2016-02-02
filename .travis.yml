@@ -29,9 +29,9 @@ addons:
 before_install:
   # Create a database for the integration tests.
   - createdb agdcintegration
-  - sudo apt-get install libblas-dev
-  - sudo apt-get install liblapack-dev
-  - sudo apt-get install gfortran
+  - apt-get install libblas-dev
+  - apt-get install liblapack-dev
+  - apt-get install gfortran
 
 install:
   - export CPLUS_INCLUDE_PATH="/usr/include/gdal"
