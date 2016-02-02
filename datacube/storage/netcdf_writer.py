@@ -214,8 +214,8 @@ class ProjectedNetCDFWriter(NetCDFWriter):
 
     def create_x_y_variables(self, tile_spec):
         nco = self.nco
-        nco.createDimension('x', tile_spec.width)
-        nco.createDimension('y', tile_spec.height)
+        nco.createDimension('x', tile_spec.xs.size)
+        nco.createDimension('y', tile_spec.ys.size)
 
         xvar = nco.createVariable('x', 'double', 'x')
         xvar.long_name = 'x coordinate of projection'
@@ -265,8 +265,8 @@ class GeographicNetCDFWriter(NetCDFWriter):
         return crs_var
 
     def create_coordinate_variables(self, tile_spec):
-        self.nco.createDimension('longitude', len(tile_spec.lons))
-        self.nco.createDimension('latitude', len(tile_spec.lats))
+        self.nco.createDimension('longitude', tile_spec.lons.size)
+        self.nco.createDimension('latitude', tile_spec.lats.size)
 
         lon = self.nco.createVariable('longitude', 'double', 'longitude')
         lon.units = 'degrees_east'
