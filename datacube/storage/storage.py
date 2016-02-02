@@ -18,7 +18,7 @@ from rasterio.coords import BoundingBox
 from rasterio.warp import RESAMPLING, transform_bounds
 
 from datacube import compat
-from datacube.model import StorageUnit, TileSpec, Coordinate, _uri_to_local_path
+from datacube.model import StorageUnit, TileSpec, Coordinate
 from datacube.storage.netcdf_writer import create_netcdf_writer
 from datacube.storage.utils import namedtuples2dicts, datetime_to_seconds_since_1970
 
@@ -108,7 +108,6 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
     """
     Create storage unit at `tile_index` for datasets using mapping
 
-
     :param tile_index: X,Y index of the storage unit
     :type tile_index: tuple[int, int]
     :type datasets:  list[datacube.model.Dataset]
@@ -120,10 +119,47 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
     if not datasets:
         raise ValueError('Shall not create empty StorageUnit%s %s' % (tile_index, output_uri))
 
-    if storage_type.driver != 'NetCDF CF':
-        raise ValueError('Storage driver is not supported (yet): %s' % storage_type.driver)
+    tile_spec = TileSpec.create_from_storage_type_and_index(storage_type, tile_index)
 
-    output_filename = _uri_to_local_path(output_uri)
+    datasets_grouped_by_time = _group_datasets_by_time(datasets)
+    time_values = [time for time, _ in datasets_grouped_by_time]
+
+    extents = {
+        'geospatial_lat_min': tile_spec.lat_min,
+        'geospatial_lat_max': tile_spec.lat_max,
+        'geospatial_lon_min': tile_spec.lon_min,
+        'geospatial_lon_max': tile_spec.lon_max,
+        'time_min': time_values[0],
+        'time_max': time_values[-1]
+    }
+    coordinates = tile_spec.coordinates
+    coordinates['time'] = Coordinate(numpy.dtype(numpy.float64),
+                                     datetime_to_seconds_since_1970(time_values[0]),
+                                     datetime_to_seconds_since_1970(time_values[-1]),
+                                     len(time_values),
+                                     'seconds since 1970-01-01 00:00:00')
+
+    descriptor = dict(coordinates=namedtuples2dicts(coordinates), extents=extents, tile_index=tile_index)
+
+    su = StorageUnit([dataset.id for dataset in datasets],
+                     storage_type,
+                     descriptor,
+                     storage_type.local_uri_to_location_relative_path(output_uri))
+
+    if su.storage_type.driver != 'NetCDF CF':
+        raise ValueError('Storage driver is not supported (yet): %s' % storage_type.driver)
+    write_storage_unit_to_disk(su, datasets)
+
+    return su
+
+
+def write_storage_unit_to_disk(storage_unit, datasets):
+    """
+    :type storage_unit: datacube.model.StorageUnit
+    """
+    data_provider = GroupDatasetsByTimeDataProvider.from_storage_unit(storage_unit, datasets)
+    time_values = data_provider.get_time_values()
+    output_filename = storage_unit.local_path
 
     if output_filename.exists():
         raise RuntimeError('file already exists: %s' % output_filename)
@@ -132,53 +168,24 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
 
     tmpfile, tmpfilename = tempfile.mkstemp(dir=str(output_filename.parent))
     try:
-        data_provider = GroupDatasetsByTimeDataProvider(datasets, tile_index, storage_type)
+        with create_netcdf_writer(tmpfilename, storage_unit.tile_spec) as su_writer:
+            su_writer.create_time_values(time_values)
 
-        descriptor = write_storage_unit_to_disk(tmpfilename, data_provider)
+            for time_index, docs in data_provider.get_metadata_documents():
+                su_writer.add_source_metadata(time_index, docs)
+
+            for measurement_descriptor, chunking, data in data_provider.get_measurements():
+                output_var = su_writer.ensure_variable(measurement_descriptor, chunking)
+                for time_index, buffer_ in enumerate(data):
+                    output_var[time_index] = buffer_
+
         os.close(tmpfile)
         os.rename(tmpfilename, str(output_filename))
-
-        return StorageUnit([dataset.id for dataset in datasets],
-                           storage_type,
-                           descriptor,
-                           storage_type.local_uri_to_location_relative_path(output_uri))
     finally:
         try:
             os.unlink(tmpfilename)
         except OSError:
             pass
-
-
-def write_storage_unit_to_disk(filename, data_provider):
-
-    time_values = data_provider.get_time_values()
-    extents = {
-        'geospatial_lat_min': data_provider.tile_spec.lat_min,
-        'geospatial_lat_max': data_provider.tile_spec.lat_max,
-        'geospatial_lon_min': data_provider.tile_spec.lon_min,
-        'geospatial_lon_max': data_provider.tile_spec.lon_max,
-        'time_min': time_values[0],
-        'time_max': time_values[-1]
-    }
-    coordinates = data_provider.tile_spec.coordinates
-    coordinates['time'] = Coordinate(numpy.dtype(numpy.float64),
-                                     datetime_to_seconds_since_1970(time_values[0]),
-                                     datetime_to_seconds_since_1970(time_values[-1]),
-                                     len(time_values),
-                                     'seconds since 1970-01-01 00:00:00')
-
-    with create_netcdf_writer(filename, data_provider.tile_spec) as su_writer:
-        su_writer.create_time_values(time_values)
-
-        for time_index, docs in data_provider.get_metadata_documents():
-            su_writer.add_source_metadata(time_index, docs)
-
-        for measurement_descriptor, chunking, data in data_provider.get_measurements():
-            output_var = su_writer.ensure_variable(measurement_descriptor, chunking)
-            for time_index, buffer_ in enumerate(data):
-                output_var[time_index] = buffer_
-
-    return dict(coordinates=namedtuples2dicts(coordinates), extents=extents)
 
 
 class GroupDatasetsByTimeDataProvider(object):
@@ -191,6 +198,10 @@ class GroupDatasetsByTimeDataProvider(object):
         self._warn_if_mosaiced_datasets(tile_index)
         self.tile_spec = TileSpec.create_from_storage_type_and_index(storage_type, tile_index)
         self.storage_type = storage_type
+
+    @classmethod
+    def from_storage_unit(cls, storage_unit, datasets):
+        return cls(datasets, storage_unit.tile_index, storage_unit.storage_type)
 
     def _warn_if_mosaiced_datasets(self, tile_index):
         for time, group in self.datasets_grouped_by_time:

@@ -203,10 +203,16 @@ class StorageUnit(object):
         return None
 
     @property
+    def tile_spec(self):
+        return TileSpec.create_from_storage_type_and_index(self.storage_type, self.tile_index)
+
+    @property
     def tile_index(self):
-        # TODO: should probably just store it
-        return [int(min(self.coordinates[dim].begin, self.coordinates[dim].end) // size)
-                for size, dim in zip(self.storage_type.tile_size, self.storage_type.spatial_dimensions)]
+        try:
+            return self.descriptor['tile_index']
+        except KeyError:
+            return [int(min(self.coordinates[dim].begin, self.coordinates[dim].end) // size)
+                    for size, dim in zip(self.storage_type.tile_size, self.storage_type.spatial_dimensions)]
 
     @property
     def affine(self):
@@ -494,7 +500,6 @@ class TileSpec(object):
                 'x': Coordinate(self.xs.dtype, self.xs[0], self.xs[-1], self.xs.size, units),
                 'y': Coordinate(self.ys.dtype, self.ys[0], self.ys[-1], self.ys.size, units)
             }
-
 
     @classmethod
     def create_from_storage_type_and_index(cls, storage_type, tile_index):
