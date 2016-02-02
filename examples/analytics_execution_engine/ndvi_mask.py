@@ -42,8 +42,8 @@ def main():
 
     arrays = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40', 'band_30'], dimensions, 'get_data')
     ndvi = a.apply_bandmath(arrays, '((array1 - array2) / (array1 + array2))', 'ndvi')
-    PQ = a.create_array(('LANDSAT 5', 'PQ'), ['band_pixelquality'], dimensions, 'pq')
-    mask = a.apply_cloud_mask(ndvi, PQ, 'mask')
+    pq = a.create_array(('LANDSAT 5', 'PQ'), ['band_pixelquality'], dimensions, 'pq')
+    mask = a.apply_cloud_mask(ndvi, pq, 'mask')
 
     e.execute_plan(a.plan)
 

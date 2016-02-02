@@ -42,11 +42,11 @@ def main():
 
     b40 = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40'], dimensions, 'b40')
     b30 = a.create_array(('LANDSAT 5', 'NBAR'), ['band_30'], dimensions, 'b30')
-    PQ = a.create_array(('LANDSAT 5', 'PQ'), ['band_pixelquality'], dimensions, 'pq')
+    pq = a.create_array(('LANDSAT 5', 'PQ'), ['band_pixelquality'], dimensions, 'pq')
 
     ndvi = a.apply_expression([b40, b30], '((array1 - array2) / (array1 + array2))', 'ndvi')
     adjusted_ndvi = a.apply_expression(ndvi, '(ndvi*0.5)', 'adjusted_ndvi')
-    mask = a.apply_expression([adjusted_ndvi, PQ], 'array1{array2}', 'mask')
+    mask = a.apply_expression([adjusted_ndvi, pq], 'array1{array2}', 'mask')
     median_t = a.apply_expression(mask, 'median(array1, 0)', 'medianT')
 
     result = e.execute_plan(a.plan)

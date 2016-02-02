@@ -33,13 +33,13 @@ import inspect
 import logging
 
 from datacube.api import API
-from datacube.analytics.analytics_engine import OPERATION_TYPE
+from datacube.analytics.analytics_engine import OperationType
 from datacube.analytics.utils.analytics_utils import get_pqa_mask
 from datacube.ndexpr import NDexpr
 
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+LOG = logging.getLogger(__name__)
+LOG.setLevel(logging.DEBUG)
 
 
 class ExecutionEngine(object):
@@ -58,10 +58,10 @@ class ExecutionEngine(object):
                      "var": xr.DataArray.var}
 
     def __init__(self):
-        logger.debug('Initialise Execution Module.')
+        LOG.debug('Initialise Execution Module.')
         self.cache = {}
         self.nd = NDexpr()
-        self.nd.setAE(True)
+        self.nd.set_ae(True)
 
         self.api = API()
 
@@ -71,16 +71,16 @@ class ExecutionEngine(object):
             function = task.values()[0]['orig_function']
             op_type = task.values()[0]['operation_type']
 
-            if op_type == OPERATION_TYPE.Get_Data:
+            if op_type == OperationType.Get_Data:
                 self.execute_get_data(task)
-            elif op_type == OPERATION_TYPE.Expression:
+            elif op_type == OperationType.Expression:
                 self.execute_expression(task)
-            elif op_type == OPERATION_TYPE.Cloud_Mask:
+            elif op_type == OperationType.Cloud_Mask:
                 self.execute_cloud_mask(task)
-            elif op_type == OPERATION_TYPE.Reduction and \
+            elif op_type == OperationType.Reduction and \
                     len([s for s in self.REDUCTION_FNS.keys() if s in function]) > 0:
                 self.execute_reduction(task)
-            elif op_type == OPERATION_TYPE.Bandmath:
+            elif op_type == OperationType.Bandmath:
                 self.execute_bandmath(task)
 
     def execute_get_data(self, task):
@@ -152,18 +152,18 @@ class ExecutionEngine(object):
         for i in arrays.keys():
             arrays[i] = arrays[i].where(arrays[i] != no_data_value)
 
-        arrayResult = {}
-        arrayResult['array_result'] = {}
-        arrayResult['array_result'][key] = self.nd.evaluate(task.values()[0]['function'],  local_dict=arrays)
-        #arrayResult['array_result'][key] = arrayResult['array_result'][key].fillna(no_data_value)
+        array_result = {}
+        array_result['array_result'] = {}
+        array_result['array_result'][key] = self.nd.evaluate(task.values()[0]['function'], local_dict=arrays)
+        #array_result['array_result'][key] = array_result['array_result'][key].fillna(no_data_value)
 
         array_desc = self.cache[task.values()[0]['array_input'][0]]
 
-        arrayResult['array_indices'] = copy.deepcopy(array_desc['array_indices'])
-        arrayResult['array_dimensions'] = copy.deepcopy(array_desc['array_dimensions'])
-        arrayResult['array_output'] = copy.deepcopy(task.values()[0]['array_output'])
+        array_result['array_indices'] = copy.deepcopy(array_desc['array_indices'])
+        array_result['array_dimensions'] = copy.deepcopy(array_desc['array_dimensions'])
+        array_result['array_output'] = copy.deepcopy(task.values()[0]['array_output'])
 
-        self.cache[key] = arrayResult
+        self.cache[key] = array_result
 
         return self.cache[key]
 
@@ -177,18 +177,18 @@ class ExecutionEngine(object):
             #    arrays[k] = v.astype(float).values
             arrays.update(self.cache[task_name]['array_result'])
 
-        arrayResult = {}
-        arrayResult['array_result'] = {}
-        arrayResult['array_result'][key] = xr.DataArray(ne.evaluate(task.values()[0]['function'],  arrays))
-        #arrayResult['array_result'][key] = self.nd.evaluate(task.values()[0]['function'],  arrays)
+        array_result = {}
+        array_result['array_result'] = {}
+        array_result['array_result'][key] = xr.DataArray(ne.evaluate(task.values()[0]['function'], arrays))
+        #array_result['array_result'][key] = self.nd.evaluate(task.values()[0]['function'],  arrays)
 
         array_desc = self.cache[task.values()[0]['array_input'][0]]
 
-        arrayResult['array_indices'] = copy.deepcopy(array_desc['array_indices'])
-        arrayResult['array_dimensions'] = copy.deepcopy(array_desc['array_dimensions'])
-        arrayResult['array_output'] = copy.deepcopy(task.values()[0]['array_output'])
+        array_result['array_indices'] = copy.deepcopy(array_desc['array_indices'])
+        array_result['array_dimensions'] = copy.deepcopy(array_desc['array_dimensions'])
+        array_result['array_output'] = copy.deepcopy(task.values()[0]['array_output'])
 
-        self.cache[key] = arrayResult
+        self.cache[key] = array_result
         return self.cache[key]
 
     def execute_reduction(self, task):
@@ -207,9 +207,9 @@ class ExecutionEngine(object):
 
         array_desc = self.cache[task.values()[0]['array_input'][0]]
 
-        arrayResult = {}
-        arrayResult['array_result'] = {}
-        arrayResult['array_output'] = copy.deepcopy(task.values()[0]['array_output'])
+        array_result = {}
+        array_result['array_result'] = {}
+        array_result['array_output'] = copy.deepcopy(task.values()[0]['array_output'])
 
         dims = tuple((self.cache[data_key]['array_dimensions'].index(p) for p in task.values()[0]['dimension']))
 
@@ -224,9 +224,9 @@ class ExecutionEngine(object):
            function_name != 'prod':
             args['skipna'] = True
 
-        arrayResult['array_result'][key] = func(xr.DataArray(array_data), **args)
-        arrayResult['array_indices'] = copy.deepcopy(array_desc['array_indices'])
-        arrayResult['array_dimensions'] = copy.deepcopy(arrayResult['array_output']['dimensions_order'])
+        array_result['array_result'][key] = func(xr.DataArray(array_data), **args)
+        array_result['array_indices'] = copy.deepcopy(array_desc['array_indices'])
+        array_result['array_dimensions'] = copy.deepcopy(array_result['array_output']['dimensions_order'])
 
-        self.cache[key] = arrayResult
+        self.cache[key] = array_result
         return self.cache[key]

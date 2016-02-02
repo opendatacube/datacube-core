@@ -29,18 +29,9 @@ from datetime import datetime
 from datacube.analytics.analytics_engine import AnalyticsEngine
 from datacube.execution.execution_engine import ExecutionEngine
 from datacube.analytics.utils.analytics_utils import plot
-import logging
-import sys
-
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setLevel(logging.DEBUG)
-console_formatter = logging.Formatter('%(message)s')
-console_handler.setFormatter(console_formatter)
-logging.root.addHandler(console_handler)
 
 
 def main():
-
     a = AnalyticsEngine()
     e = ExecutionEngine()
 

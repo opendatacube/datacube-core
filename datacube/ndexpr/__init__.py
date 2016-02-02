@@ -24,6 +24,9 @@
 #
 # ------------------------------------------------------------------------------
 
+# pylint: disable=too-many-statements, too-many-branches, expression-not-assigned, too-many-locals,
+# pylint: disable=too-many-return-statements, protected-access, undefined-variable, too-many-public-methods
+
 from __future__ import absolute_import
 from __future__ import print_function
 import math
@@ -50,10 +53,11 @@ class NDexpr(object):
     def __init__(self):
 
         self.ae = False
+        self.local_dict = None
+        self.f = None
 
-        self.exprStack = []
-        self.topStack = []
-        self.texprStack = []
+        self.expr_stack = []
+        self.texpr_stack = []
 
         # Define constants
         self.constants = {}
@@ -203,150 +207,141 @@ class NDexpr(object):
         indexexpr = Forward()
 
         atom = (Optional("-") +
-                (variable + seq + expr).setParseAction(self.pushAssign) |
-                indexexpr.setParseAction(self.pushIndex) |
-                (lpar + expr + qmark.setParseAction(self.pushTernary1) + expr +
-                 scolon.setParseAction(self.pushTernary2) + expr +
-                 rpar).setParseAction(self.pushTernary) |
+                (variable + seq + expr).setParseAction(self.push_assign) |
+                indexexpr.setParseAction(self.push_index) |
+                (lpar + expr + qmark.setParseAction(self.push_ternary1) + expr +
+                 scolon.setParseAction(self.push_ternary2) + expr +
+                 rpar).setParseAction(self.push_ternary) |
                 (lpar + expr + qmark + expr + scolon + expr +
-                 rpar).setParseAction(self.pushTernary) |
-                (logicalnotop + expr).setParseAction(self.pushULNot) |
-                (bitnotop + expr).setParseAction(self.pushUNot) |
+                 rpar).setParseAction(self.push_ternary) |
+                (logicalnotop + expr).setParseAction(self.push_ulnot) |
+                (bitnotop + expr).setParseAction(self.push_unot) |
                 (variable + lcurl + expr +
-                 rcurl).setParseAction(self.pushMask) |
+                 rcurl).setParseAction(self.push_mask) |
                 (variable + lpar + expr + (comma + expr)*3 +
-                 rpar).setParseAction(self.pushExpr4) |
+                 rpar).setParseAction(self.push_expr4) |
                 (variable + lpar + expr + (comma + expr)*2 +
-                 rpar).setParseAction(self.pushExpr3) |
+                 rpar).setParseAction(self.push_expr3) |
                 (variable + lpar + expr + comma + expr +
-                 rpar).setParseAction(self.pushExpr2) |
+                 rpar).setParseAction(self.push_expr2) |
                 (variable + lpar + expr + rpar |
-                 variable).setParseAction(self.pushExpr1) |
-                fnumber.setParseAction(self.pushExpr) |
+                 variable).setParseAction(self.push_expr1) |
+                fnumber.setParseAction(self.push_expr) |
                 (lpar + expr.suppress() +
-                 rpar).setParseAction(self.pushUMinus)
-                )
+                 rpar).setParseAction(self.push_uminus))
 
         # Define order of operations for operators
 
         factor = Forward()
-        factor << atom + ZeroOrMore((expop + factor)
-                                    .setParseAction(self.pushOp))
-        term = factor + ZeroOrMore((multop + factor)
-                                   .setParseAction(self.pushOp))
-        term2 = term + ZeroOrMore((addop + term)
-                                  .setParseAction(self.pushOp))
-        term3 = term2 + ZeroOrMore((sliceop + term2)
-                                   .setParseAction(self.pushOp))
-        term4 = term3 + ZeroOrMore((compop + term3)
-                                   .setParseAction(self.pushOp))
-        term5 = term4 + ZeroOrMore((eqop + term4)
-                                   .setParseAction(self.pushOp))
-        term6 = term5 + ZeroOrMore((bitcompop + term5)
-                                   .setParseAction(self.pushOp))
-        expr << term6 + ZeroOrMore((assignop + term6)
-                                   .setParseAction(self.pushOp))
+        factor << atom + ZeroOrMore((expop + factor).setParseAction(self.push_op))
+        term = factor + ZeroOrMore((multop + factor).setParseAction(self.push_op))
+        term2 = term + ZeroOrMore((addop + term).setParseAction(self.push_op))
+        term3 = term2 + ZeroOrMore((sliceop + term2).setParseAction(self.push_op))
+        term4 = term3 + ZeroOrMore((compop + term3).setParseAction(self.push_op))
+        term5 = term4 + ZeroOrMore((eqop + term4).setParseAction(self.push_op))
+        term6 = term5 + ZeroOrMore((bitcompop + term5).setParseAction(self.push_op))
+        expr << term6 + ZeroOrMore((assignop + term6).setParseAction(self.push_op))
 
         # Define index operators
 
         colon_expr = (colon + FollowedBy(comma) ^ colon +
-                      FollowedBy(rbrac)).setParseAction(self.pushColon)
+                      FollowedBy(rbrac)).setParseAction(self.push_colon)
         range_expr = colon_expr | expr | colon
         indexexpr << (variable + lbrac + delimitedList(range_expr, delim=',') +
-                      rbrac).setParseAction(self.pushExpr)
+                      rbrac).setParseAction(self.push_expr)
 
         self.parser = expr
 
-    def setAE(self, flag):
+    def set_ae(self, flag):
         self.ae = flag
 
-    def pushExpr(self, strg, loc, toks):
-        self.exprStack.append(toks[0])
+    def push_expr(self, strg, loc, toks):
+        self.expr_stack.append(toks[0])
 
-    def pushExpr1(self, strg, loc, toks):
+    def push_expr1(self, strg, loc, toks):
         if toks[0] in self.xrfn:
-            self.exprStack.append('1')
-        self.exprStack.append(toks[0])
+            self.expr_stack.append('1')
+        self.expr_stack.append(toks[0])
 
-    def pushExpr2(self, strg, loc, toks):
+    def push_expr2(self, strg, loc, toks):
         if toks[0] in self.xrfn:
-            self.exprStack.append('2')
-        self.exprStack.append(toks[0])
+            self.expr_stack.append('2')
+        self.expr_stack.append(toks[0])
 
-    def pushExpr3(self, strg, loc, toks):
+    def push_expr3(self, strg, loc, toks):
         if toks[0] in self.xrfn:
-            self.exprStack.append('3')
-        self.exprStack.append(toks[0])
+            self.expr_stack.append('3')
+        self.expr_stack.append(toks[0])
 
-    def pushExpr4(self, strg, loc, toks):
+    def push_expr4(self, strg, loc, toks):
         if toks[0] in self.xrfn:
-            self.exprStack.append('4')
-        self.exprStack.append(toks[0])
+            self.expr_stack.append('4')
+        self.expr_stack.append(toks[0])
 
-    def pushOp(self, strg, loc, toks):
-        self.exprStack.append(toks[0])
+    def push_op(self, strg, loc, toks):
+        self.expr_stack.append(toks[0])
 
-    def pushUMinus(self, strg, loc, toks):
+    def push_uminus(self, strg, loc, toks):
         if toks and toks[0] == '-':
-            self.exprStack.append('unary -')
+            self.expr_stack.append('unary -')
 
-    def pushUNot(self, strg, loc, toks):
+    def push_unot(self, strg, loc, toks):
         if toks and toks[0] == '~':
-            self.exprStack.append('unary ~')
+            self.expr_stack.append('unary ~')
 
-    def pushULNot(self, strg, loc, toks):
+    def push_ulnot(self, strg, loc, toks):
         if toks and toks[0] == '!':
-            self.exprStack.append('unary !')
+            self.expr_stack.append('unary !')
 
-    def pushIndex(self, strg, loc, toks):
-        self.exprStack.append("[]")
+    def push_index(self, strg, loc, toks):
+        self.expr_stack.append("[]")
 
-    def pushColon(self, strg, loc, toks):
-        self.exprStack.append("::")
+    def push_colon(self, strg, loc, toks):
+        self.expr_stack.append("::")
 
-    def pushMask(self, strg, loc, toks):
-        self.exprStack.append(toks[0])
-        self.exprStack.append("{}")
+    def push_mask(self, strg, loc, toks):
+        self.expr_stack.append(toks[0])
+        self.expr_stack.append("{}")
 
-    def pushAssign(self, strg, loc, toks):
-        self.exprStack.append(toks[0])
-        self.exprStack.append("=")
+    def push_assign(self, strg, loc, toks):
+        self.expr_stack.append(toks[0])
+        self.expr_stack.append("=")
 
-    def pushTernary(self, strg, loc, toks):
-        self.texprStack.append(self.exprStack)
-        self.exprStack = []
-        self.exprStack.append(self.texprStack[::-1])
-        self.exprStack.append('?')
-        self.exprStack = self.flatten_list(self.exprStack)
-        self.texprStack = []
+    def push_ternary(self, strg, loc, toks):
+        self.texpr_stack.append(self.expr_stack)
+        self.expr_stack = []
+        self.expr_stack.append(self.texpr_stack[::-1])
+        self.expr_stack.append('?')
+        self.expr_stack = self.flatten_list(self.expr_stack)
+        self.texpr_stack = []
 
-    def pushTernary1(self, strg, loc, toks):
-        self.texprStack.append(self.exprStack)
-        self.exprStack = []
+    def push_ternary1(self, strg, loc, toks):
+        self.texpr_stack.append(self.expr_stack)
+        self.expr_stack = []
 
-    def pushTernary2(self, strg, loc, toks):
-        self.texprStack.append(self.exprStack)
-        self.exprStack = []
+    def push_ternary2(self, strg, loc, toks):
+        self.texpr_stack.append(self.expr_stack)
+        self.expr_stack = []
 
-    def evaluateStack(self, s):
+    def evaluate_stack(self, s):
         op = s.pop()
         if op == 'unary -':
-            return -self.evaluateStack(s)
+            return -self.evaluate_stack(s)
         elif op == 'unary ~':
-            return ~self.evaluateStack(s)
+            return ~self.evaluate_stack(s)
         elif op == 'unary !':
-            return not self.evaluateStack(s)
+            return not self.evaluate_stack(s)
         elif op == "=":
             op1 = s.pop()
-            op2 = self.evaluateStack(s)
+            op2 = self.evaluate_stack(s)
             self.f.f_globals[op1] = op2
 
             # code to write to locals, need to sort out when to write to locals/globals.
             # self.f.f_locals[op1] = op2
             # ctypes.pythonapi.PyFrame_LocalsToFast(ctypes.py_object(self.f), ctypes.c_int(1))
         elif op in self.opn.keys():
-            op2 = self.evaluateStack(s)
-            op1 = self.evaluateStack(s)
+            op2 = self.evaluate_stack(s)
+            op1 = self.evaluate_stack(s)
             if op == '+' and isinstance(op2, xr.DataArray) and \
                op2.dtype.type == np.bool_:
                 return xr.DataArray.where(op1, op2)
@@ -354,11 +349,11 @@ class NDexpr(object):
         elif op == "::":
             return slice(None, None, None)
         elif op in self.xrfn:
-            dim = int(self.evaluateStack(s))
+            dim = int(self.evaluate_stack(s))
             dims = ()
             for i in range(1, dim):
-                dims += int(self.evaluateStack(s)),
-            op1 = self.evaluateStack(s)
+                dims += int(self.evaluate_stack(s)),
+            op1 = self.evaluate_stack(s)
 
             args = {}
             if op == 'argmax' or op == 'argmin':
@@ -374,39 +369,39 @@ class NDexpr(object):
             val = self.xrfn[op](xr.DataArray(op1), **args)
             return val
         elif op in self.xfn1:
-            val = self.xfn1[op](self.evaluateStack(s))
+            val = self.xfn1[op](self.evaluate_stack(s))
 
             if isinstance(val, tuple) or isinstance(val, np.ndarray):
                 return xr.DataArray(val)
             return val
         elif op in self.xfn2:
-            op2 = self.evaluateStack(s)
-            op1 = self.evaluateStack(s)
+            op2 = self.evaluate_stack(s)
+            op1 = self.evaluate_stack(s)
             val = self.xfn2[op](op1, op2)
 
             if isinstance(val, tuple) or isinstance(val, np.ndarray):
                 return xr.DataArray(val)
             return val
         elif op in self.fn2:
-            op2 = self.evaluateStack(s)
-            op1 = self.evaluateStack(s)
+            op2 = self.evaluate_stack(s)
+            op1 = self.evaluate_stack(s)
             val = self.fn2[op](op1, op2)
 
             if isinstance(val, tuple) or isinstance(val, np.ndarray):
                 return xr.DataArray(val)
             return val
         elif op in ":":
-            op2 = int(self.evaluateStack(s))
-            op1 = int(self.evaluateStack(s))
+            op2 = int(self.evaluate_stack(s))
+            op1 = int(self.evaluate_stack(s))
 
             return slice(op1, op2, None)
         elif op in "[]":
-            op1 = self.evaluateStack(s)
+            op1 = self.evaluate_stack(s)
             ops = ()
             i = 0
             dims = len(s)
             while len(s) > 0:
-                val = self.evaluateStack(s)
+                val = self.evaluate_stack(s)
                 if not isinstance(val, slice):
                     val = int(val)
                 ops += val,
@@ -414,12 +409,12 @@ class NDexpr(object):
             ops = ops[::-1]
             return op1[ops]
         elif op in "{}":
-            op1 = self.evaluateStack(s)
+            op1 = self.evaluate_stack(s)
             if self.ae:
-                op2 = self.evaluateStack(s).astype(np.int64).values
+                op2 = self.evaluate_stack(s).astype(np.int64).values
                 op2 = self.get_pqa_mask(op2)
             else:
-                op2 = self.evaluateStack(s)
+                op2 = self.evaluate_stack(s)
 
             val = xr.DataArray.where(op1, op2)
             return val
@@ -428,11 +423,11 @@ class NDexpr(object):
             op2 = s.pop()
             op3 = s.pop()
 
-            ifval = self.evaluateStack(op1)
+            ifval = self.evaluate_stack(op1)
             if ifval:
-                return self.evaluateStack(op2)
+                return self.evaluate_stack(op2)
             else:
-                return self.evaluateStack(op3)
+                return self.evaluate_stack(op3)
         elif op[0].isalpha():
             if self.local_dict is not None and op in self.local_dict:
                 return self.local_dict[op]
@@ -464,23 +459,7 @@ class NDexpr(object):
             return self.f
         except ValueError:
             return self.f
-    '''
-    def evaluate(self, s):
-        self.f = sys._getframe(1)
-        self.exprStack = []
-        results = self.parser.parseString(s)
-        #print(self.exprStack)
-        val = self.evaluateStack(self.exprStack[:])
-        return val
 
-    def evaluate(self, s, local_dict):
-        self.local_dict = local_dict
-        self.exprStack = []
-        results = self.parser.parseString(s)
-        #print(self.exprStack)
-        val = self.evaluateStack(self.exprStack[:])
-        return val
-    '''
     def evaluate(self, s, local_dict=None):
         if local_dict is None:
             self.local_dict = None
@@ -488,10 +467,10 @@ class NDexpr(object):
         else:
             self.f = None
             self.local_dict = local_dict
-        self.exprStack = []
+        self.expr_stack = []
         results = self.parser.parseString(s)
-        #print(self.exprStack)
-        val = self.evaluateStack(self.exprStack[:])
+        #print(self.expr_stack)
+        val = self.evaluate_stack(self.expr_stack[:])
         return val
 
     def test(self, s, e):
@@ -509,8 +488,7 @@ class NDexpr(object):
             print(s, "=", r, " ****** FAILED ******")
             return False
 
-    def get_pqa_mask(self, pqa_ndarray,
-                     good_pixel_masks=[32767, 16383, 2457], dilation=3):
+    def get_pqa_mask(self, pqa_ndarray):
         '''
         create pqa_mask from a ndarray
 
@@ -519,7 +497,8 @@ class NDexpr(object):
             good_pixel_masks: known good pixel values
             dilation: amount of dilation to apply
         '''
-
+        good_pixel_masks = [32767, 16383, 2457]
+        dilation = 3
         pqa_mask = np.zeros(pqa_ndarray.shape, dtype=np.bool)
         for i in range(len(pqa_ndarray)):
             pqa_array = pqa_ndarray[i]
@@ -560,7 +539,7 @@ class NDexpr(object):
                 pqa_mask[i][pqa_array == good_pixel_mask] = True
         return pqa_mask
 
-    def plot3D(self, array_result):
+    def plot_3d(self, array_result):
         print('plot3D')
 
         img = array_result
@@ -595,7 +574,7 @@ class NDexpr(object):
     def test2(self):
         x1 = xr.DataArray(np.random.randn(2, 3))
         y1 = xr.DataArray(np.random.randn(2, 3))
-        z1 = xr.DataArray(np.array([[[0,  1,  2], [3,  4,  5], [6,  7,  8]],
+        z1 = xr.DataArray(np.array([[[0, 1, 2], [3, 4, 5], [6, 7, 8]],
                                     [[9, 10, 11], [12, 13, 14], [15, 16, 17]],
                                     [[18, 19, 20], [21, 22, 23], [24, 25, 26]]]))
         z2 = z1*2
@@ -603,11 +582,6 @@ class NDexpr(object):
         mask1 = z1 > 4
 
         ne = NDexpr()
-
-        '''
-        print "x1 = ", x1
-        print "y1 = ", y1
-        '''
 
         ne.test("angle(z1)", xr.ufuncs.angle(z1))
         ne.test("arccos(z1)", xr.ufuncs.arccos(z1))

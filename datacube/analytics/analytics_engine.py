@@ -29,11 +29,11 @@ from pprint import pprint
 
 from datacube.api import API
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+LOG = logging.getLogger(__name__)
+LOG.setLevel(logging.DEBUG)
 
 
-class OPERATION_TYPE:
+class OperationType(object):
     Get_Data, Expression, Cloud_Mask, Bandmath, Reduction = range(5)
 
 
@@ -62,7 +62,7 @@ class AnalyticsEngine(object):
         }
 
     def __init__(self):
-        logger.debug('Initialise Analytics Module.')
+        LOG.debug('Initialise Analytics Module.')
         self.plan = []
         self.plan_dict = {}
 
@@ -97,43 +97,43 @@ class AnalyticsEngine(object):
 
         query_parameters['platform'] = storage_type[0]
         query_parameters['product'] = storage_type[1]
-        arrayDescriptors = self.api.get_descriptor(query_parameters)
+        array_descriptors = self.api.get_descriptor(query_parameters)
 
         # stopgap until storage_units are filtered based on descriptors
-        arrayDescriptors[arrayDescriptors.keys()[0]]['storage_units'] = {}
+        array_descriptors[array_descriptors.keys()[0]]['storage_units'] = {}
 
-        arrayResults = []
+        array_results = []
 
-        storage_type_key = arrayDescriptors.keys()[0]
+        storage_type_key = array_descriptors.keys()[0]
         for variable in variables:
-            if variable not in arrayDescriptors[storage_type_key]['variables']:
+            if variable not in array_descriptors[storage_type_key]['variables']:
                 raise AssertionError(variable, "not present in", storage_type_key, "descriptor")
 
-            logger.debug('variable = %s', variable)
+            LOG.debug('variable = %s', variable)
 
-            arrayResult = {}
-            arrayResult['storage_type'] = storage_type_key
-            arrayResult['platform'] = storage_type[0]
-            arrayResult['product'] = storage_type[1]
-            arrayResult['variable'] = variable
-            arrayResult['dimensions_order'] = arrayDescriptors[storage_type_key]['dimensions']
-            arrayResult['dimensions'] = dimensions
-            arrayResult['result_max'] = arrayDescriptors[storage_type_key]['result_max']
-            arrayResult['result_min'] = arrayDescriptors[storage_type_key]['result_min']
-            arrayResult['shape'] = arrayDescriptors[storage_type_key]['result_shape']
-            arrayResult['data_type'] = arrayDescriptors[storage_type_key]['variables'][variable]['datatype_name']
-            arrayResult['no_data_value'] = arrayDescriptors[storage_type_key]['variables'][variable]['nodata_value']
+            array_result = {}
+            array_result['storage_type'] = storage_type_key
+            array_result['platform'] = storage_type[0]
+            array_result['product'] = storage_type[1]
+            array_result['variable'] = variable
+            array_result['dimensions_order'] = array_descriptors[storage_type_key]['dimensions']
+            array_result['dimensions'] = dimensions
+            array_result['result_max'] = array_descriptors[storage_type_key]['result_max']
+            array_result['result_min'] = array_descriptors[storage_type_key]['result_min']
+            array_result['shape'] = array_descriptors[storage_type_key]['result_shape']
+            array_result['data_type'] = array_descriptors[storage_type_key]['variables'][variable]['datatype_name']
+            array_result['no_data_value'] = array_descriptors[storage_type_key]['variables'][variable]['nodata_value']
 
-            arrayResults.append({variable: arrayResult})
+            array_results.append({variable: array_result})
 
         task = {}
-        task['array_input'] = arrayResults
-        task['array_output'] = copy.deepcopy(arrayResult)
+        task['array_input'] = array_results
+        task['array_output'] = copy.deepcopy(array_result)
         task['array_output']['variable'] = name
         task['function'] = 'get_data'
         task['orig_function'] = 'get_data'
         task['expression'] = 'none'
-        task['operation_type'] = OPERATION_TYPE.Get_Data
+        task['operation_type'] = OperationType.Get_Data
 
         return self.add_to_plan(name, task)
 
@@ -158,7 +158,7 @@ class AnalyticsEngine(object):
         task['expression'] = 'none'
         task['array_output'] = copy.deepcopy(arrays.values()[0]['array_output'])
         task['array_output']['variable'] = name
-        task['operation_type'] = OPERATION_TYPE.Cloud_Mask
+        task['operation_type'] = OperationType.Cloud_Mask
 
         return self.add_to_plan(name, task)
 
@@ -179,12 +179,12 @@ class AnalyticsEngine(object):
             variables.append(array.keys()[0])
 
         orig_function = function
-        logger.debug('function before = %s', function)
+        LOG.debug('function before = %s', function)
         count = 1
         for variable in variables:
             function = function.replace('array'+str(count), variable)
             count += 1
-        logger.debug('function after = %s', function)
+        LOG.debug('function after = %s', function)
 
         task = {}
 
@@ -198,7 +198,7 @@ class AnalyticsEngine(object):
         task['expression'] = function
         task['array_output'] = copy.deepcopy(arrays[0].values()[0]['array_output'])
         task['array_output']['variable'] = name
-        task['operation_type'] = OPERATION_TYPE.Expression
+        task['operation_type'] = OperationType.Expression
 
         return self.add_to_plan(name, task)
 
@@ -229,12 +229,12 @@ class AnalyticsEngine(object):
                 variables.append(arrays.keys()[0])
 
             orig_function = function
-            logger.debug('function before = %s', function)
+            LOG.debug('function before = %s', function)
             count = 1
             for variable in variables:
                 function = function.replace('array'+str(count), variable)
                 count += 1
-            logger.debug('function after = %s', function)
+            LOG.debug('function after = %s', function)
 
             task = {}
 
@@ -245,7 +245,7 @@ class AnalyticsEngine(object):
             task['expression'] = 'none'
             task['array_output'] = copy.deepcopy(arrays.values()[0]['array_output'])
             task['array_output']['variable'] = name
-            task['operation_type'] = OPERATION_TYPE.Bandmath
+            task['operation_type'] = OperationType.Bandmath
 
             return self.add_to_plan(name, task)
 
@@ -254,12 +254,12 @@ class AnalyticsEngine(object):
                 variables.append(array.keys()[0])
 
             orig_function = function
-            logger.debug('function before = %s', function)
+            LOG.debug('function before = %s', function)
             count = 1
             for variable in variables:
                 function = function.replace('array'+str(count), variable)
                 count += 1
-            logger.debug('function after = %s', function)
+            LOG.debug('function after = %s', function)
 
             task = {}
 
@@ -273,7 +273,7 @@ class AnalyticsEngine(object):
             task['expression'] = 'none'
             task['array_output'] = copy.deepcopy(arrays[0].values()[0]['array_output'])
             task['array_output']['variable'] = name
-            task['operation_type'] = OPERATION_TYPE.Bandmath
+            task['operation_type'] = OperationType.Bandmath
 
             return self.add_to_plan(name, task)
 
@@ -313,9 +313,7 @@ class AnalyticsEngine(object):
 
             variable = arrays.values()[0]['array_input'][0].values()[0]['variable']
             orig_function = function
-            logger.debug('function before = %s', function)
             function = function.replace('array1', variable)
-            logger.debug('function after = %s', function)
 
             task = {}
 
@@ -341,15 +339,13 @@ class AnalyticsEngine(object):
                 value = input_task.values()[0]['array_output']['shape'][index]
                 result += (value,)
             task['array_output']['shape'] = result
-            task['operation_type'] = OPERATION_TYPE.Reduction
+            task['operation_type'] = OperationType.Reduction
 
             return self.add_to_plan(name, task)
         else:
             variable = arrays.keys()[0]
             orig_function = function
-            logger.debug('function before = %s', function)
             function = function.replace('array1', variable)
-            logger.debug('function after = %s', function)
 
             task = {}
 
@@ -372,7 +368,7 @@ class AnalyticsEngine(object):
                 value = input_task.values()[0]['array_output']['shape'][index]
                 result += (value,)
             task['array_output']['shape'] = result
-            task['operation_type'] = OPERATION_TYPE.Reduction
+            task['operation_type'] = OperationType.Reduction
 
             return self.add_to_plan(name, task)
 
