@@ -155,7 +155,7 @@ def datetime_to_timestamp(dt):
 
 
 def dimension_ranges_to_selector(dimension_ranges, reverse_sort):
-    ranges = dict((dim_name, dim['range']) for dim_name, dim in dimension_ranges.items())
+    ranges = dict((dim_name, dim['range']) for dim_name, dim in dimension_ranges.items() if 'range' in dim)
     # if 'time' in ranges:
     #     ranges['time'] = tuple(datetime_to_timestamp(r) for r in ranges['time'])
     return dict((c, slice(*sorted(r, reverse=reverse_sort[c]))) for c, r in ranges.items())
@@ -163,6 +163,7 @@ def dimension_ranges_to_selector(dimension_ranges, reverse_sort):
 
 def dimension_ranges_to_iselector(dim_ranges):
     array_ranges = dict((dim_name, dim['array_range']) for dim_name, dim in dim_ranges.items() if 'array_range' in dim)
+    #TODO: Check if 'end' of array range should be inclusive or exclusive. Prefer exclusive to match with slice
     return dict((c, slice(*r)) for c, r in array_ranges.items())
 
 
@@ -178,7 +179,7 @@ def _convert_descriptor_to_query(descriptor=None):
     descriptor = descriptor or {}
 
     query = {key: descriptor[key] for key in ('satellite', 'sensor', 'product') if key in descriptor}
-    variables = descriptor.get('variables', [])
+    variables = descriptor.get('variables', None)
     dimension_ranges = descriptor.get('dimensions', {}).copy()
     input_coord = {'left': None, 'bottom': None, 'right': None, 'top': None}
     input_crs = None
@@ -198,7 +199,8 @@ def _convert_descriptor_to_query(descriptor=None):
         elif dim in ['time']:
             # TODO: Handle time formatting strings & other CRS's
             # Assume dateime object or seconds since UNIX epoch 1970-01-01 for now...
-            data['range'] = (datetime_to_timestamp(data['range'][0]), datetime_to_timestamp(data['range'][1]))
+            if 'range' in data:
+                data['range'] = (datetime_to_timestamp(data['range'][0]), datetime_to_timestamp(data['range'][1]))
         else:
             # Assume the search function will sort it out, add it to the query
             query[dim] = Range(*data['range'])
@@ -685,7 +687,7 @@ class API(object):
                 result.update(get_result_stats(grouped_storage_units.get_storage_units(), dimension_ranges))
         return descriptor
 
-    def get_data(self, descriptor, storage_units=None):
+    def get_data(self, descriptor={}, storage_units=None):
         """
         Function to return composite in-memory arrays
         :param descriptor:
