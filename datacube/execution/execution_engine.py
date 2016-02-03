@@ -220,9 +220,14 @@ class ExecutionEngine(object):
         else:
             args['axis'] = dims
 
-        if 'skipna' in inspect.getargspec(self.REDUCTION_FNS[function_name])[0] and \
-           function_name != 'prod':
-            args['skipna'] = True
+        if sys.version_info >= (3, 0):
+            if 'skipna' in list(inspect.signature(self.REDUCTION_FNS[function_name]).parameters.keys()) and \
+               function_name != 'prod':
+                args['skipna'] = True
+        else:
+            if 'skipna' in inspect.getargspec(self.REDUCTION_FNS[function_name])[0] and \
+               function_name != 'prod':
+                args['skipna'] = True
 
         array_result['array_result'][key] = func(xr.DataArray(array_data), **args)
         array_result['array_indices'] = copy.deepcopy(array_desc['array_indices'])

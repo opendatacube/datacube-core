@@ -363,9 +363,14 @@ class NDexpr(object):
             elif dim != 1:
                 args['axis'] = dims
 
-            if 'skipna' in inspect.getargspec(self.xrfn[op])[0] and \
-               op != 'prod':
-                args['skipna'] = True
+            if sys.version_info >= (3, 0):
+                if 'skipna' in list(inspect.signature(self.xrfn[op]).parameters.keys()) and \
+                   op != 'prod':
+                    args['skipna'] = True
+            else:
+                if 'skipna' in inspect.getargspec(self.xrfn[op])[0] and \
+                   op != 'prod':
+                    args['skipna'] = True
 
             val = self.xrfn[op](xr.DataArray(op1), **args)
             return val
