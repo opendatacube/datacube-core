@@ -25,6 +25,9 @@ addons:
     - libproj-dev
     - libgdal1-dev
     - libudunits2-dev
+    - libblas-dev
+    - liblapack-dev
+    - gfortran
 
 before_install:
   # Create a database for the integration tests.
