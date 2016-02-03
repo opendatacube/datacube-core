@@ -687,7 +687,7 @@ class API(object):
                 result.update(get_result_stats(grouped_storage_units.get_storage_units(), dimension_ranges))
         return descriptor
 
-    def get_data(self, descriptor={}, storage_units=None):
+    def get_data(self, descriptor=None, storage_units=None):
         """
         Function to return composite in-memory arrays
         :param descriptor:
