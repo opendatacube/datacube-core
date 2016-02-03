@@ -32,7 +32,6 @@ from datacube.analytics.utils.analytics_utils import plot
 
 
 def main():
-
     a = AnalyticsEngine()
     e = ExecutionEngine()
 

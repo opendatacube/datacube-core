@@ -35,8 +35,6 @@ def main():
     a = AnalyticsEngine()
     e = ExecutionEngine()
 
-    pprint("Demo start")
-
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
                   'latitude':  {'range': (-35.32, -35.28)},

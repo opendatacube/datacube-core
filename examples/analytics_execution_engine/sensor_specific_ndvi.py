@@ -41,6 +41,7 @@ def main():
                   'time':      {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
     ndvi = a.apply_sensor_specific_bandmath('LANDSAT 5', 'NBAR', 'ndvi', dimensions, 'get_data', 'ndvi')
+
     result = e.execute_plan(a.plan)
 
     plot(e.cache['ndvi'])
