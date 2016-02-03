@@ -199,8 +199,8 @@ def do_no_spoon(stats, bands, query, index):
         sus.append(
             StorageUnitDimensionProxy(su, ('time', v, numpy.dtype(numpy.float64), 'seconds since 1970-01-01 00:00:00')))
     data = StorageUnitStack(sus, 'time')
-    print (data)
-    print (data.get('blue', longitude=slice(0, 6), latitude=slice(0, 12)))
+    print(data)
+    print(data.get('blue', longitude=slice(0, 6), latitude=slice(0, 12)))
 
 
 def get_descriptors(index, *query):
