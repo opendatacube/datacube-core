@@ -98,7 +98,7 @@ class StorageUnitBase(object):
 
     def get_coord(self, dim, index=None):
         """
-        Return portion of the coordinate data
+        Return portion of the coordinate data and the slice object corresponding to it
         Slice is defined by specifying keyword arguments with coordinate names
         Use builtin slice object is used for integer indexing,
         User indexing.Range object for labels indexing
@@ -107,7 +107,7 @@ class StorageUnitBase(object):
         :param index: index
         :type dim: str
         :type index: slice | Range
-        :rtype: numpy.array
+        :rtype: tuple[numpy.array, slice]
         """
         coord = self._get_coord(dim)
         index = make_index(coord, index)
