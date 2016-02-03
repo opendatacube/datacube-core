@@ -132,7 +132,7 @@ class PostgresDb(object):
         Insert dataset if not already indexed.
         :type metadata_doc: dict
         :type dataset_id: str or uuid.UUID
-        :type path: pathlib.Path
+        :type collection_id: int
         :return: whether it was inserted
         :rtype: bool
         """
@@ -177,6 +177,11 @@ class PostgresDb(object):
             raise
 
     def ensure_dataset_location(self, dataset_id, uri):
+        """
+        Add a location to a dataset if it is not already recorded.
+        :type dataset_id: str or uuid.UUID
+        :type uri: str
+        """
         scheme, body = _split_uri(uri)
         # Insert if not exists.
         #     (there's still a tiny chance of a race condition: It will throw an integrity error if another
@@ -500,6 +505,7 @@ class PostgresDb(object):
 def _pg_exists(conn, name):
     """
     Does a postgres object exist?
+    :rtype bool
     """
     return conn.execute("SELECT to_regclass(%s)", name).scalar() is not None
 

@@ -107,6 +107,7 @@ class StorageUnitResource(object):
 
     def search(self, *expressions, **query):
         """
+        Perform a search, returning results as StorageUnit objects.
         :type expressions: tuple[datacube.index.fields.PgExpression]
         :type query: dict[str,str|float|datacube.model.Range]
         :rtype list[datacube.model.StorageUnit]
@@ -115,6 +116,13 @@ class StorageUnitResource(object):
         return self._make(self._db.search_storage_units((expressions + query_exprs)))
 
     def search_summaries(self, *expressions, **query):
+        """
+        Perform a search, returning just the search fields of each storage unit.
+
+        :type query: dict[str,str|float|datacube.model.Range]
+        :type expressions: tuple[datacube.index.fields.PgExpression]
+        :rtype: dict
+        """
         query_exprs = tuple(fields.to_expressions(self.get_field_with_fallback, **query))
 
         return (

@@ -73,7 +73,7 @@ def _prepare_single(collection_resource, dataset_doc, db):
 
 
 class MetadataTypeResource(object):
-    def __init__(self, db, user_config):
+    def __init__(self, db):
         """
         :type db: datacube.index.postgres._api.PostgresDb
         """
@@ -139,7 +139,7 @@ class MetadataTypeResource(object):
 
 
 class CollectionResource(object):
-    def __init__(self, db, user_config, metadata_type_resource):
+    def __init__(self, db, metadata_type_resource):
         """
         :type db: datacube.index.postgres._api.PostgresDb
         :type metadata_type_resource: MetadataTypeResource
@@ -324,6 +324,7 @@ class DatasetResource(object):
 
     def search(self, *expressions, **query):
         """
+        Perform a search, returning results as Dataset objects.
         :type query: dict[str,str|float|datacube.model.Range]
         :type expressions: tuple[datacube.index.fields.PgExpression]
         :rtype list[datacube.model.Dataset]
@@ -332,6 +333,13 @@ class DatasetResource(object):
         return self._make_many(self._db.search_datasets((expressions + query_exprs)))
 
     def search_summaries(self, *expressions, **query):
+        """
+        Perform a search, returning just the search fields of each dataset.
+
+        :type query: dict[str,str|float|datacube.model.Range]
+        :type expressions: tuple[datacube.index.fields.PgExpression]
+        :rtype: dict
+        """
         query_exprs = tuple(fields.to_expressions(self.get_field, **query))
 
         return (

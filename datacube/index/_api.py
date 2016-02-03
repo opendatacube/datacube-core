@@ -19,7 +19,6 @@ _DEFAULT_METADATA_TYPES_PATH = Path(__file__).parent.joinpath('default-metadata-
 _DEFAULT_COLLECTIONS_PATH = Path(__file__).parent.joinpath('default-collections.yaml')
 
 
-
 def connect(local_config=LocalConfig.find()):
     """
     Connect to the index. Default Postgres implementation.
@@ -39,8 +38,8 @@ class Index(object):
         """
         self._db = db
 
-        self.metadata_types = MetadataTypeResource(db, local_config)
-        self.collections = CollectionResource(db, local_config, self.metadata_types)
+        self.metadata_types = MetadataTypeResource(db)
+        self.collections = CollectionResource(db, self.metadata_types)
         self.datasets = DatasetResource(db, local_config, self.collections)
         self.storage = StorageUnitResource(db, StorageTypeResource(db, local_config), self.collections, local_config)
 
