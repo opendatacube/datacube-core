@@ -22,21 +22,18 @@ from itertools import groupby
 
 import click
 import numpy
+from affine import Affine
 import rasterio
 from rasterio.coords import BoundingBox
 
-from affine import Affine
-from osgeo import osr
-
-from datacube.model import Coordinate, Variable
 from datacube.api import make_storage_unit
 from datacube.index import index_connect
+from datacube.model import Variable, GeoBox
 from datacube.storage.access.core import StorageUnitBase, StorageUnitStack, StorageUnitDimensionProxy,\
     StorageUnitVariableProxy
-from datacube.ui import parse_expressions
-
 from datacube.storage.storage import fuse_sources, DatasetSource, RESAMPLING, RESAMPLING_METHODS
 from datacube.storage.utils import datetime_to_seconds_since_1970
+from datacube.ui import parse_expressions
 
 
 def group_storage_units_by_location(sus):
@@ -98,82 +95,43 @@ def get_data(datasets,
 
 
 class NoSpoonStorageUnit(StorageUnitBase):
-    def __init__(self, datasets, bounds, resolution, crs, mapping, fuse_func=None):
+    def __init__(self, datasets, geobox, mapping, fuse_func=None):
         if not datasets:
             raise RuntimeError('Shall not make empty StorageUnit')
 
         self._datasets = datasets
-        self._bounds = bounds
-        self._res = resolution
-        self.crs = crs
+        self.geobox = geobox
         self._varmap = {attrs['varname']: name for name, attrs in mapping.items()}
         self._mapping = mapping
         self._fuse_func = fuse_func
 
-        self.shape = (int((bounds.top - bounds.bottom) / abs(resolution[1]) + 0.5),
-                      int((bounds.right - bounds.left) / abs(resolution[0]) + 0.5))
-        self.affine = Affine(resolution[0], 0.0, bounds.right if resolution[0] < 0 else bounds.left,
-                             0.0, resolution[1], bounds.top if resolution[1] < 0 else bounds.bottom)
-
-        height, width = self.shape
-        self.geo_extents = [(0, 0), (0, height), (width, height), (width, 0)]
-        self.affine.itransform(self.geo_extents)
-
-        xs = numpy.arange(width) * self.affine.a + self.affine.c + self.affine.a / 2
-        ys = numpy.arange(height) * self.affine.e + self.affine.f + self.affine.e / 2
-
-        crs = osr.SpatialReference()
-        crs.SetFromUserInput(self.crs)
-
-        self.coord_data = {}
-        self.coordinates = {}
-
-        if crs.IsGeographic():
-            self.coord_data['longitude'] = xs
-            self.coord_data['latitude'] = ys
-            self.coordinates['latitude'] = Coordinate(ys.dtype, ys[0], ys[-1], ys.size, 'degrees_north')
-            self.coordinates['longitude'] = Coordinate(xs.dtype, xs[0], xs[-1], xs.size, 'degrees_east')
-            dimensions = 'latitude', 'longitude'
-
-        elif crs.IsProjected():
-            units = crs.GetAttrValue('UNIT')
-            self.coord_data['x'] = xs
-            self.coord_data['y'] = ys
-            self.coordinates['x'] = Coordinate(xs.dtype, xs[0], xs[-1], xs.size, units)
-            self.coordinates['y'] = Coordinate(ys.dtype, ys[0], ys[-1], ys.size, units)
-            dimensions = 'x', 'y'
-
-            wgs84 = osr.SpatialReference()
-            wgs84.ImportFromEPSG(4326)
-            transform = osr.CoordinateTransformation(self.crs, wgs84)
-            self.geo_extents = transform.TransformPoints(self.geo_extents)
-
-        else:
-            raise RuntimeError('Crazy CRS')
+        self.coord_data = self.geobox.coordinate_labels
+        self.coordinates = self.geobox.coordinates
 
         self.variables = {
             attrs['varname']: Variable(numpy.dtype(attrs['dtype']),
-                                       attrs['nodata'], dimensions,
+                                       attrs['nodata'],
+                                       self.geobox.dimensions,
                                        attrs.get('units', '1'))
             for name, attrs in mapping.items()
         }
 
     def get_crs(self):
-        return self.crs
+        return self.geobox.crs_str
 
     def _get_coord(self, dim):
         return self.coord_data[dim]
 
     def _fill_data(self, name, index, dest):
-        affine = self.affine*Affine.translation(index[1].start, index[0].start)
         measurement_id = self._varmap[name]
+        resampling = RESAMPLING_METHODS[self._mapping[measurement_id]['resampling_method']]
         sources = [DatasetSource(dataset, measurement_id) for dataset in self._datasets]
         fuse_sources(sources,
                      dest,
-                     affine,
-                     self.crs,
+                     self.geobox[index].affine,
+                     self.get_crs(),
                      self.variables[name].nodata,
-                     resampling=RESAMPLING_METHODS[self._mapping[measurement_id]['resampling_method']],
+                     resampling=resampling,
                      fuse_func=self._fuse_func)
 
 
@@ -183,12 +141,20 @@ def do_no_spoon(stats, bands, query, index):
     datasets.sort(key=group_func)
     groups = [(key, list(group)) for key, group in groupby(datasets, group_func)]
 
+    bounds = BoundingBox(149.00000001, -34.9999999, 149.99999999, -34.00000001)
+    resolution = (0.00025, -0.00025)
+    crs = 'EPSG:4326'
+
+    width, height = (int((bounds.top - bounds.bottom) / abs(resolution[1]) + 0.5),
+                     int((bounds.right - bounds.left) / abs(resolution[0]) + 0.5))
+    affine = Affine(resolution[0], 0.0, bounds.right if resolution[0] < 0 else bounds.left,
+                    0.0, resolution[1], bounds.top if resolution[1] < 0 else bounds.bottom)
+    geobox = GeoBox(width, height, affine, crs)
+
     sus = []
     for v, group in groups:
         su = NoSpoonStorageUnit(group,
-                                bounds=BoundingBox(149.00000001, -34.9999999, 149.99999999, -34.00000001),
-                                resolution=(0.00025, -0.00025),
-                                crs='EPSG:4326',
+                                geobox,
                                 mapping={
                                     '10': {'varname': 'blue',
                                            'dtype': numpy.int16,

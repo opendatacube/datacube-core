@@ -8,7 +8,7 @@ import numpy.testing as npt
 import netCDF4
 import pytest
 
-from datacube.model import TileSpec
+from datacube.model import GeoBox
 from datacube.storage.netcdf_writer import create_netcdf_writer, map_measurement_descriptor_parameters
 
 GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
@@ -146,13 +146,13 @@ def test_extra_measurement_attrs(tmpnetcdf_filename):
 
 
 def build_test_netcdf(filename, affine, projection, chunking, make_measurement_descriptor=dict):
-    tile_spec = TileSpec(projection, affine, DATA_HEIGHT, DATA_WIDTH, global_attrs=GLOBAL_ATTRS)
+    tile_spec = GeoBox(DATA_WIDTH, DATA_HEIGHT, affine, projection)
 
     dates = [datetime(2008, month, 1) for month in (1, 2)]
     ops = [(band, time_index) for band in (1, 2) for time_index in (0, 1)]
 
     ncwriter = create_netcdf_writer(filename, tile_spec)
-
+    ncwriter.add_global_attributes(GLOBAL_ATTRS)
     ncwriter.create_time_values(dates)
 
     for band, time_index in ops:

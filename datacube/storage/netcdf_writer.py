@@ -59,7 +59,7 @@ class NetCDFWriter(object):
     as internal compliance checks are not performed.
 
     :param str netcdf_path: File path at which to create this NetCDF file
-    :param datacube.model.TileSpec tile_spec: Storage Unit definition
+    :param datacube.model.GeoBox tile_spec: Storage Unit definition
     :param num_times: The number of time values allowed to be stored. Unlimited by default.
     """
 
@@ -94,20 +94,23 @@ class NetCDFWriter(object):
     def _set_global_attributes(self, tile_spec):
         """
 
-        :type tile_spec: datacube.model.TileSpec
+        :type tile_spec: datacube.model.GeoBox
         """
         # ACDD Metadata (Recommended)
-        extents = chain(tile_spec.extents, [tile_spec.extents[0]])
-        self.nco.geospatial_bounds = "POLYGON((" + ", ".join("{0} {1}".format(*p) for p in extents) + "))"
+        geo_extents = tile_spec.geographic_extent
+        geo_extents.append(geo_extents[0])
+        self.nco.geospatial_bounds = "POLYGON((" + ", ".join("{0} {1}".format(*p) for p in geo_extents) + "))"
         self.nco.geospatial_bounds_crs = "EPSG:4326"
-        self.nco.geospatial_lat_min = tile_spec.lat_min
-        self.nco.geospatial_lat_max = tile_spec.lat_max
+
+        geo_aabb = tile_spec.geographic_boundingbox
+        self.nco.geospatial_lat_min = geo_aabb.bottom
+        self.nco.geospatial_lat_max = geo_aabb.top
         self.nco.geospatial_lat_units = "degrees_north"
-        self.nco.geospatial_lat_resolution = "{} degrees".format(abs(tile_spec.lat_res))
-        self.nco.geospatial_lon_min = tile_spec.lon_min
-        self.nco.geospatial_lon_max = tile_spec.lon_max
+        self.nco.geospatial_lat_resolution = "{} degrees".format(abs(tile_spec.affine.e))
+        self.nco.geospatial_lon_min = geo_aabb.left
+        self.nco.geospatial_lon_max = geo_aabb.right
         self.nco.geospatial_lon_units = "degrees_east"
-        self.nco.geospatial_lon_resolution = "{} degrees".format(abs(tile_spec.lon_res))
+        self.nco.geospatial_lon_resolution = "{} degrees".format(abs(tile_spec.affine.a))
         self.nco.date_created = datetime.today().isoformat()
         self.nco.history = "NetCDF-CF file created by agdc-v2 at {:%Y%m%d}.".format(datetime.utcnow())
 
@@ -115,7 +118,12 @@ class NetCDFWriter(object):
         self.nco.Conventions = 'CF-1.6, ACDD-1.3'
 
         # Attributes from Dataset. For NCI Reqs MUST contain at least title, summary, source, product_version
-        for name, value in tile_spec.global_attrs.items():
+        # TODO: global attrs come from somewhere
+        # for name, value in tile_spec.global_attrs.items():
+        #     self.nco.setncattr(name, value)
+
+    def add_global_attributes(self, global_attrs):
+        for name, value in global_attrs.items():
             self.nco.setncattr(name, value)
 
     def create_time_values(self, time_values):
@@ -214,20 +222,22 @@ class ProjectedNetCDFWriter(NetCDFWriter):
 
     def create_x_y_variables(self, tile_spec):
         nco = self.nco
-        nco.createDimension('x', tile_spec.xs.size)
-        nco.createDimension('y', tile_spec.ys.size)
+        coordinate_labels = tile_spec.coordinate_labels
+
+        nco.createDimension('x', coordinate_labels['x'].size)
+        nco.createDimension('y', coordinate_labels['y'].size)
 
         xvar = nco.createVariable('x', 'double', 'x')
         xvar.long_name = 'x coordinate of projection'
         xvar.units = tile_spec.crs.GetAttrValue('UNIT')
         xvar.standard_name = 'projection_x_coordinate'
-        xvar[:] = tile_spec.xs
+        xvar[:] = coordinate_labels['x']
 
         yvar = nco.createVariable('y', 'double', 'y')
         yvar.long_name = 'y coordinate of projection'
         yvar.units = tile_spec.crs.GetAttrValue('UNIT')
         yvar.standard_name = 'projection_y_coordinate'
-        yvar[:] = tile_spec.ys
+        yvar[:] = coordinate_labels['y']
 
     def create_lat_lon_variables(self, tile_spec):
         wgs84 = osr.SpatialReference()
@@ -265,22 +275,24 @@ class GeographicNetCDFWriter(NetCDFWriter):
         return crs_var
 
     def create_coordinate_variables(self, tile_spec):
-        self.nco.createDimension('longitude', tile_spec.lons.size)
-        self.nco.createDimension('latitude', tile_spec.lats.size)
+        coordinate_labels = tile_spec.coordinate_labels
+
+        self.nco.createDimension('longitude', coordinate_labels['longitude'].size)
+        self.nco.createDimension('latitude', coordinate_labels['latitude'].size)
 
         lon = self.nco.createVariable('longitude', 'double', 'longitude')
         lon.units = 'degrees_east'
         lon.standard_name = 'longitude'
         lon.long_name = 'longitude'
         lon.axis = "X"
-        lon[:] = tile_spec.lons
+        lon[:] = coordinate_labels['longitude']
 
         lat = self.nco.createVariable('latitude', 'double', 'latitude')
         lat.units = 'degrees_north'
         lat.standard_name = 'latitude'
         lat.long_name = 'latitude'
         lat.axis = "Y"
-        lat[:] = tile_spec.lats
+        lat[:] = coordinate_labels['latitude']
 
 
 def _gdal_geotransform(tile_spec):

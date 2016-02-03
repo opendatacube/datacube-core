@@ -159,6 +159,10 @@ class StorageType(object):
         return [res[dim] for dim in self.spatial_dimensions]
 
     @property
+    def pixel_size(self):
+        return [int(size / abs(res)) for size, res in zip(self.tile_size, self.resolution)]
+
+    @property
     def chunking(self):
         chunks = self.definition['chunking']
         return [(dim, chunks[dim]) for dim in self.definition['dimension_order']]
@@ -203,10 +207,6 @@ class StorageUnit(object):
         return None
 
     @property
-    def tile_spec(self):
-        return TileSpec.create_from_storage_type_and_index(self.storage_type, self.tile_index)
-
-    @property
     def tile_index(self):
         try:
             return self.descriptor['tile_index']
@@ -222,6 +222,17 @@ class StorageUnit(object):
         x = (tile_index[0] + (1 if tile_res[0] < 0 else 0)) * tile_size[0]
         y = (tile_index[1] + (1 if tile_res[1] < 0 else 0)) * tile_size[1]
         return Affine(tile_res[0], 0.0, x, 0.0, tile_res[1], y)
+
+    @property
+    def geographic_extents(self):
+        width, height = self.storage_type.pixel_size
+        extents = [(0, 0), (0, height), (width, height), (width, 0)]
+        self.affine.itransform(extents)
+        epsg4326 = osr.SpatialReference()
+        epsg4326.ImportFromEPSG(4326)
+        crs = osr.SpatialReference(self.storage_type.crs)
+        transform = osr.CoordinateTransformation(crs, epsg4326)
+        return transform.TransformPoints(extents)
 
     @property
     def coordinates(self):
@@ -430,112 +441,131 @@ class DatasetOffsets(object):
         self.sources = sources or ('lineage', 'source_datasets')
 
 
-class TileSpec(object):
+class GeoBox(object):
     """
     Defines a single Storage Unit, its CRS, location, resolution, and global attributes
 
     >>> from affine import Affine
     >>> wgs84 = osr.SpatialReference()
     >>> r = wgs84.ImportFromEPSG(4326)
-    >>> t = TileSpec(wgs84.ExportToWkt(), Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0), 4000, 4000)
-    >>> t.lat_min, t.lat_max
-    (-30.0, -29.0)
-    >>> t.lon_min, t.lon_max
-    (151.0, 152.0)
-    >>> t.lats
+    >>> t = GeoBox(4000, 4000, Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0), wgs84.ExportToWkt())
+    >>> t.coordinate_labels['latitude']
     array([-29.000125, -29.000375, -29.000625, ..., -29.999375, -29.999625,
            -29.999875])
-    >>> t.lons
+    >>> t.coordinate_labels['longitude']
     array([ 151.000125,  151.000375,  151.000625, ...,  151.999375,
             151.999625,  151.999875])
+    >>> t.geographic_extent
+    [(151.0, -29.0), (151.0, -30.0), (152.0, -30.0), (152.0, -29.0)]
 
 
-    :param raw_crs: WKT representation of the coordinate reference system
-    :type raw_crs: str
+    :param crs_str: WKT representation of the coordinate reference system
+    :type crs_str: str
     :param affine: Affine transformation defining the location of the storage unit
     :type affine: affine.Affine
-    :param global_attrs: Extra attributes to store in each storage unit
-    :type global_attrs: dict
     """
-
-    def __init__(self, raw_crs, affine, height, width, global_attrs=None):
-        self.affine = affine
-        self.global_attrs = global_attrs or {}
-        self.height = height
+    def __init__(self, width, height, affine, crs_str):
         self.width = width
-
-        self.extents = [(0, 0), (0, height), (width, height), (width, 0)]
-        affine.itransform(self.extents)
-
-        if not affine.is_rectilinear:
-            raise RuntimeError("rotation and/or shear are not supported")
-
-        xs = numpy.arange(width) * affine.a + affine.c + affine.a / 2
-        ys = numpy.arange(height) * affine.e + affine.f + affine.e / 2
-
-        self.crs = osr.SpatialReference(raw_crs)
-        if self.crs.IsGeographic():
-            self.lons = xs
-            self.lats = ys
-        elif self.crs.IsProjected():
-            self.xs = xs
-            self.ys = ys
-
-            wgs84 = osr.SpatialReference()
-            wgs84.ImportFromEPSG(4326)
-            transform = osr.CoordinateTransformation(self.crs, wgs84)
-            self.extents = transform.TransformPoints(self.extents)
-
-    @property
-    def coordinates(self):
-        crs = self.crs
-        if crs.IsGeographic():
-            return {
-                'latitude': Coordinate(self.lats.dtype, self.lats[0], self.lats[-1], self.lats.size, 'degrees_north'),
-                'longitude': Coordinate(self.lons.dtype, self.lons[0], self.lons[-1], self.lons.size, 'degrees_east')
-            }
-        elif crs.IsProjected():
-            units = crs.GetAttrValue('UNIT')
-            return {
-                'x': Coordinate(self.xs.dtype, self.xs[0], self.xs[-1], self.xs.size, units),
-                'y': Coordinate(self.ys.dtype, self.ys[0], self.ys[-1], self.ys.size, units)
-            }
+        self.height = height
+        self.affine = affine
+        self.crs_str = crs_str
 
     @classmethod
-    def create_from_storage_type_and_index(cls, storage_type, tile_index):
+    def from_storage_type(cls, storage_type, tile_index):
         tile_size = storage_type.tile_size
         tile_res = storage_type.resolution
-        return cls(storage_type.crs,
-                   _get_tile_transform(tile_index, tile_size, tile_res),
+        return cls(crs_str=storage_type.crs,
+                   affine=_get_tile_transform(tile_index, tile_size, tile_res),
                    width=int(tile_size[0] / abs(tile_res[0])),
                    height=int(tile_size[1] / abs(tile_res[1])))
 
-    @property
-    def lat_min(self):
-        return min(ll[1] for ll in self.extents)
+    def __getitem__(self, item):
+        indexes = [slice(index.start or 0, index.stop or size, index.step or 1)
+                   for size, index in zip(self.shape, item)]
+        for index in indexes:
+            if index.step != 1:
+                raise NotImplementedError('scaling not implemented, yet')
+
+        affine = self.affine*Affine.translation(indexes[1].start, indexes[0].start)
+        return GeoBox(width=indexes[1].stop - indexes[1].start,
+                      height=indexes[0].stop - indexes[0].start,
+                      affine=affine,
+                      crs_str=self.crs_str)
 
     @property
-    def lat_max(self):
-        return max(ll[1] for ll in self.extents)
+    def shape(self):
+        return self.height, self.width
 
     @property
-    def lon_min(self):
-        return min(ll[0] for ll in self.extents)
+    def crs(self):
+        crs = osr.SpatialReference()
+        crs.SetFromUserInput(self.crs_str)
+        return crs
 
     @property
-    def lon_max(self):
-        return max(ll[0] for ll in self.extents)
+    def dimensions(self):
+        crs = self.crs
+        if crs.IsGeographic():
+            return 'latitude', 'longitude'
+        elif crs.IsProjected():
+            return 'y', 'x'
 
     @property
-    def lat_res(self):
-        return self.affine.e
+    def coordinates(self):
+        xs = numpy.array([0, self.width-1]) * self.affine.a + self.affine.c + self.affine.a / 2
+        ys = numpy.array([0, self.height-1]) * self.affine.e + self.affine.f + self.affine.e / 2
+
+        crs = self.crs
+        if crs.IsGeographic():
+            return {
+                'latitude': Coordinate(ys.dtype, ys[0], ys[-1], self.height, 'degrees_north'),
+                'longitude': Coordinate(xs.dtype, xs[0], xs[-1], self.width, 'degrees_east')
+            }
+
+        elif crs.IsProjected():
+            units = crs.GetAttrValue('UNIT')
+            return {
+                'x': Coordinate(xs.dtype, xs[0], xs[-1], self.width, units),
+                'y': Coordinate(ys.dtype, ys[0], ys[-1], self.height, units)
+            }
 
     @property
-    def lon_res(self):
-        return self.affine.a
+    def coordinate_labels(self):
+        xs = numpy.arange(self.width) * self.affine.a + self.affine.c + self.affine.a / 2
+        ys = numpy.arange(self.height) * self.affine.e + self.affine.f + self.affine.e / 2
 
-    def __repr__(self):
-        return repr(self.__dict__)
+        crs = self.crs
+        if crs.IsGeographic():
+            return {
+                'latitude': ys,
+                'longitude': xs
+            }
+        elif crs.IsProjected():
+            return {
+                'x': xs,
+                'y': ys
+            }
+
+    @property
+    def geographic_extent(self):
+        height, width = self.shape
+        extents = [(0, 0), (0, height), (width, height), (width, 0)]
+        self.affine.itransform(extents)
+        if self.crs.IsGeographic():
+            return extents
+
+        epsg4326 = osr.SpatialReference()
+        epsg4326.ImportFromEPSG(4326)
+        transform = osr.CoordinateTransformation(self.crs, epsg4326)
+        return [p[:2] for p in transform.TransformPoints(extents)]
+
+    @property
+    def geographic_boundingbox(self):
+        extents = self.geographic_extent
+        return BoundingBox(left=min(lon for lon, lat in extents),
+                           bottom=min(lat for lon, lat in extents),
+                           right=max(lon for lon, lat in extents),
+                           top=max(lat for lon, lat in extents))
 
 
 def _get_tile_transform(tile_index, tile_size, tile_res):

@@ -8,14 +8,14 @@ from pathlib import Path
 
 import pytest
 
-from datacube.model import TileSpec
+from datacube.model import GeoBox
 from datacube.storage import write_storage_unit_to_disk
 from datacube.scripts.ingest_storage_units import process_storage_unit
 
 
 class SingleTimeEmptyDataProvider(object):
     def __init__(self, storage_type, tile_index):
-        self.tile_spec = TileSpec.create_from_storage_type_and_index(storage_type, tile_index)
+        self.tile_spec = GeoBox.from_storage_type(storage_type, tile_index)
         self.storage_type = storage_type
 
     def get_metadata_documents(self):

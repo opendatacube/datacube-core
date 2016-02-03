@@ -18,7 +18,7 @@ from rasterio.coords import BoundingBox
 from rasterio.warp import RESAMPLING, transform_bounds
 
 from datacube import compat
-from datacube.model import StorageUnit, TileSpec, Coordinate
+from datacube.model import StorageUnit, GeoBox, Coordinate
 from datacube.storage.netcdf_writer import create_netcdf_writer
 from datacube.storage.utils import namedtuples2dicts, datetime_to_seconds_since_1970
 
@@ -119,20 +119,21 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
     if not datasets:
         raise ValueError('Shall not create empty StorageUnit%s %s' % (tile_index, output_uri))
 
-    tile_spec = TileSpec.create_from_storage_type_and_index(storage_type, tile_index)
 
     datasets_grouped_by_time = _group_datasets_by_time(datasets)
     time_values = [time for time, _ in datasets_grouped_by_time]
 
+    geobox = GeoBox.from_storage_type(storage_type, tile_index)
+    geo_bounds = geobox.geographic_boundingbox
     extents = {
-        'geospatial_lat_min': tile_spec.lat_min,
-        'geospatial_lat_max': tile_spec.lat_max,
-        'geospatial_lon_min': tile_spec.lon_min,
-        'geospatial_lon_max': tile_spec.lon_max,
+        'geospatial_lat_min': geo_bounds.bottom,
+        'geospatial_lat_max': geo_bounds.top,
+        'geospatial_lon_min': geo_bounds.left,
+        'geospatial_lon_max': geo_bounds.right,
         'time_min': time_values[0],
         'time_max': time_values[-1]
     }
-    coordinates = tile_spec.coordinates
+    coordinates = geobox.coordinates
     coordinates['time'] = Coordinate(numpy.dtype(numpy.float64),
                                      datetime_to_seconds_since_1970(time_values[0]),
                                      datetime_to_seconds_since_1970(time_values[-1]),
@@ -168,7 +169,7 @@ def write_storage_unit_to_disk(storage_unit, datasets):
 
     tmpfile, tmpfilename = tempfile.mkstemp(dir=str(output_filename.parent))
     try:
-        with create_netcdf_writer(tmpfilename, storage_unit.tile_spec) as su_writer:
+        with create_netcdf_writer(tmpfilename, data_provider.geobox) as su_writer:
             su_writer.create_time_values(time_values)
 
             for time_index, docs in data_provider.get_metadata_documents():
@@ -191,12 +192,12 @@ def write_storage_unit_to_disk(storage_unit, datasets):
 class GroupDatasetsByTimeDataProvider(object):
     """
     :type storage_type: datacube.model.StorageType
-    :type tile_spec: datacube.model.TileSpec
+    :type geobox: datacube.model.GeoBox
     """
     def __init__(self, datasets, tile_index, storage_type):
         self.datasets_grouped_by_time = _group_datasets_by_time(datasets)
         self._warn_if_mosaiced_datasets(tile_index)
-        self.tile_spec = TileSpec.create_from_storage_type_and_index(storage_type, tile_index)
+        self.geobox = GeoBox.from_storage_type(storage_type, tile_index)
         self.storage_type = storage_type
 
     @classmethod
@@ -217,14 +218,14 @@ class GroupDatasetsByTimeDataProvider(object):
 
     def _fused_data(self, measurement_id):
         measurement_descriptor = self.storage_type.measurements[measurement_id]
-        shape = self.tile_spec.height, self.tile_spec.width
+        shape = self.geobox.shape
         buffer_ = numpy.empty(shape, dtype=measurement_descriptor['dtype'])
         nodata = measurement_descriptor.get('nodata')
         for time_index, (_, time_group) in enumerate(self.datasets_grouped_by_time):
             buffer_ = fuse_sources([DatasetSource(dataset, measurement_id) for dataset in time_group],
                                    buffer_,
-                                   self.tile_spec.affine,
-                                   self.storage_type.crs,
+                                   self.geobox.affine,
+                                   self.geobox.crs_str,
                                    nodata,
                                    resampling=_rasterio_resampling_method(measurement_descriptor))
             yield buffer_
