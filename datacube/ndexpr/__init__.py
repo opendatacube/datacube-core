@@ -26,7 +26,7 @@
 
 # pylint: disable=too-many-statements, too-many-branches, expression-not-assigned, too-many-locals,
 # pylint: disable=too-many-return-statements, protected-access, undefined-variable, too-many-public-methods
-# pylint: disable=consider-using-enumerate
+# pylint: disable=consider-using-enumerate, deprecated-method
 
 from __future__ import absolute_import
 from __future__ import print_function
