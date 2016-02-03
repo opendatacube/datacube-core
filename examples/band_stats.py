@@ -26,17 +26,21 @@ import rasterio
 from rasterio.coords import BoundingBox
 
 from affine import Affine
+from osgeo import osr
 
+from datacube.model import Coordinate, Variable
 from datacube.api import make_storage_unit
 from datacube.index import index_connect
-from datacube.storage.access.core import StorageUnitStack, StorageUnitVariableProxy
+from datacube.storage.access.core import StorageUnitBase, StorageUnitStack, StorageUnitDimensionProxy,\
+    StorageUnitVariableProxy
 from datacube.ui import parse_expressions
 
-from datacube.storage.storage import fuse_sources, DatasetSource, RESAMPLING
+from datacube.storage.storage import fuse_sources, DatasetSource, RESAMPLING, RESAMPLING_METHODS
+from datacube.storage.utils import datetime_to_seconds_since_1970
 
 
 def group_storage_units_by_location(sus):
-    dims = ('longitude', 'latitude')
+    dims = ('x', 'y')
     stacks = {}
     for su in sus:
         stacks.setdefault(tuple(su.coordinates[dim].begin for dim in dims), []).append(su)
@@ -93,51 +97,110 @@ def get_data(datasets,
     return result
 
 
+class NoSpoonStorageUnit(StorageUnitBase):
+    def __init__(self, datasets, bounds, resolution, crs, mapping, fuse_func=None):
+        if not datasets:
+            raise RuntimeError('Shall not make empty StorageUnit')
+
+        self._datasets = datasets
+        self._bounds = bounds
+        self._res = resolution
+        self.crs = crs
+        self._varmap = {attrs['varname']: name for name, attrs in mapping.items()}
+        self._mapping = mapping
+        self._fuse_func = fuse_func
+
+        self.shape = (int((bounds.top - bounds.bottom) / abs(resolution[1]) + 0.5),
+                      int((bounds.right - bounds.left) / abs(resolution[0]) + 0.5))
+        self.affine = Affine(resolution[0], 0.0, bounds.right if resolution[0] < 0 else bounds.left,
+                             0.0, resolution[1], bounds.top if resolution[1] < 0 else bounds.bottom)
+
+        height, width = self.shape
+        self.geo_extents = [(0, 0), (0, height), (width, height), (width, 0)]
+        self.affine.itransform(self.geo_extents)
+
+        xs = numpy.arange(width) * self.affine.a + self.affine.c + self.affine.a / 2
+        ys = numpy.arange(height) * self.affine.e + self.affine.f + self.affine.e / 2
+
+        crs = osr.SpatialReference()
+        crs.SetFromUserInput(self.crs)
+
+        self.coord_data = {}
+        self.coordinates = {}
+
+        if crs.IsGeographic():
+            self.coord_data['longitude'] = xs
+            self.coord_data['latitude'] = ys
+            self.coordinates['latitude'] = Coordinate(ys.dtype, ys[0], ys[-1], ys.size, 'degrees_north')
+            self.coordinates['longitude'] = Coordinate(xs.dtype, xs[0], xs[-1], xs.size, 'degrees_east')
+            dimensions = 'latitude', 'longitude'
+
+        elif crs.IsProjected():
+            units = crs.GetAttrValue('UNIT')
+            self.coord_data['x'] = xs
+            self.coord_data['y'] = ys
+            self.coordinates['x'] = Coordinate(xs.dtype, xs[0], xs[-1], xs.size, units)
+            self.coordinates['y'] = Coordinate(ys.dtype, ys[0], ys[-1], ys.size, units)
+            dimensions = 'x', 'y'
+
+            wgs84 = osr.SpatialReference()
+            wgs84.ImportFromEPSG(4326)
+            transform = osr.CoordinateTransformation(self.crs, wgs84)
+            self.geo_extents = transform.TransformPoints(self.geo_extents)
+
+        else:
+            raise RuntimeError('Crazy CRS')
+
+        self.variables = {
+            attrs['varname']: Variable(numpy.dtype(attrs['dtype']),
+                                       attrs['nodata'], dimensions,
+                                       attrs.get('units', '1'))
+            for name, attrs in mapping.items()
+        }
+
+    def get_crs(self):
+        return self.crs
+
+    def _get_coord(self, dim):
+        return self.coord_data[dim]
+
+    def _fill_data(self, name, index, dest):
+        affine = self.affine*Affine.translation(index[1].start, index[0].start)
+        measurement_id = self._varmap[name]
+        sources = [DatasetSource(dataset, measurement_id) for dataset in self._datasets]
+        fuse_sources(sources,
+                     dest,
+                     affine,
+                     self.crs,
+                     self.variables[name].nodata,
+                     resampling=RESAMPLING_METHODS[self._mapping[measurement_id]['resampling_method']],
+                     fuse_func=self._fuse_func)
+
+
 def do_no_spoon(stats, bands, query, index):
-    # map bands to meaningfull names
-    var_map = {
-        'blue': '10',
-        'green': '20',
-        'red': '30',
-        'nir': '40',
-        'ir1': '50',
-        'ir2': '70',
-        'pqa': '1111111111111100'
-    }
-
     datasets = index.datasets.search_eager(*query)
+    group_func = lambda ds: ds.time
+    datasets.sort(key=group_func)
+    groups = [(key, list(group)) for key, group in groupby(datasets, group_func)]
 
-    def get(id_):
-        return get_data(datasets, var_map[id_],
-                        bounds=BoundingBox(149.00000001, -34.9999999, 149.99999999, -34.00000001),
-                        resolution=(0.00025, -0.00025),
-                        crs={'init': 'EPSG:4326'},
-                        nodata=None,
-                        group_func=lambda ds: ds.time)
-
-    pqa = get('pqa')
-    nbands = len(stats) * len(bands)
-    name = "%s_%s.tif" % ('greg', 'greg')
-    with rasterio.open(name, 'w', driver='GTiff',
-                       width=pqa.shape[2],
-                       height=pqa.shape[1],
-                       count=nbands, dtype=numpy.int16,
-                       # crs=proj, transform=geotr, TODO: transform/projection
-                       nodata=-999,
-                       INTERLEAVE="BAND", COMPRESS="LZW", TILED="YES") as raster:
-        for band_idx, band in enumerate(bands):
-            band_num = band_idx * len(stats) + 1
-
-            # TODO: use requested portion of the data, not the whole tile
-            pqa_mask = ls_pqa_mask(pqa)
-            data = get(band)
-            data = ndv_to_nan(data, -999)
-            data[pqa_mask] = numpy.nan
-
-            for stat in stats:
-                result = getattr(numpy, 'nan' + stat)(data, axis=0)
-                raster.write(result.astype('int16'), indexes=band_num)
-                band_num += 1
+    sus = []
+    for v, group in groups:
+        su = NoSpoonStorageUnit(group,
+                                bounds=BoundingBox(149.00000001, -34.9999999, 149.99999999, -34.00000001),
+                                resolution=(0.00025, -0.00025),
+                                crs='EPSG:4326',
+                                mapping={
+                                    '10': {'varname': 'blue',
+                                           'dtype': numpy.int16,
+                                           'nodata': -999,
+                                           'resampling_method': 'cubic'}
+                                })
+        v = datetime_to_seconds_since_1970(v)
+        sus.append(
+            StorageUnitDimensionProxy(su, ('time', v, numpy.dtype(numpy.float64), 'seconds since 1970-01-01 00:00:00')))
+    data = StorageUnitStack(sus, 'time')
+    print (data)
+    print (data.get('blue', longitude=slice(0, 6), latitude=slice(0, 12)))
 
 
 def get_descriptors(index, *query):
