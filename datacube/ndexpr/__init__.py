@@ -217,6 +217,7 @@ class NDexpr(object):
                  rpar).setParseAction(self.push_ternary) |
                 (logicalnotop + expr).setParseAction(self.push_ulnot) |
                 (bitnotop + expr).setParseAction(self.push_unot) |
+                (minus + expr).setParseAction(self.push_uminus) |
                 (variable + lcurl + expr +
                  rcurl).setParseAction(self.push_mask) |
                 (variable + lpar + expr + (comma + expr)*3 +
@@ -331,7 +332,7 @@ class NDexpr(object):
         elif op == 'unary ~':
             return ~self.evaluate_stack(s)
         elif op == 'unary !':
-            return not self.evaluate_stack(s)
+            return xr.ufuncs.logical_not(self.evaluate_stack(s))
         elif op == "=":
             op1 = s.pop()
             op2 = self.evaluate_stack(s)
@@ -514,29 +515,25 @@ class NDexpr(object):
             # Dilating both the cloud and cloud shadow masks
             s = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
             acca = (pqa_array & 1024) >> 10
-            erode = ndimage.binary_erosion(acca, s, iterations=dilation,
-                                           border_value=1)
+            erode = ndimage.binary_erosion(acca, s, iterations=dilation, border_value=1)
             dif = erode - acca
             dif[dif < 0] = 1
             pqa_array += (dif << 10)
             del acca
             fmask = (pqa_array & 2048) >> 11
-            erode = ndimage.binary_erosion(fmask, s, iterations=dilation,
-                                           border_value=1)
+            erode = ndimage.binary_erosion(fmask, s, iterations=dilation, border_value=1)
             dif = erode - fmask
             dif[dif < 0] = 1
             pqa_array += (dif << 11)
             del fmask
             acca_shad = (pqa_array & 4096) >> 12
-            erode = ndimage.binary_erosion(acca_shad, s, iterations=dilation,
-                                           border_value=1)
+            erode = ndimage.binary_erosion(acca_shad, s, iterations=dilation, border_value=1)
             dif = erode - acca_shad
             dif[dif < 0] = 1
             pqa_array += (dif << 12)
             del acca_shad
             fmask_shad = (pqa_array & 8192) >> 13
-            erode = ndimage.binary_erosion(fmask_shad, s, iterations=dilation,
-                                           border_value=1)
+            erode = ndimage.binary_erosion(fmask_shad, s, iterations=dilation, border_value=1)
             dif = erode - fmask_shad
             dif[dif < 0] = 1
             pqa_array += (dif << 13)
@@ -556,7 +553,6 @@ class NDexpr(object):
         plot_count = 1
         for i in range(img.shape[0]):
             data = img[i]
-            # data[data == -999] = 0
             ax = fig.add_subplot(num_rowcol, num_rowcol, plot_count)
             cax = ax.imshow(data, interpolation='nearest', aspect='equal')
             plot_count += 1
@@ -567,7 +563,7 @@ class NDexpr(object):
     def test_1_level(self):
         x5 = xr.DataArray(np.random.randn(2, 3))
         self.evaluate("z5 = x5 + 1")
-        print(z5)
+        assert z5.equals(x5 + 1)
 
     def test_2_level(self):
         self.test_2_level_fn()
@@ -575,160 +571,4 @@ class NDexpr(object):
     def test_2_level_fn(self):
         x6 = xr.DataArray(np.random.randn(2, 3))
         self.evaluate("z6 = x6 + 1")
-        print(z6)
-
-    def test2(self):
-        x1 = xr.DataArray(np.random.randn(2, 3))
-        y1 = xr.DataArray(np.random.randn(2, 3))
-        z1 = xr.DataArray(np.array([[[0, 1, 2], [3, 4, 5], [6, 7, 8]],
-                                    [[9, 10, 11], [12, 13, 14], [15, 16, 17]],
-                                    [[18, 19, 20], [21, 22, 23], [24, 25, 26]]]))
-        z2 = z1*2
-        z3 = np.arange(27)
-        mask1 = z1 > 4
-
-        ne = NDexpr()
-
-        ne.test("angle(z1)", xr.ufuncs.angle(z1))
-        ne.test("arccos(z1)", xr.ufuncs.arccos(z1))
-        ne.test("arccosh(z1)", xr.ufuncs.arccosh(z1))
-        ne.test("arcsin(z1)", xr.ufuncs.arcsin(z1))
-        ne.test("arcsinh(z1)", xr.ufuncs.arcsinh(z1))
-        ne.test("arctan(z1)", xr.ufuncs.arctan(z1))
-        ne.test("arctanh(z1)", xr.ufuncs.arctanh(z1))
-        ne.test("ceil(z1)", xr.ufuncs.ceil(z1))
-        ne.test("conj(z1)", xr.ufuncs.conj(z1))
-        ne.test("cos(z1)", xr.ufuncs.cos(z1))
-        ne.test("cosh(z1)", xr.ufuncs.cosh(z1))
-        ne.test("deg2rad(z1)", xr.ufuncs.deg2rad(z1))
-        ne.test("degrees(z1)", xr.ufuncs.degrees(z1))
-        ne.test("exp(z1)", xr.ufuncs.exp(z1))
-        ne.test("expm1(z1)", xr.ufuncs.expm1(z1))
-        ne.test("fabs(z1)", xr.ufuncs.fabs(z1))
-        ne.test("fix(z1)", xr.ufuncs.fix(z1))
-        ne.test("floor(z1)", xr.ufuncs.floor(z1))
-        ne.test("frexp(z3)", xr.DataArray(xr.ufuncs.frexp(z3)))
-        ne.test("imag(z1)", xr.ufuncs.imag(z1))
-        ne.test("iscomplex(z1)", xr.ufuncs.iscomplex(z1))
-        ne.test("isfinite(z1)", xr.ufuncs.isfinite(z1))
-        ne.test("isinf(z1)", xr.ufuncs.isinf(z1))
-        ne.test("isnan(z1)", xr.ufuncs.isnan(z1))
-        ne.test("isreal(z1)", xr.ufuncs.isreal(z1))
-        ne.test("log(z1)", xr.ufuncs.log(z1))
-        ne.test("log10(z1)", xr.ufuncs.log10(z1))
-        ne.test("log1p(z1)", xr.ufuncs.log1p(z1))
-        ne.test("log2(z1)", xr.ufuncs.log2(z1))
-        ne.test("rad2deg(z1)", xr.ufuncs.rad2deg(z1))
-        ne.test("radians(z1)", xr.ufuncs.radians(z1))
-        ne.test("real(z1)", xr.ufuncs.real(z1))
-        ne.test("rint(z1)", xr.ufuncs.rint(z1))
-        ne.test("sign(z1)", xr.ufuncs.sign(z1))
-        ne.test("signbit(z1)", xr.ufuncs.signbit(z1))
-        ne.test("sin(z1)", xr.ufuncs.sin(z1))
-        ne.test("sinh(z1)", xr.ufuncs.sinh(z1))
-        ne.test("sqrt(z1)", xr.ufuncs.sqrt(z1))
-        ne.test("square(z1)", xr.ufuncs.square(z1))
-        ne.test("tan(z1)", xr.ufuncs.tan(z1))
-        ne.test("tanh(z1)", xr.ufuncs.tanh(z1))
-        ne.test("trunc(z1)", xr.ufuncs.trunc(z1))
-
-        ne.test("arctan2(z1, z2)", xr.ufuncs.arctan2(z1, z2))
-        ne.test("copysign(z1, z2)", xr.ufuncs.copysign(z1, z2))
-        ne.test("fmax(z1, z2)", xr.ufuncs.fmax(z1, z2))
-        ne.test("fmin(z1, z2)", xr.ufuncs.fmin(z1, z2))
-        ne.test("fmod(z1, z2)", xr.ufuncs.fmod(z1, z2))
-        ne.test("hypot(z1, z2)", xr.ufuncs.hypot(z1, z2))
-        ne.test("ldexp(z1, z2)", xr.DataArray(xr.ufuncs.ldexp(z1, z2)))
-        ne.test("logaddexp(z1, z2)", xr.ufuncs.logaddexp(z1, z2))
-        ne.test("logaddexp2(z1, z2)", xr.ufuncs.logaddexp2(z1, z2))
-        ne.test("logicaland(z1, z2)", xr.ufuncs.logical_and(z1, z2))
-        ne.test("logicalnot(z1, z2)", xr.ufuncs.logical_not(z1, z2))
-        ne.test("logicalor(z1, z2)", xr.ufuncs.logical_or(z1, z2))
-        ne.test("logicalxor(z1, z2)", xr.ufuncs.logical_xor(z1, z2))
-        ne.test("maximum(z1, z2)", xr.ufuncs.maximum(z1, z2))
-        ne.test("minimum(z1, z2)", xr.ufuncs.minimum(z1, z2))
-        ne.test("nextafter(z1, z2)", xr.ufuncs.nextafter(z1, z2))
-
-        ne.test("all(z1)", xr.DataArray.all(z1))
-        ne.test("all(z1, 0)", xr.DataArray.all(z1, axis=0))
-        ne.test("all(z1, 0, 1)", xr.DataArray.all(z1, axis=(0, 1)))
-        ne.test("all(z1, 0, 1, 2)", xr.DataArray.all(z1, axis=(0, 1, 2)))
-
-        ne.test("any(z1)", xr.DataArray.any(z1))
-        ne.test("any(z1, 0)", xr.DataArray.any(z1, axis=0))
-        ne.test("any(z1, 0, 1)", xr.DataArray.any(z1, axis=(0, 1)))
-        ne.test("any(z1, 0, 1, 2)", xr.DataArray.any(z1, axis=(0, 1, 2)))
-
-        ne.test("argmax(z1)", xr.DataArray.argmax(z1))
-        ne.test("argmax(z1, 0)", xr.DataArray.argmax(z1, axis=0))
-        ne.test("argmax(z1, 1)", xr.DataArray.argmax(z1, axis=1))
-        ne.test("argmax(z1, 2)", xr.DataArray.argmax(z1, axis=2))
-
-        ne.test("argmin(z1)", xr.DataArray.argmin(z1))
-        ne.test("argmin(z1, 0)", xr.DataArray.argmin(z1, axis=0))
-        ne.test("argmin(z1, 1)", xr.DataArray.argmin(z1, axis=1))
-        ne.test("argmin(z1, 2)", xr.DataArray.argmin(z1, axis=2))
-
-        ne.test("max(z1)", xr.DataArray.max(z1))
-        ne.test("max(z1, 0)", xr.DataArray.max(z1, axis=0))
-        ne.test("max(z1, 0, 1)", xr.DataArray.max(z1, axis=(0, 1)))
-        ne.test("max(z1, 0, 1, 2)", xr.DataArray.max(z1, axis=(0, 1, 2)))
-
-        ne.test("mean(z1)", xr.DataArray.mean(z1))
-        ne.test("mean(z1, 0)", xr.DataArray.mean(z1, axis=0))
-        ne.test("mean(z1, 0, 1)", xr.DataArray.mean(z1, axis=(0, 1)))
-        ne.test("mean(z1, 0, 1, 2)", xr.DataArray.mean(z1, axis=(0, 1, 2)))
-
-        ne.test("median(z1)", xr.DataArray.median(z1))
-        ne.test("median(z1, 0)", xr.DataArray.median(z1, axis=0))
-        ne.test("median(z1, 0, 1)", xr.DataArray.median(z1, axis=(0, 1)))
-        ne.test("median(z1, 0, 1, 2)", xr.DataArray.median(z1, axis=(0, 1, 2)))
-
-        ne.test("min(z1)", xr.DataArray.min(z1))
-        ne.test("min(z1, 0)", xr.DataArray.min(z1, axis=0))
-        ne.test("min(z1, 0, 1)", xr.DataArray.min(z1, axis=(0, 1)))
-        ne.test("min(z1, 0, 1, 2)", xr.DataArray.min(z1, axis=(0, 1, 2)))
-
-        ne.test("prod(z1)", xr.DataArray.prod(z1))
-        ne.test("prod(z1, 0)", xr.DataArray.prod(z1, axis=0))
-        ne.test("prod(z1, 0, 1)", xr.DataArray.prod(z1, axis=(0, 1)))
-        ne.test("prod(z1, 0, 1, 2)", xr.DataArray.prod(z1, axis=(0, 1, 2)))
-
-        ne.test("sum(z1)", xr.DataArray.sum(z1))
-        ne.test("sum(z1, 0)", xr.DataArray.sum(z1, axis=0))
-        ne.test("sum(z1, 0, 1)", xr.DataArray.sum(z1, axis=(0, 1)))
-        ne.test("sum(z1, 0, 1, 2)", xr.DataArray.sum(z1, axis=(0, 1, 2)))
-
-        ne.test("std(z1)", xr.DataArray.std(z1))
-        ne.test("std(z1, 0)", xr.DataArray.std(z1, axis=0))
-        ne.test("std(z1, 0, 1)", xr.DataArray.std(z1, axis=(0, 1)))
-        ne.test("std(z1, 0, 1, 2)", xr.DataArray.std(z1, axis=(0, 1, 2)))
-
-        ne.test("var(z1)", xr.DataArray.var(z1))
-        ne.test("var(z1, 0)", xr.DataArray.var(z1, axis=0))
-        ne.test("var(z1, 0, 1)", xr.DataArray.var(z1, axis=(0, 1)))
-        ne.test("var(z1, 0, 1, 2)", xr.DataArray.var(z1, axis=(0, 1, 2)))
-
-        ne.test("percentile(z1, 50)", np.percentile(z1, 50))
-        ne.test("percentile(z1, 50)+percentile(z1, 50)", np.percentile(z1, 50) + np.percentile(z1, 50))
-        ne.test("1 + var(z1, 0, 0+1, 2) + 1", 1+xr.DataArray.var(z1, axis=(0, 0+1, 2))+1)
-
-        ne.test("z1{mask1}", xr.DataArray.where(z1, mask1))
-        ne.test("z1{z1>2}", xr.DataArray.where(z1, z1 > 2))
-        ne.test("z1{z1>=2}", xr.DataArray.where(z1, z1 >= 2))
-        ne.test("z1{z1<2}", xr.DataArray.where(z1, z1 < 2))
-        ne.test("z1{z1<=2}", xr.DataArray.where(z1, z1 <= 2))
-        ne.test("z1{z1==2}", xr.DataArray.where(z1, z1 == 2))
-        ne.test("z1{z1!=2}", xr.DataArray.where(z1, z1 != 2))
-
-        ne.test("z1{z1<2 | z1>5}", xr.DataArray.where(z1, (z1 < 2) | (z1 > 5)))
-        ne.test("z1{z1>2 & z1<5}", xr.DataArray.where(z1, (z1 > 2) & (z1 < 5)))
-
-        ne.evaluate("m = z1+1")
-        ne.test("m", z1+1)
-
-        ne.test("z1{~mask1}", xr.DataArray.where(z1, ~mask1))
-
-        print(ne.evaluate("(1<0?1+1;2+2)"))
-        print(ne.evaluate("(1<2?z1+1;2+2)"))
-        ne.test("z1+mask1", xr.DataArray.where(z1, mask1))
+        assert z6.equals(x6 + 1)
