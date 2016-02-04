@@ -99,7 +99,7 @@ def get_data(datasets,
 class NoSpoonStorageUnit(StorageUnitBase):
     def __init__(self, datasets, geobox, mapping, fuse_func=None):
         if not datasets:
-            raise RuntimeError('Shall not make empty StorageUnit')
+            raise ValueError('Shall not make empty StorageUnit')
 
         self._datasets = datasets
         self.geobox = geobox

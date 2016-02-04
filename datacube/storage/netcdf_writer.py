@@ -25,19 +25,13 @@ DATASET_YAML_MAX_SIZE = 30000
 
 def map_measurement_descriptor_parameters(measurement_descriptor):
     """Map measurement descriptor parameters to netcdf variable parameters"""
-    md_to_netcdf = {'dtype': 'datatype',
-                    'nodata': 'fill_value',
-                    'varname': 'varname',
-                    'zlib': 'zlib',
+    md_to_netcdf = {'zlib': 'zlib',
                     'complevel': 'complevel',
                     'shuffle': 'shuffle',
                     'fletcher32': 'fletcher32',
                     'contiguous': 'contiguous'}
     params = {ncparam: measurement_descriptor[mdkey]
               for mdkey, ncparam in md_to_netcdf.items() if mdkey in measurement_descriptor}
-
-    if 'varname' not in params:
-        raise ValueError("'varname' must be specified in 'measurement_descriptor'", measurement_descriptor)
 
     return params
 
@@ -133,24 +127,21 @@ class NetCDFWriter(object):
         extra_metadata_variable.long_name = 'Detailed source dataset information'
 
     def _create_data_variable(self, measurement_descriptor, chunking):
+        var = Variable(dtype=measurement_descriptor['dtype'],
+                       nodata=measurement_descriptor['nodata'],
+                       dimensions=[c[0] for c in chunking],
+                       units=measurement_descriptor.get('units', '1'))
         params = map_measurement_descriptor_parameters(measurement_descriptor)
-        params['dimensions'] = [c[0] for c in chunking]
         params['chunksizes'] = [c[1] for c in chunking]
-        data_var = self.nco.createVariable(**params)
 
+        data_var = create_variable(self.nco, measurement_descriptor['varname'], var, **params)
         data_var.grid_mapping = 'crs'
-        data_var.set_auto_maskandscale(False)
 
         # Copy extra attributes from the measurement descriptor onto the netcdf variable
         if 'attrs' in measurement_descriptor:
             for name, value in measurement_descriptor['attrs'].items():
                 # Unicode or str, that is the netcdf4 question
                 data_var.setncattr(str(name), str(value))
-
-                # Everywhere else is str, so this can be too
-
-        units = measurement_descriptor.get('units', '1')
-        data_var.units = units
 
         return data_var
 
@@ -243,6 +234,7 @@ def create_variable(nco, name, var, **kwargs):
                                   dimensions=var.dimensions,
                                   fill_value=var.nodata,
                                   **kwargs)
+    data_var.set_auto_maskandscale(False)
     data_var.units = var.units
     return data_var
 
@@ -304,8 +296,10 @@ def write_geographical_extents_attributes(nco, geobox):
 
 def create_grid_mapping_variable(nco, crs):
     if crs.IsGeographic():
-        return _create_latlon_grid_mapping_variable(nco, crs)
+        crs_var = _create_latlon_grid_mapping_variable(nco, crs)
     elif crs.IsProjected():
-        return _create_projected_grid_mapping_variable(nco, crs)
+        crs_var = _create_projected_grid_mapping_variable(nco, crs)
     else:
         raise ValueError('Unknown CRS')
+    crs_var.crs_wkt = crs.ExportToWkt()
+    return crs_var

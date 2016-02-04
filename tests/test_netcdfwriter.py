@@ -164,9 +164,3 @@ def build_test_netcdf(filename, affine, projection, chunking, make_measurement_d
         var = ncwriter.ensure_variable(measurement_descriptor, chunking)
         var[time_index] = data
     ncwriter.close()
-
-
-def test_bad_measurement_descriptor():
-    missing_varname = {}
-    with pytest.raises(ValueError):
-        map_measurement_descriptor_parameters(missing_varname)
