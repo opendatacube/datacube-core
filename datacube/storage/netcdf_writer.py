@@ -8,16 +8,16 @@ import logging
 from datetime import datetime
 
 import netCDF4
-from osgeo import osr
+import numpy
 import yaml
-
 try:
     from yaml import CSafeDumper as SafeDumper
 except ImportError:
     from yaml import SafeDumper
 
-from datacube.storage.utils import datetime_to_seconds_since_1970
 from datacube import __version__
+from datacube.storage.utils import datetime_to_seconds_since_1970
+from datacube.model import Coordinate, Variable
 
 _LOG = logging.getLogger(__name__)
 DATASET_YAML_MAX_SIZE = 30000
@@ -64,14 +64,19 @@ class NetCDFWriter(object):
     """
 
     def __init__(self, netcdf_path, geobox):
-        netcdf_path = str(netcdf_path)
+        self.netcdf_path = str(netcdf_path)
 
-        self.nco = netCDF4.Dataset(netcdf_path, 'w')
+        self.nco = netCDF4.Dataset(self.netcdf_path, 'w')
+        self.nco.date_created = datetime.today().isoformat()
+        self.nco.Conventions = 'CF-1.6, ACDD-1.3'
+        self.nco.history = ("NetCDF-CF file created by "
+                            "datacube version '{}' at {:%Y%m%d}."
+                            .format(__version__, datetime.utcnow()))
 
-        self.netcdf_path = netcdf_path
-
-        self._create_crs_coords_and_variables(geobox)
-        self._set_global_attributes(geobox)
+        self.create_coordinate_variables(geobox)
+        create_grid_mapping_variable(self.nco, geobox.crs)
+        write_gdal_geobox_attributes(self.nco, geobox)
+        write_geographical_extents_attributes(self.nco, geobox)
 
     def __enter__(self):
         return self
@@ -82,53 +87,8 @@ class NetCDFWriter(object):
     def close(self):
         self.nco.close()
 
-    def create_crs_variable(self, geobox):
-        raise NotImplementedError()
-
     def create_coordinate_variables(self, geobox):
         raise NotImplementedError()
-
-    def _create_crs_coords_and_variables(self, geobox):
-        self.validate_crs_arguments(geobox)
-
-        self.create_crs_variable(geobox)
-        self.create_coordinate_variables(geobox)
-
-    def validate_crs_arguments(self, geobox):
-        pass
-
-    def _set_global_attributes(self, geobox):
-        """
-
-        :type geobox: datacube.model.GeoBox
-        """
-        # ACDD Metadata (Recommended)
-        geo_extents = geobox.geographic_extent
-        geo_extents.append(geo_extents[0])
-        self.nco.geospatial_bounds = "POLYGON((" + ", ".join("{0} {1}".format(*p) for p in geo_extents) + "))"
-        self.nco.geospatial_bounds_crs = "EPSG:4326"
-
-        geo_aabb = geobox.geographic_boundingbox
-        self.nco.geospatial_lat_min = geo_aabb.bottom
-        self.nco.geospatial_lat_max = geo_aabb.top
-        self.nco.geospatial_lat_units = "degrees_north"
-        self.nco.geospatial_lat_resolution = "{} degrees".format(abs(geobox.affine.e))
-        self.nco.geospatial_lon_min = geo_aabb.left
-        self.nco.geospatial_lon_max = geo_aabb.right
-        self.nco.geospatial_lon_units = "degrees_east"
-        self.nco.geospatial_lon_resolution = "{} degrees".format(abs(geobox.affine.a))
-        self.nco.date_created = datetime.today().isoformat()
-        self.nco.history = ("NetCDF-CF file created by "
-                            "datacube version '{}' at {:%Y%m%d}."
-                            .format(__version__, datetime.utcnow()))
-
-        # Follow ACDD and CF Conventions
-        self.nco.Conventions = 'CF-1.6, ACDD-1.3'
-
-        # Attributes from Dataset. For NCI Reqs MUST contain at least title, summary, source, product_version
-        # TODO: global attrs come from somewhere
-        # for name, value in geobox.global_attrs.items():
-        #     self.nco.setncattr(name, value)
 
     def add_global_attributes(self, global_attrs):
         for name, value in global_attrs.items():
@@ -144,13 +104,8 @@ class NetCDFWriter(object):
         """
         Create time dimension
         """
-        self.nco.createDimension('time', time_length)
-        timeo = self.nco.createVariable('time', 'double', 'time')
-        timeo.units = 'seconds since 1970-01-01 00:00:00'
-        timeo.standard_name = 'time'
-        timeo.long_name = 'Time, unix time-stamp'
-        timeo.calendar = 'standard'
-        timeo.axis = "T"
+        create_coordinate(self.nco, 'time', Coordinate(numpy.dtype(numpy.float64), 0, 0, time_length,
+                                                       'seconds since 1970-01-01 00:00:00'))
 
     def ensure_variable(self, measurement_descriptor, chunking):
         varname = measurement_descriptor['varname']
@@ -201,116 +156,156 @@ class NetCDFWriter(object):
 
 
 class ProjectedNetCDFWriter(NetCDFWriter):
-    def validate_crs_arguments(self, geobox):
-        grid_mapping_name = _grid_mapping_name(geobox.crs)
-
-        if grid_mapping_name != 'albers_conic_equal_area':
-            raise ValueError('{} CRS is not supported'.format(grid_mapping_name))
-
-    def create_crs_variable(self, geobox):
-        crs = geobox.crs
-        # http://spatialreference.org/ref/epsg/gda94-australian-albers/html/
-        # http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/cf-conventions.html#appendix-grid-mappings
-        crs_var = self.nco.createVariable('crs', 'i4')
-        crs_var.standard_parallel = (crs.GetProjParm('standard_parallel_1'),
-                                     crs.GetProjParm('standard_parallel_2'))
-        crs_var.longitude_of_central_meridian = crs.GetProjParm('longitude_of_center')
-        crs_var.latitude_of_projection_origin = crs.GetProjParm('latitude_of_center')
-        crs_var.false_easting = crs.GetProjParm('false_easting')
-        crs_var.false_northing = crs.GetProjParm('false_northing')
-        crs_var.grid_mapping_name = _grid_mapping_name(crs)
-        crs_var.long_name = crs.GetAttrValue('PROJCS')
-        crs_var.spatial_ref = crs.ExportToWkt()  # GDAL variable
-        crs_var.GeoTransform = _gdal_geotransform(geobox)  # GDAL variable
-        return crs_var
-
     def create_coordinate_variables(self, geobox):
-        self.create_x_y_variables(geobox)
-        # self.create_lat_lon_variables(geobox)
-
-    def create_x_y_variables(self, geobox):
-        nco = self.nco
         coordinate_labels = geobox.coordinate_labels
 
-        nco.createDimension('x', coordinate_labels['x'].size)
-        nco.createDimension('y', coordinate_labels['y'].size)
+        units = geobox.crs.GetAttrValue('UNIT')
 
-        xvar = nco.createVariable('x', 'double', 'x')
-        xvar.long_name = 'x coordinate of projection'
-        xvar.units = geobox.crs.GetAttrValue('UNIT')
-        xvar.standard_name = 'projection_x_coordinate'
-        xvar.axis = "X"
+        xvar = create_coordinate(self.nco, 'x',
+                                 Coordinate(coordinate_labels['x'].dtype, 0, 0, coordinate_labels['x'].size, units))
         xvar[:] = coordinate_labels['x']
 
-        yvar = nco.createVariable('y', 'double', 'y')
-        yvar.long_name = 'y coordinate of projection'
-        yvar.units = geobox.crs.GetAttrValue('UNIT')
-        yvar.standard_name = 'projection_y_coordinate'
-        yvar.axis = "Y"
+        yvar = create_coordinate(self.nco, 'y',
+                                 Coordinate(coordinate_labels['y'].dtype, 0, 0, coordinate_labels['y'].size, units))
         yvar[:] = coordinate_labels['y']
-
-    def create_lat_lon_variables(self, geobox):
-        wgs84 = osr.SpatialReference()
-        wgs84.ImportFromEPSG(4326)
-        to_wgs84 = osr.CoordinateTransformation(geobox.crs, wgs84)
-
-        lats, lons, _ = zip(*[to_wgs84.TransformPoint(x, y)
-                              for y in geobox.ys
-                              for x in geobox.xs])
-
-        lats_var = self.nco.createVariable('lat', 'double', ('y', 'x'))
-        lats_var.long_name = 'latitude coordinate'
-        lats_var.standard_name = 'latitude'
-        lats_var.units = 'degrees north'
-        lats_var[:] = lats_var
-
-        lons_var = self.nco.createVariable('lon', 'double', ('y', 'x'))
-        lons_var.long_name = 'longitude coordinate'
-        lons_var.standard_name = 'longitude'
-        lons_var.units = 'degrees east'
-        lons_var[:] = lons_var
 
 
 class GeographicNetCDFWriter(NetCDFWriter):
-    def create_crs_variable(self, geobox):
-        crs = geobox.crs
-        crs_var = self.nco.createVariable('crs', 'i4')
-        crs_var.long_name = crs.GetAttrValue('GEOGCS')  # "Lon/Lat Coords in WGS84"
-        crs_var.grid_mapping_name = _grid_mapping_name(crs)
-        crs_var.longitude_of_prime_meridian = 0.0
-        crs_var.semi_major_axis = crs.GetSemiMajor()
-        crs_var.inverse_flattening = crs.GetInvFlattening()
-        crs_var.spatial_ref = crs.ExportToWkt()  # GDAL variable
-        crs_var.GeoTransform = _gdal_geotransform(geobox)  # GDAL variable
-        return crs_var
-
     def create_coordinate_variables(self, geobox):
         coordinate_labels = geobox.coordinate_labels
 
-        self.nco.createDimension('longitude', coordinate_labels['longitude'].size)
-        self.nco.createDimension('latitude', coordinate_labels['latitude'].size)
-
-        lon = self.nco.createVariable('longitude', 'double', 'longitude')
-        lon.units = 'degrees_east'
-        lon.standard_name = 'longitude'
-        lon.long_name = 'longitude'
-        lon.axis = "X"
+        lon = create_coordinate(self.nco, 'longitude',
+                                Coordinate(coordinate_labels['longitude'].dtype, 0, 0,
+                                           coordinate_labels['longitude'].size, 'degrees_east'))
         lon[:] = coordinate_labels['longitude']
 
-        lat = self.nco.createVariable('latitude', 'double', 'latitude')
-        lat.units = 'degrees_north'
-        lat.standard_name = 'latitude'
-        lat.long_name = 'latitude'
-        lat.axis = "Y"
+        lat = create_coordinate(self.nco, 'latitude',
+                                Coordinate(coordinate_labels['latitude'].dtype, 0, 0,
+                                           coordinate_labels['latitude'].size, 'degrees_north'))
         lat[:] = coordinate_labels['latitude']
 
 
-def _gdal_geotransform(geobox):
-    return geobox.affine.to_gdal()
+_STANDARD_COORDINATES = {
+    'longitude': {
+        'standard_name': 'longitude',
+        'long_name': 'longitude',
+        'axis': 'X'
+    },
+    'latitude': {
+        'standard_name': 'latitude',
+        'long_name': 'latitude',
+        'axis': 'Y'
+    },
+    'x': {
+        'standard_name': 'projection_x_coordinate',
+        'long_name': 'x coordinate of projection',
+        'axis': 'X'
+    },
+    'y': {
+        'standard_name': 'projection_y_coordinate',
+        'long_name': 'y coordinate of projection',
+        'axis': 'Y'
+    },
+    'time': {
+        'standard_name': 'time',
+        'long_name': 'Time, unix time-stamp',
+        'axis': 'T',
+        'calendar': 'standard'
+    }
+}
 
 
-def _grid_mapping_name(crs):
+def create_coordinate(nco, name, coord):
+    """
+    :type nco: netCDF4.Dataset
+    :type name: str
+    :type coord: datacube.model.Coordinate
+    :return:
+    """
+    nco.createDimension(name, coord.length)
+    var = nco.createVariable(name, coord.dtype, name)
+    var.units = coord.units
+    for key, value in _STANDARD_COORDINATES.get(name, {}).items():
+        setattr(var, key, value)
+    return var
+
+
+def create_variable(nco, name, var, **kwargs):
+    """
+    :param nco:
+    :param name:
+    :type var: datacube.model.Variable
+    :param kwargs:
+    :return:
+    """
+    data_var = nco.createVariable(varname=name,
+                                  datatype=var.dtype,
+                                  dimensions=var.dimensions,
+                                  fill_value=var.nodata,
+                                  **kwargs)
+    data_var.units = var.units
+    return data_var
+
+
+def _create_latlon_grid_mapping_variable(nco, crs):
+    crs_var = nco.createVariable('crs', 'i4')
+    crs_var.long_name = crs.GetAttrValue('GEOGCS')  # "Lon/Lat Coords in WGS84"
+    crs_var.grid_mapping_name = 'latitude_longitude'
+    crs_var.longitude_of_prime_meridian = 0.0
+    crs_var.semi_major_axis = crs.GetSemiMajor()
+    crs_var.inverse_flattening = crs.GetInvFlattening()
+
+    return crs_var
+
+
+def _create_projected_grid_mapping_variable(nco, crs):
+    grid_mapping_name = crs.GetAttrValue('PROJECTION').lower()
+
+    if grid_mapping_name != 'albers_conic_equal_area':
+        raise ValueError('{} CRS is not supported'.format(grid_mapping_name))
+
+    # http://spatialreference.org/ref/epsg/gda94-australian-albers/html/
+    # http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/cf-conventions.html#appendix-grid-mappings
+    crs_var = nco.createVariable('crs', 'i4')
+    crs_var.standard_parallel = (crs.GetProjParm('standard_parallel_1'),
+                                 crs.GetProjParm('standard_parallel_2'))
+    crs_var.longitude_of_central_meridian = crs.GetProjParm('longitude_of_center')
+    crs_var.latitude_of_projection_origin = crs.GetProjParm('latitude_of_center')
+    crs_var.false_easting = crs.GetProjParm('false_easting')
+    crs_var.false_northing = crs.GetProjParm('false_northing')
+    crs_var.grid_mapping_name = grid_mapping_name
+    crs_var.long_name = crs.GetAttrValue('PROJCS')
+
+    return crs_var
+
+
+def write_gdal_geobox_attributes(nco, geobox):
+    crs_var = nco['crs']
+    crs_var.spatial_ref = geobox.crs.ExportToWkt()
+    crs_var.GeoTransform = geobox.affine.to_gdal()
+
+
+def write_geographical_extents_attributes(nco, geobox):
+    geo_extents = geobox.geographic_extent
+    geo_extents.append(geo_extents[0])
+    nco.geospatial_bounds = "POLYGON((" + ", ".join("{0} {1}".format(*p) for p in geo_extents) + "))"
+    nco.geospatial_bounds_crs = "EPSG:4326"
+
+    geo_aabb = geobox.geographic_boundingbox
+    nco.geospatial_lat_min = geo_aabb.bottom
+    nco.geospatial_lat_max = geo_aabb.top
+    nco.geospatial_lat_units = "degrees_north"
+    nco.geospatial_lat_resolution = "{} degrees".format(abs(geobox.affine.e))
+    nco.geospatial_lon_min = geo_aabb.left
+    nco.geospatial_lon_max = geo_aabb.right
+    nco.geospatial_lon_units = "degrees_east"
+    nco.geospatial_lon_resolution = "{} degrees".format(abs(geobox.affine.a))
+
+
+def create_grid_mapping_variable(nco, crs):
     if crs.IsGeographic():
-        return 'latitude_longitude'
+        return _create_latlon_grid_mapping_variable(nco, crs)
     elif crs.IsProjected():
-        return crs.GetAttrValue('PROJECTION').lower()
+        return _create_projected_grid_mapping_variable(nco, crs)
+    else:
+        raise ValueError('Unknown CRS')
