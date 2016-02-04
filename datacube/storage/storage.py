@@ -170,6 +170,7 @@ def write_storage_unit_to_disk(storage_unit, datasets):
     tmpfile, tmpfilename = tempfile.mkstemp(dir=str(output_filename.parent))
     try:
         with create_netcdf_writer(tmpfilename, data_provider.geobox) as su_writer:
+            su_writer.add_global_attributes(storage_unit.storage_type.global_attributes)
             su_writer.create_time_values(time_values)
 
             for time_index, docs in data_provider.get_metadata_documents():

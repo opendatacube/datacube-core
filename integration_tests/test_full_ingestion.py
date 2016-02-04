@@ -80,6 +80,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset)
             check_data_shape(nco)
             check_cf_compliance(nco)
             check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset)
+            check_global_attributes(nco, su.storage_type.global_attributes)
         check_open_with_xray(su.local_path)
     check_open_with_api(index)
 
@@ -111,6 +112,11 @@ def check_cf_compliance(dataset):
 
     groups = ComplianceChecker.stdout_output(cs, score_groups, verbose=1, limit=COMPLIANCE_CHECKER_NORMAL_LIMIT)
     assert cs.passtree(groups, limit=COMPLIANCE_CHECKER_NORMAL_LIMIT)
+
+
+def check_global_attributes(nco, attrs):
+    for k, v in attrs.items():
+        assert nco.getncattr(k) == v
 
 
 def check_dataset_metadata_in_storage_unit(nco, dataset_dir):

@@ -69,54 +69,69 @@ class DatasetMatcher(object):
 
 
 class StorageType(object):
-    def __init__(self, name, description,
-                 match, measurements,
-                 location, filename_pattern, roi, definition, id_=None):
-        # Which datasets to match.
-        #: :type: DatasetMatcher
-        self.match = match
-
-        # A unique name for the storage type (specified by users)
-        #: :type: str
-        self.name = name
-
-        # A human-readable, potentially multi-line, description for display on the UI.
-        #: :type: str
-        self.description = description
-
-        # A dictionary of the measurements to store
-        # (key is measurement id, value is a doc understood by the storage driver)
-        #: :type: dict
-        self.measurements = measurements
-
-        # (Optional) Limited ROI for this storage type
-        #: :type: dict
-        self.roi = roi
-
-        # The storage location where the storage units should be stored.
-        # Defined in the users configuration file.
-        #: :type: str
-        self.location = location
-
-        # Storage Unit filename pattern
-        # TODO: define pattern expansion rules
-        #: :type: str
-        self.filename_pattern = filename_pattern
-
-        self.definition = definition
-
+    def __init__(self, document, id_=None):
         # Database primary key
         #: :type: int
         self.id_ = id_
 
-    def local_uri_to_location_relative_path(self, uri):
-        if not uri.startswith(self.location):
-            raise ValueError('Not a local URI: %s', uri)
-        return uri[len(self.location):]
+        self.document = document
 
-    def resolve_location(self, offset):
-        # We can't use urlparse.urljoin() because it takes a relative path, not a path inside the base.
-        return '/'.join(s.strip('/') for s in (self.location, offset))
+    @property
+    def match(self):
+        # Which datasets to match.
+        #: :rtype: DatasetMatcher
+        return DatasetMatcher(self.document['match']['metadata'])
+
+    @property
+    def name(self):
+        # A unique name for the storage type (specified by users)
+        #: :rtype: str
+        return self.document['name']
+
+    @property
+    def description(self):
+        # A human-readable, potentially multi-line, description for display on the UI.
+        #: :rtype: str
+        return self.document['description']
+
+    @property
+    def measurements(self):
+        # A dictionary of the measurements to store
+        # (key is measurement id, value is a doc understood by the storage driver)
+        #: :rtype: dict
+        return self.document['measurements']
+
+    @property
+    def roi(self):
+        # (Optional) Limited ROI for this storage type
+        #: :rtype: dict
+        return self.document.get('roi')
+
+    @property
+    def location(self):
+        # The storage location where the storage units should be stored.
+        # Defined in the users configuration file.
+        #: :rtype: str
+        return self.document['location']
+
+    @property
+    def filename_pattern(self):
+        # Storage Unit filename pattern
+        # TODO: define pattern expansion rules
+        #: :rtype: str
+        return self.document['file_path_template']
+
+    @property
+    def global_attributes(self):
+        return self.document.get('global_attributes', {})
+
+    @property
+    def filename_format(self):
+        return self.definition['filename_format']
+
+    @property
+    def definition(self):
+        return self.document['storage']
 
     @property
     def storage_pattern(self):
@@ -167,9 +182,14 @@ class StorageType(object):
         chunks = self.definition['chunking']
         return [(dim, chunks[dim]) for dim in self.definition['dimension_order']]
 
-    @property
-    def filename_format(self):
-        return self.definition['filename_format']
+    def local_uri_to_location_relative_path(self, uri):
+        if not uri.startswith(self.location):
+            raise ValueError('Not a local URI: %s', uri)
+        return uri[len(self.location):]
+
+    def resolve_location(self, offset):
+        # We can't use urlparse.urljoin() because it takes a relative path, not a path inside the base.
+        return '/'.join(s.strip('/') for s in (self.location, offset))
 
     def __repr__(self):
         return 'StorageType<name={!r}, id_={!r}>'.format(self.name, self.id_)

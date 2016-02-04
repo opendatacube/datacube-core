@@ -150,15 +150,11 @@ def test_index_storage_unit(index, db, default_collection):
     index.storage.add(
         StorageUnit(
             [_telemetry_uuid],
-            StorageType(
-                name='test_storage_mapping',
-                description=None,
-                match=None,
-                measurements={},
-                location="file://g/data",
-                filename_pattern="foo.nc",
-                roi=None,
-                definition={},
+            StorageType({
+                'name': 'test_storage_mapping',
+                'location': "file://g/data",
+                'filename_pattern': "foo.nc",
+                },
                 id_=storage_type['id']
             ),
             {'test': 'descriptor'},

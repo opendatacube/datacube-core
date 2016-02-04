@@ -198,24 +198,13 @@ class StorageTypeResource(object):
         :rtype: datacube.model.StorageType
         """
         definition = record['definition']
-        _match = definition.get('match')
         if definition['location_name'] in self._host_config.location_mappings:
-            location = self._host_config.location_mappings[definition['location_name']]
+            definition['location'] = self._host_config.location_mappings[definition['location_name']]
         else:
             raise Exception("Invalid configuration, storage type '{}' references unknown location '{}'".format(
                 record['name'], definition['location_name']))
 
-        return StorageType(
-            definition=definition['storage'],
-            name=record['name'],
-            description=definition.get('description'),
-            match=DatasetMatcher(record['dataset_metadata']),
-            measurements=definition['measurements'],
-            location=location,
-            filename_pattern=definition['file_path_template'],
-            roi=_match.get('roi') if _match else None,
-            id_=record['id']
-        )
+        return StorageType(definition, id_=record['id'])
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def get(self, id_):
