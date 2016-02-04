@@ -5,7 +5,7 @@ set -eu
 
 pep8 tests integration_tests --max-line-length 120
 
-pylint --reports no datacube examples/*.py version.py
+pylint --reports no datacube examples/*.py
 
 # Run tests, taking coverage.
 # Users can specify extra folders as arguments.

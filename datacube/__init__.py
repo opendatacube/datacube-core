@@ -1,2 +1,4 @@
 from __future__ import absolute_import
-from .version import VERSION as __version__
+from .version import get_version
+
+__version__ = get_version()

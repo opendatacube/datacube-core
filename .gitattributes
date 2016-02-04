@@ -1,6 +1,6 @@
 * text=auto
 
-version.py  export-subst
+datacube/version.py  export-subst
 
 *.sh text eol=lf
 *.bash text eol=lf
