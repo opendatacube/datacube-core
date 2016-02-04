@@ -3,8 +3,26 @@
 from setuptools import setup, find_packages
 from version import get_version
 
+GIT_VERSION = get_version()
+
+
+def write_version_py(filename='datacube/version.py'):
+    cnt = """#
+# THIS FILE IS GENERATED FROM DATACUBE SETUP.PY
+#
+from __future__ import absolute_import
+VERSION = '%(version)s'
+"""
+
+    with open(filename, 'w') as f:
+        f.write(cnt % {'version': GIT_VERSION})
+
+# Rewrite the version file everytime
+write_version_py()
+
+
 setup(name='datacube',
-      version=get_version(),
+      version=GIT_VERSION,
       packages=find_packages(
           exclude=('tests', 'tests.*', 'examples',
                    'integration_tests', 'integration_tests.*')
@@ -61,3 +79,4 @@ setup(name='datacube',
           ]
       },
       )
+
