@@ -41,11 +41,11 @@ def map_measurement_descriptor_parameters(measurement_descriptor):
     return params
 
 
-def create_netcdf_writer(netcdf_path, tile_spec):
-    if tile_spec.crs.IsGeographic():
-        return GeographicNetCDFWriter(netcdf_path, tile_spec)
-    elif tile_spec.crs.IsProjected():
-        return ProjectedNetCDFWriter(netcdf_path, tile_spec)
+def create_netcdf_writer(netcdf_path, geobox):
+    if geobox.crs.IsGeographic():
+        return GeographicNetCDFWriter(netcdf_path, geobox)
+    elif geobox.crs.IsProjected():
+        return ProjectedNetCDFWriter(netcdf_path, geobox)
     else:
         raise RuntimeError("Unknown projection")
 
@@ -58,19 +58,19 @@ class NetCDFWriter(object):
     as internal compliance checks are not performed.
 
     :param str netcdf_path: File path at which to create this NetCDF file
-    :param datacube.model.GeoBox tile_spec: Storage Unit definition
+    :param datacube.model.GeoBox geobox: Storage Unit definition
     :param num_times: The number of time values allowed to be stored. Unlimited by default.
     """
 
-    def __init__(self, netcdf_path, tile_spec):
+    def __init__(self, netcdf_path, geobox):
         netcdf_path = str(netcdf_path)
 
         self.nco = netCDF4.Dataset(netcdf_path, 'w')
 
         self.netcdf_path = netcdf_path
 
-        self._create_crs_coords_and_variables(tile_spec)
-        self._set_global_attributes(tile_spec)
+        self._create_crs_coords_and_variables(geobox)
+        self._set_global_attributes(geobox)
 
     def __enter__(self):
         return self
@@ -81,41 +81,41 @@ class NetCDFWriter(object):
     def close(self):
         self.nco.close()
 
-    def create_crs_variable(self, tile_spec):
+    def create_crs_variable(self, geobox):
         raise NotImplementedError()
 
-    def create_coordinate_variables(self, tile_spec):
+    def create_coordinate_variables(self, geobox):
         raise NotImplementedError()
 
-    def _create_crs_coords_and_variables(self, tile_spec):
-        self.validate_crs_arguments(tile_spec)
+    def _create_crs_coords_and_variables(self, geobox):
+        self.validate_crs_arguments(geobox)
 
-        self.create_crs_variable(tile_spec)
-        self.create_coordinate_variables(tile_spec)
+        self.create_crs_variable(geobox)
+        self.create_coordinate_variables(geobox)
 
-    def validate_crs_arguments(self, tile_spec):
+    def validate_crs_arguments(self, geobox):
         pass
 
-    def _set_global_attributes(self, tile_spec):
+    def _set_global_attributes(self, geobox):
         """
 
-        :type tile_spec: datacube.model.GeoBox
+        :type geobox: datacube.model.GeoBox
         """
         # ACDD Metadata (Recommended)
-        geo_extents = tile_spec.geographic_extent
+        geo_extents = geobox.geographic_extent
         geo_extents.append(geo_extents[0])
         self.nco.geospatial_bounds = "POLYGON((" + ", ".join("{0} {1}".format(*p) for p in geo_extents) + "))"
         self.nco.geospatial_bounds_crs = "EPSG:4326"
 
-        geo_aabb = tile_spec.geographic_boundingbox
+        geo_aabb = geobox.geographic_boundingbox
         self.nco.geospatial_lat_min = geo_aabb.bottom
         self.nco.geospatial_lat_max = geo_aabb.top
         self.nco.geospatial_lat_units = "degrees_north"
-        self.nco.geospatial_lat_resolution = "{} degrees".format(abs(tile_spec.affine.e))
+        self.nco.geospatial_lat_resolution = "{} degrees".format(abs(geobox.affine.e))
         self.nco.geospatial_lon_min = geo_aabb.left
         self.nco.geospatial_lon_max = geo_aabb.right
         self.nco.geospatial_lon_units = "degrees_east"
-        self.nco.geospatial_lon_resolution = "{} degrees".format(abs(tile_spec.affine.a))
+        self.nco.geospatial_lon_resolution = "{} degrees".format(abs(geobox.affine.a))
         self.nco.date_created = datetime.today().isoformat()
         self.nco.history = "NetCDF-CF file created by agdc-v2 at {:%Y%m%d}.".format(datetime.utcnow())
 
@@ -124,7 +124,7 @@ class NetCDFWriter(object):
 
         # Attributes from Dataset. For NCI Reqs MUST contain at least title, summary, source, product_version
         # TODO: global attrs come from somewhere
-        # for name, value in tile_spec.global_attrs.items():
+        # for name, value in geobox.global_attrs.items():
         #     self.nco.setncattr(name, value)
 
     def add_global_attributes(self, global_attrs):
@@ -198,14 +198,14 @@ class NetCDFWriter(object):
 
 
 class ProjectedNetCDFWriter(NetCDFWriter):
-    def validate_crs_arguments(self, tile_spec):
-        grid_mapping_name = _grid_mapping_name(tile_spec.crs)
+    def validate_crs_arguments(self, geobox):
+        grid_mapping_name = _grid_mapping_name(geobox.crs)
 
         if grid_mapping_name != 'albers_conic_equal_area':
             raise ValueError('{} CRS is not supported'.format(grid_mapping_name))
 
-    def create_crs_variable(self, tile_spec):
-        crs = tile_spec.crs
+    def create_crs_variable(self, geobox):
+        crs = geobox.crs
         # http://spatialreference.org/ref/epsg/gda94-australian-albers/html/
         # http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/cf-conventions.html#appendix-grid-mappings
         crs_var = self.nco.createVariable('crs', 'i4')
@@ -218,42 +218,42 @@ class ProjectedNetCDFWriter(NetCDFWriter):
         crs_var.grid_mapping_name = _grid_mapping_name(crs)
         crs_var.long_name = crs.GetAttrValue('PROJCS')
         crs_var.spatial_ref = crs.ExportToWkt()  # GDAL variable
-        crs_var.GeoTransform = _gdal_geotransform(tile_spec)  # GDAL variable
+        crs_var.GeoTransform = _gdal_geotransform(geobox)  # GDAL variable
         return crs_var
 
-    def create_coordinate_variables(self, tile_spec):
-        self.create_x_y_variables(tile_spec)
-        # self.create_lat_lon_variables(tile_spec)
+    def create_coordinate_variables(self, geobox):
+        self.create_x_y_variables(geobox)
+        # self.create_lat_lon_variables(geobox)
 
-    def create_x_y_variables(self, tile_spec):
+    def create_x_y_variables(self, geobox):
         nco = self.nco
-        coordinate_labels = tile_spec.coordinate_labels
+        coordinate_labels = geobox.coordinate_labels
 
         nco.createDimension('x', coordinate_labels['x'].size)
         nco.createDimension('y', coordinate_labels['y'].size)
 
         xvar = nco.createVariable('x', 'double', 'x')
         xvar.long_name = 'x coordinate of projection'
-        xvar.units = tile_spec.crs.GetAttrValue('UNIT')
+        xvar.units = geobox.crs.GetAttrValue('UNIT')
         xvar.standard_name = 'projection_x_coordinate'
         xvar.axis = "X"
         xvar[:] = coordinate_labels['x']
 
         yvar = nco.createVariable('y', 'double', 'y')
         yvar.long_name = 'y coordinate of projection'
-        yvar.units = tile_spec.crs.GetAttrValue('UNIT')
+        yvar.units = geobox.crs.GetAttrValue('UNIT')
         yvar.standard_name = 'projection_y_coordinate'
         yvar.axis = "Y"
         yvar[:] = coordinate_labels['y']
 
-    def create_lat_lon_variables(self, tile_spec):
+    def create_lat_lon_variables(self, geobox):
         wgs84 = osr.SpatialReference()
         wgs84.ImportFromEPSG(4326)
-        to_wgs84 = osr.CoordinateTransformation(tile_spec.crs, wgs84)
+        to_wgs84 = osr.CoordinateTransformation(geobox.crs, wgs84)
 
         lats, lons, _ = zip(*[to_wgs84.TransformPoint(x, y)
-                              for y in tile_spec.ys
-                              for x in tile_spec.xs])
+                              for y in geobox.ys
+                              for x in geobox.xs])
 
         lats_var = self.nco.createVariable('lat', 'double', ('y', 'x'))
         lats_var.long_name = 'latitude coordinate'
@@ -269,8 +269,8 @@ class ProjectedNetCDFWriter(NetCDFWriter):
 
 
 class GeographicNetCDFWriter(NetCDFWriter):
-    def create_crs_variable(self, tile_spec):
-        crs = tile_spec.crs
+    def create_crs_variable(self, geobox):
+        crs = geobox.crs
         crs_var = self.nco.createVariable('crs', 'i4')
         crs_var.long_name = crs.GetAttrValue('GEOGCS')  # "Lon/Lat Coords in WGS84"
         crs_var.grid_mapping_name = _grid_mapping_name(crs)
@@ -278,11 +278,11 @@ class GeographicNetCDFWriter(NetCDFWriter):
         crs_var.semi_major_axis = crs.GetSemiMajor()
         crs_var.inverse_flattening = crs.GetInvFlattening()
         crs_var.spatial_ref = crs.ExportToWkt()  # GDAL variable
-        crs_var.GeoTransform = _gdal_geotransform(tile_spec)  # GDAL variable
+        crs_var.GeoTransform = _gdal_geotransform(geobox)  # GDAL variable
         return crs_var
 
-    def create_coordinate_variables(self, tile_spec):
-        coordinate_labels = tile_spec.coordinate_labels
+    def create_coordinate_variables(self, geobox):
+        coordinate_labels = geobox.coordinate_labels
 
         self.nco.createDimension('longitude', coordinate_labels['longitude'].size)
         self.nco.createDimension('latitude', coordinate_labels['latitude'].size)
@@ -302,8 +302,8 @@ class GeographicNetCDFWriter(NetCDFWriter):
         lat[:] = coordinate_labels['latitude']
 
 
-def _gdal_geotransform(tile_spec):
-    return tile_spec.affine.to_gdal()
+def _gdal_geotransform(geobox):
+    return geobox.affine.to_gdal()
 
 
 def _grid_mapping_name(crs):
