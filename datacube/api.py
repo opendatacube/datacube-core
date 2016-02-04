@@ -553,7 +553,8 @@ class API(object):
         known_fields = self.index.datasets.get_fields().keys()
         query = {key: descriptor[key] for key in descriptor.keys() if key in known_fields}
 
-        unknown_fields = [key for key in descriptor.keys() if key not in known_fields + ['variables', 'dimensions']]
+        unknown_fields = [key for key in descriptor.keys()
+                          if key not in known_fields and key not in ['variables', 'dimensions']]
         if unknown_fields:
             _LOG.warning("Some of the fields in the query are unknown and will be ignored: %s",
                          ', '.join(unknown_fields))
