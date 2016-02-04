@@ -11,7 +11,7 @@ import os
 import click
 import pkg_resources
 
-from datacube import config
+from datacube import config, __version__
 from datacube.index import index_connect
 
 
@@ -22,12 +22,10 @@ def _print_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
 
-    #: pylint: disable=not-callable
-    version = pkg_resources.require('datacube')[0].version
     click.echo(
         '{prog}, version {version}'.format(
             prog='Data Cube',
-            version=version
+            version=__version__
         )
     )
     ctx.exit()

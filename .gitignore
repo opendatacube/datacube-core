@@ -59,6 +59,3 @@ target/
 .idea/
 examples/notebooks/.ipynb_checkpoints/datacube_api_example-checkpoint.ipynb
 examples/notebooks/.ipynb_checkpoints/
-
-# Datacube specific files
-datacube/version.py
