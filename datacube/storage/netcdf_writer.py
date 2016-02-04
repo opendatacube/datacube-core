@@ -6,7 +6,6 @@ from __future__ import absolute_import
 
 import logging
 from datetime import datetime
-from itertools import chain
 
 import netCDF4
 from osgeo import osr
@@ -81,6 +80,12 @@ class NetCDFWriter(object):
 
     def close(self):
         self.nco.close()
+
+    def create_crs_variable(self, tile_spec):
+        raise NotImplementedError()
+
+    def create_coordinate_variables(self, tile_spec):
+        raise NotImplementedError()
 
     def _create_crs_coords_and_variables(self, tile_spec):
         self.validate_crs_arguments(tile_spec)
@@ -210,7 +215,7 @@ class ProjectedNetCDFWriter(NetCDFWriter):
         crs_var.latitude_of_projection_origin = crs.GetProjParm('latitude_of_center')
         crs_var.false_easting = crs.GetProjParm('false_easting')
         crs_var.false_northing = crs.GetProjParm('false_northing')
-        crs_var.grid_mapping_name = 'crs'
+        crs_var.grid_mapping_name = _grid_mapping_name(crs)
         crs_var.long_name = crs.GetAttrValue('PROJCS')
         crs_var.spatial_ref = crs.ExportToWkt()  # GDAL variable
         crs_var.GeoTransform = _gdal_geotransform(tile_spec)  # GDAL variable
@@ -231,12 +236,14 @@ class ProjectedNetCDFWriter(NetCDFWriter):
         xvar.long_name = 'x coordinate of projection'
         xvar.units = tile_spec.crs.GetAttrValue('UNIT')
         xvar.standard_name = 'projection_x_coordinate'
+        xvar.axis = "X"
         xvar[:] = coordinate_labels['x']
 
         yvar = nco.createVariable('y', 'double', 'y')
         yvar.long_name = 'y coordinate of projection'
         yvar.units = tile_spec.crs.GetAttrValue('UNIT')
         yvar.standard_name = 'projection_y_coordinate'
+        yvar.axis = "Y"
         yvar[:] = coordinate_labels['y']
 
     def create_lat_lon_variables(self, tile_spec):
