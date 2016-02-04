@@ -23,6 +23,7 @@ from itertools import groupby
 import click
 import numpy
 from affine import Affine
+import netCDF4
 import rasterio
 from rasterio.coords import BoundingBox
 
@@ -33,6 +34,7 @@ from datacube.storage.access.core import StorageUnitBase, StorageUnitStack, Stor
     StorageUnitVariableProxy
 from datacube.storage.storage import fuse_sources, DatasetSource, RESAMPLING, RESAMPLING_METHODS
 from datacube.storage.utils import datetime_to_seconds_since_1970
+from datacube.storage import netcdf_writer
 from datacube.ui import parse_expressions
 
 
@@ -141,7 +143,7 @@ def do_no_spoon(stats, bands, query, index):
     datasets.sort(key=group_func)
     groups = [(key, list(group)) for key, group in groupby(datasets, group_func)]
 
-    bounds = BoundingBox(149.00000001, -34.9999999, 149.99999999, -34.00000001)
+    bounds = BoundingBox(149.0, -35.0, 150.0, -34.0)
     resolution = (0.00025, -0.00025)
     crs = 'EPSG:4326'
 
@@ -165,8 +167,23 @@ def do_no_spoon(stats, bands, query, index):
         sus.append(
             StorageUnitDimensionProxy(su, ('time', v, numpy.dtype(numpy.float64), 'seconds since 1970-01-01 00:00:00')))
     data = StorageUnitStack(sus, 'time')
-    print(data)
-    print(data.get('blue', longitude=slice(0, 6), latitude=slice(0, 12)))
+
+    nco = netCDF4.Dataset('test.nc', 'w')
+    for name, coord in data.coordinates.items():
+        coord_var = netcdf_writer.create_coordinate(nco, name, coord)
+        coord_var[:] = data.get_coord(name)[0]
+    netcdf_writer.create_grid_mapping_variable(nco, geobox.crs)
+    netcdf_writer.write_gdal_geobox_attributes(nco, geobox)
+    netcdf_writer.write_geographical_extents_attributes(nco, geobox)
+
+    for name, var in data.variables.items():
+        data_var = netcdf_writer.create_variable(nco, name, var)
+        data_var.grid_mapping = 'crs'
+        data_var[:] = data.get(name).values
+
+    nco.close()
+
+    return data
 
 
 def get_descriptors(index, *query):
