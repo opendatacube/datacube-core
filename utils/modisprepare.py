@@ -97,7 +97,7 @@ def prepare_dataset(path):
             'extent': {
                 'from_dt': from_dt.isoformat(),
                 'to_dt': to_dt.isoformat(),
-                'center_dt': (from_dt + (to_dt - from_dt) / 2).isoformat(),
+                'center_dt': (from_dt + (to_dt - from_dt) // 2).isoformat(),
                 # 'coord': get_coords(geo_ref_points, spatial_ref),
             },
             'lineage': {'source_datasets': {}},
