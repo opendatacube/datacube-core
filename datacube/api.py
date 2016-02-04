@@ -18,6 +18,7 @@ GDF Trial backward compatibility
 
 from __future__ import absolute_import, division, print_function
 
+import logging
 import datetime
 import itertools
 import operator
@@ -35,6 +36,9 @@ from .storage.access.core import StorageUnitDimensionProxy, StorageUnitBase
 from datacube.model import Coordinate, Variable
 from .storage.access.backends import NetCDF4StorageUnit, GeoTifStorageUnit, FauxStorageUnit
 from .index import index_connect
+
+
+_LOG = logging.getLogger(__name__)
 
 # TODO: Move into storage.access.StorageUnitBase
 # class NDArrayProxy(object):
@@ -173,47 +177,6 @@ def no_data_block(shape, dtype, fill):
         fill = numpy.NaN
     arr.fill(fill)
     return arr
-
-
-def _convert_descriptor_to_query(descriptor=None):
-    descriptor = descriptor or {}
-
-    query = {key: descriptor[key] for key in ('satellite', 'sensor', 'product') if key in descriptor}
-    variables = descriptor.get('variables', None)
-    dimension_ranges = descriptor.get('dimensions', {}).copy()
-    input_coord = {'left': None, 'bottom': None, 'right': None, 'top': None}
-    input_crs = None
-    mapped_vars = {}
-    for dim, data in dimension_ranges.items():
-        # Convert any known dimension CRS
-        if dim in ['latitude', 'lat', 'y']:
-            input_crs = input_crs or data.get('crs', 'EPSG:4326')
-            input_coord['top'] = data['range'][0]
-            input_coord['bottom'] = data['range'][1]
-            mapped_vars['lat'] = dim
-        elif dim in ['longitude', 'lon', 'long', 'x']:
-            input_crs = input_crs or data.get('crs', 'EPSG:4326')
-            input_coord['left'] = data['range'][0]
-            input_coord['right'] = data['range'][1]
-            mapped_vars['lon'] = dim
-        elif dim in ['time']:
-            # TODO: Handle time formatting strings & other CRS's
-            # Assume dateime object or seconds since UNIX epoch 1970-01-01 for now...
-            if 'range' in data:
-                data['range'] = (datetime_to_timestamp(data['range'][0]), datetime_to_timestamp(data['range'][1]))
-        else:
-            # Assume the search function will sort it out, add it to the query
-            query[dim] = Range(*data['range'])
-
-    search_crs = 'EPSG:4326'  # TODO: look up storage index CRS for collection
-    if all(v is not None for v in input_coord.values()):
-        left, bottom, right, top = rasterio.warp.transform_bounds(input_crs, search_crs, **input_coord)
-        query['lat'] = Range(bottom, top)
-        query['lon'] = Range(left, right)
-        dimension_ranges[mapped_vars['lat']]['range'] = (top, bottom)
-        dimension_ranges[mapped_vars['lon']]['range'] = (left, right)
-
-    return query, variables, dimension_ranges
 
 
 class StorageUnitCollection(object):
@@ -543,12 +506,67 @@ def get_result_stats(storage_units, dimension_ranges):
     return result
 
 
+def _dimension_crs_to_ranges_query(dimension_ranges_descriptor):
+    dimension_ranges = dimension_ranges_descriptor.copy()
+    query = {}
+    input_coord = {'left': None, 'bottom': None, 'right': None, 'top': None}
+    input_crs = None
+    mapped_vars = {}
+    for dim, data in dimension_ranges.items():
+        # Convert any known dimension CRS
+        if dim in ['latitude', 'lat', 'y']:
+            input_crs = input_crs or data.get('crs', 'EPSG:4326')
+            input_coord['top'] = data['range'][0]
+            input_coord['bottom'] = data['range'][1]
+            mapped_vars['lat'] = dim
+        elif dim in ['longitude', 'lon', 'long', 'x']:
+            input_crs = input_crs or data.get('crs', 'EPSG:4326')
+            input_coord['left'] = data['range'][0]
+            input_coord['right'] = data['range'][1]
+            mapped_vars['lon'] = dim
+        elif dim in ['time']:
+            # TODO: Handle time formatting strings & other CRS's
+            # Assume dateime object or seconds since UNIX epoch 1970-01-01 for now...
+            if 'range' in data:
+                data['range'] = (datetime_to_timestamp(data['range'][0]), datetime_to_timestamp(data['range'][1]))
+        else:
+            # Assume the search function will sort it out, add it to the query
+            query[dim] = Range(*data['range'])
+
+    search_crs = 'EPSG:4326'  # TODO: look up storage index CRS for collection
+    if all(v is not None for v in input_coord.values()):
+        left, bottom, right, top = rasterio.warp.transform_bounds(input_crs, search_crs, **input_coord)
+        query['lat'] = Range(bottom, top)
+        query['lon'] = Range(left, right)
+        dimension_ranges[mapped_vars['lat']]['range'] = (top, bottom)
+        dimension_ranges[mapped_vars['lon']]['range'] = (left, right)
+    return query, dimension_ranges
+
+
 class API(object):
     def __init__(self, index=None):
         self.index = index or index_connect()
 
+    def _convert_descriptor_to_query(self, descriptor=None):
+        descriptor = descriptor or {}
+
+        known_fields = self.index.datasets.get_fields().keys()
+        query = {key: descriptor[key] for key in descriptor.keys() if key in known_fields}
+
+        unknown_fields = [key for key in descriptor.keys() if key not in known_fields + ['variables', 'dimensions']]
+        if unknown_fields:
+            _LOG.warning("Some of the fields in the query are unknown and will be ignored: %s",
+                         ', '.join(unknown_fields))
+
+        variables = descriptor.get('variables', None)
+        dimension_ranges_descriptor = descriptor.get('dimensions', {})
+        range_query, dimension_ranges = _dimension_crs_to_ranges_query(dimension_ranges_descriptor)
+        query.update(range_query)
+
+        return query, variables, dimension_ranges
+
     def _get_storage_units(self, descriptor_request):
-        query, variables, dimension_ranges = _convert_descriptor_to_query(descriptor_request)
+        query, variables, dimension_ranges = self._convert_descriptor_to_query(descriptor_request)
 
         sus = self.index.storage.search(**query)
 
@@ -743,7 +761,7 @@ class API(object):
         }
         """
 
-        query, variables, dimension_ranges = _convert_descriptor_to_query(descriptor)
+        query, variables, dimension_ranges = self._convert_descriptor_to_query(descriptor)
 
         storage_units_by_type = {}
         if storage_units:
