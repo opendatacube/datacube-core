@@ -119,7 +119,6 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
     if not datasets:
         raise ValueError('Shall not create empty StorageUnit%s %s' % (tile_index, output_uri))
 
-
     datasets_grouped_by_time = _group_datasets_by_time(datasets)
     time_values = [time for time, _ in datasets_grouped_by_time]
 
