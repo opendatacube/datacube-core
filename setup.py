@@ -52,7 +52,7 @@ setup(name='datacube',
       maintainer='AGDC Collaboration',
       maintainer_email='',
       description='AGDC v2',
-      long_description='Australian Geoscience Data Cube v2',
+      long_description=open('README.md', 'r').read(),
       license='Apache License 2.0',
       entry_points={
           'console_scripts': [
