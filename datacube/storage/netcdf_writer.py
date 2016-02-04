@@ -17,6 +17,7 @@ except ImportError:
     from yaml import SafeDumper
 
 from datacube.storage.utils import datetime_to_seconds_since_1970
+from datacube import __version__
 
 _LOG = logging.getLogger(__name__)
 DATASET_YAML_MAX_SIZE = 30000
@@ -117,7 +118,9 @@ class NetCDFWriter(object):
         self.nco.geospatial_lon_units = "degrees_east"
         self.nco.geospatial_lon_resolution = "{} degrees".format(abs(geobox.affine.a))
         self.nco.date_created = datetime.today().isoformat()
-        self.nco.history = "NetCDF-CF file created by agdc-v2 at {:%Y%m%d}.".format(datetime.utcnow())
+        self.nco.history = ("NetCDF-CF file created by "
+                            "datacube version '{}' at {:%Y%m%d}."
+                            .format(__version__, datetime.utcnow()))
 
         # Follow ACDD and CF Conventions
         self.nco.Conventions = 'CF-1.6, ACDD-1.3'
