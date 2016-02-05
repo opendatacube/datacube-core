@@ -75,7 +75,11 @@ dataset:
             max_offset:
             - [extent, coord, ur, lat]
             - [extent, coord, lr, lat]
+            - [extent, coord, ul, lat]
+            - [extent, coord, ll, lat]
             min_offset:
+            - [extent, coord, ur, lat]
+            - [extent, coord, lr, lat]
             - [extent, coord, ul, lat]
             - [extent, coord, ll, lat]
 
@@ -86,7 +90,11 @@ dataset:
             max_offset:
             - [extent, coord, ul, lon]
             - [extent, coord, ur, lon]
+            - [extent, coord, ll, lon]
+            - [extent, coord, lr, lon]
             min_offset:
+            - [extent, coord, ul, lon]
+            - [extent, coord, ur, lon]
             - [extent, coord, ll, lon]
             - [extent, coord, lr, lon]
 
