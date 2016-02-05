@@ -24,7 +24,6 @@ import itertools
 import operator
 import uuid
 import copy
-import types
 
 import functools
 import numpy
@@ -37,6 +36,7 @@ from .storage.access.core import StorageUnitDimensionProxy, StorageUnitBase
 from datacube.model import Coordinate, Variable
 from .storage.access.backends import NetCDF4StorageUnit, GeoTifStorageUnit, FauxStorageUnit
 from .index import index_connect
+from . import compat
 
 
 _LOG = logging.getLogger(__name__)
@@ -524,7 +524,7 @@ def _dimension_crs_to_ranges_query(dimension_ranges_descriptor):
             # Convert any known dimension CRS
             if dim in ['latitude', 'lat', 'y']:
                 input_crs = input_crs or data.get('crs', 'EPSG:4326')
-                if isinstance(data['range'], types.StringTypes + (int, float)):
+                if isinstance(data['range'], compat.string_types + compat.integer_types+ (float,)):
                     input_coord['top'] = float(data['range'])
                     input_coord['bottom'] = float(data['range'])
                 else:
@@ -533,7 +533,7 @@ def _dimension_crs_to_ranges_query(dimension_ranges_descriptor):
                 mapped_vars['lat'] = dim
             elif dim in ['longitude', 'lon', 'long', 'x']:
                 input_crs = input_crs or data.get('crs', 'EPSG:4326')
-                if isinstance(data['range'], types.StringTypes + (int, float)):
+                if isinstance(data['range'], compat.string_types + compat.integer_types+ (float,)):
                     input_coord['left'] = float(data['range'])
                     input_coord['right'] = float(data['range'])
                 else:
