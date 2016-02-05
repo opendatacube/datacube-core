@@ -165,7 +165,8 @@ def dimension_ranges_to_selector(dimension_ranges, reverse_sort):
     ranges = dict((dim_name, dim['range']) for dim_name, dim in dimension_ranges.items() if 'range' in dim)
     # if 'time' in ranges:
     #     ranges['time'] = tuple(datetime_to_timestamp(r) for r in ranges['time'])
-    return dict((c, slice(*sorted(r, reverse=reverse_sort[c])) if isinstance(r, tuple) else r) for c, r in ranges.items())
+    return dict((c, slice(*sorted(r, reverse=reverse_sort[c]))
+                 if isinstance(r, tuple) else r) for c, r in ranges.items())
 
 
 def dimension_ranges_to_iselector(dim_ranges):
@@ -514,15 +515,14 @@ def get_result_stats(storage_units, dimension_ranges):
 
 
 def _dimension_crs_to_ranges_query(dimension_ranges_descriptor):
-    dimension_ranges = dimension_ranges_descriptor.copy()
     query = {}
     input_coord = {'left': None, 'bottom': None, 'right': None, 'top': None}
     input_crs = None
     mapped_vars = {}
-    for dim, data in dimension_ranges.items():
-        # Convert any known dimension CRS
-        if dim in ['latitude', 'lat', 'y']:
-            if 'range' in data:
+    for dim, data in dimension_ranges_descriptor.items():
+        if 'range' in data:
+            # Convert any known dimension CRS
+            if dim in ['latitude', 'lat', 'y']:
                 input_crs = input_crs or data.get('crs', 'EPSG:4326')
                 if isinstance(data['range'], types.StringTypes + (int, float)):
                     input_coord['top'] = float(data['range'])
@@ -531,8 +531,7 @@ def _dimension_crs_to_ranges_query(dimension_ranges_descriptor):
                     input_coord['top'] = data['range'][0]
                     input_coord['bottom'] = data['range'][-1]
                 mapped_vars['lat'] = dim
-        elif dim in ['longitude', 'lon', 'long', 'x']:
-            if 'range' in data:
+            elif dim in ['longitude', 'lon', 'long', 'x']:
                 input_crs = input_crs or data.get('crs', 'EPSG:4326')
                 if isinstance(data['range'], types.StringTypes + (int, float)):
                     input_coord['left'] = float(data['range'])
@@ -541,32 +540,38 @@ def _dimension_crs_to_ranges_query(dimension_ranges_descriptor):
                     input_coord['left'] = data['range'][0]
                     input_coord['right'] = data['range'][-1]
                 mapped_vars['lon'] = dim
-        elif dim in ['time']:
-            # TODO: Handle time formatting strings & other CRS's
-            # Assume dateime object or seconds since UNIX epoch 1970-01-01 for now...
-            if 'range' in data:
+            elif dim in ['time']:
+                # TODO: Handle time formatting strings & other CRS's
+                # Assume dateime object or seconds since UNIX epoch 1970-01-01 for now...
                 data['range'] = (datetime_to_timestamp(data['range'][0]), datetime_to_timestamp(data['range'][1]))
-        else:
-            # Assume the search function will sort it out, add it to the query
-            query[dim] = Range(*data['range'])
+            else:
+                # Assume the search function will sort it out, add it to the query
+                query[dim] = Range(*data['range'])
 
     search_crs = 'EPSG:4326'  # TODO: look up storage index CRS for collection
+    query, dimension_ranges = geospatial_warp(input_crs, search_crs, input_coord,
+                                              dimension_ranges_descriptor, mapped_vars)
+    return query, dimension_ranges
+
+
+def geospatial_warp(input_crs, search_crs, input_coord, dimension_ranges, mapped_vars):
+    dimension_ranges = dimension_ranges.copy()
+    search_query = {}
     if all(v is not None for v in input_coord.values()):
         left, bottom, right, top = rasterio.warp.transform_bounds(input_crs, search_crs, **input_coord)
 
-        query['lat'] = Range(bottom, top)
-        query['lon'] = Range(left, right)
+        search_query['lat'] = Range(bottom, top)
+        search_query['lon'] = Range(left, right)
         dimension_ranges[mapped_vars['lat']]['range'] = (top, bottom)
         dimension_ranges[mapped_vars['lon']]['range'] = (left, right)
 
         if bottom == top:
-            query['lat'] = Range(bottom + FLOAT_TOLERANCE, top - FLOAT_TOLERANCE)
+            search_query['lat'] = Range(bottom + FLOAT_TOLERANCE, top - FLOAT_TOLERANCE)
             dimension_ranges[mapped_vars['lat']]['range'] = top
         if left == right:
-            query['lon'] = Range(left - FLOAT_TOLERANCE, right + FLOAT_TOLERANCE)
+            search_query['lon'] = Range(left - FLOAT_TOLERANCE, right + FLOAT_TOLERANCE)
             dimension_ranges[mapped_vars['lon']]['range'] = left
-    return query, dimension_ranges
-
+    return search_query, dimension_ranges
 
 class API(object):
     def __init__(self, index=None):
