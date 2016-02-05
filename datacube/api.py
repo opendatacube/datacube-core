@@ -24,6 +24,7 @@ import itertools
 import operator
 import uuid
 import copy
+import types
 
 import functools
 import numpy
@@ -39,6 +40,8 @@ from .index import index_connect
 
 
 _LOG = logging.getLogger(__name__)
+
+FLOAT_TOLERANCE = 0.0000001 # TODO: Use
 
 # TODO: Move into storage.access.StorageUnitBase
 # class NDArrayProxy(object):
@@ -162,7 +165,7 @@ def dimension_ranges_to_selector(dimension_ranges, reverse_sort):
     ranges = dict((dim_name, dim['range']) for dim_name, dim in dimension_ranges.items() if 'range' in dim)
     # if 'time' in ranges:
     #     ranges['time'] = tuple(datetime_to_timestamp(r) for r in ranges['time'])
-    return dict((c, slice(*sorted(r, reverse=reverse_sort[c]))) for c, r in ranges.items())
+    return dict((c, slice(*sorted(r, reverse=reverse_sort[c])) if isinstance(r, tuple) else r) for c, r in ranges.items())
 
 
 def dimension_ranges_to_iselector(dim_ranges):
@@ -278,7 +281,7 @@ def _create_response(xarrays, dimensions, extra_properties):
         'arrays': xarrays,
         'indices': dict((dim, sample_xarray.coords[dim].values) for dim in dimensions),
         'element_sizes': [(abs(sample_xarray.coords[dim].values[0] - sample_xarray.coords[dim].values[-1]) /
-                           float(sample_xarray.coords[dim].size)) if sample_xarray.coords[dim].size > 0 else 0
+                           float(sample_xarray.coords[dim].size)) if sample_xarray.coords[dim].size > 1 else 0
                           for dim in dimensions],
         'size': sample_xarray.shape,
     }
@@ -370,8 +373,12 @@ def _get_data_by_variable(storage_units_by_variable, dimensions, dimension_range
     xarrays = {}
     for var_name, storage_units in storage_units_by_variable.items():
         xarray_data_array = _get_array(storage_units, var_name, dimensions, dim_props)
-        cropped = xarray_data_array.sel(**selectors)
-        subset = cropped.isel(**iselectors)
+        for key, value in selectors.items():
+            if isinstance(value, slice):
+                xarray_data_array = xarray_data_array.sel(**{key: value})
+            else:
+                xarray_data_array = xarray_data_array.sel(method='nearest', **{key: value})
+        subset = xarray_data_array.isel(**iselectors)
         xarrays[var_name] = subset
     extra_properties = _get_extra_properties(sus_with_dims, dimensions)
     return _create_response(xarrays, dimensions, extra_properties)
@@ -515,15 +522,25 @@ def _dimension_crs_to_ranges_query(dimension_ranges_descriptor):
     for dim, data in dimension_ranges.items():
         # Convert any known dimension CRS
         if dim in ['latitude', 'lat', 'y']:
-            input_crs = input_crs or data.get('crs', 'EPSG:4326')
-            input_coord['top'] = data['range'][0]
-            input_coord['bottom'] = data['range'][1]
-            mapped_vars['lat'] = dim
+            if 'range' in data:
+                input_crs = input_crs or data.get('crs', 'EPSG:4326')
+                if isinstance(data['range'], types.StringTypes + (int, float)):
+                    input_coord['top'] = float(data['range'])
+                    input_coord['bottom'] = float(data['range'])
+                else:
+                    input_coord['top'] = data['range'][0]
+                    input_coord['bottom'] = data['range'][-1]
+                mapped_vars['lat'] = dim
         elif dim in ['longitude', 'lon', 'long', 'x']:
-            input_crs = input_crs or data.get('crs', 'EPSG:4326')
-            input_coord['left'] = data['range'][0]
-            input_coord['right'] = data['range'][1]
-            mapped_vars['lon'] = dim
+            if 'range' in data:
+                input_crs = input_crs or data.get('crs', 'EPSG:4326')
+                if isinstance(data['range'], types.StringTypes + (int, float)):
+                    input_coord['left'] = float(data['range'])
+                    input_coord['right'] = float(data['range'])
+                else:
+                    input_coord['left'] = data['range'][0]
+                    input_coord['right'] = data['range'][-1]
+                mapped_vars['lon'] = dim
         elif dim in ['time']:
             # TODO: Handle time formatting strings & other CRS's
             # Assume dateime object or seconds since UNIX epoch 1970-01-01 for now...
@@ -536,10 +553,18 @@ def _dimension_crs_to_ranges_query(dimension_ranges_descriptor):
     search_crs = 'EPSG:4326'  # TODO: look up storage index CRS for collection
     if all(v is not None for v in input_coord.values()):
         left, bottom, right, top = rasterio.warp.transform_bounds(input_crs, search_crs, **input_coord)
+
         query['lat'] = Range(bottom, top)
         query['lon'] = Range(left, right)
         dimension_ranges[mapped_vars['lat']]['range'] = (top, bottom)
         dimension_ranges[mapped_vars['lon']]['range'] = (left, right)
+
+        if bottom == top:
+            query['lat'] = Range(bottom + FLOAT_TOLERANCE, top - FLOAT_TOLERANCE)
+            dimension_ranges[mapped_vars['lat']]['range'] = top
+        if left == right:
+            query['lon'] = Range(left - FLOAT_TOLERANCE, right + FLOAT_TOLERANCE)
+            dimension_ranges[mapped_vars['lon']]['range'] = left
     return query, dimension_ranges
 
 
