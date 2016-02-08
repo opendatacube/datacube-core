@@ -33,7 +33,7 @@ import rasterio.warp
 
 from .model import Range
 from .storage.access.core import StorageUnitDimensionProxy, StorageUnitBase
-from datacube.model import Coordinate, Variable
+from datacube.model import Coordinate, Variable, CoordinateValue
 from .storage.access.backends import NetCDF4StorageUnit, GeoTifStorageUnit, FauxStorageUnit
 from .index import index_connect
 from . import compat
@@ -149,7 +149,7 @@ def make_storage_unit(su, is_diskless=False):
         result = GeoTifStorageUnit(su.local_path, coordinates=coordinates, variables=variables, attributes=attributes)
         time = datetime.datetime.strptime(su.descriptor['extents']['time_min'], '%Y-%m-%dT%H:%M:%S.%f')
         time = (time - datetime.datetime.utcfromtimestamp(0)).total_seconds()
-        return StorageUnitDimensionProxy(result, ('time', time, numpy.float64, 'seconds since 1970'))
+        return StorageUnitDimensionProxy(result, CoordinateValue('time', time, numpy.float64, 'seconds since 1970'))
 
     raise RuntimeError('unsupported storage unit access driver %s' % su.storage_type.driver)
 

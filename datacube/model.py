@@ -22,6 +22,7 @@ _LOG = logging.getLogger(__name__)
 
 Range = namedtuple('Range', ('begin', 'end'))
 Coordinate = namedtuple('Coordinate', ('dtype', 'begin', 'end', 'length', 'units'))
+CoordinateValue = namedtuple('CoordinateValue', ('name', 'value', 'dtype', 'units'))
 Variable = namedtuple('Variable', ('dtype', 'nodata', 'dimensions', 'units'))
 
 

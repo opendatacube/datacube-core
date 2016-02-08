@@ -21,7 +21,7 @@ import numpy
 from datacube.storage.access.core import Coordinate, Variable
 from datacube.storage.access.core import StorageUnitVariableProxy, StorageUnitDimensionProxy, StorageUnitStack
 from datacube.storage.access.backends import FauxStorageUnit
-from datacube.model import Range, Coordinate, Variable
+from datacube.model import Range, Coordinate, Variable, CoordinateValue
 
 DATA_DIR = os.path.join(os.path.split(os.path.realpath(__file__))[0], 'data')
 
@@ -82,7 +82,7 @@ def test_storage_unit_variable_proxy():
 
 
 def test_storage_unit_dimension_proxy():
-    su = StorageUnitDimensionProxy(ds1, ('greg', 12.0, numpy.double, '1'))
+    su = StorageUnitDimensionProxy(ds1, CoordinateValue('greg', 12.0, numpy.double, '1'))
     data = su.get_coord('greg')[0]
     assert data == numpy.array([12.0])
 

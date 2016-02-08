@@ -7,6 +7,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 import tempfile
 import os.path
+from collections import defaultdict
 from contextlib import contextmanager
 from itertools import groupby
 
@@ -23,7 +24,7 @@ from rasterio.coords import BoundingBox
 from rasterio.warp import RESAMPLING, transform_bounds
 
 from datacube import compat
-from datacube.model import StorageUnit, GeoBox, Coordinate, Variable, _uri_to_local_path
+from datacube.model import StorageUnit, GeoBox, Coordinate, Variable, _uri_to_local_path, CoordinateValue
 from datacube.storage import netcdf_writer
 from datacube.storage.utils import namedtuples2dicts, datetime_to_seconds_since_1970
 from datacube.storage.access.core import StorageUnitBase, StorageUnitDimensionProxy, StorageUnitStack
@@ -66,7 +67,7 @@ def _roi_to_bounds(roi, dims):
 
 
 def _grid_datasets(datasets, bounds_override, grid_proj, grid_size):
-    tiles = {}
+    tiles = defaultdict(list)
     for dataset in datasets:
         dataset_proj = dataset.crs
         dataset_bounds = dataset.bounds
@@ -76,7 +77,7 @@ def _grid_datasets(datasets, bounds_override, grid_proj, grid_size):
             for x in range(int(bounds.left // grid_size[0]), int(bounds.right // grid_size[0]) + 1):
                 tile_index = (x, y)
                 if _check_intersect(tile_index, grid_size, grid_proj, dataset_bounds, dataset_proj):
-                    tiles.setdefault(tile_index, []).append(dataset)
+                    tiles[tile_index].append(dataset)
 
     return tiles
 
@@ -212,9 +213,10 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
     access_unit = StorageUnitStack([
         StorageUnitDimensionProxy(
             WarpingStorageUnit(group, geobox, mapping=storage_type.measurements),
-            ('time', datetime_to_seconds_since_1970(time),
-             numpy.dtype(numpy.float64),
-             'seconds since 1970-01-01 00:00:00'))
+            CoordinateValue(name='time',
+                            value=datetime_to_seconds_since_1970(time),
+                            dtype=numpy.dtype(numpy.float64),
+                            units='seconds since 1970-01-01 00:00:00'))
         for time, group in datasets_grouped_by_time
         ], 'time')
 
