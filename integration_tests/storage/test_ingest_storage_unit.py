@@ -9,7 +9,6 @@ from pathlib import Path
 import pytest
 
 from datacube.model import GeoBox
-from datacube.storage import write_storage_unit_to_disk
 from datacube.scripts.ingest_storage_units import process_storage_unit
 
 
@@ -30,18 +29,18 @@ class SingleTimeEmptyDataProvider(object):
             out_var[0] = 0
 
 
-@pytest.fixture
-def ingestable_storage_unit(index, tmpdir, indexed_ls5_nbar_storage_type,
-                            default_collection):
-    tile_index = (150, -35)
-
-    filename = str(tmpdir.join('example_storage_unit.nc'))
-
-    data_provider = SingleTimeEmptyDataProvider(indexed_ls5_nbar_storage_type, tile_index)
-
-    write_storage_unit_to_disk(filename, data_provider)
-
-    return filename
+# @pytest.fixture
+# def ingestable_storage_unit(index, tmpdir, indexed_ls5_nbar_storage_type,
+#                             default_collection):
+#     tile_index = (150, -35)
+#
+#     filename = str(tmpdir.join('example_storage_unit.nc'))
+#
+#     data_provider = SingleTimeEmptyDataProvider(indexed_ls5_nbar_storage_type, tile_index)
+#
+#     write_storage_unit_to_disk(filename, data_provider)
+#
+#     return filename
 
 
 @pytest.skip

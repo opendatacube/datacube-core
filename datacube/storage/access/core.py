@@ -212,7 +212,9 @@ class StorageUnitDimensionProxy(StorageUnitBase):
         ndims = len(self._dimensions)
         if any(i == 0 for i in shape[:ndims]):
             return dest
-        self._storage_unit._fill_data(name, index[ndims:], dest[(0,)*ndims])  # pylint: disable=protected-access
+        slicer = (0,)*ndims+(Ellipsis, )
+        self._storage_unit._fill_data(name, index[ndims:], dest[slicer])  # pylint: disable=protected-access
+        return dest
 
 
 class StorageUnitStack(StorageUnitBase):

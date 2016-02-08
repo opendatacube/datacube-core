@@ -8,8 +8,10 @@ import numpy.testing as npt
 import netCDF4
 import pytest
 
+from osgeo import osr
+
 from datacube.model import GeoBox
-from datacube.storage.netcdf_writer import create_netcdf_writer, map_measurement_descriptor_parameters
+from datacube.storage.netcdf_writer import create_netcdf, create_grid_mapping_variable
 
 GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
            'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
@@ -59,108 +61,24 @@ def tmpnetcdf_filename(tmpdir):
 
 
 def test_create_albers_projection_netcdf(tmpnetcdf_filename):
-    affine = Affine(25.0, 0.0, 100000, 0.0, -25, 100000)
-    chunking = [('time', 1), ('y', 100), ('x', 100)]
-
-    build_test_netcdf(tmpnetcdf_filename, affine, ALBERS_PROJ, chunking)
-
-    EXPECTED_VARIABLES = COMMON_VARIABLES + DATA_VARIABLES + PROJECTED_COORDINATES
+    nco = create_netcdf(tmpnetcdf_filename)
+    crs = osr.SpatialReference(ALBERS_PROJ)
+    create_grid_mapping_variable(nco, crs)
+    nco.close()
 
     # Perform some basic checks
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
-        for var in EXPECTED_VARIABLES:
-            assert var in nco.variables
-        for k, v in GLOBAL_ATTRS.items():
-            assert getattr(nco, k) == v
-
-        assert len(nco.variables['time']) == 2
-        assert len(nco.variables['x']) == DATA_WIDTH
-        assert len(nco.variables['y']) == DATA_HEIGHT
-
-        for varname in PROJECTED_COORDINATES:
-            assert nco.variables[varname].standard_name == 'projection_%s_coordinate' % varname
+        assert 'crs' in nco.variables
+        assert nco['crs'].grid_mapping_name == 'albers_conic_equal_area'
 
 
 def test_create_epsg4326_netcdf(tmpnetcdf_filename):
-    X_RES = 1.0 / DATA_WIDTH
-    Y_RES = -1.0 / DATA_HEIGHT
-    affine = Affine(X_RES, 0.0, 151.0, 0.0, Y_RES, -29.0)
-    chunking = [('time', 1), ('latitude', 100), ('longitude', 100)]
-
-    build_test_netcdf(tmpnetcdf_filename, affine, GEO_PROJ, chunking)
-
-    EXPECTED_VARIABLES = COMMON_VARIABLES + DATA_VARIABLES + LAT_LON_COORDINATES
+    nco = create_netcdf(tmpnetcdf_filename)
+    crs = osr.SpatialReference(GEO_PROJ)
+    create_grid_mapping_variable(nco, crs)
+    nco.close()
 
     # Perform some basic checks
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
-        for var in EXPECTED_VARIABLES:
-            assert var in nco.variables
-        for k, v in GLOBAL_ATTRS.items():
-            assert getattr(nco, k) == v
-
-        assert len(nco.variables['time']) == 2
-        assert len(nco.variables['longitude']) == DATA_WIDTH
-        assert len(nco.variables['latitude']) == DATA_HEIGHT
-        npt.assert_almost_equal(nco.variables['longitude'][0], 151 + X_RES / 2)
-        npt.assert_almost_equal(nco.variables['longitude'][-1], 152 - X_RES / 2)
-        npt.assert_almost_equal(nco.variables['latitude'][0], -29 + Y_RES / 2)
-        npt.assert_almost_equal(nco.variables['latitude'][-1], -30 - Y_RES / 2)
-
-        assert nco.variables['B1'].shape == (2, DATA_HEIGHT, DATA_WIDTH)
-
-        # Check GDAL Attributes
-        assert np.allclose(nco.variables['crs'].GeoTransform, affine.to_gdal())
-        assert nco.variables['crs'].spatial_ref == GEO_PROJ
-
-
-def test_extra_measurement_attrs(tmpnetcdf_filename):
-    affine = Affine(0.00025, 0.0, 151.0, 0.0, -0.0005, -29.0)
-    chunking = [('time', 1), ('latitude', 100), ('longitude', 100)]
-
-    def extended_measurement_descriptor(**attrs):
-        if attrs['varname'] == 'B1':
-            attrs['attrs'] = {
-                'wavelength': '55 meters',
-                'colour': 'Blue'
-            }
-        else:
-            attrs['attrs'] = {
-                'wavelength': '65 meters',
-                'colour': 'Green'
-            }
-
-        return attrs
-
-    build_test_netcdf(tmpnetcdf_filename, affine, GEO_PROJ, chunking,
-                      make_measurement_descriptor=extended_measurement_descriptor)
-
-    print(tmpnetcdf_filename)
-    with netCDF4.Dataset(tmpnetcdf_filename) as nco:
-        var = nco.variables['B1']
-        assert var.wavelength == '55 meters'
-        assert var.colour == 'Blue'
-
-        var = nco.variables['B2']
-        assert var.wavelength == '65 meters'
-        assert var.colour == 'Green'
-
-
-def build_test_netcdf(filename, affine, projection, chunking, make_measurement_descriptor=dict):
-    tile_spec = GeoBox(DATA_WIDTH, DATA_HEIGHT, affine, projection)
-
-    dates = [datetime(2008, month, 1) for month in (1, 2)]
-    ops = [(band, time_index) for band in (1, 2) for time_index in (0, 1)]
-
-    ncwriter = create_netcdf_writer(filename, tile_spec)
-    ncwriter.add_global_attributes(GLOBAL_ATTRS)
-    ncwriter.create_time_values(dates)
-
-    for band, time_index in ops:
-        data = np.empty([DATA_HEIGHT, DATA_WIDTH])
-        data[:] = band
-        bandname = 'B%s' % band
-        measurement_descriptor = make_measurement_descriptor(varname=bandname, dtype='int16', nodata=-999)
-
-        var = ncwriter.ensure_variable(measurement_descriptor, chunking)
-        var[time_index] = data
-    ncwriter.close()
+        assert 'crs' in nco.variables
+        assert nco['crs'].grid_mapping_name == 'latitude_longitude'

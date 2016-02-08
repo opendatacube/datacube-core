@@ -174,13 +174,9 @@ class StorageType(object):
         return [res[dim] for dim in self.spatial_dimensions]
 
     @property
-    def pixel_size(self):
-        return [int(size / abs(res)) for size, res in zip(self.tile_size, self.resolution)]
-
-    @property
     def chunking(self):
         chunks = self.definition['chunking']
-        return [(dim, chunks[dim]) for dim in self.definition['dimension_order']]
+        return [chunks[dim] for dim in self.definition['dimension_order']]
 
     def local_uri_to_location_relative_path(self, uri):
         if not uri.startswith(self.location):
@@ -220,39 +216,6 @@ class StorageUnit(object):
     def local_path(self):
         file_uri = self.storage_type.resolve_location(self.path)
         return _uri_to_local_path(file_uri)
-
-    def coordinate_values(self, coord):
-        if coord == 'time':
-            pass
-        return None
-
-    @property
-    def tile_index(self):
-        try:
-            return self.descriptor['tile_index']
-        except KeyError:
-            return [int(min(self.coordinates[dim].begin, self.coordinates[dim].end) // size)
-                    for size, dim in zip(self.storage_type.tile_size, self.storage_type.spatial_dimensions)]
-
-    @property
-    def affine(self):
-        tile_index = self.tile_index
-        tile_res = self.storage_type.resolution
-        tile_size = self.storage_type.tile_size
-        x = (tile_index[0] + (1 if tile_res[0] < 0 else 0)) * tile_size[0]
-        y = (tile_index[1] + (1 if tile_res[1] < 0 else 0)) * tile_size[1]
-        return Affine(tile_res[0], 0.0, x, 0.0, tile_res[1], y)
-
-    @property
-    def geographic_extents(self):
-        width, height = self.storage_type.pixel_size
-        extents = [(0, 0), (0, height), (width, height), (width, 0)]
-        self.affine.itransform(extents)
-        epsg4326 = osr.SpatialReference()
-        epsg4326.ImportFromEPSG(4326)
-        crs = osr.SpatialReference(self.storage_type.crs)
-        transform = osr.CoordinateTransformation(crs, epsg4326)
-        return transform.TransformPoints(extents)
 
     @property
     def coordinates(self):
@@ -492,6 +455,10 @@ class GeoBox(object):
 
     @classmethod
     def from_storage_type(cls, storage_type, tile_index):
+        """
+        :type storage_type: datacube.model.StorageType
+        :rtype: GeoBox
+        """
         tile_size = storage_type.tile_size
         tile_res = storage_type.resolution
         return cls(crs_str=storage_type.crs,

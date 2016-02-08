@@ -10,6 +10,11 @@ import os.path
 from contextlib import contextmanager
 from itertools import groupby
 
+import yaml
+try:
+    from yaml import CSafeDumper as SafeDumper
+except ImportError:
+    from yaml import SafeDumper
 import dateutil.parser
 import numpy
 from osgeo import ogr, osr
@@ -18,9 +23,10 @@ from rasterio.coords import BoundingBox
 from rasterio.warp import RESAMPLING, transform_bounds
 
 from datacube import compat
-from datacube.model import StorageUnit, GeoBox, Coordinate
-from datacube.storage.netcdf_writer import create_netcdf_writer
+from datacube.model import StorageUnit, GeoBox, Coordinate, Variable, _uri_to_local_path
+from datacube.storage import netcdf_writer
 from datacube.storage.utils import namedtuples2dicts, datetime_to_seconds_since_1970
+from datacube.storage.access.core import StorageUnitBase, StorageUnitDimensionProxy, StorageUnitStack
 
 _LOG = logging.getLogger(__name__)
 
@@ -32,6 +38,8 @@ RESAMPLING_METHODS = {
     'lanczos': RESAMPLING.lanczos,
     'average': RESAMPLING.average,
 }
+
+NETCDF_VAR_OPTIONS = {'zlib', 'complevel', 'shuffle', 'fletcher32', 'contiguous'}
 
 
 def tile_datasets_with_storage_type(datasets, storage_type):
@@ -104,6 +112,68 @@ def _poly_from_bounds(left, bottom, right, top, segments=None):
     return poly
 
 
+class WarpingStorageUnit(StorageUnitBase):
+    def __init__(self, datasets, geobox, mapping, fuse_func=None):
+        if not datasets:
+            raise ValueError('Shall not make empty StorageUnit')
+
+        self._datasets = datasets
+        self.geobox = geobox
+        self._varmap = {attrs['varname']: name for name, attrs in mapping.items()}
+        self._mapping = mapping
+        self._fuse_func = fuse_func
+
+        self.coord_data = self.geobox.coordinate_labels
+        self.coordinates = self.geobox.coordinates
+
+        self.variables = {
+            attrs['varname']: Variable(numpy.dtype(attrs['dtype']),
+                                       attrs['nodata'],
+                                       self.geobox.dimensions,
+                                       attrs.get('units', '1'))
+            for name, attrs in mapping.items()
+        }
+        self.variables['extra_metadata'] = Variable(numpy.dtype('S30000'), None, tuple(), None)
+
+    def get_crs(self):
+        return self.geobox.crs_str
+
+    def _get_coord(self, dim):
+        return self.coord_data[dim]
+
+    def _fill_data(self, name, index, dest):
+        if name == 'extra_metadata':
+            docs = yaml.dump_all([doc.metadata_doc for doc in self._datasets], Dumper=SafeDumper)
+            numpy.copyto(dest, docs)
+        else:
+            measurement_id = self._varmap[name]
+            resampling = RESAMPLING_METHODS[self._mapping[measurement_id]['resampling_method']]
+            sources = [DatasetSource(dataset, measurement_id) for dataset in self._datasets]
+            fuse_sources(sources,
+                         dest,
+                         self.geobox[index].affine,
+                         self.get_crs(),
+                         self.variables[name].nodata,
+                         resampling=resampling,
+                         fuse_func=self._fuse_func)
+        return dest
+
+
+def create_access_unit_from_datasets(geobox, datasets, mapping):
+    datasets_grouped_by_time = _group_datasets_by_time(datasets)
+    sus = []
+    for v, group in datasets_grouped_by_time:
+        su = WarpingStorageUnit(group, geobox, mapping)
+        v = datetime_to_seconds_since_1970(v)
+        sus.append(
+            StorageUnitDimensionProxy(su, ('time', v, numpy.dtype(numpy.float64), 'seconds since 1970-01-01 00:00:00')))
+    return StorageUnitStack(sus, 'time')
+
+
+# pylint: disable=too-many-locals
+# TODO: guts of this func need to be refactored to a function
+# TODO: taking access::StorageUnit, and a 'mapping' dict
+# TODO: so it can be used without storage_type and datatsets
 def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output_uri):
     """
     Create storage unit at `tile_index` for datasets using mapping
@@ -112,129 +182,69 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
     :type tile_index: tuple[int, int]
     :type datasets:  list[datacube.model.Dataset]
     :type storage_type:  datacube.model.StorageType
-    :param output_uri: URI specifying filename, must be file:// (for now)
-    :type output_filename:  str
-    :rtype: datacube.model.StorageUnit
+    :rtype: datacube.storage.access.core.StorageUnitBase
     """
-    if not datasets:
-        raise ValueError('Shall not create empty StorageUnit%s %s' % (tile_index, output_uri))
-
     datasets_grouped_by_time = _group_datasets_by_time(datasets)
-    time_values = [time for time, _ in datasets_grouped_by_time]
-
     geobox = GeoBox.from_storage_type(storage_type, tile_index)
+
+    access_unit = StorageUnitStack([
+        StorageUnitDimensionProxy(
+            WarpingStorageUnit(group, geobox, mapping=storage_type.measurements),
+            ('time', datetime_to_seconds_since_1970(v),
+             numpy.dtype(numpy.float64),
+             'seconds since 1970-01-01 00:00:00'))
+        for v, group in datasets_grouped_by_time
+        ], 'time')
+
+    nco = netcdf_writer.create_netcdf(str(_uri_to_local_path(output_uri)))
+    for name, coord in access_unit.coordinates.items():
+        coord_var = netcdf_writer.create_coordinate(nco, name, coord)
+        coord_var[:] = access_unit.get_coord(name)[0]
+    netcdf_writer.create_grid_mapping_variable(nco, access_unit.geobox.crs)
+    netcdf_writer.write_gdal_geobox_attributes(nco, access_unit.geobox)
+    netcdf_writer.write_geographical_extents_attributes(nco, access_unit.geobox)
+
+    for name, var in access_unit.variables.items():
+        for mapping in storage_type.measurements.values():
+            if mapping['varname'] == name:
+                attrs = mapping.get('attrs', {})
+                params = {k: v for k, v in mapping.items() if k in NETCDF_VAR_OPTIONS}
+                chunksizes = storage_type.chunking
+                break
+        else:
+            attrs = {}
+            params = {}
+            #TODO: hack for extra_metadata
+            chunksizes = None
+            _LOG.warning("no mapping found for %s", name)
+
+        data_var = netcdf_writer.create_variable(nco, name, var, chunksizes=chunksizes, **params)
+        data_var[:] = netcdf_writer.netcdfy_data(access_unit.get(name).values)
+
+        # write extra attributes
+        for k, v in attrs.items():
+            setattr(data_var, k, str(v))
+
+    # write global atrributes
+    for name, value in storage_type.global_attributes.items():
+        nco.setncattr(name, str(value))
+    nco.close()
+
     geo_bounds = geobox.geographic_boundingbox
     extents = {
         'geospatial_lat_min': geo_bounds.bottom,
         'geospatial_lat_max': geo_bounds.top,
         'geospatial_lon_min': geo_bounds.left,
         'geospatial_lon_max': geo_bounds.right,
-        'time_min': time_values[0],
-        'time_max': time_values[-1]
+        'time_min': datasets_grouped_by_time[0][0],
+        'time_max': datasets_grouped_by_time[-1][0]
     }
-    coordinates = geobox.coordinates
-    coordinates['time'] = Coordinate(numpy.dtype(numpy.float64),
-                                     datetime_to_seconds_since_1970(time_values[0]),
-                                     datetime_to_seconds_since_1970(time_values[-1]),
-                                     len(time_values),
-                                     'seconds since 1970-01-01 00:00:00')
-
+    coordinates = access_unit.coordinates
     descriptor = dict(coordinates=namedtuples2dicts(coordinates), extents=extents, tile_index=tile_index)
-
-    su = StorageUnit([dataset.id for dataset in datasets],
-                     storage_type,
-                     descriptor,
-                     storage_type.local_uri_to_location_relative_path(output_uri))
-
-    if su.storage_type.driver != 'NetCDF CF':
-        raise ValueError('Storage driver is not supported (yet): %s' % storage_type.driver)
-    write_storage_unit_to_disk(su, datasets)
-
-    return su
-
-
-def write_storage_unit_to_disk(storage_unit, datasets):
-    """
-    :type storage_unit: datacube.model.StorageUnit
-    """
-    data_provider = GroupDatasetsByTimeDataProvider.from_storage_unit(storage_unit, datasets)
-    time_values = data_provider.get_time_values()
-    output_filename = storage_unit.local_path
-
-    if output_filename.exists():
-        raise RuntimeError('file already exists: %s' % output_filename)
-
-    _LOG.info("Creating Storage Unit %s", output_filename)
-
-    tmpfile, tmpfilename = tempfile.mkstemp(dir=str(output_filename.parent))
-    try:
-        with create_netcdf_writer(tmpfilename, data_provider.geobox) as su_writer:
-            su_writer.add_global_attributes(storage_unit.storage_type.global_attributes)
-            su_writer.create_time_values(time_values)
-
-            for time_index, docs in data_provider.get_metadata_documents():
-                su_writer.add_source_metadata(time_index, docs)
-
-            for measurement_descriptor, chunking, data in data_provider.get_measurements():
-                output_var = su_writer.ensure_variable(measurement_descriptor, chunking)
-                for time_index, buffer_ in enumerate(data):
-                    output_var[time_index] = buffer_
-
-        os.close(tmpfile)
-        os.rename(tmpfilename, str(output_filename))
-    finally:
-        try:
-            os.unlink(tmpfilename)
-        except OSError:
-            pass
-
-
-class GroupDatasetsByTimeDataProvider(object):
-    """
-    :type storage_type: datacube.model.StorageType
-    :type geobox: datacube.model.GeoBox
-    """
-    def __init__(self, datasets, tile_index, storage_type):
-        self.datasets_grouped_by_time = _group_datasets_by_time(datasets)
-        self._warn_if_mosaiced_datasets(tile_index)
-        self.geobox = GeoBox.from_storage_type(storage_type, tile_index)
-        self.storage_type = storage_type
-
-    @classmethod
-    def from_storage_unit(cls, storage_unit, datasets):
-        return cls(datasets, storage_unit.tile_index, storage_unit.storage_type)
-
-    def _warn_if_mosaiced_datasets(self, tile_index):
-        for time, group in self.datasets_grouped_by_time:
-            if len(group) > 1:
-                _LOG.warning("Mosaicing multiple datasets %s@%s: %s", tile_index, time, group)
-
-    def get_time_values(self):
-        return [time for time, _ in self.datasets_grouped_by_time]
-
-    def get_metadata_documents(self):
-        for time_index, (_, group) in enumerate(self.datasets_grouped_by_time):
-            yield time_index, (dataset.metadata_doc for dataset in group)
-
-    def _fused_data(self, measurement_id):
-        measurement_descriptor = self.storage_type.measurements[measurement_id]
-        shape = self.geobox.shape
-        buffer_ = numpy.empty(shape, dtype=measurement_descriptor['dtype'])
-        nodata = measurement_descriptor.get('nodata')
-        for time_index, (_, time_group) in enumerate(self.datasets_grouped_by_time):
-            buffer_ = fuse_sources([DatasetSource(dataset, measurement_id) for dataset in time_group],
-                                   buffer_,
-                                   self.geobox.affine,
-                                   self.geobox.crs_str,
-                                   nodata,
-                                   resampling=_rasterio_resampling_method(measurement_descriptor))
-            yield buffer_
-
-    def get_measurements(self):
-        measurements = self.storage_type.measurements
-        chunking = self.storage_type.chunking
-        for measurement_id, measurement_descriptor in measurements.items():
-            yield measurement_descriptor, chunking, self._fused_data(measurement_id)
+    return StorageUnit([dataset.id for dataset in datasets],
+                       storage_type,
+                       descriptor,
+                       storage_type.local_uri_to_location_relative_path(output_uri))
 
 
 def _group_datasets_by_time(datasets):

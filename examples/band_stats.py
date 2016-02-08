@@ -96,45 +96,6 @@ def get_data(datasets,
     return result
 
 
-class NoSpoonStorageUnit(StorageUnitBase):
-    def __init__(self, datasets, geobox, mapping, fuse_func=None):
-        if not datasets:
-            raise ValueError('Shall not make empty StorageUnit')
-
-        self._datasets = datasets
-        self.geobox = geobox
-        self._varmap = {attrs['varname']: name for name, attrs in mapping.items()}
-        self._mapping = mapping
-        self._fuse_func = fuse_func
-
-        self.coord_data = self.geobox.coordinate_labels
-        self.coordinates = self.geobox.coordinates
-
-        self.variables = {
-            attrs['varname']: Variable(numpy.dtype(attrs['dtype']),
-                                       attrs['nodata'],
-                                       self.geobox.dimensions,
-                                       attrs.get('units', '1'))
-            for name, attrs in mapping.items()
-        }
-
-    def get_crs(self):
-        return self.geobox.crs_str
-
-    def _get_coord(self, dim):
-        return self.coord_data[dim]
-
-    def _fill_data(self, name, index, dest):
-        measurement_id = self._varmap[name]
-        resampling = RESAMPLING_METHODS[self._mapping[measurement_id]['resampling_method']]
-        sources = [DatasetSource(dataset, measurement_id) for dataset in self._datasets]
-        fuse_sources(sources,
-                     dest,
-                     self.geobox[index].affine,
-                     self.get_crs(),
-                     self.variables[name].nodata,
-                     resampling=resampling,
-                     fuse_func=self._fuse_func)
 
 
 def do_no_spoon(stats, bands, query, index):
@@ -153,37 +114,38 @@ def do_no_spoon(stats, bands, query, index):
                     0.0, resolution[1], bounds.top if resolution[1] < 0 else bounds.bottom)
     geobox = GeoBox(width, height, affine, crs)
 
-    sus = []
-    for v, group in groups:
-        su = NoSpoonStorageUnit(group,
-                                geobox,
-                                mapping={
-                                    '10': {'varname': 'blue',
-                                           'dtype': numpy.int16,
-                                           'nodata': -999,
-                                           'resampling_method': 'cubic'}
-                                })
-        v = datetime_to_seconds_since_1970(v)
-        sus.append(
-            StorageUnitDimensionProxy(su, ('time', v, numpy.dtype(numpy.float64), 'seconds since 1970-01-01 00:00:00')))
-    data = StorageUnitStack(sus, 'time')
+    # sus = []
+    # for v, group in groups:
+    #     su = NoSpoonStorageUnit(group,
+    #                             geobox,
+    #                             mapping={
+    #                                 '10': {'varname': 'blue',
+    #                                        'dtype': numpy.int16,
+    #                                        'nodata': -999,
+    #                                        'resampling_method': 'cubic'}
+    #                             })
+    #     v = datetime_to_seconds_since_1970(v)
+    #     sus.append(
+    #         StorageUnitDimensionProxy(su, ('time', v, numpy.dtype(numpy.float64),
+    # 'seconds since 1970-01-01 00:00:00')))
+    # data = StorageUnitStack(sus, 'time')
+    #
+    # nco = netCDF4.Dataset('test.nc', 'w')
+    # for name, coord in data.coordinates.items():
+    #     coord_var = netcdf_writer.create_coordinate(nco, name, coord)
+    #     coord_var[:] = data.get_coord(name)[0]
+    # netcdf_writer.create_grid_mapping_variable(nco, geobox.crs)
+    # netcdf_writer.write_gdal_geobox_attributes(nco, geobox)
+    # netcdf_writer.write_geographical_extents_attributes(nco, geobox)
+    #
+    # for name, var in data.variables.items():
+    #     data_var = netcdf_writer.create_variable(nco, name, var)
+    #     data_var.grid_mapping = 'crs'
+    #     data_var[:] = data.get(name).values
+    #
+    # nco.close()
 
-    nco = netCDF4.Dataset('test.nc', 'w')
-    for name, coord in data.coordinates.items():
-        coord_var = netcdf_writer.create_coordinate(nco, name, coord)
-        coord_var[:] = data.get_coord(name)[0]
-    netcdf_writer.create_grid_mapping_variable(nco, geobox.crs)
-    netcdf_writer.write_gdal_geobox_attributes(nco, geobox)
-    netcdf_writer.write_geographical_extents_attributes(nco, geobox)
-
-    for name, var in data.variables.items():
-        data_var = netcdf_writer.create_variable(nco, name, var)
-        data_var.grid_mapping = 'crs'
-        data_var[:] = data.get(name).values
-
-    nco.close()
-
-    return data
+    # return data
 
 
 def get_descriptors(index, *query):
