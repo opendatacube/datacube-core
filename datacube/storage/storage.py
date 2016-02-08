@@ -143,7 +143,7 @@ class WarpingStorageUnit(StorageUnitBase):
 
     def _fill_data(self, name, index, dest):
         if name == 'extra_metadata':
-            docs = yaml.dump_all([doc.metadata_doc for doc in self._datasets], Dumper=SafeDumper)
+            docs = yaml.dump_all([doc.metadata_doc for doc in self._datasets], Dumper=SafeDumper, encoding='utf-8')
             numpy.copyto(dest, docs)
         else:
             measurement_id = self._varmap[name]
