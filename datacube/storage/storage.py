@@ -159,10 +159,43 @@ class WarpingStorageUnit(StorageUnitBase):
         return dest
 
 
+# TODO: global_attributes and variable_attributes should be members of access_unit
+def write_access_unit_to_netcdf(access_unit, global_attributes, variable_attributes, variable_params, filename):
+    """
+    Write access.StorageUnit to NetCDF4.
+    :param access_unit:
+    :param global_attributes: key value pairs to write as global attributes
+    :param variable_attributes: mapping of variable name to key-value pairs
+    :param variable_params: mapping of variable name to netcdf variable creation params
+    :param filename: output filename
+    :return:
+
+    :type access_unit: datacube.storage.access.StorageUnitBase
+    """
+    nco = netcdf_writer.create_netcdf(filename)
+    for name, coord in access_unit.coordinates.items():
+        coord_var = netcdf_writer.create_coordinate(nco, name, coord)
+        coord_var[:] = access_unit.get_coord(name)[0]
+    netcdf_writer.create_grid_mapping_variable(nco, access_unit.geobox.crs)
+    netcdf_writer.write_gdal_geobox_attributes(nco, access_unit.geobox)
+    netcdf_writer.write_geographical_extents_attributes(nco, access_unit.geobox)
+
+    for name, variable in access_unit.variables.items():
+        data_var = netcdf_writer.create_variable(nco, name, variable, **variable_params.get(name, {}))
+        data_var[:] = netcdf_writer.netcdfy_data(access_unit.get(name).values)
+
+        # write extra attributes
+        for key, value in variable_attributes.get(name, {}).items():
+            setattr(data_var, key, value)
+
+    # write global atrributes
+    for key, value in global_attributes.items():
+        nco.setncattr(key, value)
+    nco.close()
+
+
 # pylint: disable=too-many-locals
-# TODO: guts of this func need to be refactored to a function
-# TODO: taking access::StorageUnit, and a 'mapping' dict
-# TODO: so it can be used without storage_type and datatsets
+# TODO: only 18/16 over :P... getting there
 def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output_uri):
     """
     Create storage unit at `tile_index` for datasets using mapping
@@ -185,39 +218,19 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
         for time, group in datasets_grouped_by_time
         ], 'time')
 
-    nco = netcdf_writer.create_netcdf(str(_uri_to_local_path(output_uri)))
-    for name, coord in access_unit.coordinates.items():
-        coord_var = netcdf_writer.create_coordinate(nco, name, coord)
-        coord_var[:] = access_unit.get_coord(name)[0]
-    netcdf_writer.create_grid_mapping_variable(nco, access_unit.geobox.crs)
-    netcdf_writer.write_gdal_geobox_attributes(nco, access_unit.geobox)
-    netcdf_writer.write_geographical_extents_attributes(nco, access_unit.geobox)
+    variable_attributes = {}
+    variable_params = {}
+    for mapping in storage_type.measurements.values():
+        varname = mapping['varname']
+        variable_attributes[varname] = mapping.get('attrs', {})
+        variable_params[varname] = {k: v for k, v in mapping.items() if k in NETCDF_VAR_OPTIONS}
+        variable_params[varname]['chunksizes'] = storage_type.chunking
 
-    for name, var in access_unit.variables.items():
-        for mapping in storage_type.measurements.values():
-            if mapping['varname'] == name:
-                attrs = mapping.get('attrs', {})
-                params = {k: v for k, v in mapping.items() if k in NETCDF_VAR_OPTIONS}
-                chunksizes = storage_type.chunking
-                break
-        else:
-            attrs = {}
-            params = {}
-            #TODO: hack for extra_metadata
-            chunksizes = None
-            _LOG.warning("no mapping found for %s", name)
-
-        data_var = netcdf_writer.create_variable(nco, name, var, chunksizes=chunksizes, **params)
-        data_var[:] = netcdf_writer.netcdfy_data(access_unit.get(name).values)
-
-        # write extra attributes
-        for k, v in attrs.items():
-            setattr(data_var, k, str(v))
-
-    # write global atrributes
-    for name, value in storage_type.global_attributes.items():
-        nco.setncattr(name, str(value))
-    nco.close()
+    write_access_unit_to_netcdf(access_unit,
+                                storage_type.global_attributes,
+                                variable_attributes,
+                                variable_params,
+                                str(_uri_to_local_path(output_uri)))
 
     geo_bounds = geobox.geographic_boundingbox
     extents = {
