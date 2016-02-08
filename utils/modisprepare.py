@@ -54,6 +54,9 @@ def fill_image_data(doc, granule_path):
         }
     del gran_file
 
+    if not format_:
+        raise RuntimeError('empty dataset')
+
     doc['image'] = {'bands': bands}
     doc['format'] = {'name': format_}
     doc['grid_spatial'] = {
@@ -127,8 +130,11 @@ def main(datasets):
 
         documents = []
         for path in paths:
-            logging.info("Processing %s", path)
-            documents += prepare_dataset(path)
+            logging.info("Processing %s...", path)
+            try:
+                documents += prepare_dataset(path)
+            except Exception as e:
+                logging.info("Failed: %s", e)
 
         if documents:
             yaml_path = str(path.parent.joinpath('agdc-metadata.yaml'))
