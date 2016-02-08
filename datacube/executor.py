@@ -19,15 +19,29 @@ class SerialExecutor(object):
     map = map
 
 
+def _get_multiprocessing_executor(workers):
+    from multiprocessing import Pool
+    return Pool()
+
+
+def _get_ipyparallel_executor(workers):
+    try:
+        import ipyparallel
+    except ImportError:
+        return None
+    try:
+        rc = ipyparallel.Client()
+    except (IOError, ipyparallel.TimeoutError):
+        return None
+    return rc.load_balanced_view()
+
+
 def get_executor(workers=None):
     if not workers:
         return SerialExecutor()
 
-    try:
-        import ipyparallel
-        rc = ipyparallel.Client()
-        return rc.load_balanced_view()
+    executor = _get_ipyparallel_executor(workers)
+    if executor:
+        return executor
 
-    except (ImportError, IOError, ipyparallel.TimeoutError):
-        from multiprocessing import Pool
-        return Pool()
+    return _get_multiprocessing_executor(workers)
