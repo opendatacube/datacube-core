@@ -159,17 +159,6 @@ class WarpingStorageUnit(StorageUnitBase):
         return dest
 
 
-def create_access_unit_from_datasets(geobox, datasets, mapping):
-    datasets_grouped_by_time = _group_datasets_by_time(datasets)
-    sus = []
-    for v, group in datasets_grouped_by_time:
-        su = WarpingStorageUnit(group, geobox, mapping)
-        v = datetime_to_seconds_since_1970(v)
-        sus.append(
-            StorageUnitDimensionProxy(su, ('time', v, numpy.dtype(numpy.float64), 'seconds since 1970-01-01 00:00:00')))
-    return StorageUnitStack(sus, 'time')
-
-
 # pylint: disable=too-many-locals
 # TODO: guts of this func need to be refactored to a function
 # TODO: taking access::StorageUnit, and a 'mapping' dict
@@ -190,10 +179,10 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
     access_unit = StorageUnitStack([
         StorageUnitDimensionProxy(
             WarpingStorageUnit(group, geobox, mapping=storage_type.measurements),
-            ('time', datetime_to_seconds_since_1970(v),
+            ('time', datetime_to_seconds_since_1970(time),
              numpy.dtype(numpy.float64),
              'seconds since 1970-01-01 00:00:00'))
-        for v, group in datasets_grouped_by_time
+        for time, group in datasets_grouped_by_time
         ], 'time')
 
     nco = netcdf_writer.create_netcdf(str(_uri_to_local_path(output_uri)))
