@@ -23,3 +23,9 @@ def example_gdal_path(request):
 @pytest.fixture
 def example_netcdf_path(request):
     return str(request.fspath.dirpath('data/sample_tile.nc'))
+
+
+@pytest.fixture
+def tmpnetcdf_filename(tmpdir):
+    filename = str(tmpdir.join('testfile_np.nc'))
+    return filename

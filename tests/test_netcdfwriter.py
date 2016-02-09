@@ -1,17 +1,14 @@
 from __future__ import print_function, absolute_import
 
-from datetime import datetime
-
-from affine import Affine
-import numpy as np
-import numpy.testing as npt
+import numpy
 import netCDF4
 import pytest
 
 from osgeo import osr
 
-from datacube.model import GeoBox
-from datacube.storage.netcdf_writer import create_netcdf, create_grid_mapping_variable
+from datacube.model import Variable, Coordinate
+from datacube.storage.netcdf_writer import create_netcdf, create_coordinate, create_variable, netcdfy_data, \
+    create_grid_mapping_variable
 
 GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
            'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
@@ -53,13 +50,6 @@ DATA_WIDTH = 400
 DATA_HEIGHT = 200
 
 
-@pytest.fixture
-def tmpnetcdf_filename(tmpdir):
-    filename = str(tmpdir.join('testfile_np.nc'))
-
-    return filename
-
-
 def test_create_albers_projection_netcdf(tmpnetcdf_filename):
     nco = create_netcdf(tmpnetcdf_filename)
     crs = osr.SpatialReference(ALBERS_PROJ)
@@ -82,3 +72,20 @@ def test_create_epsg4326_netcdf(tmpnetcdf_filename):
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
         assert 'crs' in nco.variables
         assert nco['crs'].grid_mapping_name == 'latitude_longitude'
+
+
+def test_create_string_variable(tmpnetcdf_filename):
+    nco = create_netcdf(tmpnetcdf_filename)
+    coord = create_coordinate(nco, 'greg', Coordinate(numpy.dtype('int'), 0, 0, 3, 'cubic gregs'))
+    coord[:] = [1, 3, 9]
+
+    dtype = numpy.dtype('S100')
+    data = numpy.array(["test-str1", "test-str2", "test-str3"], dtype=dtype)
+
+    var = create_variable(nco, 'str_var', Variable(dtype, None, ('greg', ), None))
+    var[:] = netcdfy_data(data)
+    nco.close()
+
+    with netCDF4.Dataset(tmpnetcdf_filename) as nco:
+        assert 'str_var' in nco.variables
+        assert netCDF4.chartostring(nco['str_var'][0]) == data[0]

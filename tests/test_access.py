@@ -18,7 +18,6 @@ from __future__ import absolute_import, division, print_function
 import os
 import numpy
 
-from datacube.storage.access.core import Coordinate, Variable
 from datacube.storage.access.core import StorageUnitVariableProxy, StorageUnitDimensionProxy, StorageUnitStack
 from datacube.storage.access.backends import FauxStorageUnit
 from datacube.model import Range, Coordinate, Variable, CoordinateValue
