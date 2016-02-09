@@ -58,12 +58,12 @@ def test_write_access_unit_to_netcdf(tmpnetcdf_filename):
     affine = Affine.scale(0.1, 0.1)*Affine.translation(20, 30)
     geobox = GeoBox(100, 100, affine, GEO_PROJ)
     ds1 = GeoBoxStorageUnit(geobox,
-                            {'time': Coordinate(numpy.dtype(numpy.int), 100, 400, 4, 'seconds')},
+                            {'time': Coordinate(numpy.dtype(numpy.int), begin=100, end=400, length=4, units='seconds')},
                             {
                                 'B10': Variable(numpy.dtype(numpy.float32),
-                                                numpy.nan,
-                                                ('time', 'latitude', 'longitude'),
-                                                '1')
+                                                nodata=numpy.nan,
+                                                dimensions=('time', 'latitude', 'longitude'),
+                                                units='1')
                             })
     write_access_unit_to_netcdf(ds1, {}, {}, {}, tmpnetcdf_filename)
 
