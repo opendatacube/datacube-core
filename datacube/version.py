@@ -22,6 +22,8 @@ import re
 from os.path import dirname, isdir, join, exists
 from subprocess import CalledProcessError, check_output
 
+import pkg_resources
+
 PREFIX = 'datacube-'
 
 GIT_TAG_PATTERN = re.compile(r'\btag: %s([0-9][^,]*)\b' % PREFIX)
@@ -71,7 +73,12 @@ def get_version():
             # We can't get the last tagged version from git-archive, so we'll use 0.0.0.
             version = '0.0.0+' + GIT_ARCHIVE_COMMIT_HASH
     else:
-        raise RuntimeError('Unknown version: Not a git repository, a python dist tarball or a git-created archive.')
+        try:
+            version = pkg_resources.get_distribution('datacube').version
+        except pkg_resources.DistributionNotFound:
+            raise RuntimeError('Unknown version: Package is not installed, not a '
+                               'git repository, a python dist tarball'
+                               'or a git-created archive.')
 
     return version
 
