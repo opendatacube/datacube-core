@@ -230,9 +230,9 @@ class StorageUnitStack(StorageUnitBase):
         """
         for a, b in zip(storage_units[:-1], storage_units[1:]):
             if a.coordinates[stack_dim].begin >= b.coordinates[stack_dim].begin:
-                raise RuntimeError("source storage units must be sorted")
+                raise ValueError("source storage units must be sorted")
             if a.coordinates[stack_dim].end > b.coordinates[stack_dim].begin:
-                raise RuntimeError("overlapping coordinates are not supported yet")
+                raise ValueError("overlapping coordinates are not supported yet")
         StorageUnitStack.check_consistent(storage_units, stack_dim)
 
         self._stack_dim = stack_dim

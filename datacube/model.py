@@ -5,10 +5,10 @@ Core classes used across modules.
 from __future__ import absolute_import, division
 
 import logging
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 import os
-from pathlib import Path
 
+from pathlib import Path
 import numpy
 import dateutil.parser
 from affine import Affine
@@ -17,13 +17,17 @@ from rasterio.coords import BoundingBox
 
 from datacube import compat
 from datacube.compat import parse_url
+from datacube.utils import datetime_to_seconds_since_1970
 
 _LOG = logging.getLogger(__name__)
 
 Range = namedtuple('Range', ('begin', 'end'))
 Coordinate = namedtuple('Coordinate', ('dtype', 'begin', 'end', 'length', 'units'))
-CoordinateValue = namedtuple('CoordinateValue', ('name', 'value', 'dtype', 'units'))
+CoordinateValue = namedtuple('CoordinateValue', ('dimension_name', 'value', 'dtype', 'units'))
 Variable = namedtuple('Variable', ('dtype', 'nodata', 'dimensions', 'units'))
+Measurement = namedtuple('Measurement', ('name', 'dtype', 'nodata', 'resampling_method'))
+
+NETCDF_VAR_OPTIONS = {'zlib', 'complevel', 'shuffle', 'fletcher32', 'contiguous'}
 
 
 def _uri_to_local_path(local_uri):
@@ -66,10 +70,10 @@ class DatasetMatcher(object):
         self.metadata = metadata
 
     def __repr__(self):
-        return "DatasetMatcher(metadata={!r})".format(self.metadata)
+        return "{}(metadata={!r})".format(self.__class__.__name__, self.metadata)
 
 
-class StorageType(object):
+class StorageType(object):  # pylint: disable=too-many-public-methods
     def __init__(self, document, id_=None):
         # Database primary key
         #: :type: int
@@ -125,6 +129,23 @@ class StorageType(object):
     @property
     def global_attributes(self):
         return self.document.get('global_attributes', {})
+
+    @property
+    def variable_params(self):
+        variable_params = defaultdict(dict)
+        for mapping in self.measurements.values():
+            varname = mapping['varname']
+            variable_params[varname] = {k: v for k, v in mapping.items() if k in NETCDF_VAR_OPTIONS}
+            variable_params[varname]['chunksizes'] = self.chunking
+        return variable_params
+
+    @property
+    def variable_attributes(self):
+        variable_attributes = defaultdict(dict)
+        for mapping in self.measurements.values():
+            varname = mapping['varname']
+            variable_attributes[varname] = mapping.get('attrs', {})
+        return variable_attributes
 
     @property
     def filename_format(self):
@@ -189,11 +210,14 @@ class StorageType(object):
         return '/'.join(s.strip('/') for s in (self.location, offset))
 
     def __repr__(self):
-        return 'StorageType<name={!r}, id_={!r}>'.format(self.name, self.id_)
+        return '{}(name={!r}, id_={!r})'.format(self.__class__.__name__, self.name, self.id_)
 
 
 class StorageUnit(object):
-    def __init__(self, dataset_ids, storage_type, descriptor, path, id_=None):
+    def __init__(self, dataset_ids, storage_type, descriptor, relative_path=None, output_uri=None, id_=None):
+        if relative_path and output_uri:
+            raise ValueError('only specify one of `relative_path` or `output_uri`')
+
         #: :type: list[uuid.UUID]
         self.dataset_ids = dataset_ids
 
@@ -202,12 +226,19 @@ class StorageUnit(object):
 
         # A descriptor for this segment. (parameters etc)
         # A 'document' understandable by the storage driver. Properties inside may be queried by users.
+        #
+        # Contains 'coordinates', and 'extents'
+        # 'extents' contains 'time_min', 'time_max', 'geospatial_lat_min', 'geospatial_lon_max', ...
         #: :type: dict
         self.descriptor = descriptor
 
         # An offset from the location defined in the storage type.
         #: :type: pathlib.Path
-        self.path = path
+        if relative_path:
+            self.path = relative_path
+        else:
+            self.path = storage_type.local_uri_to_location_relative_path(output_uri)
+
 
         # Database primary key
         #: :type: int
@@ -232,8 +263,9 @@ class StorageUnit(object):
         return "StorageUnit <type={m.name}, path={path}>".format(path=self.path, m=self.storage_type)
 
     def __repr__(self):
-        return "StorageUnit({!r}, {!r}, {!r}, {!r}, {!r})".format(self.dataset_ids, self.storage_type,
-                                                                  self.descriptor, self.path, self.id_)
+        return "{}({!r}, {!r}, {!r}, {!r}, {!r})".format(self.__class__.__name__, self.dataset_ids,
+                                                         self.storage_type, self.descriptor,
+                                                         self.path, self.id_)
 
 
 class Dataset(object):
@@ -639,3 +671,10 @@ class _DocReader(object):
                 )
             )
         return _set_doc_offset(offset, self._doc, val)
+
+
+def time_coordinate_value(time):
+    return CoordinateValue(dimension_name='time',
+                           value=datetime_to_seconds_since_1970(time),
+                           dtype=numpy.dtype(numpy.float64),
+                           units='seconds since 1970-01-01 00:00:00')

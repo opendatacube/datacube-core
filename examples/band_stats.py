@@ -23,18 +23,14 @@ from itertools import groupby
 import click
 import numpy
 from affine import Affine
-import netCDF4
 import rasterio
 from rasterio.coords import BoundingBox
 
 from datacube.api import make_storage_unit
 from datacube.index import index_connect
-from datacube.model import Variable, GeoBox
-from datacube.storage.access.core import StorageUnitBase, StorageUnitStack, StorageUnitDimensionProxy,\
-    StorageUnitVariableProxy
-from datacube.storage.storage import fuse_sources, DatasetSource, RESAMPLING, RESAMPLING_METHODS
-from datacube.storage.utils import datetime_to_seconds_since_1970
-from datacube.storage import netcdf_writer
+from datacube.model import GeoBox
+from datacube.storage.access.core import StorageUnitStack, StorageUnitVariableProxy
+from datacube.storage.storage import fuse_sources, DatasetSource, RESAMPLING
 from datacube.ui import parse_expressions
 
 

@@ -14,7 +14,7 @@ from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS
 from datacube.ingest import find_storage_types_for_datasets
 from datacube.storage.access.backends import NetCDF4StorageUnit
-from datacube.storage.utils import namedtuples2dicts
+from datacube.utils import namedtuples2dicts
 
 
 @click.command(help="Ingest storage units into the Data Cube.", context_settings=CLICK_SETTINGS)
@@ -94,7 +94,7 @@ def create_in_memory_storage_unit(datasets, storage_type, filename):
     return StorageUnit([dataset.id for dataset in datasets],
                        storage_type,
                        su_descriptor,
-                       storage_type.local_path_to_location_offset('file://' + filename))
+                       relative_path=storage_type.local_path_to_location_offset('file://' + filename))
 
 
 def add_storage_unit_to_index(storage_unit, index):

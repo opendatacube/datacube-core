@@ -5,13 +5,12 @@ Create/store dataset data into storage units based on the provided storage mappi
 from __future__ import absolute_import, division, print_function
 
 import logging
-import tempfile
-import os.path
 from collections import defaultdict
 from contextlib import contextmanager
 from itertools import groupby
 
 import yaml
+
 try:
     from yaml import CSafeDumper as SafeDumper
 except ImportError:
@@ -24,9 +23,9 @@ from rasterio.coords import BoundingBox
 from rasterio.warp import RESAMPLING, transform_bounds
 
 from datacube import compat
-from datacube.model import StorageUnit, GeoBox, Coordinate, Variable, _uri_to_local_path, CoordinateValue
+from datacube.model import StorageUnit, GeoBox, Variable, _uri_to_local_path, time_coordinate_value
 from datacube.storage import netcdf_writer
-from datacube.storage.utils import namedtuples2dicts, datetime_to_seconds_since_1970
+from datacube.utils import namedtuples2dicts
 from datacube.storage.access.core import StorageUnitBase, StorageUnitDimensionProxy, StorageUnitStack
 
 _LOG = logging.getLogger(__name__)
@@ -39,8 +38,6 @@ RESAMPLING_METHODS = {
     'lanczos': RESAMPLING.lanczos,
     'average': RESAMPLING.average,
 }
-
-NETCDF_VAR_OPTIONS = {'zlib', 'complevel', 'shuffle', 'fletcher32', 'contiguous'}
 
 
 def tile_datasets_with_storage_type(datasets, storage_type):
@@ -133,7 +130,7 @@ class WarpingStorageUnit(StorageUnitBase):
                                        self.geobox.dimensions,
                                        attrs.get('units', '1'))
             for name, attrs in mapping.items()
-        }
+            }
         self.variables['extra_metadata'] = Variable(numpy.dtype('S30000'), None, tuple(), None)
 
     def get_crs(self):
@@ -182,11 +179,11 @@ def write_access_unit_to_netcdf(access_unit, global_attributes, variable_attribu
     netcdf_writer.write_geographical_extents_attributes(nco, access_unit.geobox)
 
     for name, variable in access_unit.variables.items():
-        data_var = netcdf_writer.create_variable(nco, name, variable, **variable_params.get(name, {}))
+        data_var = netcdf_writer.create_variable(nco, name, variable, **variable_params[name])
         data_var[:] = netcdf_writer.netcdfy_data(access_unit.get(name).values)
 
         # write extra attributes
-        for key, value in variable_attributes.get(name, {}).items():
+        for key, value in variable_attributes[name].items():
             setattr(data_var, key, value)
 
     # write global atrributes
@@ -195,8 +192,6 @@ def write_access_unit_to_netcdf(access_unit, global_attributes, variable_attribu
     nco.close()
 
 
-# pylint: disable=too-many-locals
-# TODO: only 18/16 over :P... getting there
 def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output_uri):
     """
     Create storage unit at `tile_index` for datasets using mapping
@@ -210,28 +205,17 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
     datasets_grouped_by_time = _group_datasets_by_time(datasets)
     geobox = GeoBox.from_storage_type(storage_type, tile_index)
 
-    access_unit = StorageUnitStack([
-        StorageUnitDimensionProxy(
-            WarpingStorageUnit(group, geobox, mapping=storage_type.measurements),
-            CoordinateValue(name='time',
-                            value=datetime_to_seconds_since_1970(time),
-                            dtype=numpy.dtype(numpy.float64),
-                            units='seconds since 1970-01-01 00:00:00'))
-        for time, group in datasets_grouped_by_time
-        ], 'time')
-
-    variable_attributes = {}
-    variable_params = {}
-    for mapping in storage_type.measurements.values():
-        varname = mapping['varname']
-        variable_attributes[varname] = mapping.get('attrs', {})
-        variable_params[varname] = {k: v for k, v in mapping.items() if k in NETCDF_VAR_OPTIONS}
-        variable_params[varname]['chunksizes'] = storage_type.chunking
+    storage_units = [StorageUnitDimensionProxy(
+        WarpingStorageUnit(group, geobox, mapping=storage_type.measurements),
+        time_coordinate_value(time))
+                     for time, group in datasets_grouped_by_time]
+    access_unit = StorageUnitStack(storage_units=storage_units,
+                                   stack_dim='time')
 
     write_access_unit_to_netcdf(access_unit,
                                 storage_type.global_attributes,
-                                variable_attributes,
-                                variable_params,
+                                storage_type.variable_attributes,
+                                storage_type.variable_params,
                                 str(_uri_to_local_path(output_uri)))
 
     geo_bounds = geobox.geographic_boundingbox
@@ -248,7 +232,7 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
     return StorageUnit([dataset.id for dataset in datasets],
                        storage_type,
                        descriptor,
-                       storage_type.local_uri_to_location_relative_path(output_uri))
+                       output_uri=output_uri)
 
 
 def _group_datasets_by_time(datasets):
