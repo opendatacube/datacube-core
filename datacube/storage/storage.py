@@ -126,7 +126,7 @@ class WarpingStorageUnit(StorageUnitBase):
 
         self.variables = {
             attrs['varname']: Variable(numpy.dtype(attrs['dtype']),
-                                       attrs['nodata'],
+                                       attrs.get('nodata', None),
                                        self.geobox.dimensions,
                                        attrs.get('units', '1'))
             for name, attrs in mapping.items()
