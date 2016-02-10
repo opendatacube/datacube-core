@@ -19,6 +19,16 @@ class SerialExecutor(object):
     map = map
 
 
+class DistributedExecutor(object):
+    def __init__(self, executor):
+        self._executor = executor
+
+    def map(self, func, iterable):
+        futures = self._executor.map(func, iterable)
+        for future in futures:
+            yield future.result()
+
+
 def _get_multiprocessing_executor(workers):
     from multiprocessing import Pool
     return Pool()
@@ -36,9 +46,25 @@ def _get_ipyparallel_executor(workers):
     return rc.load_balanced_view()
 
 
-def get_executor(workers=None):
+def _get_distributed_executor(scheduler, workers):
+    try:
+        import distributed
+    except ImportError:
+        return None
+    try:
+        return DistributedExecutor(distributed.Executor(scheduler))
+    except IOError:
+        return None
+
+
+def get_executor(scheduler, workers):
     if not workers:
         return SerialExecutor()
+
+    if scheduler:
+        distributed_exec = _get_distributed_executor(scheduler, workers)
+        if distributed_exec:
+            return distributed_exec
 
     executor = _get_ipyparallel_executor(workers)
     if executor:
