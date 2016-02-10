@@ -26,12 +26,12 @@ Multiple storage type definitions can be used to ingest datasets into different 
 
 For more information see :ref:`storage-type-doc`
 
-:ref:`datacube-config-tool` can be used to add storage type::
+:ref:`datacube-config-tool` can be used to add storage types::
 
-    datacube-config storage add docs/config_samples/ga_landsat_7/ls7_nbar_mapping.yaml
+    datacube-config storage add docs/config_samples/ga_landsat_7/ls7_nbar_mapping.yaml docs/config_samples/ga_landsat_7/ls7_pq_mapping.yaml
 
 Ingestion
 ---------
-:ref:`datacube-ingest-tool` can be used to ingest a dataset::
+:ref:`datacube-ingest-tool` can be used to ingest prepared datasets::
 
-    datacube-ingest -v packages/nbar/LS8_OLITIRS_TNBAR_P54_GALPGS01-002_112_079_20140126
+    datacube-ingest -v packages/nbar/LS8_OLITIRS_TNBAR_P54_GALPGS01-002_112_079_20140126 packages/pq/LS8_OLITIRS_PQ_P55_GAPQ01-002_112_079_20140126
