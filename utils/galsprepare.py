@@ -11,6 +11,7 @@ import re
 from pathlib import Path
 import yaml
 from dateutil import parser
+from datetime import timedelta
 import rasterio.warp
 import click
 from osgeo import osr
@@ -66,12 +67,21 @@ def populate_coord(doc):
     doc['extent']['coord'] = get_coords(proj['geo_ref_points'], proj['spatial_reference'])
 
 
+def crazy_parse(timestr):
+    try:
+        return parser.parse(timestr)
+    except ValueError:
+        if not timestr[-2:] == "60":
+            raise
+        return parser.parse(timestr[:-2]+'00') + timedelta(minutes=1)
+
+
 def prep_dataset(fields, path):
     doc = ElementTree.parse(str(path.joinpath('metadata.xml')))
-    aos = parser.parse(doc.findall("./ACQUISITIONINFORMATION/EVENT/AOS")[0].text)
-    los = parser.parse(doc.findall("./ACQUISITIONINFORMATION/EVENT/LOS")[0].text)
-    start_time = parser.parse(doc.findall("./EXEXTENT/TEMPORALEXTENTFROM")[0].text)
-    end_time = parser.parse(doc.findall("./EXEXTENT/TEMPORALEXTENTTO")[0].text)
+    aos = crazy_parse(doc.findall("./ACQUISITIONINFORMATION/EVENT/AOS")[0].text)
+    los = crazy_parse(doc.findall("./ACQUISITIONINFORMATION/EVENT/LOS")[0].text)
+    start_time = crazy_parse(doc.findall("./EXEXTENT/TEMPORALEXTENTFROM")[0].text)
+    end_time = crazy_parse(doc.findall("./EXEXTENT/TEMPORALEXTENTTO")[0].text)
 
     images = {band_name(im_path): {
         'path': str(im_path)
@@ -131,19 +141,25 @@ def prepare_datasets(nbar_path, pq_path=None, fc_path=None):
             "$"
         ),
         nbar_path.stem).groupdict()
-    nbar = prep_dataset(fields, nbar_path)
 
-    fields.update({'type': 'FC'})
-    fc_path = (fc_path or nbar_path.parent).joinpath(dataset_folder(fields))
-    fc = prep_dataset(fields, fc_path or nbar_path.parent)
+    nbar = prep_dataset(fields, nbar_path)
 
     fields.update({'type': 'PQ', 'level': 'P55'})
     pq_path = (pq_path or nbar_path.parent).joinpath(dataset_folder(fields))
-    pq = prep_dataset(fields, pq_path or nbar_path.parent)
+    if not pq_path.exists():
+        return [(nbar, nbar_path)]
 
+    pq = prep_dataset(fields, pq_path or nbar_path.parent)
     pq['lineage']['source_datasets'] = {
         nbar['id']: nbar
     }
+
+    fields.update({'type': 'FC', 'level': 'P54'})
+    fc_path = (fc_path or nbar_path.parent).joinpath(dataset_folder(fields))
+    if not fc_path.exists():
+        return (nbar, nbar_path), (pq, pq_path)
+
+    fc = prep_dataset(fields, fc_path or nbar_path.parent)
     fc['lineage']['source_datasets'] = {
         nbar['id']: nbar,
         pq['id']: pq
