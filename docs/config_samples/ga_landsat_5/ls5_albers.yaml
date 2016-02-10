@@ -65,31 +65,37 @@ measurements:
       nodata: -999
       resampling_method: cubic
       varname: band_10
+      zlib: True
   '20':
       dtype: int16
       nodata: -999
       resampling_method: cubic
       varname: band_20
+      zlib: True
   '30':
       dtype: int16
       nodata: -999
       resampling_method: cubic
       varname: band_30
+      zlib: True
   '40':
       dtype: int16
       nodata: -999
       resampling_method: cubic
       varname: band_40
+      zlib: True
   '50':
       dtype: int16
       nodata: -999
       resampling_method: cubic
       varname: band_50
+      zlib: True
   '70':
       dtype: int16
       nodata: -999
       resampling_method: cubic
       varname: band_70
+      zlib: True
 
 ---
 
@@ -159,6 +165,7 @@ measurements:
       dtype: int16
       resampling_method: nearest
       varname: band_pixelquality
+      zlib: True
 
 ---
 
@@ -228,18 +235,22 @@ measurements:
       nodata: -999
       resampling_method: cubic
       varname: band_bs
+      zlib: True
   'NPV':
       dtype: int16
       nodata: -999
       resampling_method: cubic
       varname: band_npv
+      zlib: True
   'PV':
       dtype: int16
       nodata: -999
       resampling_method: cubic
       varname: band_pv
+      zlib: True
   'UE':
       dtype: int16
       nodata: -999
       resampling_method: cubic
       varname: band_ue
+      zlib: True
