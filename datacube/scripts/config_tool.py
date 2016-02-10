@@ -93,6 +93,7 @@ def add_storage_types(ctx, index, files):
     for descriptor_path, parsed_doc in _read_docs(files):
         try:
             index.storage.types.add(parsed_doc)
+            echo('Added "%s"' % parsed_doc['name'])
         except KeyError as ke:
             _LOG.exception(ke)
             _LOG.error('Invalid storage type definition: %s', descriptor_path)

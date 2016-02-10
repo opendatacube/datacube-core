@@ -53,7 +53,7 @@ def store_datasets(datasets, index=None, executor=SerialExecutor()):
 
     for storage_type_id, datasets in storage_types.items():
         storage_type = index.storage.types.get(storage_type_id)
-        _LOG.info('Using %s to store %s datasets', storage_type, datasets)
+        _LOG.info('Storing %s datasets using %s', datasets, storage_type)
         storage_units = create_storage_units(datasets, storage_type, executor=executor)
         index.storage.add_many(storage_units)
 
