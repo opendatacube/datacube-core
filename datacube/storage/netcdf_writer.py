@@ -106,19 +106,35 @@ def _create_latlon_grid_mapping_variable(nco, crs):
     return crs_var
 
 
-def _create_projected_grid_mapping_variable(nco, crs):
-    grid_mapping_name = crs.GetAttrValue('PROJECTION').lower()
-
-    if grid_mapping_name != 'albers_conic_equal_area':
-        raise ValueError('{} CRS is not supported'.format(grid_mapping_name))
-
+def _write_albers_params(crs_var, crs):
     # http://spatialreference.org/ref/epsg/gda94-australian-albers/html/
     # http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/cf-conventions.html#appendix-grid-mappings
-    crs_var = nco.createVariable('crs', 'i4')
     crs_var.standard_parallel = (crs.GetProjParm('standard_parallel_1'),
                                  crs.GetProjParm('standard_parallel_2'))
     crs_var.longitude_of_central_meridian = crs.GetProjParm('longitude_of_center')
     crs_var.latitude_of_projection_origin = crs.GetProjParm('latitude_of_center')
+
+
+def _write_sinusoidal_params(crs_var, crs):
+    crs_var.semi_major_axis = crs.GetSemiMajor()
+    crs_var.inverse_flattening = crs.GetInvFlattening()
+    crs_var.longitude_of_central_meridian = crs.GetProjParm('central_meridian')
+
+
+CRS_PARAM_WRITERS = {
+    'albers_conic_equal_area': _write_albers_params,
+    'sinusoidal': _write_sinusoidal_params
+}
+
+
+def _create_projected_grid_mapping_variable(nco, crs):
+    grid_mapping_name = crs.GetAttrValue('PROJECTION').lower()
+    if grid_mapping_name not in CRS_PARAM_WRITERS:
+        raise ValueError('{} CRS is not supported'.format(grid_mapping_name))
+
+    crs_var = nco.createVariable('crs', 'i4')
+    CRS_PARAM_WRITERS[grid_mapping_name](crs_var, crs)
+
     crs_var.false_easting = crs.GetProjParm('false_easting')
     crs_var.false_northing = crs.GetProjParm('false_northing')
     crs_var.grid_mapping_name = grid_mapping_name

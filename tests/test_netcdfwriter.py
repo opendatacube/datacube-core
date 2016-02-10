@@ -39,6 +39,18 @@ ALBERS_PROJ = """PROJCS["GDA94 / Australian Albers",
                         AXIS["Easting",EAST],
                         AXIS["Northing",NORTH]]"""
 
+SINIS_PROJ = """PROJCS["Sinusoidal",
+                        GEOGCS["GCS_Undefined",
+                                DATUM["Undefined",
+                                SPHEROID["User_Defined_Spheroid",6371007.181,0.0]],
+                                PRIMEM["Greenwich",0.0],
+                                UNIT["Degree",0.0174532925199433]],
+                        PROJECTION["Sinusoidal"],
+                        PARAMETER["False_Easting",0.0],
+                        PARAMETER["False_Northing",0.0],
+                        PARAMETER["Central_Meridian",0.0],
+                        UNIT["Meter",1.0]]"""
+
 GLOBAL_ATTRS = {'test_attribute': 'test_value'}
 
 DATA_VARIABLES = ('B1', 'B2')
@@ -56,10 +68,12 @@ def test_create_albers_projection_netcdf(tmpnetcdf_filename):
     create_grid_mapping_variable(nco, crs)
     nco.close()
 
-    # Perform some basic checks
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
         assert 'crs' in nco.variables
         assert nco['crs'].grid_mapping_name == 'albers_conic_equal_area'
+        assert 'standard_parallel' in nco['crs'].ncattrs()
+        assert 'longitude_of_central_meridian' in nco['crs'].ncattrs()
+        assert 'latitude_of_projection_origin' in nco['crs'].ncattrs()
 
 
 def test_create_epsg4326_netcdf(tmpnetcdf_filename):
@@ -68,10 +82,21 @@ def test_create_epsg4326_netcdf(tmpnetcdf_filename):
     create_grid_mapping_variable(nco, crs)
     nco.close()
 
-    # Perform some basic checks
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
         assert 'crs' in nco.variables
         assert nco['crs'].grid_mapping_name == 'latitude_longitude'
+
+
+def test_create_sinus_netcdf(tmpnetcdf_filename):
+    nco = create_netcdf(tmpnetcdf_filename)
+    crs = osr.SpatialReference(SINIS_PROJ)
+    create_grid_mapping_variable(nco, crs)
+    nco.close()
+
+    with netCDF4.Dataset(tmpnetcdf_filename) as nco:
+        assert 'crs' in nco.variables
+        assert nco['crs'].grid_mapping_name == 'sinusoidal'
+        assert 'longitude_of_central_meridian' in nco['crs'].ncattrs()
 
 
 def test_create_string_variable(tmpnetcdf_filename):
