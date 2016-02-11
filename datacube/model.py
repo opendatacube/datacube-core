@@ -255,6 +255,7 @@ class StorageUnit(object):
 
     @property
     def tile_index(self):
+        #: :rtype: tuple[int, int]
         return self.descriptor['tile_index']
 
     @property
@@ -466,7 +467,10 @@ class DatasetOffsets(object):
 
 
 class GeoPolygon(object):
-    def __init__(self, points, crs_str='EPSG:4326'):
+    """
+    Polygon with a CRS
+    """
+    def __init__(self, points, crs_str=None):
         self.points = points
         self.crs_str = crs_str
 
@@ -483,9 +487,16 @@ class GeoPolygon(object):
                            right=max(x for x, y in self.points),
                            top=max(y for x, y in self.points))
 
-    def to_crs(self, crs_str='EPSG:4326'):
+    def to_crs(self, crs_str):
+        """
+        :param crs_str:
+        :return: new GeoPolygon with CRS specified by crs_str
+        """
         crs = osr.SpatialReference()
         crs.SetFromUserInput(crs_str)
+        if self.crs.IsSame(crs):
+            return self
+
         transform = osr.CoordinateTransformation(self.crs, crs)
         return GeoPolygon([p[:2] for p in transform.TransformPoints(self.points)], crs_str)
 
@@ -517,7 +528,6 @@ class GeoBox(object):
         self.width = width
         self.height = height
         self.affine = affine
-        self.crs_str = crs_str
 
         points = [(0, 0), (0, height), (width, height), (width, 0)]
         self.affine.itransform(points)
@@ -554,10 +564,12 @@ class GeoBox(object):
         return self.height, self.width
 
     @property
+    def crs_str(self):
+        return self.extent.crs_str
+
+    @property
     def crs(self):
-        crs = osr.SpatialReference()
-        crs.SetFromUserInput(self.crs_str)
-        return crs
+        return self.extent.crs
 
     @property
     def dimensions(self):

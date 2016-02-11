@@ -207,7 +207,7 @@ def write_access_unit_to_netcdf(access_unit, global_attributes, variable_attribu
 
 
 def _accesss_unit_descriptor(access_unit, **stuff):
-    geo_bounds = access_unit.geobox.geographic_extent.boundingbox
+    geo_bounds = access_unit.extent.to_crs('EPSG:4326').boundingbox
     extents = {
         'geospatial_lat_min': geo_bounds.bottom,
         'geospatial_lat_max': geo_bounds.top,
