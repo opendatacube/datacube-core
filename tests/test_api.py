@@ -25,7 +25,7 @@ def test_convert_descriptor_query_to_search_query():
     descriptor_query = {
         'dimensions': {
             'latitude': {
-                'range': (-35.5,-36.5),
+                'range': (-35.5, -36.5),
             },
             'longitude': {
                 'range': (148.3, 149.9)
@@ -55,7 +55,7 @@ def test_convert_descriptor_query_to_search_query_with_crs_conversion():
         }
     }
     expected_result = {
-        'lat': Range(-36.67155581104,-35.3276406574),
+        'lat': Range(-36.67155581104, -35.3276406574),
         'lon': Range(148.1454080502, 150.070966205676),
     }
     descriptor_query_dimensions = descriptor_query.get('dimensions', {})
@@ -72,7 +72,7 @@ def test_convert_descriptor_dims_to_selector_dims():
                 'range': (148.3, 149.9),
             },
             'y': {
-                'range': (-35.5,-36.5),
+                'range': (-35.5, -36.5),
             }
         }
     }
@@ -91,4 +91,3 @@ def test_convert_descriptor_dims_to_selector_dims():
     assert isclose(selector_dims['x']['range'][1], storage_selector['x']['range'][1])
     assert isclose(selector_dims['y']['range'][0], storage_selector['y']['range'][0])
     assert isclose(selector_dims['y']['range'][1], storage_selector['y']['range'][1])
-
