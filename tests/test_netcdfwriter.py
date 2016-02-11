@@ -62,6 +62,12 @@ DATA_WIDTH = 400
 DATA_HEIGHT = 200
 
 
+def _ensure_spheroid(var):
+    assert 'semi_major_axis' in var.ncattrs()
+    assert 'semi_minor_axis' in var.ncattrs()
+    assert 'inverse_flattening' in var.ncattrs()
+
+
 def test_create_albers_projection_netcdf(tmpnetcdf_filename):
     nco = create_netcdf(tmpnetcdf_filename)
     crs = osr.SpatialReference(ALBERS_PROJ)
@@ -74,6 +80,7 @@ def test_create_albers_projection_netcdf(tmpnetcdf_filename):
         assert 'standard_parallel' in nco['crs'].ncattrs()
         assert 'longitude_of_central_meridian' in nco['crs'].ncattrs()
         assert 'latitude_of_projection_origin' in nco['crs'].ncattrs()
+        _ensure_spheroid(nco['crs'])
 
 
 def test_create_epsg4326_netcdf(tmpnetcdf_filename):
@@ -85,6 +92,7 @@ def test_create_epsg4326_netcdf(tmpnetcdf_filename):
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
         assert 'crs' in nco.variables
         assert nco['crs'].grid_mapping_name == 'latitude_longitude'
+        _ensure_spheroid(nco['crs'])
 
 
 def test_create_sinus_netcdf(tmpnetcdf_filename):
@@ -97,6 +105,7 @@ def test_create_sinus_netcdf(tmpnetcdf_filename):
         assert 'crs' in nco.variables
         assert nco['crs'].grid_mapping_name == 'sinusoidal'
         assert 'longitude_of_central_meridian' in nco['crs'].ncattrs()
+        _ensure_spheroid(nco['crs'])
 
 
 def test_create_string_variable(tmpnetcdf_filename):

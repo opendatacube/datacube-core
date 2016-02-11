@@ -101,9 +101,6 @@ def _create_latlon_grid_mapping_variable(nco, crs):
     crs_var.long_name = crs.GetAttrValue('GEOGCS')  # "Lon/Lat Coords in WGS84"
     crs_var.grid_mapping_name = 'latitude_longitude'
     crs_var.longitude_of_prime_meridian = 0.0
-    crs_var.semi_major_axis = crs.GetSemiMajor()
-    crs_var.inverse_flattening = crs.GetInvFlattening()
-
     return crs_var
 
 
@@ -119,8 +116,6 @@ def _write_albers_params(crs_var, crs):
 
 def _write_sinusoidal_params(crs_var, crs):
     crs_var.grid_mapping_name = 'sinusoidal'
-    crs_var.semi_major_axis = crs.GetSemiMajor()
-    crs_var.inverse_flattening = crs.GetInvFlattening()
     crs_var.longitude_of_central_meridian = crs.GetProjParm('central_meridian')
 
 
@@ -175,6 +170,9 @@ def create_grid_mapping_variable(nco, crs):
         crs_var = _create_projected_grid_mapping_variable(nco, crs)
     else:
         raise ValueError('Unknown CRS')
+    crs_var.semi_major_axis = crs.GetSemiMajor()
+    crs_var.semi_minor_axis = crs.GetSemiMinor()
+    crs_var.inverse_flattening = crs.GetInvFlattening()
     crs_var.crs_wkt = crs.ExportToWkt()
     return crs_var
 
