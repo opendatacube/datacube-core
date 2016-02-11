@@ -89,6 +89,7 @@ def create_variable(nco, name, var, **kwargs):
                                       dimensions=var.dimensions,
                                       fill_value=var.nodata,
                                       **kwargs)
+        data_var.grid_mapping = 'crs'
     if var.units is not None:
         data_var.units = var.units
     data_var.set_auto_maskandscale(False)

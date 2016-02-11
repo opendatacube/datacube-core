@@ -78,10 +78,10 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset)
     for su in (latlon_storageunits[0], albers_storageunits[0]):
         with netCDF4.Dataset(str(su.local_path)) as nco:
             check_data_shape(nco)
+            check_grid_mapping(nco)
             check_cf_compliance(nco)
             check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset)
             check_global_attributes(nco, su.storage_type.global_attributes)
-            check_gdal_attributes(nco)
         check_open_with_xray(su.local_path)
     check_open_with_api(index)
 
@@ -90,6 +90,14 @@ def ensure_dataset_is_indexed(index):
     datasets = index.datasets.search_eager()
     assert len(datasets) == 1
     assert datasets[0].id == EXAMPLE_LS5_DATASET_ID
+
+
+def check_grid_mapping(nco):
+    assert 'grid_mapping' in nco.variables['band_10'].ncattrs()
+    grid_mapping = nco.variables['band_10'].grid_mapping
+    assert grid_mapping in nco.variables
+    assert 'GeoTransform' in nco.variables[grid_mapping].ncattrs()
+    assert 'spatial_ref' in nco.variables[grid_mapping].ncattrs()
 
 
 def check_data_shape(nco):
@@ -118,11 +126,6 @@ def check_cf_compliance(dataset):
 def check_global_attributes(nco, attrs):
     for k, v in attrs.items():
         assert nco.getncattr(k) == v
-
-
-def check_gdal_attributes(nco):
-    assert 'GeoTransform' in nco.ncattrs()
-    assert 'spatial_ref' in nco.ncattrs()
 
 
 def check_dataset_metadata_in_storage_unit(nco, dataset_dir):
