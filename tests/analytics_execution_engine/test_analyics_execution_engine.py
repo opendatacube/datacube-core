@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from os import sys, path
 from pprint import pprint
 from datetime import datetime
+import pytest
 from datacube.analytics.analytics_engine import AnalyticsEngine
 from datacube.execution.execution_engine import ExecutionEngine
 
@@ -14,8 +15,11 @@ from datacube.execution.execution_engine import ExecutionEngine
 # pylint: disable=too-many-public-methods
 #
 
+skipme = pytest.mark.skipif(True, reason="BADF00D")
 
-def _test_1():
+
+@skipme
+def test_1():
 
     # Test get data
 
@@ -32,7 +36,8 @@ def _test_1():
     e.execute_plan(a.plan)
 
 
-def _test_2():
+@skipme
+def test_2():
 
     # Test perform ndvi
 
@@ -52,7 +57,8 @@ def _test_2():
     e.execute_plan(a.plan)
 
 
-def _test_3():
+@skipme
+def test_3():
 
     # Test perform ndvi - old version for backwards compatibility
 
@@ -70,7 +76,8 @@ def _test_3():
     e.execute_plan(a.plan)
 
 
-def _test_4():
+@skipme
+def test_4():
 
     # Test median reduction over time
 
@@ -89,7 +96,8 @@ def _test_4():
     e.execute_plan(a.plan)
 
 
-def _test_5():
+@skipme
+def test_5():
 
     # Test median reduction over time - old version for backwards compatibility
 
@@ -108,7 +116,8 @@ def _test_5():
     result = e.execute_plan(a.plan)
 
 
-def _test_6():
+@skipme
+def test_6():
 
     # Test median reduction over lat/long
 
@@ -127,7 +136,8 @@ def _test_6():
     e.execute_plan(a.plan)
 
 
-def _test_7():
+@skipme
+def test_7():
 
     # Test median reduction over lat/long - old version for backwards compatibility
 
@@ -146,7 +156,8 @@ def _test_7():
     result = e.execute_plan(a.plan)
 
 
-def _test_8():
+@skipme
+def test_8():
 
     # Test perform ndvi + mask - old version for backwards compatibility
 
@@ -166,7 +177,8 @@ def _test_8():
     e.execute_plan(a.plan)
 
 
-def _test_9():
+@skipme
+def test_9():
 
     # Test perform ndvi + mask
 
@@ -188,7 +200,8 @@ def _test_9():
     e.execute_plan(a.plan)
 
 
-def _test_10():
+@skipme
+def test_10():
 
     # Test sensor specific bandmath - old version for backwards compatibility
 
@@ -205,7 +218,8 @@ def _test_10():
     result = e.execute_plan(a.plan)
 
 
-def _test_11():
+@skipme
+def test_11():
 
     # Test bit of everything
 
@@ -229,7 +243,8 @@ def _test_11():
     result = e.execute_plan(a.plan)
 
 
-def _test_12():
+@skipme
+def test_12():
 
     # Test median reduction over time - old version for backwards compatibility
 
