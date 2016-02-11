@@ -168,6 +168,10 @@ class StorageType(object):  # pylint: disable=too-many-public-methods
         return str(self.definition['crs']).strip()
 
     @property
+    def dimensions(self):
+        return self.definition['dimension_order']
+
+    @property
     def spatial_dimensions(self):
         """
         Latitude/Longitude or X/Y
@@ -198,7 +202,7 @@ class StorageType(object):  # pylint: disable=too-many-public-methods
     @property
     def chunking(self):
         chunks = self.definition['chunking']
-        return [chunks[dim] for dim in self.definition['dimension_order']]
+        return [chunks[dim] for dim in self.dimensions]
 
     def local_uri_to_location_relative_path(self, uri):
         if not uri.startswith(self.location):
@@ -248,6 +252,10 @@ class StorageUnit(object):
     def local_path(self):
         file_uri = self.storage_type.resolve_location(self.path)
         return _uri_to_local_path(file_uri)
+
+    @property
+    def tile_index(self):
+        return self.descriptor['tile_index']
 
     @property
     def coordinates(self):

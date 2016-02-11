@@ -116,22 +116,21 @@ def make_storage_unit(su, is_diskless=False):
     :param su: database index storage unit
     :param is_diskless: Use a cached object for the source of data, rather than the file
     """
-    storage_type = su.storage_type.definition
-    crs = dict((dim, su.descriptor['coordinates'][dim].get('units', None)) for dim in storage_type['dimension_order'])
+    crs = dict((dim, su.descriptor['coordinates'][dim].get('units', None)) for dim in su.storage_type.dimensions)
     for dim in crs.keys():
         if dim in su.storage_type.spatial_dimensions:
-            crs[dim] = storage_type['crs']
+            crs[dim] = su.storage_type.crs
     coordinates = su.coordinates
     variables = {
         attributes['varname']: Variable(
             dtype=numpy.dtype(attributes['dtype']),
             nodata=attributes.get('nodata', None),
-            dimensions=storage_type['dimension_order'],
+            dimensions=su.storage_type.dimensions,
             units=attributes.get('units', None))
         for attributes in su.storage_type.measurements.values()
     }
     attributes = {
-        'storage_type': storage_type
+        'storage_type': su.storage_type
     }
     attributes.update(su.storage_type.match.metadata)
 
