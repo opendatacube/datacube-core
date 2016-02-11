@@ -90,6 +90,9 @@ class StorageUnitResource(object):
             collection_name = self._config.default_collection_name
 
         collection = self._collection_resource.get_by_name(collection_name)
+        if not collection:
+            raise ValueError('Unknown collection: ' + collection_name)
+
         metadata_type = collection.metadata_type
         val = metadata_type.storage_fields.get(name)
 
