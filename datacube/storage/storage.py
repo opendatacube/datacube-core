@@ -254,6 +254,62 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
                        output_uri=output_uri)
 
 
+def storage_unit_to_access_unit(storage_unit):
+    """
+    :type storage_units: datacube.model.StorageUnit
+    :rtype: datacube.storage.access.core.StorageUnitBase
+    """
+    coordinates = storage_unit.coordinates
+    variables = {
+        attributes['varname']: Variable(
+            dtype=numpy.dtype(attributes['dtype']),
+            nodata=attributes.get('nodata', None),
+            dimensions=storage_unit.storage_type.dimensions,
+            units=attributes.get('units', None))
+        for attributes in storage_unit.storage_type.measurements.values()
+    }
+    if storage_unit.storage_type.driver == 'NetCDF CF':
+        variables['extra_metadata'] = Variable(numpy.dtype('S30000'), None, ('time',), None)
+        return NetCDF4StorageUnit(storage_unit.local_path, coordinates=coordinates, variables=variables)
+
+    if storage_unit.storage_type.driver == 'GeoTiff':
+        result = GeoTifStorageUnit(storage_unit.local_path, coordinates=coordinates, variables=variables)
+        time = datetime.datetime.strptime(storage_unit.descriptor['extents']['time_min'], '%Y-%m-%dT%H:%M:%S.%f')
+        return StorageUnitDimensionProxy(result, time_coordinate_value(time))
+
+    raise RuntimeError('unsupported storage unit access driver %s' % storage_unit.storage_type.driver)
+
+
+def stack_storage_units(storage_units, output_uri):
+    """
+    :type storage_units: list[datacube.model.StorageUnit]
+    :return:
+    """
+    # TODO: check same storage_type
+    # TODO: check same time index
+
+    tile_index = storage_units[0].tile_index
+    storage_type = storage_units[0].storage_type
+    access_units = [storage_unit_to_access_unit(su) for su in storage_units]
+    access_unit = StorageUnitStack(storage_units=access_units, stack_dim='time')
+    geobox = GeoBox.from_storage_type(storage_type, tile_index)
+    access_unit.crs = geobox.crs
+    access_unit.affine = geobox.affine
+    access_unit.extent = geobox.extent
+
+    write_access_unit_to_netcdf(access_unit,
+                                storage_type.global_attributes,
+                                storage_type.variable_attributes,
+                                storage_type.variable_params,
+                                str(_uri_to_local_path(output_uri)))
+
+    descriptor = _accesss_unit_descriptor(access_unit, tile_index=tile_index)
+    return StorageUnit([id_ for su in storage_units for id_ in su.dataset_ids],
+                       storage_type,
+                       descriptor,
+                       output_uri=output_uri)
+
+
 def _group_datasets_by_time(datasets):
     return [(time, list(group)) for time, group in groupby(datasets, lambda ds: ds.time)]
 
