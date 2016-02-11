@@ -15,9 +15,12 @@
 
 from __future__ import absolute_import, division, print_function
 
+import datetime
+
 from .util import isclose
 
 from datacube.api import convert_descriptor_dims_to_search_dims, convert_descriptor_dims_to_selector_dims
+from datacube.api import datetime_to_timestamp
 from datacube.model import Range
 
 
@@ -91,3 +94,31 @@ def test_convert_descriptor_dims_to_selector_dims():
     assert isclose(selector_dims['x']['range'][1], storage_selector['x']['range'][1])
     assert isclose(selector_dims['y']['range'][0], storage_selector['y']['range'][0])
     assert isclose(selector_dims['y']['range'][1], storage_selector['y']['range'][1])
+
+
+def test_convert_descriptor_dims_to_selector_dims_with_time():
+    storage_crs = 'EPSG:3577'
+    descriptor_query = {
+        'dimensions': {
+            'time': {
+                'range': ((1990, 1, 7), datetime.datetime(1995, 5, 8)),
+            },
+        }
+    }
+    expected_result = {
+        'time': {
+            'range': (631670400, 799891200),
+        },
+    }
+    descriptor_query_dimensions = descriptor_query.get('dimensions', {})
+    actual_result = convert_descriptor_dims_to_selector_dims(descriptor_query_dimensions, storage_crs)
+    assert len(actual_result) == len(descriptor_query_dimensions)
+    print(actual_result['time']['range'][0])
+    assert actual_result['time']['range'][0] == expected_result['time']['range'][0]
+    assert actual_result['time']['range'][1] == expected_result['time']['range'][1]
+
+
+def test_datetime_to_timestamp():
+    assert datetime_to_timestamp((1990, 1, 7)) == 631670400
+    assert datetime_to_timestamp(datetime.datetime(1990, 1, 7)) == 631670400
+    assert datetime_to_timestamp(631670400) == 631670400

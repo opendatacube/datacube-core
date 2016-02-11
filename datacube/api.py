@@ -29,6 +29,7 @@ import numpy
 import dask.array as da
 import xarray
 import rasterio.warp
+from dateutil import tz
 
 from .model import Range
 from .storage.access.core import StorageUnitDimensionProxy, StorageUnitBase
@@ -139,10 +140,40 @@ def make_storage_unit(su, is_diskless=False):
 
 
 def datetime_to_timestamp(dt):
+    if not isinstance(dt, datetime.datetime) and not isinstance(dt, datetime.date):
+        dt = to_datetime(dt)
+    else:
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=tz.tzutc())
+
     if isinstance(dt, datetime.datetime) or isinstance(dt, datetime.date):
-        epoch = datetime.datetime.utcfromtimestamp(0)
+        epoch = datetime.datetime.fromtimestamp(0, tz=tz.tzutc())
         return (dt - epoch).total_seconds()
     return dt
+
+
+def to_datetime(t):
+    if isinstance(t, compat.integer_types + (float,)):
+        t = datetime.datetime.fromtimestamp(t, tz=tz.tzutc())
+    if isinstance(t, tuple):
+        t = datetime.datetime(*t, tzinfo=tz.tzutc())
+    elif isinstance(t, compat.string_types):
+        try:
+            t = datetime.strptime(t, "%Y-%m-%dT%H:%M:%S.%fZ")
+        except ValueError:
+            pass
+        try:
+            from pandas import to_datetime as pandas_to_datetime
+            return pandas_to_datetime(t, utc=True, infer_datetime_format=True).to_pydatetime()
+        except ImportError:
+            pass
+
+    # TODO: Needs to be UTC aware, even if just converted
+    if isinstance(t, datetime.datetime):
+        if t.tzinfo is None:
+            t = t.replace(tzinfo=tz.tzutc())
+        return t
+    raise ValueError('Could not parse the time for {}'.format(t))
 
 
 def dimension_ranges_to_selector(dimension_ranges, reverse_sort):
@@ -359,9 +390,9 @@ def _fix_custom_dimensions(dimensions, dim_props):
     coord_labels = dim_props['coord_labels']
     # TODO: Move handling of timestamps down to the storage level
     if 'time' in dimensions:
-        coord_labels['time'] = [datetime.datetime.fromtimestamp(c) for c in coord_labels['time']]
+        coord_labels['time'] = [datetime.datetime.utcfromtimestamp(c) for c in coord_labels['time']]
         if 'time' in dimension_ranges and 'range' in dimension_ranges['time']:
-            dimension_ranges['time']['range'] = tuple(datetime.datetime.fromtimestamp(t)
+            dimension_ranges['time']['range'] = tuple(to_datetime(t)
                                                       for t in dimension_ranges['time']['range'])
     return dimension_ranges, coord_labels
 
@@ -545,8 +576,8 @@ def convert_descriptor_dims_to_search_dims(descriptor_query_dimensions):
             elif dim in ['time', 't']:
                 # TODO: Handle time formatting strings & other CRS's
                 # Assume dateime object or seconds since UNIX epoch 1970-01-01 for now...
-                search_query['time'] = Range(datetime_to_timestamp(data['range'][0]),
-                                             datetime_to_timestamp(data['range'][1]))
+                search_query['time'] = Range(to_datetime(data['range'][0]),
+                                             to_datetime(data['range'][1]))
             else:
                 # Assume the search function will sort it out, add it to the query
                 search_query[dim] = Range(*data['range'])
