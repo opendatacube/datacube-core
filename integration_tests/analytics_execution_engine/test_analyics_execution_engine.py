@@ -2,7 +2,6 @@ from __future__ import absolute_import
 from os import sys, path
 from pprint import pprint
 from datetime import datetime
-import pytest
 from datacube.analytics.analytics_engine import AnalyticsEngine
 from datacube.execution.execution_engine import ExecutionEngine
 
@@ -15,16 +14,13 @@ from datacube.execution.execution_engine import ExecutionEngine
 # pylint: disable=too-many-public-methods
 #
 
-skipme = pytest.mark.skipif(True, reason="BADF00D")
 
-
-@skipme
-def test_1():
+def test_1(dict_api):
 
     # Test get data
 
-    a = AnalyticsEngine()
-    e = ExecutionEngine()
+    a = AnalyticsEngine(api=dict_api)
+    e = ExecutionEngine(api=dict_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -36,13 +32,12 @@ def test_1():
     e.execute_plan(a.plan)
 
 
-@skipme
-def test_2():
+def test_2(dict_api):
 
     # Test perform ndvi
 
-    a = AnalyticsEngine()
-    e = ExecutionEngine()
+    a = AnalyticsEngine(api=dict_api)
+    e = ExecutionEngine(api=dict_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -57,13 +52,12 @@ def test_2():
     e.execute_plan(a.plan)
 
 
-@skipme
-def test_3():
+def test_3(dict_api):
 
     # Test perform ndvi - old version for backwards compatibility
 
-    a = AnalyticsEngine()
-    e = ExecutionEngine()
+    a = AnalyticsEngine(api=dict_api)
+    e = ExecutionEngine(api=dict_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -76,13 +70,12 @@ def test_3():
     e.execute_plan(a.plan)
 
 
-@skipme
-def test_4():
+def test_4(dict_api):
 
     # Test median reduction over time
 
-    a = AnalyticsEngine()
-    e = ExecutionEngine()
+    a = AnalyticsEngine(api=dict_api)
+    e = ExecutionEngine(api=dict_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -96,13 +89,12 @@ def test_4():
     e.execute_plan(a.plan)
 
 
-@skipme
-def test_5():
+def test_5(dict_api):
 
     # Test median reduction over time - old version for backwards compatibility
 
-    a = AnalyticsEngine()
-    e = ExecutionEngine()
+    a = AnalyticsEngine(api=dict_api)
+    e = ExecutionEngine(api=dict_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -116,13 +108,12 @@ def test_5():
     result = e.execute_plan(a.plan)
 
 
-@skipme
-def test_6():
+def test_6(dict_api):
 
     # Test median reduction over lat/long
 
-    a = AnalyticsEngine()
-    e = ExecutionEngine()
+    a = AnalyticsEngine(api=dict_api)
+    e = ExecutionEngine(api=dict_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -136,13 +127,12 @@ def test_6():
     e.execute_plan(a.plan)
 
 
-@skipme
-def test_7():
+def test_7(dict_api):
 
     # Test median reduction over lat/long - old version for backwards compatibility
 
-    a = AnalyticsEngine()
-    e = ExecutionEngine()
+    a = AnalyticsEngine(api=dict_api)
+    e = ExecutionEngine(api=dict_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -156,13 +146,12 @@ def test_7():
     result = e.execute_plan(a.plan)
 
 
-@skipme
-def test_8():
+def test_8(dict_api):
 
     # Test perform ndvi + mask - old version for backwards compatibility
 
-    a = AnalyticsEngine()
-    e = ExecutionEngine()
+    a = AnalyticsEngine(api=dict_api)
+    e = ExecutionEngine(api=dict_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -177,13 +166,12 @@ def test_8():
     e.execute_plan(a.plan)
 
 
-@skipme
-def test_9():
+def test_9(dict_api):
 
     # Test perform ndvi + mask
 
-    a = AnalyticsEngine()
-    e = ExecutionEngine()
+    a = AnalyticsEngine(api=dict_api)
+    e = ExecutionEngine(api=dict_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -200,13 +188,12 @@ def test_9():
     e.execute_plan(a.plan)
 
 
-@skipme
-def test_10():
+def test_10(dict_api):
 
     # Test sensor specific bandmath - old version for backwards compatibility
 
-    a = AnalyticsEngine()
-    e = ExecutionEngine()
+    a = AnalyticsEngine(api=dict_api)
+    e = ExecutionEngine(api=dict_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -218,13 +205,12 @@ def test_10():
     result = e.execute_plan(a.plan)
 
 
-@skipme
-def test_11():
+def test_11(dict_api):
 
     # Test bit of everything
 
-    a = AnalyticsEngine()
-    e = ExecutionEngine()
+    a = AnalyticsEngine(api=dict_api)
+    e = ExecutionEngine(api=dict_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -243,13 +229,12 @@ def test_11():
     result = e.execute_plan(a.plan)
 
 
-@skipme
-def test_12():
+def test_12(dict_api):
 
     # Test median reduction over time - old version for backwards compatibility
 
-    a = AnalyticsEngine()
-    e = ExecutionEngine()
+    a = AnalyticsEngine(api=dict_api)
+    e = ExecutionEngine(api=dict_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},

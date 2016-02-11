@@ -18,6 +18,7 @@ except ImportError:
     from yaml import SafeLoader
 
 from datacube import ui
+from datacube.api import API
 from datacube.config import LocalConfig
 from datacube.index._api import Index, _DEFAULT_COLLECTIONS_PATH, _DEFAULT_METADATA_TYPES_PATH
 from datacube.index.postgres import PostgresDb
@@ -97,6 +98,14 @@ def index(db, local_config):
     :type db: datacube.index.postgres._api.PostgresDb
     """
     return Index(db, local_config)
+
+
+@pytest.fixture
+def dict_api(index):
+    """
+    :type index: datacube.index._api.Index
+    """
+    return API(index=index)
 
 
 @pytest.fixture

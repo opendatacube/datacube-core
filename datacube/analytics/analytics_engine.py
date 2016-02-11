@@ -62,12 +62,12 @@ class AnalyticsEngine(object):
             'median': 'median(array1)'
         }
 
-    def __init__(self):
+    def __init__(self, api=None):
         LOG.debug('Initialise Analytics Module.')
         self.plan = []
         self.plan_dict = {}
 
-        self.api = API()
+        self.api = api or API()
 
     def task(self, name):
         """Retrieve a task"""

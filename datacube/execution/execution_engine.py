@@ -59,13 +59,13 @@ class ExecutionEngine(object):
                      "std": xr.DataArray.std,
                      "var": xr.DataArray.var}
 
-    def __init__(self):
+    def __init__(self, api=None):
         LOG.debug('Initialise Execution Module.')
         self.cache = {}
         self.nd = NDexpr()
         self.nd.set_ae(True)
 
-        self.api = API()
+        self.api = api or API()
 
     def execute_plan(self, plan):
 
