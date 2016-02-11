@@ -21,9 +21,11 @@ def compare_descriptor_with_data(descriptor, data):
     print("Sizes match: {}".format(data['size'] == descriptor['result_shape']))
 
     for dim, de in zip(descriptor['dimensions'], descriptor['result_min']):
-        print("  Dimension: {}\tStart:\t{}\t{}".format(dim, data['indices'][dim][0], de))
+        data_var = data['indices'][dim][0] if data['indices'][dim].ndim else data['indices'][dim][()]
+        print("  Dimension: {}\tStart:\t{}\t{}".format(dim, data_var, de))
     for dim, de in zip(descriptor['dimensions'], descriptor['result_max']):
-        print("  Dimension: {}\tEnd:\t{}\t{}".format(dim, data['indices'][dim][-1], de))
+        data_var = data['indices'][dim][-1] if data['indices'][dim].ndim else data['indices'][dim][()]
+        print("  Dimension: {}\tEnd:\t{}\t{}".format(dim, data_var, de))
 
 def create_rgb(data):
     band_1 = data['arrays']['band_1']
@@ -58,10 +60,10 @@ def main():
         'variables': ('band_10', 'band_40', 'band_60'),
         'dimensions': {
             'longitude': {
-                'range': (148, 149),
+                'range': 148,
             },
             'latitude': {
-                'range': (-36.1, -35.1),
+                'range': -35.1,
             },
             # 'time': {
             #     'range': (datetime.datetime(2015, 2, 19),

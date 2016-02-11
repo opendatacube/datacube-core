@@ -150,3 +150,11 @@ def create_empty_dataset(src_filename, out_filename):
     out.SetGeoTransform(inds.GetGeoTransform())
     out.SetProjection(inds.GetProjection())
     out.FlushCache()
+
+
+def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
+    """
+    Testing aproximate equality for floats
+    See https://docs.python.org/3/whatsnew/3.5.html#pep-485-a-function-for-testing-approximate-equality
+    """
+    return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)

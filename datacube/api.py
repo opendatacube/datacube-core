@@ -13,7 +13,7 @@
 #    limitations under the License.
 
 """
-GDF Trial backward compatibility
+Storage Query and Access API module
 """
 
 from __future__ import absolute_import, division, print_function
@@ -25,7 +25,6 @@ import operator
 import uuid
 import copy
 
-import functools
 import numpy
 import dask.array as da
 import xarray
@@ -38,10 +37,9 @@ from .storage.access.backends import NetCDF4StorageUnit, GeoTifStorageUnit, Faux
 from .index import index_connect
 from . import compat
 
-
 _LOG = logging.getLogger(__name__)
 
-FLOAT_TOLERANCE = 0.0000001 # TODO: Use
+FLOAT_TOLERANCE = 0.0000001 # TODO: For DB query, use some sort of 'contains' point, rather than range overlap.
 
 # TODO: Move into storage.access.StorageUnitBase
 # class NDArrayProxy(object):
@@ -76,18 +74,6 @@ FLOAT_TOLERANCE = 0.0000001 # TODO: Use
 #
 #     def __repr__(self):
 #         return '%s(array=%r)' % (type(self).__name__, self.shape)
-
-
-# TODO: Confirm that we don't need this code
-# def get_storage_unit_transform(su):
-#     storage_type = su.attributes['storage_type']
-#     return [su.coordinates['longitude'].begin, storage_type['resolution']['x'], 0.0,
-#             su.coordinates['latitude'].begin, 0.0, storage_type['resolution']['y']]
-#
-#
-# def get_storage_unit_projection(su):
-#     storage_type = su.attributes['storage_type']
-#     return storage_type['projection']['spatial_ref']
 
 
 def make_in_memory_storage_unit(su, coordinates, variables, attributes, crs):
@@ -163,7 +149,7 @@ def dimension_ranges_to_selector(dimension_ranges, reverse_sort):
     ranges = dict((dim_name, dim['range']) for dim_name, dim in dimension_ranges.items() if 'range' in dim)
     # if 'time' in ranges:
     #     ranges['time'] = tuple(datetime_to_timestamp(r) for r in ranges['time'])
-    return dict((c, slice(*sorted(r, reverse=reverse_sort[c]))
+    return dict((c, slice(*sorted(r, reverse=(c in reverse_sort and reverse_sort[c])))
                  if isinstance(r, tuple) else r) for c, r in ranges.items())
 
 
@@ -189,6 +175,11 @@ class StorageUnitCollection(object):
 
     def append(self, storage_unit):
         self._storage_units.append(storage_unit)
+
+    def iteritems(self):
+        su_iter = iter(self._storage_units)
+        for su in su_iter:
+            yield su
 
     def get_storage_units(self):
         return self._storage_units
@@ -222,6 +213,21 @@ class StorageUnitCollection(object):
             for dims in dim_groups:
                 dimension_group.setdefault(dims, StorageUnitCollection()).append(storage_unit)
         return dimension_group
+
+    def get_spatial_crs(self):
+        return _get_spatial_crs(self._storage_units)
+
+
+def _get_spatial_crs(storage_units):
+    if len(storage_units) == 0:
+        return None
+    sample = storage_units[0]
+    crs = sample.crs
+    spatial_crs = None
+    for key in crs.keys():
+        if key in ['latitude', 'longitude', 'lat', 'lon', 'x', 'y']:
+            spatial_crs = crs[key]
+    return spatial_crs
 
 
 def _get_dimension_properties(storage_units, dimensions):
@@ -469,8 +475,6 @@ class IrregularStorageUnitSlice(StorageUnitBase):
 def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges=None):
     if not dimension_ranges:
         dimension_ranges = {}
-    if not len(storage_units):
-        return {}
 
     variables_by_dimensions = {}
     for storage_unit in storage_units:
@@ -478,6 +482,9 @@ def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges
             if variables is None or var_name in variables:
                 dims = tuple(v.dimensions)
                 variables_by_dimensions.setdefault(dims, {}).setdefault(var_name, []).append(storage_unit)
+
+    if not len(variables_by_dimensions):
+        return {}
 
     dimension_group = {}
     for dimensions, sus_by_variable in variables_by_dimensions.items():
@@ -495,29 +502,71 @@ def to_single_value(data_array):
     return data_array.values
 
 
-def get_result_stats(storage_units, dimension_ranges):
+def get_result_stats(storage_units, dimensions, dimension_ranges):
     strata_storage_units = _stratify_irregular_dimension(storage_units, 'time')
     storage_data = _get_data_from_storage_units(strata_storage_units, dimension_ranges=dimension_ranges)
     example = storage_data['arrays'][list(storage_data['arrays'].keys())[0]]
     result = {
-        'result_shape': example.shape,
+        'result_shape': (example[dim].size for dim in dimensions),
         'result_min': tuple(to_single_value(example[dim].min()) if example[dim].size > 0 else numpy.NaN
-                            for dim in example.dims),
+                            for dim in dimensions),
         'result_max': tuple(to_single_value(example[dim].max()) if example[dim].size > 0 else numpy.NaN
-                            for dim in example.dims),
+                            for dim in dimensions),
     }
     irregular_dim_names = ['time', 't']  # TODO: Use irregular flag from database instead
     result['irregular_indices'] = dict((dim, example[dim].values)
-                                       for dim in example.dims if dim in irregular_dim_names)
+                                       for dim in dimensions if dim in irregular_dim_names)
     return result
 
 
-def _dimension_crs_to_ranges_query(dimension_ranges_descriptor):
-    query = {}
+def convert_descriptor_dims_to_search_dims(descriptor_query_dimensions):
+    search_query = {}
+    input_coords = {'left': None, 'bottom': None, 'right': None, 'top': None}
+    input_crs = None  # Get spatial CRS from either spatial dimension
+    for dim, data in descriptor_query_dimensions.items():
+        if 'range' in data:
+            # Convert any known dimension CRS
+            if dim in ['latitude', 'lat', 'y']:
+                input_crs = input_crs or data.get('crs', 'EPSG:4326')
+                if isinstance(data['range'], compat.string_types + compat.integer_types + (float,)):
+                    input_coords['top'] = float(data['range'])
+                    input_coords['bottom'] = float(data['range'])
+                else:
+                    input_coords['top'] = data['range'][0]
+                    input_coords['bottom'] = data['range'][-1]
+            elif dim in ['longitude', 'lon', 'long', 'x']:
+                input_crs = input_crs or data.get('crs', 'EPSG:4326')
+                if isinstance(data['range'], compat.string_types + compat.integer_types + (float,)):
+                    input_coords['left'] = float(data['range'])
+                    input_coords['right'] = float(data['range'])
+                else:
+                    input_coords['left'] = data['range'][0]
+                    input_coords['right'] = data['range'][-1]
+            elif dim in ['time', 't']:
+                # TODO: Handle time formatting strings & other CRS's
+                # Assume dateime object or seconds since UNIX epoch 1970-01-01 for now...
+                search_query['time'] = Range(datetime_to_timestamp(data['range'][0]),
+                                             datetime_to_timestamp(data['range'][1]))
+            else:
+                # Assume the search function will sort it out, add it to the query
+                search_query[dim] = Range(*data['range'])
+    try:
+        search_coords = geospatial_warp_bounds(input_coords, input_crs, tolerance=FLOAT_TOLERANCE)
+        search_query['lat'] = Range(search_coords['bottom'], search_coords['top'])
+        search_query['lon'] = Range(search_coords['left'], search_coords['right'])
+    except ValueError:
+        _LOG.warning("Couldn't convert spatial dimension ranges")
+    return search_query
+
+
+def convert_descriptor_dims_to_selector_dims(dimension_ranges_descriptor, storage_crs='EPSG:4326'):
+    dimension_ranges = {}
     input_coord = {'left': None, 'bottom': None, 'right': None, 'top': None}
     input_crs = None
     mapped_vars = {}
+    single_value_vars = []
     for dim, data in dimension_ranges_descriptor.items():
+        dimension_ranges[dim] = dict((k, v) for k, v in data.items() if k != 'range')
         if 'range' in data:
             # Convert any known dimension CRS
             if dim in ['latitude', 'lat', 'y']:
@@ -525,6 +574,7 @@ def _dimension_crs_to_ranges_query(dimension_ranges_descriptor):
                 if isinstance(data['range'], compat.string_types + compat.integer_types+ (float,)):
                     input_coord['top'] = float(data['range'])
                     input_coord['bottom'] = float(data['range'])
+                    single_value_vars.append('lat')
                 else:
                     input_coord['top'] = data['range'][0]
                     input_coord['bottom'] = data['range'][-1]
@@ -534,6 +584,7 @@ def _dimension_crs_to_ranges_query(dimension_ranges_descriptor):
                 if isinstance(data['range'], compat.string_types + compat.integer_types+ (float,)):
                     input_coord['left'] = float(data['range'])
                     input_coord['right'] = float(data['range'])
+                    single_value_vars.append('lon')
                 else:
                     input_coord['left'] = data['range'][0]
                     input_coord['right'] = data['range'][-1]
@@ -541,69 +592,69 @@ def _dimension_crs_to_ranges_query(dimension_ranges_descriptor):
             elif dim in ['time']:
                 # TODO: Handle time formatting strings & other CRS's
                 # Assume dateime object or seconds since UNIX epoch 1970-01-01 for now...
-                data['range'] = (datetime_to_timestamp(data['range'][0]), datetime_to_timestamp(data['range'][1]))
+                dimension_ranges[dim]['range'] = (datetime_to_timestamp(data['range'][0]),
+                                                  datetime_to_timestamp(data['range'][1]))
             else:
-                # Assume the search function will sort it out, add it to the query
-                query[dim] = Range(*data['range'])
+                # Add to ranges unchanged
+                dimension_ranges[dim]['range'] = data['range']
+    try:
+        storage_coords = geospatial_warp_bounds(input_coord, input_crs, storage_crs)
+        def make_range(a, b, single_var=False):
+            if single_var:
+                return a
+            return (a, b)
+        dimension_ranges[mapped_vars['lat']]['range'] = make_range(storage_coords['top'],
+                                                                   storage_coords['bottom'],
+                                                                   'lat' in single_value_vars)
+        dimension_ranges[mapped_vars['lat']]['crs'] = storage_crs
+        dimension_ranges[mapped_vars['lon']]['range'] = make_range(storage_coords['left'],
+                                                                   storage_coords['right'],
+                                                                   'lon' in single_value_vars)
+        dimension_ranges[mapped_vars['lon']]['crs'] = storage_crs
+    except ValueError:
+        _LOG.warning("Couldn't convert spatial dimension ranges")
+    return dimension_ranges
 
-    search_crs = 'EPSG:4326'  # TODO: look up storage index CRS for collection
-    query, dimension_ranges = geospatial_warp(input_crs, search_crs, input_coord,
-                                              dimension_ranges_descriptor, mapped_vars)
-    return query, dimension_ranges
 
+def geospatial_warp_bounds(input_coord, input_crs='EPSG:4326', output_crs='EPSG:4326', tolerance=0.):
+    '''
+    Converts coordinates, adding tolerance if they are the same point for index searching
+    :param input_crs: EPSG or other GDAL string
+    :param output_crs: EPSG or other GDAL string (Search is 'EPSG:4326')
+    :param input_coord: {'left': float, 'bottom': float, 'right': float, 'top': float}
+    :return: {'lat':Range,'lon':Range}
+    '''
+    if any(v is None for v in input_coord.values()):
+        raise ValueError('Missing coordinate in input_coord {}'.format(input_coord))
+    left, bottom, right, top = rasterio.warp.transform_bounds(input_crs, output_crs, **input_coord)
+    output_coords = {'left': left, 'bottom': bottom, 'right': right, 'top': top}
 
-def geospatial_warp(input_crs, search_crs, input_coord, dimension_ranges, mapped_vars):
-    dimension_ranges = dimension_ranges.copy()
-    search_query = {}
-    if all(v is not None for v in input_coord.values()):
-        left, bottom, right, top = rasterio.warp.transform_bounds(input_crs, search_crs, **input_coord)
+    if bottom == top:
+        output_coords['top'] = top - tolerance
+        output_coords['bottom'] = bottom + tolerance
+    if left == right:
+        output_coords['left'] = left - tolerance
+        output_coords['right'] = right + tolerance
+    return output_coords
 
-        search_query['lat'] = Range(bottom, top)
-        search_query['lon'] = Range(left, right)
-        dimension_ranges[mapped_vars['lat']]['range'] = (top, bottom)
-        dimension_ranges[mapped_vars['lon']]['range'] = (left, right)
-
-        if bottom == top:
-            search_query['lat'] = Range(bottom + FLOAT_TOLERANCE, top - FLOAT_TOLERANCE)
-            dimension_ranges[mapped_vars['lat']]['range'] = top
-        if left == right:
-            search_query['lon'] = Range(left - FLOAT_TOLERANCE, right + FLOAT_TOLERANCE)
-            dimension_ranges[mapped_vars['lon']]['range'] = left
-    return search_query, dimension_ranges
 
 class API(object):
     def __init__(self, index=None):
         self.index = index or index_connect()
 
-    def _convert_descriptor_to_query(self, descriptor=None):
-        descriptor = descriptor or {}
-
-        known_fields = self.index.datasets.get_fields().keys()
-        query = {key: descriptor[key] for key in descriptor.keys() if key in known_fields}
-
-        unknown_fields = [key for key in descriptor.keys()
-                          if key not in known_fields and key not in ['variables', 'dimensions']]
-        if unknown_fields:
-            _LOG.warning("Some of the fields in the query are unknown and will be ignored: %s",
-                         ', '.join(unknown_fields))
-
-        variables = descriptor.get('variables', None)
-        dimension_ranges_descriptor = descriptor.get('dimensions', {})
-        range_query, dimension_ranges = _dimension_crs_to_ranges_query(dimension_ranges_descriptor)
-        query.update(range_query)
-
-        return query, variables, dimension_ranges
-
     def _get_storage_units(self, descriptor_request):
-        query, variables, dimension_ranges = self._convert_descriptor_to_query(descriptor_request)
+        descriptor_request_dimensions = descriptor_request.get('dimensions', {})
+        query = convert_descriptor_dims_to_search_dims(descriptor_request_dimensions)
 
         sus = self.index.storage.search(**query)
+
+        variables = descriptor_request.get('variables', None)
 
         storage_units_by_type = {}
         for su in sus:
             unit = make_storage_unit(su, is_diskless=True)
             storage_units_by_type.setdefault(su.storage_type.name, StorageUnitCollection()).append(unit)
-        return storage_units_by_type, query, variables, dimension_ranges
+        return storage_units_by_type, query, variables
 
     def get_descriptor(self, descriptor_request=None, include_storage_units=True):
         """
@@ -705,10 +756,12 @@ class API(object):
                  }
             }
         """
-        storage_units_by_type, query, _, dimension_ranges = self._get_storage_units(descriptor_request)
+        storage_units_by_type, query, variables = self._get_storage_units(descriptor_request)
         descriptor = {}
         for stype, storage_units in storage_units_by_type.items():
             # Group by dimension
+            dimension_ranges = convert_descriptor_dims_to_selector_dims(descriptor_request.get('dimensions', {}),
+                                                                        storage_units.get_spatial_crs())
             storage_units_by_dimensions = storage_units.group_by_dimensions()
             for dimensions, grouped_storage_units in storage_units_by_dimensions.items():
                 # TODO: Either filter our undesired variables or return everything
@@ -725,13 +778,15 @@ class API(object):
                     'irregular_indices': None,
                 })
                 for var_name, var in grouped_storage_units.get_variables().items():
-                    result['variables'][var_name] = {
-                        'datatype_name': var.dtype,
-                        'nodata_value': var.nodata,
-                    }
+                    if variables is None or var_name in variables:
+                        result['variables'][var_name] = {
+                            'datatype_name': var.dtype,
+                            'nodata_value': var.nodata,
+                        }
                 if include_storage_units:
                     result['storage_units'] = grouped_storage_units.get_storage_unit_stats(dimensions)
-                result.update(get_result_stats(grouped_storage_units.get_storage_units(), dimension_ranges))
+                result.update(get_result_stats(grouped_storage_units.get_storage_units(),
+                                               dimensions, dimension_ranges))
         return descriptor
 
     def get_data(self, descriptor=None, storage_units=None):
@@ -789,31 +844,40 @@ class API(object):
             ]
         }
         """
-
-        query, variables, dimension_ranges = self._convert_descriptor_to_query(descriptor)
-
+        query = convert_descriptor_dims_to_search_dims(descriptor)
+        variables = descriptor.get('variables', None)
         storage_units_by_type = {}
         if storage_units:
             stype = 'Requested Storage'
-            storage_units_by_type[stype] = [NetCDF4StorageUnit.from_file(su['storage_path'])
-                                            for su in storage_units.values()]
+            storage_units_by_type[stype] = StorageUnitCollection([NetCDF4StorageUnit.from_file(su['storage_path'])
+                                                                  for su in storage_units.values()])
         else:
             sus = self.index.storage.search(**query)
             for su in sus:
                 stype = su.storage_type.name
-                storage_units_by_type.setdefault(stype, []).append(make_storage_unit(su))
+                storage_units_by_type.setdefault(stype, StorageUnitCollection()).append(make_storage_unit(su))
 
         if len(storage_units_by_type) > 1:
+            # TODO: Work out if they share the same grid (projection & resolution)
+            # TODO: Reproject all into the requested grid
             raise RuntimeError('Data must come from a single storage')
 
-        data_response = {'arrays': {}}
-        for stype, storage_units in storage_units_by_type.items():
+        data_response = {}
+        for stype, storage_unit_collection in storage_units_by_type.items():
             # TODO: check var names are unique accross products
-            storage_units = _stratify_irregular_dimension(storage_units, 'time')
+            storage_crs = storage_unit_collection.get_spatial_crs()
+            dimension_descriptor = descriptor.get('dimensions', {})
+            dimension_ranges = convert_descriptor_dims_to_selector_dims(dimension_descriptor, storage_crs)
+            storage_units = _stratify_irregular_dimension(storage_unit_collection.iteritems(), 'time')
             storage_data = _get_data_from_storage_units(storage_units, variables, dimension_ranges)
 
             data_response.update(storage_data)
         return data_response
+
+    def get_fields(self):
+        fields = self.index.datasets.get_fields()
+        return fields.keys()
+
 
 
 def main():
