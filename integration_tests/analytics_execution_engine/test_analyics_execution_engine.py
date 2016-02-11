@@ -15,7 +15,7 @@ from datacube.execution.execution_engine import ExecutionEngine
 #
 
 
-def test_1(dict_api):
+def test_1(dict_api, default_collection):
 
     # Test get data
 
@@ -32,7 +32,7 @@ def test_1(dict_api):
     e.execute_plan(a.plan)
 
 
-def test_2(dict_api):
+def test_2(dict_api, default_collection):
 
     # Test perform ndvi
 
@@ -52,7 +52,7 @@ def test_2(dict_api):
     e.execute_plan(a.plan)
 
 
-def test_3(dict_api):
+def test_3(dict_api, default_collection):
 
     # Test perform ndvi - old version for backwards compatibility
 
@@ -70,7 +70,7 @@ def test_3(dict_api):
     e.execute_plan(a.plan)
 
 
-def test_4(dict_api):
+def test_4(dict_api, default_collection):
 
     # Test median reduction over time
 
@@ -89,7 +89,7 @@ def test_4(dict_api):
     e.execute_plan(a.plan)
 
 
-def test_5(dict_api):
+def test_5(dict_api, default_collection):
 
     # Test median reduction over time - old version for backwards compatibility
 
@@ -108,7 +108,7 @@ def test_5(dict_api):
     result = e.execute_plan(a.plan)
 
 
-def test_6(dict_api):
+def test_6(dict_api, default_collection):
 
     # Test median reduction over lat/long
 
@@ -127,7 +127,7 @@ def test_6(dict_api):
     e.execute_plan(a.plan)
 
 
-def test_7(dict_api):
+def test_7(dict_api, default_collection):
 
     # Test median reduction over lat/long - old version for backwards compatibility
 
@@ -146,7 +146,7 @@ def test_7(dict_api):
     result = e.execute_plan(a.plan)
 
 
-def test_8(dict_api):
+def test_8(dict_api, default_collection):
 
     # Test perform ndvi + mask - old version for backwards compatibility
 
@@ -166,7 +166,7 @@ def test_8(dict_api):
     e.execute_plan(a.plan)
 
 
-def test_9(dict_api):
+def test_9(dict_api, default_collection):
 
     # Test perform ndvi + mask
 
@@ -188,7 +188,7 @@ def test_9(dict_api):
     e.execute_plan(a.plan)
 
 
-def test_10(dict_api):
+def test_10(dict_api, default_collection):
 
     # Test sensor specific bandmath - old version for backwards compatibility
 
@@ -205,7 +205,7 @@ def test_10(dict_api):
     result = e.execute_plan(a.plan)
 
 
-def test_11(dict_api):
+def test_11(dict_api, default_collection):
 
     # Test bit of everything
 
@@ -229,7 +229,7 @@ def test_11(dict_api):
     result = e.execute_plan(a.plan)
 
 
-def test_12(dict_api):
+def test_12(dict_api, default_collection):
 
     # Test median reduction over time - old version for backwards compatibility
 
