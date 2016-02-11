@@ -642,7 +642,8 @@ class API(object):
     def __init__(self, index=None):
         self.index = index or index_connect()
 
-    def _get_storage_units(self, descriptor_request):
+    def _get_storage_units(self, descriptor_request=None):
+        descriptor_request = descriptor_request or {}
         descriptor_request_dimensions = descriptor_request.get('dimensions', {})
         query = convert_descriptor_dims_to_search_dims(descriptor_request_dimensions)
 
@@ -756,6 +757,7 @@ class API(object):
                  }
             }
         """
+        descriptor_request = descriptor_request or {}
         storage_units_by_type, query, variables = self._get_storage_units(descriptor_request)
         descriptor = {}
         for stype, storage_units in storage_units_by_type.items():
