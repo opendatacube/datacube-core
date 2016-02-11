@@ -108,6 +108,8 @@ class NetCDF4StorageUnit(StorageUnitBase):
 
     def _fill_data(self, name, index, dest):
         with _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.file_path)) as ncds:
+            if dest.dtype.kind == 'S' and dest.dtype.itemsize > 1:
+                dest = dest.view('S1').reshape(dest.shape + (-1,))
             numpy.copyto(dest, ncds[name][index])
 
     def get_chunk(self, name, index):
