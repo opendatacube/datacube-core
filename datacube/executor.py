@@ -18,6 +18,9 @@ from __future__ import absolute_import, division
 class SerialExecutor(object):
     map = map
 
+    def apply(self, func, *args, **kwargs):
+        return func(*args, **kwargs)
+
 
 class DistributedExecutor(object):
     def __init__(self, executor):
