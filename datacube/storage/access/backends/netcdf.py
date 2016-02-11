@@ -32,7 +32,9 @@ def _open_dataset(filepath):
     """
     :type filepath: pathlib.Path
     """
-    return nc4.Dataset(str(filepath), mode='r', clobber=False, diskless=False, persist=False, format='NETCDF4')
+    ncds = nc4.Dataset(str(filepath), mode='r', clobber=False, diskless=False, persist=False, format='NETCDF4')
+    ncds.set_auto_mask(False)
+    return ncds
 
 
 class NetCDF4StorageUnit(StorageUnitBase):
