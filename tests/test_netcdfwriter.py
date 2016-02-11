@@ -70,7 +70,7 @@ def test_create_albers_projection_netcdf(tmpnetcdf_filename):
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
         assert 'crs' in nco.variables
-        assert nco['crs'].grid_mapping_name == 'albers_conic_equal_area'
+        assert nco['crs'].grid_mapping_name == 'albers_conical_equal_area'
         assert 'standard_parallel' in nco['crs'].ncattrs()
         assert 'longitude_of_central_meridian' in nco['crs'].ncattrs()
         assert 'latitude_of_projection_origin' in nco['crs'].ncattrs()

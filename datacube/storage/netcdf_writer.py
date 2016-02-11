@@ -109,6 +109,7 @@ def _create_latlon_grid_mapping_variable(nco, crs):
 def _write_albers_params(crs_var, crs):
     # http://spatialreference.org/ref/epsg/gda94-australian-albers/html/
     # http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/build/cf-conventions.html#appendix-grid-mappings
+    crs_var.grid_mapping_name = 'albers_conical_equal_area'
     crs_var.standard_parallel = (crs.GetProjParm('standard_parallel_1'),
                                  crs.GetProjParm('standard_parallel_2'))
     crs_var.longitude_of_central_meridian = crs.GetProjParm('longitude_of_center')
@@ -116,6 +117,7 @@ def _write_albers_params(crs_var, crs):
 
 
 def _write_sinusoidal_params(crs_var, crs):
+    crs_var.grid_mapping_name = 'sinusoidal'
     crs_var.semi_major_axis = crs.GetSemiMajor()
     crs_var.inverse_flattening = crs.GetInvFlattening()
     crs_var.longitude_of_central_meridian = crs.GetProjParm('central_meridian')
@@ -137,7 +139,6 @@ def _create_projected_grid_mapping_variable(nco, crs):
 
     crs_var.false_easting = crs.GetProjParm('false_easting')
     crs_var.false_northing = crs.GetProjParm('false_northing')
-    crs_var.grid_mapping_name = grid_mapping_name
     crs_var.long_name = crs.GetAttrValue('PROJCS')
 
     return crs_var
