@@ -465,6 +465,31 @@ class DatasetOffsets(object):
         self.sources = sources or ('lineage', 'source_datasets')
 
 
+class GeoPolygon(object):
+    def __init__(self, points, crs_str='EPSG:4326'):
+        self.points = points
+        self.crs_str = crs_str
+
+    @property
+    def crs(self):
+        crs = osr.SpatialReference()
+        crs.SetFromUserInput(self.crs_str)
+        return crs
+
+    @property
+    def boundingbox(self):
+        return BoundingBox(left=min(x for x, y in self.points),
+                           bottom=min(y for x, y in self.points),
+                           right=max(x for x, y in self.points),
+                           top=max(y for x, y in self.points))
+
+    def to_crs(self, crs_str='EPSG:4326'):
+        crs = osr.SpatialReference()
+        crs.SetFromUserInput(crs_str)
+        transform = osr.CoordinateTransformation(self.crs, crs)
+        return GeoPolygon([p[:2] for p in transform.TransformPoints(self.points)], crs_str)
+
+
 class GeoBox(object):
     """
     Defines a single Storage Unit, its CRS, location, resolution, and global attributes
@@ -479,7 +504,7 @@ class GeoBox(object):
     >>> t.coordinate_labels['longitude']
     array([ 151.000125,  151.000375,  151.000625, ...,  151.999375,
             151.999625,  151.999875])
-    >>> t.geographic_extent
+    >>> t.geographic_extent.points
     [(151.0, -29.0), (151.0, -30.0), (152.0, -30.0), (152.0, -29.0)]
 
 
@@ -493,6 +518,10 @@ class GeoBox(object):
         self.height = height
         self.affine = affine
         self.crs_str = crs_str
+
+        points = [(0, 0), (0, height), (width, height), (width, 0)]
+        self.affine.itransform(points)
+        self.extent = GeoPolygon(points, crs_str)
 
     @classmethod
     def from_storage_type(cls, storage_type, tile_index):
@@ -576,24 +605,9 @@ class GeoBox(object):
 
     @property
     def geographic_extent(self):
-        height, width = self.shape
-        extents = [(0, 0), (0, height), (width, height), (width, 0)]
-        self.affine.itransform(extents)
         if self.crs.IsGeographic():
-            return extents
-
-        epsg4326 = osr.SpatialReference()
-        epsg4326.ImportFromEPSG(4326)
-        transform = osr.CoordinateTransformation(self.crs, epsg4326)
-        return [p[:2] for p in transform.TransformPoints(extents)]
-
-    @property
-    def geographic_boundingbox(self):
-        extents = self.geographic_extent
-        return BoundingBox(left=min(lon for lon, lat in extents),
-                           bottom=min(lat for lon, lat in extents),
-                           right=max(lon for lon, lat in extents),
-                           top=max(lat for lon, lat in extents))
+            return self.extent
+        return self.extent.to_crs('EPSG:4326')
 
 
 def _get_tile_transform(tile_index, tile_size, tile_res):

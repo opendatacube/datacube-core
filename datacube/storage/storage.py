@@ -8,6 +8,7 @@ import logging
 from collections import defaultdict
 from contextlib import contextmanager
 from itertools import groupby
+from datetime import datetime
 
 import yaml
 
@@ -16,6 +17,7 @@ try:
 except ImportError:
     from yaml import SafeDumper
 import dateutil.parser
+from dateutil.tz import tzutc
 import numpy
 from osgeo import ogr, osr
 import rasterio.warp
@@ -27,6 +29,7 @@ from datacube.model import StorageUnit, GeoBox, Variable, _uri_to_local_path, ti
 from datacube.storage import netcdf_writer
 from datacube.utils import namedtuples2dicts
 from datacube.storage.access.core import StorageUnitBase, StorageUnitDimensionProxy, StorageUnitStack
+from datacube.storage.access.backends import NetCDF4StorageUnit, GeoTifStorageUnit
 
 _LOG = logging.getLogger(__name__)
 
@@ -133,7 +136,12 @@ class WarpingStorageUnit(StorageUnitBase):
             }
         self.variables['extra_metadata'] = Variable(numpy.dtype('S30000'), None, tuple(), None)
 
-    def get_crs(self):
+    @property
+    def crs(self):
+        return self.geobox.crs
+
+    @property
+    def crs_str(self):
         return self.geobox.crs_str
 
     def _get_coord(self, dim):
@@ -150,7 +158,7 @@ class WarpingStorageUnit(StorageUnitBase):
             fuse_sources(sources,
                          dest,
                          self.geobox[index].affine,
-                         self.get_crs(),
+                         self.geobox.crs_str,
                          self.variables[name].nodata,
                          resampling=resampling,
                          fuse_func=self._fuse_func)
@@ -174,9 +182,9 @@ def write_access_unit_to_netcdf(access_unit, global_attributes, variable_attribu
     for name, coord in access_unit.coordinates.items():
         coord_var = netcdf_writer.create_coordinate(nco, name, coord)
         coord_var[:] = access_unit.get_coord(name)[0]
-    netcdf_writer.create_grid_mapping_variable(nco, access_unit.geobox.crs)
-    netcdf_writer.write_gdal_geobox_attributes(nco, access_unit.geobox)
-    netcdf_writer.write_geographical_extents_attributes(nco, access_unit.geobox)
+    netcdf_writer.create_grid_mapping_variable(nco, access_unit.crs)
+    netcdf_writer.write_gdal_geobox_attributes(nco, access_unit.crs_str, access_unit.geobox.affine)
+    netcdf_writer.write_geographical_extents_attributes(nco, access_unit.geobox.geographic_extent.points)
 
     for name, variable in access_unit.variables.items():
         var_params = variable_params.get(name, {})
@@ -191,6 +199,22 @@ def write_access_unit_to_netcdf(access_unit, global_attributes, variable_attribu
     for key, value in global_attributes.items():
         nco.setncattr(key, value)
     nco.close()
+
+
+def _accesss_unit_descriptor(access_unit, **stuff):
+    geo_bounds = access_unit.geobox.geographic_extent.boundingbox
+    extents = {
+        'geospatial_lat_min': geo_bounds.bottom,
+        'geospatial_lat_max': geo_bounds.top,
+        'geospatial_lon_min': geo_bounds.left,
+        'geospatial_lon_max': geo_bounds.right,
+        'time_min': datetime.fromtimestamp(access_unit.coordinates['time'].begin, tzutc()),
+        'time_max': datetime.fromtimestamp(access_unit.coordinates['time'].end, tzutc())
+    }
+    coordinates = access_unit.coordinates
+    descriptor = dict(coordinates=namedtuples2dicts(coordinates), extents=extents)
+    descriptor.update(stuff)
+    return descriptor
 
 
 def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output_uri):
@@ -210,8 +234,7 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
         WarpingStorageUnit(group, geobox, mapping=storage_type.measurements),
         time_coordinate_value(time))
                      for time, group in datasets_grouped_by_time]
-    access_unit = StorageUnitStack(storage_units=storage_units,
-                                   stack_dim='time')
+    access_unit = StorageUnitStack(storage_units=storage_units, stack_dim='time')
 
     write_access_unit_to_netcdf(access_unit,
                                 storage_type.global_attributes,
@@ -219,17 +242,7 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
                                 storage_type.variable_params,
                                 str(_uri_to_local_path(output_uri)))
 
-    geo_bounds = geobox.geographic_boundingbox
-    extents = {
-        'geospatial_lat_min': geo_bounds.bottom,
-        'geospatial_lat_max': geo_bounds.top,
-        'geospatial_lon_min': geo_bounds.left,
-        'geospatial_lon_max': geo_bounds.right,
-        'time_min': datasets_grouped_by_time[0][0],
-        'time_max': datasets_grouped_by_time[-1][0]
-    }
-    coordinates = access_unit.coordinates
-    descriptor = dict(coordinates=namedtuples2dicts(coordinates), extents=extents, tile_index=tile_index)
+    descriptor = _accesss_unit_descriptor(access_unit, tile_index=tile_index)
     return StorageUnit([dataset.id for dataset in datasets],
                        storage_type,
                        descriptor,

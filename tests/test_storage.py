@@ -39,6 +39,14 @@ class GeoBoxStorageUnit(StorageUnitBase):
         self.coordinates.update(coordinates)
         self.variables = variables
 
+    @property
+    def crs(self):
+        return self.geobox.crs
+
+    @property
+    def crs_str(self):
+        return self.geobox.crs_str
+
     def _get_coord(self, name):
         if name in self.geobox.coordinate_labels:
             return self.geobox.coordinate_labels[name]

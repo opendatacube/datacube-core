@@ -144,27 +144,27 @@ def _create_projected_grid_mapping_variable(nco, crs):
     return crs_var
 
 
-def write_gdal_geobox_attributes(nco, geobox):
+def write_gdal_geobox_attributes(nco, crs_str, affine):
     crs_var = nco['crs']
-    crs_var.spatial_ref = geobox.crs.ExportToWkt()
-    crs_var.GeoTransform = geobox.affine.to_gdal()
+    crs_var.spatial_ref = crs_str
+    crs_var.GeoTransform = affine.to_gdal()
 
 
-def write_geographical_extents_attributes(nco, geobox):
-    geo_extents = geobox.geographic_extent
-    geo_extents.append(geo_extents[0])
+def write_geographical_extents_attributes(nco, geo_extents):
+    geo_extents = geo_extents + [geo_extents[0]]
     nco.geospatial_bounds = "POLYGON((" + ", ".join("{0} {1}".format(*p) for p in geo_extents) + "))"
     nco.geospatial_bounds_crs = "EPSG:4326"
 
-    geo_aabb = geobox.geographic_boundingbox
-    nco.geospatial_lat_min = geo_aabb.bottom
-    nco.geospatial_lat_max = geo_aabb.top
+    nco.geospatial_lat_min = min(lat for lon, lat in geo_extents)
+    nco.geospatial_lat_max = max(lat for lon, lat in geo_extents)
     nco.geospatial_lat_units = "degrees_north"
-    nco.geospatial_lat_resolution = "{} degrees".format(abs(geobox.affine.e))
-    nco.geospatial_lon_min = geo_aabb.left
-    nco.geospatial_lon_max = geo_aabb.right
+    nco.geospatial_lon_min = min(lon for lon, lat in geo_extents)
+    nco.geospatial_lon_max = max(lon for lon, lat in geo_extents)
     nco.geospatial_lon_units = "degrees_east"
-    nco.geospatial_lon_resolution = "{} degrees".format(abs(geobox.affine.a))
+
+    # TODO: broken anyway...
+    #nco.geospatial_lat_resolution = "{} degrees".format(abs(geobox.affine.e))
+    #nco.geospatial_lon_resolution = "{} degrees".format(abs(geobox.affine.a))
 
 
 def create_grid_mapping_variable(nco, crs):
