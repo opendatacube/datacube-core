@@ -81,6 +81,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset)
             check_cf_compliance(nco)
             check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset)
             check_global_attributes(nco, su.storage_type.global_attributes)
+            check_gdal_attributes(nco)
         check_open_with_xray(su.local_path)
     check_open_with_api(index)
 
@@ -117,6 +118,11 @@ def check_cf_compliance(dataset):
 def check_global_attributes(nco, attrs):
     for k, v in attrs.items():
         assert nco.getncattr(k) == v
+
+
+def check_gdal_attributes(nco):
+    assert 'GeoTransform' in nco.ncattrs()
+    assert 'spatial_ref' in nco.ncattrs()
 
 
 def check_dataset_metadata_in_storage_unit(nco, dataset_dir):

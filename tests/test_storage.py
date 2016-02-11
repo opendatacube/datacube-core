@@ -44,8 +44,12 @@ class GeoBoxStorageUnit(StorageUnitBase):
         return self.geobox.crs
 
     @property
-    def crs_str(self):
-        return self.geobox.crs_str
+    def affine(self):
+        return self.geobox.affine
+
+    @property
+    def extent(self):
+        return self.geobox.extent
 
     def _get_coord(self, name):
         if name in self.geobox.coordinate_labels:

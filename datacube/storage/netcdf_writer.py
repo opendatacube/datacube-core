@@ -144,9 +144,9 @@ def _create_projected_grid_mapping_variable(nco, crs):
     return crs_var
 
 
-def write_gdal_geobox_attributes(nco, crs_str, affine):
+def write_gdal_attributes(nco, crs, affine):
     crs_var = nco['crs']
-    crs_var.spatial_ref = crs_str
+    crs_var.spatial_ref = crs.ExportToWkt()
     crs_var.GeoTransform = affine.to_gdal()
 
 

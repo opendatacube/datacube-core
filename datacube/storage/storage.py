@@ -141,8 +141,12 @@ class WarpingStorageUnit(StorageUnitBase):
         return self.geobox.crs
 
     @property
-    def crs_str(self):
-        return self.geobox.crs_str
+    def affine(self):
+        return self.geobox.affine
+
+    @property
+    def extent(self):
+        return self.geobox.extent
 
     def _get_coord(self, dim):
         return self.coord_data[dim]
@@ -157,7 +161,7 @@ class WarpingStorageUnit(StorageUnitBase):
             sources = [DatasetSource(dataset, measurement_id) for dataset in self._datasets]
             fuse_sources(sources,
                          dest,
-                         self.geobox[index].affine,
+                         self.geobox[index].affine,  # NOTE: Overloaded GeoBox.__getitem__
                          self.geobox.crs_str,
                          self.variables[name].nodata,
                          resampling=resampling,
@@ -183,8 +187,9 @@ def write_access_unit_to_netcdf(access_unit, global_attributes, variable_attribu
         coord_var = netcdf_writer.create_coordinate(nco, name, coord)
         coord_var[:] = access_unit.get_coord(name)[0]
     netcdf_writer.create_grid_mapping_variable(nco, access_unit.crs)
-    netcdf_writer.write_gdal_geobox_attributes(nco, access_unit.crs_str, access_unit.geobox.affine)
-    netcdf_writer.write_geographical_extents_attributes(nco, access_unit.geobox.geographic_extent.points)
+    if getattr(access_unit, 'affine'):
+        netcdf_writer.write_gdal_attributes(nco, access_unit.crs, access_unit.affine)
+    netcdf_writer.write_geographical_extents_attributes(nco, access_unit.extent.to_crs('EPSG:4326').points)
 
     for name, variable in access_unit.variables.items():
         var_params = variable_params.get(name, {})
