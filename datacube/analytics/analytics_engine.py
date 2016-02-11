@@ -298,7 +298,7 @@ class AnalyticsEngine(object):
         """
 
         function = self.OPERATORS_REDUCTION.get(function)
-        return self.apply_generic_reduction_function(array1, dimensions, function, name)
+        return self.apply_generic_reduction(array1, dimensions, function, name)
 
     def apply_generic_reduction(self, arrays, dimensions, function, name):
         """
