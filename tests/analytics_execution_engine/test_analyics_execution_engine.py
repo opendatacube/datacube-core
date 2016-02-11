@@ -15,7 +15,7 @@ from datacube.execution.execution_engine import ExecutionEngine
 #
 
 
-def test_1():
+def _test_1():
 
     # Test get data
 
@@ -32,7 +32,7 @@ def test_1():
     e.execute_plan(a.plan)
 
 
-def test_2():
+def _test_2():
 
     # Test perform ndvi
 
@@ -52,7 +52,7 @@ def test_2():
     e.execute_plan(a.plan)
 
 
-def test_3():
+def _test_3():
 
     # Test perform ndvi - old version for backwards compatibility
 
@@ -70,7 +70,7 @@ def test_3():
     e.execute_plan(a.plan)
 
 
-def test_4():
+def _test_4():
 
     # Test median reduction over time
 
@@ -89,7 +89,7 @@ def test_4():
     e.execute_plan(a.plan)
 
 
-def test_5():
+def _test_5():
 
     # Test median reduction over time - old version for backwards compatibility
 
@@ -108,7 +108,7 @@ def test_5():
     result = e.execute_plan(a.plan)
 
 
-def test_6():
+def _test_6():
 
     # Test median reduction over lat/long
 
@@ -127,7 +127,7 @@ def test_6():
     e.execute_plan(a.plan)
 
 
-def test_7():
+def _test_7():
 
     # Test median reduction over lat/long - old version for backwards compatibility
 
@@ -146,7 +146,7 @@ def test_7():
     result = e.execute_plan(a.plan)
 
 
-def test_8():
+def _test_8():
 
     # Test perform ndvi + mask - old version for backwards compatibility
 
@@ -166,7 +166,7 @@ def test_8():
     e.execute_plan(a.plan)
 
 
-def test_9():
+def _test_9():
 
     # Test perform ndvi + mask
 
@@ -188,7 +188,7 @@ def test_9():
     e.execute_plan(a.plan)
 
 
-def test_10():
+def _test_10():
 
     # Test sensor specific bandmath - old version for backwards compatibility
 
@@ -205,7 +205,7 @@ def test_10():
     result = e.execute_plan(a.plan)
 
 
-def test_11():
+def _test_11():
 
     # Test bit of everything
 
@@ -229,7 +229,7 @@ def test_11():
     result = e.execute_plan(a.plan)
 
 
-def test_12():
+def _test_12():
 
     # Test median reduction over time - old version for backwards compatibility
 
