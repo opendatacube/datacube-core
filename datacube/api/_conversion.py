@@ -23,9 +23,7 @@ FLOAT_TOLERANCE = 0.0000001 # TODO: For DB query, use some sort of 'contains' qu
 def datetime_to_timestamp(dt):
     if not isinstance(dt, datetime.datetime) and not isinstance(dt, datetime.date):
         dt = to_datetime(dt)
-    if isinstance(dt, datetime.datetime) or isinstance(dt, datetime.date):
-        return datetime_to_seconds_since_1970(dt)
-    return dt
+    return datetime_to_seconds_since_1970(dt)
 
 
 def to_datetime(t):

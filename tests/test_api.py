@@ -16,6 +16,7 @@
 from __future__ import absolute_import, division, print_function
 
 import datetime
+from dateutil import tz
 
 from .util import isclose
 
@@ -32,6 +33,9 @@ def test_convert_descriptor_query_to_search_query():
             },
             'longitude': {
                 'range': (148.3, 149.9)
+            },
+            'time': {
+                'range': (datetime.datetime(2001, 5, 7), datetime.datetime(2002, 3, 9))
             }
         }
     }
@@ -42,6 +46,8 @@ def test_convert_descriptor_query_to_search_query():
     assert max(descriptor_query_dimensions['latitude']['range']) == search_query['lat'].end
     assert min(descriptor_query_dimensions['longitude']['range']) == search_query['lon'].begin
     assert max(descriptor_query_dimensions['longitude']['range']) == search_query['lon'].end
+    assert datetime.datetime(2001, 5, 7, tzinfo=tz.tzutc()) == search_query['time'].begin
+    assert datetime.datetime(2002, 3, 9, tzinfo=tz.tzutc()) == search_query['time'].end
 
 
 def test_convert_descriptor_query_to_search_query_with_crs_conversion():
@@ -65,6 +71,29 @@ def test_convert_descriptor_query_to_search_query_with_crs_conversion():
     search_query = convert_descriptor_dims_to_search_dims(descriptor_query_dimensions)
     assert all(map(isclose, search_query['lat'], expected_result['lat']))
     assert all(map(isclose, search_query['lon'], expected_result['lon']))
+
+
+def test_convert_descriptor_query_to_search_query_with_single_value():
+    descriptor_query = {
+        'dimensions': {
+            'latitude': {
+                'range': -3971790.0737348166,
+                'crs': 'EPSG:3577',
+            },
+            'longitude': {
+                'range': 1458629.8414059384,
+                'crs': 'EPSG:3577',
+            }
+        }
+    }
+    expected_lat = -35.5160917746369
+    expected_lon = 148.145408285529885
+    descriptor_query_dimensions = descriptor_query.get('dimensions', {})
+    search_query = convert_descriptor_dims_to_search_dims(descriptor_query_dimensions)
+    assert min(*search_query['lat']) <= expected_lat <= max(*search_query['lat'])
+    assert search_query['lat'].begin != search_query['lat'].end
+    assert min(*search_query['lon']) <= expected_lon <= max(*search_query['lon'])
+    assert search_query['lon'].begin != search_query['lon'].end
 
 
 def test_convert_descriptor_dims_to_selector_dims():
@@ -94,6 +123,24 @@ def test_convert_descriptor_dims_to_selector_dims():
     assert isclose(selector_dims['x']['range'][1], storage_selector['x']['range'][1])
     assert isclose(selector_dims['y']['range'][0], storage_selector['y']['range'][0])
     assert isclose(selector_dims['y']['range'][1], storage_selector['y']['range'][1])
+
+
+def test_convert_descriptor_dims_to_selector_dims_with_single_value():
+    storage_crs = 'EPSG:3577'
+    descriptor_query = {
+        'dimensions': {
+            'x': {
+                'range': 148.3,
+            },
+            'y': {
+                'range': -35.5,
+            }
+        }
+    }
+    descriptor_query_dimensions = descriptor_query.get('dimensions', {})
+    selector_dims = convert_descriptor_dims_to_selector_dims(descriptor_query_dimensions, storage_crs)
+    assert isclose(selector_dims['x']['range'], 1472748.1820625546)
+    assert isclose(selector_dims['y']['range'], -3971790.0737348166)
 
 
 def test_convert_descriptor_dims_to_selector_dims_with_time():
