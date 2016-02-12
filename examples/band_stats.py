@@ -26,7 +26,7 @@ from affine import Affine
 import rasterio
 from rasterio.coords import BoundingBox
 
-from datacube.api import make_storage_unit
+from datacube.api._storage import make_storage_unit
 from datacube.index import index_connect
 from datacube.model import GeoBox
 from datacube.storage.access.core import StorageUnitStack, StorageUnitVariableProxy

@@ -19,8 +19,8 @@ import datetime
 
 from .util import isclose
 
-from datacube.api import convert_descriptor_dims_to_search_dims, convert_descriptor_dims_to_selector_dims
-from datacube.api import datetime_to_timestamp
+from datacube.api._conversion import convert_descriptor_dims_to_search_dims, convert_descriptor_dims_to_selector_dims
+from datacube.api._conversion import datetime_to_timestamp
 from datacube.model import Range
 
 
@@ -122,3 +122,4 @@ def test_datetime_to_timestamp():
     assert datetime_to_timestamp((1990, 1, 7)) == 631670400
     assert datetime_to_timestamp(datetime.datetime(1990, 1, 7)) == 631670400
     assert datetime_to_timestamp(631670400) == 631670400
+    assert datetime_to_timestamp('1990-01-07T00:00:00.0Z') == 631670400
