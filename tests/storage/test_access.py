@@ -15,14 +15,11 @@
 
 from __future__ import absolute_import, division, print_function
 
-import os
 import numpy
 
 from datacube.storage.access.core import StorageUnitVariableProxy, StorageUnitDimensionProxy, StorageUnitStack
 from datacube.storage.access.backends import FauxStorageUnit
 from datacube.model import Range, Coordinate, Variable, CoordinateValue
-
-DATA_DIR = os.path.join(os.path.split(os.path.realpath(__file__))[0], 'data')
 
 
 ds1 = FauxStorageUnit({
@@ -121,10 +118,10 @@ def test_storage_unit_stack():
     assert (data.values == expected).all()
 
 
-def test_geotif_storage_unit():
+def test_geotif_storage_unit(data_folder):
     from datacube.storage.access.backends import GeoTifStorageUnit
 
-    su = GeoTifStorageUnit.from_file(DATA_DIR+'/test.tif')
+    su = GeoTifStorageUnit.from_file(data_folder+'/test.tif')
     assert set(su.coordinates.keys()) == ({'x', 'y'})
     assert su.variables['layer2'].nodata == -999
 
@@ -140,10 +137,10 @@ def test_geotif_storage_unit():
     assert (data.values == 1).all()
 
 
-def test_netcdf_storage_unit():
+def test_netcdf_storage_unit(data_folder):
     from datacube.storage.access.backends import NetCDF4StorageUnit
 
-    su = NetCDF4StorageUnit.from_file(DATA_DIR+'/test.nc')
+    su = NetCDF4StorageUnit.from_file(data_folder+'/test.nc')
     assert set(su.coordinates.keys()) == ({'longitude', 'latitude', 'time'})
     assert su.variables['B2'].nodata == -999
 

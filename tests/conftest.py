@@ -1,5 +1,6 @@
 from __future__ import print_function, absolute_import
 
+import os
 import pytest
 
 '''
@@ -18,6 +19,11 @@ def example_gdal_path(request):
     test method.
     """
     return str(request.fspath.dirpath('data/sample_tile_151_-29.tif'))
+
+
+@pytest.fixture
+def data_folder(request):
+    return os.path.join(os.path.split(os.path.realpath(__file__))[0], 'data')
 
 
 @pytest.fixture
