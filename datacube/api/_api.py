@@ -307,7 +307,7 @@ def _get_storage_units(descriptor_request=None, index=None, is_diskless=False):
     :return: StorageUnitCollection
     '''
     index = index or index_connect()
-    query = convert_descriptor_query_to_search_query(descriptor_request)
+    query = convert_descriptor_query_to_search_query(descriptor_request, index)
     sus = index.storage.search(**query)
     storage_units_by_type = defaultdict(StorageUnitCollection)
     for su in sus:
