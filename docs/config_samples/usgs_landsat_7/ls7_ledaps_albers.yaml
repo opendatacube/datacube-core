@@ -1,0 +1,158 @@
+
+name: ls7_ledaps_albers
+description: LS7 LEDAPS 25 metre, 100km tile, Albers projection
+
+match:
+    metadata:
+        platform:
+            code: LANDSAT_7
+        instrument:
+            name: ETM
+        product_type: LEDAPS
+
+location_name: eotiles
+file_path_template: '{platform[code]}_{instrument[name]}_LEDAPS_3577_{tile_index[0]}_{tile_index[1]}_{start_time:%Y-%m-%dT%H-%M-%S.%f}.nc'
+global_attributes:
+  title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
+  summary: These files are experimental, short lived, and the format will change.
+  source: This data is a reprojection and retile of Landsat surface reflectance data from the USGS
+  product_version: '0.0.0'
+  license: Creative Commons Attribution 4.0 International CC BY 4.0
+
+storage:
+  driver: NetCDF CF
+
+  crs: |
+    PROJCS["GDA94 / Australian Albers",
+        GEOGCS["GDA94",
+            DATUM["Geocentric_Datum_of_Australia_1994",
+                SPHEROID["GRS 1980",6378137,298.257222101,
+                    AUTHORITY["EPSG","7019"]],
+                TOWGS84[0,0,0,0,0,0,0],
+                AUTHORITY["EPSG","6283"]],
+            PRIMEM["Greenwich",0,
+                AUTHORITY["EPSG","8901"]],
+            UNIT["degree",0.01745329251994328,
+                AUTHORITY["EPSG","9122"]],
+            AUTHORITY["EPSG","4283"]],
+        UNIT["metre",1,
+            AUTHORITY["EPSG","9001"]],
+        PROJECTION["Albers_Conic_Equal_Area"],
+        PARAMETER["standard_parallel_1",-18],
+        PARAMETER["standard_parallel_2",-36],
+        PARAMETER["latitude_of_center",0],
+        PARAMETER["longitude_of_center",132],
+        PARAMETER["false_easting",0],
+        PARAMETER["false_northing",0],
+        AUTHORITY["EPSG","3577"],
+        AXIS["Easting",EAST],
+        AXIS["Northing",NORTH]]
+  tile_size:
+          x: 100000.0
+          y: 100000.0
+  resolution:
+          x: 25
+          y: -25
+  chunking:
+      x: 500
+      y: 500
+      time: 1
+  dimension_order: ['time', 'y', 'x']
+
+measurements:
+  'cfmask':
+      dtype: int16
+      nodata: 255
+      resampling_method: nearest
+      varname: cfmask
+      zlib: True
+  'cfmask_conf':
+      dtype: int16
+      nodata: 255
+      resampling_method: nearest
+      varname: cfmask_conf
+      zlib: True
+  'sr_adjacent_cloud_qa':
+      dtype: int16
+      nodata: 255
+      resampling_method: nearest
+      varname: sr_adjacent_cloud_qa
+      zlib: True
+  'sr_atmos_opacity':
+      dtype: int16
+      nodata: -9999
+      resampling_method: nearest
+      varname: sr_atmos_opacity
+      zlib: True
+  'sr_band1':
+      dtype: int16
+      nodata: -9999
+      resampling_method: nearest
+      varname: band1
+      zlib: True
+  'sr_band2':
+      dtype: int16
+      nodata: -9999
+      resampling_method: nearest
+      varname: band2
+      zlib: True
+  'sr_band3':
+      dtype: int16
+      nodata: -9999
+      resampling_method: nearest
+      varname: band3
+      zlib: True
+  'sr_band4':
+      dtype: int16
+      nodata: -9999
+      resampling_method: nearest
+      varname: band4
+      zlib: True
+  'sr_band5':
+      dtype: int16
+      nodata: -9999
+      resampling_method: nearest
+      varname: band5
+      zlib: True
+  'sr_band7':
+      dtype: int16
+      nodata: -9999
+      resampling_method: nearest
+      varname: band7
+      zlib: True
+  'sr_cloud_qa':
+      dtype: int16
+      nodata: 255
+      resampling_method: nearest
+      varname: sr_cloud_qa
+      zlib: True
+  'sr_cloud_shadow_qa':
+      dtype: int16
+      nodata: 255
+      resampling_method: nearest
+      varname: sr_cloud_shadow_qa
+      zlib: True
+  'sr_ddv_qa':
+      dtype: int16
+      nodata: 255
+      resampling_method: nearest
+      varname: sr_ddv_qa
+      zlib: True
+  'sr_fill_qa':
+      dtype: int16
+      nodata: 255
+      resampling_method: nearest
+      varname: sr_fill_qa
+      zlib: True
+  'sr_land_water_qa':
+      dtype: int16
+      nodata: 255
+      resampling_method: nearest
+      varname: sr_land_water_qa
+      zlib: True
+  'sr_snow_qa':
+      dtype: int16
+      nodata: 255
+      resampling_method: nearest
+      varname: sr_snow_qa
+      zlib: True
