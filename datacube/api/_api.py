@@ -31,7 +31,7 @@ from datacube.index import index_connect
 
 from ._conversion import convert_descriptor_query_to_search_query, convert_descriptor_dims_to_selector_dims
 from ._conversion import dimension_ranges_to_selector, dimension_ranges_to_iselector, to_datetime
-from ._dask import get_dask_array
+from ._dask import get_dask_array, get_fake_dask_array
 from ._storage import StorageUnitCollection, IrregularStorageUnitSlice
 from ._storage import make_storage_unit, make_storage_unit_collection_from_descriptor
 
@@ -350,12 +350,15 @@ def _create_response(xarrays, dimensions, extra_properties):
     return response
 
 
-def _get_array(storage_units, var_name, dimensions, dim_props):
+def _get_array(storage_units, var_name, dimensions, dim_props, fake_array=False):
     """
     Create an xarray.DataArray
     :return xarray.DataArray
     """
-    dask_array = get_dask_array(storage_units, var_name, dimensions, dim_props)
+    if not fake_array:
+        dask_array = get_dask_array(storage_units, var_name, dimensions, dim_props)
+    else:
+        dask_array = get_fake_dask_array(storage_units, var_name, dimensions, dim_props)
     coords = [(dim, dim_props['coord_labels'][dim]) for dim in dimensions]
     xarray_data_array = xarray.DataArray(dask_array, coords=coords)
     return xarray_data_array
@@ -373,7 +376,7 @@ def _fix_custom_dimensions(dimensions, dim_props):
     return dimension_ranges, coord_labels
 
 
-def _get_data_by_variable(storage_units_by_variable, dimensions, dimension_ranges):
+def _get_data_by_variable(storage_units_by_variable, dimensions, dimension_ranges, fake_array=False):
     sus_with_dims = set(itertools.chain(*storage_units_by_variable.values()))
     dim_props = _get_dimension_properties(sus_with_dims, dimensions)
     dim_props['dimension_ranges'] = dimension_ranges
@@ -384,7 +387,7 @@ def _get_data_by_variable(storage_units_by_variable, dimensions, dimension_range
 
     xarrays = {}
     for var_name, storage_units in storage_units_by_variable.items():
-        xarray_data_array = _get_array(storage_units, var_name, dimensions, dim_props)
+        xarray_data_array = _get_array(storage_units, var_name, dimensions, dim_props, fake_array)
         for key, value in selectors.items():
             if isinstance(value, slice):
                 xarray_data_array = xarray_data_array.sel(**{key: value})
@@ -422,7 +425,7 @@ def _stratify_irregular_dimension(storage_units, dimension):
     return list(itertools.chain(*stratified_storage_units))
 
 
-def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges=None):
+def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges=None, fake_array=False):
     if not dimension_ranges:
         dimension_ranges = {}
 
@@ -438,7 +441,7 @@ def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges
 
     dimension_group = {}
     for dimensions, sus_by_variable in variables_by_dimensions.items():
-        dimension_group[dimensions] = _get_data_by_variable(sus_by_variable, dimensions, dimension_ranges)
+        dimension_group[dimensions] = _get_data_by_variable(sus_by_variable, dimensions, dimension_ranges, fake_array)
     if len(dimension_group) == 1:
         return list(dimension_group.values())[0]
     return dimension_group
@@ -454,7 +457,9 @@ def _to_single_value(data_array):
 
 def _get_result_stats(storage_units, dimensions, dimension_ranges):
     strata_storage_units = _stratify_irregular_dimension(storage_units, 'time')
-    storage_data = _get_data_from_storage_units(strata_storage_units, dimension_ranges=dimension_ranges)
+    storage_data = _get_data_from_storage_units(strata_storage_units,
+                                                dimension_ranges=dimension_ranges,
+                                                fake_array=True)
     example = storage_data['arrays'][list(storage_data['arrays'].keys())[0]]
     result = {
         'result_shape': tuple(example[dim].size for dim in dimensions),

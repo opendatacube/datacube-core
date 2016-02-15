@@ -27,6 +27,19 @@ def get_dask_array(storage_units, var_name, dimensions, dim_props):
     return dask_array
 
 
+def get_fake_dask_array(storage_units, var_name, dimensions, dim_props):
+    """
+    Create an xarray.DataArray
+    :return xarray.DataArray
+    """
+    dsk_id = str(uuid.uuid1())  # unique name for the requested dask
+    dsk = {}
+    dtype = storage_units[0].variables[var_name].dtype
+    chunks = tuple(tuple(dim_props['sus_size'][dim]) for dim in dimensions)
+    dask_array = da.Array(dsk, dsk_id, chunks, dtype=dtype)
+    return dask_array
+
+
 def _get_dask_for_storage_units(storage_units, var_name, dimensions, dim_vals, dsk_id):
     dsk = {}
     for storage_unit in storage_units:
@@ -41,28 +54,29 @@ def _get_dask_for_storage_units(storage_units, var_name, dimensions, dim_vals, d
 
 
 def _fill_in_dask_blanks(dsk, storage_units, var_name, dimensions, dim_props, dsk_id):
-    nodata_dsk = _make_nodata_func(storage_units, var_name, dimensions, dim_props['sus_size'])
-
     all_dsk_keys = set(itertools.product((dsk_id,), *[[i for i, _ in enumerate(dim_props['dim_vals'][dim])]
                                                       for dim in dimensions]))
     missing_dsk_keys = all_dsk_keys - set(dsk.keys())
 
-    for key in missing_dsk_keys:
-        dsk[key] = nodata_dsk(key)
-    return dsk
+    if missing_dsk_keys:
+        dtype, nodata = _nodata_properties(storage_units, var_name)
+        for key in missing_dsk_keys:
+            shape = _get_chunk_shape(key, dimensions, dim_props['sus_size'])
+            dsk[key] = (no_data_block, shape, dtype, nodata)
+        return dsk
 
 
-def _make_nodata_func(storage_units, var_name, dimensions, chunksize):
+def _nodata_properties(storage_units, var_name):
     sample = storage_units[0]
     dtype = sample.variables[var_name].dtype
     nodata = sample.variables[var_name].nodata
+    return dtype, nodata
 
-    def make_nodata_dask(key):
-        coords = list(key)[1:]
-        shape = tuple(operator.getitem(chunksize[dim], i) for dim, i in zip(dimensions, coords))
-        return no_data_block, shape, dtype, nodata
 
-    return make_nodata_dask
+def _get_chunk_shape(key, dimensions, chunksize):
+    coords = list(key)[1:]
+    shape = tuple(operator.getitem(chunksize[dim], i) for dim, i in zip(dimensions, coords))
+    return shape
 
 
 def no_data_block(shape, dtype, fill):
