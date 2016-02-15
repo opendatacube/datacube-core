@@ -322,6 +322,14 @@ class DatasetResource(object):
         """
         return (self._make(dataset) for dataset in query_result)
 
+    def search_by_metadata(self, metadata):
+        """
+        Perform a search, returning results as Dataset objects.
+        :type metadata: dict
+        :rtype list[datacube.model.Dataset]
+        """
+        return self._make_many(self._db.search_datasets_by_metadata(metadata))
+
     def search(self, *expressions, **query):
         """
         Perform a search, returning results as Dataset objects.

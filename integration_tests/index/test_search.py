@@ -82,6 +82,31 @@ def test_search_dataset_equals(index, db, default_collection):
     assert len(datasets) == 0
 
 
+def test_search_dataset_by_metadata(index, db, default_collection):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    """
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid
+    )
+    assert was_inserted
+
+    datasets = index.datasets.search_by_metadata(
+        {"platform": {"code": "LANDSAT_8"}, "instrument": {"name": "OLI_TIRS"}}
+    )
+    datasets = list(datasets)
+    assert len(datasets) == 1
+    assert datasets[0].id == _telemetry_uuid
+
+    datasets = index.datasets.search_by_metadata(
+        {"platform": {"code": "LANDSAT_5"}, "instrument": {"name": "TM"}}
+    )
+    datasets = list(datasets)
+    assert len(datasets) == 0
+
+
 def test_search_dataset_ranges(index, db, default_collection):
     """
     :type db: datacube.index.postgres._api.PostgresDb

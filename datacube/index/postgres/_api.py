@@ -355,6 +355,19 @@ class PostgresDb(object):
 
         return fields
 
+    def search_datasets_by_metadata(self, metadata):
+        """
+        Find any datasets that have the given metadata.
+
+        :type dataset_metadata: dict
+        :rtype: dict
+        """
+        # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
+        return self._connection.execute(
+            select(_DATASET_SELECT_FIELDS).where(DATASET.c.metadata.contains(metadata))
+        ).fetchall()
+
+
     def search_datasets(self, expressions, select_fields=None):
         """
         :type select_fields: tuple[datacube.index.postgres._fields.PgField]
