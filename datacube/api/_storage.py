@@ -102,6 +102,7 @@ class StorageUnitCollection(object):
 
     def get_storage_unit_stats(self, dimensions):
         stats = {}
+        irregular_dim_names = ['time', 't']  # TODO: Use irregular flag from database instead
         for storage_unit in self._storage_units:
             index = tuple(storage_unit.coordinates[dim].begin for dim in dimensions)
             stats[index] = {
@@ -110,7 +111,9 @@ class StorageUnitCollection(object):
                 'storage_max': tuple(max(storage_unit.coordinates[dim].begin, storage_unit.coordinates[dim].end)
                                      for dim in dimensions),
                 'storage_shape': tuple(storage_unit.coordinates[dim].length for dim in dimensions),
-                'storage_path': str(storage_unit.file_path)
+                'storage_path': str(storage_unit.file_path),
+                'irregular_indicies': dict((dim, storage_unit.get_coord(dim)[0].tolist())
+                                           for dim in dimensions if dim in irregular_dim_names)
             }
         return stats
 
