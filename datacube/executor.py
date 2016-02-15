@@ -18,23 +18,46 @@ from __future__ import absolute_import, division
 class SerialExecutor(object):
     map = map
 
-    def apply(self, func, *args, **kwargs):
+    def submit(self, func, *args, **kwargs):
         return func(*args, **kwargs)
+
+    @staticmethod
+    def result(value):
+        return value
+
+
+class MultiprocessingExecutor(object):
+    def __init__(self, pool):
+        self._pool = pool
+
+    def submit(self, func, *args, **kwargs):
+        return self._pool.submit(func, *args, **kwargs).result()
+
+    def map(self, func, iterable):
+        return list(self._pool.map(func, iterable))
+
+    @staticmethod
+    def result(value):
+        return value
 
 
 class DistributedExecutor(object):
     def __init__(self, executor):
+        """
+        :type executor: distributed.Executor
+        :return:
+        """
         self._executor = executor
 
+    def submit(self, func, *args, **kwargs):
+        return self._executor.submit(func, *args, **kwargs)
+
     def map(self, func, iterable):
-        futures = self._executor.map(func, iterable)
-        for future in futures:
-            yield future.result()
+        return self._executor.map(func, iterable)
 
-
-def _get_multiprocessing_executor(workers):
-    from multiprocessing import Pool
-    return Pool()
+    @staticmethod
+    def result(value):
+        return value.result()
 
 
 def _get_ipyparallel_executor(workers):
@@ -55,7 +78,8 @@ def _get_distributed_executor(scheduler, workers):
     except ImportError:
         return None
     try:
-        return DistributedExecutor(distributed.Executor(scheduler))
+        executor = DistributedExecutor(distributed.Executor(scheduler))
+        return executor
     except IOError:
         return None
 
@@ -69,8 +93,6 @@ def get_executor(scheduler, workers):
         if distributed_exec:
             return distributed_exec
 
-    executor = _get_ipyparallel_executor(workers)
-    if executor:
-        return executor
-
-    return _get_multiprocessing_executor(workers)
+    from concurrent.futures import ProcessPoolExecutor
+    mp_exec = MultiprocessingExecutor(ProcessPoolExecutor())
+    return mp_exec

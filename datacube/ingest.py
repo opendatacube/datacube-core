@@ -11,6 +11,7 @@ import logging
 from datacube import ui, storage
 from datacube.executor import SerialExecutor
 from datacube.index import index_connect
+from datacube.model import _uri_to_local_path
 
 _LOG = logging.getLogger(__name__)
 
@@ -51,11 +52,13 @@ def store_datasets(datasets, index=None, executor=SerialExecutor()):
 
     storage_types = find_storage_types_for_datasets(datasets, index)
 
+    storage_units = []
     for storage_type_id, datasets in storage_types.items():
         storage_type = index.storage.types.get(storage_type_id)
         _LOG.info('Storing %s datasets using %s', datasets, storage_type)
-        storage_units = create_storage_units(datasets, storage_type, executor=executor)
-        index.storage.add_many(storage_units)
+        storage_units += create_storage_units(datasets, storage_type, executor=executor)
+
+    index.storage.add_many(executor.result(value) for value in storage_units)
 
 
 def find_storage_types_for_datasets(datasets, index=None):
@@ -114,6 +117,6 @@ def _remove_storage_unit(task):
     tile_index, storage_type, datasets = task
     filename = storage.generate_filename(tile_index, datasets, storage_type)
     try:
-        os.unlink(filename)
+        os.unlink(str(_uri_to_local_path(filename)))
     except OSError:
         pass
