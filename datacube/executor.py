@@ -84,6 +84,15 @@ def _get_distributed_executor(scheduler, workers):
         return None
 
 
+def _get_concurrent_executor(workers):
+    try:
+        from concurrent.futures import ProcessPoolExecutor
+    except ImportError:
+        return None
+
+    return MultiprocessingExecutor(ProcessPoolExecutor())
+
+
 def get_executor(scheduler, workers):
     if not workers:
         return SerialExecutor()
@@ -93,6 +102,8 @@ def get_executor(scheduler, workers):
         if distributed_exec:
             return distributed_exec
 
-    from concurrent.futures import ProcessPoolExecutor
-    mp_exec = MultiprocessingExecutor(ProcessPoolExecutor())
-    return mp_exec
+    concurrent_exec = _get_concurrent_executor(workers)
+    if concurrent_exec:
+        return concurrent_exec
+
+    return SerialExecutor()
