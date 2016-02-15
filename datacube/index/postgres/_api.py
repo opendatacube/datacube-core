@@ -367,7 +367,6 @@ class PostgresDb(object):
             select(_DATASET_SELECT_FIELDS).where(DATASET.c.metadata.contains(metadata))
         ).fetchall()
 
-
     def search_datasets(self, expressions, select_fields=None):
         """
         :type select_fields: tuple[datacube.index.postgres._fields.PgField]

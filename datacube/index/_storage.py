@@ -17,7 +17,7 @@ except ImportError:
     from yaml import SafeLoader
 
 from datacube.index.fields import InvalidDocException
-from datacube.model import StorageUnit, StorageType, DatasetMatcher
+from datacube.model import StorageUnit, StorageType
 from . import fields
 
 MAPPING_SCHEMA_PATH = pathlib.Path(__file__).parent.joinpath('storage-type-schema.yaml')
