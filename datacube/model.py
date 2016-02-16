@@ -256,7 +256,7 @@ class StorageUnit(object):
     @property
     def tile_index(self):
         #: :rtype: tuple[int, int]
-        return self.descriptor['tile_index']
+        return tuple(self.descriptor['tile_index'])
 
     @property
     def coordinates(self):
