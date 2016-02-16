@@ -5,14 +5,16 @@ Ingest data from the command-line.
 """
 from __future__ import absolute_import
 import os
-from itertools import chain
+from datetime import datetime
 
 from pathlib import Path
-
+from dateutil.tz import tzutc
+from dateutil.relativedelta import relativedelta
 import click
 
 from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS
+from datacube.model import Range
 from datacube.ingest import index_datasets, store_datasets
 from datacube.storage.storage import stack_storage_units
 
@@ -47,23 +49,29 @@ def stack(index, types, workers, scheduler):
     else:
         storage_types = [index.storage.types.get_by_name(name) for name in types]
 
+    tasks = []
     for storage_type in storage_types:
-        storage_units_by_tile_index = {}
-        for storage_unit in index.storage.search(type=storage_type.id_):
-            storage_units_by_tile_index.setdefault(storage_unit.tile_index, []).append(storage_unit)
+        start_date = datetime(1970, 1, 1, tzinfo=tzutc())
+        end_date = datetime(2016, 1, 1, tzinfo=tzutc())
+        period = relativedelta(months=1)
+        while start_date < end_date:
+            storage_units_by_tile_index = {}
+            for storage_unit in index.storage.search(type=storage_type.id_, time=Range(start_date, start_date+period)):
+                storage_units_by_tile_index.setdefault(storage_unit.tile_index, []).append(storage_unit)
 
-        if not storage_units_by_tile_index:
-            continue
+            for tile_index, storage_units in storage_units_by_tile_index.items():
+                if len(storage_units) < 2:
+                    continue
 
-        stacked_storage_units = [
-            stack_storage_units(storage_units, storage_type.resolve_location(os.urandom(16).encode('hex')+'.nc'))
-            for storage_units in storage_units_by_tile_index.values()
-            ]
-        old_storage_units = list(chain.from_iterable(storage_units_by_tile_index.values()))
+                filename = storage_type.generate_uri(tile_index=tile_index,
+                                                     start_time=start_date.strftime('%Y%m'),
+                                                     end_time=(start_date+period).strftime('%Y%m'))
+                tasks.append((storage_units, filename))
+            start_date = start_date + period
 
-        index.storage.replace(old_storage_units, stacked_storage_units)
-
-        for storage_unit in old_storage_units:
+    for storage_units, filename in tasks:
+        index.storage.replace(storage_units, [stack_storage_units(storage_units, filename)])
+        for storage_unit in storage_units:
             os.unlink(str(storage_unit.local_path))
 
 
