@@ -384,6 +384,11 @@ class PostgresDb(object):
             select_fields=select_fields,
         )
 
+    def get_dataset_ids_for_storage_unit(self, storage_unit_id):
+        return self._connection.execute(
+            select([DATASET_STORAGE.c.dataset_ref]).where(DATASET_STORAGE.c.storage_unit_ref == storage_unit_id)
+        ).fetchall()
+
     def search_storage_units(self, expressions, select_fields=None):
         """
         :type select_fields: tuple[datacube.index.postgres._fields.PgField]
