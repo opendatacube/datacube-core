@@ -191,6 +191,7 @@ class StorageType(object):  # pylint: disable=too-many-public-methods
         params = {
             'mapping_id': self.id_,
             'mapping_name': self.name,
+            'random': os.urandom(16).encode('hex'),
         }
         params.update(self.document['match']['metadata'])
         params.update(kwargs)
