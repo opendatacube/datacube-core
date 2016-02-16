@@ -63,7 +63,6 @@ def make_storage_unit(su, is_diskless=False):
     attributes = {
         'storage_type': su.storage_type
     }
-    attributes.update(su.storage_type.match.metadata)
 
     if is_diskless:
         return make_in_memory_storage_unit(su,

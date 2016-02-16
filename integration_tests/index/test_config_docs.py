@@ -124,8 +124,8 @@ def test_get_for_dataset(index, local_config):
     storage_type = storage_types[0]
     assert storage_type.name == 'ls5_nbar'
 
-    assert storage_type.storage_pattern == local_config.location_mappings['eotiles'] + '/file_path_template/file.nc'
-    assert storage_type.match.metadata == _STORAGE_MAPPING['match']['metadata']
+    assert storage_type.document['file_path_template'] == '/file_path_template/file.nc'
+    assert storage_type.document['match']['metadata'] == _STORAGE_MAPPING['match']['metadata']
     assert storage_type.measurements == _STORAGE_MAPPING['measurements']
 
     assert storage_type.driver == 'NetCDF CF'

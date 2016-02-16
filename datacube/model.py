@@ -82,12 +82,6 @@ class StorageType(object):  # pylint: disable=too-many-public-methods
         self.document = document
 
     @property
-    def match(self):
-        # Which datasets to match.
-        #: :rtype: DatasetMatcher
-        return DatasetMatcher(self.document['match']['metadata'])
-
-    @property
     def name(self):
         # A unique name for the storage type (specified by users)
         #: :rtype: str
@@ -120,13 +114,6 @@ class StorageType(object):  # pylint: disable=too-many-public-methods
         return self.document['location']
 
     @property
-    def filename_pattern(self):
-        # Storage Unit filename pattern
-        # TODO: define pattern expansion rules
-        #: :rtype: str
-        return self.document['file_path_template']
-
-    @property
     def global_attributes(self):
         return self.document.get('global_attributes', {})
 
@@ -154,10 +141,6 @@ class StorageType(object):  # pylint: disable=too-many-public-methods
     @property
     def definition(self):
         return self.document['storage']
-
-    @property
-    def storage_pattern(self):
-        return self.resolve_location(self.filename_pattern)
 
     @property
     def driver(self):
@@ -203,6 +186,17 @@ class StorageType(object):  # pylint: disable=too-many-public-methods
     def chunking(self):
         chunks = self.definition['chunking']
         return [chunks[dim] for dim in self.dimensions]
+
+    def generate_uri(self, **kwargs):
+        params = {
+            'mapping_id': self.id_,
+            'mapping_name': self.name,
+        }
+        params.update(self.document['match']['metadata'])
+        params.update(kwargs)
+
+        filename = self.document['file_path_template'].format(**params)
+        return self.resolve_location(filename)
 
     def local_uri_to_location_relative_path(self, uri):
         if not uri.startswith(self.location):

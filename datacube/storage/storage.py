@@ -319,15 +319,11 @@ def _rasterio_resampling_method(measurement_descriptor):
 
 
 def generate_filename(tile_index, datasets, mapping):
-    merged = {
-        'tile_index': tile_index,
-        'mapping_id': mapping.id_,
-        'start_time': _parse_time(datasets[0].time),
-        'end_time': _parse_time(datasets[-1].time),
-    }
-    merged.update(mapping.match.metadata)
-
-    return mapping.storage_pattern.format(**merged)
+    return mapping.generate_uri(
+        tile_index=tile_index,
+        start_time=_parse_time(datasets[0].time),
+        end_time=_parse_time(datasets[-1].time),
+    )
 
 
 def _parse_time(time):
