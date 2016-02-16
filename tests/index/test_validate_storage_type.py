@@ -13,8 +13,7 @@ from datacube.index.fields import InvalidDocException
 
 only_mandatory_fields = {
     'name': 'ls7_nbar',
-    'file_path_template': '{platform[code]}_{instrument[name]}_{tile_index[0]}_{tile_index[1]}_'
-                          '{start_time:%Y-%m-%dT%H-%M-%S.%f}.nc',
+    'file_path_template': '{platform[code]}_{instrument[name]}_{tile_index[0]}_{tile_index[1]}_{start_time}.nc',
     'location_name': 'eotiles',
     'match': {
         'metadata': {

@@ -11,7 +11,7 @@ match:
         product_type: LEDAPS
 
 location_name: eotiles
-file_path_template: '{platform[code]}_{instrument[name]}_LEDAPS_3577_{tile_index[0]}_{tile_index[1]}_{start_time:%Y-%m-%dT%H-%M-%S.%f}.nc'
+file_path_template: '{platform[code]}_{instrument[name]}_LEDAPS_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
   summary: These files are experimental, short lived, and the format will change.

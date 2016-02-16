@@ -113,7 +113,7 @@ It controls things like:
 
     location_name: eotiles
 
-    file_path_template: '{platform[code]}_{instrument[name]}_{tile_index[0]}_{tile_index[1]}_NBAR_{start_time:%Y-%m-%dT%H-%M-%S.%f}.nc'
+    file_path_template: '{platform[code]}_{instrument[name]}_{tile_index[0]}_{tile_index[1]}_NBAR_{start_time}.nc'
 
     global_attributes:
         title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE

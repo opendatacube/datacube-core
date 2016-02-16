@@ -321,8 +321,8 @@ def _rasterio_resampling_method(measurement_descriptor):
 def generate_filename(tile_index, datasets, mapping):
     return mapping.generate_uri(
         tile_index=tile_index,
-        start_time=_parse_time(datasets[0].time),
-        end_time=_parse_time(datasets[-1].time),
+        start_time=_parse_time(datasets[0].time).strftime('%Y%m%d%H%M%S%f'),
+        end_time=_parse_time(datasets[-1].time).strftime('%Y%m%d%H%M%S%f'),
     )
 
 
