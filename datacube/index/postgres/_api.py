@@ -333,6 +333,12 @@ class PostgresDb(object):
                 collection_result['id'],
                 STORAGE_UNIT.c.id
             ),
+            'type': NativeField(
+                'type',
+                'Storage type id',
+                collection_result['id'],
+                STORAGE_UNIT.c.storage_type_ref
+            ),
             'path': NativeField(
                 'path',
                 'Path to storage file',

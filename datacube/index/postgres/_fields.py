@@ -70,7 +70,7 @@ class NativeField(PgField):
 
     @property
     def alchemy_expression(self):
-        return self._expression or self.alchemy_column
+        return (self._expression or self.alchemy_column).label(self.name)
 
     @property
     def postgres_index_type(self):
