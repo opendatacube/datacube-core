@@ -408,8 +408,11 @@ def _stratify_storage_unit(storage_unit, dimension):
     :return: storage_units: list of storage_unit-like objects that point to an underlying storage unit at a particular
      value, one for each value of the irregular dimension
     """
-    coord, index = storage_unit.get_coord(dimension)
-    if len(coord) > 1:
+    if dimension not in storage_unit.coordinates:
+        return [storage_unit]
+    irregular_coord = storage_unit.coordinates[dimension]
+    if irregular_coord.length > 1:
+        coord, index = storage_unit.get_coord(dimension)
         return [IrregularStorageUnitSlice(storage_unit, dimension, i) for i, c in enumerate(coord)]
     return [storage_unit]
 
