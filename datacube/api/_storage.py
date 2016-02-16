@@ -72,7 +72,8 @@ def make_storage_unit(su, is_diskless=False):
                                            crs=crs)
 
     if su.storage_type.driver == 'NetCDF CF':
-        return NetCDF4StorageUnit(su.local_path, coordinates=coordinates, variables=variables, attributes=attributes)
+        return NetCDF4StorageUnit(su.local_path, coordinates=coordinates, variables=variables,
+                                  attributes=attributes, crs=crs)
 
     if su.storage_type.driver == 'GeoTiff':
         result = GeoTifStorageUnit(su.local_path, coordinates=coordinates, variables=variables, attributes=attributes)
