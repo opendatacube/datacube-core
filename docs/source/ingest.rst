@@ -34,4 +34,4 @@ Ingestion
 ---------
 :ref:`datacube-ingest-tool` can be used to ingest prepared datasets::
 
-    datacube-ingest -v packages/nbar/LS8_OLITIRS_TNBAR_P54_GALPGS01-002_112_079_20140126 packages/pq/LS8_OLITIRS_PQ_P55_GAPQ01-002_112_079_20140126
+    datacube-ingest -v ingest packages/nbar/LS8_OLITIRS_TNBAR_P54_GALPGS01-002_112_079_20140126 packages/pq/LS8_OLITIRS_PQ_P55_GAPQ01-002_112_079_20140126

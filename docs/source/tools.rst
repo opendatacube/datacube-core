@@ -32,18 +32,20 @@ datacube-ingest
 
 .. code-block:: text
 
-    Usage: datacube-ingest [OPTIONS] [DATASETS]...
+    Usage: datacube-ingest [OPTIONS] COMMAND [DATASETS]...
 
-        Ingest datasets into the Data Cube.
+        Data Management Tool
 
     Options:
       --version
       -v, --verbose           Use multiple times for more verbosity
       -C, --config_file TEXT
       --log-queries           Print database queries.
-      --workers INTEGER
-      --no-storage            Don't create storage units
       -h, --help              Show this message and exit.
+
+    Commands:
+      ingest Ingest datasets into the Data Cube.
+      stack  Stack storage units
 .. _datacube-search-tool:
 
 datacube-search
