@@ -76,7 +76,8 @@ def convert_descriptor_query_to_search_query(descriptor=None, index=None):
         _LOG.warning("Some of the fields in the query are unknown and will be ignored: %s",
                      ', '.join(unknown_fields))
 
-    search_query.update(convert_descriptor_dims_to_search_dims(descriptor))
+    descriptor_dimensions = descriptor.get('dimensions', {})
+    search_query.update(convert_descriptor_dims_to_search_dims(descriptor_dimensions))
     return search_query
 
 

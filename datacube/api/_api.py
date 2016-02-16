@@ -157,7 +157,7 @@ class API(object):
             storage_units_by_dimensions = storage_units.group_by_dimensions()
             for dimensions, grouped_storage_units in storage_units_by_dimensions.items():
                 # TODO: Either filter our undesired variables or return everything
-                if len(dimensions) != 3:
+                if len(dimensions) < 3:
                     continue
 
                 result = descriptor.setdefault(stype, {
@@ -238,7 +238,7 @@ class API(object):
             ]
         }
         """
-
+        descriptor = descriptor or {}
         variables = descriptor.get('variables', None)
         storage_units_by_type = defaultdict(StorageUnitCollection)
         if storage_units:
@@ -308,6 +308,7 @@ def _get_storage_units(descriptor_request=None, index=None, is_diskless=False):
     '''
     index = index or index_connect()
     query = convert_descriptor_query_to_search_query(descriptor_request, index)
+    _LOG.debug("Database storage search %s", query)
     sus = index.storage.search(**query)
     storage_units_by_type = defaultdict(StorageUnitCollection)
     for su in sus:
@@ -441,6 +442,9 @@ def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges
 
     dimension_group = {}
     for dimensions, sus_by_variable in variables_by_dimensions.items():
+        # TODO: Work out how to tell the difference between real variables and metadata variables
+        if len(dimensions) < 3:
+            continue
         dimension_group[dimensions] = _get_data_by_variable(sus_by_variable, dimensions, dimension_ranges, fake_array)
     if len(dimension_group) == 1:
         return list(dimension_group.values())[0]
