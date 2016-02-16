@@ -7,6 +7,7 @@ from __future__ import absolute_import, division
 import logging
 from collections import namedtuple, defaultdict
 import os
+import codecs
 
 from pathlib import Path
 import numpy
@@ -191,7 +192,7 @@ class StorageType(object):  # pylint: disable=too-many-public-methods
         params = {
             'mapping_id': self.id_,
             'mapping_name': self.name,
-            'random': os.urandom(16).encode('hex'),
+            'random': codecs.encode(os.urandom(16), 'hex'),
         }
         params.update(self.document['match']['metadata'])
         params.update(kwargs)
