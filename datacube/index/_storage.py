@@ -72,6 +72,20 @@ class StorageUnitResource(object):
         """
         return self.add_many([storage_unit])
 
+    def replace(self, old_storage_unit, new_storage_units):
+        with self._db.begin() as transaction:
+            for unit in old_storage_unit:
+                self._db.archive_storage_unit(unit.id_)
+
+            for unit in new_storage_units:
+                unit_id = self._db.add_storage_unit(
+                    unit.path,
+                    unit.dataset_ids,
+                    unit.descriptor,
+                    unit.storage_type.id_,
+                )
+                _LOG.debug('Indexed unit %s @ %s', unit_id, unit.path)
+
     def get_field(self, name, collection_name=None):
         """
         :type name: str
