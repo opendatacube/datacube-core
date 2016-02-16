@@ -245,7 +245,7 @@ class API(object):
             stype = 'Requested Storage'
             storage_units_by_type[stype] = make_storage_unit_collection_from_descriptor(storage_units)
         else:
-            storage_units_by_type = self._get_storage_units(descriptor, self.index)
+            storage_units_by_type = _get_storage_units(descriptor, self.index)
 
         if len(storage_units_by_type) > 1:
             # TODO: Work out if they share the same grid (projection & resolution)
