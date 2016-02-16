@@ -261,6 +261,10 @@ class PostgresDb(object):
         )
         return res.inserted_primary_key[0]
 
+    def archive_storage_unit(self, storage_unit_id):
+        self._connection.execute(DATASET_STORAGE.delete().where(DATASET_STORAGE.c.storage_unit_ref == storage_unit_id))
+        self._connection.execute(STORAGE_UNIT.delete().where(STORAGE_UNIT.c.id == storage_unit_id))
+
     def add_storage_unit(self, path, dataset_ids, descriptor, storage_type_id):
         if not dataset_ids:
             raise ValueError('Storage unit must be linked to at least one dataset.')
