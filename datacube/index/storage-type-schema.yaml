@@ -126,4 +126,3 @@ definitions:
           - resolution
           - tile_size
         additionalProperties: false
-

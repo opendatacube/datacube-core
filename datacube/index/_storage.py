@@ -95,6 +95,9 @@ class StorageUnitResource(object):
         """
         return self.get_fields().get(name)
 
+    def get_overlaps(self, storage_type):
+        return (r['id'] for r in self._db.get_storage_unit_overlap(storage_type))
+
     def get_field_with_fallback(self, name, collection_name=None):
         """
         :type name: str

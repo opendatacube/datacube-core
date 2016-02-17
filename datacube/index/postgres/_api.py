@@ -12,7 +12,7 @@ import logging
 from functools import reduce as reduce_
 
 import numpy
-from sqlalchemy import create_engine, select, text, bindparam, exists, and_, or_, Index, func
+from sqlalchemy import create_engine, select, text, bindparam, exists, and_, or_, Index, func, alias
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.url import URL as EngineUrl
 from sqlalchemy.exc import IntegrityError
@@ -264,6 +264,32 @@ class PostgresDb(object):
     def archive_storage_unit(self, storage_unit_id):
         self._connection.execute(DATASET_STORAGE.delete().where(DATASET_STORAGE.c.storage_unit_ref == storage_unit_id))
         self._connection.execute(STORAGE_UNIT.delete().where(STORAGE_UNIT.c.id == storage_unit_id))
+
+    def get_storage_unit_overlap(self, storage_type):
+        def _array_str(p):
+            return 'ARRAY[' + ','.join("CAST(descriptor #>> '{coordinates,%s,%s}' as numeric)" % (c, p)
+                                       for c in storage_type.dimensions) + ']'
+        wild_sql_appears = "cube(" + ','.join(_array_str(p) for p in ['begin', 'end']) + ") as cube"
+
+        su1 = select([
+            STORAGE_UNIT.c.id,
+            text(wild_sql_appears)
+        ]).where(STORAGE_UNIT.c.storage_type_ref == storage_type.id_)
+        su1 = alias(su1, name='su1')
+        su2 = alias(su1, name='su2')
+
+        overlaps = select([su1.c.id]).where(
+            exists(
+                select([1]).select_from(su2).where(
+                    and_(
+                        su1.c.id != su2.c.id,
+                        text("su1.cube && su2.cube")
+                    )
+                )
+            )
+        )
+
+        return self._connection.execute(overlaps).fetchall()
 
     def add_storage_unit(self, path, dataset_ids, descriptor, storage_type_id, size_bytes):
         if not dataset_ids:

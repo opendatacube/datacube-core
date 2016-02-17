@@ -12,6 +12,8 @@ from dateutil.tz import tzutc
 from dateutil.relativedelta import relativedelta
 import click
 
+from sqlalchemy.exc import DBAPIError
+
 from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS
 from datacube.model import Range
@@ -91,6 +93,28 @@ def _stack_storage_type(storage_type, start_date, end_date, index):
 def _do_stack(task):
     storage_units, filename = task
     return [stack_storage_units(storage_units, filename)]
+
+
+@cli.command('check', help='Check database consistency')
+@click.argument('types', nargs=-1)
+@ui.pass_index
+def check(index, types):
+    if not types:
+        storage_types = index.storage.types.get_all()
+    else:
+        storage_types = [index.storage.types.get_by_name(name) for name in types]
+
+    for storage_type in storage_types:
+        try:
+            overlaps = list(index.storage.get_overlaps(storage_type))
+            click.echo('%s: %s overlaping storage units' % (storage_type.name, len(overlaps)))
+        except DBAPIError:
+            click.echo('Failed to get overlaps! cube extension is, probably, not loaded')
+            break
+
+    for storage_type in storage_types:
+        click.echo('%s: %s missing storage units' % (storage_type.name, 'TODO'))
+        # TODO: find missing storage units
 
 
 @cli.command('ingest', help="Ingest datasets into the Data Cube.")
