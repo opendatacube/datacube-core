@@ -70,7 +70,7 @@ def _stack_storage_type(storage_type, start_date, end_date, index):
     period, date_format = {
         'year': (relativedelta(years=1), '%Y'),
         'month': (relativedelta(months=1), '%Y%m'),
-    }[storage_type.time_stack_size]
+    }[storage_type.aggregation_period]
     # TODO: order by time will remove the need to run multiple searches
     while start_date < end_date:
         storage_units_by_tile_index = {}
