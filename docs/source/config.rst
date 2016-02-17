@@ -146,6 +146,7 @@ It controls things like:
             latitude:  500
             time: 1
         dimension_order: ['time', 'latitude', 'longitude']
+        aggregation_period: year
 
     roi:
         longitude: [110, 120]
@@ -195,6 +196,9 @@ storage
     tile_size
         Size of the tiles for the data to be stored in specified in projection units.
             - Use 'latitude' and 'longitude' if the projection is geographic, else use 'x' and 'y'
+
+    aggregation_period
+        Storage unit aggregation period. One of 'month', 'year'
 
     resolution
         Resolution for the data to be stored in specified in projection units.
