@@ -287,7 +287,7 @@ def stack_storage_units(storage_units, output_uri):
     """
     if not attrs_all_equal(storage_units, 'storage_type'):
         raise TypeError('all storage units must have the same storage type')
-    if not attrs_all_equal(storage_units, 'storage_type'):
+    if not attrs_all_equal(storage_units, 'tile_index'):
         raise TypeError('all storage units must have the same tile index')
 
     tile_index = storage_units[0].tile_index
