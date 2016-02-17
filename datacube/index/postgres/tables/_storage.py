@@ -5,7 +5,7 @@ Tables for indexing the storage of a dataset in a reprojected or new form.
 (ie. What NetCDF files do I have of this dataset?)
 """
 from __future__ import absolute_import
-from sqlalchemy import ForeignKey, SmallInteger, CheckConstraint
+from sqlalchemy import ForeignKey, SmallInteger, CheckConstraint, BigInteger
 from sqlalchemy import Table, Column, Integer, String, DateTime
 from sqlalchemy.dialects import postgres
 from sqlalchemy.sql import func
@@ -47,7 +47,7 @@ STORAGE_UNIT = Table(
     Column('descriptor', postgres.JSONB, nullable=False),
 
     Column('path', String, unique=True, nullable=False),
-    Column('size_bytes', Integer, nullable=False),
+    Column('size_bytes', BigInteger, nullable=False),
 
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
