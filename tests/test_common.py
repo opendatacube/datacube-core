@@ -8,6 +8,7 @@ import pytest
 
 from datacube.ui.common import get_metadata_path, _find_any_metadata_suffix
 from . import util
+from datacube.utils import attrs_all_equal
 
 
 def test_find_metadata_path():
@@ -68,3 +69,18 @@ def test_find_any_metatadata_suffix():
     # Returns none if none exist
     path = _find_any_metadata_suffix(files.joinpath('no_metadata'))
     assert path is None
+
+
+def test_attrs_all_equal():
+    class Bunch:
+        def __init__(self, **kwds):
+            self.__dict__.update(kwds)
+
+    all_equal = [Bunch(a=1), Bunch(a=1), Bunch(a=1)]
+    assert attrs_all_equal(all_equal, 'a')
+
+    not_all_equal = [Bunch(a=1), Bunch(a=2)]
+    assert not attrs_all_equal(not_all_equal, 'a')
+
+    missing = [Bunch(a=1), Bunch()]
+    assert not attrs_all_equal(missing, 'a')
