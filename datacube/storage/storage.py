@@ -198,11 +198,11 @@ def write_access_unit_to_netcdf(access_unit, global_attributes, variable_attribu
 
         # write extra attributes
         for key, value in variable_attributes.get(name, {}).items():
-            setattr(data_var, key, value)
+            setattr(data_var, key, str(value))
 
     # write global atrributes
     for key, value in global_attributes.items():
-        nco.setncattr(key, value)
+        nco.setncattr(key, str(value))
     nco.close()
 
 
