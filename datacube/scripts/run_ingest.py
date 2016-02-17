@@ -44,6 +44,8 @@ def cli():
 @click.argument('types', nargs=-1)
 @ui.pass_index
 def stack(index, types, workers, scheduler):
+    executor = get_executor(scheduler, workers)
+
     if not types:
         storage_types = index.storage.types.get_all()
     else:
@@ -51,28 +53,44 @@ def stack(index, types, workers, scheduler):
 
     tasks = []
     for storage_type in storage_types:
-        start_date = datetime(1970, 1, 1, tzinfo=tzutc())
+        # TODO: figure out start date - search ordered by time, get first, round down
+        start_date = datetime(1986, 1, 1, tzinfo=tzutc())
+        # TODO: figure out end date - now, round down
         end_date = datetime(2016, 1, 1, tzinfo=tzutc())
-        period = relativedelta(months=1)
-        while start_date < end_date:
-            storage_units_by_tile_index = {}
-            for storage_unit in index.storage.search(type=storage_type.id_, time=Range(start_date, start_date+period)):
-                storage_units_by_tile_index.setdefault(storage_unit.tile_index, []).append(storage_unit)
+        tasks += list(_stack_storage_type(storage_type, start_date, end_date, index))
 
-            for tile_index, storage_units in storage_units_by_tile_index.items():
-                if len(storage_units) < 2:
-                    continue
-
-                filename = storage_type.generate_uri(tile_index=tile_index,
-                                                     start_time=start_date.strftime('%Y%m'),
-                                                     end_time=(start_date+period).strftime('%Y%m'))
-                tasks.append((storage_units, filename))
-            start_date = start_date + period
-
-    for storage_units, filename in tasks:
-        index.storage.replace(storage_units, [stack_storage_units(storage_units, filename)])
+    stacked = executor.map(_do_stack, tasks)
+    for (storage_units, filename), stacked in zip(tasks, (executor.result(s) for s in stacked)):
+        index.storage.replace(storage_units, stacked)
         for storage_unit in storage_units:
             os.unlink(str(storage_unit.local_path))
+
+
+def _stack_storage_type(storage_type, start_date, end_date, index):
+    period, date_format = {
+        'year': (relativedelta(years=1), '%Y'),
+        'month': (relativedelta(months=1), '%Y%m'),
+    }[storage_type.time_stack_size]
+    # TODO: order by time will remove the need to run multiple searches
+    while start_date < end_date:
+        storage_units_by_tile_index = {}
+        for storage_unit in index.storage.search(type=storage_type.id_, time=Range(start_date, start_date + period)):
+            storage_units_by_tile_index.setdefault(storage_unit.tile_index, []).append(storage_unit)
+
+        for tile_index, storage_units in storage_units_by_tile_index.items():
+            if len(storage_units) < 2:
+                continue
+
+            filename = storage_type.generate_uri(tile_index=tile_index,
+                                                 start_time=start_date.strftime(date_format),
+                                                 end_time=(start_date + period).strftime(date_format))
+            yield (storage_units, filename)
+        start_date += period
+
+
+def _do_stack(task):
+    storage_units, filename = task
+    return [stack_storage_units(storage_units, filename)]
 
 
 @cli.command('ingest', help="Ingest datasets into the Data Cube.")
