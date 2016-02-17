@@ -77,6 +77,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset)
     assert len(albers_storageunits) == EXPECTED_NUMBER_OF_STORAGE_UNITS
 
     for su in (latlon_storageunits[0], albers_storageunits[0]):
+        assert su.size_bytes > 0
         with netCDF4.Dataset(str(su.local_path)) as nco:
             check_data_shape(nco)
             check_grid_mapping(nco)

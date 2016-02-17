@@ -281,10 +281,11 @@ def test_search_storage_star(index, db, default_collection, indexed_ls5_nbar_sto
     assert len(index.storage.search_eager()) == 0
 
     db.add_storage_unit(
-        '/tmp/something.tif',
-        [_telemetry_uuid],
-        {'test': 'test'},
-        indexed_ls5_nbar_storage_type.id_
+        path='/tmp/something.tif',
+        dataset_ids=[_telemetry_uuid],
+        descriptor={'test': 'test'},
+        storage_type_id=indexed_ls5_nbar_storage_type.id_,
+        size_bytes=1234
     )
 
     assert len(index.storage.search_eager()) == 1
@@ -308,7 +309,8 @@ def test_search_storage_by_dataset(index, db, default_collection, indexed_ls5_nb
         '/tmp/something.tif',
         [_telemetry_uuid],
         {'test': 'test'},
-        indexed_ls5_nbar_storage_type.id_
+        indexed_ls5_nbar_storage_type.id_,
+        size_bytes=1234
     )
     dfield = metadata_type.dataset_fields.get
 
@@ -376,13 +378,14 @@ def test_search_storage_by_both_fields(global_integration_cli_args, db, indexed_
     unit_id = db.add_storage_unit(
         '/tmp/something.tif',
         [_telemetry_uuid],
-        {
+        descriptor={
             'extents': {
                 'geospatial_lat_min': 120,
                 'geospatial_lat_max': 140
             }
         },
-        indexed_ls5_nbar_storage_type.id_
+        storage_type_id=indexed_ls5_nbar_storage_type.id_,
+        size_bytes=1234
     )
 
     rows = _cli_csv_search(['units', '100<lat<150'], global_integration_cli_args)

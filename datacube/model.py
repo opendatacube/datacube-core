@@ -239,7 +239,6 @@ class StorageUnit(object):
         else:
             self.path = storage_type.local_uri_to_location_relative_path(output_uri)
 
-
         # Database primary key
         #: :type: int
         self.id_ = id_
@@ -263,6 +262,10 @@ class StorageUnit(object):
                                  length=attributes['length'],
                                  units=attributes.get('units', None))
                 for name, attributes in self.descriptor['coordinates'].items()}
+
+    @property
+    def size_bytes(self):
+        return Path(self.local_path).stat().st_size
 
     def __str__(self):
         return "StorageUnit <type={m.name}, path={path}>".format(path=self.path, m=self.storage_type)

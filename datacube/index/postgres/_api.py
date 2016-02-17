@@ -265,7 +265,7 @@ class PostgresDb(object):
         self._connection.execute(DATASET_STORAGE.delete().where(DATASET_STORAGE.c.storage_unit_ref == storage_unit_id))
         self._connection.execute(STORAGE_UNIT.delete().where(STORAGE_UNIT.c.id == storage_unit_id))
 
-    def add_storage_unit(self, path, dataset_ids, descriptor, storage_type_id):
+    def add_storage_unit(self, path, dataset_ids, descriptor, storage_type_id, size_bytes):
         if not dataset_ids:
             raise ValueError('Storage unit must be linked to at least one dataset.')
 
@@ -284,7 +284,8 @@ class PostgresDb(object):
                 metadata_type_ref=select([matched_collection.c.metadata_type_ref]),
                 storage_type_ref=storage_type_id,
                 descriptor=descriptor,
-                path=path
+                path=path,
+                size_bytes=size_bytes
             ).returning(STORAGE_UNIT.c.id),
         ).scalar()
 

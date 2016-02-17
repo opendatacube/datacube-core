@@ -47,6 +47,7 @@ STORAGE_UNIT = Table(
     Column('descriptor', postgres.JSONB, nullable=False),
 
     Column('path', String, unique=True, nullable=False),
+    Column('size_bytes', Integer, nullable=False),
 
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
