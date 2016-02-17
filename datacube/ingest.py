@@ -54,8 +54,7 @@ def store_datasets(datasets, index=None, executor=SerialExecutor()):
     storage_types = find_storage_types_for_datasets(datasets, index)
 
     storage_units = []
-    for storage_type_id, datasets in storage_types.items():
-        storage_type = index.storage.types.get(storage_type_id)
+    for storage_type, datasets in storage_types.items():
         _LOG.info('Storing %s dataset(s) using %s', len(datasets), storage_type)
         storage_units += create_storage_units(datasets, storage_type, executor=executor)
 
@@ -66,13 +65,13 @@ def find_storage_types_for_datasets(datasets, index=None):
     """
     Find matching storage_types for datasets
 
-    Return a dictionary, keys are storage_type_ids, values are a list of datasets
+    Return a dictionary, keys are storage_types, values are lists of datasets
 
     :type datasets: list[datacube.model.Dataset]
     :type index: datacube.index._api.Index
-    :rtype dict[int, list[datacube.model.Dataset]]
+    :rtype dict[datacube.model.StorageType, list[datacube.model.Dataset]]
     """
-    # TODO: Move to storage-types/storage-mappings
+    # TODO: Move to storage-types
     index = index or index_connect()
 
     storage_types = defaultdict(list)
@@ -81,7 +80,7 @@ def find_storage_types_for_datasets(datasets, index=None):
         if not dataset_storage_types:
             raise RuntimeError('No storage types found for %s dataset', dataset)
         for storage_type in dataset_storage_types:
-            storage_types[storage_type.id_].append(dataset)
+            storage_types[storage_type].append(dataset)
     return storage_types
 
 
@@ -96,9 +95,9 @@ def create_storage_units(datasets, storage_type, executor=SerialExecutor()):
     # :type tile_index: (x,y)
     # Each task is an entire storage unit, safe to run tasks in parallel
 
-    tasks = [(tile_index, storage_type, list(group))
+    tasks = [(tile_index, storage_type, list(dataset_group))
              for tile_index, datasets in storage.tile_datasets_with_storage_type(datasets, storage_type).items()
-             for time, group in groupby(datasets, lambda ds: ds.time)]
+             for time, dataset_group in groupby(datasets, lambda ds: ds.time)]
 
     try:
         storage_units = executor.map(_create_storage_unit, tasks)
