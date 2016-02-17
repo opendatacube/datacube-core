@@ -156,6 +156,10 @@ class StorageType(object):  # pylint: disable=too-many-public-methods
         return self.definition['dimension_order']
 
     @property
+    def time_stack_size(self):
+        return self.definition.get('time_stack_size', 'year')
+
+    @property
     def spatial_dimensions(self):
         """
         Latitude/Longitude or X/Y
