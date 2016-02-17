@@ -111,3 +111,5 @@ definitions:
             tile_size:
                 # TODO: Expand
                 type: object
+            aggregation_period:
+                enum: ['month', 'year']
