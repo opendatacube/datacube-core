@@ -5,6 +5,7 @@ Ingest datasets into the AGDC.
 from __future__ import absolute_import
 
 from collections import defaultdict
+from itertools import groupby
 import os
 import logging
 
@@ -55,7 +56,7 @@ def store_datasets(datasets, index=None, executor=SerialExecutor()):
     storage_units = []
     for storage_type_id, datasets in storage_types.items():
         storage_type = index.storage.types.get(storage_type_id)
-        _LOG.info('Storing %s datasets using %s', datasets, storage_type)
+        _LOG.info('Storing %s dataset(s) using %s', len(datasets), storage_type)
         storage_units += create_storage_units(datasets, storage_type, executor=executor)
 
     index.storage.add_many(executor.result(value) for value in storage_units)
@@ -95,8 +96,9 @@ def create_storage_units(datasets, storage_type, executor=SerialExecutor()):
     # :type tile_index: (x,y)
     # Each task is an entire storage unit, safe to run tasks in parallel
 
-    tasks = [(tile_index, storage_type, datasets) for
-             tile_index, datasets in storage.tile_datasets_with_storage_type(datasets, storage_type).items()]
+    tasks = [(tile_index, storage_type, list(group))
+             for tile_index, datasets in storage.tile_datasets_with_storage_type(datasets, storage_type).items()
+             for time, group in groupby(datasets, lambda ds: ds.time)]
 
     try:
         storage_units = executor.map(_create_storage_unit, tasks)
