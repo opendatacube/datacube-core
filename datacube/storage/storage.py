@@ -181,7 +181,7 @@ def write_access_unit_to_netcdf(access_unit, global_attributes, variable_attribu
         coord_var = netcdf_writer.create_coordinate(nco, name, coord)
         coord_var[:] = access_unit.get_coord(name)[0]
     netcdf_writer.create_grid_mapping_variable(nco, access_unit.crs)
-    if getattr(access_unit, 'affine'):
+    if hasattr(access_unit, 'affine'):
         netcdf_writer.write_gdal_attributes(nco, access_unit.crs, access_unit.affine)
     netcdf_writer.write_geographical_extents_attributes(nco, access_unit.extent.to_crs('EPSG:4326').points)
 
