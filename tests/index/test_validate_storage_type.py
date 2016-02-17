@@ -114,9 +114,18 @@ def test_rejects_invalid_docs(invalid_storage_type_update):
 
 
 @pytest.mark.parametrize("valid_storage_type_measurement", [
-    {},
+    {
+        'dtype': 'int16',
+        'varname': 'var',
+        'resampling_method': 'nearest'
+    },
     # With the optional properties
-    {'nodata': -999},
+    {
+        'nodata': -999,
+        'dtype': 'int16',
+        'varname': 'var',
+        'resampling_method': 'nearest'
+    },
 ])
 def test_accepts_valid_measurements(valid_storage_type_measurement):
     mapping = deepcopy(only_mandatory_fields)
