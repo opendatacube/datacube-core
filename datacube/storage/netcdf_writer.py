@@ -10,6 +10,7 @@ from datetime import datetime
 import netCDF4
 
 from datacube import __version__
+from datacube.compat import string_types
 
 _LOG = logging.getLogger(__name__)
 
@@ -175,6 +176,12 @@ def create_grid_mapping_variable(nco, crs):
     crs_var.inverse_flattening = crs.GetInvFlattening()
     crs_var.crs_wkt = crs.ExportToWkt()
     return crs_var
+
+
+def write_attribute(obj, key, value):
+    if isinstance(value, string_types):
+        value = value.encode('utf8')
+    setattr(obj, key.encode('utf8'), value)
 
 
 def netcdfy_data(data):
