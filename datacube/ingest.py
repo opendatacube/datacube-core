@@ -95,6 +95,7 @@ def create_storage_units(datasets, storage_type, executor=SerialExecutor()):
     # :type tile_index: (x,y)
     # Each task is an entire storage unit, safe to run tasks in parallel
 
+    # datasets.sort(key=lambda ds: ds.time)
     tasks = [(tile_index, storage_type, list(dataset_group))
              for tile_index, datasets in storage.tile_datasets_with_storage_type(datasets, storage_type).items()
              for time, dataset_group in groupby(datasets, lambda ds: ds.time)]
