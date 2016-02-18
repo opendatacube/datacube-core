@@ -119,7 +119,7 @@ def parse_endpoint(value):
 EXECUTOR_TYPES = {
     'serial': lambda _: get_executor(None, None),
     'multiproc': lambda workers: get_executor(None, int(workers)),
-    'distributed': lambda addr: get_executor(parse_endpoint(addr), None)
+    'distributed': lambda addr: get_executor(parse_endpoint(addr), True)
 }
 
 
