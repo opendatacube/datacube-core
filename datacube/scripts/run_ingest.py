@@ -20,19 +20,6 @@ from datacube.model import Range
 from datacube.ingest import index_datasets, store_datasets
 from datacube.storage.storage import stack_storage_units, tile_datasets_with_storage_type
 
-from datacube.executor import get_executor
-
-
-def parse_endpoint(ctx, param, value):
-    if not value:
-        return None
-
-    try:
-        ip, port = tuple(value.split(':'))
-        return ip, int(port)
-    except ValueError:
-        ctx.fail('%s is not a valid endpoint' % value)
-
 
 @click.group(help="Data Management Tool", context_settings=CLICK_SETTINGS)
 @ui.global_cli_options
@@ -41,13 +28,10 @@ def cli():
 
 
 @cli.command('stack', help='Stack storage units')
-@click.option('--scheduler', callback=parse_endpoint)
-@click.option('--workers', default=0)
+@ui.executor_cli_options
 @click.argument('types', nargs=-1)
 @ui.pass_index
-def stack(index, types, workers, scheduler):
-    executor = get_executor(scheduler, workers)
-
+def stack(index, executor, types, workers, scheduler):
     if not types:
         storage_types = index.storage.types.get_all()
     else:
@@ -101,7 +85,7 @@ def _do_stack(task):
 @click.option('--overlaps', is_flag=True, default=False)
 @click.argument('types', nargs=-1)
 @ui.pass_index
-def check(index, missing, overlaps, types):
+def check(index, executor, missing, overlaps, types):
     if not types:
         storage_types = index.storage.types.get_all()
     else:
@@ -134,19 +118,17 @@ def check(index, missing, overlaps, types):
 
 
 @cli.command('ingest', help="Ingest datasets into the Data Cube.")
-@click.option('--scheduler', callback=parse_endpoint)
-@click.option('--workers', default=0)
+@ui.executor_cli_options
 @click.option('--no-storage', is_flag=True, help="Don't create storage units")
 @click.argument('datasets',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
 @ui.pass_index
-def ingest(index, datasets, workers, scheduler, no_storage):
+def ingest(index, executor, datasets, no_storage):
     indexed_datasets = []
     for dataset_path in datasets:
         indexed_datasets += index_datasets(Path(dataset_path), index=index)
 
-    executor = get_executor(scheduler, workers)
     if not no_storage:
         store_datasets(indexed_datasets, index=index, executor=executor)
 

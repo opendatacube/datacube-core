@@ -90,7 +90,7 @@ def _get_concurrent_executor(workers):
     except ImportError:
         return None
 
-    return MultiprocessingExecutor(ProcessPoolExecutor())
+    return MultiprocessingExecutor(ProcessPoolExecutor(workers if workers > 0 else None))
 
 
 def get_executor(scheduler, workers):
