@@ -18,7 +18,7 @@ from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS
 from datacube.model import Range
 from datacube.ingest import index_datasets, store_datasets
-from datacube.storage.storage import stack_storage_units
+from datacube.storage.storage import stack_storage_units, tile_datasets_with_storage_type
 
 from datacube.executor import get_executor
 
@@ -83,6 +83,7 @@ def _stack_storage_type(storage_type, start_date, end_date, index):
             if len(storage_units) < 2:
                 continue
 
+            storage_units.sort(key=lambda su: su.coordinates['time'].begin)
             filename = storage_type.generate_uri(tile_index=tile_index,
                                                  start_time=start_date.strftime(date_format),
                                                  end_time=(start_date + period).strftime(date_format))
@@ -96,25 +97,40 @@ def _do_stack(task):
 
 
 @cli.command('check', help='Check database consistency')
+@click.option('--missing', is_flag=True, default=True)
+@click.option('--overlaps', is_flag=True, default=False)
 @click.argument('types', nargs=-1)
 @ui.pass_index
-def check(index, types):
+def check(index, missing, overlaps, types):
     if not types:
         storage_types = index.storage.types.get_all()
     else:
         storage_types = [index.storage.types.get_by_name(name) for name in types]
 
     for storage_type in storage_types:
-        try:
-            overlaps = list(index.storage.get_overlaps(storage_type))
-            click.echo('%s: %s overlaping storage units' % (storage_type.name, len(overlaps)))
-        except DBAPIError:
-            click.echo('Failed to get overlaps! cube extension is, probably, not loaded')
-            break
+        click.echo('Checking %s' % storage_type.name)
+        if overlaps:
+            click.echo('Overlaps. Might take REALLY long time...')
+            try:
+                overlaps = list(index.storage.get_overlaps(storage_type))
+                click.echo('%s overlaping storage units' % len(overlaps))
+            except DBAPIError:
+                click.echo('Failed to get overlaps! cube extension might not be loaded')
 
-    for storage_type in storage_types:
-        click.echo('%s: %s missing storage units' % (storage_type.name, 'TODO'))
-        # TODO: find missing storage units
+        if missing:
+            missing_units = 0
+            datasets = index.datasets.search_by_metadata(storage_type.document['match']['metadata'])
+            for dataset in datasets:
+                tiles = tile_datasets_with_storage_type([dataset], storage_type)
+                storage_units = index.storage.search(index.datasets.get_field('id') == dataset.id)
+                for storage_unit in storage_units:
+                    tiles.pop(storage_unit.tile_index)
+
+                if tiles:
+                    click.echo('%s missing %s' % (dataset, tiles.keys()))
+
+                missing_units += len(tiles)
+            click.echo('%s missing storage units' % missing_units)
 
 
 @cli.command('ingest', help="Ingest datasets into the Data Cube.")
