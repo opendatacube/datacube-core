@@ -181,7 +181,7 @@ def create_grid_mapping_variable(nco, crs):
 def write_attribute(obj, key, value):
     if isinstance(value, string_types):
         value = value.encode('utf8')
-    setattr(obj, key.encode('utf8'), value)
+    setattr(obj, key, value)
 
 
 def netcdfy_data(data):
