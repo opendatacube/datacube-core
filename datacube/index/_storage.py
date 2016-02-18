@@ -84,6 +84,7 @@ class StorageUnitResource(object):
                     unit.dataset_ids,
                     unit.descriptor,
                     unit.storage_type.id_,
+                    unit.size_bytes
                 )
                 _LOG.debug('Indexed unit %s @ %s', unit_id, unit.path)
 
