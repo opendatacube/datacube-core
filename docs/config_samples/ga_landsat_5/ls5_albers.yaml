@@ -63,39 +63,57 @@ measurements:
   '10':
       dtype: int16
       nodata: -999
-      resampling_method: cubic
+      resampling_method: nearest
       varname: band_10
       zlib: True
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 0.45-0.52 microns"
+          standard_name: surface_bidirectional_reflectance
   '20':
       dtype: int16
       nodata: -999
-      resampling_method: cubic
+      resampling_method: nearest
       varname: band_20
       zlib: True
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 0.52-0.60 microns"
+          standard_name: surface_bidirectional_reflectance
   '30':
       dtype: int16
       nodata: -999
-      resampling_method: cubic
+      resampling_method: nearest
       varname: band_30
       zlib: True
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 0.63-0.69 microns"
+          standard_name: surface_bidirectional_reflectance
   '40':
       dtype: int16
       nodata: -999
-      resampling_method: cubic
+      resampling_method: nearest
       varname: band_40
       zlib: True
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 0.76-0.90 microns"
+          standard_name: surface_bidirectional_reflectance
   '50':
       dtype: int16
       nodata: -999
-      resampling_method: cubic
+      resampling_method: nearest
       varname: band_50
       zlib: True
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 1.55-1.75 microns"
+          standard_name: surface_bidirectional_reflectance
   '70':
       dtype: int16
       nodata: -999
-      resampling_method: cubic
+      resampling_method: nearest
       varname: band_70
       zlib: True
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 2.08-2.35 microns"
+          standard_name: surface_bidirectional_reflectance
 
 ---
 
@@ -166,6 +184,58 @@ measurements:
       resampling_method: nearest
       varname: band_pixelquality
       zlib: True
+      attrs:
+          valid_range: 1, 32768;
+          long_name: "Quality Control"
+          flag_masks: 32768 16384 8192 4096 2048 1024 512 256 128 64 8 4 2 1
+          flag_meanings: (unused) Topographic Shadow Cloud Shadow (Fmask) Cloud Shadow (ACCA) Cloud (Fmask) Cloud (ACCA) Land or Sea Contiguity Band 7 is saturated Band 6-2 is saturated Band 6-1 is saturated Band 5 is saturated Band 4 is saturated Band 3 is saturated Band 2 is saturated Band 1 is saturated
+          QA_index:  |
+                  Bits are listed from the MSB (bit 15) to the LSB (bit 0):
+                  Bit    Description
+                  15     (unused);
+                  14     (unused);
+                  13     Cloud Shadow (Fmask);
+                         1 -- No Cloud Shadow
+                         0 -- Cloud Shadow
+                  12     Cloud Shadow (ACCA);
+                         1 -- No Cloud Shadow
+                         0 -- Cloud Shadow
+                  11     Cloud (Fmask);
+                         1 -- No Cloud
+                         0 -- Cloud
+                  10     Cloud (ACCA);
+                         1 -- No Cloud
+                         0 -- Cloud
+                  9      Land or Sea;
+                         1 -- Land
+                         0 -- Sea
+                  8      Contiguity;
+                         1 -- All bands for this pixel contain non-null values
+                         0 -- Null value in at least one band
+                  7      Band 7 is saturated;
+                         1 -- no
+                         0 -- yes
+                  6      Band 6-2 is saturated;
+                         1 -- no
+                         0 -- yes
+                  5      Band 6-1 is saturated;
+                         1 -- no
+                         0 -- yes
+                  4      Band 5 is saturated;
+                         1 -- no
+                         0 -- yes
+                  3      Band 4 is saturated;
+                         1 -- no
+                         0 -- yes
+                  2      Band 3 is saturated;
+                         1 -- no
+                         0 -- yes
+                  1      Band 2 is saturated;
+                         1 -- no
+                         0 -- yes
+                  0      Band 1 is saturated;
+                         1 -- no
+                         0 -- yes
 
 ---
 
@@ -233,24 +303,24 @@ measurements:
   'BS':
       dtype: int16
       nodata: -999
-      resampling_method: cubic
+      resampling_method: nearest
       varname: band_bs
       zlib: True
   'NPV':
       dtype: int16
       nodata: -999
-      resampling_method: cubic
+      resampling_method: nearest
       varname: band_npv
       zlib: True
   'PV':
       dtype: int16
       nodata: -999
-      resampling_method: cubic
+      resampling_method: nearest
       varname: band_pv
       zlib: True
   'UE':
       dtype: int16
       nodata: -999
-      resampling_method: cubic
+      resampling_method: nearest
       varname: band_ue
       zlib: True
