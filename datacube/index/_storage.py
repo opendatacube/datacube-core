@@ -20,7 +20,7 @@ from datacube.index.fields import InvalidDocException
 from datacube.model import StorageUnit, StorageType
 from . import fields
 
-MAPPING_SCHEMA_PATH = pathlib.Path(__file__).parent.joinpath('storage-type-schema.yaml')
+STORAGE_TYPE_SCHEMA_PATH = pathlib.Path(__file__).parent.joinpath('storage-type-schema.yaml')
 
 _LOG = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ def _ensure_valid(descriptor):
     try:
         jsonschema.validate(
             descriptor,
-            yaml.load(MAPPING_SCHEMA_PATH.open('r'), Loader=SafeLoader)
+            yaml.load(STORAGE_TYPE_SCHEMA_PATH.open('r'), Loader=SafeLoader)
         )
     except jsonschema.ValidationError as e:
         raise InvalidDocException(e.message)
