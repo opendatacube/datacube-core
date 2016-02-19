@@ -265,11 +265,14 @@ class PostgresDb(object):
         self._connection.execute(DATASET_STORAGE.delete().where(DATASET_STORAGE.c.storage_unit_ref == storage_unit_id))
         self._connection.execute(STORAGE_UNIT.delete().where(STORAGE_UNIT.c.id == storage_unit_id))
 
-    def get_storage_unit_overlap(self, storage_type):
+    def _storage_unit_cube_sql_str(self, dimensions):
         def _array_str(p):
             return 'ARRAY[' + ','.join("CAST(descriptor #>> '{coordinates,%s,%s}' as numeric)" % (c, p)
-                                       for c in storage_type.dimensions) + ']'
-        wild_sql_appears = "cube(" + ','.join(_array_str(p) for p in ['begin', 'end']) + ") as cube"
+                                       for c in dimensions) + ']'
+        return "cube(" + ','.join(_array_str(p) for p in ['begin', 'end']) + ")"
+
+    def get_storage_unit_overlap(self, storage_type):
+        wild_sql_appears = self._storage_unit_cube_sql_str(storage_type.dimensions) + ' as cube'
 
         su1 = select([
             STORAGE_UNIT.c.id,
