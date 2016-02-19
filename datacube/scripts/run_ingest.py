@@ -31,7 +31,7 @@ def cli():
 @ui.executor_cli_options
 @click.argument('types', nargs=-1)
 @ui.pass_index
-def stack(index, executor, types, workers, scheduler):
+def stack(index, executor, types):
     if not types:
         storage_types = index.storage.types.get_all()
     else:
