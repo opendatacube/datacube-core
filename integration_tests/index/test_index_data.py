@@ -143,7 +143,7 @@ def test_index_storage_unit(index, db, default_collection):
     db.ensure_storage_type(
         'test_storage_mapping',
         {},
-        {},
+        {'storage': {'dimension_order': []}},
     )
     storage_type = db._connection.execute(STORAGE_TYPE.select()).first()
 

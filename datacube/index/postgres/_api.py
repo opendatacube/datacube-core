@@ -259,7 +259,13 @@ class PostgresDb(object):
                 definition=definition
             )
         )
-        return res.inserted_primary_key[0]
+        storage_type_id = res.inserted_primary_key[0]
+        cube_sql_str = self._storage_unit_cube_sql_str(definition['storage']['dimension_order'])
+        constraint = """alter table agdc.storage_unit add exclude using gist (%s with &&)
+                        where (storage_type_ref = %s)""" % (cube_sql_str, storage_type_id)
+        # TODO: must enforce cube extension somehow before we can do this
+        # self._connection.execute(constraint)
+        return storage_type_id
 
     def archive_storage_unit(self, storage_unit_id):
         self._connection.execute(DATASET_STORAGE.delete().where(DATASET_STORAGE.c.storage_unit_ref == storage_unit_id))
