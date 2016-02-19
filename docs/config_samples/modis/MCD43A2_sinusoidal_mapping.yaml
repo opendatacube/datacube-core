@@ -1,5 +1,5 @@
 
-name: modis_mcd43a4_sinusoidal
+name: modis_mcd43a2_sinusoidal
 description: MODIS 500 metre, 1000 pixel tile
 
 # Any datasets matching these metadata properties.
