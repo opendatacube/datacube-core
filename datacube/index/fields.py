@@ -128,9 +128,15 @@ def get_doc_changes(original, new, base_prefix=()):
     [(('a', 'b'), 1, 2)]
     >>> get_doc_changes({}, {'b': 1})
     [(('b',), None, 1)]
+    >>> get_doc_changes({}, None, base_prefix=('a',))
+    [(('a',), {}, None)]
     """
     changed_fields = []
     if original == new:
+        return changed_fields
+
+    if not isinstance(new, dict):
+        changed_fields.append((base_prefix, original, new))
         return changed_fields
 
     all_keys = set(original.keys()).union(new.keys())
@@ -151,4 +157,4 @@ def get_doc_changes(original, new, base_prefix=()):
                 (key_prefix, original_val, new_val)
             )
 
-    return sorted(changed_fields)
+    return sorted(changed_fields, key=lambda a: a[0])

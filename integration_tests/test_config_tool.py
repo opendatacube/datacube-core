@@ -35,6 +35,11 @@ def _run_cli(cli_method, opts, catch_exceptions=False):
 def test_add_example_storage_types(global_integration_cli_args, db):
     """
     Add example mapping docs, to ensure they're valid and up-to-date.
+
+    We do them all in one test (rather than pytest fixture params) so that we
+    can check them together in one database (to check for, for example,
+    for duplicate ids).
+
     :type global_integration_cli_args: tuple[str]
     :type db: datacube.index.postgres._api.PostgresDb
     """
@@ -53,7 +58,7 @@ def test_add_example_storage_types(global_integration_cli_args, db):
             datacube.scripts.config_tool.cli,
             opts
         )
-        assert result.exit_code == 0
+        assert result.exit_code == 0, "Error for %r. output: %r" % (str(mapping_path), result.output)
         mappings_count = db.count_storage_types()
         assert mappings_count > existing_mappings, "Mapping document was not added: " + str(mapping_path)
         existing_mappings = mappings_count
