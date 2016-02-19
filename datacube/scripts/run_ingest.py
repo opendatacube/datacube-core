@@ -81,11 +81,11 @@ def _do_stack(task):
 
 
 @cli.command('check', help='Check database consistency')
-@click.option('--missing', is_flag=True, default=True)
-@click.option('--overlaps', is_flag=True, default=False)
+@click.option('--check-missing', is_flag=True, default=True)
+@click.option('--check-overlaps', is_flag=True, default=False)
 @click.argument('types', nargs=-1)
 @ui.pass_index
-def check(index, executor, missing, overlaps, types):
+def check(index, check_missing, check_overlaps, types):
     if not types:
         storage_types = index.storage.types.get_all()
     else:
@@ -93,7 +93,7 @@ def check(index, executor, missing, overlaps, types):
 
     for storage_type in storage_types:
         click.echo('Checking %s' % storage_type.name)
-        if overlaps:
+        if check_overlaps:
             click.echo('Overlaps. Might take REALLY long time...')
             try:
                 overlaps = list(index.storage.get_overlaps(storage_type))
@@ -101,7 +101,7 @@ def check(index, executor, missing, overlaps, types):
             except DBAPIError:
                 click.echo('Failed to get overlaps! cube extension might not be loaded')
 
-        if missing:
+        if check_missing:
             missing_units = 0
             datasets = index.datasets.search_by_metadata(storage_type.document['match']['metadata'])
             for dataset in datasets:
