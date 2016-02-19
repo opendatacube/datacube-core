@@ -9,11 +9,11 @@ match:
             code: AQUA_TERRA
         instrument:
             name: MODIS
-        product_type: MCD43A4
+        product_type: MCD43A2
 
 location_name: eotiles
 
-file_path_template: '{platform[code]}_{instrument[name]}_sinusoidal_500m_{tile_index[0]}_{tile_index[1]}_MCD43A4_{start_time}.nc'
+file_path_template: '{platform[code]}_{instrument[name]}_sinusoidal_500m_{tile_index[0]}_{tile_index[1]}_MCD43A2_{start_time}.nc'
 
 global_attributes:
     title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
@@ -59,30 +59,18 @@ default_measurement: &MEASUREMENT_DEFAULTS
   contiguous: False
 
 measurements:
-    'Nadir_Reflectance_Band1':
+    'BRDF_Albedo_Ancillary':
         <<: *MEASUREMENT_DEFAULTS
-        varname: nadir_reflectance_band1
+        varname: brdf_albedo_ancillary
 
-    'Nadir_Reflectance_Band2':
+    'BRDF_Albedo_Band_Quality':
         <<: *MEASUREMENT_DEFAULTS
-        varname: nadir_reflectance_band2
+        varname: brdf_albedo_band_quality
 
-    'Nadir_Reflectance_Band3':
+    'BRDF_Albedo_Quality':
         <<: *MEASUREMENT_DEFAULTS
-        varname: nadir_reflectance_band3
+        varname: brdf_albedo_quality
 
-    'Nadir_Reflectance_Band4':
+    'Snow_BRDF_Albedo':
         <<: *MEASUREMENT_DEFAULTS
-        varname: nadir_reflectance_band4
-
-    'Nadir_Reflectance_Band5':
-        <<: *MEASUREMENT_DEFAULTS
-        varname: nadir_reflectance_band5
-
-    'Nadir_Reflectance_Band6':
-        <<: *MEASUREMENT_DEFAULTS
-        varname: nadir_reflectance_band6
-
-    'Nadir_Reflectance_Band7':
-        <<: *MEASUREMENT_DEFAULTS
-        varname: nadir_reflectance_band7
+        varname: snow_brdf_albedo
