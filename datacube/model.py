@@ -194,8 +194,8 @@ class StorageType(object):  # pylint: disable=too-many-public-methods
 
     def generate_uri(self, **kwargs):
         params = {
-            'mapping_id': self.id_,
-            'mapping_name': self.name,
+            'type_id': self.id_,
+            'type_name': self.name,
             'random': codecs.encode(os.urandom(16), 'hex'),
         }
         params.update(self.document['match']['metadata'])
