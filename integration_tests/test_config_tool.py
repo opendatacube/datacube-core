@@ -36,9 +36,7 @@ def test_add_example_storage_types(global_integration_cli_args, db):
     """
     Add example mapping docs, to ensure they're valid and up-to-date.
 
-    We do them all in one test (rather than pytest fixture params) so that we
-    can check them together in one database (to check for, for example,
-    for duplicate ids).
+    We add them all to a single database to check for things like duplicate ids.
 
     :type global_integration_cli_args: tuple[str]
     :type db: datacube.index.postgres._api.PostgresDb
