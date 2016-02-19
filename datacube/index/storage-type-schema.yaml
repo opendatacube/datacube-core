@@ -91,6 +91,19 @@ definitions:
             # Used by GeoTIFF types
             layer:
                 type: number
+
+            flags_definition:
+                description: A structured definition of bit flags and meanings
+                type: object
+                properties:
+                  bit_index:
+                    type: number
+                  description:
+                    description: A string describing the meaning if this bit value is 1
+                    type: string
+                  null_description:
+                    description: A string describing the meaning if this bit value is 0
+                    type: string
         required:
           - varname
           - dtype

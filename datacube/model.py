@@ -8,6 +8,7 @@ import logging
 from collections import namedtuple, defaultdict
 import os
 import codecs
+from cStringIO import StringIO
 
 from pathlib import Path
 import numpy
@@ -26,7 +27,6 @@ Range = namedtuple('Range', ('begin', 'end'))
 Coordinate = namedtuple('Coordinate', ('dtype', 'begin', 'end', 'length', 'units'))
 CoordinateValue = namedtuple('CoordinateValue', ('dimension_name', 'value', 'dtype', 'units'))
 Variable = namedtuple('Variable', ('dtype', 'nodata', 'dimensions', 'units'))
-Measurement = namedtuple('Measurement', ('name', 'dtype', 'nodata', 'resampling_method'))
 
 NETCDF_VAR_OPTIONS = {'zlib', 'complevel', 'shuffle', 'fletcher32', 'contiguous'}
 
@@ -62,6 +62,36 @@ def _cross_platform_path(path):
         return path[1:]
     else:
         return path
+
+
+class Measurement(object):
+    def __init__(self, name, attributes):
+        self.name = name
+        self.attributes = attributes
+        for attr_name in ('dtype', 'nodata', 'resampling_method'):
+            try:
+                setattr(self, attr_name, attributes[attr_name])
+            except KeyError:
+                pass
+
+    def human_readable_flags_definition(self):
+        def gen_human_readable(flags_def):
+            bitdef_by_bit = {item['bit_index']: dict(name=key, **item) for key, item in flags_def.items()}
+            yield ("Bits are listed from the MSB (bit {}) to the"
+                   " LSB (bit {})".format(max(bitdef_by_bit), min(bitdef_by_bit)))
+            yield "Bit    Description"
+            for bit, desc in sorted(bitdef_by_bit.items(), reverse=True):
+                yield "{:<7d}{};".format(bit, desc['description'])
+                yield "       1 -- {}".format(desc['description'])
+                yield "       0 -- {}".format(desc['null_description'])
+
+        return '\n'.join(gen_human_readable(self.attributes['flags_definition']))
+
+    def flag_mask_meanings(self):
+        flags_definition = self.attributes['flags_definition']
+        bit_vals = ((bitdef['bit_index'], key) for key, bitdef in flags_definition.items())
+        masks_meanings = [(2**bit_val, name) for bit_val, name in  sorted(bit_vals)]
+        return zip(*masks_meanings)
 
 
 class DatasetMatcher(object):
@@ -134,6 +164,11 @@ class StorageType(object):  # pylint: disable=too-many-public-methods
             varname = mapping['varname']
             variable_attributes[varname] = mapping.get('attrs', {})
         return variable_attributes
+
+    @property
+    def measurement_objs(self):
+        for varname, attributes in self.measurements.items():
+            yield Measurement(name=varname, attributes=attributes)
 
     @property
     def filename_format(self):

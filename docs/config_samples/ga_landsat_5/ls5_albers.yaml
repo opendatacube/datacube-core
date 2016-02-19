@@ -184,58 +184,67 @@ measurements:
       resampling_method: nearest
       varname: band_pixelquality
       zlib: True
+      flags_definition:
+          no_cloud_shadow_fmask:
+            bit_index: 13
+            description: No Cloud Shadow (Fmask)
+            null_description: Cloud Shadow (Fmask)
+          no_cloud_shadow_acca:
+            bit_index: 12
+            description: No Cloud Shadow (ACCA)
+            null_description: Cloud Shadow (ACCA)
+          no_cloud_fmask:
+            bit_index: 11
+            description: No Cloud (Fmask)
+            null_description: Cloud (Fmask)
+          no_cloud_acca:
+            bit_index: 10
+            description: No Cloud (ACCA)
+            null_description: Cloud (ACCA)
+          land_obs:
+            bit_index: 9
+            description: Land observation
+            null_description: Sea observation
+          contiguity:
+            bit_index: 8
+            description: All bands for this pixel contain non-null values
+            null_description: Null value in at least one band
+          band_7_not_saturated:
+            bit_index: 7
+            description: Band 7 is not saturated
+            null_description: Band 7 is saturated
+          band_6_2_not_saturated:
+            bit_index: 6
+            description: Band 6-2 is not saturated
+            null_description: Band 6-2 is saturated
+          band_6_1_not_saturated:
+            bit_index: 5
+            description: Band 6-1 is not saturated
+            null_description: Band 6-1 is saturated
+          band_5_not_saturated:
+            bit_index: 4
+            description: Band 5 is not saturated
+            null_description: Band 5 is saturated
+          band_4_not_saturated:
+            bit_index: 3
+            description: Band 4 is not saturated
+            null_description: Band 4 is saturated
+          band_3_not_saturated:
+            bit_index: 2
+            description: Band 3 is not saturated
+            null_description: Band 3 is saturated
+          band_2_not_saturated:
+            bit_index: 1
+            description: Band 2 is not saturated
+            null_description: Band 2 is saturated
+          band_1_not_saturated:
+            bit_index: 0
+            description: Band 1 is not saturated
+            null_description: Band 1 is saturated
+
       attrs:
-          valid_range: 1, 32768;
+          valid_range: [0, 16384]
           long_name: "Quality Control"
-          flag_masks: 32768 16384 8192 4096 2048 1024 512 256 128 64 8 4 2 1
-          flag_meanings: (unused) Topographic Shadow Cloud Shadow (Fmask) Cloud Shadow (ACCA) Cloud (Fmask) Cloud (ACCA) Land or Sea Contiguity Band 7 is saturated Band 6-2 is saturated Band 6-1 is saturated Band 5 is saturated Band 4 is saturated Band 3 is saturated Band 2 is saturated Band 1 is saturated
-          QA_index:  |
-                  Bits are listed from the MSB (bit 15) to the LSB (bit 0):
-                  Bit    Description
-                  15     (unused);
-                  14     (unused);
-                  13     Cloud Shadow (Fmask);
-                         1 -- No Cloud Shadow
-                         0 -- Cloud Shadow
-                  12     Cloud Shadow (ACCA);
-                         1 -- No Cloud Shadow
-                         0 -- Cloud Shadow
-                  11     Cloud (Fmask);
-                         1 -- No Cloud
-                         0 -- Cloud
-                  10     Cloud (ACCA);
-                         1 -- No Cloud
-                         0 -- Cloud
-                  9      Land or Sea;
-                         1 -- Land
-                         0 -- Sea
-                  8      Contiguity;
-                         1 -- All bands for this pixel contain non-null values
-                         0 -- Null value in at least one band
-                  7      Band 7 is saturated;
-                         1 -- no
-                         0 -- yes
-                  6      Band 6-2 is saturated;
-                         1 -- no
-                         0 -- yes
-                  5      Band 6-1 is saturated;
-                         1 -- no
-                         0 -- yes
-                  4      Band 5 is saturated;
-                         1 -- no
-                         0 -- yes
-                  3      Band 4 is saturated;
-                         1 -- no
-                         0 -- yes
-                  2      Band 3 is saturated;
-                         1 -- no
-                         0 -- yes
-                  1      Band 2 is saturated;
-                         1 -- no
-                         0 -- yes
-                  0      Band 1 is saturated;
-                         1 -- no
-                         0 -- yes
 
 ---
 
