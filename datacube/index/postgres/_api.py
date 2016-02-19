@@ -259,17 +259,26 @@ class PostgresDb(object):
                 definition=definition
             )
         )
-        return res.inserted_primary_key[0]
+        storage_type_id = res.inserted_primary_key[0]
+        cube_sql_str = self._storage_unit_cube_sql_str(definition['storage']['dimension_order'])
+        constraint = """alter table agdc.storage_unit add exclude using gist (%s with &&)
+                        where (storage_type_ref = %s)""" % (cube_sql_str, storage_type_id)
+        # TODO: must enforce cube extension somehow before we can do this
+        # self._connection.execute(constraint)
+        return storage_type_id
 
     def archive_storage_unit(self, storage_unit_id):
         self._connection.execute(DATASET_STORAGE.delete().where(DATASET_STORAGE.c.storage_unit_ref == storage_unit_id))
         self._connection.execute(STORAGE_UNIT.delete().where(STORAGE_UNIT.c.id == storage_unit_id))
 
-    def get_storage_unit_overlap(self, storage_type):
+    def _storage_unit_cube_sql_str(self, dimensions):
         def _array_str(p):
             return 'ARRAY[' + ','.join("CAST(descriptor #>> '{coordinates,%s,%s}' as numeric)" % (c, p)
-                                       for c in storage_type.dimensions) + ']'
-        wild_sql_appears = "cube(" + ','.join(_array_str(p) for p in ['begin', 'end']) + ") as cube"
+                                       for c in dimensions) + ']'
+        return "cube(" + ','.join(_array_str(p) for p in ['begin', 'end']) + ")"
+
+    def get_storage_unit_overlap(self, storage_type):
+        wild_sql_appears = self._storage_unit_cube_sql_str(storage_type.dimensions) + ' as cube'
 
         su1 = select([
             STORAGE_UNIT.c.id,

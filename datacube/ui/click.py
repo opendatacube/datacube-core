@@ -13,6 +13,7 @@ import pkg_resources
 
 from datacube import config, __version__
 from datacube.index import index_connect
+from datacube.executor import get_executor
 
 
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
@@ -108,3 +109,28 @@ def pass_index(f):
         return f(index, *args, **kwargs)
 
     return functools.update_wrapper(new_func, f)
+
+
+def parse_endpoint(value):
+    ip, port = tuple(value.split(':'))
+    return ip, int(port)
+
+
+EXECUTOR_TYPES = {
+    'serial': lambda _: get_executor(None, None),
+    'multiproc': lambda workers: get_executor(None, int(workers)),
+    'distributed': lambda addr: get_executor(parse_endpoint(addr), True)
+}
+
+
+def _setup_executor(ctx, param, value):
+    try:
+        return EXECUTOR_TYPES[value[0]](value[1])
+    except ValueError:
+        ctx.fail("Failed to create '%s' executor with '%s'" % value)
+
+
+executor_cli_options = click.option('--executor',
+                                    type=(click.Choice(EXECUTOR_TYPES.keys()), str),
+                                    default=('serial', None),
+                                    callback=_setup_executor)

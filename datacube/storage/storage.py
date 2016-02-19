@@ -52,14 +52,8 @@ def tile_datasets_with_storage_type(datasets, storage_type):
     :type storage_type:  datacube.model.StorageType
     :rtype: dict[tuple[int, int], list[datacube.model.Dataset]]
     """
-    datasets = sort_datasets_by_time(datasets)
     bounds_override = storage_type.roi and _roi_to_bounds(storage_type.roi, storage_type.spatial_dimensions)
     return _grid_datasets(datasets, bounds_override, storage_type.crs, storage_type.tile_size)
-
-
-def sort_datasets_by_time(datasets):
-    datasets.sort(key=lambda ds: ds.time)
-    return datasets
 
 
 def _roi_to_bounds(roi, dims):
@@ -198,11 +192,11 @@ def write_access_unit_to_netcdf(access_unit, global_attributes, variable_attribu
 
         # write extra attributes
         for key, value in variable_attributes.get(name, {}).items():
-            setattr(data_var, key, str(value))
+            netcdf_writer.write_attribute(data_var, key, value)
 
     # write global atrributes
     for key, value in global_attributes.items():
-        nco.setncattr(key, str(value))
+        netcdf_writer.write_attribute(nco, key, value)
     nco.close()
 
 
