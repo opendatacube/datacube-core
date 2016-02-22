@@ -1,6 +1,12 @@
 from __future__ import absolute_import
 
+from .mock_api_response import mock_get_data, mock_get_descriptor
+
+
 from datetime import datetime
+
+from datacube.api import API
+from mock import MagicMock
 
 import pytest
 
@@ -17,13 +23,21 @@ from datacube.execution.execution_engine import ExecutionEngine
 skip = pytest.mark.skipif(True, reason="Until completed")
 
 
-@skip
-def test_1(dict_api, default_collection):
+@pytest.fixture
+def mock_api():
+    mock_api = MagicMock(type=API)
+    mock_api.get_descriptor.side_effect = mock_get_descriptor
+    mock_api.get_data.side_effect = mock_get_data
+    return mock_api
 
+
+def test_get_data(mock_api):
     # Test get data
 
-    a = AnalyticsEngine(api=dict_api)
-    e = ExecutionEngine(api=dict_api)
+    # mock_api.get_data.return_value = mock_get_data(('band_30', 'band_40'))
+
+    a = AnalyticsEngine(api=mock_api)
+    e = ExecutionEngine(api=mock_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -34,14 +48,22 @@ def test_1(dict_api, default_collection):
 
     e.execute_plan(a.plan)
 
+    result = e.cache['get_data']
+    assert 'array_result' in result
+    assert 'band_30' in result['array_result']
+    assert 'band_40' in result['array_result']
 
-@skip
-def test_2(dict_api, default_collection):
+    assert result['array_result']['band_30'].shape == (2, 400, 400)
+
+
+def test_perform_ndvi(mock_api):
 
     # Test perform ndvi
 
-    a = AnalyticsEngine(api=dict_api)
-    e = ExecutionEngine(api=dict_api)
+    a = AnalyticsEngine(api=mock_api)
+    e = ExecutionEngine(api=mock_api)
+
+    mock_api.get_descriptor.side_effect = mock_get_descriptor
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -53,16 +75,17 @@ def test_2(dict_api, default_collection):
 
     ndvi = a.apply_expression([b40, b30], '((array1 - array2) / (array1 + array2))', 'ndvi')
 
-    e.execute_plan(a.plan)
+    res = e.execute_plan(a.plan)
+
+    print(res)
 
 
-@skip
-def test_3(dict_api, default_collection):
+def test_perform_old_ndvi_version(mock_api):
 
     # Test perform ndvi - old version for backwards compatibility
 
-    a = AnalyticsEngine(api=dict_api)
-    e = ExecutionEngine(api=dict_api)
+    a = AnalyticsEngine(api=mock_api)
+    e = ExecutionEngine(api=mock_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -75,13 +98,12 @@ def test_3(dict_api, default_collection):
     e.execute_plan(a.plan)
 
 
-@skip
-def test_4(dict_api, default_collection):
+def test_median_reduction_over_time(mock_api):
 
     # Test median reduction over time
 
-    a = AnalyticsEngine(api=dict_api)
-    e = ExecutionEngine(api=dict_api)
+    a = AnalyticsEngine(api=mock_api)
+    e = ExecutionEngine(api=mock_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -95,13 +117,12 @@ def test_4(dict_api, default_collection):
     e.execute_plan(a.plan)
 
 
-@skip
-def test_5(dict_api, default_collection):
+def test_old_version_median_reduction_over_time(mock_api):
 
     # Test median reduction over time - old version for backwards compatibility
 
-    a = AnalyticsEngine(api=dict_api)
-    e = ExecutionEngine(api=dict_api)
+    a = AnalyticsEngine(api=mock_api)
+    e = ExecutionEngine(api=mock_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -115,13 +136,12 @@ def test_5(dict_api, default_collection):
     result = e.execute_plan(a.plan)
 
 
-@skip
-def test_6(dict_api, default_collection):
+def test_median_reduction_over_lat_long(mock_api):
 
     # Test median reduction over lat/long
 
-    a = AnalyticsEngine(api=dict_api)
-    e = ExecutionEngine(api=dict_api)
+    a = AnalyticsEngine(api=mock_api)
+    e = ExecutionEngine(api=mock_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -135,33 +155,32 @@ def test_6(dict_api, default_collection):
     e.execute_plan(a.plan)
 
 
-@skip
-def test_7(dict_api, default_collection):
+def test_median_reduction_over_latlong_old_version(mock_api):
 
     # Test median reduction over lat/long - old version for backwards compatibility
 
-    a = AnalyticsEngine(api=dict_api)
-    e = ExecutionEngine(api=dict_api)
+    a = AnalyticsEngine(api=mock_api)
+    e = ExecutionEngine(api=mock_api)
 
     # Lake Burley Griffin
-    dimensions = {'longitude': {'range': (149.07, 149.18)},
-                  'latitude':  {'range': (-35.32, -35.28)},
+    dimensions = {'x': {'range': (149.07, 149.18)},
+                  'y':  {'range': (-35.32, -35.28)},
                   'time':      {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
     arrays = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40'], dimensions, 'get_data')
 
-    median_xy = a.apply_generic_reduction(arrays, ['latitude', 'longitude'], 'median(array1)', 'medianXY')
+    median_xy = a.apply_generic_reduction(arrays, ['x', 'y'], 'median(array1)', 'medianXY')
 
     result = e.execute_plan(a.plan)
 
 
 @skip
-def test_8(dict_api, default_collection):
+def test_perform_ndvi_mask_old_version(mock_api):
 
     # Test perform ndvi + mask - old version for backwards compatibility
 
-    a = AnalyticsEngine(api=dict_api)
-    e = ExecutionEngine(api=dict_api)
+    a = AnalyticsEngine(api=mock_api)
+    e = ExecutionEngine(api=mock_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -176,13 +195,12 @@ def test_8(dict_api, default_collection):
     e.execute_plan(a.plan)
 
 
-@skip
-def test_9(dict_api, default_collection):
+def test_perform_ndvi_mask(mock_api):
 
     # Test perform ndvi + mask
 
-    a = AnalyticsEngine(api=dict_api)
-    e = ExecutionEngine(api=dict_api)
+    a = AnalyticsEngine(api=mock_api)
+    e = ExecutionEngine(api=mock_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -199,13 +217,12 @@ def test_9(dict_api, default_collection):
     e.execute_plan(a.plan)
 
 
-@skip
-def test_10(dict_api, default_collection):
+def test_sensor_specific_bandmath_old_version(mock_api):
 
     # Test sensor specific bandmath - old version for backwards compatibility
 
-    a = AnalyticsEngine(api=dict_api)
-    e = ExecutionEngine(api=dict_api)
+    a = AnalyticsEngine(api=mock_api)
+    e = ExecutionEngine(api=mock_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -217,13 +234,12 @@ def test_10(dict_api, default_collection):
     result = e.execute_plan(a.plan)
 
 
-@skip
-def test_11(dict_api, default_collection):
+def test_bit_of_everything(mock_api):
 
     # Test bit of everything
 
-    a = AnalyticsEngine(api=dict_api)
-    e = ExecutionEngine(api=dict_api)
+    a = AnalyticsEngine(api=mock_api)
+    e = ExecutionEngine(api=mock_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
@@ -242,13 +258,12 @@ def test_11(dict_api, default_collection):
     result = e.execute_plan(a.plan)
 
 
-@skip
-def test_12(dict_api, default_collection):
+def test_median_reduction_over_time_old_version(mock_api):
 
     # Test median reduction over time - old version for backwards compatibility
 
-    a = AnalyticsEngine(api=dict_api)
-    e = ExecutionEngine(api=dict_api)
+    a = AnalyticsEngine(api=mock_api)
+    e = ExecutionEngine(api=mock_api)
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
