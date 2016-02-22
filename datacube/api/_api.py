@@ -177,7 +177,7 @@ class API(object):
                                                 dimensions, dimension_ranges))
         return descriptor
 
-    def get_data(self, descriptor=None, storage_units_descriptor=None):
+    def get_data(self, descriptor=None, storage_units=None):
         """
         Function to return composite in-memory arrays
         :param descriptor:
@@ -238,9 +238,9 @@ class API(object):
         variables = descriptor.get('variables', None)
 
         storage_units_by_type = defaultdict(StorageUnitCollection)
-        if storage_units_descriptor:
+        if storage_units:
             stype = 'Requested Storage'
-            storage_units_by_type[stype] = make_storage_unit_collection_from_descriptor(storage_units_descriptor)
+            storage_units_by_type[stype] = make_storage_unit_collection_from_descriptor(storage_units)
         else:
             storage_units_by_type = _get_storage_units(descriptor, self.index)
 
@@ -256,7 +256,7 @@ class API(object):
             dimension_descriptor = descriptor.get('dimensions', {})
             dimension_ranges = convert_descriptor_dims_to_selector_dims(dimension_descriptor, storage_crs)
             dimension_groups = _get_data_from_storage_units(storage_unit_collection.get_storage_units(),
-                                                   variables, dimension_ranges)
+                                                            variables, dimension_ranges)
             #data_response[stype] = _create_data_response(xarrays)
             # TODO: Return multiple storages, or wait until we suppport reprojection
             xarrays, dimensions = dimension_groups[0]
@@ -285,11 +285,11 @@ class API(object):
                                                                         storage_units.get_spatial_crs())
             data_dicts = _get_data_from_storage_units(storage_units.iteritems(), variables, dimension_ranges,
                                                       set_nan=set_nan)
-            for i, (data_dict, dimensions) in enumerate(data_dicts):
-                #stype_label = '{}.{}'.format(stype, i) if len(data_dicts) > 1 else stype
-                data_array = _stack_vars(data_dict, var_dim_name)
-                data_array.name = stype
-                return data_array
+            data_dict = data_dicts[0][0]
+            return _stack_vars(data_dict, var_dim_name, stack_name=stype)
+            # for i, (data_dict, _) in enumerate(data_dicts):
+            #     #stype_label = '{}.{}'.format(stype, i) if len(data_dicts) > 1 else stype
+            #     return _stack_vars(data_dict, var_dim_name, stack_name=stype)
         return xarray.DataArray()
 
     def get_dataset(self, variables=None, set_nan=True, **kwargs):
@@ -334,12 +334,15 @@ class API(object):
         return dict((field, set(field_values[field] for field_values in summary)) for field in fields)
 
 
-def _stack_vars(data_dict, var_dim_name):
+def _stack_vars(data_dict, var_dim_name, stack_name=None):
     labels = sorted(data_dict.keys())
-    return xarray.concat(
+    stack = xarray.concat(
         [data_dict[var_name] for var_name in labels],
         dim=xarray.DataArray(labels, name=var_dim_name, dims=var_dim_name),
         coords='minimal')
+    if stack_name:
+        stack.name = stack_name
+    return stack
 
 
 def _get_dimension_properties(storage_units, dimensions, dimension_ranges):
