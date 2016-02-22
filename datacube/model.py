@@ -8,12 +8,12 @@ import codecs
 import logging
 import os
 from collections import namedtuple, defaultdict
+from pathlib import Path
 
 import dateutil.parser
 import numpy
 from affine import Affine
 from osgeo import osr
-from pathlib import Path
 from rasterio.coords import BoundingBox
 
 from datacube import compat
