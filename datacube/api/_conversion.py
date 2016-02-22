@@ -182,6 +182,32 @@ def convert_descriptor_dims_to_selector_dims(dimension_ranges_descriptor, storag
     return dimension_ranges
 
 
+def convert_request_args_to_descriptor_query(request=None, index=None):
+    request_remaining = request.copy() or {}
+    index = index or index_connect()
+
+    descriptor_request = dict()
+
+    if 'variables' in request:
+        descriptor_request['variables'] = request_remaining.pop('variables')
+
+    known_fields = index.datasets.get_fields()
+    for field in request:
+        if field in known_fields:
+            descriptor_request[field] = request_remaining.pop(field)
+
+    dimensions = request.pop('dimensions', {})
+    for k, v in request.items():
+        if isinstance(v, tuple):
+            dimensions[k] = {'range': v}
+        elif isinstance(v, slice):
+            dimensions[k] = {'array_range': v}
+        else:
+            descriptor_request[k] = v # actual search field
+    descriptor_request['dimensions'] = dimensions
+    return descriptor_request
+
+
 def geospatial_warp_bounds(input_coord, input_crs='EPSG:4326', output_crs='EPSG:4326', tolerance=0.):
     '''
     Converts coordinates, adding tolerance if they are the same point for index searching

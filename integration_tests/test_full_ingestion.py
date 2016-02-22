@@ -149,6 +149,8 @@ def check_open_with_xray(file_path):
 def check_open_with_api(index):
     import datacube.api
     api = datacube.api.API(index)
+    fields = api.list_fields()
+    assert 'product' in fields
     descriptor = api.get_descriptor()
     assert 'ls5_nbar' in descriptor
     storage_units = descriptor['ls5_nbar']['storage_units']
