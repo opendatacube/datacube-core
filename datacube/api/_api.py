@@ -562,7 +562,7 @@ def _get_result_stats(storage_units, dimensions, dimension_ranges):
                                                 dimension_ranges=dimension_ranges,
                                                 fake_array=True)
 
-    sample = (x for x in storage_data[0][0].values()).next()
+    sample = list(storage_data[0][0].values())[0]
     result = _describe_data_array(sample)
     return result
 
