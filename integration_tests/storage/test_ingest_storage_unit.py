@@ -3,7 +3,6 @@
 Module
 """
 from __future__ import absolute_import
-
 from datetime import datetime
 from pathlib import Path
 
@@ -44,7 +43,7 @@ class SingleTimeEmptyDataProvider(object):
 #     return filename
 
 
-@pytest.mark.skip(reason="Not yet implemented")
+@pytest.skip("Not implemented yet")
 def test_ingest_storage_unit(ingestable_storage_unit, index):
     assert Path(ingestable_storage_unit).exists()
     process_storage_unit(ingestable_storage_unit, index)
