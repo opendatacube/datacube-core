@@ -191,8 +191,9 @@ def test_get_descriptor_some_data():
 
     band_10 = MagicMock(dtype='int16', )
     my_dict = {'band10': band_10}
+
     def getitem(name):
-         return my_dict[name]
+        return my_dict[name]
 
     def setitem(name, val):
         my_dict[name] = val
