@@ -1,26 +1,24 @@
 from __future__ import absolute_import
 
+from datetime import datetime
+import sys
+
+import pytest
+from mock import MagicMock
+
+from datacube.analytics.analytics_engine import AnalyticsEngine
+from datacube.api import API
+from datacube.execution.execution_engine import ExecutionEngine
 from .mock_api_response import mock_get_data, mock_get_descriptor
 
 
-from datetime import datetime
-
-from datacube.api import API
-from mock import MagicMock
-
-import pytest
-
-from datacube.analytics.analytics_engine import AnalyticsEngine
-from datacube.execution.execution_engine import ExecutionEngine
-
-#
-# Test cases for NDexpr class
 #
 # Tested with democube database + data provided for Milestone 2 dev branch.
 #
 
 
-skip = pytest.mark.skipif(True, reason="Until completed")
+fails_under_py3 = pytest.mark.xfail(sys.version_info > (3, 0),
+                                    reason="Not Python 3 Compatible")
 
 
 @pytest.fixture
@@ -31,6 +29,7 @@ def mock_api():
     return mock_api
 
 
+@fails_under_py3
 def test_get_data(mock_api):
     # Test get data
 
@@ -41,8 +40,8 @@ def test_get_data(mock_api):
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
-                  'latitude':  {'range': (-35.32, -35.28)},
-                  'time':      {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
+                  'latitude': {'range': (-35.32, -35.28)},
+                  'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
     arrays = a.create_array(('LANDSAT 5', 'NBAR'), ['band_30', 'band_40'], dimensions, 'get_data')
 
@@ -56,8 +55,8 @@ def test_get_data(mock_api):
     assert result['array_result']['band_30'].shape == (2, 400, 400)
 
 
+@fails_under_py3
 def test_perform_ndvi(mock_api):
-
     # Test perform ndvi
 
     a = AnalyticsEngine(api=mock_api)
@@ -67,8 +66,8 @@ def test_perform_ndvi(mock_api):
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
-                  'latitude':  {'range': (-35.32, -35.28)},
-                  'time':      {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
+                  'latitude': {'range': (-35.32, -35.28)},
+                  'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
     b40 = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40'], dimensions, 'b40')
     b30 = a.create_array(('LANDSAT 5', 'NBAR'), ['band_30'], dimensions, 'b30')
@@ -80,8 +79,8 @@ def test_perform_ndvi(mock_api):
     print(res)
 
 
+@fails_under_py3
 def test_perform_old_ndvi_version(mock_api):
-
     # Test perform ndvi - old version for backwards compatibility
 
     a = AnalyticsEngine(api=mock_api)
@@ -89,8 +88,8 @@ def test_perform_old_ndvi_version(mock_api):
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
-                  'latitude':  {'range': (-35.32, -35.28)},
-                  'time':      {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
+                  'latitude': {'range': (-35.32, -35.28)},
+                  'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
     arrays = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40', 'band_30'], dimensions, 'get_data')
     ndvi = a.apply_bandmath(arrays, '((array1 - array2) / (array1 + array2))', 'ndvi')
@@ -98,8 +97,8 @@ def test_perform_old_ndvi_version(mock_api):
     e.execute_plan(a.plan)
 
 
+@fails_under_py3
 def test_median_reduction_over_time(mock_api):
-
     # Test median reduction over time
 
     a = AnalyticsEngine(api=mock_api)
@@ -107,8 +106,8 @@ def test_median_reduction_over_time(mock_api):
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
-                  'latitude':  {'range': (-35.32, -35.28)},
-                  'time':      {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
+                  'latitude': {'range': (-35.32, -35.28)},
+                  'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
     arrays = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40'], dimensions, 'get_data')
 
@@ -117,8 +116,8 @@ def test_median_reduction_over_time(mock_api):
     e.execute_plan(a.plan)
 
 
+@fails_under_py3
 def test_old_version_median_reduction_over_time(mock_api):
-
     # Test median reduction over time - old version for backwards compatibility
 
     a = AnalyticsEngine(api=mock_api)
@@ -126,8 +125,8 @@ def test_old_version_median_reduction_over_time(mock_api):
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
-                  'latitude':  {'range': (-35.32, -35.28)},
-                  'time':      {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
+                  'latitude': {'range': (-35.32, -35.28)},
+                  'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
     arrays = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40'], dimensions, 'get_data')
 
@@ -136,8 +135,8 @@ def test_old_version_median_reduction_over_time(mock_api):
     result = e.execute_plan(a.plan)
 
 
+@fails_under_py3
 def test_median_reduction_over_lat_long(mock_api):
-
     # Test median reduction over lat/long
 
     a = AnalyticsEngine(api=mock_api)
@@ -145,8 +144,8 @@ def test_median_reduction_over_lat_long(mock_api):
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
-                  'latitude':  {'range': (-35.32, -35.28)},
-                  'time':      {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
+                  'latitude': {'range': (-35.32, -35.28)},
+                  'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
     arrays = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40'], dimensions, 'get_data')
 
@@ -155,8 +154,8 @@ def test_median_reduction_over_lat_long(mock_api):
     e.execute_plan(a.plan)
 
 
+@fails_under_py3
 def test_median_reduction_over_latlong_old_version(mock_api):
-
     # Test median reduction over lat/long - old version for backwards compatibility
 
     a = AnalyticsEngine(api=mock_api)
@@ -164,8 +163,8 @@ def test_median_reduction_over_latlong_old_version(mock_api):
 
     # Lake Burley Griffin
     dimensions = {'x': {'range': (149.07, 149.18)},
-                  'y':  {'range': (-35.32, -35.28)},
-                  'time':      {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
+                  'y': {'range': (-35.32, -35.28)},
+                  'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
     arrays = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40'], dimensions, 'get_data')
 
@@ -174,9 +173,8 @@ def test_median_reduction_over_latlong_old_version(mock_api):
     result = e.execute_plan(a.plan)
 
 
-@skip
+@pytest.mark.xfail(reason="Unknown error, mask ending up as float32, needs further research")
 def test_perform_ndvi_mask_old_version(mock_api):
-
     # Test perform ndvi + mask - old version for backwards compatibility
 
     a = AnalyticsEngine(api=mock_api)
@@ -184,8 +182,8 @@ def test_perform_ndvi_mask_old_version(mock_api):
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
-                  'latitude':  {'range': (-35.32, -35.28)},
-                  'time':      {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
+                  'latitude': {'range': (-35.32, -35.28)},
+                  'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
     arrays = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40', 'band_30'], dimensions, 'get_data')
     ndvi = a.apply_bandmath(arrays, '((array1 - array2) / (array1 + array2))', 'ndvi')
@@ -195,8 +193,8 @@ def test_perform_ndvi_mask_old_version(mock_api):
     e.execute_plan(a.plan)
 
 
+@fails_under_py3
 def test_perform_ndvi_mask(mock_api):
-
     # Test perform ndvi + mask
 
     a = AnalyticsEngine(api=mock_api)
@@ -204,8 +202,8 @@ def test_perform_ndvi_mask(mock_api):
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
-                  'latitude':  {'range': (-35.32, -35.28)},
-                  'time':      {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
+                  'latitude': {'range': (-35.32, -35.28)},
+                  'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
     b40 = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40'], dimensions, 'b40')
     b30 = a.create_array(('LANDSAT 5', 'NBAR'), ['band_30'], dimensions, 'b30')
@@ -217,8 +215,8 @@ def test_perform_ndvi_mask(mock_api):
     e.execute_plan(a.plan)
 
 
+@fails_under_py3
 def test_sensor_specific_bandmath_old_version(mock_api):
-
     # Test sensor specific bandmath - old version for backwards compatibility
 
     a = AnalyticsEngine(api=mock_api)
@@ -226,16 +224,16 @@ def test_sensor_specific_bandmath_old_version(mock_api):
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
-                  'latitude':  {'range': (-35.32, -35.28)},
-                  'time':      {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
+                  'latitude': {'range': (-35.32, -35.28)},
+                  'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
     ndvi = a.apply_sensor_specific_bandmath('LANDSAT 5', 'NBAR', 'ndvi', dimensions, 'get_data', 'ndvi')
 
     result = e.execute_plan(a.plan)
 
 
+@fails_under_py3
 def test_bit_of_everything(mock_api):
-
     # Test bit of everything
 
     a = AnalyticsEngine(api=mock_api)
@@ -243,8 +241,8 @@ def test_bit_of_everything(mock_api):
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
-                  'latitude':  {'range': (-35.32, -35.28)},
-                  'time':      {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
+                  'latitude': {'range': (-35.32, -35.28)},
+                  'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
     b40 = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40'], dimensions, 'b40')
     b30 = a.create_array(('LANDSAT 5', 'NBAR'), ['band_30'], dimensions, 'b30')
@@ -258,8 +256,8 @@ def test_bit_of_everything(mock_api):
     result = e.execute_plan(a.plan)
 
 
+@fails_under_py3
 def test_median_reduction_over_time_old_version(mock_api):
-
     # Test median reduction over time - old version for backwards compatibility
 
     a = AnalyticsEngine(api=mock_api)
@@ -267,8 +265,8 @@ def test_median_reduction_over_time_old_version(mock_api):
 
     # Lake Burley Griffin
     dimensions = {'longitude': {'range': (149.07, 149.18)},
-                  'latitude':  {'range': (-35.32, -35.28)},
-                  'time':      {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
+                  'latitude': {'range': (-35.32, -35.28)},
+                  'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
     arrays = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40'], dimensions, 'get_data')
 

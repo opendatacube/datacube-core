@@ -10,5 +10,5 @@ pylint -j 2 --reports no datacube examples/*.py
 
 # Run tests, taking coverage.
 # Users can specify extra folders as arguments.
-py.test -r s --cov datacube --durations=5 datacube examples tests $@
+py.test -r sx --cov datacube --durations=5 datacube examples tests $@
 
