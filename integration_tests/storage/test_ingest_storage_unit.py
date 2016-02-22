@@ -44,7 +44,7 @@ class SingleTimeEmptyDataProvider(object):
 #     return filename
 
 
-@pytest.skip(reason="Not yet implemented")
+@pytest.mark.skip(reason="Not yet implemented")
 def test_ingest_storage_unit(ingestable_storage_unit, index):
     assert Path(ingestable_storage_unit).exists()
     process_storage_unit(ingestable_storage_unit, index)
