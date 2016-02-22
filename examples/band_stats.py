@@ -18,27 +18,28 @@ Example showing usage of search api and data access api to calculate some band t
 
 from __future__ import absolute_import, division, print_function
 
-from itertools import groupby
-
 import click
 import numpy
-from affine import Affine
 import rasterio
-from rasterio.coords import BoundingBox
 
 from datacube.api._storage import make_storage_unit
 from datacube.index import index_connect
-from datacube.model import GeoBox
+from datacube.storage.storage import storage_unit_to_access_unit
 from datacube.storage.access.core import StorageUnitStack, StorageUnitVariableProxy
-from datacube.storage.storage import fuse_sources, DatasetSource, RESAMPLING
 from datacube.ui import parse_expressions
 
 
+def group_storage_units_by_type(sus):
+    groups = {}
+    for su in sus:
+        groups.setdefault(su.storage_type, []).append(su)
+    return groups
+
+
 def group_storage_units_by_location(sus):
-    dims = ('x', 'y')
     stacks = {}
     for su in sus:
-        stacks.setdefault(tuple(su.coordinates[dim].begin for dim in dims), []).append(su)
+        stacks.setdefault(su.tile_index, []).append(su)
     return stacks
 
 
@@ -54,94 +55,7 @@ def ls_pqa_mask(pqa):
 
 
 def filter_duplicates(sus):
-    return {su.id_: su for su in sus}.values()
-
-
-# pylint: disable=too-many-locals
-def get_data(datasets,
-             measurement_id,
-             bounds,
-             resolution,
-             crs,
-             nodata,
-             group_func,
-             fuse_func=None):
-    """
-    :type bounds: BoundingBox
-    """
-    datasets = [dataset for dataset in datasets if measurement_id in dataset.metadata.measurements_dict]
-    datasets.sort()
-    groups = [(key, [DatasetSource(dataset, measurement_id) for dataset in group])
-              for key, group in groupby(datasets, group_func)]
-
-    shape = (len(groups),
-             int((bounds.top - bounds.bottom) / abs(resolution[1]) + 0.5),
-             int((bounds.right - bounds.left) / abs(resolution[0]) + 0.5))
-    transform = Affine(resolution[0], 0.0, bounds.right if resolution[0] < 0 else bounds.left,
-                       0.0, resolution[1], bounds.top if resolution[1] < 0 else bounds.bottom)
-
-    result = numpy.empty(shape, dtype=numpy.int16)
-    for index, (key, sources) in enumerate(groups):
-        fuse_sources(sources,
-                     result[index],
-                     transform,
-                     crs,
-                     nodata,
-                     resampling=RESAMPLING.nearest,
-                     fuse_func=fuse_func)
-    return result
-
-
-
-
-def do_no_spoon(stats, bands, query, index):
-    datasets = index.datasets.search_eager(*query)
-    group_func = lambda ds: ds.time
-    datasets.sort(key=group_func)
-    groups = [(key, list(group)) for key, group in groupby(datasets, group_func)]
-
-    bounds = BoundingBox(149.0, -35.0, 150.0, -34.0)
-    resolution = (0.00025, -0.00025)
-    crs = 'EPSG:4326'
-
-    width, height = (int((bounds.top - bounds.bottom) / abs(resolution[1]) + 0.5),
-                     int((bounds.right - bounds.left) / abs(resolution[0]) + 0.5))
-    affine = Affine(resolution[0], 0.0, bounds.right if resolution[0] < 0 else bounds.left,
-                    0.0, resolution[1], bounds.top if resolution[1] < 0 else bounds.bottom)
-    geobox = GeoBox(width, height, affine, crs)
-
-    # sus = []
-    # for v, group in groups:
-    #     su = NoSpoonStorageUnit(group,
-    #                             geobox,
-    #                             mapping={
-    #                                 '10': {'varname': 'blue',
-    #                                        'dtype': numpy.int16,
-    #                                        'nodata': -999,
-    #                                        'resampling_method': 'cubic'}
-    #                             })
-    #     v = datetime_to_seconds_since_1970(v)
-    #     sus.append(
-    #         StorageUnitDimensionProxy(su, ('time', v, numpy.dtype(numpy.float64),
-    # 'seconds since 1970-01-01 00:00:00')))
-    # data = StorageUnitStack(sus, 'time')
-    #
-    # nco = netCDF4.Dataset('test.nc', 'w')
-    # for name, coord in data.coordinates.items():
-    #     coord_var = netcdf_writer.create_coordinate(nco, name, coord)
-    #     coord_var[:] = data.get_coord(name)[0]
-    # netcdf_writer.create_grid_mapping_variable(nco, geobox.crs)
-    # netcdf_writer.write_gdal_geobox_attributes(nco, geobox)
-    # netcdf_writer.write_geographical_extents_attributes(nco, geobox)
-    #
-    # for name, var in data.variables.items():
-    #     data_var = netcdf_writer.create_variable(nco, name, var)
-    #     data_var.grid_mapping = 'crs'
-    #     data_var[:] = data.get(name).values
-    #
-    # nco.close()
-
-    # return data
+    return {su.id: su for su in sus}.values()
 
 
 def get_descriptors(index, *query):
@@ -149,17 +63,27 @@ def get_descriptors(index, *query):
     sus = index.storage.search_eager(*query)
     sus = filter_duplicates(sus)
 
-    nbars = [make_storage_unit(su) for su in sus if 'PQ' not in su.path]
-    pqs = [make_storage_unit(su) for su in sus if 'PQ' in su.path]
+    nbars = pqs = {}
+    grouped_by_type = group_storage_units_by_type(sus)
+    for storage_type in grouped_by_type:
+        product_type = storage_type.document['match']['metadata']['product_type']
+        if product_type == 'NBAR':
+            nbars = grouped_by_type[storage_type]
+        if product_type == 'PQ':
+            pqs = grouped_by_type[storage_type]
+
+    assert nbars and pqs
 
     nbars = group_storage_units_by_location(nbars)
     pqs = group_storage_units_by_location(pqs)
 
     result = []
     for key in nbars:
+        nbars[key].sort(key=lambda su: su.coordinates['time'].begin)
+        pqs[key].sort(key=lambda su: su.coordinates['time'].begin)
         result.append({
-            'NBAR': StorageUnitStack(sorted(nbars[key], key=lambda su: su.coordinates['time'].begin), 'time'),
-            'PQ': StorageUnitStack(sorted(pqs[key], key=lambda su: su.coordinates['time'].begin), 'time')
+            'NBAR': StorageUnitStack([storage_unit_to_access_unit(su) for su in nbars[key]], 'time'),
+            'PQ': StorageUnitStack([storage_unit_to_access_unit(su) for su in pqs[key]], 'time')
         })
     return result
 
@@ -218,10 +142,9 @@ def do_storage_unit(stats, bands, query, index):
 @click.argument('expression', nargs=-1)
 @click.option('--band', multiple=True, help="bands to calculate statistics on",
               type=click.Choice(['blue', 'green', 'red', 'nir', 'ir1', 'ir2']))
-@click.option('--no-spoon', is_flag=True, help="bypass storage unit access")
 # @click.option('--percentile', type=int, multiple=True)
 @click.option('--mean', is_flag=True, help="calculate mean of the specified bands")
-def main(expression, no_spoon, band, **features):
+def main(expression, band, **features):
     """
     Calculate some band stats and dump them into tif files in the current directory
     """
@@ -232,11 +155,7 @@ def main(expression, no_spoon, band, **features):
 
     index = index_connect()
     query = parse_expressions(index.storage.get_field_with_fallback, *expression)
-
-    if no_spoon:
-        do_no_spoon(stats, band, query, index)
-    else:
-        do_storage_unit(stats, band, query, index)
+    do_storage_unit(stats, band, query, index)
 
 
 if __name__ == "__main__":
