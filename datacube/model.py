@@ -4,17 +4,16 @@ Core classes used across modules.
 """
 from __future__ import absolute_import, division
 
-import logging
-from collections import namedtuple, defaultdict
-import os
 import codecs
-from cStringIO import StringIO
+import logging
+import os
+from collections import namedtuple, defaultdict
 
-from pathlib import Path
-import numpy
 import dateutil.parser
+import numpy
 from affine import Affine
 from osgeo import osr
+from pathlib import Path
 from rasterio.coords import BoundingBox
 
 from datacube import compat
@@ -90,7 +89,7 @@ class Measurement(object):
     def flag_mask_meanings(self):
         flags_definition = self.attributes['flags_definition']
         bit_vals = ((bitdef['bit_index'], key) for key, bitdef in flags_definition.items())
-        masks_meanings = [(2**bit_val, name) for bit_val, name in  sorted(bit_vals)]
+        masks_meanings = [(2 ** bit_val, name) for bit_val, name in sorted(bit_vals)]
         return zip(*masks_meanings)
 
 
@@ -508,6 +507,7 @@ class GeoPolygon(object):
     """
     Polygon with a CRS
     """
+
     def __init__(self, points, crs_str=None):
         self.points = points
         self.crs_str = crs_str
@@ -562,6 +562,7 @@ class GeoBox(object):
     :param affine: Affine transformation defining the location of the storage unit
     :type affine: affine.Affine
     """
+
     def __init__(self, width, height, affine, crs_str):
         self.width = width
         self.height = height
@@ -591,7 +592,7 @@ class GeoBox(object):
             if index.step != 1:
                 raise NotImplementedError('scaling not implemented, yet')
 
-        affine = self.affine*Affine.translation(indexes[1].start, indexes[0].start)
+        affine = self.affine * Affine.translation(indexes[1].start, indexes[0].start)
         return GeoBox(width=indexes[1].stop - indexes[1].start,
                       height=indexes[0].stop - indexes[0].start,
                       affine=affine,
@@ -619,8 +620,8 @@ class GeoBox(object):
 
     @property
     def coordinates(self):
-        xs = numpy.array([0, self.width-1]) * self.affine.a + self.affine.c + self.affine.a / 2
-        ys = numpy.array([0, self.height-1]) * self.affine.e + self.affine.f + self.affine.e / 2
+        xs = numpy.array([0, self.width - 1]) * self.affine.a + self.affine.c + self.affine.a / 2
+        ys = numpy.array([0, self.height - 1]) * self.affine.e + self.affine.f + self.affine.e / 2
 
         crs = self.crs
         if crs.IsGeographic():
