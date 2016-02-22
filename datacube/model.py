@@ -107,7 +107,7 @@ class StorageType(object):  # pylint: disable=too-many-public-methods
     def __init__(self, document, id_=None):
         # Database primary key
         #: :type: int
-        self.id_ = id_
+        self.id = id_
 
         self.document = document
 
@@ -228,7 +228,7 @@ class StorageType(object):  # pylint: disable=too-many-public-methods
 
     def generate_uri(self, **kwargs):
         params = {
-            'type_id': self.id_,
+            'type_id': self.id,
             'type_name': self.name,
             'random': codecs.encode(os.urandom(16), 'hex'),
         }
@@ -248,7 +248,7 @@ class StorageType(object):  # pylint: disable=too-many-public-methods
         return '/'.join(s.strip('/') for s in (self.location, offset))
 
     def __repr__(self):
-        return '{}(name={!r}, id_={!r})'.format(self.__class__.__name__, self.name, self.id_)
+        return '{}(name={!r}, id_={!r})'.format(self.__class__.__name__, self.name, self.id)
 
 
 class StorageUnit(object):
@@ -279,7 +279,7 @@ class StorageUnit(object):
 
         # Database primary key
         #: :type: int
-        self.id_ = id_
+        self.id = id_
 
     @property
     def local_path(self):
@@ -311,7 +311,7 @@ class StorageUnit(object):
     def __repr__(self):
         return "{}({!r}, {!r}, {!r}, {!r}, {!r})".format(self.__class__.__name__, self.dataset_ids,
                                                          self.storage_type, self.descriptor,
-                                                         self.path, self.id_)
+                                                         self.path, self.id)
 
 
 class Dataset(object):
@@ -412,7 +412,7 @@ class MetadataType(object):
         #: :type: dict[str, datacube.index.fields.Field]
         self.storage_fields = storage_unit_search_fields
 
-        self.id_ = id_
+        self.id = id_
 
     def dataset_reader(self, dataset_doc):
         return _DocReader(self.dataset_offsets.__dict__, dataset_doc)
@@ -431,7 +431,7 @@ class Collection(object):
         :type match: DatasetMatcher
         :type name: str
         """
-        self.id_ = id_
+        self.id = id_
 
         # Name of collection. Unique.
         self.name = name
@@ -443,7 +443,7 @@ class Collection(object):
         self.metadata_type = metadata_type
 
     def __str__(self):
-        return "Collection <id={id}, name={name}>".format(id=self.id_, name=self.name)
+        return "Collection <id={id}, name={name}>".format(id=self.id, name=self.name)
 
     def __repr__(self):
         return self.__str__()

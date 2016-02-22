@@ -193,7 +193,7 @@ def test_searches_only_collection(index, db, default_collection, telemetry_colle
     )
     assert was_inserted
 
-    assert default_collection.metadata_type.id_ == telemetry_collection.metadata_type.id_
+    assert default_collection.metadata_type.id == telemetry_collection.metadata_type.id
 
     metadata_type = telemetry_collection.metadata_type
     assert index.datasets.search_eager()
@@ -284,7 +284,7 @@ def test_search_storage_star(index, db, default_collection, indexed_ls5_nbar_sto
         path='/tmp/something.tif',
         dataset_ids=[_telemetry_uuid],
         descriptor={'test': 'test'},
-        storage_type_id=indexed_ls5_nbar_storage_type.id_,
+        storage_type_id=indexed_ls5_nbar_storage_type.id,
         size_bytes=1234
     )
 
@@ -309,7 +309,7 @@ def test_search_storage_by_dataset(index, db, default_collection, indexed_ls5_nb
         '/tmp/something.tif',
         [_telemetry_uuid],
         {'test': 'test'},
-        indexed_ls5_nbar_storage_type.id_,
+        indexed_ls5_nbar_storage_type.id,
         size_bytes=1234
     )
     dfield = metadata_type.dataset_fields.get
@@ -320,7 +320,7 @@ def test_search_storage_by_dataset(index, db, default_collection, indexed_ls5_nb
         dfield('instrument') == 'OLI_TIRS'
     )
     assert len(storages) == 1
-    assert storages[0].id_ == unit_id
+    assert storages[0].id == unit_id
 
     # When fields don't match the dataset it shouldn't be returned.
     storages = index.storage.search_eager(
@@ -384,7 +384,7 @@ def test_search_storage_by_both_fields(global_integration_cli_args, db, indexed_
                 'geospatial_lat_max': 140
             }
         },
-        storage_type_id=indexed_ls5_nbar_storage_type.id_,
+        storage_type_id=indexed_ls5_nbar_storage_type.id,
         size_bytes=1234
     )
 

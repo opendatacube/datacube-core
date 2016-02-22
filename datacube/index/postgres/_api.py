@@ -283,7 +283,7 @@ class PostgresDb(object):
         su1 = select([
             STORAGE_UNIT.c.id,
             text(wild_sql_appears)
-        ]).where(STORAGE_UNIT.c.storage_type_ref == storage_type.id_)
+        ]).where(STORAGE_UNIT.c.storage_type_ref == storage_type.id)
         su1 = alias(su1, name='su1')
         su2 = alias(su1, name='su2')
 

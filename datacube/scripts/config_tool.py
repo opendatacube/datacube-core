@@ -107,7 +107,7 @@ def list_storage_types(index):
     :type index: datacube.index._api.Index
     """
     for storage_type in index.storage.types.get_all():
-        echo("{m.id_:2d}. {m.name:15}: {m.description!s}".format(m=storage_type))
+        echo("{m.id:2d}. {m.name:15}: {m.description!s}".format(m=storage_type))
 
 
 def _read_docs(paths):

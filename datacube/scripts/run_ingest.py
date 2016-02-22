@@ -60,7 +60,7 @@ def _stack_storage_type(storage_type, start_date, end_date, index):
     # TODO: order by time will remove the need to run multiple searches
     while start_date < end_date:
         storage_units_by_tile_index = {}
-        for storage_unit in index.storage.search(type=storage_type.id_, time=Range(start_date, start_date + period)):
+        for storage_unit in index.storage.search(type=storage_type.id, time=Range(start_date, start_date + period)):
             storage_units_by_tile_index.setdefault(storage_unit.tile_index, []).append(storage_unit)
 
         for tile_index, storage_units in storage_units_by_tile_index.items():

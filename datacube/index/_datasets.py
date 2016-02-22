@@ -55,7 +55,7 @@ def _prepare_single(collection_resource, dataset_doc, db):
         _LOG.debug('Failed match on dataset doc %r', dataset_doc)
         raise ValueError('No collection matched for dataset.')
 
-    _LOG.info('Matched collection %r (%s)', collection.name, collection.id_)
+    _LOG.info('Matched collection %r (%s)', collection.name, collection.id)
 
     indexable_doc = copy.deepcopy(dataset_doc)
     dataset = collection.metadata_type.dataset_reader(indexable_doc)
@@ -67,7 +67,7 @@ def _prepare_single(collection_resource, dataset_doc, db):
     dataset_id = dataset.uuid_field
 
     _LOG.info('Indexing %s', dataset_id)
-    was_inserted = db.insert_dataset(indexable_doc, dataset_id, collection_id=collection.id_)
+    was_inserted = db.insert_dataset(indexable_doc, dataset_id, collection_id=collection.id)
 
     return was_inserted, dataset, source_datasets
 
@@ -183,7 +183,7 @@ class CollectionResource(object):
                 name=name,
                 dataset_metadata=dataset_metadata,
                 match_priority=match_priority,
-                metadata_type_id=metadata_type.id_,
+                metadata_type_id=metadata_type.id,
                 definition=definition
             )
         return self.get_by_name(name)

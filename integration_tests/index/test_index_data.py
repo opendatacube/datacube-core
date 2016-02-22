@@ -98,9 +98,9 @@ def test_index_dataset_with_location(index, default_collection):
     )
 
     assert dataset.id == _telemetry_uuid
-    assert dataset.collection.id_ == default_collection.id_
-    assert dataset.collection.id_ == default_collection.id_
-    assert dataset.metadata_type.id_ == default_collection.metadata_type.id_
+    assert dataset.collection.id == default_collection.id
+    assert dataset.collection.id == default_collection.id
+    assert dataset.metadata_type.id == default_collection.metadata_type.id
 
     assert dataset.local_path.absolute() == Path(first_file).absolute()
 

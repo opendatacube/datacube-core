@@ -62,7 +62,7 @@ class StorageUnitResource(object):
                     unit.path,
                     unit.dataset_ids,
                     unit.descriptor,
-                    unit.storage_type.id_,
+                    unit.storage_type.id,
                     unit.size_bytes
                 )
                 _LOG.debug('Indexed unit %s @ %s', unit_id, unit.path)
@@ -76,14 +76,14 @@ class StorageUnitResource(object):
     def replace(self, old_storage_unit, new_storage_units):
         with self._db.begin() as transaction:
             for unit in old_storage_unit:
-                self._db.archive_storage_unit(unit.id_)
+                self._db.archive_storage_unit(unit.id)
 
             for unit in new_storage_units:
                 unit_id = self._db.add_storage_unit(
                     unit.path,
                     unit.dataset_ids,
                     unit.descriptor,
-                    unit.storage_type.id_,
+                    unit.storage_type.id,
                     unit.size_bytes
                 )
                 _LOG.debug('Indexed unit %s @ %s', unit_id, unit.path)
