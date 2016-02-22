@@ -47,7 +47,7 @@ def make_storage_unit(su, is_diskless=False):
     :param su: database index storage unit
     :param is_diskless: Use a cached object for the source of data, rather than the file
     """
-    crs = dict((dim, su.descriptor['coordinates'][dim].get('units', None)) for dim in su.storage_type.dimensions)
+    crs = {dim: su.descriptor['coordinates'][dim].get('units', None) for dim in su.storage_type.dimensions}
     for dim in crs.keys():
         if dim in su.storage_type.spatial_dimensions:
             crs[dim] = su.storage_type.crs
