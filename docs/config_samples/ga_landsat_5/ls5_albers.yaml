@@ -185,62 +185,66 @@ measurements:
       varname: band_pixelquality
       zlib: True
       flags_definition:
-          no_cloud_shadow_fmask:
+          cloud_shadow_fmask:
             bit_index: 13
-            description: No Cloud Shadow (Fmask)
-            null_description: Cloud Shadow (Fmask)
-          no_cloud_shadow_acca:
+            value: 0
+            description: Cloud Shadow (Fmask)
+          cloud_shadow_acca:
             bit_index: 12
-            description: No Cloud Shadow (ACCA)
-            null_description: Cloud Shadow (ACCA)
-          no_cloud_fmask:
+            value: 0
+            description: Cloud Shadow (ACCA)
+          cloud_fmask:
             bit_index: 11
-            description: No Cloud (Fmask)
-            null_description: Cloud (Fmask)
-          no_cloud_acca:
+            value: 0
+            description: Cloud (Fmask)
+          cloud_acca:
             bit_index: 10
-            description: No Cloud (ACCA)
-            null_description: Cloud (ACCA)
+            value: 0
+            description: Cloud (ACCA)
           land_obs:
             bit_index: 9
+            value: 1
             description: Land observation
-            null_description: Sea observation
+          sea_obs:
+            bit_index: 9
+            value: 0
+            description: Sea observation
           contiguity:
             bit_index: 8
+            value: 1
             description: All bands for this pixel contain non-null values
-            null_description: Null value in at least one band
-          band_7_not_saturated:
+          band_7_saturated:
             bit_index: 7
-            description: Band 7 is not saturated
-            null_description: Band 7 is saturated
-          band_6_2_not_saturated:
+            value: 0
+            description: Band 7 is saturated
+          band_6_2_saturated:
             bit_index: 6
-            description: Band 6-2 is not saturated
-            null_description: Band 6-2 is saturated
-          band_6_1_not_saturated:
+            value: 0
+            description: Band 6-2 is saturated
+          band_6_1_saturated:
             bit_index: 5
-            description: Band 6-1 is not saturated
-            null_description: Band 6-1 is saturated
-          band_5_not_saturated:
+            value: 0
+            description: Band 6-1 is saturated
+          band_5_saturated:
             bit_index: 4
-            description: Band 5 is not saturated
-            null_description: Band 5 is saturated
-          band_4_not_saturated:
+            value: 0
+            description: Band 5 is saturated
+          band_4_saturated:
             bit_index: 3
-            description: Band 4 is not saturated
-            null_description: Band 4 is saturated
-          band_3_not_saturated:
+            value: 0
+            description: Band 4 is saturated
+          band_3_saturated:
             bit_index: 2
-            description: Band 3 is not saturated
-            null_description: Band 3 is saturated
-          band_2_not_saturated:
+            value: 0
+            description: Band 3 is saturated
+          band_2_saturated:
             bit_index: 1
-            description: Band 2 is not saturated
-            null_description: Band 2 is saturated
-          band_1_not_saturated:
+            value: 0
+            description: Band 2 is saturated
+          band_1_saturated:
             bit_index: 0
-            description: Band 1 is not saturated
-            null_description: Band 1 is saturated
+            value: 0
+            description: Band 1 is saturated
 
       attrs:
           valid_range: [0, 16384]

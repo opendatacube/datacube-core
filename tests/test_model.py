@@ -128,39 +128,47 @@ EXAMPLE_PQ_MEASUREMENT_DEF = {
     'nodata': -999,
     'varname': 'pixel_quality',
     'flags_definition': {
-        'band_1_not_saturated': {
+        'band_1_saturated': {
             'bit_index': 0,
-            'description': 'Band 1 is not saturated',
-            'null_description': 'Band 1 is saturated'},
-        'band_2_not_saturated': {
+            'value': 0,
+            'description': 'Band 1 is saturated'},
+        'band_2_saturated': {
             'bit_index': 1,
-            'description': 'Band 2 is not saturated',
-            'null_description': 'Band 2 is saturated'},
-        'band_3_not_saturated': {
+            'value': 0,
+            'description': 'Band 2 is saturated'},
+        'band_3_saturated': {
             'bit_index': 2,
-            'description': 'Band 3 is not saturated',
-            'null_description': 'Band 3 is saturated'},
+            'value': 0,
+            'description': 'Band 3 is saturated'},
+        'land_obs': {
+            'bit_index': 9,
+            'value': 1,
+            'description': 'Land observation'},
+        'sea_obs': {
+            'bit_index': 9,
+            'value': 0,
+            'description': 'Sea observation'},
     }}
 
 EXPECTED_HUMAN_READABLE_FLAGS = dedent("""\
-        Bits are listed from the MSB (bit 2) to the LSB (bit 0)
-        Bit    Description
-        2      Band 3 is not saturated;
-               1 -- Band 3 is not saturated
-               0 -- Band 3 is saturated
-        1      Band 2 is not saturated;
-               1 -- Band 2 is not saturated
-               0 -- Band 2 is saturated
-        0      Band 1 is not saturated;
-               1 -- Band 1 is not saturated
-               0 -- Band 1 is saturated""")
+        Bits are listed from the MSB (bit 9) to the LSB (bit 0)
+        Bit    Value     Description
+        9       1       Land observation
+        9       0       Sea observation
+        2       0       Band 3 is saturated
+        1       0       Band 2 is saturated
+        0       0       Band 1 is saturated""")
 
 
-def test_measurements_model():
+def test_measurements_model_netcdfflags():
     flagged_measurement = Measurement('PQ', EXAMPLE_PQ_MEASUREMENT_DEF)
 
     masks, meanings = flagged_measurement.flag_mask_meanings()
-    assert masks == (1, 2, 4)
-    assert meanings == ('band_1_not_saturated', 'band_2_not_saturated', 'band_3_not_saturated')
+    assert [1, 2, 4, 512] == masks
+    assert ['no_band_1_saturated', 'no_band_2_saturated', 'no_band_3_saturated',
+            'land_obs'] == meanings
 
+
+def test_measurements_model_human_readable_flags():
+    flagged_measurement = Measurement('PQ', EXAMPLE_PQ_MEASUREMENT_DEF)
     assert EXPECTED_HUMAN_READABLE_FLAGS == flagged_measurement.human_readable_flags_definition()

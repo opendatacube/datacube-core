@@ -75,22 +75,43 @@ class Measurement(object):
 
     def human_readable_flags_definition(self):
         def gen_human_readable(flags_def):
-            bitdef_by_bit = {item['bit_index']: dict(name=key, **item) for key, item in flags_def.items()}
-            yield ("Bits are listed from the MSB (bit {}) to the"
-                   " LSB (bit {})".format(max(bitdef_by_bit), min(bitdef_by_bit)))
-            yield "Bit    Description"
-            for bit, desc in sorted(bitdef_by_bit.items(), reverse=True):
-                yield "{:<7d}{};".format(bit, desc['description'])
-                yield "       1 -- {}".format(desc['description'])
-                yield "       0 -- {}".format(desc['null_description'])
+            bit_value_desc = [
+                (bitdef['bit_index'], bitdef['value'], bitdef['description'])
+                for name, bitdef in flags_def.items()]
+            max_bit, _, _ = max(bit_value_desc)
+            min_bit, _, _ = min(bit_value_desc)
+
+            yield "Bits are listed from the MSB (bit {}) to the LSB (bit {})".format(max_bit, min_bit)
+            yield "Bit    Value     Description"
+            for bit, value, desc in sorted(bit_value_desc, reverse=True):
+                yield "{:<8d}{:<8d}{}".format(bit, value, desc)
 
         return '\n'.join(gen_human_readable(self.attributes['flags_definition']))
 
     def flag_mask_meanings(self):
-        flags_definition = self.attributes['flags_definition']
-        bit_vals = ((bitdef['bit_index'], key) for key, bitdef in flags_definition.items())
-        masks_meanings = [(2 ** bit_val, name) for bit_val, name in sorted(bit_vals)]
-        return zip(*masks_meanings)
+        flags_def = self.attributes['flags_definition']
+
+        max_bit = max([bit_def['bit_index'] for bit_def in flags_def.values()])
+
+        bit_value_name = {
+            (bitdef['bit_index'], bitdef['value']): name
+            for name, bitdef in flags_def.items()}
+
+        masks = []
+        meanings = []
+
+        for i in range(max_bit+1):
+            try:
+                name = bit_value_name[(i, 1)]
+            except KeyError:
+                try:
+                    name = 'no_' + bit_value_name[(i, 0)]
+                except KeyError:
+                    continue
+            masks.append(2**i)
+            meanings.append(name)
+
+        return masks, meanings
 
 
 class DatasetMatcher(object):

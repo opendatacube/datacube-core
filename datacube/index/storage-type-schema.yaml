@@ -98,11 +98,11 @@ definitions:
                 properties:
                   bit_index:
                     type: number
+                  value:
+                    description: Truth value. Defaults to 1.
+                    type: number
                   description:
-                    description: A string describing the meaning if this bit value is 1
-                    type: string
-                  null_description:
-                    description: A string describing the meaning if this bit value is 0
+                    description: A string describing the meaning if this bit value is $value
                     type: string
         required:
           - varname
