@@ -110,7 +110,8 @@ def test_create_sinus_netcdf(tmpnetcdf_filename):
 
 def test_create_string_variable(tmpnetcdf_filename):
     nco = create_netcdf(tmpnetcdf_filename)
-    coord = create_coordinate(nco, 'greg', Coordinate(numpy.dtype('int'), 0, 0, 3, 'cubic gregs'))
+    coord = create_coordinate(nco, 'greg', Coordinate(numpy.dtype('int'), begin=0, end=0,
+                                                      length=3, units='cubic gregs'))
     coord[:] = [1, 3, 9]
 
     dtype = numpy.dtype('S100')
@@ -133,3 +134,8 @@ def test_chunksizes(tmpnetcdf_filename):
     no_chunks = create_variable(nco, 'no_chunks', Variable(numpy.dtype(int), None, ('greg', 'bleh'), None))
     min_max_chunks = create_variable(nco, 'min_max_chunks', Variable(numpy.dtype(int), None, ('greg', 'bleh'), None),
                                      chunksizes=[2, 50])
+    nco.close()
+
+    with netCDF4.Dataset(tmpnetcdf_filename) as nco:
+        assert nco['no_chunks'].chunking() == 'contiguous'
+        assert nco['min_max_chunks'].chunking() == [2, 5]
