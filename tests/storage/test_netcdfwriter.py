@@ -123,3 +123,13 @@ def test_create_string_variable(tmpnetcdf_filename):
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
         assert 'str_var' in nco.variables
         assert netCDF4.chartostring(nco['str_var'][0]) == data[0]
+
+
+def test_chunksizes(tmpnetcdf_filename):
+    nco = create_netcdf(tmpnetcdf_filename)
+    coord1 = create_coordinate(nco, 'greg', Coordinate(numpy.dtype('int'), 0, 0, 3, 'cubic gregs'))
+    coord2 = create_coordinate(nco, 'bleh', Coordinate(numpy.dtype('int'), 0, 0, 5, 'metric blehs'))
+
+    no_chunks = create_variable(nco, 'no_chunks', Variable(numpy.dtype(int), None, ('greg', 'bleh'), None))
+    min_max_chunks = create_variable(nco, 'min_max_chunks', Variable(numpy.dtype(int), None, ('greg', 'bleh'), None),
+                                     chunksizes=[2, 50])

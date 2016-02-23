@@ -77,6 +77,11 @@ def create_variable(nco, name, var, **kwargs):
     :param kwargs:
     :return:
     """
+    if 'chunksizes' in kwargs:
+        maxsizes = [len(nco.dimensions[dim]) for dim in var.dimensions]
+        kwargs['chunksizes'] = [min(chunksize, maxsize) if chunksize and maxsize else chunksize
+                                for maxsize, chunksize in zip(maxsizes, kwargs['chunksizes'])]
+
     if var.dtype.kind == 'S' and var.dtype.itemsize > 1:
         nco.createDimension(name+'_nchar', size=var.dtype.itemsize)
         data_var = nco.createVariable(varname=name,
