@@ -12,28 +12,17 @@ import numpy
 import dask.array as da
 
 
-def get_dask_array(storage_units, var_name, dimensions, dim_props):
+def get_dask_array(storage_units, var_name, dimensions, dim_props, is_fake_array=False):
     """
     Create an xarray.DataArray
     :return xarray.DataArray
     """
-    dsk_id = str(uuid.uuid1())  # unique name for the requested dask
-    dsk = _get_dask_for_storage_units(storage_units, var_name, dimensions, dim_props['dim_vals'], dsk_id)
-    _fill_in_dask_blanks(dsk, storage_units, var_name, dimensions, dim_props, dsk_id)
-
-    dtype = storage_units[0].variables[var_name].dtype
-    chunks = tuple(tuple(dim_props['sus_size'][dim]) for dim in dimensions)
-    dask_array = da.Array(dsk, dsk_id, chunks, dtype=dtype)
-    return dask_array
-
-
-def get_fake_dask_array(storage_units, var_name, dimensions, dim_props):
-    """
-    Create an xarray.DataArray
-    :return xarray.DataArray
-    """
-    dsk_id = str(uuid.uuid1())  # unique name for the requested dask
+    dsk_id = var_name  # unique name for the requested dask
     dsk = {}
+    if not is_fake_array:
+        dsk = _get_dask_for_storage_units(storage_units, var_name, dimensions, dim_props['dim_vals'], dsk_id)
+        _fill_in_dask_blanks(dsk, storage_units, var_name, dimensions, dim_props, dsk_id)
+
     dtype = storage_units[0].variables[var_name].dtype
     chunks = tuple(tuple(dim_props['sus_size'][dim]) for dim in dimensions)
     dask_array = da.Array(dsk, dsk_id, chunks, dtype=dtype)

@@ -30,8 +30,9 @@ from dateutil import tz
 from datacube.index import index_connect
 
 from ._conversion import convert_descriptor_query_to_search_query, convert_descriptor_dims_to_selector_dims
+from ._conversion import convert_request_args_to_descriptor_query
 from ._conversion import dimension_ranges_to_selector, dimension_ranges_to_iselector, to_datetime
-from ._dask import get_dask_array, get_fake_dask_array
+from ._dask import get_dask_array
 from ._storage import StorageUnitCollection, IrregularStorageUnitSlice
 from ._storage import make_storage_unit, make_storage_unit_collection_from_descriptor
 
@@ -156,13 +157,8 @@ class API(object):
                                                                         storage_units.get_spatial_crs())
             storage_units_by_dimensions = storage_units.group_by_dimensions()
             for dimensions, grouped_storage_units in storage_units_by_dimensions.items():
-                # TODO: Either filter our undesired variables or return everything
-                if len(dimensions) < 3:
-                    continue
-
                 result = descriptor.setdefault(stype, {
                     'dimensions': list(dimensions),
-                    'storage_units': {},
                     'variables': {},
                     'result_min': None,
                     'result_max': None,
@@ -240,6 +236,7 @@ class API(object):
         """
         descriptor = descriptor or {}
         variables = descriptor.get('variables', None)
+
         storage_units_by_type = defaultdict(StorageUnitCollection)
         if storage_units:
             stype = 'Requested Storage'
@@ -248,7 +245,7 @@ class API(object):
             storage_units_by_type = _get_storage_units(descriptor, self.index)
 
         if len(storage_units_by_type) > 1:
-            # TODO: Work out if they share the same grid (projection & resolution)
+            # TODO: Work out if they share the same grid (projection & resolution), and combine into same output?
             # TODO: Reproject all into the requested grid
             raise RuntimeError('Data must come from a single storage')
 
@@ -258,31 +255,114 @@ class API(object):
             storage_crs = storage_unit_collection.get_spatial_crs()
             dimension_descriptor = descriptor.get('dimensions', {})
             dimension_ranges = convert_descriptor_dims_to_selector_dims(dimension_descriptor, storage_crs)
-            storage_units = _stratify_irregular_dimension(storage_unit_collection.iteritems(), 'time')
-            storage_data = _get_data_from_storage_units(storage_units, variables, dimension_ranges)
-
-            data_response.update(storage_data)
+            dimension_groups = _get_data_from_storage_units(storage_unit_collection.get_storage_units(),
+                                                            variables, dimension_ranges)
+            #data_response[stype] = _create_data_response(xarrays)
+            # TODO: Return multiple storages, or wait until we suppport reprojection
+            xarrays, dimensions = dimension_groups[0]
+            return _create_data_response(xarrays, dimensions)
         return data_response
 
-    def get_fields(self):
+    def get_data_array(self, variables=None, var_dim_name=u'variable', set_nan=True, **kwargs):
+        """
+        Gets an xarray.DataArray obejct for the requested data
+        :param variables: list of variables to be included. Use `None` to include all available variables
+        :param var_dim_name: dimension name that the variables will be stacked
+        :param kwargs: search parameters and dimension ranges
+        E.g. product='NBAR', platform='LANDSAT_5', lat=(-35.5, -34.5)
+        :return: xarray.DataArray
+        """
+        descriptor_request = convert_request_args_to_descriptor_query(kwargs, self.index)
+        descriptor_dimensions = descriptor_request.get('dimensions', {})
+
+        query = convert_descriptor_query_to_search_query(descriptor_request)
+        storage_units_by_type = defaultdict(StorageUnitCollection)
+        for su in self.index.storage.search(**query):
+            storage_units_by_type[su.storage_type.name].append(make_storage_unit(su))
+
+        for stype, storage_units in storage_units_by_type.items():
+            dimension_ranges = convert_descriptor_dims_to_selector_dims(descriptor_dimensions,
+                                                                        storage_units.get_spatial_crs())
+            data_dicts = _get_data_from_storage_units(storage_units.iteritems(), variables, dimension_ranges,
+                                                      set_nan=set_nan)
+            data_dict = data_dicts[0][0]
+            return _stack_vars(data_dict, var_dim_name, stack_name=stype)
+            # for i, (data_dict, _) in enumerate(data_dicts):
+            #     #stype_label = '{}.{}'.format(stype, i) if len(data_dicts) > 1 else stype
+            #     return _stack_vars(data_dict, var_dim_name, stack_name=stype)
+        return xarray.DataArray()
+
+    def get_dataset(self, variables=None, set_nan=True, **kwargs):
+        """
+        Gets an xarray.Dataset obejct for the requested data
+        :param variables: list of variables to be included. Use `None` to include all available variables
+        :param kwargs: search parameters and dimension ranges
+        E.g. product='NBAR', platform='LANDSAT_5', lat=(-35.5, -34.5)
+        :return: xarray.Dataset
+        """
+        descriptor_request = convert_request_args_to_descriptor_query(kwargs, self.index)
+        descriptor_dimensions = descriptor_request.get('dimensions', {})
+
+        query = convert_descriptor_query_to_search_query(descriptor_request)
+        storage_units_by_type = defaultdict(StorageUnitCollection)
+        for su in self.index.storage.search(**query):
+            storage_units_by_type[su.storage_type.name].append(make_storage_unit(su))
+
+        for stype, storage_units in storage_units_by_type.items():
+            dimension_ranges = convert_descriptor_dims_to_selector_dims(descriptor_dimensions,
+                                                                        storage_units.get_spatial_crs())
+            data_dicts = _get_data_from_storage_units(storage_units.iteritems(), variables,
+                                                      dimension_ranges, set_nan=set_nan)
+            return xarray.Dataset(data_dicts[0][0])
+        return xarray.Dataset()
+
+    def list_storage_units(self, **kwargs):
+        descriptor_request = kwargs
+        query = convert_descriptor_query_to_search_query(descriptor_request)
+        sus = self.index.storage.search(**query)
+        return [su.local_path for su in sus]
+
+    def list_fields(self):
         return self.index.datasets.get_fields().keys()
 
+    def list_field_values(self, field):
+        return list(set(field_values[field] for field_values in self.index.datasets.search_summaries()))
 
-def _get_dimension_properties(storage_units, dimensions):
+    def list_all_field_values(self):
+        summary = self.index.datasets.search_summaries()
+        fields = self.index.datasets.get_fields()
+        return dict((field, set(field_values[field] for field_values in summary)) for field in fields)
+
+
+def _stack_vars(data_dict, var_dim_name, stack_name=None):
+    labels = sorted(data_dict.keys())
+    stack = xarray.concat(
+        [data_dict[var_name] for var_name in labels],
+        dim=xarray.DataArray(labels, name=var_dim_name, dims=var_dim_name),
+        coords='minimal')
+    if stack_name:
+        stack.name = stack_name
+    return stack
+
+
+def _get_dimension_properties(storage_units, dimensions, dimension_ranges):
     dim_props = {
         'sus_size': {},
         'coord_labels': {},
         'dim_vals': {},
+        'coordinate_reference_systems': {},
+        'dimension_ranges': dimension_ranges,
     }
     sample = list(storage_units)[0]
     # Get the start value of the storage unit so we can sort them
-    # Some dims are stored upside down (eg Latitude), so sort the tiles consistant with the bounding box order
+    # Some dims are stored upside down (eg Latitude), so sort the tiles consistent with the bounding box order
     dim_props['reverse'] = dict((dim, sample.coordinates[dim].begin > sample.coordinates[dim].end)
                                 for dim in dimensions)
     for dim in dimensions:
         dim_props['dim_vals'][dim] = sorted(set(su.coordinates[dim].begin for su in storage_units),
                                             reverse=dim_props['reverse'][dim])
-    dim_props['sus_size'] = {}
+        dim_props['coordinate_reference_systems'][dim] = sample.get_crs()[dim]
+
     coord_lists = {}
     for su in storage_units:
         for dim in dimensions:
@@ -291,10 +371,12 @@ def _get_dimension_properties(storage_units, dimensions):
             dim_props['sus_size'].setdefault(dim, [None] * dim_val_len)[ordinal] = su.coordinates[dim].length
             coord_list = coord_lists.setdefault(dim, [None] * dim_val_len)
             # We only need the coords once, so don't open up every file if we don't need to - su.get_coord()
+            # TODO: if we tried against the diagonal first, we might get all coords in max(shape) rather than sum(shape)
             if coord_list[ordinal] is None:
                 coord_list[ordinal], _ = su.get_coord(dim)
     for dim in dimensions:
         dim_props['coord_labels'][dim] = list(itertools.chain(*coord_lists[dim]))
+    _fix_custom_dimensions(dimensions, dim_props)
     return dim_props
 
 
@@ -317,15 +399,7 @@ def _get_storage_units(descriptor_request=None, index=None, is_diskless=False):
     return storage_units_by_type
 
 
-def _get_extra_properties(storage_units, dimensions):
-    sample_su_crs = list(storage_units)[0].get_crs()
-    extra_properties = {
-        'coordinate_reference_systems': [sample_su_crs[dim] for dim in dimensions],
-    }
-    return extra_properties
-
-
-def _create_response(xarrays, dimensions, extra_properties):
+def _create_data_response(xarrays, dimensions):
     """
     :param xarrays: a dict of xarray.DataArrays
     :param dimensions: list of dimension names
@@ -346,22 +420,30 @@ def _create_response(xarrays, dimensions, extra_properties):
                            float(sample_xarray.coords[dim].size)) if sample_xarray.coords[dim].size > 1 else 0
                           for dim in dimensions],
         'size': sample_xarray.shape,
+        'coordinate_reference_systems': [dict(v for v in sample_xarray[dim].attrs.items()) for dim in dimensions]
+
     }
-    response.update(extra_properties)
     return response
 
 
-def _get_array(storage_units, var_name, dimensions, dim_props, fake_array=False):
+def _get_array(storage_units, var_name, dimensions, dim_props, fake_array=False, set_nan=False):
     """
     Create an xarray.DataArray
     :return xarray.DataArray
     """
-    if not fake_array:
-        dask_array = get_dask_array(storage_units, var_name, dimensions, dim_props)
-    else:
-        dask_array = get_fake_dask_array(storage_units, var_name, dimensions, dim_props)
+    dask_array = get_dask_array(storage_units, var_name, dimensions, dim_props, fake_array)
     coords = [(dim, dim_props['coord_labels'][dim]) for dim in dimensions]
     xarray_data_array = xarray.DataArray(dask_array, coords=coords)
+    for dim in dimensions:
+        coord = xarray_data_array.coords[dim]
+        if isinstance(dim_props['coordinate_reference_systems'][dim], dict):
+            for prop_name, prop_value in dim_props['coordinate_reference_systems'][dim].items():
+                coord.attrs[prop_name] = prop_value
+        else:
+            coord.attrs['coordinate_reference_systems'] = dim_props['coordinate_reference_systems'][dim]
+    if set_nan:
+        nodata_val = storage_units[0].variables[var_name].nodata
+        xarray_data_array = xarray_data_array.where(xarray_data_array != nodata_val)
     return xarray_data_array
 
 
@@ -377,18 +459,15 @@ def _fix_custom_dimensions(dimensions, dim_props):
     return dimension_ranges, coord_labels
 
 
-def _get_data_by_variable(storage_units_by_variable, dimensions, dimension_ranges, fake_array=False):
+def _get_data_array_dict(storage_units_by_variable, dimensions, dimension_ranges, fake_array=False, set_nan=False):
     sus_with_dims = set(itertools.chain(*storage_units_by_variable.values()))
-    dim_props = _get_dimension_properties(sus_with_dims, dimensions)
-    dim_props['dimension_ranges'] = dimension_ranges
-
-    _fix_custom_dimensions(dimensions, dim_props)
+    dim_props = _get_dimension_properties(sus_with_dims, dimensions, dimension_ranges)
     selectors = dimension_ranges_to_selector(dim_props['dimension_ranges'], dim_props['reverse'])
     iselectors = dimension_ranges_to_iselector(dim_props['dimension_ranges'])
 
     xarrays = {}
     for var_name, storage_units in storage_units_by_variable.items():
-        xarray_data_array = _get_array(storage_units, var_name, dimensions, dim_props, fake_array)
+        xarray_data_array = _get_array(storage_units, var_name, dimensions, dim_props, fake_array, set_nan)
         for key, value in selectors.items():
             if isinstance(value, slice):
                 xarray_data_array = xarray_data_array.sel(**{key: value})
@@ -396,8 +475,7 @@ def _get_data_by_variable(storage_units_by_variable, dimensions, dimension_range
                 xarray_data_array = xarray_data_array.sel(method='nearest', **{key: value})
         subset = xarray_data_array.isel(**iselectors)
         xarrays[var_name] = subset
-    extra_properties = _get_extra_properties(sus_with_dims, dimensions)
-    return _create_response(xarrays, dimensions, extra_properties)
+    return xarrays
 
 
 def _stratify_storage_unit(storage_unit, dimension):
@@ -425,13 +503,26 @@ def _stratify_irregular_dimension(storage_units, dimension):
     :return: storage_units: list of storage_unit-like objects that point to an underlying storage unit at a particular
      value, one for each value of the irregular dimension
     """
-    stratified_storage_units = [_stratify_storage_unit(storage_unit, dimension) for storage_unit in storage_units]
-    return list(itertools.chain(*stratified_storage_units))
+    stratified_units = [_stratify_storage_unit(storage_unit, dimension) for storage_unit in storage_units]
+    return list(itertools.chain(*stratified_units))
 
 
-def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges=None, fake_array=False):
+def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges=None, fake_array=False, set_nan=False):
+    """
+    Converts a set of storage units into a dictionary of xrarray.DataArrays
+    :param storage_units: list(datacube.storage.access.core.StorageUnitBase)
+    :param variables: (optional) list of variables names to retrieve
+    :param dimension_ranges: dict of dimensions name -> {'range': (begin, end), 'array_range': (begin, end)}
+            Should be converted to storage CRS
+    :param fake_array: (default=False) Set to true if only the array shape and properties are required,
+            not the actual array.
+    :param set_nan: sets the data to numpy.NaN if it matches the storage_unit nodata_value (default=False)
+    :return: list of dict(variable name -> xarray.DataArray)
+    """
     if not dimension_ranges:
         dimension_ranges = {}
+
+    storage_units = _stratify_irregular_dimension(storage_units, 'time')
 
     variables_by_dimensions = defaultdict(lambda: defaultdict(list))
     for storage_unit in storage_units:
@@ -443,14 +534,11 @@ def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges
     if not len(variables_by_dimensions):
         return {}
 
-    dimension_group = {}
+    dimension_group = []
     for dimensions, sus_by_variable in variables_by_dimensions.items():
-        # TODO: Work out how to tell the difference between real variables and metadata variables
-        if len(dimensions) < 3:
-            continue
-        dimension_group[dimensions] = _get_data_by_variable(sus_by_variable, dimensions, dimension_ranges, fake_array)
-    if len(dimension_group) == 1:
-        return list(dimension_group.values())[0]
+        dimension_group.append((_get_data_array_dict(sus_by_variable, dimensions, dimension_ranges,
+                                                     fake_array, set_nan),
+                                dimensions))
     return dimension_group
 
 
@@ -463,11 +551,30 @@ def _to_single_value(data_array):
 
 
 def _get_result_stats(storage_units, dimensions, dimension_ranges):
-    strata_storage_units = _stratify_irregular_dimension(storage_units, 'time')
-    storage_data = _get_data_from_storage_units(strata_storage_units,
+    """
+
+    :param storage_units:
+    :param dimensions:
+    :param dimension_ranges:
+    :return:
+    """
+    storage_data = _get_data_from_storage_units(storage_units,
                                                 dimension_ranges=dimension_ranges,
                                                 fake_array=True)
-    example = storage_data['arrays'][list(storage_data['arrays'].keys())[0]]
+
+    sample = list(storage_data[0][0].values())[0]
+    result = _describe_data_array(sample)
+    return result
+
+
+def _describe_data_array(xarray_sample):
+    """
+    Creates a "descriptor" dictionary for a sample xarray DataArray
+    :param storage_units:
+    :return:
+    """
+    example = xarray_sample
+    dimensions = xarray_sample.dims
     result = {
         'result_shape': tuple(example[dim].size for dim in dimensions),
         'result_min': tuple(_to_single_value(example[dim].min()) if example[dim].size > 0 else numpy.NaN
