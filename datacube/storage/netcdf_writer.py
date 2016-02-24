@@ -5,7 +5,6 @@ Create netCDF4 Storage Units and write data to them
 from __future__ import absolute_import
 
 import logging
-from datetime import datetime
 
 import netCDF4
 
@@ -83,10 +82,10 @@ def create_variable(nco, name, var, **kwargs):
                                 for maxsize, chunksize in zip(maxsizes, kwargs['chunksizes'])]
 
     if var.dtype.kind == 'S' and var.dtype.itemsize > 1:
-        nco.createDimension(name+'_nchar', size=var.dtype.itemsize)
+        nco.createDimension(name + '_nchar', size=var.dtype.itemsize)
         data_var = nco.createVariable(varname=name,
                                       datatype='S1',
-                                      dimensions=tuple(var.dimensions)+(name+'_nchar',),
+                                      dimensions=tuple(var.dimensions) + (name + '_nchar',),
                                       fill_value=var.nodata,
                                       **kwargs)
     else:
@@ -100,6 +99,26 @@ def create_variable(nco, name, var, **kwargs):
         data_var.units = var.units
     data_var.set_auto_maskandscale(False)
     return data_var
+
+
+class _EncodedStrings(object):
+    def __init__(self, var):
+        self._wrapped_obj = var
+
+    def __getattr__(self, attr):
+        return getattr(self._wrapped_obj, attr)
+
+    def __setattr__(self, name, value):
+        if isinstance(value, string_types):
+            self._wrapped_obj[name] = value.encode('utf8')
+        else:
+            super(self.__class__, self).__setattr(name, value
+
+
+def _create_variable_safe_attributes(nco, *vars, **kwargs):
+    var = nco.createVariable(*vars, **kwargs)
+
+    return _EncodedStrings(var)
 
 
 def _create_latlon_grid_mapping_variable(nco, crs):
@@ -165,8 +184,8 @@ def write_geographical_extents_attributes(nco, geo_extents):
     nco.geospatial_lon_units = "degrees_east"
 
     # TODO: broken anyway...
-    #nco.geospatial_lat_resolution = "{} degrees".format(abs(geobox.affine.e))
-    #nco.geospatial_lon_resolution = "{} degrees".format(abs(geobox.affine.a))
+    # nco.geospatial_lat_resolution = "{} degrees".format(abs(geobox.affine.e))
+    # nco.geospatial_lon_resolution = "{} degrees".format(abs(geobox.affine.a))
 
 
 def create_grid_mapping_variable(nco, crs):
@@ -180,7 +199,6 @@ def create_grid_mapping_variable(nco, crs):
     crs_var.semi_minor_axis = crs.GetSemiMinor()
     crs_var.inverse_flattening = crs.GetInvFlattening()
     crs_var.crs_wkt = crs.ExportToWkt()
-    return crs_var
 
 
 def write_attribute(obj, key, value):
