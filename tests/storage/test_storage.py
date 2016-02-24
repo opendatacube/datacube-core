@@ -82,4 +82,4 @@ def test_write_access_unit_to_netcdf(tmpnetcdf_filename):
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
         assert 'B10' in nco.variables
         var = nco.variables['B10']
-        assert (var[:] == ds1.get('B10')).all()
+        assert (var[:] == ds1.get('B10').values).all()
