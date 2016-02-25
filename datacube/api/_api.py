@@ -28,6 +28,7 @@ import xarray
 from dateutil import tz
 
 from datacube.index import index_connect
+from datacube.compat import string_types
 
 from ._conversion import convert_descriptor_query_to_search_query, convert_descriptor_dims_to_selector_dims
 from ._conversion import convert_request_args_to_descriptor_query
@@ -274,7 +275,7 @@ class API(object):
         """
         descriptor_request = convert_request_args_to_descriptor_query(kwargs, self.index)
         descriptor_dimensions = descriptor_request.get('dimensions', {})
-        variables = [variables] if isinstance(variables, basestring) else variables
+        variables = [variables] if isinstance(variables, string_types) else variables
 
         query = convert_descriptor_query_to_search_query(descriptor_request)
         storage_units_by_type = defaultdict(StorageUnitCollection)
@@ -292,7 +293,7 @@ class API(object):
             # for i, (data_dict, _) in enumerate(data_dicts):
             #     #stype_label = '{}.{}'.format(stype, i) if len(data_dicts) > 1 else stype
             #     return _stack_vars(data_dict, var_dim_name, stack_name=stype)
-        return xarray.DataArray()
+        return None
 
     def get_dataset(self, variables=None, set_nan=True, **kwargs):
         """
@@ -305,7 +306,7 @@ class API(object):
         """
         descriptor_request = convert_request_args_to_descriptor_query(kwargs, self.index)
         descriptor_dimensions = descriptor_request.get('dimensions', {})
-        variables = [variables] if isinstance(variables, basestring) else variables
+        variables = [variables] if isinstance(variables, string_types) else variables
 
         query = convert_descriptor_query_to_search_query(descriptor_request)
         storage_units_by_type = defaultdict(StorageUnitCollection)
