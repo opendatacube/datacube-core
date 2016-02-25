@@ -111,6 +111,7 @@ definitions:
                     type: string
         required:
           - dtype
+          - units
           - resampling_method
         additionalProperties: false
 
