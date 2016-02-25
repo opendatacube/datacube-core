@@ -6,6 +6,8 @@ written as UTF-8 encoded bytes.
 """
 import netCDF4
 
+from datacube.compat import string_types
+
 
 class _VariableProxy(object):
     """
@@ -62,6 +64,7 @@ class _NC4DatasetProxy(object):
         var = super(_NC4DatasetProxy, self).__getitem__(name)
         return _VariableProxy(var)
 
+    #: pylint: disable=invalid-name
     def createVariable(self, *args, **kwargs):
         new_var = super(_NC4DatasetProxy, self).createVariable(*args, **kwargs)
         return _VariableProxy(new_var)
