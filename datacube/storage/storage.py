@@ -188,12 +188,12 @@ def storage_unit_to_access_unit(storage_unit):
     """
     coordinates = storage_unit.coordinates
     variables = {
-        attributes['varname']: Variable(
+        name: Variable(
             dtype=numpy.dtype(attributes['dtype']),
             nodata=attributes.get('nodata', None),
             dimensions=storage_unit.storage_type.dimensions,
-            units=attributes.get('units', None))
-        for attributes in storage_unit.storage_type.measurements.values()
+            units=attributes['units'])
+        for name, attributes in storage_unit.storage_type.measurements.items()
         }
     if storage_unit.storage_type.driver == 'NetCDF CF':
         variables['extra_metadata'] = Variable(numpy.dtype('S30000'), None, ('time',), None)
