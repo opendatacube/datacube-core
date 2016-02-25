@@ -102,26 +102,6 @@ def create_variable(nco, name, var, **kwargs):
     return data_var
 
 
-class _EncodedStrings(object):
-    def __init__(self, var):
-        self._wrapped_obj = var
-
-    def __getattr__(self, attr):
-        return getattr(self._wrapped_obj, attr)
-
-    def __setattr__(self, name, value):
-        if isinstance(value, string_types):
-            self._wrapped_obj[name] = value.encode('utf8')
-        else:
-            super(self.__class__, self).__setattr(name, value)
-
-
-def _create_variable_safe_attributes(nco, *args, **kwargs):
-    var = nco.createVariable(*args, **kwargs)
-
-    return _EncodedStrings(var)
-
-
 def _create_latlon_grid_mapping_variable(nco, crs):
     crs_var = nco.createVariable('crs', 'i4')
     crs_var.long_name = crs.GetAttrValue('GEOGCS')  # "Lon/Lat Coords in WGS84"
