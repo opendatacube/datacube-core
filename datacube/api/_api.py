@@ -269,11 +269,12 @@ class API(object):
         :param variables: list of variables to be included. Use `None` to include all available variables
         :param var_dim_name: dimension name that the variables will be stacked
         :param kwargs: search parameters and dimension ranges
-        E.g. product='NBAR', platform='LANDSAT_5', lat=(-35.5, -34.5)
+        E.g. product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5)
         :return: xarray.DataArray
         """
         descriptor_request = convert_request_args_to_descriptor_query(kwargs, self.index)
         descriptor_dimensions = descriptor_request.get('dimensions', {})
+        variables = [variables] if isinstance(variables, basestring) else variables
 
         query = convert_descriptor_query_to_search_query(descriptor_request)
         storage_units_by_type = defaultdict(StorageUnitCollection)
@@ -285,8 +286,9 @@ class API(object):
                                                                         storage_units.get_spatial_crs())
             data_dicts = _get_data_from_storage_units(storage_units.iteritems(), variables, dimension_ranges,
                                                       set_nan=set_nan)
-            data_dict = data_dicts[0][0]
-            return _stack_vars(data_dict, var_dim_name, stack_name=stype)
+            if len(data_dicts) and len(data_dicts[0]):
+                data_dict = data_dicts[0][0]
+                return _stack_vars(data_dict, var_dim_name, stack_name=stype)
             # for i, (data_dict, _) in enumerate(data_dicts):
             #     #stype_label = '{}.{}'.format(stype, i) if len(data_dicts) > 1 else stype
             #     return _stack_vars(data_dict, var_dim_name, stack_name=stype)
@@ -295,13 +297,15 @@ class API(object):
     def get_dataset(self, variables=None, set_nan=True, **kwargs):
         """
         Gets an xarray.Dataset obejct for the requested data
-        :param variables: list of variables to be included. Use `None` to include all available variables
+        :param variables: variable or list of variables to be included.
+                Use `None` to include all available variables (default)
         :param kwargs: search parameters and dimension ranges
-        E.g. product='NBAR', platform='LANDSAT_5', lat=(-35.5, -34.5)
+        E.g. product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5)
         :return: xarray.Dataset
         """
         descriptor_request = convert_request_args_to_descriptor_query(kwargs, self.index)
         descriptor_dimensions = descriptor_request.get('dimensions', {})
+        variables = [variables] if isinstance(variables, basestring) else variables
 
         query = convert_descriptor_query_to_search_query(descriptor_request)
         storage_units_by_type = defaultdict(StorageUnitCollection)
@@ -317,21 +321,41 @@ class API(object):
         return xarray.Dataset()
 
     def list_storage_units(self, **kwargs):
+        """
+        Returns a list of paths to the storage unit that meet the search query
+        :param kwargs: search parameters and dimension ranges
+        E.g. product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5)
+        :return: list of local paths to the storage units as a list(str)
+        """
         descriptor_request = kwargs
         query = convert_descriptor_query_to_search_query(descriptor_request)
         sus = self.index.storage.search(**query)
         return [su.local_path for su in sus]
 
     def list_fields(self):
+        """
+        List of the search fields
+        :return: list of field names. E.g. ['product', 'platform']
+        """
         return self.index.datasets.get_fields().keys()
 
     def list_field_values(self, field):
-        return list(set(field_values[field] for field_values in self.index.datasets.search_summaries()))
+        """
+        List the values found for a field
+        :param field: Name of the field, as returned by the `list_fields()` method.
+        :return: Values for the field in the database ['LANDSAT_5', 'LANDSAT_7']
+        """
+        return list(set(field_values[field] for field_values in self.index.datasets.search_summaries()
+                        if field in field_values))
 
     def list_all_field_values(self):
-        summary = self.index.datasets.search_summaries()
+        """
+        Lists all the search fields with their known values in the database
+        :return: {'platform': ['LANDSAT_5', 'LANDSAT_7'], 'product': ['NBAR', 'PQ', 'FC']}
+        """
+        summary = list(self.index.datasets.search_summaries())
         fields = self.index.datasets.get_fields()
-        return dict((field, set(field_values[field] for field_values in summary)) for field in fields)
+        return dict((field, list(set(field_values[field] for field_values in summary))) for field in fields)
 
 
 def _stack_vars(data_dict, var_dim_name, stack_name=None):
@@ -469,10 +493,12 @@ def _get_data_array_dict(storage_units_by_variable, dimensions, dimension_ranges
     for var_name, storage_units in storage_units_by_variable.items():
         xarray_data_array = _get_array(storage_units, var_name, dimensions, dim_props, fake_array, set_nan)
         for key, value in selectors.items():
-            if isinstance(value, slice):
-                xarray_data_array = xarray_data_array.sel(**{key: value})
-            else:
-                xarray_data_array = xarray_data_array.sel(method='nearest', **{key: value})
+            if key in xarray_data_array.dims:
+                if isinstance(value, slice):
+                    xarray_data_array = xarray_data_array.sel(**{key: value})
+                else:
+                    xarray_data_array = xarray_data_array.sel(method='nearest', **{key: value})
+        iselectors = dict((k,v) for k,v in iselectors.items() if k in dimensions)
         subset = xarray_data_array.isel(**iselectors)
         xarrays[var_name] = subset
     return xarrays
