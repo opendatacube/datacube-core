@@ -53,12 +53,12 @@ def make_storage_unit(su, is_diskless=False):
             crs[dim] = su.storage_type.crs
     coordinates = su.coordinates
     variables = {
-        attributes['varname']: Variable(
+        varname: Variable(
             dtype=numpy.dtype(attributes['dtype']),
             nodata=attributes.get('nodata', None),
             dimensions=su.storage_type.dimensions,
             units=attributes.get('units', None))
-        for attributes in su.storage_type.measurements.values()
+        for varname, attributes in su.storage_type.measurements.items()
     }
     attributes = {
         'storage_type': su.storage_type

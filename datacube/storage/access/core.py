@@ -46,7 +46,7 @@ class StorageUnitBase(object):
         User indexing.Range object for labels indexing
 
         Example:
-          su.get('B2', time=slice(3,6), longitude=Range(151.5, 151.7), latitude=Range(-29.5, -29.2))
+          su.get('band_20', time=slice(3,6), longitude=Range(151.5, 151.7), latitude=Range(-29.5, -29.2))
 
         :param name: name of the variable
         :param dest: where to put the data

@@ -47,7 +47,7 @@ class WarpingStorageUnit(StorageUnitBase):
 
         self._datasets = datasets
         self.geobox = geobox
-        self._varmap = {attrs['varname']: name for name, attrs in mapping.items()}
+        self._varmap = {name: attrs['src_varname'] for name, attrs in mapping.items()}
         self._mapping = mapping
         self._fuse_func = fuse_func
 
@@ -55,10 +55,10 @@ class WarpingStorageUnit(StorageUnitBase):
         self.coordinates = self.geobox.coordinates
 
         self.variables = {
-            attrs['varname']: Variable(numpy.dtype(attrs['dtype']),
-                                       attrs.get('nodata', None),
-                                       self.geobox.dimensions,
-                                       attrs.get('units', '1'))
+            name: Variable(numpy.dtype(attrs['dtype']),
+                           attrs.get('nodata', None),
+                           self.geobox.dimensions,
+                           attrs.get('units', '1'))
             for name, attrs in mapping.items()
             }
         self.variables['extra_metadata'] = Variable(numpy.dtype('S30000'), None, tuple(), None)
@@ -83,9 +83,9 @@ class WarpingStorageUnit(StorageUnitBase):
             docs = yaml.dump_all([doc.metadata_doc for doc in self._datasets], Dumper=SafeDumper, encoding='utf-8')
             numpy.copyto(dest, docs)
         else:
-            measurement_id = self._varmap[name]
-            resampling = RESAMPLING_METHODS[self._mapping[measurement_id]['resampling_method']]
-            sources = [DatasetSource(dataset, measurement_id) for dataset in self._datasets]
+            src_variable_name = self._varmap[name]
+            resampling = RESAMPLING_METHODS[self._mapping[name]['resampling_method']]
+            sources = [DatasetSource(dataset, src_variable_name) for dataset in self._datasets]
             fuse_sources(sources,
                          dest,
                          self.geobox[index].affine,  # NOTE: Overloaded GeoBox.__getitem__
@@ -194,7 +194,7 @@ def storage_unit_to_access_unit(storage_unit):
             dimensions=storage_unit.storage_type.dimensions,
             units=attributes.get('units', None))
         for attributes in storage_unit.storage_type.measurements.values()
-    }
+        }
     if storage_unit.storage_type.driver == 'NetCDF CF':
         variables['extra_metadata'] = Variable(numpy.dtype('S30000'), None, ('time',), None)
         return NetCDF4StorageUnit(storage_unit.local_path, coordinates=coordinates, variables=variables)

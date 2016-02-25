@@ -171,8 +171,7 @@ class StorageType(object):  # pylint: disable=too-many-public-methods
     @property
     def variable_params(self):
         variable_params = defaultdict(dict)
-        for mapping in self.measurements.values():
-            varname = mapping['varname']
+        for varname, mapping in self.measurements.items():
             variable_params[varname] = {k: v for k, v in mapping.items() if k in NETCDF_VAR_OPTIONS}
             variable_params[varname]['chunksizes'] = self.chunking
         return variable_params
@@ -180,8 +179,7 @@ class StorageType(object):  # pylint: disable=too-many-public-methods
     @property
     def variable_attributes(self):
         variable_attributes = defaultdict(dict)
-        for mapping in self.measurements.values():
-            varname = mapping['varname']
+        for varname, mapping in self.measurements.items():
             variable_attributes[varname] = mapping.get('attrs', {})
         return variable_attributes
 

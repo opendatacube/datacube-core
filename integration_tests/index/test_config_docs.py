@@ -127,13 +127,13 @@ def test_get_for_dataset(index, local_config):
     assert storage_type.document['match']['metadata'] == _STORAGE_TYPE['match']['metadata']
     for name in _STORAGE_TYPE['measurements']:
         assert _STORAGE_TYPE['measurements'][name]['dtype'] == str(
-            storage_type.measurements[name].dtype)
+            storage_type.measurements[name]['dtype'])
         assert _STORAGE_TYPE['measurements'][name]['nodata'] == \
-            storage_type.measurements[name].nodata
+            storage_type.measurements[name]['nodata']
         assert _STORAGE_TYPE['measurements'][name]['resampling_method'] == \
-            storage_type.measurements[name].resampling_method
+            storage_type.measurements[name]['resampling_method']
         assert _STORAGE_TYPE['measurements'][name]['src_varname'] == \
-            storage_type.measurements[name].src_varname
+            storage_type.measurements[name]['src_varname']
 
     assert storage_type.driver == 'NetCDF CF'
     assert storage_type.definition == _STORAGE_TYPE['storage']
