@@ -4,6 +4,7 @@ Create netCDF4 Storage Units and write data to them
 """
 from __future__ import absolute_import
 
+from datetime import datetime
 import logging
 
 import netCDF4
@@ -115,8 +116,8 @@ class _EncodedStrings(object):
             super(self.__class__, self).__setattr(name, value)
 
 
-def _create_variable_safe_attributes(nco, *vars, **kwargs):
-    var = nco.createVariable(*vars, **kwargs)
+def _create_variable_safe_attributes(nco, *args, **kwargs):
+    var = nco.createVariable(*args, **kwargs)
 
     return _EncodedStrings(var)
 
