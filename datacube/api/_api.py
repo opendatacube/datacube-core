@@ -498,7 +498,7 @@ def _get_data_array_dict(storage_units_by_variable, dimensions, dimension_ranges
                     xarray_data_array = xarray_data_array.sel(**{key: value})
                 else:
                     xarray_data_array = xarray_data_array.sel(method='nearest', **{key: value})
-        iselectors = dict((k,v) for k,v in iselectors.items() if k in dimensions)
+        iselectors = dict((k, v) for k, v in iselectors.items() if k in dimensions)
         subset = xarray_data_array.isel(**iselectors)
         xarrays[var_name] = subset
     return xarrays
