@@ -53,6 +53,7 @@ measurements:
       resampling_method: cubic
       src_varname: 'dems'
       nodata: -999
+      units: 'meters'
 ---
 
 name: DEM_H
@@ -109,3 +110,4 @@ measurements:
       resampling_method: cubic
       src_varname: 'demh'
       nodata: -999
+      units: 'meters'
