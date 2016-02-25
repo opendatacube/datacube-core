@@ -112,7 +112,7 @@ class _EncodedStrings(object):
         if isinstance(value, string_types):
             self._wrapped_obj[name] = value.encode('utf8')
         else:
-            super(self.__class__, self).__setattr(name, value
+            super(self.__class__, self).__setattr(name, value)
 
 
 def _create_variable_safe_attributes(nco, *vars, **kwargs):
