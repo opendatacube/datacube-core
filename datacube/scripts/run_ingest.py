@@ -18,7 +18,8 @@ from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS
 from datacube.model import Range
 from datacube.ingest import index_datasets, store_datasets
-from datacube.storage.storage import stack_storage_units, tile_datasets_with_storage_type
+from datacube.storage.storage import stack_storage_units
+from datacube.storage import tile_datasets_with_storage_type
 
 
 @click.group(help="Data Management Tool", context_settings=CLICK_SETTINGS)

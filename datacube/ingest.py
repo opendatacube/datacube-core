@@ -10,6 +10,7 @@ import os
 import logging
 
 from datacube import ui, storage
+from datacube.storage.tiling import tile_datasets_with_storage_type
 from datacube.executor import SerialExecutor
 from datacube.index import index_connect
 from datacube.model import _uri_to_local_path
@@ -97,7 +98,7 @@ def create_storage_units(datasets, storage_type, executor=SerialExecutor()):
 
     # datasets.sort(key=lambda ds: ds.time)
     tasks = [(tile_index, storage_type, list(dataset_group))
-             for tile_index, datasets in storage.tile_datasets_with_storage_type(datasets, storage_type).items()
+             for tile_index, datasets in tile_datasets_with_storage_type(datasets, storage_type).items()
              for time, dataset_group in groupby(datasets, lambda ds: ds.time)]
 
     try:

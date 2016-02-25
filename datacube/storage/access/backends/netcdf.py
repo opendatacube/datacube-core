@@ -40,7 +40,7 @@ def _open_dataset(filepath):
 class NetCDF4StorageUnit(StorageUnitBase):
     def __init__(self, file_path, variables, coordinates, attributes=None, crs=None):
         """
-        :param variables: variables in the SU
+        :param variables: variables in the SU. dict of name: Variable
         :param coordinates: coordinates in the SU
         :type file_path: pathlib.Path
         """
