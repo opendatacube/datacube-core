@@ -59,18 +59,18 @@ default_measurement: &MEASUREMENT_DEFAULTS
   contiguous: False
 
 measurements:
-    'BRDF_Albedo_Ancillary':
+    'brdf_albedo_ancillary':
         <<: *MEASUREMENT_DEFAULTS
-        varname: brdf_albedo_ancillary
+        src_varname: BRDF_Albedo_Ancillary
 
-    'BRDF_Albedo_Band_Quality':
+    'brdf_albedo_band_quality':
         <<: *MEASUREMENT_DEFAULTS
-        varname: brdf_albedo_band_quality
+        src_varname: BRDF_Albedo_Band_Quality
 
-    'BRDF_Albedo_Quality':
+    'brdf_albedo_quality':
         <<: *MEASUREMENT_DEFAULTS
-        varname: brdf_albedo_quality
+        src_varname: BRDF_Albedo_Quality
 
-    'Snow_BRDF_Albedo':
+    'snow_brdf_albedo':
         <<: *MEASUREMENT_DEFAULTS
-        varname: snow_brdf_albedo
+        src_varname: Snow_BRDF_Albedo

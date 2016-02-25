@@ -59,42 +59,42 @@ default_measurement: &MEASUREMENT_DEFAULTS
   contiguous: False
 
 measurements:
-    'BRDF_Albedo_Parameters_Band1':
+    'brdf_albedo_parameters_band1':
         <<: *MEASUREMENT_DEFAULTS
-        varname: brdf_albedo_parameters_band1
+        src_varname: BRDF_Albedo_Parameters_Band1
 
-    'BRDF_Albedo_Parameters_Band2':
+    'brdf_albedo_parameters_band2':
         <<: *MEASUREMENT_DEFAULTS
-        varname: brdf_albedo_parameters_band2
+        src_varname: BRDF_Albedo_Parameters_Band2
 
-    'BRDF_Albedo_Parameters_Band3':
+    'brdf_albedo_parameters_band3':
         <<: *MEASUREMENT_DEFAULTS
-        varname: brdf_albedo_parameters_band3
+        src_varname: BRDF_Albedo_Parameters_Band3
 
-    'BRDF_Albedo_Parameters_Band4':
+    'brdf_albedo_parameters_band4':
         <<: *MEASUREMENT_DEFAULTS
-        varname: brdf_albedo_parameters_band4
+        src_varname: BRDF_Albedo_Parameters_Band4
 
-    'BRDF_Albedo_Parameters_Band5':
+    'brdf_albedo_parameters_band5':
         <<: *MEASUREMENT_DEFAULTS
-        varname: brdf_albedo_parameters_band5
+        src_varname: BRDF_Albedo_Parameters_Band5
 
-    'BRDF_Albedo_Parameters_Band6':
+    'brdf_albedo_parameters_band7':
         <<: *MEASUREMENT_DEFAULTS
-        varname: brdf_albedo_parameters_band7
+        src_varname: BRDF_Albedo_Parameters_Band6
 
-    'BRDF_Albedo_Parameters_nir':
+    'brdf_albedo_parameters_nir':
         <<: *MEASUREMENT_DEFAULTS
-        varname: brdf_albedo_parameters_nir
+        src_varname: BRDF_Albedo_Parameters_nir
 
-    'BRDF_Albedo_Parameters_shortwave':
+    'brdf_albedo_parameters_shortwave':
         <<: *MEASUREMENT_DEFAULTS
-        varname: brdf_albedo_parameters_shortwave
+        src_varname: BRDF_Albedo_Parameters_shortwave
 
-    'BRDF_Albedo_Parameters_vis':
+    'brdf_albedo_parameters_vis':
         <<: *MEASUREMENT_DEFAULTS
-        varname: brdf_albedo_parameters_vis
+        src_varname: BRDF_Albedo_Parameters_vis
 
-    'BRDF_Shape_Indicators':
+    'brdf_shape_indicators':
         <<: *MEASUREMENT_DEFAULTS
-        varname: brdf_shape_indicators
+        src_varname: BRDF_Shape_Indicators
