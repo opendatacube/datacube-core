@@ -2,6 +2,7 @@
 import os
 from textwrap import dedent
 
+import numpy as np
 import pytest
 
 from datacube.model import _uri_to_local_path, Dataset, DatasetMatcher, StorageType, Measurement
@@ -119,14 +120,12 @@ SAMPLE_STORAGE_TYPE = {
 def test_storage_type_model():
     st = StorageType(SAMPLE_STORAGE_TYPE)
 
-    measurements = st.measurements
-
 
 EXAMPLE_PQ_MEASUREMENT_DEF = {
     'attrs': {'standard_name': 'pixel_quality'},
     'dtype': 'int16',
     'nodata': -999,
-    'varname': 'pixel_quality',
+    'src_varname': 'PQ',
     'flags_definition': {
         'band_1_saturated': {
             'bit_index': 0,

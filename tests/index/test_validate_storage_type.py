@@ -20,30 +20,30 @@ only_mandatory_fields = {
         }
     },
     'measurements': {
-        '10': {'dtype': 'int16',
-               'nodata': -999,
-               'resampling_method': 'cubic',
-               'varname': 'band_10'},
-        '20': {'dtype': 'int16',
-               'nodata': -999,
-               'resampling_method': 'cubic',
-               'varname': 'band_20'},
-        '30': {'dtype': 'int16',
-               'nodata': -999,
-               'resampling_method': 'cubic',
-               'varname': 'band_30'},
-        '40': {'dtype': 'int16',
-               'nodata': -999,
-               'resampling_method': 'cubic',
-               'varname': 'band_40'},
-        '50': {'dtype': 'int16',
-               'nodata': -999,
-               'resampling_method': 'cubic',
-               'varname': 'band_50'},
-        '70': {'dtype': 'int16',
-               'nodata': -999,
-               'resampling_method': 'cubic',
-               'varname': 'band_70'}
+        'band_10': {'dtype': 'int16',
+                    'nodata': -999,
+                    'resampling_method': 'cubic',
+                    'src_varname': '10'},
+        'band_20': {'dtype': 'int16',
+                    'nodata': -999,
+                    'resampling_method': 'cubic',
+                    'src_varname': '20'},
+        'band_30': {'dtype': 'int16',
+                    'nodata': -999,
+                    'resampling_method': 'cubic',
+                    'src_varname': '30'},
+        'band_40': {'dtype': 'int16',
+                    'nodata': -999,
+                    'resampling_method': 'cubic',
+                    'src_varname': '40'},
+        'band_50': {'dtype': 'int16',
+                    'nodata': -999,
+                    'resampling_method': 'cubic',
+                    'src_varname': '50'},
+        'band_70': {'dtype': 'int16',
+                    'nodata': -999,
+                    'resampling_method': 'cubic',
+                    'src_varname': '70'}
     },
     'storage': {
         'chunking': {
@@ -116,14 +116,14 @@ def test_rejects_invalid_docs(invalid_storage_type_update):
 @pytest.mark.parametrize("valid_storage_type_measurement", [
     {
         'dtype': 'int16',
-        'varname': 'var',
+        'src_varname': 'var',
         'resampling_method': 'nearest'
     },
     # With the optional properties
     {
         'nodata': -999,
         'dtype': 'int16',
-        'varname': 'var',
+        'src_varname': 'var',
         'resampling_method': 'nearest'
     },
 ])
@@ -151,8 +151,8 @@ def test_accepts_valid_measurements(valid_storage_type_measurement):
     # Unknown resampling method
     {'resampling_method': 'dartboard'},
     # Invalid varname
-    {'varname': 'white space'},
-    {'varname': '%chars%'},
+    {'src_varname': 'white space'},
+    {'src_varname': '%chars%'},
 ])
 def test_rejects_invalid_measurements(invalid_storage_type_measurement):
     mapping = deepcopy(only_mandatory_fields)

@@ -61,39 +61,39 @@ default_measurement: &MEASUREMENT_DEFAULTS
   contiguous: False
 
 measurements:
-    '10':
+    'band_10':
         <<: *MEASUREMENT_DEFAULTS
-        varname: band_10
+        src_varname: '10'
         attrs:
             wavelength: 0.45 - 0.52 micrometers
             colour: Blue
-    '20':
+    'band_20':
         <<: *MEASUREMENT_DEFAULTS
-        varname: band_20
+        src_varname: '20'
         attrs:
             wavelength: 0.52 - 0.60 micrometers
             colour: Green
-    '30':
+    'band_30':
         <<: *MEASUREMENT_DEFAULTS
-        varname: band_30
+        src_varname: '30'
         attrs:
             wavelength: 0.63 - 0.69 micrometers
             colour: Red
-    '40':
+    'band_40':
         <<: *MEASUREMENT_DEFAULTS
-        varname: band_40
+        src_varname: '40'
         attrs:
             wavelength: 0.77 - 0.90 micrometers
             colour: Near Infrared
-    '50':
+    'band_50':
         <<: *MEASUREMENT_DEFAULTS
-        varname: band_50
+        src_varname: '50'
         attrs:
             wavelength: 1.55 - 1.75 micrometers
             colour: Short-wave Infrared
-    '70':
+    'band_70':
         <<: *MEASUREMENT_DEFAULTS
-        varname: band_70
+        src_varname: '70'
         attrs:
             wavelength: 2.09 - 2.35 micrometers
             colour: Short-wave Infrared
@@ -149,7 +149,7 @@ storage:
     dimension_order: ['time', 'latitude', 'longitude']
 
 measurements:
-  'PQ':
+  'band_pixelquality':
       dtype: int16
       resampling_method: nearest
-      varname: band_pixelquality
+      src_varname: PQ

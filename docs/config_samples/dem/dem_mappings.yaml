@@ -1,5 +1,5 @@
 
-name: dem_s
+name: DEM_S
 description: DEM-S 25 metre, 1 degree tile
 
 match:
@@ -51,11 +51,11 @@ measurements:
   'dems':
       dtype: float32
       resampling_method: cubic
-      varname: dems
+      src_varname: 'dems'
       nodata: -999
 ---
 
-name: DEM-H
+name: DEM_H
 description: DEM-H 25 metre, 1 degree tile
 
 match:
@@ -107,5 +107,5 @@ measurements:
   'demh':
       dtype: float32
       resampling_method: cubic
-      varname: demh
+      src_varname: 'demh'
       nodata: -999

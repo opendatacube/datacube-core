@@ -14,12 +14,12 @@ from datacube.index.postgres.tables._core import drop_db, has_schema
 
 _LOG = logging.getLogger(__name__)
 
-MAPPING_EXAMPLE_DOCS = Path(__file__).parent.parent. \
-    joinpath('docs', 'config_samples').glob('**/*mapping.yaml')
+EXAMPLE_STORAGE_TYPE_DOCS = Path(__file__).parent.parent. \
+    joinpath('docs', 'config_samples').glob('**/*.yaml')
 
 # Documents that shouldn't be accepted as mapping docs.
 INVALID_MAPPING_DOCS = Path(__file__).parent.parent. \
-    joinpath('docs', 'config_samples').glob('**/*metadata*.yaml')
+    joinpath('docs').glob('*')
 
 
 def _run_cli(cli_method, opts, catch_exceptions=False):
@@ -43,7 +43,7 @@ def test_add_example_storage_types(global_integration_cli_args, db):
     """
     existing_mappings = db.count_storage_types()
     print('{} mappings'.format(existing_mappings))
-    for mapping_path in MAPPING_EXAMPLE_DOCS:
+    for mapping_path in EXAMPLE_STORAGE_TYPE_DOCS:
         print('Adding mapping {}'.format(mapping_path))
         opts = list(global_integration_cli_args)
         opts.extend(

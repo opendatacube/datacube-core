@@ -60,56 +60,56 @@ storage:
   dimension_order: ['time', 'y', 'x']
 
 measurements:
-  '10':
+  band_10:
       dtype: int16
       nodata: -999
       resampling_method: nearest
-      varname: band_10
+      src_varname: '10'
       zlib: True
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.45-0.52 microns"
           standard_name: surface_bidirectional_reflectance
-  '20':
+  band_20:
       dtype: int16
       nodata: -999
       resampling_method: nearest
-      varname: band_20
+      src_varname: '20'
       zlib: True
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.52-0.60 microns"
           standard_name: surface_bidirectional_reflectance
-  '30':
+  band_30:
       dtype: int16
       nodata: -999
       resampling_method: nearest
-      varname: band_30
+      src_varname: '30'
       zlib: True
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.63-0.69 microns"
           standard_name: surface_bidirectional_reflectance
-  '40':
+  band_40:
       dtype: int16
       nodata: -999
       resampling_method: nearest
-      varname: band_40
+      src_varname: '40'
       zlib: True
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.76-0.90 microns"
           standard_name: surface_bidirectional_reflectance
-  '50':
+  band_50:
       dtype: int16
       nodata: -999
       resampling_method: nearest
-      varname: band_50
+      src_varname: '50'
       zlib: True
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 1.55-1.75 microns"
           standard_name: surface_bidirectional_reflectance
-  '70':
+  band_70:
       dtype: int16
       nodata: -999
       resampling_method: nearest
-      varname: band_70
+      src_varname: '70'
       zlib: True
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 2.08-2.35 microns"
@@ -179,10 +179,10 @@ storage:
   dimension_order: ['time', 'y', 'x']
 
 measurements:
-  'PQ':
+  pixelquality:
       dtype: int16
       resampling_method: nearest
-      varname: band_pixelquality
+      src_varname: PQ
       zlib: True
       flags_definition:
           cloud_shadow_fmask:
@@ -313,27 +313,27 @@ storage:
   dimension_order: ['time', 'y', 'x']
 
 measurements:
-  'BS':
+  band_bs:
       dtype: int16
       nodata: -999
       resampling_method: nearest
-      varname: band_bs
+      src_varname: BS
       zlib: True
-  'NPV':
+  band_npv:
       dtype: int16
       nodata: -999
       resampling_method: nearest
-      varname: band_npv
+      src_varname: NPV
       zlib: True
-  'PV':
+  band_pv:
       dtype: int16
       nodata: -999
       resampling_method: nearest
-      varname: band_pv
+      src_varname: PV
       zlib: True
-  'UE':
+  band_ue:
       dtype: int16
       nodata: -999
       resampling_method: nearest
-      varname: band_ue
+      src_varname: UE
       zlib: True

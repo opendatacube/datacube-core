@@ -58,30 +58,30 @@ default_measurement: &MEASUREMENT_DEFAULTS
   contiguous: False
 
 measurements:
-    'Nadir_Reflectance_Band1':
+    'nadir_reflectance_band1':
         <<: *MEASUREMENT_DEFAULTS
-        varname: nadir_reflectance_band1
+        src_varname: Nadir_Reflectance_Band1
 
-    'Nadir_Reflectance_Band2':
+    'nadir_reflectance_band2':
         <<: *MEASUREMENT_DEFAULTS
-        varname: nadir_reflectance_band2
+        src_varname: Nadir_Reflectance_Band2
 
-    'Nadir_Reflectance_Band3':
+    'nadir_reflectance_band3':
         <<: *MEASUREMENT_DEFAULTS
-        varname: nadir_reflectance_band3
+        src_varname: Nadir_Reflectance_Band3
 
-    'Nadir_Reflectance_Band4':
+    'nadir_reflectance_band4':
         <<: *MEASUREMENT_DEFAULTS
-        varname: nadir_reflectance_band4
+        src_varname: Nadir_Reflectance_Band4
 
-    'Nadir_Reflectance_Band5':
+    'nadir_reflectance_band5':
         <<: *MEASUREMENT_DEFAULTS
-        varname: nadir_reflectance_band5
+        src_varname: Nadir_Reflectance_Band5
 
-    'Nadir_Reflectance_Band6':
+    'nadir_reflectance_band6':
         <<: *MEASUREMENT_DEFAULTS
-        varname: nadir_reflectance_band6
+        src_varname: Nadir_Reflectance_Band6
 
-    'Nadir_Reflectance_Band7':
+    'nadir_reflectance_band7':
         <<: *MEASUREMENT_DEFAULTS
-        varname: nadir_reflectance_band7
+        src_varname: Nadir_Reflectance_Band7

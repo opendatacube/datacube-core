@@ -60,26 +60,26 @@ storage:
     dimension_order: ['time', 'y', 'x']
 
 measurements:
-    '02':
+    'band_02':
         dtype: int16
         nodata: -999
         resampling_method: cubic
-        varname: band_02
-    '03':
+        src_varname: '02'
+    'band_03':
         dtype: int16
         nodata: -999
         resampling_method: cubic
-        varname: band_03
-    '04':
+        src_varname: '03'
+    'band_04':
         dtype: int16
         nodata: -999
         resampling_method: cubic
-        varname: band_04
-    '08':
+        src_varname: '04'
+    'band_08':
         dtype: int16
         nodata: -999
         resampling_method: cubic
-        varname: band_08
+        src_varname: '08'
 
 ---
 
@@ -144,36 +144,36 @@ storage:
     dimension_order: ['time', 'y', 'x']
 
 measurements:
-  '05':
+  'band_05':
       dtype: int16
       nodata: -999
       resampling_method: cubic
-      varname: band_05
-  '06':
+      src_varname: '05'
+  'band_06':
       dtype: int16
       nodata: -999
       resampling_method: cubic
-      varname: band_06
-  '07':
+      src_varname: '06'
+  'band_07':
       dtype: int16
       nodata: -999
       resampling_method: cubic
-      varname: band_07
-  '11':
+      src_varname: '07'
+  'band_11':
       dtype: int16
       nodata: -999
       resampling_method: cubic
-      varname: band_11
-  '12':
+      src_varname: '11'
+  'band_12':
       dtype: int16
       nodata: -999
       resampling_method: cubic
-      varname: band_12
-  '8A':
+      src_varname: '12'
+  'band_8A':
       dtype: int16
       nodata: -999
       resampling_method: cubic
-      varname: band_8A
+      src_varname: '8A'
 
 ---
 
@@ -238,18 +238,18 @@ storage:
     dimension_order: ['time', 'y', 'x']
 
 measurements:
-  '01':
+  'band_01':
       dtype: int16
       nodata: -999
       resampling_method: cubic
-      varname: band_01
-  '09':
+      src_varname: '01'
+  'band_09':
       dtype: int16
       nodata: -999
       resampling_method: cubic
-      varname: band_09
-  '10':
+      src_varname: '09'
+  'band_10':
       dtype: int16
       nodata: -999
       resampling_method: cubic
-      varname: band_10
+      src_varname: '10'

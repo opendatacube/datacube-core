@@ -24,7 +24,7 @@ _15M_STORAGE_TYPE = {
     'tile_size': {'x': 1.0, 'y': -1.0}
 }
 
-_STORAGE_MAPPING = {
+_STORAGE_TYPE = {
     'name': 'ls5_nbar',
     'match': {
         'metadata':
@@ -37,18 +37,18 @@ _STORAGE_MAPPING = {
     'location_name': 'eotiles',
     'file_path_template': '/file_path_template/file.nc',
     'measurements': {
-        '1': {'dtype': 'int16',
-              'nodata': -999,
-              'resampling_method': 'cubic',
-              'varname': 'band_1'},
-        '2': {'dtype': 'int16',
-              'nodata': -999,
-              'resampling_method': 'cubic',
-              'varname': 'band_2'},
-        '3': {'dtype': 'int16',
-              'nodata': -999,
-              'resampling_method': 'cubic',
-              'varname': 'band_3'},
+        'band_1': {'dtype': 'int16',
+                   'nodata': -999,
+                   'resampling_method': 'cubic',
+                   'src_varname': '1'},
+        'band_2': {'dtype': 'int16',
+                   'nodata': -999,
+                   'resampling_method': 'cubic',
+                   'src_varname': '2'},
+        'band_3': {'dtype': 'int16',
+                   'nodata': -999,
+                   'resampling_method': 'cubic',
+                   'src_varname': '3'},
     },
     'storage': {
         'driver': 'NetCDF CF',
@@ -114,7 +114,7 @@ def test_get_for_dataset(index, local_config):
     storage_types = index.storage.types.get_for_dataset(dataset)
     assert len(storage_types) == 0
 
-    index.storage.types.add(_STORAGE_MAPPING)
+    index.storage.types.add(_STORAGE_TYPE)
 
     # The properties of the dataset should match.
     storage_types = index.storage.types.get_for_dataset(dataset)
@@ -124,11 +124,19 @@ def test_get_for_dataset(index, local_config):
     assert storage_type.name == 'ls5_nbar'
 
     assert storage_type.document['file_path_template'] == '/file_path_template/file.nc'
-    assert storage_type.document['match']['metadata'] == _STORAGE_MAPPING['match']['metadata']
-    assert storage_type.measurements == _STORAGE_MAPPING['measurements']
+    assert storage_type.document['match']['metadata'] == _STORAGE_TYPE['match']['metadata']
+    for name in _STORAGE_TYPE['measurements']:
+        assert _STORAGE_TYPE['measurements'][name]['dtype'] == str(
+            storage_type.measurements[name].dtype)
+        assert _STORAGE_TYPE['measurements'][name]['nodata'] == \
+            storage_type.measurements[name].nodata
+        assert _STORAGE_TYPE['measurements'][name]['resampling_method'] == \
+            storage_type.measurements[name].resampling_method
+        assert _STORAGE_TYPE['measurements'][name]['src_varname'] == \
+            storage_type.measurements[name].src_varname
 
     assert storage_type.driver == 'NetCDF CF'
-    assert storage_type.definition == _STORAGE_MAPPING['storage']
+    assert storage_type.definition == _STORAGE_TYPE['storage']
 
     # A different dataset should not match our storage types
     dataset = Dataset(None, {
@@ -145,17 +153,17 @@ def test_idempotent_add_mapping(index, local_config):
     :type local_config: datacube.config.LocalConfig
     :type index: datacube.index._api.Index
     """
-    index.storage.types.add(_STORAGE_MAPPING)
+    index.storage.types.add(_STORAGE_TYPE)
     # Second time, no effect, because it's equal.
-    index.storage.types.add(_STORAGE_MAPPING)
+    index.storage.types.add(_STORAGE_TYPE)
 
     # But if we add the same mapping with differing properties we should get an error:
-    different_storage_mapping = copy.deepcopy(_STORAGE_MAPPING)
+    different_storage_mapping = copy.deepcopy(_STORAGE_TYPE)
     different_storage_mapping['location_name'] = 'new_location'
     with pytest.raises(ValueError):
         index.storage.types.add(different_storage_mapping)
 
-    assert index.storage.types.get_by_name(_STORAGE_MAPPING['name']) is not None
+    assert index.storage.types.get_by_name(_STORAGE_TYPE['name']) is not None
 
 
 def test_collection_indexes_views_exist(db, telemetry_collection):
@@ -164,7 +172,8 @@ def test_collection_indexes_views_exist(db, telemetry_collection):
     :type telemetry_collection: datacube.model.Collection
     """
     # Ensure indexes were created for the eo metadata type (following the naming conventions):
-    val = db._connection.execute("SELECT to_regclass('agdc.ix_field_eo_dataset_platform')").scalar()
+    val = db._connection.execute(
+        "SELECT to_regclass('agdc.ix_field_eo_dataset_platform')").scalar()
     assert val == 'agdc.ix_field_eo_dataset_platform'
 
     # Ensure view was created (following naming conventions)

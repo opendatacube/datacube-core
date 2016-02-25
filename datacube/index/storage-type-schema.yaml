@@ -4,7 +4,7 @@ type: object
 properties:
     name:
         type: string
-        # Alphanumeric or underscore
+        # Alphanumeric, underscore or hyphen
         pattern: '^\w+$'
     description:
         type: string
@@ -27,6 +27,7 @@ properties:
     measurements:
         type: object
         additionalProperties: false
+        description: Describes how data is to be stored in storage units
         # Each property is a measurement. Ensure they are alphanumeric+underscores.
         patternProperties:
             '^\w+$':
@@ -64,6 +65,13 @@ definitions:
                 type: string
             resampling_method:
                 enum: ['nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average']
+
+            # Injestion fields
+            src_varname:
+                # Alphanumeric or underscore
+                description: Source Dataset Variable Name, Used when injesting
+                pattern: '^\w+$'
+                type: string
             #
             # Driver specific fields.
             #   -> Each of these could be written as a separate jsonschema object definition,
@@ -71,9 +79,6 @@ definitions:
             #      not very user friendly.
 
             # Used by NetCDF types
-            varname:
-                # Alphanumeric or underscore
-                pattern: '^\w+$'
             zlib:
                 type: boolean
             fletcher32:
@@ -105,7 +110,6 @@ definitions:
                     description: A string describing the meaning if this bit value is $value
                     type: string
         required:
-          - varname
           - dtype
           - resampling_method
         additionalProperties: false
