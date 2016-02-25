@@ -49,21 +49,25 @@ measurements:
     'band_02':
         dtype: int16
         nodata: -999
+        units: '1'
         resampling_method: cubic
         src_varname: '02'
     'band_03':
         dtype: int16
         nodata: -999
+        units: '1'
         resampling_method: cubic
         src_varname: '03'
     'band_04':
         dtype: int16
         nodata: -999
+        units: '1'
         resampling_method: cubic
         src_varname: '04'
     'band_08':
         dtype: int16
         nodata: -999
+        units: '1'
         resampling_method: cubic
         src_varname: '08'
 
@@ -120,31 +124,37 @@ measurements:
   'band_05':
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: cubic
       src_varname: '05'
   'band_06':
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: cubic
       src_varname: '06'
   'band_07':
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: cubic
       src_varname: '07'
   'band_11':
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: cubic
       src_varname: '11'
   'band_12':
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: cubic
       src_varname: '12'
   'band_8A':
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: cubic
       src_varname: '8A'
 
@@ -199,15 +209,18 @@ measurements:
   'band_01':
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: cubic
       src_varname: '01'
   'band_09':
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: cubic
       src_varname: '09'
   'band_10':
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: cubic
       src_varname: '10'

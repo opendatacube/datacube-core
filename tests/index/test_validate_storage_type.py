@@ -21,27 +21,27 @@ only_mandatory_fields = {
     },
     'measurements': {
         'band_10': {'dtype': 'int16',
-                    'nodata': -999,
+                    'units': '1',
                     'resampling_method': 'cubic',
                     'src_varname': '10'},
         'band_20': {'dtype': 'int16',
-                    'nodata': -999,
+                    'units': '1',
                     'resampling_method': 'cubic',
                     'src_varname': '20'},
         'band_30': {'dtype': 'int16',
-                    'nodata': -999,
+                    'units': '1',
                     'resampling_method': 'cubic',
                     'src_varname': '30'},
         'band_40': {'dtype': 'int16',
-                    'nodata': -999,
+                    'units': '1',
                     'resampling_method': 'cubic',
                     'src_varname': '40'},
         'band_50': {'dtype': 'int16',
-                    'nodata': -999,
+                    'units': '1',
                     'resampling_method': 'cubic',
                     'src_varname': '50'},
         'band_70': {'dtype': 'int16',
-                    'nodata': -999,
+                    'units': '1',
                     'resampling_method': 'cubic',
                     'src_varname': '70'}
     },
@@ -116,12 +116,14 @@ def test_rejects_invalid_docs(invalid_storage_type_update):
 @pytest.mark.parametrize("valid_storage_type_measurement", [
     {
         'dtype': 'int16',
+        'units': '1',
         'src_varname': 'var',
         'resampling_method': 'nearest'
     },
     # With the optional properties
     {
         'nodata': -999,
+        'units': '1',
         'dtype': 'int16',
         'src_varname': 'var',
         'resampling_method': 'nearest'

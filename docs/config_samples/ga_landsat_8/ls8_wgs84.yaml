@@ -49,36 +49,43 @@ measurements:
   'band_10':
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: cubic
       src_varname: '1'
   'band_20':
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: cubic
       src_varname: '2'
   'band_30':
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: cubic
       src_varname: '3'
   'band_40':
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: cubic
       src_varname: '4'
   'band_50':
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: cubic
       src_varname: '5'
   'band_60':
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: cubic
       src_varname: '6'
   'band_70':
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: cubic
       src_varname: '7'
 
@@ -134,5 +141,6 @@ storage:
 measurements:
   'band_pixelquality':
       dtype: int16
+      units: '1'
       resampling_method: nearest
       src_varname: PQ

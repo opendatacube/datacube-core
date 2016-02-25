@@ -51,6 +51,7 @@ storage:
 default_measurement: &MEASUREMENT_DEFAULTS
   dtype: int16
   nodata: 32767
+  units: '1'
   resampling_method: nearest
   zlib: True
   complevel: 4

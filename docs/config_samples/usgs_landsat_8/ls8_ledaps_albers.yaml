@@ -63,54 +63,63 @@ measurements:
   'cfmask':
       dtype: int16
       nodata: 255
+      units: '1'
       resampling_method: nearest
       src_varname: cfmask
       zlib: True
   'cfmask_conf':
       dtype: int16
       nodata: 255
+      units: '1'
       resampling_method: nearest
       src_varname: cfmask_conf
       zlib: True
   'band1':
       dtype: int16
       nodata: -9999
+      units: '1'
       resampling_method: nearest
       src_varname: sr_band1
       zlib: True
   'band2':
       dtype: int16
       nodata: -9999
+      units: '1'
       resampling_method: nearest
       src_varname: sr_band2
       zlib: True
   'band3':
       dtype: int16
       nodata: -9999
+      units: '1'
       resampling_method: nearest
       src_varname: sr_band3
       zlib: True
   'band4':
       dtype: int16
       nodata: -9999
+      units: '1'
       resampling_method: nearest
       src_varname: sr_band4
       zlib: True
   'band5':
       dtype: int16
       nodata: -9999
+      units: '1'
       resampling_method: nearest
       src_varname: sr_band5
       zlib: True
   'band7':
       dtype: int16
       nodata: -9999
+      units: '1'
       resampling_method: nearest
       src_varname: sr_band7
       zlib: True
   'sr_cloud':
       dtype: int16
       nodata: 255
+      units: '1'
       resampling_method: nearest
       src_varname: sr_cloud
       zlib: True

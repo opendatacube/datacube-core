@@ -124,6 +124,7 @@ def test_storage_type_model():
 EXAMPLE_PQ_MEASUREMENT_DEF = {
     'attrs': {'standard_name': 'pixel_quality'},
     'dtype': 'int16',
+    'units': '1',
     'nodata': -999,
     'src_varname': 'PQ',
     'flags_definition': {

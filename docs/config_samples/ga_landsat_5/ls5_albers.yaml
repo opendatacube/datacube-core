@@ -63,6 +63,7 @@ measurements:
   band_10:
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: nearest
       src_varname: '10'
       zlib: True
@@ -73,6 +74,7 @@ measurements:
   band_20:
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: nearest
       src_varname: '20'
       zlib: True
@@ -83,6 +85,7 @@ measurements:
   band_30:
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: nearest
       src_varname: '30'
       zlib: True
@@ -93,6 +96,7 @@ measurements:
   band_40:
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: nearest
       src_varname: '40'
       zlib: True
@@ -103,6 +107,7 @@ measurements:
   band_50:
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: nearest
       src_varname: '50'
       zlib: True
@@ -113,6 +118,7 @@ measurements:
   band_70:
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: nearest
       src_varname: '70'
       zlib: True
@@ -187,6 +193,7 @@ storage:
 measurements:
   pixelquality:
       dtype: int16
+      units: '1'
       resampling_method: nearest
       src_varname: PQ
       zlib: True
@@ -322,24 +329,28 @@ measurements:
   band_bs:
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: nearest
       src_varname: BS
       zlib: True
   band_npv:
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: nearest
       src_varname: NPV
       zlib: True
   band_pv:
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: nearest
       src_varname: PV
       zlib: True
   band_ue:
       dtype: int16
       nodata: -999
+      units: '1'
       resampling_method: nearest
       src_varname: UE
       zlib: True

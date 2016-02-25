@@ -51,6 +51,7 @@ default_measurement: &MEASUREMENT_DEFAULTS
   # data settings
   dtype: int16
   nodata: -999
+  units: '1'
   
   # compression settings
   resampling_method: cubic
@@ -67,42 +68,36 @@ measurements:
         attrs:
             wavelength: 0.45 - 0.52 micrometers
             color: Blue
-            units: '1'
     'band_20':
         <<: *MEASUREMENT_DEFAULTS
         src_varname: '20'
         attrs:
             wavelength: 0.52 - 0.60 micrometers
             color: Green
-            units: '1'
     'band_30':
         <<: *MEASUREMENT_DEFAULTS
         src_varname: '30'
         attrs:
             wavelength: 0.63 - 0.69 micrometers
             color: Red
-            units: '1'
     'band_40':
         <<: *MEASUREMENT_DEFAULTS
         src_varname: '40'
         attrs:
             wavelength: 0.77 - 0.90 micrometers
             color: Near Infrared
-            units: '1'
     'band_50':
         <<: *MEASUREMENT_DEFAULTS
         src_varname: '50'
         attrs:
             wavelength: 1.55 - 1.75 micrometers
             color: Short-wave Infrared
-            units: '1'
     'band_70':
         <<: *MEASUREMENT_DEFAULTS
         src_varname: '70'
         attrs:
             wavelength: 2.09 - 2.35 micrometers
             color: Short-wave Infrared
-            units: '1'
 
 ---
 
@@ -157,5 +152,6 @@ storage:
 measurements:
   'band_pixelquality':
       dtype: int16
+      units: '1'
       resampling_method: nearest
       src_varname: PQ
