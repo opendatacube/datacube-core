@@ -260,6 +260,8 @@ class API(object):
                                                             variables, dimension_ranges)
             #data_response[stype] = _create_data_response(xarrays)
             # TODO: Return multiple storages, or wait until we suppport reprojection
+            # Right now, just return the result with the largest number of dimensions
+            dimension_groups.sort(key=lambda x: len(x[1]), reverse=True)
             xarrays, dimensions = dimension_groups[0]
             return _create_data_response(xarrays, dimensions)
         return data_response
@@ -382,9 +384,11 @@ def _get_dimension_properties(storage_units, dimensions, dimension_ranges):
     # Get the start value of the storage unit so we can sort them
     # Some dims are stored upside down (eg Latitude), so sort the tiles consistent with the bounding box order
     dim_props['reverse'] = dict((dim, sample.coordinates[dim].begin > sample.coordinates[dim].end)
-                                for dim in dimensions)
+                                for dim in dimensions if dim in sample.coordinates)
     for dim in dimensions:
-        dim_props['dim_vals'][dim] = sorted(set(su.coordinates[dim].begin for su in storage_units),
+        dim_props['dim_vals'][dim] = sorted(set(su.coordinates[dim].begin
+                                                for su in storage_units
+                                                if dim in su.coordinates),
                                             reverse=dim_props['reverse'][dim])
         dim_props['coordinate_reference_systems'][dim] = sample.get_crs()[dim]
 

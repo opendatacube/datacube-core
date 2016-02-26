@@ -70,7 +70,7 @@ class NetCDF4StorageUnit(StorageUnitBase):
                 units = getattr(var, 'units', None)
                 if hasattr(var, 'grid_mapping_name') and hasattr(var, 'spatial_ref'):
                     grid_mappings[getattr(var, 'grid_mapping_name', None)] = getattr(var, 'spatial_ref', None)
-                if len(dims) == 1 and name == dims[0]:
+                elif len(dims) == 1 and name == dims[0]:
                     coordinates[name] = Coordinate(dtype=numpy.dtype(var.dtype),
                                                    begin=var[0].item(), end=var[var.size-1].item(),
                                                    length=var.shape[0], units=units)
@@ -78,11 +78,18 @@ class NetCDF4StorageUnit(StorageUnitBase):
                     if standard_name:
                         standard_names[standard_name] = name
                 else:
+                    dtype = numpy.dtype(var.dtype)
+                    if 'nchar' in dims:
+                        string_length = var.shape[dims.index('nchar')]
+                        dims = tuple(d for d in dims if d != 'nchar')
+                        dtype = numpy.dtype('<S{}'.format(string_length))
+
+                    dims = tuple(dims)
                     ndv = (getattr(var, '_FillValue', None) or
                            getattr(var, 'missing_value', None) or
                            getattr(var, 'fill_value', None))
                     ndv = ndv.item() if ndv else None
-                    variables[name] = Variable(numpy.dtype(var.dtype), ndv, var.dimensions, units)
+                    variables[name] = Variable(dtype, ndv, dims, units)
         crs = {}
         if grid_mappings:
             for standard_name, real_name in standard_names.items():
