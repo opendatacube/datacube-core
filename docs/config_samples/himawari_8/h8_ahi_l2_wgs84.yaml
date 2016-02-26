@@ -56,25 +56,21 @@ measurements:
       nodata: 10000000000  # 1e10
       resampling_method: cubic
       src_varname: '01_1000'
-      units: '1'
   'band_02':
       dtype: float32
       units: '1'
       nodata: 10000000000
       resampling_method: cubic
       src_varname: '02_1000'
-      units: '1'
   'band_03':
       dtype: float32
       units: '1'
       nodata: 10000000000
       resampling_method: cubic
       src_varname: '03_1000'
-      units: '1'
   'band_04':
       dtype: float32
       units: '1'
       nodata: 10000000000
       resampling_method: cubic
       src_varname: '04_1000'
-      units: '1'
