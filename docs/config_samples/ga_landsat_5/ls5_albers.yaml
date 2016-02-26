@@ -70,7 +70,6 @@ measurements:
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.45-0.52 microns"
           standard_name: surface_bidirectional_reflectance
-          units: '1'
   band_20:
       dtype: int16
       nodata: -999
@@ -81,7 +80,6 @@ measurements:
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.52-0.60 microns"
           standard_name: surface_bidirectional_reflectance
-          units: '1'
   band_30:
       dtype: int16
       nodata: -999
@@ -92,7 +90,6 @@ measurements:
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.63-0.69 microns"
           standard_name: surface_bidirectional_reflectance
-          units: '1'
   band_40:
       dtype: int16
       nodata: -999
@@ -103,7 +100,6 @@ measurements:
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.76-0.90 microns"
           standard_name: surface_bidirectional_reflectance
-          units: '1'
   band_50:
       dtype: int16
       nodata: -999
@@ -114,7 +110,6 @@ measurements:
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 1.55-1.75 microns"
           standard_name: surface_bidirectional_reflectance
-          units: '1'
   band_70:
       dtype: int16
       nodata: -999
@@ -125,7 +120,6 @@ measurements:
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 2.08-2.35 microns"
           standard_name: surface_bidirectional_reflectance
-          units: '1'
 
 ---
 
