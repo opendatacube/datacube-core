@@ -37,6 +37,29 @@ def _open_dataset(filepath):
     return ncds
 
 
+def _get_dims_and_dtype(var):
+    if var.dtype == str or var.dtype.kind == 'S':
+        fake_dim = [d for d in var.dimensions if d.endswith('nchar')]
+        if fake_dim:
+            dims = tuple(d for d in var.dimensions if d not in fake_dim)
+            fake_dim_index = var.dimensions.index(fake_dim[0])
+            fake_size = var.shape[fake_dim_index]
+            dtype = numpy.dtype('<S{}'.format(fake_size))
+            return dims, dtype
+    return tuple(var.dimensions), var.dtype
+
+
+def _make_crs(grid_mappings, standard_names):
+    crs = {}
+    if grid_mappings:
+        for standard_name, real_name in standard_names.items():
+            if standard_name in ['latitude', 'longitude'] and 'latitude_longitude' in grid_mappings:
+                crs[real_name] = grid_mappings['latitude_longitude']
+            elif standard_name in ['projection_x_coordinate', 'projection_y_coordinate']:
+                crs[real_name] = grid_mappings[list(grid_mappings.keys())[0]]
+    return crs
+
+
 class NetCDF4StorageUnit(StorageUnitBase):
     def __init__(self, file_path, variables, coordinates, attributes=None, crs=None):
         """
@@ -78,25 +101,13 @@ class NetCDF4StorageUnit(StorageUnitBase):
                     if standard_name:
                         standard_names[standard_name] = name
                 else:
-                    dtype = numpy.dtype(var.dtype)
-                    if 'nchar' in dims:
-                        string_length = var.shape[dims.index('nchar')]
-                        dims = tuple(d for d in dims if d != 'nchar')
-                        dtype = numpy.dtype('<S{}'.format(string_length))
-
-                    dims = tuple(dims)
+                    dims, dtype = _get_dims_and_dtype(var)
                     ndv = (getattr(var, '_FillValue', None) or
                            getattr(var, 'missing_value', None) or
                            getattr(var, 'fill_value', None))
                     ndv = ndv.item() if ndv else None
                     variables[name] = Variable(dtype, ndv, dims, units)
-        crs = {}
-        if grid_mappings:
-            for standard_name, real_name in standard_names.items():
-                if standard_name in ['latitude', 'longitude'] and 'latitude_longitude' in grid_mappings:
-                    crs[real_name] = grid_mappings['latitude_longitude']
-                elif standard_name in ['projection_x_coordinate', 'projection_y_coordinate']:
-                    crs[real_name] = grid_mappings[list(grid_mappings.keys())[0]]
+        crs = _make_crs(grid_mappings, standard_names)
         return cls(file_path, variables=variables, coordinates=coordinates, attributes=attributes, crs=crs)
 
     def get_coord(self, dim, index=None):
