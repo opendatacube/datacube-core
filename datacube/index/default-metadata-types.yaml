@@ -104,8 +104,12 @@ dataset:
             type: datetime-range
             min_offset:
             - [extent, from_dt]
+            - [extent, center_dt]
+            - [acquisition, aos]
             max_offset:
             - [extent, to_dt]
+            - [extent, center_dt]
+            - [acquisition, los]
 
         gsi:
             description: Ground Station Identifier (eg. ASA)
