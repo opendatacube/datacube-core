@@ -63,57 +63,6 @@ def _cross_platform_path(path):
         return path
 
 
-class Measurement(object):
-    def __init__(self, name, attributes):
-        self.name = name
-        self.attributes = attributes
-        for attr_name in ('dtype', 'nodata', 'resampling_method'):
-            try:
-                setattr(self, attr_name, attributes[attr_name])
-            except KeyError:
-                pass
-
-    def human_readable_flags_definition(self):
-        def gen_human_readable(flags_def):
-            bit_value_desc = [
-                (bitdef['bit_index'], bitdef['value'], bitdef['description'])
-                for name, bitdef in flags_def.items()]
-            max_bit, _, _ = max(bit_value_desc)
-            min_bit, _, _ = min(bit_value_desc)
-
-            yield "Bits are listed from the MSB (bit {}) to the LSB (bit {})".format(max_bit, min_bit)
-            yield "Bit    Value     Description"
-            for bit, value, desc in sorted(bit_value_desc, reverse=True):
-                yield "{:<8d}{:<8d}{}".format(bit, value, desc)
-
-        return '\n'.join(gen_human_readable(self.attributes['flags_definition']))
-
-    def flag_mask_meanings(self):
-        flags_def = self.attributes['flags_definition']
-
-        max_bit = max([bit_def['bit_index'] for bit_def in flags_def.values()])
-
-        bit_value_name = {
-            (bitdef['bit_index'], bitdef['value']): name
-            for name, bitdef in flags_def.items()}
-
-        masks = []
-        meanings = []
-
-        for i in range(max_bit+1):
-            try:
-                name = bit_value_name[(i, 1)]
-            except KeyError:
-                try:
-                    name = 'no_' + bit_value_name[(i, 0)]
-                except KeyError:
-                    continue
-            masks.append(2**i)
-            meanings.append(name)
-
-        return masks, meanings
-
-
 class DatasetMatcher(object):
     def __init__(self, metadata):
         # Match by exact metadata properties (a subset of the metadata doc)
@@ -182,11 +131,6 @@ class StorageType(object):  # pylint: disable=too-many-public-methods
         for varname, mapping in self.measurements.items():
             variable_attributes[varname] = mapping.get('attrs', {})
         return variable_attributes
-
-    @property
-    def measurement_objs(self):
-        for varname, attributes in self.measurements.items():
-            yield Measurement(name=varname, attributes=attributes)
 
     @property
     def filename_format(self):

@@ -119,11 +119,14 @@ def write_access_unit_to_netcdf(access_unit, global_attributes, variable_attribu
     netcdf_writer.write_geographical_extents_attributes(nco, access_unit.extent.to_crs('EPSG:4326').points)
 
     for name, variable in access_unit.variables.items():
+        # Create variable
         var_params = variable_params.get(name, {})
         data_var = netcdf_writer.create_variable(nco, name, variable, **var_params)
+
+        # Write data
         data_var[:] = netcdf_writer.netcdfy_data(access_unit.get(name).values)
 
-        # write extra attributes
+        # Write extra attributes
         for key, value in variable_attributes.get(name, {}).items():
             netcdf_writer.write_attribute(data_var, key, value)
 

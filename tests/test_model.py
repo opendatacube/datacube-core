@@ -2,10 +2,9 @@
 import os
 from textwrap import dedent
 
-import numpy as np
 import pytest
 
-from datacube.model import _uri_to_local_path, Dataset, DatasetMatcher, StorageType, Measurement
+from datacube.model import _uri_to_local_path, Dataset, DatasetMatcher, StorageType
 
 
 def test_uri_to_local_path():
@@ -119,56 +118,3 @@ SAMPLE_STORAGE_TYPE = {
 
 def test_storage_type_model():
     st = StorageType(SAMPLE_STORAGE_TYPE)
-
-
-EXAMPLE_PQ_MEASUREMENT_DEF = {
-    'attrs': {'standard_name': 'pixel_quality'},
-    'dtype': 'int16',
-    'units': '1',
-    'nodata': -999,
-    'src_varname': 'PQ',
-    'flags_definition': {
-        'band_1_saturated': {
-            'bit_index': 0,
-            'value': 0,
-            'description': 'Band 1 is saturated'},
-        'band_2_saturated': {
-            'bit_index': 1,
-            'value': 0,
-            'description': 'Band 2 is saturated'},
-        'band_3_saturated': {
-            'bit_index': 2,
-            'value': 0,
-            'description': 'Band 3 is saturated'},
-        'land_obs': {
-            'bit_index': 9,
-            'value': 1,
-            'description': 'Land observation'},
-        'sea_obs': {
-            'bit_index': 9,
-            'value': 0,
-            'description': 'Sea observation'},
-    }}
-
-EXPECTED_HUMAN_READABLE_FLAGS = dedent("""\
-        Bits are listed from the MSB (bit 9) to the LSB (bit 0)
-        Bit    Value     Description
-        9       1       Land observation
-        9       0       Sea observation
-        2       0       Band 3 is saturated
-        1       0       Band 2 is saturated
-        0       0       Band 1 is saturated""")
-
-
-def test_measurements_model_netcdfflags():
-    flagged_measurement = Measurement('PQ', EXAMPLE_PQ_MEASUREMENT_DEF)
-
-    masks, meanings = flagged_measurement.flag_mask_meanings()
-    assert [1, 2, 4, 512] == masks
-    assert ['no_band_1_saturated', 'no_band_2_saturated', 'no_band_3_saturated',
-            'land_obs'] == meanings
-
-
-def test_measurements_model_human_readable_flags():
-    flagged_measurement = Measurement('PQ', EXAMPLE_PQ_MEASUREMENT_DEF)
-    assert EXPECTED_HUMAN_READABLE_FLAGS == flagged_measurement.human_readable_flags_definition()
