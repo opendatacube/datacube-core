@@ -4,14 +4,11 @@ Functions for dealing with storage unit index objects and access objects.
 """
 from __future__ import absolute_import, division, print_function
 
-import copy
 import datetime
 from collections import defaultdict
 
 import numpy
 
-from datacube.model import Coordinate
-from datacube.storage.storage import StorageUnitBase
 from datacube.model import Variable, time_coordinate_value
 from datacube.storage.access.core import StorageUnitDimensionProxy
 from datacube.storage.access.backends import NetCDF4StorageUnit, GeoTifStorageUnit, FauxStorageUnit
@@ -24,7 +21,7 @@ def make_in_memory_storage_unit(su, coordinates, variables, attributes, crs):
                              attributes=attributes,
                              crs=crs)
 
-    # TODO: Retrive from database instead of opening file
+    # TODO: Retrive irregular coords from database instead of opening file
     irregular_dim_names = ['time', 't']  # TODO: Use irregular flag from database instead
     irregular_dims = [name for name, coord in coordinates.items()
                       if name in irregular_dim_names and coord.length > 2]
@@ -145,7 +142,6 @@ class StorageUnitCollection(object):
         return spatial_crs
 
 
-
 class MemoryStorageUnit(FauxStorageUnit):
     def __init__(self, coordinates, variables, attributes=None, coodinate_values=None, crs=None, file_path=None):
         super(MemoryStorageUnit, self).__init__(coordinates, variables)
@@ -168,36 +164,3 @@ class MemoryStorageUnit(FauxStorageUnit):
             else:
                 crs[coord]['reference_system_definition'] = value
         return crs
-
-
-class IrregularStorageUnitSlice(StorageUnitBase):
-    """ Storage Unit interface for accessing another Storage unit at a defined coordinate  """
-    def __init__(self, parent, dimension, index):
-        self._parent = parent
-        self._sliced_coordinate = dimension
-        self._index = index
-        self.coordinates = copy.copy(parent.coordinates)
-        real_dim = self.coordinates[dimension]
-        self._cached_coord, _ = parent.get_coord(dimension, index=slice(self._index, self._index + 1))
-        fake_dim = Coordinate(dtype=real_dim.dtype,
-                              begin=self._cached_coord[0],
-                              end=self._cached_coord[0],
-                              length=1,
-                              units=real_dim.units)
-        self.coordinates[dimension] = fake_dim
-        self.variables = parent.variables
-        self.file_path = parent.file_path
-
-    def get_crs(self):
-        return self._parent.get_crs()
-
-    def get_coord(self, name, index=None):
-        if name == self._sliced_coordinate:
-            return self._cached_coord, slice(0, 1, 1)
-        return self._parent.get_coord(name, index)
-
-    def _fill_data(self, name, index, dest):
-        var = self.variables[name]
-        subset_slice = {self._sliced_coordinate:slice(self._index, self._index+1)}
-        data = self._parent.get(name, **subset_slice)
-        numpy.copyto(dest, data.data)

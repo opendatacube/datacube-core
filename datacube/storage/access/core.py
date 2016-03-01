@@ -73,8 +73,11 @@ class StorageUnitBase(object):
         :param index: integer indexing
         :return: numpy-array-like object
         """
-        full_array = self.get(name)
-        return full_array[index].data
+        var = self.variables[name]
+        shape = index_shape(index)
+        dest = numpy.empty(shape, dtype=var.dtype)
+        self._fill_data(name, index, dest)
+        return dest
 
     def get_crs(self):
         """

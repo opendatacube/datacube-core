@@ -34,8 +34,9 @@ from ._conversion import convert_descriptor_query_to_search_query, convert_descr
 from ._conversion import convert_request_args_to_descriptor_query
 from ._conversion import dimension_ranges_to_selector, dimension_ranges_to_iselector, to_datetime
 from ._dask import get_dask_array
-from ._storage import StorageUnitCollection, IrregularStorageUnitSlice
+from ._storage import StorageUnitCollection
 from ._storage import make_storage_unit, make_storage_unit_collection_from_descriptor
+from ._stratify import _stratify_irregular_dimension
 
 _LOG = logging.getLogger(__name__)
 
@@ -504,38 +505,10 @@ def _get_data_array_dict(storage_units_by_variable, dimensions, dimension_ranges
                 else:
                     xarray_data_array = xarray_data_array.sel(method='nearest', **{key: value})
         iselectors = dict((k, v) for k, v in iselectors.items() if k in dimensions)
-        subset = xarray_data_array.isel(**iselectors)
-        xarrays[var_name] = subset
+        if iselectors:
+            xarray_data_array = xarray_data_array.isel(**iselectors)
+        xarrays[var_name] = xarray_data_array
     return xarrays
-
-
-def _stratify_storage_unit(storage_unit, dimension):
-    """
-    Creates a new series of storage units for every index along an irregular dimension that must be merged together
-    :param storage_unit: A storage unit
-    :param dimension: The name of the irregular dimension to stratify
-    :return: storage_units: list of storage_unit-like objects that point to an underlying storage unit at a particular
-     value, one for each value of the irregular dimension
-    """
-    if dimension not in storage_unit.coordinates:
-        return [storage_unit]
-    irregular_coord = storage_unit.coordinates[dimension]
-    if irregular_coord.length > 1:
-        coord, index = storage_unit.get_coord(dimension)
-        return [IrregularStorageUnitSlice(storage_unit, dimension, i) for i, c in enumerate(coord)]
-    return [storage_unit]
-
-
-def _stratify_irregular_dimension(storage_units, dimension):
-    """
-    Creates a new series of storage units for every index along an irregular dimension that must be merged together
-    :param storage_units:
-    :param dimension:
-    :return: storage_units: list of storage_unit-like objects that point to an underlying storage unit at a particular
-     value, one for each value of the irregular dimension
-    """
-    stratified_units = [_stratify_storage_unit(storage_unit, dimension) for storage_unit in storage_units]
-    return list(itertools.chain(*stratified_units))
 
 
 def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges=None, fake_array=False, set_nan=False):

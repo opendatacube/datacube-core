@@ -16,13 +16,17 @@
 from __future__ import absolute_import, division, print_function
 
 import datetime
+
+import numpy
 from dateutil import tz
 
 from .util import isclose
 
+from datacube.model import Range, Coordinate, Variable
+from datacube.api._storage import MemoryStorageUnit
 from datacube.api._conversion import convert_descriptor_dims_to_search_dims, convert_descriptor_dims_to_selector_dims
 from datacube.api._conversion import datetime_to_timestamp
-from datacube.model import Range
+from datacube.api._stratify import _stratify_irregular_dimension
 
 
 def test_convert_descriptor_query_to_search_query():
@@ -218,3 +222,34 @@ def test_get_descriptor_some_data():
     descriptor = api.get_descriptor({})
 
     assert descriptor == {}
+
+
+def test_stratify_irregular_dimension():
+    coordinates_1 = {'time': Coordinate(dtype='datetime64[D]',
+                                        begin=numpy.datetime64("1990-01-01"), end=numpy.datetime64("2000-01-01"),
+                                        length=5, units='D')}
+    coodinate_values_1 = {'time': numpy.asarray(["1990-01-01", "1991-01-01", "1992-01-01", "1999-01-01", "2000-01-01"],
+                                                dtype='datetime64')}
+    variables_1 = {'test': Variable(dimensions='time', dtype=int, nodata=0, units='dummy')}
+    storage_unit_1 = MemoryStorageUnit(coordinates_1, variables_1, coodinate_values=coodinate_values_1)
+
+    coordinates_2 = {'time': Coordinate(dtype='datetime64[D]',
+                                        begin=numpy.datetime64("1990-01-01"), end=numpy.datetime64("2000-01-01"),
+                                        length=5, units='ns')}
+    coodinate_values_2 = {'time': numpy.asarray(["1991-01-01", "1992-01-01", "1993-01-01", "1999-01-01", "2001-01-01"],
+                                                dtype='datetime64')}
+    variables_2 = {'test': Variable(dimensions='time', dtype=int, nodata=0, units='dummy')}
+    storage_unit_2 = MemoryStorageUnit(coordinates_2, variables_2, coodinate_values=coodinate_values_2)
+
+    input_sus = [storage_unit_1, storage_unit_2]
+    output_sus = _stratify_irregular_dimension(input_sus, 'time')
+
+    all_coords = set(numpy.concatenate((coodinate_values_1['time'], coodinate_values_2['time'])))
+    # for each coordinate across all storage units
+    for coord in all_coords:
+        # for each storage unit
+        for su in output_sus:
+            # if the coordinate is in the range of the storage unit
+            if su.coordinates['time'].begin <= coord <= su.coordinates['time'].end:
+                # assert that the coordinate is in the storage unit
+                assert su and numpy.any(su.get_coord('time')[0] == coord)

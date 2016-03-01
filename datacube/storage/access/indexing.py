@@ -104,5 +104,5 @@ def index_shape(index):
     """
     # TODO: single index
     # TODO: step
-    assert all(i.step == 1 for i in index)
+    assert all(i.step in [None, 1] for i in index)
     return tuple(i.stop-i.start for i in index)
