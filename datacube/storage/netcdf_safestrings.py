@@ -3,6 +3,8 @@ Provides `SafeStringsDataset`, a replacement netCDF4.Dataset class which works
 around a bug in NetCDF4 which causes attribute strings written to files to
 be incompatible with older NetCDF software. Ensures that strings are only
 written as UTF-8 encoded bytes.
+
+For more information see https://github.com/Unidata/netcdf4-python/issues/448
 """
 import netCDF4
 
