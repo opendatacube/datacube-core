@@ -22,7 +22,6 @@ from dateutil import tz
 from affine import Affine
 
 from .util import isclose
-from .storage.test_storage import GEO_PROJ
 
 from datacube.model import Range, Coordinate, Variable, GeoBox
 from datacube.storage.access.backends.geobox import GeoBoxStorageUnit
