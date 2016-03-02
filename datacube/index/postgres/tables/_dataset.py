@@ -61,7 +61,7 @@ DATASET = Table(
     Column('metadata_type_ref', None, ForeignKey(METADATA_TYPE.c.id), nullable=False),
     Column('collection_ref', None, ForeignKey(COLLECTION.c.id), nullable=False),
 
-    Column('metadata', postgres.JSONB, index=True, nullable=False),
+    Column('metadata', postgres.JSONB, index=False, nullable=False),
 
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
