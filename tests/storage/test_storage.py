@@ -15,55 +15,18 @@
 
 from __future__ import absolute_import, division, print_function
 
-from functools import reduce as reduce_
-
 import numpy
 import netCDF4
 from affine import Affine
 
 from datacube.model import Coordinate, Variable, GeoBox
-from datacube.storage.access.core import StorageUnitBase
+from datacube.storage.access.backends.geobox import GeoBoxStorageUnit
 from datacube.storage.storage import write_access_unit_to_netcdf
-from datacube.storage.access.backends import FauxStorageUnit
+
 
 GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
            'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
            'AUTHORITY["EPSG","4326"]]'
-
-
-class GeoBoxStorageUnit(StorageUnitBase):
-    """ Fake Storage Unit for testing """
-    def __init__(self, geobox, coordinates, variables):
-        self.geobox = geobox
-        self.coordinates = geobox.coordinates.copy()
-        self.coordinates.update(coordinates)
-        self.variables = variables
-
-    @property
-    def crs(self):
-        return self.geobox.crs
-
-    @property
-    def affine(self):
-        return self.geobox.affine
-
-    @property
-    def extent(self):
-        return self.geobox.extent
-
-    def _get_coord(self, name):
-        if name in self.geobox.coordinate_labels:
-            return self.geobox.coordinate_labels[name]
-        else:
-            coord = self.coordinates[name]
-            data = numpy.linspace(coord.begin, coord.end, coord.length).astype(coord.dtype)
-            return data
-
-    def _fill_data(self, name, index, dest):
-        var = self.variables[name]
-        shape = tuple(self.coordinates[dim].length for dim in var.dimensions)
-        size = reduce_(lambda x, y: x*y, shape, 1)
-        numpy.copyto(dest, numpy.arange(size).reshape(shape)[index])
 
 
 def test_write_access_unit_to_netcdf(tmpnetcdf_filename):

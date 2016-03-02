@@ -19,14 +19,19 @@ import datetime
 
 import numpy
 from dateutil import tz
+from affine import Affine
 
 from .util import isclose
+from .storage.test_storage import GEO_PROJ
 
-from datacube.model import Range, Coordinate, Variable
+from datacube.model import Range, Coordinate, Variable, GeoBox
+from datacube.storage.access.backends.geobox import GeoBoxStorageUnit
+from datacube.api._api import _get_dimension_properties
 from datacube.api._storage import MemoryStorageUnit
 from datacube.api._conversion import convert_descriptor_dims_to_search_dims, convert_descriptor_dims_to_selector_dims
 from datacube.api._conversion import datetime_to_timestamp
 from datacube.api._stratify import _stratify_irregular_dimension
+from datacube.api._dask import get_dask_array
 
 
 def test_convert_descriptor_query_to_search_query():
@@ -253,3 +258,36 @@ def test_stratify_irregular_dimension():
             if su.coordinates['time'].begin <= coord <= su.coordinates['time'].end:
                 # assert that the coordinate is in the storage unit
                 assert su and numpy.any(su.get_coord('time')[0] == coord)
+
+
+def test_dask():
+    GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
+               'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
+               'AUTHORITY["EPSG","4326"]]'
+
+    affine1 = Affine.scale(0.1, 0.1)*Affine.translation(20, 30)
+    ds1 = GeoBoxStorageUnit(GeoBox(100, 100, affine1, GEO_PROJ),
+                            {'time': Coordinate(numpy.dtype(numpy.int), begin=100, end=400, length=4, units='seconds')},
+                            {
+                                'B10': Variable(numpy.dtype(numpy.float32), nodata=numpy.nan,
+                                                dimensions=('time', 'latitude', 'longitude'), units='1')
+                            })
+    ds1.get_crs = lambda: {'time': None, 'latitude': None, 'longitude': None}
+    affine2 = Affine.scale(0.1, 0.1)*Affine.translation(120, 130)
+    ds2 = GeoBoxStorageUnit(GeoBox(100, 100, affine2, GEO_PROJ),
+                            {'time': Coordinate(numpy.dtype(numpy.int), begin=100, end=400, length=4, units='seconds')},
+                            {
+                                'B10': Variable(numpy.dtype(numpy.float32), nodata=numpy.nan,
+                                                dimensions=('time', 'latitude', 'longitude'), units='1')
+                            })
+    ds2.get_crs = lambda: {'time': None, 'latitude': None, 'longitude': None}
+
+    storage_units = [ds1, ds2]
+    dim_props = _get_dimension_properties(storage_units, ('time', 'latitude', 'longitude'), [])
+    da = get_dask_array(storage_units, 'B10', ['time', 'latitude', 'longitude'], dim_props)
+    da_computed = da.compute()
+    assert da.shape == (4, 200, 200)
+    assert da_computed[0, 0, 0] == 0
+    assert da_computed[0, 199, 199] == 9999
+    assert numpy.isnan(da_computed[0, 0, 150])
+    assert numpy.isnan(da_computed[0, 150, 0])

@@ -282,8 +282,11 @@ class API(object):
 
         query = convert_descriptor_query_to_search_query(descriptor_request)
         storage_units_by_type = defaultdict(StorageUnitCollection)
-        for su in self.index.storage.search(**query):
-            storage_units_by_type[su.storage_type.name].append(make_storage_unit(su))
+        su_id = set()
+        for su in self.index.storage.search_eager(**query):
+            if su.id not in su_id:
+                su_id.add(su.id)
+                storage_units_by_type[su.storage_type.name].append(make_storage_unit(su))
 
         for stype, storage_units in storage_units_by_type.items():
             dimension_ranges = convert_descriptor_dims_to_selector_dims(descriptor_dimensions,
@@ -334,7 +337,7 @@ class API(object):
         descriptor_request = kwargs
         query = convert_descriptor_query_to_search_query(descriptor_request)
         sus = self.index.storage.search(**query)
-        return [su.local_path for su in sus]
+        return [str(su.local_path) for su in sus]
 
     def list_fields(self):
         """

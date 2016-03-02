@@ -6,10 +6,12 @@ from __future__ import absolute_import
 
 import itertools
 import operator
-import uuid
+import collections
+import functools
 
-import numpy
+import dask
 import dask.array as da
+import numpy
 
 
 def get_dask_array(storage_units, var_name, dimensions, dim_props, is_fake_array=False):
@@ -37,8 +39,8 @@ def _get_dask_for_storage_units(storage_units, var_name, dimensions, dim_vals, d
             ordinal = dim_vals[dim].index(storage_unit.coordinates[dim].begin)
             dsk_index += (ordinal,)
         # TODO: Wrap in a chunked dask for sub-file dask chunks
-        dsk[dsk_index] = (storage_unit.get, var_name)
-        # dsk[dsk_index] = (get_chunked_data_func, storage_unit, var_name)
+        dsk[dsk_index] = (storage_unit.get_chunk, var_name, Ellipsis)
+        #dsk[dsk_index] = (_get_chunked_data_func, storage_unit, var_name)
     return dsk
 
 
@@ -51,7 +53,7 @@ def _fill_in_dask_blanks(dsk, storage_units, var_name, dimensions, dim_props, ds
         dtype, nodata = _nodata_properties(storage_units, var_name)
         for key in missing_dsk_keys:
             shape = _get_chunk_shape(key, dimensions, dim_props['sus_size'])
-            dsk[key] = (no_data_block, shape, dtype, nodata)
+            dsk[key] = (_no_data_block, shape, dtype, nodata)
         return dsk
 
 
@@ -68,7 +70,7 @@ def _get_chunk_shape(key, dimensions, chunksize):
     return shape
 
 
-def no_data_block(shape, dtype, fill):
+def _no_data_block(shape, dtype, fill):
     arr = numpy.empty(shape, dtype)
     if fill is None:
         fill = numpy.NaN
@@ -76,12 +78,14 @@ def no_data_block(shape, dtype, fill):
     return arr
 
 
-# def get_chunked_data_func(storage_unit, var_name):
-#     # TODO: Provide dask array to chunked NetCDF calls
-#     return NDArrayProxy(storage_unit, var_name)
-
-
-# TODO: Move into storage.access.StorageUnitBase
+# def _get_chunked_data_func(storage_unit, var_name):
+#     storage_array = NDArrayProxy(storage_unit, var_name)
+#     # TODO: Chunk along chunk direction
+#     chunks = (1000,) * storage_array.ndim
+#     return da.from_array(storage_array, chunks=chunks)
+#
+#
+# # TODO: Move into storage.access.StorageUnitBase
 # class NDArrayProxy(object):
 #     def __init__(self, storage_unit, var_name):
 #         self._storage_unit = storage_unit
@@ -89,11 +93,11 @@ def no_data_block(shape, dtype, fill):
 #
 #     @property
 #     def ndim(self):
-#         return len(self._storage_unit.coordinates)
+#         return len(self._storage_unit.variables[self._var_name].dimensions)
 #
 #     @property
 #     def size(self):
-#         return functools.reduce(operator.mul, [coord.length for coord in self._storage_unit.coordinates])
+#         return functools.reduce(operator.mul, self.shape)
 #
 #     @property
 #     def dtype(self):
@@ -101,15 +105,29 @@ def no_data_block(shape, dtype, fill):
 #
 #     @property
 #     def shape(self):
-#         return tuple(coord.length for coord in self._storage_unit.coordinates)
+#         dims = self._storage_unit.variables[self._var_name].dimensions
+#         return tuple(self._storage_unit.coordinates[dim].length for dim in dims)
 #
 #     def __len__(self):
 #         return self.shape[0]
 #
 #     def __array__(self, dtype=None):
-#         return self._storage_unit.get(self._var_name)
+#         x = self[...]
+#         if dtype and x.dtype != dtype:
+#             x = x.astype(dtype)
+#         if not isinstance(x, numpy.ndarray):
+#             x = numpy.array(x)
+#         return x
 #
 #     def __getitem__(self, key):
+#         # if not isinstance(key, collections.Iterable):
+#         #     # dealing with a single value
+#         #     if not isinstance(key, slice):
+#         #         key = slice(key, key + 1)
+#         #     key = [key]
+#         # if len(key) < self.ndim:
+#         #     key = [key[i] if i < len(key) else slice(0,self.shape[i]) for i in range(self.ndim)]
+#
 #         return self._storage_unit.get_chunk(self._var_name, key)
 #
 #     def __repr__(self):

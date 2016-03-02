@@ -25,7 +25,7 @@ from ..core import StorageUnitBase
 from datacube.model import Coordinate, Variable
 from ..indexing import Range, range_to_index, normalize_index
 
-_GLOBAL_LOCK = threading.Lock()
+_GLOBAL_LOCK = threading.RLock()
 
 
 def _open_dataset(filepath):
@@ -72,6 +72,7 @@ class NetCDF4StorageUnit(StorageUnitBase):
         self.variables = variables
         self.attributes = attributes or {}
         self.crs = crs or {}
+        self._coord_values = {coord_name: None for coord_name in coordinates}
 
     def get_crs(self):
         # Use units for sensible default
@@ -86,6 +87,7 @@ class NetCDF4StorageUnit(StorageUnitBase):
         variables = {}
         grid_mappings = {}
         standard_names = {}
+
         with _GLOBAL_LOCK, contextlib.closing(_open_dataset(file_path)) as ncds:
             attributes = {k: getattr(ncds, k) for k in ncds.ncattrs()}
             for name, var in ncds.variables.items():
@@ -115,14 +117,17 @@ class NetCDF4StorageUnit(StorageUnitBase):
         index = normalize_index(coord, index)
 
         if isinstance(index, slice):
-            with _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.file_path)) as ncds:
-                return ncds[dim][index], index
+            if self._coord_values[dim] is None:
+                with _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.file_path)) as ncds:
+                    self._coord_values[dim] = ncds[dim][:]
+            return self._coord_values[dim][index], index
 
         if isinstance(index, Range):
-            with _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.file_path)) as ncds:
-                data = ncds[dim][:]
-                index = range_to_index(data, index)
-                return data[index], index
+            if self._coord_values[dim] is None:
+                with _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.file_path)) as ncds:
+                    self._coord_values[dim] = ncds[dim][:]
+            index = range_to_index(self._coord_values[dim], index)
+            return self._coord_values[dim][index], index
 
     def _fill_data(self, name, index, dest):
         with _GLOBAL_LOCK, contextlib.closing(_open_dataset(self.file_path)) as ncds:

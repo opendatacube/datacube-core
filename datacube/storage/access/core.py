@@ -19,6 +19,7 @@ Core classes used to access data
 
 from __future__ import absolute_import, division, print_function
 
+import collections
 import sys
 import numpy
 
@@ -74,6 +75,18 @@ class StorageUnitBase(object):
         :return: numpy-array-like object
         """
         var = self.variables[name]
+
+        if index is Ellipsis or index is None:
+            index = []
+        if not isinstance(index, collections.Iterable):
+            if not isinstance(index, slice):
+                index = [slice(index, index + 1)]
+            else:
+                index = [index]
+        if len(index) < len(var.dimensions):
+            index = [index[i] if i < len(index) else slice(0, self.coordinates[dim].length, 1)
+                     for i, dim in enumerate(var.dimensions)]
+
         shape = index_shape(index)
         dest = numpy.empty(shape, dtype=var.dtype)
         self._fill_data(name, index, dest)
