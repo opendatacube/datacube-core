@@ -81,8 +81,8 @@ def find_storage_types_for_datasets(datasets, index=None):
         if not dataset_storage_types:
             raise RuntimeError('No storage types found for %s dataset', dataset)
         for storage_type in dataset_storage_types:
-            storage_types[storage_type].append(dataset)
-    return storage_types
+            storage_types[storage_type.id].append(dataset)
+    return {index.storage.types.get(id): datasets for id, datasets in storage_types.items()}
 
 
 def create_storage_units(datasets, storage_type, executor=SerialExecutor()):
