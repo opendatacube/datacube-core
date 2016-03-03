@@ -1,5 +1,5 @@
 name: ls7_nbar_albers
-description: LS7 NBAR 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
+description: Landsat 7 NBAR 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
 
 # Any datasets matching these metadata properties.
 match:
@@ -101,7 +101,7 @@ measurements:
 
 ---
 name: ls7_nbart_albers
-description: LS7 NBART 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
+description: Landsat 7 NBART 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
 
 # Any datasets matching these metadata properties.
 match:
@@ -115,7 +115,7 @@ match:
 
 location_name: eotiles
 
-file_path_template: '{platform[code]}_{instrument[name]}_NBAR_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+file_path_template: '{platform[code]}_{instrument[name]}_NBART_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
 
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
@@ -204,7 +204,7 @@ measurements:
 ---
 
 name: ls7_pq_albers
-description: LS7 PQ 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
+description: Landsat 7 Pixel Quality 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
 
 # Any datasets matching these metadata properties.
 match:
@@ -340,7 +340,7 @@ measurements:
 ---
 
 name: ls7_fc_albers
-description: LS7 FC 25 metre, 100km tile, Albers projection
+description: Landsat 7 Fractional Cover 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
 
 match:
     metadata:
@@ -351,7 +351,7 @@ match:
         product_type: FC
 
 location_name: eotiles
-file_path_template: '{platform[code]}_{instrument[name]}_FC_ALB_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+file_path_template: '{platform[code]}_{instrument[name]}_FC_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
   summary: These files are experimental, short lived, and the format will change.
