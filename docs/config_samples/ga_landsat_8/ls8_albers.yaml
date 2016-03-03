@@ -66,42 +66,63 @@ measurements:
       units: '1'
       resampling_method: cubic
       src_varname: '1'
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 0.43-0.45 microns (Coastal Aerosol)"
+          standard_name: surface_bidirectional_reflectance
   'band_20':
       dtype: int16
       nodata: -999
       units: '1'
       resampling_method: cubic
       src_varname: '2'
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 0.45-0.51 microns (Blue)"
+          standard_name: surface_bidirectional_reflectance
   'band_30':
       dtype: int16
       nodata: -999
       units: '1'
       resampling_method: cubic
       src_varname: '3'
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 0.53-0.59 microns (Green)"
+          standard_name: surface_bidirectional_reflectance
   'band_40':
       dtype: int16
       nodata: -999
       units: '1'
       resampling_method: cubic
       src_varname: '4'
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 0.64-0.67 microns (Red)"
+          standard_name: surface_bidirectional_reflectance
   'band_50':
       dtype: int16
       nodata: -999
       units: '1'
       resampling_method: cubic
       src_varname: '5'
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 0.85-0.88 microns (Near Infrared)"
+          standard_name: surface_bidirectional_reflectance
   'band_60':
       dtype: int16
       nodata: -999
       units: '1'
       resampling_method: cubic
       src_varname: '6'
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 1.57-1.65 microns (Short-wave Infrared 1)"
+          standard_name: surface_bidirectional_reflectance
   'band_70':
       dtype: int16
       nodata: -999
       units: '1'
       resampling_method: cubic
       src_varname: '7'
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 2.11-2.29 microns (Short-wave Infrared 2)"
+          standard_name: surface_bidirectional_reflectance
 
 ---
 name: ls8_nbart_albers
@@ -171,42 +192,63 @@ measurements:
       units: '1'
       resampling_method: cubic
       src_varname: '1'
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 0.43-0.45 microns (Coastal Aerosol)"
+          standard_name: surface_bidirectional_reflectance
   'band_20':
       dtype: int16
       nodata: -999
       units: '1'
       resampling_method: cubic
       src_varname: '2'
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 0.45-0.51 microns (Blue)"
+          standard_name: surface_bidirectional_reflectance
   'band_30':
       dtype: int16
       nodata: -999
       units: '1'
       resampling_method: cubic
       src_varname: '3'
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 0.53-0.59 microns (Green)"
+          standard_name: surface_bidirectional_reflectance
   'band_40':
       dtype: int16
       nodata: -999
       units: '1'
       resampling_method: cubic
       src_varname: '4'
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 0.64-0.67 microns (Red)"
+          standard_name: surface_bidirectional_reflectance
   'band_50':
       dtype: int16
       nodata: -999
       units: '1'
       resampling_method: cubic
       src_varname: '5'
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 0.85-0.88 microns (Near Infrared)"
+          standard_name: surface_bidirectional_reflectance
   'band_60':
       dtype: int16
       nodata: -999
       units: '1'
       resampling_method: cubic
       src_varname: '6'
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 1.57-1.65 microns (Short-wave Infrared 1)"
+          standard_name: surface_bidirectional_reflectance
   'band_70':
       dtype: int16
       nodata: -999
       units: '1'
       resampling_method: cubic
       src_varname: '7'
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 2.11-2.29 microns (Short-wave Infrared 2)"
+          standard_name: surface_bidirectional_reflectance
 
 ---
 

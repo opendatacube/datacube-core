@@ -67,7 +67,7 @@ measurements:
       src_varname: '10'
       zlib: True
       attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 0.45-0.52 microns"
+          long_name: "Nadir BRDF Adjusted Reflectance 0.45-0.52 microns (Blue)"
           standard_name: surface_bidirectional_reflectance
   band_20:
       dtype: int16
@@ -77,7 +77,7 @@ measurements:
       src_varname: '20'
       zlib: True
       attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 0.52-0.60 microns"
+          long_name: "Nadir BRDF Adjusted Reflectance 0.52-0.60 microns (Green)"
           standard_name: surface_bidirectional_reflectance
   band_30:
       dtype: int16
@@ -87,7 +87,7 @@ measurements:
       src_varname: '30'
       zlib: True
       attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 0.63-0.69 microns"
+          long_name: "Nadir BRDF Adjusted Reflectance 0.63-0.69 microns (Red)"
           standard_name: surface_bidirectional_reflectance
   band_40:
       dtype: int16
@@ -97,7 +97,7 @@ measurements:
       src_varname: '40'
       zlib: True
       attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 0.76-0.90 microns"
+          long_name: "Nadir BRDF Adjusted Reflectance 0.76-0.90 microns (Near Infrared)"
           standard_name: surface_bidirectional_reflectance
   band_50:
       dtype: int16
@@ -107,7 +107,7 @@ measurements:
       src_varname: '50'
       zlib: True
       attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 1.55-1.75 microns"
+          long_name: "Nadir BRDF Adjusted Reflectance 1.55-1.75 microns (Short-wave Infrared)"
           standard_name: surface_bidirectional_reflectance
   band_70:
       dtype: int16
@@ -117,7 +117,7 @@ measurements:
       src_varname: '70'
       zlib: True
       attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 2.08-2.35 microns"
+          long_name: "Nadir BRDF Adjusted Reflectance 2.08-2.35 microns (Short-wave Infrared)"
           standard_name: surface_bidirectional_reflectance
 
 ---
@@ -190,7 +190,7 @@ measurements:
       src_varname: '10'
       zlib: True
       attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 0.45-0.52 microns"
+          long_name: "Nadir BRDF Adjusted Reflectance 0.45-0.52 microns (Blue)"
           standard_name: surface_bidirectional_reflectance
   band_20:
       dtype: int16
@@ -200,7 +200,7 @@ measurements:
       src_varname: '20'
       zlib: True
       attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 0.52-0.60 microns"
+          long_name: "Nadir BRDF Adjusted Reflectance 0.52-0.60 microns (Green)"
           standard_name: surface_bidirectional_reflectance
   band_30:
       dtype: int16
@@ -210,7 +210,7 @@ measurements:
       src_varname: '30'
       zlib: True
       attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 0.63-0.69 microns"
+          long_name: "Nadir BRDF Adjusted Reflectance 0.63-0.69 microns (Red)"
           standard_name: surface_bidirectional_reflectance
   band_40:
       dtype: int16
@@ -220,7 +220,7 @@ measurements:
       src_varname: '40'
       zlib: True
       attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 0.76-0.90 microns"
+          long_name: "Nadir BRDF Adjusted Reflectance 0.76-0.90 microns (Near Infrared)"
           standard_name: surface_bidirectional_reflectance
   band_50:
       dtype: int16
@@ -230,7 +230,7 @@ measurements:
       src_varname: '50'
       zlib: True
       attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 1.55-1.75 microns"
+          long_name: "Nadir BRDF Adjusted Reflectance 1.55-1.75 microns (Short-wave Infrared)"
           standard_name: surface_bidirectional_reflectance
   band_70:
       dtype: int16
@@ -240,7 +240,7 @@ measurements:
       src_varname: '70'
       zlib: True
       attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 2.08-2.35 microns"
+          long_name: "Nadir BRDF Adjusted Reflectance 2.08-2.35 microns (Short-wave Infrared)"
           standard_name: surface_bidirectional_reflectance
 
 ---
