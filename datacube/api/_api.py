@@ -500,7 +500,7 @@ def _get_data_array_dict(storage_units_by_variable, dimensions, dimension_ranges
 
     xarrays = {}
     for var_name, storage_units in storage_units_by_variable.items():
-        xarray_data_array = _get_array(storage_units, var_name, dimensions, dim_props, fake_array, set_nan)
+        xarray_data_array = _get_array(storage_units, var_name, dimensions, dim_props, fake_array)
         for key, value in selectors.items():
             if key in xarray_data_array.dims:
                 if isinstance(value, slice):
@@ -510,6 +510,9 @@ def _get_data_array_dict(storage_units_by_variable, dimensions, dimension_ranges
         iselectors = dict((k, v) for k, v in iselectors.items() if k in dimensions)
         if iselectors:
             xarray_data_array = xarray_data_array.isel(**iselectors)
+        if set_nan:
+            nodata = storage_units[0].variables[var_name].nodata
+            xarray_data_array = xarray_data_array.where(xarray_data_array != nodata)
         xarrays[var_name] = xarray_data_array
     return xarrays
 
