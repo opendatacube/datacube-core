@@ -130,7 +130,7 @@ match:
             code: LANDSAT_5
         instrument:
             name: TM
-        product_type: NBART
+        product_type: nbar_terrain
 
 location_name: eotiles
 file_path_template: '{platform[code]}_{instrument[name]}_NBART_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
@@ -182,62 +182,62 @@ storage:
   dimension_order: ['time', 'y', 'x']
 
 measurements:
-  band_10:
+  band_1:
       dtype: int16
       nodata: -999
       units: '1'
       resampling_method: nearest
-      src_varname: '10'
+      src_varname: '1'
       zlib: True
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.45-0.52 microns (Blue)"
           standard_name: surface_bidirectional_reflectance
-  band_20:
+  band_2:
       dtype: int16
       nodata: -999
       units: '1'
       resampling_method: nearest
-      src_varname: '20'
+      src_varname: '2'
       zlib: True
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.52-0.60 microns (Green)"
           standard_name: surface_bidirectional_reflectance
-  band_30:
+  band_3:
       dtype: int16
       nodata: -999
       units: '1'
       resampling_method: nearest
-      src_varname: '30'
+      src_varname: '3'
       zlib: True
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.63-0.69 microns (Red)"
           standard_name: surface_bidirectional_reflectance
-  band_40:
+  band_4:
       dtype: int16
       nodata: -999
       units: '1'
       resampling_method: nearest
-      src_varname: '40'
+      src_varname: '4'
       zlib: True
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.76-0.90 microns (Near Infrared)"
           standard_name: surface_bidirectional_reflectance
-  band_50:
+  band_5:
       dtype: int16
       nodata: -999
       units: '1'
       resampling_method: nearest
-      src_varname: '50'
+      src_varname: '5'
       zlib: True
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 1.55-1.75 microns (Short-wave Infrared)"
           standard_name: surface_bidirectional_reflectance
-  band_70:
+  band_7:
       dtype: int16
       nodata: -999
       units: '1'
       resampling_method: nearest
-      src_varname: '70'
+      src_varname: '7'
       zlib: True
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 2.08-2.35 microns (Short-wave Infrared)"
