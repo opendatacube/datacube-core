@@ -128,11 +128,14 @@ def write_access_unit_to_netcdf(access_unit, global_attributes, variable_attribu
 
         # Write extra attributes
         for key, value in variable_attributes.get(name, {}).items():
-            netcdf_writer.write_attribute(data_var, key, value)
+            if key == 'flags_definition':
+                netcdf_writer.write_flag_definition(data_var, value)
+            else:
+                setattr(data_var, key, value)
 
     # write global atrributes
     for key, value in global_attributes.items():
-        netcdf_writer.write_attribute(nco, key, value)
+        setattr(nco, key, value)
     nco.close()
 
 

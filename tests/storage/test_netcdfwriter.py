@@ -183,8 +183,7 @@ EXPECTED_HUMAN_READABLE_FLAGS = dedent("""\
 def test_measurements_model_netcdfflags():
     masks, meanings = flag_mask_meanings(EXAMPLE_PQ_MEASUREMENT_DEF['flags_definition'])
     assert [1, 2, 4, 512] == masks
-    assert ['no_band_1_saturated', 'no_band_2_saturated', 'no_band_3_saturated',
-            'land_obs'] == meanings
+    assert 'no_band_1_saturated no_band_2_saturated no_band_3_saturated land_obs' == meanings
 
 
 def test_measurements_model_human_readable_flags():

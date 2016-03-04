@@ -32,13 +32,16 @@ class _VariableProxy(object):
     def __setattr__(self, name, value):
         if self.__initialized:
             if isinstance(value, string_types):
-                value = value.encode('utf8')
+                value = value.encode('ascii')
             setattr(self._wrapped, name, value)
         else:
             super(_VariableProxy, self).__setattr__(name, value)
 
+    def __setitem__(self, key, value):
+        self._wrapped.__setitem__(key, value)
+
     def setncattr(self, name, value):
-        super(_VariableProxy, self).setncattr(name, value)
+        self._wrapped.setncattr(name, value)
 
 
 class _NC4DatasetProxy(object):
@@ -54,12 +57,12 @@ class _NC4DatasetProxy(object):
 
     def __setattr__(self, name, value):
         if isinstance(value, string_types):
-            value = value.encode('utf8')
+            value = value.encode('ascii')
         super(_NC4DatasetProxy, self).__setattr__(name, value)
 
     def setncattr(self, name, value):
         if isinstance(value, string_types):
-            value = value.encode('utf8')
+            value = value.encode('ascii')
         super(_NC4DatasetProxy, self).setncattr(name, value)
 
     def __getitem__(self, name):

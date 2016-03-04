@@ -11,6 +11,7 @@ import netCDF4
 
 from datacube import __version__
 from datacube.compat import string_types
+from datacube.storage.netcdf_safestrings import SafeStringsDataset
 
 _LOG = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ _STANDARD_COORDINATES = {
 
 
 def create_netcdf(netcdf_path):
-    nco = netCDF4.Dataset(netcdf_path, 'w')
+    nco = SafeStringsDataset(netcdf_path, 'w')
     nco.date_created = datetime.today().isoformat()
     nco.Conventions = 'CF-1.6, ACDD-1.3'
     nco.history = ("NetCDF-CF file created by "
@@ -182,16 +183,11 @@ def create_grid_mapping_variable(nco, crs):
     crs_var.crs_wkt = crs.ExportToWkt()
 
 
-def write_attribute(obj, key, value):
-    if key == 'flags_definition':
-        # write bitflag info
-        # Functions for this are stored in Measurements
-        obj.QA_index = human_readable_flags_definition(flags_definition=value)
-        obj.flag_masks, obj.flag_meanings = flag_mask_meanings(flags_def=value)
-
-    if isinstance(value, string_types):
-        value = value.encode('utf8')
-    setattr(obj, key, value)
+def write_flag_definition(variable, flags_definition):
+    # write bitflag info
+    # Functions for this are stored in Measurements
+    variable.QA_index = human_readable_flags_definition(flags_def=flags_definition)
+    variable.flag_masks, variable.flag_meanings = flag_mask_meanings(flags_def=flags_definition)
 
 
 def netcdfy_data(data):
@@ -201,7 +197,7 @@ def netcdfy_data(data):
         return data
 
 
-def human_readable_flags_definition(flags_definition):
+def human_readable_flags_definition(flags_def):
     def gen_human_readable(flags_def):
         bit_value_desc = [
             (bitdef['bit_index'], bitdef['value'], bitdef['description'])
@@ -214,7 +210,7 @@ def human_readable_flags_definition(flags_definition):
         for bit, value, desc in sorted(bit_value_desc, reverse=True):
             yield "{:<8d}{:<8d}{}".format(bit, value, desc)
 
-    return '\n'.join(gen_human_readable(flags_definition))
+    return '\n'.join(gen_human_readable(flags_def))
 
 
 def flag_mask_meanings(flags_def):
@@ -236,6 +232,6 @@ def flag_mask_meanings(flags_def):
             except KeyError:
                 continue
         masks.append(2**i)
-        meanings.append(name)
+        meanings.append(str(name))
 
-    return masks, meanings
+    return masks, ' '.join(meanings)

@@ -28,6 +28,7 @@ CoordinateValue = namedtuple('CoordinateValue', ('dimension_name', 'value', 'dty
 Variable = namedtuple('Variable', ('dtype', 'nodata', 'dimensions', 'units'))
 
 NETCDF_VAR_OPTIONS = {'zlib', 'complevel', 'shuffle', 'fletcher32', 'contiguous'}
+VALID_VARIABLE_ATTRS = {'standard_name', 'long_name', 'units', 'flags_definition'}
 
 
 def _uri_to_local_path(local_uri):
@@ -130,6 +131,7 @@ class StorageType(object):  # pylint: disable=too-many-public-methods
         variable_attributes = defaultdict(dict)
         for varname, mapping in self.measurements.items():
             variable_attributes[varname] = mapping.get('attrs', {})
+            variable_attributes[varname].update({k: v for k, v in mapping.items() if k in VALID_VARIABLE_ATTRS})
         return variable_attributes
 
     @property
