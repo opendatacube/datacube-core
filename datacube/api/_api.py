@@ -324,7 +324,11 @@ class API(object):
                                                                         storage_units.get_spatial_crs())
             data_dicts = _get_data_from_storage_units(storage_units.iteritems(), variables,
                                                       dimension_ranges, set_nan=set_nan)
-            return xarray.Dataset(data_dicts[0][0])
+            combined = {
+                'crs': xarray.Variable(dims=())
+            }
+            map(combined.update, (data_arrays for data_arrays, _ in data_dicts))
+            return xarray.Dataset(combined)
         return xarray.Dataset()
 
     def list_storage_units(self, **kwargs):
