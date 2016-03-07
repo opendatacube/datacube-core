@@ -24,8 +24,7 @@ print(sys.path)
 # Test Import
 import datacube
 
-from version import get_version
-__version = get_version()
+__version = '%i.%i' % (sys.version_info.major, sys.version_info.minor)
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
