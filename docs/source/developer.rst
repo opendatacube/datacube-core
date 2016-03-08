@@ -1,6 +1,8 @@
 Developers Guide
 ================
 
+This documentation applies to version: |version|
+
 Search API
 ----------
 
