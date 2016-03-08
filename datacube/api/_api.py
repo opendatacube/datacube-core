@@ -325,7 +325,9 @@ class API(object):
             data_dicts = _get_data_from_storage_units(storage_units.iteritems(), variables,
                                                       dimension_ranges, set_nan=set_nan)
             combined = {
-                'crs': xarray.Variable(dims=())
+                'crs': xarray.Variable(dims=(), data=0, attrs={
+                    'spatial_ref': storage_units.get_spatial_crs()
+                })
             }
             map(combined.update, (data_arrays for data_arrays, _ in data_dicts))
             return xarray.Dataset(combined)
