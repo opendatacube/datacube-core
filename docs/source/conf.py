@@ -29,6 +29,8 @@ __version = get_version()
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
+os.system('pwd; git status')
+
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
