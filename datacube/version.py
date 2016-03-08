@@ -19,6 +19,8 @@ This script is derived from https://github.com/Changaco/version.py
 from __future__ import absolute_import, print_function
 
 import re
+import contextlib
+import os
 from os.path import dirname, isdir, join, exists
 from subprocess import CalledProcessError, check_output
 
@@ -44,13 +46,15 @@ def get_version():
         # (eg. "datacube-0.0.0-651-gcf335a9-dirty")
         cmd = [
             'git',
-            '--git-dir', git_dir,
             'describe', '--tags', '--match', PREFIX + '[0-9]*', '--dirty'
         ]
-        try:
-            git_version = check_output(cmd).decode().strip()[len(PREFIX):]
-        except CalledProcessError:
-            raise RuntimeError('Unable to get version number from git tags')
+        with remember_cwd():
+            os.chdir(package_dir)
+            try:
+                git_version = check_output(cmd).decode().strip()[len(PREFIX):]
+            except CalledProcessError:
+                raise RuntimeError('Unable to get version number from git tags')
+
         components = git_version.split('-')
         version = components.pop(0)
 
@@ -81,6 +85,15 @@ def get_version():
                                'or a git-created archive.')
 
     return version
+
+
+@contextlib.contextmanager
+def remember_cwd():
+    current_dir = os.getcwd()
+    try:
+        yield
+    finally:
+        os.chdir(current_dir)
 
 
 if __name__ == '__main__':
