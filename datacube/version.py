@@ -21,7 +21,7 @@ from __future__ import absolute_import, print_function
 import re
 import contextlib
 import os
-from os.path import dirname, isdir, join, exists
+from os.path import dirname, isdir, join, exists, abspath
 from subprocess import CalledProcessError, check_output
 
 import pkg_resources
@@ -37,7 +37,7 @@ GIT_ARCHIVE_COMMIT_HASH = '$Format:%h$'
 
 
 def get_version():
-    package_dir = dirname(dirname(__file__))
+    package_dir = abspath(dirname(dirname(__file__)))
     git_dir = join(package_dir, '.git')
     pkg_info_file = join(package_dir, 'PKG-INFO')
 
