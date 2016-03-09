@@ -217,7 +217,7 @@ def flag_mask_meanings(flags_def):
     max_bit = max([bit_def['bit_index'] for bit_def in flags_def.values()])
 
     if max_bit >= 32:
-        # GDAL upto and including 2.0 can support int65 attributes...
+        # GDAL upto and including 2.0 can't support int64 attributes...
         raise RuntimeError('Bit index too high: %s' % max_bit)
 
     valid_range = numpy.array([0, (2**max_bit-1)+2**max_bit], dtype='int32')
