@@ -8,9 +8,9 @@ from datetime import datetime
 import logging
 
 import netCDF4
+import numpy
 
 from datacube import __version__
-from datacube.compat import string_types
 from datacube.storage.netcdf_safestrings import SafeStringsDataset
 
 _LOG = logging.getLogger(__name__)
@@ -187,7 +187,7 @@ def write_flag_definition(variable, flags_definition):
     # write bitflag info
     # Functions for this are stored in Measurements
     variable.QA_index = human_readable_flags_definition(flags_def=flags_definition)
-    variable.flag_masks, variable.flag_meanings = flag_mask_meanings(flags_def=flags_definition)
+    variable.flag_masks, variable.valid_range, variable.flag_meanings = flag_mask_meanings(flags_def=flags_definition)
 
 
 def netcdfy_data(data):
@@ -216,6 +216,12 @@ def human_readable_flags_definition(flags_def):
 def flag_mask_meanings(flags_def):
     max_bit = max([bit_def['bit_index'] for bit_def in flags_def.values()])
 
+    if max_bit >= 32:
+        # GDAL upto and including 2.0 can support int65 attributes...
+        raise RuntimeError('Bit index too high: %s' % max_bit)
+
+    valid_range = numpy.array([0, (2**max_bit-1)+2**max_bit], dtype='int32')
+
     bit_value_name = {
         (bitdef['bit_index'], bitdef['value']): name
         for name, bitdef in flags_def.items()}
@@ -234,4 +240,4 @@ def flag_mask_meanings(flags_def):
         masks.append(2**i)
         meanings.append(str(name))
 
-    return masks, ' '.join(meanings)
+    return numpy.array(masks, dtype='int32'), valid_range, ' '.join(meanings)

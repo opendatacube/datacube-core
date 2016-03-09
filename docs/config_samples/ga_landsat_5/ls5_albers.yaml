@@ -375,7 +375,6 @@ measurements:
             description: Band 1 is saturated
 
       attrs:
-          valid_range: [0, 16384]
           long_name: "Quality Control"
 
 
