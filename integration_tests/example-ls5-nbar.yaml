@@ -1,7 +1,7 @@
 id: bbf3e21c-82b0-11e5-9ba1-a0000100fe80
 ga_label: LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302
 ga_level: P54
-product_type: NBAR
+product_type: nbar
 creation_dt: 2015-03-22 01:49:21
 checksum_path: package.sha1
 platform:
@@ -61,7 +61,7 @@ image:
         x: 90
         y: 84
     bands:
-        '10':
+        '1':
             path: product/scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B10.tif
             number: '10'
             shape:
@@ -70,7 +70,7 @@ image:
             cell_size:
                 x: 25.0
                 y: 25.0
-        '20':
+        '2':
             path: product/scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B20.tif
             number: '20'
             shape:
@@ -79,7 +79,7 @@ image:
             cell_size:
                 x: 25.0
                 y: 25.0
-        '30':
+        '3':
             path: product/scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B30.tif
             number: '30'
             shape:

@@ -95,15 +95,15 @@ def ensure_dataset_is_indexed(index):
 
 
 def check_grid_mapping(nco):
-    assert 'grid_mapping' in nco.variables['band_10'].ncattrs()
-    grid_mapping = nco.variables['band_10'].grid_mapping
+    assert 'grid_mapping' in nco.variables['band_1'].ncattrs()
+    grid_mapping = nco.variables['band_1'].grid_mapping
     assert grid_mapping in nco.variables
     assert 'GeoTransform' in nco.variables[grid_mapping].ncattrs()
     assert 'spatial_ref' in nco.variables[grid_mapping].ncattrs()
 
 
 def check_data_shape(nco):
-    assert nco.variables['band_10'].shape == EXPECTED_STORAGE_UNIT_DATA_SHAPE
+    assert nco.variables['band_1'].shape == EXPECTED_STORAGE_UNIT_DATA_SHAPE
 
 
 def check_cf_compliance(dataset):
@@ -156,13 +156,13 @@ def check_open_with_api(index):
     assert 'ls5_nbar' in descriptor
     storage_units = descriptor['ls5_nbar']['storage_units']
     query = {
-        'variables': ['band_10'],
+        'variables': ['band_1'],
         'dimensions': {
             'latitude': {'range': (-34, -35)},
             'longitude': {'range': (149, 150)}}
     }
     data = api.get_data(query, storage_units=storage_units)
-    assert data['arrays']['band_10'].size
+    assert data['arrays']['band_1'].size
 
 
 def make_pgsqljson_match_yaml_load(data):
