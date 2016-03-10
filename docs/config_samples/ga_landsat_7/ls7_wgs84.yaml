@@ -9,12 +9,12 @@ match:
             code: LANDSAT_7
         instrument:
             name: ETM
-        product_type: NBAR
+        product_type: nbar
 
 
 location_name: eotiles
 
-file_path_template: '{platform[code]}_{instrument[name]}_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+file_path_template: 'LS7_ETM_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
 
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
@@ -49,42 +49,42 @@ storage:
     dimension_order: ['time', 'latitude', 'longitude']
 
 measurements:
-  'band_10':
+  'band_1':
       dtype: int16
       nodata: -999
       units: '1'
-      resampling_method: cubic
-      src_varname: '10'
-  'band_20':
+      resampling_method: nearest
+      src_varname: '1'
+  'band_2':
       dtype: int16
       nodata: -999
       units: '1'
-      resampling_method: cubic
-      src_varname: '20'
-  'band_30':
+      resampling_method: nearest
+      src_varname: '2'
+  'band_3':
       dtype: int16
       nodata: -999
       units: '1'
-      resampling_method: cubic
-      src_varname: '30'
-  'band_40':
+      resampling_method: nearest
+      src_varname: '3'
+  'band_4':
       dtype: int16
       nodata: -999
       units: '1'
-      resampling_method: cubic
-      src_varname: '40'
-  'band_50':
+      resampling_method: nearest
+      src_varname: '4'
+  'band_5':
       dtype: int16
       nodata: -999
       units: '1'
-      resampling_method: cubic
-      src_varname: '50'
-  'band_70':
+      resampling_method: nearest
+      src_varname: '5'
+  'band_7':
       dtype: int16
       nodata: -999
       units: '1'
-      resampling_method: cubic
-      src_varname: '70'
+      resampling_method: nearest
+      src_varname: '7'
 
 ---
 
@@ -99,11 +99,11 @@ match:
             code: LANDSAT_7
         instrument:
             name: ETM
-        product_type: PQ
+        product_type: pqa
 
 
 location_name: eotiles
-file_path_template: '{platform[code]}_{instrument[name]}_PQ_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+file_path_template: 'LS7_ETM_PQ_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
 
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE

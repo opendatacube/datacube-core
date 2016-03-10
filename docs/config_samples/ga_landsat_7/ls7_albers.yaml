@@ -8,12 +8,12 @@ match:
             code: LANDSAT_7
         instrument:
             name: ETM
-        product_type: NBAR
+        product_type: nbar
 
 
 location_name: eotiles
 
-file_path_template: '{platform[code]}_{instrument[name]}_NBAR_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+file_path_template: 'LS7_ETM_NBAR_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
 
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
@@ -50,69 +50,69 @@ storage:
           AXIS["Easting",EAST],
           AXIS["Northing",NORTH]]
     tile_size:
-        longitude: 1.0
-        latitude:  1.0
+        x: 100000
+        y: 100000
     resolution:
-        longitude: 0.00025
-        latitude: -0.00025
+        x: 25
+        y: -25
     chunking:
-        longitude: 500
-        latitude:  500
+        x: 500
+        y:  500
         time: 100
-    dimension_order: ['time', 'latitude', 'longitude']
+    dimension_order: ['time', 'y', 'x']
 
 measurements:
-  'band_10':
+  'band_1':
       dtype: int16
       nodata: -999
       units: '1'
-      resampling_method: cubic
-      src_varname: '10'
+      resampling_method: nearest
+      src_varname: '1'
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.45-0.52 microns (Blue)"
           standard_name: surface_bidirectional_reflectance
-  'band_20':
+  'band_2':
       dtype: int16
       nodata: -999
       units: '1'
-      resampling_method: cubic
-      src_varname: '20'
+      resampling_method: nearest
+      src_varname: '2'
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.52-0.60 microns (Green)"
           standard_name: surface_bidirectional_reflectance
-  'band_30':
+  'band_3':
       dtype: int16
       nodata: -999
       units: '1'
-      resampling_method: cubic
-      src_varname: '30'
+      resampling_method: nearest
+      src_varname: '3'
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.63-0.69 microns (Red)"
           standard_name: surface_bidirectional_reflectance
-  'band_40':
+  'band_4':
       dtype: int16
       nodata: -999
       units: '1'
-      resampling_method: cubic
-      src_varname: '40'
+      resampling_method: nearest
+      src_varname: '4'
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.76-0.90 microns (Near Infrared)"
           standard_name: surface_bidirectional_reflectance
-  'band_50':
+  'band_5':
       dtype: int16
       nodata: -999
       units: '1'
-      resampling_method: cubic
-      src_varname: '50'
+      resampling_method: nearest
+      src_varname: '5'
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 1.55-1.75 microns (Short-wave Infrared)"
           standard_name: surface_bidirectional_reflectance
-  'band_70':
+  'band_7':
       dtype: int16
       nodata: -999
       units: '1'
-      resampling_method: cubic
-      src_varname: '70'
+      resampling_method: nearest
+      src_varname: '7'
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 2.08-2.35 microns (Short-wave Infrared)"
           standard_name: surface_bidirectional_reflectance
@@ -128,12 +128,12 @@ match:
             code: LANDSAT_7
         instrument:
             name: ETM
-        product_type: NBART
+        product_type: nbart
 
 
 location_name: eotiles
 
-file_path_template: '{platform[code]}_{instrument[name]}_NBART_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+file_path_template: 'LS7_ETM_NBART_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
 
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
@@ -170,23 +170,23 @@ storage:
           AXIS["Easting",EAST],
           AXIS["Northing",NORTH]]
     tile_size:
-        longitude: 1.0
-        latitude:  1.0
+        x: 100000
+        y:  100000
     resolution:
-        longitude: 0.00025
-        latitude: -0.00025
+        x: 25
+        y: -25
     chunking:
-        longitude: 500
-        latitude:  500
+        x: 500
+        y: 500
         time: 100
-    dimension_order: ['time', 'latitude', 'longitude']
+    dimension_order: ['time', 'y', 'x']
 
 measurements:
   'band_1':
       dtype: int16
       nodata: -999
       units: '1'
-      resampling_method: cubic
+      resampling_method: nearest
       src_varname: '1'
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.45-0.52 microns (Blue)"
@@ -195,7 +195,7 @@ measurements:
       dtype: int16
       nodata: -999
       units: '1'
-      resampling_method: cubic
+      resampling_method: nearest
       src_varname: '2'
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.52-0.60 microns (Green)"
@@ -204,7 +204,7 @@ measurements:
       dtype: int16
       nodata: -999
       units: '1'
-      resampling_method: cubic
+      resampling_method: nearest
       src_varname: '3'
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.63-0.69 microns (Red)"
@@ -213,7 +213,7 @@ measurements:
       dtype: int16
       nodata: -999
       units: '1'
-      resampling_method: cubic
+      resampling_method: nearest
       src_varname: '4'
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.76-0.90 microns (Near Infrared)"
@@ -222,7 +222,7 @@ measurements:
       dtype: int16
       nodata: -999
       units: '1'
-      resampling_method: cubic
+      resampling_method: nearest
       src_varname: '5'
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 1.55-1.75 microns (Short-wave Infrared)"
@@ -231,7 +231,7 @@ measurements:
       dtype: int16
       nodata: -999
       units: '1'
-      resampling_method: cubic
+      resampling_method: nearest
       src_varname: '7'
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 2.08-2.35 microns (Short-wave Infrared)"
@@ -249,11 +249,11 @@ match:
             code: LANDSAT_7
         instrument:
             name: ETM
-        product_type: PQ
+        product_type: pqa
 
 
 location_name: eotiles
-file_path_template: '{platform[code]}_{instrument[name]}_PQ_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+file_path_template: 'LS7_ETM_PQ_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
 
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
@@ -290,16 +290,16 @@ storage:
           AXIS["Easting",EAST],
           AXIS["Northing",NORTH]]
     tile_size:
-        longitude: 1.0
-        latitude:  1.0
+        x: 100000
+        y: 100000
     resolution:
-        longitude: 0.00025
-        latitude: -0.00025
+        x: 25
+        y: -25
     chunking:
-        longitude: 500
-        latitude:  500
+        x: 500
+        y:  500
         time: 100
-    dimension_order: ['time', 'latitude', 'longitude']
+    dimension_order: ['time', 'y', 'x']
 
 measurements:
   'pixelquality':
@@ -372,94 +372,3 @@ measurements:
 
       attrs:
           long_name: "Quality Control"
----
-
-name: ls7_fc_albers
-description: Landsat 7 Fractional Cover 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
-
-match:
-    metadata:
-        platform:
-            code: LANDSAT_7
-        instrument:
-            name: TM
-        product_type: FC
-
-location_name: eotiles
-file_path_template: '{platform[code]}_{instrument[name]}_FC_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
-global_attributes:
-  title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
-  summary: These files are experimental, short lived, and the format will change.
-  source: This data is a reprojection and retile of Landsat surface reflectance scene data.
-  product_version: '0.0.0'
-  license: Creative Commons Attribution 4.0 International (CC-BY 4.0)
-
-storage:
-  driver: NetCDF CF
-
-  crs: |
-    PROJCS["GDA94 / Australian Albers",
-        GEOGCS["GDA94",
-            DATUM["Geocentric_Datum_of_Australia_1994",
-                SPHEROID["GRS 1980",6378137,298.257222101,
-                    AUTHORITY["EPSG","7019"]],
-                TOWGS84[0,0,0,0,0,0,0],
-                AUTHORITY["EPSG","6283"]],
-            PRIMEM["Greenwich",0,
-                AUTHORITY["EPSG","8901"]],
-            UNIT["degree",0.01745329251994328,
-                AUTHORITY["EPSG","9122"]],
-            AUTHORITY["EPSG","4283"]],
-        UNIT["metre",1,
-            AUTHORITY["EPSG","9001"]],
-        PROJECTION["Albers_Conic_Equal_Area"],
-        PARAMETER["standard_parallel_1",-18],
-        PARAMETER["standard_parallel_2",-36],
-        PARAMETER["latitude_of_center",0],
-        PARAMETER["longitude_of_center",132],
-        PARAMETER["false_easting",0],
-        PARAMETER["false_northing",0],
-        AUTHORITY["EPSG","3577"],
-        AXIS["Easting",EAST],
-        AXIS["Northing",NORTH]]
-  tile_size:
-          x: 100000.0
-          y: 100000.0
-  resolution:
-          x: 25
-          y: -25
-  chunking:
-      x: 500
-      y: 500
-      time: 100
-  dimension_order: ['time', 'y', 'x']
-
-measurements:
-  bare_soil:
-      dtype: int16
-      nodata: -999
-      units: '1'
-      resampling_method: nearest
-      src_varname: BS
-      zlib: True
-  non_photosynthetic_vegetation:
-      dtype: int16
-      nodata: -999
-      units: '1'
-      resampling_method: nearest
-      src_varname: NPV
-      zlib: True
-  photosynthetic_vegetation:
-      dtype: int16
-      nodata: -999
-      units: '1'
-      resampling_method: nearest
-      src_varname: PV
-      zlib: True
-  unmixing_error:
-      dtype: int16
-      nodata: -999
-      units: '1'
-      resampling_method: nearest
-      src_varname: UE
-      zlib: True
