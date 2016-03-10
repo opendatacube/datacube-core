@@ -16,9 +16,9 @@ file_path_template: '{platform[code]}_{instrument[name]}_{tile_index[0]}_{tile_i
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
   summary: These files are experimental, short lived, and the format will change.
-  source: This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/
+  source: This data is a reprojection and retile of Landsat surface reflectance scene data.
   product_version: '0.0.0'
-  license: Creative Commons Attribution 4.0 International CC BY 4.0
+  license: Creative Commons Attribution 4.0 International (CC-BY 4.0)
 
 storage:
     driver: NetCDF CF
@@ -109,9 +109,9 @@ file_path_template: '{platform[code]}_{instrument[name]}_PQ_{tile_index[0]}_{til
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
   summary: These files are experimental, short lived, and the format will change.
-  source: This data is a reprojection and retile of Landsat surface reflectance scene data available from /g/data/rs0/scenes/
+  source: This data is a reprojection and retile of Landsat surface reflectance scene data.
   product_version: '0.0.0'
-  license: Creative Commons Attribution 4.0 International CC BY 4.0
+  license: Creative Commons Attribution 4.0 International (CC-BY 4.0)
 
 storage:
     driver: NetCDF CF
