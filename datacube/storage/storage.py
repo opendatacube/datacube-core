@@ -174,11 +174,15 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
                      for time, group in datasets_grouped_by_time]
     access_unit = StorageUnitStack(storage_units=storage_units, stack_dim='time')
 
+    su_filename = _uri_to_local_path(output_uri)
+    if not su_filename.parent.exists():
+        su_filename.parent.mkdir(parents=True)
+
     write_access_unit_to_netcdf(access_unit,
                                 storage_type.global_attributes,
                                 storage_type.variable_attributes,
                                 storage_type.variable_params,
-                                str(_uri_to_local_path(output_uri)))
+                                str(su_filename))
 
     descriptor = _accesss_unit_descriptor(access_unit, tile_index=tile_index)
     return StorageUnit([dataset.id for dataset in datasets],

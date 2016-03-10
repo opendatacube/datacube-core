@@ -13,7 +13,7 @@ match:
 
 location_name: eotiles
 
-file_path_template: 'LS7_ETM_NBAR_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+file_path_template: 'LS7_ETM_NBAR/LS7_ETM_NBAR_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
 
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
@@ -133,7 +133,7 @@ match:
 
 location_name: eotiles
 
-file_path_template: 'LS7_ETM_NBART_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+file_path_template: 'LS7_ETM_NBAR/LS7_ETM_NBART_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
 
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
@@ -253,7 +253,7 @@ match:
 
 
 location_name: eotiles
-file_path_template: 'LS7_ETM_PQ_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+file_path_template: 'LS7_ETM_NBAR/LS7_ETM_PQ_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
 
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE

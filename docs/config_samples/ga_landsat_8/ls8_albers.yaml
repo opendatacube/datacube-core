@@ -11,7 +11,7 @@ match:
             name: OLI_TIRS
         product_type: nbar
 location_name: eotiles
-file_path_template: 'LS8_OLI_TIRS_NBAR_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+file_path_template: 'LS8_OLI_TIRS_NBAR/LS8_OLI_TIRS_NBAR_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
 
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
@@ -137,7 +137,7 @@ match:
             name: OLI_TIRS
         product_type: nbart
 location_name: eotiles
-file_path_template: 'LS8_OLI_TIRS_NBART_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+file_path_template: 'LS8_OLI_TIRS_NBAR/LS8_OLI_TIRS_NBART_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
 
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
@@ -266,7 +266,7 @@ match:
         product_type: pqa
 
 location_name: eotiles
-file_path_template: 'LS8_OLI_TIRS_PQ_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+file_path_template: 'LS8_OLI_TIRS_NBAR/LS8_OLI_TIRS_PQ_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
 global_attributes:
   title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
   summary: These files are experimental, short lived, and the format will change.
