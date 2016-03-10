@@ -23,6 +23,13 @@ _STATIONS = {'023': 'TKSC', '022': 'SGS', '010': 'GNC', '011': 'HOA',
              '007': 'DKI', '006': 'CUB', '005': 'CHM', '004': 'BKT', '009': 'GLC',
              '008': 'EDC', '029': 'JSA', '028': 'COA', '021': 'PFS', '020': 'PAC'}
 
+_PRODUCTS = {
+    'NBART': 'nbart',
+    'NBAR': 'nbar',
+    'PQ': 'pqa',
+    'FC': 'fc'
+}
+
 
 def band_name(path):
     name = path.stem
@@ -30,7 +37,7 @@ def band_name(path):
     if position == -1:
         raise ValueError('Unexpected tif image in eods: %r' % path)
     if re.match(r"[Bb]\d+", name[position+1:]):
-        band_number = name[position+2:]
+        band_number = name[position+2:position+3]
     elif name[position+1:].startswith('1111111111111100'):
         band_number = 'PQ'
     else:
@@ -90,7 +97,7 @@ def prep_dataset(fields, path):
     doc = {
         'id': str(uuid.uuid4()),
         'processing_level': fields["level"],
-        'product_type': fields["type"],
+        'product_type': _PRODUCTS[fields["type"]],
         'creation_dt':  str(aos),
         'platform': {'code': "LANDSAT_" + fields["vehicle"][2]},
         'instrument': {'name': fields["instrument"]},
