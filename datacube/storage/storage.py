@@ -177,7 +177,7 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
     su_filename = _uri_to_local_path(output_uri)
     try:
         su_filename.parent.mkdir(parents=True)
-    except IOError:
+    except OSError:
         pass
 
     write_access_unit_to_netcdf(access_unit,
