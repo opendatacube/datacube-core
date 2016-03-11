@@ -175,8 +175,10 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
     access_unit = StorageUnitStack(storage_units=storage_units, stack_dim='time')
 
     su_filename = _uri_to_local_path(output_uri)
-    if not su_filename.parent.exists():
+    try:
         su_filename.parent.mkdir(parents=True)
+    except IOError:
+        pass
 
     write_access_unit_to_netcdf(access_unit,
                                 storage_type.global_attributes,
