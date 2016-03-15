@@ -17,6 +17,7 @@ from __future__ import absolute_import, division, print_function
 
 import numpy
 import netCDF4
+from pathlib import Path
 from affine import Affine
 
 from datacube.model import Coordinate, Variable, GeoBox
@@ -40,7 +41,7 @@ def test_write_access_unit_to_netcdf(tmpnetcdf_filename):
                                                 dimensions=('time', 'latitude', 'longitude'),
                                                 units='1')
                             })
-    write_access_unit_to_netcdf(ds1, {}, {}, {}, tmpnetcdf_filename)
+    write_access_unit_to_netcdf(ds1, {}, {}, {}, Path(tmpnetcdf_filename))
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
         assert 'B10' in nco.variables
