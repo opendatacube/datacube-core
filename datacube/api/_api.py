@@ -329,7 +329,8 @@ class API(object):
                     'spatial_ref': storage_units.get_spatial_crs()
                 })
             }
-            map(combined.update, (data_arrays for data_arrays, _ in data_dicts))
+            for data_arrays, _ in data_dicts:
+                combined.update(data_arrays)
             return xarray.Dataset(combined)
         return xarray.Dataset()
 
