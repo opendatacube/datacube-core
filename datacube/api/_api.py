@@ -316,22 +316,22 @@ class API(object):
 
         query = convert_descriptor_query_to_search_query(descriptor_request)
         storage_units_by_type = defaultdict(StorageUnitCollection)
+        storage_unit_types = {}
         for su in self.index.storage.search(**query):
             storage_units_by_type[su.storage_type.name].append(make_storage_unit(su))
+            storage_unit_types[su.storage_type.name] = su.storage_type
 
+        #TODO: return multiple storage types if compatible
+        # or warp / reproject / resample if required?
+        # including realigning timestamps
+        # and dealing with each storage unit having an extra_metadata field...
         for stype, storage_units in storage_units_by_type.items():
+            storage_unit_type = storage_unit_types[stype]
             dimension_ranges = convert_descriptor_dims_to_selector_dims(descriptor_dimensions,
                                                                         storage_units.get_spatial_crs())
             data_dicts = _get_data_from_storage_units(storage_units.iteritems(), variables,
                                                       dimension_ranges, set_nan=set_nan)
-            combined = {
-                'crs': xarray.Variable(dims=(), data=0, attrs={
-                    'spatial_ref': storage_units.get_spatial_crs()
-                })
-            }
-            for data_arrays, _ in data_dicts:
-                combined.update(data_arrays)
-            return xarray.Dataset(combined)
+            return _make_xarray_dataset(data_dicts, storage_unit_type)
         return xarray.Dataset()
 
     def list_storage_units(self, **kwargs):
@@ -344,11 +344,21 @@ class API(object):
         descriptor_request = kwargs
         query = convert_descriptor_query_to_search_query(descriptor_request)
         sus = self.index.storage.search(**query)
-        return [str(su.local_path) for su in sus]
+        output_set = set()
+        for su in sus:
+            output_set.add(str(su.local_path))
+        return list(output_set)
+
+    def list_products(self):
+        """Lists a dictionary for each stored product
+        Note: This is exposing an internal structure and subject to change.
+        :return: List of dicts describing each product
+        """
+        return [t.document for t in self.index.storage.types.get_all()]
 
     def list_fields(self):
-        """
-        List of the search fields
+        """List of the search fields
+
         :return: list of field names. E.g. ['product', 'platform']
         """
         return self.index.datasets.get_fields().keys()
@@ -522,6 +532,19 @@ def _get_data_array_dict(storage_units_by_variable, dimensions, dimension_ranges
             xarray_data_array = xarray_data_array.where(xarray_data_array != nodata)
         xarrays[var_name] = xarray_data_array
     return xarrays
+
+
+def _make_xarray_dataset(data_dicts, storage_unit_type):
+    combined = {
+        'crs': xarray.Variable(dims=(), data=0, attrs={
+            'spatial_ref': storage_unit_type.crs
+        })
+    }
+    for data_arrays, _ in data_dicts:
+        for variable_name, data_array in data_arrays.items():
+            data_array.attrs.update(storage_unit_type.variable_attributes[variable_name])
+        combined.update(data_arrays)
+    return xarray.Dataset(combined, attrs=storage_unit_type.global_attributes)
 
 
 def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges=None, fake_array=False, set_nan=False):
