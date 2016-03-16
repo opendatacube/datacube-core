@@ -6,12 +6,13 @@ from __future__ import absolute_import, division, print_function
 
 import datetime
 from collections import defaultdict
+from functools import reduce as reduce_
 
 import numpy
 
 from datacube.model import Variable, time_coordinate_value
-from datacube.storage.access.core import StorageUnitDimensionProxy
-from datacube.storage.access.backends import NetCDF4StorageUnit, GeoTifStorageUnit, FauxStorageUnit
+from datacube.storage.access.core import StorageUnitDimensionProxy, StorageUnitBase
+from datacube.storage.access.backends import NetCDF4StorageUnit, GeoTifStorageUnit
 
 
 def make_in_memory_storage_unit(su, coordinates, variables, attributes, crs):
@@ -31,7 +32,7 @@ def make_in_memory_storage_unit(su, coordinates, variables, attributes, crs):
                                      coordinates=coordinates, variables=variables, attributes=attributes)
         for coord in irregular_dims:
             coord_values, _ = real_su.get_coord(coord)
-            faux.coodinate_values[coord] = coord_values
+            faux.coordinate_values[coord] = coord_values
     return faux
 
 
@@ -142,18 +143,22 @@ class StorageUnitCollection(object):
         return spatial_crs
 
 
-class MemoryStorageUnit(FauxStorageUnit):
+class MemoryStorageUnit(StorageUnitBase):
     def __init__(self, coordinates, variables, attributes=None, coodinate_values=None, crs=None, file_path=None):
-        super(MemoryStorageUnit, self).__init__(coordinates, variables)
+        self.coordinates = coordinates
+        self.variables = variables
         self.crs = crs or {}
-        self.coodinate_values = coodinate_values or {}
+        self.coordinate_values = coodinate_values or {}
         self.attributes = attributes or {}
         self.file_path = file_path
 
     def _get_coord(self, name):
-        if name in self.coodinate_values:
-            return self.coodinate_values[name]
-        return super(MemoryStorageUnit, self)._get_coord(name)
+        if name in self.coordinate_values:
+            return self.coordinate_values[name]
+        coord = self.coordinates[name]
+        data = numpy.linspace(coord.begin, coord.end, coord.length).astype(coord.dtype)
+        self.coordinate_values[name] = data
+        return data
 
     def get_crs(self):
         crs = dict((dim, {'reference_system_unit': coord.units}) for dim, coord in self.coordinates.items())
@@ -164,3 +169,9 @@ class MemoryStorageUnit(FauxStorageUnit):
             else:
                 crs[coord]['reference_system_definition'] = value
         return crs
+
+    def _fill_data(self, name, index, dest):
+        var = self.variables[name]
+        shape = tuple(self.coordinates[dim].length for dim in var.dimensions)
+        size = reduce_(lambda x, y: x*y, shape, 1)
+        numpy.copyto(dest, numpy.arange(size).reshape(shape)[index])
