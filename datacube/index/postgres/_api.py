@@ -695,24 +695,27 @@ class FloatEncoder(json.JSONEncoder):
             _encoder = json.encoder.encode_basestring_ascii
         else:
             _encoder = json.encoder.encode_basestring
+
+        def non_utf8_encoder(o, _orig_encoder=_encoder, _encoding=self.encoding):
+            if isinstance(o, str):
+                o = o.decode(_encoding)
+            return _orig_encoder(o)
+
         if self.encoding != 'utf-8':
-            def _encoder(o, _orig_encoder=_encoder, _encoding=self.encoding):
-                if isinstance(o, str):
-                    o = o.decode(_encoding)
-                return _orig_encoder(o)
+            _encoder = non_utf8_encoder
 
         def floatstr(o, allow_nan=self.allow_nan, _repr=json.encoder.FLOAT_REPR,
-                _inf=json.encoder.INFINITY, _neginf=-json.encoder.INFINITY):
+                     _inf=json.encoder.INFINITY, _neginf=-json.encoder.INFINITY):
             # Check for specials.  Note that this type of test is processor
             # and/or platform-specific, so do tests which don't depend on the
             # internals.
 
             if o != o:
-                text = '"NaN"'
+                value = '"NaN"'
             elif o == _inf:
-                text = '"Infinity"'
+                value = '"Infinity"'
             elif o == _neginf:
-                text = '"-Infinity"'
+                value = '"-Infinity"'
             else:
                 return _repr(o)
 
@@ -721,12 +724,13 @@ class FloatEncoder(json.JSONEncoder):
                     "Out of range float values are not JSON compliant: " +
                     repr(o))
 
-            return text
+            return value
 
+        # pylint: disable=protected-access
         _iterencode = json.encoder._make_iterencode(
-                markers, self.default, _encoder, self.indent, floatstr,
-                self.key_separator, self.item_separator, self.sort_keys,
-                self.skipkeys, _one_shot)
+            markers, self.default, _encoder, self.indent, floatstr,
+            self.key_separator, self.item_separator, self.sort_keys,
+            self.skipkeys, _one_shot)
         return _iterencode(o, 0)
 
 
