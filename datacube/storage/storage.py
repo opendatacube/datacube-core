@@ -24,7 +24,7 @@ from rasterio.warp import RESAMPLING
 from datacube import compat
 from datacube.model import StorageUnit, GeoBox, Variable, _uri_to_local_path, time_coordinate_value
 from datacube.storage import netcdf_writer
-from datacube.utils import namedtuples2dicts, attrs_all_equal
+from datacube.utils import namedtuples2dicts
 from datacube.storage.access.core import StorageUnitBase, StorageUnitDimensionProxy, StorageUnitStack
 from datacube.storage.access.backends import NetCDF4StorageUnit, GeoTifStorageUnit
 
@@ -226,9 +226,9 @@ def stack_storage_units(storage_units, output_uri):
     :type storage_units: list[datacube.model.StorageUnit]
     :return:
     """
-    if not attrs_all_equal(storage_units, 'storage_type'):
+    if not all(storage_unit.storage_type.id == storage_units[0].storage_type.id for storage_unit in storage_units):
         raise TypeError('all storage units must have the same storage type')
-    if not attrs_all_equal(storage_units, 'tile_index'):
+    if not all(storage_unit.tile_index == storage_units[0].tile_index for storage_unit in storage_units):
         raise TypeError('all storage units must have the same tile index')
 
     tile_index = storage_units[0].tile_index
