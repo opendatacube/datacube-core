@@ -674,77 +674,39 @@ def _prepare_expressions(expressions, primary_table):
     return from_expression, raw_expressions
 
 
-class FloatEncoder(json.JSONEncoder):
-    def __init__(self, **kwargs):
-        super(FloatEncoder, self).__init__(**kwargs)
-
-    def iterencode(self, o, _one_shot=False):
-        """Encode the given object and yield each string
-        representation as available.
-
-        For example::
-
-            for chunk in JSONEncoder().iterencode(bigobject):
-                mysocket.write(chunk)
-        """
-        if self.check_circular:
-            markers = {}
-        else:
-            markers = None
-        if self.ensure_ascii:
-            _encoder = json.encoder.encode_basestring_ascii
-        else:
-            _encoder = json.encoder.encode_basestring
-
-        def non_utf8_encoder(o, _orig_encoder=_encoder, _encoding=self.encoding):
-            if isinstance(o, str):
-                o = o.decode(_encoding)
-            return _orig_encoder(o)
-
-        if self.encoding != 'utf-8':
-            _encoder = non_utf8_encoder
-
-        def floatstr(o, allow_nan=self.allow_nan, _repr=json.encoder.FLOAT_REPR,
-                     _inf=json.encoder.INFINITY, _neginf=-json.encoder.INFINITY):
-            # Check for specials.  Note that this type of test is processor
-            # and/or platform-specific, so do tests which don't depend on the
-            # internals.
-
-            if o != o:
-                value = '"NaN"'
-            elif o == _inf:
-                value = '"Infinity"'
-            elif o == _neginf:
-                value = '"-Infinity"'
-            else:
-                return _repr(o)
-
-            if not allow_nan:
-                raise ValueError(
-                    "Out of range float values are not JSON compliant: " +
-                    repr(o))
-
-            return value
-
-        # pylint: disable=protected-access
-        _iterencode = json.encoder._make_iterencode(
-            markers, self.default, _encoder, self.indent, floatstr,
-            self.key_separator, self.item_separator, self.sort_keys,
-            self.skipkeys, _one_shot)
-        return _iterencode(o, 0)
+def transform_object_tree(o, f):
+    if isinstance(o, dict):
+        return {k: transform_object_tree(v, f) for k, v in o.items()}
+    if isinstance(o, list):
+        return [transform_object_tree(v, f) for v in o]
+    if isinstance(o, tuple):
+        return tuple(transform_object_tree(v, f) for v in o)
+    return f(o)
 
 
 def _to_json(o):
     # Postgres <=9.5 doesn't support NaN and Infinity
-    return json.dumps(o, cls=FloatEncoder, default=_json_fallback)
+    def fixup_value(v):
+        if isinstance(v, float):
+            if v != v:
+                return "NaN"
+            if v == float("inf"):
+                return "Infinity"
+            if v == float("-inf"):
+                return "-Infinity"
+        if isinstance(v, (datetime.datetime, datetime.date)):
+            return v.isoformat()
+        if isinstance(v, numpy.dtype):
+            return v.name
+        return v
+
+    fixedup = transform_object_tree(o, fixup_value)
+
+    return json.dumps(fixedup, default=_json_fallback)
 
 
 def _json_fallback(obj):
     """Fallback json serialiser."""
-    if isinstance(obj, (datetime.datetime, datetime.date)):
-        return obj.isoformat()
-    if isinstance(obj, numpy.dtype):
-        return obj.name
     raise TypeError("Type not serializable: {}".format(type(obj)))
 
 
