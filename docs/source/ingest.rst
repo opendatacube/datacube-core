@@ -28,7 +28,7 @@ For more information see :ref:`storage-type-doc`
 
 :ref:`datacube-config-tool` can be used to add storage types::
 
-    datacube-config storage add docs/config_samples/ga_landsat_7/ls7_nbar_mapping.yaml docs/config_samples/ga_landsat_7/ls7_pq_mapping.yaml
+    datacube-config storage add docs/config_samples/ga_landsat_7/ls7_albers.yaml
 
 Ingestion
 ---------
