@@ -9,6 +9,8 @@ Dataset Preparation
     - geospatial extents and projection
     - acquisition time
 
+**Note:** Some metadata requires cleanup before they are ready to be loaded.
+
 For more information see :ref:`dataset-metadata-doc`
 
 Storage Types
@@ -29,6 +31,10 @@ For more information see :ref:`storage-type-doc`
 :ref:`datacube-config-tool` can be used to add storage types::
 
     datacube-config storage add docs/config_samples/ga_landsat_7/ls7_nbar_mapping.yaml docs/config_samples/ga_landsat_7/ls7_pq_mapping.yaml
+
+**Note:** You should refer to ``platform`` in your metadata file to determine which kind of mapping to configure. For example, ``LANDSAT_5`` means you should configure for the Landsat 5 configuration.
+
+`Configuration samples <https://github.com/data-cube/agdc-v2/tree/develop/docs/config_samples>`_ are available as part of the open source Github repoistory.
 
 Ingestion
 ---------
