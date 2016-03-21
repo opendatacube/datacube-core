@@ -168,8 +168,7 @@ class StorageUnitResource(object):
         :rtype: list[datacube.model.StorageUnit]
         """
         return (StorageUnit(
-            # TODO: move dataset ids out of this class?
-            [r['dataset_ref'] for r in self._db.get_dataset_ids_for_storage_unit(su['id'])],
+            su['dataset_refs'],
             self.types.get(su['storage_type_ref']),
             su['descriptor'],
             # An offset from the location (ie. a URL fragment):

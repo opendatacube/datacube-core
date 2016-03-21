@@ -7,6 +7,7 @@ from __future__ import absolute_import
 import csv
 import datetime
 import io
+import uuid
 
 import pytest
 from click.testing import CliRunner
@@ -288,7 +289,9 @@ def test_search_storage_star(index, db, default_collection, indexed_ls5_nbar_sto
         size_bytes=1234
     )
 
-    assert len(index.storage.search_eager()) == 1
+    results = index.storage.search_eager()
+    assert len(results) == 1
+    assert results[0].dataset_ids == [uuid.UUID(_telemetry_uuid)]
 
 
 def test_search_storage_by_dataset(index, db, default_collection, indexed_ls5_nbar_storage_type):
