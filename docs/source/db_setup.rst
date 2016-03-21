@@ -18,6 +18,7 @@ If you have existing Postgres authentication:
 or specify connection details manually:
 
 ::
+
     createdb -h <hostname> -U <username> datacube
 
 Create Configuration File

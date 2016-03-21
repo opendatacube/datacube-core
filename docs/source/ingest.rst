@@ -3,6 +3,7 @@ Ingestion Configuration
 
 Dataset Preparation
 -------------------
+
 :ref:`dataset-metadata-doc` is required to accompany the dataset for it to be recognised by Data Cube. It defines critical metadata of the dataset such as:
     - measurements
     - platform and sensor names
