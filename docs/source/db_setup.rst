@@ -39,7 +39,9 @@ Datacube looks for configuration file in ~/.datacube.conf::
     #     storage type files.
     #  -> We may eventually support remote protocols (http, S3, etc) to lazily fetch remote data.
     eotiles: file:///short/public/democube/
-    v1tiles: file:///g/data/rs0/tiles/EPSG4326_1deg_0.00025pixel/
+
+Change eotiles to point to the location where the datacube should store the storage units.
+Note the URI syntax (file:// prefix is required).
 
 See also :ref:`runtime-config-doc`
 
