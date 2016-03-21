@@ -102,7 +102,7 @@ def prep_dataset(fields, path):
     start_time = aos
     end_time = los
     images = {band_name(im_path): {
-        'path': str(im_path)
+        'path': str(im_path.name)
     } for im_path in path.glob('*.tif')}
 
     doc = {
@@ -126,7 +126,7 @@ def prep_dataset(fields, path):
         },
         'format': {'name': 'GeoTiff'},
         'grid_spatial': {
-            'projection': get_projection(images.values()[0]['path'])
+            'projection': get_projection(str(path/list(images.values())[0]['path']))
         },
         'image': {
             'satellite_ref_point_start': {'path': int(fields["path"]), 'row': int(fields["row"])},
