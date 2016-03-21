@@ -6,6 +6,7 @@ Configuration Files
 Dataset Metadata
 ----------------
 Dataset Metadata is a document that defines critical metadata of the dataset such as:
+
     - measurements
     - platform and sensor names
     - geospatial extents and projection
@@ -90,6 +91,7 @@ Storage Type
 A Storage Type is a document that defines the way an input dataset is stored inside the Data Cube.
 
 It controls things like:
+
     - which measurements are stored
     - what projection the data is stored in
     - what resolution the data is stored in
