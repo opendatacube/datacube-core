@@ -252,3 +252,5 @@ Runtime Config document specifies various runtime configuration options such as:
 
 locations
     Mapping of location names to URI prefixes. How to reach each location from the current machine.
+
+    **Note:** You may want to rename ``eotiles`` path to a location you can modify. The database will create storage there.

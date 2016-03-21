@@ -4,7 +4,7 @@ AGDC Database Setup
 .. attention::
 
     You must have a properly configured Postgres installation for this to work. If you have a fresh install of Postgres
-    on Ubuntu then you may want to configure the ``postgres`` user password to `complete the postgres setup <https://help.ubuntu.com/community/PostgreSQL>`
+    on Ubuntu then you may want to configure the ``postgres`` user password to `complete the postgres setup <https://help.ubuntu.com/community/PostgreSQL>`_
 
 
 Create Database
@@ -16,10 +16,13 @@ If you have existing Postgres authentication:
     createdb datacube
 
 or specify connection details manually:
-
 ::
 
     createdb -h <hostname> -U <username> datacube
+
+.. note::
+
+    You can also delete the database by doing ``dropdb datacube``. This step is not reversible.
 
 Create Configuration File
 -------------------------
@@ -30,7 +33,7 @@ Datacube looks for configuration file in ~/.datacube.conf::
     db_hostname:
     db_database: datacube
 
-    # Credentials are optional: you might have other PG authentication configured.
+    # Credentials are optional: you might have other Postgres authentication configured.
     # db_username:
     # db_password:
 
