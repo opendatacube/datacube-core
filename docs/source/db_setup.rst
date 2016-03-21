@@ -29,11 +29,13 @@ Create Configuration File
 Datacube looks for configuration file in ~/.datacube.conf::
 
     [datacube]
-    # Blank implies localhost
-    db_hostname:
     db_database: datacube
 
+    # A blank host will use a local socket. Specify a hostname to use TCP.
+    db_hostname:
+
     # Credentials are optional: you might have other Postgres authentication configured.
+    # The default username otherwise is the current user id.
     # db_username:
     # db_password:
 
