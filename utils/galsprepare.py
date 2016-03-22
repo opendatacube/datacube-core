@@ -46,7 +46,7 @@ def band_name(path):
 
 
 def get_projection(path):
-    with rasterio.open(path) as img:
+    with rasterio.open(str(path)) as img:
         left, bottom, right, top = img.bounds
         return {
             'spatial_reference': str(img.crs_wkt),
@@ -91,7 +91,7 @@ def prep_dataset(fields, path):
     end_time = crazy_parse(doc.findall("./EXEXTENT/TEMPORALEXTENTTO")[0].text)
 
     images = {band_name(im_path): {
-        'path': str(im_path)
+        'path': str(im_path.relative_to(path))
     } for im_path in path.glob('scene01/*.tif')}
 
     doc = {
@@ -115,7 +115,7 @@ def prep_dataset(fields, path):
         },
         'format': {'name': 'GeoTiff'},
         'grid_spatial': {
-            'projection': get_projection(images.values()[0]['path'])
+            'projection': get_projection(path/next(iter(images.values()))['path'])
         },
         'image': {
             'satellite_ref_point_start': {'path': int(fields["path"]), 'row': int(fields["row"])},

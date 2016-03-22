@@ -275,6 +275,7 @@ class PostgresDb(object):
         def _array_str(p):
             return 'ARRAY[' + ','.join("CAST(descriptor #>> '{coordinates,%s,%s}' as numeric)" % (c, p)
                                        for c in dimensions) + ']'
+
         return "cube(" + ','.join(_array_str(p) for p in ['begin', 'end']) + ")"
 
     def get_storage_unit_overlap(self, storage_type):
@@ -441,18 +442,30 @@ class PostgresDb(object):
         :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
         :rtype: dict
         """
-        select_fields = [
-            f.alchemy_expression.label(f.name)
-            for f in select_fields
-            ] if select_fields else [STORAGE_UNIT]
+
+        if select_fields:
+            select_fields = [
+                f.alchemy_expression.label(f.name)
+                for f in select_fields
+                ]
+            group_by_fields = None
+        else:
+            select_fields = [
+                STORAGE_UNIT,
+                func.array_agg(
+                    DATASET_STORAGE.c.dataset_ref
+                ).label('dataset_refs')
+            ]
+            group_by_fields = (STORAGE_UNIT.c.id,)
 
         return self._search_docs(
             expressions,
             primary_table=STORAGE_UNIT,
-            select_fields=select_fields
+            select_fields=select_fields,
+            group_by_fields=group_by_fields
         )
 
-    def _search_docs(self, expressions, primary_table, select_fields=None):
+    def _search_docs(self, expressions, primary_table, select_fields=None, group_by_fields=None):
         """
 
         :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
@@ -461,11 +474,12 @@ class PostgresDb(object):
         """
         from_expression, raw_expressions = _prepare_expressions(expressions, primary_table)
 
-        results = self._connection.execute(
-            select(select_fields).select_from(from_expression).where(
-                and_(*raw_expressions)
-            )
-        )
+        select_query = select(select_fields).select_from(from_expression).where(and_(*raw_expressions))
+
+        if group_by_fields:
+            select_query = select_query.group_by(*group_by_fields)
+
+        results = self._connection.execute(select_query)
         for result in results:
             yield result
 

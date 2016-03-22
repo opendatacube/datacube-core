@@ -7,6 +7,7 @@ from __future__ import absolute_import
 import csv
 import datetime
 import io
+import uuid
 
 import pytest
 from click.testing import CliRunner
@@ -46,6 +47,8 @@ _telemetry_dataset = {
         'source_datasets': {}
     }
 }
+
+_telemetry_uuid2 = '39dbf959-efb2-11e5-9eda-0023dfa0db82'
 
 
 def test_search_dataset_equals(index, db, default_collection):
@@ -288,7 +291,9 @@ def test_search_storage_star(index, db, default_collection, indexed_ls5_nbar_sto
         size_bytes=1234
     )
 
-    assert len(index.storage.search_eager()) == 1
+    results = index.storage.search_eager()
+    assert len(results) == 1
+    assert results[0].dataset_ids == [uuid.UUID(_telemetry_uuid)]
 
 
 def test_search_storage_by_dataset(index, db, default_collection, indexed_ls5_nbar_storage_type):
@@ -327,6 +332,45 @@ def test_search_storage_by_dataset(index, db, default_collection, indexed_ls5_nb
         dfield('platform') == 'LANDSAT_7'
     )
     assert len(storages) == 0
+
+
+def test_search_storage_multi_dataset(index, db, default_collection,  indexed_ls5_nbar_storage_type):
+    """
+    When a storage unit is linked to multiple datasets, it should only be returned once.
+
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    :type indexed_ls5_nbar_storage_type: datacube.model.StorageType
+    """
+    metadata_type = default_collection.metadata_type
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid
+    )
+    assert was_inserted
+    was_inserted = db.insert_dataset(
+        _telemetry_dataset,
+        _telemetry_uuid2
+    )
+    assert was_inserted
+
+    unit_id = db.add_storage_unit(
+        '/tmp/something.tif',
+        [_telemetry_uuid, _telemetry_uuid2],
+        {'test': 'test'},
+        indexed_ls5_nbar_storage_type.id,
+        size_bytes=1234
+    )
+    dfield = metadata_type.dataset_fields.get
+    # Search by the linked dataset properties.
+    storages = index.storage.search_eager(
+        dfield('platform') == 'LANDSAT_8',
+        dfield('instrument') == 'OLI_TIRS'
+    )
+
+    assert len(storages) == 1
+    assert storages[0].id == unit_id
+    assert storages[0].dataset_ids == [uuid.UUID(_telemetry_uuid), uuid.UUID(_telemetry_uuid2)]
 
 
 def test_search_cli_basic(global_integration_cli_args, db, default_collection):
