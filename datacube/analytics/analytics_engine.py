@@ -102,6 +102,7 @@ class AnalyticsEngine(object):
 
         # stopgap until storage_units are filtered based on descriptors
         array_descriptors[array_descriptors.keys()[0]]['storage_units'] = {}
+        pprint(array_descriptors)
 
         array_results = []
 
@@ -113,7 +114,7 @@ class AnalyticsEngine(object):
             LOG.debug('variable = %s', variable)
 
             array_result = {}
-            array_result['storage_type'] = storage_type_key
+            array_result['storage_type'] = storage_type[0]#storage_type_key
             array_result['platform'] = storage_type[0]
             array_result['product'] = storage_type[1]
             array_result['variable'] = variable
