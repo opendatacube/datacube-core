@@ -98,8 +98,6 @@ class ExecutionEngine(object):
             data_request_param['variables'] += (array.values()[0]['variable'],)
 
         data_response = self.api.get_data(data_request_param)
-        #pprint(data_request_param)
-        #pprint(data_response)
 
         no_data_value = task.values()[0]['array_output']['no_data_value']
 

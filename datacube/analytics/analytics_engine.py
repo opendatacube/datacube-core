@@ -102,7 +102,6 @@ class AnalyticsEngine(object):
 
         # stopgap until storage_units are filtered based on descriptors
         array_descriptors[array_descriptors.keys()[0]]['storage_units'] = {}
-        pprint(array_descriptors)
 
         array_results = []
 
