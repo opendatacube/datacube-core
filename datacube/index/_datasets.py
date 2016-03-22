@@ -324,7 +324,10 @@ class DatasetResource(object):
 
     def search_by_metadata(self, metadata):
         """
-        Perform a search, returning results as Dataset objects.
+        Perform a search using arbitrary metadata, returning results as Dataset objects.
+
+        Caution – slow! This will usually not use indexes.
+
         :type metadata: dict
         :rtype list[datacube.model.Dataset]
         """
