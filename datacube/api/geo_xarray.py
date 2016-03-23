@@ -103,25 +103,26 @@ def reproject(src_data_array, src_crs, dst_crs, dst_resolution=None, resampling=
                                 dst_crs=dst_crs,
                                 dst_nodata=nodata,
                                 resampling=resampling)
-
-    # Warp spatial coords
-    coords = copy.deepcopy(src_data_array.coords)
-    new_coords = _warp_spatial_coords(src_data_array, dst_affine, dst_width, dst_height)
-    coords.update(new_coords)
-
     if set_nan:
         dst_data = dst_data.astype(np.float)
         dst_data[dst_data == nodata] = np.nan
 
-    new_attrs = copy.deepcopy(src_data_array.attrs) if copy_attrs else None
+    return xr.DataArray(data=dst_data,
+                        coords=_make_coords(src_data_array, dst_affine, dst_width, dst_height),
+                        dims=copy.deepcopy(src_data_array.dims),
+                        attrs=copy.deepcopy(src_data_array.attrs) if copy_attrs else None)
 
-    return xr.DataArray(data=dst_data, coords=coords, dims=copy.deepcopy(src_data_array.dims), attrs=new_attrs)
+
+def _make_coords(src_data_array, dst_affine, dst_width, dst_height):
+    coords = copy.deepcopy(src_data_array.coords)
+    new_coords = _warp_spatial_coords(src_data_array, dst_affine, dst_width, dst_height)
+    coords.update(new_coords)
+    return coords
 
 
 def _make_dst_affine(src_data_array, src_crs, dst_crs, dst_resolution=None):
     src_bounds = _get_bounds(src_data_array)
     src_width, src_height = _get_shape(src_data_array)
-
     dst_affine, dst_width, dst_height = rasterio.warp.calculate_default_transform(src_crs, dst_crs,
                                                                                   src_width, src_height,
                                                                                   *src_bounds,
