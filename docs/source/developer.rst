@@ -9,6 +9,8 @@ Search API
 Data Access API
 ---------------
 
+See :doc:`api`
+
 Exploratory Data Analysis
 -------------------------
 

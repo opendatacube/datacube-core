@@ -19,6 +19,7 @@ Contents:
    config
    tools
    developer
+   api
    license
 
 
