@@ -117,6 +117,7 @@ def write_access_unit_to_netcdf(access_unit, global_attributes, variable_attribu
     except OSError:
         pass
 
+    _LOG.info("Writing storage unit: %s", filename)
     nco = netcdf_writer.create_netcdf(str(filename))
     for name, coord in access_unit.coordinates.items():
         coord_var = netcdf_writer.create_coordinate(nco, name, coord)
@@ -247,7 +248,7 @@ def stack_storage_units(storage_units, output_uri):
                                 _uri_to_local_path(output_uri))
 
     descriptor = _accesss_unit_descriptor(access_unit, tile_index=tile_index)
-    return StorageUnit([id_ for su in storage_units for id_ in su.dataset_ids],
+    return StorageUnit([id_.hex for su in storage_units for id_ in su.dataset_ids],
                        storage_type,
                        descriptor,
                        output_uri=output_uri)
