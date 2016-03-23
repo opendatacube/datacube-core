@@ -381,6 +381,9 @@ class API(object):
         fields = self.index.datasets.get_fields()
         return dict((field, list(set(field_values[field] for field_values in summary))) for field in fields)
 
+    def __repr__(self):
+        return "API<index={!r}>".format(self.index)
+
 
 def _stack_vars(data_dict, var_dim_name, stack_name=None):
     labels = sorted(data_dict.keys())

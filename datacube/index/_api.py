@@ -53,3 +53,6 @@ class Index(object):
                 self.collections.add(doc)
 
         return is_new
+
+    def __repr__(self):
+        return "Index<db={!r}>".format(self._db)

@@ -585,6 +585,9 @@ class PostgresDb(object):
             ).fetchall()
             ]
 
+    def __repr__(self):
+        return "PostgresDb<engine={!r}>".format(self._engine)
+
 
 def _pg_exists(conn, name):
     """
