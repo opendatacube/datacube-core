@@ -11,7 +11,10 @@ import netCDF4
 import numpy
 
 from datacube import __version__
-from datacube.storage.netcdf_safestrings import SafeStringsDataset
+try:
+    from datacube.storage.netcdf_safestrings import SafeStringsDataset as Dataset
+except TypeError:  # The above fails when netCDF4.Dataset is mocked, eg in RTD
+    from netCDF4 import Dataset
 
 _LOG = logging.getLogger(__name__)
 
@@ -46,7 +49,7 @@ _STANDARD_COORDINATES = {
 
 
 def create_netcdf(netcdf_path):
-    nco = SafeStringsDataset(netcdf_path, 'w')
+    nco = Dataset(netcdf_path, 'w')
     nco.date_created = datetime.today().isoformat()
     nco.Conventions = 'CF-1.6, ACDD-1.3'
     nco.history = ("NetCDF-CF file created by "
