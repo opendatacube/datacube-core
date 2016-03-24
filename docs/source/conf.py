@@ -298,6 +298,7 @@ if on_rtd:
         'jsonschema',
         'xarray',
         'dask',
+        'dask.array',
 
     ]
 
