@@ -196,14 +196,12 @@ def convert_request_args_to_descriptor_query(request=None, index=None):
         if field in known_fields:
             descriptor_request[field] = request_remaining.pop(field)
 
-    dimensions = request.pop('dimensions', {})
-    for k, v in request.items():
-        if isinstance(v, tuple):
-            dimensions[k] = {'range': v}
-        elif isinstance(v, slice):
+    dimensions = request_remaining.pop('dimensions', {})
+    for k, v in request_remaining.items():
+        if isinstance(v, slice):
             dimensions[k] = {'array_range': v}
         else:
-            descriptor_request[k] = v # actual search field
+            dimensions[k] = {'range': v} # assume range or single value
     descriptor_request['dimensions'] = dimensions
     return descriptor_request
 
@@ -222,8 +220,8 @@ def geospatial_warp_bounds(input_coord, input_crs='EPSG:4326', output_crs='EPSG:
     output_coords = {'left': left, 'bottom': bottom, 'right': right, 'top': top}
 
     if bottom == top:
-        output_coords['top'] = top - tolerance
-        output_coords['bottom'] = bottom + tolerance
+        output_coords['top'] = top + tolerance
+        output_coords['bottom'] = bottom - tolerance
     if left == right:
         output_coords['left'] = left - tolerance
         output_coords['right'] = right + tolerance
