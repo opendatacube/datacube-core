@@ -617,7 +617,7 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_
                 Index(
                     index_name,
                     field.alchemy_expression,
-                    postgres_where=where_expression,
+                    postgresql_where=where_expression,
                     postgresql_using=index_type,
                     # Don't lock the table (in the future we'll allow indexing new fields...)
                     postgresql_concurrently=True
