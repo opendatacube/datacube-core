@@ -370,7 +370,7 @@ def test_search_storage_multi_dataset(index, db, default_collection,  indexed_ls
 
     assert len(storages) == 1
     assert storages[0].id == unit_id
-    assert storages[0].dataset_ids == [uuid.UUID(_telemetry_uuid), uuid.UUID(_telemetry_uuid2)]
+    assert set(storages[0].dataset_ids) == {uuid.UUID(_telemetry_uuid), uuid.UUID(_telemetry_uuid2)}
 
 
 def test_search_cli_basic(global_integration_cli_args, db, default_collection):
