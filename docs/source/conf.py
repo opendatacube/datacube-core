@@ -295,6 +295,8 @@ if on_rtd:
         'cachetools',
         'rasterio.coords',
         'netCDF4',
+        'jsonschema',
+        'xarray',
 
     ]
 
