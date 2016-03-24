@@ -41,6 +41,7 @@ os.system('pwd; git status')
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.viewcode',
 ]
 

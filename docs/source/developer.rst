@@ -9,7 +9,9 @@ Search API
 Data Access API
 ---------------
 
-See :doc:`api`
+See :doc:`api` for more details
+
+.. include:: api_index.rst
 
 Exploratory Data Analysis
 -------------------------

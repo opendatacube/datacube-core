@@ -54,7 +54,7 @@ class API(object):
 
     def get_descriptor(self, descriptor_request=None, include_storage_units=True):
         """
-        Gets the metadata describing a
+        Gets the metadata for a `AnalyticsEngine` query.
 
         :param descriptor_request: The request query, formatted as:
             ::
@@ -75,6 +75,7 @@ class API(object):
                         }
                     },
                 }
+
         :type descriptor_request: dict or None
         :param include_storage_units: Include the list of storage units
         :type include_storage_units: bool, optional
@@ -126,6 +127,7 @@ class API(object):
                         # ...
                     }
                 }
+
         :rtype: dict
         """
         descriptor_request = descriptor_request or {}
@@ -160,6 +162,7 @@ class API(object):
 
     def get_data(self, descriptor=None, storage_units=None):
         """
+        Gets the data for a `ExecutionEngine` query.
         Function to return composite in-memory arrays.
 
         :param descriptor: A dictionary containing the query parameters
@@ -189,8 +192,9 @@ class API(object):
 
         :type descriptor: dict or None
 
-        :param storage_units: Limit the query to the given storage unit descriptors, as given by
-            the :py:meth:`.get_descriptor` method.
+        :param storage_units:
+            Limit the query to the given storage unit descriptors, as given by the :py:meth:`.get_descriptor` method.
+
         :type storage_units: list or None
 
         :return: A dict containing the arrays, dimensions, indices, element_sizes and coordinate_reference_systems of
@@ -258,12 +262,14 @@ class API(object):
 
     def get_data_array(self, variables=None, var_dim_name=u'variable', set_nan=True, **kwargs):
         """
-        Gets an xarray.DataArray object for the requested data and stacks the data similar to `numpy.dstack`
+        Gets a stacked xarray.DataArray for the requested variables.
+        This stacks the data similar to `numpy.dstack`.
 
         :param variables: Variables to be included. Use `None` to include all available variables
         :type variables: list or None
         :param var_dim_name: dimension name that the variables will be stacked
         :param set_nan: Set "no data" values to `numpy.NaN`.
+
             *Note:* this will cause the data to be converted to float dtype.
         :type set_nan: bool
 
@@ -301,7 +307,7 @@ class API(object):
 
     def get_dataset(self, variables=None, set_nan=False, **kwargs):
         """
-        Gets an xarray.Dataset obejct for the requested data.
+        Gets an xarray.Dataset for the requested data.
 
         :param variables: variable or list of variables to be included.
                 Use `None` to include all available variables (default)
@@ -341,7 +347,7 @@ class API(object):
 
     def list_storage_units(self, **kwargs):
         """
-        Returns a list of paths to the storage unit that meet the search query
+        List of storage units path that meet the search query.
 
         :param * * kwargs: search parameters and dimension ranges.
             E.g.::
@@ -370,7 +376,10 @@ class API(object):
     def list_fields(self):
         """List of the search fields
 
-        :return: list of field names. E.g. ['product', 'platform']
+        :return: list of field names, e.g.
+            ::
+                ['product', 'platform']
+
         """
         return self.index.datasets.get_fields().keys()
 
