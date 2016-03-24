@@ -1,6 +1,3 @@
-
-.. automodule:: datacube.api
-
 .. currentmodule:: datacube.api
 
 Create API
