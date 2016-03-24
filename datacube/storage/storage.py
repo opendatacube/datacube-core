@@ -183,16 +183,21 @@ def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output
                      for time, group in datasets_grouped_by_time]
     access_unit = StorageUnitStack(storage_units=storage_units, stack_dim='time')
 
+    local_filename = _uri_to_local_path(output_uri)
+
     write_access_unit_to_netcdf(access_unit,
                                 storage_type.global_attributes,
                                 storage_type.variable_attributes,
                                 storage_type.variable_params,
-                                _uri_to_local_path(output_uri))
+                                local_filename)
 
     descriptor = _accesss_unit_descriptor(access_unit, tile_index=tile_index)
+
+    size_bytes = local_filename.stat().st_size
     return StorageUnit([dataset.id for dataset in datasets],
                        storage_type,
                        descriptor,
+                       size_bytes=size_bytes,
                        output_uri=output_uri)
 
 
@@ -241,16 +246,21 @@ def stack_storage_units(storage_units, output_uri):
     access_unit.affine = geobox.affine
     access_unit.extent = geobox.extent
 
+    local_filename = _uri_to_local_path(output_uri)
+
     write_access_unit_to_netcdf(access_unit,
                                 storage_type.global_attributes,
                                 storage_type.variable_attributes,
                                 storage_type.variable_params,
-                                _uri_to_local_path(output_uri))
+                                local_filename)
 
     descriptor = _accesss_unit_descriptor(access_unit, tile_index=tile_index)
+
+    size_bytes = local_filename.stat().st_size
     return StorageUnit([id_.hex for su in storage_units for id_ in su.dataset_ids],
                        storage_type,
                        descriptor,
+                       size_bytes=size_bytes,
                        output_uri=output_uri)
 
 
