@@ -297,6 +297,7 @@ if on_rtd:
         'netCDF4',
         'jsonschema',
         'xarray',
+        'dask',
 
     ]
 
