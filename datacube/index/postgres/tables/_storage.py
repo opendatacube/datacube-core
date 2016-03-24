@@ -37,12 +37,12 @@ STORAGE_TYPE = Table(
 STORAGE_UNIT = Table(
     'storage_unit', _core.METADATA,
     Column('id', Integer, primary_key=True, autoincrement=True),
-    Column('storage_type_ref', None, ForeignKey(STORAGE_TYPE.c.id), nullable=False),
+    Column('storage_type_ref', None, ForeignKey(STORAGE_TYPE.c.id), index=True, nullable=False),
 
     # These should match the linked datasets.
     #  -> They are duplicated here so that we can define indexes on this table based on them.
-    Column('collection_ref', None, ForeignKey(_dataset.COLLECTION.c.id), nullable=False),
-    Column('metadata_type_ref', None, ForeignKey(_dataset.METADATA_TYPE.c.id), nullable=False),
+    Column('collection_ref', None, ForeignKey(_dataset.COLLECTION.c.id), index=True, nullable=False),
+    Column('metadata_type_ref', None, ForeignKey(_dataset.METADATA_TYPE.c.id), index=True, nullable=False),
 
     Column('descriptor', postgres.JSONB, nullable=False),
 
@@ -56,6 +56,6 @@ STORAGE_UNIT = Table(
 
 DATASET_STORAGE = Table(
     'dataset_storage', _core.METADATA,
-    Column('dataset_ref', None, ForeignKey(_dataset.DATASET.c.id), primary_key=True, nullable=False),
-    Column('storage_unit_ref', None, ForeignKey(STORAGE_UNIT.c.id), primary_key=True, nullable=False),
+    Column('dataset_ref', None, ForeignKey(_dataset.DATASET.c.id), index=True, primary_key=True, nullable=False),
+    Column('storage_unit_ref', None, ForeignKey(STORAGE_UNIT.c.id), index=True, primary_key=True, nullable=False),
 )
