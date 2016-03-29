@@ -199,7 +199,7 @@ def convert_request_args_to_descriptor_query(request=None, index=None):
     dimensions = request_remaining.pop('dimensions', {})
     for k, v in request_remaining.items():
         if isinstance(v, slice):
-            dimensions[k] = {'array_range': v}
+            dimensions[k] = {'array_range': (v.start, v.stop)}
         else:
             dimensions[k] = {'range': v} # assume range or single value
     descriptor_request['dimensions'] = dimensions

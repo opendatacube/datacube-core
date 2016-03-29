@@ -29,6 +29,7 @@ from dateutil import tz
 
 from datacube.index import index_connect
 from datacube.compat import string_types
+from datacube.model import Variable
 
 from ._conversion import convert_descriptor_query_to_search_query, convert_descriptor_dims_to_selector_dims
 from ._conversion import convert_request_args_to_descriptor_query
@@ -305,7 +306,7 @@ class API(object):
             #     return _stack_vars(data_dict, var_dim_name, stack_name=stype)
         return None
 
-    def get_dataset(self, variables=None, set_nan=False, **kwargs):
+    def get_dataset(self, variables=None, set_nan=False, include_lineage=False, **kwargs):
         """
         Gets an xarray.Dataset for the requested data.
 
@@ -315,6 +316,10 @@ class API(object):
         :param set_nan: If any "no data" values should be set to `numpy.NaN`
             *Note:* this will cause the data to be cast to a float dtype.
         :type set_nan: bool, optional
+        :param include_lineage: Include an 'extra_metadata' variable containing detailed lineage information.
+            *Note:* This can cause the query to be slow for large datasets, as it is not lazy-loaded.
+            Not included by default.
+        :type include_lineage: bool, optional
         :param kwargs: search parameters and dimension ranges
             E.g.::
                 product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5)
@@ -342,6 +347,8 @@ class API(object):
                                                                         storage_units.get_spatial_crs())
             data_dicts = _get_data_from_storage_units(storage_units.iteritems(), variables,
                                                       dimension_ranges, set_nan=set_nan)
+            if include_lineage:
+                data_dicts.append(_get_metadata_from_storage_units(storage_units.iteritems()))
             return _make_xarray_dataset(data_dicts, storage_unit_type)
         return xarray.Dataset()
 
@@ -580,6 +587,19 @@ def _make_xarray_dataset(data_dicts, storage_unit_type):
             data_array.attrs.update(storage_unit_type.variable_attributes[variable_name])
         combined.update(data_arrays)
     return xarray.Dataset(combined, attrs=storage_unit_type.global_attributes)
+
+
+def _get_metadata_from_storage_units(storage_units):
+    metadata = defaultdict(list)
+    for storage_unit in storage_units:
+        if 'extra_metadata' in storage_unit.variables:
+            su_metadata = storage_unit.get('extra_metadata')
+            for arr in su_metadata:
+                # {arr['time'].item(): arr.values for arr in su_metadata}
+                metadata[arr['time'].item()].append(arr.values)
+    multi_yaml = {k: '\n---\n'.join(str(s) for s in v) for k, v in metadata.items()}
+    data_array = xarray.DataArray(multi_yaml.values(), coords={'time': multi_yaml.keys()})
+    return ({'extra_metadata': data_array}, ('time',))
 
 
 def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges=None, fake_array=False, set_nan=False):
