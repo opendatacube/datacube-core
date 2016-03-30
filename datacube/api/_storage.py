@@ -101,6 +101,9 @@ class StorageUnitCollection(object):
         for su in su_iter:
             yield su
 
+    def items(self):
+        return self._storage_units
+
     def get_storage_units(self):
         return self._storage_units
 

@@ -21,7 +21,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 import datetime
 import itertools
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 import numpy
 import xarray
@@ -29,7 +29,6 @@ from dateutil import tz
 
 from datacube.index import index_connect
 from datacube.compat import string_types
-from datacube.model import Variable
 
 from ._conversion import convert_descriptor_query_to_search_query, convert_descriptor_dims_to_selector_dims
 from ._conversion import convert_request_args_to_descriptor_query
@@ -334,7 +333,7 @@ class API(object):
         storage_units_by_type = defaultdict(StorageUnitCollection)
         storage_unit_types = {}
         for su in self.index.storage.search(**query):
-            storage_units_by_type[su.storage_type.name].append(make_storage_unit(su))
+            storage_units_by_type[su.storage_type.name].append(make_storage_unit(su, include_lineage=include_lineage))
             storage_unit_types[su.storage_type.name] = su.storage_type
 
         #TODO: return multiple storage types if compatible
@@ -348,7 +347,7 @@ class API(object):
             data_dicts = _get_data_from_storage_units(storage_units.iteritems(), variables,
                                                       dimension_ranges, set_nan=set_nan)
             if include_lineage:
-                data_dicts.append(_get_metadata_from_storage_units(storage_units.iteritems()))
+                data_dicts.append(_get_metadata_from_storage_units(storage_units.items(), dimension_ranges))
             return _make_xarray_dataset(data_dicts, storage_unit_type)
         return xarray.Dataset()
 
@@ -589,17 +588,34 @@ def _make_xarray_dataset(data_dicts, storage_unit_type):
     return xarray.Dataset(combined, attrs=storage_unit_type.global_attributes)
 
 
-def _get_metadata_from_storage_units(storage_units):
+def _get_metadata_from_storage_units(storage_units, dimension_ranges):
+    dimensions = ('time',)
+    #TODO: Handle metadata across non-harcoded and multiple dimensions
+    dim_props = _get_dimension_properties(storage_units, dimensions, dimension_ranges)
+    selectors = dimension_ranges_to_selector(dim_props['dimension_ranges'], dim_props['reverse'])
+    iselectors = dimension_ranges_to_iselector(dim_props['dimension_ranges'])
+
     metadata = defaultdict(list)
     for storage_unit in storage_units:
         if 'extra_metadata' in storage_unit.variables:
             su_metadata = storage_unit.get('extra_metadata')
             for arr in su_metadata:
-                # {arr['time'].item(): arr.values for arr in su_metadata}
                 metadata[arr['time'].item()].append(arr.values)
     multi_yaml = {k: '\n---\n'.join(str(s) for s in v) for k, v in metadata.items()}
-    data_array = xarray.DataArray(multi_yaml.values(), coords={'time': multi_yaml.keys()})
-    return ({'extra_metadata': data_array}, ('time',))
+    multi_yaml = OrderedDict((to_datetime(k), multi_yaml[k]) for k in sorted(multi_yaml))
+    data_array = xarray.DataArray(multi_yaml.values(),
+                                  coords={'time': multi_yaml.keys()})
+
+    for key, value in selectors.items():
+        if key in data_array.dims:
+            if isinstance(value, slice):
+                data_array = data_array.sel(**{key: value})
+            else:
+                data_array = data_array.sel(method='nearest', **{key: value})
+    iselectors = dict((k, v) for k, v in iselectors.items() if k in dimensions)
+    if iselectors:
+        data_array = data_array.isel(**iselectors)
+    return ({'extra_metadata': data_array}, dimensions)
 
 
 def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges=None, fake_array=False, set_nan=False):
