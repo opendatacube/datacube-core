@@ -42,6 +42,11 @@ _LOG = logging.getLogger(__name__)
 
 
 class API(object):
+    """
+    The API object is the primary way to query the datacube and extract data, making use of both the database and
+    underlying data files.  This API can be used directly, or through higher-level layers such as the Analytics Engine.
+    """
+
     def __init__(self, index=None):
         """
         Creates the interface for the query and storage access.
@@ -55,6 +60,17 @@ class API(object):
     def get_descriptor(self, descriptor_request=None, include_storage_units=True):
         """
         Gets the metadata for a `AnalyticsEngine` query.
+
+        All fields are optional.
+
+        Search for any of the fields returned by :meth:`list_fields`.
+
+        **Dimensions**
+
+        Dimensions can specify a range by label, and optionally a CRS to interpret the label.
+
+        The default CRS interpretation for geospatial dimensions (longitude/latitude or x/y) is WGS84/EPSG:4236,
+        even if the resulting dimension is in another projection.
 
         :param descriptor_request: The request query, formatted as:
             ::
@@ -165,13 +181,41 @@ class API(object):
         Gets the data for a `ExecutionEngine` query.
         Function to return composite in-memory arrays.
 
-        :param descriptor: A dictionary containing the query parameters
+        :param descriptor: A dictionary containing the query parameters. All fields are optional.
+
+            Search for any of the fields returned by :meth:`list_fields`.
+
+            **`storage_type`** field
+
+            The storage type can be any of the keys returned by :meth:`get_descriptor`.
+
+            **`variables`** field
+
+            Variables (optional) are a list of variable names, matching those listed by :meth:`get_descriptor`.
+            If not specified, all variables are returned.
+
+            **`dimensions`** field
+
+            Dimensions can specify a range by label, and optionally a CRS to interpret the label.
+
+            Times can be specified as :class:`datetime` objects, tuples of (year, month, day) or
+            (year, month, day, hour, minute, second), or by seconds since the Unix epoch.
+            Strings may also be used, with ISO format preferred.
+
+            The default CRS interpretation for geospatial dimensions (longitude/latitude or x/y) is WGS84/EPSG:4236,
+            even if the resulting dimension is in another projection.
+
+            The `array_range` field can be used to subset the request.
             ::
                 descriptor = {
                     'platform': 'LANDSAT_8',
                     'product': 'NBAR',
                     # <search_field>: <search value>,
+
+                    'storage_type': 'ls8_nbar',
+
                     'variables': ('B30', 'B40'),
+
                     'dimensions': {
                         'x': {
                             'range': (140, 142),
@@ -273,9 +317,11 @@ class API(object):
             *Note:* this will cause the data to be converted to float dtype.
         :type set_nan: bool
 
-        :param * * kwargs: search parameters and dimension ranges.
+        :param * * kwargs: search parameters, dimension ranges and storage_type.
             ::
-                product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5)
+                api.get_data_array(product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5))
+
+                api.get_data_array(storage_type='ls5_nbar', time=((1990, 1, 1), (1991, 1, 1))
 
         :return: Data with all variables stacked along a dimension.
         :rtype: xarray.DataArray
@@ -368,6 +414,17 @@ class API(object):
         for su in sus:
             output_set.add(str(su.local_path))
         return list(output_set)
+
+    def list_storage_type_names(self):
+        """
+        List the names of the storage types
+
+        *Note:* This is exposing an internal structure and subject to change.
+
+        :return: List of the storage types
+        """
+        storage_types = self.index.storage.types.get_all()
+        return [st.name for st in storage_types]
 
     def list_products(self):
         """

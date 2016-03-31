@@ -13,6 +13,7 @@ from dateutil import tz
 from datacube import compat
 from datacube.model import Range
 from datacube.index import index_connect
+from datacube.index.postgres._fields import RangeDocField  # pylint: disable=protected-access
 from datacube.utils import datetime_to_seconds_since_1970
 
 _LOG = logging.getLogger(__name__)
@@ -84,6 +85,7 @@ def convert_descriptor_query_to_search_query(descriptor=None, index=None):
             search_query['type'] = storage_type.id
 
     descriptor_dimensions = descriptor.get('dimensions', {})
+    descriptor_dimensions.update(descriptor.get('dimension', {}))
     search_query.update(convert_descriptor_dims_to_search_dims(descriptor_dimensions))
     return search_query
 
@@ -198,15 +200,18 @@ def convert_request_args_to_descriptor_query(request=None, index=None):
     if 'variables' in request:
         descriptor_request['variables'] = request_remaining.pop('variables')
 
-    known_fields = index.datasets.get_fields()
     if 'storage_type' in request_remaining:
         descriptor_request['storage_type'] = request_remaining.pop('storage_type')
+
+    known_fields = [field_name for field_name, field in index.datasets.get_fields().items()
+                    if not isinstance(field, RangeDocField)]  # Assume range fields will be also dimensions...
 
     for field in request:
         if field in known_fields:
             descriptor_request[field] = request_remaining.pop(field)
 
     dimensions = request_remaining.pop('dimensions', {})
+
     for k, v in request_remaining.items():
         if isinstance(v, slice):
             dimensions[k] = {'array_range': (v.start, v.stop)}
