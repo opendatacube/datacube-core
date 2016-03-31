@@ -71,10 +71,17 @@ def convert_descriptor_query_to_search_query(descriptor=None, index=None):
 
     search_query = {key: descriptor[key] for key in descriptor.keys() if key in known_fields}
     unknown_fields = [key for key in descriptor.keys()
-                      if key not in known_fields and key not in ['variables', 'dimensions']]
+                      if key not in known_fields
+                      and key not in ['variables', 'variable', 'dimensions', 'dimension', 'storage_type']]
     if unknown_fields:
         _LOG.warning("Some of the fields in the query are unknown and will be ignored: %s",
                      ', '.join(unknown_fields))
+
+    if 'storage_type' in descriptor:
+        storage_type_name = descriptor.get('storage_type', '')
+        storage_type = index.storage.types.get_by_name(storage_type_name)
+        if storage_type:
+            search_query['type'] = storage_type.id
 
     descriptor_dimensions = descriptor.get('dimensions', {})
     search_query.update(convert_descriptor_dims_to_search_dims(descriptor_dimensions))
@@ -192,6 +199,9 @@ def convert_request_args_to_descriptor_query(request=None, index=None):
         descriptor_request['variables'] = request_remaining.pop('variables')
 
     known_fields = index.datasets.get_fields()
+    if 'storage_type' in request_remaining:
+        descriptor_request['storage_type'] = request_remaining.pop('storage_type')
+
     for field in request:
         if field in known_fields:
             descriptor_request[field] = request_remaining.pop(field)
