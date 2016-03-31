@@ -330,7 +330,7 @@ class API(object):
         descriptor_dimensions = descriptor_request.get('dimensions', {})
         variables = [variables] if isinstance(variables, string_types) else variables
 
-        query = convert_descriptor_query_to_search_query(descriptor_request)
+        query = convert_descriptor_query_to_search_query(descriptor_request, self.index)
         storage_units_by_type = defaultdict(StorageUnitCollection)
         su_id = set()
         for su in self.index.storage.search_eager(**query):
@@ -375,7 +375,7 @@ class API(object):
         descriptor_dimensions = descriptor_request.get('dimensions', {})
         variables = [variables] if isinstance(variables, string_types) else variables
 
-        query = convert_descriptor_query_to_search_query(descriptor_request)
+        query = convert_descriptor_query_to_search_query(descriptor_request, self.index)
         storage_units_by_type = defaultdict(StorageUnitCollection)
         storage_unit_types = {}
         for su in self.index.storage.search(**query):
@@ -408,7 +408,7 @@ class API(object):
         :return: list of local paths to the storage units
         """
         descriptor_request = kwargs
-        query = convert_descriptor_query_to_search_query(descriptor_request)
+        query = convert_descriptor_query_to_search_query(descriptor_request, self.index)
         sus = self.index.storage.search(**query)
         output_set = set()
         for su in sus:
