@@ -31,7 +31,7 @@ import numexpr as ne
 from datacube.api import API
 
 LOG = logging.getLogger(__name__)
-LOG.setLevel(logging.DEBUG)
+LOG.setLevel(logging.INFO)
 
 
 class OperationType(object):
@@ -48,8 +48,8 @@ class AnalyticsEngine(object):
             {
                 'sensors':
                 {
-                    'LANDSAT 5': {'input': ['band_40', 'band_30'], 'function': 'ndvi'},
-                    'LANDSAT 7': {'input': ['band_40', 'band_30'], 'function': 'ndvi'},
+                    'LANDSAT_5': {'input': ['band_4', 'band_3'], 'function': 'ndvi'},
+                    'LANDSAT_7': {'input': ['band_4', 'band_3'], 'function': 'ndvi'},
                 },
                 'functions':
                 {
@@ -63,7 +63,7 @@ class AnalyticsEngine(object):
         }
 
     def __init__(self, api=None):
-        LOG.debug('Initialise Analytics Module.')
+        LOG.info('Initialise Analytics Module.')
         self.plan = []
         self.plan_dict = {}
 
