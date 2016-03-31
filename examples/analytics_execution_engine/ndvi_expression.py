@@ -26,8 +26,8 @@ from datacube.analytics.analytics_engine import AnalyticsEngine
 from datacube.execution.execution_engine import ExecutionEngine
 from datacube.analytics.utils.analytics_utils import plot
 
-from glue.core import Data, DataCollection
-from glue.qt.glue_application import GlueApplication
+from glue.core import Data, DataCollection  #: pylint: disable=import-error
+from glue.qt.glue_application import GlueApplication  #: pylint: disable=import-error
 
 
 def main():

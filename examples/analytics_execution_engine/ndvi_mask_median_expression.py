@@ -26,8 +26,8 @@ from datacube.analytics.analytics_engine import AnalyticsEngine
 from datacube.execution.execution_engine import ExecutionEngine
 from datacube.analytics.utils.analytics_utils import plot
 
-from glue.core import Data, DataCollection
-from glue.qt.glue_application import GlueApplication
+from glue.core import Data, DataCollection  #: pylint: disable=import-error
+from glue.qt.glue_application import GlueApplication  #: pylint: disable=import-error
 
 
 def main():
@@ -70,7 +70,7 @@ def main():
     time_data = Data(x=b40_result.coords['time'], label='time')
 
     collection = DataCollection([median_data, mask_data, pq_data, ndvi_data, b30_data, b40_data,
-                                long_data, lat_data, time_data, ])
+                                 long_data, lat_data, time_data, ])
     app = GlueApplication(collection)
     app.start()
 
