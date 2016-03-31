@@ -43,7 +43,7 @@ def test_get_data(mock_api):
                   'latitude': {'range': (-35.32, -35.28)},
                   'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
-    arrays = a.create_array(('LANDSAT 5', 'NBAR'), ['band_30', 'band_40'], dimensions, 'get_data')
+    arrays = a.create_array(('LANDSAT_5', 'NBAR'), ['band_30', 'band_40'], dimensions, 'get_data')
 
     e.execute_plan(a.plan)
 
@@ -69,8 +69,8 @@ def test_perform_ndvi(mock_api):
                   'latitude': {'range': (-35.32, -35.28)},
                   'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
-    b40 = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40'], dimensions, 'b40')
-    b30 = a.create_array(('LANDSAT 5', 'NBAR'), ['band_30'], dimensions, 'b30')
+    b40 = a.create_array(('LANDSAT_5', 'NBAR'), ['band_40'], dimensions, 'b40')
+    b30 = a.create_array(('LANDSAT_5', 'NBAR'), ['band_30'], dimensions, 'b30')
 
     ndvi = a.apply_expression([b40, b30], '((array1 - array2) / (array1 + array2))', 'ndvi')
 
@@ -91,7 +91,7 @@ def test_perform_old_ndvi_version(mock_api):
                   'latitude': {'range': (-35.32, -35.28)},
                   'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
-    arrays = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40', 'band_30'], dimensions, 'get_data')
+    arrays = a.create_array(('LANDSAT_5', 'NBAR'), ['band_40', 'band_30'], dimensions, 'get_data')
     ndvi = a.apply_bandmath(arrays, '((array1 - array2) / (array1 + array2))', 'ndvi')
 
     e.execute_plan(a.plan)
@@ -109,7 +109,7 @@ def test_median_reduction_over_time(mock_api):
                   'latitude': {'range': (-35.32, -35.28)},
                   'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
-    arrays = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40'], dimensions, 'get_data')
+    arrays = a.create_array(('LANDSAT_5', 'NBAR'), ['band_40'], dimensions, 'get_data')
 
     median = a.apply_expression(arrays, 'median(array1, 0)', 'medianT')
 
@@ -128,7 +128,7 @@ def test_old_version_median_reduction_over_time(mock_api):
                   'latitude': {'range': (-35.32, -35.28)},
                   'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
-    arrays = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40'], dimensions, 'get_data')
+    arrays = a.create_array(('LANDSAT_5', 'NBAR'), ['band_40'], dimensions, 'get_data')
 
     median_t = a.apply_generic_reduction(arrays, ['time'], 'median(array1)', 'medianT')
 
@@ -147,7 +147,7 @@ def test_median_reduction_over_lat_long(mock_api):
                   'latitude': {'range': (-35.32, -35.28)},
                   'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
-    arrays = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40'], dimensions, 'get_data')
+    arrays = a.create_array(('LANDSAT_5', 'NBAR'), ['band_40'], dimensions, 'get_data')
 
     median = a.apply_expression(arrays, 'median(array1, 1, 2)', 'medianXY')
 
@@ -166,7 +166,7 @@ def test_median_reduction_over_latlong_old_version(mock_api):
                   'y': {'range': (-35.32, -35.28)},
                   'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
-    arrays = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40'], dimensions, 'get_data')
+    arrays = a.create_array(('LANDSAT_5', 'NBAR'), ['band_40'], dimensions, 'get_data')
 
     median_xy = a.apply_generic_reduction(arrays, ['x', 'y'], 'median(array1)', 'medianXY')
 
@@ -185,9 +185,9 @@ def test_perform_ndvi_mask_old_version(mock_api):
                   'latitude': {'range': (-35.32, -35.28)},
                   'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
-    arrays = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40', 'band_30'], dimensions, 'get_data')
+    arrays = a.create_array(('LANDSAT_5', 'NBAR'), ['band_40', 'band_30'], dimensions, 'get_data')
     ndvi = a.apply_bandmath(arrays, '((array1 - array2) / (array1 + array2))', 'ndvi')
-    pq = a.create_array(('LANDSAT 5', 'PQ'), ['band_pixelquality'], dimensions, 'pq')
+    pq = a.create_array(('LANDSAT_5', 'PQ'), ['band_pixelquality'], dimensions, 'pq')
     mask = a.apply_cloud_mask(ndvi, pq, 'mask')
 
     e.execute_plan(a.plan)
@@ -205,9 +205,9 @@ def test_perform_ndvi_mask(mock_api):
                   'latitude': {'range': (-35.32, -35.28)},
                   'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
-    b40 = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40'], dimensions, 'b40')
-    b30 = a.create_array(('LANDSAT 5', 'NBAR'), ['band_30'], dimensions, 'b30')
-    pq = a.create_array(('LANDSAT 5', 'PQ'), ['band_pixelquality'], dimensions, 'pq')
+    b40 = a.create_array(('LANDSAT_5', 'NBAR'), ['band_40'], dimensions, 'b40')
+    b30 = a.create_array(('LANDSAT_5', 'NBAR'), ['band_30'], dimensions, 'b30')
+    pq = a.create_array(('LANDSAT_5', 'PQ'), ['band_pixelquality'], dimensions, 'pq')
 
     ndvi = a.apply_expression([b40, b30], '((array1 - array2) / (array1 + array2))', 'ndvi')
     mask = a.apply_expression([ndvi, pq], 'array1{array2}', 'mask')
@@ -227,7 +227,7 @@ def test_sensor_specific_bandmath_old_version(mock_api):
                   'latitude': {'range': (-35.32, -35.28)},
                   'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
-    ndvi = a.apply_sensor_specific_bandmath('LANDSAT 5', 'NBAR', 'ndvi', dimensions, 'get_data', 'ndvi')
+    ndvi = a.apply_sensor_specific_bandmath('LANDSAT_5', 'NBAR', 'ndvi', dimensions, 'get_data', 'ndvi')
 
     result = e.execute_plan(a.plan)
 
@@ -244,9 +244,9 @@ def test_bit_of_everything(mock_api):
                   'latitude': {'range': (-35.32, -35.28)},
                   'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
-    b40 = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40'], dimensions, 'b40')
-    b30 = a.create_array(('LANDSAT 5', 'NBAR'), ['band_30'], dimensions, 'b30')
-    pq = a.create_array(('LANDSAT 5', 'PQ'), ['band_pixelquality'], dimensions, 'pq')
+    b40 = a.create_array(('LANDSAT_5', 'NBAR'), ['band_40'], dimensions, 'b40')
+    b30 = a.create_array(('LANDSAT_5', 'NBAR'), ['band_30'], dimensions, 'b30')
+    pq = a.create_array(('LANDSAT_5', 'PQ'), ['band_pixelquality'], dimensions, 'pq')
 
     ndvi = a.apply_expression([b40, b30], '((array1 - array2) / (array1 + array2))', 'ndvi')
     adjusted_ndvi = a.apply_expression(ndvi, '(ndvi*0.5)', 'adjusted_ndvi')
@@ -268,7 +268,7 @@ def test_median_reduction_over_time_old_version(mock_api):
                   'latitude': {'range': (-35.32, -35.28)},
                   'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
-    arrays = a.create_array(('LANDSAT 5', 'NBAR'), ['band_40'], dimensions, 'get_data')
+    arrays = a.create_array(('LANDSAT_5', 'NBAR'), ['band_40'], dimensions, 'get_data')
 
     median_t = a.apply_reduction(arrays, ['time'], 'median', 'medianT')
 
