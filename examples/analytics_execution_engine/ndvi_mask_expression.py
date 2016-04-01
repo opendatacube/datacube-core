@@ -30,6 +30,7 @@ from glue.core import Data, DataCollection  #: pylint: disable=import-error
 from glue.qt.glue_application import GlueApplication  #: pylint: disable=import-error
 
 
+# pylint: disable=too-many-locals
 def main():
     a = AnalyticsEngine()
     e = ExecutionEngine()
