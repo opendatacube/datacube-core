@@ -604,6 +604,19 @@ def _fix_custom_dimensions(dimensions, dim_props):
         if 'time' in dimension_ranges and 'range' in dimension_ranges['time']:
             dimension_ranges['time']['range'] = tuple(to_datetime(t)
                                                       for t in dimension_ranges['time']['range'])
+    for dim in dimension_ranges.keys():
+        if dim not in dimensions:
+            x_dims = ['x', 'lon', 'longitude']
+            if dim in x_dims:
+                x_match = list(set(x_dims) & set(dimensions))
+                if x_match:
+                    dimension_ranges[x_match[0]] = dimension_ranges.pop(dim)
+            y_dims = ['y', 'lat', 'latitude']
+            if dim in y_dims:
+                y_match = list(set(y_dims) & set(dimensions))
+                if y_match:
+                    dimension_ranges[y_match[0]] = dimension_ranges.pop(dim)
+
     return dimension_ranges, coord_labels
 
 
