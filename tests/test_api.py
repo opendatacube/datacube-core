@@ -282,7 +282,7 @@ def test_dask():
     ds2.get_crs = lambda: {'time': None, 'latitude': None, 'longitude': None}
 
     storage_units = [ds1, ds2]
-    dim_props = _get_dimension_properties(storage_units, ('time', 'latitude', 'longitude'), [])
+    dim_props = _get_dimension_properties(storage_units, ('time', 'latitude', 'longitude'), {})
     da = get_dask_array(storage_units, 'B10', ['time', 'latitude', 'longitude'], dim_props)
     da_computed = da.compute()
     assert da.shape == (4, 200, 200)
