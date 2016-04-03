@@ -27,7 +27,7 @@ Requirements
 * PostgreSQL 9.4 or greater
 * Python 2.7+ or Python 3.4+
 
-General usage
+Documentation
 =============
 See the [user guide](http://agdc-v2.readthedocs.org/en/develop/) for installation &amp; 
 usage of the datacube.
