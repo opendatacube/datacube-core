@@ -1,9 +1,9 @@
-===============================
-Windows AGDC Python Environment
-===============================
+=================
+Microsoft Windows
+=================
 
-For For Python 2.7 and Python 3.5
----------------------------------
+Python 2.7 or Python 3.5 environment
+------------------------------------
 
 1. Download and install a standard python release from http://www.python.org/ . The AGDC supports versions 2.7 and
 3.5.
@@ -36,8 +36,19 @@ For For Python 2.7 and Python 3.5
 5. Activate virtualenv::
 
     C:\envs\agdcv2\Scripts\activate
+    
+The python virtual environment isolates this python installation from other python
+installations (which may be in use for other application software) to prevent
+conflicts between different python module versions.
 
-6. Download and install binary wheels from http://www.lfd.uci.edu/~gohlke/pythonlibs/
+Python modules
+--------------
+
+On windows systems by default there are no ready configured compilers, and so 
+libraries needed for some python modules must be obtained in precompiled 
+(binary) form.
+
+Download and install binary wheels from http://www.lfd.uci.edu/~gohlke/pythonlibs/
 
 You will need to download at least:
 
@@ -46,25 +57,32 @@ You will need to download at least:
 - numpy
 - netCDF4
 - psycopg2
+- numexpr
+- scipy
+- pandas
+- matplotlib
 
 The following may also be useful:
 
 - lxml
-- matplotlib
 - pyzmq
 - udunits2
-- pandas
 
 Install these packages by running in your ``Downloads`` directory::
 
     pip install *.whl
 
 .. note::
+    It may be necessary to manually replace ``*.whl`` with the full filenames for each
+    .whl file (unless using a unix-like shell instead of the standard windows command line
+    console).
+
+.. note::
     **For 3.5 only**
 
     If there are problems loading libraries. Try::
 
-        cp site-packages/matplotlib/msvcp140.dll site-packages/osgeo/
+        copy site-packages/matplotlib/msvcp140.dll site-packages/osgeo/
 
 PostgreSQL Portable
 -------------------
