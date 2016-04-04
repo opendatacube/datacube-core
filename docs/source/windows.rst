@@ -83,6 +83,10 @@ Install these packages by running in your ``Downloads`` directory::
     If there are problems loading libraries. Try::
 
         copy site-packages/matplotlib/msvcp140.dll site-packages/osgeo/
+        
+Also, install the python notebook interface for working with datacube example notebooks::
+
+    pip install jupyter
 
 PostgreSQL Portable
 -------------------
@@ -96,6 +100,18 @@ substituting "u12345" with your windows login user-ID::
 
     create role u12345 superuser login;
     create database datacube;
+
+Datacube installation
+---------------------
+
+Obtain a current copy of the datacube source code from GitHub. A simple way is to extract 
+https://github.com/data-cube/agdc-v2/archive/develop.zip 
+into a subdirectory of the python environment. 
+
+Install the datacube module by running::
+
+    cd agdc-v2-develop
+    python setup.py install
 
 
 Extra instructions for installing Compliance Checker
