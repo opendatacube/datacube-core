@@ -12,6 +12,8 @@ For For Python 2.7 and Python 3.5
     If in a restricted environment with no local administrator access, python can be installed by running::
 
         msiexec /a python-2.7.11.msi TARGETDIR=C:\Python27
+    
+    Or by launching the version 3.5 installer and selecting **not** to *install for all users* (only single user install).
 
 2. Ensure **pip** is installed::
 
