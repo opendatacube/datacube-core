@@ -166,7 +166,9 @@ def check_open_with_api(index):
     data_array = api.get_data_array(storage_type='ls5_nbar', variables=['band_1'],
                                     latitude=(-34, -35), longitude=(149, 150))
     assert data_array.size
-    dataset = api.get_dataset(storage_type='ls5_nbar', variables=['band_1'], latitude=(-34, -35), longitude=(149, 150))
+    dataset = api.get_dataset(storage_type='ls5_nbar', variables=['band_1'],
+                              latitude=(-34, -35), longitude=(149, 150),
+                              include_lineage=True)
     assert dataset['band_1'].size
 
 
