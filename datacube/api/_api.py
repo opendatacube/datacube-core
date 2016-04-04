@@ -674,7 +674,7 @@ def _get_metadata_from_storage_units(storage_units, dimension_ranges):
     multi_yaml = {k: '\n---\n'.join(str(s) for s in v) for k, v in metadata.items()}
     multi_yaml = OrderedDict((to_datetime(k), multi_yaml[k]) for k in sorted(multi_yaml))
     data_array = xarray.DataArray(multi_yaml.values(),
-                                  coords={'time': multi_yaml.keys()})
+                                  coords={'time': list(multi_yaml.keys())})
 
     for key, value in selectors.items():
         if key in data_array.dims:
