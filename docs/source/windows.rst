@@ -89,9 +89,13 @@ PostgreSQL Portable
 
 An easy to install version of PostgreSQL can be downloaded from http://sourceforge.net/projects/postgresqlportable/ . It can install and run as an unprivileged windows user.
 
-It helps to add `PostgreSQLPortable\App\PgSQL\bin` to your `%PATH%` to make PostgreSQL
-admin commands like `dropdb`, `createdb` and `psql` more easily available.
+After installing, launch ``PostgreSQLPortable.exe`` (and place a shortcut in the windows Startup menu).
 
+To prepare the database for first use, enter the following commands in the PostgrSQL Portable window,
+substituting "u12345" with your windows login user-ID:
+
+    create role u12345 superuser login;
+    create database datacube;
 
 
 Extra instructions for installing Compliance Checker
