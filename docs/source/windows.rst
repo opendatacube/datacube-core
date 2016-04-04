@@ -92,7 +92,7 @@ An easy to install version of PostgreSQL can be downloaded from http://sourcefor
 After installing, launch ``PostgreSQLPortable.exe`` (and place a shortcut in the windows Startup menu).
 
 To prepare the database for first use, enter the following commands in the PostgrSQL Portable window,
-substituting "u12345" with your windows login user-ID:
+substituting "u12345" with your windows login user-ID::
 
     create role u12345 superuser login;
     create database datacube;
