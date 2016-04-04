@@ -23,7 +23,7 @@ foster broader collaboration on the design and implementation. It is not intende
 Documentation
 =============
 See the [user guide](http://agdc-v2.readthedocs.org/en/develop/) for installation &amp; 
-usage of the datacube.
+usage of the datacube, and for documentation of the API.
 
 Requirements
 ============
