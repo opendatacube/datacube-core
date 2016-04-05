@@ -9,6 +9,7 @@ from __future__ import absolute_import
 import datetime
 import json
 import logging
+import re
 from functools import reduce as reduce_
 
 import numpy
@@ -17,6 +18,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.url import URL as EngineUrl
 from sqlalchemy.exc import IntegrityError
 
+import datacube
 from datacube.config import LocalConfig
 from datacube.index.fields import OrExpression
 from datacube.index.postgres.tables._core import schema_qualified
@@ -24,6 +26,9 @@ from datacube.index.postgres.tables._dataset import DATASET_LOCATION, METADATA_T
 from . import tables
 from ._fields import parse_fields, NativeField
 from .tables import DATASET, DATASET_SOURCE, STORAGE_TYPE, STORAGE_UNIT, DATASET_STORAGE, COLLECTION
+
+_LIB_ID = 'agdc-' + str(datacube.__version__)
+APP_NAME_PATTERN = re.compile('^[a-zA-Z0-9-]+$')
 
 DATASET_URI_FIELD = DATASET_LOCATION.c.uri_scheme + ':' + DATASET_LOCATION.c.uri_body
 _DATASET_SELECT_FIELDS = (
@@ -77,7 +82,7 @@ class PostgresDb(object):
         self._connection = connection
 
     @classmethod
-    def connect(cls, hostname, database, username=None, password=None, port=None):
+    def connect(cls, hostname, database, username=None, password=None, port=None, application_name=None):
         _engine = create_engine(
             EngineUrl(
                 'postgresql',
@@ -90,20 +95,50 @@ class PostgresDb(object):
             isolation_level='AUTOCOMMIT',
 
             json_serializer=_to_json,
-            # json_deserializer=my_deserialize_fn
+            connect_args={'application_name': application_name}
         )
         _connection = _engine.connect()
         return PostgresDb(_engine, _connection)
 
     @classmethod
-    def from_config(cls, config=LocalConfig.find()):
+    def from_config(cls, config=LocalConfig.find(), application_name=None):
+        app_name = cls._expand_app_name(application_name)
+
         return PostgresDb.connect(
             config.db_hostname,
             config.db_database,
             config.db_username,
             config.db_password,
-            config.db_port
+            config.db_port,
+            application_name=app_name
         )
+
+    @classmethod
+    def _expand_app_name(cls, application_name):
+        """
+        >>> PostgresDb._expand_app_name(None) #doctest: +ELLIPSIS
+        'agdc-...'
+        >>> PostgresDb._expand_app_name('cli') #doctest: +ELLIPSIS
+        'cli agdc-...'
+        >>> PostgresDb._expand_app_name('not valid')
+        Traceback (most recent call last):
+        ...
+        ValueError: Invalid application name 'not valid': Must be alphanumeric with dashes.
+        >>> PostgresDb._expand_app_name('') #doctest: +ELLIPSIS
+        Traceback (most recent call last):
+        ...
+        ValueError: Invalid application name '': Must be alphanumeric with dashes.
+        """
+        full_name = _LIB_ID
+        if application_name is not None:
+            if not APP_NAME_PATTERN.match(application_name):
+                raise ValueError('Invalid application name %r: Must be alphanumeric with dashes.' % application_name)
+
+            full_name = application_name + ' ' + _LIB_ID
+
+        if len(full_name) > 64:
+            raise ValueError('Application name is too long: Maximum %s chars' % (64 - len(_LIB_ID)))
+        return full_name
 
     def init(self):
         """
@@ -406,7 +441,7 @@ class PostgresDb(object):
         """
         Find any datasets that have the given metadata.
 
-        :type dataset_metadata: dict
+        :type metadata: dict
         :rtype: dict
         """
         # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
@@ -449,7 +484,9 @@ class PostgresDb(object):
                 for f in select_fields
                 ]
             group_by_fields = None
+            required_tables = None
         else:
+            # We include a list of dataset ids alongside each storage unit.
             select_fields = [
                 STORAGE_UNIT,
                 func.array_agg(
@@ -457,22 +494,27 @@ class PostgresDb(object):
                 ).label('dataset_refs')
             ]
             group_by_fields = (STORAGE_UNIT.c.id,)
+            required_tables = (DATASET_STORAGE,)
 
         return self._search_docs(
             expressions,
             primary_table=STORAGE_UNIT,
             select_fields=select_fields,
-            group_by_fields=group_by_fields
+            group_by_fields=group_by_fields,
+            required_tables=required_tables
         )
 
-    def _search_docs(self, expressions, primary_table, select_fields=None, group_by_fields=None):
+    def _search_docs(self, expressions, primary_table, select_fields=None, group_by_fields=None, required_tables=None):
         """
 
         :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
         :param primary_table: SQLAlchemy table
         :return:
         """
-        from_expression, raw_expressions = _prepare_expressions(expressions, primary_table)
+        from_expression, raw_expressions = _prepare_expressions(
+            expressions, primary_table,
+            required_tables=required_tables
+        )
 
         select_query = select(select_fields).select_from(from_expression).where(and_(*raw_expressions))
 
@@ -578,6 +620,9 @@ class PostgresDb(object):
             ).fetchall()
             ]
 
+    def __repr__(self):
+        return "PostgresDb<engine={!r}>".format(self._engine)
+
 
 def _pg_exists(conn, name):
     """
@@ -607,7 +652,7 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_
                 Index(
                     index_name,
                     field.alchemy_expression,
-                    postgres_where=where_expression,
+                    postgresql_where=where_expression,
                     postgresql_using=index_type,
                     # Don't lock the table (in the future we'll allow indexing new fields...)
                     postgresql_concurrently=True
@@ -633,14 +678,14 @@ _JOIN_REQUIREMENTS = {
 }
 
 
-def _prepare_expressions(expressions, primary_table):
+def _prepare_expressions(expressions, primary_table, required_tables=None):
     """
     :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
     :param primary_table: SQLAlchemy table
     """
     # We currently only allow one metadata to be queried at a time (our indexes are per-type)
     metadata_type_references = set()
-    join_tables = set()
+    join_tables = set(required_tables) if required_tables else set()
 
     def tables_referenced(expression):
         if isinstance(expression, OrExpression):
@@ -677,15 +722,27 @@ def _prepare_expressions(expressions, primary_table):
     for from_table, queried_metadata_type in metadata_type_references:
         raw_expressions.insert(0, from_table.c.metadata_type_ref == queried_metadata_type)
 
+    from_expression = _prepare_from_expression(primary_table, join_tables)
+
+    return from_expression, raw_expressions
+
+
+def _prepare_from_expression(primary_table, join_tables):
+    """
+    Calculate an SQLAlchemy from expression to join the given table to other required tables.
+    """
     from_expression = primary_table
+    middleman_tables = set(_JOIN_REQUIREMENTS.get((primary_table, table), None) for table in join_tables)
     for table in join_tables:
+        # If this table will be used to join another, we can skip it.
+        if table in middleman_tables:
+            continue
         # Do we need any middle-men tables to join our tables?
         join_requirement = _JOIN_REQUIREMENTS.get((primary_table, table), None)
         if join_requirement is not None:
             from_expression = from_expression.join(join_requirement)
         from_expression = from_expression.join(table)
-
-    return from_expression, raw_expressions
+    return from_expression
 
 
 def transform_object_tree(o, f):

@@ -41,6 +41,7 @@ os.system('pwd; git status')
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.viewcode',
 ]
 
@@ -295,6 +296,11 @@ if on_rtd:
         'cachetools',
         'rasterio.coords',
         'netCDF4',
+        'netCDF4.Dataset',
+        'jsonschema',
+        'xarray',
+        'dask',
+        'dask.array',
 
     ]
 

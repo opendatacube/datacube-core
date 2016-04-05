@@ -129,6 +129,6 @@ class IrregularStorageUnitSlice(StorageUnitBase):
         var = self.variables[name]
         dim_i = var.dimensions.index(self._sliced_coordinate)
         offset = self._slice.start
-        parent_index = tuple(slice(subset.start + offset, subset.stop + offset) if dim_i == 0 else subset
+        parent_index = tuple(slice(subset.start + offset, subset.stop + offset) if dim_i == i else subset
                              for i, subset in enumerate(index))
         self._parent._fill_data(name, parent_index, dest)  # pylint: disable=protected-access

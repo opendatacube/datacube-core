@@ -21,7 +21,7 @@ from __future__ import absolute_import, division, print_function
 import logging
 import datetime
 import itertools
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 import numpy
 import xarray
@@ -42,112 +42,110 @@ _LOG = logging.getLogger(__name__)
 
 
 class API(object):
-    def __init__(self, index=None):
+    """
+    The API object is the primary way to query the datacube and extract data, making use of both the database and
+    underlying data files.  This API can be used directly, or through higher-level layers such as the Analytics Engine.
+    """
+
+    def __init__(self, index=None, application_name=None):
         """
-        :param index: datacube.index._api.Index
-        :return:
+        Creates the interface for the query and storage access.
+        If no index is given, the default configuration is used for database connection, etc.
+
+        :param index: The database index to use.
+        :param application_name: A short, alphanumeric name to identify this application.
+        :type index: from :py:class:`datacube.index.index_connect` or None
         """
-        self.index = index or index_connect()
+        self.index = index or index_connect(application_name=application_name)
 
     def get_descriptor(self, descriptor_request=None, include_storage_units=True):
         """
-        :param descriptor_request:
-        query_parameter = \
-        {
-        'storage_types': [ {
-                'satellite': 'LANDSAT_8',
-                'sensor': 'OLI_TIRS',
-                'product': 'EODS_NBAR',
-            }, {
-                'satellite': 'LANDSAT_8',
-                'sensor': 'OLI_TIRS',
-                'product': 'EODS_NBAR',
-            } ],
-        'dimensions': {
-             'x': {
-                   'range': (140, 142),
-                   'crs': 'EPSG:4326'
-                   },
-             'y': {
-                   'range': (-36, -35),
-                   'crs': 'EPSG:4326'
-                   },
-             't': {
-                   'range': (1293840000, 1325376000),
-                   'crs': 'SSE', # Seconds since epoch
-                   'grouping_function': GDF.solar_days_since_epoch
-                   }
-             },
-        'polygon': '<some kind of text representation of a polygon for PostGIS to sort out>'
-                    # We won't be doing this in the pilot
-        }
+        Gets the metadata for a `AnalyticsEngine` query.
+
+        All fields are optional.
+
+        Search for any of the fields returned by :meth:`list_fields`.
+
+        **Dimensions**
+
+        Dimensions can specify a range by label, and optionally a CRS to interpret the label.
+
+        The default CRS interpretation for geospatial dimensions (longitude/latitude or x/y) is WGS84/EPSG:4236,
+        even if the resulting dimension is in another projection.
+
+        :param descriptor_request: The request query, formatted as:
+            ::
+                descriptor_request = {
+                    'platform': 'LANDSAT_8',
+                    'product': 'NBAR',
+                    'dimensions': {
+                        'x': {
+                            'range': (140, 142),
+                            'crs': 'EPSG:4326'
+                        },
+                        'y': {
+                            'range': (-36, -35),
+                            'crs': 'EPSG:4326'
+                        },
+                        'time': {
+                            'range': ((1990, 6, 1), (1992, 7 ,1)),
+                        }
+                    },
+                }
+
+        :type descriptor_request: dict or None
         :param include_storage_units: Include the list of storage units
-        :return: descriptor = {
-            'LS5TM': { # storage_type identifier
-                 'dimensions': ['x', 'y', 't'],
-                 'variables': { # These will be the variables which can be accessed as arrays
-                       'B10': {
-                            'datatype': 'int16',
-                            'nodata_value': -999
+        :type include_storage_units: bool, optional
+        :return: A descriptor dict of the query, containing the metadata of the request
+            ::
+                descriptor = {
+                    'ls5_nbar_albers': { # storage_type identifier
+                        'dimensions': ['x', 'y', 'time'],
+                        'variables': { # Variables which can be accessed as arrays
+                            'B10': {
+                                'datatype': 'int16',
+                                'nodata_value': -999
                             },
-                       'B20': {
-                            'datatype': 'int16',
-                            'nodata_value': -999
+                            'B20': {
+                                'datatype': 'int16',
+                                'nodata_value': -999
                             },
-                       'B30': {
-                            'datatype': 'int16',
-                            'nodata_value': -999
-                            },
-                       'B40': {
-                            'datatype': 'int16',
-                            'nodata_value': -999
-                            },
-                       'B50': {
-                            'datatype': 'int16',
-                            'nodata_value': -999
-                            },
-                       'B70': {
-                            'datatype': 'int16',
-                            'nodata_value': -999
-                            },
-                       'PQ': { # There is no reason why we can't put PQ in with NBAR if we want to
-                            'datatype': 'int16'
+                            'B30': {
+                                'datatype': 'int16',
+                                'nodata_value': -999
                             }
-                       },
-                 'result_min': (140, -36, 1293840000),
-                 'result_max': (141, -35, 1325376000),
-                 'overlap': (0, 0, 0), # We won't be doing this in the pilot
-                 'buffer_size': (128, 128, 128), # Chunk size to use
-                 'result_shape': (8000, 8000, 40), # Overall size of result set
-                 'irregular_indices': { # Regularly indexed dimensions (e.g. x & y) won't need to be specified,
-                                        # but we could also do that here if we wanted to
-                       't': date_array # Array of days since 1/1/1970
-                       },
-                 'storage_units': { # Should wind up with 8 for the 2x2x2 query above
-                       (140, -36, 2010): { # Storage unit indices
-                            'storage_min': (140, -36, 1293840000),
-                            'storage_max': (141, -35, 1293800400),
-                            'storage_shape': (4000, 4000, 24)
+                        },
+                        'result_min': (140, -36, 1293840000),
+                        'result_max': (141, -35, 1325376000),
+                        'result_shape': (8000, 8000, 40), # Overall size of result set
+                        'irregular_indices': {
+                            # Regularly indexed dimensions (e.g. x & y) won't be specified
+                            'time': date_array # Array of days since 1/1/1970
+                        },
+                        'storage_units': {
+                            (140, -36, 1990): { # Storage unit indices
+                                'storage_min': (140, -36, 1293840000),
+                                'storage_max': (141, -35, 1293800400),
+                                'storage_shape': (4000, 4000, 24),
+                                'storage_path': '/path/to/storage/units/nbar_140_-36_1990.nc',
                             },
-                       (140, -36, 2011): { # Storage unit indices
-                            'storage_min': (140, -36, 1293800400),
-                            'storage_max': (141, -35, 1325376000),
-                            'storage_shape': (4000, 4000, 23)
+                            (140, -36, 1991): { # Storage unit indices
+                                'storage_min': (140, -36, 1293800400),
+                                'storage_max': (141, -35, 1325376000),
+                                'storage_shape': (4000, 4000, 23),
+                                'storage_path': '/path/to/storage/units/nbar_140_-36_1991.nc',
                             },
-                       (140, -35, 2011): { # Storage unit indices
-                            'storage_min': (140, -36, 1293840000),
-                            'storage_max': (141, -35, 1293800400),
-                            'storage_shape': (4000, 4000, 20)
-                            }
-                       ...
-                       <more storage_unit sub-descriptors>
-                       ...
-                       }
-                 ...
-                 <more storage unit type sub-descriptors>
-                 ...
-                 }
-            }
+                            # ...
+                            # <more storage_unit sub-descriptors>
+                            # ...
+                        },
+                        # ...
+                        # <more storage unit type sub-descriptors>
+                        # ...
+                    }
+                }
+
+        :rtype: dict
         """
         descriptor_request = descriptor_request or {}
         storage_units_by_type = _get_storage_units(descriptor_request, self.index, is_diskless=True)
@@ -181,60 +179,100 @@ class API(object):
 
     def get_data(self, descriptor=None, storage_units=None):
         """
-        Function to return composite in-memory arrays
-        :param descriptor:
-        data_request = \
-        {
-        'platform': 'LANDSAT_8',
-        <search_field>: <search value>,
-        'product': '',
-        'variables': ('B30', 'B40','PQ'), # Note that we won't necessarily have PQ in the same storage unit
-        'dimensions': {
-             'x': {
-                   'range': (140, 142),
-                   'array_range': (0, 127)
-                   'crs': 'EPSG:4326'
-                   },
-             'y': {
-                   'range': (-36, -35),
-                   'array_range': (0, 127)
-                   'crs': 'EPSG:4326'
-                   },
-             't': {
-                   'range': (1293840000, 1325376000),
-                   'array_range': (0, 127)
-                   'crs': 'SSE', # Seconds since epoch
-                   'grouping_function': '<e.g. gdf.solar_day>'
-                   }
-             },
-        'polygon': '<some kind of text representation of a polygon for PostGIS to sort out>'
-                    # We won't be doing this in the pilot
-        }
+        Gets the data for a `ExecutionEngine` query.
+        Function to return composite in-memory arrays.
+
+        :param descriptor: A dictionary containing the query parameters. All fields are optional.
+
+            Search for any of the fields returned by :meth:`list_fields`.
+
+            **`storage_type`** field
+
+            The storage type can be any of the keys returned by :meth:`get_descriptor`.
+
+            **`variables`** field
+
+            Variables (optional) are a list of variable names, matching those listed by :meth:`get_descriptor`.
+            If not specified, all variables are returned.
+
+            **`dimensions`** field
+
+            Dimensions can specify a range by label, and optionally a CRS to interpret the label.
+
+            Times can be specified as :class:`datetime` objects, tuples of (year, month, day) or
+            (year, month, day, hour, minute, second), or by seconds since the Unix epoch.
+            Strings may also be used, with ISO format preferred.
+
+            The default CRS interpretation for geospatial dimensions (longitude/latitude or x/y) is WGS84/EPSG:4236,
+            even if the resulting dimension is in another projection.
+
+            The `array_range` field can be used to subset the request.
+            ::
+                descriptor = {
+                    'platform': 'LANDSAT_8',
+                    'product': 'NBAR',
+                    # <search_field>: <search value>,
+
+                    'storage_type': 'ls8_nbar',
+
+                    'variables': ('B30', 'B40'),
+
+                    'dimensions': {
+                        'x': {
+                            'range': (140, 142),
+                            'array_range': (0, 127),
+                            'crs': 'EPSG:4326'
+                        },
+                        'y': {
+                            'range': (-36, -35),
+                            'array_range': (0, 127),
+                            'crs': 'EPSG:4326'
+                        },
+                        'time': {
+                            'range': (1293840000, 1325376000),
+                            'array_range': (0, 127)
+                        }
+                    },
+                }
+
+        :type descriptor: dict or None
+
         :param storage_units:
-        :return: data_response = \
-        {
-        'dimensions': ['x', 'y', 't'],
-        'arrays': { # All of these will have the same shape
-             'B30': '<Numpy array>',
-             'B40': '<Numpy array>',
-             'PQ': '<Numpy array>'
-             },
-        'indices': [ # These will be the actual x, y & t (long, lat & time) values for each array index
-            '<numpy array of x indices>',
-            '<numpy array of y indices>',
-            '<numpy array of t indices>'
-            ]
-        'element_sizes': [ # These will be the element sizes for each dimension
-            '< x element size>',
-            '< y element size>',
-            '< t element size>'
-            ]
-        'coordinate_reference_systems': [ # These will be the coordinate_reference_systems for each dimension
-            '< x CRS>',
-            '< y CRS>',
-            '< t CRS>'
-            ]
-        }
+            Limit the query to the given storage unit descriptors, as given by the :py:meth:`.get_descriptor` method.
+
+        :type storage_units: list or None
+
+        :return: A dict containing the arrays, dimensions, indices, element_sizes and coordinate_reference_systems of
+            the query.
+            ::
+                data = {
+                    'dimensions': ['x', 'y', 'time'],
+                    'arrays': {
+                        # All of these will have the same shape
+                        'B30': 'xarray.DataArray',
+                        'B40': 'xarray.DataArray',
+                    },
+                    'indices': [
+                        # Actual x, y & t (long, lat & time) values for each array index
+                        '<numpy array of x indices>',
+                        '<numpy array of y indices>',
+                        '<numpy array of time indices>'
+                    ],
+                    'element_sizes': [
+                        # Element sizes for each dimension
+                        '< x element size>',
+                        '< y element size>',
+                        '< time element size>'
+                    ],
+                    'coordinate_reference_systems': [
+                        # These will be the coordinate_reference_systems for each dimension
+                        '< x CRS>',
+                        '< y CRS>',
+                        '< time CRS>'
+                    ],
+                }
+
+        :rtype: dict
         """
         descriptor = descriptor or {}
         variables = descriptor.get('variables', None)
@@ -269,18 +307,31 @@ class API(object):
 
     def get_data_array(self, variables=None, var_dim_name=u'variable', set_nan=True, **kwargs):
         """
-        Gets an xarray.DataArray obejct for the requested data
-        :param variables: list of variables to be included. Use `None` to include all available variables
+        Gets a stacked xarray.DataArray for the requested variables.
+        This stacks the data similar to `numpy.dstack`.
+
+        :param variables: Variables to be included. Use `None` to include all available variables
+        :type variables: list or None
         :param var_dim_name: dimension name that the variables will be stacked
-        :param kwargs: search parameters and dimension ranges
-        E.g. product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5)
-        :return: xarray.DataArray
+        :param set_nan: Set "no data" values to `numpy.NaN`.
+
+            *Note:* this will cause the data to be converted to float dtype.
+        :type set_nan: bool
+
+        :param * * kwargs: search parameters, dimension ranges and storage_type.
+            ::
+                api.get_data_array(product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5))
+
+                api.get_data_array(storage_type='ls5_nbar', time=((1990, 1, 1), (1991, 1, 1))
+
+        :return: Data with all variables stacked along a dimension.
+        :rtype: xarray.DataArray
         """
         descriptor_request = convert_request_args_to_descriptor_query(kwargs, self.index)
         descriptor_dimensions = descriptor_request.get('dimensions', {})
         variables = [variables] if isinstance(variables, string_types) else variables
 
-        query = convert_descriptor_query_to_search_query(descriptor_request)
+        query = convert_descriptor_query_to_search_query(descriptor_request, self.index)
         storage_units_by_type = defaultdict(StorageUnitCollection)
         su_id = set()
         for su in self.index.storage.search_eager(**query):
@@ -301,24 +352,35 @@ class API(object):
             #     return _stack_vars(data_dict, var_dim_name, stack_name=stype)
         return None
 
-    def get_dataset(self, variables=None, set_nan=True, **kwargs):
+    def get_dataset(self, variables=None, set_nan=False, include_lineage=False, **kwargs):
         """
-        Gets an xarray.Dataset obejct for the requested data
+        Gets an xarray.Dataset for the requested data.
+
         :param variables: variable or list of variables to be included.
                 Use `None` to include all available variables (default)
+        :type variables: list(str) or str, optional
+        :param set_nan: If any "no data" values should be set to `numpy.NaN`
+            *Note:* this will cause the data to be cast to a float dtype.
+        :type set_nan: bool, optional
+        :param include_lineage: Include an 'extra_metadata' variable containing detailed lineage information.
+            *Note:* This can cause the query to be slow for large datasets, as it is not lazy-loaded.
+            Not included by default.
+        :type include_lineage: bool, optional
         :param kwargs: search parameters and dimension ranges
-        E.g. product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5)
-        :return: xarray.Dataset
+            E.g.::
+                product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5)
+        :return: Data as variables with shared coordinate dimensions.
+        :rtype: xarray.Dataset
         """
         descriptor_request = convert_request_args_to_descriptor_query(kwargs, self.index)
         descriptor_dimensions = descriptor_request.get('dimensions', {})
         variables = [variables] if isinstance(variables, string_types) else variables
 
-        query = convert_descriptor_query_to_search_query(descriptor_request)
+        query = convert_descriptor_query_to_search_query(descriptor_request, self.index)
         storage_units_by_type = defaultdict(StorageUnitCollection)
         storage_unit_types = {}
         for su in self.index.storage.search(**query):
-            storage_units_by_type[su.storage_type.name].append(make_storage_unit(su))
+            storage_units_by_type[su.storage_type.name].append(make_storage_unit(su, include_lineage=include_lineage))
             storage_unit_types[su.storage_type.name] = su.storage_type
 
         #TODO: return multiple storage types if compatible
@@ -331,27 +393,46 @@ class API(object):
                                                                         storage_units.get_spatial_crs())
             data_dicts = _get_data_from_storage_units(storage_units.iteritems(), variables,
                                                       dimension_ranges, set_nan=set_nan)
+            if include_lineage:
+                data_dicts.append(_get_metadata_from_storage_units(storage_units.items(), dimension_ranges))
             return _make_xarray_dataset(data_dicts, storage_unit_type)
         return xarray.Dataset()
 
     def list_storage_units(self, **kwargs):
         """
-        Returns a list of paths to the storage unit that meet the search query
-        :param kwargs: search parameters and dimension ranges
-        E.g. product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5)
-        :return: list of local paths to the storage units as a list(str)
+        List of storage units path that meet the search query.
+
+        :param * * kwargs: search parameters and dimension ranges.
+            E.g.::
+                product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5)
+
+        :return: list of local paths to the storage units
         """
         descriptor_request = kwargs
-        query = convert_descriptor_query_to_search_query(descriptor_request)
+        query = convert_descriptor_query_to_search_query(descriptor_request, self.index)
         sus = self.index.storage.search(**query)
         output_set = set()
         for su in sus:
             output_set.add(str(su.local_path))
         return list(output_set)
 
+    def list_storage_type_names(self):
+        """
+        List the names of the storage types
+
+        *Note:* This is exposing an internal structure and subject to change.
+
+        :return: List of the storage types
+        """
+        storage_types = self.index.storage.types.get_all()
+        return [st.name for st in storage_types]
+
     def list_products(self):
-        """Lists a dictionary for each stored product
-        Note: This is exposing an internal structure and subject to change.
+        """
+        Lists a dictionary for each stored product
+
+        *Note:* This is exposing an internal structure and subject to change.
+
         :return: List of dicts describing each product
         """
         return [t.document for t in self.index.storage.types.get_all()]
@@ -359,15 +440,23 @@ class API(object):
     def list_fields(self):
         """List of the search fields
 
-        :return: list of field names. E.g. ['product', 'platform']
+        :return: list of field names, e.g.
+            ::
+                ['product', 'platform']
+
         """
         return self.index.datasets.get_fields().keys()
 
     def list_field_values(self, field):
         """
         List the values found for a field
-        :param field: Name of the field, as returned by the `list_fields()` method.
-        :return: Values for the field in the database ['LANDSAT_5', 'LANDSAT_7']
+
+        :param field: Name of the field, as returned by the :meth:`.list_fields` method.
+        :type field: str
+        :return: List of values for the field in the database, eg
+            ::
+                ['LANDSAT_5', 'LANDSAT_7']
+
         """
         return list(set(field_values[field] for field_values in self.index.datasets.search_summaries()
                         if field in field_values))
@@ -375,11 +464,21 @@ class API(object):
     def list_all_field_values(self):
         """
         Lists all the search fields with their known values in the database
-        :return: {'platform': ['LANDSAT_5', 'LANDSAT_7'], 'product': ['NBAR', 'PQ', 'FC']}
+
+        :return: Each search field with the list of known values
+            ::
+                {
+                    'platform': ['LANDSAT_5', 'LANDSAT_7'],
+                    'product': ['NBAR', 'PQ', 'FC']
+                }
+        :rtype: dict
         """
         summary = list(self.index.datasets.search_summaries())
         fields = self.index.datasets.get_fields()
         return dict((field, list(set(field_values[field] for field_values in summary))) for field in fields)
+
+    def __repr__(self):
+        return "API<index={!r}>".format(self.index)
 
 
 def _stack_vars(data_dict, var_dim_name, stack_name=None):
@@ -506,6 +605,19 @@ def _fix_custom_dimensions(dimensions, dim_props):
         if 'time' in dimension_ranges and 'range' in dimension_ranges['time']:
             dimension_ranges['time']['range'] = tuple(to_datetime(t)
                                                       for t in dimension_ranges['time']['range'])
+    for dim in dimension_ranges.keys():
+        if dim not in dimensions:
+            x_dims = ['x', 'lon', 'longitude']
+            if dim in x_dims:
+                x_match = list(set(x_dims) & set(dimensions))
+                if x_match:
+                    dimension_ranges[x_match[0]] = dimension_ranges.pop(dim)
+            y_dims = ['y', 'lat', 'latitude']
+            if dim in y_dims:
+                y_match = list(set(y_dims) & set(dimensions))
+                if y_match:
+                    dimension_ranges[y_match[0]] = dimension_ranges.pop(dim)
+
     return dimension_ranges, coord_labels
 
 
@@ -545,6 +657,36 @@ def _make_xarray_dataset(data_dicts, storage_unit_type):
             data_array.attrs.update(storage_unit_type.variable_attributes[variable_name])
         combined.update(data_arrays)
     return xarray.Dataset(combined, attrs=storage_unit_type.global_attributes)
+
+
+def _get_metadata_from_storage_units(storage_units, dimension_ranges):
+    dimensions = ('time',)
+    #TODO: Handle metadata across non-harcoded and multiple dimensions
+    dim_props = _get_dimension_properties(storage_units, dimensions, dimension_ranges)
+    selectors = dimension_ranges_to_selector(dim_props['dimension_ranges'], dim_props['reverse'])
+    iselectors = dimension_ranges_to_iselector(dim_props['dimension_ranges'])
+
+    metadata = defaultdict(list)
+    for storage_unit in storage_units:
+        if 'extra_metadata' in storage_unit.variables:
+            su_metadata = storage_unit.get('extra_metadata')
+            for arr in su_metadata:
+                metadata[arr['time'].item()].append(arr.values)
+    multi_yaml = {k: '\n---\n'.join(str(s) for s in v) for k, v in metadata.items()}
+    multi_yaml = OrderedDict((to_datetime(k), multi_yaml[k]) for k in sorted(multi_yaml))
+    data_array = xarray.DataArray(multi_yaml.values(),
+                                  coords={'time': list(multi_yaml.keys())})
+
+    for key, value in selectors.items():
+        if key in data_array.dims:
+            if isinstance(value, slice):
+                data_array = data_array.sel(**{key: value})
+            else:
+                data_array = data_array.sel(method='nearest', **{key: value})
+    iselectors = dict((k, v) for k, v in iselectors.items() if k in dimensions)
+    if iselectors:
+        data_array = data_array.isel(**iselectors)
+    return ({'extra_metadata': data_array}, dimensions)
 
 
 def _get_data_from_storage_units(storage_units, variables=None, dimension_ranges=None, fake_array=False, set_nan=False):

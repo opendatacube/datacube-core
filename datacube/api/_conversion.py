@@ -13,6 +13,7 @@ from dateutil import tz
 from datacube import compat
 from datacube.model import Range
 from datacube.index import index_connect
+from datacube.index.postgres._fields import RangeDocField  # pylint: disable=protected-access
 from datacube.utils import datetime_to_seconds_since_1970
 
 _LOG = logging.getLogger(__name__)
@@ -71,12 +72,20 @@ def convert_descriptor_query_to_search_query(descriptor=None, index=None):
 
     search_query = {key: descriptor[key] for key in descriptor.keys() if key in known_fields}
     unknown_fields = [key for key in descriptor.keys()
-                      if key not in known_fields and key not in ['variables', 'dimensions']]
+                      if key not in known_fields
+                      and key not in ['variables', 'variable', 'dimensions', 'dimension', 'storage_type']]
     if unknown_fields:
         _LOG.warning("Some of the fields in the query are unknown and will be ignored: %s",
                      ', '.join(unknown_fields))
 
+    if 'storage_type' in descriptor:
+        storage_type_name = descriptor.get('storage_type', '')
+        storage_type = index.storage.types.get_by_name(storage_type_name)
+        if storage_type:
+            search_query['type'] = storage_type.id
+
     descriptor_dimensions = descriptor.get('dimensions', {})
+    descriptor_dimensions.update(descriptor.get('dimension', {}))
     search_query.update(convert_descriptor_dims_to_search_dims(descriptor_dimensions))
     return search_query
 
@@ -191,19 +200,23 @@ def convert_request_args_to_descriptor_query(request=None, index=None):
     if 'variables' in request:
         descriptor_request['variables'] = request_remaining.pop('variables')
 
-    known_fields = index.datasets.get_fields()
+    if 'storage_type' in request_remaining:
+        descriptor_request['storage_type'] = request_remaining.pop('storage_type')
+
+    known_fields = [field_name for field_name, field in index.datasets.get_fields().items()
+                    if not isinstance(field, RangeDocField)]  # Assume range fields will be also dimensions...
+
     for field in request:
         if field in known_fields:
             descriptor_request[field] = request_remaining.pop(field)
 
-    dimensions = request.pop('dimensions', {})
-    for k, v in request.items():
-        if isinstance(v, tuple):
-            dimensions[k] = {'range': v}
-        elif isinstance(v, slice):
-            dimensions[k] = {'array_range': v}
+    dimensions = request_remaining.pop('dimensions', {})
+
+    for k, v in request_remaining.items():
+        if isinstance(v, slice):
+            dimensions[k] = {'array_range': (v.start, v.stop)}
         else:
-            descriptor_request[k] = v # actual search field
+            dimensions[k] = {'range': v} # assume range or single value
     descriptor_request['dimensions'] = dimensions
     return descriptor_request
 
@@ -222,8 +235,8 @@ def geospatial_warp_bounds(input_coord, input_crs='EPSG:4326', output_crs='EPSG:
     output_coords = {'left': left, 'bottom': bottom, 'right': right, 'top': top}
 
     if bottom == top:
-        output_coords['top'] = top - tolerance
-        output_coords['bottom'] = bottom + tolerance
+        output_coords['top'] = top + tolerance
+        output_coords['bottom'] = bottom - tolerance
     if left == right:
         output_coords['left'] = left - tolerance
         output_coords['right'] = right + tolerance

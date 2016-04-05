@@ -40,10 +40,12 @@ def make_storage_unit_collection_from_descriptor(descriptor_su):
     return StorageUnitCollection([NetCDF4StorageUnit.from_file(su['storage_path']) for su in descriptor_su.values()])
 
 
-def make_storage_unit(su, is_diskless=False):
+def make_storage_unit(su, is_diskless=False, include_lineage=False):
     """convert search result into StorageUnit object
     :param su: database index storage unit
     :param is_diskless: Use a cached object for the source of data, rather than the file
+    :param include_lineage: Include an 'extra_metadata' variable containing detailed lineage information.
+        Note: This can cause the query to be slow for large datasets, as it is not lazy-loaded.
     """
     crs = {dim: su.descriptor['coordinates'][dim].get('units', None) for dim in su.storage_type.dimensions}
     for dim in crs.keys():
@@ -58,8 +60,12 @@ def make_storage_unit(su, is_diskless=False):
             units=attributes.get('units', None))
         for varname, attributes in su.storage_type.measurements.items()
     }
+    if 'extra_metadata' not in variables.keys() and include_lineage:
+        variables['extra_metadata'] = Variable(numpy.dtype('S30000'), None, ('time',), None)
+
     attributes = {
-        'storage_type': su.storage_type
+        'storage_type': su.storage_type,
+        'dataset_ids': su.dataset_ids
     }
 
     if is_diskless:
@@ -94,6 +100,9 @@ class StorageUnitCollection(object):
         su_iter = iter(self._storage_units)
         for su in su_iter:
             yield su
+
+    def items(self):
+        return self._storage_units
 
     def get_storage_units(self):
         return self._storage_units

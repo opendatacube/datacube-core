@@ -4,14 +4,19 @@ Create netCDF4 Storage Units and write data to them
 """
 from __future__ import absolute_import
 
-from datetime import datetime
 import logging
+from datetime import datetime
 
 import netCDF4
 import numpy
 
+# pylint: disable=ungrouped-imports,wrong-import-order
+try:
+    from datacube.storage.netcdf_safestrings import SafeStringsDataset as Dataset
+except TypeError:  # The above fails when netCDF4.Dataset is mocked, eg in RTD
+    from netCDF4 import Dataset
+
 from datacube import __version__
-from datacube.storage.netcdf_safestrings import SafeStringsDataset
 
 _LOG = logging.getLogger(__name__)
 
@@ -46,7 +51,7 @@ _STANDARD_COORDINATES = {
 
 
 def create_netcdf(netcdf_path):
-    nco = SafeStringsDataset(netcdf_path, 'w')
+    nco = Dataset(netcdf_path, 'w')
     nco.date_created = datetime.today().isoformat()
     nco.Conventions = 'CF-1.6, ACDD-1.3'
     nco.history = ("NetCDF-CF file created by "
@@ -220,7 +225,7 @@ def flag_mask_meanings(flags_def):
         # GDAL upto and including 2.0 can't support int64 attributes...
         raise RuntimeError('Bit index too high: %s' % max_bit)
 
-    valid_range = numpy.array([0, (2**max_bit-1)+2**max_bit], dtype='int32')
+    valid_range = numpy.array([0, (2 ** max_bit - 1) + 2 ** max_bit], dtype='int32')
 
     bit_value_name = {
         (bitdef['bit_index'], bitdef['value']): name
@@ -229,7 +234,7 @@ def flag_mask_meanings(flags_def):
     masks = []
     meanings = []
 
-    for i in range(max_bit+1):
+    for i in range(max_bit + 1):
         try:
             name = bit_value_name[(i, 1)]
         except KeyError:
@@ -237,7 +242,7 @@ def flag_mask_meanings(flags_def):
                 name = 'no_' + bit_value_name[(i, 0)]
             except KeyError:
                 continue
-        masks.append(2**i)
+        masks.append(2 ** i)
         meanings.append(str(name))
 
     return numpy.array(masks, dtype='int32'), valid_range, ' '.join(meanings)

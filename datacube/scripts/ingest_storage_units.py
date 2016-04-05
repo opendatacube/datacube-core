@@ -5,15 +5,17 @@ Ingest storage units from the command-line.
 """
 from __future__ import absolute_import
 
+from pathlib import Path
+
+import click
 import netCDF4
 import yaml
-import click
 
+from datacube.ingest import find_storage_types_for_datasets
 from datacube.model import StorageUnit
+from datacube.storage.access.backends import NetCDF4StorageUnit
 from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS
-from datacube.ingest import find_storage_types_for_datasets
-from datacube.storage.access.backends import NetCDF4StorageUnit
 from datacube.utils import namedtuples2dicts
 
 
@@ -22,7 +24,7 @@ from datacube.utils import namedtuples2dicts
 @click.argument('storage_units',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
-@ui.pass_index
+@ui.pass_index(app_name='su-ingest')
 def cli(index, storage_units):
     for storage_unit_path in storage_units:
         process_storage_unit(storage_unit_path, index=index)
@@ -91,9 +93,11 @@ def add_datasets_to_index(datasets, index):
 
 def create_in_memory_storage_unit(datasets, storage_type, filename):
     su_descriptor = read_netcdf_structure(filename)
+    size_bytes = Path(filename).stat().st_size
     return StorageUnit([dataset.id for dataset in datasets],
                        storage_type,
                        su_descriptor,
+                       size_bytes=size_bytes,
                        relative_path=storage_type.local_path_to_location_offset('file://' + filename))
 
 
