@@ -123,10 +123,11 @@ def _make_coords(src_data_array, dst_affine, dst_width, dst_height):
 def _make_dst_affine(src_data_array, src_crs, dst_crs, dst_resolution=None):
     src_bounds = _get_bounds(src_data_array)
     src_width, src_height = _get_shape(src_data_array)
-    dst_affine, dst_width, dst_height = rasterio.warp.calculate_default_transform(src_crs, dst_crs,
-                                                                                  src_width, src_height,
-                                                                                  *src_bounds,
-                                                                                  resolution=dst_resolution)
+    with rasterio.drivers():
+        dst_affine, dst_width, dst_height = rasterio.warp.calculate_default_transform(src_crs, dst_crs,
+                                                                                      src_width, src_height,
+                                                                                      *src_bounds,
+                                                                                      resolution=dst_resolution)
     return dst_affine, dst_width, dst_height
 
 
