@@ -9,12 +9,10 @@ import logging
 import os
 
 import click
-import pkg_resources
 
 from datacube import config, __version__
-from datacube.index import index_connect
 from datacube.executor import get_executor
-
+from datacube.index import index_connect
 
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 
@@ -101,14 +99,23 @@ def pass_config(f):
     return functools.update_wrapper(new_func, f)
 
 
-def pass_index(f):
-    """Get a connection to the index as the first argument. """
+def pass_index(app_name='cli'):
+    """Get a connection to the index as the first argument.
 
-    def new_func(*args, **kwargs):
-        index = index_connect(click.get_current_context().obj['config_file'])
-        return f(index, *args, **kwargs)
+    A short name name of the application can be specified for logging purposes.
+    """
 
-    return functools.update_wrapper(new_func, f)
+    def decorate(f):
+        def with_index(*args, **kwargs):
+            index = index_connect(
+                click.get_current_context().obj['config_file'],
+                application_name=app_name
+            )
+            return f(index, *args, **kwargs)
+
+        return functools.update_wrapper(with_index, f)
+
+    return decorate
 
 
 def parse_endpoint(value):

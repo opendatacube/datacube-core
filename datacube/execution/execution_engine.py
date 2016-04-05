@@ -41,7 +41,7 @@ from datacube.ndexpr import NDexpr
 
 
 LOG = logging.getLogger(__name__)
-LOG.setLevel(logging.DEBUG)
+LOG.setLevel(logging.INFO)
 
 
 class ExecutionEngine(object):
@@ -60,7 +60,7 @@ class ExecutionEngine(object):
                      "var": xr.DataArray.var}
 
     def __init__(self, api=None):
-        LOG.debug('Initialise Execution Module.')
+        LOG.info('Initialise Execution Module.')
         self.cache = {}
         self.nd = NDexpr()
         self.nd.set_ae(True)

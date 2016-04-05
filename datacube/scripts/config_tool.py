@@ -6,7 +6,6 @@ Configure the Data Cube from the command-line.
 from __future__ import absolute_import
 
 import logging
-import os
 import sys
 from pathlib import Path
 
@@ -17,8 +16,9 @@ from datacube.index import index_connect
 from datacube.ui import read_documents
 from datacube.ui.click import global_cli_options, pass_index, pass_config, CLICK_SETTINGS
 
-
 _LOG = logging.getLogger(__name__)
+
+PASS_INDEX = pass_index(app_name='datacube-config')
 
 
 @click.group(help="Configure the Data Cube", context_settings=CLICK_SETTINGS)
@@ -34,7 +34,7 @@ def database():
 
 @database.command('init', help='Initialise the database')
 @click.option('--no-default-collection', is_flag=True, help="Don't add a default collection.")
-@pass_index
+@PASS_INDEX
 def database_init(index, no_default_collection):
     echo('Initialising database...')
     was_created = index.init_db(with_default_collection=not no_default_collection)
@@ -72,7 +72,7 @@ def check(config_file):
 @click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
-@pass_index
+@PASS_INDEX
 def collection_add(index, files):
     for descriptor_path, parsed_doc in _read_docs(files):
         index.collections.add(parsed_doc)
@@ -87,7 +87,7 @@ def storage():
 @click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
-@pass_index
+@PASS_INDEX
 @click.pass_context
 def add_storage_types(ctx, index, files):
     for descriptor_path, parsed_doc in _read_docs(files):
@@ -101,7 +101,7 @@ def add_storage_types(ctx, index, files):
 
 
 @storage.command('list')
-@pass_index
+@PASS_INDEX
 def list_storage_types(index):
     """
     :type index: datacube.index._api.Index

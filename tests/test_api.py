@@ -21,10 +21,13 @@ import numpy
 from dateutil import tz
 from affine import Affine
 
+import xarray as xr
+
 from .util import isclose
 
 from datacube.model import Range, Coordinate, Variable, GeoBox
 from datacube.storage.access.backends.geobox import GeoBoxStorageUnit
+from datacube.api import geo_xarray
 from datacube.api._api import _get_dimension_properties
 from datacube.api._storage import MemoryStorageUnit
 from datacube.api._conversion import convert_descriptor_dims_to_search_dims, convert_descriptor_dims_to_selector_dims
@@ -282,7 +285,7 @@ def test_dask():
     ds2.get_crs = lambda: {'time': None, 'latitude': None, 'longitude': None}
 
     storage_units = [ds1, ds2]
-    dim_props = _get_dimension_properties(storage_units, ('time', 'latitude', 'longitude'), [])
+    dim_props = _get_dimension_properties(storage_units, ('time', 'latitude', 'longitude'), {})
     da = get_dask_array(storage_units, 'B10', ['time', 'latitude', 'longitude'], dim_props)
     da_computed = da.compute()
     assert da.shape == (4, 200, 200)
@@ -290,3 +293,21 @@ def test_dask():
     assert da_computed[0, 199, 199] == 9999
     assert numpy.isnan(da_computed[0, 0, 150])
     assert numpy.isnan(da_computed[0, 150, 0])
+
+
+def test_geo_xarray():
+    width = 1000
+    height = 1000
+    da = xr.DataArray(
+        data=numpy.ones((4, 1000, 1000)),
+        coords={
+            'time': numpy.linspace(1, 5, 4),
+            'longitude': numpy.linspace(148, 148.24975, width),
+            'latitude': numpy.linspace(-35.24975, -35, height),
+        },
+        dims=['time', 'latitude', 'longitude'])
+    shape = geo_xarray._get_shape(da)
+    assert shape == (height, width)
+
+    res = geo_xarray._get_resolution(da)
+    assert isclose(res, 0.00025)

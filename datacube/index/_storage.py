@@ -172,7 +172,8 @@ class StorageUnitResource(object):
             self.types.get(su['storage_type_ref']),
             su['descriptor'],
             # An offset from the location (ie. a URL fragment):
-            su['path'],
+            size_bytes=su['size_bytes'],
+            relative_path=su['path'],
             id_=su['id']
         ) for su in query_results)
 

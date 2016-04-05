@@ -58,7 +58,7 @@ def reproject_like(src_data_array, like_data_array, resampling=Resampling.neares
     return reproject(src_data_array, src_crs, dest_crs, dest_resolution, resampling=resampling)
 
 
-def reproject(src_data_array, src_crs, dst_crs, dst_resolution=None, resampling=Resampling.nearest,
+def reproject(src_data_array, src_crs, dst_crs, resolution=None, resampling=Resampling.nearest,
               set_nan=False, copy_attrs=True):
     """
     Reprojects a `xarray.DataArray` objects
@@ -69,7 +69,7 @@ def reproject(src_data_array, src_crs, dst_crs, dst_resolution=None, resampling=
     :param src_data_array: `xarray.DataArray`
     :param src_crs: EPSG code, OGC WKT string, etc
     :param dst_crs: EPSG code, OGC WKT string, etc
-    :param dst_resolution: Size of a destination pixel in destination projection units (eg degrees or metres)
+    :param resolution: Size of a destination pixel in destination projection units (eg degrees or metres)
     :param resampling: Resampling method - see rasterio.warp.reproject for more details
         Possible values are:
             Resampling.nearest,
@@ -89,7 +89,7 @@ def reproject(src_data_array, src_crs, dst_crs, dst_resolution=None, resampling=
     src_data = np.copy(src_data_array.load().data)
 
     src_affine = _make_src_affine(src_data_array)
-    dst_affine, dst_width, dst_height = _make_dst_affine(src_data_array, src_crs, dst_crs, dst_resolution)
+    dst_affine, dst_width, dst_height = _make_dst_affine(src_data_array, src_crs, dst_crs, resolution)
 
     dst_data = np.zeros((dst_height, dst_width), dtype=src_data_array.dtype)
     nodata = _get_nodata_value(src_data_array) or -999

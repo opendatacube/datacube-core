@@ -20,6 +20,8 @@ from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS
 from datacube.ui.expression import parse_expressions
 
+PASS_INDEX = ui.pass_index('datacube-search')
+
 
 def printable_values(d):
     return {k: printable(v) for k, v in d.items()}
@@ -82,7 +84,7 @@ def cli(ctx, f):
 
 @cli.command(help='Datasets')
 @click.argument('expression', nargs=-1)
-@ui.pass_index
+@PASS_INDEX
 @click.pass_context
 def datasets(ctx, index, expression):
     ctx.obj['write_results'](
@@ -93,7 +95,7 @@ def datasets(ctx, index, expression):
 
 @cli.command(help='Storage units')
 @click.argument('expression', nargs=-1)
-@ui.pass_index
+@PASS_INDEX
 @click.pass_context
 def units(ctx, index, expression):
     ctx.obj['write_results'](

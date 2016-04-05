@@ -7,8 +7,6 @@ Integration tests: these depend on a local Postgres instance.
 from __future__ import absolute_import
 
 import datetime
-
-from mock import patch, PropertyMock
 from pathlib import Path
 
 from datacube.index.postgres import PostgresDb
@@ -148,24 +146,23 @@ def test_index_storage_unit(index, db, default_collection):
     storage_type = db._connection.execute(STORAGE_TYPE.select()).first()
 
     # Add storage unit
-    with patch('datacube.model.StorageUnit.size_bytes', new_callable=PropertyMock) as mock_size_bytes:
-        mock_size_bytes.return_value = 1234
 
-        storage_unit = StorageUnit(
-                dataset_ids=[_telemetry_uuid],
-                storage_type=StorageType({
-                    'name': 'test_storage_mapping',
-                    'location': "file://g/data",
-                    'filename_pattern': "foo.nc",
-                    },
-                    id_=storage_type['id']
-                ),
-                descriptor={'test': 'descriptor'},
-                relative_path='/test/offset'
-            )
-        index.storage.add(
-            storage_unit
-        )
+    storage_unit = StorageUnit(
+        dataset_ids=[_telemetry_uuid],
+        storage_type=StorageType({
+            'name': 'test_storage_mapping',
+            'location': "file://g/data",
+            'filename_pattern': "foo.nc",
+        },
+            id_=storage_type['id']
+        ),
+        descriptor={'test': 'descriptor'},
+        relative_path='/test/offset',
+        size_bytes=1234
+    )
+    index.storage.add(
+        storage_unit
+    )
 
     units = db._connection.execute(STORAGE_UNIT.select()).fetchall()
     assert len(units) == 1

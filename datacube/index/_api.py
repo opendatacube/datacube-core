@@ -19,14 +19,17 @@ _DEFAULT_METADATA_TYPES_PATH = Path(__file__).parent.joinpath('default-metadata-
 _DEFAULT_COLLECTIONS_PATH = Path(__file__).parent.joinpath('default-collections.yaml')
 
 
-def connect(local_config=LocalConfig.find()):
+def connect(local_config=LocalConfig.find(), application_name=None):
     """
     Connect to the index. Default Postgres implementation.
-    :type local_config: datacube.config.LocalConfig
+
+    :param application_name: A short, alphanumeric name to identify this application.
+    :param local_config: Config object to use.
+    :type local_config: :py:class:`datacube.config.LocalConfig`, optional
     :rtype: Index
     """
     return Index(
-        PostgresDb.from_config(local_config),
+        PostgresDb.from_config(local_config, application_name=application_name),
         local_config
     )
 
@@ -53,3 +56,6 @@ class Index(object):
                 self.collections.add(doc)
 
         return is_new
+
+    def __repr__(self):
+        return "Index<db={!r}>".format(self._db)

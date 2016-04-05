@@ -217,7 +217,8 @@ class StorageType(object):  # pylint: disable=too-many-public-methods
 
 
 class StorageUnit(object):
-    def __init__(self, dataset_ids, storage_type, descriptor, relative_path=None, output_uri=None, id_=None):
+    def __init__(self, dataset_ids, storage_type, descriptor, size_bytes,
+                 relative_path=None, output_uri=None, id_=None):
         if relative_path and output_uri:
             raise ValueError('only specify one of `relative_path` or `output_uri`')
 
@@ -242,6 +243,8 @@ class StorageUnit(object):
         else:
             self.path = storage_type.local_uri_to_location_relative_path(output_uri)
 
+        self.size_bytes = size_bytes
+
         # Database primary key
         #: :type: int
         self.id = id_
@@ -265,10 +268,6 @@ class StorageUnit(object):
                                  length=attributes['length'],
                                  units=attributes.get('units', None))
                 for name, attributes in self.descriptor['coordinates'].items()}
-
-    @property
-    def size_bytes(self):
-        return Path(self.local_path).stat().st_size
 
     def __str__(self):
         return "StorageUnit <type={m.name}, path={path}>".format(path=self.path, m=self.storage_type)
