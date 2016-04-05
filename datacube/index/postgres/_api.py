@@ -146,7 +146,7 @@ class PostgresDb(object):
 
         :return: If it was newly created.
         """
-        return tables.ensure_db(self._connection, self._engine)
+        return tables.ensure_db(self._engine)
 
     def begin(self):
         """
