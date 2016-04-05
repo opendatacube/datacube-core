@@ -24,7 +24,7 @@ from datacube.utils import namedtuples2dicts
 @click.argument('storage_units',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
-@ui.pass_index
+@ui.pass_index(app_name='su-ingest')
 def cli(index, storage_units):
     for storage_unit_path in storage_units:
         process_storage_unit(storage_unit_path, index=index)

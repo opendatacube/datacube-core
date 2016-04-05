@@ -47,15 +47,16 @@ class API(object):
     underlying data files.  This API can be used directly, or through higher-level layers such as the Analytics Engine.
     """
 
-    def __init__(self, index=None):
+    def __init__(self, index=None, application_name=None):
         """
         Creates the interface for the query and storage access.
         If no index is given, the default configuration is used for database connection, etc.
 
         :param index: The database index to use.
+        :param application_name: A short, alphanumeric name to identify this application.
         :type index: from :py:class:`datacube.index.index_connect` or None
         """
-        self.index = index or index_connect()
+        self.index = index or index_connect(application_name=application_name)
 
     def get_descriptor(self, descriptor_request=None, include_storage_units=True):
         """

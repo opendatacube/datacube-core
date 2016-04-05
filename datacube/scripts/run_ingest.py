@@ -21,6 +21,8 @@ from datacube.ingest import index_datasets, store_datasets
 from datacube.storage.storage import stack_storage_units
 from datacube.storage import tile_datasets_with_storage_type
 
+PASS_INDEX = ui.pass_index(app_name='datacube-ingest')
+
 
 @click.group(help="Data Management Tool", context_settings=CLICK_SETTINGS)
 @ui.global_cli_options
@@ -31,7 +33,7 @@ def cli():
 @cli.command('stack', help='Stack storage units')
 @ui.executor_cli_options
 @click.argument('types', nargs=-1)
-@ui.pass_index
+@PASS_INDEX
 def stack(index, executor, types):
     if not types:
         storage_types = index.storage.types.get_all()
@@ -86,7 +88,7 @@ def _do_stack(task):
 @click.option('--check-storage', is_flag=True, default=True, help="check that storage units have valid filepaths")
 @click.option('--check-overlaps', is_flag=True, default=False, help="check that storage units don't overlap (long)")
 @click.argument('types', nargs=-1)
-@ui.pass_index
+@PASS_INDEX
 def check(index, check_index, check_storage, check_overlaps, types):
     if not types:
         storage_types = index.storage.types.get_all()
@@ -132,7 +134,7 @@ def check(index, check_index, check_storage, check_overlaps, types):
 @click.argument('datasets',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
-@ui.pass_index
+@PASS_INDEX
 def ingest(index, executor, datasets, no_storage):
     indexed_datasets = []
     for dataset_path in datasets:
