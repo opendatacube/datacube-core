@@ -144,7 +144,7 @@ def convert_descriptor_dims_to_selector_dims(dimension_ranges_descriptor, storag
             # Convert any known dimension CRS
             if dim in ['latitude', 'lat', 'y']:
                 input_crs = input_crs or data.get('crs', 'EPSG:4326')
-                if isinstance(data['range'], compat.string_types + compat.integer_types+ (float,)):
+                if isinstance(data['range'], compat.string_types + compat.integer_types + (float,)):
                     input_coord['top'] = float(data['range'])
                     input_coord['bottom'] = float(data['range'])
                     single_value_vars.append('lat')
