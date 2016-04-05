@@ -406,7 +406,7 @@ class PostgresDb(object):
         """
         Find any datasets that have the given metadata.
 
-        :type dataset_metadata: dict
+        :type metadata: dict
         :rtype: dict
         """
         # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
@@ -449,7 +449,9 @@ class PostgresDb(object):
                 for f in select_fields
                 ]
             group_by_fields = None
+            required_tables = None
         else:
+            # We include a list of dataset ids alongside each storage unit.
             select_fields = [
                 STORAGE_UNIT,
                 func.array_agg(
@@ -457,22 +459,27 @@ class PostgresDb(object):
                 ).label('dataset_refs')
             ]
             group_by_fields = (STORAGE_UNIT.c.id,)
+            required_tables = (DATASET_STORAGE,)
 
         return self._search_docs(
             expressions,
             primary_table=STORAGE_UNIT,
             select_fields=select_fields,
-            group_by_fields=group_by_fields
+            group_by_fields=group_by_fields,
+            required_tables=required_tables
         )
 
-    def _search_docs(self, expressions, primary_table, select_fields=None, group_by_fields=None):
+    def _search_docs(self, expressions, primary_table, select_fields=None, group_by_fields=None, required_tables=None):
         """
 
         :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
         :param primary_table: SQLAlchemy table
         :return:
         """
-        from_expression, raw_expressions = _prepare_expressions(expressions, primary_table)
+        from_expression, raw_expressions = _prepare_expressions(
+            expressions, primary_table,
+            required_tables=required_tables
+        )
 
         select_query = select(select_fields).select_from(from_expression).where(and_(*raw_expressions))
 
@@ -633,14 +640,14 @@ _JOIN_REQUIREMENTS = {
 }
 
 
-def _prepare_expressions(expressions, primary_table):
+def _prepare_expressions(expressions, primary_table, required_tables=None):
     """
     :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
     :param primary_table: SQLAlchemy table
     """
     # We currently only allow one metadata to be queried at a time (our indexes are per-type)
     metadata_type_references = set()
-    join_tables = set()
+    join_tables = set(required_tables) if required_tables else set()
 
     def tables_referenced(expression):
         if isinstance(expression, OrExpression):
@@ -677,15 +684,27 @@ def _prepare_expressions(expressions, primary_table):
     for from_table, queried_metadata_type in metadata_type_references:
         raw_expressions.insert(0, from_table.c.metadata_type_ref == queried_metadata_type)
 
+    from_expression = _prepare_from_expression(primary_table, join_tables)
+
+    return from_expression, raw_expressions
+
+
+def _prepare_from_expression(primary_table, join_tables):
+    """
+    Calculate an SQLAlchemy from expression to join the given table to other required tables.
+    """
     from_expression = primary_table
+    middleman_tables = set(_JOIN_REQUIREMENTS.get((primary_table, table), None) for table in join_tables)
     for table in join_tables:
+        # If this table will be used to join another, we can skip it.
+        if table in middleman_tables:
+            continue
         # Do we need any middle-men tables to join our tables?
         join_requirement = _JOIN_REQUIREMENTS.get((primary_table, table), None)
         if join_requirement is not None:
             from_expression = from_expression.join(join_requirement)
         from_expression = from_expression.join(table)
-
-    return from_expression, raw_expressions
+    return from_expression
 
 
 def transform_object_tree(o, f):

@@ -82,11 +82,12 @@ def _do_stack(task):
 
 
 @cli.command('check', help='Check database consistency')
-@click.option('--check-missing', is_flag=True, default=True)
-@click.option('--check-overlaps', is_flag=True, default=False)
+@click.option('--check-index', is_flag=True, default=True, help="check that datasets have all possible storage unit")
+@click.option('--check-storage', is_flag=True, default=True, help="check that storage units have valid filepaths")
+@click.option('--check-overlaps', is_flag=True, default=False, help="check that storage units don't overlap (long)")
 @click.argument('types', nargs=-1)
 @ui.pass_index
-def check(index, check_missing, check_overlaps, types):
+def check(index, check_index, check_storage, check_overlaps, types):
     if not types:
         storage_types = index.storage.types.get_all()
     else:
@@ -102,7 +103,7 @@ def check(index, check_missing, check_overlaps, types):
             except DBAPIError:
                 click.echo('Failed to get overlaps! cube extension might not be loaded')
 
-        if check_missing:
+        if check_index:
             missing_units = 0
             datasets = index.datasets.search_by_metadata(storage_type.document['match']['metadata'])
             for dataset in datasets:
@@ -111,11 +112,18 @@ def check(index, check_missing, check_overlaps, types):
                 for storage_unit in storage_units:
                     tiles.pop(storage_unit.tile_index)
 
-                if tiles:
-                    click.echo('%s missing %s' % (dataset, tiles.keys()))
+                # if tiles:
+                #     click.echo('%s missing units %s' % (dataset, tiles.keys()))
 
                 missing_units += len(tiles)
             click.echo('%s missing storage units' % missing_units)
+
+        if check_storage:
+            missing_files = 0
+            for storage_unit in index.storage.search(type=storage_type.id):
+                if not storage_unit.local_path.exists():
+                    missing_files += 1
+            click.echo('%s missing storage unit files' % missing_files)
 
 
 @cli.command('ingest', help="Ingest datasets into the Data Cube.")

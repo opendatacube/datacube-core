@@ -9,18 +9,30 @@ although this should probably instead check the 'standard_name' as defined by CF
 """
 from __future__ import division, absolute_import, print_function
 
-import xarray as xr
-
-import rasterio
-import rasterio.warp
-from rasterio import Affine
+import copy
 
 import numpy as np
 
+import rasterio
+import rasterio.warp
+from rasterio.warp import RESAMPLING as Resampling
+from rasterio import Affine
 
-def reproject_like(src_data_array, like_data_array):
-    src_crs = like_data_array['crs'].attrs['spatial_ref']
-    dest_crs = like_data_array['crs'].attrs['spatial_ref']
+import xarray as xr
+
+
+def reproject_like(src_data_array, like_data_array, resampling=Resampling.nearest,):
+    """
+    Reprojects a DataArray object to match the resolution and projection of another DataArray.
+    Note: Only 2D arrays with dimensions named 'latitude'/'longitude' or 'x'/'y' are currently supported.
+    Requires an attr 'spatial_ref' to be set containing a valid CRS.
+    If using a WKT (e.g. from spatiareference.org), make sure it is an OGC WKT.
+    :param src_data_array: a `xarray.DataArray` that will be reprojected
+    :param like_data_array: a `xarray.DataArray` of the target resolution and projection
+    :return: a `xarray.DataArray` containing the data from the src_data_array, reprojected to match like_data_array
+    """
+    src_crs = src_data_array.attrs['spatial_ref']
+    dest_crs = like_data_array.attrs['spatial_ref']
 
     if 'latitude' in like_data_array.dims and 'longitude' in like_data_array.dims:
         dest_x_dim = 'longitude'
@@ -43,10 +55,36 @@ def reproject_like(src_data_array, like_data_array):
     dest_resolution_y = (src_bottom - src_top) / src_height
     dest_resolution = (dest_resolution_x + dest_resolution_y) / 2
 
-    return reproject(src_data_array, src_crs, dest_crs, dest_resolution)
+    return reproject(src_data_array, src_crs, dest_crs, dest_resolution, resampling=resampling)
 
 
-def reproject(src_data_array, src_crs, dst_crs, dst_resolution=None, set_nan=True):
+def reproject(src_data_array, src_crs, dst_crs, dst_resolution=None, resampling=Resampling.nearest,
+              set_nan=False, copy_attrs=True):
+    """
+    Reprojects a `xarray.DataArray` objects
+    Note: Only 2D arrays with dimensions named 'latitude'/'longitude' or 'x'/'y' are currently supported.
+    Requires an attr 'spatial_ref' to be set containing a valid CRS.
+    If using a WKT (e.g. from spatiareference.org), make sure it is an OGC WKT.
+
+    :param src_data_array: `xarray.DataArray`
+    :param src_crs: EPSG code, OGC WKT string, etc
+    :param dst_crs: EPSG code, OGC WKT string, etc
+    :param dst_resolution: Size of a destination pixel in destination projection units (eg degrees or metres)
+    :param resampling: Resampling method - see rasterio.warp.reproject for more details
+        Possible values are:
+            Resampling.nearest,
+            Resampling.bilinear,
+            Resampling.cubic,
+            Resampling.cubic_spline,
+            Resampling.lanczos,
+            Resampling.average,
+            Resampling.mode
+    :param set_nan: If nodata values from the source and any nodata areas created by the reproject should be set to NaN
+        Note: this causes the data type to be cast to float.
+    :param copy_attrs: Should the attributes be copied to the destination.
+        Note: No attempt is made to update spatial attributes, e.g. spatial_ref, bounds, etc
+    :return: A reprojected `xarray.DataArray`
+    """
     #TODO: Support lazy loading of data with dask imperative function
     src_data = np.copy(src_data_array.load().data)
 
@@ -64,24 +102,27 @@ def reproject(src_data_array, src_crs, dst_crs, dst_resolution=None, set_nan=Tru
                                 dst_transform=dst_affine,
                                 dst_crs=dst_crs,
                                 dst_nodata=nodata,
-                                resampling=rasterio.warp.RESAMPLING.nearest)
-
-    # Warp spatial coords
-    coords = src_data_array.coords
-    new_coords = _warp_spatial_coords(src_data_array, dst_affine, dst_width, dst_height)
-    coords.update(new_coords)
-
+                                resampling=resampling)
     if set_nan:
         dst_data = dst_data.astype(np.float)
         dst_data[dst_data == nodata] = np.nan
 
-    return xr.DataArray(data=dst_data, coords=coords, dims=src_data_array.dims)
+    return xr.DataArray(data=dst_data,
+                        coords=_make_coords(src_data_array, dst_affine, dst_width, dst_height),
+                        dims=copy.deepcopy(src_data_array.dims),
+                        attrs=copy.deepcopy(src_data_array.attrs) if copy_attrs else None)
+
+
+def _make_coords(src_data_array, dst_affine, dst_width, dst_height):
+    coords = copy.deepcopy(src_data_array.coords)
+    new_coords = _warp_spatial_coords(src_data_array, dst_affine, dst_width, dst_height)
+    coords.update(new_coords)
+    return coords
 
 
 def _make_dst_affine(src_data_array, src_crs, dst_crs, dst_resolution=None):
     src_bounds = _get_bounds(src_data_array)
     src_width, src_height = _get_shape(src_data_array)
-
     dst_affine, dst_width, dst_height = rasterio.warp.calculate_default_transform(src_crs, dst_crs,
                                                                                   src_width, src_height,
                                                                                   *src_bounds,
