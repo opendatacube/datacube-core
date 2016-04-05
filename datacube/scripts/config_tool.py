@@ -33,15 +33,23 @@ def database():
 
 
 @database.command('init', help='Initialise the database')
-@click.option('--no-default-collection', is_flag=True, help="Don't add a default collection.")
+@click.option(
+    '--default-collections/--no-default-collections', is_flag=True, default=True,
+    help="Add default collections? (default: true)"
+)
+@click.option(
+    '--init-users/--no-init-users', is_flag=True, default=True,
+    help="Include user roles and grants. (default: true)"
+)
 @PASS_INDEX
-def database_init(index, no_default_collection):
+def database_init(index, default_collections, init_users):
     echo('Initialising database...')
-    was_created = index.init_db(with_default_collection=not no_default_collection)
+    was_created = index.init_db(with_default_collection=default_collections,
+                                with_permissions=init_users)
     if was_created:
         echo('Done.')
     else:
-        echo('Nothing to do.')
+        echo('Updated.')
 
 
 @cli.group(help='Dataset collections')

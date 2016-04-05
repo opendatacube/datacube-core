@@ -38,7 +38,7 @@ def _get_connection_info(connection):
     return db, user
 
 
-def ensure_db(engine):
+def ensure_db(engine, with_permissions=True):
     """
     Initialise the db if needed.
     """
@@ -47,41 +47,49 @@ def ensure_db(engine):
 
     db_name, db_user = _get_connection_info(c)
 
-    _ensure_role(c, 'agdc_user')
-    _ensure_role(c, 'agdc_ingest', inherits_from='agdc_user')
-    _ensure_role(c, 'agdc_management', inherits_from='agdc_ingest')
-    _ensure_role(c, 'agdc_admin', inherits_from='agdc_management', add_user=True)
+    if with_permissions:
+        _LOG.info('Ensuring user roles.')
+        _ensure_role(c, 'agdc_user')
+        _ensure_role(c, 'agdc_ingest', inherits_from='agdc_user')
+        _ensure_role(c, 'agdc_management', inherits_from='agdc_ingest')
+        _ensure_role(c, 'agdc_admin', inherits_from='agdc_management', add_user=True)
 
-    c.execute("""
-    grant all on database {db} to agdc_admin;
-    """.format(db=db_name))
+        c.execute("""
+        grant all on database {db} to agdc_admin;
+        """.format(db=db_name))
 
     if not has_schema(engine, c):
         is_new = True
         try:
-            # Switch to 'agdc_admin', so that all items are owned by them.
-            c.execute('set role agdc_admin')
+            if with_permissions:
+                # Switch to 'agdc_admin', so that all items are owned by them.
+                c.execute('set role agdc_admin')
+            _LOG.info('Creating schema.')
             c.execute(CreateSchema(SCHEMA_NAME))
+            _LOG.info('Creating tables.')
             c.execute(_FUNCTIONS)
             METADATA.create_all(c)
         finally:
-            c.execute('set role ' + db_user)
+            if with_permissions:
+                c.execute('set role ' + db_user)
 
-    c.execute("""
-    grant usage on schema {schema} to agdc_user;
-    grant select on all tables in schema {schema} to agdc_user;
-    grant execute on function {schema}.common_timestamp(text) to agdc_user;
+    if with_permissions:
+        _LOG.info('Adding role grants.')
+        c.execute("""
+        grant usage on schema {schema} to agdc_user;
+        grant select on all tables in schema {schema} to agdc_user;
+        grant execute on function {schema}.common_timestamp(text) to agdc_user;
 
-    grant insert on {schema}.dataset,
-                    {schema}.dataset_location,
-                    {schema}.dataset_source,
-                    {schema}.dataset_storage,
-                    {schema}.storage_unit to agdc_ingest;
+        grant insert on {schema}.dataset,
+                        {schema}.dataset_location,
+                        {schema}.dataset_source,
+                        {schema}.dataset_storage,
+                        {schema}.storage_unit to agdc_ingest;
 
-    grant insert on {schema}.storage_type,
-                    {schema}.collection,
-                    {schema}.metadata_type to agdc_management
-    """.format(schema=SCHEMA_NAME))
+        grant insert on {schema}.storage_type,
+                        {schema}.collection,
+                        {schema}.metadata_type to agdc_management
+        """.format(schema=SCHEMA_NAME))
 
     c.close()
 

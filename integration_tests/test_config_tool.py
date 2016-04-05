@@ -126,7 +126,7 @@ def test_db_init_noop(global_integration_cli_args, local_config):
         opts
     )
     assert result.exit_code == 0
-    assert 'Nothing to do.' in result.output
+    assert 'Updated.' in result.output
 
 
 def test_db_init(global_integration_cli_args, db, local_config):

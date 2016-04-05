@@ -140,13 +140,13 @@ class PostgresDb(object):
             raise ValueError('Application name is too long: Maximum %s chars' % (64 - len(_LIB_ID)))
         return full_name
 
-    def init(self):
+    def init(self, with_permissions=True):
         """
         Init a new database (if not already set up).
 
         :return: If it was newly created.
         """
-        return tables.ensure_db(self._engine)
+        return tables.ensure_db(self._engine, with_permissions=with_permissions)
 
     def begin(self):
         """
@@ -642,11 +642,11 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_
     for field in fields.values():
         index_type = field.postgres_index_type
         if index_type:
-            _LOG.debug('Creating index: %s', field.name)
             index_name = 'ix_field_{prefix}_{field_name}'.format(
                 prefix=name.lower(),
                 field_name=field.name.lower()
             )
+            _LOG.debug('Creating index: %s', index_name)
 
             if not _pg_exists(conn, schema_qualified(index_name)):
                 Index(
