@@ -633,7 +633,12 @@ def _get_data_array_dict(storage_units_by_variable, dimensions, dimension_ranges
         for key, value in selectors.items():
             if key in xarray_data_array.dims:
                 if isinstance(value, slice):
-                    xarray_data_array = xarray_data_array.sel(**{key: value})
+                    if xarray_data_array[key].dtype.kind == 'f':
+                        tolerance = float(xarray_data_array[key][1] - xarray_data_array[key][0]) / 4.
+                        sel_slice = slice(value.start - tolerance, value.stop + tolerance, value.step)
+                        xarray_data_array = xarray_data_array.sel(**{key: sel_slice})
+                    else:
+                        xarray_data_array = xarray_data_array.sel(**{key: value})
                 else:
                     xarray_data_array = xarray_data_array.sel(method='nearest', **{key: value})
         iselectors = dict((k, v) for k, v in iselectors.items() if k in dimensions)
