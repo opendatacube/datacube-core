@@ -20,17 +20,17 @@ __The current AGDC v2 implementation is intended as a working prototype__ for a 
 large-scale multidimensional data management for geoscientific data. This public development release is intended to 
 foster broader collaboration on the design and implementation. It is not intended for operational use.
 
+Documentation
+=============
+See the [user guide](http://agdc-v2.readthedocs.org/en/develop/) for installation &amp; 
+usage of the datacube, and for documentation of the API.
+
 Requirements
 ============
 
 ### System
 * PostgreSQL 9.4 or greater
 * Python 2.7+ or Python 3.4+
-
-General usage
-=============
-See the [user guide](http://agdc-v2.readthedocs.org/en/develop/) for installation &amp; 
-usage of the datacube.
 
 Developer setup
 ===============

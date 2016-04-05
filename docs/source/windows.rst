@@ -1,9 +1,9 @@
-===============================
-Windows AGDC Python Environment
-===============================
+=================
+Microsoft Windows
+=================
 
-For For Python 2.7 and Python 3.5
----------------------------------
+Python 2.7 or Python 3.5 environment
+------------------------------------
 
 1. Download and install a standard python release from http://www.python.org/ . The AGDC supports versions 2.7 and
 3.5.
@@ -12,6 +12,8 @@ For For Python 2.7 and Python 3.5
     If in a restricted environment with no local administrator access, python can be installed by running::
 
         msiexec /a python-2.7.11.msi TARGETDIR=C:\Python27
+    
+    Or by launching the version 3.5 installer and selecting **not** to *install for all users* (only single user install).
 
 2. Ensure **pip** is installed::
 
@@ -34,8 +36,19 @@ For For Python 2.7 and Python 3.5
 5. Activate virtualenv::
 
     C:\envs\agdcv2\Scripts\activate
+    
+The python virtual environment isolates this python installation from other python
+installations (which may be in use for other application software) to prevent
+conflicts between different python module versions.
 
-6. Download and install binary wheels from http://www.lfd.uci.edu/~gohlke/pythonlibs/
+Python modules
+--------------
+
+On windows systems by default there are no ready configured compilers, and so 
+libraries needed for some python modules must be obtained in precompiled 
+(binary) form.
+
+Download and install binary wheels from http://www.lfd.uci.edu/~gohlke/pythonlibs/
 
 You will need to download at least:
 
@@ -44,34 +57,61 @@ You will need to download at least:
 - numpy
 - netCDF4
 - psycopg2
+- numexpr
+- scipy
+- pandas
+- matplotlib
 
 The following may also be useful:
 
 - lxml
-- matplotlib
 - pyzmq
 - udunits2
-- pandas
 
 Install these packages by running in your ``Downloads`` directory::
 
     pip install *.whl
 
 .. note::
+    It may be necessary to manually replace ``*.whl`` with the full filenames for each
+    .whl file (unless using a unix-like shell instead of the standard windows command line
+    console).
+
+.. note::
     **For 3.5 only**
 
     If there are problems loading libraries. Try::
 
-        cp site-packages/matplotlib/msvcp140.dll site-packages/osgeo/
+        copy site-packages/matplotlib/msvcp140.dll site-packages/osgeo/
+        
+Also, install the python notebook interface for working with datacube example notebooks::
+
+    pip install jupyter
 
 PostgreSQL Portable
 -------------------
 
 An easy to install version of PostgreSQL can be downloaded from http://sourceforge.net/projects/postgresqlportable/ . It can install and run as an unprivileged windows user.
 
-It helps to add `PostgreSQLPortable\App\PgSQL\bin` to your `%PATH%` to make PostgreSQL
-admin commands like `dropdb`, `createdb` and `psql` more easily available.
+After installing, launch ``PostgreSQLPortable.exe`` (and place a shortcut in the windows Startup menu).
 
+To prepare the database for first use, enter the following commands in the PostgrSQL Portable window,
+substituting "u12345" with your windows login user-ID::
+
+    create role u12345 superuser login;
+    create database datacube;
+
+Datacube installation
+---------------------
+
+Obtain a current copy of the datacube source code from GitHub. A simple way is to extract 
+https://github.com/data-cube/agdc-v2/archive/develop.zip 
+into a subdirectory of the python environment. 
+
+Install the datacube module by running::
+
+    cd agdc-v2-develop
+    python setup.py install
 
 
 Extra instructions for installing Compliance Checker
