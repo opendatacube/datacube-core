@@ -47,10 +47,14 @@ def _stratify_storage_unit(storage_unit, dimension, runs):
 
     if current_run:
         # Make sure to finish off the last one
-        contiguous_slice = slice(start_i, len(coord), 1)
-        sus.append(IrregularStorageUnitSlice(storage_unit, dimension,
-                                             irregular_slice=contiguous_slice,
-                                             coord=coord[contiguous_slice]))
+        if start_i == 0:
+            # Only create a proxy if it is needed, if it matches the run, just use it
+            return [storage_unit]
+        else:
+            contiguous_slice = slice(start_i, len(coord), 1)
+            sus.append(IrregularStorageUnitSlice(storage_unit, dimension,
+                                                 irregular_slice=contiguous_slice,
+                                                 coord=coord[contiguous_slice]))
     return sus
     #
     # return [IrregularStorageUnitSlice(storage_unit, dimension, i, coord=coord[i:i+1])
