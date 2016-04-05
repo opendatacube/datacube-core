@@ -89,7 +89,7 @@ class AnalyticsEngine(object):
         # construct query descriptor
 
         query_parameters = {}
-        query_parameters['storage_type'] = storage_type
+        #query_parameters['storage_type'] = storage_type
         query_parameters['dimensions'] = dimensions
         query_parameters['variables'] = ()
 
