@@ -59,5 +59,24 @@ class Index(object):
 
         return is_new
 
+    def grant_role(self, role, *users):
+        """
+        Grant a role to users
+        """
+        self._db.grant_role(role, users)
+
+    def create_user(self, user, key, role):
+        """
+        Create a new user.
+        """
+        self._db.create_user(user, key, role)
+
+    def list_users(self):
+        """
+        :returns list of (role, user)
+        :rtype: list[(str, str)]
+        """
+        return self._db.list_users()
+
     def __repr__(self):
         return "Index<db={!r}>".format(self._db)

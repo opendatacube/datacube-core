@@ -5,7 +5,9 @@ Configure the Data Cube from the command-line.
 """
 from __future__ import absolute_import
 
+import base64
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -15,6 +17,8 @@ from click import echo
 from datacube.index import index_connect
 from datacube.ui import read_documents
 from datacube.ui.click import global_cli_options, pass_index, pass_config, CLICK_SETTINGS
+
+USER_ROLES = ('user', 'ingest', 'manage', 'admin')
 
 _LOG = logging.getLogger(__name__)
 
@@ -116,6 +120,51 @@ def list_storage_types(index):
     """
     for storage_type in index.storage.types.get_all():
         echo("{m.id:2d}. {m.name:15}: {m.description!s}".format(m=storage_type))
+
+
+@cli.command('grant')
+@click.argument('role',
+                type=click.Choice(USER_ROLES),
+                nargs=1)
+@click.argument('users', nargs=-1)
+@PASS_INDEX
+def grant(index, role, users):
+    """
+    :type index: datacube.index._api.Index
+    """
+    index.grant_role(role, *users)
+
+
+@cli.command('create')
+@click.argument('role',
+                type=click.Choice(USER_ROLES), nargs=1)
+@click.argument('user', nargs=1)
+@PASS_INDEX
+@pass_config
+def create_user(config, index, role, user):
+    """
+    :type index: datacube.index._api.Index
+    :type config: datacube.config.LocalConfig
+    """
+    key = base64.urlsafe_b64encode(os.urandom(12)).decode('utf-8')
+    index.create_user(user, key, role)
+
+    click.echo('{host}:{port}:*:{username}:{key}'.format(
+        host=config.db_hostname or 'localhost',
+        port=config.db_port,
+        username=user,
+        key=key
+    ))
+
+
+@cli.command('users')
+@PASS_INDEX
+def list_users(index):
+    """
+    :type index: datacube.index._api.Index
+    """
+    for role_user in index.list_users():
+        click.echo('\t'.join(role_user))
 
 
 def _read_docs(paths):

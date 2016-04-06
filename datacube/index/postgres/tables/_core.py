@@ -12,6 +12,8 @@ from sqlalchemy.schema import CreateSchema
 from sqlalchemy.sql.expression import Executable, ClauseElement
 from sqlalchemy.sql.functions import GenericFunction
 
+USER_ROLES = ('agdc_user', 'agdc_ingest', 'agdc_manage', 'agdc_admin')
+
 SQL_NAMING_CONVENTIONS = {
     "ix": 'ix_%(column_0_label)s',
     "uq": "uq_%(table_name)s_%(column_0_name)s",
@@ -51,8 +53,8 @@ def ensure_db(engine, with_permissions=True):
         _LOG.info('Ensuring user roles.')
         _ensure_role(c, 'agdc_user')
         _ensure_role(c, 'agdc_ingest', inherits_from='agdc_user')
-        _ensure_role(c, 'agdc_management', inherits_from='agdc_ingest')
-        _ensure_role(c, 'agdc_admin', inherits_from='agdc_management', add_user=True)
+        _ensure_role(c, 'agdc_manage', inherits_from='agdc_ingest')
+        _ensure_role(c, 'agdc_admin', inherits_from='agdc_manage', add_user=True)
 
         c.execute("""
         grant all on database {db} to agdc_admin;
@@ -88,7 +90,7 @@ def ensure_db(engine, with_permissions=True):
 
         grant insert on {schema}.storage_type,
                         {schema}.collection,
-                        {schema}.metadata_type to agdc_management
+                        {schema}.metadata_type to agdc_manage
         """.format(schema=SCHEMA_NAME))
 
     c.close()
@@ -97,7 +99,7 @@ def ensure_db(engine, with_permissions=True):
 
 
 def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=False):
-    if _has_role(engine, name):
+    if has_role(engine, name):
         _LOG.debug('Role exists: %s', name)
         return
 
@@ -111,7 +113,26 @@ def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=Fal
     engine.execute(' '.join(sql))
 
 
-def _has_role(engine, role_name):
+def create_user(engine, username, key, role):
+    if role not in USER_ROLES:
+        raise ValueError('Unknown role %r. Expected one of %r' % (role, USER_ROLES))
+
+    engine.execute(
+        'create user {username} password %s in role {role}'.format(username=username, role=role),
+        key
+    )
+
+
+def grant_role(engine, role, users):
+    if role not in USER_ROLES:
+        raise ValueError('Unknown role %r. Expected one of %r' % (role, USER_ROLES))
+
+    engine.execute(
+        'grant {role} to {users}'.format(users=', '.join(users), role=role)
+    )
+
+
+def has_role(engine, role_name):
     return bool(engine.execute('select rolname from pg_roles where rolname=%s', role_name).fetchall())
 
 

@@ -623,6 +623,67 @@ class PostgresDb(object):
     def __repr__(self):
         return "PostgresDb<engine={!r}>".format(self._engine)
 
+    def list_users(self):
+        result = self._connection.execute("""
+            select group_role.rolname as role_name, user_role.rolname as user_name
+            from pg_roles group_role
+            inner join pg_auth_members am on am.roleid = group_role.oid
+            inner join pg_roles user_role on am.member = user_role.oid
+            where (group_role.rolname like 'agdc_%%') and not (user_role.rolname like 'agdc_%%')
+            order by group_role.oid asc, user_role.oid asc;
+        """)
+        for row in result:
+            yield _from_pg_role(row['role_name']), row['user_name']
+
+    def create_user(self, username, key, role):
+        pg_role = _to_pg_role(role)
+        tables.create_user(self._engine, username, key, pg_role)
+
+    def grant_role(self, role, users):
+        """
+        Grant a role to a user.
+        """
+        pg_role = _to_pg_role(role)
+
+        for user in users:
+            if not tables.has_role(self._engine, user):
+                raise ValueError('Unknown user %r' % user)
+
+        tables.grant_role(self._engine, pg_role, users)
+
+
+def _to_pg_role(role):
+    """
+    >>> _to_pg_role('ingest')
+    'agdc_ingest'
+    >>> _to_pg_role('fake')
+    Traceback (most recent call last):
+    ...
+    ValueError: Unknown role 'fake'. Expected one of ...
+    """
+    pg_role = 'agdc_' + role.lower()
+    if pg_role not in tables.USER_ROLES:
+        raise ValueError(
+            'Unknown role %r. Expected one of %r' %
+            (role, [r.split('_')[1] for r in tables.USER_ROLES])
+        )
+    return pg_role
+
+
+def _from_pg_role(pg_role):
+    """
+    >>> _from_pg_role('agdc_admin')
+    'admin'
+    >>> _from_pg_role('fake')
+    Traceback (most recent call last):
+    ...
+    ValueError: Not a pg role: 'fake'. Expected one of ...
+    """
+    if pg_role not in tables.USER_ROLES:
+        raise ValueError('Not a pg role: %r. Expected one of %r' % (pg_role, tables.USER_ROLES))
+
+    return pg_role.split('_')[1]
+
 
 def _pg_exists(conn, name):
     """
