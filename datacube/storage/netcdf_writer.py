@@ -34,12 +34,12 @@ _STANDARD_COORDINATES = {
     'x': {
         'standard_name': 'projection_x_coordinate',
         'long_name': 'x coordinate of projection',
-        'axis': 'X'
+        # 'axis': 'X'  # this makes gdal (2.0.0) think x is longitude and it does bad things to it (subtract 360)
     },
     'y': {
         'standard_name': 'projection_y_coordinate',
         'long_name': 'y coordinate of projection',
-        'axis': 'Y'
+        # 'axis': 'Y'  # see x's axis comment above
     },
     'time': {
         'standard_name': 'time',
