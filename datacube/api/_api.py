@@ -630,17 +630,7 @@ def _get_data_array_dict(storage_units_by_variable, dimensions, dimension_ranges
     xarrays = {}
     for var_name, storage_units in storage_units_by_variable.items():
         xarray_data_array = _get_array(storage_units, var_name, dimensions, dim_props, fake_array)
-        for key, value in selectors.items():
-            if key in xarray_data_array.dims:
-                if isinstance(value, slice):
-                    if xarray_data_array[key].dtype.kind == 'f':
-                        tolerance = float(xarray_data_array[key][1] - xarray_data_array[key][0]) / 4.
-                        sel_slice = slice(value.start - tolerance, value.stop + tolerance, value.step)
-                        xarray_data_array = xarray_data_array.sel(**{key: sel_slice})
-                    else:
-                        xarray_data_array = xarray_data_array.sel(**{key: value})
-                else:
-                    xarray_data_array = xarray_data_array.sel(method='nearest', **{key: value})
+        xarray_data_array = _apply_selectors(xarray_data_array, selectors)
         iselectors = dict((k, v) for k, v in iselectors.items() if k in dimensions)
         if iselectors:
             xarray_data_array = xarray_data_array.isel(**iselectors)
@@ -649,6 +639,21 @@ def _get_data_array_dict(storage_units_by_variable, dimensions, dimension_ranges
             xarray_data_array = xarray_data_array.where(xarray_data_array != nodata)
         xarrays[var_name] = xarray_data_array
     return xarrays
+
+
+def _apply_selectors(xarray_data_array, selectors):
+    for key, value in selectors.items():
+        if key in xarray_data_array.dims:
+            if isinstance(value, slice):
+                if xarray_data_array[key].dtype.kind == 'f':
+                    tolerance = float(xarray_data_array[key][1] - xarray_data_array[key][0]) / 4.
+                    xarray_data_array = xarray_data_array.sel(
+                        **{key: slice(value.start - tolerance, value.stop + tolerance, value.step)})
+                else:
+                    xarray_data_array = xarray_data_array.sel(**{key: value})
+            else:
+                xarray_data_array = xarray_data_array.sel(method='nearest', **{key: value})
+    return xarray_data_array
 
 
 def _make_xarray_dataset(data_dicts, storage_unit_type):
