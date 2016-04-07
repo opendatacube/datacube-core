@@ -87,6 +87,7 @@ def ensure_db(engine, with_permissions=True):
                         {schema}.dataset_source,
                         {schema}.dataset_storage,
                         {schema}.storage_unit to agdc_ingest;
+        grant usage, select on all sequences in schema {schema} to agdc_ingest;
 
         grant insert on {schema}.storage_type,
                         {schema}.collection,
