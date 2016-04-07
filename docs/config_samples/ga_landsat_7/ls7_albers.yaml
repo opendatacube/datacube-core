@@ -318,7 +318,7 @@ measurements:
       dtype: int16
       units: '1'
       resampling_method: nearest
-      src_varname: PQ
+      src_varname: pqa
       zlib: True
       flags_definition:
           cloud_shadow_fmask:
