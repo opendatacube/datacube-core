@@ -63,9 +63,12 @@ def collections():
     pass
 
 
-@cli.command('check', help='Verify & view current configuration.')
+@cli.command('check')
 @pass_config
 def check(config_file):
+    """
+    Verify & view current configuration
+    """
     echo('Host: {}:{}'.format(config_file.db_hostname or 'localhost', config_file.db_port or '5432'))
     echo('Database: {}'.format(config_file.db_database))
     echo('User: {}'.format(config_file.db_username))
@@ -82,14 +85,27 @@ def check(config_file):
         click.get_current_context().exit(1)
 
 
-@collections.command('add',)
+@collections.command('add')
 @click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
 @PASS_INDEX
 def collection_add(index, files):
+    """
+    Add collections to the database
+    """
     for descriptor_path, parsed_doc in _read_docs(files):
         index.collections.add(parsed_doc)
+
+
+@collections.command('list')
+@PASS_INDEX
+def collections_list(index):
+    """
+    List all collections
+    """
+    for collection in index.collections.get_all():
+        echo("{c.id:2d}. {c.name:15}".format(c=collection))
 
 
 @cli.group(help='Storage types')
@@ -97,13 +113,16 @@ def storage():
     pass
 
 
-@storage.command('add', help='Add storage types to the index')
+@storage.command('add')
 @click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
 @PASS_INDEX
 @click.pass_context
 def add_storage_types(ctx, index, files):
+    """
+    Add storage types to the index
+    """
     for descriptor_path, parsed_doc in _read_docs(files):
         try:
             index.storage.types.add(parsed_doc)
@@ -114,11 +133,11 @@ def add_storage_types(ctx, index, files):
             ctx.exit(1)
 
 
-@storage.command('list', help='List all Storage Types')
+@storage.command('list')
 @PASS_INDEX
 def list_storage_types(index):
     """
-    :type index: datacube.index._api.Index
+    List all Storage Types
     """
     for storage_type in index.storage.types.get_all():
         echo("{m.id:2d}. {m.name:15}: {m.description!s}".format(m=storage_type))
@@ -132,7 +151,7 @@ def list_storage_types(index):
 @PASS_INDEX
 def grant(index, role, users):
     """
-    :type index: datacube.index._api.Index
+    Grant a role to users
     """
     index.grant_role(role, *users)
 
@@ -145,8 +164,7 @@ def grant(index, role, users):
 @pass_config
 def create_user(config, index, role, user):
     """
-    :type index: datacube.index._api.Index
-    :type config: datacube.config.LocalConfig
+    Create a User
     """
     key = base64.urlsafe_b64encode(os.urandom(12)).decode('utf-8')
     index.create_user(user, key, role)
@@ -163,16 +181,21 @@ def create_user(config, index, role, user):
 @PASS_INDEX
 def list_users(index):
     """
-    :type index: datacube.index._api.Index
+    List users
     """
     for role_user in index.list_users():
         click.echo('\t'.join(role_user))
 
 
-@storage.command('print', help='Print Storage Type YAML based on an id or name')
+@storage.command('print')
 @click.argument('storage_arg')
 @PASS_INDEX
 def print_storage_type(index, storage_arg):
+    """
+    Print Storage Type in YAML format
+
+    <STORAGE_ARG> may be an id or a name
+    """
     try:
         storage_type_id = int(storage_arg)
         storage_type = index.storage.types.get(storage_type_id)

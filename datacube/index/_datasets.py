@@ -217,12 +217,18 @@ class CollectionResource(object):
 
         return self._make(collection_res)
 
+    def get_all(self):
+        """
+        :rtype: iter[datacube.model.Collection]
+        """
+        return (self._make(record) for record in self._db.get_all_collections())
+
     def _make_many(self, query_rows):
         return (self._make(c) for c in query_rows)
 
     def _make(self, query_row):
         """
-        :rtype list[datacube.model.Collection]
+        :rtype datacube.model.Collection
         """
         return Collection(
             query_row['name'],
