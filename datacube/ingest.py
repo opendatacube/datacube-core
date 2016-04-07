@@ -79,7 +79,7 @@ def find_storage_types_for_datasets(datasets, index=None):
     for dataset in datasets:
         dataset_storage_types = index.storage.types.get_for_dataset(dataset)
         if not dataset_storage_types:
-            raise RuntimeError('No storage types found for %s dataset', dataset)
+            raise ValueError('No storage types found for %s' % dataset.local_path)
         for storage_type in dataset_storage_types:
             storage_types[storage_type.id].append(dataset)
     return {index.storage.types.get(id): datasets for id, datasets in storage_types.items()}

@@ -7,9 +7,9 @@ from __future__ import absolute_import
 
 import base64
 import logging
-import os
 import sys
 from pathlib import Path
+import yaml
 
 import click
 from click import echo
@@ -80,7 +80,7 @@ def check(config_file):
         click.get_current_context().exit(1)
 
 
-@collections.command('add')
+@collections.command('add',)
 @click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
@@ -95,7 +95,7 @@ def storage():
     pass
 
 
-@storage.command('add')
+@storage.command('add', help='Add storage types to the index')
 @click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
@@ -112,7 +112,7 @@ def add_storage_types(ctx, index, files):
             ctx.exit(1)
 
 
-@storage.command('list')
+@storage.command('list', help='List all Storage Types')
 @PASS_INDEX
 def list_storage_types(index):
     """
@@ -165,6 +165,22 @@ def list_users(index):
     """
     for role_user in index.list_users():
         click.echo('\t'.join(role_user))
+
+
+@storage.command('print', help='Print Storage Type YAML based on an id or name')
+@click.argument('storage_arg')
+@PASS_INDEX
+def print_storage_type(index, storage_arg):
+    try:
+        storage_type_id = int(storage_arg)
+        storage_type = index.storage.types.get(storage_type_id)
+    except ValueError:
+        storage_type = index.storage.types.get_by_name(storage_arg)
+
+    if storage_type is not None:
+        echo(yaml.dump(storage_type.document))
+    else:
+        echo("Error: Storage type was found")
 
 
 def _read_docs(paths):
