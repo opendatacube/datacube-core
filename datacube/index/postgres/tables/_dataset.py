@@ -7,7 +7,7 @@ from __future__ import absolute_import
 import logging
 
 from sqlalchemy import ForeignKey, UniqueConstraint, CheckConstraint, SmallInteger
-from sqlalchemy import Table, Column, Integer, String, DateTime
+from sqlalchemy import Table, Column, Integer, String, DateTime, Boolean
 from sqlalchemy.dialects import postgres
 from sqlalchemy.sql import func
 
@@ -31,20 +31,19 @@ METADATA_TYPE = Table(
     CheckConstraint(r"name ~* '^\w+$'", name='alphanumeric_name'),
 )
 
-COLLECTION = Table(
-    'collection', _core.METADATA,
+DATASET_TYPE = Table(
+    'dataset_type', _core.METADATA,
     Column('id', SmallInteger, primary_key=True, autoincrement=True),
 
+    # A name/label for this type (eg. 'ls7_nbar'). Specified by users.
     Column('name', String, unique=True, nullable=False),
 
-    # All datasets in the collection have this metadata type.
+    # All datasets of this type should contain these fields.
+    # (newly-ingested datasets may be matched against these fields to determine the dataset type)
+    Column('metadata', postgres.JSONB, nullable=False),
+
+    # The metadata format expected (eg. what fields to search by)
     Column('metadata_type_ref', None, ForeignKey(METADATA_TYPE.c.id), nullable=False),
-
-    # Match any datasets whose metadata is a superset of this document.
-    Column('dataset_metadata', postgres.JSONB, nullable=False),
-    Column('match_priority', Integer, nullable=False, default=999),
-
-    Column('definition', postgres.JSONB, nullable=False),
 
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
@@ -59,7 +58,7 @@ DATASET = Table(
     Column('id', postgres.UUID, primary_key=True),
 
     Column('metadata_type_ref', None, ForeignKey(METADATA_TYPE.c.id), nullable=False),
-    Column('collection_ref', None, ForeignKey(COLLECTION.c.id), nullable=False),
+    Column('dataset_type_ref', None, ForeignKey(DATASET_TYPE.c.id), nullable=False),
 
     Column('metadata', postgres.JSONB, index=False, nullable=False),
 
@@ -72,6 +71,8 @@ DATASET_LOCATION = Table(
     'dataset_location', _core.METADATA,
     Column('id', Integer, primary_key=True, autoincrement=True),
     Column('dataset_ref', None, ForeignKey(DATASET.c.id), nullable=False),
+
+    Column('managed', Boolean, nullable=False),
 
     # The base URI to find the dataset.
     #

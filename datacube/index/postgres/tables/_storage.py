@@ -41,7 +41,6 @@ STORAGE_UNIT = Table(
 
     # These should match the linked datasets.
     #  -> They are duplicated here so that we can define indexes on this table based on them.
-    Column('collection_ref', None, ForeignKey(_dataset.COLLECTION.c.id), index=True, nullable=False),
     Column('metadata_type_ref', None, ForeignKey(_dataset.METADATA_TYPE.c.id), index=True, nullable=False),
 
     Column('descriptor', postgres.JSONB, nullable=False),

@@ -96,12 +96,9 @@ def ensure_db(engine, with_permissions=True):
                         {schema}.storage_unit to agdc_ingest;
         grant usage, select on all sequences in schema {schema} to agdc_ingest;
 
-        grant insert on {schema}.storage_type,
-                        {schema}.collection,
-                        {schema}.metadata_type to agdc_manage;
-
-        -- Allow deletion of storage types that have no storage units.
-        grant delete on {schema}.storage_type to agdc_manage;
+        -- (We're only granting deletion of types that have nothing written yet: they can't delete the data itself)
+        grant insert, delete on {schema}.dataset_type,
+                                {schema}.metadata_type to agdc_manage;
         """.format(schema=SCHEMA_NAME))
 
     c.close()

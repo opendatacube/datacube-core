@@ -25,7 +25,7 @@ from datacube.index.postgres.tables._core import schema_qualified
 from datacube.index.postgres.tables._dataset import DATASET_LOCATION, METADATA_TYPE
 from . import tables
 from ._fields import parse_fields, NativeField
-from .tables import DATASET, DATASET_SOURCE, STORAGE_TYPE, STORAGE_UNIT, DATASET_STORAGE, COLLECTION
+from .tables import DATASET, DATASET_SOURCE, STORAGE_TYPE, STORAGE_UNIT, DATASET_STORAGE, DATASET_TYPE
 
 _LIB_ID = 'agdc-' + str(datacube.__version__)
 APP_NAME_PATTERN = re.compile('^[a-zA-Z0-9-]+$')
@@ -419,11 +419,11 @@ class PostgresDb(object):
                 None,
                 DATASET.c.id
             ),
-            'collection': NativeField(
-                'collection',
-                'Name of collection',
-                None, COLLECTION.c.name
-            )
+            # 'collection': NativeField(
+            #     'collection',
+            #     'Name of collection',
+            #     None, COLLECTION.c.name
+            # )
         }
         dataset_search_fields = collection_result['definition']['dataset']['search_fields']
 
