@@ -352,6 +352,61 @@ class API(object):
             #     return _stack_vars(data_dict, var_dim_name, stack_name=stype)
         return None
 
+    def get_data_array_by_cell(self, x_index, y_index, variables=None, var_dim_name=u'variable',
+                               set_nan=True, **kwargs):
+        """
+        Gets a stacked xarray.DataArray for the requested variables.
+        This stacks the data similar to `numpy.dstack`.
+
+        :param x_index: x tile index (or list of indicies) to return.
+        :type x_index: list or int
+        :param y_index: y tile index (or list of indicies) to return.
+        :type y_index: list or int
+        :param variables: Variables to be included. Use `None` to include all available variables
+        :type variables: list or None
+        :param var_dim_name: dimension name that the variables will be stacked
+        :param set_nan: Set "no data" values to `numpy.NaN`.
+
+            *Note:* this will cause the data to be converted to float dtype.
+        :type set_nan: bool
+
+        :param * * kwargs: search parameters, dimension ranges and storage_type.
+            ::
+                api.get_data_array(product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5))
+
+                api.get_data_array(storage_type='ls5_nbar', time=((1990, 1, 1), (1991, 1, 1))
+
+        :return: Data with all variables stacked along a dimension.
+        :rtype: xarray.DataArray
+        """
+        x_index = x_index if x_index is None or hasattr(x_index, '__contains__') else [x_index]
+        y_index = y_index if y_index is None or hasattr(y_index, '__contains__') else [y_index]
+        variables = [variables] if isinstance(variables, string_types) else variables
+
+        descriptor_request = convert_request_args_to_descriptor_query(kwargs, self.index)
+        query = convert_descriptor_query_to_search_query(descriptor_request, self.index)
+
+        storage_units_by_type = defaultdict(StorageUnitCollection)
+        # su_id = set()
+        for su in self.index.storage.search_eager(**query):
+            if _su_in_cell(su, x_index, y_index):
+                # if su.id not in su_id:
+                #     su_id.add(su.id)
+                storage_units_by_type[su.storage_type.name].append(make_storage_unit(su))
+
+        for stype, storage_units in storage_units_by_type.items():
+            dimension_ranges = convert_descriptor_dims_to_selector_dims(descriptor_request.get('dimensions', {}),
+                                                                        storage_units.get_spatial_crs())
+            data_dicts = _get_data_from_storage_units(storage_units.iteritems(), variables, dimension_ranges,
+                                                      set_nan=set_nan)
+            if len(data_dicts) and len(data_dicts[0]):
+                data_dict = data_dicts[0][0]
+                return _stack_vars(data_dict, var_dim_name, stack_name=stype)
+            # for i, (data_dict, _) in enumerate(data_dicts):
+            #     #stype_label = '{}.{}'.format(stype, i) if len(data_dicts) > 1 else stype
+            #     return _stack_vars(data_dict, var_dim_name, stack_name=stype)
+        return None
+
     def get_dataset(self, variables=None, set_nan=False, include_lineage=False, **kwargs):
         """
         Gets an xarray.Dataset for the requested data.
@@ -377,19 +432,74 @@ class API(object):
         variables = [variables] if isinstance(variables, string_types) else variables
 
         query = convert_descriptor_query_to_search_query(descriptor_request, self.index)
-        storage_units_by_type = defaultdict(StorageUnitCollection)
-        storage_unit_types = {}
+
+        storage_units_by_type = defaultdict(lambda: list([None, StorageUnitCollection()]))
         for su in self.index.storage.search(**query):
-            storage_units_by_type[su.storage_type.name].append(make_storage_unit(su, include_lineage=include_lineage))
-            storage_unit_types[su.storage_type.name] = su.storage_type
+            storage_units_by_type[su.storage_type.id][0] = su.storage_type
+            storage_units_by_type[su.storage_type.id][1].append(
+                make_storage_unit(su, include_lineage=include_lineage))
 
         #TODO: return multiple storage types if compatible
         # or warp / reproject / resample if required?
         # including realigning timestamps
         # and dealing with each storage unit having an extra_metadata field...
-        for stype, storage_units in storage_units_by_type.items():
-            storage_unit_type = storage_unit_types[stype]
+        for storage_unit_type, storage_units in storage_units_by_type.values():
+            # storage_unit_type = storage_unit_types[stype]
             dimension_ranges = convert_descriptor_dims_to_selector_dims(descriptor_dimensions,
+                                                                        storage_units.get_spatial_crs())
+            data_dicts = _get_data_from_storage_units(storage_units.iteritems(), variables,
+                                                      dimension_ranges, set_nan=set_nan)
+            if include_lineage:
+                data_dicts.append(_get_metadata_from_storage_units(storage_units.items(), dimension_ranges))
+            return _make_xarray_dataset(data_dicts, storage_unit_type)
+        return xarray.Dataset()
+
+    def get_dataset_by_cell(self, x_index, y_index, variables=None, set_nan=False, include_lineage=False, **kwargs):
+        """
+        Gets an xarray.Dataset for the requested data given a cell
+
+        :param x_index: x tile index (or list of indicies) to return.
+        :type x_index: list or int
+        :param y_index: y tile index (or list of indicies) to return.
+        :type y_index: list or int
+        :param variables: variable or list of variables to be included.
+                Use `None` to include all available variables (default)
+        :type variables: list(str) or str, optional
+        :param set_nan: If any "no data" values should be set to `numpy.NaN`
+            *Note:* this will cause the data to be cast to a float dtype.
+        :type set_nan: bool, optional
+        :param include_lineage: Include an 'extra_metadata' variable containing detailed lineage information.
+            *Note:* This can cause the query to be slow for large datasets, as it is not lazy-loaded.
+            Not included by default.
+        :type include_lineage: bool, optional
+        :param kwargs: search parameters and dimension ranges
+            Note that the dimension range must fall in the cells specified by the tile indices.
+            E.g.::
+                product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5)
+        :return: Data as variables with shared coordinate dimensions.
+        :rtype: xarray.Dataset
+        """
+        x_index = x_index if x_index is None or hasattr(x_index, '__contains__') else [x_index]
+        y_index = y_index if y_index is None or hasattr(y_index, '__contains__') else [y_index]
+
+        variables = [variables] if isinstance(variables, string_types) else variables
+
+        descriptor_request = convert_request_args_to_descriptor_query(kwargs, self.index)
+        query = convert_descriptor_query_to_search_query(descriptor_request, self.index)
+
+        storage_units_by_type = defaultdict(lambda: list([None, StorageUnitCollection()]))
+        for su in self.index.storage.search(**query):
+            if _su_in_cell(su, x_index, y_index):
+                storage_units_by_type[su.storage_type.id][0] = su.storage_type
+                storage_units_by_type[su.storage_type.id][1].append(
+                    make_storage_unit(su, include_lineage=include_lineage))
+
+        #TODO: return multiple storage types if compatible
+        # or warp / reproject / resample if required?
+        # including realigning timestamps
+        # and dealing with each storage unit having an extra_metadata field...
+        for storage_unit_type, storage_units in storage_units_by_type.values():
+            dimension_ranges = convert_descriptor_dims_to_selector_dims(descriptor_request.get('dimensions', {}),
                                                                         storage_units.get_spatial_crs())
             data_dicts = _get_data_from_storage_units(storage_units.iteritems(), variables,
                                                       dimension_ranges, set_nan=set_nan)
@@ -477,8 +587,23 @@ class API(object):
         fields = self.index.datasets.get_fields()
         return dict((field, list(set(field_values[field] for field_values in summary))) for field in fields)
 
+    def list_cells(self, x_index, y_index, **kwargs):
+        x_index = x_index if x_index is None or hasattr(x_index, '__contains__') else [x_index]
+        y_index = y_index if y_index is None or hasattr(y_index, '__contains__') else [y_index]
+
+        descriptor_request = convert_request_args_to_descriptor_query(kwargs, self.index)
+        descriptor_dimensions = descriptor_request.get('dimensions', {})
+        query = convert_descriptor_query_to_search_query(descriptor_request, self.index)
+        return sorted({su.tile_index for su in self.index.storage.search(**query) if _su_in_cell(su, x_index, y_index)})
+
     def __repr__(self):
         return "API<index={!r}>".format(self.index)
+
+
+def _su_in_cell(su, x_index, y_index):
+    return (hasattr(su, 'tile_index')
+            and (su.tile_index[0] in x_index or x_index is None)
+            and (su.tile_index[1] in y_index or y_index is None))
 
 
 def _stack_vars(data_dict, var_dim_name, stack_name=None):
