@@ -1,8 +1,20 @@
 #!/bin/bash
+
+######################################################################################################
 # Purpose: One script installation of agdc-v2 into a baseline AWS ec2 instance with ubuntu-14.04 OS 64bit.
 # Minimal hardware Spec: 2CPU, 8GB memory, 200GB diskspace.
 # Author: Fei.Zhang@ga.gov.au
-# Date: 2016-04-08
+# DateCreated: 2016-04-08
+
+# Main Steps:
+#
+# 1. Install git, gdal hdf netcdf binaries and ananconda Python and libraries 
+# 2. clone and install agdc-v2 into conda python
+# 3. install and setup postgres 9.4
+# 4. create and initialize the datacube schema +config
+# 5. ingest test datasts
+# 6. Run test suite.
+###################################################################################################### 
 
 function install_postgres94:  # Install postgres-9.4 etc
 {
