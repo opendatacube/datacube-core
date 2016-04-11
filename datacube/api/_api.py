@@ -22,6 +22,7 @@ import logging
 import datetime
 import itertools
 from collections import defaultdict, OrderedDict
+import warnings
 
 import numpy
 import xarray
@@ -443,6 +444,10 @@ class API(object):
         # or warp / reproject / resample if required?
         # including realigning timestamps
         # and dealing with each storage unit having an extra_metadata field...
+        if len(storage_units_by_type) > 1:
+            warnings.warn('Multiple storage types found. Only 1 will be returned. Make a '
+                          'more specific request to access the other data.')
+
         for storage_unit_type, storage_units in storage_units_by_type.values():
             # storage_unit_type = storage_unit_types[stype]
             dimension_ranges = convert_descriptor_dims_to_selector_dims(descriptor_dimensions,
@@ -759,9 +764,10 @@ def _get_data_array_dict(storage_units_by_variable, dimensions, dimension_ranges
         iselectors = dict((k, v) for k, v in iselectors.items() if k in dimensions)
         if iselectors:
             xarray_data_array = xarray_data_array.isel(**iselectors)
-        if set_nan:
-            nodata = storage_units[0].variables[var_name].nodata
-            xarray_data_array = xarray_data_array.where(xarray_data_array != nodata)
+
+        nodata_value = storage_units[0].variables[var_name].nodata
+        if set_nan and nodata_value is not None:
+            xarray_data_array = xarray_data_array.where(xarray_data_array != nodata_value)
         xarrays[var_name] = xarray_data_array
     return xarrays
 
