@@ -283,7 +283,7 @@ class Dataset(object):
         """
         A dataset on disk.
 
-        :type collection: Collection
+        :type collection: DatasetType
         :param metadata_doc: the document (typically a parsed json/yaml)
         :type metadata_doc: dict
         :param local_uri: A URI to access this dataset locally.
@@ -382,7 +382,7 @@ class MetadataType(object):
         return _DocReader(self.dataset_offsets.__dict__, dataset_doc)
 
 
-class Collection(object):
+class DatasetType(object):
     def __init__(self,
                  name,
                  match,

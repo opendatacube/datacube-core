@@ -172,7 +172,7 @@ def test_idempotent_add_mapping(index, local_config):
 def test_collection_indexes_views_exist(db, telemetry_collection):
     """
     :type db: datacube.index.postgres._api.PostgresDb
-    :type telemetry_collection: datacube.model.Collection
+    :type telemetry_collection: datacube.model.DatasetType
     """
     # Ensure indexes were created for the eo metadata type (following the naming conventions):
     val = db._connection.execute(
@@ -186,7 +186,7 @@ def test_collection_indexes_views_exist(db, telemetry_collection):
 
 def test_idempotent_add_collection(index, telemetry_collection, telemetry_collection_doc):
     """
-    :type telemetry_collection: datacube.model.Collection
+    :type telemetry_collection: datacube.model.DatasetType
     :type index: datacube.index._api.Index
     """
     # Re-add should have no effect, because it's equal to the current one.

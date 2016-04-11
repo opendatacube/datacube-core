@@ -11,7 +11,7 @@ import cachetools
 
 from datacube import compat
 from datacube.index.fields import InvalidDocException
-from datacube.model import Dataset, Collection, DatasetMatcher, DatasetOffsets, MetadataType
+from datacube.model import Dataset, DatasetType, DatasetMatcher, DatasetOffsets, MetadataType
 from . import fields
 
 _LOG = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ def _ensure_dataset(db, collection_resource, dataset_doc):
 
     :type db: datacube.index.postgres._api.PostgresDb
     :type dataset_doc: dict
-    :type collection_resource: CollectionResource
+    :type collection_resource: DatasetTypeResource
     :returns: The dataset_id if we ingested it.
     :rtype: uuid.UUID
     """
@@ -68,7 +68,7 @@ def _prepare_single(collection_resource, dataset_doc, db):
     dataset_id = dataset.uuid_field
 
     _LOG.info('Indexing %s', dataset_id)
-    was_inserted = db.insert_dataset(indexable_doc, dataset_id, collection_id=collection.id)
+    was_inserted = db.insert_dataset(indexable_doc, dataset_id, dataset_type_id=collection.id)
 
     return was_inserted, dataset, source_datasets
 
@@ -145,7 +145,7 @@ class MetadataTypeResource(object):
         )
 
 
-class CollectionResource(object):
+class DatasetTypeResource(object):
     def __init__(self, db, metadata_type_resource):
         """
         :type db: datacube.index.postgres._api.PostgresDb
@@ -157,12 +157,11 @@ class CollectionResource(object):
     def add(self, definition):
         """
         :type definition: dict
-        :rtype: datacube.model.Collection
+        :rtype: datacube.model.DatasetType
         """
         # This column duplication is getting out of hand:
         name = definition['name']
         dataset_metadata = definition['match']['metadata']
-        match_priority = int(definition['match']['priority'])
         metadata_type = definition['metadata_type']
 
         # They either specified the name of a metadata type, or specified a metadata type.
@@ -174,22 +173,21 @@ class CollectionResource(object):
             metadata_type = self.metadata_type_resource.add(metadata_type, allow_table_lock=False)
 
         if not metadata_type:
-            raise InvalidDocException('Unkown metadata type: %r' % definition['metadata_type'])
+            raise InvalidDocException('Unknown metadata type: %r' % definition['metadata_type'])
 
-        existing = self._db.get_collection_by_name(name)
+        existing = self._db.get_dataset_type_by_name(name)
         if existing:
             # TODO: Support for adding/updating match rules?
             # They've passed us the same collection again. Make sure it matches what is stored.
             fields.check_doc_unchanged(
                 existing.definition,
                 definition,
-                'Collection {}'.format(name)
+                'Dataset type {}'.format(name)
             )
         else:
-            self._db.add_collection(
+            self._db.add_dataset_type(
                 name=name,
-                dataset_metadata=dataset_metadata,
-                match_priority=match_priority,
+                metadata=dataset_metadata,
                 metadata_type_id=metadata_type.id,
                 definition=definition
             )
@@ -204,11 +202,11 @@ class CollectionResource(object):
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def get(self, id_):
-        return self._make(self._db.get_collection(id_))
+        return self._make(self._db.get_dataset_type(id_))
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def get_by_name(self, name):
-        collection = self._db.get_collection_by_name(name)
+        collection = self._db.get_dataset_type_by_name(name)
         if not collection:
             return None
         return self._make(collection)
@@ -216,9 +214,9 @@ class CollectionResource(object):
     def get_for_dataset_doc(self, metadata_doc):
         """
         :type metadata_doc: dict
-        :rtype: datacube.model.Collection or None
+        :rtype: datacube.model.DatasetType or None
         """
-        collection_res = self._db.get_collection_for_doc(metadata_doc)
+        collection_res = self._db.determine_dataset_type_for_doc(metadata_doc)
         if collection_res is None:
             return None
 
@@ -228,7 +226,7 @@ class CollectionResource(object):
         """
         :rtype: iter[datacube.model.Collection]
         """
-        return (self._make(record) for record in self._db.get_all_collections())
+        return (self._make(record) for record in self._db.get_all_dataset_types())
 
     def _make_many(self, query_rows):
         return (self._make(c) for c in query_rows)
@@ -237,7 +235,7 @@ class CollectionResource(object):
         """
         :rtype datacube.model.Collection
         """
-        return Collection(
+        return DatasetType(
             query_row['name'],
             DatasetMatcher(query_row['dataset_metadata']),
             metadata_type=self.metadata_type_resource.get(query_row['metadata_type_ref']),
@@ -246,15 +244,15 @@ class CollectionResource(object):
 
 
 class DatasetResource(object):
-    def __init__(self, db, user_config, collection_resource):
+    def __init__(self, db, user_config, dataset_type_resource):
         """
         :type db: datacube.index.postgres._api.PostgresDb
         :type user_config: datacube.config.LocalConfig
-        :type collection_resource: CollectionResource
+        :type dataset_type_resource: DatasetTypeResource
         """
         self._db = db
         self._config = user_config
-        self._collection_resource = collection_resource
+        self.types = dataset_type_resource
 
     def get(self, id_, provenance=False):
         """
@@ -295,7 +293,7 @@ class DatasetResource(object):
         :rtype: datacube.model.Dataset
         """
         with self._db.begin() as transaction:
-            dataset_id = _ensure_dataset(self._db, self._collection_resource, metadata_doc)
+            dataset_id = _ensure_dataset(self._db, self.types, metadata_doc)
 
             if metadata_path or uri:
                 if uri is None:
@@ -321,7 +319,7 @@ class DatasetResource(object):
         """
         if collection_name is None:
             collection_name = self._config.default_collection_name
-        collection = self._collection_resource.get_by_name(collection_name)
+        collection = self.types.get_by_name(collection_name)
         return collection.metadata_type.dataset_fields
 
     def get_locations(self, dataset):
@@ -336,7 +334,7 @@ class DatasetResource(object):
         :rtype datacube.model.Dataset
         """
         return Dataset(
-            self._collection_resource.get(dataset_res.collection_ref),
+            self.types.get(dataset_res.collection_ref),
             dataset_res.metadata,
             dataset_res.local_uri
         )

@@ -168,3 +168,40 @@ storage_unit:
             - [extents, geospatial_lon_min]
             max_offset:
             - [extents, geospatial_lon_max]
+---
+
+name: storage_unit
+description: |
+    Stacked storage units
+
+    Produced by the agdc storage module.
+
+dataset:
+    search_fields:
+        platform:
+            description: Platform code
+            offset: [platform, code]
+        instrument:
+            description: Instrument name
+            offset: [instrument, name]
+        lat:
+            description: Latitude range
+            type: float-range
+            max_offset:
+            - [extents, geospatial_lat_max]
+            min_offset:
+            - [extents, geospatial_lat_min]
+        lon:
+            description: Longitude range
+            type: float-range
+            max_offset:
+            - [extents, geospatial_lon_max]
+            min_offset:
+            - [extents, geospatial_lon_min]
+        time:
+            description: Acquisition time
+            type: datetime-range
+            max_offset:
+            - [extents, time_max]
+            min_offset:
+            - [extents, time_min]

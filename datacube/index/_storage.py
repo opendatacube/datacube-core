@@ -36,16 +36,16 @@ def _ensure_valid(descriptor):
 
 
 class StorageUnitResource(object):
-    def __init__(self, db, storage_type_resource, collection_resource, local_config):
+    def __init__(self, db, storage_type_resource, dataset_types, local_config):
         """
         :type db: datacube.index.postgres._api.PostgresDb
         :type storage_type_resource: StorageTypeResource
-        :type collection_resource: CollectionResource
+        :type dataset_types: datacube.index._datasets.DatasetTypeResource
         :type local_config: datacube.config.LocalConfig
         """
         self._db = db
         self.types = storage_type_resource
-        self._collection_resource = collection_resource
+        self._dataset_types = dataset_types
 
         self._config = local_config
 
@@ -108,7 +108,7 @@ class StorageUnitResource(object):
         if collection_name is None:
             collection_name = self._config.default_collection_name
 
-        collection = self._collection_resource.get_by_name(collection_name)
+        collection = self._dataset_types.get_by_name(collection_name)
         if not collection:
             raise ValueError('Unknown collection: ' + collection_name)
 
@@ -124,7 +124,7 @@ class StorageUnitResource(object):
         """
         if collection_name is None:
             collection_name = self._config.default_collection_name
-        collection = self._collection_resource.get_by_name(collection_name)
+        collection = self._dataset_types.get_by_name(collection_name)
         return collection.metadata_type.storage_fields
 
     def search(self, *expressions, **query):

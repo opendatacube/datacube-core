@@ -9,14 +9,13 @@ from pathlib import Path
 
 from datacube import ui
 from datacube.config import LocalConfig
-from ._datasets import DatasetResource, CollectionResource, MetadataTypeResource
+from ._datasets import DatasetResource, DatasetTypeResource, MetadataTypeResource
 from ._storage import StorageUnitResource, StorageTypeResource
 from .postgres import PostgresDb
 
 _LOG = logging.getLogger(__name__)
 
 _DEFAULT_METADATA_TYPES_PATH = Path(__file__).parent.joinpath('default-metadata-types.yaml')
-_DEFAULT_COLLECTIONS_PATH = Path(__file__).parent.joinpath('default-collections.yaml')
 
 
 def connect(local_config=LocalConfig.find(), application_name=None):
@@ -42,9 +41,9 @@ class Index(object):
         self._db = db
 
         self.metadata_types = MetadataTypeResource(db)
-        self.collections = CollectionResource(db, self.metadata_types)
-        self.datasets = DatasetResource(db, local_config, self.collections)
-        self.storage = StorageUnitResource(db, StorageTypeResource(db, local_config), self.collections, local_config)
+        dataset_types = DatasetTypeResource(db, self.metadata_types)
+        self.datasets = DatasetResource(db, local_config, dataset_types)
+        self.storage = StorageUnitResource(db, StorageTypeResource(db, local_config), dataset_types, local_config)
 
     def init_db(self, with_default_collection=True, with_permissions=True):
         is_new = self._db.init(with_permissions=with_permissions)
@@ -53,9 +52,6 @@ class Index(object):
             _LOG.info('Adding default metadata types.')
             for _, doc in ui.read_documents(_DEFAULT_METADATA_TYPES_PATH):
                 self.metadata_types.add(doc, allow_table_lock=True)
-            _LOG.info('Adding default collections.')
-            for _, doc in ui.read_documents(_DEFAULT_COLLECTIONS_PATH):
-                self.collections.add(doc)
 
         return is_new
 

@@ -45,6 +45,8 @@ DATASET_TYPE = Table(
     # The metadata format expected (eg. what fields to search by)
     Column('metadata_type_ref', None, ForeignKey(METADATA_TYPE.c.id), nullable=False),
 
+    Column('definition', postgres.JSONB, nullable=False),
+
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
     Column('added_by', String, server_default=func.current_user(), nullable=False),

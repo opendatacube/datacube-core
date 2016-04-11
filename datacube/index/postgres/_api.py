@@ -162,46 +162,46 @@ class PostgresDb(object):
         """
         return _BegunTransaction(self._connection)
 
-    def insert_dataset(self, metadata_doc, dataset_id, collection_id=None):
+    def insert_dataset(self, metadata_doc, dataset_id, dataset_type_id=None):
         """
         Insert dataset if not already indexed.
         :type metadata_doc: dict
         :type dataset_id: str or uuid.UUID
-        :type collection_id: int
+        :type dataset_type_id: int
         :return: whether it was inserted
         :rtype: bool
         """
-        if collection_id is None:
-            collection_result = self.get_collection_for_doc(metadata_doc)
-            if not collection_result:
+        if dataset_type_id is None:
+            d_type_result = self.determine_dataset_type_for_doc(metadata_doc)
+            if not d_type_result:
                 _LOG.debug('Attempted failed match on doc %r', metadata_doc)
-                raise RuntimeError('No collection matches dataset')
-            collection_id = collection_result['id']
-            _LOG.debug('Matched collection %r', collection_id)
+                raise RuntimeError('No dataset type matches dataset')
+            dataset_type_id = d_type_result['id']
+            _LOG.debug('Matched collection %r', dataset_type_id)
         else:
-            _LOG.debug('Using provided collection %r', collection_id)
+            _LOG.debug('Using provided collection %r', dataset_type_id)
 
         try:
-            collection_ref = bindparam('collection_ref')
+            dataset_type_ref = bindparam('dataset_type_ref')
             ret = self._connection.execute(
                 # Insert if not exists.
                 #     (there's still a tiny chance of a race condition: It will throw an integrity error if another
                 #      connection inserts the same dataset in the time between the subquery and the main query.
                 #      This is ok for our purposes.)
                 DATASET.insert().from_select(
-                    ['id', 'collection_ref', 'metadata_type_ref', 'metadata'],
+                    ['id', 'dataset_type_ref', 'metadata_type_ref', 'metadata'],
                     select([
-                        bindparam('id'), collection_ref,
+                        bindparam('id'), dataset_type_ref,
                         select([
-                            COLLECTION.c.metadata_type_ref
+                            DATASET_TYPE.c.metadata_type_ref
                         ]).where(
-                            COLLECTION.c.id == collection_ref
+                            DATASET_TYPE.c.id == dataset_type_ref
                         ).label('metadata_type_ref'),
                         bindparam('metadata', type_=JSONB)
                     ]).where(~exists(select([DATASET.c.id]).where(DATASET.c.id == bindparam('id'))))
                 ),
                 id=dataset_id,
-                collection_ref=collection_id,
+                dataset_type_ref=dataset_type_id,
                 metadata=metadata_doc
             )
             return ret.rowcount > 0
@@ -562,22 +562,23 @@ class PostgresDb(object):
         for result in results:
             yield result
 
-    def get_collection_for_doc(self, metadata_doc):
+    def determine_dataset_type_for_doc(self, metadata_doc):
         """
         :type metadata_doc: dict
         :rtype: dict or None
         """
-        return self._connection.execute(
-            COLLECTION.select().where(
-                COLLECTION.c.dataset_metadata.contained_by(metadata_doc)
-            ).order_by(
-                COLLECTION.c.match_priority.asc()
-            ).limit(1)
-        ).first()
+        matching_types = self._connection.execute(
+            DATASET_TYPE.select().where(
+                DATASET_TYPE.c.metadata.contained_by(metadata_doc)
+            )
+        ).fetchall()
 
-    def get_collection(self, id_):
+        if len(matching_types) > 1:
+            pass
+
+    def get_dataset_type(self, id_):
         return self._connection.execute(
-            COLLECTION.select().where(COLLECTION.c.id == id_)
+            DATASET_TYPE.select().where(DATASET_TYPE.c.id == id_)
         ).first()
 
     def get_metadata_type(self, id_):
@@ -585,9 +586,9 @@ class PostgresDb(object):
             METADATA_TYPE.select().where(METADATA_TYPE.c.id == id_)
         ).first()
 
-    def get_collection_by_name(self, name):
+    def get_dataset_type_by_name(self, name):
         return self._connection.execute(
-            COLLECTION.select().where(COLLECTION.c.name == name)
+            DATASET_TYPE.select().where(DATASET_TYPE.c.name == name)
         ).first()
 
     def get_metadata_type_by_name(self, name):
@@ -600,18 +601,16 @@ class PostgresDb(object):
             STORAGE_TYPE.select().where(STORAGE_TYPE.c.name == name)
         ).first()
 
-    def add_collection(self,
-                       name,
-                       dataset_metadata,
-                       match_priority,
-                       metadata_type_id,
-                       definition):
+    def add_dataset_type(self,
+                         name,
+                         metadata,
+                         metadata_type_id,
+                         definition):
         res = self._connection.execute(
-            COLLECTION.insert().values(
+            DATASET_TYPE.insert().values(
                 name=name,
-                dataset_metadata=dataset_metadata,
+                metadata=metadata,
                 metadata_type_ref=metadata_type_id,
-                match_priority=match_priority,
                 definition=definition
             )
         )
@@ -639,8 +638,8 @@ class PostgresDb(object):
             concurrently=concurrently
         )
 
-    def get_all_collections(self):
-        return self._connection.execute(COLLECTION.select()).fetchall()
+    def get_all_dataset_types(self):
+        return self._connection.execute(DATASET_TYPE.select()).fetchall()
 
     def count_storage_types(self):
         return self._connection.execute(select([func.count()]).select_from(STORAGE_TYPE)).scalar()

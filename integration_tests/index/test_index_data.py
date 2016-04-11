@@ -86,7 +86,7 @@ def test_index_dataset_in_transactions(index, db, local_config, default_collecti
 def test_index_dataset_with_location(index, default_collection):
     """
     :type index: datacube.index._api.Index
-    :type default_collection: datacube.model.Collection
+    :type default_collection: datacube.model.DatasetType
     """
     first_file = '/tmp/first/something.yaml'
     second_file = '/tmp/second/something.yaml'
