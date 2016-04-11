@@ -39,12 +39,14 @@ function setup_db:
 #make sure postgres servewr up and running
 # 9.4/main (port 5432): online
 
-#become postgres user
- su - postgres
-postgres@ip-10-0-0-164:~$ ls
-9.4
 
-postgres@ip-10-0-0-164:~$ createdb datacube
+# Create and initise a database
+#ubuntu@ip-10-0-0-164:/xdisk$ sudo su - postgres -c "createdb testdc"
+#ubuntu@ip-10-0-0-164:/xdisk$ datacube-config database init
+#Initialising database...
+#Done.
+
+#postgres@ip-10-0-0-164:~$ createdb datacube
 
 # create a admin db users
 
@@ -68,7 +70,7 @@ db_hostname: localhost
 # Credentials are optional: you might have other Postgres authentication configured.
 # The default username otherwise is the current user id.
 db_username: test_user
-db_password: test_user
+
 
 [locations]
 # Where to reach storage locations from the current machine.
@@ -86,10 +88,15 @@ Done.
 
 # import data storage type definition
 
-datacube-config storage add docs/config_samples/ga_landsat_7/ls7_albers.yaml
+datacube-config storage add /xdisk/fzhang/agdc-v2/docs/config_samples/ga_landsat_5/ls5_albers.yaml
+
+datacube-config storage add /xdisk/fzhang/agdc-v2/docs/config_samples/ga_landsat_7/ls7_albers.yaml
+
+datacube-config storage add /xdisk/fzhang/agdc-v2/docs/config_samples/ga_landsat_8/ls8_albers.yaml
 
 # ingest datasets
-datacube-ingest -v ingest packages/nbar/LS8_OLITIRS_TNBAR_P54_GALPGS01-002_112_079_20140126 packages/pq/LS8_OLITIRS_PQ_P55_GAPQ01-002_112_079_20140126
+datacube-ingest -v ingest /xdisk/IngestInputs/ls5/LS5_TM_NBAR_P54_GANBAR01-002_095_083_20060129/ga-metadata.yaml
+
 }
 
 # other stuff
@@ -122,6 +129,3 @@ git checkout develop # use the right branch
 python setup.py install  # will install into anaconda version
 
 # conda list
-
-
-
