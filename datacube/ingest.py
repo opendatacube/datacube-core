@@ -101,13 +101,8 @@ def create_storage_units(datasets, storage_type, executor=SerialExecutor()):
              for tile_index, datasets in tile_datasets_with_storage_type(datasets, storage_type).items()
              for time, dataset_group in groupby(datasets, lambda ds: ds.time)]
 
-    try:
-        storage_units = executor.map(_create_storage_unit, tasks)
-        return storage_units
-    except:
-        for task in tasks:
-            _remove_storage_unit(task)
-        raise
+    storage_units = executor.map(_create_storage_unit, tasks)
+    return storage_units
 
 
 def _create_storage_unit(task):
@@ -115,11 +110,3 @@ def _create_storage_unit(task):
     filename = storage.generate_filename(tile_index, datasets, storage_type)
     return storage.create_storage_unit_from_datasets(tile_index, datasets, storage_type, filename)
 
-
-def _remove_storage_unit(task):
-    tile_index, storage_type, datasets = task
-    filename = storage.generate_filename(tile_index, datasets, storage_type)
-    try:
-        os.unlink(str(_uri_to_local_path(filename)))
-    except OSError:
-        pass
