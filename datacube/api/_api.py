@@ -71,7 +71,7 @@ class API(object):
 
         Dimensions can specify a range by label, and optionally a CRS to interpret the label.
 
-        The default CRS interpretation for geospatial dimensions (longitude/latitude or x/y) is WGS84/EPSG:4236,
+        The default CRS interpretation for geospatial dimensions (longitude/latitude or x/y) is WGS84/EPSG:4326,
         even if the resulting dimension is in another projection.
 
         :param descriptor_request: The request query, formatted as:
@@ -204,7 +204,7 @@ class API(object):
             (year, month, day, hour, minute, second), or by seconds since the Unix epoch.
             Strings may also be used, with ISO format preferred.
 
-            The default CRS interpretation for geospatial dimensions (longitude/latitude or x/y) is WGS84/EPSG:4236,
+            The default CRS interpretation for geospatial dimensions (longitude/latitude or x/y) is WGS84/EPSG:4326,
             even if the resulting dimension is in another projection.
 
             The `array_range` field can be used to subset the request.
