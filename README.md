@@ -29,7 +29,7 @@ Requirements
 ============
 
 ### System
-* PostgreSQL 9.4 or greater
+* PostgreSQL 9.5+
 * Python 2.7+ or Python 3.4+
 
 Developer setup
