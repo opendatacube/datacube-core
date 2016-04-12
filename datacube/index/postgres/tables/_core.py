@@ -91,7 +91,10 @@ def ensure_db(engine, with_permissions=True):
 
         grant insert on {schema}.storage_type,
                         {schema}.collection,
-                        {schema}.metadata_type to agdc_manage
+                        {schema}.metadata_type to agdc_manage;
+
+        -- Allow deletion of storage types that have no storage units.
+        grant delete on {schema}.storage_type to agdc_manage;
         """.format(schema=SCHEMA_NAME))
 
     c.close()
