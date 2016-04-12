@@ -308,8 +308,10 @@ class API(object):
 
     def get_data_array(self, variables=None, var_dim_name=u'variable', set_nan=True, **kwargs):
         """
-        Gets a stacked xarray.DataArray for the requested variables.
+        Gets a stacked `xarray.DataArray` for the requested variables.
         This stacks the data similar to `numpy.dstack`.
+
+        See http://xarray.pydata.org/en/stable/api.html#dataarray for usage of the `DataArray` object.
 
         :param variables: Variables to be included. Use `None` to include all available variables
         :type variables: list or None
@@ -356,8 +358,14 @@ class API(object):
     def get_data_array_by_cell(self, x_index, y_index, variables=None, var_dim_name=u'variable',
                                set_nan=True, **kwargs):
         """
-        Gets a stacked xarray.DataArray for the requested variables.
+        Gets a stacked `xarray.DataArray` for the requested variables.
         This stacks the data similar to `numpy.dstack`.
+
+        The cell represents a tiled footprint of the underlying storage footprint,
+        and is typically only used in large-scale processing of data.
+        Cell indexes can be found using :meth:`list_cells`.
+
+        See http://xarray.pydata.org/en/stable/api.html#dataarray for usage of the `DataArray` object.
 
         :param x_index: x tile index (or list of indicies) to return.
         :type x_index: list or int
@@ -410,7 +418,9 @@ class API(object):
 
     def get_dataset(self, variables=None, set_nan=False, include_lineage=False, **kwargs):
         """
-        Gets an xarray.Dataset for the requested data.
+        Gets an `xarray.Dataset` for the requested data.
+
+        See http://xarray.pydata.org/en/stable/api.html#dataset for usage of the `Dataset` object.
 
         :param variables: variable or list of variables to be included.
                 Use `None` to include all available variables (default)
@@ -461,7 +471,13 @@ class API(object):
 
     def get_dataset_by_cell(self, x_index, y_index, variables=None, set_nan=False, include_lineage=False, **kwargs):
         """
-        Gets an xarray.Dataset for the requested data given a cell
+        Gets an `xarray.Dataset` for the requested data given a cell.
+
+        The cell represents a tiled footprint of the underlying storage footprint,
+        and is typically only used in large-scale processing of data.
+        Cell indexes can be found using :meth:`list_cells`.
+
+        See http://xarray.pydata.org/en/stable/api.html#dataset for usage of the `Dataset` object.
 
         :param x_index: x tile index (or list of indicies) to return.
         :type x_index: list or int
@@ -480,7 +496,7 @@ class API(object):
         :param kwargs: search parameters and dimension ranges
             Note that the dimension range must fall in the cells specified by the tile indices.
             E.g.::
-                product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5)
+                product='NBAR', platform='LANDSAT_5', time=((1990, 6, 1), (1992, 7 ,1))
         :return: Data as variables with shared coordinate dimensions.
         :rtype: xarray.Dataset
         """
@@ -592,12 +608,37 @@ class API(object):
         fields = self.index.datasets.get_fields()
         return dict((field, list(set(field_values[field] for field_values in summary))) for field in fields)
 
-    def list_cells(self, x_index, y_index, **kwargs):
+    def list_cells(self, x_index=None, y_index=None, **kwargs):
+        """
+        List the tile index pairs for cells.
+
+        Cells are the spatial footprint, with an `(x, y)` index that can be configured to match the projection of the
+        stored data.
+
+        E.g. (148, -35) could represent a 1x1 degree tile containing data between
+        longitudes 148.0 up to but not including 149.0 and
+        latitudes of -35.0 up to but not including -36.0 for in geographically projected data.
+
+        For projected data (such as Australian Albers equal-area projection - ESPG:3577),
+        (15, -40) could represent a 100x100km tile containing data from
+        eastings 1,500,000m up to but not including 1,600,000, and
+        northings -4,000,000m up to but not including -4,100,000m.
+
+        **Note:** This is typically only used for data processing.
+
+        :param x_index: Limit the response to those cells with an x tile index in this list.
+            The default of `None` does not filter the list.
+        :type x_index: int, list of ints, or None
+        :param y_index: Limit the response to those cells with an y tile index in this list.
+            The default of `None` does not filter the list.
+        :type y_index: int, list of ints, or None
+        :param kwargs: Filter the cells by search parameters, dimension ranges and storage_type.
+        :return: List of tuples of the (x, y) tile indicies.
+        """
         x_index = x_index if x_index is None or hasattr(x_index, '__contains__') else [x_index]
         y_index = y_index if y_index is None or hasattr(y_index, '__contains__') else [y_index]
 
         descriptor_request = convert_request_args_to_descriptor_query(kwargs, self.index)
-        descriptor_dimensions = descriptor_request.get('dimensions', {})
         query = convert_descriptor_query_to_search_query(descriptor_request, self.index)
         return sorted({su.tile_index for su in self.index.storage.search(**query) if _su_in_cell(su, x_index, y_index)})
 
@@ -607,8 +648,8 @@ class API(object):
 
 def _su_in_cell(su, x_index, y_index):
     return (hasattr(su, 'tile_index')
-            and (su.tile_index[0] in x_index or x_index is None)
-            and (su.tile_index[1] in y_index or y_index is None))
+            and (x_index is None or su.tile_index[0] in x_index)
+            and (y_index is None or su.tile_index[1] in y_index))
 
 
 def _stack_vars(data_dict, var_dim_name, stack_name=None):

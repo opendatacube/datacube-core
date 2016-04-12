@@ -29,6 +29,16 @@ Data Access
    API.get_dataset
    API.get_data_array
 
+Cell-based Procesing
+~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   API.list_cells
+   API.get_dataset_by_cell
+   API.get_data_array_by_cell
+
 Analytics Functions
 ~~~~~~~~~~~~~~~~~~~
 
