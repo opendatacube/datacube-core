@@ -365,7 +365,6 @@ class MetadataType(object):
                  name,
                  dataset_offsets,
                  dataset_search_fields,
-                 storage_unit_search_fields,
                  id_=None):
         self.name = name
         #: :type: DatasetOffsets
@@ -373,8 +372,6 @@ class MetadataType(object):
 
         #: :type: dict[str, datacube.index.fields.Field]
         self.dataset_fields = dataset_search_fields
-        #: :type: dict[str, datacube.index.fields.Field]
-        self.storage_fields = storage_unit_search_fields
 
         self.id = id_
 

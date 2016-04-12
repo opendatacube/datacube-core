@@ -50,7 +50,7 @@ def database():
 @PASS_INDEX
 def database_init(index, default_collections, init_users):
     echo('Initialising database...')
-    was_created = index.init_db(with_default_collection=default_collections,
+    was_created = index.init_db(with_default_types=default_collections,
                                 with_permissions=init_users)
     if was_created:
         echo('Done.')

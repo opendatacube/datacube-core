@@ -4,12 +4,10 @@ SQL Alchemy table definitions.
 """
 from __future__ import absolute_import
 
-from ._core import ensure_db, has_role, grant_role, create_user, USER_ROLES, View
-from ._dataset import DATASET, DATASET_SOURCE, DATASET_TYPE
-from ._storage import STORAGE_UNIT, STORAGE_TYPE, DATASET_STORAGE
+from ._core import ensure_db, schema_qualified, has_role, grant_role, create_user, USER_ROLES, View
+from ._schema import DATASET, DATASET_SOURCE, DATASET_LOCATION, DATASET_TYPE, METADATA_TYPE, STORAGE_TYPE
 
 __all__ = [
-    'ensure_db', 'View',
-    'DATASET', 'DATASET_SOURCE', 'COLLECTION',
-    'STORAGE_UNIT', 'STORAGE_TYPE', 'DATASET_STORAGE'
+    'ensure_db', 'schema_qualified', 'View',
+    'DATASET', 'DATASET_LOCATION', 'DATASET_SOURCE', 'STORAGE_TYPE', 'METADATA_TYPE', 'DATASET_TYPE'
 ]

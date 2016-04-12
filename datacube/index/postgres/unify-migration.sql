@@ -38,6 +38,16 @@ alter table agdc.dataset
   add constraint fk_dataset_dataset_type_ref_dataset_type
 foreign key (dataset_type_ref) references agdc.dataset_type (id);
 
+alter table agdc.dataset
+  add column archived timestamp with time zone null default null;
+
+-- Optional reference to storage type that created the dataset.
+alter table agdc.dataset
+  add column storage_type_ref smallint null;
+alter table agdc.dataset
+  add constraint fk_dataset_storage_type_ref_storage_type
+foreign key (storage_type_ref) references agdc.storage_type (id);
+
 -- --------------- DATASET IMPORT --------------- --
 
 \echo '-- Creating dataset types for existing datasets --'
@@ -176,20 +186,25 @@ insert into agdc.dataset (id, metadata_type_ref, dataset_type_ref, metadata, add
     left outer join agdc.dataset_type dt on s.storage_type_ref = dt.source_storage_type_ref;
 
 \echo '-- Adding dataset locations for the storage units'
-insert into agdc.dataset_location(dataset_ref, uri_scheme, uri_body, added, added_by)
-    select su.dataset_uuid, 'file',
-      -- TODO: get location from config (once run from python)
-      '///g/data/u46/public/datacube/data' || '/' || su.path,
-      su.added,
-      su.added_by
-    from agdc.storage_unit su;
+insert into agdc.dataset_location (dataset_ref, uri_scheme, uri_body, added, added_by)
+  select
+    su.dataset_uuid,
+    'file',
+    -- TODO: get location from config (once run from python)
+    '///g/data/u46/public/datacube/data' || '/' || su.path,
+    su.added,
+    su.added_by
+  from agdc.storage_unit su;
 
 
 \echo '-- Linking the "storage unit" datasets to their source datasets.'
-insert into agdc.dataset_source(dataset_ref, classifier, source_dataset_ref)
-    select su.dataset_uuid, date_trunc('seconds', (d.metadata->'extent'->>'center_dt')::timestamp)::text, d.id
-      from agdc.storage_unit su
-      inner join agdc.dataset_storage ds on su.id = ds.storage_unit_ref
-      inner join agdc.dataset d on d.id = ds.dataset_ref;
+insert into agdc.dataset_source (dataset_ref, classifier, source_dataset_ref)
+  select
+    su.dataset_uuid,
+    date_trunc('seconds', (d.metadata -> 'extent' ->> 'center_dt') :: timestamp) :: text,
+    d.id
+  from agdc.storage_unit su
+    inner join agdc.dataset_storage ds on su.id = ds.storage_unit_ref
+    inner join agdc.dataset d on d.id = ds.dataset_ref;
 
 commit;

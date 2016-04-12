@@ -21,11 +21,9 @@ from sqlalchemy.exc import IntegrityError
 import datacube
 from datacube.config import LocalConfig
 from datacube.index.fields import OrExpression
-from datacube.index.postgres.tables._core import schema_qualified
-from datacube.index.postgres.tables._dataset import DATASET_LOCATION, METADATA_TYPE
 from . import tables
 from ._fields import parse_fields, NativeField
-from .tables import DATASET, DATASET_SOURCE, STORAGE_TYPE, STORAGE_UNIT, DATASET_STORAGE, DATASET_TYPE
+from .tables import DATASET, DATASET_SOURCE, STORAGE_TYPE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
 
 _LIB_ID = 'agdc-' + str(datacube.__version__)
 APP_NAME_PATTERN = re.compile('^[a-zA-Z0-9-]+$')
@@ -162,7 +160,7 @@ class PostgresDb(object):
         """
         return _BegunTransaction(self._connection)
 
-    def insert_dataset(self, metadata_doc, dataset_id, dataset_type_id=None):
+    def insert_dataset(self, metadata_doc, dataset_id, dataset_type_id=None, storage_type_id=None):
         """
         Insert dataset if not already indexed.
         :type metadata_doc: dict
@@ -189,9 +187,9 @@ class PostgresDb(object):
                 #      connection inserts the same dataset in the time between the subquery and the main query.
                 #      This is ok for our purposes.)
                 DATASET.insert().from_select(
-                    ['id', 'dataset_type_ref', 'metadata_type_ref', 'metadata'],
+                    ['id', 'dataset_type_ref', 'storage_type_ref', 'metadata_type_ref', 'metadata'],
                     select([
-                        bindparam('id'), dataset_type_ref,
+                        bindparam('id'), dataset_type_ref, storage_type_id,
                         select([
                             DATASET_TYPE.c.metadata_type_ref
                         ]).where(
@@ -340,8 +338,12 @@ class PostgresDb(object):
         return storage_type_id
 
     def archive_storage_unit(self, storage_unit_id):
-        self._connection.execute(DATASET_STORAGE.delete().where(DATASET_STORAGE.c.storage_unit_ref == storage_unit_id))
-        self._connection.execute(STORAGE_UNIT.delete().where(STORAGE_UNIT.c.id == storage_unit_id))
+        self._connection.execute(
+            DATASET.update()
+                .where(DATASET.c.id == storage_unit_id)
+                .where(DATASET.c.archived == None)
+                .values(archived=func.now())
+        )
 
     def _storage_unit_cube_sql_str(self, dimensions):
         def _array_str(p):
@@ -351,12 +353,12 @@ class PostgresDb(object):
         return "cube(" + ','.join(_array_str(p) for p in ['begin', 'end']) + ")"
 
     def get_storage_unit_overlap(self, storage_type):
+        # TODO: This is probably totally broken after the storage_unit->dataset unification. But all its tests pass!
         wild_sql_appears = self._storage_unit_cube_sql_str(storage_type.dimensions) + ' as cube'
-
         su1 = select([
-            STORAGE_UNIT.c.id,
+            DATASET.c.id,
             text(wild_sql_appears)
-        ]).where(STORAGE_UNIT.c.storage_type_ref == storage_type.id)
+        ]).where(DATASET.c.dataset_type_ref == storage_type.id)
         su1 = alias(su1, name='su1')
         su2 = alias(su1, name='su2')
 
@@ -372,43 +374,6 @@ class PostgresDb(object):
         )
 
         return self._connection.execute(overlaps).fetchall()
-
-    def add_storage_unit(self, path, dataset_ids, descriptor, storage_type_id, size_bytes):
-        if not dataset_ids:
-            raise ValueError('Storage unit must be linked to at least one dataset.')
-
-        # Get the collection/metadata-type for this storage unit.
-        # We assume all datasets are of the same collection. (TODO: Revise when 'product type' concept is added)
-        matched_collection = select([
-            DATASET.c.collection_ref, DATASET.c.metadata_type_ref
-        ]).where(
-            DATASET.c.id == dataset_ids[0]
-        ).cte('matched_collection')
-
-        # Add the storage unit
-        unit_id = self._connection.execute(
-            STORAGE_UNIT.insert().values(
-                collection_ref=select([matched_collection.c.collection_ref]),
-                metadata_type_ref=select([matched_collection.c.metadata_type_ref]),
-                storage_type_ref=storage_type_id,
-                descriptor=descriptor,
-                path=path,
-                size_bytes=size_bytes
-            ).returning(STORAGE_UNIT.c.id),
-        ).scalar()
-
-        # Link the storage unit to the datasets.
-        self._connection.execute(
-            DATASET_STORAGE.insert(),
-            [
-                {'dataset_ref': dataset_id, 'storage_unit_ref': unit_id}
-                for dataset_id in dataset_ids
-                ]
-        )
-        return unit_id
-
-    def get_storage_units(self):
-        return self._connection.execute(STORAGE_UNIT.select()).fetchall()
 
     def get_dataset_fields(self, collection_result):
         # Native fields (hard-coded into the schema)
@@ -437,43 +402,6 @@ class PostgresDb(object):
         )
         return fields
 
-    def get_storage_unit_fields(self, collection_result):
-        # Native fields (hard-coded into the schema)
-        fields = {
-            'id': NativeField(
-                'id',
-                None,
-                collection_result['id'],
-                STORAGE_UNIT.c.id
-            ),
-            'type': NativeField(
-                'type',
-                'Storage type id',
-                collection_result['id'],
-                STORAGE_UNIT.c.storage_type_ref
-            ),
-            'path': NativeField(
-                'path',
-                'Path to storage file',
-                collection_result['id'],
-                STORAGE_UNIT.c.path
-            )
-        }
-        storage_unit_def = collection_result['definition'].get('storage_unit')
-        if storage_unit_def and 'search_fields' in storage_unit_def:
-            unit_search_fields = storage_unit_def['search_fields']
-
-            # noinspection PyTypeChecker
-            fields.update(
-                parse_fields(
-                    unit_search_fields,
-                    collection_result['id'],
-                    STORAGE_UNIT.c.descriptor
-                )
-            )
-
-        return fields
-
     def search_datasets_by_metadata(self, metadata):
         """
         Find any datasets that have the given metadata.
@@ -486,59 +414,32 @@ class PostgresDb(object):
             select(_DATASET_SELECT_FIELDS).where(DATASET.c.metadata.contains(metadata))
         ).fetchall()
 
-    def search_datasets(self, expressions, select_fields=None):
+    def search_datasets(self, expressions, select_fields=None, with_source_ids=False):
         """
+        :type with_source_ids: bool
         :type select_fields: tuple[datacube.index.postgres._fields.PgField]
         :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
         :rtype: dict
         """
-        select_fields = [
+        select_fields = tuple(
             f.alchemy_expression.label(f.name)
             for f in select_fields
-            ] if select_fields else _DATASET_SELECT_FIELDS
+        ) if select_fields else _DATASET_SELECT_FIELDS
+
+        if with_source_ids:
+            # Include the IDs of source datasets
+            select_fields + (
+                func.array_agg(
+                    DATASET_SOURCE
+                        .select(DATASET_SOURCE.c.source_dataset_ref)
+                        .where(DATASET_SOURCE.c.dataset_ref == DATASET.c.id)
+                ).label('dataset_refs')
+            )
 
         return self._search_docs(
             expressions,
             primary_table=DATASET,
             select_fields=select_fields,
-        )
-
-    def get_dataset_ids_for_storage_unit(self, storage_unit_id):
-        return self._connection.execute(
-            select([DATASET_STORAGE.c.dataset_ref]).where(DATASET_STORAGE.c.storage_unit_ref == storage_unit_id)
-        ).fetchall()
-
-    def search_storage_units(self, expressions, select_fields=None):
-        """
-        :type select_fields: tuple[datacube.index.postgres._fields.PgField]
-        :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
-        :rtype: dict
-        """
-
-        if select_fields:
-            select_fields = [
-                f.alchemy_expression.label(f.name)
-                for f in select_fields
-                ]
-            group_by_fields = None
-            required_tables = None
-        else:
-            # We include a list of dataset ids alongside each storage unit.
-            select_fields = [
-                STORAGE_UNIT,
-                func.array_agg(
-                    DATASET_STORAGE.c.dataset_ref
-                ).label('dataset_refs')
-            ]
-            group_by_fields = (STORAGE_UNIT.c.id,)
-            required_tables = (DATASET_STORAGE,)
-
-        return self._search_docs(
-            expressions,
-            primary_table=STORAGE_UNIT,
-            select_fields=select_fields,
-            group_by_fields=group_by_fields,
-            required_tables=required_tables
         )
 
     def _search_docs(self, expressions, primary_table, select_fields=None, group_by_fields=None, required_tables=None):
@@ -553,7 +454,10 @@ class PostgresDb(object):
             required_tables=required_tables
         )
 
-        select_query = select(select_fields).select_from(from_expression).where(and_(*raw_expressions))
+        select_query = (
+            select(select_fields)
+                .select_from(from_expression)
+                .where(and_(DATASET.c.archived == None, *raw_expressions)))
 
         if group_by_fields:
             select_query = select_query.group_by(*group_by_fields)
@@ -629,12 +533,7 @@ class PostgresDb(object):
         # Initialise search fields.
         _setup_collection_fields(
             self._connection, name, 'dataset', self.get_dataset_fields(record),
-            DATASET.c.metadata_type_ref == type_id,
-            concurrently=concurrently
-        )
-        _setup_collection_fields(
-            self._connection, name, 'storage_unit', self.get_storage_unit_fields(record),
-            STORAGE_UNIT.c.metadata_type_ref == type_id,
+            and_(DATASET.c.metadata_type_ref == type_id, DATASET.c.archived == None),
             concurrently=concurrently
         )
 
@@ -751,7 +650,7 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_
             )
             _LOG.debug('Creating index: %s', index_name)
 
-            if not _pg_exists(conn, schema_qualified(index_name)):
+            if not _pg_exists(conn, tables.schema_qualified(index_name)):
                 Index(
                     index_name,
                     field.alchemy_expression,
@@ -762,7 +661,7 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_
                 ).create(conn)
 
     # Create a view of search fields (for debugging convenience).
-    view_name = schema_qualified(name)
+    view_name = tables.schema_qualified(name)
     if not _pg_exists(conn, view_name):
         conn.execute(
             tables.View(
@@ -772,13 +671,6 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_
                 ).where(where_expression)
             )
         )
-
-
-_JOIN_REQUIREMENTS = {
-    # To join dataset to storage unit, use this table.
-    (DATASET, STORAGE_UNIT): DATASET_STORAGE,
-    (STORAGE_UNIT, DATASET): DATASET_STORAGE
-}
 
 
 def _prepare_expressions(expressions, primary_table, required_tables=None):
@@ -835,15 +727,7 @@ def _prepare_from_expression(primary_table, join_tables):
     Calculate an SQLAlchemy from expression to join the given table to other required tables.
     """
     from_expression = primary_table
-    middleman_tables = set(_JOIN_REQUIREMENTS.get((primary_table, table), None) for table in join_tables)
     for table in join_tables:
-        # If this table will be used to join another, we can skip it.
-        if table in middleman_tables:
-            continue
-        # Do we need any middle-men tables to join our tables?
-        join_requirement = _JOIN_REQUIREMENTS.get((primary_table, table), None)
-        if join_requirement is not None:
-            from_expression = from_expression.join(join_requirement)
         from_expression = from_expression.join(table)
     return from_expression
 

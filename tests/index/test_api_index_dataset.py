@@ -125,8 +125,7 @@ _EXAMPLE_METADATA_TYPE = MetadataType(
         measurements_dict=['image', 'bands'],
         sources=['lineage', 'source_datasets']
     ),
-    dataset_search_fields={},
-    storage_unit_search_fields={}
+    dataset_search_fields={}
 )
 
 _EXAMPLE_COLLECTION = DatasetType(
@@ -142,12 +141,12 @@ class MockDb(object):
         self.dataset_source = set()
         self.already_ingested = set()
 
-    def insert_dataset(self, metadata_doc, dataset_id, collection_id=None):
+    def insert_dataset(self, metadata_doc, dataset_id, dataset_type_id=None, storage_type_id=None):
         # Will we pretend this one was already ingested?
         if dataset_id in self.already_ingested:
             return False
 
-        self.dataset.append((metadata_doc, dataset_id, collection_id))
+        self.dataset.append((metadata_doc, dataset_id, dataset_type_id))
         return True
 
     def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):

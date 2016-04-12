@@ -55,6 +55,27 @@ DATASET_TYPE = Table(
     CheckConstraint(r"name ~* '^\w+$'", name='alphanumeric_name'),
 )
 
+# Describes what storage to write when receiving a dataset.
+STORAGE_TYPE = Table(
+    'storage_type', _core.METADATA,
+    Column('id', SmallInteger, primary_key=True, autoincrement=True),
+
+    # A name/label for this storage type (eg. 'ls7_nbar'). Specified by users.
+    Column('name', String, unique=True, nullable=False),
+
+    # Match any datasets whose metadata is a superset of this.
+    Column('dataset_metadata', postgres.JSONB, nullable=False),
+
+    Column('definition', postgres.JSONB, nullable=False),
+
+    # When it was added and by whom.
+    Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
+    Column('added_by', String, server_default=func.current_user(), nullable=False),
+
+    # Name must be alphanumeric + underscores.
+    CheckConstraint(r"name ~* '^\w+$'", name='alphanumeric_name'),
+)
+
 DATASET = Table(
     'dataset', _core.METADATA,
     Column('id', postgres.UUID, primary_key=True),
@@ -63,6 +84,12 @@ DATASET = Table(
     Column('dataset_type_ref', None, ForeignKey(DATASET_TYPE.c.id), nullable=False),
 
     Column('metadata', postgres.JSONB, index=False, nullable=False),
+
+    # Date it was archived. Null for active datasets.
+    Column('archived', DateTime(timezone=True), default=None, nullable=True),
+
+    # The storage type this was produced from, if any.
+    Column('storage_type_ref', None, ForeignKey(STORAGE_TYPE.c.id), index=True, nullable=True),
 
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),

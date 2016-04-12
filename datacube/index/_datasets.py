@@ -17,18 +17,18 @@ from . import fields
 _LOG = logging.getLogger(__name__)
 
 
-def _ensure_dataset(db, collection_resource, dataset_doc):
+def _ensure_dataset(db, types_resource, dataset_doc):
     """
     Ensure a dataset is in the index (add it if needed).
 
     :type db: datacube.index.postgres._api.PostgresDb
     :type dataset_doc: dict
-    :type collection_resource: DatasetTypeResource
+    :type types_resource: DatasetTypeResource
     :returns: The dataset_id if we ingested it.
     :rtype: uuid.UUID
     """
 
-    was_inserted, dataset, source_datasets = _prepare_single(collection_resource, dataset_doc, db)
+    was_inserted, dataset, source_datasets = _prepare_single(types_resource, dataset_doc, db)
 
     dataset_id = dataset.uuid_field
 
@@ -41,7 +41,7 @@ def _ensure_dataset(db, collection_resource, dataset_doc):
         # Get source datasets & index them.
         sources = {}
         for classifier, source_dataset in source_datasets.items():
-            sources[classifier] = _ensure_dataset(db, collection_resource, source_dataset)
+            sources[classifier] = _ensure_dataset(db, types_resource, source_dataset)
 
         # Link to sources.
         for classifier, source_dataset_id in sources.items():
@@ -50,16 +50,21 @@ def _ensure_dataset(db, collection_resource, dataset_doc):
     return dataset_id
 
 
-def _prepare_single(collection_resource, dataset_doc, db):
-    collection = collection_resource.get_for_dataset_doc(dataset_doc)
-    if not collection:
+def _prepare_single(types_resource, dataset_doc, db):
+    """
+    :type types_resource: DatasetTypeResource
+    :type dataset_doc: dict
+    :type db: datacube.index.postgres._api.PostgresDb
+    """
+    type_ = types_resource.get_for_dataset_doc(dataset_doc)
+    if not type_:
         _LOG.debug('Failed match on dataset doc %r', dataset_doc)
-        raise ValueError('No collection matched for dataset.')
+        raise ValueError('No types match the dataset.')
 
-    _LOG.info('Matched collection %r (%s)', collection.name, collection.id)
+    _LOG.info('Matched collection %r (%s)', type_.name, type_.id)
 
     indexable_doc = copy.deepcopy(dataset_doc)
-    dataset = collection.metadata_type.dataset_reader(indexable_doc)
+    dataset = type_.metadata_type.dataset_reader(indexable_doc)
 
     source_datasets = dataset.sources
     # Clear source datasets: We store them separately.
@@ -68,7 +73,7 @@ def _prepare_single(collection_resource, dataset_doc, db):
     dataset_id = dataset.uuid_field
 
     _LOG.info('Indexing %s', dataset_id)
-    was_inserted = db.insert_dataset(indexable_doc, dataset_id, dataset_type_id=collection.id)
+    was_inserted = db.insert_dataset(indexable_doc, dataset_id, dataset_type_id=type_.id)
 
     return was_inserted, dataset, source_datasets
 
@@ -140,7 +145,6 @@ class MetadataTypeResource(object):
                 sources=dataset_.get('sources_offset'),
             ),
             dataset_search_fields=self._db.get_dataset_fields(query_row),
-            storage_unit_search_fields=self._db.get_storage_unit_fields(query_row),
             id_=query_row['id']
         )
 
@@ -206,21 +210,21 @@ class DatasetTypeResource(object):
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def get_by_name(self, name):
-        collection = self._db.get_dataset_type_by_name(name)
-        if not collection:
+        result = self._db.get_dataset_type_by_name(name)
+        if not result:
             return None
-        return self._make(collection)
+        return self._make(result)
 
     def get_for_dataset_doc(self, metadata_doc):
         """
         :type metadata_doc: dict
         :rtype: datacube.model.DatasetType or None
         """
-        collection_res = self._db.determine_dataset_type_for_doc(metadata_doc)
-        if collection_res is None:
+        result = self._db.determine_dataset_type_for_doc(metadata_doc)
+        if result is None:
             return None
 
-        return self._make(collection_res)
+        return self._make(result)
 
     def get_all(self):
         """
@@ -293,33 +297,49 @@ class DatasetResource(object):
         :rtype: datacube.model.Dataset
         """
         with self._db.begin() as transaction:
-            dataset_id = _ensure_dataset(self._db, self.types, metadata_doc)
-
-            if metadata_path or uri:
-                if uri is None:
-                    uri = metadata_path.absolute().as_uri()
-                self._db.ensure_dataset_location(dataset_id, uri)
+            dataset_id = self._add_dataset(metadata_doc, metadata_path, uri)
 
         if not dataset_id:
             return None
 
         return self.get(dataset_id)
 
-    def get_field(self, name, collection_name=None):
+    def _add_dataset(self, metadata_doc, metadata_path=None, uri=None):
+        dataset_id = _ensure_dataset(self._db, self.types, metadata_doc)
+        if metadata_path or uri:
+            if uri is None:
+                uri = metadata_path.absolute().as_uri()
+            self._db.ensure_dataset_location(dataset_id, uri)
+        return dataset_id
+
+    def replace(self, old_datasets, new_datasets):
+        """
+        :type old_datasets: list[datacube.model.Dataset]
+        :type new_datasets: list[datacube.model.Dataset]
+        """
+        with self._db.begin() as transaction:
+            for unit in old_datasets:
+                self._db.archive_storage_unit(unit.id)
+
+            for unit in new_datasets:
+                dataset_id = self._add_dataset(unit.metadata_doc, uri=unit.local_uri)
+                _LOG.debug('Indexed dataset %s @ %s', dataset_id, unit.local_uri)
+
+    def get_field(self, name, type_name=None):
         """
         :type name: str
         :rtype: datacube.index.fields.Field
         """
-        return self.get_fields(collection_name).get(name)
+        return self.get_fields(type_name).get(name)
 
-    def get_fields(self, collection_name=None):
+    def get_fields(self, type_name=None):
         """
-        :type collection_name: str
+        :type type_name: str
         :rtype: dict[str, datacube.index.fields.Field]
         """
-        if collection_name is None:
-            collection_name = self._config.default_collection_name
-        collection = self.types.get_by_name(collection_name)
+        if type_name is None:
+            type_name = self._config.default_collection_name
+        collection = self.types.get_by_name(type_name)
         return collection.metadata_type.dataset_fields
 
     def get_locations(self, dataset):

@@ -48,7 +48,7 @@ _telemetry_dataset = {
 }
 
 
-def test_index_dataset_in_transactions(index, db, local_config, default_collection):
+def test_index_dataset_in_transactions(index, db, local_config):
     """
     :type index: datacube.index._api.Index
     :type db: datacube.index.postgres._api.PostgresDb
@@ -83,7 +83,7 @@ def test_index_dataset_in_transactions(index, db, local_config, default_collecti
     assert not db.contains_dataset(_telemetry_uuid)
 
 
-def test_index_dataset_with_location(index, default_collection):
+def test_index_dataset_with_location(index, default_metadata_type):
     """
     :type index: datacube.index._api.Index
     :type default_collection: datacube.model.DatasetType
@@ -96,9 +96,10 @@ def test_index_dataset_with_location(index, default_collection):
     )
 
     assert dataset.id == _telemetry_uuid
+    # TODO: Dataset types?
     assert dataset.collection.id == default_collection.id
     assert dataset.collection.id == default_collection.id
-    assert dataset.metadata_type.id == default_collection.metadata_type.id
+    assert dataset.metadata_type.id == default_metadata_type.id
 
     assert dataset.local_path.absolute() == Path(first_file).absolute()
 

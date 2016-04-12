@@ -91,9 +91,7 @@ def ensure_db(engine, with_permissions=True):
 
         grant insert on {schema}.dataset,
                         {schema}.dataset_location,
-                        {schema}.dataset_source,
-                        {schema}.dataset_storage,
-                        {schema}.storage_unit to agdc_ingest;
+                        {schema}.dataset_source to agdc_ingest;
         grant usage, select on all sequences in schema {schema} to agdc_ingest;
 
         -- (We're only granting deletion of types that have nothing written yet: they can't delete the data itself)

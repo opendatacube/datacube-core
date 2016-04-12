@@ -5,6 +5,9 @@ API for storage indexing, access and search.
 from __future__ import absolute_import
 
 import logging
+import uuid
+
+import dateutil.parser
 import pathlib
 
 import cachetools
@@ -58,14 +61,29 @@ class StorageUnitResource(object):
         """
         with self._db.begin() as transaction:
             for unit in storage_units:
-                unit_id = self._db.add_storage_unit(
-                    unit.path,
-                    unit.dataset_ids,
-                    unit.descriptor,
-                    unit.storage_type.id,
-                    unit.size_bytes
-                )
-                _LOG.debug('Indexed unit %s @ %s', unit_id, unit.path)
+                self._add_unit(unit)
+
+    def _add_unit(self, unit):
+        if unit.id is None:
+            unit.id = uuid.uuid4()
+
+        _storage_unit_type = self._dataset_types.get_by_name('storage_unit')
+
+        was_newly_inserted = self._db.insert_dataset(
+            unit.descriptor,
+            unit.id,
+            _storage_unit_type.id,
+            storage_type_id=unit.storage_type.id
+        )
+        # TODO: unit.size_bytes
+        for source_id in unit.dataset_ids:
+            self._db.insert_dataset_source(
+                dateutil.parser.parse(unit.descriptor['extent']['center_dt']).isoformat(),
+                unit.id,
+                source_id
+            )
+        self._db.ensure_dataset_location(unit.id, pathlib.Path(unit.path).as_uri())
+        _LOG.debug('Indexed unit %s @ %s', unit.id, unit.path)
 
     def add(self, storage_unit):
         """
@@ -73,20 +91,18 @@ class StorageUnitResource(object):
         """
         return self.add_many([storage_unit])
 
-    def replace(self, old_storage_unit, new_storage_units):
+    def replace(self, old_storage_units, new_storage_units):
+        """
+        :type old_storage_units: list[datacube.model.StorageUnit]
+        :type new_storage_units: list[datacube.model.StorageUnit]
+        """
         with self._db.begin() as transaction:
-            for unit in old_storage_unit:
+            for unit in old_storage_units:
                 self._db.archive_storage_unit(unit.id)
 
             for unit in new_storage_units:
-                unit_id = self._db.add_storage_unit(
-                    unit.path,
-                    unit.dataset_ids,
-                    unit.descriptor,
-                    unit.storage_type.id,
-                    unit.size_bytes
-                )
-                _LOG.debug('Indexed unit %s @ %s', unit_id, unit.path)
+                self._add_unit(unit)
+                _LOG.debug('Indexed unit %s @ %s', unit.id, unit.path)
 
     def get_field(self, name, collection_name=None):
         """
@@ -125,7 +141,8 @@ class StorageUnitResource(object):
         if collection_name is None:
             collection_name = self._config.default_collection_name
         collection = self._dataset_types.get_by_name(collection_name)
-        return collection.metadata_type.storage_fields
+        _storage_unit_type = self._dataset_types.get_by_name('storage_unit')
+        return _storage_unit_type.dataset_fields
 
     def search(self, *expressions, **query):
         """
@@ -135,7 +152,7 @@ class StorageUnitResource(object):
         :rtype list[datacube.model.StorageUnit]
         """
         query_exprs = tuple(fields.to_expressions(self.get_field_with_fallback, **query))
-        return self._make(self._db.search_storage_units((expressions + query_exprs)))
+        return self._make(self._db.search_datasets((expressions + query_exprs), with_source_ids=True))
 
     def search_summaries(self, *expressions, **query):
         """
@@ -149,9 +166,10 @@ class StorageUnitResource(object):
 
         return (
             dict(fs) for fs in
-            self._db.search_storage_units(
+            self._db.search_datasets(
                 (expressions + query_exprs),
-                select_fields=tuple(self.get_fields().values())
+                select_fields=tuple(self.get_fields().values()),
+                with_source_ids=True
             )
         )
 

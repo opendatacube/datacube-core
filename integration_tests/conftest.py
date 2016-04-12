@@ -21,7 +21,7 @@ except ImportError:
 from datacube import ui
 from datacube.api import API
 from datacube.config import LocalConfig
-from datacube.index._api import Index, _DEFAULT_COLLECTIONS_PATH, _DEFAULT_METADATA_TYPES_PATH
+from datacube.index._api import Index, _DEFAULT_METADATA_TYPES_PATH
 from datacube.index.postgres import PostgresDb
 from datacube.index.postgres.tables._core import ensure_db, drop_db, METADATA
 
@@ -153,11 +153,6 @@ def create_empty_geotiff(path):
 
 
 @pytest.fixture
-def default_collection_doc():
-    return list(ui.read_documents(_DEFAULT_COLLECTIONS_PATH))[0][1]
-
-
-@pytest.fixture
 def default_metadata_type_doc():
     return list(ui.read_documents(_DEFAULT_METADATA_TYPES_PATH))[0][1]
 
@@ -165,14 +160,6 @@ def default_metadata_type_doc():
 @pytest.fixture
 def default_metadata_type(index, default_metadata_type_doc):
     return index.metadata_types.add(default_metadata_type_doc)
-
-
-@pytest.fixture
-def default_collection(index, default_collection_doc, default_metadata_type):
-    """
-    :type index: datacube.index._api.Index
-    """
-    return index.collections.add(default_collection_doc)
 
 
 @pytest.fixture
