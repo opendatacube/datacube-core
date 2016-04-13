@@ -34,6 +34,7 @@ def _ensure_dataset(db, collection_resource, dataset_doc):
 
     if not was_inserted:
         # Already existed.
+        _LOG.info('Dataset already in Index. No indexing required.')
         return dataset_id
 
     if source_datasets:
