@@ -105,7 +105,7 @@ def collections_list(index):
     List all collections
     """
     for collection in index.collections.get_all():
-        echo("{c.id:2d}. {c.name:15}".format(c=collection))
+        echo("{c.name:15}".format(c=collection))
 
 
 @cli.group(help='Storage types')
@@ -140,7 +140,7 @@ def list_storage_types(index):
     List all Storage Types
     """
     for storage_type in index.storage.types.get_all():
-        echo("{m.id:2d}. {m.name:15}: {m.description!s}".format(m=storage_type))
+        echo("{m.name:20}\t{m.description!s}".format(m=storage_type))
 
 
 @cli.command('grant')
