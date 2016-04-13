@@ -309,7 +309,9 @@ class API(object):
     def get_data_array(self, variables=None, var_dim_name=u'variable', set_nan=True, **kwargs):
         """
         Gets a stacked `xarray.DataArray` for the requested variables.
-        This stacks the data similar to `numpy.dstack`.
+        This stacks the data similar to `numpy.dstack`.  Use this function instead of :meth:`get_dataset` if you
+        only need stacked data.  All variables must be of the same dimensions, and this function doesn't return
+        additional information such as `crs` and `extra_metadata`.
 
         See http://xarray.pydata.org/en/stable/api.html#dataarray for usage of the `DataArray` object.
 
@@ -325,7 +327,12 @@ class API(object):
             ::
                 api.get_data_array(product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5))
 
-                api.get_data_array(storage_type='ls5_nbar', time=((1990, 1, 1), (1991, 1, 1))
+                api.get_data_array(storage_type='ls5_nbar', time=((1990, 1, 1), (1991, 1, 1)))
+
+            The default CRS interpretation for geospatial dimensions is WGS84/EPSG:4326,
+            even if the resulting dimension is in another projection.
+
+            The dimensions `longitude`/`latitude` and `x`/`y` can be used interchangeably.
 
         :return: Data with all variables stacked along a dimension.
         :rtype: xarray.DataArray
@@ -383,7 +390,7 @@ class API(object):
             ::
                 api.get_data_array(product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5))
 
-                api.get_data_array(storage_type='ls5_nbar', time=((1990, 1, 1), (1991, 1, 1))
+                api.get_data_array(storage_type='ls5_nbar', time=((1990, 1, 1), (1991, 1, 1)))
 
         :return: Data with all variables stacked along a dimension.
         :rtype: xarray.DataArray
@@ -435,6 +442,12 @@ class API(object):
         :param kwargs: search parameters and dimension ranges
             E.g.::
                 product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5)
+
+            The default CRS interpretation for geospatial dimensions is WGS84/EPSG:4326,
+            even if the resulting dimension is in another projection.
+
+            The dimensions `longitude`/`latitude` and `x`/`y` can be used interchangeably.
+
         :return: Data as variables with shared coordinate dimensions.
         :rtype: xarray.Dataset
         """
@@ -584,7 +597,7 @@ class API(object):
 
         :param field: Name of the field, as returned by the :meth:`.list_fields` method.
         :type field: str
-        :return: List of values for the field in the database, eg
+        :return: List of values for the field in the database, e.g.
             ::
                 ['LANDSAT_5', 'LANDSAT_7']
 
@@ -615,12 +628,12 @@ class API(object):
         Cells are the spatial footprint, with an `(x, y)` index that can be configured to match the projection of the
         stored data.
 
-        E.g. (148, -35) could represent a 1x1 degree tile containing data between
+        E.g. `(148, -35)` could represent a 1x1 degree tile containing data between
         longitudes 148.0 up to but not including 149.0 and
         latitudes of -35.0 up to but not including -36.0 for in geographically projected data.
 
-        For projected data (such as Australian Albers equal-area projection - ESPG:3577),
-        (15, -40) could represent a 100x100km tile containing data from
+        For projected data (such as Australian Albers equal-area projection - ESPG:3577), the tile
+        `(15, -40)` could represent a 100x100km tile containing data from
         eastings 1,500,000m up to but not including 1,600,000, and
         northings -4,000,000m up to but not including -4,100,000m.
 
@@ -673,7 +686,7 @@ def _get_dimension_properties(storage_units, dimensions, dimension_ranges):
     }
     sample = list(storage_units)[0]
     # Get the start value of the storage unit so we can sort them
-    # Some dims are stored upside down (eg Latitude), so sort the tiles consistent with the bounding box order
+    # Some dims are stored upside down (e.g. Latitude), so sort the tiles consistent with the bounding box order
     dim_props['reverse'] = dict((dim, sample.coordinates[dim].begin > sample.coordinates[dim].end)
                                 for dim in dimensions if dim in sample.coordinates)
     for dim in dimensions:
