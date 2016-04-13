@@ -183,8 +183,8 @@ def list_users(index):
     """
     List users
     """
-    for user_fields in index.list_users():
-        click.echo('\t'.join(user_fields))
+    for role, user, description in index.list_users():
+        click.echo('{0:6}\t{1:15}\t{2}'.format(role, user, description if description else ''))
 
 
 @storage.command('print')
