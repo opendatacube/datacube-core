@@ -121,14 +121,12 @@ def convert_descriptor_dims_to_search_dims(descriptor_query_dimensions):
             else:
                 # Assume the search function will sort it out, add it to the query
                 search_query[dim] = Range(*data['range'])
-    try:
-        if any(v is not None for v in input_coords.values()):
-            search_coords = geospatial_warp_bounds(input_coords, input_crs, tolerance=FLOAT_TOLERANCE)
-            search_query['lat'] = Range(search_coords['bottom'], search_coords['top'])
-            search_query['lon'] = Range(search_coords['left'], search_coords['right'])
-    except ValueError:
-        _LOG.warning("Couldn't convert spatial dimension ranges %s \nfrom CRS=%s \nto CRS=%s",
-                     input_coords, input_crs, 'EPSG:4326')
+
+    if any(v is not None for v in input_coords.values()):
+        search_coords = geospatial_warp_bounds(input_coords, input_crs, tolerance=FLOAT_TOLERANCE)
+        search_query['lat'] = Range(search_coords['bottom'], search_coords['top'])
+        search_query['lon'] = Range(search_coords['left'], search_coords['right'])
+
     return search_query
 
 
@@ -170,24 +168,22 @@ def convert_descriptor_dims_to_selector_dims(dimension_ranges_descriptor, storag
             else:
                 # Add to ranges unchanged
                 dimension_ranges[dim]['range'] = data['range']
-    try:
-        if any(v is not None for v in input_coord.values()):
-            storage_coords = geospatial_warp_bounds(input_coord, input_crs, storage_crs)
-            def make_range(a, b, single_var=False):
-                if single_var:
-                    return a
-                return (a, b)
-            dimension_ranges[mapped_vars['lat']]['range'] = make_range(storage_coords['top'],
-                                                                       storage_coords['bottom'],
-                                                                       'lat' in single_value_vars)
-            dimension_ranges[mapped_vars['lat']]['crs'] = storage_crs
-            dimension_ranges[mapped_vars['lon']]['range'] = make_range(storage_coords['left'],
-                                                                       storage_coords['right'],
-                                                                       'lon' in single_value_vars)
-            dimension_ranges[mapped_vars['lon']]['crs'] = storage_crs
-    except ValueError:
-        _LOG.warning("Couldn't convert spatial dimension ranges %s \nfrom CRS=%s \nto CRS=%s",
-                     input_coord, input_crs, storage_crs)
+
+    if any(v is not None for v in input_coord.values()):
+        storage_coords = geospatial_warp_bounds(input_coord, input_crs, storage_crs)
+        def make_range(a, b, single_var=False):
+            if single_var:
+                return a
+            return (a, b)
+        dimension_ranges[mapped_vars['lat']]['range'] = make_range(storage_coords['top'],
+                                                                   storage_coords['bottom'],
+                                                                   'lat' in single_value_vars)
+        dimension_ranges[mapped_vars['lat']]['crs'] = storage_crs
+        dimension_ranges[mapped_vars['lon']]['range'] = make_range(storage_coords['left'],
+                                                                   storage_coords['right'],
+                                                                   'lon' in single_value_vars)
+        dimension_ranges[mapped_vars['lon']]['crs'] = storage_crs
+
     return dimension_ranges
 
 
@@ -230,7 +226,7 @@ def geospatial_warp_bounds(input_coord, input_crs='EPSG:4326', output_crs='EPSG:
     :return: {'lat':Range,'lon':Range}
     '''
     if any(v is None for v in input_coord.values()):
-        raise ValueError('Missing coordinate in input_coord {}'.format(input_coord))
+        raise ValueError('Unable to convert spatial bounds: Missing coordinate in input_coord {}'.format(input_coord))
     left, bottom, right, top = rasterio.warp.transform_bounds(input_crs, output_crs, **input_coord)
     output_coords = {'left': left, 'bottom': bottom, 'right': right, 'top': top}
 

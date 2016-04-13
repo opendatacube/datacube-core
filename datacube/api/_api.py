@@ -357,9 +357,6 @@ class API(object):
             if len(data_dicts) and len(data_dicts[0]):
                 data_dict = data_dicts[0][0]
                 return _stack_vars(data_dict, var_dim_name, stack_name=stype)
-            # for i, (data_dict, _) in enumerate(data_dicts):
-            #     #stype_label = '{}.{}'.format(stype, i) if len(data_dicts) > 1 else stype
-            #     return _stack_vars(data_dict, var_dim_name, stack_name=stype)
         return None
 
     def get_data_array_by_cell(self, x_index, y_index, variables=None, var_dim_name=u'variable',
