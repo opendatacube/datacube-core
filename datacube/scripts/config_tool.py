@@ -183,8 +183,8 @@ def list_users(index):
     """
     List users
     """
-    for role_user in index.list_users():
-        click.echo('\t'.join(role_user))
+    for user_fields in index.list_users():
+        click.echo('\t'.join(user_fields))
 
 
 @storage.command('print')

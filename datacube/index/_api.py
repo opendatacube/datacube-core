@@ -73,8 +73,8 @@ class Index(object):
 
     def list_users(self):
         """
-        :returns list of (role, user)
-        :rtype: list[(str, str)]
+        :returns list of (role, user, description)
+        :rtype: list[(str, str, str)]
         """
         return self._db.list_users()
 

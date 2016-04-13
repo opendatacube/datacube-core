@@ -625,7 +625,10 @@ class PostgresDb(object):
 
     def list_users(self):
         result = self._connection.execute("""
-            select group_role.rolname as role_name, user_role.rolname as user_name
+            select
+                group_role.rolname as role_name,
+                user_role.rolname as user_name,
+                pg_catalog.shobj_description(user_role.oid, 'pg_authid') as description
             from pg_roles group_role
             inner join pg_auth_members am on am.roleid = group_role.oid
             inner join pg_roles user_role on am.member = user_role.oid
@@ -633,7 +636,7 @@ class PostgresDb(object):
             order by group_role.oid asc, user_role.oid asc;
         """)
         for row in result:
-            yield _from_pg_role(row['role_name']), row['user_name']
+            yield _from_pg_role(row['role_name']), row['user_name'], row['description']
 
     def create_user(self, username, key, role):
         pg_role = _to_pg_role(role)

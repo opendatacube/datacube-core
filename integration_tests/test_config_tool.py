@@ -113,6 +113,27 @@ def test_config_check(global_integration_cli_args, local_config):
     assert user_line in result.output
 
 
+def list_users_does_not_fail(global_integration_cli_args, local_config):
+    """
+    :type global_integration_cli_args: tuple[str]
+    :type local_config: datacube.config.LocalConfig
+    """
+    # We don't want to make assumptions about available users during test runs.
+    # (They are host-global, not specific to the database)
+    # So we're just checking that it doesn't fail (and the SQL etc is well formed)
+    opts = list(global_integration_cli_args)
+    opts.extend(
+        [
+            '-v', 'users'
+        ]
+    )
+    result = _run_cli(
+        datacube.scripts.config_tool.cli,
+        opts
+    )
+    assert result.exit_code == 0
+
+
 def test_db_init_noop(global_integration_cli_args, local_config):
     # Run on an existing database.
     opts = list(global_integration_cli_args)
