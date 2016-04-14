@@ -61,7 +61,7 @@ class API(object):
 
     def get_descriptor(self, descriptor_request=None, include_storage_units=True):
         """
-        Gets the metadata for a `AnalyticsEngine` query.
+        Gets the metadata for a ``AnalyticsEngine`` query.
 
         All fields are optional.
 
@@ -180,25 +180,28 @@ class API(object):
 
     def get_data(self, descriptor=None, storage_units=None):
         """
-        Gets the data for a `ExecutionEngine` query.
+        Gets the data for a ``ExecutionEngine`` query.
         Function to return composite in-memory arrays.
 
         :param descriptor: A dictionary containing the query parameters. All fields are optional.
 
+            **Search fields**
+
             Search for any of the fields returned by :meth:`list_fields`.
 
-            **`storage_type`** field
+            **Storage type field**
 
-            The storage type can be any of the keys returned by :meth:`get_descriptor`.
+            The ``storage_type`` can be any of the keys returned by :meth:`get_descriptor`.
 
-            **`variables`** field
+            **Variables field**
 
-            Variables (optional) are a list of variable names, matching those listed by :meth:`get_descriptor`.
+            The ``variables`` field is a list of variable names matching those listed by :meth:`get_descriptor`.
             If not specified, all variables are returned.
 
-            **`dimensions`** field
+            **Dimensions field**
 
-            Dimensions can specify a range by label, and optionally a CRS to interpret the label.
+            The ``dimensions`` field can specify a range by label and/or index, and optionally a CRS to interpret
+            the label range request.
 
             Times can be specified as :class:`datetime` objects, tuples of (year, month, day) or
             (year, month, day, hour, minute, second), or by seconds since the Unix epoch.
@@ -207,7 +210,7 @@ class API(object):
             The default CRS interpretation for geospatial dimensions (longitude/latitude or x/y) is WGS84/EPSG:4326,
             even if the resulting dimension is in another projection.
 
-            The `array_range` field can be used to subset the request.
+            The ``array_range`` field can be used to subset the request.
             ::
                 descriptor = {
                     'platform': 'LANDSAT_8',
@@ -238,8 +241,8 @@ class API(object):
 
         :type descriptor: dict or None
 
-        :param storage_units:
-            Limit the query to the given storage unit descriptors, as given by the :py:meth:`.get_descriptor` method.
+        :param storage_units: Limit the query to the given storage unit descriptors,
+            as given by the :py:meth:`.get_descriptor` method.
 
         :type storage_units: list or None
 
@@ -308,19 +311,24 @@ class API(object):
 
     def get_data_array(self, variables=None, var_dim_name=u'variable', set_nan=True, **kwargs):
         """
-        Gets a stacked `xarray.DataArray` for the requested variables.
-        This stacks the data similar to `numpy.dstack`.  Use this function instead of :meth:`get_dataset` if you
+        Gets data as a stacked ``xarray.DataArray``.  The data will be in a single array, with each variable
+        available for the  variables.
+        This stacks the data similar to ``numpy.dstack``.  Use this function instead of :meth:`get_dataset` if you
         only need stacked data.  All variables must be of the same dimensions, and this function doesn't return
-        additional information such as `crs` and `extra_metadata`.
+        additional information such as ``crs`` and ``extra_metadata``.
 
-        See http://xarray.pydata.org/en/stable/api.html#dataarray for usage of the `DataArray` object.
+        See http://xarray.pydata.org/en/stable/api.html#dataarray for usage of the ``DataArray`` object.
 
-        :param variables: Variables to be included. Use `None` to include all available variables
+        :param variables: Variables to be included. Use ``None`` to include all available variables
         :type variables: list or None
-        :param var_dim_name: dimension name that the variables will be stacked
-        :param set_nan: Set "no data" values to `numpy.NaN`.
+        :param var_dim_name: dimension name to use for the stack of variables.
+            The default is `"variable"`.
 
-            *Note:* this will cause the data to be converted to float dtype.
+        :type var_dim_name: str
+        :param set_nan: Set "no data" values to ``numpy.NaN``.
+
+            .. warning::
+                This will cause the data to be converted to float dtype.
         :type set_nan: bool
 
         :param * * kwargs: search parameters, dimension ranges and storage_type.
@@ -332,7 +340,7 @@ class API(object):
             The default CRS interpretation for geospatial dimensions is WGS84/EPSG:4326,
             even if the resulting dimension is in another projection.
 
-            The dimensions `longitude`/`latitude` and `x`/`y` can be used interchangeably.
+            The dimensions ``longitude``/``latitude`` and ``x``/``y`` can be used interchangeably.
 
         :return: Data with all variables stacked along a dimension.
         :rtype: xarray.DataArray
@@ -362,25 +370,38 @@ class API(object):
     def get_data_array_by_cell(self, x_index, y_index, variables=None, var_dim_name=u'variable',
                                set_nan=True, **kwargs):
         """
-        Gets a stacked `xarray.DataArray` for the requested variables.
-        This stacks the data similar to `numpy.dstack`.
+        Gets data as a stacked ``xarray.DataArray``.  The data will be in a single array, with each variable
+        available for the  variables.
+        This stacks the data similar to ``numpy.dstack``.  Use this function instead of :meth:`get_dataset` if you
+        only need stacked data.  All variables must be of the same dimensions, and this function doesn't return
+        additional information such as ``crs`` and ``extra_metadata``.
 
         The cell represents a tiled footprint of the underlying storage footprint,
         and is typically only used in large-scale processing of data.
         Cell indexes can be found using :meth:`list_cells`.
 
-        See http://xarray.pydata.org/en/stable/api.html#dataarray for usage of the `DataArray` object.
+        See http://xarray.pydata.org/en/stable/api.html#dataarray for usage of the ``DataArray`` object.
 
         :param x_index: x tile index (or list of indicies) to return.
+            ::
+                api.get_data_array_by_cell(x_index=11, y_index=-20, product='NBAR')
+
+                api.get_data_array_by_cell(x_index=[11, 12], y_index=[-20, -21], product='NBAR')
+
         :type x_index: list or int
         :param y_index: y tile index (or list of indicies) to return.
         :type y_index: list or int
-        :param variables: Variables to be included. Use `None` to include all available variables
+        :param variables: Variables to be included. Use ``None`` to include all available variables
         :type variables: list or None
-        :param var_dim_name: dimension name that the variables will be stacked
-        :param set_nan: Set "no data" values to `numpy.NaN`.
+        :param var_dim_name: dimension name to use for the stack of variables.
+            The default is `"variable"`.
 
-            *Note:* this will cause the data to be converted to float dtype.
+        :type var_dim_name: str
+        :param set_nan: Set "no data" values to ``numpy.NaN``.
+
+            .. warning::
+                This will cause the data to be converted to float dtype.
+
         :type set_nan: bool
 
         :param * * kwargs: search parameters, dimension ranges and storage_type.
@@ -422,28 +443,34 @@ class API(object):
 
     def get_dataset(self, variables=None, set_nan=False, include_lineage=False, **kwargs):
         """
-        Gets an `xarray.Dataset` for the requested data.
+        Gets an ``xarray.Dataset`` for the requested data.
 
-        See http://xarray.pydata.org/en/stable/api.html#dataset for usage of the `Dataset` object.
+        See http://xarray.pydata.org/en/stable/api.html#dataset for usage of the ``Dataset`` object.
 
         :param variables: variable or list of variables to be included.
-                Use `None` to include all available variables (default)
+                Use ``None`` to include all available variables (default)
         :type variables: list(str) or str, optional
-        :param set_nan: If any "no data" values should be set to `numpy.NaN`
-            *Note:* this will cause the data to be cast to a float dtype.
+        :param set_nan: If any "no data" values should be set to ``numpy.NaN``
+
+            .. warning::
+                This will cause the data to be converted to float dtype.
         :type set_nan: bool, optional
         :param include_lineage: Include an 'extra_metadata' variable containing detailed lineage information.
-            *Note:* This can cause the query to be slow for large datasets, as it is not lazy-loaded.
             Not included by default.
+
+            .. note::
+                This can cause the query to be slow for large datasets, as it is not lazy-loaded.
         :type include_lineage: bool, optional
-        :param kwargs: search parameters and dimension ranges
+        :param kwargs: Search parameters and dimension ranges.
+
+            See :meth:`get_data` for a explaination of the possible parameters.
             E.g.::
                 product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5)
 
             The default CRS interpretation for geospatial dimensions is WGS84/EPSG:4326,
             even if the resulting dimension is in another projection.
 
-            The dimensions `longitude`/`latitude` and `x`/`y` can be used interchangeably.
+            The dimensions ``longitude``/``latitude`` and ``x``/``y`` can be used interchangeably.
 
         :return: Data as variables with shared coordinate dimensions.
         :rtype: xarray.Dataset
@@ -481,32 +508,45 @@ class API(object):
 
     def get_dataset_by_cell(self, x_index, y_index, variables=None, set_nan=False, include_lineage=False, **kwargs):
         """
-        Gets an `xarray.Dataset` for the requested data given a cell.
+        Gets an ``xarray.Dataset`` for a given cell.
 
         The cell represents a tiled footprint of the underlying storage footprint,
         and is typically only used in large-scale processing of data.
         Cell indexes can be found using :meth:`list_cells`.
 
-        See http://xarray.pydata.org/en/stable/api.html#dataset for usage of the `Dataset` object.
+        See http://xarray.pydata.org/en/stable/api.html#dataset for usage of the ``Dataset`` object.
 
         :param x_index: x tile index (or list of indicies) to return.
         :type x_index: list or int
         :param y_index: y tile index (or list of indicies) to return.
         :type y_index: list or int
         :param variables: variable or list of variables to be included.
-                Use `None` to include all available variables (default)
+                Use ``None`` to include all available variables (default)
         :type variables: list(str) or str, optional
-        :param set_nan: If any "no data" values should be set to `numpy.NaN`
-            *Note:* this will cause the data to be cast to a float dtype.
+        :param set_nan: If any "no data" values should be set to ``numpy.NaN``
+
+            .. warning::
+                This will cause the data to be converted to float dtype.
         :type set_nan: bool, optional
         :param include_lineage: Include an 'extra_metadata' variable containing detailed lineage information.
             *Note:* This can cause the query to be slow for large datasets, as it is not lazy-loaded.
             Not included by default.
         :type include_lineage: bool, optional
-        :param kwargs: search parameters and dimension ranges
-            Note that the dimension range must fall in the cells specified by the tile indices.
+        :param kwargs: Search parameters and dimension ranges.
+
+            See :meth:`get_data` for a explaination of the possible parameters.
             E.g.::
-                product='NBAR', platform='LANDSAT_5', time=((1990, 6, 1), (1992, 7 ,1))
+                product='NBAR', platform='LANDSAT_5',
+                time=((1990, 6, 1), (1992, 7 ,1)), latitude=(-35.5, -34.5)
+
+            The default CRS interpretation for geospatial dimensions is WGS84/EPSG:4326,
+            even if the resulting dimension is in another projection.
+
+            The dimensions ``longitude``/``latitude`` and ``x``/``y`` can be used interchangeably.
+
+            .. note::
+                The dimension range must fall in the cells specified by the tile indices.
+
         :return: Data as variables with shared coordinate dimensions.
         :rtype: xarray.Dataset
         """
@@ -547,7 +587,7 @@ class API(object):
             E.g.::
                 product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5)
 
-        :return: list of local paths to the storage units
+        :return: List of local paths to the storage units
         """
         descriptor_request = kwargs
         query = convert_descriptor_query_to_search_query(descriptor_request, self.index)
@@ -559,9 +599,10 @@ class API(object):
 
     def list_storage_type_names(self):
         """
-        List the names of the storage types
+        List the names of the storage types.
 
-        *Note:* This is exposing an internal structure and subject to change.
+        .. warning::
+            This is exposing an internal structure and subject to change.
 
         :return: List of the storage types
         """
@@ -570,16 +611,18 @@ class API(object):
 
     def list_products(self):
         """
-        Lists a dictionary for each stored product
+        Lists a dictionary for each stored product.
 
-        *Note:* This is exposing an internal structure and subject to change.
+        .. warning::
+            This is exposing an internal structure and subject to change.
 
         :return: List of dicts describing each product
         """
         return [t.document for t in self.index.storage.types.get_all()]
 
     def list_fields(self):
-        """List of the search fields
+        """
+        List of the search fields.
 
         :return: list of field names, e.g.
             ::
@@ -590,7 +633,7 @@ class API(object):
 
     def list_field_values(self, field):
         """
-        List the values found for a field
+        List the values found for a field.
 
         :param field: Name of the field, as returned by the :meth:`.list_fields` method.
         :type field: str
@@ -604,9 +647,9 @@ class API(object):
 
     def list_all_field_values(self):
         """
-        Lists all the search fields with their known values in the database
+        Lists all the search fields with their known values in the database.
 
-        :return: Each search field with the list of known values
+        :return: Each search field with the list of known values.
             ::
                 {
                     'platform': ['LANDSAT_5', 'LANDSAT_7'],
@@ -622,25 +665,25 @@ class API(object):
         """
         List the tile index pairs for cells.
 
-        Cells are the spatial footprint, with an `(x, y)` index that can be configured to match the projection of the
+        Cells are the spatial footprint, with an ``(x, y)`` index that can be configured to match the projection of the
         stored data.
 
-        E.g. `(148, -35)` could represent a 1x1 degree tile containing data between
+        E.g. ``(148, -35)`` could represent a 1x1 degree tile containing data between
         longitudes 148.0 up to but not including 149.0 and
         latitudes of -35.0 up to but not including -36.0 for in geographically projected data.
 
         For projected data (such as Australian Albers equal-area projection - ESPG:3577), the tile
-        `(15, -40)` could represent a 100x100km tile containing data from
+        ``(15, -40)`` could represent a 100x100km tile containing data from
         eastings 1,500,000m up to but not including 1,600,000, and
         northings -4,000,000m up to but not including -4,100,000m.
 
         **Note:** This is typically only used for data processing.
 
         :param x_index: Limit the response to those cells with an x tile index in this list.
-            The default of `None` does not filter the list.
+            The default of ``None`` does not filter the list.
         :type x_index: int, list of ints, or None
         :param y_index: Limit the response to those cells with an y tile index in this list.
-            The default of `None` does not filter the list.
+            The default of ``None`` does not filter the list.
         :type y_index: int, list of ints, or None
         :param kwargs: Filter the cells by search parameters, dimension ranges and storage_type.
         :return: List of tuples of the (x, y) tile indicies.
