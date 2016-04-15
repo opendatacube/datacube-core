@@ -172,10 +172,20 @@ def check_open_with_api(index):
                               latitude=(-34, -35), longitude=(149, 150))
     assert dataset['band_1'].size
 
-    data_array_cell = api.get_data_array_by_cell(149, -34, storage_type='ls5_nbar', variables=['band_1'])
+    data_array_cell = api.get_data_array_by_cell((149, -34), storage_type='ls5_nbar', variables=['band_1'])
     assert data_array_cell.size
 
-    dataset_cell = api.get_dataset_by_cell(149, -34, storage_type='ls5_nbar', variables=['band_1'])
+    data_array_cell = api.get_data_array_by_cell(x_index=149, y_index=-34,
+                                                 storage_type='ls5_nbar', variables=['band_1'])
+    assert data_array_cell.size
+
+    dataset_cell = api.get_dataset_by_cell((149, -34), storage_type='ls5_nbar', variables=['band_1'])
+    assert dataset_cell['band_1'].size
+
+    dataset_cell = api.get_dataset_by_cell([(149, -34), (149, -35)], storage_type='ls5_nbar', variables=['band_1'])
+    assert dataset_cell['band_1'].size
+
+    dataset_cell = api.get_dataset_by_cell(x_index=149, y_index=-34, storage_type='ls5_nbar', variables=['band_1'])
     assert dataset_cell['band_1'].size
 
 

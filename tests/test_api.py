@@ -28,11 +28,11 @@ from .util import isclose
 from datacube.model import Range, Coordinate, Variable, GeoBox
 from datacube.storage.access.backends.geobox import GeoBoxStorageUnit
 from datacube.api import geo_xarray
-from datacube.api._api import _get_dimension_properties
+from datacube.api._xarray import get_dimension_properties
 from datacube.api._storage import MemoryStorageUnit
 from datacube.api._conversion import convert_descriptor_dims_to_search_dims, convert_descriptor_dims_to_selector_dims
 from datacube.api._conversion import datetime_to_timestamp
-from datacube.api._stratify import _stratify_irregular_dimension
+from datacube.api._stratify import stratify_irregular_dimension
 from datacube.api._dask import get_dask_array
 
 
@@ -249,7 +249,7 @@ def test_stratify_irregular_dimension():
     storage_unit_2 = MemoryStorageUnit(coordinates_2, variables_2, coodinate_values=coodinate_values_2)
 
     input_sus = [storage_unit_1, storage_unit_2]
-    output_sus = _stratify_irregular_dimension(input_sus, 'time')
+    output_sus = stratify_irregular_dimension(input_sus, 'time')
 
     all_coords = set(numpy.concatenate((coodinate_values_1['time'], coodinate_values_2['time'])))
     # for each coordinate across all storage units
@@ -285,7 +285,7 @@ def test_dask():
     ds2.get_crs = lambda: {'time': None, 'latitude': None, 'longitude': None}
 
     storage_units = [ds1, ds2]
-    dim_props = _get_dimension_properties(storage_units, ('time', 'latitude', 'longitude'), {})
+    dim_props = get_dimension_properties(storage_units, ('time', 'latitude', 'longitude'), {})
     da = get_dask_array(storage_units, 'B10', ['time', 'latitude', 'longitude'], dim_props)
     da_computed = da.compute()
     assert da.shape == (4, 200, 200)

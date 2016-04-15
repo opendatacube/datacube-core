@@ -13,7 +13,7 @@ from datacube.model import Coordinate
 from datacube.storage.storage import StorageUnitBase
 
 
-def _stratify_storage_unit(storage_unit, dimension, runs):
+def stratify_storage_unit(storage_unit, dimension, runs):
     """
     Creates a new series of storage units for every index along an irregular dimension that must be merged together
 
@@ -61,7 +61,7 @@ def _stratify_storage_unit(storage_unit, dimension, runs):
     #         for i, c in enumerate(coord)]
 
 
-def _stratify_irregular_dimension(storage_units, dimension):
+def stratify_irregular_dimension(storage_units, dimension):
     """
     Creates a new series of storage units for every index along an irregular dimension that must be merged together
     :param storage_units:
@@ -95,7 +95,7 @@ def _stratify_irregular_dimension(storage_units, dimension):
     if current_run:
         runs.append(current_run)
 
-    stratified_units = [_stratify_storage_unit(storage_unit, dimension, runs) for storage_unit in storage_units]
+    stratified_units = [stratify_storage_unit(storage_unit, dimension, runs) for storage_unit in storage_units]
     return list(itertools.chain(*stratified_units))
 
 
