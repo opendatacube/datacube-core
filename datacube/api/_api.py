@@ -684,7 +684,7 @@ class API(object):
         eastings 1,500,000m up to but not including 1,600,000, and
         northings -4,000,000m up to but not including -4,100,000m.
 
-        **Note:** This is typically only used for data processing.
+        **Note:** This is typically only used for bulk data processing.
 
         :param x_index: Limit the response to those cells with an x tile index in this list.
             The default of ``None`` does not filter the list.
