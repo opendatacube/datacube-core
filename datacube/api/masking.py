@@ -37,7 +37,7 @@ def describe_flags(variable):
     :return: str
     """
     variable = _ensure_masking_variable(variable)
-    COL_SPACING = 3
+    column_spacing = 3
 
     def gen_human_readable(flags_def):
         bit_value_flagname_desc = [
@@ -50,10 +50,10 @@ def describe_flags(variable):
 
         yield "Bits are listed from the MSB (bit {}) to the LSB (bit {})".format(max_bit, min_bit)
         yield "{:<8}{:<8}{:<{flagname_width}}{}".format('Bit', 'Value', 'Flag Name', 'Description',
-                                                    flagname_width=widest_flagname + COL_SPACING)
+                                                        flagname_width=widest_flagname + column_spacing)
         for bit, value, flagname, desc in sorted(bit_value_flagname_desc, reverse=True):
             yield "{:<8d}{:<8d}{:<{flagname_width}}{}".format(bit, value, flagname, desc,
-                                                          flagname_width=widest_flagname + COL_SPACING)
+                                                              flagname_width=widest_flagname + column_spacing)
 
     return '\n'.join(gen_human_readable(getattr(variable, FLAGS_ATTR_NAME)))
 
@@ -107,8 +107,8 @@ def _get_masking_array(dataset):
     for var in dataset.data_vars.values():
         if _is_data_var(var) and hasattr(var, FLAGS_ATTR_NAME):
             return var
-    else:
-        raise ValueError('No masking variable found')
+
+    raise ValueError('No masking variable found')
 
 
 def set_value(bitmask, index, value):
@@ -130,7 +130,7 @@ def set_value(bitmask, index, value):
     :type index: int
     :type value: bool
     """
-    bit_val = 2**index
+    bit_val = 2 ** index
     if value:
         bitmask |= bit_val
     else:
@@ -143,8 +143,8 @@ def _is_data_var(variable):
 
 
 def is_set(x, n):
-    return x & 2**n != 0
+    return x & 2 ** n != 0
 
 
 def all_set(max_bit):
-    return (2 << max_bit+1) - 1
+    return (2 << max_bit + 1) - 1
