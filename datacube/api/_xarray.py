@@ -60,6 +60,8 @@ def stack_vars(data_dict, var_dim_name, stack_name=None):
 
 
 def su_in_cell(su, x_index, y_index, xy_index=None):
+    if xy_index is None and x_index is None and y_index is None:
+        return True
     if not hasattr(su, 'tile_index'):
         return False
     if xy_index is not None and su.tile_index in xy_index:
