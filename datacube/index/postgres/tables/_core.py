@@ -63,6 +63,7 @@ def ensure_db(engine, with_permissions=True):
     if not has_schema(engine, c):
         is_new = True
         try:
+            c.execute('begin')
             if with_permissions:
                 # Switch to 'agdc_admin', so that all items are owned by them.
                 c.execute('set role agdc_admin')
@@ -71,6 +72,10 @@ def ensure_db(engine, with_permissions=True):
             _LOG.info('Creating tables.')
             c.execute(_FUNCTIONS)
             METADATA.create_all(c)
+            c.execute('commit')
+        except:
+            c.execute('rollback')
+            raise
         finally:
             if with_permissions:
                 # psycopg doesn't have an equivalent to server-side quote_ident(). ?
