@@ -73,7 +73,9 @@ def ensure_db(engine, with_permissions=True):
             METADATA.create_all(c)
         finally:
             if with_permissions:
-                c.execute('set role ' + db_user)
+                # psycopg doesn't have an equivalent to server-side quote_ident(). ?
+                quoted_user = db_user.replace('"', '""')
+                c.execute('set role "{}"'.format(quoted_user))
 
     if with_permissions:
         _LOG.info('Adding role grants.')
