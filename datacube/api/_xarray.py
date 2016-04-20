@@ -145,7 +145,7 @@ def create_data_response(xarrays, dimensions):
         'arrays': xarrays,
         'indices': dict((dim, sample_xarray.coords[dim].values) for dim in dimensions),
         'element_sizes': [(abs(sample_xarray.coords[dim].values[0] - sample_xarray.coords[dim].values[-1]) /
-                           float(sample_xarray.coords[dim].size)) if sample_xarray.coords[dim].size > 1 else 0
+                           float(sample_xarray.coords[dim].size - 1)) if sample_xarray.coords[dim].size > 1 else 0
                           for dim in dimensions],
         'size': sample_xarray.shape,
         'coordinate_reference_systems': [dict(v for v in sample_xarray[dim].attrs.items()) for dim in dimensions]
