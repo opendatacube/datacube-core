@@ -52,7 +52,7 @@ class Index(object):
         if is_new and with_default_collection:
             _LOG.info('Adding default metadata types.')
             for _, doc in ui.read_documents(_DEFAULT_METADATA_TYPES_PATH):
-                self.metadata_types.add(doc)
+                self.metadata_types.add(doc, allow_table_lock=True)
             _LOG.info('Adding default collections.')
             for _, doc in ui.read_documents(_DEFAULT_COLLECTIONS_PATH):
                 self.collections.add(doc)

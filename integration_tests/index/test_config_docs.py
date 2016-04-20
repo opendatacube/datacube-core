@@ -176,8 +176,8 @@ def test_collection_indexes_views_exist(db, telemetry_collection):
     """
     # Ensure indexes were created for the eo metadata type (following the naming conventions):
     val = db._connection.execute(
-        "SELECT to_regclass('agdc.ix_field_eo_dataset_platform')").scalar()
-    assert val == 'agdc.ix_field_eo_dataset_platform'
+        "SELECT to_regclass('agdc.dix_field_eo_dataset_platform')").scalar()
+    assert val == 'agdc.dix_field_eo_dataset_platform'
 
     # Ensure view was created (following naming conventions)
     val = db._connection.execute("SELECT to_regclass('agdc.eo_dataset')").scalar()

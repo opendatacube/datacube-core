@@ -80,9 +80,14 @@ class MetadataTypeResource(object):
         """
         self._db = db
 
-    def add(self, definition):
+    def add(self, definition, allow_table_lock=False):
         """
         :type definition: dict
+        :param allow_table_lock:
+            Allow an exclusive lock to be taken on the table while creating the indexes.
+            This will halt other user's requests until completed.
+
+            If false, creation will be slightly slower and cannot be done in a transaction.
         :rtype: datacube.model.MetadataType
         """
         # This column duplication is getting out of hand:
@@ -100,7 +105,8 @@ class MetadataTypeResource(object):
         else:
             self._db.add_metadata_type(
                 name=name,
-                definition=definition
+                definition=definition,
+                concurrently=not allow_table_lock
             )
         return self.get_by_name(name)
 
@@ -165,7 +171,7 @@ class CollectionResource(object):
             metadata_type = self.metadata_type_resource.get_by_name(metadata_type)
         else:
             # Otherwise they embedded a document, add it if needed:
-            metadata_type = self.metadata_type_resource.add(metadata_type)
+            metadata_type = self.metadata_type_resource.add(metadata_type, allow_table_lock=False)
 
         if not metadata_type:
             raise InvalidDocException('Unkown metadata type: %r' % definition['metadata_type'])

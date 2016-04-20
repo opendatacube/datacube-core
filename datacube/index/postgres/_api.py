@@ -580,7 +580,7 @@ class PostgresDb(object):
         )
         return res.inserted_primary_key[0]
 
-    def add_metadata_type(self, name, definition):
+    def add_metadata_type(self, name, definition, concurrently=False):
         res = self._connection.execute(
             METADATA_TYPE.insert().values(
                 name=name,
@@ -593,11 +593,13 @@ class PostgresDb(object):
         # Initialise search fields.
         _setup_collection_fields(
             self._connection, name, 'dataset', self.get_dataset_fields(record),
-            DATASET.c.metadata_type_ref == type_id
+            DATASET.c.metadata_type_ref == type_id,
+            concurrently=concurrently
         )
         _setup_collection_fields(
             self._connection, name, 'storage_unit', self.get_storage_unit_fields(record),
-            STORAGE_UNIT.c.metadata_type_ref == type_id
+            STORAGE_UNIT.c.metadata_type_ref == type_id,
+            concurrently=concurrently
         )
 
     def get_all_collections(self):
@@ -696,7 +698,7 @@ def _pg_exists(conn, name):
     return conn.execute("SELECT to_regclass(%s)", name).scalar() is not None
 
 
-def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_expression):
+def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_expression, concurrently=False):
     """
     Create indexes and views for a collection's search fields.
     """
@@ -706,7 +708,8 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_
     for field in fields.values():
         index_type = field.postgres_index_type
         if index_type:
-            index_name = 'ix_field_{prefix}_{field_name}'.format(
+            # Our normal indexes start with "ix_", dynamic indexes with "dix_"
+            index_name = 'dix_field_{prefix}_{field_name}'.format(
                 prefix=name.lower(),
                 field_name=field.name.lower()
             )
@@ -719,7 +722,7 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_
                     postgresql_where=where_expression,
                     postgresql_using=index_type,
                     # Don't lock the table (in the future we'll allow indexing new fields...)
-                    postgresql_concurrently=True
+                    postgresql_concurrently=concurrently
                 ).create(conn)
 
     # Create a view of search fields (for debugging convenience).

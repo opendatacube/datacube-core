@@ -12,6 +12,8 @@ from pathlib import Path
 import pytest
 import rasterio
 import yaml
+
+
 try:
     from yaml import CSafeLoader as SafeLoader
 except ImportError:
@@ -22,7 +24,7 @@ from datacube.api import API
 from datacube.config import LocalConfig
 from datacube.index._api import Index, _DEFAULT_COLLECTIONS_PATH, _DEFAULT_METADATA_TYPES_PATH
 from datacube.index.postgres import PostgresDb
-from datacube.index.postgres.tables._core import ensure_db, drop_db
+from datacube.index.postgres.tables._core import ensure_db, drop_db, METADATA
 
 _SINGLE_RUN_CONFIG_TEMPLATE = """
 [locations]
@@ -88,8 +90,18 @@ def db(local_config):
     db = PostgresDb.from_config(local_config, application_name='test-run')
     # Drop and recreate tables so our tests have a clean db.
     drop_db(db._connection)
+    remove_dynamic_indexes()
     ensure_db(db._engine)
     return db
+
+
+def remove_dynamic_indexes():
+    """
+    Clear any dynamically created indexes from the schema.
+    """
+    # Our normal indexes start with "ix_", dynamic indexes with "dix_"
+    for table in METADATA.tables.values():
+        table.indexes.intersection_update([i for i in table.indexes if not i.name.startswith('dix_')])
 
 
 @pytest.fixture
