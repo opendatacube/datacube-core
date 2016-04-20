@@ -13,7 +13,6 @@ import pytest
 import rasterio
 import yaml
 
-
 try:
     from yaml import CSafeLoader as SafeLoader
 except ImportError:
@@ -41,8 +40,8 @@ _TELEMETRY_COLLECTION_DESCRIPTOR = Path(__file__).parent.joinpath('telemetry-col
 _EXAMPLE_LS5_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('example-ls5-nbar.yaml')
 
 PROJECT_ROOT = Path(__file__).parents[1]
-CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
-LS5_SAMPLES = CONFIG_SAMPLES / 'ga_landsat_5/'
+CONFIG_SAMPLES = PROJECT_ROOT / 'docs' / 'config_samples'
+LS5_SAMPLES = CONFIG_SAMPLES / 'ga_landsat_5'
 LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_geographic.yaml'
 LS5_NBAR_NAME = 'ls5_nbar'
 LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_albers.yaml'
