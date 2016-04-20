@@ -116,11 +116,13 @@ def convert_descriptor_dims_to_search_dims(descriptor_query_dimensions):
             elif dim in ['time', 't']:
                 # TODO: Handle time formatting strings & other CRS's
                 # Assume dateime object or seconds since UNIX epoch 1970-01-01 for now...
-                search_query['time'] = Range(to_datetime(data['range'][0]),
-                                             to_datetime(data['range'][1]))
+                search_query['time'] = time_to_search_dims(data['range'])
             else:
                 # Assume the search function will sort it out, add it to the query
-                search_query[dim] = Range(*data['range'])
+                if 'range' in data and hasattr(data['range'], '__iter__'):
+                    search_query[dim] = Range(*data['range'])
+                else:
+                    search_query[dim] = data
 
     if any(v is not None for v in input_coords.values()):
         search_coords = geospatial_warp_bounds(input_coords, input_crs, tolerance=FLOAT_TOLERANCE)
@@ -128,6 +130,17 @@ def convert_descriptor_dims_to_search_dims(descriptor_query_dimensions):
         search_query['lon'] = Range(search_coords['left'], search_coords['right'])
 
     return search_query
+
+
+def time_to_search_dims(time_range):
+    # TODO: Handle time formatting strings & other CRS's
+    # Assume dateime object or seconds since UNIX epoch 1970-01-01 for now...
+    if hasattr(time_range, '__iter__') and len(time_range) == 2:
+        return Range(to_datetime(time_range[0]), to_datetime(time_range[1]))
+    else:
+        single_query_time = to_datetime(time_range)
+        end_time = single_query_time + datetime.timedelta(milliseconds=1)
+        return Range(single_query_time, end_time)
 
 
 def convert_descriptor_dims_to_selector_dims(dimension_ranges_descriptor, storage_crs='EPSG:4326'):
@@ -163,8 +176,7 @@ def convert_descriptor_dims_to_selector_dims(dimension_ranges_descriptor, storag
             elif dim in ['time']:
                 # TODO: Handle time formatting strings & other CRS's
                 # Assume dateime object or seconds since UNIX epoch 1970-01-01 for now...
-                dimension_ranges[dim]['range'] = (datetime_to_timestamp(data['range'][0]),
-                                                  datetime_to_timestamp(data['range'][1]))
+                dimension_ranges[dim]['range'] = time_to_selector_dim(data['range'])
             else:
                 # Add to ranges unchanged
                 dimension_ranges[dim]['range'] = data['range']
@@ -185,6 +197,14 @@ def convert_descriptor_dims_to_selector_dims(dimension_ranges_descriptor, storag
         dimension_ranges[mapped_vars['lon']]['crs'] = storage_crs
 
     return dimension_ranges
+
+
+def time_to_selector_dim(time_range):
+    # TODO: Handle time formatting strings & other CRS's
+    if hasattr(time_range, '__iter__') and len(time_range) == 2:
+        return (datetime_to_timestamp(time_range[0]), datetime_to_timestamp(time_range[1]))
+    else:
+        return datetime_to_timestamp(time_range)
 
 
 def convert_request_args_to_descriptor_query(request=None, index=None):

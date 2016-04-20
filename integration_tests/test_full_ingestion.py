@@ -149,7 +149,7 @@ def check_open_with_xray(file_path):
 
 def check_open_with_api(index):
     import datacube.api
-    api = datacube.api.API(index)
+    api = datacube.api.API(index=index)
     fields = api.list_fields()
     assert 'product' in fields
     descriptor = api.get_descriptor()
@@ -188,6 +188,11 @@ def check_open_with_api(index):
 
     dataset_cell = api.get_dataset_by_cell(x_index=149, y_index=-34, storage_type='ls5_nbar', variables=['band_1'])
     assert dataset_cell['band_1'].size
+
+    tiles = api.list_tiles(x_index=149, y_index=-34, storage_type='ls5_nbar')
+    for tile_query, tile_attrs in tiles:
+        dataset = api.get_dataset_by_cell(**tile_query)
+        assert dataset['band_1'].size
 
 
 def make_pgsqljson_match_yaml_load(data):

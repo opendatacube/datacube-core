@@ -60,10 +60,10 @@ def stack_vars(data_dict, var_dim_name, stack_name=None):
 
 
 def su_in_cell(su, x_index, y_index, xy_index=None):
-    if xy_index is None and x_index is None and y_index is None:
-        return True
     if not hasattr(su, 'tile_index'):
         return False
+    if xy_index is None and x_index is None and y_index is None:
+        return True
     if xy_index is not None and su.tile_index in xy_index:
         return True
     if x_index is None and y_index is None:
@@ -161,8 +161,11 @@ def fix_custom_dimensions(dimensions, dim_props):
     if 'time' in dimensions:
         coord_labels['time'] = [datetime.datetime.fromtimestamp(c, tz=tz.tzutc()) for c in coord_labels['time']]
         if 'time' in dimension_ranges and 'range' in dimension_ranges['time']:
-            dimension_ranges['time']['range'] = tuple(to_datetime(t)
-                                                      for t in dimension_ranges['time']['range'])
+            if hasattr(dimension_ranges['time']['range'], '__iter__'):
+                dimension_ranges['time']['range'] = tuple(to_datetime(t)
+                                                          for t in dimension_ranges['time']['range'])
+            else:
+                dimension_ranges['time']['range'] = numpy.datetime64(to_datetime(dimension_ranges['time']['range']))
     for dim in dimension_ranges.keys():
         if dim not in dimensions:
             x_dims = ['x', 'lon', 'longitude']

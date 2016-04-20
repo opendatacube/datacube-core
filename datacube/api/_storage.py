@@ -7,6 +7,7 @@ from __future__ import absolute_import, division, print_function
 import datetime
 from collections import defaultdict
 from functools import reduce as reduce_
+import itertools
 
 import numpy
 
@@ -85,6 +86,17 @@ def make_storage_unit(su, is_diskless=False, include_lineage=False):
         return StorageUnitDimensionProxy(result, time_coordinate_value(time))
 
     raise RuntimeError('unsupported storage unit access driver %s' % su.storage_type.driver)
+
+
+def get_tiles_for_su(su):
+    access_unit = make_storage_unit(su, is_diskless=True, )
+    irregular_coords = []
+    irregular_dims = [dim for dim in su.storage_type.dimensions if dim in ['time', 't']]
+    for dim in irregular_dims:
+        coords = access_unit.get_coord(dim)[0]  # TODO: Get coords from index.SU, not storage.SU
+        irregular_coords.append([(dim, value) for value in coords])
+    slices = itertools.product(*irregular_coords)
+    return slices
 
 
 class StorageUnitCollection(object):

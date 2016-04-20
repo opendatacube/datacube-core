@@ -145,6 +145,9 @@ def test_convert_descriptor_dims_to_selector_dims_with_single_value():
             },
             'y': {
                 'range': -35.5,
+            },
+            'time': {
+                'range': (2001, 1, 1, 20, 13, 0)
             }
         }
     }
@@ -152,6 +155,7 @@ def test_convert_descriptor_dims_to_selector_dims_with_single_value():
     selector_dims = convert_descriptor_dims_to_selector_dims(descriptor_query_dimensions, storage_crs)
     assert isclose(selector_dims['x']['range'], 1472748.1820625546)
     assert isclose(selector_dims['y']['range'], -3971790.0737348166)
+    assert selector_dims['time']['range'] == 978379980
 
 
 def test_convert_descriptor_dims_to_selector_dims_with_time():

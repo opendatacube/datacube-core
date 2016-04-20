@@ -30,7 +30,7 @@ from datacube.compat import string_types
 from ._conversion import convert_descriptor_query_to_search_query, convert_descriptor_dims_to_selector_dims
 from ._conversion import convert_request_args_to_descriptor_query
 from ._storage import StorageUnitCollection
-from ._storage import make_storage_unit, make_storage_unit_collection_from_descriptor
+from ._storage import make_storage_unit, make_storage_unit_collection_from_descriptor, get_tiles_for_su
 from ._xarray import get_storage_units, get_result_stats, get_data_from_storage_units, create_data_response, stack_vars
 from ._xarray import su_in_cell, get_metadata_from_storage_units, make_xarray_dataset
 
@@ -701,6 +701,103 @@ class API(object):
         descriptor_request = convert_request_args_to_descriptor_query(kwargs, self.index)
         query = convert_descriptor_query_to_search_query(descriptor_request, self.index)
         return sorted({su.tile_index for su in self.index.storage.search(**query) if su_in_cell(su, x_index, y_index)})
+
+    def list_tiles(self, xy_index=None, x_index=None, y_index=None, **kwargs):
+        """List the tiles for a given cell
+
+        The cell represents a tiled footprint of the underlying storage footprint,
+        and is typically only used in large-scale processing of data.
+
+        A first element of a returned item (the `tile_query` part) can be used as part of a
+        :meth:``get_dataset_by_cell`` or :meth:``get_data_array_by_cell``, using the ``**`` unpack operator
+
+            ::
+                tiles = dc.list_tiles((11, -20), product='NBAR')
+                for (tile_query, tile_attrs) in tiles.items():
+                    dataset = dc.get_dataset_by_cell(**tile_query)
+                    ...
+
+        :param xy_index: (x, y) tile index (or list of indices) to return.
+            ::
+                dc.list_tiles((11, -20), product='NBAR')
+
+                dc.list_tiles([(11, -20), (12, -20)], product='NBAR')
+
+        :type xy_index: list or tuple
+        :param x_index: x tile index (or list of indicies) to return.
+            ::
+                api.list_tiles(x_index=11, y_index=-20, product='NBAR')
+
+                api.list_tiles(x_index=[11, 12], y_index=[-20, -21], product='NBAR')
+
+        :type x_index: list or int
+        :param y_index: y tile index (or list of indicies) to return.
+        :type y_index: list or int
+        :param kwargs: Search parameters and dimension ranges.
+
+            See :meth:`get_data` for a explaination of the possible parameters.
+            E.g.::
+                product='NBAR', platform='LANDSAT_5',
+                time=((1990, 6, 1), (1992, 7 ,1)), latitude=(-35.5, -34.5)
+
+            The default CRS interpretation for geospatial dimensions is WGS84/EPSG:4326,
+            even if the resulting dimension is in another projection.
+
+            The dimensions ``longitude``/``latitude`` and ``x``/``y`` can be used interchangeably.
+
+            .. note::
+                The dimension range must fall in the cells specified by the tile indices.
+
+        :return: lit of tuples(``tile_query``, ``tile_attributes``)
+
+            ::
+                [
+                    tuple({
+                        'xy_index': (-15, -40),
+                        'time': numpy.datetime64(...)
+                        'storage_type': 'ls5_nbar'
+                    }, {
+                        'path': '...',
+                        'description': '...',
+                    })
+                ]
+        """
+        x_index = x_index if x_index is None or hasattr(x_index, '__contains__') else [x_index]
+        y_index = y_index if y_index is None or hasattr(y_index, '__contains__') else [y_index]
+        xy_index = xy_index if not isinstance(xy_index, tuple) else [xy_index]
+        descriptor_request = convert_request_args_to_descriptor_query(kwargs, self.index)
+        query = convert_descriptor_query_to_search_query(descriptor_request, self.index)
+
+        tiles = []  # (tile query, attributes)
+        for su in self.index.storage.search(**query):
+            if su_in_cell(su, x_index, y_index, xy_index):
+                slices = get_tiles_for_su(su)
+                for data_slice in slices:
+                    tile_query = {
+                        'xy_index': su.tile_index,
+                        'storage_type': su.storage_type.name,
+                    }
+                    for (dim, val) in data_slice:
+                        tile_query[dim] = val
+                    tile_attributes = {
+                        'path': str(su.local_path),
+                        'description': su.storage_type.description,
+                        'metadata': su.storage_type.document[u'match'][u'metadata']
+                    }
+                    tiles.append(tuple([tile_query, tile_attributes]))
+        return tiles
+
+    def list_variables(self, storage_type):
+        """Lists the variables for a given ``storage_type`` name, from :meth:`list_storage_type_names`.
+
+            .. warning::
+                This function is under development, and is subject to change.
+
+        :param storage_type: Name of the the storage type
+        :return: dict
+        """
+        storage_type = self.index.storage.types.get_by_name(storage_type)
+        return {k: {} for k in storage_type.measurements.keys()}
 
     def __repr__(self):
         return "API<index={!r}>".format(self.index)
