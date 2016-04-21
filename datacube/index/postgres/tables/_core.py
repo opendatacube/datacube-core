@@ -6,6 +6,7 @@ from __future__ import absolute_import
 
 import logging
 
+import sqlalchemy.sql.sqltypes
 from sqlalchemy import MetaData, TIMESTAMP
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.schema import CreateSchema
@@ -180,3 +181,13 @@ class CommonTimestamp(GenericFunction):
     identifier = 'common_timestamp'
 
     name = '%s.common_timestamp' % SCHEMA_NAME
+
+
+class PGNAME(sqlalchemy.sql.sqltypes.Text):
+    """Postgres 'NAME' type."""
+    __visit_name__ = 'NAME'
+
+
+@compiles(PGNAME)
+def visit_NAME(element, compiler, **kw):
+    return "NAME"
