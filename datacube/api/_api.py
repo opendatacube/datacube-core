@@ -60,7 +60,7 @@ class API(object):
 
         All fields are optional.
 
-        Search for any of the fields returned by :meth:`list_fields`.
+        Search for any of the fields returned by :meth:`list_fields()`.
 
         **Dimensions**
 
@@ -182,15 +182,18 @@ class API(object):
 
             **Search fields**
 
-            Search for any of the fields returned by :meth:`list_fields`.
+            Search for any of the fields returned by :meth:`list_fields()`, using a value from
+            :meth:`list_field_values()`.
 
             **Storage type field**
 
-            The ``storage_type`` can be any of the keys returned by :meth:`get_descriptor`.
+            The ``storage_type`` can be any of the keys returned by :meth:`get_descriptor()` or
+            :meth:`list_storage_type_names()`.
 
             **Variables field**
 
-            The ``variables`` field is a list of variable names matching those listed by :meth:`get_descriptor`.
+            The ``variables`` field is a list of variable names matching those listed by :meth:`get_descriptor()` or
+            :meth:`list_variables()`.
             If not specified, all variables are returned.
 
             **Dimensions field**
@@ -237,7 +240,7 @@ class API(object):
         :type descriptor: dict or None
 
         :param storage_units: Limit the query to the given storage unit descriptors,
-            as given by the :py:meth:`.get_descriptor` method.
+            as given by the :py:meth:`.get_descriptor()` method.
 
         :type storage_units: list or None
 
@@ -308,7 +311,7 @@ class API(object):
         """
         Gets data as a stacked ``xarray.DataArray``.  The data will be in a single array, with each variable
         available for the  variables.
-        This stacks the data similar to ``numpy.dstack``.  Use this function instead of :meth:`get_dataset` if you
+        This stacks the data similar to ``numpy.dstack``.  Use this function instead of :meth:`get_dataset()` if you
         only need stacked data.  All variables must be of the same dimensions, and this function doesn't return
         additional information such as ``crs`` and ``extra_metadata``.
 
@@ -358,13 +361,13 @@ class API(object):
         """
         Gets data as a stacked ``xarray.DataArray``.  The data will be in a single array, with each variable
         available for the  variables.
-        This stacks the data similar to ``numpy.dstack``.  Use this function instead of :meth:`get_dataset` if you
+        This stacks the data similar to ``numpy.dstack``.  Use this function instead of :meth:`get_dataset()` if you
         only need stacked data.  All variables must be of the same dimensions, and this function doesn't return
         additional information such as ``crs`` and ``extra_metadata``.
 
         The cell represents a tiled footprint of the underlying storage footprint,
         and is typically only used in large-scale processing of data.
-        Cell indexes can be found using :meth:`list_cells`.
+        Cell indexes can be found using :meth:`list_cells()`.
 
         See http://xarray.pydata.org/en/stable/api.html#dataarray for usage of the ``DataArray`` object.
 
@@ -456,7 +459,7 @@ class API(object):
         :type include_lineage: bool, optional
         :param kwargs: Search parameters and dimension ranges.
 
-            See :meth:`get_data` for a explaination of the possible parameters.
+            See :meth:`get_data()` for a explaination of the possible parameters.
             E.g.::
                 product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5)
 
@@ -506,7 +509,7 @@ class API(object):
 
         The cell represents a tiled footprint of the underlying storage footprint,
         and is typically only used in large-scale processing of data.
-        Cell indexes can be found using :meth:`list_cells`.
+        Cell indexes can be found using :meth:`list_cells()`.
 
         See http://xarray.pydata.org/en/stable/api.html#dataset for usage of the ``Dataset`` object.
 
@@ -540,7 +543,7 @@ class API(object):
         :type include_lineage: bool, optional
         :param kwargs: Search parameters and dimension ranges.
 
-            See :meth:`get_data` for a explaination of the possible parameters.
+            See :meth:`get_data()` for a explaination of the possible parameters.
             E.g.::
                 product='NBAR', platform='LANDSAT_5',
                 time=((1990, 6, 1), (1992, 7 ,1)), latitude=(-35.5, -34.5)
@@ -642,7 +645,7 @@ class API(object):
         """
         List the values found for a field.
 
-        :param field: Name of the field, as returned by the :meth:`.list_fields` method.
+        :param field: Name of the field, as returned by the :meth:()`.list_fields` method.
         :type field: str
         :return: List of values for the field in the database, e.g.
             ::
@@ -703,25 +706,23 @@ class API(object):
         return sorted({su.tile_index for su in self.index.storage.search(**query) if su_in_cell(su, x_index, y_index)})
 
     def list_tiles(self, xy_index=None, x_index=None, y_index=None, **kwargs):
-        """List the tiles for a given cell
+        """List the tiles for a given cell.
 
         The cell represents a tiled footprint of the underlying storage footprint,
         and is typically only used in large-scale processing of data.
 
         A first element of a returned item (the `tile_query` part) can be used as part of a
-        :meth:``get_dataset_by_cell`` or :meth:``get_data_array_by_cell``, using the ``**`` unpack operator
-
-            ::
-                tiles = dc.list_tiles((11, -20), product='NBAR')
+        :meth:`get_dataset_by_cell()` or :meth:`get_data_array_by_cell()`, using the ``**`` unpack operator::
+                tiles = api.list_tiles((11, -20), product='NBAR')
                 for (tile_query, tile_attrs) in tiles.items():
-                    dataset = dc.get_dataset_by_cell(**tile_query)
+                    dataset = api.get_dataset_by_cell(**tile_query)
                     ...
 
         :param xy_index: (x, y) tile index (or list of indices) to return.
             ::
-                dc.list_tiles((11, -20), product='NBAR')
+                api.list_tiles((11, -20), product='NBAR')
 
-                dc.list_tiles([(11, -20), (12, -20)], product='NBAR')
+                api.list_tiles([(11, -20), (12, -20)], product='NBAR')
 
         :type xy_index: list or tuple
         :param x_index: x tile index (or list of indicies) to return.
@@ -735,7 +736,7 @@ class API(object):
         :type y_index: list or int
         :param kwargs: Search parameters and dimension ranges.
 
-            See :meth:`get_data` for a explaination of the possible parameters.
+            See :meth:`get_data()` for a explaination of the possible parameters.
             E.g.::
                 product='NBAR', platform='LANDSAT_5',
                 time=((1990, 6, 1), (1992, 7 ,1)), latitude=(-35.5, -34.5)
@@ -748,19 +749,20 @@ class API(object):
             .. note::
                 The dimension range must fall in the cells specified by the tile indices.
 
-        :return: lit of tuples(``tile_query``, ``tile_attributes``)
-
+        :return: List of tuples containing (``tile_query``, ``tile_attributes``).
             ::
                 [
-                    tuple({
+                    ({
                         'xy_index': (-15, -40),
-                        'time': numpy.datetime64(...)
-                        'storage_type': 'ls5_nbar'
+                        'time': numpy.datetime64(),
+                        'storage_type': 'ls5_nbar',
                     }, {
                         'path': '...',
                         'description': '...',
-                    })
+                    }),
+                    ...
                 ]
+
         """
         x_index = x_index if x_index is None or hasattr(x_index, '__contains__') else [x_index]
         y_index = y_index if y_index is None or hasattr(y_index, '__contains__') else [y_index]
@@ -788,7 +790,7 @@ class API(object):
         return tiles
 
     def list_variables(self, storage_type):
-        """Lists the variables for a given ``storage_type`` name, from :meth:`list_storage_type_names`.
+        """Lists the variables for a given ``storage_type`` name, from :meth:`list_storage_type_names()`.
 
             .. warning::
                 This function is under development, and is subject to change.

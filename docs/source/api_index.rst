@@ -36,6 +36,7 @@ Cell-based Procesing
    :toctree: generated/
 
    API.list_cells
+   API.list_tiles
    API.get_dataset_by_cell
    API.get_data_array_by_cell
 
