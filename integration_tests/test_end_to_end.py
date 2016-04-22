@@ -71,7 +71,7 @@ def test_end_to_end(global_integration_cli_args, index, example_ls5_dataset):
             '-vv',
             'storage',
             'add',
-            r'C:\Users\u42007\Documents\GitHub\agdc-v2\docs\config_samples\ga_landsat_5\ls5_albers.yaml'
+            str(LS5_NBAR_ALBERS_STORAGE_TYPE)
         ]
     )
     result = CliRunner().invoke(
