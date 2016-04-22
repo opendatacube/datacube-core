@@ -113,6 +113,44 @@ def reproject(src_data_array, src_crs, dst_crs, resolution=None, resampling=Resa
                         attrs=copy.deepcopy(src_data_array.attrs) if copy_attrs else None)
 
 
+def append_solar_day(dataset, longitude=None):
+    """Appends a ``solar_day`` data variable on the given dataset.
+
+    The resulting dataset could then have ``groupby`` operations performed on it, such as finding the max value for
+    each day::
+        dataset = api.get_dataset(...)
+        geo_xarray.append_solar_day(dataset)
+        solar_day_data = dataset.groupby('solar_day').max(dim='time')
+
+    :param dataset: An ``xarray.Dataset`` with a ``time`` dimension.
+
+    If a ``longitude`` parameter is not specified, the dataset must also contain a spatial dimensions (i.e. ``x, y`` or
+    ``longitude, latitude``) and a ``crs`` variable with a ``spatial_ref`` attribute.
+    :param longitude: mean longitude of the dataset in WGS84
+    """
+    if longitude is None:
+        longitude = _get_mean_longitude(dataset)
+    solar_days = np.array([_solar_day(dt, longitude) for dt in dataset.time.values]).astype('datetime64[D]')
+    dataset['solar_day'] = xr.DataArray(solar_days, coords={'time': dataset.time}, dims=['time'])
+
+
+def _solar_day(utc, latitude):
+    seconds_per_degree = 240
+    offset_seconds = int(latitude * seconds_per_degree)
+    offset = np.timedelta64(offset_seconds, 's')
+    return utc + offset
+
+
+def _get_mean_longitude(dataset):
+    x, y = _get_spatial_dims(dataset)
+    mean_lat = float(dataset[x][0] + dataset[x][-1])/2.
+    mean_lon = float(dataset[y][0] + dataset[y][-1])/2.
+    bounds = {'left': mean_lon, 'right': mean_lon, 'top': mean_lat, 'bottom': mean_lat}
+    input_crs = dataset.crs.attrs['spatial_ref']
+    left, bottom, right, top = rasterio.warp.transform_bounds(input_crs, 'EPSG:4326', **bounds)
+    return left
+
+
 def _make_coords(src_data_array, dst_affine, dst_width, dst_height):
     coords = copy.deepcopy(src_data_array.coords)
     new_coords = _warp_spatial_coords(src_data_array, dst_affine, dst_width, dst_height)
