@@ -7,11 +7,10 @@ from __future__ import absolute_import
 import logging
 import uuid
 
-import dateutil.parser
-import pathlib
-
 import cachetools
+import dateutil.parser
 import jsonschema
+import pathlib
 import yaml
 
 try:
@@ -39,7 +38,7 @@ def _ensure_valid(descriptor):
 
 
 class StorageUnitResource(object):
-    def __init__(self, db, storage_type_resource, dataset_types, local_config):
+    def __init__(self, db, storage_type_resource, dataset_types, metadata_types, local_config):
         """
         :type db: datacube.index.postgres._api.PostgresDb
         :type storage_type_resource: StorageTypeResource
@@ -49,6 +48,7 @@ class StorageUnitResource(object):
         self._db = db
         self.types = storage_type_resource
         self._dataset_types = dataset_types
+        self._metadata_types = metadata_types
 
         self._config = local_config
 
@@ -67,22 +67,25 @@ class StorageUnitResource(object):
         if unit.id is None:
             unit.id = uuid.uuid4()
 
-        _storage_unit_type = self._dataset_types.get_by_name('storage_unit')
-
         was_newly_inserted = self._db.insert_dataset(
             unit.descriptor,
             unit.id,
-            _storage_unit_type.id,
             storage_type_id=unit.storage_type.id
         )
         # TODO: unit.size_bytes
         for source_id in unit.dataset_ids:
+            source_dataset = self._db.get_dataset(source_id)
+            if not source_dataset:
+                raise ValueError('Unknown source dataset: %s' % source_id)
+
             self._db.insert_dataset_source(
-                dateutil.parser.parse(unit.descriptor['extent']['center_dt']).isoformat(),
+                _unit_classifier(source_dataset['metadata']),
                 unit.id,
                 source_id
             )
-        self._db.ensure_dataset_location(unit.id, pathlib.Path(unit.path).as_uri())
+        self._db.ensure_dataset_location(
+            unit.id,
+            pathlib.Path(unit.path).as_uri(), allow_replacement=True)
         _LOG.debug('Indexed unit %s @ %s', unit.id, unit.path)
 
     def add(self, storage_unit):
@@ -285,3 +288,18 @@ class StorageTypeResource(object):
 
     def count(self):
         return self._db.count_storage_types()
+
+
+def _unit_classifier(descriptor):
+    """
+    Get a classifier for the given source dataset.
+
+    (A classifier is how we distinguish different sources: a storage unit may have many source datasets)
+
+    We currently use the center time without microseconds.
+
+    >>> _unit_classifier({"extent": {"center_dt": "2014-07-26T23:49:00.343853"}})
+    '2014-07-26T23:49:00'
+    """
+    d = dateutil.parser.parse(descriptor['extent']['center_dt'])
+    return d.replace(microsecond=0).isoformat()

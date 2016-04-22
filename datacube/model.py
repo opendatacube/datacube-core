@@ -8,12 +8,12 @@ import codecs
 import logging
 import os
 from collections import namedtuple, defaultdict
-from pathlib import Path
 
 import dateutil.parser
 import numpy
 from affine import Affine
 from osgeo import osr
+from pathlib import Path
 from rasterio.coords import BoundingBox
 
 from datacube import compat
@@ -279,20 +279,20 @@ class StorageUnit(object):
 
 
 class Dataset(object):
-    def __init__(self, collection, metadata_doc, local_uri):
+    def __init__(self, type_, metadata_doc, local_uri):
         """
         A dataset on disk.
 
-        :type collection: DatasetType
+        :type type_: DatasetType
         :param metadata_doc: the document (typically a parsed json/yaml)
         :type metadata_doc: dict
         :param local_uri: A URI to access this dataset locally.
         :type local_uri: str
         """
         #: :type: Collection
-        self.collection = collection
+        self.type_ = type_
 
-        self.metadata_type = collection.metadata_type if collection else None
+        self.metadata_type = type_.metadata_type if type_ else None
 
         #: :type: dict
         self.metadata_doc = metadata_doc

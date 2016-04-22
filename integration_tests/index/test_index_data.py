@@ -7,11 +7,12 @@ Integration tests: these depend on a local Postgres instance.
 from __future__ import absolute_import
 
 import datetime
+import uuid
+
 from pathlib import Path
 
 from datacube.index.postgres import PostgresDb
-from datacube.index.postgres.tables import STORAGE_TYPE, STORAGE_UNIT
-from datacube.index.postgres.tables._storage import DATASET_STORAGE
+from datacube.index.postgres.tables import STORAGE_TYPE, DATASET, DATASET_SOURCE, DATASET_LOCATION
 from datacube.model import StorageUnit, StorageType
 
 _telemetry_uuid = '4ec8fe97-e8b9-11e4-87ff-1040f381a756'
@@ -47,8 +48,25 @@ _telemetry_dataset = {
     }
 }
 
+_pseudo_telemetry_dataset_type = {
+    'name': 'ls8_telemetry',
+    'match': {
+        'metadata': {
+            'product_type': 'satellite_telemetry_data',
+            'platform': {
+                'code': 'LANDSAT_8'
+            },
+            'format': {
+                'name': 'MD'
+            }
+        }
+    },
+    'metadata_type': 'eo'
+}
+_EXAMPLE_LS7_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('ls7-nbar-example.yaml')
 
-def test_index_dataset_in_transactions(index, db, local_config):
+
+def test_index_dataset_in_transactions(index, db, local_config, default_metadata_type):
     """
     :type index: datacube.index._api.Index
     :type db: datacube.index.postgres._api.PostgresDb
@@ -57,6 +75,7 @@ def test_index_dataset_in_transactions(index, db, local_config):
     assert not db.contains_dataset(_telemetry_uuid)
 
     with db.begin() as transaction:
+        index.datasets.types.add(_pseudo_telemetry_dataset_type)
         was_inserted = db.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid
@@ -90,6 +109,7 @@ def test_index_dataset_with_location(index, default_metadata_type):
     """
     first_file = '/tmp/first/something.yaml'
     second_file = '/tmp/second/something.yaml'
+    type_ = index.datasets.types.add(_pseudo_telemetry_dataset_type)
     dataset = index.datasets.add(
         _telemetry_dataset,
         metadata_path=Path(first_file)
@@ -97,8 +117,7 @@ def test_index_dataset_with_location(index, default_metadata_type):
 
     assert dataset.id == _telemetry_uuid
     # TODO: Dataset types?
-    assert dataset.collection.id == default_collection.id
-    assert dataset.collection.id == default_collection.id
+    assert dataset.type_.id == type_.id
     assert dataset.metadata_type.id == default_metadata_type.id
 
     assert dataset.local_path.absolute() == Path(first_file).absolute()
@@ -127,13 +146,14 @@ def test_index_dataset_with_location(index, default_metadata_type):
     assert dataset.local_path.absolute() == Path(second_file).absolute()
 
 
-def test_index_storage_unit(index, db, default_collection):
+def test_index_storage_unit(index, db, default_metadata_type):
     """
     :type db: datacube.index.postgres._api.PostgresDb
     :type index: datacube.index._api.Index
     """
 
     # Setup foreign keys for our storage unit.
+    type_ = index.datasets.types.add(_pseudo_telemetry_dataset_type)
     was_inserted = db.insert_dataset(
         _telemetry_dataset,
         _telemetry_uuid
@@ -145,11 +165,21 @@ def test_index_storage_unit(index, db, default_collection):
         {'storage': {'dimension_order': []}},
     )
     storage_type = db._connection.execute(STORAGE_TYPE.select()).first()
+    storage_dataset_type_ = index.datasets.types.add({
+        'name': 'ls8_telemetry_storage',
+        'match': {
+            'metadata': {
+                'test': 'descriptor',
+            }
+        },
+        'metadata_type': 'storage_unit'
+    })
 
     # Add storage unit
 
     storage_unit = StorageUnit(
-        dataset_ids=[_telemetry_uuid],
+        id_=str(uuid.uuid4()),
+        dataset_ids=[str(_telemetry_uuid)],
         storage_type=StorageType({
             'name': 'test_storage_mapping',
             'location': "file://g/data",
@@ -157,7 +187,12 @@ def test_index_storage_unit(index, db, default_collection):
         },
             id_=storage_type['id']
         ),
-        descriptor={'test': 'descriptor'},
+        descriptor={
+            'test': 'descriptor',
+            'extent': {
+                'center_dt': datetime.datetime(2014, 7, 26, 23, 49, 0, 343853).isoformat(),
+            }
+        },
         relative_path='/test/offset',
         size_bytes=1234
     )
@@ -165,17 +200,25 @@ def test_index_storage_unit(index, db, default_collection):
         storage_unit
     )
 
-    units = db._connection.execute(STORAGE_UNIT.select()).fetchall()
+    units = db._connection.execute(DATASET.select().where(DATASET.c.storage_type_ref == storage_type.id)).fetchall()
     assert len(units) == 1
     unit = units[0]
-    assert unit['descriptor'] == {'test': 'descriptor'}
-    assert unit['path'] == '/test/offset'
-    assert unit['storage_type_ref'] == storage_type['id']
-    assert unit['size_bytes'] == 1234
+    assert unit['metadata'] == {'test': 'descriptor', 'extent': {'center_dt': '2014-07-26T23:49:00.343853'}}
 
-    # Dataset and storage should have been linked.
-    d_ss = db._connection.execute(DATASET_STORAGE.select()).fetchall()
+    assert unit['storage_type_ref'] == storage_type['id']
+    # assert unit['size_bytes'] == 1234
+    assert unit['dataset_type_ref'] == storage_dataset_type_.id
+
+    locations = db._connection.execute(
+        DATASET_LOCATION.select().where(DATASET_LOCATION.c.dataset_ref == unit['id'])).fetchall()
+    assert locations[0]['uri_scheme'] == 'file'
+    assert locations[0]['uri_body'] == '///test/offset'
+    assert locations[0]['managed'] == True
+
+    # Storage should have been linked to the source dataset.
+    d_ss = db._connection.execute(DATASET_SOURCE.select()).fetchall()
     assert len(d_ss) == 1
     d_s = d_ss[0]
-    assert d_s['dataset_ref'] == _telemetry_uuid
-    assert d_s['storage_unit_ref'] == unit['id']
+    assert d_s['dataset_ref'] == unit['id']
+    assert d_s['source_dataset_ref'] == _telemetry_uuid
+    assert d_s['classifier'] == '2014-07-26T23:49:00'

@@ -209,7 +209,7 @@ class PostgresDb(object):
                 # We're still going to raise it, because the transaction will have been invalidated.
             raise
 
-    def ensure_dataset_location(self, dataset_id, uri):
+    def ensure_dataset_location(self, dataset_id, uri, allow_replacement):
         """
         Add a location to a dataset if it is not already recorded.
         :type dataset_id: str or uuid.UUID
@@ -222,9 +222,9 @@ class PostgresDb(object):
         #      This is ok for our purposes.)
         self._connection.execute(
             DATASET_LOCATION.insert().from_select(
-                ['dataset_ref', 'uri_scheme', 'uri_body'],
+                ['dataset_ref', 'uri_scheme', 'uri_body', 'managed'],
                 select([
-                    bindparam('dataset_ref'), bindparam('uri_scheme'), bindparam('uri_body'),
+                    bindparam('dataset_ref'), bindparam('uri_scheme'), bindparam('uri_body'), bindparam('managed')
                 ]).where(
                     ~exists(select([DATASET_LOCATION.c.id]).where(
                         and_(
@@ -238,6 +238,7 @@ class PostgresDb(object):
             dataset_ref=dataset_id,
             uri_scheme=scheme,
             uri_body=body,
+            managed=allow_replacement,
         )
 
     def contains_dataset(self, dataset_id):
@@ -477,8 +478,13 @@ class PostgresDb(object):
             )
         ).fetchall()
 
+        if not matching_types:
+            return None
+
         if len(matching_types) > 1:
-            pass
+            raise ValueError('Dataset matches multiple types: %r' % [t['name'] for t in matching_types])
+
+        return matching_types[0]
 
     def get_dataset_type(self, id_):
         return self._connection.execute(

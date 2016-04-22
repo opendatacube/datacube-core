@@ -241,7 +241,7 @@ class DatasetTypeResource(object):
         """
         return DatasetType(
             query_row['name'],
-            DatasetMatcher(query_row['dataset_metadata']),
+            DatasetMatcher(query_row['metadata']),
             metadata_type=self.metadata_type_resource.get(query_row['metadata_type_ref']),
             id_=query_row['id'],
         )
@@ -252,7 +252,7 @@ class DatasetResource(object):
         """
         :type db: datacube.index.postgres._api.PostgresDb
         :type user_config: datacube.config.LocalConfig
-        :type dataset_type_resource: DatasetTypeResource
+        :type dataset_type_resource: datacube.index._datasets.DatasetTypeResource
         """
         self._db = db
         self._config = user_config
@@ -285,7 +285,7 @@ class DatasetResource(object):
         """
         return self._db.contains_dataset(dataset.id)
 
-    def add(self, metadata_doc, metadata_path=None, uri=None):
+    def add(self, metadata_doc, metadata_path=None, uri=None, allow_replacement=False):
         """
         Ensure a dataset is in the index. Add it if not present.
 
@@ -297,19 +297,22 @@ class DatasetResource(object):
         :rtype: datacube.model.Dataset
         """
         with self._db.begin() as transaction:
-            dataset_id = self._add_dataset(metadata_doc, metadata_path, uri)
+            dataset_id = self._add_dataset(metadata_doc,
+                                           allow_replacement=allow_replacement,
+                                           metadata_path=metadata_path,
+                                           uri=uri)
 
         if not dataset_id:
             return None
 
         return self.get(dataset_id)
 
-    def _add_dataset(self, metadata_doc, metadata_path=None, uri=None):
+    def _add_dataset(self, metadata_doc, allow_replacement, metadata_path=None, uri=None):
         dataset_id = _ensure_dataset(self._db, self.types, metadata_doc)
         if metadata_path or uri:
             if uri is None:
                 uri = metadata_path.absolute().as_uri()
-            self._db.ensure_dataset_location(dataset_id, uri)
+            self._db.ensure_dataset_location(dataset_id, uri, allow_replacement)
         return dataset_id
 
     def replace(self, old_datasets, new_datasets):
@@ -322,7 +325,7 @@ class DatasetResource(object):
                 self._db.archive_storage_unit(unit.id)
 
             for unit in new_datasets:
-                dataset_id = self._add_dataset(unit.metadata_doc, uri=unit.local_uri)
+                dataset_id = self._add_dataset(unit.metadata_doc, allow_replacement=True, uri=unit.local_uri)
                 _LOG.debug('Indexed dataset %s @ %s', dataset_id, unit.local_uri)
 
     def get_field(self, name, type_name=None):
@@ -354,7 +357,7 @@ class DatasetResource(object):
         :rtype datacube.model.Dataset
         """
         return Dataset(
-            self.types.get(dataset_res.collection_ref),
+            self.types.get(dataset_res.dataset_type_ref),
             dataset_res.metadata,
             dataset_res.local_uri
         )

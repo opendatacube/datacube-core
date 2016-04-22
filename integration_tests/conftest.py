@@ -36,7 +36,6 @@ INTEGRATION_DEFAULT_CONFIG_PATH = Path(__file__).parent.joinpath('agdcintegratio
 _TELEMETRY_COLLECTION_DEF_PATH = Path(__file__).parent.joinpath('telemetry-collection.yaml')
 _ANCILLARY_COLLECTION_DEF_PATH = Path(__file__).parent.joinpath('ancillary-collection.yaml')
 
-_EXAMPLE_LS5_NBAR = Path(__file__).parent.joinpath('example-ls5-nbar.yaml')
 _TELEMETRY_COLLECTION_DESCRIPTOR = Path(__file__).parent.joinpath('telemetry-collection.yaml')
 _EXAMPLE_LS5_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('example-ls5-nbar.yaml')
 
@@ -153,13 +152,14 @@ def create_empty_geotiff(path):
 
 
 @pytest.fixture
-def default_metadata_type_doc():
-    return list(ui.read_documents(_DEFAULT_METADATA_TYPES_PATH))[0][1]
-
+def default_metadata_type_docs():
+    return [doc for (path, doc) in ui.read_documents(_DEFAULT_METADATA_TYPES_PATH)]
 
 @pytest.fixture
-def default_metadata_type(index, default_metadata_type_doc):
-    return index.metadata_types.add(default_metadata_type_doc)
+def default_metadata_type(index, default_metadata_type_docs):
+    for d in default_metadata_type_docs:
+        index.metadata_types.add(d)
+    return index.metadata_types.get_by_name('eo')
 
 
 @pytest.fixture

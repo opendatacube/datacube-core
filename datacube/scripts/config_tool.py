@@ -40,17 +40,17 @@ def database():
 
 @database.command('init', help='Initialise the database')
 @click.option(
-    '--default-collections/--no-default-collections', is_flag=True, default=True,
-    help="Add default collections? (default: true)"
+    '--default-types/--no-default-types', is_flag=True, default=True,
+    help="Add default types? (default: true)"
 )
 @click.option(
     '--init-users/--no-init-users', is_flag=True, default=True,
     help="Include user roles and grants. (default: true)"
 )
 @PASS_INDEX
-def database_init(index, default_collections, init_users):
+def database_init(index, default_types, init_users):
     echo('Initialising database...')
-    was_created = index.init_db(with_default_types=default_collections,
+    was_created = index.init_db(with_default_types=default_types,
                                 with_permissions=init_users)
     if was_created:
         echo('Done.')
