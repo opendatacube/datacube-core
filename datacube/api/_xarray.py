@@ -197,8 +197,11 @@ def get_data_array_dict(storage_units_by_variable, dimensions, dimension_ranges,
             xarray_data_array = xarray_data_array.isel(**iselectors)
 
         nodata_value = storage_units[0].variables[var_name].nodata
-        if set_nan and nodata_value is not None:
-            xarray_data_array = xarray_data_array.where(xarray_data_array != nodata_value)
+        if nodata_value is not None:
+            if set_nan:
+                xarray_data_array = xarray_data_array.where(xarray_data_array != nodata_value)
+            else:
+                xarray_data_array.attrs['_FillValue'] = nodata_value
         xarrays[var_name] = xarray_data_array
     return xarrays
 
