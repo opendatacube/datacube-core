@@ -68,6 +68,8 @@ class AnalyticsEngine(object):
         self.plan_dict = {}
 
         self.api = api or API()
+        self.api_descriptors = {}
+        self.api_products = []
 
     def task(self, name):
         """Retrieve a task"""
@@ -89,15 +91,18 @@ class AnalyticsEngine(object):
         # construct query descriptor
 
         query_parameters = {}
-        #query_parameters['storage_type'] = storage_type
+        if isinstance(storage_type, basestring):
+            query_parameters['storage_type'] = storage_type
+        else:
+            query_parameters['platform'] = storage_type[0]
+            query_parameters['product'] = storage_type[1]
+
         query_parameters['dimensions'] = dimensions
         query_parameters['variables'] = ()
 
         for array in variables:
             query_parameters['variables'] += (array,)
 
-        query_parameters['platform'] = storage_type[0]
-        query_parameters['product'] = storage_type[1]
         array_descriptors = self.api.get_descriptor(query_parameters)
 
         # stopgap until storage_units are filtered based on descriptors
@@ -113,9 +118,12 @@ class AnalyticsEngine(object):
             LOG.debug('variable = %s', variable)
 
             array_result = {}
-            array_result['storage_type'] = storage_type[0]#storage_type_key
-            array_result['platform'] = storage_type[0]
-            array_result['product'] = storage_type[1]
+            # storage_type_key
+            if isinstance(storage_type, basestring):
+                array_result['storage_type'] = storage_type
+            else:
+                array_result['platform'] = storage_type[0]
+                array_result['product'] = storage_type[1]
             array_result['variable'] = variable
             array_result['dimensions_order'] = array_descriptors[storage_type_key]['dimensions']
             array_result['dimensions'] = dimensions
@@ -387,3 +395,32 @@ class AnalyticsEngine(object):
         function_id = self.OPERATORS_SENSOR_SPECIFIC_BANDMATH.get(function) \
             .get('sensors').get(storage_type).get('function')
         return self.OPERATORS_SENSOR_SPECIFIC_BANDMATH.get(function).get('functions').get(function_id)
+
+    def list_searchables(self):
+        """List searchable parameters for use in get_descriptor and get_data"""
+        items = {}
+        if len(self.api_descriptors) == 0:
+            self.api_descriptors = self.api.get_descriptor()
+        for storage_type in self.api_descriptors.keys():
+            item = {}
+            item['dimensions'] = \
+                zip([str(x) for x in self.api_descriptors[storage_type]['dimensions']],
+                    [str(x) for x in self.api_descriptors[storage_type]['result_min']],
+                    [str(x) for x in self.api_descriptors[storage_type]['result_max']])
+            item['storage_type'] = str(storage_type)
+            items[str(storage_type)] = item
+
+        if len(self.api_products) == 0:
+            self.api_products = self.api.list_products()
+        for product in self.api_products:
+            storage_type = str(product['name'])
+            if storage_type not in self.api_descriptors.keys():
+                continue
+            items[storage_type]['platform'] = str(product['match']['metadata']['platform']['code'])
+            items[storage_type]['product_type'] = str(product['match']['metadata']['product_type'])
+            items[storage_type]['instrument'] = str(product['match']['metadata']['instrument']['name'])
+            items[storage_type]['bands'] = [str(x) for x in product['measurements'].keys()]
+            items[storage_type]['bands'].sort()
+
+
+        return items

@@ -89,9 +89,11 @@ class ExecutionEngine(object):
 
         data_request_param = {}
         data_request_param['dimensions'] = task.values()[0]['array_input'][0].values()[0]['dimensions']
-        #data_request_param['storage_type'] = task.values()[0]['array_input'][0].values()[0]['storage_type']
-        data_request_param['product'] = task.values()[0]['array_input'][0].values()[0]['product']
-        data_request_param['platform'] = task.values()[0]['array_input'][0].values()[0]['storage_type']
+        if 'storage_type' in task.values()[0]['array_input'][0].values()[0]:
+            data_request_param['storage_type'] = task.values()[0]['array_input'][0].values()[0]['storage_type']
+        else:
+            data_request_param['product'] = task.values()[0]['array_input'][0].values()[0]['product']
+            data_request_param['platform'] = task.values()[0]['array_input'][0].values()[0]['platform']
         data_request_param['variables'] = ()
 
         for array in task.values()[0]['array_input']:
