@@ -89,6 +89,10 @@ class AnalyticsEngine(object):
         """Creates an array descriptor with metadata about what the data will look like"""
 
         # construct query descriptor
+        try:
+            basestring
+        except NameError:
+            basestring = str
 
         query_parameters = {}
         if isinstance(storage_type, basestring):
