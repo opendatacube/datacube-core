@@ -20,6 +20,9 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
+
+# pylint: disable=redefined-builtin
+
 import sys
 import copy
 import logging
@@ -88,12 +91,12 @@ class AnalyticsEngine(object):
     def create_array(self, storage_type, variables, dimensions, name):
         """Creates an array descriptor with metadata about what the data will look like"""
 
-        # construct query descriptor
         try:
             basestring
         except NameError:
             basestring = str
 
+        # construct query descriptor
         query_parameters = {}
         if isinstance(storage_type, basestring):
             query_parameters['storage_type'] = storage_type
