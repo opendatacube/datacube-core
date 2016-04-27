@@ -37,9 +37,9 @@ def main():
     print('Retrieving data from API')
     # construct data request parameters for band_30 and band_40
     data_request_descriptor = {
-        'platform': 'LANDSAT 5',
-        'product': 'NBAR',
-        'variables': ('band_30', 'band_40'),
+        'platform': 'LANDSAT_5',
+        'product': 'nbar',
+        'variables': ('band_3', 'band_4'),
         'dimensions': {
             'longitude': {
                 'range': (150, 150.256)
@@ -55,9 +55,9 @@ def main():
 
     # construct data request parameters for PQ
     pq_request_descriptor = {
-        'platform': 'LANDSAT 5',
-        'product': 'PQ',
-        'variables': ('band_pixelquality'),
+        'platform': 'LANDSAT_5',
+        'product': 'pqa',
+        'variables': ('pixelquality'),
         'dimensions': {
             'longitude': {
                 'range': (150, 150.256)
@@ -73,9 +73,9 @@ def main():
 
     # The following 3 lines shouldn't be done like this
     # Currently done like this for the sake of the example.
-    b30 = xr.DataArray(d1['arrays']['band_30'])
-    b40 = xr.DataArray(d1['arrays']['band_40'])
-    pq = nd.get_pqa_mask(d2['arrays']['band_pixelquality'].values)
+    b30 = xr.DataArray(d1['arrays']['band_3'])
+    b40 = xr.DataArray(d1['arrays']['band_4'])
+    pq = nd.get_pqa_mask(d2['arrays']['pixelquality'].values)
 
     print('NDexpr demo begins here')
     # perform ndvi as expressed in this language.
