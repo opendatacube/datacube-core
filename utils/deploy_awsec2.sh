@@ -118,6 +118,9 @@ wget https://3230d63b5fc54e62148e-c95ac804525aac4b6dba79b00b39d1d3.ssl.cf1.rackc
 
 bash Anaconda2-4.0.0-Linux-x86_64.sh
 
+#add to .bashrc after anaconda path
+export GDAL_DATA=/xdisk/anaconda2/share/gdal/
+
 # re-login or export PATH=/anaconda/bin:$PATH; to make sure python -V showing the anaconda's installation version
 conda install psycopg2 gdal libgdal hdf5 rasterio netcdf4 libnetcdf pandas
 
