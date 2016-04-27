@@ -11,7 +11,7 @@ from datacube.index.fields import to_expressions
 from datacube.index.postgres._fields import SimpleDocField, RangeBetweenExpression, EqualsExpression, \
     FloatRangeDocField
 from datacube.model import Range
-from datacube.ui import parse_expressions, UnknownFieldException
+from datacube.ui import parse_expressions, parse_simple_expressions, UnknownFieldException
 
 _sat_field = SimpleDocField('platform', None, None, None)
 _sens_field = SimpleDocField('instrument', None, None, None)
@@ -54,6 +54,22 @@ def test_parse_multiple_expressions():
             'OTHER'
         )
     ]
+
+
+def test_parse_simple_expression():
+    assert {'platform': 4} == parse_simple_expressions('platform = 4')
+    assert {'platform': 'LANDSAT_8'} == parse_simple_expressions('platform = "LANDSAT_8"')
+
+    between_exp = {'lat': (4, 6)}
+    assert between_exp == parse_simple_expressions('4<lat<6')
+    assert between_exp == parse_simple_expressions('6 > lat > 4')
+
+
+def test_parse_multiple_simple_expressions():
+    # Multiple expressions in one command-line statement.
+    # Mixed whitespace:
+    between_exp = parse_simple_expressions('platform=LS8 -4<lat<23.5 instrument="OTHER"')
+    assert between_exp == {'platform': 'LS8', 'lat': (-4, 23.5), 'instrument': 'OTHER'}
 
 
 def test_build_query_expressions():

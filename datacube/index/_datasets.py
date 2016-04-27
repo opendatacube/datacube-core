@@ -226,9 +226,22 @@ class DatasetTypeResource(object):
 
         return self._make(result)
 
+    def get_with_fields(self, field_names):
+        """
+        Return dataset types that have all the given fields.
+        :type field_names: list[str]
+        :rtype: list[DatasetType]
+        """
+        for type in self.get_all():
+            for name in field_names:
+                if name not in type.metadata_type.dataset_fields:
+                    break
+            else:
+                yield type
+
     def get_all(self):
         """
-        :rtype: iter[datacube.model.Collection]
+        :rtype: iter[datacube.model.DatasetType]
         """
         return (self._make(record) for record in self._db.get_all_dataset_types())
 
@@ -237,7 +250,7 @@ class DatasetTypeResource(object):
 
     def _make(self, query_row):
         """
-        :rtype datacube.model.Collection
+        :rtype datacube.model.DatasetType
         """
         return DatasetType(
             query_row['name'],
@@ -340,10 +353,25 @@ class DatasetResource(object):
         :type type_name: str
         :rtype: dict[str, datacube.index.fields.Field]
         """
+
         if type_name is None:
             type_name = self._config.default_collection_name
         collection = self.types.get_by_name(type_name)
         return collection.metadata_type.dataset_fields
+
+    def get_field_names(self, type_name=None):
+        """
+        :type type_name: str
+        :rtype: dict[str, datacube.index.fields.Field]
+        """
+        if type_name is None:
+            types = self.types.get_all()
+        else:
+            types = [self.types.get_by_name(type_name)]
+
+        for type in types:
+            for name in type.metadata_type.dataset_fields:
+                return name
 
     def get_locations(self, dataset):
         """
@@ -399,11 +427,13 @@ class DatasetResource(object):
         """
         query_exprs = tuple(fields.to_expressions(self.get_field, **query))
 
+        all_expressions = (expressions + query_exprs)
+
         return (
             dict(fs) for fs in
             self._db.search_datasets(
-                (expressions + query_exprs),
-                select_fields=tuple(self.get_fields().values())
+                all_expressions,
+                select_fields=tuple(self.get_field_names())
             )
         )
 

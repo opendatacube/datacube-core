@@ -18,8 +18,8 @@ Data Access Module
 from __future__ import absolute_import, print_function, division
 
 import re
-from pypeg2 import word, attr, List, maybe_some, parse as peg_parse
 
+from pypeg2 import word, attr, List, maybe_some, parse as peg_parse
 
 FIELD_NAME = attr(u'field_name', word)
 
@@ -59,6 +59,9 @@ class StringValue(Expr):
     def query_repr(self, get_field):
         return self.value
 
+    def as_value(self):
+        return self.value
+
 
 class NumericValue(Expr):
     def __init__(self, value=None):
@@ -75,6 +78,9 @@ class NumericValue(Expr):
     def query_repr(self, get_field):
         return float(self.value)
 
+    def as_value(self):
+        return float(self.value)
+
 
 class EqualsExpression(Expr):
     def __init__(self, field_name=None, value=None):
@@ -88,6 +94,9 @@ class EqualsExpression(Expr):
 
     def query_repr(self, get_field):
         return get_field(self.field_name) == self.value.query_repr(get_field)
+
+    def as_query(self):
+        return {self.field_name: self.value.as_value()}
 
 
 class BetweenExpression(Expr):
@@ -110,6 +119,9 @@ class BetweenExpression(Expr):
             self.high_value.query_repr(get_field)
         )
 
+    def as_query(self):
+        return {self.field_name: (self.low_value.as_value(), self.high_value.as_value())}
+
 
 class ExpressionList(List):
     grammar = maybe_some([EqualsExpression, BetweenExpression])
@@ -120,7 +132,7 @@ class ExpressionList(List):
 
 def _parse_raw_expressions(*expression_text):
     """
-    :rtype: Expr
+    :rtype: ExpressionList
     :type expression_text: str
     """
     return peg_parse(' '.join(expression_text), ExpressionList)
@@ -145,3 +157,13 @@ def parse_expressions(get_field, *expression_text):
 
     raw_expr = _parse_raw_expressions(' '.join(expression_text))
     return [expr.query_repr(_get_field) for expr in raw_expr]
+
+
+def parse_simple_expressions(*expression_text):
+    raw_expr = _parse_raw_expressions(' '.join(expression_text))
+
+    out = {}
+    for expr in raw_expr:
+        out.update(expr.as_query())
+
+    return out
