@@ -39,7 +39,7 @@ def band_name(path):
     if re.match(r"[Bb]\d+", name[position+1:]):
         band_number = name[position+2:position+3]
     elif name[position+1:].startswith('1111111111111100'):
-        band_number = 'PQ'
+        band_number = 'pqa'
     else:
         band_number = name[position+1:]
     return band_number
