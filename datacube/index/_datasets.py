@@ -229,8 +229,8 @@ class DatasetTypeResource(object):
     def get_with_fields(self, field_names):
         """
         Return dataset types that have all the given fields.
-        :type field_names: list[str]
-        :rtype: list[DatasetType]
+        :type field_names: tuple[str]
+        :rtype: __generator[DatasetType]
         """
         for type in self.get_all():
             for name in field_names:
@@ -362,7 +362,7 @@ class DatasetResource(object):
     def get_field_names(self, type_name=None):
         """
         :type type_name: str
-        :rtype: dict[str, datacube.index.fields.Field]
+        :rtype: __generator[str]
         """
         if type_name is None:
             types = self.types.get_all()
@@ -371,7 +371,7 @@ class DatasetResource(object):
 
         for type in types:
             for name in type.metadata_type.dataset_fields:
-                return name
+                yield name
 
     def get_locations(self, dataset):
         """
@@ -407,40 +407,55 @@ class DatasetResource(object):
         """
         return self._make_many(self._db.search_datasets_by_metadata(metadata))
 
-    def search(self, *expressions, **query):
+    def search(self, **query):
         """
         Perform a search, returning results as Dataset objects.
         :type query: dict[str,str|float|datacube.model.Range]
-        :type expressions: tuple[datacube.index.fields.PgExpression]
-        :rtype list[datacube.model.Dataset]
+        :rtype: __generator[datacube.model.Dataset]
         """
-        query_exprs = tuple(fields.to_expressions(self.get_field, **query))
-        return self._make_many(self._db.search_datasets((expressions + query_exprs)))
+        return self._make_many(self._do_search(query))
 
-    def search_summaries(self, *expressions, **query):
+    def _do_search(self, query, return_fields=False, with_source_ids=False):
+        # If they specified a metadata type, search using it.
+        if 'metadata_type' in query.keys():
+            metadata_types = set(self.types.get_by_name(query['metadata_type']))
+        else:
+            # Otherwise search any metadata type that has all the given search fields.
+            applicable_dataset_types = self.types.get_with_fields(query.keys())
+            if not applicable_dataset_types:
+                raise ValueError('No type of dataset has fields: %r', tuple(query.keys()))
+            # Unique metadata types we're searching.
+            metadata_types = set(d.metadata_type for d in applicable_dataset_types)
+
+        # Perform one search per metadata type.
+        for metadata_type in metadata_types:
+            query_exprs = tuple(fields.to_expressions(metadata_type.dataset_fields.get, **query))
+            select_fields = None
+            if return_fields:
+                select_fields = tuple(metadata_type.dataset_fields.values())
+            for dataset in self._db.search_datasets(query_exprs,
+                                                    select_fields=select_fields,
+                                                    with_source_ids=with_source_ids):
+                yield dataset
+
+    def search_summaries(self, **query):
         """
         Perform a search, returning just the search fields of each dataset.
 
         :type query: dict[str,str|float|datacube.model.Range]
-        :type expressions: tuple[datacube.index.fields.PgExpression]
         :rtype: dict
         """
-        query_exprs = tuple(fields.to_expressions(self.get_field, **query))
-
-        all_expressions = (expressions + query_exprs)
-
         return (
             dict(fs) for fs in
-            self._db.search_datasets(
-                all_expressions,
-                select_fields=tuple(self.get_field_names())
+            self._do_search(
+                query,
+                return_fields=True
             )
         )
 
-    def search_eager(self, *expressions, **query):
+    def search_eager(self, **query):
         """
-        :type expressions: list[datacube.index.fields.Expression]
         :type query: dict[str,str|float|datacube.model.Range]
         :rtype list[datacube.model.Dataset]
         """
-        return list(self.search(*expressions, **query))
+        return list(self.search(**query))

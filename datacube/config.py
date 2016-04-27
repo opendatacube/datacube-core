@@ -23,10 +23,6 @@ _DEFAULT_CONF = u"""
 db_hostname:
 db_database: datacube
 
-[collection]
-# The default collection when none is specified (such as in searches)
-default: eo
-
 [locations]
 # Where to reach storage locations from the current machine.
 #  -> Location names (here 'eotiles') are arbitrary, but correspond to names used in the
@@ -79,10 +75,6 @@ class LocalConfig(object):
         :rtype: dict[str, str]
         """
         return dict(self._config.items('locations'))
-
-    @property
-    def default_collection_name(self):
-        return self._prop('default', section='collection')
 
     @property
     def db_username(self):

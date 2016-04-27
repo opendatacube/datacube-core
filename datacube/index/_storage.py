@@ -38,10 +38,11 @@ def _ensure_valid(descriptor):
 
 
 class StorageUnitResource(object):
-    def __init__(self, db, storage_type_resource, dataset_types, metadata_types, local_config):
+    def __init__(self, db, storage_type_resource, dataset_types, datasets, metadata_types, local_config):
         """
         :type db: datacube.index.postgres._api.PostgresDb
         :type storage_type_resource: StorageTypeResource
+        :type datasets: datacube.index._datasets.DatasetResource
         :type dataset_types: datacube.index._datasets.DatasetTypeResource
         :type local_config: datacube.config.LocalConfig
         """
@@ -49,6 +50,7 @@ class StorageUnitResource(object):
         self.types = storage_type_resource
         self._dataset_types = dataset_types
         self._metadata_types = metadata_types
+        self._datasets = datasets
 
         self._config = local_config
 
@@ -136,53 +138,43 @@ class StorageUnitResource(object):
 
         return val if val is not None else metadata_type.dataset_fields.get(name)
 
-    def get_fields(self, collection_name=None):
+    def get_fields(self):
         """
-        :type collection_name: str
         :rtype: dict[str, datacube.index.fields.Field]
         """
-        if collection_name is None:
-            collection_name = self._config.default_collection_name
-        collection = self._dataset_types.get_by_name(collection_name)
-        _storage_unit_type = self._dataset_types.get_by_name('storage_unit')
-        return _storage_unit_type.dataset_fields
+        return self._metadata_types.get_by_name('storage_unit').dataset_fields
 
-    def search(self, *expressions, **query):
+    def search(self, **query):
         """
         Perform a search, returning results as StorageUnit objects.
-        :type expressions: tuple[datacube.index.fields.PgExpression]
         :type query: dict[str,str|float|datacube.model.Range]
         :rtype list[datacube.model.StorageUnit]
         """
-        query_exprs = tuple(fields.to_expressions(self.get_field_with_fallback, **query))
-        return self._make(self._db.search_datasets((expressions + query_exprs), with_source_ids=True))
+        query.update({'metadata_type': 'eo'})
+        return self._make(self._datasets._do_search(query, with_source_ids=True))
 
-    def search_summaries(self, *expressions, **query):
+    def search_summaries(self, **query):
         """
         Perform a search, returning just the search fields of each storage unit.
 
         :type query: dict[str,str|float|datacube.model.Range]
-        :type expressions: tuple[datacube.index.fields.PgExpression]
         :rtype: dict
         """
-        query_exprs = tuple(fields.to_expressions(self.get_field_with_fallback, **query))
-
         return (
             dict(fs) for fs in
-            self._db.search_datasets(
-                (expressions + query_exprs),
-                select_fields=tuple(self.get_fields().values()),
+            self._datasets._do_search(
+                query,
+                return_fields=True,
                 with_source_ids=True
             )
         )
 
-    def search_eager(self, *expressions, **query):
+    def search_eager(self, **query):
         """
-        :type expressions: list[datacube.index.fields.Expression]
         :type query: dict[str,str|float|datacube.model.Range]
         :rtype list[datacube.model.StorageUnit]
         """
-        return list(self.search(*expressions, **query))
+        return list(self.search(**query))
 
     def _make(self, query_results):
         """

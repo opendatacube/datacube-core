@@ -21,6 +21,8 @@ create table agdc.dataset_type (
   added                   timestamp with time zone default now() not null,
   added_by                varchar default CURRENT_USER           not null,
 
+  definition              jsonb                                  null,
+
   -- If this type was derived from a legacy storage type.
   source_storage_type_ref smallint                               null,
 
@@ -90,6 +92,16 @@ insert into agdc.dataset_type (name, metadata, metadata_type_ref)
      where name = 'eo')
   from unique_dataset_types;
 
+update agdc.dataset_type
+set definition = json_build_object(
+    'name', name,
+    'metadata_type', 'eo',
+    'match', json_build_object('metadata', metadata)
+);
+
+alter table agdc.metadata_type
+  alter column definition set not null;
+
 -- Set the metadata type for every dataset.
 -- They'll all match exactly one. (it will fail loudly otherwise)
 -- (SLOW)
@@ -155,14 +167,20 @@ insert into agdc.metadata_type (name, definition) values (
 \echo '-- Creating dataset types for existing storage units --'
 
 -- TODO: Add projection/filetype/other params?
-insert into agdc.dataset_type (name, metadata, metadata_type_ref, source_storage_type_ref)
+insert into agdc.dataset_type (name, metadata, metadata_type_ref, source_storage_type_ref, definition)
   select
     st.name,
     st.dataset_metadata,
     (select id
      from agdc.metadata_type
      where name = 'storage_unit'),
-    st.id
+    st.id,
+    json_build_object(
+        'name', st.name,
+        'description', st.definition->>'description',
+        'metadata_type', 'storage_unit',
+        'match', json_build_object('metadata', st.dataset_metadata)
+    )
   from agdc.storage_type st;
 
 

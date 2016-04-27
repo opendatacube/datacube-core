@@ -142,24 +142,13 @@ class UnknownFieldException(Exception):
     pass
 
 
-def parse_expressions(get_field, *expression_text):
+def parse_expressions(*expression_text):
     """
+    Parse an expression string into a dictionary suitable for .search() methods.
+
     :type expression_text: list[str]
-    :type get_field: (str) -> datacube.index.fields.Field
-    :rtype: list[datacube.index.fields.Expression]
+    :rtype: dict[str, object]
     """
-
-    def _get_field(name):
-        field = get_field(name)
-        if field is None:
-            raise UnknownFieldException("Unknown field '%s'" % name)
-        return field
-
-    raw_expr = _parse_raw_expressions(' '.join(expression_text))
-    return [expr.query_repr(_get_field) for expr in raw_expr]
-
-
-def parse_simple_expressions(*expression_text):
     raw_expr = _parse_raw_expressions(' '.join(expression_text))
 
     out = {}

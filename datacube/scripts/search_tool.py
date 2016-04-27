@@ -27,14 +27,14 @@ def printable_values(d):
     return {k: printable(v) for k, v in d.items()}
 
 
-def write_pretty(out_f, fields, search_results, terminal_size=click.get_terminal_size()):
+def write_pretty(out_f, field_names, search_results, terminal_size=click.get_terminal_size()):
     """
     Output in a human-readable text format. Inspired by psql's expanded output.
     """
     terminal_width = terminal_size[0]
     record_num = 1
 
-    field_header_width = max([len(field_name) for field_name in fields])
+    field_header_width = max(map(len, field_names))
     field_output_format = '{:<' + str(field_header_width) + '} | {}'
 
     for result in search_results:
@@ -51,11 +51,11 @@ def write_pretty(out_f, fields, search_results, terminal_size=click.get_terminal
         record_num += 1
 
 
-def write_csv(out_f, fields, search_results):
+def write_csv(out_f, field_names, search_results):
     """
     Output as a CSV.
     """
-    writer = csv.DictWriter(out_f, tuple(sorted(fields.keys())))
+    writer = csv.DictWriter(out_f, tuple(sorted(field_names)))
     writer.writeheader()
     writer.writerows(
         (
@@ -88,8 +88,8 @@ def cli(ctx, f):
 @click.pass_context
 def datasets(ctx, index, expression):
     ctx.obj['write_results'](
-        index.datasets.get_fields(),
-        index.datasets.search_summaries(*parse_expressions(index.datasets.get_field, *expression))
+        index.datasets.get_field_names(),
+        index.datasets.search_summaries(**parse_expressions(*expression))
     )
 
 
@@ -99,8 +99,8 @@ def datasets(ctx, index, expression):
 @click.pass_context
 def units(ctx, index, expression):
     ctx.obj['write_results'](
-        index.storage.get_fields(),
-        index.storage.search_summaries(*parse_expressions(index.storage.get_field_with_fallback, *expression))
+        index.storage.get_fields().keys(),
+        index.storage.search_summaries(**parse_expressions(*expression))
     )
 
 
