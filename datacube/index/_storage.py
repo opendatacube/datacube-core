@@ -120,24 +120,6 @@ class StorageUnitResource(object):
     def get_overlaps(self, storage_type):
         return (r['id'] for r in self._db.get_storage_unit_overlap(storage_type))
 
-    def get_field_with_fallback(self, name, collection_name=None):
-        """
-        :type name: str
-        :rtype: datacube.index.fields.Field
-        :param collection_name: Collection to search, or None for default
-        """
-        if collection_name is None:
-            collection_name = self._config.default_collection_name
-
-        collection = self._dataset_types.get_by_name(collection_name)
-        if not collection:
-            raise ValueError('Unknown collection: ' + collection_name)
-
-        metadata_type = collection.metadata_type
-        val = metadata_type.storage_fields.get(name)
-
-        return val if val is not None else metadata_type.dataset_fields.get(name)
-
     def get_fields(self):
         """
         :rtype: dict[str, datacube.index.fields.Field]
@@ -150,7 +132,7 @@ class StorageUnitResource(object):
         :type query: dict[str,str|float|datacube.model.Range]
         :rtype list[datacube.model.StorageUnit]
         """
-        query.update({'metadata_type': 'eo'})
+        query.update({'metadata_type': 'storage_unit'})
         return self._make(self._datasets._do_search(query, with_source_ids=True))
 
     def search_summaries(self, **query):

@@ -261,7 +261,7 @@ class DatasetTypeResource(object):
 
 
 class DatasetResource(object):
-    def __init__(self, db, user_config, dataset_type_resource):
+    def __init__(self, db, user_config, dataset_type_resource, metadata_type_resource):
         """
         :type db: datacube.index.postgres._api.PostgresDb
         :type user_config: datacube.config.LocalConfig
@@ -270,6 +270,7 @@ class DatasetResource(object):
         self._db = db
         self._config = user_config
         self.types = dataset_type_resource
+        self._metadata_types = metadata_type_resource
 
     def get(self, id_, provenance=False):
         """
@@ -416,20 +417,33 @@ class DatasetResource(object):
         return self._make_many(self._do_search(query))
 
     def _do_search(self, query, return_fields=False, with_source_ids=False):
+        q = dict(query)
+        metadata_types = set()
+        if 'type' in q.keys():
+            metadata_types.add(self.types.get_by_name(q['type']).metadata_type)
+
         # If they specified a metadata type, search using it.
-        if 'metadata_type' in query.keys():
-            metadata_types = set(self.types.get_by_name(query['metadata_type']))
-        else:
+        if 'metadata_type' in q.keys():
+            metadata_types.add(self._metadata_types.get_by_name(q['metadata_type']))
+
+        if len(metadata_types) > 1:
+            _LOG.warn('Both a dataset type and metadata type were specified, but they\'re not compatible: %r, %r.' %
+                      (query['type'], query['metadata_type']))
+            # No datasets of this type can have the given metadata type.
+            # No results.
+            return
+
+        if not metadata_types:
             # Otherwise search any metadata type that has all the given search fields.
-            applicable_dataset_types = self.types.get_with_fields(query.keys())
+            applicable_dataset_types = self.types.get_with_fields(q.keys())
             if not applicable_dataset_types:
-                raise ValueError('No type of dataset has fields: %r', tuple(query.keys()))
+                raise ValueError('No type of dataset has fields: %r', tuple(q.keys()))
             # Unique metadata types we're searching.
             metadata_types = set(d.metadata_type for d in applicable_dataset_types)
 
         # Perform one search per metadata type.
         for metadata_type in metadata_types:
-            query_exprs = tuple(fields.to_expressions(metadata_type.dataset_fields.get, **query))
+            query_exprs = tuple(fields.to_expressions(metadata_type.dataset_fields.get, **q))
             select_fields = None
             if return_fields:
                 select_fields = tuple(metadata_type.dataset_fields.values())

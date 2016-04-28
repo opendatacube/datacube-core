@@ -42,7 +42,7 @@ class Index(object):
 
         self.metadata_types = MetadataTypeResource(db)
         dataset_types = DatasetTypeResource(db, self.metadata_types)
-        self.datasets = DatasetResource(db, local_config, dataset_types)
+        self.datasets = DatasetResource(db, local_config, dataset_types, self.metadata_types)
         self.storage = StorageUnitResource(db, StorageTypeResource(db, local_config), dataset_types, self.datasets,
                                            self.metadata_types, local_config)
 

@@ -385,11 +385,16 @@ class PostgresDb(object):
                 None,
                 DATASET.c.id
             ),
-            # 'collection': NativeField(
-            #     'collection',
-            #     'Name of collection',
-            #     None, COLLECTION.c.name
-            # )
+            'type': NativeField(
+                'type',
+                'Dataset type name',
+                None, DATASET_TYPE.c.name
+            ),
+            'metadata_type': NativeField(
+                'metadata_type',
+                'Metadata type of dataset',
+                None, METADATA_TYPE.c.name
+            )
         }
         dataset_search_fields = collection_result['definition']['dataset']['search_fields']
 
@@ -429,13 +434,11 @@ class PostgresDb(object):
 
         if with_source_ids:
             # Include the IDs of source datasets
-            select_fields + (
-                func.array_agg(
-                    DATASET_SOURCE
-                        .select(DATASET_SOURCE.c.source_dataset_ref)
-                        .where(DATASET_SOURCE.c.dataset_ref == DATASET.c.id)
-                ).label('dataset_refs')
-            )
+            select_fields += (func.array_agg(
+                DATASET_SOURCE
+                    .select(DATASET_SOURCE.c.source_dataset_ref)
+                    .where(DATASET_SOURCE.c.dataset_ref == DATASET.c.id)
+            ).label('dataset_refs'),)
 
         return self._search_docs(
             expressions,

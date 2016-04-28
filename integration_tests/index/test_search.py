@@ -16,6 +16,7 @@ from pathlib import Path
 
 import datacube.scripts.run_ingest
 import datacube.scripts.search_tool
+from datacube.model import Range, StorageUnit
 
 _EXAMPLE_LS7_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('ls7-nbar-example.yaml')
 
@@ -46,7 +47,7 @@ def indexed_ls7_nbar(global_integration_cli_args, index):
 
 
 @pytest.fixture
-def pseudo_telemetry_type(index, db):
+def pseudo_telemetry_type(index, default_metadata_type):
     index.datasets.types.add({
         'name': 'ls8_telemetry',
         'match': {
@@ -60,13 +61,13 @@ def pseudo_telemetry_type(index, db):
                 }
             }
         },
-        'metadata_type': 'eo'
+        'metadata_type': default_metadata_type.name  # 'eo'
     })
     return index.datasets.types.get_by_name('ls8_telemetry')
 
 
 @pytest.fixture
-def pseudo_telemetry_dataset(index, db, default_metadata_type, pseudo_telemetry_type):
+def pseudo_telemetry_dataset(index, db, pseudo_telemetry_type):
     id_ = str(uuid.uuid4())
     was_inserted = db.insert_dataset(
         {
@@ -117,25 +118,23 @@ def test_search_dataset_equals(index, pseudo_telemetry_dataset):
     :type index: datacube.index._api.Index
     :type pseudo_telemetry_dataset: datacube.model.Dataset
     """
-    field = index.datasets.get_field
-
     datasets = index.datasets.search_eager(
-        field('platform') == 'LANDSAT_8',
+        platform='LANDSAT_8'
     )
     assert len(datasets) == 1
     assert datasets[0].id == pseudo_telemetry_dataset.id
 
     datasets = index.datasets.search_eager(
-        field('platform') == 'LANDSAT_8',
-        field('instrument') == 'OLI_TIRS',
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS'
     )
     assert len(datasets) == 1
     assert datasets[0].id == pseudo_telemetry_dataset.id
 
     # Wrong sensor name
     datasets = index.datasets.search_eager(
-        field('platform') == 'LANDSAT-8',
-        field('instrument') == 'TM',
+        platform='LANDSAT-8',
+        instrument='TM',
     )
     assert len(datasets) == 0
 
@@ -169,8 +168,8 @@ def test_search_dataset_ranges(index, pseudo_telemetry_dataset):
 
     # In the lat bounds.
     datasets = index.datasets.search_eager(
-        field('lat').between(-30.5, -29.5),
-        field('time').between(
+        lat=Range(-30.5, -29.5),
+        time=Range(
             datetime.datetime(2014, 7, 26, 23, 0, 0),
             datetime.datetime(2014, 7, 26, 23, 59, 0)
         )
@@ -180,8 +179,8 @@ def test_search_dataset_ranges(index, pseudo_telemetry_dataset):
 
     # Out of the lat bounds.
     datasets = index.datasets.search_eager(
-        field('lat').between(28, 32),
-        field('time').between(
+        lat=Range(28, 32),
+        time=Range(
             datetime.datetime(2014, 7, 26, 23, 48, 0),
             datetime.datetime(2014, 7, 26, 23, 50, 0)
         )
@@ -190,8 +189,8 @@ def test_search_dataset_ranges(index, pseudo_telemetry_dataset):
 
     # Out of the time bounds
     datasets = index.datasets.search_eager(
-        field('lat').between(-30.5, -29.5),
-        field('time').between(
+        lat=Range(-30.5, -29.5),
+        time=Range(
             datetime.datetime(2014, 7, 26, 21, 48, 0),
             datetime.datetime(2014, 7, 26, 21, 50, 0)
         )
@@ -202,7 +201,7 @@ def test_search_dataset_ranges(index, pseudo_telemetry_dataset):
     # TODO: Do we want overlap as the default behaviour?
     # Should we distinguish between 'contains' and 'overlaps'?
     datasets = index.datasets.search_eager(
-        field('lat').between(-40, -30)
+        lat=Range(-40, -30)
     )
     assert len(datasets) == 1
     assert datasets[0].id == pseudo_telemetry_dataset.id
@@ -219,7 +218,7 @@ def test_search_globally(index, pseudo_telemetry_dataset):
     assert len(results) == 1
 
 
-def test_searches_only_type(index, pseudo_telemetry_type, pseudo_telemetry_dataset):
+def test_searches_only_type(index, pseudo_telemetry_type, pseudo_telemetry_dataset, ls5_nbar_gtiff_type):
     """
     :type index: datacube.index._api.Index
     :type pseudo_telemetry_type: datacube.model.DatasetType
@@ -227,46 +226,59 @@ def test_searches_only_type(index, pseudo_telemetry_type, pseudo_telemetry_datas
     """
     # The dataset should have been matched to the telemetry type.
     assert pseudo_telemetry_dataset.type_.id == pseudo_telemetry_type.id
-
-    metadata_type = pseudo_telemetry_type.metadata_type
     assert index.datasets.search_eager()
-    # No results on the default collection.
-    f = metadata_type.dataset_fields.get
+
+    # One result in the telemetry type
     datasets = index.datasets.search_eager(
         type=pseudo_telemetry_type.name,
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS',
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == pseudo_telemetry_dataset.id
+
+    # One result in the metadata type
+    datasets = index.datasets.search_eager(
+        metadata_type=pseudo_telemetry_type.metadata_type.name,
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS',
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == pseudo_telemetry_dataset.id
+
+    # No results when searching for a different dataset type.
+    datasets = index.datasets.search_eager(
+        type=ls5_nbar_gtiff_type.name,
         platform='LANDSAT_8',
         instrument='OLI_TIRS'
     )
     assert len(datasets) == 0
 
-    # One result in the telemetry collection.
+    # One result when no types specified.
+    datasets = index.datasets.search_eager(
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS',
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == pseudo_telemetry_dataset.id
+
+    # No results for different metadata type.
+    datasets = index.datasets.search_eager(
+        metadata_type='storage_unit',
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS'
+    )
+    assert len(datasets) == 0
+
+
+def test_search_conflicting_types(index, pseudo_telemetry_dataset, pseudo_telemetry_type):
+    # It prints a warning and returns no results.
     datasets = index.datasets.search_eager(
         type=pseudo_telemetry_type.name,
-        platform='LANDSAT_8',
-        instrument='OLI_TIRS',
+        # The telemetry type is not of type storage_unit.
+        metadata_type='storage_unit'
     )
-    assert len(datasets) == 1
-    assert datasets[0].id == pseudo_telemetry_dataset.id
-
-    # One result when no collection specified.
-    datasets = index.datasets.search_eager(
-        platform='LANDSAT_8',
-        instrument='OLI_TIRS',
-    )
-    assert len(datasets) == 1
-    assert datasets[0].id == pseudo_telemetry_dataset.id
-
-
-def test_cannot_search_multiple_metadata_types(index, default_metadata_type, ancillary_collection):
-    f = default_metadata_type.metadata_type.dataset_fields.get
-    ancillary_f = ancillary_collection.metadata_type.dataset_fields.get
-
-    # An error if you mix metadata types (although we may support this in the future):
-    with pytest.raises(ValueError):
-        index.datasets.search_eager(
-            f('platform') == 'LANDSAT_8',
-            ancillary_f('name') == 'LO8BPF2014',
-        )
+    assert len(datasets) == 0
 
 
 def test_fetch_all_of_md_type(index, pseudo_telemetry_dataset):
@@ -274,13 +286,20 @@ def test_fetch_all_of_md_type(index, pseudo_telemetry_dataset):
     :type index: datacube.index._api.Index
     :type pseudo_telemetry_dataset: datacube.model.Dataset
     """
-    # Get every dataset in the collection
+    # Get every dataset of the md type.
     results = index.datasets.search_eager(
         metadata_type='eo'
     )
     assert len(results) == 1
-    assert results[0] == pseudo_telemetry_dataset.id
+    assert results[0].id == pseudo_telemetry_dataset.id
+    # Get every dataset of the type.
+    results = index.datasets.search_eager(
+        type=pseudo_telemetry_dataset.type_.name
+    )
+    assert len(results) == 1
+    assert results[0].id == pseudo_telemetry_dataset.id
 
+    # No results for another.
     results = index.datasets.search_eager(
         metadata_type='storage_unit'
     )
@@ -318,28 +337,25 @@ def test_search_storage_by_dataset(index, db, default_metadata_type, indexed_ls5
     :type indexed_ls5_nbar_storage_type: datacube.model.StorageType
     :type default_metadata_type: datacube.model.Collection
     """
-    metadata_type = default_metadata_type.metadata_type
-
-    unit_id = db.add_storage_unit(
-        '/tmp/something.tif',
+    unit_id = index.storage.add(StorageUnit(
         [pseudo_telemetry_dataset.id],
-        {'test': 'test'},
         indexed_ls5_nbar_storage_type.id,
-        size_bytes=1234
-    )
-    dfield = metadata_type.dataset_fields.get
+        {'test': 'test'},
+        size_bytes=1234,
+        relative_path='/tmp/something.tif'
+    ))
 
     # Search by the linked dataset properties.
     storages = index.storage.search_eager(
-        dfield('platform') == 'LANDSAT_8',
-        dfield('instrument') == 'OLI_TIRS'
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS'
     )
     assert len(storages) == 1
     assert storages[0].id == unit_id
 
     # When fields don't match the dataset it shouldn't be returned.
     storages = index.storage.search_eager(
-        dfield('platform') == 'LANDSAT_7'
+        platform='LANDSAT_7'
     )
     assert len(storages) == 0
 
@@ -362,18 +378,17 @@ def test_search_storage_multi_dataset(index, db, default_metadata_type, indexed_
     was_inserted = db.insert_dataset(doc2, id2)
     assert was_inserted
 
-    unit_id = db.add_storage_unit(
-        '/tmp/something.tif',
+    unit_id = index.storage.add(StorageUnit(
         [pseudo_telemetry_dataset.id, id2],
-        {'test': 'test'},
         indexed_ls5_nbar_storage_type.id,
-        size_bytes=1234
-    )
-    dfield = metadata_type.dataset_fields.get
+        {'test': 'test'},
+        size_bytes=1234,
+        relative_path='/tmp/something.tif'
+    ))
     # Search by the linked dataset properties.
     storages = index.storage.search_eager(
-        dfield('platform') == 'LANDSAT_8',
-        dfield('instrument') == 'OLI_TIRS'
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS'
     )
 
     assert len(storages) == 1
@@ -407,7 +422,7 @@ def test_search_cli_basic(global_integration_cli_args, default_metadata_type, ps
     assert result.exit_code == 0
 
 
-def test_search_storage_by_both_fields(global_integration_cli_args, db, indexed_ls5_nbar_storage_type,
+def test_search_storage_by_both_fields(global_integration_cli_args, index, indexed_ls5_nbar_storage_type,
                                        pseudo_telemetry_dataset):
     """
     Search storage using both storage and dataset fields.
@@ -416,19 +431,18 @@ def test_search_storage_by_both_fields(global_integration_cli_args, db, indexed_
     :type indexed_ls5_nbar_storage_type: datacube.model.StorageType
     :type pseudo_telemetry_dataset: datacube.model.Dataset
     """
-
-    unit_id = db.add_storage_unit(
-        '/tmp/something.tif',
+    unit_id = index.storage.add(StorageUnit(
         [pseudo_telemetry_dataset.id],
+        indexed_ls5_nbar_storage_type.id,
         descriptor={
             'extents': {
                 'geospatial_lat_min': 120,
                 'geospatial_lat_max': 140
             }
         },
-        storage_type_id=indexed_ls5_nbar_storage_type.id,
-        size_bytes=1234
-    )
+        size_bytes=1234,
+        relative_path='/tmp/something.tif'
+    ))
 
     rows = _cli_csv_search(['units', '100<lat<150'], global_integration_cli_args)
     assert len(rows) == 1

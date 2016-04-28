@@ -7,11 +7,11 @@ from __future__ import absolute_import
 import itertools
 import os
 import shutil
-from pathlib import Path
 
 import pytest
 import rasterio
 import yaml
+from pathlib import Path
 
 try:
     from yaml import CSafeLoader as SafeLoader
@@ -122,6 +122,27 @@ def dict_api(index):
 
 
 @pytest.fixture
+def ls5_nbar_gtiff_type(index, default_metadata_type):
+    definition = {
+        "name": "ls5_nbart_p54_gtiff",
+        "match": {
+            "metadata": {
+                "platform": {
+                    "code": "LANDSAT_5"
+                },
+                "product_type": "nbart",
+                "ga_level": "P54",
+                "format": {
+                    "name": "GeoTIFF"
+                }
+            }
+        },
+        "metadata_type": default_metadata_type.name  # "eo"
+    }
+    return index.datasets.types.add(definition)
+
+
+@pytest.fixture
 def example_ls5_dataset(tmpdir):
     # Based on LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302
     dataset_dir = tmpdir.mkdir('ls5_dataset')
@@ -154,6 +175,7 @@ def create_empty_geotiff(path):
 @pytest.fixture
 def default_metadata_type_docs():
     return [doc for (path, doc) in ui.read_documents(_DEFAULT_METADATA_TYPES_PATH)]
+
 
 @pytest.fixture
 def default_metadata_type(index, default_metadata_type_docs):
