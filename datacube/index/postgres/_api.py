@@ -264,6 +264,38 @@ class PostgresDb(object):
             select(_DATASET_SELECT_FIELDS).where(DATASET.c.id == dataset_id)
         ).first()
 
+    def get_dataset_sources(self, dataset_id):
+        sources = select(
+            [DATASET_SOURCE.c.dataset_ref,
+             DATASET_SOURCE.c.source_dataset_ref,
+             DATASET_SOURCE.c.classifier]
+        ).where(
+            DATASET_SOURCE.c.dataset_ref == dataset_id
+        ).cte(name="sources", recursive=True)
+
+        sources = sources.union_all(
+            select(
+                [sources.c.source_dataset_ref.label('dataset_ref'),
+                 DATASET_SOURCE.c.source_dataset_ref,
+                 DATASET_SOURCE.c.classifier]
+            ).select_from(
+                sources.join(DATASET_SOURCE,
+                             sources.c.source_dataset_ref == DATASET_SOURCE.c.dataset_ref,
+                             isouter=True)
+            ).where(sources.c.source_dataset_ref != None))
+
+        aggd = select(
+            [sources.c.dataset_ref,
+             func.array_agg(sources.c.source_dataset_ref).label('sources'),
+             func.array_agg(sources.c.classifier).label('classes')]
+        ).group_by(sources.c.dataset_ref).alias('aggd')
+
+        query = select(
+            _DATASET_SELECT_FIELDS + (aggd.c.sources, aggd.c.classes)
+        ).select_from(aggd.join(DATASET, DATASET.c.id == aggd.c.dataset_ref))
+
+        return self._connection.execute(query).fetchall()
+
     def get_storage_types(self, dataset_metadata):
         """
         Find any storage types that match the given dataset.
