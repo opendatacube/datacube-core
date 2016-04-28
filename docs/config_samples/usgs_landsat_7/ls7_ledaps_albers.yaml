@@ -109,91 +109,100 @@ measurements:
       zlib: True
       flags_definition:
         undetermined_cloud:
-          bits: 15, 14
+          bits: [15, 14]
           value: 0
           description: Cloud not determined
         no_cloud:
-          bits: 15, 14
+          bits: [15, 14]
           value: 1
           description: No cloud
         maybe_cloud:
-          bits: 15, 14
+          bits: [15, 14]
           value: 2
           description: Maybe cloud
         cloud:
-          bits: 15, 14
+          bits: [15, 14]
           value: 3
           description: Cloud
 
 
         undetermined_cirrus:
-          bits: 12,13
+          bits: [12, 13]
           value: 0
           description: Cirrus not determined
         no_cirrus:
-          bits: 12,13
+          bits: [12, 13]
           value: 1
           description: No cirrus
         maybe_cirrus:
-          bits: 12,13
+          bits: [12, 13]
           value: 2
           description: Maybe cirrus
         cirrus:
-          bits: 12,13
+          bits: [12, 13]
           value: 3
           description: Cirrus
 
+        snowice:
+          bits: [10,11]
+          description: Contains snow or ice
+          values:
+            0:
+            not determined
+            1: no
+            2: maybe
+            3: yes
 
         undetermined_snowice:
-          bits: 10,11
+          bits: [10,11]
           value: 0
           description: Snow/ice not determined
         no_snowice:
-          bits: 10,11
+          bits: [10,11]
           value: 1
           description: No snow/ice
         maybe_snowice:
-          bits: 10,11
+          bits: [10,11]
           value: 2
           description: Maybe snow/ice
         snowice:
-          bits: 10,11
+          bits: [10,11]
           value: 3
           description: Snow/ice
 
 
         undetermined_veg:
-          bits: 8,9
+          bits: [8,9]
           value: 0
           description: Vegetation not determined
         no_veg:
-          bits: 8,9
+          bits: [8,9]
           value: 1
           description: No vegetation
         maybe_veg:
-          bits: 8,9
+          bits: [8,9]
           value: 2
           description: Maybe vegetation
         veg:
-          bits: 8,9
+          bits: [8,9]
           value: 3
           description: Vegetation
 
 
         undetermined_water:
-          bits: 4,5
+          bits: [4,5]
           value: 0
           description: Water not determined
         no_water:
-          bits: 4,5
+          bits: [4,5]
           value: 1
           description: No water
         maybe_water:
-          bits: 4,5
+          bits: [4,5]
           value: 2
           description: Maybe water
         water:
-          bits: 4,5
+          bits: [4,5]
           value: 3
           description: Water
 
@@ -207,7 +216,7 @@ measurements:
           description: Terrain occluded
 
 
-        dropped_not_frame:
+        frame_not_dropped:
           bit_index: 1
           value: 0
           description: Frame not dropped
