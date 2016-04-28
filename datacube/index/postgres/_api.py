@@ -265,6 +265,8 @@ class PostgresDb(object):
         ).first()
 
     def get_dataset_sources(self, dataset_id):
+        # recursively build the list of (dataset_ref, source_dataset_ref) pairs starting from dataset_id
+        # include (dataset_ref, NULL) [hence the left join]
         sources = select(
             [DATASET_SOURCE.c.dataset_ref,
              DATASET_SOURCE.c.source_dataset_ref,
@@ -284,12 +286,15 @@ class PostgresDb(object):
                              isouter=True)
             ).where(sources.c.source_dataset_ref != None))
 
+        # turn the list of pairs into adjacency list (dataset_ref, [source_dataset_ref, ...])
+        # some source_dataset_ref's will be NULL
         aggd = select(
             [sources.c.dataset_ref,
              func.array_agg(sources.c.source_dataset_ref).label('sources'),
              func.array_agg(sources.c.classifier).label('classes')]
         ).group_by(sources.c.dataset_ref).alias('aggd')
 
+        # join the adjacency list with datasets table
         query = select(
             _DATASET_SELECT_FIELDS + (aggd.c.sources, aggd.c.classes)
         ).select_from(aggd.join(DATASET, DATASET.c.id == aggd.c.dataset_ref))
