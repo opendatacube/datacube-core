@@ -28,6 +28,7 @@ from datacube.index.postgres.tables._core import ensure_db, drop_db, METADATA
 _SINGLE_RUN_CONFIG_TEMPLATE = """
 [locations]
 testdata: {test_tile_folder}
+eotiles: {eotiles_tile_folder}
 """
 
 INTEGRATION_DEFAULT_CONFIG_PATH = Path(__file__).parent.joinpath('agdcintegration.conf')
@@ -59,9 +60,11 @@ EXAMPLE_LS5_DATASET_ID = 'bbf3e21c-82b0-11e5-9ba1-a0000100fe80'
 def integration_config_paths(tmpdir):
     test_tile_folder = str(tmpdir.mkdir('testdata'))
     test_tile_folder = Path(test_tile_folder).as_uri()
+    eotiles_tile_folder = str(tmpdir.mkdir('eotiles'))
+    eotiles_tile_folder = Path(eotiles_tile_folder).as_uri()
     run_config_file = tmpdir.mkdir('config').join('test-run.conf')
     run_config_file.write(
-        _SINGLE_RUN_CONFIG_TEMPLATE.format(test_tile_folder=test_tile_folder)
+        _SINGLE_RUN_CONFIG_TEMPLATE.format(test_tile_folder=test_tile_folder, eotiles_tile_folder=eotiles_tile_folder)
     )
     return (
         str(INTEGRATION_DEFAULT_CONFIG_PATH),
