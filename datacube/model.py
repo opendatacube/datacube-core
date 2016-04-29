@@ -75,12 +75,14 @@ class DatasetMatcher(object):
 
 
 class StorageType(object):  # pylint: disable=too-many-public-methods
-    def __init__(self, document, id_=None):
+    def __init__(self, document, target_dataset_type_id, id_=None ):
         # Database primary key
         #: :type: int
         self.id = id_
 
         self.document = document
+
+        self.target_dataset_type_id = target_dataset_type_id
 
     @property
     def name(self):
@@ -384,6 +386,7 @@ class DatasetType(object):
                  name,
                  match,
                  metadata_type,
+                 source_storage_type_id=None,
                  id_=None):
         """
         Collection of datasets & storage.
@@ -402,6 +405,9 @@ class DatasetType(object):
 
         # All datasets in a collection must have the same metadata_type.
         self.metadata_type = metadata_type
+
+        # The storage type that produces this, if any.
+        self.source_storage_type_id = source_storage_type_id
 
     def __str__(self):
         return "Collection <id={id}, name={name}>".format(id=self.id, name=self.name)

@@ -177,7 +177,7 @@ insert into agdc.dataset_type (name, metadata, metadata_type_ref, source_storage
     st.id,
     json_build_object(
         'name', st.name,
-        'description', st.definition->>'description',
+        'description', st.definition ->> 'description',
         'metadata_type', 'storage_unit',
         'match', json_build_object('metadata', st.dataset_metadata)
     )

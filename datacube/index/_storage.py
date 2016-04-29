@@ -72,6 +72,7 @@ class StorageUnitResource(object):
         was_newly_inserted = self._db.insert_dataset(
             unit.descriptor,
             unit.id,
+            dataset_type_id=unit.storage_type.target_dataset_type_id,
             storage_type_id=unit.storage_type.id
         )
         # TODO: unit.size_bytes
@@ -221,7 +222,7 @@ class StorageTypeResource(object):
             raise Exception("Invalid configuration, storage type '{}' references unknown location '{}'".format(
                 record['name'], definition['location_name']))
 
-        return StorageType(definition, id_=record['id'])
+        return StorageType(definition, record['source_storage_type_ref'], id_=record['id'])
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def get(self, id_):
@@ -254,6 +255,7 @@ class StorageTypeResource(object):
             return None
         return self._make(record)
 
+    @cachetools.cached(cachetools.TTLCache(100, 60))
     def get_all(self):
         """
         :rtype: list[datacube.model.StorageType]

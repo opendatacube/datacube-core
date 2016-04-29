@@ -308,7 +308,7 @@ def test_fetch_all_of_md_type(index, pseudo_telemetry_dataset):
 
 # Storage searching:
 
-def test_search_storage_star(index, db, indexed_ls5_nbar_storage_type, pseudo_telemetry_dataset):
+def test_search_storage_star(index, db, indexed_ls5_nbar_storage_type, default_metadata_type, pseudo_telemetry_dataset):
     """
     :type db: datacube.index.postgres._api.PostgresDb
     :type index: datacube.index._api.Index
@@ -316,13 +316,13 @@ def test_search_storage_star(index, db, indexed_ls5_nbar_storage_type, pseudo_te
     """
     assert len(index.storage.search_eager()) == 0
 
-    db.add_storage_unit(
-        path='/tmp/something.tif',
-        dataset_ids=[pseudo_telemetry_dataset],
-        descriptor={'test': 'test'},
-        storage_type_id=indexed_ls5_nbar_storage_type.id,
-        size_bytes=1234
-    )
+    index.storage.add(StorageUnit(
+        [pseudo_telemetry_dataset.id],
+        indexed_ls5_nbar_storage_type,
+        {'test': 'test'},
+        size_bytes=1234,
+        relative_path='/tmp/something.tif'
+    ))
 
     results = index.storage.search_eager()
     assert len(results) == 1
@@ -339,7 +339,7 @@ def test_search_storage_by_dataset(index, db, default_metadata_type, indexed_ls5
     """
     unit_id = index.storage.add(StorageUnit(
         [pseudo_telemetry_dataset.id],
-        indexed_ls5_nbar_storage_type.id,
+        indexed_ls5_nbar_storage_type,
         {'test': 'test'},
         size_bytes=1234,
         relative_path='/tmp/something.tif'
@@ -380,7 +380,7 @@ def test_search_storage_multi_dataset(index, db, default_metadata_type, indexed_
 
     unit_id = index.storage.add(StorageUnit(
         [pseudo_telemetry_dataset.id, id2],
-        indexed_ls5_nbar_storage_type.id,
+        indexed_ls5_nbar_storage_type,
         {'test': 'test'},
         size_bytes=1234,
         relative_path='/tmp/something.tif'
@@ -433,7 +433,7 @@ def test_search_storage_by_both_fields(global_integration_cli_args, index, index
     """
     unit_id = index.storage.add(StorageUnit(
         [pseudo_telemetry_dataset.id],
-        indexed_ls5_nbar_storage_type.id,
+        indexed_ls5_nbar_storage_type,
         descriptor={
             'extents': {
                 'geospatial_lat_min': 120,

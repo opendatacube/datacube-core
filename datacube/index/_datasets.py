@@ -226,6 +226,18 @@ class DatasetTypeResource(object):
 
         return self._make(result)
 
+    def get_for_storage_type(self, storage_type):
+        """
+
+        :type storage_type: datacube.model.StorageType
+        :rtype: datacube.model.DatasetType
+        """
+        matching_sts = [d for d in self.get_all() if d.target_ == storage_type.id]
+
+        if not matching_sts:
+            return None
+
+        return matching_sts[0]
     def get_with_fields(self, field_names):
         """
         Return dataset types that have all the given fields.
@@ -256,6 +268,7 @@ class DatasetTypeResource(object):
             query_row['name'],
             DatasetMatcher(query_row['metadata']),
             metadata_type=self.metadata_type_resource.get(query_row['metadata_type_ref']),
+            source_storage_type_id=query_row['source_storage_type_ref'],
             id_=query_row['id'],
         )
 
