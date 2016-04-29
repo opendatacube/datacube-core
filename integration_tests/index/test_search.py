@@ -10,6 +10,7 @@ import datetime
 import io
 import uuid
 
+import dateutil.parser
 import pytest
 from click.testing import CliRunner
 from pathlib import Path
@@ -380,25 +381,29 @@ def test_search_storage_multi_dataset(index, db, default_metadata_type, indexed_
     id2 = str(uuid.uuid4())
     doc2 = copy.deepcopy(pseudo_telemetry_dataset.metadata_doc)
     doc2['id'] = id2
+    # Second dataset is a minute later
+    doc2['extent']['to_dt'] = dateutil.parser.parse(doc2['extent']['to_dt']) + datetime.timedelta(minutes=1)
     was_inserted = db.insert_dataset(doc2, id2)
     assert was_inserted
 
-    unit_id = index.storage.add(StorageUnit(
+    su = StorageUnit(
         [pseudo_telemetry_dataset.id, id2],
         indexed_ls5_nbar_storage_type,
         {'test': 'test'},
         size_bytes=1234,
         output_uri=indexed_ls5_nbar_storage_type.location + '/tmp/something.tif'
-    ))
+    )
+    index.storage.add(su)
     # Search by the linked dataset properties.
     storages = index.storage.search_eager(
-        platform='LANDSAT_8',
-        instrument='OLI_TIRS'
+        platform='LANDSAT_5',
+        instrument='TM'
     )
 
     assert len(storages) == 1
-    assert storages[0].id == unit_id
-    assert set(storages[0].dataset_ids) == {uuid.UUID(pseudo_telemetry_dataset), uuid.UUID(id2)}
+    assert su.id is not None
+    assert storages[0].id == su.id
+    assert set(storages[0].dataset_ids) == {uuid.UUID(pseudo_telemetry_dataset.id), uuid.UUID(id2)}
 
 
 def test_search_cli_basic(global_integration_cli_args, default_metadata_type, pseudo_telemetry_dataset):
