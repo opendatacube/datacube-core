@@ -53,7 +53,7 @@ _STANDARD_COORDINATES = {
 def create_netcdf(netcdf_path):
     nco = Dataset(netcdf_path, 'w')
     nco.date_created = datetime.today().isoformat()
-    nco.Conventions = 'CF-1.6, ACDD-1.3'
+    nco.setncattr('Conventions', 'CF-1.6, ACDD-1.3')
     nco.history = ("NetCDF-CF file created by "
                    "datacube version '{}' at {:%Y%m%d}."
                    .format(__version__, datetime.utcnow()))

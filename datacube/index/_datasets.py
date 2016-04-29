@@ -256,11 +256,23 @@ class DatasetResource(object):
         self._config = user_config
         self._collection_resource = collection_resource
 
-    def get(self, id_):
+    def get(self, id_, provenance=False):
         """
+        Get dataset by id
+
+        :param provenance: get the full provenance graph?
         :rtype datacube.model.Dataset
         """
-        return self._make(self._db.get_dataset(id_))
+        if not provenance:
+            return self._make(self._db.get_dataset(id_))
+
+        datasets = {result['id']: result for result in self._db.get_dataset_sources(id_)}
+        for dataset in datasets.values():
+            dataset['metadata']['lineage']['source_datasets'] = {
+                classifier: datasets[str(source)]['metadata']
+                for source, classifier in zip(dataset['sources'], dataset['classes']) if source
+            }
+        return self._make(datasets[id_])
 
     def has(self, dataset):
         """
