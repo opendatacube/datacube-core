@@ -56,6 +56,9 @@ def pseudo_telemetry_type(index, default_metadata_type):
                 'platform': {
                     'code': 'LANDSAT_8'
                 },
+                'instrument': {
+                    'name': 'OLI_TIRS'
+                },
                 'format': {
                     'name': 'PSEUDOMD'
                 }
@@ -337,21 +340,24 @@ def test_search_storage_by_dataset(index, db, default_metadata_type, indexed_ls5
     :type indexed_ls5_nbar_storage_type: datacube.model.StorageType
     :type default_metadata_type: datacube.model.Collection
     """
-    unit_id = index.storage.add(StorageUnit(
+    su = StorageUnit(
         [pseudo_telemetry_dataset.id],
         indexed_ls5_nbar_storage_type,
         {'test': 'test'},
         size_bytes=1234,
         output_uri=indexed_ls5_nbar_storage_type.location + '/tmp/something.tif'
-    ))
+    )
+    index.storage.add(su)
 
     # Search by the linked dataset properties.
     storages = index.storage.search_eager(
-        platform='LANDSAT_8',
-        instrument='OLI_TIRS'
+        platform='LANDSAT_5',
+        instrument='TM'
     )
     assert len(storages) == 1
-    assert storages[0].id == unit_id
+    # A UUID was assigned.
+    assert su.id is not None
+    assert storages[0].id == su.id
 
     # When fields don't match the dataset it shouldn't be returned.
     storages = index.storage.search_eager(
@@ -370,7 +376,6 @@ def test_search_storage_multi_dataset(index, db, default_metadata_type, indexed_
     :type indexed_ls5_nbar_storage_type: datacube.model.StorageType
     :type pseudo_telemetry_dataset: datacube.model.Dataset
     """
-    metadata_type = default_metadata_type.metadata_type
     # Add a second
     id2 = str(uuid.uuid4())
     doc2 = copy.deepcopy(pseudo_telemetry_dataset.metadata_doc)

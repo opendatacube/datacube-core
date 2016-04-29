@@ -273,9 +273,9 @@ class StorageUnit(object):
         return "StorageUnit <type={m.name}, path={path}>".format(path=self.path, m=self.storage_type)
 
     def __repr__(self):
-        return "{}({!r}, {!r}, {!r}, {!r}, {!r})".format(self.__class__.__name__, self.dataset_ids,
+        return "{}({!r}, {!r}, {!r}, None, {!r}, {!r})".format(self.__class__.__name__, self.dataset_ids,
                                                          self.storage_type, self.descriptor,
-                                                         self.path, self.id)
+                                                         self.local_uri, self.id)
 
 
 class Dataset(object):
@@ -378,6 +378,9 @@ class MetadataType(object):
     def dataset_reader(self, dataset_doc):
         return _DocReader(self.dataset_offsets.__dict__, dataset_doc)
 
+    def __str__(self):
+        return "MetadataType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
+
 
 class DatasetType(object):
     def __init__(self,
@@ -404,7 +407,7 @@ class DatasetType(object):
         self.metadata_type = metadata_type
 
     def __str__(self):
-        return "Collection <id={id}, name={name}>".format(id=self.id, name=self.name)
+        return "DatasetType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
 
     def __repr__(self):
         return self.__str__()
