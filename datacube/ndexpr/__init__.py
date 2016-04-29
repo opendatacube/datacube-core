@@ -417,11 +417,9 @@ class NDexpr(object):
             return op1[ops]
         elif op in "{}":
             op1 = self.evaluate_stack(s)
-            if self.ae:
-                op2 = self.evaluate_stack(s).astype(np.int64).values
-                op2 = self.get_pqa_mask(op2)
-            else:
-                op2 = self.evaluate_stack(s)
+            op2 = self.evaluate_stack(s)
+            if (op2.dtype != bool):
+                op2 = self.get_pqa_mask(op2.astype(np.int64).values)
 
             val = xr.DataArray.where(op1, op2)
             return val
