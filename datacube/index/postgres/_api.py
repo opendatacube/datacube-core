@@ -323,21 +323,17 @@ class PostgresDb(object):
     def ensure_storage_type(self,
                             name,
                             dataset_metadata,
-                            definition):
+                            definition,
+                            target_dataset_id):
         res = self._connection.execute(
             STORAGE_TYPE.insert().values(
                 name=name,
                 dataset_metadata=dataset_metadata,
-                definition=definition
+                definition=definition,
+                target_dataset_type_ref=target_dataset_id
             )
         )
-        storage_type_id = res.inserted_primary_key[0]
-        cube_sql_str = self._storage_unit_cube_sql_str(definition['storage']['dimension_order'])
-        constraint = """alter table agdc.storage_unit add exclude using gist (%s with &&)
-                        where (storage_type_ref = %s)""" % (cube_sql_str, storage_type_id)
-        # TODO: must enforce cube extension somehow before we can do this
-        # self._connection.execute(constraint)
-        return storage_type_id
+        return res.inserted_primary_key[0]
 
     def archive_storage_unit(self, storage_unit_id):
         self._connection.execute(

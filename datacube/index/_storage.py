@@ -67,9 +67,9 @@ class StorageUnitResource(object):
 
     def _add_unit(self, unit):
         if unit.id is None:
-            unit.id = uuid.uuid4()
+            unit.id = str(uuid.uuid4())
 
-        dataset_type = self._dataset_types.get_by_name(unit.storage_type.target_dataset_type_id)
+        dataset_type = self._dataset_types.get(unit.storage_type.target_dataset_type_id)
 
         # Merge with expected dataset type metadata (old storage unit creation code does not include them)
         merged_descriptor = {}
@@ -182,13 +182,15 @@ class StorageUnitResource(object):
 
 
 class StorageTypeResource(object):
-    def __init__(self, db, host_config):
+    def __init__(self, db, host_config, metadata_type_resource):
         """
         :type db: datacube.index.postgres._api.PostgresDb
         :type host_config: datacube.config.LocalConfig
+        :type metadata_type_resource: datacube.index._datasets.MetadataTypeResource
         """
         self._db = db
         self._host_config = host_config
+        self._metadata_type_resource = metadata_type_resource
 
     def add(self, definition):
         """
@@ -212,10 +214,23 @@ class StorageTypeResource(object):
                     'Storage type {}'.format(name)
                 )
             else:
+                # Add a corresponding dataset type.
+                # The duplication is temporary: replacements for storage_types are still being discussed.
+                dataset_type_id = self._db.add_dataset_type(
+                    name, dataset_metadata,
+                    self._metadata_type_resource.get_by_name('storage_unit').id,
+                    {
+                        'name': name,
+                        'description': definition.get('description'),
+                        'metadata_type': 'storage_unit',
+                        'match': {'metadata': dataset_metadata}
+                    }
+                )
                 self._db.ensure_storage_type(
                     name,
                     dataset_metadata,
-                    definition
+                    definition,
+                    dataset_type_id
                 )
 
     def _make(self, record):
@@ -283,6 +298,27 @@ def _unit_classifier(descriptor):
 
     >>> _unit_classifier({"extent": {"center_dt": "2014-07-26T23:49:00.343853"}})
     '2014-07-26T23:49:00'
+    >>> _unit_classifier(
+    ...     {"extent": {
+    ...         "center_dt": "2014-07-26T23:49:00.343853",
+    ...         "from_dt": "2014-07-26T23:48:00.343853",
+    ...         "to_dt": "2014-07-26T23:56:00.343853"
+    ...     }}
+    ... )
+    '2014-07-26T23:49:00'
+    >>> _unit_classifier({"extent": {"from_dt": "2014-07-26T23:49:00.343853", "to_dt": "2014-07-26T23:51:00.343853"}})
+    '2014-07-26T23:50:00'
     """
-    d = dateutil.parser.parse(descriptor['extent']['center_dt'])
+    extent_ = descriptor['extent']
+    if 'center_dt' in extent_:
+        d = dateutil.parser.parse(extent_.get('center_dt'))
+    elif 'from_dt' in extent_:
+        # No center: calculate from start/stop
+        start = dateutil.parser.parse(extent_.get('to_dt'))
+        end = dateutil.parser.parse(extent_.get('from_dt'))
+        interval = (end - start) / 2
+        d = start + interval
+    else:
+        raise ValueError('No usable time information in dataset metadata: %r ' % descriptor)
+
     return d.replace(microsecond=0).isoformat()

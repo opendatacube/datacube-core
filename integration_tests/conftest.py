@@ -213,7 +213,7 @@ def ancillary_collection(index, ancillary_collection_docs):
 
 
 @pytest.fixture
-def indexed_ls5_nbar_storage_type(db, index):
+def indexed_ls5_nbar_storage_type(index, default_metadata_type):
     """
     :type db: datacube.index.postgres._api.PostgresDb
     :type index: datacube.index._api.Index
