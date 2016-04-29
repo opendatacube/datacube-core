@@ -151,12 +151,13 @@ class StorageUnitResource(object):
         :type query: dict[str,str|float|datacube.model.Range]
         :rtype: dict
         """
+        query.update({'metadata_type': 'storage_unit'})
         return (
             dict(fs) for fs in
             self._datasets._do_search(
                 query,
                 return_fields=True,
-                with_source_ids=True
+                with_source_ids=False
             )
         )
 
