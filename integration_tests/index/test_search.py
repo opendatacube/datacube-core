@@ -321,12 +321,12 @@ def test_search_storage_star(index, db, indexed_ls5_nbar_storage_type, default_m
         indexed_ls5_nbar_storage_type,
         {'test': 'test'},
         size_bytes=1234,
-        relative_path='/tmp/something.tif'
+        output_uri=indexed_ls5_nbar_storage_type.location + '/tmp/something.tif'
     ))
 
     results = index.storage.search_eager()
     assert len(results) == 1
-    assert results[0].dataset_ids == [uuid.UUID(pseudo_telemetry_dataset)]
+    assert results[0].dataset_ids == [uuid.UUID(pseudo_telemetry_dataset.id)]
 
 
 def test_search_storage_by_dataset(index, db, default_metadata_type, indexed_ls5_nbar_storage_type,
@@ -342,7 +342,7 @@ def test_search_storage_by_dataset(index, db, default_metadata_type, indexed_ls5
         indexed_ls5_nbar_storage_type,
         {'test': 'test'},
         size_bytes=1234,
-        relative_path='/tmp/something.tif'
+        output_uri=indexed_ls5_nbar_storage_type.location + '/tmp/something.tif'
     ))
 
     # Search by the linked dataset properties.
@@ -383,7 +383,7 @@ def test_search_storage_multi_dataset(index, db, default_metadata_type, indexed_
         indexed_ls5_nbar_storage_type,
         {'test': 'test'},
         size_bytes=1234,
-        relative_path='/tmp/something.tif'
+        output_uri=indexed_ls5_nbar_storage_type.location + '/tmp/something.tif'
     ))
     # Search by the linked dataset properties.
     storages = index.storage.search_eager(
@@ -441,7 +441,7 @@ def test_search_storage_by_both_fields(global_integration_cli_args, index, index
             }
         },
         size_bytes=1234,
-        relative_path='/tmp/something.tif'
+        output_uri=indexed_ls5_nbar_storage_type.location + '/tmp/something.tif'
     ))
 
     rows = _cli_csv_search(['units', '100<lat<150'], global_integration_cli_args)

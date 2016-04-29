@@ -71,8 +71,11 @@ class StorageUnitResource(object):
 
         dataset_type = self._dataset_types.get(unit.storage_type.target_dataset_type_id)
 
+        merged_descriptor = {
+            # Storage units stored this as a separate column, datasets have it in the metadata.
+            'size_bytes': unit.size_bytes
+        }
         # Merge with expected dataset type metadata (old storage unit creation code does not include them)
-        merged_descriptor = {}
         merged_descriptor.update(dataset_type.match.metadata)
         merged_descriptor.update(unit.descriptor)
 
@@ -93,10 +96,8 @@ class StorageUnitResource(object):
                 unit.id,
                 source_id
             )
-        self._db.ensure_dataset_location(
-            unit.id,
-            pathlib.Path(unit.path).as_uri(), allow_replacement=True)
-        _LOG.debug('Indexed unit %s @ %s', unit.id, unit.path)
+        self._db.ensure_dataset_location(unit.id, unit.local_uri, allow_replacement=True)
+        _LOG.debug('Indexed unit %s @ %s', unit.id, unit.local_uri)
 
     def add(self, storage_unit):
         """
@@ -172,11 +173,11 @@ class StorageUnitResource(object):
         """
         return (StorageUnit(
             su['dataset_refs'],
-            self.types.get(su['storage_type_ref']),
-            su['descriptor'],
+            self.types.get_for_dataset_type(su['dataset_type_ref']),
+            su['metadata'],
             # An offset from the location (ie. a URL fragment):
-            size_bytes=su['size_bytes'],
-            relative_path=su['path'],
+            size_bytes=su['metadata']['size_bytes'],
+            output_uri=su['local_uri'],
             id_=su['id']
         ) for su in query_results)
 
@@ -276,6 +277,13 @@ class StorageTypeResource(object):
         if not record:
             return None
         return self._make(record)
+
+    def get_for_dataset_type(self, dataset_type_id):
+        results = [d for d in self.get_all() if d.target_dataset_type_id == dataset_type_id]
+        if not results:
+            return None
+
+        return results[0]
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def get_all(self):

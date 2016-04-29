@@ -207,7 +207,7 @@ class StorageType(object):  # pylint: disable=too-many-public-methods
 
     def local_uri_to_location_relative_path(self, uri):
         if not uri.startswith(self.location):
-            raise ValueError('Not a local URI: %s', uri)
+            raise ValueError('Not a local URI: %r (expected to be in storage location %r)' % (uri, self.location))
         return uri[len(self.location):]
 
     def resolve_location(self, offset):
@@ -240,10 +240,9 @@ class StorageUnit(object):
 
         # An offset from the location defined in the storage type.
         #: :type: pathlib.Path
+        self.local_uri = output_uri
         if relative_path:
-            self.path = relative_path
-        else:
-            self.path = storage_type.local_uri_to_location_relative_path(output_uri)
+            self.local_uri = storage_type.location +'/'+relative_path
 
         self.size_bytes = size_bytes
 
@@ -253,8 +252,7 @@ class StorageUnit(object):
 
     @property
     def local_path(self):
-        file_uri = self.storage_type.resolve_location(self.path)
-        return _uri_to_local_path(file_uri)
+        return _uri_to_local_path(self.local_uri)
 
     @property
     def tile_index(self):
