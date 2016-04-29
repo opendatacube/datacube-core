@@ -21,6 +21,8 @@ import re
 
 from pypeg2 import word, attr, List, maybe_some, parse as peg_parse
 
+from datacube.model import Range
+
 FIELD_NAME = attr(u'field_name', word)
 
 NUMBER = re.compile(r"[-+]?(\d*\.\d+|\d+\.\d*|\d+)")
@@ -120,7 +122,7 @@ class BetweenExpression(Expr):
         )
 
     def as_query(self):
-        return {self.field_name: (self.low_value.as_value(), self.high_value.as_value())}
+        return {self.field_name: Range(self.low_value.as_value(), self.high_value.as_value())}
 
 
 class ExpressionList(List):

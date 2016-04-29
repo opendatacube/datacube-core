@@ -26,7 +26,7 @@ def test_parse_simple_expression():
     assert {'platform': 4} == parse_expressions('platform = 4')
     assert {'platform': 'LANDSAT_8'} == parse_expressions('platform = "LANDSAT_8"')
 
-    between_exp = {'lat': (4, 6)}
+    between_exp = {'lat': Range(4, 6)}
     assert between_exp == parse_expressions('4<lat<6')
     assert between_exp == parse_expressions('6 > lat > 4')
 
@@ -35,7 +35,9 @@ def test_parse_multiple_simple_expressions():
     # Multiple expressions in one command-line statement.
     # Mixed whitespace:
     between_exp = parse_expressions('platform=LS8 -4<lat<23.5 instrument="OTHER"')
-    assert between_exp == {'platform': 'LS8', 'lat': (-4, 23.5), 'instrument': 'OTHER'}
+    assert between_exp == {'platform': 'LS8', 'lat': Range(-4, 23.5), 'instrument': 'OTHER'}
+    # Range(x,y) is "equal" to (x, y). Check explicitly that it's a range:
+    assert between_exp['lat'].begin == -4
 
 
 def test_build_query_expressions():
