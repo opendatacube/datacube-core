@@ -9,6 +9,7 @@ from __future__ import absolute_import
 import datetime
 import json
 import logging
+import operator
 import re
 from functools import reduce as reduce_
 
@@ -432,39 +433,21 @@ class PostgresDb(object):
             for f in select_fields
         ) if select_fields else _DATASET_SELECT_FIELDS
 
+        from_expression, raw_expressions = _prepare_expressions(expressions, DATASET)
+
         if with_source_ids:
             # Include the IDs of source datasets
-            select_fields += (func.array_agg(
-                DATASET_SOURCE
-                    .select(DATASET_SOURCE.c.source_dataset_ref)
+            select_fields += (
+                select((func.array_agg(DATASET_SOURCE.c.source_dataset_ref),))
+                    .select_from(DATASET_SOURCE)
                     .where(DATASET_SOURCE.c.dataset_ref == DATASET.c.id)
-            ).label('dataset_refs'),)
-
-        return self._search_docs(
-            expressions,
-            primary_table=DATASET,
-            select_fields=select_fields,
-        )
-
-    def _search_docs(self, expressions, primary_table, select_fields=None, group_by_fields=None, required_tables=None):
-        """
-
-        :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
-        :param primary_table: SQLAlchemy table
-        :return:
-        """
-        from_expression, raw_expressions = _prepare_expressions(
-            expressions, primary_table,
-            required_tables=required_tables
-        )
+                    .group_by(DATASET_SOURCE.c.dataset_ref)
+                    .label('dataset_refs'),)
 
         select_query = (
             select(select_fields)
                 .select_from(from_expression)
                 .where(and_(DATASET.c.archived == None, *raw_expressions)))
-
-        if group_by_fields:
-            select_query = select_query.group_by(*group_by_fields)
 
         results = self._connection.execute(select_query)
         for result in results:
@@ -682,18 +665,18 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_
         )
 
 
-def _prepare_expressions(expressions, primary_table, required_tables=None):
+def _prepare_expressions(expressions, primary_table):
     """
     :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
     :param primary_table: SQLAlchemy table
     """
     # We currently only allow one metadata to be queried at a time (our indexes are per-type)
     metadata_type_references = set()
-    join_tables = set(required_tables) if required_tables else set()
+    join_tables = set()
 
     def tables_referenced(expression):
         if isinstance(expression, OrExpression):
-            return reduce_(lambda a, b: a | b, (tables_referenced(expr) for expr in expression.exprs), set())
+            return reduce_(operator.or_, (tables_referenced(expr) for expr in expression.exprs), set())
 
         #: :type: datacube.index.postgres._fields.PgField
         field = expression.field
@@ -701,12 +684,12 @@ def _prepare_expressions(expressions, primary_table, required_tables=None):
         metadata_type_id = field.metadata_type_id
         return {(table, metadata_type_id)}
 
-    for table, metadata_type_id in reduce_(lambda a, b: a | b, (tables_referenced(expr) for expr in expressions),
-                                           set()):
-        if table != primary_table:
-            join_tables.add(table)
-        if metadata_type_id:
-            metadata_type_references.add((table, metadata_type_id))
+    for expr in expressions:
+        for table, metadata_type_id in tables_referenced(expr):
+            if table != primary_table:
+                join_tables.add(table)
+            if metadata_type_id:
+                metadata_type_references.add((table, metadata_type_id))
 
     unique_metadata_types = set([c[1] for c in metadata_type_references])
     if len(unique_metadata_types) > 1:
