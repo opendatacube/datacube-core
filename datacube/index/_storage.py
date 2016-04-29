@@ -69,8 +69,15 @@ class StorageUnitResource(object):
         if unit.id is None:
             unit.id = uuid.uuid4()
 
+        dataset_type = self._dataset_types.get_by_name(unit.storage_type.target_dataset_type_id)
+
+        # Merge with expected dataset type metadata (old storage unit creation code does not include them)
+        merged_descriptor = {}
+        merged_descriptor.update(dataset_type.match.metadata)
+        merged_descriptor.update(unit.descriptor)
+
         was_newly_inserted = self._db.insert_dataset(
-            unit.descriptor,
+            merged_descriptor,
             unit.id,
             dataset_type_id=unit.storage_type.target_dataset_type_id,
             storage_type_id=unit.storage_type.id
@@ -222,7 +229,7 @@ class StorageTypeResource(object):
             raise Exception("Invalid configuration, storage type '{}' references unknown location '{}'".format(
                 record['name'], definition['location_name']))
 
-        return StorageType(definition, record['source_storage_type_ref'], id_=record['id'])
+        return StorageType(definition, record['target_dataset_type_ref'], id_=record['id'])
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def get(self, id_):

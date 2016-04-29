@@ -31,27 +31,6 @@ METADATA_TYPE = Table(
     CheckConstraint(r"name ~* '^\w+$'", name='alphanumeric_name'),
 )
 
-# Describes what storage to write when receiving a dataset.
-STORAGE_TYPE = Table(
-    'storage_type', _core.METADATA,
-    Column('id', SmallInteger, primary_key=True, autoincrement=True),
-
-    # A name/label for this storage type (eg. 'ls7_nbar'). Specified by users.
-    Column('name', String, unique=True, nullable=False),
-
-    # Match any datasets whose metadata is a superset of this.
-    Column('dataset_metadata', postgres.JSONB, nullable=False),
-
-    Column('definition', postgres.JSONB, nullable=False),
-
-    # When it was added and by whom.
-    Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
-    Column('added_by', _core.PGNAME, server_default=func.current_user(), nullable=False),
-
-    # Name must be alphanumeric + underscores.
-    CheckConstraint(r"name ~* '^\w+$'", name='alphanumeric_name'),
-)
-
 DATASET_TYPE = Table(
     'dataset_type', _core.METADATA,
     Column('id', SmallInteger, primary_key=True, autoincrement=True),
@@ -66,7 +45,28 @@ DATASET_TYPE = Table(
     # The metadata format expected (eg. what fields to search by)
     Column('metadata_type_ref', None, ForeignKey(METADATA_TYPE.c.id), nullable=False),
 
-    Column('source_storage_type_ref', None, ForeignKey(STORAGE_TYPE.c.id), unique=True, nullable=True),
+    Column('definition', postgres.JSONB, nullable=False),
+
+    # When it was added and by whom.
+    Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
+    Column('added_by', _core.PGNAME, server_default=func.current_user(), nullable=False),
+
+    # Name must be alphanumeric + underscores.
+    CheckConstraint(r"name ~* '^\w+$'", name='alphanumeric_name'),
+)
+
+# Describes what storage to write when receiving a dataset.
+STORAGE_TYPE = Table(
+    'storage_type', _core.METADATA,
+    Column('id', SmallInteger, primary_key=True, autoincrement=True),
+
+    # A name/label for this storage type (eg. 'ls7_nbar'). Specified by users.
+    Column('name', String, unique=True, nullable=False),
+
+    # Match any datasets whose metadata is a superset of this.
+    Column('dataset_metadata', postgres.JSONB, nullable=False),
+
+    Column('target_dataset_type_ref', None, ForeignKey(DATASET_TYPE.c.id), nullable=False, unique=True),
 
     Column('definition', postgres.JSONB, nullable=False),
 

@@ -386,7 +386,6 @@ class DatasetType(object):
                  name,
                  match,
                  metadata_type,
-                 source_storage_type_id=None,
                  id_=None):
         """
         Collection of datasets & storage.
@@ -405,9 +404,6 @@ class DatasetType(object):
 
         # All datasets in a collection must have the same metadata_type.
         self.metadata_type = metadata_type
-
-        # The storage type that produces this, if any.
-        self.source_storage_type_id = source_storage_type_id
 
     def __str__(self):
         return "Collection <id={id}, name={name}>".format(id=self.id, name=self.name)

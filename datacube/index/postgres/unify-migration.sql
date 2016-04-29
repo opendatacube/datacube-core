@@ -23,15 +23,18 @@ create table agdc.dataset_type (
 
   definition              jsonb                                  null,
 
-  -- If this type was derived from a legacy storage type.
-  source_storage_type_ref smallint                               null,
-
   constraint pk_dataset_type primary key (id),
   constraint ck_dataset_type_alphanumeric_name check (name ~* '^\w+$'),
   constraint uq_dataset_type_name unique (name),
   constraint fk_dataset_type_metadata_type_ref_metadata_type foreign key (metadata_type_ref) references agdc.metadata_type (id)
 );
 
+-- Record the dataset type produced per storage type.
+alter table agdc.storage_type
+  add column target_dataset_type_ref smallint;
+alter table agdc.storage_type
+  add constraint fk_storage_type_target_dataset_type_ref_dataset_type
+  foreign key (target_dataset_type_ref) references agdc.dataset_type (id);
 
 alter table agdc.dataset
   add column dataset_type_ref smallint null;
@@ -167,14 +170,13 @@ insert into agdc.metadata_type (name, definition) values (
 \echo '-- Creating dataset types for existing storage units --'
 
 -- TODO: Add projection/filetype/other params?
-insert into agdc.dataset_type (name, metadata, metadata_type_ref, source_storage_type_ref, definition)
+insert into agdc.dataset_type (name, metadata, metadata_type_ref, definition)
   select
     st.name,
     st.dataset_metadata,
     (select id
      from agdc.metadata_type
      where name = 'storage_unit'),
-    st.id,
     json_build_object(
         'name', st.name,
         'description', st.definition ->> 'description',
@@ -183,6 +185,10 @@ insert into agdc.dataset_type (name, metadata, metadata_type_ref, source_storage
     )
   from agdc.storage_type st;
 
+-- Link storage types to their dataset types.
+update agdc.storage_type st
+set target_dataset_type_ref = (select dt.id from agdc.dataset_type dt where dt.name = st.name);
+alter table agdc.storage_type alter column target_dataset_type_ref set not null;
 
 \echo '-- Assigning dataset types to each storage unit --'
 
