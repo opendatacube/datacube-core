@@ -197,17 +197,16 @@ alter table agdc.storage_unit
 
 insert into agdc.dataset (id, metadata_type_ref, dataset_type_ref, metadata, added, added_by)
   select
-    s.dataset_uuid,
-    (select id
-     from agdc.metadata_type
-     where name = 'storage_unit'),
+    su.dataset_uuid,
+    dt.metadata_type_ref,
     dt.id,
-    dt.metadata || s.descriptor || json_build_object('size_bytes', s.size_bytes) :: jsonb,
-    s.added,
-    s.added_by
-  from agdc.storage_unit s
+    dt.metadata || su.descriptor || json_build_object('size_bytes', su.size_bytes) :: jsonb,
+    su.added,
+    su.added_by
+  from agdc.storage_unit su
+    inner join agdc.storage_type st on su.storage_type_ref = st.id
     -- Outer join so that it fails if a storage unit is missed.
-    left outer join agdc.dataset_type dt on s.storage_type_ref = dt.source_storage_type_ref;
+    left outer join agdc.dataset_type dt on dt.id = st.target_dataset_type_ref;
 
 \echo '-- Adding dataset locations for the storage units'
 insert into agdc.dataset_location (dataset_ref, uri_scheme, uri_body, added, added_by)
