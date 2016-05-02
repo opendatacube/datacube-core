@@ -441,7 +441,7 @@ def test_search_storage_by_both_fields(global_integration_cli_args, index, index
     :type indexed_ls5_nbar_storage_type: datacube.model.StorageType
     :type pseudo_telemetry_dataset: datacube.model.Dataset
     """
-    unit_id = index.storage.add(StorageUnit(
+    su = StorageUnit(
         [pseudo_telemetry_dataset.id],
         indexed_ls5_nbar_storage_type,
         descriptor={
@@ -452,20 +452,22 @@ def test_search_storage_by_both_fields(global_integration_cli_args, index, index
         },
         size_bytes=1234,
         output_uri=indexed_ls5_nbar_storage_type.location + '/tmp/something.tif'
-    ))
+    )
+    index.storage.add(su)
 
     rows = _cli_csv_search(['units', '100<lat<150'], global_integration_cli_args)
+    assert su.id is not None
     assert len(rows) == 1
-    assert rows[0]['id'] == str(unit_id)
+    assert rows[0]['id'] == str(su.id)
 
     # Don't return on a mismatch
     rows = _cli_csv_search(['units', '150<lat<160'], global_integration_cli_args)
     assert len(rows) == 0
 
     # Search by both dataset and storage fields.
-    rows = _cli_csv_search(['units', 'platform=LANDSAT_8', '100<lat<150'], global_integration_cli_args)
+    rows = _cli_csv_search(['units', 'platform=LANDSAT_5', '100<lat<150'], global_integration_cli_args)
     assert len(rows) == 1
-    assert rows[0]['id'] == str(unit_id)
+    assert rows[0]['id'] == str(su.id)
 
 
 def _cli_csv_search(args, global_integration_cli_args):
