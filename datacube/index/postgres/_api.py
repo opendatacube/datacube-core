@@ -9,9 +9,7 @@ from __future__ import absolute_import
 import datetime
 import json
 import logging
-import operator
 import re
-from functools import reduce as reduce_
 
 import numpy
 from sqlalchemy import create_engine, select, text, bindparam, exists, and_, or_, Index, func, alias
@@ -424,25 +422,35 @@ class PostgresDb(object):
         :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
         :rtype: dict
         """
-        select_fields = tuple(
-            f.alchemy_expression.label(f.name)
-            for f in select_fields
-        ) if select_fields else _DATASET_SELECT_FIELDS
 
-        from_expression, raw_expressions = _prepare_expressions(expressions, DATASET)
+        if select_fields:
+            select_columns = tuple(
+                f.alchemy_expression.label(f.name)
+                for f in select_fields
+            )
+        else:
+            select_columns = _DATASET_SELECT_FIELDS
 
         if with_source_ids:
             # Include the IDs of source datasets
-            select_fields += (
+            select_columns += (
                 select((func.array_agg(DATASET_SOURCE.c.source_dataset_ref),))
                     .select_from(DATASET_SOURCE)
                     .where(DATASET_SOURCE.c.dataset_ref == DATASET.c.id)
                     .group_by(DATASET_SOURCE.c.dataset_ref)
                     .label('dataset_refs'),)
 
+        def raw_expr(expression):
+            if isinstance(expression, OrExpression):
+                return or_(raw_expr(expr) for expr in expression.exprs)
+            return expression.alchemy_expression
+
+        raw_expressions = [raw_expr(expression) for expression in expressions]
+
+        from_tables = DATASET.join(DATASET_TYPE).join(METADATA_TYPE)
         select_query = (
-            select(select_fields)
-                .select_from(from_expression)
+            select(select_columns)
+                .select_from(from_tables)
                 .where(and_(DATASET.c.archived == None, *raw_expressions)))
 
         results = self._connection.execute(select_query)
@@ -661,72 +669,13 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_
         )
 
 
-def _prepare_expressions(expressions, primary_table):
-    """
-    :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
-    :param primary_table: SQLAlchemy table
-    """
-    # We currently only allow one metadata to be queried at a time (our indexes are per-type)
-    metadata_type_references = set()
-    join_tables = set()
-
-    def tables_referenced(expression):
-        if isinstance(expression, OrExpression):
-            return reduce_(operator.or_, (tables_referenced(expr) for expr in expression.exprs), set())
-
-        #: :type: datacube.index.postgres._fields.PgField
-        field = expression.field
-        table = field.alchemy_column.table
-        metadata_type_id = field.metadata_type_id
-        return {(table, metadata_type_id)}
-
-    for expr in expressions:
-        for table, metadata_type_id in tables_referenced(expr):
-            if table != primary_table:
-                join_tables.add(table)
-            if metadata_type_id:
-                metadata_type_references.add((table, metadata_type_id))
-
-    unique_metadata_types = set([c[1] for c in metadata_type_references])
-    if len(unique_metadata_types) > 1:
-        raise ValueError(
-            'Currently only one metadata type can be queried at a time. (Tried %r)' % metadata_type_references
-        )
-
-    def raw_expr(expression):
-        if isinstance(expression, OrExpression):
-            return or_(raw_expr(expr) for expr in expression.exprs)
-        return expression.alchemy_expression
-
-    raw_expressions = [raw_expr(expression) for expression in expressions]
-
-    # We may have multiple references: storage.metadata_type_ref and dataset.metadata_type_ref.
-    # We want to include all, to ensure the indexes are used.
-    for from_table, queried_metadata_type in metadata_type_references:
-        raw_expressions.insert(0, from_table.c.metadata_type_ref == queried_metadata_type)
-
-    from_expression = _prepare_from_expression(primary_table, join_tables)
-
-    return from_expression, raw_expressions
-
-
-def _prepare_from_expression(primary_table, join_tables):
-    """
-    Calculate an SQLAlchemy from expression to join the given table to other required tables.
-    """
-    from_expression = primary_table
-    for table in join_tables:
-        from_expression = from_expression.join(table)
-    return from_expression
-
-
-def transform_object_tree(o, f):
+def _transform_object_tree(o, f):
     if isinstance(o, dict):
-        return {k: transform_object_tree(v, f) for k, v in o.items()}
+        return {k: _transform_object_tree(v, f) for k, v in o.items()}
     if isinstance(o, list):
-        return [transform_object_tree(v, f) for v in o]
+        return [_transform_object_tree(v, f) for v in o]
     if isinstance(o, tuple):
-        return tuple(transform_object_tree(v, f) for v in o)
+        return tuple(_transform_object_tree(v, f) for v in o)
     return f(o)
 
 
@@ -746,7 +695,7 @@ def _to_json(o):
             return v.name
         return v
 
-    fixedup = transform_object_tree(o, fixup_value)
+    fixedup = _transform_object_tree(o, fixup_value)
 
     return json.dumps(fixedup, default=_json_fallback)
 
