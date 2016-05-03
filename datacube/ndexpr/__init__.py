@@ -403,11 +403,11 @@ class NDexpr(object):
             fn = self.user_functions[op]
             num_args = len(inspect.getargspec(fn).args)
 
-            args = ()
+            fn_args = ()
             for i in range(0, num_args):
-                args += self.evaluate_stack(s),
+                fn_args += self.evaluate_stack(s),
 
-            val = self.user_functions[op](*args)
+            val = self.user_functions[op](*fn_args)
             return val
         elif op in ":":
             op2 = int(self.evaluate_stack(s))
