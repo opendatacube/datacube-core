@@ -57,6 +57,8 @@ class NDexpr(object):
         self.local_dict = None
         self.f = None
 
+        self.user_functions = None
+
         self.expr_stack = []
         self.texpr_stack = []
 
@@ -397,6 +399,16 @@ class NDexpr(object):
             if isinstance(val, tuple) or isinstance(val, np.ndarray):
                 return xr.DataArray(val)
             return val
+        elif op in self.user_functions:
+            fn = self.user_functions[op]
+            num_args = len(inspect.getargspec(fn).args)
+
+            args = ()
+            for i in range(0, num_args):
+                args += self.evaluate_stack(s),
+
+            val = self.user_functions[op](*args)
+            return val
         elif op in ":":
             op2 = int(self.evaluate_stack(s))
             op1 = int(self.evaluate_stack(s))
@@ -465,13 +477,15 @@ class NDexpr(object):
         except ValueError:
             return self.f
 
-    def evaluate(self, s, local_dict=None):
+    def evaluate(self, s, local_dict=None, user_functions=None):
         if local_dict is None:
             self.local_dict = None
             self.f = sys._getframe(1)
         else:
             self.f = None
             self.local_dict = local_dict
+        if user_functions is not None:
+            self.user_functions = user_functions
         self.expr_stack = []
         results = self.parser.parseString(s)
         #print(self.expr_stack)

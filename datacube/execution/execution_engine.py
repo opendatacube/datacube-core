@@ -66,6 +66,10 @@ class ExecutionEngine(object):
         self.nd.set_ae(True)
 
         self.api = api or API()
+        self.udfuncs = {}
+
+    def add_function(self, name, func):
+        self.udfuncs[name] = func
 
     def execute_plan(self, plan):
 
@@ -161,7 +165,9 @@ class ExecutionEngine(object):
 
         array_result = {}
         array_result['array_result'] = {}
-        array_result['array_result'][key] = self.nd.evaluate(task.values()[0]['function'], local_dict=arrays)
+        array_result['array_result'][key] = self.nd.evaluate(task.values()[0]['function'],
+                                                             local_dict=arrays,
+                                                             user_functions=self.udfuncs)
         #array_result['array_result'][key] = array_result['array_result'][key].fillna(no_data_value)
 
         array_desc = self.cache[task.values()[0]['array_input'][0]]
