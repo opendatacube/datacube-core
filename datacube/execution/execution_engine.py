@@ -113,6 +113,7 @@ class ExecutionEngine(object):
         self.cache[key]['array_indices'] = copy.deepcopy(data_response['indices'])
         self.cache[key]['array_dimensions'] = copy.deepcopy(data_response['dimensions'])
         self.cache[key]['array_output'] = copy.deepcopy(task.values()[0]['array_output'])
+        self.cache[key]['crs'] = copy.deepcopy(data_response['coordinate_reference_systems'])
 
         del data_request_param
         del data_response
@@ -143,6 +144,7 @@ class ExecutionEngine(object):
         self.cache[key]['array_indices'] = copy.deepcopy(array_desc['array_indices'])
         self.cache[key]['array_dimensions'] = copy.deepcopy(array_desc['array_dimensions'])
         self.cache[key]['array_output'] = copy.deepcopy(task.values()[0]['array_output'])
+        self.cache[key]['crs'] = copy.deepcopy(array_desc['crs'])
 
     def execute_expression(self, task):
 
@@ -167,6 +169,7 @@ class ExecutionEngine(object):
         array_result['array_indices'] = copy.deepcopy(array_desc['array_indices'])
         array_result['array_dimensions'] = copy.deepcopy(array_desc['array_dimensions'])
         array_result['array_output'] = copy.deepcopy(task.values()[0]['array_output'])
+        array_result['crs'] = copy.deepcopy(array_desc['crs'])
 
         self.cache[key] = array_result
 
@@ -192,6 +195,7 @@ class ExecutionEngine(object):
         array_result['array_indices'] = copy.deepcopy(array_desc['array_indices'])
         array_result['array_dimensions'] = copy.deepcopy(array_desc['array_dimensions'])
         array_result['array_output'] = copy.deepcopy(task.values()[0]['array_output'])
+        array_result['crs'] = copy.deepcopy(array_desc['crs'])
 
         self.cache[key] = array_result
         return self.cache[key]
@@ -237,6 +241,7 @@ class ExecutionEngine(object):
         array_result['array_result'][key] = func(xr.DataArray(array_data), **args)
         array_result['array_indices'] = copy.deepcopy(array_desc['array_indices'])
         array_result['array_dimensions'] = copy.deepcopy(array_result['array_output']['dimensions_order'])
+        array_result['crs'] = copy.deepcopy(array_desc['crs'])
 
         self.cache[key] = array_result
         return self.cache[key]
