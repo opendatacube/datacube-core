@@ -399,7 +399,7 @@ class NDexpr(object):
             if isinstance(val, tuple) or isinstance(val, np.ndarray):
                 return xr.DataArray(val)
             return val
-        elif op in self.user_functions:
+        elif self.user_functions is not None and op in self.user_functions:
             fn = self.user_functions[op]
             num_args = len(inspect.getargspec(fn).args)
 
