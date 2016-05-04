@@ -33,10 +33,6 @@ eotiles: {eotiles_tile_folder}
 
 INTEGRATION_DEFAULT_CONFIG_PATH = Path(__file__).parent.joinpath('agdcintegration.conf')
 
-_TELEMETRY_COLLECTION_DEF_PATH = Path(__file__).parent.joinpath('telemetry-collection.yaml')
-_ANCILLARY_COLLECTION_DEF_PATH = Path(__file__).parent.joinpath('ancillary-collection.yaml')
-
-_TELEMETRY_COLLECTION_DESCRIPTOR = Path(__file__).parent.joinpath('telemetry-collection.yaml')
 _EXAMPLE_LS5_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('example-ls5-nbar.yaml')
 
 PROJECT_ROOT = Path(__file__).parents[1]
@@ -120,10 +116,9 @@ def dict_api(index):
     """
     return API(index=index)
 
-
 @pytest.fixture
-def ls5_nbar_gtiff_type(index, default_metadata_type):
-    definition = {
+def ls5_nbar_gtiff_doc(default_metadata_type):
+    return {
         "name": "ls5_nbart_p54_gtiff",
         "match": {
             "metadata": {
@@ -139,7 +134,10 @@ def ls5_nbar_gtiff_type(index, default_metadata_type):
         },
         "metadata_type": default_metadata_type.name  # "eo"
     }
-    return index.datasets.types.add(definition)
+
+@pytest.fixture
+def ls5_nbar_gtiff_type(index, ls5_nbar_gtiff_doc):
+    return index.datasets.types.add(ls5_nbar_gtiff_doc)
 
 
 @pytest.fixture
@@ -182,34 +180,6 @@ def default_metadata_type(index, default_metadata_type_docs):
     for d in default_metadata_type_docs:
         index.metadata_types.add(d)
     return index.metadata_types.get_by_name('eo')
-
-
-@pytest.fixture
-def telemetry_collection_doc():
-    return list(ui.read_documents(_TELEMETRY_COLLECTION_DEF_PATH))[0][1]
-
-
-@pytest.fixture
-def ancillary_collection_docs():
-    return [doc for (path, doc) in ui.read_documents(_ANCILLARY_COLLECTION_DEF_PATH)]
-
-
-@pytest.fixture
-def telemetry_collection(index, default_metadata_type, telemetry_collection_doc):
-    """
-    :type index: datacube.index._api.Index
-    :type telemetry_collection_doc: dict
-    """
-    return index.collections.add(telemetry_collection_doc)
-
-
-@pytest.fixture
-def ancillary_collection(index, ancillary_collection_docs):
-    """
-    :type index: datacube.index._api.Index
-    :type ancillary_collection_docs: list[dict]
-    """
-    return index.collections.add(ancillary_collection_docs[0])
 
 
 @pytest.fixture

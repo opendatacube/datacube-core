@@ -169,10 +169,10 @@ def test_idempotent_add_mapping(index, local_config, default_metadata_type):
     assert index.storage.types.get_by_name(_STORAGE_TYPE['name']) is not None
 
 
-def test_collection_indexes_views_exist(db, telemetry_collection):
+def test_metadata_indexes_views_exist(db, default_metadata_type):
     """
     :type db: datacube.index.postgres._api.PostgresDb
-    :type telemetry_collection: datacube.model.DatasetType
+    :type default_metadata_type: datacube.model.MetadataType
     """
     # Ensure indexes were created for the eo metadata type (following the naming conventions):
     val = db._connection.execute(
@@ -184,18 +184,20 @@ def test_collection_indexes_views_exist(db, telemetry_collection):
     assert val == 'agdc.eo_dataset'
 
 
-def test_idempotent_add_collection(index, telemetry_collection, telemetry_collection_doc):
+def test_idempotent_add_collection(index, ls5_nbar_gtiff_type, ls5_nbar_gtiff_doc):
     """
-    :type telemetry_collection: datacube.model.DatasetType
+    :type ls5_nbar_gtiff_type: datacube.model.DatasetType
     :type index: datacube.index._api.Index
     """
-    # Re-add should have no effect, because it's equal to the current one.
-    index.collections.add(telemetry_collection_doc)
+    assert index.datasets.types.get_by_name(ls5_nbar_gtiff_type.name) is not None
 
-    # But if we add the same collection with differing properties we should get an error:
-    different_telemetry_collection = copy.deepcopy(telemetry_collection_doc)
+    # Re-add should have no effect, because it's equal to the current one.
+    index.datasets.types.add(ls5_nbar_gtiff_doc)
+
+    # But if we add the same type with differing properties we should get an error:
+    different_telemetry_collection = copy.deepcopy(ls5_nbar_gtiff_doc)
     different_telemetry_collection['match']['metadata']['ga_label'] = 'something'
     with pytest.raises(ValueError):
-        index.collections.add(different_telemetry_collection)
+        index.datasets.types.add(different_telemetry_collection)
 
         # TODO: Support for adding/changing search fields?
