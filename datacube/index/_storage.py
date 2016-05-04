@@ -231,9 +231,11 @@ class StorageTypeResource(object):
                         'name': definition['storage']['driver']
                     }
                 })
+                storage_unit_type = self._metadata_type_resource.get_by_name('storage_unit')
+                assert storage_unit_type, "No storage_unit type exists: were default metadata types skipped?"
                 dataset_type_id = self._db.add_dataset_type(
                     name, match_metadata,
-                    self._metadata_type_resource.get_by_name('storage_unit').id,
+                    storage_unit_type.id,
                     {
                         'name': name,
                         'description': definition.get('description'),

@@ -34,7 +34,7 @@ JSON_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
 
 
-@pytest.mark.usefixtures('default_collection',
+@pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_nbar_storage_type',
                          'indexed_ls5_nbar_albers_storage_type')
 def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset):

@@ -107,9 +107,8 @@ _DATASET_METADATA = {
 }
 
 
-def test_get_for_dataset(index, local_config):
+def test_get_for_dataset(index, default_metadata_type):
     """
-    :type local_config: datacube.config.LocalConfig
     :type index: datacube.index._api.Index
     """
     dataset = Dataset(None, _DATASET_METADATA, '/tmp/somepath.yaml')
