@@ -32,7 +32,7 @@ def _run_cli(cli_method, opts, catch_exceptions=False):
     return result
 
 
-def test_add_example_storage_types(global_integration_cli_args, db):
+def test_add_example_storage_types(global_integration_cli_args, db, default_metadata_type):
     """
     Add example mapping docs, to ensure they're valid and up-to-date.
 

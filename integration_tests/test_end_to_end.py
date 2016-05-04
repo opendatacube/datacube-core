@@ -39,7 +39,7 @@ LBG_CELL_Y = -40
 LBG_CELL = (LBG_CELL_X, LBG_CELL_Y)
 
 
-@pytest.mark.usefixtures('default_collection')
+@pytest.mark.usefixtures('default_metadata_type')
 def test_end_to_end(global_integration_cli_args, index, example_ls5_dataset):
     """
     Loads two storage mapping configurations, then ingests a sample Landsat 5 scene

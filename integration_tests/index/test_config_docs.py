@@ -151,7 +151,7 @@ def test_get_for_dataset(index, local_config):
     assert len(storage_types) == 0
 
 
-def test_idempotent_add_mapping(index, local_config):
+def test_idempotent_add_mapping(index, local_config, default_metadata_type):
     """
     :type local_config: datacube.config.LocalConfig
     :type index: datacube.index._api.Index
