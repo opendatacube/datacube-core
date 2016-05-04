@@ -61,7 +61,7 @@ def _prepare_single(types_resource, dataset_doc, db):
         _LOG.debug('Failed match on dataset doc %r', dataset_doc)
         raise ValueError('No types match the dataset.')
 
-    _LOG.info('Matched collection %r (%s)', type_.name, type_.id)
+    _LOG.info('Matched type %r (%s)', type_.name, type_.id)
 
     indexable_doc = copy.deepcopy(dataset_doc)
     dataset = type_.metadata_type.dataset_reader(indexable_doc)
