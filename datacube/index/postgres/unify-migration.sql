@@ -173,7 +173,7 @@ insert into agdc.metadata_type (name, definition) values (
 insert into agdc.dataset_type (name, metadata, metadata_type_ref, definition)
   select
     st.name,
-    st.dataset_metadata,
+    json_build_object('format', json_build_object('name', st.definition -> 'storage' ->> 'driver'))::jsonb || st.dataset_metadata,
     (select id
      from agdc.metadata_type
      where name = 'storage_unit'),
@@ -181,7 +181,14 @@ insert into agdc.dataset_type (name, metadata, metadata_type_ref, definition)
         'name', st.name,
         'description', st.definition ->> 'description',
         'metadata_type', 'storage_unit',
-        'match', json_build_object('metadata', st.dataset_metadata)
+        'match',
+          json_build_object('metadata',
+              -- These produced datasets have the same metadata match fields
+              -- as their source dataset but with a new format (NetCDF).
+              json_build_object('format',
+                                json_build_object('name', st.definition -> 'storage' ->> 'driver')
+              )::jsonb || st.dataset_metadata
+          )
     )
   from agdc.storage_type st;
 
