@@ -117,4 +117,4 @@ SAMPLE_STORAGE_TYPE = {
 
 
 def test_storage_type_model():
-    st = StorageType(SAMPLE_STORAGE_TYPE)
+    st = StorageType(SAMPLE_STORAGE_TYPE, target_dataset_type_id=None)
