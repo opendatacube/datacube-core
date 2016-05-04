@@ -84,7 +84,7 @@ class PostgresDb(object):
         self._connection = connection
 
     @classmethod
-    def connect(cls, hostname, database, username=None, password=None, port=None, application_name=None):
+    def connect(cls, hostname, database, username=None, password=None, port=None, application_name=None, validate=True):
         _engine = create_engine(
             EngineUrl(
                 'postgresql',
@@ -99,23 +99,24 @@ class PostgresDb(object):
             json_serializer=_to_json,
             connect_args={'application_name': application_name}
         )
-        if not tables.database_exists(_engine):
-            raise EnvironmentError('\n\nNo DB schema exists. Have you run init?\n\t{init_command}'.format(
-                init_command='datacube-config database init'
-            ))
-
-        if not tables.schema_is_latest(_engine):
-            file_path = Path(__file__).parent.joinpath('unify-migration.sql')
-            raise EnvironmentError(
-                '\n\nDB schema is out of date. Please run an update script:\n\t{update_command}'.format(
-                    update_command=_get_psql_command_for_file(database, file_path, hostname, port, username)
+        if validate:
+            if not tables.database_exists(_engine):
+                raise EnvironmentError('\n\nNo DB schema exists. Have you run init?\n\t{init_command}'.format(
+                    init_command='datacube-config database init'
                 ))
+
+            if not tables.schema_is_latest(_engine):
+                file_path = Path(__file__).parent.joinpath('unify-migration.sql')
+                raise EnvironmentError(
+                    '\n\nDB schema is out of date. Please run an update script:\n\t{update_command}'.format(
+                        update_command=_get_psql_command_for_file(database, file_path, hostname, port, username)
+                    ))
 
         _connection = _engine.connect()
         return PostgresDb(_engine, _connection)
 
     @classmethod
-    def from_config(cls, config=LocalConfig.find(), application_name=None):
+    def from_config(cls, config=LocalConfig.find(), application_name=None, validate_db=True):
         app_name = cls._expand_app_name(application_name)
 
         return PostgresDb.connect(
@@ -124,7 +125,8 @@ class PostgresDb(object):
             config.db_username,
             config.db_password,
             config.db_port,
-            application_name=app_name
+            application_name=app_name,
+            validate=validate_db
         )
 
     @classmethod

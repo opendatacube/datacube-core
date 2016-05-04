@@ -25,6 +25,7 @@ USER_ROLES = ('user', 'ingest', 'manage', 'admin')
 _LOG = logging.getLogger(__name__)
 
 PASS_INDEX = pass_index(app_name='datacube-config')
+PASS_RAW_INDEX = pass_index(app_name='datacube-config', expect_initialised=False)
 
 
 @click.group(help="Configure the Data Cube", context_settings=CLICK_SETTINGS)
@@ -47,7 +48,7 @@ def database():
     '--init-users/--no-init-users', is_flag=True, default=True,
     help="Include user roles and grants. (default: true)"
 )
-@PASS_INDEX
+@PASS_RAW_INDEX
 def database_init(index, default_types, init_users):
     echo('Initialising database...')
     was_created = index.init_db(with_default_types=default_types,

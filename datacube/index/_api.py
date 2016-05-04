@@ -18,7 +18,7 @@ _LOG = logging.getLogger(__name__)
 _DEFAULT_METADATA_TYPES_PATH = Path(__file__).parent.joinpath('default-metadata-types.yaml')
 
 
-def connect(local_config=LocalConfig.find(), application_name=None):
+def connect(local_config=LocalConfig.find(), application_name=None, validate_connection=True):
     """
     Connect to the index. Default Postgres implementation.
 
@@ -29,7 +29,7 @@ def connect(local_config=LocalConfig.find(), application_name=None):
     :raises: datacube.index.postgres._api.EnvironmentError
     """
     return Index(
-        PostgresDb.from_config(local_config, application_name=application_name),
+        PostgresDb.from_config(local_config, application_name=application_name, validate_db=validate_connection),
         local_config
     )
 
