@@ -213,5 +213,5 @@ class PGNAME(sqlalchemy.sql.sqltypes.Text):
 
 
 @compiles(PGNAME)
-def visit_NAME(element, compiler, **kw):
+def visit_name(element, compiler, **kw):
     return "NAME"

@@ -75,7 +75,7 @@ class DatasetMatcher(object):
 
 
 class StorageType(object):  # pylint: disable=too-many-public-methods
-    def __init__(self, document, target_dataset_type_id, id_=None ):
+    def __init__(self, document, target_dataset_type_id, id_=None):
         # Database primary key
         #: :type: int
         self.id = id_
@@ -242,7 +242,7 @@ class StorageUnit(object):
         #: :type: pathlib.Path
         self.local_uri = output_uri
         if relative_path:
-            self.local_uri = storage_type.location +'/'+relative_path
+            self.local_uri = storage_type.location + '/' + relative_path
 
         self.size_bytes = size_bytes
 
@@ -270,12 +270,12 @@ class StorageUnit(object):
                 for name, attributes in self.descriptor['coordinates'].items()}
 
     def __str__(self):
-        return "StorageUnit <type={m.name}, path={path}>".format(path=self.path, m=self.storage_type)
+        return "StorageUnit <type={m.name}, uri={path}>".format(path=self.local_uri, m=self.storage_type)
 
     def __repr__(self):
         return "{}({!r}, {!r}, {!r}, None, {!r}, {!r})".format(self.__class__.__name__, self.dataset_ids,
-                                                         self.storage_type, self.descriptor,
-                                                         self.local_uri, self.id)
+                                                               self.storage_type, self.descriptor,
+                                                               self.local_uri, self.id)
 
 
 class Dataset(object):

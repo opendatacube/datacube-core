@@ -116,6 +116,7 @@ def dict_api(index):
     """
     return API(index=index)
 
+
 @pytest.fixture
 def ls5_nbar_gtiff_doc(default_metadata_type):
     return {
@@ -134,6 +135,7 @@ def ls5_nbar_gtiff_doc(default_metadata_type):
         },
         "metadata_type": default_metadata_type.name  # "eo"
     }
+
 
 @pytest.fixture
 def ls5_nbar_gtiff_type(index, ls5_nbar_gtiff_doc):

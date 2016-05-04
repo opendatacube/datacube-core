@@ -1,6 +1,11 @@
 # coding=utf-8
+
 # We often have one-arg-per column, so these checks aren't so useful.
 # pylint: disable=too-many-arguments,too-many-public-methods
+
+# SQLAlchemy queries require "column == None", not "column is None" due to operator overloading:
+# pylint: disable=singleton-comparison
+
 """
 Lower-level database access.
 """
@@ -66,7 +71,7 @@ def _split_uri(uri):
     return scheme, body
 
 
-class EnvironmentError(Exception):
+class IndexSetupError(Exception):
     pass
 
 
@@ -101,13 +106,13 @@ class PostgresDb(object):
         )
         if validate:
             if not tables.database_exists(_engine):
-                raise EnvironmentError('\n\nNo DB schema exists. Have you run init?\n\t{init_command}'.format(
+                raise IndexSetupError('\n\nNo DB schema exists. Have you run init?\n\t{init_command}'.format(
                     init_command='datacube-config database init'
                 ))
 
             if not tables.schema_is_latest(_engine):
                 file_path = Path(__file__).parent.joinpath('unify-migration.sql')
-                raise EnvironmentError(
+                raise IndexSetupError(
                     '\n\nDB schema is out of date. Please run an update script:\n\t{update_command}'.format(
                         update_command=_get_psql_command_for_file(database, file_path, hostname, port, username)
                     ))
@@ -354,10 +359,13 @@ class PostgresDb(object):
 
     def archive_storage_unit(self, storage_unit_id):
         self._connection.execute(
-            DATASET.update()
-                .where(DATASET.c.id == storage_unit_id)
-                .where(DATASET.c.archived == None)
-                .values(archived=func.now())
+            DATASET.update().where(
+                DATASET.c.id == storage_unit_id
+            ).where(
+                DATASET.c.archived == None
+            ).values(
+                archived=func.now()
+            )
         )
 
     def _storage_unit_cube_sql_str(self, dimensions):
@@ -453,11 +461,16 @@ class PostgresDb(object):
         if with_source_ids:
             # Include the IDs of source datasets
             select_columns += (
-                select((func.array_agg(DATASET_SOURCE.c.source_dataset_ref),))
-                    .select_from(DATASET_SOURCE)
-                    .where(DATASET_SOURCE.c.dataset_ref == DATASET.c.id)
-                    .group_by(DATASET_SOURCE.c.dataset_ref)
-                    .label('dataset_refs'),)
+                select(
+                    (func.array_agg(DATASET_SOURCE.c.source_dataset_ref),)
+                ).select_from(
+                    DATASET_SOURCE
+                ).where(
+                    DATASET_SOURCE.c.dataset_ref == DATASET.c.id
+                ).group_by(
+                    DATASET_SOURCE.c.dataset_ref
+                ).label('dataset_refs'),
+            )
 
         def raw_expr(expression):
             if isinstance(expression, OrExpression):
@@ -468,9 +481,14 @@ class PostgresDb(object):
 
         from_tables = DATASET.join(DATASET_TYPE).join(METADATA_TYPE)
         select_query = (
-            select(select_columns)
-                .select_from(from_tables)
-                .where(and_(DATASET.c.archived == None, *raw_expressions)))
+            select(
+                select_columns
+            ).select_from(
+                from_tables
+            ).where(
+                and_(DATASET.c.archived == None, *raw_expressions)
+            )
+        )
 
         results = self._connection.execute(select_query)
         for result in results:

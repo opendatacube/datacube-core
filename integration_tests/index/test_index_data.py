@@ -177,7 +177,6 @@ def test_index_storage_unit(index, db, default_metadata_type):
     })
 
     # Add storage unit
-
     storage_unit = StorageUnit(
         id_=str(uuid.uuid4()),
         dataset_ids=[str(_telemetry_uuid)],
@@ -216,7 +215,7 @@ def test_index_storage_unit(index, db, default_metadata_type):
         DATASET_LOCATION.select().where(DATASET_LOCATION.c.dataset_ref == unit['id'])).fetchall()
     assert locations[0]['uri_scheme'] == 'file'
     assert locations[0]['uri_body'] == '///test/offset'
-    assert locations[0]['managed'] == True
+    assert locations[0]['managed'] is True
 
     # Storage should have been linked to the source dataset.
     d_ss = db._connection.execute(DATASET_SOURCE.select()).fetchall()

@@ -2,7 +2,7 @@
 """
 API for storage indexing, access and search.
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, division
 
 import copy
 import logging
@@ -39,6 +39,9 @@ def _ensure_valid(descriptor):
 
 
 class StorageUnitResource(object):
+    # This class is a temporary shim for backwards compatibility: we're ok with using the underlying dataset api.
+    # pylint: disable=protected-access
+
     def __init__(self, db, storage_type_resource, dataset_types, datasets, metadata_types, local_config):
         """
         :type db: datacube.index.postgres._api.PostgresDb
@@ -147,6 +150,7 @@ class StorageUnitResource(object):
         :rtype list[datacube.model.StorageUnit]
         """
         query.update({'metadata_type': 'storage_unit'})
+
         return self._make(self._datasets._do_search(query, with_source_ids=True))
 
     def search_summaries(self, **query):
@@ -159,6 +163,7 @@ class StorageUnitResource(object):
         query.update({'metadata_type': 'storage_unit'})
         return (
             dict(fs) for fs in
+
             self._datasets._do_search(
                 query,
                 return_fields=True,

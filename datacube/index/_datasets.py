@@ -232,12 +232,12 @@ class DatasetTypeResource(object):
         :type field_names: tuple[str]
         :rtype: __generator[DatasetType]
         """
-        for type in self.get_all():
+        for type_ in self.get_all():
             for name in field_names:
-                if name not in type.metadata_type.dataset_fields:
+                if name not in type_.metadata_type.dataset_fields:
                     break
             else:
-                yield type
+                yield type_
 
     def get_all(self):
         """
@@ -287,7 +287,7 @@ class DatasetResource(object):
             dataset['metadata']['lineage']['source_datasets'] = {
                 classifier: datasets[str(source)]['metadata']
                 for source, classifier in zip(dataset['sources'], dataset['classes']) if source
-            }
+                }
         return self._make(datasets[id_])
 
     def has(self, dataset):
@@ -370,8 +370,8 @@ class DatasetResource(object):
         else:
             types = [self.types.get_by_name(type_name)]
 
-        for type in types:
-            for name in type.metadata_type.dataset_fields:
+        for type_ in types:
+            for name in type_.metadata_type.dataset_fields:
                 yield name
 
     def get_locations(self, dataset):
@@ -427,8 +427,10 @@ class DatasetResource(object):
             metadata_types.add(self._metadata_types.get_by_name(q['metadata_type']))
 
         if len(metadata_types) > 1:
-            _LOG.warn('Both a dataset type and metadata type were specified, but they\'re not compatible: %r, %r.' %
-                      (query['type'], query['metadata_type']))
+            _LOG.warn(
+                "Both a dataset type and metadata type were specified, but they're not compatible: %r, %r.",
+                query['type'], query['metadata_type']
+            )
             # No datasets of this type can have the given metadata type.
             # No results.
             return
