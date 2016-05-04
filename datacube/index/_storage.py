@@ -4,6 +4,7 @@ API for storage indexing, access and search.
 """
 from __future__ import absolute_import
 
+import copy
 import logging
 import uuid
 
@@ -73,8 +74,12 @@ class StorageUnitResource(object):
 
         merged_descriptor = {
             # Storage units stored this as a separate column, datasets have it in the metadata.
-            'size_bytes': unit.size_bytes
+            'size_bytes': unit.size_bytes,
+            'format': {
+                'name': unit.storage_type.driver
+            }
         }
+
         # Merge with expected dataset type metadata (old storage unit creation code does not include them)
         merged_descriptor.update(dataset_type.match.metadata)
         merged_descriptor.update(unit.descriptor)
@@ -218,14 +223,22 @@ class StorageTypeResource(object):
             else:
                 # Add a corresponding dataset type.
                 # The duplication is temporary: replacements for storage_types are still being discussed.
+
+                # Our type has the same dataset metadata but in a different file format.
+                match_metadata = copy.deepcopy(dataset_metadata)
+                match_metadata.update({
+                    'format': {
+                        'name': definition['storage']['driver']
+                    }
+                })
                 dataset_type_id = self._db.add_dataset_type(
-                    name, dataset_metadata,
+                    name, match_metadata,
                     self._metadata_type_resource.get_by_name('storage_unit').id,
                     {
                         'name': name,
                         'description': definition.get('description'),
                         'metadata_type': 'storage_unit',
-                        'match': {'metadata': dataset_metadata}
+                        'match': {'metadata': match_metadata}
                     }
                 )
                 self._db.ensure_storage_type(
