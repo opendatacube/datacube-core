@@ -163,6 +163,7 @@ def test_index_storage_unit(index, db, default_metadata_type):
         'test_storage_mapping',
         {},
         {'storage': {'dimension_order': []}},
+        target_dataset_id=type_.id
     )
     storage_type = db._connection.execute(STORAGE_TYPE.select()).first()
     storage_dataset_type_ = index.datasets.types.add({
@@ -180,11 +181,13 @@ def test_index_storage_unit(index, db, default_metadata_type):
     storage_unit = StorageUnit(
         id_=str(uuid.uuid4()),
         dataset_ids=[str(_telemetry_uuid)],
-        storage_type=StorageType({
-            'name': 'test_storage_mapping',
-            'location': "file://g/data",
-            'filename_pattern': "foo.nc",
-        },
+        storage_type=StorageType(
+            document={
+                'name': 'test_storage_mapping',
+                'location': "file://g/data",
+                'filename_pattern': "foo.nc",
+            },
+            target_dataset_type_id=type_.id,
             id_=storage_type['id']
         ),
         descriptor={
