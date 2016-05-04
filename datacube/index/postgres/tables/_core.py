@@ -105,6 +105,30 @@ def ensure_db(engine, with_permissions=True):
     return is_new
 
 
+def _pg_exists(conn, name):
+    """
+    Does a postgres object exist?
+    :rtype bool
+    """
+    return conn.execute("SELECT to_regclass(%s)", name).scalar() is not None
+
+
+def database_exists(engine):
+    """
+    Have they init'd this database?
+    """
+    return has_schema(engine, engine)
+
+
+def schema_is_latest(engine):
+    """
+    Is the schema up-to-date?
+    """
+    # We may have versioned schema in the future.
+    # For now, we know updates ahve been applied if the dataset_type table exists,
+    return _pg_exists(engine, schema_qualified('dataset_type'))
+
+
 def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=False):
     if has_role(engine, name):
         _LOG.debug('Role exists: %s', name)

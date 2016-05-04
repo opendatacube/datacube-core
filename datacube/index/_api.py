@@ -26,6 +26,7 @@ def connect(local_config=LocalConfig.find(), application_name=None):
     :param local_config: Config object to use.
     :type local_config: :py:class:`datacube.config.LocalConfig`, optional
     :rtype: Index
+    :raises: datacube.index.postgres._api.EnvironmentError
     """
     return Index(
         PostgresDb.from_config(local_config, application_name=application_name),

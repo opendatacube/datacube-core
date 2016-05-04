@@ -12,6 +12,7 @@ import logging
 import re
 
 import numpy
+from pathlib import Path
 from sqlalchemy import create_engine, select, text, bindparam, exists, and_, or_, Index, func, alias
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.url import URL as EngineUrl
@@ -65,6 +66,10 @@ def _split_uri(uri):
     return scheme, body
 
 
+class EnvironmentError(Exception):
+    pass
+
+
 class PostgresDb(object):
     """
     A very thin database access api.
@@ -94,6 +99,18 @@ class PostgresDb(object):
             json_serializer=_to_json,
             connect_args={'application_name': application_name}
         )
+        if not tables.database_exists(_engine):
+            raise EnvironmentError('\n\nNo DB schema exists. Have you run init?\n\t{init_command}'.format(
+                init_command='datacube-config database init'
+            ))
+
+        if not tables.schema_is_latest(_engine):
+            file_path = Path(__file__).parent.joinpath('unify-migration.sql')
+            raise EnvironmentError(
+                '\n\nDB schema is out of date. Please run an update script:\n\t{update_command}'.format(
+                    update_command=_get_psql_command_for_file(database, file_path, hostname, port, username)
+                ))
+
         _connection = _engine.connect()
         return PostgresDb(_engine, _connection)
 
@@ -703,6 +720,27 @@ def _to_json(o):
 def _json_fallback(obj):
     """Fallback json serialiser."""
     raise TypeError("Type not serializable: {}".format(type(obj)))
+
+
+def _get_psql_command_for_file(database, file_path, hostname, port, username):
+    """
+    Get a psql command to run the given SQL file.
+
+    >>> _get_psql_command_for_file('datacube', '/tmp/test.sql', 'example.com', '5432', 'tyler')
+    'psql -h example.com -p 5432 -U tyler datacube -f /tmp/test.sql'
+    >>> _get_psql_command_for_file('datacube', '/tmp/test.sql', None, '5432', 'tyler')
+    'psql -U tyler datacube -f /tmp/test.sql'
+    """
+    p_cmd = ['psql']
+    if hostname:
+        p_cmd.append('-h ' + hostname)
+        if port:
+            p_cmd.append('-p ' + port)
+    if username:
+        p_cmd.append('-U ' + username)
+    p_cmd.append(database)
+    p_cmd.append('-f ' + str(file_path))
+    return ' '.join(p_cmd)
 
 
 class _BegunTransaction(object):
