@@ -59,11 +59,6 @@ def database_init(index, default_types, init_users):
         echo('Updated.')
 
 
-@cli.group(help='Dataset collections')
-def collections():
-    pass
-
-
 @cli.command('check')
 @pass_config
 def check(config_file):
@@ -84,29 +79,6 @@ def check(config_file):
         _LOG.exception("Connection error")
         echo('Connection error', file=sys.stderr)
         click.get_current_context().exit(1)
-
-
-@collections.command('add')
-@click.argument('files',
-                type=click.Path(exists=True, readable=True, writable=False),
-                nargs=-1)
-@PASS_INDEX
-def collection_add(index, files):
-    """
-    Add collections to the database
-    """
-    for descriptor_path, parsed_doc in _read_docs(files):
-        index.collections.add(parsed_doc)
-
-
-@collections.command('list')
-@PASS_INDEX
-def collections_list(index):
-    """
-    List all collections
-    """
-    for collection in index.collections.get_all():
-        echo("{c.name:15}".format(c=collection))
 
 
 @cli.group(help='Storage types')
