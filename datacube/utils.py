@@ -33,3 +33,17 @@ def attrs_all_equal(iterable, attr_name):
     :rtype: bool
     """
     return len({getattr(item, attr_name, float('nan')) for item in iterable}) <= 1
+
+
+def clamp(x, l, u):
+    """
+    clamp x to be l <= x <= u
+
+    >>> clamp(5, 1, 10)
+    5
+    >>> clamp(-1, 1, 10)
+    1
+    >>> clamp(12, 1, 10)
+    10
+    """
+    return l if x < l else u if x > u else x
