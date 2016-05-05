@@ -368,32 +368,50 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
 
 class DatasetSource(object):
     def __init__(self, dataset, measurement_id):
-        dataset_measurement_descriptor = dataset.metadata.measurements_dict[measurement_id]
-        self._filename = str(dataset.local_path.parent.joinpath(dataset_measurement_descriptor['path']))
-        self._band_id = dataset_measurement_descriptor.get('layer', 1)
+        self._descriptor = dataset.metadata.measurements_dict[measurement_id]
         self.transform = None
         self.crs = None
         self.nodata = None
         self.format = dataset.format
+        self.time = dataset.time
+        self.local_path = dataset.local_path
 
     @contextmanager
     def open(self):
+        if self._descriptor['path']:
+            filename = str(self.local_path.parent.joinpath(self._descriptor['path']))
+        else:
+            filename = str(self.local_path)
+
         for nasty_format in ('netcdf', 'hdf'):
             if nasty_format in self.format.lower():
-                filename = '%s:"%s":%s' % (self.format, self._filename, self._band_id)
-                bandnumber = 1
+                filename = '%s:%s:%s' % (self.format, filename, self._descriptor['layer'])
+                bandnumber = None
                 break
         else:
-            filename = self._filename
-            bandnumber = self._band_id
+            bandnumber = self._descriptor.get('layer', 1)
 
         try:
             _LOG.debug("openening %s, band %s", filename, bandnumber)
             with rasterio.open(filename) as src:
+                if bandnumber is None:
+                    bandnumber = self.wheres_my_band(src, self.time)
+
                 self.transform = src.affine
-                self.crs = src.crs
+                self.crs = src.crs_wkt
                 self.nodata = src.nodatavals[0] or (0 if self.format == 'JPEG2000' else None)  # TODO: sentinel 2 hack
                 yield rasterio.band(src, bandnumber)
         except Exception as e:
             _LOG.error("Error opening source dataset: %s", filename)
             raise e
+
+    def wheres_my_band(self, src, time):
+        sec_since_1970 = (time - datetime(1970, 1, 1)).total_seconds()
+        timestag = src.tags()['NETCDF_DIM_time_VALUES']
+        times = [float(v) for v in timestag.replace('{', '').replace('}', '').split(',')]
+        idx = 0
+        dist = float('+inf')
+        for i, v in enumerate(times):
+            if abs(sec_since_1970 - v) < dist:
+                idx = i
+        return idx+1
