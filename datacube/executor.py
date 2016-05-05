@@ -16,14 +16,18 @@ from __future__ import absolute_import, division
 
 
 class SerialExecutor(object):
-    map = map
+    @staticmethod
+    def submit(func, *args, **kwargs):
+        return func, args, kwargs
 
-    def submit(self, func, *args, **kwargs):
-        return func(*args, **kwargs)
+    @staticmethod
+    def map(func, iterable):
+        return [SerialExecutor.submit(func, data) for data in iterable]
 
     @staticmethod
     def result(value):
-        return value
+        func, args, kwargs = value
+        return func(*args, **kwargs)
 
 
 class MultiprocessingExecutor(object):
@@ -31,14 +35,14 @@ class MultiprocessingExecutor(object):
         self._pool = pool
 
     def submit(self, func, *args, **kwargs):
-        return self._pool.submit(func, *args, **kwargs).result()
+        return self._pool.submit(func, *args, **kwargs)
 
     def map(self, func, iterable):
-        return list(self._pool.map(func, iterable))
+        return [self.submit(func, data) for data in iterable]
 
     @staticmethod
     def result(value):
-        return value
+        return value.result()
 
 
 class DistributedExecutor(object):
