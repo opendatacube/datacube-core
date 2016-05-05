@@ -410,6 +410,42 @@ class DatasetType(object):
         # DatasetType definition.
         self.definition = definition
 
+    @property
+    def gridspec(self):
+        return self.definition.get('storage', None)
+
+    @property
+    def crs(self):
+        return str(self.gridspec['crs']).strip()
+
+    @property
+    def spatial_dimensions(self):
+        """
+        Latitude/Longitude or X/Y
+        :rtype: tuple
+        """
+        sr = osr.SpatialReference(self.crs)
+        if sr.IsGeographic():
+            return 'longitude', 'latitude'
+        elif sr.IsProjected():
+            return 'x', 'y'
+
+    @property
+    def tile_size(self):
+        """
+        :return: tuple(x size, y size)
+        """
+        tile_size = self.gridspec['tile_size']
+        return [tile_size[dim] for dim in self.spatial_dimensions]
+
+    @property
+    def resolution(self):
+        """
+        :return: tuple(x res, y res)
+        """
+        res = self.gridspec['resolution']
+        return [res[dim] for dim in self.spatial_dimensions]
+
     def __str__(self):
         return "DatasetType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
 
