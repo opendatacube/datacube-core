@@ -416,6 +416,11 @@ class PostgresDb(object):
                 'metadata_type',
                 'Metadata type of dataset',
                 None, METADATA_TYPE.c.name
+            ),
+            'type_id': NativeField(
+                'type_id',
+                None,
+                None, DATASET_TYPE.c.id
             )
         }
         dataset_search_fields = collection_result['definition']['dataset']['search_fields']
