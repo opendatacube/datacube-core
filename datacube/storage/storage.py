@@ -385,7 +385,7 @@ class DatasetSource(object):
 
         for nasty_format in ('netcdf', 'hdf'):
             if nasty_format in self.format.lower():
-                filename = '%s:%s:%s' % (self.format, filename, self._descriptor['layer'])
+                filename = 'file://%s:%s:%s' % (self.format, filename, self._descriptor['layer'])
                 bandnumber = None
                 break
         else:
