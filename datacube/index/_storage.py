@@ -345,7 +345,7 @@ def _unit_classifier(descriptor):
         # No center: calculate from start/stop
         start = dateutil.parser.parse(extent_.get('to_dt'))
         end = dateutil.parser.parse(extent_.get('from_dt'))
-        interval = (end - start) / 2
+        interval = (end - start) // 2
         d = start + interval
     else:
         raise ValueError('No usable time information in dataset metadata: %r ' % descriptor)
