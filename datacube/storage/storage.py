@@ -4,6 +4,7 @@ Create/store dataset data into storage units based on the provided storage mappi
 """
 from __future__ import absolute_import, division, print_function
 
+import uuid
 import logging
 from contextlib import contextmanager
 from datetime import datetime
@@ -19,12 +20,13 @@ import dateutil.parser
 from dateutil.tz import tzutc
 import numpy
 import rasterio.warp
+import rasterio.crs
 from rasterio.warp import RESAMPLING
 
 from datacube import compat
-from datacube.model import StorageUnit, GeoBox, Variable, _uri_to_local_path, time_coordinate_value
+from datacube.model import StorageUnit, GeoPolygon, GeoBox, Variable, _uri_to_local_path, time_coordinate_value
 from datacube.storage import netcdf_writer
-from datacube.utils import namedtuples2dicts
+from datacube.utils import namedtuples2dicts, clamp
 from datacube.storage.access.core import StorageUnitBase, StorageUnitDimensionProxy, StorageUnitStack
 from datacube.storage.access.backends import NetCDF4StorageUnit, GeoTifStorageUnit
 
@@ -286,20 +288,62 @@ def _parse_time(time):
     return time
 
 
+def _calc_offsets(off, src_size, dst_size):
+    """
+    >>> _calc_offsets(11, 10, 12) # no overlap
+    (10, 0, 0)
+    >>> _calc_offsets(-11, 12, 10) # no overlap
+    (0, 10, 0)
+    >>> _calc_offsets(5, 10, 12) # overlap
+    (5, 0, 5)
+    >>> _calc_offsets(-5, 12, 10) # overlap
+    (0, 5, 5)
+    >>> _calc_offsets(5, 10, 4) # containment
+    (5, 0, 4)
+    >>> _calc_offsets(-5, 4, 10) # containment
+    (0, 5, 4)
+    """
+    read_off = clamp(off, 0, src_size)
+    write_off = clamp(-off, 0, dst_size)
+    size = min(src_size-read_off, dst_size-write_off)
+    return read_off, write_off, size
+
+
 def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata,
                  resampling=RESAMPLING.nearest, fuse_func=None):
+
+    def no_scale(affine, eps=0.01):
+        return abs(affine.a - 1.0) < eps and abs(affine.e - 1.0) < eps
+
+    def no_fractional_translate(affine, eps=0.01):
+        return abs(affine.c % 1.0) < eps and abs(affine.f % 1.0) < eps
+
     def reproject(source, dest):
         with source.open() as src:
-            rasterio.warp.reproject(src,
-                                    dest,
-                                    src_transform=source.transform,
-                                    src_crs=source.crs,
-                                    src_nodata=source.nodata,
-                                    dst_transform=dst_transform,
-                                    dst_crs=dst_projection,
-                                    dst_nodata=dst_nodata,
-                                    resampling=resampling,
-                                    NUM_THREADS=4)
+            array_transform = ~source.transform * dst_transform
+            if (rasterio.crs.is_same_crs(source.crs, dst_projection) and no_scale(array_transform) and
+                    (resampling == RESAMPLING.nearest or no_fractional_translate(array_transform))):
+                dydx = (int(round(array_transform.f)), int(round(array_transform.c)))
+                read, write, shape = zip(*map(_calc_offsets, dydx, src.shape, dest.shape))
+
+                if all(shape):
+                    # TODO: dtype and nodata conversion
+                    assert src.dtype == dest.dtype
+                    assert source.nodata == dst_nodata
+                    src.ds.read(indexes=src.bidx,
+                                out=dest[write[0]:write[0] + shape[0], write[1]:write[1] + shape[1]],
+                                window=((read[0], read[0] + shape[0]), (read[1], read[1] + shape[1])))
+            else:
+                rasterio.warp.reproject(src,
+                                        dest,
+                                        src_transform=source.transform,
+                                        src_crs=source.crs,
+                                        src_nodata=source.nodata,
+                                        dst_transform=dst_transform,
+                                        dst_crs=dst_projection,
+                                        dst_nodata=dst_nodata,
+                                        resampling=resampling,
+                                        NUM_THREADS=4)
 
     def copyto_fuser(dest, src):
         numpy.copyto(dest, src, where=(src != dst_nodata))
