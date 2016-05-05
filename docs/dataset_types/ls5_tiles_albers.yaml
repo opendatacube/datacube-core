@@ -7,7 +7,7 @@ match:
             code: LANDSAT_5
         instrument:
             name: TM
-        product_type: nbar_albers
+        product_type: ls5_nbar_albers
 
 location_name: eotiles
 file_path_template: 'LS5_TM_NBAR/LS5_TM_NBAR_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
@@ -59,7 +59,7 @@ storage:
   dimension_order: ['time', 'y', 'x']
 
 measurements:
-  band_1:
+  blue:
       dtype: int16
       nodata: -999
       units: '1'
@@ -69,7 +69,7 @@ measurements:
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.45-0.52 microns (Blue)"
           standard_name: surface_bidirectional_reflectance
-  band_2:
+  green:
       dtype: int16
       nodata: -999
       units: '1'
@@ -79,7 +79,7 @@ measurements:
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.52-0.60 microns (Green)"
           standard_name: surface_bidirectional_reflectance
-  band_3:
+  red:
       dtype: int16
       nodata: -999
       units: '1'
@@ -89,7 +89,7 @@ measurements:
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.63-0.69 microns (Red)"
           standard_name: surface_bidirectional_reflectance
-  band_4:
+  nir:
       dtype: int16
       nodata: -999
       units: '1'
@@ -99,7 +99,7 @@ measurements:
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.76-0.90 microns (Near Infrared)"
           standard_name: surface_bidirectional_reflectance
-  band_5:
+  swir1:
       dtype: int16
       nodata: -999
       units: '1'
@@ -109,7 +109,7 @@ measurements:
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 1.55-1.75 microns (Short-wave Infrared)"
           standard_name: surface_bidirectional_reflectance
-  band_7:
+  swir2:
       dtype: int16
       nodata: -999
       units: '1'
@@ -119,131 +119,6 @@ measurements:
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 2.08-2.35 microns (Short-wave Infrared)"
           standard_name: surface_bidirectional_reflectance
-
----
-name: ls5_nbart_albers
-description: Landsat 5 NBART 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
-metadata_type: eo
-
-match:
-    metadata:
-        platform:
-            code: LANDSAT_5
-        instrument:
-            name: TM
-        product_type: nbart
-
-location_name: eotiles
-file_path_template: 'LS5_TM_NBART/LS5_TM_NBART_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
-global_attributes:
-  title: Experimental Data files From the Australian Geoscience Data Cube - DO NOT USE
-  summary: These files are experimental, short lived, and the format will change.
-  source: This data is a reprojection and retile of Landsat surface reflectance scene data.
-  product_version: '0.0.0'
-  license: Creative Commons Attribution 4.0 International (CC-BY 4.0)
-
-storage:
-  driver: NetCDF CF
-
-  crs: |
-    PROJCS["GDA94 / Australian Albers",
-        GEOGCS["GDA94",
-            DATUM["Geocentric_Datum_of_Australia_1994",
-                SPHEROID["GRS 1980",6378137,298.257222101,
-                    AUTHORITY["EPSG","7019"]],
-                TOWGS84[0,0,0,0,0,0,0],
-                AUTHORITY["EPSG","6283"]],
-            PRIMEM["Greenwich",0,
-                AUTHORITY["EPSG","8901"]],
-            UNIT["degree",0.01745329251994328,
-                AUTHORITY["EPSG","9122"]],
-            AUTHORITY["EPSG","4283"]],
-        UNIT["metre",1,
-            AUTHORITY["EPSG","9001"]],
-        PROJECTION["Albers_Conic_Equal_Area"],
-        PARAMETER["standard_parallel_1",-18],
-        PARAMETER["standard_parallel_2",-36],
-        PARAMETER["latitude_of_center",0],
-        PARAMETER["longitude_of_center",132],
-        PARAMETER["false_easting",0],
-        PARAMETER["false_northing",0],
-        AUTHORITY["EPSG","3577"],
-        AXIS["Easting",EAST],
-        AXIS["Northing",NORTH]]
-  tile_size:
-          x: 100000.0
-          y: 100000.0
-  resolution:
-          x: 25
-          y: -25
-  chunking:
-      x: 500
-      y: 500
-      time: 100
-  dimension_order: ['time', 'y', 'x']
-
-measurements:
-  band_1:
-      dtype: int16
-      nodata: -999
-      units: '1'
-      resampling_method: nearest
-      src_varname: '1'
-      zlib: True
-      attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 0.45-0.52 microns (Blue)"
-          standard_name: surface_bidirectional_reflectance
-  band_2:
-      dtype: int16
-      nodata: -999
-      units: '1'
-      resampling_method: nearest
-      src_varname: '2'
-      zlib: True
-      attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 0.52-0.60 microns (Green)"
-          standard_name: surface_bidirectional_reflectance
-  band_3:
-      dtype: int16
-      nodata: -999
-      units: '1'
-      resampling_method: nearest
-      src_varname: '3'
-      zlib: True
-      attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 0.63-0.69 microns (Red)"
-          standard_name: surface_bidirectional_reflectance
-  band_4:
-      dtype: int16
-      nodata: -999
-      units: '1'
-      resampling_method: nearest
-      src_varname: '4'
-      zlib: True
-      attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 0.76-0.90 microns (Near Infrared)"
-          standard_name: surface_bidirectional_reflectance
-  band_5:
-      dtype: int16
-      nodata: -999
-      units: '1'
-      resampling_method: nearest
-      src_varname: '5'
-      zlib: True
-      attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 1.55-1.75 microns (Short-wave Infrared)"
-          standard_name: surface_bidirectional_reflectance
-  band_7:
-      dtype: int16
-      nodata: -999
-      units: '1'
-      resampling_method: nearest
-      src_varname: '7'
-      zlib: True
-      attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 2.08-2.35 microns (Short-wave Infrared)"
-          standard_name: surface_bidirectional_reflectance
-
 ---
 
 name: ls5_pq_albers
@@ -256,7 +131,7 @@ match:
             code: LANDSAT_5
         instrument:
             name: TM
-        product_type: pqa
+        product_type: ls5_pq_albers
 
 location_name: eotiles
 file_path_template: 'LS5_TM_PQ/LS5_TM_PQ_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
