@@ -131,7 +131,8 @@ _EXAMPLE_METADATA_TYPE = MetadataType(
 _EXAMPLE_COLLECTION = DatasetType(
     'eo',
     DatasetMatcher({}),
-    _EXAMPLE_METADATA_TYPE
+    _EXAMPLE_METADATA_TYPE,
+    {}
 )
 
 

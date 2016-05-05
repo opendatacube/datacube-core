@@ -387,9 +387,10 @@ class DatasetType(object):
                  name,
                  match,
                  metadata_type,
+                 definition,
                  id_=None):
         """
-        Collection of datasets & storage.
+        DatasetType of datasets & storage.
 
         :type metadata_type: MetadataType
         :type match: DatasetMatcher
@@ -405,6 +406,9 @@ class DatasetType(object):
 
         # All datasets in a collection must have the same metadata_type.
         self.metadata_type = metadata_type
+
+        # DatasetType definition.
+        self.definition = definition
 
     def __str__(self):
         return "DatasetType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)

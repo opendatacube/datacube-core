@@ -255,6 +255,7 @@ class DatasetTypeResource(object):
         return DatasetType(
             query_row['name'],
             DatasetMatcher(query_row['metadata']),
+            definition=query_row['definition'],
             metadata_type=self.metadata_type_resource.get(query_row['metadata_type_ref']),
             id_=query_row['id'],
         )
