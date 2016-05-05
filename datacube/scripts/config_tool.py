@@ -144,6 +144,31 @@ def list_storage_types(index):
         echo("{m.name:20}\t{m.description!s}".format(m=storage_type))
 
 
+@cli.group(name='type', help='Dataset types')
+def dataset_type():
+    pass
+
+
+@dataset_type.command('add')
+@click.argument('files',
+                type=click.Path(exists=True, readable=True, writable=False),
+                nargs=-1)
+@PASS_INDEX
+@click.pass_context
+def add_dataset_types(ctx, index, files):
+    """
+    Add storage types to the index
+    """
+    for descriptor_path, parsed_doc in _read_docs(files):
+        try:
+            index.datasets.types.add(parsed_doc)
+            echo('Added "%s"' % parsed_doc['name'])
+        except KeyError as ke:
+            _LOG.exception(ke)
+            _LOG.error('Invalid dataset type definition: %s', descriptor_path)
+            ctx.exit(1)
+
+
 @cli.command('grant')
 @click.argument('role',
                 type=click.Choice(USER_ROLES),
