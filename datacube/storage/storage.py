@@ -399,7 +399,7 @@ class DatasetSource(object):
 
                 self.transform = src.affine
                 self.crs = src.crs_wkt
-                self.nodata = src.nodatavals[0] or (0 if self.format == 'JPEG2000' else None)  # TODO: sentinel 2 hack
+                self.nodata = src.nodatavals[0]
                 yield rasterio.band(src, bandnumber)
         except Exception as e:
             _LOG.error("Error opening source dataset: %s", filename)
