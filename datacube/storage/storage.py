@@ -407,11 +407,11 @@ class DatasetSource(object):
 
     def wheres_my_band(self, src, time):
         sec_since_1970 = (time - datetime(1970, 1, 1)).total_seconds()
-        timestag = src.tags()['NETCDF_DIM_time_VALUES']
-        times = [float(v) for v in timestag.replace('{', '').replace('}', '').split(',')]
+
         idx = 0
         dist = float('+inf')
-        for i, v in enumerate(times):
+        for i in range(1, src.count+1):
+            v = float(src.tags(i)['NETCDF_DIM_time'])
             if abs(sec_since_1970 - v) < dist:
                 idx = i
-        return idx+1
+        return idx
