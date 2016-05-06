@@ -231,7 +231,9 @@ def make_xarray_dataset(data_dicts, storage_unit_type):
         for variable_name, data_array in data_arrays.items():
             data_array.attrs.update(storage_unit_type.variable_attributes[variable_name])
         combined.update(data_arrays)
-    return xarray.Dataset(combined, attrs=storage_unit_type.global_attributes)
+    attrs = storage_unit_type.global_attributes
+    attrs['storage_type'] = storage_unit_type.name
+    return xarray.Dataset(combined, attrs=attrs)
 
 
 def get_metadata_from_storage_units(storage_units, dimension_ranges):
