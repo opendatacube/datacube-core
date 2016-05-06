@@ -13,7 +13,7 @@ disable=no-self-use,
     fixme,
     no-value-for-parameter,
     file-ignored,
-    wrong-import-order # Causes too many py2/3 false positives (diff. builtins).
+    wrong-import-order
 
 enable=python3
 
