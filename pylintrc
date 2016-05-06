@@ -12,7 +12,8 @@ disable=no-self-use,
     no-name-in-module,
     fixme,
     no-value-for-parameter,
-    file-ignored
+    file-ignored,
+    wrong-import-order # Causes too many py2/3 false positives (diff. builtins).
 
 enable=python3
 
