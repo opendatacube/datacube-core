@@ -183,10 +183,11 @@ def test_index_storage_unit(index, db, default_metadata_type):
         storage_type=StorageType(
             document={
                 'name': 'test_storage_mapping',
-                'location': "file://g/data",
+                'location': "file:///g/data",
                 'filename_pattern': "foo.nc",
+                'storage': {'driver': 'NetCDF'}
             },
-            target_dataset_type_id=type_.id,
+            target_dataset_type_id=storage_dataset_type_.id,
             id_=storage_type['id']
         ),
         descriptor={
@@ -195,7 +196,7 @@ def test_index_storage_unit(index, db, default_metadata_type):
                 'center_dt': datetime.datetime(2014, 7, 26, 23, 49, 0, 343853).isoformat(),
             }
         },
-        relative_path='/test/offset',
+        relative_path='test/offset',
         size_bytes=1234
     )
     index.storage.add(
@@ -205,7 +206,8 @@ def test_index_storage_unit(index, db, default_metadata_type):
     units = db._connection.execute(DATASET.select().where(DATASET.c.storage_type_ref == storage_type.id)).fetchall()
     assert len(units) == 1
     unit = units[0]
-    assert unit['metadata'] == {'test': 'descriptor', 'extent': {'center_dt': '2014-07-26T23:49:00.343853'}}
+    assert unit['metadata']['test'] == 'descriptor'
+    assert unit['metadata']['extent'] == {'center_dt': '2014-07-26T23:49:00.343853'}
 
     assert unit['storage_type_ref'] == storage_type['id']
     # assert unit['size_bytes'] == 1234
@@ -214,7 +216,7 @@ def test_index_storage_unit(index, db, default_metadata_type):
     locations = db._connection.execute(
         DATASET_LOCATION.select().where(DATASET_LOCATION.c.dataset_ref == unit['id'])).fetchall()
     assert locations[0]['uri_scheme'] == 'file'
-    assert locations[0]['uri_body'] == '///test/offset'
+    assert locations[0]['uri_body'] == '///g/data/test/offset'
     assert locations[0]['managed'] is True
 
     # Storage should have been linked to the source dataset.
