@@ -39,6 +39,10 @@ LBG_CELL_Y = -40
 LBG_CELL = (LBG_CELL_X, LBG_CELL_Y)
 
 
+ignore_me = pytest.mark.xfail(True, reason="Not being used")
+
+
+@ignore_me
 @pytest.mark.usefixtures('default_metadata_type')
 def test_end_to_end(global_integration_cli_args, index, example_ls5_dataset):
     """
