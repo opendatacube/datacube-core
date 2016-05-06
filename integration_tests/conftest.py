@@ -37,6 +37,7 @@ _EXAMPLE_LS5_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('example-ls5-nba
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs' / 'config_samples'
+DATASET_TYPES = PROJECT_ROOT / 'docs' / 'dataset_types'
 LS5_SAMPLES = CONFIG_SAMPLES / 'ga_landsat_5'
 LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_geographic.yaml'
 LS5_NBAR_NAME = 'ls5_nbar'
@@ -200,6 +201,21 @@ def indexed_ls5_nbar_storage_type(index, default_metadata_type):
 
 
 @pytest.fixture
+def indexed_ls5_scene_dataset_type(index, default_metadata_type):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type index: datacube.index._api.Index
+    :rtype: datacube.model.StorageType
+    """
+    dataset_types = load_test_storage_config(DATASET_TYPES/'ls5_scenes.yaml')
+
+    for dataset_type in dataset_types:
+        index.datasets.types.add(dataset_type)
+
+    return None
+
+
+@pytest.fixture
 def example_ls5_nbar_metadata_doc():
     return load_yaml_file(_EXAMPLE_LS5_NBAR_DATASET_FILE)[0]
 
@@ -225,12 +241,15 @@ def load_yaml_file(filename):
 
 
 def alter_storage_type_for_testing(storage_type):
-    storage_type = limit_num_measurements(storage_type)
+    if 'measurements' in storage_type:
+        storage_type = limit_num_measurements(storage_type)
     storage_type = use_test_storage(storage_type)
-    if is_geogaphic(storage_type):
-        return shrink_storage_type(storage_type, GEOGRAPHIC_VARS)
-    else:
-        return shrink_storage_type(storage_type, PROJECTED_VARS)
+    if 'storage' in storage_type:
+        if is_geogaphic(storage_type):
+            storage_type = shrink_storage_type(storage_type, GEOGRAPHIC_VARS)
+        else:
+            storage_type = shrink_storage_type(storage_type, PROJECTED_VARS)
+    return storage_type
 
 
 def limit_num_measurements(storage_type):

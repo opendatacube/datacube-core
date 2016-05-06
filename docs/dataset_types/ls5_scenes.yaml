@@ -12,7 +12,7 @@ match:
 
 ---
 
-name: ls5_ortho
+name: ls5_ortho_scene
 description: ls5_ortho
 metadata_type: eo
 
@@ -23,10 +23,12 @@ match:
         instrument:
             name: TM
         product_type: ortho
+        format:
+            name: GeoTiff
 
 ---
 
-name: ls5_nbar
+name: ls5_nbar_scene
 description: Landsat 5 NBAR 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
 metadata_type: eo
 
@@ -37,6 +39,8 @@ match:
         instrument:
             name: TM
         product_type: nbar
+        format:
+            name: GeoTiff
 
 measurements:
   1:
@@ -66,7 +70,7 @@ measurements:
 
 ---
 
-name: ls5_pq
+name: ls5_pq_scene
 description: Landsat 5 PQ 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
 metadata_type: eo
 
@@ -77,6 +81,8 @@ match:
         instrument:
             name: TM
         product_type: pqa
+        format:
+            name: GeoTiff
 
 measurements:
   pqa:
