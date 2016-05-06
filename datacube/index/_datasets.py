@@ -428,7 +428,7 @@ class DatasetResource(object):
             metadata_types.add(self._metadata_types.get_by_name(q['metadata_type']))
 
         if len(metadata_types) > 1:
-            _LOG.warn(
+            _LOG.warning(
                 "Both a dataset type and metadata type were specified, but they're not compatible: %r, %r.",
                 query['type'], query['metadata_type']
             )
