@@ -35,6 +35,13 @@ from datacube.api._conversion import datetime_to_timestamp
 from datacube.api._stratify import stratify_irregular_dimension
 from datacube.api._dask import get_dask_array
 
+# HACK: to deal with https://github.com/mapbox/rasterio/issues/694
+try:
+    from rasterio.env import defenv
+    defenv()
+except ImportError:
+    pass
+
 
 def test_convert_descriptor_query_to_search_query():
     descriptor_query = {
