@@ -127,7 +127,7 @@ class Datacube(object):
 
         return xarray.Dataset()
 
-    def product_observations(self, type_name, geobox, group_func, index):
+    def product_observations(self, type_name, geobox, group_func):
         geo_bb = geobox.geographic_extent.boundingbox
         # TODO: pull out full datasets lineage?
         datasets = self.index.datasets.search_eager(lat=Range(geo_bb.bottom, geo_bb.top),
