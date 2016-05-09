@@ -324,12 +324,6 @@ class Dataset(object):
         return center_dt
 
     @property
-    def bounds(self):
-        geo_ref_points = self.metadata_doc['grid_spatial']['projection']['geo_ref_points']
-        return BoundingBox(geo_ref_points['ll']['x'], geo_ref_points['ll']['y'],
-                           geo_ref_points['ur']['x'], geo_ref_points['ur']['y'])
-
-    @property
     def crs(self):
         projection = self.metadata_doc['grid_spatial']['projection']
 

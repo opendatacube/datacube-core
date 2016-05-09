@@ -134,7 +134,7 @@ class Datacube(object):
                                                     lon=Range(geo_bb.left, geo_bb.right),
                                                     type=type_name)
         datasets = [dataset for dataset in datasets
-                    if _check_intersect(geobox.extent, dataset_poly(dataset).to_crs(geobox.crs_str))]
+                    if _check_intersect(geobox.extent, dataset.extent.to_crs(geobox.crs_str))]
 
         datasets.sort(key=group_func)
         groups = [(key, list(group)) for key, group in groupby(datasets, group_func)]
