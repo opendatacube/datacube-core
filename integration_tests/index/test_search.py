@@ -106,7 +106,8 @@ def pseudo_telemetry_dataset(index, db, pseudo_telemetry_type):
                 'source_datasets': {}
             }
         },
-        id_
+        id_,
+        pseudo_telemetry_type.id
     )
     assert was_inserted
     d = index.datasets.get(id_)
@@ -383,7 +384,7 @@ def test_search_storage_multi_dataset(index, db, default_metadata_type, indexed_
     doc2['id'] = id2
     # Second dataset is a minute later
     doc2['extent']['to_dt'] = dateutil.parser.parse(doc2['extent']['to_dt']) + datetime.timedelta(minutes=1)
-    was_inserted = db.insert_dataset(doc2, id2)
+    was_inserted = db.insert_dataset(doc2, id2, pseudo_telemetry_dataset.type.id)
     assert was_inserted
 
     su = StorageUnit(

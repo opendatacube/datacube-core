@@ -183,7 +183,7 @@ class PostgresDb(object):
         """
         return _BegunTransaction(self._connection)
 
-    def insert_dataset(self, metadata_doc, dataset_id, dataset_type_id=None, storage_type_id=None):
+    def insert_dataset(self, metadata_doc, dataset_id, dataset_type_id):
         """
         Insert dataset if not already indexed.
         :type metadata_doc: dict
@@ -200,9 +200,9 @@ class PostgresDb(object):
                 #      connection inserts the same dataset in the time between the subquery and the main query.
                 #      This is ok for our purposes.)
                 DATASET.insert().from_select(
-                    ['id', 'dataset_type_ref', 'storage_type_ref', 'metadata_type_ref', 'metadata'],
+                    ['id', 'dataset_type_ref', 'metadata_type_ref', 'metadata'],
                     select([
-                        bindparam('id'), dataset_type_ref, storage_type_id,
+                        bindparam('id'), dataset_type_ref,
                         select([
                             DATASET_TYPE.c.metadata_type_ref
                         ]).where(

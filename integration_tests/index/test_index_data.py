@@ -75,10 +75,11 @@ def test_index_dataset_in_transactions(index, db, local_config, default_metadata
     assert not db.contains_dataset(_telemetry_uuid)
 
     with db.begin() as transaction:
-        index.datasets.types.add(_pseudo_telemetry_dataset_type)
+        dataset_type = index.datasets.types.add(_pseudo_telemetry_dataset_type)
         was_inserted = db.insert_dataset(
             _telemetry_dataset,
-            _telemetry_uuid
+            _telemetry_uuid,
+            dataset_type.id
         )
 
         assert was_inserted
@@ -87,7 +88,8 @@ def test_index_dataset_in_transactions(index, db, local_config, default_metadata
         # Insert again. It should be ignored.
         was_inserted = db.insert_dataset(
             _telemetry_dataset,
-            _telemetry_uuid
+            _telemetry_uuid,
+            dataset_type.id
         )
         assert not was_inserted
         assert db.contains_dataset(_telemetry_uuid)
@@ -156,16 +158,11 @@ def test_index_storage_unit(index, db, default_metadata_type):
     type_ = index.datasets.types.add(_pseudo_telemetry_dataset_type)
     was_inserted = db.insert_dataset(
         _telemetry_dataset,
-        _telemetry_uuid
+        _telemetry_uuid,
+        type_.id
     )
     assert was_inserted
-    db.ensure_storage_type(
-        'test_storage_mapping',
-        {},
-        {'storage': {'dimension_order': []}},
-        target_dataset_id=type_.id
-    )
-    storage_type = db._connection.execute(STORAGE_TYPE.select()).first()
+
     storage_dataset_type_ = index.datasets.types.add({
         'name': 'ls8_telemetry_storage',
         'match': {
@@ -175,6 +172,13 @@ def test_index_storage_unit(index, db, default_metadata_type):
         },
         'metadata_type': 'storage_unit'
     })
+    db.ensure_storage_type(
+        'test_storage_mapping',
+        {},
+        {'storage': {'dimension_order': []}},
+        target_dataset_id=storage_dataset_type_.id
+    )
+    storage_type = db._connection.execute(STORAGE_TYPE.select()).first()
 
     # Add storage unit
     storage_unit = StorageUnit(
@@ -203,13 +207,15 @@ def test_index_storage_unit(index, db, default_metadata_type):
         storage_unit
     )
 
-    units = db._connection.execute(DATASET.select().where(DATASET.c.storage_type_ref == storage_type.id)).fetchall()
+    target_dataset_type_ref = db._connection.execute(
+        STORAGE_TYPE.select().where(STORAGE_TYPE.c.id == storage_type.id)).fetchone()['target_dataset_type_ref']
+    units = db._connection.execute(
+        DATASET.select().where(DATASET.c.dataset_type_ref == target_dataset_type_ref)).fetchall()
     assert len(units) == 1
     unit = units[0]
     assert unit['metadata']['test'] == 'descriptor'
     assert unit['metadata']['extent'] == {'center_dt': '2014-07-26T23:49:00.343853'}
 
-    assert unit['storage_type_ref'] == storage_type['id']
     # assert unit['size_bytes'] == 1234
     assert unit['dataset_type_ref'] == storage_dataset_type_.id
 

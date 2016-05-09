@@ -90,8 +90,7 @@ class StorageUnitResource(object):
         was_newly_inserted = self._db.insert_dataset(
             merged_descriptor,
             unit.id,
-            dataset_type_id=unit.storage_type.target_dataset_type_id,
-            storage_type_id=unit.storage_type.id
+            dataset_type_id=unit.storage_type.target_dataset_type_id
         )
         # TODO: unit.size_bytes
         for source_id in unit.dataset_ids:

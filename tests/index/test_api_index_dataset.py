@@ -142,7 +142,7 @@ class MockDb(object):
         self.dataset_source = set()
         self.already_ingested = set()
 
-    def insert_dataset(self, metadata_doc, dataset_id, dataset_type_id=None, storage_type_id=None):
+    def insert_dataset(self, metadata_doc, dataset_id, dataset_type_id):
         # Will we pretend this one was already ingested?
         if dataset_id in self.already_ingested:
             return False

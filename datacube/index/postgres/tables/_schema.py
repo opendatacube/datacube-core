@@ -90,9 +90,6 @@ DATASET = Table(
     # Date it was archived. Null for active datasets.
     Column('archived', DateTime(timezone=True), default=None, nullable=True),
 
-    # The storage type this was produced from, if any.
-    Column('storage_type_ref', None, ForeignKey(STORAGE_TYPE.c.id), index=True, nullable=True),
-
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
     Column('added_by', _core.PGNAME, server_default=func.current_user(), nullable=False),
