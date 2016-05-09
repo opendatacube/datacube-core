@@ -186,9 +186,3 @@ def _check_intersect(a, b):
     a = ogr_poly(a)
     b = ogr_poly(b)
     return a.Intersects(b) and not a.Touches(b)
-
-
-def dataset_poly(dataset):
-    left, bottom, right, top = dataset.bounds
-    return GeoPolygon([(left, bottom), (left, top), (right, top), (right, bottom)], crs_str=dataset.crs)
-
