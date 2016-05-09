@@ -343,6 +343,14 @@ class Dataset(object):
 
         raise RuntimeError('Cant figure out the projection: %s %s' % (projection['datum'], projection['zone']))
 
+    @property
+    def extent(self):
+        def xytuple(obj):
+            return obj['x'], obj['y']
+
+        geo_ref_points = self.metadata_doc['grid_spatial']['projection']['geo_ref_points']
+        return GeoPolygon([xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr')], crs_str=self.crs)
+
     def __str__(self):
         return "Dataset <id={id}>".format(id=self.id)
 
