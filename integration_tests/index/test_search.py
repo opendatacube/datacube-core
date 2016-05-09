@@ -112,7 +112,7 @@ def pseudo_telemetry_dataset(index, db, pseudo_telemetry_type):
     d = index.datasets.get(id_)
 
     # The dataset should have been matched to the telemetry type.
-    assert d.type_.id == pseudo_telemetry_type.id
+    assert d.type.id == pseudo_telemetry_type.id
 
     return d
 
@@ -229,7 +229,7 @@ def test_searches_only_type(index, pseudo_telemetry_type, pseudo_telemetry_datas
     :type pseudo_telemetry_dataset: datacube.model.Dataset
     """
     # The dataset should have been matched to the telemetry type.
-    assert pseudo_telemetry_dataset.type_.id == pseudo_telemetry_type.id
+    assert pseudo_telemetry_dataset.type.id == pseudo_telemetry_type.id
     assert index.datasets.search_eager()
 
     # One result in the telemetry type
@@ -298,7 +298,7 @@ def test_fetch_all_of_md_type(index, pseudo_telemetry_dataset):
     assert results[0].id == pseudo_telemetry_dataset.id
     # Get every dataset of the type.
     results = index.datasets.search_eager(
-        type=pseudo_telemetry_dataset.type_.name
+        type=pseudo_telemetry_dataset.type.name
     )
     assert len(results) == 1
     assert results[0].id == pseudo_telemetry_dataset.id

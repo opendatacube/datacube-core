@@ -289,15 +289,17 @@ class Dataset(object):
         :param local_uri: A URI to access this dataset locally.
         :type local_uri: str
         """
-        #: :type: Collection
-        self.type_ = type_
-
-        self.metadata_type = type_.metadata_type if type_ else None
+        #: :type: DatasetType
+        self.type = type_
 
         #: :type: dict
         self.metadata_doc = metadata_doc
 
         self.local_uri = local_uri
+
+    @property
+    def metadata_type(self):
+        return self.type.metadata_type if self.type else None
 
     @property
     def local_path(self):

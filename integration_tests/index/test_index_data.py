@@ -117,7 +117,7 @@ def test_index_dataset_with_location(index, default_metadata_type):
 
     assert dataset.id == _telemetry_uuid
     # TODO: Dataset types?
-    assert dataset.type_.id == type_.id
+    assert dataset.type.id == type_.id
     assert dataset.metadata_type.id == default_metadata_type.id
 
     assert dataset.local_path.absolute() == Path(first_file).absolute()

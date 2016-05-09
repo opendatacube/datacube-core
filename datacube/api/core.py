@@ -117,7 +117,7 @@ class Datacube(object):
         # Group by dataset type
         datasets_by_type = defaultdict(list)
         for dataset in datasets:
-            datasets_by_type[dataset.type_.name].append(dataset)
+            datasets_by_type[dataset.type.name].append(dataset)
 
         # Get output geobox from query
 
@@ -149,7 +149,7 @@ class Datacube(object):
         for name, v in geobox.coordinate_labels.items():
             result[name] = (name, v, {'units': geobox.coordinates[name].units})
 
-        measurements = groups[0][1][0].type_.definition['measurements']
+        measurements = groups[0][1][0].type.definition['measurements']
 
         for name, stuffs in measurements.items():
             data = numpy.empty((len(groups),) + geobox.shape, dtype=stuffs['dtype'])
