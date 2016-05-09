@@ -144,16 +144,16 @@ class Datacube(object):
     def product_data(self, groups, geobox, fuse_func=None):
         assert groups
 
+        result = xarray.Dataset(attrs={'extent': geobox.extent, 'affine': geobox.affine, 'crs': geobox.crs})
+        result['time'] = ('time', numpy.array([v[0] for v in groups]), {'units': 'seconds since 1970-01-01 00:00:00'})
+        for name, v in geobox.coordinate_labels.items():
+            result[name] = (name, v, {'units': geobox.coordinates[name].units})
+
         measurements = groups[0][1][0].type_.definition['measurements']
 
-        shape = (len(groups), ) + geobox.shape
-        dims = ('time',) + geobox.dimensions
-
-        variables = {}
-
         for name, stuffs in measurements.items():
-            data = numpy.empty(shape, dtype=stuffs['dtype'])
-            for index, (key, sources) in enumerate(groups):
+            data = numpy.empty((len(groups),) + geobox.shape, dtype=stuffs['dtype'])
+            for index, (_, sources) in enumerate(groups):
                 fuse_sources([DatasetSource(dataset, name) for dataset in sources],
                              data[index],
                              geobox.affine,
@@ -161,26 +161,17 @@ class Datacube(object):
                              stuffs.get('nodata'),
                              resampling=RESAMPLING.nearest,
                              fuse_func=fuse_func)
-            variables[name] = (dims, data, {
+            result[name] = (('time',) + geobox.dimensions, data, {
                 'nodata': stuffs.get('nodata'),
-                'units': '1'
-                })
+                'units': stuffs.get('units', '1')
+            })
 
         extra_md = numpy.empty(len(groups), dtype=object)
-        for index, (key, sources) in enumerate(groups):
+        for index, (_, sources) in enumerate(groups):
             extra_md[index] = sources
-        variables['sources'] = (['time'], extra_md)
+        result['sources'] = (['time'], extra_md)
 
-        coords = {'time': ('time', numpy.array([v[0] for v in groups]), {'units': 'seconds since 1970-01-01 00:00:00'})}
-        coords.update({k:(k, v, {'units': '1'}) for k, v in geobox.coordinate_labels.items()})
-
-        attrs = {
-            'extent': geobox.extent,
-            'affine': geobox.affine,
-            'crs': geobox.crs
-        }
-
-        return xarray.Dataset(variables, coords=coords, attrs=attrs)
+        return result
 
 
 def _check_intersect(a, b):
