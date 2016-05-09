@@ -192,16 +192,6 @@ class PostgresDb(object):
         :return: whether it was inserted
         :rtype: bool
         """
-        if dataset_type_id is None:
-            d_type_result = self.determine_dataset_type_for_doc(metadata_doc)
-            if not d_type_result:
-                _LOG.debug('Attempted failed match on doc %r', metadata_doc)
-                raise RuntimeError('No dataset type matches dataset')
-            dataset_type_id = d_type_result['id']
-            _LOG.debug('Matched collection %r', dataset_type_id)
-        else:
-            _LOG.debug('Using provided collection %r', dataset_type_id)
-
         try:
             dataset_type_ref = bindparam('dataset_type_ref')
             ret = self._connection.execute(
