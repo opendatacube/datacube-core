@@ -42,7 +42,7 @@ class StorageUnitResource(object):
     # This class is a temporary shim for backwards compatibility: we're ok with using the underlying dataset api.
     # pylint: disable=protected-access
 
-    def __init__(self, db, storage_type_resource, dataset_types, datasets, metadata_types, local_config):
+    def __init__(self, db, storage_type_resource, dataset_types, datasets, metadata_types):
         """
         :type db: datacube.index.postgres._api.PostgresDb
         :type storage_type_resource: StorageTypeResource
@@ -55,8 +55,6 @@ class StorageUnitResource(object):
         self._dataset_types = dataset_types
         self._metadata_types = metadata_types
         self._datasets = datasets
-
-        self._config = local_config
 
     def get(self, id_):
         raise RuntimeError('TODO: implement')

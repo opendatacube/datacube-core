@@ -262,16 +262,13 @@ class DatasetTypeResource(object):
 
 
 class DatasetResource(object):
-    def __init__(self, db, user_config, dataset_type_resource, metadata_type_resource):
+    def __init__(self, db, dataset_type_resource):
         """
         :type db: datacube.index.postgres._api.PostgresDb
-        :type user_config: datacube.config.LocalConfig
         :type dataset_type_resource: datacube.index._datasets.DatasetTypeResource
         """
         self._db = db
-        self._config = user_config
         self.types = dataset_type_resource
-        self._metadata_types = metadata_type_resource
 
     def get(self, id_, provenance=False):
         """
@@ -425,7 +422,7 @@ class DatasetResource(object):
 
         # If they specified a metadata type, search using it.
         if 'metadata_type' in q.keys():
-            metadata_types.add(self._metadata_types.get_by_name(q['metadata_type']))
+            metadata_types.add(self.types.metadata_type_resource.get_by_name(q['metadata_type']))
 
         if len(metadata_types) > 1:
             _LOG.warning(
