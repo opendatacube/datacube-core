@@ -112,7 +112,7 @@ def test_index_dataset_with_location(index, default_metadata_type):
     first_file = '/tmp/first/something.yaml'
     second_file = '/tmp/second/something.yaml'
     type_ = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
-    dataset = index.datasets.add(
+    dataset = index.datasets.add_document(
         _telemetry_dataset,
         metadata_path=Path(first_file)
     )
@@ -125,7 +125,7 @@ def test_index_dataset_with_location(index, default_metadata_type):
     assert dataset.local_path.absolute() == Path(first_file).absolute()
 
     # Ingesting again should have no effect.
-    index.datasets.add(
+    index.datasets.add_document(
         _telemetry_dataset,
         metadata_path=Path(first_file)
     )
@@ -136,7 +136,7 @@ def test_index_dataset_with_location(index, default_metadata_type):
     second_as_uri = Path(second_file).absolute().as_uri()
 
     # Ingesting with a new path should add the second one too.
-    dataset = index.datasets.add(
+    dataset = index.datasets.add_document(
         _telemetry_dataset,
         uri=second_as_uri
     )

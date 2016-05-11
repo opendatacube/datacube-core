@@ -174,7 +174,7 @@ def test_index_dataset():
     mock_db = MockDb()
     mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
     datasets = DatasetResource(mock_db, mock_types)
-    datasets.add(_EXAMPLE_NBAR)
+    datasets.add_document(_EXAMPLE_NBAR)
 
     ids = {d[0]['id'] for d in mock_db.dataset}
     assert ids == {_nbar_uuid, _ortho_uuid, _telemetry_uuid}
@@ -196,7 +196,7 @@ def test_index_already_ingested_dataset():
     mock_db.already_ingested = {_ortho_uuid, _telemetry_uuid, _nbar_uuid}
     mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
     datasets = DatasetResource(mock_db, mock_types)
-    datasets.add(_EXAMPLE_NBAR)
+    datasets.add_document(_EXAMPLE_NBAR)
 
     # Nothing ingested, because we reported the first as already ingested.
     assert len(mock_db.dataset) == 0
@@ -209,7 +209,7 @@ def test_index_already_ingested_source_dataset():
     mock_db.already_ingested = {_ortho_uuid, _telemetry_uuid}
     mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
     datasets = DatasetResource(mock_db, mock_types)
-    datasets.add(_EXAMPLE_NBAR)
+    datasets.add_document(_EXAMPLE_NBAR)
 
     # Only the first dataset ingested
     assert len(mock_db.dataset) == 1
@@ -228,7 +228,7 @@ def test_index_two_levels_already_ingested():
     mock_db.already_ingested = {_telemetry_uuid}
     mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
     datasets = DatasetResource(mock_db, mock_types)
-    datasets.add(_EXAMPLE_NBAR)
+    datasets.add_document(_EXAMPLE_NBAR)
 
     ids = {d[0]['id'] for d in mock_db.dataset}
     assert ids == {_nbar_uuid, _ortho_uuid}

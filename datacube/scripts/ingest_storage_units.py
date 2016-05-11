@@ -88,7 +88,7 @@ def pull_datasets_from_storage_unit(storage_unit):
 
 def add_datasets_to_index(datasets, index):
     for dataset in datasets:
-        index.datasets.add(dataset)
+        index.datasets.add_document(dataset)
 
 
 def create_in_memory_storage_unit(datasets, storage_type, filename):

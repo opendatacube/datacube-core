@@ -32,7 +32,7 @@ def index_datasets(path, index=None):
     if not metadata_path or not metadata_path.exists():
         raise ValueError('No supported metadata docs found for dataset {}'.format(path))
 
-    datasets = [index.datasets.add(metadata_doc, metadata_path)
+    datasets = [index.datasets.add_document(metadata_doc, metadata_path)
                 for metadata_path, metadata_doc
                 in ui.read_documents(metadata_path)]
     _LOG.info('Indexed datasets %s', path)

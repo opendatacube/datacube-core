@@ -292,7 +292,7 @@ class DatasetResource(object):
 
         return dataset
 
-    def add(self, metadata_doc, metadata_path=None, uri=None, allow_replacement=False):
+    def add_document(self, metadata_doc, metadata_path=None, uri=None, allow_replacement=False):
         """
         Ensure a dataset is in the index. Add it if not present.
 
