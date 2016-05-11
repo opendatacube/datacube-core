@@ -89,6 +89,12 @@ global_cli_options = compose(
 )
 
 
+@click.group(help="AGDC command-line interface", context_settings=CLICK_SETTINGS)
+@global_cli_options
+def cli():
+    pass
+
+
 def pass_config(f):
     """Get a datacube config as the first argument. """
 
