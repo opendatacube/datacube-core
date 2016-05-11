@@ -312,6 +312,47 @@ class DatasetResource(object):
         """
         return self._db.contains_dataset(dataset.id)
 
+    def from_doc(self, dataset_doc, metadata_path=None, uri=None, allow_replacement=False):
+        type_ = self.types.get_for_dataset_doc(dataset_doc)
+        if not type_:
+            _LOG.debug('Failed match on dataset doc %r', dataset_doc)
+            raise ValueError('No types match the dataset.')
+        _LOG.info('Matched type %r (%s)', type_.name, type_.id)
+
+        indexable_doc = copy.deepcopy(dataset_doc)
+        dataset = type_.metadata_type.dataset_reader(indexable_doc)
+
+        source_datasets = {classifier: self.from_doc(source_dataset_doc)
+                           for classifier, source_dataset_doc in dataset.sources.items()}
+
+        if metadata_path and not uri:
+            uri = metadata_path.absolute().as_uri()
+
+        return Dataset(type_, indexable_doc, uri, source_datasets, managed=allow_replacement)
+
+    def add_obj(self, dataset):
+        """
+        Ensure a dataset is in the index. Add it if not present.
+
+        :type dataset: datacube.model.Dataset
+        :rtype: datacube.model.Dataset
+        """
+        for source in dataset.sources.values():
+            self.add_obj(source)
+
+        _LOG.info('Indexing %s', dataset.id)
+        with self._db.begin() as transaction:
+            was_inserted = self._db.insert_dataset(dataset.metadata_doc, dataset.id, dataset.type.id)
+
+            if was_inserted:
+                for classifier, source_dataset in dataset.sources.items():
+                    self._db.insert_dataset_source(classifier, dataset.id, source_dataset.id)
+
+        if dataset.local_uri:
+            self._db.ensure_dataset_location(dataset.id, dataset.local_uri, dataset.managed)
+
+        return dataset
+
     def add(self, metadata_doc, metadata_path=None, uri=None, allow_replacement=False):
         """
         Ensure a dataset is in the index. Add it if not present.
@@ -323,24 +364,8 @@ class DatasetResource(object):
         :type uri: str
         :rtype: datacube.model.Dataset
         """
-        with self._db.begin() as transaction:
-            dataset_id = self._add_dataset(metadata_doc,
-                                           allow_replacement=allow_replacement,
-                                           metadata_path=metadata_path,
-                                           uri=uri)
-
-        if not dataset_id:
-            return None
-
-        return self.get(dataset_id)
-
-    def _add_dataset(self, metadata_doc, allow_replacement, metadata_path=None, uri=None):
-        dataset_id = _ensure_dataset(self._db, self.types, metadata_doc)
-        if metadata_path or uri:
-            if uri is None:
-                uri = metadata_path.absolute().as_uri()
-            self._db.ensure_dataset_location(dataset_id, uri, allow_replacement)
-        return dataset_id
+        dataset = self.from_doc(metadata_doc, metadata_path, uri, allow_replacement)
+        return self.add_obj(dataset)
 
     def replace(self, old_datasets, new_datasets):
         """
@@ -352,8 +377,8 @@ class DatasetResource(object):
                 self._db.archive_storage_unit(unit.id)
 
             for unit in new_datasets:
-                dataset_id = self._add_dataset(unit.metadata_doc, allow_replacement=True, uri=unit.local_uri)
-                _LOG.debug('Indexed dataset %s @ %s', dataset_id, unit.local_uri)
+                unit = self.add_obj(unit)
+                _LOG.debug('Indexed dataset %s @ %s', unit.id, unit.local_uri)
 
     def get_field(self, name, type_name=None):
         """
