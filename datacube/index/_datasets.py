@@ -269,7 +269,7 @@ class DatasetResource(object):
 
         return Dataset(type_, indexable_doc, uri, source_datasets, managed=allow_replacement)
 
-    def add_obj(self, dataset):
+    def add(self, dataset):
         """
         Ensure a dataset is in the index. Add it if not present.
 
@@ -277,7 +277,7 @@ class DatasetResource(object):
         :rtype: datacube.model.Dataset
         """
         for source in dataset.sources.values():
-            self.add_obj(source)
+            self.add(source)
 
         _LOG.info('Indexing %s', dataset.id)
         with self._db.begin() as transaction:
@@ -304,7 +304,7 @@ class DatasetResource(object):
         :rtype: datacube.model.Dataset
         """
         dataset = self.from_doc(metadata_doc, metadata_path, uri, allow_replacement)
-        return self.add_obj(dataset)
+        return self.add(dataset)
 
     def replace(self, old_datasets, new_datasets):
         """
@@ -316,7 +316,7 @@ class DatasetResource(object):
                 self._db.archive_storage_unit(unit.id)
 
             for unit in new_datasets:
-                unit = self.add_obj(unit)
+                unit = self.add(unit)
                 _LOG.debug('Indexed dataset %s @ %s', unit.id, unit.local_uri)
 
     def get_field(self, name, type_name=None):
