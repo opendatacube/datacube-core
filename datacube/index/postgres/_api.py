@@ -38,7 +38,7 @@ _DATASET_SELECT_FIELDS = (
     DATASET,
     # The most recent file uri. We may want more advanced path selection in the future...
     select([
-        DATASET_URI_FIELD
+        DATASET_URI_FIELD,
     ]).where(
         and_(
             DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
@@ -46,7 +46,18 @@ _DATASET_SELECT_FIELDS = (
         )
     ).order_by(
         DATASET_LOCATION.c.added.desc()
-    ).limit(1).label('local_uri')
+    ).limit(1).label('local_uri'),
+    # The most recent file uri. We may want more advanced path selection in the future...
+    select([
+        DATASET_LOCATION.c.managed,
+    ]).where(
+        and_(
+            DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
+            DATASET_LOCATION.c.uri_scheme == 'file'
+        )
+    ).order_by(
+        DATASET_LOCATION.c.added.desc()
+    ).limit(1).label('managed')
 )
 
 PGCODE_UNIQUE_CONSTRAINT = '23505'
