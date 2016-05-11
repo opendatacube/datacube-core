@@ -368,7 +368,9 @@ class Dataset(object):
         return GeoPolygon([xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr')], crs_str=self.crs)
 
     def __str__(self):
-        return "Dataset <id={id}>".format(id=self.id)
+        return "Dataset <id={id} type={type} location={loc}>".format(id=self.id,
+                                                                     type=self.type.name,
+                                                                     loc=self.local_path)
 
     def __repr__(self):
         return self.__str__()
