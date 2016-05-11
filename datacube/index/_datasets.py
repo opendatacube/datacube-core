@@ -347,17 +347,6 @@ class DatasetResource(object):
         """
         return self.get_fields(type_name).get(name)
 
-    def get_fields(self, type_name=None):
-        """
-        :type type_name: str
-        :rtype: dict[str, datacube.index.fields.Field]
-        """
-
-        if type_name is None:
-            type_name = self._config.default_collection_name
-        collection = self.types.get_by_name(type_name)
-        return collection.metadata_type.dataset_fields
-
     def get_field_names(self, type_name=None):
         """
         :type type_name: str
