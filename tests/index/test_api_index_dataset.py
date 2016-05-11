@@ -3,8 +3,9 @@
 from __future__ import absolute_import
 
 import datetime
+from contextlib import contextmanager
 
-from datacube.index._datasets import _ensure_dataset
+from datacube.index._datasets import DatasetResource
 from datacube.model import DatasetType, DatasetOffsets, DatasetMatcher, MetadataType
 
 _nbar_uuid = 'f2f12372-8366-11e5-817e-1040f381a756'
@@ -128,7 +129,7 @@ _EXAMPLE_METADATA_TYPE = MetadataType(
     dataset_search_fields={}
 )
 
-_EXAMPLE_COLLECTION = DatasetType(
+_EXAMPLE_DATASET_TYPE = DatasetType(
     'eo',
     DatasetMatcher({}),
     _EXAMPLE_METADATA_TYPE,
@@ -142,6 +143,13 @@ class MockDb(object):
         self.dataset_source = set()
         self.already_ingested = set()
 
+    @contextmanager
+    def begin(self):
+        yield
+
+    def ensure_dataset_location(self, *args, **kwargs):
+        return
+
     def insert_dataset(self, metadata_doc, dataset_id, dataset_type_id):
         # Will we pretend this one was already ingested?
         if dataset_id in self.already_ingested:
@@ -154,18 +162,19 @@ class MockDb(object):
         self.dataset_source.add((classifier, dataset_id, source_dataset_id))
 
 
-class MockCollectionResource(object):
-    def __init__(self, collection):
-        self.collection = collection
+class MockTypesResource(object):
+    def __init__(self, type_):
+        self.type = type_
 
     def get_for_dataset_doc(self, metadata_doc):
-        return self.collection
+        return self.type
 
 
 def test_index_dataset():
     mock_db = MockDb()
-    mock_coll_res = MockCollectionResource(_EXAMPLE_COLLECTION)
-    _ensure_dataset(mock_db, mock_coll_res, _EXAMPLE_NBAR)
+    mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
+    datasets = DatasetResource(mock_db, mock_types)
+    datasets.add(_EXAMPLE_NBAR)
 
     ids = {d[0]['id'] for d in mock_db.dataset}
     assert ids == {_nbar_uuid, _ortho_uuid, _telemetry_uuid}
@@ -184,9 +193,10 @@ def test_index_dataset():
 
 def test_index_already_ingested_dataset():
     mock_db = MockDb()
-    mock_coll_res = MockCollectionResource(_EXAMPLE_COLLECTION)
-    mock_db.already_ingested = {_nbar_uuid}
-    _ensure_dataset(mock_db, mock_coll_res, _EXAMPLE_NBAR)
+    mock_db.already_ingested = {_ortho_uuid, _telemetry_uuid, _nbar_uuid}
+    mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
+    datasets = DatasetResource(mock_db, mock_types)
+    datasets.add(_EXAMPLE_NBAR)
 
     # Nothing ingested, because we reported the first as already ingested.
     assert len(mock_db.dataset) == 0
@@ -196,9 +206,10 @@ def test_index_already_ingested_dataset():
 
 def test_index_already_ingested_source_dataset():
     mock_db = MockDb()
-    mock_coll_res = MockCollectionResource(_EXAMPLE_COLLECTION)
     mock_db.already_ingested = {_ortho_uuid, _telemetry_uuid}
-    _ensure_dataset(mock_db, mock_coll_res, _EXAMPLE_NBAR)
+    mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
+    datasets = DatasetResource(mock_db, mock_types)
+    datasets.add(_EXAMPLE_NBAR)
 
     # Only the first dataset ingested
     assert len(mock_db.dataset) == 1
@@ -213,10 +224,11 @@ def test_index_already_ingested_source_dataset():
 
 def test_index_two_levels_already_ingested():
     mock_db = MockDb()
-    mock_coll_res = MockCollectionResource(_EXAMPLE_COLLECTION)
     # RAW was already ingested.
     mock_db.already_ingested = {_telemetry_uuid}
-    _ensure_dataset(mock_db, mock_coll_res, _EXAMPLE_NBAR)
+    mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
+    datasets = DatasetResource(mock_db, mock_types)
+    datasets.add(_EXAMPLE_NBAR)
 
     ids = {d[0]['id'] for d in mock_db.dataset}
     assert ids == {_nbar_uuid, _ortho_uuid}

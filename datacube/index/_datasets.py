@@ -17,67 +17,6 @@ from . import fields
 _LOG = logging.getLogger(__name__)
 
 
-def _ensure_dataset(db, types_resource, dataset_doc):
-    """
-    Ensure a dataset is in the index (add it if needed).
-
-    :type db: datacube.index.postgres._api.PostgresDb
-    :type dataset_doc: dict
-    :type types_resource: DatasetTypeResource
-    :returns: The dataset_id if we ingested it.
-    :rtype: uuid.UUID
-    """
-
-    was_inserted, dataset, source_datasets = _prepare_single(types_resource, dataset_doc, db)
-
-    dataset_id = dataset.uuid_field
-
-    if not was_inserted:
-        # Already existed.
-        _LOG.info('Dataset already in Index. No indexing required.')
-        return dataset_id
-
-    if source_datasets:
-        # Get source datasets & index them.
-        sources = {}
-        for classifier, source_dataset in source_datasets.items():
-            sources[classifier] = _ensure_dataset(db, types_resource, source_dataset)
-
-        # Link to sources.
-        for classifier, source_dataset_id in sources.items():
-            db.insert_dataset_source(classifier, dataset_id, source_dataset_id)
-
-    return dataset_id
-
-
-def _prepare_single(types_resource, dataset_doc, db):
-    """
-    :type types_resource: DatasetTypeResource
-    :type dataset_doc: dict
-    :type db: datacube.index.postgres._api.PostgresDb
-    """
-    type_ = types_resource.get_for_dataset_doc(dataset_doc)
-    if not type_:
-        _LOG.debug('Failed match on dataset doc %r', dataset_doc)
-        raise ValueError('No types match the dataset.')
-
-    _LOG.info('Matched type %r (%s)', type_.name, type_.id)
-
-    indexable_doc = copy.deepcopy(dataset_doc)
-    dataset = type_.metadata_type.dataset_reader(indexable_doc)
-
-    source_datasets = dataset.sources
-    # Clear source datasets: We store them separately.
-    dataset.sources = None
-
-    dataset_id = dataset.uuid_field
-
-    _LOG.info('Indexing %s', dataset_id)
-    was_inserted = db.insert_dataset(indexable_doc, dataset_id, dataset_type_id=type_.id)
-
-    return was_inserted, dataset, source_datasets
-
-
 class MetadataTypeResource(object):
     def __init__(self, db):
         """
