@@ -120,7 +120,7 @@ class DatasetTypeResource(object):
 
         return DatasetType(name, DatasetMatcher(dataset_metadata), metadata_type, definition)
 
-    def add_obj(self, type_):
+    def add(self, type_):
         """
         :type type_: datacube.model.DatasetType
         :rtype: datacube.model.DatasetType
@@ -149,7 +149,7 @@ class DatasetTypeResource(object):
         :rtype: datacube.model.DatasetType
         """
         type_ = self.from_doc(definition)
-        return self.add_obj(type_)
+        return self.add(type_)
 
     def add_many(self, definitions):
         """
