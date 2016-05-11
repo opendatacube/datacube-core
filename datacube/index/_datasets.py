@@ -158,7 +158,7 @@ class DatasetTypeResource(object):
         self._db = db
         self.metadata_type_resource = metadata_type_resource
 
-    def add(self, definition):
+    def from_doc(self, definition):
         """
         :type definition: dict
         :rtype: datacube.model.DatasetType
@@ -179,23 +179,38 @@ class DatasetTypeResource(object):
         if not metadata_type:
             raise InvalidDocException('Unknown metadata type: %r' % definition['metadata_type'])
 
-        existing = self._db.get_dataset_type_by_name(name)
+        return DatasetType(name, DatasetMatcher(dataset_metadata), metadata_type, definition)
+
+    def add_obj(self, type_):
+        """
+        :type type_: datacube.model.DatasetType
+        :rtype: datacube.model.DatasetType
+        """
+        existing = self._db.get_dataset_type_by_name(type_.name)
         if existing:
             # TODO: Support for adding/updating match rules?
             # They've passed us the same collection again. Make sure it matches what is stored.
             fields.check_doc_unchanged(
                 existing.definition,
-                definition,
-                'Dataset type {}'.format(name)
+                type_.definition,
+                'Dataset type {}'.format(type_.name)
             )
         else:
             self._db.add_dataset_type(
-                name=name,
-                metadata=dataset_metadata,
-                metadata_type_id=metadata_type.id,
-                definition=definition
+                name=type_.name,
+                metadata=type_.match.metadata,
+                metadata_type_id=type_.metadata_type.id,
+                definition=type_.definition
             )
-        return self.get_by_name(name)
+        return self.get_by_name(type_.name)
+
+    def add(self, definition):
+        """
+        :type definition: dict
+        :rtype: datacube.model.DatasetType
+        """
+        type_ = self.from_doc(definition)
+        return self.add_obj(type_)
 
     def add_many(self, definitions):
         """
