@@ -56,10 +56,16 @@ class MetadataTypeResource(object):
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def get(self, id_):
+        """
+        :rtype datacube.model.MetadataType
+        """
         return self._make(self._db.get_metadata_type(id_))
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def get_by_name(self, name):
+        """
+        :rtype datacube.model.MetadataType
+        """
         record = self._db.get_metadata_type_by_name(name)
         if not record:
             return None
@@ -70,7 +76,7 @@ class MetadataTypeResource(object):
 
     def _make(self, query_row):
         """
-        :rtype list[datacube.model.Collection]
+        :rtype list[datacube.model.MetadataType]
         """
         definition = query_row['definition']
         dataset_ = definition['dataset']
@@ -160,10 +166,16 @@ class DatasetTypeResource(object):
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def get(self, id_):
+        """
+        :rtype datacube.model.DatasetType
+        """
         return self._make(self._db.get_dataset_type(id_))
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def get_by_name(self, name):
+        """
+        :rtype datacube.model.DatasetType
+        """
         result = self._db.get_dataset_type_by_name(name)
         if not result:
             return None
@@ -256,6 +268,16 @@ class DatasetResource(object):
         return self._db.contains_dataset(dataset.id)
 
     def from_doc(self, dataset_doc, metadata_path=None, uri=None, allow_replacement=False):
+        """
+        Build a dataset from its document
+
+        A file path or URI should be specified if available.
+
+        :type metadata_doc: dict
+        :type metadata_path: pathlib.Path
+        :type uri: str
+        :rtype: datacube.model.Dataset
+        """
         type_ = self.types.get_for_dataset_doc(dataset_doc)
         if not type_:
             _LOG.debug('Failed match on dataset doc %r', dataset_doc)
