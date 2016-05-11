@@ -224,23 +224,27 @@ class DatasetResource(object):
         self._db = db
         self.types = dataset_type_resource
 
-    def get(self, id_, provenance=False):
+    def get(self, id_, include_sources=False):
         """
         Get dataset by id
 
-        :param provenance: get the full provenance graph?
+        :param include_sources: get the full provenance graph?
         :rtype datacube.model.Dataset
         """
-        if not provenance:
+        if not include_sources:
             return self._make(self._db.get_dataset(id_))
 
-        datasets = {result['id']: result for result in self._db.get_dataset_sources(id_)}
-        for dataset in datasets.values():
-            dataset['metadata']['lineage']['source_datasets'] = {
-                classifier: datasets[str(source)]['metadata']
-                for source, classifier in zip(dataset['sources'], dataset['classes']) if source
+        datasets = {result['id']: (self._make(result), result) for result in self._db.get_dataset_sources(id_)}
+        for dataset, result in datasets.values():
+            dataset.metadata_doc['lineage']['source_datasets'] = {
+                classifier: datasets[str(source)][0].metadata_doc
+                for source, classifier in zip(result['sources'], result['classes']) if source
                 }
-        return self._make(datasets[id_])
+            dataset.sources = {
+                classifier: datasets[str(source)][0]
+                for source, classifier in zip(result['sources'], result['classes']) if source
+            }
+        return datasets[id_][0]
 
     def has(self, dataset):
         """
