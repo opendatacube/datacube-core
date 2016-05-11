@@ -279,7 +279,7 @@ class StorageUnit(object):
 
 
 class Dataset(object):
-    def __init__(self, type_, metadata_doc, local_uri):
+    def __init__(self, type_, metadata_doc, local_uri, sources=None, managed=False):
         """
         A dataset on disk.
 
@@ -287,6 +287,7 @@ class Dataset(object):
         :param metadata_doc: the document (typically a parsed json/yaml)
         :type metadata_doc: dict
         :param local_uri: A URI to access this dataset locally.
+        :param managed: Should dataset files be managed by the datacube instance (vs managed externally)
         :type local_uri: str
         """
         #: :type: DatasetType
@@ -295,7 +296,14 @@ class Dataset(object):
         #: :type: dict
         self.metadata_doc = metadata_doc
 
+        #: :type: str
         self.local_uri = local_uri
+
+        #: :type: dict[str, Dataset]
+        self.sources = sources or {}
+
+        #: :type: bool
+        self.managed = managed
 
     @property
     def metadata_type(self):
