@@ -140,7 +140,7 @@ def ls5_nbar_gtiff_doc(default_metadata_type):
 
 @pytest.fixture
 def ls5_nbar_gtiff_type(index, ls5_nbar_gtiff_doc):
-    return index.datasets.types.add(ls5_nbar_gtiff_doc)
+    return index.datasets.types.add_document(ls5_nbar_gtiff_doc)
 
 
 @pytest.fixture
@@ -210,7 +210,7 @@ def indexed_ls5_scene_dataset_type(index, default_metadata_type):
     dataset_types = load_test_storage_config(DATASET_TYPES/'ls5_scenes.yaml')
 
     for dataset_type in dataset_types:
-        index.datasets.types.add(dataset_type)
+        index.datasets.types.add_document(dataset_type)
 
     return None
 

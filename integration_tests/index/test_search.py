@@ -49,7 +49,7 @@ def indexed_ls7_nbar(global_integration_cli_args, index):
 
 @pytest.fixture
 def pseudo_telemetry_type(index, default_metadata_type):
-    index.datasets.types.add({
+    index.datasets.types.add_document({
         'name': 'ls8_telemetry',
         'match': {
             'metadata': {

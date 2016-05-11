@@ -191,12 +191,12 @@ def test_idempotent_add_collection(index, ls5_nbar_gtiff_type, ls5_nbar_gtiff_do
     assert index.datasets.types.get_by_name(ls5_nbar_gtiff_type.name) is not None
 
     # Re-add should have no effect, because it's equal to the current one.
-    index.datasets.types.add(ls5_nbar_gtiff_doc)
+    index.datasets.types.add_document(ls5_nbar_gtiff_doc)
 
     # But if we add the same type with differing properties we should get an error:
     different_telemetry_collection = copy.deepcopy(ls5_nbar_gtiff_doc)
     different_telemetry_collection['match']['metadata']['ga_label'] = 'something'
     with pytest.raises(ValueError):
-        index.datasets.types.add(different_telemetry_collection)
+        index.datasets.types.add_document(different_telemetry_collection)
 
         # TODO: Support for adding/changing search fields?

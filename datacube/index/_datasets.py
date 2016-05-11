@@ -143,7 +143,7 @@ class DatasetTypeResource(object):
             )
         return self.get_by_name(type_.name)
 
-    def add(self, definition):
+    def add_document(self, definition):
         """
         :type definition: dict
         :rtype: datacube.model.DatasetType
@@ -156,7 +156,7 @@ class DatasetTypeResource(object):
         :type definitions: list[dict]
         """
         for definition in definitions:
-            self.add(definition)
+            self.add_document(definition)
 
     @cachetools.cached(cachetools.TTLCache(100, 60))
     def get(self, id_):

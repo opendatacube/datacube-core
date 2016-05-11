@@ -133,7 +133,7 @@ def add_dataset_types(ctx, index, files):
     """
     for descriptor_path, parsed_doc in _read_docs(files):
         try:
-            index.datasets.types.add(parsed_doc)
+            index.datasets.types.add_document(parsed_doc)
             echo('Added "%s"' % parsed_doc['name'])
         except KeyError as ke:
             _LOG.exception(ke)

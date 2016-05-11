@@ -75,7 +75,7 @@ def test_index_dataset_in_transactions(index, db, local_config, default_metadata
     assert not db.contains_dataset(_telemetry_uuid)
 
     with db.begin() as transaction:
-        dataset_type = index.datasets.types.add(_pseudo_telemetry_dataset_type)
+        dataset_type = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
         was_inserted = db.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,
@@ -111,7 +111,7 @@ def test_index_dataset_with_location(index, default_metadata_type):
     """
     first_file = '/tmp/first/something.yaml'
     second_file = '/tmp/second/something.yaml'
-    type_ = index.datasets.types.add(_pseudo_telemetry_dataset_type)
+    type_ = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
     dataset = index.datasets.add(
         _telemetry_dataset,
         metadata_path=Path(first_file)
@@ -155,7 +155,7 @@ def test_index_storage_unit(index, db, default_metadata_type):
     """
 
     # Setup foreign keys for our storage unit.
-    type_ = index.datasets.types.add(_pseudo_telemetry_dataset_type)
+    type_ = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
     was_inserted = db.insert_dataset(
         _telemetry_dataset,
         _telemetry_uuid,
@@ -163,7 +163,7 @@ def test_index_storage_unit(index, db, default_metadata_type):
     )
     assert was_inserted
 
-    storage_dataset_type_ = index.datasets.types.add({
+    storage_dataset_type_ = index.datasets.types.add_document({
         'name': 'ls8_telemetry_storage',
         'match': {
             'metadata': {
