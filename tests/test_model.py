@@ -4,7 +4,7 @@ from textwrap import dedent
 
 import pytest
 
-from datacube.model import _uri_to_local_path, Dataset, DatasetMatcher, StorageType
+from datacube.model import _uri_to_local_path, Dataset, DatasetMatcher, StorageType, GeoPolygon, GeoBox
 
 
 def test_uri_to_local_path():
@@ -118,3 +118,21 @@ SAMPLE_STORAGE_TYPE = {
 
 def test_storage_type_model():
     st = StorageType(SAMPLE_STORAGE_TYPE, target_dataset_type_id=None)
+
+
+def test_geobox():
+    points_list = [
+        [(148.2697, -35.20111), (149.31254, -35.20111), (149.31254, -36.331431), (148.2697, -36.331431)],
+        [(148.2697, 35.20111), (149.31254, 35.20111), (149.31254, 36.331431), (148.2697, 36.331431)],
+        [(-148.2697, 35.20111), (-149.31254, 35.20111), (-149.31254, 36.331431), (-148.2697, 36.331431)],
+        [(-148.2697, -35.20111), (-149.31254, -35.20111), (-149.31254, -36.331431), (-148.2697, -36.331431)],
+        ]
+    for points in points_list:
+        polygon = GeoPolygon(points, 'EPSG:3577')
+        resolution = (25, -25)
+        geobox = GeoBox.from_geopolygon(polygon, resolution)
+
+        assert abs(resolution[0]) > abs(geobox.extent.boundingbox.left - polygon.boundingbox.left)
+        assert abs(resolution[0]) > abs(geobox.extent.boundingbox.right - polygon.boundingbox.right)
+        assert abs(resolution[1]) > abs(geobox.extent.boundingbox.top - polygon.boundingbox.top)
+        assert abs(resolution[1]) > abs(geobox.extent.boundingbox.bottom - polygon.boundingbox.bottom)
