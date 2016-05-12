@@ -107,6 +107,7 @@ measurements:
       resampling_method: nearest
       src_varname: cfmask
       zlib: True
+      units: '1'
       flags_definition:
         undetermined_cloud:
           bits: [15, 14]
@@ -147,8 +148,7 @@ measurements:
           bits: [10,11]
           description: Contains snow or ice
           values:
-            0:
-            not determined
+            0: not determined
             1: no
             2: maybe
             3: yes
