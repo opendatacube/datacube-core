@@ -28,6 +28,10 @@ def contains(v1, v2):
     True
     >>> contains({'a':{'b': 'BOB'}}, {'a':{'b': 'bob'}})
     True
+    >>> contains("bob", "alice")
+    False
+    >>> contains({'a':1}, {'a':1, 'b': 2})
+    False
     """
     if isinstance(v1, string_types):
         return isinstance(v2, string_types) and v1.lower() == v2.lower()
