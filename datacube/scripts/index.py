@@ -45,9 +45,9 @@ def contains(v1, v2):
 def match_doc(rules, doc):
     matched = [rule for rule in rules if contains(doc, rule['metadata'])]
     if not matched:
-        raise RuntimeError('No matches found for %s' % doc)
+        raise RuntimeError('No matches found for %s' % doc.get('id', 'unidentified'))
     if len(matched) > 1:
-        raise RuntimeError('Too many matches found for' % doc)
+        raise RuntimeError('Too many matches found for' % doc.get('id', 'unidentified'))
     return matched[0]
 
 
@@ -71,30 +71,32 @@ def match_dataset(dataset_doc, uri, rules):
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
 @ui.pass_index(app_name='agdc-index')
-def ingest(index, match_rules, dry_run, datasets):
+def index_cmd(index, match_rules, dry_run, datasets):
     rules = read_documents(Path(match_rules)).next()[1]
     # TODO: verify schema
 
     for rule in rules:
         type_ = index.datasets.types.get_by_name(rule['type'])
         if not type_:
-            raise RuntimeError('DatasetType %s does not exists' % rule['type'])
+            _LOG.error('DatasetType %s does not exists', rule['type'])
+            return
         if not contains(type_.definition, rule['metadata']):
-            raise RuntimeError('DatasetType %s can\'t be matched by its own rule' % rule['type'])
+            _LOG.error('DatasetType %s can\'t be matched by its own rule', rule['type'])
+            return
         rule['type'] = type_
 
-    indexed_datasets = []
     for dataset_path in datasets:
         metadata_path = get_metadata_path(Path(dataset_path))
         if not metadata_path or not metadata_path.exists():
             raise ValueError('No supported metadata docs found for dataset {}'.format(dataset_path))
 
         for metadata_path, metadata_doc in read_documents(metadata_path):
-            dataset = match_dataset(metadata_doc, metadata_path.absolute().as_uri(), rules)
-            indexed_datasets.append(dataset)
+            try:
+                dataset = match_dataset(metadata_doc, metadata_path.absolute().as_uri(), rules)
+            except RuntimeError as e:
+                _LOG.error('Unable to create Dataset for %s: %s', metadata_path, e)
+                continue
 
-    if dry_run:
-        return
-
-    for dataset in indexed_datasets:
-        index.datasets.add(dataset)
+            _LOG.info('Matched %s', dataset)
+            if not dry_run:
+                index.datasets.add(dataset)
