@@ -405,8 +405,6 @@ class MetadataType(object):
 
 class DatasetType(object):
     def __init__(self,
-                 name,
-                 match,
                  metadata_type,
                  definition,
                  id_=None):
@@ -414,22 +412,22 @@ class DatasetType(object):
         DatasetType of datasets & storage.
 
         :type metadata_type: MetadataType
-        :type match: DatasetMatcher
-        :type name: str
         """
         self.id = id_
-
-        # Name of collection. Unique.
-        self.name = name
-
-        # Match datasets that should belong to this collection.
-        self.match = match
 
         # All datasets in a collection must have the same metadata_type.
         self.metadata_type = metadata_type
 
         # DatasetType definition.
         self.definition = definition
+
+    @property
+    def name(self):
+        return self.definition['name']
+
+    @property
+    def match(self):
+        return self.definition.get('match', {}).get('metadata', None)
 
     @property
     def gridspec(self):

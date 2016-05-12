@@ -82,7 +82,7 @@ class StorageUnitResource(object):
         }
 
         # Merge with expected dataset type metadata (old storage unit creation code does not include them)
-        merged_descriptor.update(dataset_type.match.metadata)
+        merged_descriptor.update(dataset_type.match)
         merged_descriptor.update(unit.descriptor)
 
         was_newly_inserted = self._db.insert_dataset(

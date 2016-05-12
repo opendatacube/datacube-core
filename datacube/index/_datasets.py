@@ -128,7 +128,7 @@ class DatasetTypeResource(object):
         if not metadata_type:
             raise InvalidDocException('Unknown metadata type: %r' % definition['metadata_type'])
 
-        return DatasetType(name, DatasetMatcher(dataset_metadata), metadata_type, definition)
+        return DatasetType(metadata_type, definition)
 
     def add(self, type_):
         """
@@ -147,7 +147,7 @@ class DatasetTypeResource(object):
         else:
             self._db.add_dataset_type(
                 name=type_.name,
-                metadata=type_.match.metadata,
+                metadata=type_.match,
                 metadata_type_id=type_.metadata_type.id,
                 definition=type_.definition
             )
@@ -223,8 +223,6 @@ class DatasetTypeResource(object):
         :rtype datacube.model.DatasetType
         """
         return DatasetType(
-            query_row['name'],
-            DatasetMatcher(query_row['metadata']),
             definition=query_row['definition'],
             metadata_type=self.metadata_type_resource.get(query_row['metadata_type_ref']),
             id_=query_row['id'],

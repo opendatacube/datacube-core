@@ -130,10 +130,8 @@ _EXAMPLE_METADATA_TYPE = MetadataType(
 )
 
 _EXAMPLE_DATASET_TYPE = DatasetType(
-    'eo',
-    DatasetMatcher({}),
     _EXAMPLE_METADATA_TYPE,
-    {}
+    {'name': 'eo'}
 )
 
 
