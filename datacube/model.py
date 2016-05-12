@@ -443,7 +443,8 @@ class DatasetType(object):
         Latitude/Longitude or X/Y
         :rtype: tuple
         """
-        sr = osr.SpatialReference(self.crs)
+        sr = osr.SpatialReference()
+        sr.SetFromUserInput(self.crs)
         if sr.IsGeographic():
             return 'longitude', 'latitude'
         elif sr.IsProjected():
