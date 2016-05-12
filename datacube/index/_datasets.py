@@ -95,6 +95,10 @@ class MetadataTypeResource(object):
 
 
 class DatasetTypeResource(object):
+    """
+    :type _db: datacube.index.postgres._api.PostgresDb
+    :type metadata_type_resource: MetadataTypeResource
+    """
     def __init__(self, db, metadata_type_resource):
         """
         :type db: datacube.index.postgres._api.PostgresDb
@@ -228,6 +232,10 @@ class DatasetTypeResource(object):
 
 
 class DatasetResource(object):
+    """
+    :type _db: datacube.index.postgres._api.PostgresDb
+    :type types: datacube.index._datasets.DatasetTypeResource
+    """
     def __init__(self, db, dataset_type_resource):
         """
         :type db: datacube.index.postgres._api.PostgresDb
