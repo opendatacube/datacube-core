@@ -4,6 +4,7 @@ Core classes used across modules.
 """
 from __future__ import absolute_import, division
 
+import math
 import codecs
 import logging
 import os
@@ -536,6 +537,16 @@ class GeoPolygon(object):
         self.points = points
         self.crs_str = crs_str
 
+    @classmethod
+    def from_boundingbox(cls, boundingbox, crs_str=None):
+        points = [
+            (boundingbox.left, boundingbox.top),
+            (boundingbox.right, boundingbox.top),
+            (boundingbox.right, boundingbox.bottom),
+            (boundingbox.left, boundingbox.bottom),
+        ]
+        cls(points, crs_str)
+
     @property
     def crs(self):
         crs = osr.SpatialReference()
@@ -608,6 +619,31 @@ class GeoBox(object):
                    affine=_get_tile_transform(tile_index, tile_size, tile_res),
                    width=int(tile_size[0] / abs(tile_res[0])),
                    height=int(tile_size[1] / abs(tile_res[1])))
+
+    @classmethod
+    def from_geopolygon(cls, geopolygon, resolution, align=True):
+        """
+        :type geopolygon: datacube.model.GeoPolygon
+        :param resolution: (x_resolution, y_resolution)
+        :param align: Should the geobox be aligned to pixels of the given resolution. This assumes an origin of (0,0).
+        :type align: boolean
+        :rtype: GeoBox
+        """
+        bounding_box = geopolygon.boundingbox
+        left, top = float(bounding_box.left), float(bounding_box.top)
+        if align:
+            left = math.floor(left / resolution[0]) * resolution[0]
+            top = math.floor(top / resolution[1]) * resolution[1]
+        affine = (Affine.translation(left, top) * Affine.scale(resolution[0], resolution[1]))
+        right, bottom = float(bounding_box.right), float(bounding_box.bottom)
+        width, height = ~affine * (right, bottom)
+        if align:
+            width = math.ceil(width)
+            height = math.ceil(height)
+        return GeoBox(crs_str=geopolygon.crs_str,
+                      affine=affine,
+                      width=int(width),
+                      height=int(height))
 
     def __getitem__(self, item):
         indexes = [slice(index.start or 0, index.stop or size, index.step or 1)
