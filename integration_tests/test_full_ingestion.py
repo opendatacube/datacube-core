@@ -95,15 +95,15 @@ def ensure_dataset_is_indexed(index):
 
 
 def check_grid_mapping(nco):
-    assert 'grid_mapping' in nco.variables['band_1'].ncattrs()
-    grid_mapping = nco.variables['band_1'].grid_mapping
+    assert 'grid_mapping' in nco.variables['blue'].ncattrs()
+    grid_mapping = nco.variables['blue'].grid_mapping
     assert grid_mapping in nco.variables
     assert 'GeoTransform' in nco.variables[grid_mapping].ncattrs()
     assert 'spatial_ref' in nco.variables[grid_mapping].ncattrs()
 
 
 def check_data_shape(nco):
-    assert nco.variables['band_1'].shape == EXPECTED_STORAGE_UNIT_DATA_SHAPE
+    assert nco.variables['blue'].shape == EXPECTED_STORAGE_UNIT_DATA_SHAPE
 
 
 def check_cf_compliance(dataset):
@@ -156,7 +156,7 @@ def check_open_with_api(index):
     assert 'ls5_nbar' in descriptor
     storage_units = descriptor['ls5_nbar']['storage_units']
     query = {
-        'variables': ['band_1'],
+        'variables': ['blue'],
         'dimensions': {
             'latitude': {'range': (-34, -35)},
             'longitude': {'range': (149, 150)}}
@@ -165,34 +165,34 @@ def check_open_with_api(index):
     assert abs(data['element_sizes'][1] - 0.025) < .0000001
     assert abs(data['element_sizes'][2] - 0.025) < .0000001
 
-    data_array = api.get_data_array(storage_type='ls5_nbar', variables=['band_1'],
+    data_array = api.get_data_array(storage_type='ls5_nbar', variables=['blue'],
                                     latitude=(-34, -35), longitude=(149, 150))
     assert data_array.size
 
-    dataset = api.get_dataset(storage_type='ls5_nbar', variables=['band_1'],
+    dataset = api.get_dataset(storage_type='ls5_nbar', variables=['blue'],
                               latitude=(-34, -35), longitude=(149, 150))
-    assert dataset['band_1'].size
+    assert dataset['blue'].size
 
-    data_array_cell = api.get_data_array_by_cell((149, -34), storage_type='ls5_nbar', variables=['band_1'])
+    data_array_cell = api.get_data_array_by_cell((149, -34), storage_type='ls5_nbar', variables=['blue'])
     assert data_array_cell.size
 
     data_array_cell = api.get_data_array_by_cell(x_index=149, y_index=-34,
-                                                 storage_type='ls5_nbar', variables=['band_1'])
+                                                 storage_type='ls5_nbar', variables=['blue'])
     assert data_array_cell.size
 
-    dataset_cell = api.get_dataset_by_cell((149, -34), storage_type='ls5_nbar', variables=['band_1'])
-    assert dataset_cell['band_1'].size
+    dataset_cell = api.get_dataset_by_cell((149, -34), storage_type='ls5_nbar', variables=['blue'])
+    assert dataset_cell['blue'].size
 
-    dataset_cell = api.get_dataset_by_cell([(149, -34), (149, -35)], storage_type='ls5_nbar', variables=['band_1'])
-    assert dataset_cell['band_1'].size
+    dataset_cell = api.get_dataset_by_cell([(149, -34), (149, -35)], storage_type='ls5_nbar', variables=['blue'])
+    assert dataset_cell['blue'].size
 
-    dataset_cell = api.get_dataset_by_cell(x_index=149, y_index=-34, storage_type='ls5_nbar', variables=['band_1'])
-    assert dataset_cell['band_1'].size
+    dataset_cell = api.get_dataset_by_cell(x_index=149, y_index=-34, storage_type='ls5_nbar', variables=['blue'])
+    assert dataset_cell['blue'].size
 
     tiles = api.list_tiles(x_index=149, y_index=-34, storage_type='ls5_nbar')
     for tile_query, tile_attrs in tiles:
         dataset = api.get_dataset_by_cell(**tile_query)
-        assert dataset['band_1'].size
+        assert dataset['blue'].size
 
 
 def make_pgsqljson_match_yaml_load(data):
