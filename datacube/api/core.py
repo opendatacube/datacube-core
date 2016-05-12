@@ -141,7 +141,8 @@ class Datacube(object):
 
         return groups
 
-    def product_data(self, groups, geobox, fuse_func=None):
+    @staticmethod
+    def product_data(groups, geobox, fuse_func=None):
         assert groups
 
         result = xarray.Dataset(attrs={'extent': geobox.extent, 'affine': geobox.affine, 'crs': geobox.crs})
