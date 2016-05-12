@@ -39,4 +39,3 @@
     product_type: pqa
     format:
         name: GeoTIFF
-  managed: True
