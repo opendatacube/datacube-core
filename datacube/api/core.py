@@ -142,15 +142,13 @@ class Datacube(object):
         return groups
 
     @staticmethod
-    def product_data(groups, geobox, fuse_func=None):
+    def product_data(groups, geobox, measurements, fuse_func=None):
         assert groups
 
         result = xarray.Dataset(attrs={'extent': geobox.extent, 'affine': geobox.affine, 'crs': geobox.crs})
         result['time'] = ('time', numpy.array([v[0] for v in groups]), {'units': 'seconds since 1970-01-01 00:00:00'})
         for name, v in geobox.coordinate_labels.items():
             result[name] = (name, v, {'units': geobox.coordinates[name].units})
-
-        measurements = groups[0][1][0].type.definition['measurements']
 
         for name, stuffs in measurements.items():
             data = numpy.empty((len(groups),) + geobox.shape, dtype=stuffs['dtype'])
