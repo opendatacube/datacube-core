@@ -168,7 +168,7 @@ def ls5_nbar_ingest_config(tmpdir):
     config = alter_storage_type_for_testing(config)
 
     config_path = dataset_dir.join('ls5_nbar_ingest_config.yaml')
-    with file(str(config_path), 'w') as stream:
+    with open(str(config_path), 'w') as stream:
         yaml.dump(config, stream)
     return config_path
 

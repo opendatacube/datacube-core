@@ -284,7 +284,7 @@ def get_namemap(config):
 @click.option('--dry-run', '-d', is_flag=True, default=False, help='Check if everything is ok')
 @ui.pass_index(app_name='agdc-ingest')
 def ingest_cmd(index, config, dry_run, executor):
-    config = read_documents(Path(config)).next()[1]
+    config = next(read_documents(Path(config)))[1]
     source_type = index.datasets.types.get_by_name(config['source_type'])
     if not source_type:
         _LOG.error("Source DatasetType %s does not exist", config['source_type'])

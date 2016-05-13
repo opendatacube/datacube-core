@@ -72,7 +72,7 @@ def match_dataset(dataset_doc, uri, rules):
                 nargs=-1)
 @ui.pass_index(app_name='agdc-index')
 def index_cmd(index, match_rules, dry_run, datasets):
-    rules = read_documents(Path(match_rules)).next()[1]
+    rules = next(read_documents(Path(match_rules)))[1]
     # TODO: verify schema
 
     for rule in rules:
