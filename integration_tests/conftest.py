@@ -122,16 +122,14 @@ def dict_api(index):
 def ls5_nbar_gtiff_doc(default_metadata_type):
     return {
         "name": "ls5_nbart_p54_gtiff",
-        "match": {
-            "metadata": {
-                "platform": {
-                    "code": "LANDSAT_5"
-                },
-                "product_type": "nbart",
-                "ga_level": "P54",
-                "format": {
-                    "name": "GeoTIFF"
-                }
+        "metadata": {
+            "platform": {
+                "code": "LANDSAT_5"
+            },
+            "product_type": "nbart",
+            "ga_level": "P54",
+            "format": {
+                "name": "GeoTIFF"
             }
         },
         "metadata_type": default_metadata_type.name  # "eo"

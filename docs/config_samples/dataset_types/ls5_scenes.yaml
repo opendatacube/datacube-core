@@ -22,7 +22,7 @@ metadata:
         name: TM
     product_type: ortho
     format:
-        name: GeoTIFF
+        name: GeoTiff
 
 ---
 
@@ -37,7 +37,7 @@ metadata:
         name: TM
     product_type: nbar
     format:
-        name: GeoTIFF
+        name: GeoTiff
 
 measurements:
   1:
@@ -78,7 +78,7 @@ metadata:
         name: TM
     product_type: pqa
     format:
-        name: GeoTIFF
+        name: GeoTiff
 
 measurements:
   pqa:

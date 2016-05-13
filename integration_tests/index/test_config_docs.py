@@ -195,7 +195,7 @@ def test_idempotent_add_collection(index, ls5_nbar_gtiff_type, ls5_nbar_gtiff_do
 
     # But if we add the same type with differing properties we should get an error:
     different_telemetry_collection = copy.deepcopy(ls5_nbar_gtiff_doc)
-    different_telemetry_collection['match']['metadata']['ga_label'] = 'something'
+    different_telemetry_collection['metadata']['ga_label'] = 'something'
     with pytest.raises(ValueError):
         index.datasets.types.add_document(different_telemetry_collection)
 

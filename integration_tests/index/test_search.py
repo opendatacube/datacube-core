@@ -51,18 +51,16 @@ def indexed_ls7_nbar(global_integration_cli_args, index):
 def pseudo_telemetry_type(index, default_metadata_type):
     index.datasets.types.add_document({
         'name': 'ls8_telemetry',
-        'match': {
-            'metadata': {
-                'product_type': 'pseudo_telemetry_data',
-                'platform': {
-                    'code': 'LANDSAT_8'
-                },
-                'instrument': {
-                    'name': 'OLI_TIRS'
-                },
-                'format': {
-                    'name': 'PSEUDOMD'
-                }
+        'metadata': {
+            'product_type': 'pseudo_telemetry_data',
+            'platform': {
+                'code': 'LANDSAT_8'
+            },
+            'instrument': {
+                'name': 'OLI_TIRS'
+            },
+            'format': {
+                'name': 'PSEUDOMD'
             }
         },
         'metadata_type': default_metadata_type.name  # 'eo'

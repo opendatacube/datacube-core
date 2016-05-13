@@ -50,15 +50,13 @@ _telemetry_dataset = {
 
 _pseudo_telemetry_dataset_type = {
     'name': 'ls8_telemetry',
-    'match': {
-        'metadata': {
-            'product_type': 'satellite_telemetry_data',
-            'platform': {
-                'code': 'LANDSAT_8'
-            },
-            'format': {
-                'name': 'MD'
-            }
+    'metadata': {
+        'product_type': 'satellite_telemetry_data',
+        'platform': {
+            'code': 'LANDSAT_8'
+        },
+        'format': {
+            'name': 'MD'
         }
     },
     'metadata_type': 'eo'
@@ -165,10 +163,8 @@ def test_index_storage_unit(index, db, default_metadata_type):
 
     storage_dataset_type_ = index.datasets.types.add_document({
         'name': 'ls8_telemetry_storage',
-        'match': {
-            'metadata': {
-                'test': 'descriptor',
-            }
+        'metadata': {
+            'test': 'descriptor',
         },
         'metadata_type': 'storage_unit'
     })
