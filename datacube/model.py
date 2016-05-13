@@ -427,7 +427,11 @@ class DatasetType(object):
 
     @property
     def metadata(self):
-        return self.definition.get('metadata', None)
+        return self.definition['metadata']
+
+    @property
+    def measurements(self):
+        return self.definition['measurements']
 
     @property
     def gridspec(self):
