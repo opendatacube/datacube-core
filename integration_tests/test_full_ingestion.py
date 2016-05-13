@@ -83,8 +83,8 @@ def test_new_full_ingestion(global_integration_cli_args, index, example_ls5_data
 
     ds_path = str(datasets[0].local_path)
     with netCDF4.Dataset(ds_path) as nco:
-        # TODO: check_data_shape(nco)
-        # TODO: check_grid_mapping(nco)
+        check_data_shape(nco)
+        check_grid_mapping(nco)
         check_cf_compliance(nco)
         # TODO: check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset)
         # TODO: check_global_attributes(nco, su.storage_type.global_attributes)
