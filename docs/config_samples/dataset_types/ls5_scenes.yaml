@@ -2,13 +2,12 @@ name: ls5_satellite_telemetry_data
 description: ls5_satellite_telemetry_data
 metadata_type: eo
 
-match:
-    metadata:
-        platform:
-            code: LANDSAT_5
-        instrument:
-            name: TM
-        product_type: satellite_telemetry_data
+metadata:
+    platform:
+        code: LANDSAT_5
+    instrument:
+        name: TM
+    product_type: satellite_telemetry_data
 
 ---
 
@@ -16,15 +15,14 @@ name: ls5_ortho_scene
 description: ls5_ortho
 metadata_type: eo
 
-match:
-    metadata:
-        platform:
-            code: LANDSAT_5
-        instrument:
-            name: TM
-        product_type: ortho
-        format:
-            name: GeoTiff
+metadata:
+    platform:
+        code: LANDSAT_5
+    instrument:
+        name: TM
+    product_type: ortho
+    format:
+        name: GeoTIFF
 
 ---
 
@@ -32,15 +30,14 @@ name: ls5_nbar_scene
 description: Landsat 5 NBAR 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
 metadata_type: eo
 
-match:
-    metadata:
-        platform:
-            code: LANDSAT_5
-        instrument:
-            name: TM
-        product_type: nbar
-        format:
-            name: GeoTiff
+metadata:
+    platform:
+        code: LANDSAT_5
+    instrument:
+        name: TM
+    product_type: nbar
+    format:
+        name: GeoTIFF
 
 measurements:
   1:
@@ -74,15 +71,14 @@ name: ls5_pq_scene
 description: Landsat 5 PQ 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
 metadata_type: eo
 
-match:
-    metadata:
-        platform:
-            code: LANDSAT_5
-        instrument:
-            name: TM
-        product_type: pqa
-        format:
-            name: GeoTiff
+metadata:
+    platform:
+        code: LANDSAT_5
+    instrument:
+        name: TM
+    product_type: pqa
+    format:
+        name: GeoTIFF
 
 measurements:
   pqa:
