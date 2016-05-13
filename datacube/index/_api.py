@@ -35,6 +35,10 @@ def connect(local_config=LocalConfig.find(), application_name=None, validate_con
 
 
 class Index(object):
+    """
+    :type datasets: datacube.index._datasets.DatasetResource
+    :type metadata_types: datacube.index._datasets.MetadataTypeResource
+    """
     def __init__(self, db, local_config):
         """
         :type db: datacube.index.postgres._api.PostgresDb
