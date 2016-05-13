@@ -58,8 +58,7 @@ def test_new_full_ingestion(global_integration_cli_args, index, example_ls5_data
     assert not result.exception
     assert result.exit_code == 0
 
-    # TODO: dataset indexed
-    # TODO: can pull data out
+    ensure_dataset_is_indexed(index)
 
     opts = list(global_integration_cli_args)
     opts.extend(
@@ -79,9 +78,18 @@ def test_new_full_ingestion(global_integration_cli_args, index, example_ls5_data
     assert not result.exception
     assert result.exit_code == 0
 
-    # TODO: DatasetType created
-    # TODO: datasets created
-    # TODO: netcdfs are cool
+    datasets = index.datasets.search_eager(type='ls5_nbar_albers')
+    assert len(datasets) > 0
+
+    ds_path = str(datasets[0].local_path)
+    with netCDF4.Dataset(ds_path) as nco:
+        # TODO: check_data_shape(nco)
+        # TODO: check_grid_mapping(nco)
+        check_cf_compliance(nco)
+        # TODO: check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset)
+        # TODO: check_global_attributes(nco, su.storage_type.global_attributes)
+    check_open_with_xray(ds_path)
+
     # TODO: can pull data out
 
 
