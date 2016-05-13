@@ -189,24 +189,24 @@ def sorted_diff(a, b, key_func=lambda x: x):
     biter = iter(b)
 
     try:
-        val_b = biter.next()
+        val_b = next(biter)
     except StopIteration:
         for val_a in aiter:
             yield val_a
         return
-    val_a = aiter.next()
+    val_a = next(aiter)
 
     while True:
         if key_func(val_a) < key_func(val_b):
             yield val_a
-            val_a = aiter.next()
+            val_a = next(aiter)
         elif key_func(val_a) > key_func(val_b):
             try:
-                val_b = biter.next()
+                val_b = next(biter)
             except StopIteration:
                 break
         else:
-            val_a = aiter.next()
+            val_a = next(aiter)
 
     yield val_a
     for val_a in aiter:
