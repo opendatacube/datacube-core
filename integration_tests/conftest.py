@@ -39,6 +39,7 @@ PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs' / 'config_samples'
 DATASET_TYPES = CONFIG_SAMPLES / 'dataset_types'
 LS5_SAMPLES = CONFIG_SAMPLES / 'storage_types' / 'ga_landsat_5'
+LS5_NBAR_INGEST_CONFIG = CONFIG_SAMPLES / 'ingester' / 'ls5_nbar_albers.yaml'
 LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_geographic.yaml'
 LS5_NBAR_NAME = 'ls5_nbar'
 LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_albers.yaml'
@@ -156,6 +157,20 @@ def example_ls5_dataset(tmpdir):
         create_empty_geotiff(str(path))
 
     return Path(str(dataset_dir))
+
+
+@pytest.fixture
+def ls5_nbar_ingest_config(tmpdir):
+    dataset_dir = tmpdir.mkdir('ls5_nbar_ingest_test')
+    config = load_yaml_file(LS5_NBAR_INGEST_CONFIG)[0]
+
+    config['location'] = str(dataset_dir)
+    config = alter_storage_type_for_testing(config)
+
+    config_path = dataset_dir.join('ls5_nbar_ingest_config.yaml')
+    with file(str(config_path), 'w') as stream:
+        yaml.dump(config, stream)
+    return config_path
 
 
 def create_empty_geotiff(path):

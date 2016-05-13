@@ -13,11 +13,13 @@ import yaml
 from click.testing import CliRunner
 
 import datacube.scripts.run_ingest
+import datacube.scripts.agdc
 from .conftest import LS5_NBAR_NAME, LS5_NBAR_ALBERS_NAME, EXAMPLE_LS5_DATASET_ID
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
 LS5_SAMPLES = CONFIG_SAMPLES / 'ga_landsat_5/'
+LS5_MATCH_RULES = CONFIG_SAMPLES / 'match_rules' / 'ls5_scenes.yaml'
 LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_geographic.yaml'
 LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_albers.yaml'
 
@@ -32,6 +34,55 @@ EXPECTED_NUMBER_OF_STORAGE_UNITS = 12
 JSON_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
 COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
+
+
+@pytest.mark.usefixtures('default_metadata_type',
+                         'indexed_ls5_scene_dataset_type')
+def test_new_full_ingestion(global_integration_cli_args, index, example_ls5_dataset, ls5_nbar_ingest_config):
+    opts = list(global_integration_cli_args)
+    opts.extend(
+        [
+            '-vv',
+            'index',
+            '--match-rules',
+            str(LS5_MATCH_RULES),
+            str(example_ls5_dataset)
+        ]
+    )
+    result = CliRunner().invoke(
+        datacube.scripts.agdc.cli,
+        opts,
+        catch_exceptions=False
+    )
+    print(result.output)
+    assert not result.exception
+    assert result.exit_code == 0
+
+    # TODO: dataset indexed
+    # TODO: can pull data out
+
+    opts = list(global_integration_cli_args)
+    opts.extend(
+        [
+            '-vv',
+            'ingest',
+            '--config',
+            str(ls5_nbar_ingest_config)
+        ]
+    )
+    result = CliRunner().invoke(
+        datacube.scripts.agdc.cli,
+        opts,
+        catch_exceptions=False
+    )
+    print(result.output)
+    assert not result.exception
+    assert result.exit_code == 0
+
+    # TODO: DatasetType created
+    # TODO: datasets created
+    # TODO: netcdfs are cool
+    # TODO: can pull data out
 
 
 @pytest.mark.usefixtures('default_metadata_type',
