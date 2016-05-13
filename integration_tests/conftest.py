@@ -37,8 +37,8 @@ _EXAMPLE_LS5_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('example-ls5-nba
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs' / 'config_samples'
-DATASET_TYPES = PROJECT_ROOT / 'docs' / 'dataset_types'
-LS5_SAMPLES = CONFIG_SAMPLES / 'ga_landsat_5'
+DATASET_TYPES = CONFIG_SAMPLES / 'dataset_types'
+LS5_SAMPLES = CONFIG_SAMPLES / 'storage_types' / 'ga_landsat_5'
 LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_geographic.yaml'
 LS5_NBAR_NAME = 'ls5_nbar'
 LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_albers.yaml'

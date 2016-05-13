@@ -15,7 +15,7 @@ from datacube.index.postgres.tables._core import drop_db, has_schema
 _LOG = logging.getLogger(__name__)
 
 EXAMPLE_STORAGE_TYPE_DOCS = Path(__file__).parent.parent. \
-    joinpath('docs', 'config_samples').glob('**/*.yaml')
+    joinpath('docs', 'config_samples', 'storage_types').glob('**/*.yaml')
 
 # Documents that shouldn't be accepted as mapping docs.
 INVALID_MAPPING_DOCS = Path(__file__).parent.parent. \

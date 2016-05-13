@@ -53,9 +53,9 @@ storage:
           x: 25
           y: -25
   chunking:
-      x: 500
-      y: 500
-      time: 100
+      x: 200
+      y: 200
+      time: 1
   dimension_order: ['time', 'y', 'x']
 
 measurements:
@@ -177,9 +177,9 @@ storage:
           x: 25
           y: -25
   chunking:
-      x: 500
-      y: 500
-      time: 100
+      x: 200
+      y: 200
+      time: 1
   dimension_order: ['time', 'y', 'x']
 
 measurements:
