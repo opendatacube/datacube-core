@@ -426,8 +426,8 @@ class DatasetType(object):
         return self.definition['name']
 
     @property
-    def match(self):
-        return self.definition.get('match', {}).get('metadata', None)
+    def metadata(self):
+        return self.definition.get('metadata', None)
 
     @property
     def gridspec(self):

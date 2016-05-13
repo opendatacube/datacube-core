@@ -114,7 +114,7 @@ class DatasetTypeResource(object):
         """
         # This column duplication is getting out of hand:
         name = definition['name']
-        dataset_metadata = definition['match']['metadata']
+        dataset_metadata = definition['metadata']
         metadata_type = definition['metadata_type']
 
         # They either specified the name of a metadata type, or specified a metadata type.
@@ -147,7 +147,7 @@ class DatasetTypeResource(object):
         else:
             self._db.add_dataset_type(
                 name=type_.name,
-                metadata=type_.match,
+                metadata=type_.metadata,
                 metadata_type_id=type_.metadata_type.id,
                 definition=type_.definition
             )
