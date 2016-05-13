@@ -17,10 +17,6 @@ from .mock_api_response import mock_get_data, mock_get_descriptor
 #
 
 
-fails_under_py3 = pytest.mark.xfail(sys.version_info > (3, 0),
-                                    reason="Not Python 3 Compatible")
-
-
 @pytest.fixture
 def mock_api():
     mock_api = MagicMock(type=API)
@@ -29,7 +25,6 @@ def mock_api():
     return mock_api
 
 
-@fails_under_py3
 def test_get_data(mock_api):
     # Test get data
 
@@ -55,7 +50,6 @@ def test_get_data(mock_api):
     assert result['array_result']['band_30'].shape == (2, 400, 400)
 
 
-@fails_under_py3
 def test_perform_ndvi(mock_api):
     # Test perform ndvi
 
@@ -79,7 +73,6 @@ def test_perform_ndvi(mock_api):
     print(res)
 
 
-@fails_under_py3
 def test_perform_old_ndvi_version(mock_api):
     # Test perform ndvi - old version for backwards compatibility
 
@@ -97,7 +90,6 @@ def test_perform_old_ndvi_version(mock_api):
     e.execute_plan(a.plan)
 
 
-@fails_under_py3
 def test_median_reduction_over_time(mock_api):
     # Test median reduction over time
 
@@ -116,7 +108,6 @@ def test_median_reduction_over_time(mock_api):
     e.execute_plan(a.plan)
 
 
-@fails_under_py3
 def test_old_version_median_reduction_over_time(mock_api):
     # Test median reduction over time - old version for backwards compatibility
 
@@ -135,7 +126,6 @@ def test_old_version_median_reduction_over_time(mock_api):
     result = e.execute_plan(a.plan)
 
 
-@fails_under_py3
 def test_median_reduction_over_lat_long(mock_api):
     # Test median reduction over lat/long
 
@@ -154,7 +144,6 @@ def test_median_reduction_over_lat_long(mock_api):
     e.execute_plan(a.plan)
 
 
-@fails_under_py3
 def test_median_reduction_over_latlong_old_version(mock_api):
     # Test median reduction over lat/long - old version for backwards compatibility
 
@@ -193,7 +182,6 @@ def test_perform_ndvi_mask_old_version(mock_api):
     e.execute_plan(a.plan)
 
 
-@fails_under_py3
 def test_perform_ndvi_mask(mock_api):
     # Test perform ndvi + mask
 
@@ -215,7 +203,6 @@ def test_perform_ndvi_mask(mock_api):
     e.execute_plan(a.plan)
 
 
-@fails_under_py3
 def test_sensor_specific_bandmath_old_version(mock_api):
     # Test sensor specific bandmath - old version for backwards compatibility
 
@@ -232,7 +219,6 @@ def test_sensor_specific_bandmath_old_version(mock_api):
     result = e.execute_plan(a.plan)
 
 
-@fails_under_py3
 def test_bit_of_everything(mock_api):
     # Test bit of everything
 
@@ -256,7 +242,6 @@ def test_bit_of_everything(mock_api):
     result = e.execute_plan(a.plan)
 
 
-@fails_under_py3
 def test_median_reduction_over_time_old_version(mock_api):
     # Test median reduction over time - old version for backwards compatibility
 
