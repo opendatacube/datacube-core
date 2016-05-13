@@ -80,7 +80,7 @@ def index_cmd(index, match_rules, dry_run, datasets):
         if not type_:
             _LOG.error('DatasetType %s does not exists', rule['type'])
             return
-        if not contains(type_.definition, rule['metadata']):
+        if not contains(type_.metadata, rule['metadata']):
             _LOG.error('DatasetType %s can\'t be matched by its own rule', rule['type'])
             return
         rule['type'] = type_
