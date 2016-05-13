@@ -62,37 +62,37 @@ default_measurement: &MEASUREMENT_DEFAULTS
   contiguous: False
 
 measurements:
-    'band_1':
+    'blue':
         <<: *MEASUREMENT_DEFAULTS
         src_varname: '1'
         attrs:
             wavelength: 0.45 - 0.52 micrometers
             color: Blue
-    'band_2':
+    'green':
         <<: *MEASUREMENT_DEFAULTS
         src_varname: '2'
         attrs:
             wavelength: 0.52 - 0.60 micrometers
             color: Green
-    'band_3':
+    'red':
         <<: *MEASUREMENT_DEFAULTS
         src_varname: '3'
         attrs:
             wavelength: 0.63 - 0.69 micrometers
             color: Red
-    'band_4':
+    'nir':
         <<: *MEASUREMENT_DEFAULTS
         src_varname: '4'
         attrs:
             wavelength: 0.77 - 0.90 micrometers
             color: Near Infrared
-    'band_5':
+    'swir1':
         <<: *MEASUREMENT_DEFAULTS
         src_varname: '5'
         attrs:
             wavelength: 1.55 - 1.75 micrometers
             color: Short-wave Infrared
-    'band_7':
+    'swir2':
         <<: *MEASUREMENT_DEFAULTS
         src_varname: '7'
         attrs:

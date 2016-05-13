@@ -97,6 +97,21 @@ definitions:
             layer:
                 type: number
 
+            spectral_definition:
+                description: A structured measured relative spectral response with sample intervals
+                type: object
+                properties:
+                  wavelength:
+                    description: List of comma delimited wavelength values
+                    type: array
+                    items:
+                      type: number
+                  response:
+                    description: The relative spectral response of the sensor band at a given wavelength
+                    type: array
+                    items:
+                      type: number
+
             flags_definition:
                 description: A structured definition of bit flags and meanings
                 type: object

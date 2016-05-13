@@ -1,6 +1,6 @@
 
 name: DEM
-description: DEM 25 metre, 25m tile
+description: DEM 25 metre, 100km tile
 
 match:
     metadata:

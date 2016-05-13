@@ -112,12 +112,13 @@ class AnalyticsEngine(object):
 
         array_descriptors = self.api.get_descriptor(query_parameters)
 
+        storage_type_key = next(iter(array_descriptors.keys()))
+
         # stopgap until storage_units are filtered based on descriptors
-        array_descriptors[array_descriptors.keys()[0]]['storage_units'] = {}
+        array_descriptors[storage_type_key]['storage_units'] = {}
 
         array_results = []
 
-        storage_type_key = array_descriptors.keys()[0]
         for variable in variables:
             if variable not in array_descriptors[storage_type_key]['variables']:
                 raise AssertionError(variable, "not present in", storage_type_key, "descriptor")
@@ -168,11 +169,11 @@ class AnalyticsEngine(object):
         for array in arrays.keys():
             task['array_input'].append(array)
 
-        task['array_mask'] = mask.keys()[0]
+        task['array_mask'] = next(iter(mask.keys()))
         task['orig_function'] = 'apply_cloud_mask'
         task['function'] = 'apply_cloud_mask'
         task['expression'] = 'none'
-        task['array_output'] = copy.deepcopy(arrays.values()[0]['array_output'])
+        task['array_output'] = copy.deepcopy(next(iter(arrays.values()))['array_output'])
         task['array_output']['variable'] = name
         task['operation_type'] = OperationType.Cloud_Mask
 
@@ -192,7 +193,7 @@ class AnalyticsEngine(object):
         if not isinstance(arrays, list):
             arrays = [arrays]
         for array in arrays:
-            variables.append(array.keys()[0])
+            variables.append(next(iter(array.keys())))
 
         orig_function = function
         LOG.debug('function before = %s', function)
@@ -207,12 +208,12 @@ class AnalyticsEngine(object):
         task['array_input'] = []
 
         for array in arrays:
-            task['array_input'].append(array.keys()[0])
+            task['array_input'].append(next(iter(array.keys())))
 
         task['orig_function'] = orig_function
         task['function'] = function
         task['expression'] = function
-        task['array_output'] = copy.deepcopy(arrays[0].values()[0]['array_output'])
+        task['array_output'] = copy.deepcopy(next(iter(arrays[0].values()))['array_output'])
         task['array_output']['variable'] = name
         task['operation_type'] = OperationType.Expression
 
@@ -233,16 +234,17 @@ class AnalyticsEngine(object):
 
         variables = []
         if size == 1:  # 1 input
-            if arrays.values()[0]['function'] == 'get_data':
+            array_value = next(iter(arrays.values()))
+            if array_value['function'] == 'get_data':
 
                 # check shape is same for all input arrays
-                shape = arrays.values()[0]['array_input'][0].values()[0]['shape']
-                for variable in arrays.values()[0]['array_input']:
-                    if shape != variable.values()[0]['shape']:
+                shape = next(iter(array_value['array_input'][0].values()))['shape']
+                for variable in array_value['array_input']:
+                    if shape != next(iter(variable.values()))['shape']:
                         raise AssertionError("Shape is different")
-                    variables.append(variable.keys()[0])
+                    variables.append(next(iter(variable.keys())))
             else:
-                variables.append(arrays.keys()[0])
+                variables.append(next(iter(arrays.keys())))
 
             orig_function = function
             LOG.debug('function before = %s', function)
@@ -255,11 +257,11 @@ class AnalyticsEngine(object):
             task = {}
 
             task['array_input'] = []
-            task['array_input'].append(arrays.keys()[0])
+            task['array_input'].append(next(iter(arrays.keys())))
             task['orig_function'] = orig_function
             task['function'] = function
             task['expression'] = 'none'
-            task['array_output'] = copy.deepcopy(arrays.values()[0]['array_output'])
+            task['array_output'] = copy.deepcopy(array_value['array_output'])
             task['array_output']['variable'] = name
             task['operation_type'] = OperationType.Bandmath
 
@@ -267,7 +269,7 @@ class AnalyticsEngine(object):
 
         else:  # multi-dependencies
             for array in arrays:
-                variables.append(array.keys()[0])
+                variables.append(next(iter(array.keys())))
 
             orig_function = function
             LOG.debug('function before = %s', function)
@@ -282,12 +284,12 @@ class AnalyticsEngine(object):
             task['array_input'] = []
 
             for array in arrays:
-                task['array_input'].append(array.keys()[0])
+                task['array_input'].append(next(iter(array.keys())))
 
             task['orig_function'] = orig_function
             task['function'] = function
             task['expression'] = 'none'
-            task['array_output'] = copy.deepcopy(arrays[0].values()[0]['array_output'])
+            task['array_output'] = copy.deepcopy(next(iter(arrays[0].values()))['array_output'])
             task['array_output']['variable'] = name
             task['operation_type'] = OperationType.Bandmath
 
@@ -325,25 +327,25 @@ class AnalyticsEngine(object):
         if size != 1:
             raise AssertionError("Input array should be 1")
 
-        if arrays.values()[0]['function'] == 'get_data':
-
-            variable = arrays.values()[0]['array_input'][0].values()[0]['variable']
+        if next(iter(arrays.values()))['function'] == 'get_data':
+            array_value = next(iter(arrays.values()))
+            variable = next(iter(array_value['array_input'][0].values()))['variable']
             orig_function = function
             function = function.replace('array1', variable)
 
             task = {}
 
             task['array_input'] = []
-            task['array_input'].append(arrays.keys()[0])
+            task['array_input'].append(next(iter(arrays.keys())))
             task['orig_function'] = orig_function
             task['function'] = function
             task['expression'] = 'none'
             task['dimension'] = copy.deepcopy(dimensions)
 
-            task['array_output'] = copy.deepcopy(arrays.values()[0]['array_output'])
+            task['array_output'] = copy.deepcopy(array_value['array_output'])
             task['array_output']['variable'] = name
             task['array_output']['dimensions_order'] = \
-                self.diff_list(arrays.values()[0]['array_input'][0].values()[0]['dimensions_order'], dimensions)
+                self.diff_list(next(iter(array_value['array_input'][0].values()))['dimensions_order'], dimensions)
 
             for item in task['dimension']:
                 if item in task['array_output']['dimensions']:
@@ -351,15 +353,15 @@ class AnalyticsEngine(object):
             result = ()
             for value in task['array_output']['dimensions_order']:
                 input_task = self.task(task['array_input'][0])
-                index = input_task.values()[0]['array_output']['dimensions_order'].index(value)
-                value = input_task.values()[0]['array_output']['shape'][index]
+                index = next(iter(input_task.values()))['array_output']['dimensions_order'].index(value)
+                value = next(iter(input_task.values()))['array_output']['shape'][index]
                 result += (value,)
             task['array_output']['shape'] = result
             task['operation_type'] = OperationType.Reduction
 
             return self.add_to_plan(name, task)
         else:
-            variable = arrays.keys()[0]
+            variable = next(iter(arrays.keys()))
             orig_function = function
             function = function.replace('array1', variable)
 
@@ -372,16 +374,16 @@ class AnalyticsEngine(object):
             task['expression'] = 'none'
             task['dimension'] = copy.deepcopy(dimensions)
 
-            task['array_output'] = copy.deepcopy(arrays.values()[0]['array_output'])
+            task['array_output'] = copy.deepcopy(next(iter(arrays.values()))['array_output'])
             task['array_output']['variable'] = name
             task['array_output']['dimensions_order'] = \
-                self.diff_list(arrays.values()[0]['array_output']['dimensions_order'], dimensions)
+                self.diff_list(next(iter(arrays.values()))['array_output']['dimensions_order'], dimensions)
 
             result = ()
             for value in task['array_output']['dimensions_order']:
                 input_task = self.task(task['array_input'][0])
-                index = input_task.values()[0]['array_output']['dimensions_order'].index(value)
-                value = input_task.values()[0]['array_output']['shape'][index]
+                index = next(iter(input_task.values()))['array_output']['dimensions_order'].index(value)
+                value = next(iter(input_task.values()))['array_output']['shape'][index]
                 result += (value,)
             task['array_output']['shape'] = result
             task['operation_type'] = OperationType.Reduction
