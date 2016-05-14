@@ -96,9 +96,14 @@ def create_mask_value(flag_defs, **flags):
             mask = set_value_at_index(mask, defn['bit_index'], True)
             value = set_value_at_index(value, defn['bit_index'], bool(flag) == bool(defn['value']))
         elif 'bits' in defn:
+            # Set mask
+            for bit in defn['bits']:
+                mask = set_value_at_index(mask, bit, True)
+
             shift = min(defn['bits'])
             real_val = defn['value'] << shift
-            mask, value = real_val, real_val
+
+            value |= real_val
 
     return mask, value
 

@@ -20,6 +20,14 @@ def test_create_mask_value():
     assert create_mask_value(multi_flags_def, filled=True) == (1, 1)
     assert create_mask_value(multi_flags_def, water=True) == (0b011000, 0b011000)
 
+    assert create_mask_value(multi_flags_def, water=True, filled=True) == (0b011001, 0b011001)
+    assert create_mask_value(multi_flags_def, undetermined_water=True) == (0b011000, 0b0)
+    assert create_mask_value(multi_flags_def, no_water=True) == (0b11000, 0b01000)
+    assert create_mask_value(multi_flags_def, maybe_veg=True) == (0b110000000, 0b100000000)
+    assert create_mask_value(multi_flags_def, maybe_veg=True, water=True) == (0b110011000, 0b100011000)
+    assert create_mask_value(multi_flags_def,
+                             maybe_veg=True,
+                             water=True, filled=True) == (0b110011001, 0b100011001)
 
 class SimpleVariableWithFlagsDef(object):
     flags_definition = {
