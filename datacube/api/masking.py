@@ -79,19 +79,26 @@ def make_mask(variable, **flags):
     """
     variable = _ensure_masking_variable(variable)
 
-    mask, mask_value = _create_mask_value(getattr(variable, FLAGS_ATTR_NAME), **flags)
+    mask, mask_value = create_mask_value(getattr(variable, FLAGS_ATTR_NAME), **flags)
 
     return variable & mask == mask_value
 
 
-def _create_mask_value(flag_defs, **flags):
+def create_mask_value(flag_defs, **flags):
     mask = 0
     value = 0
 
     for flag_name, flag in flags.items():
         defn = flag_defs[flag_name]
-        mask = set_value(mask, defn['bit_index'], True)
-        value = set_value(value, defn['bit_index'], bool(flag) == bool(defn['value']))
+
+        if 'bit_index' in defn:
+
+            mask = set_value_at_index(mask, defn['bit_index'], True)
+            value = set_value_at_index(value, defn['bit_index'], bool(flag) == bool(defn['value']))
+        elif 'bits' in defn:
+            shift = min(defn['bits'])
+            real_val = defn['value'] << shift
+            mask, value = real_val, real_val
 
     return mask, value
 
@@ -111,17 +118,17 @@ def _get_masking_array(dataset):
     raise ValueError('No masking variable found')
 
 
-def set_value(bitmask, index, value):
+def set_value_at_index(bitmask, index, value):
     """
     Set a bit value onto an integer bitmask
 
     eg. set bits 2 and 4 to True
     >>> mask = 0
-    >>> mask = set_value(mask, 2, True)
-    >>> mask = set_value(mask, 4, True)
+    >>> mask = set_value_at_index(mask, 2, True)
+    >>> mask = set_value_at_index(mask, 4, True)
     >>> print(bin(mask))
     0b10100
-    >>> mask = set_value(mask, 2, False)
+    >>> mask = set_value_at_index(mask, 2, False)
     >>> print(bin(mask))
     0b10000
 
@@ -136,6 +143,10 @@ def set_value(bitmask, index, value):
     else:
         bitmask &= (~bit_val)
     return bitmask
+
+
+def set_value_at_mask(bitmask, new_val, old_value):
+    pass
 
 
 def _is_data_var(variable):
