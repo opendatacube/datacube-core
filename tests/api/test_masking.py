@@ -29,6 +29,7 @@ def test_create_mask_value():
                              maybe_veg=True,
                              water=True, filled=True) == (0b110011001, 0b100011001)
 
+
 class SimpleVariableWithFlagsDef(object):
     flags_definition = {
         'band_1_saturated': {
