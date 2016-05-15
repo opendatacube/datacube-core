@@ -548,7 +548,7 @@ class GeoPolygon(object):
             (boundingbox.right, boundingbox.bottom),
             (boundingbox.left, boundingbox.bottom),
         ]
-        cls(points, crs_str)
+        return cls(points, crs_str)
 
     @property
     def crs(self):
