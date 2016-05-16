@@ -166,15 +166,18 @@ class Datacube(object):
     #         response[type_name] = xarray.Dataset(data_vars, attrs=attrs)
     #     return response
 
-    def product_observations(self, type_name, geobox, group_func):
-        geo_bb = geobox.geographic_extent.boundingbox
+    def product_observations(self, type_name, geopolygon=None, group_func=None, **kwargs):
+        if geopolygon:
+            geo_bb = geopolygon.to_crs('EPSG:4326').boundingbox
+            kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
+            kwargs['lon'] = Range(geo_bb.left, geo_bb.right)
         # TODO: pull out full datasets lineage?
-        datasets = self.index.datasets.search_eager(lat=Range(geo_bb.bottom, geo_bb.top),
-                                                    lon=Range(geo_bb.left, geo_bb.right),
-                                                    type=type_name)
-        datasets = [dataset for dataset in datasets
-                    if _check_intersect(geobox.extent, dataset.extent.to_crs(geobox.crs_str))]
+        datasets = self.index.datasets.search_eager(type=type_name, **kwargs)
 
+        if geopolygon:
+            datasets = [dataset for dataset in datasets
+                        if _check_intersect(geopolygon, dataset.extent.to_crs(geopolygon.crs_str))]
+        group_func = _get_group_by_func(group_func)
         datasets.sort(key=group_func)
         groups = [(key, list(group)) for key, group in groupby(datasets, group_func)]
 

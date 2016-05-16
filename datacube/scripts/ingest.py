@@ -214,9 +214,9 @@ def sorted_diff(a, b, key_func=lambda x: x):
 def find_diff(input_type, output_type, bbox, datacube):
     tasks = []
     for tile_index, geobox in generate_grid(output_type, bbox):
-        observations = datacube.product_observations(input_type.name, geobox, lambda ds: ds.time)
+        observations = datacube.product_observations(input_type.name, geobox.extent, lambda ds: ds.time)
         if observations:
-            created_obs = datacube.product_observations(output_type.name, geobox, lambda ds: ds.time)
+            created_obs = datacube.product_observations(output_type.name, geobox.extent, lambda ds: ds.time)
             observations = list(sorted_diff(observations, created_obs, lambda x: x[0]))
             tasks += [(tile_index, [obs]) for obs in observations]
     return tasks
