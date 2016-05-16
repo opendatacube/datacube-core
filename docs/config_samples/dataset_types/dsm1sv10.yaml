@@ -1,0 +1,26 @@
+name: dsm1sv10
+description: DSM 1sec Version 1.0
+metadata_type: eo
+
+metadata:
+    platform:
+        code: SRTM
+    instrument:
+        name: SIR
+    product_type: DEM
+    format:
+        name: ENVI
+
+storage:
+    crs: EPSG:4326
+    resolution:
+        longitude: 0.000277777777780
+        latitude: -0.000277777777780
+    dimension_order: ["time", "latitude", "longitude"]
+
+measurements:
+    elevation:
+        dtype: float32
+        nodata: NaN
+        units: 'metre'
+
