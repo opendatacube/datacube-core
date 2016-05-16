@@ -1,129 +1,214 @@
 # coding=utf-8
-from datacube.api.masking import list_flag_names, create_mask_value
+import yaml
+
+from datacube.api.masking import list_flag_names, create_mask_value, describe_flags
 
 
 def test_list_flag_names():
-    flags = list_flag_names(SimpleVariableWithFlagsDef)
-    for flag_name in SimpleVariableWithFlagsDef.flags_definition.keys():
+    simple_var = SimpleVariableWithFlagsDef()
+    flags = list_flag_names(simple_var)
+    for flag_name in simple_var.flags_definition.keys():
         assert flag_name in flags
 
 
 def test_create_mask_value():
-    flags_def = SimpleVariableWithFlagsDef.flags_definition
+    simple_var = SimpleVariableWithFlagsDef()
+    bits_def = simple_var.flags_definition
 
-    assert create_mask_value(flags_def, contiguity=True) == (256, 256)
-    assert create_mask_value(flags_def, contiguity=False) == (256, 0)
-    assert create_mask_value(flags_def, contiguity=False, sea_obs=False) == (768, 512)
+    assert create_mask_value(bits_def, contiguous=True) == (256, 256)
+    assert create_mask_value(bits_def, contiguous=False) == (256, 0)
+    # assert create_mask_value(flags_def, contiguous=False, land_sea='land') == (768, 512)
 
-    multi_flags_def = VariableWithMultiBitFlags.flags_definition
+
+def test_create_multi_mask_value():
+    multi_var = VariableWithMultiBitFlags()
+    multi_flags_def = multi_var.flags_definition
 
     assert create_mask_value(multi_flags_def, filled=True) == (1, 1)
-    assert create_mask_value(multi_flags_def, water=True) == (0b011000, 0b011000)
+    assert create_mask_value(multi_flags_def, water_confidence='water') == (0b011000, 0b011000)
 
-    assert create_mask_value(multi_flags_def, water=True, filled=True) == (0b011001, 0b011001)
-    assert create_mask_value(multi_flags_def, undetermined_water=True) == (0b011000, 0b0)
-    assert create_mask_value(multi_flags_def, no_water=True) == (0b11000, 0b01000)
-    assert create_mask_value(multi_flags_def, maybe_veg=True) == (0b110000000, 0b100000000)
-    assert create_mask_value(multi_flags_def, maybe_veg=True, water=True) == (0b110011000, 0b100011000)
+    assert create_mask_value(multi_flags_def, water_confidence='water', filled=True) == (0b011001, 0b011001)
+    assert create_mask_value(multi_flags_def, water_confidence='not_determined') == (0b011000, 0b0)
+    assert create_mask_value(multi_flags_def, water_confidence='no_water') == (0b11000, 0b01000)
+    assert create_mask_value(multi_flags_def, veg_confidence='maybe_veg') == (0b110000000, 0b100000000)
     assert create_mask_value(multi_flags_def,
-                             maybe_veg=True,
-                             water=True, filled=True) == (0b110011001, 0b100011001)
+                             veg_confidence='maybe_veg',
+                             water_confidence='water') == (0b110011000, 0b100011000)
+    assert create_mask_value(multi_flags_def,
+                             veg_confidence='maybe_veg',
+                             water_confidence='water', filled=True) == (0b110011001, 0b100011001)
+
+
+def test_describe_flags():
+    simple_var = SimpleVariableWithFlagsDef()
+    describe_flags(simple_var)
 
 
 class SimpleVariableWithFlagsDef(object):
-    flags_definition = {
-        'band_1_saturated': {
-            'bit_index': 0,
-            'description': 'Band 1 is saturated',
-            'value': 0},
-        'band_2_saturated': {
-            'bit_index': 1,
-            'description': 'Band 2 is saturated',
-            'value': 0},
-        'band_3_saturated': {
-            'bit_index': 2,
-            'description': 'Band 3 is saturated',
-            'value': 0},
-        'band_4_saturated': {
-            'bit_index': 3,
-            'description': 'Band 4 is saturated',
-            'value': 0},
-        'band_5_saturated': {
-            'bit_index': 4,
-            'description': 'Band 5 is saturated',
-            'value': 0},
-        'band_6_1_saturated': {
-            'bit_index': 5,
-            'description': 'Band 6-1 is saturated',
-            'value': 0},
-        'band_6_2_saturated': {
-            'bit_index': 6,
-            'description': 'Band 6-2 is saturated',
-            'value': 0},
-        'band_7_saturated': {
-            'bit_index': 7,
-            'description': 'Band 7 is saturated',
-            'value': 0},
-        'cloud_acca': {
-            'bit_index': 10, 'description': 'Cloud (ACCA)', 'value': 0},
-        'cloud_fmask':
-            {'bit_index': 11, 'description': 'Cloud (Fmask)', 'value': 0},
-        'cloud_shadow_acca': {
-            'bit_index': 12,
-            'description': 'Cloud Shadow (ACCA)',
-            'value': 0},
-        'cloud_shadow_fmask': {
-            'bit_index': 13,
-            'description': 'Cloud Shadow (Fmask)',
-            'value': 0},
-        'contiguity': {
-            'bit_index': 8,
-            'description': 'All bands for this pixel contain non-null values',
-            'value': 1},
-        'land_obs': {'bit_index': 9, 'description': 'Land observation', 'value': 1},
-        'sea_obs': {'bit_index': 9, 'description': 'Sea observation', 'value': 0}}
+    bits_def_yaml = """
+        cloud_shadow_fmask:
+          bits: 13
+          description: Cloud Shadow (Fmask)
+          values:
+            0: no_cloud_shadow
+            1: cloud_shadow
+        cloud_shadow_acca:
+          bits: 12
+          description: Cloud Shadow (ACCA)
+          values:
+            0: no_cloud_shadow
+            1: cloud_shadow
+        cloud_fmask:
+          bits: 11
+          description: Cloud (Fmask)
+          values:
+            0: no_cloud
+            1: cloud
+        cloud_acca:
+          bits: 10
+          description: Cloud Shadow (ACCA)
+          values:
+            0: no_cloud
+            1: cloud
+        land_sea:
+          bits: 9
+          description: Land or Sea
+          values:
+            0: sea
+            1: land
+        contiguous:
+          bits: 8
+          description: All bands for this pixel contain non-null values
+          values:
+            0: false
+            1: true
+        swir2_saturated:
+          bits: 7
+          description: SWIR2 is saturated
+          values:
+            0: true
+            1: false
+
+        swir2_saturated:
+          bits: 6
+          description: SWIR2 band is saturated
+          values:
+            0: true
+            1: false
+        swir1_saturated:
+          bits: 4
+          description: SWIR1 band is saturated
+          values:
+            0: true
+            1: false
+        nir_saturated:
+          bits: 3
+          description: NIR band is saturated
+          values:
+            0: true
+            1: false
+
+        red_saturated:
+          bits: 2
+          description: Red band is saturated
+          values:
+            0: true
+            1: false
+
+        green_saturated:
+          bits: 1
+          description: Green band is saturated
+          values:
+            0: true
+            1: false
+
+        blue_saturated:
+          bits: 1
+          description: Blue band is saturated
+          values:
+            0: true
+            1: false
+
+        ga_good_pixel:
+          bits: [13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+          description: Best Quality Pixel
+          values:
+            16383: true
+        """
+
+    def __init__(self):
+        self.flags_definition = yaml.load(self.bits_def_yaml)
 
 
 class VariableWithMultiBitFlags(object):
-    flags_definition = {
-        'cirrus': {'bits': [11, 12], 'description': 'Cirrus', 'value': 3},
-        'cloud': {'bits': [13, 14], 'description': 'Cloud', 'value': 3},
-        'filled': {'bit_index': 0, 'description': 'Filled', 'value': 1},
-        'frame_dropped': {'bit_index': 1, 'description': 'Frame dropped', 'value': 1},
-        'frame_not_dropped': {'bit_index': 1,
-                              'description': 'Frame not dropped',
-                              'value': 0},
-        'maybe_cirrus': {'bits': [11, 12], 'description': 'Maybe cirrus', 'value': 2},
-        'maybe_cloud': {'bits': [13, 14], 'description': 'Maybe cloud', 'value': 2},
-        'maybe_snowice': {'bits': [9, 10],
-                          'description': 'Maybe snow/ice',
-                          'value': 2},
-        'maybe_veg': {'bits': [7, 8], 'description': 'Maybe vegetation', 'value': 2},
-        'maybe_water': {'bits': [3, 4], 'description': 'Maybe water', 'value': 2},
-        'no_cirrus': {'bits': [11, 12], 'description': 'No cirrus', 'value': 1},
-        'no_cloud': {'bits': [13, 14], 'description': 'No cloud', 'value': 1},
-        'no_snowice': {'bits': [9, 10], 'description': 'No snow/ice', 'value': 1},
-        'no_veg': {'bits': [7, 8], 'description': 'No vegetation', 'value': 1},
-        'no_water': {'bits': [3, 4], 'description': 'No water', 'value': 1},
-        'not_filled': {'bit_index': 0, 'description': 'Not filled', 'value': 0},
-        'snowice': {'bits': [9, 10], 'description': 'Snow/ice', 'value': 3},
-        'terrain_not_occluded': {'bit_index': 2,
-                                 'description': 'Terrain occluded',
-                                 'value': 1},
-        'undetermined_cirrus': {'bits': [11, 12],
-                                'description': 'Cirrus not determined',
-                                'value': 0},
-        'undetermined_cloud': {'bits': [13, 14],
-                               'description': 'Cloud not determined',
-                               'value': 0},
-        'undetermined_snowice': {'bits': [9, 10],
-                                 'description': 'Snow/ice not determined',
-                                 'value': 0},
-        'undetermined_veg': {'bits': [7, 8],
-                             'description': 'Vegetation not determined',
-                             'value': 0},
-        'undetermined_water': {'bits': [3, 4],
-                               'description': 'Water not determined',
-                               'value': 0},
-        'veg': {'bits': [7, 8], 'description': 'Vegetation', 'value': 3},
-        'water': {'bits': [3, 4], 'description': 'Water', 'value': 3}}
+    bits_def_yaml = """
+        cloud_confidence:
+          bits: [13, 14]
+          description: Cloud Confidence
+          values:
+            0: not_determined
+            1: no_cloud
+            2: maybe_cloud
+            3: cloud
+        cirrus_confidence:
+          bits: [11, 12]
+          description: Cirrus Confidence
+          values:
+            0: not_determined
+            1: no_cirrus
+            2: maybe_cirrus
+            3: cirrus
+
+        snowice_confidence:
+          bits: [9, 10]
+          description: Snow/Ice Confidence
+          values:
+            0: not_determined
+            1: no_snowice
+            2: maybe_snowice
+            3: snowice
+
+        veg_confidence:
+          bits: [7, 8]
+          description: Vegetation Confidence
+          values:
+            0: not_determined
+            1: no_veg
+            2: maybe_veg
+            3: veg
+
+
+
+        water_confidence:
+          bits: [3, 4]
+          description: Water Confidence
+          values:
+            0: not_determined
+            1: no_water
+            2: maybe_water
+            3: water
+
+        terrain_occluded:
+          bits: 2
+          description: Terrain occluded
+          values:
+            0: False
+            1: True
+
+        frame_dropped:
+          bits: 1
+          description: Frame dropped
+          values:
+            0: False
+            1: True
+
+        filled:
+          bits: 0
+          description: Filled
+          values:
+            0: False
+            1: True
+    """
+
+    def __init__(self):
+        self.flags_definition = yaml.load(self.bits_def_yaml)

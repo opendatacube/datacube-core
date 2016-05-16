@@ -10,6 +10,8 @@ from datetime import datetime
 import netCDF4
 import numpy
 
+from datacube.api.masking import describe_flags_def
+
 # pylint: disable=ungrouped-imports,wrong-import-order
 try:
     from datacube.storage.netcdf_safestrings import SafeStringsDataset as Dataset
@@ -191,7 +193,7 @@ def create_grid_mapping_variable(nco, crs):
 def write_flag_definition(variable, flags_definition):
     # write bitflag info
     # Functions for this are stored in Measurements
-    variable.QA_index = human_readable_flags_definition(flags_def=flags_definition)
+    variable.QA_index = describe_flags_def(flags_def=flags_definition)
     variable.flag_masks, variable.valid_range, variable.flag_meanings = flag_mask_meanings(flags_def=flags_definition)
 
 
@@ -200,22 +202,6 @@ def netcdfy_data(data):
         return data.view('S1').reshape(data.shape + (-1,))
     else:
         return data
-
-
-def human_readable_flags_definition(flags_def):
-    def gen_human_readable(flags_def):
-        bit_value_desc = [
-            (bitdef['bit_index'], bitdef['value'], bitdef['description'])
-            for name, bitdef in flags_def.items()]
-        max_bit, _, _ = max(bit_value_desc)
-        min_bit, _, _ = min(bit_value_desc)
-
-        yield "Bits are listed from the MSB (bit {}) to the LSB (bit {})".format(max_bit, min_bit)
-        yield "Bit    Value     Description"
-        for bit, value, desc in sorted(bit_value_desc, reverse=True):
-            yield "{:<8d}{:<8d}{}".format(bit, value, desc)
-
-    return '\n'.join(gen_human_readable(flags_def))
 
 
 def flag_mask_meanings(flags_def):

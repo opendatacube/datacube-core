@@ -3,6 +3,7 @@ Tools for masking data based on a bit-mask variable with attached definition.
 
 The main functions are `make_mask(variable)` `describe_flags(variable)`
 """
+import collections
 FLAGS_ATTR_NAME = 'flags_definition'
 
 
@@ -13,11 +14,11 @@ def list_flag_names(variable):
     :param variable: Masking xarray.Dataset or xarray.DataArray
     :return: list
     """
-    variable = _ensure_masking_variable(variable)
-    return sorted(list(getattr(variable, FLAGS_ATTR_NAME).keys()))
+    flags_def = get_flags_def(variable)
+    return sorted(list(flags_def.keys()))
 
 
-def describe_flags(variable):
+def describe_variable_flags(variable):
     """
     Return a string describing the available flags for a masking variable
 
@@ -36,26 +37,59 @@ def describe_flags(variable):
     :param variable: Masking xarray.Dataset or xarray.DataArray
     :return: str
     """
-    variable = _ensure_masking_variable(variable)
-    column_spacing = 3
+    flags_def = get_flags_def(variable)
 
-    def gen_human_readable(flags_def):
-        bit_value_flagname_desc = [
-            (bitdef['bit_index'], bitdef['value'], flagname, bitdef['description'])
-            for flagname, bitdef in flags_def.items()]
-        max_bit, _, _, _ = max(bit_value_flagname_desc)
-        min_bit, _, _, _ = min(bit_value_flagname_desc)
+    return describe_flags_def(flags_def)
 
-        widest_flagname = len(max(list(zip(*bit_value_flagname_desc))[2], key=len))
 
-        yield "Bits are listed from the MSB (bit {}) to the LSB (bit {})".format(max_bit, min_bit)
-        yield "{:<8}{:<8}{:<{flagname_width}}{}".format('Bit', 'Value', 'Flag Name', 'Description',
-                                                        flagname_width=widest_flagname + column_spacing)
-        for bit, value, flagname, desc in sorted(bit_value_flagname_desc, reverse=True):
-            yield "{:<8d}{:<8d}{:<{flagname_width}}{}".format(bit, value, flagname, desc,
-                                                              flagname_width=widest_flagname + column_spacing)
+def describe_flags_def(flags_def):
+    return '\n'.join(_yield_table(list(_table_contents(flags_def))))
 
-    return '\n'.join(gen_human_readable(getattr(variable, FLAGS_ATTR_NAME)))
+
+def _order_bitdefs_by_bits(bitdef):
+    name, defn = bitdef
+    try:
+        return min(defn['bits'])
+    except TypeError:
+        return defn['bits']
+
+
+def _table_contents(flags_def):
+    yield 'Flag name', 'Description', 'Bit. No', 'Value', 'Meaning'
+    for name, defn in sorted(flags_def.items(), key=_order_bitdefs_by_bits):
+        name, desc = name, defn['description']
+        for value, meaning in defn['values'].items():
+            yield name, desc, str(defn['bits']), str(value), str(meaning)
+            name, desc = '', ''
+
+
+def _yield_table(rows):
+    """
+    Prints out a table using the data in `rows`, which is assumed to be a
+    sequence of sequences with the 0th element being the header.
+    """
+
+    # - figure out column widths
+    widths = [len(max(columns, key=len)) for columns in zip(*rows)]
+
+    # - print the header
+    header, data = rows[0], rows[1:]
+    yield (
+        ' | '.join(format(title, "%ds" % width) for width, title in zip(widths, header))
+    )
+
+    # Print the separator
+    first_col = ''
+    # - print the data
+    for row in data:
+        if first_col == '' and row[0] != '':
+            # - print the separator
+            yield '-+-'.join('-' * width for width in widths)
+        first_col = row[0]
+
+        yield (
+            " | ".join(format(cdata, "%ds" % width) for width, cdata in zip(widths, row))
+        )
 
 
 def make_mask(variable, **flags):
@@ -77,50 +111,56 @@ def make_mask(variable, **flags):
     :param flags: list of boolean flags
     :return:
     """
-    variable = _ensure_masking_variable(variable)
+    flags_def = get_flags_def(variable)
 
-    mask, mask_value = create_mask_value(getattr(variable, FLAGS_ATTR_NAME), **flags)
+    mask, mask_value = create_mask_value(flags_def, **flags)
 
     return variable & mask == mask_value
 
 
-def create_mask_value(flag_defs, **flags):
+def create_mask_value(bits_def, **flags):
     mask = 0
     value = 0
 
-    for flag_name, flag in flags.items():
-        defn = flag_defs[flag_name]
+    for flag_name, flag_ref in flags.items():
+        defn = bits_def[flag_name]
 
-        if 'bit_index' in defn:
+        try:
+            [flag_value] = (bit_val for bit_val, val_ref in defn['values'].items() if val_ref == flag_ref)
+        except ValueError:
+            raise ValueError('Unknown value %s specified for flag %s' % (flag_ref, flag_name))
 
-            mask = set_value_at_index(mask, defn['bit_index'], True)
-            value = set_value_at_index(value, defn['bit_index'], bool(flag) == bool(defn['value']))
-        elif 'bits' in defn:
+        if isinstance(defn['bits'], collections.Iterable):  # Multi-bit flag
             # Set mask
             for bit in defn['bits']:
                 mask = set_value_at_index(mask, bit, True)
 
             shift = min(defn['bits'])
-            real_val = defn['value'] << shift
+            real_val = flag_value << shift
 
             value |= real_val
+
+        else:
+            bit = defn['bits']
+            mask = set_value_at_index(mask, bit, True)
+            value = set_value_at_index(value, bit, flag_value)
 
     return mask, value
 
 
-def _ensure_masking_variable(variable):
-    if hasattr(variable, FLAGS_ATTR_NAME):
-        return variable
-    else:
-        return _get_masking_array(variable)
+def get_flags_def(variable):
+    try:
+        return getattr(variable, FLAGS_ATTR_NAME)
+    except AttributeError:
+        # Maybe we have a DataSet, not a DataArray
+        for var in variable.data_vars.values():
+            if _is_data_var(var):
+                try:
+                    return getattr(var, FLAGS_ATTR_NAME)
+                except AttributeError:
+                    pass
 
-
-def _get_masking_array(dataset):
-    for var in dataset.data_vars.values():
-        if _is_data_var(var) and hasattr(var, FLAGS_ATTR_NAME):
-            return var
-
-    raise ValueError('No masking variable found')
+        raise ValueError('No masking variable found')
 
 
 def set_value_at_index(bitmask, index, value):
@@ -148,10 +188,6 @@ def set_value_at_index(bitmask, index, value):
     else:
         bitmask &= (~bit_val)
     return bitmask
-
-
-def set_value_at_mask(bitmask, new_val, old_value):
-    pass
 
 
 def _is_data_var(variable):
