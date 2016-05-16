@@ -334,14 +334,15 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
                                 out=dest[write[0]:write[0] + shape[0], write[1]:write[1] + shape[1]],
                                 window=((read[0], read[0] + shape[0]), (read[1], read[1] + shape[1])))
             else:
+                # HACK: dtype shenanigans to make sure 'NaN' string gets translated to NaN value
                 rasterio.warp.reproject(src,
                                         dest,
                                         src_transform=source.transform,
                                         src_crs=source.crs,
-                                        src_nodata=source.nodata,
+                                        src_nodata=numpy.dtype(src.dtype).type(source.nodata),
                                         dst_transform=dst_transform,
                                         dst_crs=dst_projection,
-                                        dst_nodata=dst_nodata,
+                                        dst_nodata=dest.dtype.type(dst_nodata),
                                         resampling=resampling,
                                         NUM_THREADS=4)
 
