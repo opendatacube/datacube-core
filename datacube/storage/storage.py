@@ -368,6 +368,12 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
 
 class DatasetSource(object):
     def __init__(self, dataset, measurement_id):
+        """
+
+        :type dataset: datacube.model.Dataset
+        :param measurement_id:
+        """
+        self._bandinfo = dataset.type.measurements[measurement_id]
         self._descriptor = dataset.metadata.measurements_dict[measurement_id]
         self.transform = None
         self.crs = None
@@ -399,7 +405,7 @@ class DatasetSource(object):
 
                 self.transform = src.affine
                 self.crs = src.crs_wkt
-                self.nodata = src.nodatavals[0]
+                self.nodata = src.nodatavals[0] or self._bandinfo.get('nodata')
                 yield rasterio.band(src, bandnumber)
         except Exception as e:
             _LOG.error("Error opening source dataset: %s", filename)

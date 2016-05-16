@@ -377,6 +377,7 @@ storage:
 measurements:
   'pixelquality':
       dtype: int16
+      nodata: 0
       units: '1'
       resampling_method: nearest
       src_varname: pqa
