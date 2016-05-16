@@ -62,17 +62,7 @@ def match_dataset(dataset_doc, uri, rules):
     return dataset
 
 
-@cli.command('index', help="Index datasets into the Data Cube")
-@click.option('--match-rules', '-r',
-              type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
-              required=True,
-              help='Rules to be used to find dataset types for datasets')
-@click.option('--dry-run', '-d', is_flag=True, default=False, help='Check if everything is ok')
-@click.argument('datasets',
-                type=click.Path(exists=True, readable=True, writable=False),
-                nargs=-1)
-@ui.pass_index(app_name='agdc-index')
-def index_cmd(index, match_rules, dry_run, datasets):
+def match_madness(match_rules, index):
     rules = next(read_documents(Path(match_rules)))[1]
     # TODO: verify schema
 
@@ -86,17 +76,59 @@ def index_cmd(index, match_rules, dry_run, datasets):
             return
         rule['type'] = type_
 
+    def generate_dataset(metadata_doc, uri):
+        try:
+            return match_dataset(metadata_doc, uri, rules)
+        except RuntimeError as e:
+            _LOG.error('Unable to create Dataset for %s: %s', uri, e)
+
+    return generate_dataset
+
+
+def type_crazy(type_name, index):
+    type_ = index.datasets.types.get_by_name(type_name)
+    if not type_:
+        _LOG.error("DatasetType %s does not exist", type_name)
+        return
+
+    def generate_dataset(metadata_doc, uri):
+        return Dataset(type_, metadata_doc, uri, managed=False)
+
+    return generate_dataset
+
+
+@cli.command('index', help="Index datasets into the Data Cube")
+@click.option('--match-rules', '-r',
+              type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
+              help='Rules to be used to find dataset types for datasets')
+@click.option('--dtype', '-t',
+              help='Dataset Type to be used to index datasets')
+@click.option('--dry-run', '-d', is_flag=True, default=False, help='Check if everything is ok')
+@click.argument('datasets',
+                type=click.Path(exists=True, readable=True, writable=False),
+                nargs=-1)
+@ui.pass_index(app_name='agdc-index')
+def index_cmd(index, match_rules, dtype, dry_run, datasets):
+    if match_rules is None is dtype is None:
+        _LOG.error('Must specify one of [--match-rules, --type]')
+        return
+
+    generate_dataset = None
+    if match_rules:
+        generate_dataset = match_madness(match_rules, index)
+    if dtype:
+        generate_dataset = type_crazy(dtype, index)
+    if generate_dataset is None:
+        return
+
     for dataset_path in datasets:
         metadata_path = get_metadata_path(Path(dataset_path))
         if not metadata_path or not metadata_path.exists():
             raise ValueError('No supported metadata docs found for dataset {}'.format(dataset_path))
 
         for metadata_path, metadata_doc in read_documents(metadata_path):
-            try:
-                dataset = match_dataset(metadata_doc, metadata_path.absolute().as_uri(), rules)
-            except RuntimeError as e:
-                _LOG.error('Unable to create Dataset for %s: %s', metadata_path, e)
-                continue
+            uri = metadata_path.absolute().as_uri()
+            dataset = generate_dataset(metadata_doc, uri)
 
             _LOG.info('Matched %s', dataset)
             if not dry_run:
