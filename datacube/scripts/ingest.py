@@ -142,8 +142,6 @@ def generate_dataset(data, prod_info, uri):
     for idx, (time, sources) in enumerate(zip(data['time'].values, data['sources'].values)):
         document = {
             'id': str(uuid.uuid4()),
-            # TODO: don't know the format yet :P
-            'format': {'name': 'NETCDF'},
             'image': {
                 'bands': {name: {'path': '', 'layer': name} for name in nudata.data_vars}
             },
@@ -243,7 +241,7 @@ def morph_dataset_type(source_type, config):
     output_type.definition['name'] = config['output_type']
     output_type.definition['description'] = config['description']
     output_type.definition['storage'] = config['storage']
-    output_type.metadata['format'] = {'name': 'NetCDF CF'}
+    output_type.metadata['format'] = {'name': 'NetCDF'}
 
     def merge_measurement(measurement, spec):
         measurement.update({k: spec.get(k, measurement[k]) for k in ('nodata', 'dtype')})
