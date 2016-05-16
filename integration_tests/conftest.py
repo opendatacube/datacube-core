@@ -199,21 +199,6 @@ def default_metadata_type(index, default_metadata_type_docs):
 
 
 @pytest.fixture
-def indexed_ls5_nbar_storage_type(index, default_metadata_type):
-    """
-    :type db: datacube.index.postgres._api.PostgresDb
-    :type index: datacube.index._api.Index
-    :rtype: datacube.model.StorageType
-    """
-    storage_types = load_test_storage_config(LS5_NBAR_STORAGE_TYPE)
-
-    for storage_type in storage_types:
-        index.storage.types.add(storage_type)
-
-    return index.storage.types.get_by_name(LS5_NBAR_NAME)
-
-
-@pytest.fixture
 def indexed_ls5_scene_dataset_type(index, default_metadata_type):
     """
     :type db: datacube.index.postgres._api.PostgresDb

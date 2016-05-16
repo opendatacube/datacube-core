@@ -15,7 +15,7 @@ from osgeo import ogr
 
 from ..compat import string_types, integer_types
 from ..index import index_connect
-from ..model import StorageUnit, GeoPolygon, GeoBox, Range, Coordinate, Variable
+from ..model import GeoPolygon, GeoBox, Range, Coordinate, Variable
 from ..model import _DocReader as DocReader
 from ..storage.storage import DatasetSource, fuse_sources, RESAMPLING
 from ..storage import netcdf_writer

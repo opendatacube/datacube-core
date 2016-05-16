@@ -12,7 +12,6 @@ import netCDF4
 import yaml
 
 from datacube.ingest import find_storage_types_for_datasets
-from datacube.model import StorageUnit
 from datacube.storage.access.backends import NetCDF4StorageUnit
 from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS

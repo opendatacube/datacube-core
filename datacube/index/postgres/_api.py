@@ -28,7 +28,7 @@ from datacube.config import LocalConfig
 from datacube.index.fields import OrExpression
 from . import tables
 from ._fields import parse_fields, NativeField
-from .tables import DATASET, DATASET_SOURCE, STORAGE_TYPE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
+from .tables import DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
 
 _LIB_ID = 'agdc-' + str(datacube.__version__)
 APP_NAME_PATTERN = re.compile('^[a-zA-Z0-9-]+$')
@@ -277,11 +277,6 @@ class PostgresDb(object):
         )
         return res.inserted_primary_key[0]
 
-    def get_storage_type(self, storage_type_id):
-        return self._connection.execute(
-            STORAGE_TYPE.select().where(STORAGE_TYPE.c.id == storage_type_id)
-        ).first()
-
     def get_dataset(self, dataset_id):
         return self._connection.execute(
             select(_DATASET_SELECT_FIELDS).where(DATASET.c.id == dataset_id)
@@ -323,51 +318,6 @@ class PostgresDb(object):
         ).select_from(aggd.join(DATASET, DATASET.c.id == aggd.c.dataset_ref))
 
         return self._connection.execute(query).fetchall()
-
-    def get_storage_types(self, dataset_metadata):
-        """
-        Find any storage types that match the given dataset.
-
-        :type dataset_metadata: dict
-        :rtype: dict
-        """
-        # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
-        return self._connection.execute(
-            STORAGE_TYPE.select().where(
-                STORAGE_TYPE.c.dataset_metadata.contained_by(dataset_metadata)
-            )
-        ).fetchall()
-
-    def get_all_storage_types(self):
-        return self._connection.execute(
-            STORAGE_TYPE.select()
-        ).fetchall()
-
-    def ensure_storage_type(self,
-                            name,
-                            dataset_metadata,
-                            definition,
-                            target_dataset_id):
-        res = self._connection.execute(
-            STORAGE_TYPE.insert().values(
-                name=name,
-                dataset_metadata=dataset_metadata,
-                definition=definition,
-                target_dataset_type_ref=target_dataset_id
-            )
-        )
-        return res.inserted_primary_key[0]
-
-    def archive_storage_unit(self, storage_unit_id):
-        self._connection.execute(
-            DATASET.update().where(
-                DATASET.c.id == storage_unit_id
-            ).where(
-                DATASET.c.archived == None
-            ).values(
-                archived=func.now()
-            )
-        )
 
     def _storage_unit_cube_sql_str(self, dimensions):
         def _array_str(p):
@@ -539,11 +489,6 @@ class PostgresDb(object):
             METADATA_TYPE.select().where(METADATA_TYPE.c.name == name)
         ).first()
 
-    def get_storage_type_by_name(self, name):
-        return self._connection.execute(
-            STORAGE_TYPE.select().where(STORAGE_TYPE.c.name == name)
-        ).first()
-
     def add_dataset_type(self,
                          name,
                          metadata,
@@ -578,9 +523,6 @@ class PostgresDb(object):
 
     def get_all_dataset_types(self):
         return self._connection.execute(DATASET_TYPE.select()).fetchall()
-
-    def count_storage_types(self):
-        return self._connection.execute(select([func.count()]).select_from(STORAGE_TYPE)).scalar()
 
     def get_locations(self, dataset_id):
         return [

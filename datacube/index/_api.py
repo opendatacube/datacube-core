@@ -10,7 +10,6 @@ from pathlib import Path
 from datacube import ui
 from datacube.config import LocalConfig
 from ._datasets import DatasetResource, DatasetTypeResource, MetadataTypeResource
-from ._storage import StorageUnitResource, StorageTypeResource
 from .postgres import PostgresDb
 
 _LOG = logging.getLogger(__name__)
@@ -48,9 +47,6 @@ class Index(object):
         self.metadata_types = MetadataTypeResource(db)
         dataset_types = DatasetTypeResource(db, self.metadata_types)
         self.datasets = DatasetResource(db, dataset_types)
-
-        self.storage = StorageUnitResource(db, StorageTypeResource(db, local_config, self.metadata_types),
-                                           dataset_types, self.datasets, self.metadata_types)
 
     def init_db(self, with_default_types=True, with_permissions=True):
         is_new = self._db.init(with_permissions=with_permissions)

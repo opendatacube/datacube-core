@@ -7,13 +7,10 @@ Integration tests: these depend on a local Postgres instance.
 from __future__ import absolute_import
 
 import datetime
-import uuid
 
 from pathlib import Path
 
 from datacube.index.postgres import PostgresDb
-from datacube.index.postgres.tables import STORAGE_TYPE, DATASET, DATASET_SOURCE, DATASET_LOCATION
-from datacube.model import StorageUnit, StorageType
 
 _telemetry_uuid = '4ec8fe97-e8b9-11e4-87ff-1040f381a756'
 _telemetry_dataset = {
@@ -144,87 +141,3 @@ def test_index_dataset_with_location(index, default_metadata_type):
     assert locations == [second_as_uri, first_as_uri]
     # And the second one is newer, so it should be returned as the default local path:
     assert dataset.local_path.absolute() == Path(second_file).absolute()
-
-
-def test_index_storage_unit(index, db, default_metadata_type):
-    """
-    :type db: datacube.index.postgres._api.PostgresDb
-    :type index: datacube.index._api.Index
-    """
-
-    # Setup foreign keys for our storage unit.
-    type_ = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
-    was_inserted = db.insert_dataset(
-        _telemetry_dataset,
-        _telemetry_uuid,
-        type_.id
-    )
-    assert was_inserted
-
-    storage_dataset_type_ = index.datasets.types.add_document({
-        'name': 'ls8_telemetry_storage',
-        'metadata': {
-            'test': 'descriptor',
-        },
-        'metadata_type': 'storage_unit'
-    })
-    db.ensure_storage_type(
-        'test_storage_mapping',
-        {},
-        {'storage': {'dimension_order': []}},
-        target_dataset_id=storage_dataset_type_.id
-    )
-    storage_type = db._connection.execute(STORAGE_TYPE.select()).first()
-
-    # Add storage unit
-    storage_unit = StorageUnit(
-        id_=str(uuid.uuid4()),
-        dataset_ids=[str(_telemetry_uuid)],
-        storage_type=StorageType(
-            document={
-                'name': 'test_storage_mapping',
-                'location': "file:///g/data",
-                'filename_pattern': "foo.nc",
-                'storage': {'driver': 'NetCDF'}
-            },
-            target_dataset_type_id=storage_dataset_type_.id,
-            id_=storage_type['id']
-        ),
-        descriptor={
-            'test': 'descriptor',
-            'extent': {
-                'center_dt': datetime.datetime(2014, 7, 26, 23, 49, 0, 343853).isoformat(),
-            }
-        },
-        relative_path='test/offset',
-        size_bytes=1234
-    )
-    index.storage.add(
-        storage_unit
-    )
-
-    target_dataset_type_ref = db._connection.execute(
-        STORAGE_TYPE.select().where(STORAGE_TYPE.c.id == storage_type.id)).fetchone()['target_dataset_type_ref']
-    units = db._connection.execute(
-        DATASET.select().where(DATASET.c.dataset_type_ref == target_dataset_type_ref)).fetchall()
-    assert len(units) == 1
-    unit = units[0]
-    assert unit['metadata']['test'] == 'descriptor'
-    assert unit['metadata']['extent'] == {'center_dt': '2014-07-26T23:49:00.343853'}
-
-    # assert unit['size_bytes'] == 1234
-    assert unit['dataset_type_ref'] == storage_dataset_type_.id
-
-    locations = db._connection.execute(
-        DATASET_LOCATION.select().where(DATASET_LOCATION.c.dataset_ref == unit['id'])).fetchall()
-    assert locations[0]['uri_scheme'] == 'file'
-    assert locations[0]['uri_body'] == '///g/data/test/offset'
-    assert locations[0]['managed'] is True
-
-    # Storage should have been linked to the source dataset.
-    d_ss = db._connection.execute(DATASET_SOURCE.select()).fetchall()
-    assert len(d_ss) == 1
-    d_s = d_ss[0]
-    assert d_s['dataset_ref'] == unit['id']
-    assert d_s['source_dataset_ref'] == _telemetry_uuid
-    assert d_s['classifier'] == '2014-07-26T23:49:00'

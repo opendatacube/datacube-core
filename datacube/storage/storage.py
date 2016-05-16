@@ -24,7 +24,7 @@ import rasterio.crs
 from rasterio.warp import RESAMPLING
 
 from datacube import compat
-from datacube.model import StorageUnit, GeoPolygon, GeoBox, Variable, _uri_to_local_path, time_coordinate_value
+from datacube.model import GeoPolygon, GeoBox, Variable, _uri_to_local_path, time_coordinate_value
 from datacube.storage import netcdf_writer
 from datacube.utils import namedtuples2dicts, clamp
 from datacube.storage.access.core import StorageUnitBase, StorageUnitDimensionProxy, StorageUnitStack

@@ -38,7 +38,7 @@ COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
 
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_dataset_type')
-def test_new_full_ingestion(global_integration_cli_args, index, example_ls5_dataset, ls5_nbar_ingest_config):
+def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset, ls5_nbar_ingest_config):
     opts = list(global_integration_cli_args)
     opts.extend(
         [
@@ -89,63 +89,8 @@ def test_new_full_ingestion(global_integration_cli_args, index, example_ls5_data
         # TODO: check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset)
         # TODO: check_global_attributes(nco, su.storage_type.global_attributes)
     check_open_with_xray(ds_path)
-
-    # TODO: can pull data out
-
-
-@pytest.mark.usefixtures('default_metadata_type',
-                         'indexed_ls5_nbar_storage_type',
-                         'indexed_ls5_scene_dataset_type',
-                         'indexed_ls5_nbar_albers_storage_type')
-def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset):
-    """
-    Loads two storage mapping configurations, then ingests a sample Landsat 5 scene
-
-    One storage configuration specifies Australian Albers Equal Area Projection,
-    the other is simply latitude/longitude.
-
-    The input dataset should be recorded in the index, and two sets of netcdf storage units
-    should be created on disk and recorded in the index.
-    """
-
-    # Run Ingest script on a dataset
-    opts = list(global_integration_cli_args)
-    opts.extend(
-        [
-            '-vv',
-            'ingest',
-            str(example_ls5_dataset)
-        ]
-    )
-    result = CliRunner().invoke(
-        datacube.scripts.run_ingest.cli,
-        opts,
-        catch_exceptions=False
-    )
-    print(result.output)
-    assert not result.exception
-    assert result.exit_code == 0
-
-    ensure_dataset_is_indexed(index)
-
-    # Check storage units are indexed and written
-    sus = index.storage.search_eager()
-    latlon_storageunits = [su for su in sus if su.storage_type.name == LS5_NBAR_NAME]
-    assert len(latlon_storageunits) == EXPECTED_NUMBER_OF_STORAGE_UNITS
-
-    albers_storageunits = [su for su in sus if su.storage_type.name == LS5_NBAR_ALBERS_NAME]
-    assert len(albers_storageunits) == EXPECTED_NUMBER_OF_STORAGE_UNITS
-
-    for su in (latlon_storageunits[0], albers_storageunits[0]):
-        assert su.size_bytes > 0
-        with netCDF4.Dataset(str(su.local_path)) as nco:
-            check_data_shape(nco)
-            check_grid_mapping(nco)
-            check_cf_compliance(nco)
-            check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset)
-            check_global_attributes(nco, su.storage_type.global_attributes)
-        check_open_with_xray(su.local_path)
     # TODO: check_open_with_api(index)
+    # TODO: can pull data out
 
 
 def ensure_dataset_is_indexed(index):

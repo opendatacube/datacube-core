@@ -17,7 +17,7 @@ from pathlib import Path
 
 import datacube.scripts.run_ingest
 import datacube.scripts.search_tool
-from datacube.model import Range, StorageUnit
+from datacube.model import Range
 
 _EXAMPLE_LS7_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('ls7-nbar-example.yaml')
 
@@ -309,102 +309,6 @@ def test_fetch_all_of_md_type(index, pseudo_telemetry_dataset):
     assert len(results) == 0
 
 
-# Storage searching:
-
-def test_search_storage_star(index, db, indexed_ls5_nbar_storage_type, default_metadata_type, pseudo_telemetry_dataset):
-    """
-    :type db: datacube.index.postgres._api.PostgresDb
-    :type index: datacube.index._api.Index
-    :type indexed_ls5_nbar_storage_type: datacube.model.StorageType
-    """
-    assert len(index.storage.search_eager()) == 0
-
-    index.storage.add(StorageUnit(
-        [pseudo_telemetry_dataset.id],
-        indexed_ls5_nbar_storage_type,
-        {'test': 'test'},
-        size_bytes=1234,
-        output_uri=indexed_ls5_nbar_storage_type.location + '/tmp/something.tif'
-    ))
-
-    results = index.storage.search_eager()
-    assert len(results) == 1
-    assert results[0].dataset_ids == [uuid.UUID(pseudo_telemetry_dataset.id)]
-
-
-def test_search_storage_by_dataset(index, db, default_metadata_type, indexed_ls5_nbar_storage_type,
-                                   pseudo_telemetry_dataset):
-    """
-    :type db: datacube.index.postgres._api.PostgresDb
-    :type index: datacube.index._api.Index
-    :type indexed_ls5_nbar_storage_type: datacube.model.StorageType
-    :type default_metadata_type: datacube.model.Collection
-    """
-    su = StorageUnit(
-        [pseudo_telemetry_dataset.id],
-        indexed_ls5_nbar_storage_type,
-        {'test': 'test'},
-        size_bytes=1234,
-        output_uri=indexed_ls5_nbar_storage_type.location + '/tmp/something.tif'
-    )
-    index.storage.add(su)
-
-    # Search by the linked dataset properties.
-    storages = index.storage.search_eager(
-        platform='LANDSAT_5',
-        instrument='TM'
-    )
-    assert len(storages) == 1
-    # A UUID was assigned.
-    assert su.id is not None
-    assert storages[0].id == su.id
-
-    # When fields don't match the dataset it shouldn't be returned.
-    storages = index.storage.search_eager(
-        platform='LANDSAT_7'
-    )
-    assert len(storages) == 0
-
-
-def test_search_storage_multi_dataset(index, db, default_metadata_type, indexed_ls5_nbar_storage_type,
-                                      pseudo_telemetry_dataset):
-    """
-    When a storage unit is linked to multiple datasets, it should only be returned once.
-
-    :type db: datacube.index.postgres._api.PostgresDb
-    :type index: datacube.index._api.Index
-    :type indexed_ls5_nbar_storage_type: datacube.model.StorageType
-    :type pseudo_telemetry_dataset: datacube.model.Dataset
-    """
-    # Add a second
-    id2 = str(uuid.uuid4())
-    doc2 = copy.deepcopy(pseudo_telemetry_dataset.metadata_doc)
-    doc2['id'] = id2
-    # Second dataset is a minute later
-    doc2['extent']['to_dt'] = dateutil.parser.parse(doc2['extent']['to_dt']) + datetime.timedelta(minutes=1)
-    was_inserted = db.insert_dataset(doc2, id2, pseudo_telemetry_dataset.type.id)
-    assert was_inserted
-
-    su = StorageUnit(
-        [pseudo_telemetry_dataset.id, id2],
-        indexed_ls5_nbar_storage_type,
-        {'test': 'test'},
-        size_bytes=1234,
-        output_uri=indexed_ls5_nbar_storage_type.location + '/tmp/something.tif'
-    )
-    index.storage.add(su)
-    # Search by the linked dataset properties.
-    storages = index.storage.search_eager(
-        platform='LANDSAT_5',
-        instrument='TM'
-    )
-
-    assert len(storages) == 1
-    assert su.id is not None
-    assert storages[0].id == su.id
-    assert set(storages[0].dataset_ids) == {uuid.UUID(pseudo_telemetry_dataset.id), uuid.UUID(id2)}
-
-
 def test_search_cli_basic(global_integration_cli_args, default_metadata_type, pseudo_telemetry_dataset):
     """
     Search datasets using the cli.
@@ -429,44 +333,6 @@ def test_search_cli_basic(global_integration_cli_args, default_metadata_type, ps
     assert str(default_metadata_type.name) in result.output
 
     assert result.exit_code == 0
-
-
-def test_search_storage_by_both_fields(global_integration_cli_args, index, indexed_ls5_nbar_storage_type,
-                                       pseudo_telemetry_dataset):
-    """
-    Search storage using both storage and dataset fields.
-    :type db: datacube.index.postgres._api.PostgresDb
-    :type global_integration_cli_args: tuple[str]
-    :type indexed_ls5_nbar_storage_type: datacube.model.StorageType
-    :type pseudo_telemetry_dataset: datacube.model.Dataset
-    """
-    su = StorageUnit(
-        [pseudo_telemetry_dataset.id],
-        indexed_ls5_nbar_storage_type,
-        descriptor={
-            'extents': {
-                'geospatial_lat_min': 120,
-                'geospatial_lat_max': 140
-            }
-        },
-        size_bytes=1234,
-        output_uri=indexed_ls5_nbar_storage_type.location + '/tmp/something.tif'
-    )
-    index.storage.add(su)
-
-    rows = _cli_csv_search(['units', '100<lat<150'], global_integration_cli_args)
-    assert su.id is not None
-    assert len(rows) == 1
-    assert rows[0]['id'] == str(su.id)
-
-    # Don't return on a mismatch
-    rows = _cli_csv_search(['units', '150<lat<160'], global_integration_cli_args)
-    assert len(rows) == 0
-
-    # Search by both dataset and storage fields.
-    rows = _cli_csv_search(['units', 'platform=LANDSAT_5', '100<lat<150'], global_integration_cli_args)
-    assert len(rows) == 1
-    assert rows[0]['id'] == str(su.id)
 
 
 def _cli_csv_search(args, global_integration_cli_args):

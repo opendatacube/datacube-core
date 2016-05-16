@@ -107,67 +107,6 @@ _DATASET_METADATA = {
 }
 
 
-def test_get_for_dataset(index, default_metadata_type):
-    """
-    :type index: datacube.index._api.Index
-    """
-    dataset = Dataset(None, _DATASET_METADATA, '/tmp/somepath.yaml')
-
-    storage_types = index.storage.types.get_for_dataset(dataset)
-    assert len(storage_types) == 0
-
-    index.storage.types.add(_STORAGE_TYPE)
-
-    # The properties of the dataset should match.
-    storage_types = index.storage.types.get_for_dataset(dataset)
-    assert len(storage_types) == 1
-
-    storage_type = storage_types[0]
-    assert storage_type.name == 'ls5_nbar'
-
-    assert storage_type.document['file_path_template'] == '/file_path_template/file.nc'
-    assert storage_type.document['match']['metadata'] == _STORAGE_TYPE['match']['metadata']
-    for name in _STORAGE_TYPE['measurements']:
-        assert _STORAGE_TYPE['measurements'][name]['dtype'] == str(
-            storage_type.measurements[name]['dtype'])
-        assert _STORAGE_TYPE['measurements'][name]['nodata'] == \
-            storage_type.measurements[name]['nodata']
-        assert _STORAGE_TYPE['measurements'][name]['resampling_method'] == \
-            storage_type.measurements[name]['resampling_method']
-        assert _STORAGE_TYPE['measurements'][name]['src_varname'] == \
-            storage_type.measurements[name]['src_varname']
-
-    assert storage_type.driver == 'NetCDF CF'
-    assert storage_type.definition == _STORAGE_TYPE['storage']
-
-    # A different dataset should not match our storage types
-    dataset = Dataset(None, {
-        'instrument': {'name': 'OLI'},
-        'platform': {'code': 'LANDSAT_8'},
-        'product_type': 'NBAR'
-    }, '/tmp/other.yaml')
-    storage_types = index.storage.types.get_for_dataset(dataset)
-    assert len(storage_types) == 0
-
-
-def test_idempotent_add_mapping(index, local_config, default_metadata_type):
-    """
-    :type local_config: datacube.config.LocalConfig
-    :type index: datacube.index._api.Index
-    """
-    index.storage.types.add(_STORAGE_TYPE)
-    # Second time, no effect, because it's equal.
-    index.storage.types.add(_STORAGE_TYPE)
-
-    # But if we add the same mapping with differing properties we should get an error:
-    different_storage_mapping = copy.deepcopy(_STORAGE_TYPE)
-    different_storage_mapping['location_name'] = 'new_location'
-    with pytest.raises(ValueError):
-        index.storage.types.add(different_storage_mapping)
-
-    assert index.storage.types.get_by_name(_STORAGE_TYPE['name']) is not None
-
-
 def test_metadata_indexes_views_exist(db, default_metadata_type):
     """
     :type db: datacube.index.postgres._api.PostgresDb
