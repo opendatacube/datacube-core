@@ -65,6 +65,7 @@ def match_dataset(dataset_doc, uri, rules):
 @cli.command('index', help="Index datasets into the Data Cube")
 @click.option('--match-rules', '-r',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
+              required=True,
               help='Rules to be used to find dataset types for datasets')
 @click.option('--dry-run', '-d', is_flag=True, default=False, help='Check if everything is ok')
 @click.argument('datasets',

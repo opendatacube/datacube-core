@@ -278,8 +278,9 @@ def get_namemap(config):
 
 @cli.command('ingest', help="Ingest datasets")
 @click.option('--config', '-c',
-              help='Ingest configuration file',
-              type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
+              type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
+              required=True,
+              help='Ingest configuration file')
 @ui.executor_cli_options
 @click.option('--dry-run', '-d', is_flag=True, default=False, help='Check if everything is ok')
 @ui.pass_index(app_name='agdc-ingest')
