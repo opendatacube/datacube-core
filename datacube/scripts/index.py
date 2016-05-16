@@ -85,14 +85,17 @@ def match_madness(match_rules, index):
     return generate_dataset
 
 
-def type_crazy(type_name, index):
+def type_crazy(type_name, managed, index):
     type_ = index.datasets.types.get_by_name(type_name)
     if not type_:
         _LOG.error("DatasetType %s does not exist", type_name)
         return
 
     def generate_dataset(metadata_doc, uri):
-        return Dataset(type_, metadata_doc, uri, managed=False)
+        if not contains(metadata_doc, type_.metadata):
+            _LOG.warning('Dataset %s does match the specified type %s',
+                         metadata_doc.get('id', 'unidentified'), type_.name)
+        return Dataset(type_, metadata_doc, uri, managed=managed)
 
     return generate_dataset
 
@@ -103,12 +106,14 @@ def type_crazy(type_name, index):
               help='Rules to be used to find dataset types for datasets')
 @click.option('--dtype', '-t',
               help='Dataset Type to be used to index datasets')
+@click.option('--managed', '-m', is_flag=True, default=False,
+              help='Should Data Cube manage dataset\'s files')
 @click.option('--dry-run', '-d', is_flag=True, default=False, help='Check if everything is ok')
 @click.argument('datasets',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
 @ui.pass_index(app_name='agdc-index')
-def index_cmd(index, match_rules, dtype, dry_run, datasets):
+def index_cmd(index, match_rules, dtype, managed, dry_run, datasets):
     if match_rules is None is dtype is None:
         _LOG.error('Must specify one of [--match-rules, --type]')
         return
@@ -117,7 +122,7 @@ def index_cmd(index, match_rules, dtype, dry_run, datasets):
     if match_rules:
         generate_dataset = match_madness(match_rules, index)
     if dtype:
-        generate_dataset = type_crazy(dtype, index)
+        generate_dataset = type_crazy(dtype, managed, index)
     if generate_dataset is None:
         return
 
