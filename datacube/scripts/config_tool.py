@@ -83,41 +83,6 @@ def check(config_file):
         click.get_current_context().exit(1)
 
 
-@cli.group(help='Storage types')
-def storage():
-    pass
-
-
-@storage.command('add')
-@click.argument('files',
-                type=click.Path(exists=True, readable=True, writable=False),
-                nargs=-1)
-@PASS_INDEX
-@click.pass_context
-def add_storage_types(ctx, index, files):
-    """
-    Add storage types to the index
-    """
-    for descriptor_path, parsed_doc in _read_docs(files):
-        try:
-            index.storage.types.add(parsed_doc)
-            echo('Added "%s"' % parsed_doc['name'])
-        except KeyError as ke:
-            _LOG.exception(ke)
-            _LOG.error('Invalid storage type definition: %s', descriptor_path)
-            ctx.exit(1)
-
-
-@storage.command('list')
-@PASS_INDEX
-def list_storage_types(index):
-    """
-    List all Storage Types
-    """
-    for storage_type in index.storage.types.get_all():
-        echo("{m.name:20}\t{m.description!s}".format(m=storage_type))
-
-
 @cli.group(name='type', help='Dataset types')
 def dataset_type():
     pass
@@ -185,27 +150,6 @@ def list_users(index):
     """
     for role, user, description in index.list_users():
         click.echo('{0:6}\t{1:15}\t{2}'.format(role, user, description if description else ''))
-
-
-@storage.command('print')
-@click.argument('storage_arg')
-@PASS_INDEX
-def print_storage_type(index, storage_arg):
-    """
-    Print Storage Type in YAML format
-
-    <STORAGE_ARG> may be an id or a name
-    """
-    try:
-        storage_type_id = int(storage_arg)
-        storage_type = index.storage.types.get(storage_type_id)
-    except ValueError:
-        storage_type = index.storage.types.get_by_name(storage_arg)
-
-    if storage_type is not None:
-        echo(yaml.dump(storage_type.document))
-    else:
-        echo("Error: Storage type was found")
 
 
 def _read_docs(paths):
