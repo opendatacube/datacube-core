@@ -51,8 +51,8 @@ class AnalyticsEngine(object):
             {
                 'sensors':
                 {
-                    'LANDSAT_5': {'input': ['band_4', 'band_3'], 'function': 'ndvi'},
-                    'LANDSAT_7': {'input': ['band_4', 'band_3'], 'function': 'ndvi'},
+                    'LANDSAT_5': {'input': ['nir', 'red'], 'function': 'ndvi'},
+                    'LANDSAT_7': {'input': ['nir', 'red'], 'function': 'ndvi'},
                 },
                 'functions':
                 {

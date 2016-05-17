@@ -45,7 +45,7 @@ def main():
                   'y':    {'range': (-35.32, -35.28)},
                   'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
-    arrays = a.create_array(('LANDSAT_5', 'nbar'), ['band_4'], dimensions, 'get_data')
+    arrays = a.create_array(('LANDSAT_5', 'nbar'), ['nir'], dimensions, 'get_data')
 
     median_t = a.apply_generic_reduction(arrays, ['time'], 'median(array1)', 'medianT')
 
@@ -53,7 +53,7 @@ def main():
 
     plot(e.cache['medianT'])
 
-    b40_result = e.cache['get_data']['array_result']['band_4']
+    b40_result = e.cache['get_data']['array_result']['nir']
     median_result = e.cache['medianT']['array_result']['medianT']
 
     b40_data = Data(x=b40_result[:, ::-1, :], label='B40')

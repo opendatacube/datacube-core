@@ -24,6 +24,7 @@ if __name__ == '__main__' and __package__ is None:
     from os import sys, path
     sys.path.append(path.dirname(path.dirname(path.dirname(path.abspath(__file__)))))
 
+from datetime import datetime
 import xarray as xr
 from datacube.api import API
 from datacube.ndexpr import NDexpr
@@ -39,13 +40,16 @@ def main():
     data_request_descriptor = {
         'platform': 'LANDSAT_5',
         'product': 'nbar',
-        'variables': ('band_3', 'band_4'),
+        'variables': ('red', 'nir'),
         'dimensions': {
             'longitude': {
-                'range': (150, 150.256)
+                'range': (149.07, 149.18)
             },
             'latitude': {
-                'range': (-34.0, -33.744)
+                'range': (-35.32, -35.28)
+            },
+            'time': {
+                'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))
             }
         }
     }
@@ -60,10 +64,13 @@ def main():
         'variables': ('pixelquality'),
         'dimensions': {
             'longitude': {
-                'range': (150, 150.256)
+                'range': (149.07, 149.18)
             },
             'latitude': {
-                'range': (-34.0, -33.744)
+                'range': (-35.32, -35.28)
+            },
+            'time': {
+                'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))
             }
         }
     }
@@ -73,15 +80,15 @@ def main():
 
     # The following 3 lines shouldn't be done like this
     # Currently done like this for the sake of the example.
-    b30 = xr.DataArray(d1['arrays']['band_3'])
-    b40 = xr.DataArray(d1['arrays']['band_4'])
-    pq = nd.get_pqa_mask(d2['arrays']['pixelquality'].values)
+    b30 = d1['arrays']['red']
+    b40 = d1['arrays']['nir']
+    pq = d2['arrays']['pixelquality']
 
     print('NDexpr demo begins here')
     # perform ndvi as expressed in this language.
     ndvi = nd.evaluate('((b40 - b30) / (b40 + b30))')
     # perform mask on ndvi as expressed in this language.
-    masked_ndvi = nd.evaluate('ndvi{pq}')
+    masked_ndvi = nd.evaluate('ndvi{(pq == 32767) | (pq == 16383) | (pq == 2457)}')
 
     # currently dimensions are integer indices, later will be labels when
     # Data Access API Interface has been finalised.

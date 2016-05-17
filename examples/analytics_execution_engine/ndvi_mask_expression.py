@@ -46,19 +46,19 @@ def main():
                   'y':    {'range': (-35.32, -35.28)},
                   'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
-    b40 = a.create_array(('LANDSAT_5', 'nbar'), ['band_4'], dimensions, 'b40')
-    b30 = a.create_array(('LANDSAT_5', 'nbar'), ['band_3'], dimensions, 'b30')
+    b40 = a.create_array(('LANDSAT_5', 'nbar'), ['nir'], dimensions, 'b40')
+    b30 = a.create_array(('LANDSAT_5', 'nbar'), ['red'], dimensions, 'b30')
     pq = a.create_array(('LANDSAT_5', 'pqa'), ['pixelquality'], dimensions, 'pq')
 
     ndvi = a.apply_expression([b40, b30], '((array1 - array2) / (array1 + array2))', 'ndvi')
-    mask = a.apply_expression([ndvi, pq], 'array1{array2}', 'mask')
+    mask = a.apply_expression([ndvi, pq], 'array1{(array2 == 32767) | (array2 == 16383) | (array2 == 2457)}', 'mask')
 
     e.execute_plan(a.plan)
 
     plot(e.cache['mask'])
 
-    b30_result = e.cache['b30']['array_result']['band_3']
-    b40_result = e.cache['b40']['array_result']['band_4']
+    b30_result = e.cache['b30']['array_result']['red']
+    b40_result = e.cache['b40']['array_result']['nir']
     ndvi_result = e.cache['ndvi']['array_result']['ndvi']
     pq_result = e.cache['pq']['array_result']['pixelquality']
     mask_result = e.cache['mask']['array_result']['mask']

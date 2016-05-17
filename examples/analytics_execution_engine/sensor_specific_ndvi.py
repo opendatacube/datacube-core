@@ -51,8 +51,8 @@ def main():
 
     plot(e.cache['ndvi'])
 
-    b30_result = e.cache['get_data']['array_result']['band_3']
-    b40_result = e.cache['get_data']['array_result']['band_4']
+    b30_result = e.cache['get_data']['array_result']['red']
+    b40_result = e.cache['get_data']['array_result']['nir']
     ndvi_result = e.cache['ndvi']['array_result']['ndvi']
 
     b30_data = Data(x=b30_result[:, ::-1, :], label='B30')
