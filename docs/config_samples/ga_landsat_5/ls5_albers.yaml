@@ -382,88 +382,58 @@ measurements:
       src_varname: pqa
       zlib: True
       flags_definition:
-        cloud_shadow_fmask:
-          bits: 13
-          description: Cloud Shadow (Fmask)
-          values:
-            0: no_cloud_shadow
-            1: cloud_shadow
-        cloud_shadow_acca:
-          bits: 12
-          description: Cloud Shadow (ACCA)
-          values:
-            0: no_cloud_shadow
-            1: cloud_shadow
-        cloud_fmask:
-          bits: 11
-          description: Cloud (Fmask)
-          values:
-            0: no_cloud
-            1: cloud
-        cloud_acca:
-          bits: 10
-          description: Cloud Shadow (ACCA)
-          values:
-            0: no_cloud
-            1: cloud
-        land_sea:
-          bits: 9
-          description: Land or Sea
-          values:
-            0: sea
-            1: land
-        contiguous:
-          bits: 8
-          description: All bands for this pixel contain non-null values
-          values:
-            0: false
-            1: true
-        swir2_saturated:
-          bits: 7
-          description: SWIR2 is saturated
-          values:
-            0: true
-            1: false
-
-        swir2_saturated:
-          bits: 6
-          description: SWIR2 band is saturated
-          values:
-            0: true
-            1: false
-        swir1_saturated:
-          bits: 4
-          description: SWIR1 band is saturated
-          values:
-            0: true
-            1: false
-        nir_saturated:
-          bits: 3
-          description: NIR band is saturated
-          values:
-            0: true
-            1: false
-
-        red_saturated:
-          bits: 2
-          description: Red band is saturated
-          values:
-            0: true
-            1: false
-
+        blue_saturated:
+          bits: 0
+          description: Blue band is saturated
+          values: {0: true, 1: false}
         green_saturated:
           bits: 1
           description: Green band is saturated
-          values:
-            0: true
-            1: false
-
-        blue_saturated:
-          bits: 1
-          description: Blue band is saturated
-          values:
-            0: true
-            1: false
+          values: {0: true, 1: false}
+        red_saturated:
+          bits: 2
+          description: Red band is saturated
+          values: {0: true, 1: false}
+        nir_saturated:
+          bits: 3
+          description: NIR band is saturated
+          values: {0: true, 1: false}
+        swir1_saturated:
+          bits: 4
+          description: SWIR1 band is saturated
+          values: {0: true, 1: false}
+        tir_saturated:
+          bits: 5
+          description: Thermal Infrared band is saturated
+          values: {0: true, 1: false}
+        swir2_saturated:
+          bits: 7
+          description: SWIR2 band is saturated
+          values: {0: true, 1: false}
+        contiguous:
+          bits: 8
+          description: All bands for this pixel contain non-null values
+          values: {0: false, 1: true}
+        land_sea:
+          bits: 9
+          description: Land or Sea
+          values: {0: sea, 1: land}
+        cloud_acca:
+          bits: 10
+          description: Cloud Shadow (ACCA)
+          values: {0: no_cloud, 1: cloud}
+        cloud_fmask:
+          bits: 11
+          description: Cloud (Fmask)
+          values: {0: no_cloud, 1: cloud}
+        cloud_shadow_acca:
+          bits: 12
+          description: Cloud Shadow (ACCA)
+          values: {0: no_cloud_shadow, 1: cloud_shadow}
+        cloud_shadow_fmask:
+          bits: 13
+          description: Cloud Shadow (Fmask)
+          values: {0: no_cloud_shadow, 1: cloud_shadow}
 
         ga_good_pixel:
           bits: [13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]

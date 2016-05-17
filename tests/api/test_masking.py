@@ -1,7 +1,7 @@
 # coding=utf-8
 import yaml
 
-from datacube.api.masking import list_flag_names, create_mask_value, describe_flags
+from datacube.api.masking import list_flag_names, create_mask_value, describe_variable_flags
 
 
 def test_list_flag_names():
@@ -41,7 +41,7 @@ def test_create_multi_mask_value():
 
 def test_describe_flags():
     simple_var = SimpleVariableWithFlagsDef()
-    describe_flags(simple_var)
+    describe_variable_flags(simple_var)
 
 
 class SimpleVariableWithFlagsDef(object):
