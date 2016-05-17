@@ -108,132 +108,74 @@ measurements:
       src_varname: cfmask
       zlib: True
       units: '1'
-      flags_definition:
-        undetermined_cloud:
-          bits: [15, 14]
-          value: 0
-          description: Cloud not determined
-        no_cloud:
-          bits: [15, 14]
-          value: 1
-          description: No cloud
-        maybe_cloud:
-          bits: [15, 14]
-          value: 2
-          description: Maybe cloud
-        cloud:
-          bits: [15, 14]
-          value: 3
-          description: Cloud
-
-
-        undetermined_cirrus:
-          bits: [12, 13]
-          value: 0
-          description: Cirrus not determined
-        no_cirrus:
-          bits: [12, 13]
-          value: 1
-          description: No cirrus
-        maybe_cirrus:
-          bits: [12, 13]
-          value: 2
-          description: Maybe cirrus
-        cirrus:
-          bits: [12, 13]
-          value: 3
-          description: Cirrus
-
-        snowice:
-          bits: [10,11]
-          description: Contains snow or ice
+      flags_definition: # From http://landsat.usgs.gov/qualityband.php, which isn't right, should be LEDAPS
+        cloud_confidence:
+          bits: [13, 14]
+          description: Cloud Confidence
           values:
-            0: not determined
-            1: no
-            2: maybe
-            3: yes
+            0: not_determined
+            1: no_cloud
+            2: maybe_cloud
+            3: cloud
+        cirrus_confidence:
+          bits: [11, 12]
+          description: Cirrus Confidence
+          values:
+            0: not_determined
+            1: no_cirrus
+            2: maybe_cirrus
+            3: cirrus
 
-        undetermined_snowice:
-          bits: [10,11]
-          value: 0
-          description: Snow/ice not determined
-        no_snowice:
-          bits: [10,11]
-          value: 1
-          description: No snow/ice
-        maybe_snowice:
-          bits: [10,11]
-          value: 2
-          description: Maybe snow/ice
-        snowice:
-          bits: [10,11]
-          value: 3
-          description: Snow/ice
+        snowice_confidence:
+          bits: [9, 10]
+          description: Snow/Ice Confidence
+          values:
+            0: not_determined
+            1: no_snowice
+            2: maybe_snowice
+            3: snowice
 
-
-        undetermined_veg:
-          bits: [8,9]
-          value: 0
-          description: Vegetation not determined
-        no_veg:
-          bits: [8,9]
-          value: 1
-          description: No vegetation
-        maybe_veg:
-          bits: [8,9]
-          value: 2
-          description: Maybe vegetation
-        veg:
-          bits: [8,9]
-          value: 3
-          description: Vegetation
+        veg_confidence:
+          bits: [7, 8]
+          description: Vegetation Confidence
+          values:
+            0: not_determined
+            1: no_veg
+            2: maybe_veg
+            3: veg
 
 
-        undetermined_water:
-          bits: [4,5]
-          value: 0
-          description: Water not determined
-        no_water:
-          bits: [4,5]
-          value: 1
-          description: No water
-        maybe_water:
-          bits: [4,5]
-          value: 2
-          description: Maybe water
-        water:
-          bits: [4,5]
-          value: 3
-          description: Water
 
-        terrain_not_occluded:
-          bit_index: 2
-          value: 0
-          description: Terrain not occluded
-        terrain_not_occluded:
-          bit_index: 2
-          value: 1
+        water_confidence:
+          bits: [3, 4]
+          description: Water Confidence
+          values:
+            0: not_determined
+            1: no_water
+            2: maybe_water
+            3: water
+
+        terrain_occluded:
+          bits: 2
           description: Terrain occluded
+          values:
+            0: False
+            1: True
 
-
-        frame_not_dropped:
-          bit_index: 1
-          value: 0
-          description: Frame not dropped
         frame_dropped:
-          bit_index: 1
-          value: 1
+          bits: 1
           description: Frame dropped
+          values:
+            0: False
+            1: True
 
-
-        not_filled:
-          bit_index: 0
-          value: 0
-          description: Not filled
         filled:
-          bit_index: 0
-          value: 1
+          bits: 0
           description: Filled
+          values:
+            0: False
+            1: True
+
 
 
   'cfmask_conf':
