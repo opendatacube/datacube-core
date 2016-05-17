@@ -227,7 +227,7 @@ class DatasetType(object):
 
     @property
     def measurements(self):
-        return self.definition['measurements']
+        return self.definition.get('measurements', {})
 
     @property
     def gridspec(self):
@@ -255,8 +255,8 @@ class DatasetType(object):
         """
         :return: tuple(x size, y size)
         """
-        tile_size = self.gridspec['tile_size']
-        return [tile_size[dim] for dim in self.spatial_dimensions]
+        tile_size = self.gridspec.get('tile_size', [])
+        return [tile_size[dim] for dim in self.spatial_dimensions if dim in tile_size]
 
     @property
     def resolution(self):

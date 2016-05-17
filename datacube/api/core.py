@@ -2,8 +2,8 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-from itertools import groupby
-from collections import defaultdict, OrderedDict
+from itertools import groupby, chain
+from collections import defaultdict, OrderedDict, namedtuple
 
 import pandas
 import numpy
@@ -21,6 +21,9 @@ from ..storage.storage import DatasetSource, fuse_sources, RESAMPLING
 from ..storage import netcdf_writer
 
 _LOG = logging.getLogger(__name__)
+
+
+Group = namedtuple('Group', ['key', 'datasets'])
 
 
 class Datacube(object):
@@ -179,7 +182,7 @@ class Datacube(object):
                         if _check_intersect(geopolygon, dataset.extent.to_crs(geopolygon.crs_str))]
         group_func = _get_group_by_func(group_func)
         datasets.sort(key=group_func)
-        groups = [(key, list(group)) for key, group in groupby(datasets, group_func)]
+        groups = [Group(key, list(group)) for key, group in groupby(datasets, group_func)]
 
         return groups
 
@@ -187,8 +190,8 @@ class Datacube(object):
     def product_data(groups, geobox, measurements, fuse_func=None):
         assert groups
 
-        result = xarray.Dataset(attrs={'extent': geobox.extent, 'affine': geobox.affine, 'crs': geobox.crs})
-        result['time'] = ('time', numpy.array([v[0] for v in groups]), {'units': 'seconds since 1970-01-01 00:00:00'})
+        result = xarray.Dataset(attrs={'extent': geobox.extent, 'affine': geobox.affine, 'crs': geobox.crs_str})
+        result['time'] = ('time', numpy.array([v.key for v in groups]), {'units': 'seconds since 1970-01-01 00:00:00'})
         for name, v in geobox.coordinate_labels.items():
             result[name] = (name, v, {'units': geobox.coordinates[name].units})
 
@@ -214,6 +217,46 @@ class Datacube(object):
 
         return result
 
+    @staticmethod
+    def variable_data(groups, geobox, name, measurement, fuse_func=None):
+        assert groups
+
+        time_coord = xarray.Coordinate('time', numpy.array([v.key for v in groups]),
+                                       attrs={'units': 'seconds since 1970-01-01 00:00:00'})
+        coords = [time_coord]
+        for dim, v in geobox.coordinate_labels.items():
+            coords.append(xarray.Coordinate(dim, v, attrs={'units': geobox.coordinates[dim].units}))
+
+        data = numpy.empty((len(groups),) + geobox.shape, dtype=measurement['dtype'])
+        for index, (_, sources) in enumerate(groups):
+            fuse_sources([DatasetSource(dataset, name) for dataset in sources],
+                         data[index],
+                         geobox.affine,
+                         geobox.crs_str,
+                         measurement.get('nodata'),
+                         resampling=RESAMPLING.nearest,
+                         fuse_func=fuse_func)
+
+        result = xarray.DataArray(data,
+                                  coords=coords,
+                                  dims=[coord.name for coord in coords],
+                                  name=name,
+                                  attrs={
+                                      'extent': geobox.extent,
+                                      'affine': geobox.affine,
+                                      'crs': geobox.crs_str,
+                                      'nodata': measurement.get('nodata'),
+                                      'units': measurement.get('units', '1')
+                                  })
+
+        # TODO: Include source metadata
+        # extra_md = numpy.empty(len(groups), dtype=object)
+        # for index, (_, sources) in enumerate(groups):
+        #     extra_md[index] = sources
+        # result['sources'] = (['time'], extra_md)
+
+        return result
+
     # def describe(self, type_name, variables=None, group_by=None, **kwargs):
     #     polygon = _query_to_geopolygon(**kwargs)
     #
@@ -221,8 +264,8 @@ class Datacube(object):
     #
     #     groups = self.product_observations(type_name, polygon, group_by_func)
     #
-    #     times = sorted(numpy.array([group[0] for group in groups], dtype='datetime64[ns]'))
-    #     dataset_count = sum([len(group[1]) for group in groups])
+    #     times = sorted(numpy.array([group.key for group in groups], dtype='datetime64[ns]'))
+    #     dataset_count = sum([len(group.datasets) for group in groups])
     #
     #     # Get dataset data
     #     dataset_type = self.index.datasets.types.get_by_name(type_name)
@@ -275,21 +318,26 @@ class Datacube(object):
 
 
 class API(object):
-    def __init__(self, index):
-        self.datacube = Datacube(index)
+    def __init__(self, index=None, datacube=None):
+        if datacube is not None:
+            self.datacube = datacube
+        elif index is not None:
+            self.datacube = Datacube(index, app='Datacube API')
+        else:
+            self.datacube = Datacube(app='Datacube API')
 
     def get_descriptor_for_dataset(self, dataset_type, datasets, group_func, geopolygon=None):
         dataset_descriptor = {}
         irregular_dims = ['time', 't', 'T']  # TODO: get irregular dims from dataset_type
 
-        if not dataset_type.gridspec:
+        if not (dataset_type.gridspec and 'dimension_order' in dataset_type.gridspec):
             return None
 
         if not geopolygon:
             geopolygon = _get_bounds(datasets, dataset_type)
 
         datasets.sort(key=group_func)
-        groups = [(key, list(group)) for key, group in groupby(datasets, group_func)]
+        groups = [Group(key, list(group)) for key, group in groupby(datasets, group_func)]
 
         dataset_descriptor['result_min'] = []
         dataset_descriptor['result_max'] = []
@@ -297,7 +345,7 @@ class API(object):
         dataset_descriptor['irregular_indices'] = {}
 
         resolution = [dataset_type.gridspec['resolution'][dim] for dim in dataset_type.spatial_dimensions]
-        geobox = GeoBox.from_geopolygon(geopolygon, resolution)
+        geobox = GeoBox.from_geopolygon(geopolygon.to_crs(dataset_type.crs), resolution)
         dims = dataset_type.gridspec['dimension_order']
         spatial_dims = dataset_type.spatial_dimensions
         dataset_descriptor['dims'] = dims
@@ -306,7 +354,7 @@ class API(object):
                 coords = geobox.coordinate_labels[dim]
             elif dim in irregular_dims:
                 # groups will define irregular_dims
-                coords = [group[0] for group in groups]
+                coords = [group.key for group in groups]
                 dataset_descriptor['irregular_indices'][dim] = coords
             else:
                 # not supported yet...
@@ -314,9 +362,9 @@ class API(object):
             dataset_descriptor['result_min'].append(min(coords))
             dataset_descriptor['result_max'].append(max(coords))
             dataset_descriptor['result_shape'].append(len(coords))
-
         if dataset_type.measurements:
             dataset_descriptor['variables'] = self.get_descriptor_for_measurements(dataset_type)
+        dataset_descriptor['groups'] = (dataset_type, groups)
         return dataset_descriptor
 
     @staticmethod
@@ -332,21 +380,14 @@ class API(object):
         return data_vars
 
     def get_descriptor(self, descriptor_request=None):
-        search_terms = _convert_descriptor_request_to_search_query(descriptor_request)
-        geopolygon = _descriptor_request_to_geopolygon(descriptor_request)
-        if geopolygon:
-            geo_bb = geopolygon.to_crs('EPSG:4326').boundingbox
-            search_terms['lat'] = Range(geo_bb.bottom, geo_bb.top)
-            search_terms['lon'] = Range(geo_bb.left, geo_bb.right)
-
-        datasets = self.datacube.index.datasets.search(**search_terms)
-        datasets_by_type = defaultdict(list)
-        for dataset in datasets:
-            datasets_by_type[dataset.type.name].append(dataset)
+        if descriptor_request is None:
+            descriptor_request = {}
+        search_terms, geopolygon = _convert_descriptor_request_to_search_query(descriptor_request)
 
         group_func = _get_group_by_func()  # TODO: Get the group func out of the dims request
 
         descriptor = {}
+        datasets_by_type = self.search_datasets_by_type(**search_terms)
         for type_name, datasets in datasets_by_type.items():
             dataset_type = self.datacube.index.datasets.types.get_by_name(type_name)
             dataset_descriptor = self.get_descriptor_for_dataset(dataset_type, datasets, group_func, geopolygon)
@@ -354,8 +395,73 @@ class API(object):
                 descriptor[type_name] = dataset_descriptor
         return descriptor
 
-    def get_data(self, descriptor_request):
-        return {}
+    def search_datasets_by_type(self, **query):
+        datasets = self.datacube.index.datasets.search(**query)
+        datasets_by_type = defaultdict(list)
+        for dataset in datasets:
+            datasets_by_type[dataset.type.name].append(dataset)
+        return datasets_by_type
+
+    def get_dataset_groups(self, group_func=None, **search_query):
+        dataset_groups = {}
+
+        group_func = _get_group_by_func(group_func)  # TODO: Get the group func out of the dims request
+
+        datasets_by_type = self.search_datasets_by_type(**search_query)
+        for dataset_type, datasets in datasets_by_type.items():
+            if dataset_type.gridspec:
+                datasets.sort(key=group_func)
+                dataset_groups[dataset_type] = [Group(key, list(group))
+                                                for key, group in groupby(datasets, group_func)]
+        return dataset_groups
+
+    def get_data(self, data_request, dataset_groups=None):
+        """
+
+        :param data_request:
+        :param dataset_groups: dict mapping dataset_type to sequence of Group pairs.
+            If not provided, the index is queried.
+        :type dataset_groups: dict{dataset_type: list(Group(key, list(datasets)))}
+        :return:
+        """
+        variables = data_request.get('variables', None)
+        search_terms, geopolygon = _convert_descriptor_request_to_search_query(data_request)
+
+        # If the user has not provided `groups` from get_descriptor call, retrieve them from the index
+        if dataset_groups is None:
+            dataset_groups = self.get_dataset_groups(**search_terms)
+
+        data = {}
+        for dataset_type, groups in dataset_groups.items():
+            dt_data = {
+                'arrays': {}
+            }
+            datasets = list(chain.from_iterable(g.datasets for g in groups))
+            if not geopolygon:
+                geopolygon = _get_bounds(datasets, dataset_type)
+            geobox = GeoBox.from_geopolygon(geopolygon.to_crs(dataset_type.crs), dataset_type.resolution)
+            #TODO: apply array_range to geobox, groups and other dimensions
+            for measurement_name, measurement in dataset_type.measurements.items():
+                if variables is None or measurement_name in variables:
+                    dt_data['arrays'][measurement_name] = self.datacube.variable_data(groups, geobox,
+                                                                                      measurement_name, measurement)
+            data[dataset_type.name] = dt_data
+        return data
+
+    def get_data_for_type(self, dataset_type, groups, variables, geopolygon, slices=None):
+        dt_data = {
+            'arrays': {}
+        }
+        datasets = list(chain.from_iterable(g.datasets for g in groups))
+        if not geopolygon:
+            geopolygon = _get_bounds(datasets, dataset_type)
+        geobox = GeoBox.from_geopolygon(geopolygon.to_crs(dataset_type.crs), dataset_type.resolution)
+        #TODO: apply array_range to geobox, groups and other dimensions
+        for measurement_name, measurement in dataset_type.measurements.items():
+            if variables is None or measurement_name in variables:
+                dt_data['arrays'][measurement_name] = self.datacube.variable_data(groups, geobox,
+                                                                                  measurement_name, measurement)
+        return dt_data
 
 
 def _check_intersect(a, b):
@@ -383,8 +489,8 @@ def _value_to_range(value):
 def _descriptor_request_to_geopolygon(descriptor_request):
     if 'dimensions' in descriptor_request:
         dims = descriptor_request['dimensions']
-        geo_params = {dim: v['range'] for dim, v in dims if 'range' in v}
-        crs = [v['coordinate_reference_system'] for dim, v in dims if 'coordinate_reference_system' in v]
+        geo_params = {dim: v['range'] for dim, v in dims.items() if 'range' in v}
+        crs = [v['coordinate_reference_system'] for dim, v in dims.items() if 'coordinate_reference_system' in v]
         if crs:
             geo_params['crs'] = crs
         return _query_to_geopolygon(**geo_params)
@@ -421,7 +527,7 @@ def _get_group_by_func(group_by=None):
             try:
                 return ds.time
             except KeyError:
-                # TODO: Remove this mess when issue #119 is resolved
+                # TODO: Remove this when issue #119 is resolved
                 return ds.metadata_doc['acquisition']['aos']
         return just_time
     elif group_by == 'day':
@@ -441,4 +547,10 @@ def _get_bounds(datasets, dataset_type):
 
 
 def _convert_descriptor_request_to_search_query(descriptor_request):
-    return {}
+    polygon = _descriptor_request_to_geopolygon(descriptor_request)
+    search_query = {}
+    if polygon:
+        geo_bb = polygon.to_crs('EPSG:4326').boundingbox
+        search_query['lat'] = Range(geo_bb.bottom, geo_bb.top)
+        search_query['lon'] = Range(geo_bb.left, geo_bb.right)
+    return search_query, polygon
