@@ -27,7 +27,7 @@ metadata:
 ---
 
 name: ls5_nbar_scene
-description: Landsat 5 NBAR 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
+description: Landsat 5 NBAR 25 metre
 metadata_type: eo
 
 metadata:
@@ -86,7 +86,7 @@ measurements:
 ---
 
 name: ls5_pq_scene
-description: Landsat 5 PQ 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
+description: Landsat 5 PQ 25 metre
 metadata_type: eo
 
 metadata:
