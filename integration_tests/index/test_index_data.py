@@ -47,6 +47,7 @@ _telemetry_dataset = {
 
 _pseudo_telemetry_dataset_type = {
     'name': 'ls8_telemetry',
+    'description': 'LS8 test',
     'metadata': {
         'product_type': 'satellite_telemetry_data',
         'platform': {

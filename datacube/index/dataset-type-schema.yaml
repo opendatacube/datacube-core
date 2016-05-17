@@ -1,5 +1,5 @@
 "$schema": "http://json-schema.org/draft-04/schema#"
-description: Schema for storage types.
+description: Schema for dataset types.
 type: object
 properties:
     name:
@@ -8,39 +8,26 @@ properties:
         pattern: '^\w+$'
     description:
         type: string
+    metadata_type:
+        type: string
+    metadata:
+        type: object
     storage:
         "$ref": "#/definitions/storage"
-    file_path_template:
-        type: string
-    location_name:
-        type: string
-    match:
-        type: object
-        properties:
-            metadata:
-                type: object
-            roi:
-                # TODO: ?
-                type: object
-        required:
-            - metadata
     measurements:
         type: object
         additionalProperties: false
-        description: Describes how data is to be stored in storage units
+        description: Describes how data is stored
         # Each property is a measurement. Ensure they are alphanumeric+underscores.
         patternProperties:
             '^\w+$':
                 "$ref": "#/definitions/measurement"
-    global_attributes:
-        type: object
 
 required:
     - name
-    - storage
-    - file_path_template
-    - location_name
-    - match
+    - description
+    - metadata_type
+    - metadata
 additionalProperties: false
 
 # Some people define default objects for reference elsewhere in the document.
@@ -55,7 +42,6 @@ definitions:
                "uint8", "uint16", "uint32", "uint64"]
     measurement:
         type: object
-        additionalProperties: false
         properties:
             dtype:
                 "$ref": "#/definitions/dtype"
@@ -63,39 +49,6 @@ definitions:
                 type: number
             units:
                 type: string
-            resampling_method:
-                enum: ['nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average']
-
-            # Injestion fields
-            src_varname:
-                # Alphanumeric or underscore
-                description: Source Dataset Variable Name, Used when injesting
-                pattern: '^\w+$'
-                type: string
-            #
-            # Driver specific fields.
-            #   -> Each of these could be written as a separate jsonschema object definition,
-            #      but the validation error messages when using these features (eg. anyOf) are
-            #      not very user friendly.
-
-            # Used by NetCDF types
-            zlib:
-                type: boolean
-            fletcher32:
-                type: boolean
-            contiguous:
-                type: boolean
-            complevel:
-                type: number
-            attrs:
-                # TODO: Enforce specific attributes?
-                type: object
-            shuffle:
-                type: boolean
-
-            # Used by GeoTIFF types
-            layer:
-                type: number
 
             spectral_definition:
                 description: A structured measured relative spectral response with sample intervals
@@ -132,36 +85,21 @@ definitions:
                         type: string
         required:
           - dtype
+          - nodata
           - units
-          - resampling_method
         additionalProperties: false
 
     storage:
         type: object
         properties:
             chunking:
-                # TODO: Expand
                 type: object
             crs:
                 type: string
             dimension_order:
-                # TODO: Expand
                 type: array
-            driver:
-                enum: ['NetCDF CF']
             resolution:
-                # TODO: Expand
                 type: object
             tile_size:
-                # TODO: Expand
                 type: object
-            aggregation_period:
-                enum: ['month', 'year']
-        required:
-          - chunking
-          - crs
-          - dimension_order
-          - driver
-          - resolution
-          - tile_size
         additionalProperties: false

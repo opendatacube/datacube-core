@@ -17,6 +17,9 @@ _LOG = logging.getLogger(__name__)
 EXAMPLE_STORAGE_TYPE_DOCS = Path(__file__).parent.parent. \
     joinpath('docs', 'config_samples', 'storage_types').glob('**/*.yaml')
 
+EXAMPLE_DATASET_TYPE_DOCS = Path(__file__).parent.parent. \
+    joinpath('docs', 'config_samples', 'dataset_types').glob('**/*.yaml')
+
 # Documents that shouldn't be accepted as mapping docs.
 INVALID_MAPPING_DOCS = Path(__file__).parent.parent. \
     joinpath('docs').glob('*')
@@ -32,7 +35,11 @@ def _run_cli(cli_method, opts, catch_exceptions=False):
     return result
 
 
-def test_add_example_storage_types(global_integration_cli_args, db, default_metadata_type):
+def _dataset_type_count(db):
+    return len(list(db.get_all_dataset_types()))
+
+
+def test_add_example_dataset_types(global_integration_cli_args, db, default_metadata_type):
     """
     Add example mapping docs, to ensure they're valid and up-to-date.
 
@@ -41,14 +48,15 @@ def test_add_example_storage_types(global_integration_cli_args, db, default_meta
     :type global_integration_cli_args: tuple[str]
     :type db: datacube.index.postgres._api.PostgresDb
     """
-    existing_mappings = db.count_storage_types()
+    existing_mappings = _dataset_type_count(db)
+
     print('{} mappings'.format(existing_mappings))
-    for mapping_path in EXAMPLE_STORAGE_TYPE_DOCS:
+    for mapping_path in EXAMPLE_DATASET_TYPE_DOCS:
         print('Adding mapping {}'.format(mapping_path))
         opts = list(global_integration_cli_args)
         opts.extend(
             [
-                '-v', 'storage', 'add',
+                '-v', 'type', 'add',
                 str(mapping_path)
             ]
         )
@@ -57,7 +65,7 @@ def test_add_example_storage_types(global_integration_cli_args, db, default_meta
             opts
         )
         assert result.exit_code == 0, "Error for %r. output: %r" % (str(mapping_path), result.output)
-        mappings_count = db.count_storage_types()
+        mappings_count = _dataset_type_count(db)
         assert mappings_count > existing_mappings, "Mapping document was not added: " + str(mapping_path)
         existing_mappings = mappings_count
 
@@ -67,13 +75,13 @@ def test_error_returned_on_invalid(global_integration_cli_args, db):
     :type global_integration_cli_args: tuple[str]
     :type db: datacube.index.postgres._api.PostgresDb
     """
-    assert db.count_storage_types() == 0
+    assert _dataset_type_count(db) == 0
 
     for mapping_path in INVALID_MAPPING_DOCS:
         opts = list(global_integration_cli_args)
         opts.extend(
             [
-                '-v', 'storage', 'add',
+                '-v', 'type', 'add',
                 str(mapping_path)
             ]
         )
@@ -85,7 +93,7 @@ def test_error_returned_on_invalid(global_integration_cli_args, db):
             catch_exceptions=True
         )
         assert result.exit_code != 0, "Success return code for invalid document."
-        assert db.count_storage_types() == 0, "Invalid document was added to DB"
+        assert _dataset_type_count(db) == 0, "Invalid document was added to DB"
 
 
 def test_config_check(global_integration_cli_args, local_config):

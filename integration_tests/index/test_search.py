@@ -23,6 +23,7 @@ _EXAMPLE_LS7_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('ls7-nbar-exampl
 def pseudo_telemetry_type(index, default_metadata_type):
     index.datasets.types.add_document({
         'name': 'ls8_telemetry',
+        'description': 'telemetry test',
         'metadata': {
             'product_type': 'pseudo_telemetry_data',
             'platform': {

@@ -123,6 +123,7 @@ def dict_api(index):
 def ls5_nbar_gtiff_doc(default_metadata_type):
     return {
         "name": "ls5_nbart_p54_gtiff",
+        "description": 'LS5 Test',
         "metadata": {
             "platform": {
                 "code": "LANDSAT_5"
@@ -164,8 +165,8 @@ def ls5_nbar_ingest_config(tmpdir):
     dataset_dir = tmpdir.mkdir('ls5_nbar_ingest_test')
     config = load_yaml_file(LS5_NBAR_INGEST_CONFIG)[0]
 
+    config = alter_dataset_type_for_testing(config)
     config['location'] = str(dataset_dir)
-    config = alter_storage_type_for_testing(config)
 
     config_path = dataset_dir.join('ls5_nbar_ingest_config.yaml')
     with open(str(config_path), 'w') as stream:
@@ -205,7 +206,7 @@ def indexed_ls5_scene_dataset_type(index, default_metadata_type):
     :type index: datacube.index._api.Index
     :rtype: datacube.model.StorageType
     """
-    dataset_types = load_test_storage_config(DATASET_TYPES/'ls5_scenes.yaml')
+    dataset_types = load_test_dataset_types(DATASET_TYPES / 'ls5_scenes.yaml')
 
     for dataset_type in dataset_types:
         index.datasets.types.add_document(dataset_type)
@@ -218,19 +219,9 @@ def example_ls5_nbar_metadata_doc():
     return load_yaml_file(_EXAMPLE_LS5_NBAR_DATASET_FILE)[0]
 
 
-@pytest.fixture
-def indexed_ls5_nbar_albers_storage_type(db, index):
-    storage_types = load_test_storage_config(LS5_NBAR_ALBERS_STORAGE_TYPE)
-
-    for storage_type in storage_types:
-        index.storage.types.add(storage_type)
-
-    return index.storage.types.get_by_name(LS5_NBAR_ALBERS_NAME)
-
-
-def load_test_storage_config(filename):
-    storage_types = load_yaml_file(filename)
-    return [alter_storage_type_for_testing(storage_type) for storage_type in storage_types]
+def load_test_dataset_types(filename):
+    types = load_yaml_file(filename)
+    return [alter_dataset_type_for_testing(type_) for type_ in types]
 
 
 def load_yaml_file(filename):
@@ -238,16 +229,15 @@ def load_yaml_file(filename):
         return list(yaml.load_all(f, Loader=SafeLoader))
 
 
-def alter_storage_type_for_testing(storage_type):
-    if 'measurements' in storage_type:
-        storage_type = limit_num_measurements(storage_type)
-    storage_type = use_test_storage(storage_type)
-    if 'storage' in storage_type:
-        if is_geogaphic(storage_type):
-            storage_type = shrink_storage_type(storage_type, GEOGRAPHIC_VARS)
+def alter_dataset_type_for_testing(type_):
+    if 'measurements' in type_:
+        type_ = limit_num_measurements(type_)
+    if 'storage' in type_:
+        if is_geogaphic(type_):
+            type_ = shrink_storage_type(type_, GEOGRAPHIC_VARS)
         else:
-            storage_type = shrink_storage_type(storage_type, PROJECTED_VARS)
-    return storage_type
+            type_ = shrink_storage_type(type_, PROJECTED_VARS)
+    return type_
 
 
 def limit_num_measurements(storage_type):

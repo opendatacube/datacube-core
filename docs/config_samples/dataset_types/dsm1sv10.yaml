@@ -21,6 +21,6 @@ storage:
 measurements:
     elevation:
         dtype: float32
-        nodata: NaN
+        nodata: .nan
         units: 'metre'
 
