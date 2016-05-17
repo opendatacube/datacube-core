@@ -319,36 +319,6 @@ class PostgresDb(object):
 
         return self._connection.execute(query).fetchall()
 
-    def _storage_unit_cube_sql_str(self, dimensions):
-        def _array_str(p):
-            return 'ARRAY[' + ','.join("CAST(descriptor #>> '{coordinates,%s,%s}' as numeric)" % (c, p)
-                                       for c in dimensions) + ']'
-
-        return "cube(" + ','.join(_array_str(p) for p in ['begin', 'end']) + ")"
-
-    def get_storage_unit_overlap(self, storage_type):
-        # TODO: This is probably totally broken after the storage_unit->dataset unification. But all its tests pass!
-        wild_sql_appears = self._storage_unit_cube_sql_str(storage_type.dimensions) + ' as cube'
-        su1 = select([
-            DATASET.c.id,
-            text(wild_sql_appears)
-        ]).where(DATASET.c.dataset_type_ref == storage_type.id)
-        su1 = alias(su1, name='su1')
-        su2 = alias(su1, name='su2')
-
-        overlaps = select([su1.c.id]).where(
-            exists(
-                select([1]).select_from(su2).where(
-                    and_(
-                        su1.c.id != su2.c.id,
-                        text("su1.cube && su2.cube")
-                    )
-                )
-            )
-        )
-
-        return self._connection.execute(overlaps).fetchall()
-
     def get_dataset_fields(self, collection_result):
         # Native fields (hard-coded into the schema)
         fields = {
