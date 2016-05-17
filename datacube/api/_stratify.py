@@ -10,7 +10,7 @@ import itertools
 import numpy
 
 from datacube.model import Coordinate
-from datacube.storage.storage import StorageUnitBase
+from datacube.storage.access.core import StorageUnitBase
 
 
 def stratify_storage_unit(storage_unit, dimension, runs):
