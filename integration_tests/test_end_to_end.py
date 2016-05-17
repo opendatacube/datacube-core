@@ -1,22 +1,13 @@
 from __future__ import absolute_import
 
-import sys
-import warnings
-from datetime import datetime
 from pathlib import Path
-from subprocess import call, check_output, PIPE, CalledProcessError
+from subprocess import call, PIPE
 
-import six
-import netCDF4
-import numpy as np
 import pytest
 
-import yaml
 from click.testing import CliRunner
 
-import datacube.scripts.run_ingest
 import datacube.scripts.config_tool
-from .conftest import LS5_NBAR_NAME, LS5_NBAR_ALBERS_NAME, EXAMPLE_LS5_DATASET_ID
 
 
 PROJECT_ROOT = Path(__file__).parents[1]

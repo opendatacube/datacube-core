@@ -4,47 +4,19 @@ Module
 """
 from __future__ import absolute_import
 
-import copy
 import csv
 import datetime
 import io
 import uuid
 
-import dateutil.parser
 import pytest
 from click.testing import CliRunner
 from pathlib import Path
 
-import datacube.scripts.run_ingest
 import datacube.scripts.search_tool
 from datacube.model import Range
 
 _EXAMPLE_LS7_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('ls7-nbar-example.yaml')
-
-
-@pytest.fixture
-def indexed_ls7_nbar(global_integration_cli_args, index):
-    """
-    :type index: datacube.index._api.Index
-    """
-    opts = list(global_integration_cli_args)
-    opts.extend(
-        [
-            '-vv',
-            'ingest',
-            str(_EXAMPLE_LS7_NBAR_DATASET_FILE)
-        ]
-    )
-    result = CliRunner().invoke(
-        datacube.scripts.run_ingest.cli,
-        opts,
-        catch_exceptions=False
-    )
-    print(result.output)
-    assert not result.exception
-    assert result.exit_code == 0
-
-    return index.datasets.get('79a4f76c-e6d7-11e5-8fa1-a0000100fe80')
 
 
 @pytest.fixture

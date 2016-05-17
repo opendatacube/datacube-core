@@ -12,9 +12,8 @@ import pytest
 import yaml
 from click.testing import CliRunner
 
-import datacube.scripts.run_ingest
 import datacube.scripts.agdc
-from .conftest import LS5_NBAR_NAME, LS5_NBAR_ALBERS_NAME, EXAMPLE_LS5_DATASET_ID
+from .conftest import EXAMPLE_LS5_DATASET_ID
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'

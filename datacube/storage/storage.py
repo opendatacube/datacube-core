@@ -150,59 +150,6 @@ def write_access_unit_to_netcdf(access_unit, global_attributes, variable_attribu
     nco.close()
 
 
-def _accesss_unit_descriptor(access_unit, **stuff):
-    geo_bounds = access_unit.extent.to_crs('EPSG:4326').boundingbox
-    extents = {
-        'geospatial_lat_min': geo_bounds.bottom,
-        'geospatial_lat_max': geo_bounds.top,
-        'geospatial_lon_min': geo_bounds.left,
-        'geospatial_lon_max': geo_bounds.right,
-        'time_min': datetime.fromtimestamp(access_unit.coordinates['time'].begin, tzutc()),
-        'time_max': datetime.fromtimestamp(access_unit.coordinates['time'].end, tzutc())
-    }
-    coordinates = access_unit.coordinates
-    descriptor = dict(coordinates=namedtuples2dicts(coordinates), extents=extents)
-    descriptor.update(stuff)
-    return descriptor
-
-
-def create_storage_unit_from_datasets(tile_index, datasets, storage_type, output_uri):
-    """
-    Create storage unit at `tile_index` for datasets using mapping
-
-    :param tile_index: X,Y index of the storage unit
-    :type tile_index: tuple[int, int]
-    :type datasets:  list[datacube.model.Dataset]
-    :type storage_type:  datacube.model.StorageType
-    :rtype: datacube.storage.access.core.StorageUnitBase
-    """
-    datasets_grouped_by_time = _group_datasets_by_time(datasets)
-    geobox = GeoBox.from_storage_type(storage_type, tile_index)
-
-    storage_units = [StorageUnitDimensionProxy(
-        WarpingStorageUnit(group, geobox, mapping=storage_type.measurements),
-        time_coordinate_value(time))
-                     for time, group in datasets_grouped_by_time]
-    access_unit = StorageUnitStack(storage_units=storage_units, stack_dim='time')
-
-    local_filename = _uri_to_local_path(output_uri)
-
-    write_access_unit_to_netcdf(access_unit,
-                                storage_type.global_attributes,
-                                storage_type.variable_attributes,
-                                storage_type.variable_params,
-                                local_filename)
-
-    descriptor = _accesss_unit_descriptor(access_unit, tile_index=tile_index)
-
-    size_bytes = local_filename.stat().st_size
-    return StorageUnit([dataset.id for dataset in datasets],
-                       storage_type,
-                       descriptor,
-                       size_bytes=size_bytes,
-                       output_uri=output_uri)
-
-
 def storage_unit_to_access_unit(storage_unit):
     """
     :type storage_units: datacube.model.StorageUnit
@@ -227,43 +174,6 @@ def storage_unit_to_access_unit(storage_unit):
         return StorageUnitDimensionProxy(result, time_coordinate_value(time))
 
     raise RuntimeError('unsupported storage unit access driver %s' % storage_unit.storage_type.driver)
-
-
-def stack_storage_units(storage_units, output_uri):
-    """
-    :type storage_units: list[datacube.model.StorageUnit]
-    :return:
-    """
-    if not all(storage_unit.storage_type.id == storage_units[0].storage_type.id for storage_unit in storage_units):
-        raise TypeError('all storage units must have the same storage type')
-    if not all(storage_unit.tile_index == storage_units[0].tile_index for storage_unit in storage_units):
-        raise TypeError('all storage units must have the same tile index')
-
-    tile_index = storage_units[0].tile_index
-    storage_type = storage_units[0].storage_type
-    access_units = [storage_unit_to_access_unit(su) for su in storage_units]
-    access_unit = StorageUnitStack(storage_units=access_units, stack_dim='time')
-    geobox = GeoBox.from_storage_type(storage_type, tile_index)
-    access_unit.crs = geobox.crs
-    access_unit.affine = geobox.affine
-    access_unit.extent = geobox.extent
-
-    local_filename = _uri_to_local_path(output_uri)
-
-    write_access_unit_to_netcdf(access_unit,
-                                storage_type.global_attributes,
-                                storage_type.variable_attributes,
-                                storage_type.variable_params,
-                                local_filename)
-
-    descriptor = _accesss_unit_descriptor(access_unit, tile_index=tile_index)
-
-    size_bytes = local_filename.stat().st_size
-    return StorageUnit([id_.hex for su in storage_units for id_ in su.dataset_ids],
-                       storage_type,
-                       descriptor,
-                       size_bytes=size_bytes,
-                       output_uri=output_uri)
 
 
 def _group_datasets_by_time(datasets):
