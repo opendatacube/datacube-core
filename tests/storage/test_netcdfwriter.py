@@ -8,7 +8,7 @@ from osgeo import osr
 
 from datacube.model import Variable, Coordinate
 from datacube.storage.netcdf_writer import create_netcdf, create_coordinate, create_variable, netcdfy_data, \
-    create_grid_mapping_variable, flag_mask_meanings, human_readable_flags_definition
+    create_grid_mapping_variable, flag_mask_meanings
 
 GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
            'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
@@ -141,52 +141,40 @@ def test_chunksizes(tmpnetcdf_filename):
         assert nco['min_max_chunks'].chunking() == [2, 5]
 
 
-EXAMPLE_PQ_MEASUREMENT_DEF = {
-    'attrs': {'standard_name': 'pixel_quality'},
-    'dtype': 'int16',
-    'units': '1',
-    'nodata': -999,
-    'src_varname': 'PQ',
-    'flags_definition': {
+EXAMPLE_FLAGS_DEF = {
         'band_1_saturated': {
-            'bit_index': 0,
-            'value': 0,
+            'bits': 0,
+            'values': {
+                0: True,
+                1: False
+            },
             'description': 'Band 1 is saturated'},
         'band_2_saturated': {
-            'bit_index': 1,
-            'value': 0,
+            'bits': 1,
+            'values': {
+                0: True,
+                1: False
+            },
             'description': 'Band 2 is saturated'},
         'band_3_saturated': {
-            'bit_index': 2,
-            'value': 0,
+            'bits': 2,
+            'values': {
+                0: True,
+                1: False
+            },
             'description': 'Band 3 is saturated'},
-        'land_obs': {
-            'bit_index': 9,
-            'value': 1,
-            'description': 'Land observation'},
-        'sea_obs': {
-            'bit_index': 9,
-            'value': 0,
-            'description': 'Sea observation'},
-    }}
-
-EXPECTED_HUMAN_READABLE_FLAGS = dedent("""\
-        Bits are listed from the MSB (bit 9) to the LSB (bit 0)
-        Bit    Value     Description
-        9       1       Land observation
-        9       0       Sea observation
-        2       0       Band 3 is saturated
-        1       0       Band 2 is saturated
-        0       0       Band 1 is saturated""")
+        'land_sea': {
+            'bits': 9,
+            'values': {
+                0: 'sea',
+                1: 'land'
+            },
+            'description': 'Land/Sea observation'},
+    }
 
 
 def test_measurements_model_netcdfflags():
-    masks, vrange, meanings = flag_mask_meanings(EXAMPLE_PQ_MEASUREMENT_DEF['flags_definition'])
+    masks, valid_range, meanings = flag_mask_meanings(EXAMPLE_FLAGS_DEF)
+    assert ([0, 1023] == valid_range).all()
     assert ([1, 2, 4, 512] == masks).all()
-    assert ([0, 1023] == vrange).all()
-    assert 'no_band_1_saturated no_band_2_saturated no_band_3_saturated land_obs' == meanings
-
-
-def test_measurements_model_human_readable_flags():
-    assert EXPECTED_HUMAN_READABLE_FLAGS == human_readable_flags_definition(
-        EXAMPLE_PQ_MEASUREMENT_DEF['flags_definition'])
+    assert 'no_band_1_saturated no_band_2_saturated no_band_3_saturated land' == meanings

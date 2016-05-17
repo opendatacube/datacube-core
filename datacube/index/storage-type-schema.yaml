@@ -115,15 +115,21 @@ definitions:
             flags_definition:
                 description: A structured definition of bit flags and meanings
                 type: object
-                properties:
-                  bit_index:
-                    type: number
-                  value:
-                    description: Truth value. Defaults to 1.
-                    type: number
-                  description:
-                    description: A string describing the meaning if this bit value is $value
-                    type: string
+                patternProperties:
+                  ".*":
+                    required: [bits, values]
+                    properties:
+                      bits:
+                        type: [number, array]
+                      values:
+                        description: Dictionary of value -> meaning
+                        type: object
+#                        patternProperties:
+#                          ".*":
+#                            type: [string, boolean]
+                      description:
+                        description: A string describing this flag
+                        type: string
         required:
           - dtype
           - units

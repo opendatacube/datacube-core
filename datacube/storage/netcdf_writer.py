@@ -5,10 +5,13 @@ Create netCDF4 Storage Units and write data to them
 from __future__ import absolute_import
 
 import logging
+import numbers
 from datetime import datetime
 
 import netCDF4
 import numpy
+
+from datacube.api.masking import describe_flags_def
 
 # pylint: disable=ungrouped-imports,wrong-import-order
 try:
@@ -191,7 +194,7 @@ def create_grid_mapping_variable(nco, crs):
 def write_flag_definition(variable, flags_definition):
     # write bitflag info
     # Functions for this are stored in Measurements
-    variable.QA_index = human_readable_flags_definition(flags_def=flags_definition)
+    variable.QA_index = describe_flags_def(flags_def=flags_definition)
     variable.flag_masks, variable.valid_range, variable.flag_meanings = flag_mask_meanings(flags_def=flags_definition)
 
 
@@ -202,24 +205,10 @@ def netcdfy_data(data):
         return data
 
 
-def human_readable_flags_definition(flags_def):
-    def gen_human_readable(flags_def):
-        bit_value_desc = [
-            (bitdef['bit_index'], bitdef['value'], bitdef['description'])
-            for name, bitdef in flags_def.items()]
-        max_bit, _, _ = max(bit_value_desc)
-        min_bit, _, _ = min(bit_value_desc)
-
-        yield "Bits are listed from the MSB (bit {}) to the LSB (bit {})".format(max_bit, min_bit)
-        yield "Bit    Value     Description"
-        for bit, value, desc in sorted(bit_value_desc, reverse=True):
-            yield "{:<8d}{:<8d}{}".format(bit, value, desc)
-
-    return '\n'.join(gen_human_readable(flags_def))
-
-
 def flag_mask_meanings(flags_def):
-    max_bit = max([bit_def['bit_index'] for bit_def in flags_def.values()])
+    # Filter out any multi-bit mask values since we can't handle them yet
+    flags_def = {k: v for k, v in flags_def.items() if isinstance(v['bits'], numbers.Integral)}
+    max_bit = max([bit_def['bits'] for bit_def in flags_def.values()])
 
     if max_bit >= 32:
         # GDAL upto and including 2.0 can't support int64 attributes...
@@ -227,22 +216,27 @@ def flag_mask_meanings(flags_def):
 
     valid_range = numpy.array([0, (2 ** max_bit - 1) + 2 ** max_bit], dtype='int32')
 
-    bit_value_name = {
-        (bitdef['bit_index'], bitdef['value']): name
-        for name, bitdef in flags_def.items()}
-
     masks = []
     meanings = []
 
-    for i in range(max_bit + 1):
+    def by_bits(i):
+        _, v = i
+        return v['bits']
+
+    for name, bitdef in sorted(flags_def.items(), key=by_bits):
         try:
-            name = bit_value_name[(i, 1)]
+            true_value = bitdef['values'][1]
+
+            if true_value is True:
+                meaning = name
+            elif true_value is False:
+                meaning = 'no_' + name
+            else:
+                meaning = true_value
+
+            masks.append(2 ** bitdef['bits'])
+            meanings.append(str(meaning))
         except KeyError:
-            try:
-                name = 'no_' + bit_value_name[(i, 0)]
-            except KeyError:
-                continue
-        masks.append(2 ** i)
-        meanings.append(str(name))
+            continue
 
     return numpy.array(masks, dtype='int32'), valid_range, ' '.join(meanings)
