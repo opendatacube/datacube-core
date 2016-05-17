@@ -7,16 +7,17 @@ from __future__ import absolute_import
 
 import base64
 import logging
-import sys
 import os
-
+import sys
 from pathlib import Path
-import yaml
 
 import click
 from click import echo
+from sqlalchemy.exc import OperationalError
+import yaml
 
 from datacube.index import index_connect
+from datacube.index.postgres._api import IndexSetupError
 from datacube.ui import read_documents
 from datacube.ui.click import global_cli_options, pass_index, pass_config, CLICK_SETTINGS
 
@@ -74,10 +75,11 @@ def check(config_file):
     try:
         index_connect(local_config=config_file)
         echo('Success.')
-    #: pylint: disable=broad-except
-    except Exception:
-        _LOG.exception("Connection error")
-        echo('Connection error', file=sys.stderr)
+    except OperationalError as e:
+        echo("Unable to connect to database: %s" % e)
+        click.get_current_context().exit(1)
+    except IndexSetupError as e:
+        echo("Database not initialised: %s" % e)
         click.get_current_context().exit(1)
 
 
