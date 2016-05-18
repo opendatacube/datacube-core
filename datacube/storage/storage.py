@@ -4,31 +4,26 @@ Create/store dataset data into storage units based on the provided storage mappi
 """
 from __future__ import absolute_import, division, print_function
 
-import uuid
 import logging
 from contextlib import contextmanager
 from datetime import datetime
 from itertools import groupby
 
-import yaml
+from datacube.model import Variable
+from datacube.storage import netcdf_writer
 
 try:
     from yaml import CSafeDumper as SafeDumper
 except ImportError:
     from yaml import SafeDumper
 import dateutil.parser
-from dateutil.tz import tzutc
 import numpy
 import rasterio.warp
 import rasterio.crs
 from rasterio.warp import RESAMPLING
 
 from datacube import compat
-from datacube.model import GeoPolygon, GeoBox, Variable, _uri_to_local_path, time_coordinate_value
-from datacube.storage import netcdf_writer
-from datacube.utils import namedtuples2dicts, clamp
-from datacube.storage.access.core import StorageUnitBase, StorageUnitDimensionProxy, StorageUnitStack
-from datacube.storage.access.backends import NetCDF4StorageUnit, GeoTifStorageUnit
+from datacube.utils import clamp
 
 _LOG = logging.getLogger(__name__)
 
@@ -40,140 +35,6 @@ RESAMPLING_METHODS = {
     'lanczos': RESAMPLING.lanczos,
     'average': RESAMPLING.average,
 }
-
-
-class WarpingStorageUnit(StorageUnitBase):
-    def __init__(self, datasets, geobox, mapping, fuse_func=None):
-        if not datasets:
-            raise ValueError('Shall not make empty StorageUnit')
-
-        self._datasets = datasets
-        self.geobox = geobox
-        self._varmap = {name: attrs['src_varname'] for name, attrs in mapping.items()}
-        self._mapping = mapping
-        self._fuse_func = fuse_func
-
-        self.coord_data = self.geobox.coordinate_labels
-        self.coordinates = self.geobox.coordinates
-
-        self.variables = {
-            name: Variable(numpy.dtype(attrs['dtype']),
-                           attrs.get('nodata', None),
-                           self.geobox.dimensions,
-                           attrs['units'])
-            for name, attrs in mapping.items()
-            }
-        self.variables['extra_metadata'] = Variable(numpy.dtype('S30000'), None, tuple(), None)
-
-    @property
-    def crs(self):
-        return self.geobox.crs
-
-    @property
-    def affine(self):
-        return self.geobox.affine
-
-    @property
-    def extent(self):
-        return self.geobox.extent
-
-    def _get_coord(self, dim):
-        return self.coord_data[dim]
-
-    def _fill_data(self, name, index, dest):
-        if name == 'extra_metadata':
-            docs = yaml.dump_all([doc.metadata_doc for doc in self._datasets], Dumper=SafeDumper, encoding='utf-8')
-            numpy.copyto(dest, docs)
-        else:
-            src_variable_name = self._varmap[name]
-            resampling = RESAMPLING_METHODS[self._mapping[name]['resampling_method']]
-            sources = [DatasetSource(dataset, src_variable_name) for dataset in self._datasets]
-            fuse_sources(sources,
-                         dest,
-                         self.geobox[index].affine,  # NOTE: Overloaded GeoBox.__getitem__
-                         self.geobox.crs_str,
-                         self.variables[name].nodata,
-                         resampling=resampling,
-                         fuse_func=self._fuse_func)
-        return dest
-
-
-# TODO: global_attributes and variable_attributes should be members of access_unit
-def write_access_unit_to_netcdf(access_unit, global_attributes, variable_attributes, variable_params, filename):
-    """
-    Write access.StorageUnit to NetCDF4.
-    :param access_unit:
-    :param global_attributes: key value pairs to write as global attributes
-    :param variable_attributes: mapping of variable name to key-value pairs
-    :param variable_params: mapping of variable name to netcdf variable creation params
-    :param filename: output filename
-    :return:
-
-    :type access_unit: datacube.storage.access.StorageUnitBase
-    """
-    if filename.exists():
-        raise RuntimeError('Storage Unit already exists: %s' % filename)
-
-    try:
-        filename.parent.mkdir(parents=True)
-    except OSError:
-        pass
-
-    _LOG.info("Writing storage unit: %s", filename)
-    nco = netcdf_writer.create_netcdf(str(filename))
-    for name, coord in access_unit.coordinates.items():
-        coord_var = netcdf_writer.create_coordinate(nco, name, coord)
-        coord_var[:] = access_unit.get_coord(name)[0]
-    netcdf_writer.create_grid_mapping_variable(nco, access_unit.crs)
-    if hasattr(access_unit, 'affine'):
-        netcdf_writer.write_gdal_attributes(nco, access_unit.crs, access_unit.affine)
-    netcdf_writer.write_geographical_extents_attributes(nco, access_unit.extent.to_crs('EPSG:4326').points)
-
-    for name, variable in access_unit.variables.items():
-        # Create variable
-        var_params = variable_params.get(name, {})
-        data_var = netcdf_writer.create_variable(nco, name, variable, **var_params)
-
-        # Write data
-        data_var[:] = netcdf_writer.netcdfy_data(access_unit.get(name).values)
-
-        # Write extra attributes
-        for key, value in variable_attributes.get(name, {}).items():
-            if key == 'flags_definition':
-                netcdf_writer.write_flag_definition(data_var, value)
-            else:
-                setattr(data_var, key, value)
-
-    # write global atrributes
-    for key, value in global_attributes.items():
-        setattr(nco, key, value)
-    nco.close()
-
-
-def storage_unit_to_access_unit(storage_unit):
-    """
-    :type storage_units: datacube.model.StorageUnit
-    :rtype: datacube.storage.access.core.StorageUnitBase
-    """
-    coordinates = storage_unit.coordinates
-    variables = {
-        name: Variable(
-            dtype=numpy.dtype(attributes['dtype']),
-            nodata=attributes.get('nodata', None),
-            dimensions=storage_unit.storage_type.dimensions,
-            units=attributes['units'])
-        for name, attributes in storage_unit.storage_type.measurements.items()
-        }
-    if storage_unit.storage_type.driver == 'NetCDF CF':
-        variables['extra_metadata'] = Variable(numpy.dtype('S30000'), None, ('time',), None)
-        return NetCDF4StorageUnit(storage_unit.local_path, coordinates=coordinates, variables=variables)
-
-    if storage_unit.storage_type.driver == 'GeoTiff':
-        result = GeoTifStorageUnit(storage_unit.local_path, coordinates=coordinates, variables=variables)
-        time = datetime.datetime.strptime(storage_unit.descriptor['extents']['time_min'], '%Y-%m-%dT%H:%M:%S.%f')
-        return StorageUnitDimensionProxy(result, time_coordinate_value(time))
-
-    raise RuntimeError('unsupported storage unit access driver %s' % storage_unit.storage_type.driver)
 
 
 def _group_datasets_by_time(datasets):
