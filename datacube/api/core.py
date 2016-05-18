@@ -176,36 +176,44 @@ class Datacube(object):
             kwargs['lon'] = Range(geo_bb.left, geo_bb.right)
         # TODO: pull out full datasets lineage?
         datasets = self.index.datasets.search_eager(type=type_name, **kwargs)
-
+        # All datasets will be same type, can make assumptions
         if geopolygon:
             datasets = [dataset for dataset in datasets
                         if _check_intersect(geopolygon, dataset.extent.to_crs(geopolygon.crs_str))]
+            # Check against the bounding box of the original scene, can throw away some portions
         group_func = _get_group_by_func(group_func)
         datasets.sort(key=group_func)
+
         groups = [Group(key, list(group)) for key, group in groupby(datasets, group_func)]
+        # Usually group by time, at the moment it's just time
+        # groups is a tuple of (time, list(datasets))
 
         return groups
 
     @staticmethod
     def product_data(groups, geobox, measurements, fuse_func=None):
+        # GeoPolygon defines a boundingbox with a CRS
+        # Geobox is a GeoPolygon with a resolution
+        # Geobox has named dimensions, eg lat/lon, x/y
+
         assert groups
 
         result = xarray.Dataset(attrs={'extent': geobox.extent, 'crs': geobox.crs})
         result['time'] = ('time', numpy.array([v.key for v in groups]), {'units': 'seconds since 1970-01-01 00:00:00'})
-        for name, v in geobox.coordinate_labels.items():
-            result[name] = (name, v, {'units': geobox.coordinates[name].units})
+        for coord_name, v in geobox.coordinate_labels.items():
+            result[coord_name] = (coord_name, v, {'units': geobox.coordinates[coord_name].units})
 
-        for name, stuffs in measurements.items():
-            data = numpy.empty((len(groups),) + geobox.shape, dtype=stuffs['dtype'])
+        for measurement_name, stuffs in measurements.items():
+            data = numpy.empty((len(groups),) + geobox.shape, dtype=stuffs['dtype']) # shape = num coordinate labels,+ geobox.shape
             for index, (_, sources) in enumerate(groups):
-                fuse_sources([DatasetSource(dataset, name) for dataset in sources],
-                             data[index],
+                fuse_sources([DatasetSource(dataset, measurement_name) for dataset in sources],
+                             data[index],  # Output goes here
                              geobox.affine,
                              geobox.crs_str,
                              stuffs.get('nodata'),
                              resampling=RESAMPLING.nearest,
                              fuse_func=fuse_func)
-            result[name] = (('time',) + geobox.dimensions, data, {
+            result[measurement_name] = (('time',) + geobox.dimensions, data, {
                 'nodata': stuffs.get('nodata'),
                 'units': stuffs.get('units', '1')
             })
