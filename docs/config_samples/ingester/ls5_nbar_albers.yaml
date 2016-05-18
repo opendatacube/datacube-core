@@ -6,11 +6,11 @@ description: Landsat 5 NBAR 25 metre, 100km tile, Australian Albers Equal Area p
 location: '/g/data/u46/gxr547/datacube/data'
 file_path_template: 'LS5_TM_NBAR/LS5_TM_NBAR_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
 
-ingestion_bounds:
-  left: 1400000
-  bottom: -4000000
-  right: 2400000
-  top: -2000000
+ingestion_bounds: # Specified in Storage CRS coordinates. Will expand to tile boundaries.
+  left: -2700000
+  bottom: -5100000
+  right: 2600000
+  top: -1270000
 
 storage:
   driver: NetCDF CF

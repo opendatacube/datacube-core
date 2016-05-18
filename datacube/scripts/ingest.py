@@ -54,6 +54,8 @@ def set_geobox_info(doc, crs_str, extent):
 
 def grid_range(lower, upper, step):
     """
+    Return indexes of a grid
+
     >>> list(grid_range(-4.0, -1.0, 3.0))
     [-2, -1]
     >>> list(grid_range(-3.0, 0.0, 3.0))
@@ -232,7 +234,7 @@ def ingest_cmd(index, config, dry_run, executor):
         _LOG.error("Source DatasetType %s does not exist", config['source_type'])
 
     output_type = morph_dataset_type(source_type, config)
-    _LOG.info('Created DatasetType %s', output_type.definition)
+    _LOG.info('Created DatasetType %s', output_type.name)
     output_type = index.datasets.types.add(output_type)
 
     datacube = Datacube(index=index)
