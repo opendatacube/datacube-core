@@ -58,7 +58,8 @@ setup(name='datacube',
           'console_scripts': [
               'datacube-ingest = datacube.scripts.run_ingest:cli',
               'datacube-config = datacube.scripts.config_tool:cli',
-              'datacube-search = datacube.scripts.search_tool:cli'
+              'datacube-search = datacube.scripts.search_tool:cli',
+              'agdc = datacube.scripts.agdc:cli'
           ]
       },
       )
