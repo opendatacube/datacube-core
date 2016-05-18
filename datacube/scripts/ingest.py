@@ -1,21 +1,21 @@
 from __future__ import absolute_import
 
-import math
 import logging
-import click
-import numpy
+import math
 import uuid
 
+import click
+import numpy
 from pathlib import Path
 from rasterio.coords import BoundingBox
 
+from datacube.api.core import Datacube
+from datacube.model import DatasetType, Dataset, GeoBox, GeoPolygon
+from datacube.storage.storage import write_dataset_to_netcdf
 from datacube.ui import click as ui
 from datacube.ui import read_documents
-from datacube.ui.click import cli
-from datacube.model import DatasetType, Dataset, GeoBox, GeoPolygon, Coordinate, Variable
-from datacube.storage import netcdf_writer
-from datacube.api.core import Datacube
 
+from datacube.ui.click import cli
 import yaml
 try:
     from yaml import CSafeDumper as SafeDumper
@@ -25,10 +25,10 @@ except ImportError:
 _LOG = logging.getLogger('agdc-ingest')
 
 
-def set_geobox_info(doc, geobox):
-    bb = geobox.extent.boundingbox
+def set_geobox_info(doc, crs_str, extent):
+    bb = extent.boundingbox
     gp = GeoPolygon([(bb.left, bb.top), (bb.right, bb.top), (bb.right, bb.bottom), (bb.left, bb.bottom)],
-                    geobox.crs_str).to_crs('EPSG:4326')
+                    crs_str).to_crs('EPSG:4326')
     doc.update({
         'extent': {
             'coord': {
@@ -40,7 +40,7 @@ def set_geobox_info(doc, geobox):
         },
         'grid_spatial': {
             'projection': {
-                'spatial_reference': geobox.crs_str,
+                'spatial_reference': crs_str,
                 'geo_ref_points': {
                     'ul': {'x': bb.left, 'y': bb.top},
                     'ur': {'x': bb.right, 'y': bb.top},
@@ -78,62 +78,6 @@ def generate_grid(grid_spec, bounds):
             yield tile_index, GeoBox.from_storage_type(grid_spec, tile_index)
 
 
-def netcdfy_coord(data):
-    if data.dtype.kind == 'M':
-        return data.astype('<M8[s]').astype('double')
-    return data
-
-
-def write_xarray_to_netcdf(access_unit, variable_params, filename):
-    if filename.exists():
-        raise RuntimeError('Storage Unit already exists: %s' % filename)
-
-    try:
-        filename.parent.mkdir(parents=True)
-    except OSError:
-        pass
-
-#    _LOG.info("Writing storage unit: %s", filename)
-    nco = netcdf_writer.create_netcdf(str(filename))
-
-    for name, coord in access_unit.coords.items():
-        coord_data = netcdfy_coord(coord.values)
-        coord_var = netcdf_writer.create_coordinate(nco, name, Coordinate(coord_data.dtype,
-                                                                          0, 0, coord.size, coord.units))
-        coord_var[:] = coord_data
-
-    netcdf_writer.create_grid_mapping_variable(nco, access_unit.crs)
-    if hasattr(access_unit, 'affine'):
-        netcdf_writer.write_gdal_attributes(nco, access_unit.crs, access_unit.affine)
-    netcdf_writer.write_geographical_extents_attributes(nco, access_unit.extent.to_crs('EPSG:4326').points)
-
-    for name, variable in access_unit.data_vars.items():
-        # Create variable
-        var_params = variable_params.get(name, {})
-        data_var = netcdf_writer.create_variable(nco, name,
-                                                 Variable(variable.dtype,
-                                                          getattr(variable, 'nodata', None),
-                                                          variable.dims,
-                                                          getattr(variable, 'units', '1')),
-                                                 **var_params)
-
-        # Write data
-        data_var[:] = netcdf_writer.netcdfy_data(variable.values)
-
-        # Write extra attributes
-#         for key, value in variable_attributes.get(name, {}).items():
-#             if key == 'flags_definition':
-#                 netcdf_writer.write_flag_definition(data_var, value)
-#             else:
-#                 setattr(data_var, key, value)
-
-    # write global atrributes
-#     for key, value in global_attributes.items():
-#         setattr(nco, key, value)
-
-    nco.close()
-
-
 def generate_dataset(data, prod_info, uri):
     nudata = data.copy()
     del nudata['sources']
@@ -147,9 +91,8 @@ def generate_dataset(data, prod_info, uri):
             },
             'lineage': {'source_datasets': {str(idx): dataset.metadata_doc for idx, dataset in enumerate(sources)}}
         }
-        # TODO: affine is a bad thing to store - it duplicates coordinate offset bit
-        geobox = GeoBox(data['x'].size, data['y'].size, data.affine, data.crs.ExportToWkt())
-        set_geobox_info(document, geobox)
+        # TODO: extent is a bad thing to store - it duplicates coordinates
+        set_geobox_info(document, data.crs.ExportToWkt(), data.extent)
         document['extent']['from_dt'] = str(time)
         document['extent']['to_dt'] = str(time)
         document['extent']['center_dt'] = str(time)
@@ -168,7 +111,7 @@ def generate_dataset(data, prod_info, uri):
 
 def write_product(data, output_prod_info, var_params, path):
     nudata, nudatasets = generate_dataset(data, output_prod_info, path.absolute().as_uri())
-    write_xarray_to_netcdf(nudata, var_params, path)
+    write_dataset_to_netcdf(nudata, var_params, path)
     return nudatasets
 
 

@@ -193,3 +193,48 @@ class DatasetSource(object):
             if abs(sec_since_1970 - v) < dist:
                 idx = i
         return idx
+
+
+def write_dataset_to_netcdf(access_unit, variable_params, filename):
+    if filename.exists():
+        raise RuntimeError('Storage Unit already exists: %s' % filename)
+
+    try:
+        filename.parent.mkdir(parents=True)
+    except OSError:
+        pass
+
+#    _LOG.info("Writing storage unit: %s", filename)
+    nco = netcdf_writer.create_netcdf(str(filename))
+
+    for name, coord in access_unit.coords.items():
+        netcdf_writer.create_coordinate(nco, name, coord.values, coord.units)
+
+    netcdf_writer.create_grid_mapping_variable(nco, access_unit.crs)
+    netcdf_writer.write_geographical_extents_attributes(nco, access_unit.extent.to_crs('EPSG:4326').points)
+
+    for name, variable in access_unit.data_vars.items():
+        # Create variable
+        var_params = variable_params.get(name, {})
+        data_var = netcdf_writer.create_variable(nco, name,
+                                                 Variable(variable.dtype,
+                                                          getattr(variable, 'nodata', None),
+                                                          variable.dims,
+                                                          getattr(variable, 'units', '1')),
+                                                 **var_params)
+
+        # Write data
+        data_var[:] = netcdf_writer.netcdfy_data(variable.values)
+
+        # Write extra attributes
+#         for key, value in variable_attributes.get(name, {}).items():
+#             if key == 'flags_definition':
+#                 netcdf_writer.write_flag_definition(data_var, value)
+#             else:
+#                 setattr(data_var, key, value)
+
+    # write global atrributes
+#     for key, value in global_attributes.items():
+#         setattr(nco, key, value)
+
+    nco.close()

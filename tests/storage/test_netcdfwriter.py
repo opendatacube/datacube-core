@@ -70,6 +70,8 @@ def _ensure_spheroid(var):
 
 def test_create_albers_projection_netcdf(tmpnetcdf_filename):
     nco = create_netcdf(tmpnetcdf_filename)
+    create_coordinate(nco, 'x', numpy.array([1, 2, 3]), 'm')
+    create_coordinate(nco, 'y', numpy.array([1, 2, 3]), 'm')
     crs = osr.SpatialReference(ALBERS_PROJ)
     create_grid_mapping_variable(nco, crs)
     nco.close()
@@ -85,6 +87,8 @@ def test_create_albers_projection_netcdf(tmpnetcdf_filename):
 
 def test_create_epsg4326_netcdf(tmpnetcdf_filename):
     nco = create_netcdf(tmpnetcdf_filename)
+    create_coordinate(nco, 'latitude', numpy.array([1, 2, 3]), 'm')
+    create_coordinate(nco, 'longitude', numpy.array([1, 2, 3]), 'm')
     crs = osr.SpatialReference(GEO_PROJ)
     create_grid_mapping_variable(nco, crs)
     nco.close()
@@ -97,6 +101,8 @@ def test_create_epsg4326_netcdf(tmpnetcdf_filename):
 
 def test_create_sinus_netcdf(tmpnetcdf_filename):
     nco = create_netcdf(tmpnetcdf_filename)
+    create_coordinate(nco, 'x', numpy.array([1, 2, 3]), 'm')
+    create_coordinate(nco, 'y', numpy.array([1, 2, 3]), 'm')
     crs = osr.SpatialReference(SINIS_PROJ)
     create_grid_mapping_variable(nco, crs)
     nco.close()
@@ -110,9 +116,7 @@ def test_create_sinus_netcdf(tmpnetcdf_filename):
 
 def test_create_string_variable(tmpnetcdf_filename):
     nco = create_netcdf(tmpnetcdf_filename)
-    coord = create_coordinate(nco, 'greg', Coordinate(numpy.dtype('int'), begin=0, end=0,
-                                                      length=3, units='cubic gregs'))
-    coord[:] = [1, 3, 9]
+    coord = create_coordinate(nco, 'greg', numpy.array([1.0, 3.0, 9.0]), 'cubic gregs')
 
     dtype = numpy.dtype('S100')
     data = numpy.array(["test-str1", "test-str2", "test-str3"], dtype=dtype)
@@ -128,8 +132,8 @@ def test_create_string_variable(tmpnetcdf_filename):
 
 def test_chunksizes(tmpnetcdf_filename):
     nco = create_netcdf(tmpnetcdf_filename)
-    coord1 = create_coordinate(nco, 'greg', Coordinate(numpy.dtype('int'), 0, 0, 3, 'cubic gregs'))
-    coord2 = create_coordinate(nco, 'bleh', Coordinate(numpy.dtype('int'), 0, 0, 5, 'metric blehs'))
+    coord1 = create_coordinate(nco, 'greg', numpy.array([1.0, 2.0, 3.0]), 'cubic gregs')
+    coord2 = create_coordinate(nco, 'bleh', numpy.array([1.0, 2.0, 3.0, 4.0, 5.0]), 'metric blehs')
 
     no_chunks = create_variable(nco, 'no_chunks', Variable(numpy.dtype(int), None, ('greg', 'bleh'), None))
     min_max_chunks = create_variable(nco, 'min_max_chunks', Variable(numpy.dtype(int), None, ('greg', 'bleh'), None),

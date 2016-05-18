@@ -190,7 +190,7 @@ class Datacube(object):
     def product_data(groups, geobox, measurements, fuse_func=None):
         assert groups
 
-        result = xarray.Dataset(attrs={'extent': geobox.extent, 'affine': geobox.affine, 'crs': geobox.crs_str})
+        result = xarray.Dataset(attrs={'extent': geobox.extent, 'crs': geobox.crs})
         result['time'] = ('time', numpy.array([v.key for v in groups]), {'units': 'seconds since 1970-01-01 00:00:00'})
         for name, v in geobox.coordinate_labels.items():
             result[name] = (name, v, {'units': geobox.coordinates[name].units})

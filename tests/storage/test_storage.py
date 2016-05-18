@@ -19,10 +19,10 @@ import numpy
 import netCDF4
 from pathlib import Path
 from affine import Affine
+import xarray
 
-from datacube.model import Coordinate, Variable, GeoBox
-from datacube.storage.access.backends.geobox import GeoBoxStorageUnit
-from datacube.storage.storage import write_access_unit_to_netcdf
+from datacube.model import GeoBox
+from datacube.storage.storage import write_dataset_to_netcdf
 
 
 GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
@@ -30,20 +30,19 @@ GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.25722
            'AUTHORITY["EPSG","4326"]]'
 
 
-def test_write_access_unit_to_netcdf(tmpnetcdf_filename):
+def test_write_dataset_to_netcdf(tmpnetcdf_filename):
     affine = Affine.scale(0.1, 0.1)*Affine.translation(20, 30)
     geobox = GeoBox(100, 100, affine, GEO_PROJ)
-    ds1 = GeoBoxStorageUnit(geobox,
-                            {'time': Coordinate(numpy.dtype(numpy.int), begin=100, end=400, length=4, units='seconds')},
-                            {
-                                'B10': Variable(numpy.dtype(numpy.float32),
-                                                nodata=numpy.nan,
-                                                dimensions=('time', 'latitude', 'longitude'),
-                                                units='1')
-                            })
-    write_access_unit_to_netcdf(ds1, {}, {}, {}, Path(tmpnetcdf_filename))
+    dataset = xarray.Dataset(attrs={'extent': geobox.extent, 'crs': geobox.crs})
+    for name, v in geobox.coordinate_labels.items():
+        dataset[name] = (name, v, {'units': geobox.coordinates[name].units})
+
+    dataset['B10'] = (geobox.dimensions, numpy.arange(10000).reshape(geobox.shape), {'nodata': 0, 'units': '1'})
+
+    write_dataset_to_netcdf(dataset, {}, Path(tmpnetcdf_filename))
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
+        nco.set_auto_mask(False)
         assert 'B10' in nco.variables
         var = nco.variables['B10']
-        assert (var[:] == ds1.get('B10').values).all()
+        assert (var[:] == dataset['B10'].values).all()

@@ -63,18 +63,24 @@ def create_netcdf(netcdf_path):
     return nco
 
 
-def create_coordinate(nco, name, coord):
+def create_coordinate(nco, name, labels, units):
     """
     :type nco: netCDF4.Dataset
     :type name: str
-    :type coord: datacube.model.Coordinate
-    :return:
+    :type labels: numpy.array
+    :type units: str
+    :return: netCDF4.Variable
     """
-    nco.createDimension(name, coord.length)
-    var = nco.createVariable(name, coord.dtype, name)
-    var.units = coord.units
+    labels = netcdfy_coord(labels)
+
+    nco.createDimension(name, labels.size)
+    var = nco.createVariable(name, labels.dtype, name)
+    var[:] = labels
+
+    var.units = units
     for key, value in _STANDARD_COORDINATES.get(name, {}).items():
         setattr(var, key, value)
+
     return var
 
 
@@ -155,12 +161,6 @@ def _create_projected_grid_mapping_variable(nco, crs):
     return crs_var
 
 
-def write_gdal_attributes(nco, crs, affine):
-    crs_var = nco['crs']
-    crs_var.spatial_ref = crs.ExportToWkt()
-    crs_var.GeoTransform = affine.to_gdal()
-
-
 def write_geographical_extents_attributes(nco, geo_extents):
     geo_extents = geo_extents + [geo_extents[0]]
     nco.geospatial_bounds = "POLYGON((" + ", ".join("{0} {1}".format(*p) for p in geo_extents) + "))"
@@ -178,11 +178,25 @@ def write_geographical_extents_attributes(nco, geo_extents):
     # nco.geospatial_lon_resolution = "{} degrees".format(abs(geobox.affine.a))
 
 
+def _get_resolution_and_offset(data):
+    """
+    >>> _get_resolution_and_offset(numpy.array([1.5, 2.5, 3.5]))
+    (1.0, 1.0)
+    >>> _get_resolution_and_offset(numpy.array([5, 3, 1]))
+    (-2.0, 6.0)
+    """
+    res = (data[data.size-1] - data[0])/(data.size-1.0)
+    off = data[0] - 0.5*res
+    return res, off
+
+
 def create_grid_mapping_variable(nco, crs):
     if crs.IsGeographic():
         crs_var = _create_latlon_grid_mapping_variable(nco, crs)
+        coords = ['longitude', 'latitude']
     elif crs.IsProjected():
         crs_var = _create_projected_grid_mapping_variable(nco, crs)
+        coords = ['x', 'y']
     else:
         raise ValueError('Unknown CRS')
     crs_var.semi_major_axis = crs.GetSemiMajor()
@@ -190,12 +204,25 @@ def create_grid_mapping_variable(nco, crs):
     crs_var.inverse_flattening = crs.GetInvFlattening()
     crs_var.crs_wkt = crs.ExportToWkt()
 
+    crs_var.spatial_ref = crs.ExportToWkt()
+    xres, xoff = _get_resolution_and_offset(nco[coords[0]])
+    yres, yoff = _get_resolution_and_offset(nco[coords[1]])
+    crs_var.GeoTransform = [xoff, xres, 0.0, yoff, 0.0, yres]
+
+    return crs_var
+
 
 def write_flag_definition(variable, flags_definition):
     # write bitflag info
     # Functions for this are stored in Measurements
     variable.QA_index = describe_flags_def(flags_def=flags_definition)
     variable.flag_masks, variable.valid_range, variable.flag_meanings = flag_mask_meanings(flags_def=flags_definition)
+
+
+def netcdfy_coord(data):
+    if data.dtype.kind == 'M':
+        return data.astype('<M8[s]').astype('double')
+    return data
 
 
 def netcdfy_data(data):
