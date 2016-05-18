@@ -237,7 +237,8 @@ def ingest_cmd(index, config, dry_run, executor):
 
     datacube = Datacube(index=index)
 
-    bbox = BoundingBox(1400000, -4000000, 1600000, -3800000)
+    bbox = BoundingBox(**config['ingestion_bounds'])
+    # bbox = BoundingBox(1400000, -4000000, 1600000, -3800000)
     tasks = find_diff(source_type, output_type, bbox, datacube)
 
     grid_spec = output_type
