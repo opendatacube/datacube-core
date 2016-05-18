@@ -37,6 +37,9 @@ class _VariableProxy(object):
         else:
             super(_VariableProxy, self).__setattr__(name, value)
 
+    def __getitem__(self, key):
+        return self._wrapped.__getitem__(key)
+
     def __setitem__(self, key, value):
         self._wrapped.__setitem__(key, value)
 
