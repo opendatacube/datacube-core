@@ -70,12 +70,12 @@ def grid_range(lower, upper, step):
     return range(int(math.floor(lower/step)), int(math.ceil(upper/step)))
 
 
-def generate_grid(grid_spec, bounds):
-    grid_size = grid_spec.tile_size
+def generate_grid(dataset_type, bounds):
+    grid_size = dataset_type.tile_size
     for y in grid_range(bounds.bottom, bounds.top, grid_size[1]):
         for x in grid_range(bounds.left, bounds.right, grid_size[0]):
             tile_index = (x, y)
-            yield tile_index, GeoBox.from_storage_type(grid_spec, tile_index)
+            yield tile_index, GeoBox.from_dataset_type(dataset_type, tile_index)
 
 
 def generate_dataset(data, prod_info, uri):
@@ -226,7 +226,7 @@ def get_namemap(config):
 @click.option('--dry-run', '-d', is_flag=True, default=False, help='Check if everything is ok')
 @ui.pass_index(app_name='agdc-ingest')
 def ingest_cmd(index, config, dry_run, executor):
-    config = next(read_documents(Path(config)))[1]
+    _, config = next(read_documents(Path(config)))
     source_type = index.datasets.types.get_by_name(config['source_type'])
     if not source_type:
         _LOG.error("Source DatasetType %s does not exist", config['source_type'])
@@ -247,7 +247,7 @@ def ingest_cmd(index, config, dry_run, executor):
     file_path_template = str(Path(config['location'], config['file_path_template']))
 
     def ingest_work(tile_index, groups):
-        geobox = GeoBox.from_storage_type(grid_spec, tile_index)
+        geobox = GeoBox.from_dataset_type(grid_spec, tile_index)
         data = Datacube.product_data(groups, geobox, measurements)
 
         nudata = data.rename(namemap)

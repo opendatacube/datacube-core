@@ -373,6 +373,10 @@ class GeoPolygon(object):
         return GeoPolygon([p[:2] for p in transform.TransformPoints(self.points)], crs_str)
 
 
+class FlagsDefinition(object):
+    pass
+
+
 class GeoBox(object):
     """
     Defines a single Storage Unit, its CRS, location, resolution, and global attributes
@@ -407,14 +411,14 @@ class GeoBox(object):
         self.extent = GeoPolygon(points, crs_str)
 
     @classmethod
-    def from_storage_type(cls, storage_type, tile_index):
+    def from_dataset_type(cls, dataset_type, tile_index):
         """
-        :type storage_type: datacube.model.StorageType
+        :type dataset_type: datacube.model.DatasetType
         :rtype: GeoBox
         """
-        tile_size = storage_type.tile_size
-        tile_res = storage_type.resolution
-        return cls(crs_str=storage_type.crs,
+        tile_size = dataset_type.tile_size
+        tile_res = dataset_type.resolution
+        return cls(crs_str=dataset_type.crs,
                    affine=_get_tile_transform(tile_index, tile_size, tile_res),
                    width=int(tile_size[0] / abs(tile_res[0])),
                    height=int(tile_size[1] / abs(tile_res[1])))
