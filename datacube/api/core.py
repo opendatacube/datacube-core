@@ -204,7 +204,8 @@ class Datacube(object):
             result[coord_name] = (coord_name, v, {'units': geobox.coordinates[coord_name].units})
 
         for measurement_name, stuffs in measurements.items():
-            data = numpy.empty((len(groups),) + geobox.shape, dtype=stuffs['dtype']) # shape = num coordinate labels,+ geobox.shape
+            num_coordinate_labels = len(groups)
+            data = numpy.empty((num_coordinate_labels,) + geobox.shape, dtype=stuffs['dtype'])
             for index, (_, sources) in enumerate(groups):
                 fuse_sources([DatasetSource(dataset, measurement_name) for dataset in sources],
                              data[index],  # Output goes here
