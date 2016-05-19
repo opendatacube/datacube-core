@@ -125,7 +125,7 @@ class Dataset(object):
 
     @property
     def measurements(self):
-        return self.metadata.measurements_doc
+        return self.metadata.measurements_dict
 
     @property
     def time(self):
