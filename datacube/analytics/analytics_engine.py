@@ -65,12 +65,12 @@ class AnalyticsEngine(object):
             'median': 'median(array1)'
         }
 
-    def __init__(self, api=None):
+    def __init__(self, api=None, index=None):
         LOG.info('Initialise Analytics Module.')
         self.plan = []
         self.plan_dict = {}
 
-        self.api = api or API()
+        self.api = api or API(index=index)
         self.api_descriptors = {}
         self.api_products = []
 
@@ -430,6 +430,5 @@ class AnalyticsEngine(object):
             items[storage_type]['instrument'] = str(product['match']['metadata']['instrument']['name'])
             items[storage_type]['bands'] = [str(x) for x in product['measurements'].keys()]
             items[storage_type]['bands'].sort()
-
 
         return items

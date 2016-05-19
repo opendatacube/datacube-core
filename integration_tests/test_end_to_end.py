@@ -120,6 +120,8 @@ def test_end_to_end(global_integration_cli_args, index, example_ls5_dataset):
     assert result.exit_code == 0
 
     check_open_with_api(index)
+    check_analytics_list_searchables(index)
+    check_get_descriptor(index)
 
 
 def check_open_with_api(index):
@@ -169,3 +171,100 @@ def check_open_with_api(index):
     for tile_query, tile_attrs in tiles:
         dataset = api.get_dataset_by_cell(**tile_query)
         assert dataset['blue'].size
+
+
+def check_analytics_list_searchables(index):
+    from datacube.analytics.analytics_engine import AnalyticsEngine
+
+    a = AnalyticsEngine(index=index)
+    result = a.list_searchables()
+
+    assert len(result) > 0
+    for storage_type in result:
+        assert len(result[storage_type]['bands']) > 0
+        assert len(list(result[storage_type]['dimensions'])) > 0
+        assert result[storage_type]['instrument']
+        assert result[storage_type]['platform']
+        assert result[storage_type]['product_type']
+        assert result[storage_type]['storage_type']
+
+
+def check_get_descriptor(index):
+    from datetime import datetime
+    from datacube.api import API
+
+    try:
+        basestring
+    except NameError:
+        basestring = str
+
+    g = API(index=index)
+
+    platform = 'LANDSAT_5'
+    product = 'nbar'
+    var1 = 'red'
+    var2 = 'nir'
+
+    data_request_descriptor = {
+        'platform': platform,
+        'product': product,
+        'variables': (var1, var2),
+        'dimensions': {
+            'longitude': {
+                'range': (149.07, 149.18)
+            },
+            'latitude': {
+                'range': (-35.32, -35.28)
+            },
+            'time': {
+                'range': (datetime(1992, 1, 1), datetime(1992, 12, 31))
+            }
+        }
+    }
+
+    d = g.get_descriptor(data_request_descriptor)
+    assert 'storage_units' in list(d.values())[0].keys()
+    assert 'dimensions' in list(d.values())[0].keys()
+    assert 'result_max' in list(d.values())[0].keys()
+    assert 'irregular_indices' in list(d.values())[0].keys()
+    assert 'variables' in list(d.values())[0].keys()
+    assert 'result_min' in list(d.values())[0].keys()
+    assert 'result_shape' in list(d.values())[0].keys()
+
+    assert isinstance(list(d.values())[0]['storage_units'], dict)
+    assert isinstance(list(d.values())[0]['dimensions'], list)
+    assert isinstance(list(d.values())[0]['result_max'], tuple)
+    assert isinstance(list(d.values())[0]['irregular_indices'], dict)
+    assert isinstance(list(d.values())[0]['result_min'], tuple)
+    assert isinstance(list(d.values())[0]['variables'], dict)
+    assert isinstance(list(d.values())[0]['result_shape'], tuple)
+
+    assert len(list(d.values())[0]['dimensions']) == \
+        len(list(d.values())[0]['dimensions']) == \
+        len(list(d.values())[0]['result_shape']) == \
+        len(list(d.values())[0]['result_max']) == \
+        len(list(d.values())[0]['result_min'])
+
+    for key in list(d.values())[0]['irregular_indices'].keys():
+        assert key in list(d.values())[0]['dimensions']
+
+    assert var1 in list(d.values())[0]['variables']
+    assert var2 in list(d.values())[0]['variables']
+
+    assert 'datatype_name' in list(d.values())[0]['variables'][var1].keys()
+    assert 'nodata_value' in list(d.values())[0]['variables'][var1].keys()
+
+    assert 'datatype_name' in list(d.values())[0]['variables'][var2].keys()
+    assert 'nodata_value' in list(d.values())[0]['variables'][var2].keys()
+
+    for su in list(d.values())[0]['storage_units'].values():
+        assert 'irregular_indicies' in su
+        assert 'storage_max' in su
+        assert 'storage_min' in su
+        assert 'storage_path' in su
+        assert 'storage_shape' in su
+        assert isinstance(su['irregular_indicies'], dict)
+        assert isinstance(su['storage_max'], tuple)
+        assert isinstance(su['storage_min'], tuple)
+        assert isinstance(su['storage_path'], basestring)
+        assert isinstance(su['storage_shape'], tuple)
