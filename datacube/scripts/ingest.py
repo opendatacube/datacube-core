@@ -54,7 +54,7 @@ def set_geobox_info(doc, crs_str, extent):
 
 def grid_range(lower, upper, step):
     """
-    Return indexes of a grid
+    Return indexes of a grid.
 
     >>> list(grid_range(-4.0, -1.0, 3.0))
     [-2, -1]
@@ -72,12 +72,19 @@ def grid_range(lower, upper, step):
     return range(int(math.floor(lower/step)), int(math.ceil(upper/step)))
 
 
-def generate_grid(dataset_type, bounds):
-    grid_size = dataset_type.tile_size
+def generate_grid(grid_spec, bounds):
+    """
+    Return an iterator of GeoBox tiles across a grid.
+
+    :param grid_spec: GridSpec like object (must include tile_size, resolution and crs)
+    :param bounds: Boundary coordinates of the required grid
+    :return: iterator across geoboxes of tiles in a grid
+    """
+    grid_size = grid_spec.tile_size
     for y in grid_range(bounds.bottom, bounds.top, grid_size[1]):
         for x in grid_range(bounds.left, bounds.right, grid_size[0]):
             tile_index = (x, y)
-            yield tile_index, GeoBox.from_dataset_type(dataset_type, tile_index)
+            yield tile_index, GeoBox.from_grid_spec(grid_spec, tile_index)
 
 
 def generate_dataset(data, prod_info, uri):
@@ -250,7 +257,7 @@ def ingest_cmd(index, config, dry_run, executor):
     file_path_template = str(Path(config['location'], config['file_path_template']))
 
     def ingest_work(tile_index, groups):
-        geobox = GeoBox.from_dataset_type(grid_spec, tile_index)
+        geobox = GeoBox.from_grid_spec(grid_spec, tile_index)
         data = Datacube.product_data(groups, geobox, measurements)
 
         nudata = data.rename(namemap)

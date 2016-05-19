@@ -411,14 +411,17 @@ class GeoBox(object):
         self.extent = GeoPolygon(points, crs_str)
 
     @classmethod
-    def from_dataset_type(cls, dataset_type, tile_index):
+    def from_grid_spec(cls, grid_spec, tile_index):
         """
-        :type dataset_type: datacube.model.DatasetType
+        Returns the GeoBox for a tile index in the specified grid.
+
+        :type grid_spec: Grid Spec like object (must include tile_size, resolution and crs)
+        :type tuple: (x,y) index of requested tile
         :rtype: GeoBox
         """
-        tile_size = dataset_type.tile_size
-        tile_res = dataset_type.resolution
-        return cls(crs_str=dataset_type.crs,
+        tile_size = grid_spec.tile_size
+        tile_res = grid_spec.resolution
+        return cls(crs_str=grid_spec.crs,
                    affine=_get_tile_transform(tile_index, tile_size, tile_res),
                    width=int(tile_size[0] / abs(tile_res[0])),
                    height=int(tile_size[1] / abs(tile_res[1])))
