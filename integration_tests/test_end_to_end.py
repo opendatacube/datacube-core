@@ -124,6 +124,7 @@ def test_end_to_end(global_integration_cli_args, index, example_ls5_dataset):
     check_analytics_list_searchables(index)
     check_get_descriptor(index)
     check_get_data(index)
+    check_get_descriptor_data(index)
 
 
 def check_open_with_api(index):
@@ -348,3 +349,42 @@ def check_get_data(index):
     for dim in list(d['dimensions']):
         assert dim in list(d['arrays'][var1].dims)
         assert dim in list(d['arrays'][var2].dims)
+
+
+def check_get_descriptor_data(index):
+    import numpy as np
+    import xarray as xr
+    from datetime import datetime
+    from datacube.api import API
+
+    g = API(index=index)
+
+    platform = 'LANDSAT_5'
+    product = 'nbar'
+    var1 = 'red'
+    var2 = 'nir'
+
+    data_request_descriptor = {
+        'platform': platform,
+        'product': product,
+        'variables': (var1, var2),
+        'dimensions': {
+            'longitude': {
+                'range': (149.07, 149.18)
+            },
+            'latitude': {
+                'range': (-35.32, -35.28)
+            },
+            'time': {
+                'range': (datetime(1992, 1, 1), datetime(1992, 12, 31))
+            }
+        }
+    }
+
+    d1 = g.get_descriptor(data_request_descriptor)
+    d2 = g.get_data(data_request_descriptor)
+
+    assert list(d1.values())[0]['result_shape'] == \
+        d2['size'] == \
+        d2['arrays'][var1].shape == \
+        d2['arrays'][var2].shape
