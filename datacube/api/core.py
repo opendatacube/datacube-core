@@ -331,9 +331,9 @@ class API(object):
         if datacube is not None:
             self.datacube = datacube
         elif index is not None:
-            self.datacube = Datacube(index, app='Datacube API')
+            self.datacube = Datacube(index, app='Datacube-API')
         else:
-            self.datacube = Datacube(app='Datacube API')
+            self.datacube = Datacube(app='Datacube-API')
 
     def get_descriptor_for_dataset(self, dataset_type, datasets, group_func, geopolygon=None):
         dataset_descriptor = {}
