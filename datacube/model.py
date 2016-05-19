@@ -124,6 +124,10 @@ class Dataset(object):
         return self.metadata_doc['format']['name']
 
     @property
+    def measurements(self):
+        return self.metadata.measurements_doc
+
+    @property
     def time(self):
         center_dt = self.metadata_doc['extent']['center_dt']
         if isinstance(center_dt, compat.string_types):

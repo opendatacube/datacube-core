@@ -146,7 +146,7 @@ class DatasetSource(object):
         :param measurement_id:
         """
         self._bandinfo = dataset.type.measurements[measurement_id]
-        self._descriptor = dataset.metadata.measurements_dict[measurement_id]
+        self._descriptor = dataset.measurements[measurement_id]
         self.transform = None
         self.crs = None
         self.nodata = None
