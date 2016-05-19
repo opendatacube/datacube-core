@@ -51,6 +51,10 @@ def match_doc(rules, doc):
     return matched[0]
 
 
+def check_dataset_consistent(dataset):
+    return set(dataset.type.measurements.keys()).issubset(dataset.measurements.keys())
+
+
 def match_dataset(dataset_doc, uri, rules):
     """
     :rtype datacube.model.Dataset:
@@ -95,7 +99,13 @@ def type_crazy(type_name, managed, index):
         if not contains(metadata_doc, type_.metadata):
             _LOG.warning('Dataset %s does match the specified type %s',
                          metadata_doc.get('id', 'unidentified'), type_.name)
-        return Dataset(type_, metadata_doc, uri, managed=managed)
+
+        dataset = Dataset(type_, metadata_doc, uri, managed=managed)
+        if dataset.metadata.sources:
+            _LOG.error('Dataset %s contains source datasets, that can\'t be matched', dataset.id)
+            return None
+
+        return dataset
 
     return generate_dataset
 
@@ -134,6 +144,10 @@ def index_cmd(index, match_rules, dtype, managed, dry_run, datasets):
         for metadata_path, metadata_doc in read_documents(metadata_path):
             uri = metadata_path.absolute().as_uri()
             dataset = generate_dataset(metadata_doc, uri)
+
+            if not check_dataset_consistent(dataset):
+                _LOG.error("Dataset measurements don't match it's type specification %s", dataset.id)
+                continue
 
             _LOG.info('Matched %s', dataset)
             if not dry_run:
