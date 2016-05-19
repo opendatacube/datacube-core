@@ -399,6 +399,12 @@ class CRS(object):
     def __getitem__(self, item):
         return self._crs.GetAttrValue(item)
 
+    def __getstate__(self):
+        return {'crs_str': self.crs_str}
+
+    def __setstate__(self, state):
+        self.__init__(state['crs_str'])
+
     @property
     def wkt(self):
         return self._crs.ExportToWkt()
