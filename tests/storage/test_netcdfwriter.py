@@ -6,15 +6,15 @@ import netCDF4
 import numpy
 from osgeo import osr
 
-from datacube.model import Variable, Coordinate
+from datacube.model import Variable, CRS
 from datacube.storage.netcdf_writer import create_netcdf, create_coordinate, create_variable, netcdfy_data, \
     create_grid_mapping_variable, flag_mask_meanings
 
-GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
-           'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
-           'AUTHORITY["EPSG","4326"]]'
+GEO_PROJ = CRS('GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],'
+               'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],'
+               'AUTHORITY["EPSG","4326"]]')
 
-ALBERS_PROJ = """PROJCS["GDA94 / Australian Albers",
+ALBERS_PROJ = CRS("""PROJCS["GDA94 / Australian Albers",
                         GEOGCS["GDA94",
                             DATUM["Geocentric_Datum_of_Australia_1994",
                                 SPHEROID["GRS 1980",6378137,298.257222101,
@@ -37,9 +37,9 @@ ALBERS_PROJ = """PROJCS["GDA94 / Australian Albers",
                         PARAMETER["false_northing",0],
                         AUTHORITY["EPSG","3577"],
                         AXIS["Easting",EAST],
-                        AXIS["Northing",NORTH]]"""
+                        AXIS["Northing",NORTH]]""")
 
-SINIS_PROJ = """PROJCS["Sinusoidal",
+SINIS_PROJ = CRS("""PROJCS["Sinusoidal",
                         GEOGCS["GCS_Undefined",
                                 DATUM["Undefined",
                                 SPHEROID["User_Defined_Spheroid",6371007.181,0.0]],
@@ -49,7 +49,7 @@ SINIS_PROJ = """PROJCS["Sinusoidal",
                         PARAMETER["False_Easting",0.0],
                         PARAMETER["False_Northing",0.0],
                         PARAMETER["Central_Meridian",0.0],
-                        UNIT["Meter",1.0]]"""
+                        UNIT["Meter",1.0]]""")
 
 GLOBAL_ATTRS = {'test_attribute': 'test_value'}
 
@@ -72,8 +72,7 @@ def test_create_albers_projection_netcdf(tmpnetcdf_filename):
     nco = create_netcdf(tmpnetcdf_filename)
     create_coordinate(nco, 'x', numpy.array([1, 2, 3]), 'm')
     create_coordinate(nco, 'y', numpy.array([1, 2, 3]), 'm')
-    crs = osr.SpatialReference(ALBERS_PROJ)
-    create_grid_mapping_variable(nco, crs)
+    create_grid_mapping_variable(nco, ALBERS_PROJ)
     nco.close()
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
@@ -89,8 +88,7 @@ def test_create_epsg4326_netcdf(tmpnetcdf_filename):
     nco = create_netcdf(tmpnetcdf_filename)
     create_coordinate(nco, 'latitude', numpy.array([1, 2, 3]), 'm')
     create_coordinate(nco, 'longitude', numpy.array([1, 2, 3]), 'm')
-    crs = osr.SpatialReference(GEO_PROJ)
-    create_grid_mapping_variable(nco, crs)
+    create_grid_mapping_variable(nco, GEO_PROJ)
     nco.close()
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
@@ -103,8 +101,7 @@ def test_create_sinus_netcdf(tmpnetcdf_filename):
     nco = create_netcdf(tmpnetcdf_filename)
     create_coordinate(nco, 'x', numpy.array([1, 2, 3]), 'm')
     create_coordinate(nco, 'y', numpy.array([1, 2, 3]), 'm')
-    crs = osr.SpatialReference(SINIS_PROJ)
-    create_grid_mapping_variable(nco, crs)
+    create_grid_mapping_variable(nco, SINIS_PROJ)
     nco.close()
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:

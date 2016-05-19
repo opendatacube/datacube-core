@@ -25,7 +25,7 @@ import xarray as xr
 
 from .util import isclose
 
-from datacube.model import Range, Coordinate, Variable, GeoBox
+from datacube.model import Range, Coordinate, Variable, GeoBox, CRS
 from datacube.storage.access.backends.geobox import GeoBoxStorageUnit
 from datacube.api import geo_xarray
 from datacube.api._xarray import get_dimension_properties
@@ -279,7 +279,7 @@ def test_dask():
                'AUTHORITY["EPSG","4326"]]'
 
     affine1 = Affine.scale(0.1, 0.1)*Affine.translation(20, 30)
-    ds1 = GeoBoxStorageUnit(GeoBox(100, 100, affine1, GEO_PROJ),
+    ds1 = GeoBoxStorageUnit(GeoBox(100, 100, affine1, CRS(GEO_PROJ)),
                             {'time': Coordinate(numpy.dtype(numpy.int), begin=100, end=400, length=4, units='seconds')},
                             {
                                 'B10': Variable(numpy.dtype(numpy.float32), nodata=numpy.nan,
@@ -287,7 +287,7 @@ def test_dask():
                             })
     ds1.get_crs = lambda: {'time': None, 'latitude': None, 'longitude': None}
     affine2 = Affine.scale(0.1, 0.1)*Affine.translation(120, 130)
-    ds2 = GeoBoxStorageUnit(GeoBox(100, 100, affine2, GEO_PROJ),
+    ds2 = GeoBoxStorageUnit(GeoBox(100, 100, affine2, CRS(GEO_PROJ)),
                             {'time': Coordinate(numpy.dtype(numpy.int), begin=100, end=400, length=4, units='seconds')},
                             {
                                 'B10': Variable(numpy.dtype(numpy.float32), nodata=numpy.nan,

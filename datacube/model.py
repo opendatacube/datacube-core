@@ -138,21 +138,25 @@ class Dataset(object):
 
     @property
     def crs(self):
+        """
+        "rtype: datacube.model.CRS
+        :return:
+        """
         projection = self.metadata_doc['grid_spatial']['projection']
 
         crs = projection.get('spatial_reference', None)
         if crs:
-            return str(crs)
+            return CRS(str(crs))
 
         # TODO: really need CRS specified properly in agdc-metadata.yaml
         if projection['datum'] == 'GDA94':
-            return 'EPSG:283' + str(abs(projection['zone']))
+            return CRS('EPSG:283' + str(abs(projection['zone'])))
 
         if projection['datum'] == 'WGS84':
             if projection['zone'][-1] == 'S':
-                return 'EPSG:327' + str(abs(int(projection['zone'][:-1])))
+                return CRS('EPSG:327' + str(abs(int(projection['zone'][:-1]))))
             else:
-                return 'EPSG:326' + str(abs(int(projection['zone'][:-1])))
+                return CRS('EPSG:326' + str(abs(int(projection['zone'][:-1]))))
 
         raise RuntimeError('Cant figure out the projection: %s %s' % (projection['datum'], projection['zone']))
 
@@ -162,7 +166,7 @@ class Dataset(object):
             return obj['x'], obj['y']
 
         geo_ref_points = self.metadata_doc['grid_spatial']['projection']['geo_ref_points']
-        return GeoPolygon([xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr')], crs_str=self.crs)
+        return GeoPolygon([xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr')], crs=self.crs)
 
     def __str__(self):
         return "Dataset <id={id} type={type} location={loc}>".format(id=self.id,
@@ -230,41 +234,24 @@ class DatasetType(object):
         return self.definition.get('measurements', {})
 
     @property
-    def gridspec(self):
-        return self.definition.get('storage', None)
+    def grid_spec(self):
+        if 'storage' not in self.definition:
+            return None
+        storage = self.definition['storage']
 
-    @property
-    def crs(self):
-        return str(self.gridspec['crs']).strip()
+        if 'crs' not in storage:
+            return None
+        crs = CRS(str(storage['crs']).strip())
 
-    @property
-    def spatial_dimensions(self):
-        """
-        Latitude/Longitude or X/Y
-        :rtype: tuple
-        """
-        sr = osr.SpatialReference()
-        sr.SetFromUserInput(self.crs)
-        if sr.IsGeographic():
-            return 'longitude', 'latitude'
-        elif sr.IsProjected():
-            return 'x', 'y'
+        tile_size = None
+        if 'tile_size' in storage:
+            tile_size = [storage['tile_size'][dim] for dim in crs.dimensions]
 
-    @property
-    def tile_size(self):
-        """
-        :return: tuple(x size, y size)
-        """
-        tile_size = self.gridspec.get('tile_size', [])
-        return [tile_size[dim] for dim in self.spatial_dimensions if dim in tile_size]
+        resolution = None
+        if 'resolution' in storage:
+            resolution = [storage['resolution'][dim] for dim in crs.dimensions]
 
-    @property
-    def resolution(self):
-        """
-        :return: tuple(x res, y res)
-        """
-        res = self.gridspec['resolution']
-        return [res[dim] for dim in self.spatial_dimensions]
+        return GridSpec(crs=crs, tile_size=tile_size, resolution=resolution)
 
     def __str__(self):
         return "DatasetType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
@@ -332,25 +319,19 @@ class GeoPolygon(object):
     Polygon with a CRS
     """
 
-    def __init__(self, points, crs_str=None):
+    def __init__(self, points, crs=None):
         self.points = points
-        self.crs_str = crs_str
+        self.crs = crs
 
     @classmethod
-    def from_boundingbox(cls, boundingbox, crs_str=None):
+    def from_boundingbox(cls, boundingbox, crs=None):
         points = [
             (boundingbox.left, boundingbox.top),
             (boundingbox.right, boundingbox.top),
             (boundingbox.right, boundingbox.bottom),
             (boundingbox.left, boundingbox.bottom),
         ]
-        return cls(points, crs_str)
-
-    @property
-    def crs(self):
-        crs = osr.SpatialReference()
-        crs.SetFromUserInput(self.crs_str)
-        return crs
+        return cls(points, crs)
 
     @property
     def boundingbox(self):
@@ -359,22 +340,114 @@ class GeoPolygon(object):
                            right=max(x for x, y in self.points),
                            top=max(y for x, y in self.points))
 
-    def to_crs(self, crs_str):
+    def to_crs(self, crs):
         """
         :param crs_str:
         :return: new GeoPolygon with CRS specified by crs_str
         """
-        crs = osr.SpatialReference()
-        crs.SetFromUserInput(crs_str)
-        if self.crs.IsSame(crs):
+        if self.crs == crs:
             return self
 
-        transform = osr.CoordinateTransformation(self.crs, crs)
-        return GeoPolygon([p[:2] for p in transform.TransformPoints(self.points)], crs_str)
+        transform = osr.CoordinateTransformation(self.crs._crs, crs._crs) # pylint: disable=protected-access
+        return GeoPolygon([p[:2] for p in transform.TransformPoints(self.points)], crs)
 
 
 class FlagsDefinition(object):
     pass
+
+
+class CRSProjProxy(object):
+    def __init__(self, crs):
+        self._crs = crs
+
+    def __getattr__(self, item):
+        return self._crs.GetProjParm(item)
+
+
+class CRS(object):
+    """
+    Wrapper around osr.SpatialReference providing more pythonic interface
+
+    >>> crs = CRS('EPSG:3577')
+    >>> crs.geographic
+    False
+    >>> crs.projected
+    True
+    >>> crs.dimensions
+    ('y', 'x')
+    >>> crs = CRS('EPSG:4326')
+    >>> crs.geographic
+    True
+    >>> crs.projected
+    False
+    >>> crs.dimensions
+    ('latitude', 'longitude')
+    >>> CRS('EPSG:3577') == CRS('EPSG:3577')
+    True
+    >>> CRS('EPSG:3577') == CRS('EPSG:4326')
+    False
+    """
+    def __init__(self, crs_str):
+        self.crs_str = crs_str
+        self._crs = osr.SpatialReference()
+        self._crs.SetFromUserInput(crs_str)
+
+    def __getitem__(self, item):
+        return self._crs.GetAttrValue(item)
+
+    @property
+    def wkt(self):
+        return self._crs.ExportToWkt()
+
+    @property
+    def proj(self):
+        return CRSProjProxy(self._crs)
+
+    @property
+    def semi_major_axis(self):
+        return self._crs.GetSemiMajor()
+
+    @property
+    def semi_minor_axis(self):
+        return self._crs.GetSemiMinor()
+
+    @property
+    def inverse_flattening(self):
+        return self._crs.GetInvFlattening()
+
+    @property
+    def geographic(self):
+        return self._crs.IsGeographic() == 1
+
+    @property
+    def projected(self):
+        return self._crs.IsProjected() == 1
+
+    @property
+    def dimensions(self):
+        if self.geographic:
+            return 'latitude', 'longitude'
+
+        if self.projected:
+            return 'y', 'x'
+
+    def __str__(self):
+        return self.crs_str
+
+    def __eq__(self, other):
+        assert isinstance(other, self.__class__)
+        return self._crs.IsSame(other._crs) == 1  # pylint: disable=protected-access
+
+
+class GridSpec(object):
+    def __init__(self, crs=None, tile_size=None, resolution=None):
+        self.crs = crs
+        self.tile_size = tile_size
+        self.resolution = resolution
+
+    @property
+    def dimensions(self):
+        return self.crs.dimensions
 
 
 class GeoBox(object):
@@ -382,9 +455,7 @@ class GeoBox(object):
     Defines a single Storage Unit, its CRS, location, resolution, and global attributes
 
     >>> from affine import Affine
-    >>> wgs84 = osr.SpatialReference()
-    >>> r = wgs84.ImportFromEPSG(4326)
-    >>> t = GeoBox(4000, 4000, Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0), wgs84.ExportToWkt())
+    >>> t = GeoBox(4000, 4000, Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0), CRS('EPSG:4326'))
     >>> t.coordinate_labels['latitude']
     array([-29.000125, -29.000375, -29.000625, ..., -29.999375, -29.999625,
            -29.999875])
@@ -401,27 +472,27 @@ class GeoBox(object):
     :type affine: affine.Affine
     """
 
-    def __init__(self, width, height, affine, crs_str):
+    def __init__(self, width, height, affine, crs):
         self.width = width
         self.height = height
         self.affine = affine
 
         points = [(0, 0), (0, height), (width, height), (width, 0)]
         self.affine.itransform(points)
-        self.extent = GeoPolygon(points, crs_str)
+        self.extent = GeoPolygon(points, crs)
 
     @classmethod
     def from_grid_spec(cls, grid_spec, tile_index):
         """
         Returns the GeoBox for a tile index in the specified grid.
 
-        :type grid_spec: Grid Spec like object (must include tile_size, resolution and crs)
-        :type tuple: (x,y) index of requested tile
-        :rtype: GeoBox
+        :type grid_spec:  datacube.model.GridSpec
+        :type tile_index: tuple(int,int)
+        :rtype: datacube.model.GeoBox
         """
         tile_size = grid_spec.tile_size
         tile_res = grid_spec.resolution
-        return cls(crs_str=grid_spec.crs,
+        return cls(crs=grid_spec.crs,
                    affine=_get_tile_transform(tile_index, tile_size, tile_res),
                    width=int(tile_size[0] / abs(tile_res[0])),
                    height=int(tile_size[1] / abs(tile_res[1])))
@@ -446,7 +517,7 @@ class GeoBox(object):
         if align:
             width = math.ceil(width)
             height = math.ceil(height)
-        return GeoBox(crs_str=geopolygon.crs_str,
+        return GeoBox(crs=geopolygon.crs,
                       affine=affine,
                       width=int(width),
                       height=int(height))
@@ -462,15 +533,11 @@ class GeoBox(object):
         return GeoBox(width=indexes[1].stop - indexes[1].start,
                       height=indexes[0].stop - indexes[0].start,
                       affine=affine,
-                      crs_str=self.crs_str)
+                      crs=self.crs)
 
     @property
     def shape(self):
         return self.height, self.width
-
-    @property
-    def crs_str(self):
-        return self.extent.crs_str
 
     @property
     def crs(self):
@@ -478,26 +545,21 @@ class GeoBox(object):
 
     @property
     def dimensions(self):
-        crs = self.crs
-        if crs.IsGeographic():
-            return 'latitude', 'longitude'
-        elif crs.IsProjected():
-            return 'y', 'x'
+        return self.crs.dimensions
 
     @property
     def coordinates(self):
         xs = numpy.array([0, self.width - 1]) * self.affine.a + self.affine.c + self.affine.a / 2
         ys = numpy.array([0, self.height - 1]) * self.affine.e + self.affine.f + self.affine.e / 2
 
-        crs = self.crs
-        if crs.IsGeographic():
+        if self.crs.geographic:
             return {
                 'latitude': Coordinate(ys.dtype, ys[0], ys[-1], self.height, 'degrees_north'),
                 'longitude': Coordinate(xs.dtype, xs[0], xs[-1], self.width, 'degrees_east')
             }
 
-        elif crs.IsProjected():
-            units = crs.GetAttrValue('UNIT')
+        elif self.crs.projected:
+            units = self.crs['UNIT']
             return {
                 'x': Coordinate(xs.dtype, xs[0], xs[-1], self.width, units),
                 'y': Coordinate(ys.dtype, ys[0], ys[-1], self.height, units)
@@ -508,13 +570,12 @@ class GeoBox(object):
         xs = numpy.arange(self.width) * self.affine.a + self.affine.c + self.affine.a / 2
         ys = numpy.arange(self.height) * self.affine.e + self.affine.f + self.affine.e / 2
 
-        crs = self.crs
-        if crs.IsGeographic():
+        if self.crs.geographic:
             return {
                 'latitude': ys,
                 'longitude': xs
             }
-        elif crs.IsProjected():
+        elif self.crs.projected:
             return {
                 'x': xs,
                 'y': ys
@@ -522,9 +583,9 @@ class GeoBox(object):
 
     @property
     def geographic_extent(self):
-        if self.crs.IsGeographic():
+        if self.crs.geographic:
             return self.extent
-        return self.extent.to_crs('EPSG:4326')
+        return self.extent.to_crs(CRS('EPSG:4326'))
 
 
 def _get_tile_transform(tile_index, tile_size, tile_res):

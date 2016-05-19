@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from itertools import groupby
 
-from datacube.model import Variable
+from datacube.model import Variable, CRS
 from datacube.storage import netcdf_writer
 
 try:
@@ -92,7 +92,7 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
     def reproject(source, dest):
         with source.open() as src:
             array_transform = ~source.transform * dst_transform
-            if (rasterio.crs.is_same_crs(source.crs, dst_projection) and no_scale(array_transform) and
+            if (source.crs == dst_projection and no_scale(array_transform) and
                     (resampling == RESAMPLING.nearest or no_fractional_translate(array_transform))):
                 dydx = (int(round(array_transform.f)), int(round(array_transform.c)))
                 read, write, shape = zip(*map(_calc_offsets, dydx, src.shape, dest.shape))
@@ -109,10 +109,10 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
                 rasterio.warp.reproject(src,
                                         dest,
                                         src_transform=source.transform,
-                                        src_crs=source.crs,
+                                        src_crs=str(source.crs),
                                         src_nodata=numpy.dtype(src.dtype).type(source.nodata),
                                         dst_transform=dst_transform,
-                                        dst_crs=dst_projection,
+                                        dst_crs=str(dst_projection),
                                         dst_nodata=dest.dtype.type(dst_nodata),
                                         resampling=resampling,
                                         NUM_THREADS=4)
@@ -176,7 +176,7 @@ class DatasetSource(object):
                     bandnumber = self.wheres_my_band(src, self.time)
 
                 self.transform = src.affine
-                self.crs = src.crs_wkt
+                self.crs = CRS(str(src.crs_wkt))
                 self.nodata = src.nodatavals[0] or self._bandinfo.get('nodata')
                 yield rasterio.band(src, bandnumber)
         except Exception as e:
@@ -211,7 +211,7 @@ def write_dataset_to_netcdf(access_unit, variable_params, filename):
         netcdf_writer.create_coordinate(nco, name, coord.values, coord.units)
 
     netcdf_writer.create_grid_mapping_variable(nco, access_unit.crs)
-    netcdf_writer.write_geographical_extents_attributes(nco, access_unit.extent.to_crs('EPSG:4326').points)
+    netcdf_writer.write_geographical_extents_attributes(nco, access_unit.extent.to_crs(CRS('EPSG:4326')).points)
 
     for name, variable in access_unit.data_vars.items():
         # Create variable

@@ -15,7 +15,7 @@ from osgeo import ogr
 
 from ..compat import string_types, integer_types
 from ..index import index_connect
-from ..model import GeoPolygon, GeoBox, Range, Coordinate, Variable
+from ..model import GeoPolygon, GeoBox, Range, CRS
 from ..model import _DocReader as DocReader
 from ..storage.storage import DatasetSource, fuse_sources, RESAMPLING
 from ..storage import netcdf_writer
@@ -171,7 +171,7 @@ class Datacube(object):
 
     def product_observations(self, type_name, geopolygon=None, group_func=None, **kwargs):
         if geopolygon:
-            geo_bb = geopolygon.to_crs('EPSG:4326').boundingbox
+            geo_bb = geopolygon.to_crs(CRS('EPSG:4326')).boundingbox
             kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
             kwargs['lon'] = Range(geo_bb.left, geo_bb.right)
         # TODO: pull out full datasets lineage?
@@ -179,7 +179,7 @@ class Datacube(object):
         # All datasets will be same type, can make assumptions
         if geopolygon:
             datasets = [dataset for dataset in datasets
-                        if _check_intersect(geopolygon, dataset.extent.to_crs(geopolygon.crs_str))]
+                        if _check_intersect(geopolygon, dataset.extent.to_crs(geopolygon.crs))]
             # Check against the bounding box of the original scene, can throw away some portions
         group_func = _get_group_by_func(group_func)
         datasets.sort(key=group_func)
@@ -210,7 +210,7 @@ class Datacube(object):
                 fuse_sources([DatasetSource(dataset, measurement_name) for dataset in sources],
                              data[index],  # Output goes here
                              geobox.affine,
-                             geobox.crs_str,
+                             geobox.crs,
                              stuffs.get('nodata'),
                              resampling=RESAMPLING.nearest,
                              fuse_func=fuse_func)

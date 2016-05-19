@@ -10,7 +10,7 @@ from pathlib import Path
 from rasterio.coords import BoundingBox
 
 from datacube.api.core import Datacube
-from datacube.model import DatasetType, Dataset, GeoBox, GeoPolygon
+from datacube.model import DatasetType, Dataset, GeoBox, GeoPolygon, CRS
 from datacube.storage.storage import write_dataset_to_netcdf
 from datacube.ui import click as ui
 from datacube.ui import read_documents
@@ -25,10 +25,10 @@ except ImportError:
 _LOG = logging.getLogger('agdc-ingest')
 
 
-def set_geobox_info(doc, crs_str, extent):
+def set_geobox_info(doc, crs, extent):
     bb = extent.boundingbox
     gp = GeoPolygon([(bb.left, bb.top), (bb.right, bb.top), (bb.right, bb.bottom), (bb.left, bb.bottom)],
-                    crs_str).to_crs('EPSG:4326')
+                    crs).to_crs(CRS('EPSG:4326'))
     doc.update({
         'extent': {
             'coord': {
@@ -40,7 +40,7 @@ def set_geobox_info(doc, crs_str, extent):
         },
         'grid_spatial': {
             'projection': {
-                'spatial_reference': crs_str,
+                'spatial_reference': str(crs),
                 'geo_ref_points': {
                     'ul': {'x': bb.left, 'y': bb.top},
                     'ur': {'x': bb.right, 'y': bb.top},
@@ -101,7 +101,7 @@ def generate_dataset(data, prod_info, uri):
             'lineage': {'source_datasets': {str(idx): dataset.metadata_doc for idx, dataset in enumerate(sources)}}
         }
         # TODO: extent is a bad thing to store - it duplicates coordinates
-        set_geobox_info(document, data.crs.ExportToWkt(), data.extent)
+        set_geobox_info(document, data.crs, data.extent)
         document['extent']['from_dt'] = str(time)
         document['extent']['to_dt'] = str(time)
         document['extent']['center_dt'] = str(time)
@@ -165,7 +165,7 @@ def sorted_diff(a, b, key_func=lambda x: x):
 
 def find_diff(input_type, output_type, bbox, datacube):
     tasks = []
-    for tile_index, geobox in generate_grid(output_type, bbox):
+    for tile_index, geobox in generate_grid(output_type.grid_spec, bbox):
         observations = datacube.product_observations(input_type.name, geobox.extent, lambda ds: ds.time)
         if observations:
             created_obs = datacube.product_observations(output_type.name, geobox.extent, lambda ds: ds.time)
@@ -250,7 +250,7 @@ def ingest_cmd(index, config, dry_run, executor):
     # bbox = BoundingBox(1400000, -4000000, 1600000, -3800000)
     tasks = find_diff(source_type, output_type, bbox, datacube)
 
-    grid_spec = output_type
+    grid_spec = output_type.grid_spec
     namemap = get_namemap(config)
     measurements = source_type.measurements
     variable_params = get_variable_params(config)

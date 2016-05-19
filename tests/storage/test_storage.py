@@ -21,7 +21,7 @@ from pathlib import Path
 from affine import Affine
 import xarray
 
-from datacube.model import GeoBox
+from datacube.model import GeoBox, CRS
 from datacube.storage.storage import write_dataset_to_netcdf
 
 
@@ -32,7 +32,7 @@ GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.25722
 
 def test_write_dataset_to_netcdf(tmpnetcdf_filename):
     affine = Affine.scale(0.1, 0.1)*Affine.translation(20, 30)
-    geobox = GeoBox(100, 100, affine, GEO_PROJ)
+    geobox = GeoBox(100, 100, affine, CRS(GEO_PROJ))
     dataset = xarray.Dataset(attrs={'extent': geobox.extent, 'crs': geobox.crs})
     for name, v in geobox.coordinate_labels.items():
         dataset[name] = (name, v, {'units': geobox.coordinates[name].units})

@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from datacube.model import _uri_to_local_path, Dataset, DatasetMatcher, GeoPolygon, GeoBox
+from datacube.model import _uri_to_local_path, Dataset, DatasetMatcher, GeoPolygon, GeoBox, CRS
 
 
 def test_uri_to_local_path():
@@ -52,7 +52,7 @@ def test_geobox():
         [(-148.2697, -35.20111), (-149.31254, -35.20111), (-149.31254, -36.331431), (-148.2697, -36.331431)],
         ]
     for points in points_list:
-        polygon = GeoPolygon(points, 'EPSG:3577')
+        polygon = GeoPolygon(points, CRS('EPSG:3577'))
         resolution = (25, -25)
         geobox = GeoBox.from_geopolygon(polygon, resolution)
 
