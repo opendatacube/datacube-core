@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import sys
 import warnings
+from past.builtins import basestring
 from datetime import datetime
 from pathlib import Path
 from subprocess import call, check_output, PIPE, CalledProcessError
@@ -122,6 +123,7 @@ def test_end_to_end(global_integration_cli_args, index, example_ls5_dataset):
     check_open_with_api(index)
     check_analytics_list_searchables(index)
     check_get_descriptor(index)
+    check_get_data(index)
 
 
 def check_open_with_api(index):
@@ -193,11 +195,6 @@ def check_get_descriptor(index):
     from datetime import datetime
     from datacube.api import API
 
-    try:
-        basestring
-    except NameError:
-        basestring = str
-
     g = API(index=index)
 
     platform = 'LANDSAT_5'
@@ -268,3 +265,86 @@ def check_get_descriptor(index):
         assert isinstance(su['storage_min'], tuple)
         assert isinstance(su['storage_path'], basestring)
         assert isinstance(su['storage_shape'], tuple)
+
+
+def check_get_data(index):
+    import numpy as np
+    import xarray as xr
+    from datetime import datetime
+    from datacube.api import API
+
+    g = API(index=index)
+
+    platform = 'LANDSAT_5'
+    product = 'nbar'
+    var1 = 'red'
+    var2 = 'nir'
+
+    data_request_descriptor = {
+        'platform': platform,
+        'product': product,
+        'variables': (var1, var2),
+        'dimensions': {
+            'longitude': {
+                'range': (149.07, 149.18)
+            },
+            'latitude': {
+                'range': (-35.32, -35.28)
+            },
+            'time': {
+                'range': (datetime(1992, 1, 1), datetime(1992, 12, 31))
+            }
+        }
+    }
+
+    d = g.get_data(data_request_descriptor)
+    assert 'dimensions' in list(d.keys())
+    assert 'arrays' in list(d.keys())
+    assert 'element_sizes' in list(d.keys())
+    assert 'indices' in list(d.keys())
+    assert 'coordinate_reference_systems' in list(d.keys())
+    assert 'size' in list(d.keys())
+
+    assert isinstance(d['dimensions'], list)
+    assert isinstance(d['arrays'], dict)
+    assert isinstance(d['element_sizes'], list)
+    assert isinstance(d['indices'], dict)
+    assert isinstance(d['coordinate_reference_systems'], list)
+    assert isinstance(d['size'], tuple)
+
+    assert len(list(d['dimensions'])) == \
+        len(list(d['coordinate_reference_systems'])) == \
+        len(list(d['element_sizes'])) == \
+        len(list(d['indices'])) == \
+        len(list(d['size']))
+
+    for key in list(d['indices'].keys()):
+        assert key in list(d['dimensions'])
+
+    assert var1 in list(d['arrays'].keys())
+    assert var2 in list(d['arrays'].keys())
+
+    for crs in d['coordinate_reference_systems']:
+        assert 'reference_system_definition' in crs
+        assert 'reference_system_unit' in crs
+        assert isinstance(crs['reference_system_definition'], basestring)
+        assert isinstance(crs['reference_system_unit'], basestring)
+
+    for dim in d['indices']:
+        assert isinstance(d['indices'][dim], np.ndarray)
+
+    assert isinstance(d['arrays'][var1], xr.DataArray)
+    assert isinstance(d['arrays'][var2], xr.DataArray)
+
+    assert d['arrays'][var1].shape == d['size']
+    assert d['arrays'][var2].shape == d['size']
+
+    assert d['arrays'][var1].name == var1
+    assert d['arrays'][var2].name == var2
+
+    assert len(list(d['arrays'][var1].dims)) == len(list(d['dimensions']))
+    assert len(list(d['arrays'][var2].dims)) == len(list(d['dimensions']))
+
+    for dim in list(d['dimensions']):
+        assert dim in list(d['arrays'][var1].dims)
+        assert dim in list(d['arrays'][var2].dims)
