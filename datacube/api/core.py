@@ -397,18 +397,17 @@ class API(object):
 
         descriptor = {}
         datasets_by_type = self.search_datasets_by_type(**search_terms)
-        for type_name, datasets in datasets_by_type.items():
-            dataset_type = self.datacube.index.datasets.types.get_by_name(type_name)
+        for dataset_type, datasets in datasets_by_type.items():
             dataset_descriptor = self.get_descriptor_for_dataset(dataset_type, datasets, group_func, geopolygon)
             if dataset_descriptor:
-                descriptor[type_name] = dataset_descriptor
+                descriptor[dataset_type.name] = dataset_descriptor
         return descriptor
 
     def search_datasets_by_type(self, **query):
         datasets = self.datacube.index.datasets.search(**query)
         datasets_by_type = defaultdict(list)
         for dataset in datasets:
-            datasets_by_type[dataset.type.name].append(dataset)
+            datasets_by_type[dataset.type].append(dataset)
         return datasets_by_type
 
     def get_dataset_groups(self, group_func=None, **search_query):
@@ -441,31 +440,67 @@ class API(object):
             dataset_groups = self.get_dataset_groups(**search_terms)
 
         data = {}
+        slices = {
+            'x': slice(0, 5),
+            'y': slice(0, 5),
+            'time': slice(0, 5),
+        }
         for dataset_type, groups in dataset_groups.items():
-            dt_data = {
-                'arrays': {}
-            }
-            datasets = list(chain.from_iterable(g.datasets for g in groups))
-            if not geopolygon:
-                geopolygon = _get_bounds(datasets, dataset_type)
-            geobox = GeoBox.from_geopolygon(geopolygon.to_crs(dataset_type.crs), dataset_type.resolution)
-            #TODO: apply array_range to geobox, groups and other dimensions
-            for measurement_name, measurement in dataset_type.measurements.items():
-                if variables is None or measurement_name in variables:
-                    dt_data['arrays'][measurement_name] = self.datacube.variable_data(groups, geobox,
-                                                                                      measurement_name, measurement)
-            data[dataset_type.name] = dt_data
+            data[dataset_type.name] = self.get_data_for_type(dataset_type, groups, variables, geopolygon, slices)
         return data
 
     def get_data_for_type(self, dataset_type, groups, variables, geopolygon, slices=None):
-        dt_data = {
-            'arrays': {}
-        }
+        irregular_dims = ['time', 't']  # TODO: get irregular dims from dataset_type
+        dt_data = {}
         datasets = list(chain.from_iterable(g.datasets for g in groups))
         if not geopolygon:
             geopolygon = _get_bounds(datasets, dataset_type)
         geobox = GeoBox.from_geopolygon(geopolygon.to_crs(dataset_type.crs), dataset_type.resolution)
-        #TODO: apply array_range to geobox, groups and other dimensions
+        if slices:
+            geo_slices = [slices.get(dim, slice(None)) for dim in geobox.dimensions]
+            geobox = geobox[geo_slices]
+            for dim, dim_slice in slices.items():
+                if dim.lower() in irregular_dims:
+                    groups = groups[dim_slice]
+        dt_data.update(self.get_data_for_dims(dataset_type, groups, geobox))
+        dt_data.update(self.get_data_for_measurement(dataset_type, groups, variables, geobox))
+        return dt_data
+
+    @staticmethod
+    def get_data_for_dims(dataset_type, groups, geobox):
+        irregular_dims = ['time', 't']  # TODO: get irregular dims from dataset_type
+        dims = dataset_type.gridspec['dimension_order']
+        dt_data = {
+            'dims': dims,
+            'indicies': [],
+            'element_sizes': [],
+            'coordinate_reference_systems': [],
+        }
+        for dim in dims:
+            if dim in dataset_type.spatial_dimensions:
+                dt_data['indicies'].append(geobox.coordinate_labels[dim])
+                dt_data['element_sizes'].append(dataset_type.gridspec['resolution'][dim])
+                dt_data['coordinate_reference_systems'].append(geobox.crs_str)
+            elif dim.lower() in irregular_dims:
+                # groups define irregular_dims
+                coords = [group.key for group in groups]
+                dt_data['indicies'].append(coords)
+                if len(coords) < 2:
+                    dt_data['element_sizes'].append(numpy.NaN)
+                    dt_data['coordinate_reference_systems'].append('')
+                else:
+                    dt_data['element_sizes'].append(abs(coords[0] - coords[1]))
+                    dt_data['coordinate_reference_systems'].append('')
+            else:
+                dt_data['indicies'].append([])
+                dt_data['element_sizes'][dim] = numpy.NaN
+                dt_data['coordinate_reference_systems'].append('')
+        return dt_data
+
+    def get_data_for_measurement(self, dataset_type, groups, variables, geobox):
+        dt_data = {
+            'arrays': {}
+        }
         for measurement_name, measurement in dataset_type.measurements.items():
             if variables is None or measurement_name in variables:
                 dt_data['arrays'][measurement_name] = self.datacube.variable_data(groups, geobox,
