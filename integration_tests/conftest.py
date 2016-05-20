@@ -166,6 +166,12 @@ def ls5_nbar_ingest_config(tmpdir):
     config = load_yaml_file(LS5_NBAR_INGEST_CONFIG)[0]
 
     config = alter_dataset_type_for_testing(config)
+    config['ingest_bounds'] = {
+        'left': 1400000,
+        'bottom': -4000000,
+        'right': 1600000,
+        'top': -3800000,
+    }
     config['location'] = str(dataset_dir)
 
     config_path = dataset_dir.join('ls5_nbar_ingest_config.yaml')
