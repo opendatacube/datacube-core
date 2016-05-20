@@ -511,22 +511,22 @@ class API(object):
     def get_query(self, descriptor=None):
         """
         Parses the descriptor query into the following parts:
-        >>> query = {
-        >>>     'type': 'ls5_nbar_albers',
-        >>>     'variables': ['red', 'blue', 'green'],
-        >>>     'search': {
-        >>>         'platform': 'LANDSAT_5',
-        >>>         'product': 'nbar',
-        >>>         'time': Range(datetime.datetime(2001, 1, 1), datetime.datetime(2006, 12, 31))
-        >>>     },
-        >>>     'geopolygon': GeoPolygon([], 'crs'),
-        >>>     'group_by': {'time': 'solar_day'}
-        >>>     'slices': {
-        >>>         'time': slice(0, 250),
-        >>>         'x': slice(0, 250),  # Need to convert to match spatial dims of output
-        >>>         'y': slice(0, 250),  #
-        >>>     }
-        >>>  }
+         query = {
+             'type': 'ls5_nbar_albers',
+             'variables': ['red', 'blue', 'green'],
+             'search': {
+                 'platform': 'LANDSAT_5',
+                 'product': 'nbar',
+                 'time': Range(datetime.datetime(2001, 1, 1), datetime.datetime(2006, 12, 31))
+             },
+             'geopolygon': GeoPolygon([], 'crs'),
+             'group_by': {'time': 'solar_day'}
+             'slices': {
+                 'time': slice(0, 250),
+                 'x': slice(0, 250),  # Need to convert to match spatial dims of output
+                 'y': slice(0, 250),  #
+             }
+          }
         """
         if descriptor is None:
             descriptor = {}
