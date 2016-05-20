@@ -377,27 +377,32 @@ class API(object):
 
         if include_storage_units:
 
-            def dataset_path(ds):
-                return str(ds.local_path)
-
-            dataset_descriptor['storage_units'] = {}
-
-            datasets.sort(key=dataset_path)
-            for path, datasets in groupby(datasets, key=dataset_path):
-                datasets = list(datasets)
-                su = {}
-                times = [dataset.time for dataset in datasets]
-                xs = [x for dataset in datasets for x in (dataset.bounds.left, dataset.bounds.right)]
-                ys = [y for dataset in datasets for y in (dataset.bounds.top, dataset.bounds.bottom)]
-                su['storage_shape'] = tuple([len(times)] + dataset_type.grid_spec.tile_resolution)
-                su['storage_min'] = min(times), min(ys), min(xs)
-                su['storage_max'] = max(times), max(ys), max(xs)
-                su['storage_path'] = path
-                su['irregular_indicies'] = {'time': times}
-
-                dataset_descriptor['storage_units'][(min(times), max(ys), min(xs))] = su
+            dataset_descriptor['storage_units'] = self._compute_storage_units(dataset_type, datasets)
 
         return dataset_descriptor
+
+    @staticmethod
+    def _compute_storage_units(dataset_type, datasets):
+        storage_units = {}
+
+        def dataset_path(ds):
+            return str(ds.local_path)
+
+        datasets.sort(key=dataset_path)
+        for path, datasets in groupby(datasets, key=dataset_path):
+            datasets = list(datasets)
+            su = {}
+            times = [dataset.time for dataset in datasets]
+            xs = [x for dataset in datasets for x in (dataset.bounds.left, dataset.bounds.right)]
+            ys = [y for dataset in datasets for y in (dataset.bounds.top, dataset.bounds.bottom)]
+            su['storage_shape'] = tuple([len(times)] + dataset_type.grid_spec.tile_resolution)
+            su['storage_min'] = min(times), min(ys), min(xs)
+            su['storage_max'] = max(times), max(ys), max(xs)
+            su['storage_path'] = path
+            su['irregular_indices'] = {'time': times}
+
+            storage_units[(min(times), max(ys), min(xs))] = su
+        return storage_units
 
     @staticmethod
     def get_descriptor_for_measurements(dataset_type):
