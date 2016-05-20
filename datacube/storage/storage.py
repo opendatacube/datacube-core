@@ -23,7 +23,7 @@ import rasterio.crs
 from rasterio.warp import RESAMPLING
 
 from datacube import compat
-from datacube.utils import clamp
+from datacube.utils import clamp, datetime_to_seconds_since_1970
 
 _LOG = logging.getLogger(__name__)
 
@@ -184,7 +184,7 @@ class DatasetSource(object):
             raise e
 
     def wheres_my_band(self, src, time):
-        sec_since_1970 = (time - datetime(1970, 1, 1)).total_seconds()
+        sec_since_1970 = datetime_to_seconds_since_1970(time)
 
         idx = 0
         dist = float('+inf')
