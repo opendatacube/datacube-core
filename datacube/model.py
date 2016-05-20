@@ -449,6 +449,9 @@ class CRS(object):
     def __str__(self):
         return self.crs_str
 
+    def __repr__(self):
+        return self.__str__()
+
     def __eq__(self, other):
         assert isinstance(other, self.__class__)
         return self._crs.IsSame(other._crs) == 1  # pylint: disable=protected-access
