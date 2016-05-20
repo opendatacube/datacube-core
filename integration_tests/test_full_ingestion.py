@@ -11,8 +11,10 @@ import pytest
 
 import yaml
 from click.testing import CliRunner
+from affine import Affine
 
 import datacube.scripts.agdc
+from datacube.model import GeoBox, CRS
 from .conftest import EXAMPLE_LS5_DATASET_ID
 
 PROJECT_ROOT = Path(__file__).parents[1]
@@ -85,11 +87,10 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset,
         check_data_shape(nco)
         check_grid_mapping(nco)
         check_cf_compliance(nco)
-        # TODO: check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset)
+        check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset)
         # TODO: check_global_attributes(nco, su.storage_type.global_attributes)
     check_open_with_xray(ds_path)
-    # TODO: check_open_with_api(index)
-    # TODO: can pull data out
+    check_open_with_api(index)
 
 
 def ensure_dataset_is_indexed(index):
@@ -135,15 +136,16 @@ def check_global_attributes(nco, attrs):
 
 
 def check_dataset_metadata_in_storage_unit(nco, dataset_dir):
-    assert len(nco.variables['extra_metadata']) == 1  # 1 time slice
-    stored_metadata = netCDF4.chartostring(nco.variables['extra_metadata'][0])
+    assert len(nco.variables['dataset']) == 1  # 1 time slice
+    stored_metadata = netCDF4.chartostring(nco.variables['dataset'][0])
     stored_metadata = str(np.char.decode(stored_metadata))
     ds_filename = dataset_dir / 'agdc-metadata.yaml'
     with ds_filename.open() as f:
         orig_metadata = f.read()
     stored = make_pgsqljson_match_yaml_load(yaml.safe_load(stored_metadata))
     original = make_pgsqljson_match_yaml_load(yaml.safe_load(orig_metadata))
-    assert stored == original
+    assert len(stored['lineage']['source_datasets']) == 1
+    assert next(iter(stored['lineage']['source_datasets'].values())) == original
 
 
 def check_open_with_xray(file_path):
@@ -152,51 +154,16 @@ def check_open_with_xray(file_path):
 
 
 def check_open_with_api(index):
-    import datacube.api
-    api = datacube.api.API(index=index)
-    fields = api.list_fields()
-    assert 'product' in fields
-    descriptor = api.get_descriptor()
-    assert 'ls5_nbar' in descriptor
-    storage_units = descriptor['ls5_nbar']['storage_units']
-    query = {
-        'variables': ['blue'],
-        'dimensions': {
-            'latitude': {'range': (-34, -35)},
-            'longitude': {'range': (149, 150)}}
-    }
-    data = api.get_data(query, storage_units=storage_units)
-    assert abs(data['element_sizes'][1] - 0.025) < .0000001
-    assert abs(data['element_sizes'][2] - 0.025) < .0000001
+    from datacube.api.core import Datacube
+    datacube = Datacube(index=index)
 
-    data_array = api.get_data_array(storage_type='ls5_nbar', variables=['blue'],
-                                    latitude=(-34, -35), longitude=(149, 150))
-    assert data_array.size
+    input_type_name = 'ls5_nbar_albers'
+    input_type = datacube.index.datasets.types.get_by_name(input_type_name)
 
-    dataset = api.get_dataset(storage_type='ls5_nbar', variables=['blue'],
-                              latitude=(-34, -35), longitude=(149, 150))
-    assert dataset['blue'].size
-
-    data_array_cell = api.get_data_array_by_cell((149, -34), storage_type='ls5_nbar', variables=['blue'])
-    assert data_array_cell.size
-
-    data_array_cell = api.get_data_array_by_cell(x_index=149, y_index=-34,
-                                                 storage_type='ls5_nbar', variables=['blue'])
-    assert data_array_cell.size
-
-    dataset_cell = api.get_dataset_by_cell((149, -34), storage_type='ls5_nbar', variables=['blue'])
-    assert dataset_cell['blue'].size
-
-    dataset_cell = api.get_dataset_by_cell([(149, -34), (149, -35)], storage_type='ls5_nbar', variables=['blue'])
-    assert dataset_cell['blue'].size
-
-    dataset_cell = api.get_dataset_by_cell(x_index=149, y_index=-34, storage_type='ls5_nbar', variables=['blue'])
-    assert dataset_cell['blue'].size
-
-    tiles = api.list_tiles(x_index=149, y_index=-34, storage_type='ls5_nbar')
-    for tile_query, tile_attrs in tiles:
-        dataset = api.get_dataset_by_cell(**tile_query)
-        assert dataset['blue'].size
+    geobox = GeoBox(200, 200, Affine(25, 0.0, 1500000, 0.0, -25, -3900000), CRS('EPSG:3577'))
+    observations = datacube.product_observations('ls5_nbar_albers', geobox.extent, lambda ds: ds.time)
+    data = datacube.product_data(observations, geobox, input_type.measurements)
+    assert data.blue.shape == (1, 200, 200)
 
 
 def make_pgsqljson_match_yaml_load(data):

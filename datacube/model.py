@@ -507,10 +507,14 @@ class GeoBox(object):
         """
         tile_size = grid_spec.tile_size
         tile_res = grid_spec.resolution
+
+        x = (tile_index[0] + (1 if tile_res[1] < 0 else 0)) * tile_size[1]
+        y = (tile_index[1] + (1 if tile_res[0] < 0 else 0)) * tile_size[0]
+
         return cls(crs=grid_spec.crs,
-                   affine=_get_tile_transform(tile_index, tile_size, tile_res),
-                   width=int(tile_size[0] / abs(tile_res[0])),
-                   height=int(tile_size[1] / abs(tile_res[1])))
+                   affine=Affine(tile_res[1], 0.0, x, 0.0, tile_res[0], y),
+                   width=int(tile_size[1] / abs(tile_res[1])),
+                   height=int(tile_size[0] / abs(tile_res[0])))
 
     @classmethod
     def from_geopolygon(cls, geopolygon, resolution, align=True):
@@ -601,12 +605,6 @@ class GeoBox(object):
         if self.crs.geographic:
             return self.extent
         return self.extent.to_crs(CRS('EPSG:4326'))
-
-
-def _get_tile_transform(tile_index, tile_size, tile_res):
-    x = (tile_index[0] + (1 if tile_res[0] < 0 else 0)) * tile_size[0]
-    y = (tile_index[1] + (1 if tile_res[1] < 0 else 0)) * tile_size[1]
-    return Affine(tile_res[0], 0.0, x, 0.0, tile_res[1], y)
 
 
 def _get_doc_offset(offset, document):
