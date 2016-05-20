@@ -140,8 +140,6 @@ def test_search_dataset_ranges(index, pseudo_telemetry_dataset):
     :type pseudo_telemetry_dataset: datacube.model.Dataset
     """
 
-    field = index.datasets.get_field
-
     # In the lat bounds.
     datasets = index.datasets.search_eager(
         lat=Range(-30.5, -29.5),

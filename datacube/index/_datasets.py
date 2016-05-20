@@ -373,13 +373,6 @@ class DatasetResource(object):
                 unit = self.add(unit)
                 _LOG.debug('Indexed dataset %s @ %s', unit.id, unit.local_uri)
 
-    def get_field(self, name, type_name=None):
-        """
-        :type name: str
-        :rtype: datacube.index.fields.Field
-        """
-        return self.get_fields(type_name).get(name)
-
     def get_field_names(self, type_name=None):
         """
         :type type_name: str
