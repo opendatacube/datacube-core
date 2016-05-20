@@ -21,7 +21,7 @@ from __future__ import absolute_import, print_function
 import re
 import contextlib
 import os
-from os.path import dirname, isdir, join, exists, abspath
+from os.path import dirname, join, exists, abspath
 from subprocess import CalledProcessError, check_output
 
 import pkg_resources
@@ -38,10 +38,10 @@ GIT_ARCHIVE_COMMIT_HASH = '$Format:%h$'
 
 def get_version():
     package_dir = abspath(dirname(dirname(__file__)))
-    git_dir = join(package_dir, '.git')
+    git_path = join(package_dir, '.git')
     pkg_info_file = join(package_dir, 'PKG-INFO')
 
-    if isdir(git_dir):
+    if exists(git_path):
         # Ask git for an annotated version number
         # (eg. "datacube-0.0.0-651-gcf335a9-dirty")
         cmd = [
