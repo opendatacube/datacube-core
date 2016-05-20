@@ -1,5 +1,5 @@
 name: ls5_satellite_telemetry_data
-description: ls5_satellite_telemetry_data
+description: Landsat 5 Satellite Telemetry Data
 metadata_type: eo
 
 metadata:
@@ -11,8 +11,8 @@ metadata:
 
 ---
 
-name: ls5_ortho_scene
-description: ls5_ortho
+name: ls5_level1_scene
+description: Landsat 5 Level 1 - Ortho Rectified
 metadata_type: eo
 
 metadata:

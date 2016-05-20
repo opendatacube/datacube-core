@@ -7,7 +7,7 @@
         name: TM
     product_type: satellite_telemetry_data
 
-- type: ls5_ortho_scene
+- type: ls5_level1_scene
   managed: False
   metadata:
     platform:
