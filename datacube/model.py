@@ -467,6 +467,9 @@ class GridSpec(object):
     def dimensions(self):
         return self.crs.dimensions
 
+    @property
+    def tile_resolution(self):
+        return [int(abs(ts / res)) for ts, res in zip(self.tile_size, self.resolution)]
 
 class GeoBox(object):
     """

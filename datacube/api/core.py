@@ -354,8 +354,6 @@ class API(object):
         dataset_descriptor['result_shape'] = []
         dataset_descriptor['irregular_indices'] = {}
 
-        #resolution = [dataset_type.grid_spec.resolution['resolution'][dim] for dim in dataset_type.spatial_dimensions]
-
         geobox = GeoBox.from_geopolygon(geopolygon.to_crs(dataset_type.grid_spec.crs),
                                         dataset_type.grid_spec.resolution)
         dims = dataset_type.dimensions
@@ -376,7 +374,29 @@ class API(object):
             dataset_descriptor['result_shape'].append(len(coords))
         if dataset_type.measurements:
             dataset_descriptor['variables'] = self.get_descriptor_for_measurements(dataset_type)
-        dataset_descriptor['groups'] = (dataset_type, groups)
+
+        if include_storage_units:
+
+            def dataset_path(ds):
+                return str(ds.local_path)
+
+            dataset_descriptor['storage_units'] = {}
+
+            datasets.sort(key=dataset_path)
+            for path, datasets in groupby(datasets, key=dataset_path):
+                datasets = list(datasets)
+                su = {}
+                times = [dataset.time for dataset in datasets]
+                xs = [x for dataset in datasets for x in (dataset.bounds.left, dataset.bounds.right)]
+                ys = [y for dataset in datasets for y in (dataset.bounds.top, dataset.bounds.bottom)]
+                su['storage_shape'] = tuple([len(times)] + dataset_type.grid_spec.tile_resolution)
+                su['storage_min'] = min(times), min(ys), min(xs)
+                su['storage_max'] = max(times), max(ys), max(xs)
+                su['storage_path'] = path
+                su['irregular_indicies'] = {'time': times}
+
+                dataset_descriptor['storage_units'][(min(times), max(ys), min(xs))] = su
+
         return dataset_descriptor
 
     @staticmethod
