@@ -1,4 +1,3 @@
-
 from __future__ import absolute_import, division, print_function
 
 import logging
@@ -15,6 +14,7 @@ from osgeo import ogr
 
 from ..compat import string_types, integer_types
 from ..index import index_connect
+from ..index.postgres._fields import RangeDocField  # pylint: disable=protected-access
 from ..model import GeoPolygon, GeoBox, Range, CRS
 from ..model import _DocReader as DocReader
 from ..storage.storage import DatasetSource, fuse_sources, RESAMPLING
@@ -99,12 +99,12 @@ class Datacube(object):
                 except KeyError:
                     pass
             row.update(good_fields)
-            if dt.gridspec is not None:
+            if dt.grid_spec is not None:
                 row.update({
-                    'crs': dt.crs,
-                    'spatial_dimensions': dt.spatial_dimensions,
-                    'tile_size': dt.tile_size,
-                    'resolution': dt.resolution,
+                    'crs': dt.grid_spec.crs,
+                    'spatial_dimensions': dt.grid_spec.dimensions,
+                    'tile_size': dt.grid_spec.tile_size,
+                    'resolution': dt.grid_spec.resolution,
                 })
             return row
         return pandas.DataFrame([to_row(dt) for dt in self.index.datasets.types.get_all()])
@@ -279,7 +279,7 @@ class Datacube(object):
     #     # Get dataset data
     #     dataset_type = self.index.datasets.types.get_by_name(type_name)
     #     crs = dataset_type.crs
-    #     dims = dataset_type.gridspec['dimension_order']
+    #     dims = dataset_type.grid_spec['dimension_order']
     #     polygon = polygon.to_crs(crs)
     #     geobox = GeoBox.from_geopolygon(polygon, dataset_type.resolution)
     #     shape = dict(zip(geobox.dimensions, geobox.shape))
@@ -339,7 +339,7 @@ class API(object):
         dataset_descriptor = {}
         irregular_dims = ['time', 't', 'T']  # TODO: get irregular dims from dataset_type
 
-        if not (dataset_type.gridspec and 'dimension_order' in dataset_type.gridspec):
+        if not (dataset_type.grid_spec and dataset_type.grid_spec.dimensions):
             return None
 
         if not geopolygon:
@@ -353,9 +353,9 @@ class API(object):
         dataset_descriptor['result_shape'] = []
         dataset_descriptor['irregular_indices'] = {}
 
-        resolution = [dataset_type.gridspec['resolution'][dim] for dim in dataset_type.spatial_dimensions]
-        geobox = GeoBox.from_geopolygon(geopolygon.to_crs(dataset_type.crs), resolution)
-        dims = dataset_type.gridspec['dimension_order']
+        #resolution = [dataset_type.grid_spec.resolution['resolution'][dim] for dim in dataset_type.spatial_dimensions]
+        geobox = GeoBox.from_geopolygon(geopolygon.to_crs(dataset_type.crs), dataset_type.grid_spec.resolution)
+        dims = dataset_type.dimensions
         spatial_dims = dataset_type.spatial_dimensions
         dataset_descriptor['dims'] = dims
         for dim in dims:
@@ -417,7 +417,7 @@ class API(object):
 
         datasets_by_type = self.search_datasets_by_type(**search_query)
         for dataset_type, datasets in datasets_by_type.items():
-            if dataset_type.gridspec:
+            if dataset_type.grid_spec:
                 datasets.sort(key=group_func)
                 dataset_groups[dataset_type] = [Group(key, list(group))
                                                 for key, group in groupby(datasets, group_func)]
@@ -469,9 +469,9 @@ class API(object):
     @staticmethod
     def get_data_for_dims(dataset_type, groups, geobox):
         irregular_dims = ['time', 't']  # TODO: get irregular dims from dataset_type
-        dims = dataset_type.gridspec['dimension_order']
+        dims = dataset_type.dimensions
         dt_data = {
-            'dims': dims,
+            'dimemsions': dims,
             'indicies': [],
             'element_sizes': [],
             'coordinate_reference_systems': [],
@@ -479,7 +479,8 @@ class API(object):
         for dim in dims:
             if dim in dataset_type.spatial_dimensions:
                 dt_data['indicies'].append(geobox.coordinate_labels[dim])
-                dt_data['element_sizes'].append(dataset_type.gridspec['resolution'][dim])
+                dim_i = dataset_type.spatial_dimensions.index(dim)
+                dt_data['element_sizes'].append(dataset_type.grid_spec.resolution[dim_i])
                 dt_data['coordinate_reference_systems'].append(geobox.crs_str)
             elif dim.lower() in irregular_dims:
                 # groups define irregular_dims
@@ -506,6 +507,59 @@ class API(object):
                 dt_data['arrays'][measurement_name] = self.datacube.variable_data(groups, geobox,
                                                                                   measurement_name, measurement)
         return dt_data
+
+    def get_query(self, descriptor=None):
+        """
+        Parses the descriptor query into the following parts:
+        >>> query = {
+        >>>     'type': 'ls5_nbar_albers',
+        >>>     'variables': ['red', 'blue', 'green'],
+        >>>     'search': {
+        >>>         'platform': 'LANDSAT_5',
+        >>>         'product': 'nbar',
+        >>>         'time': Range(datetime.datetime(2001, 1, 1), datetime.datetime(2006, 12, 31))
+        >>>     },
+        >>>     'geopolygon': GeoPolygon([], 'crs'),
+        >>>     'group_by': {'time': 'solar_day'}
+        >>>     'slices': {
+        >>>         'time': slice(0, 250),
+        >>>         'x': slice(0, 250),  # Need to convert to match spatial dims of output
+        >>>         'y': slice(0, 250),  #
+        >>>     }
+        >>>  }
+        """
+        if descriptor is None:
+            descriptor = {}
+        if not hasattr(descriptor, '__getitem__'):
+            raise ValueError('Could not understand descriptor {}'.format(descriptor))
+        remaining_keys = set(descriptor.keys())
+        query = {
+            'search': {},
+        }
+
+        type_keys = [key for key in remaining_keys if key in ('storage_type', 'type', 'dataset_type')]
+        for key in type_keys:
+            remaining_keys.remove(key)
+            query['type'] = descriptor[key]
+
+        if 'variables' in remaining_keys:
+            remaining_keys.remove('variables')
+            query['variables'] = descriptor['variables']
+
+        mt = self.datacube.index.metadata_types.get_by_name('eo')  # TODO: ???
+        known_fields = [field_name for field_name, field in mt.dataset_fields.items()
+                        if not isinstance(field, RangeDocField)]
+        found_fields = [key for key in remaining_keys if key in known_fields]
+        for key in found_fields:
+            remaining_keys.remove(key)
+            query['search'][key] = descriptor[key]
+
+        # for key in remaining_keys:
+        #     if key.lower() in ['x', 'lon', 'long', 'longitude', 'projection_x_coordinate']:
+
+
+        return query
+
 
 
 def _check_intersect(a, b):
