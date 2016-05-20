@@ -491,6 +491,7 @@ class GeoBox(object):
     """
 
     def __init__(self, width, height, affine, crs):
+        assert height > 0 and width > 0
         self.width = width
         self.height = height
         self.affine = affine
@@ -531,9 +532,9 @@ class GeoBox(object):
         bounding_box = geopolygon.boundingbox
         left, top = float(bounding_box.left), float(bounding_box.top)
         if align:
-            left = math.floor(left / resolution[0]) * resolution[0]
-            top = math.floor(top / resolution[1]) * resolution[1]
-        affine = (Affine.translation(left, top) * Affine.scale(resolution[0], resolution[1]))
+            left = math.floor(left / resolution[1]) * resolution[1]
+            top = math.floor(top / resolution[0]) * resolution[0]
+        affine = (Affine.translation(left, top) * Affine.scale(resolution[1], resolution[0]))
         right, bottom = float(bounding_box.right), float(bounding_box.bottom)
         width, height = ~affine * (right, bottom)
         if align:
