@@ -335,7 +335,8 @@ class API(object):
         else:
             self.datacube = Datacube(app='Datacube-API')
 
-    def get_descriptor_for_dataset(self, dataset_type, datasets, group_func, geopolygon=None):
+    def get_descriptor_for_dataset(self, dataset_type, datasets, group_func, geopolygon=None,
+                                   include_storage_units=True):
         dataset_descriptor = {}
         irregular_dims = ['time', 't', 'T']  # TODO: get irregular dims from dataset_type
 
@@ -354,9 +355,11 @@ class API(object):
         dataset_descriptor['irregular_indices'] = {}
 
         #resolution = [dataset_type.grid_spec.resolution['resolution'][dim] for dim in dataset_type.spatial_dimensions]
-        geobox = GeoBox.from_geopolygon(geopolygon.to_crs(dataset_type.crs), dataset_type.grid_spec.resolution)
+
+        geobox = GeoBox.from_geopolygon(geopolygon.to_crs(dataset_type.grid_spec.crs),
+                                        dataset_type.grid_spec.resolution)
         dims = dataset_type.dimensions
-        spatial_dims = dataset_type.spatial_dimensions
+        spatial_dims = dataset_type.grid_spec.dimensions
         dataset_descriptor['dims'] = dims
         for dim in dims:
             if dim in spatial_dims:
@@ -388,7 +391,7 @@ class API(object):
             data_vars[k] = var_desc
         return data_vars
 
-    def get_descriptor(self, descriptor_request=None):
+    def get_descriptor(self, descriptor_request=None, include_storage_units=True):
         if descriptor_request is None:
             descriptor_request = {}
         search_terms, geopolygon = _convert_descriptor_request_to_search_query(descriptor_request)
@@ -641,7 +644,7 @@ def _get_bounds(datasets, dataset_type):
     right = max([d.bounds.right for d in datasets])
     top = max([d.bounds.top for d in datasets])
     bottom = min([d.bounds.bottom for d in datasets])
-    return GeoPolygon.from_boundingbox(BoundingBox(left, bottom, right, top), dataset_type.crs)
+    return GeoPolygon.from_boundingbox(BoundingBox(left, bottom, right, top), dataset_type.grid_spec.crs)
 
 
 def _convert_descriptor_request_to_search_query(descriptor_request):
