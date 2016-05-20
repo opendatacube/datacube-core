@@ -238,6 +238,11 @@ class DatasetType(object):
         return self.definition.get('measurements', {})
 
     @property
+    def dimensions(self):
+        assert self.metadata_type.name == 'eo'
+        return ('time', ) + self.grid_spec.dimensions
+
+    @property
     def grid_spec(self):
         if 'storage' not in self.definition:
             return None
