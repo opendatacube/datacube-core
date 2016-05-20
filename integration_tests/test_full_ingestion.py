@@ -137,8 +137,10 @@ def check_global_attributes(nco, attrs):
 
 def check_dataset_metadata_in_storage_unit(nco, dataset_dir):
     assert len(nco.variables['dataset']) == 1  # 1 time slice
-    stored_metadata = netCDF4.chartostring(nco.variables['dataset'][0])
-    stored_metadata = str(np.char.decode(stored_metadata))
+    stored_metadata = nco.variables['dataset'][0]
+    if not isinstance(stored_metadata, str):
+        stored_metadata = netCDF4.chartostring(stored_metadata)
+        stored_metadata = str(np.char.decode(stored_metadata))
     ds_filename = dataset_dir / 'agdc-metadata.yaml'
     with ds_filename.open() as f:
         orig_metadata = f.read()
