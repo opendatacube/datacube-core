@@ -360,6 +360,12 @@ class GeoPolygon(object):
         transform = osr.CoordinateTransformation(self.crs._crs, crs._crs) # pylint: disable=protected-access
         return GeoPolygon([p[:2] for p in transform.TransformPoints(self.points)], crs)
 
+    def __str__(self):
+        return "GeoPolygon(points=%s, crs=%s)" % (self.points, self.crs)
+
+    def __repr__(self):
+        return self.__str__()
+
 
 class FlagsDefinition(object):
     pass
@@ -470,6 +476,13 @@ class GridSpec(object):
     @property
     def tile_resolution(self):
         return [int(abs(ts / res)) for ts, res in zip(self.tile_size, self.resolution)]
+
+    def __str__(self):
+        return "GridSpec(crs=%s, tile_size=%s, resolution=%s)" % (self.crs, self.tile_size, self.resolution)
+
+    def __repr__(self):
+        return self.__str__()
+
 
 class GeoBox(object):
     """
