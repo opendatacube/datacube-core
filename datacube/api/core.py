@@ -197,23 +197,23 @@ class Datacube(object):
 
         result = xarray.Dataset(attrs={'extent': geobox.extent, 'crs': geobox.crs})
         result['time'] = ('time', numpy.array([v.key for v in groups]), {'units': 'seconds since 1970-01-01 00:00:00'})
-        for coord_name, coord in geobox.coordinates.items():
-            result[coord_name] = (coord_name, coord.labels, {'units': coord.units})
+        for name, coord in geobox.coordinates.items():
+            result[name] = (name, coord.labels, {'units': coord.units})
 
-        for measurement_name, stuffs in measurements.items():
+        for name, measurement in measurements.items():
             num_coordinate_labels = len(groups)
-            data = numpy.empty((num_coordinate_labels,) + geobox.shape, dtype=stuffs['dtype'])
+            data = numpy.empty((num_coordinate_labels,) + geobox.shape, dtype=measurement['dtype'])
             for index, (_, sources) in enumerate(groups):
-                fuse_sources([DatasetSource(dataset, measurement_name) for dataset in sources],
+                fuse_sources([DatasetSource(dataset, name) for dataset in sources],
                              data[index],  # Output goes here
                              geobox.affine,
                              geobox.crs,
-                             stuffs.get('nodata'),
+                             measurement.get('nodata'),
                              resampling=RESAMPLING.nearest,
                              fuse_func=fuse_func)
-            result[measurement_name] = (('time',) + geobox.dimensions, data, {
-                'nodata': stuffs.get('nodata'),
-                'units': stuffs.get('units', '1')
+            result[name] = (('time',) + geobox.dimensions, data, {
+                'nodata': measurement.get('nodata'),
+                'units': measurement.get('units', '1')
             })
 
         extra_md = numpy.empty(len(groups), dtype=object)
