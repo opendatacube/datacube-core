@@ -490,10 +490,10 @@ class GeoBox(object):
 
     >>> from affine import Affine
     >>> t = GeoBox(4000, 4000, Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0), CRS('EPSG:4326'))
-    >>> t.coordinate_labels['latitude']
+    >>> t.coordinates['latitude'].labels
     array([-29.000125, -29.000375, -29.000625, ..., -29.999375, -29.999625,
            -29.999875])
-    >>> t.coordinate_labels['longitude']
+    >>> t.coordinates['longitude'].labels
     array([ 151.000125,  151.000375,  151.000625, ...,  151.999375,
             151.999625,  151.999875])
     >>> t.geographic_extent.points
@@ -588,36 +588,22 @@ class GeoBox(object):
 
     @property
     def coordinates(self):
-        xs = numpy.array([0, self.width - 1]) * self.affine.a + self.affine.c + self.affine.a / 2
-        ys = numpy.array([0, self.height - 1]) * self.affine.e + self.affine.f + self.affine.e / 2
+        coord_cls = namedtuple('Coordinate', ('labels', 'units'))  # TODO: replace Coordinate with this
 
-        if self.crs.geographic:
-            return {
-                'latitude': Coordinate(ys.dtype, ys[0], ys[-1], self.height, 'degrees_north'),
-                'longitude': Coordinate(xs.dtype, xs[0], xs[-1], self.width, 'degrees_east')
-            }
-
-        elif self.crs.projected:
-            units = self.crs['UNIT']
-            return {
-                'x': Coordinate(xs.dtype, xs[0], xs[-1], self.width, units),
-                'y': Coordinate(ys.dtype, ys[0], ys[-1], self.height, units)
-            }
-
-    @property
-    def coordinate_labels(self):
         xs = numpy.arange(self.width) * self.affine.a + self.affine.c + self.affine.a / 2
         ys = numpy.arange(self.height) * self.affine.e + self.affine.f + self.affine.e / 2
 
         if self.crs.geographic:
             return {
-                'latitude': ys,
-                'longitude': xs
+                'latitude': coord_cls(ys, 'degrees_north'),
+                'longitude': coord_cls(xs, 'degrees_east')
             }
+
         elif self.crs.projected:
+            units = self.crs['UNIT']
             return {
-                'x': xs,
-                'y': ys
+                'x': coord_cls(xs, units),
+                'y': coord_cls(ys, units)
             }
 
     @property

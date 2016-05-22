@@ -2,13 +2,11 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from itertools import groupby, chain
-from collections import defaultdict, OrderedDict, namedtuple
+from collections import defaultdict, namedtuple
 
 import pandas
 import numpy
 import xarray
-import rasterio
-import rasterio.crs
 from rasterio.coords import BoundingBox
 from osgeo import ogr
 
@@ -18,7 +16,6 @@ from ..index.postgres._fields import RangeDocField  # pylint: disable=protected-
 from ..model import GeoPolygon, GeoBox, Range, CRS
 from ..model import _DocReader as DocReader
 from ..storage.storage import DatasetSource, fuse_sources, RESAMPLING
-from ..storage import netcdf_writer
 
 _LOG = logging.getLogger(__name__)
 
@@ -200,8 +197,8 @@ class Datacube(object):
 
         result = xarray.Dataset(attrs={'extent': geobox.extent, 'crs': geobox.crs})
         result['time'] = ('time', numpy.array([v.key for v in groups]), {'units': 'seconds since 1970-01-01 00:00:00'})
-        for coord_name, v in geobox.coordinate_labels.items():
-            result[coord_name] = (coord_name, v, {'units': geobox.coordinates[coord_name].units})
+        for coord_name, coord in geobox.coordinates.items():
+            result[coord_name] = (coord_name, coord.labels, {'units': coord.units})
 
         for measurement_name, stuffs in measurements.items():
             num_coordinate_labels = len(groups)
@@ -233,8 +230,8 @@ class Datacube(object):
         time_coord = xarray.Coordinate('time', numpy.array([v.key for v in groups]),
                                        attrs={'units': 'seconds since 1970-01-01 00:00:00'})
         coords = [time_coord]
-        for dim, v in geobox.coordinate_labels.items():
-            coords.append(xarray.Coordinate(dim, v, attrs={'units': geobox.coordinates[dim].units}))
+        for dim, coord in geobox.coordinate_labels.items():
+            coords.append(xarray.Coordinate(dim, coord.labels, attrs={'units': coord.units}))
 
         data = numpy.empty((len(groups),) + geobox.shape, dtype=measurement['dtype'])
         for index, (_, sources) in enumerate(groups):
@@ -361,7 +358,7 @@ class API(object):
         dataset_descriptor['dims'] = dims
         for dim in dims:
             if dim in spatial_dims:
-                coords = geobox.coordinate_labels[dim]
+                coords = geobox.coordinates[dim].labels
             elif dim in irregular_dims:
                 # groups will define irregular_dims
                 coords = [group.key for group in groups]
@@ -506,7 +503,7 @@ class API(object):
         }
         for dim in dims:
             if dim in dataset_type.spatial_dimensions:
-                dt_data['indicies'].append(geobox.coordinate_labels[dim])
+                dt_data['indicies'].append(geobox.coordinates[dim].labels)
                 dim_i = dataset_type.spatial_dimensions.index(dim)
                 dt_data['element_sizes'].append(dataset_type.grid_spec.resolution[dim_i])
                 dt_data['coordinate_reference_systems'].append(geobox.crs_str)

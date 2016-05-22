@@ -34,8 +34,8 @@ def test_write_dataset_to_netcdf(tmpnetcdf_filename):
     affine = Affine.scale(0.1, 0.1)*Affine.translation(20, 30)
     geobox = GeoBox(100, 100, affine, CRS(GEO_PROJ))
     dataset = xarray.Dataset(attrs={'extent': geobox.extent, 'crs': geobox.crs})
-    for name, v in geobox.coordinate_labels.items():
-        dataset[name] = (name, v, {'units': geobox.coordinates[name].units})
+    for name, coord in geobox.coordinates.items():
+        dataset[name] = (name, coord.labels, {'units': coord.units})
 
     dataset['B10'] = (geobox.dimensions, numpy.arange(10000).reshape(geobox.shape), {'nodata': 0, 'units': '1'})
 

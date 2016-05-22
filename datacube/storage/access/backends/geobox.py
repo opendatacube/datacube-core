@@ -18,6 +18,7 @@ from __future__ import absolute_import, division, print_function
 from functools import reduce as reduce_
 import numpy
 
+from datacube.model import Coordinate
 from ..core import StorageUnitBase
 
 
@@ -25,7 +26,11 @@ class GeoBoxStorageUnit(StorageUnitBase):
     """ Fake Storage Unit for testing """
     def __init__(self, geobox, coordinates, variables):
         self.geobox = geobox
-        self.coordinates = geobox.coordinates.copy()
+        self.coordinates = {name: Coordinate(coord.labels.dtype,
+                                             coord.labels[0],
+                                             coord.labels[-1],
+                                             coord.labels.size,
+                                             coord.units) for name, coord in geobox.coordinates.items()}
         self.coordinates.update(coordinates)
         self.variables = variables
 
@@ -42,8 +47,8 @@ class GeoBoxStorageUnit(StorageUnitBase):
         return self.geobox.extent
 
     def _get_coord(self, name):
-        if name in self.geobox.coordinate_labels:
-            return self.geobox.coordinate_labels[name]
+        if name in self.geobox.coordinates:
+            return self.geobox.coordinates[name].labels
         else:
             coord = self.coordinates[name]
             data = numpy.linspace(coord.begin, coord.end, coord.length).astype(coord.dtype)
