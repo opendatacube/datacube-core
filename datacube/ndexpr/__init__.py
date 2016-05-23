@@ -406,6 +406,7 @@ class NDexpr(object):
             fn_args = ()
             for i in range(0, num_args):
                 fn_args += self.evaluate_stack(s),
+            fn_args = fn_args[::-1]
 
             val = self.user_functions[op](*fn_args)
             return val
