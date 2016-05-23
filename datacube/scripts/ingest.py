@@ -114,7 +114,7 @@ def generate_dataset(data, prod_info, uri):
         datasets.append(dataset)
     nudata['dataset'] = (['time'],
                          numpy.array([yaml.dump(dataset.metadata_doc, Dumper=SafeDumper, encoding='utf-8')
-                                      for dataset in datasets], dtype=str))
+                                      for dataset in datasets], dtype='S'))
     return nudata, datasets
 
 

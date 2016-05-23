@@ -112,10 +112,6 @@ def check_data_shape(nco):
 
 
 def check_cf_compliance(dataset):
-    if not six.PY2:
-        warnings.warn('compliance_checker non-functional in Python 3. Skipping NetCDF-CF Compliance Checks')
-        return
-
     try:
         from compliance_checker.runner import CheckSuite, ComplianceChecker
     except ImportError:

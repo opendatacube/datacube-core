@@ -97,6 +97,7 @@ def create_variable(nco, name, var, **kwargs):
         kwargs['chunksizes'] = [min(chunksize, maxsize) if chunksize and maxsize else chunksize
                                 for maxsize, chunksize in zip(maxsizes, kwargs['chunksizes'])]
 
+    assert var.dtype.kind != 'U'  # Creates Non CF-Compliant NetCDF File
     if var.dtype.kind == 'S' and var.dtype.itemsize > 1:
         nco.createDimension(name + '_nchar', size=var.dtype.itemsize)
         data_var = nco.createVariable(varname=name,
