@@ -8,13 +8,11 @@ from __future__ import absolute_import
 import base64
 import logging
 import os
-import sys
 from pathlib import Path
 
 import click
 from click import echo
 from sqlalchemy.exc import OperationalError
-import yaml
 
 from datacube.index import index_connect
 from datacube.index.postgres._api import IndexSetupError

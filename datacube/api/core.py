@@ -372,6 +372,8 @@ class API(object):
         if dataset_type.measurements:
             dataset_descriptor['variables'] = self.get_descriptor_for_measurements(dataset_type)
 
+        dataset_descriptor['groups'] = (dataset_type, groups)
+
         if include_storage_units:
 
             dataset_descriptor['storage_units'] = self._compute_storage_units(dataset_type, datasets)
@@ -480,7 +482,8 @@ class API(object):
         datasets = list(chain.from_iterable(g.datasets for g in groups))
         if not geopolygon:
             geopolygon = _get_bounds(datasets, dataset_type)
-        geobox = GeoBox.from_geopolygon(geopolygon.to_crs(dataset_type.crs), dataset_type.resolution)
+        geobox = GeoBox.from_geopolygon(geopolygon.to_crs(dataset_type.grid_spec.crs),
+                                        dataset_type.grid_spec.resolution)
         if slices:
             geo_slices = [slices.get(dim, slice(None)) for dim in geobox.dimensions]
             geobox = geobox[geo_slices]
@@ -630,8 +633,8 @@ def _query_to_geopolygon(**kwargs):
         if key in ['longitude', 'lon', 'x']:
             input_coords['left'], input_coords['right'] = _value_to_range(value)
         if key in ['crs', 'coordinate_reference_system']:
-            input_crs = value
-    input_crs = input_crs or 'EPSG:4326'
+            input_crs = CRS(value)
+    input_crs = input_crs or CRS('EPSG:4326')
     if any(v is not None for v in input_coords.values()):
         points = [(input_coords['left'], input_coords['top']),
                   (input_coords['right'], input_coords['top']),

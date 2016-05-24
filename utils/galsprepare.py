@@ -182,6 +182,9 @@ def prepare_datasets(nbar_path, pq_path=None, fc_path=None):
 def main(datasets):
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
 
+    if not datasets:
+        logging.info('Please provide the path to some datasets.')
+
     for dataset in datasets:
         path = Path(dataset)
 
