@@ -166,7 +166,7 @@ class Datacube(object):
     #         response[type_name] = xarray.Dataset(data_vars, attrs=attrs)
     #     return response
 
-    def product_observations(self, type_name, geopolygon=None, group_func=None, **kwargs):
+    def product_observations(self, type_name, geopolygon=None, **kwargs):
         if geopolygon:
             geo_bb = geopolygon.to_crs(CRS('EPSG:4326')).boundingbox
             kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
@@ -178,49 +178,49 @@ class Datacube(object):
             datasets = [dataset for dataset in datasets
                         if _check_intersect(geopolygon, dataset.extent.to_crs(geopolygon.crs))]
             # Check against the bounding box of the original scene, can throw away some portions
-        group_func = _get_group_by_func(group_func)
-        datasets.sort(key=group_func)
 
-        groups = [Group(key, list(group)) for key, group in groupby(datasets, group_func)]
-        # Usually group by time, at the moment it's just time
-        # groups is a tuple of (time, list(datasets))
-
-        return groups
+        return datasets
 
     @staticmethod
-    def product_data(groups, geobox, measurements, fuse_func=None):
+    def product_sources(datasets, group_func, dimension, units):
+        datasets.sort(key=group_func)
+        groups = [Group(key, tuple(group)) for key, group in groupby(datasets, group_func)]
+
+        data = numpy.empty(len(groups), dtype=object)
+        for index, (_, sources) in enumerate(groups):
+            data[index] = sources
+        coord = numpy.array([v.key for v in groups])
+        sources = xarray.DataArray(data, dims=[dimension], coords=[coord])
+        sources[dimension].attrs['units'] = units
+        return sources
+
+    @staticmethod
+    def product_data(sources, geobox, measurements, fuse_func=None):
         # GeoPolygon defines a boundingbox with a CRS
         # Geobox is a GeoPolygon with a resolution
         # Geobox has named dimensions, eg lat/lon, x/y
 
-        assert groups
-
         result = xarray.Dataset(attrs={'extent': geobox.extent, 'crs': geobox.crs})
-        result['time'] = ('time', numpy.array([v.key for v in groups]), {'units': 'seconds since 1970-01-01 00:00:00'})
+        for name, coord in sources.coords.items():
+            result[name] = coord
         for name, coord in geobox.coordinates.items():
             result[name] = (name, coord.labels, {'units': coord.units})
 
         for name, measurement in measurements.items():
-            num_coordinate_labels = len(groups)
-            data = numpy.empty((num_coordinate_labels,) + geobox.shape, dtype=measurement['dtype'])
-            for index, (_, sources) in enumerate(groups):
-                fuse_sources([DatasetSource(dataset, name) for dataset in sources],
-                             data[index],  # Output goes here
+            data = numpy.empty(sources.shape + geobox.shape, dtype=measurement['dtype'])
+
+            for index, datasets in numpy.ndenumerate(sources.values):
+                fuse_sources([DatasetSource(dataset, name) for dataset in datasets],
+                             data[index, ...],  # Output goes here
                              geobox.affine,
                              geobox.crs,
                              measurement.get('nodata'),
                              resampling=RESAMPLING.nearest,
                              fuse_func=fuse_func)
-            result[name] = (('time',) + geobox.dimensions, data, {
+            result[name] = (sources.dims + geobox.dimensions, data, {
                 'nodata': measurement.get('nodata'),
                 'units': measurement.get('units', '1')
             })
-
-        extra_md = numpy.empty(len(groups), dtype=object)
-        for index, (_, sources) in enumerate(groups):
-            extra_md[index] = sources
-        result['sources'] = (['time'], extra_md)
-
         return result
 
     @staticmethod
