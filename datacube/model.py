@@ -24,8 +24,6 @@ from datacube.utils import datetime_to_seconds_since_1970
 _LOG = logging.getLogger(__name__)
 
 Range = namedtuple('Range', ('begin', 'end'))
-Coordinate = namedtuple('Coordinate', ('dtype', 'begin', 'end', 'length', 'units'))
-CoordinateValue = namedtuple('CoordinateValue', ('dimension_name', 'value', 'dtype', 'units'))
 Variable = namedtuple('Variable', ('dtype', 'nodata', 'dimensions', 'units'))
 
 NETCDF_VAR_OPTIONS = {'zlib', 'complevel', 'shuffle', 'fletcher32', 'contiguous'}
@@ -690,10 +688,3 @@ class _DocReader(object):
                 )
             )
         return _set_doc_offset(offset, self._doc, val)
-
-
-def time_coordinate_value(time):
-    return CoordinateValue(dimension_name='time',
-                           value=datetime_to_seconds_since_1970(time),
-                           dtype=numpy.dtype(numpy.float64),
-                           units='seconds since 1970-01-01 00:00:00')
