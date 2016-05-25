@@ -1,0 +1,117 @@
+source_type: ls8_nbart_scene
+output_type: ls8_nbart_albers
+
+description: Landsat 8 NBART 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
+
+location: 'c:\datacube\'
+file_path_template: 'LS8_OLI_NBART/LS8_OLI_NBART_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+global_attributes:
+  title: Australian Geoscience Data Cube Landsat Nadir BRDF and Terrain Illumination Adjusted Reflectance Correction 
+  summary: Landsat 8 Operational Land Imager Analysis Ready data prepared by Geoscience Australia on behalf of the Australian Government.
+  source: Surface reflectance from NBART v2.0
+  history: This data represents a tile and reprojection of Landsat Nadir BRDF and Terrain Illumination Adjusted Reflectance scene data. The Australian Reflectance Grid (ARG) data is derived from Landsat data provided by the United States Geological Survey (USGS). The data is acquired by Geoscience Australia from its ground station in Alice Springs, or directly from the USGS. The data are processed using the National Computational Infrastructure (NCI) at the Australian National University (ANU). The data is processed to Level 1 Standard Terrain Corrected Imagery and then to Optical Surface Reflectance using the USGS Landsat Product Generation System and GA's Nadir BRDF Adjusted Reflectance (NBAR) algorithm.
+  institution: GA
+  instrument: OLI
+  cdm_data_type: Grid
+  keywords: AU/GA,NASA/GSFC/SED/ESD/LANDSAT,REFLECTANCE,ETM+,TM,OLI,EARTH SCIENCE
+  keywords_vocabulary: GCMD
+  platform: LANDSAT-8
+  processing_level: L2
+  product_version: '2.0.0'
+  product_suite: Australian Reflectance Grid 25m (ARG25)
+  project: AGDC
+  publisher_email: Australian-Geoscience-Data-Cube@ga.gov.au
+  publisher_name: AGDC Programme Director
+  publisher_url: www.ga.gov.au
+  coverage_content_type: physicalMeasurement
+  references:  http://dx.doi.org/10.4225/25/5487CC0D4F40B, http://dx.doi.org/10.1109/JSTARS.2010.2042281
+  license: https://creativecommons.org/licenses/by/4.0/
+  naming_authority: au.gov.ga
+  acknowledgment: Landsat data is provided by the United States Geological Survey (USGS) through direct reception of the data at Geoscience Australia's satellite reception facility or download.
+
+ingestion_bounds: # Specified in Storage CRS coordinates. Will expand to tile boundaries.
+  left: -2700000
+  bottom: -5100000
+  right: 2600000
+  top: -1270000
+
+storage:
+  driver: NetCDF CF
+
+  crs: EPSG:3577
+  tile_size:
+          x: 100000.0
+          y: 100000.0
+  resolution:
+          x: 25
+          y: -25
+  chunking:
+      x: 200
+      y: 200
+      time: 1
+  dimension_order: ['time', 'y', 'x']
+
+measurements:
+  coastal_aerosol:
+      dtype: int16
+      nodata: -999
+      resampling_method: nearest
+      src_varname: '1'
+      zlib: True
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 0.43-0.45 microns (Coastal Aerosol)"
+          alias: "band_1"
+  blue:
+      dtype: int16
+      nodata: -999
+      resampling_method: nearest
+      src_varname: '2'
+      zlib: True
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 0.45-0.52 microns (Blue)"
+          alias: "band_2"
+  green:
+      dtype: int16
+      nodata: -999
+      resampling_method: nearest
+      src_varname: '3'
+      zlib: True
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 0.52-0.60 microns (Green)"
+          alias: "band_3"
+  red:
+      dtype: int16
+      nodata: -999
+      resampling_method: nearest
+      src_varname: '4'
+      zlib: True
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 0.63-0.69 microns (Red)"
+          alias: "band_4"
+  nir:
+      dtype: int16
+      nodata: -999
+      resampling_method: nearest
+      src_varname: '5'
+      zlib: True
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 0.76-0.90 microns (Near Infrared)"
+          alias: "band_5"
+  swir1:
+      dtype: int16
+      nodata: -999
+      resampling_method: nearest
+      src_varname: '6'
+      zlib: True
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 1.55-1.75 microns (Short-wave Infrared)"
+          alias: "band_6"
+  swir2:
+      dtype: int16
+      nodata: -999
+      resampling_method: nearest
+      src_varname: '7'
+      zlib: True
+      attrs:
+          long_name: "Nadir BRDF Adjusted Reflectance 2.08-2.35 microns (Short-wave Infrared)"
+          alias: "band_7"
