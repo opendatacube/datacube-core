@@ -19,7 +19,7 @@ storage:
     dimension_order: ["time", "latitude", "longitude"]
 
 measurements:
-    elevation:
+      - name: elevation
         dtype: float32
         nodata: .nan
         units: 'metre'

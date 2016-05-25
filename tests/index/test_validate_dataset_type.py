@@ -23,7 +23,7 @@ only_mandatory_fields = {
     {},
     {'storage': {'crs': 'EPSG:3577'}},
     # With the optional properties
-    {'measurements': {'band_70': {'dtype': 'int16', 'nodata': -999, 'units': '1'}}}
+    {'measurements': [{'name': 'band_70', 'dtype': 'int16', 'nodata': -999, 'units': '1'}]}
 ])
 def test_accepts_valid_docs(valid_dataset_type_update):
     doc = deepcopy(only_mandatory_fields)
@@ -64,12 +64,14 @@ def test_rejects_invalid_docs(invalid_dataset_type_update):
 
 @pytest.mark.parametrize("valid_dataset_type_measurement", [
     {
+        'name': '1',
         'dtype': 'int16',
         'units': '1',
         'nodata': -999
     },
     # With the optional properties
     {
+        'name': 'red',
         'nodata': -999,
         'units': '1',
         'dtype': 'int16',
@@ -78,21 +80,23 @@ def test_rejects_invalid_docs(invalid_dataset_type_update):
 ])
 def test_accepts_valid_measurements(valid_dataset_type_measurement):
     mapping = deepcopy(only_mandatory_fields)
-    mapping['measurements'] = {'10': valid_dataset_type_measurement}
+    mapping['measurements'] = [valid_dataset_type_measurement]
     # Should have no errors.
     _ensure_valid(mapping)
 
 
 # Changes to the above dict that should render it invalid.
 @pytest.mark.parametrize("invalid_dataset_type_measurement", [
+    # no name
+    {'nodata': -999},
     # nodata must be numeric
-    {'nodata': '-999'},
+    {'name': 'red', 'nodata': '-999'},
     # Limited dtype options
-    {'dtype': 'asdf'},
-    {'dtype': 'intt13'},
-    {'dtype': 13},
+    {'name': 'red', 'dtype': 'asdf'},
+    {'name': 'red', 'dtype': 'intt13'},
+    {'name': 'red', 'dtype': 13},
     # Unknown property
-    {'asdf': 'asdf'},
+    {'name': 'red', 'asdf': 'asdf'},
 ])
 def test_rejects_invalid_measurements(invalid_dataset_type_measurement):
     mapping = deepcopy(only_mandatory_fields)

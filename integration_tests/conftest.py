@@ -248,13 +248,9 @@ def alter_dataset_type_for_testing(type_):
 
 def limit_num_measurements(storage_type):
     measurements = storage_type['measurements']
-    if len(measurements) <= TEST_STORAGE_NUM_MEASUREMENTS:
-        return storage_type
-    else:
-        measurements_to_delete = sorted(measurements)[TEST_STORAGE_NUM_MEASUREMENTS:]
-        for key in measurements_to_delete:
-            del measurements[key]
-        return storage_type
+    if len(measurements) > TEST_STORAGE_NUM_MEASUREMENTS:
+        storage_type['measurements'] = measurements[:TEST_STORAGE_NUM_MEASUREMENTS]
+    return storage_type
 
 
 def use_test_storage(storage_type):

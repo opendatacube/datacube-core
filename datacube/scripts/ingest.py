@@ -198,20 +198,19 @@ def do_work(tasks, work_func, index, executor):
 
 def morph_dataset_type(source_type, config):
     output_type = DatasetType(source_type.metadata_type, source_type.definition.copy())
-    output_type.definition['metadata'] = source_type.metadata.copy()
     output_type.definition['name'] = config['output_type']
     output_type.definition['description'] = config['description']
     output_type.definition['storage'] = config['storage']
+
+    output_type.definition['metadata'] = source_type.metadata.copy()
     output_type.metadata['format'] = {'name': 'NetCDF'}
 
     def merge_measurement(measurement, spec):
-        measurement.update({k: spec.get(k, measurement[k]) for k in ('nodata', 'dtype')})
+        measurement.update({k: spec.get(k, measurement[k]) for k in ('name', 'nodata', 'dtype')})
         return measurement
 
-    output_type.definition['measurements'] = {
-        name: merge_measurement(output_type.definition['measurements'][spec['src_varname']], spec)
-        for name, spec in config['measurements'].items()
-    }
+    output_type.definition['measurements'] = [merge_measurement(output_type.measurements[spec['src_varname']].copy(),
+                                                                spec) for spec in config['measurements']]
     return output_type
 
 
@@ -220,7 +219,8 @@ def get_variable_params(config):
     chunking = [chunking[dim] for dim in config['storage']['dimension_order']]
 
     variable_params = {}
-    for varname, mapping in config['measurements'].items():
+    for mapping in config['measurements']:
+        varname = mapping['name']
         variable_params[varname] = {k: v for k, v in mapping.items() if k in {'zlib',
                                                                               'complevel',
                                                                               'shuffle',
@@ -232,7 +232,7 @@ def get_variable_params(config):
 
 
 def get_namemap(config):
-    return {spec['src_varname']: name for name, spec in config['measurements'].items()}
+    return {spec['src_varname']: spec['name'] for spec in config['measurements']}
 
 
 @cli.command('ingest', help="Ingest datasets")

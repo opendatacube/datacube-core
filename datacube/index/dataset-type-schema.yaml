@@ -15,13 +15,12 @@ properties:
     storage:
         "$ref": "#/definitions/storage"
     measurements:
-        type: object
+        type: array
         additionalProperties: false
         description: Describes how data is stored
         # Each property is a measurement. Ensure they are alphanumeric+underscores.
-        patternProperties:
-            '^\w+$':
-                "$ref": "#/definitions/measurement"
+        items:
+            "$ref": "#/definitions/measurement"
 
 required:
     - name
@@ -37,12 +36,13 @@ patternProperties:
 
 definitions:
     dtype:
-        enum: ["float16", "float32", "float64",
-               "int8", "int16", "int32", "int64",
-               "uint8", "uint16", "uint32", "uint64"]
+        enum: ["float16", "float32", "float64", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"]
     measurement:
         type: object
         properties:
+            name:
+                type: string
+                pattern: '^\w+$'
             dtype:
                 "$ref": "#/definitions/dtype"
             nodata:
@@ -53,7 +53,7 @@ definitions:
                 description: A list of string aliases
                 type: array
                 items:
-                  type: string
+                    type: string
             spectral_definition:
                 description: A structured measured relative spectral response with sample intervals
                 type: object
@@ -88,6 +88,7 @@ definitions:
                         description: A string describing this flag
                         type: string
         required:
+          - name
           - dtype
           - nodata
           - units

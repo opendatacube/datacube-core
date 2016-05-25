@@ -8,7 +8,7 @@ import math
 import codecs
 import logging
 import os
-from collections import namedtuple, defaultdict
+from collections import namedtuple, OrderedDict
 
 import dateutil.parser
 import numpy
@@ -235,7 +235,7 @@ class DatasetType(object):
 
     @property
     def measurements(self):
-        return self.definition.get('measurements', {})
+        return OrderedDict((m['name'], m) for m in self.definition.get('measurements', []))
 
     @property
     def dimensions(self):
