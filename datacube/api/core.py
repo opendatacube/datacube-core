@@ -211,7 +211,7 @@ class Datacube(object):
 
             for index, datasets in numpy.ndenumerate(sources.values):
                 fuse_sources([DatasetSource(dataset, name) for dataset in datasets],
-                             data[index, ...],  # Output goes here
+                             data[index],  # Output goes here
                              geobox.affine,
                              geobox.crs,
                              measurement.get('nodata'),

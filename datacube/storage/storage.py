@@ -82,6 +82,7 @@ def _calc_offsets(off, src_size, dst_size):
 
 def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata,
                  resampling=RESAMPLING.nearest, fuse_func=None):
+    assert len(destination.shape) == 2
 
     def no_scale(affine, eps=0.01):
         return abs(affine.a - 1.0) < eps and abs(affine.e - 1.0) < eps
