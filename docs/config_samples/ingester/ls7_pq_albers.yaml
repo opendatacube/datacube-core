@@ -53,7 +53,7 @@ storage:
   dimension_order: ['time', 'y', 'x']
 
 measurements:
-  'pixelquality':
+    - name: pixelquality'
       dtype: int16
       nodata: 0
       resampling_method: nearest

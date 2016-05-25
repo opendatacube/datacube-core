@@ -52,7 +52,7 @@ storage:
   dimension_order: ['time', 'y', 'x']
 
 measurements:
-  coastal_aerosol:
+    - name: coastal_aerosol
       dtype: int16
       nodata: -999
       resampling_method: nearest
@@ -61,7 +61,7 @@ measurements:
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.43-0.45 microns (Coastal Aerosol)"
           alias: "band_1"
-  blue:
+    - name: blue
       dtype: int16
       nodata: -999
       resampling_method: nearest
@@ -70,7 +70,7 @@ measurements:
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.45-0.52 microns (Blue)"
           alias: "band_2"
-  green:
+    - name: green
       dtype: int16
       nodata: -999
       resampling_method: nearest
@@ -79,7 +79,7 @@ measurements:
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.52-0.60 microns (Green)"
           alias: "band_3"
-  red:
+    - name: red
       dtype: int16
       nodata: -999
       resampling_method: nearest
@@ -88,7 +88,7 @@ measurements:
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.63-0.69 microns (Red)"
           alias: "band_4"
-  nir:
+    - name: nir
       dtype: int16
       nodata: -999
       resampling_method: nearest
@@ -97,7 +97,7 @@ measurements:
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 0.76-0.90 microns (Near Infrared)"
           alias: "band_5"
-  swir1:
+    - name: swir1
       dtype: int16
       nodata: -999
       resampling_method: nearest
@@ -106,7 +106,7 @@ measurements:
       attrs:
           long_name: "Nadir BRDF Adjusted Reflectance 1.55-1.75 microns (Short-wave Infrared)"
           alias: "band_6"
-  swir2:
+    - name: swir2
       dtype: int16
       nodata: -999
       resampling_method: nearest
