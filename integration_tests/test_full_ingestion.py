@@ -13,7 +13,7 @@ import yaml
 from click.testing import CliRunner
 from affine import Affine
 
-import datacube.scripts.datacube
+import datacube.scripts.cli_app
 from datacube.model import GeoBox, CRS
 from .conftest import EXAMPLE_LS5_DATASET_ID
 
@@ -51,7 +51,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset,
         ]
     )
     result = CliRunner().invoke(
-        datacube.scripts.datacube.cli,
+        datacube.scripts.cli_app.cli,
         opts,
         catch_exceptions=False
     )
@@ -71,7 +71,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset,
         ]
     )
     result = CliRunner().invoke(
-        datacube.scripts.datacube.cli,
+        datacube.scripts.cli_app.cli,
         opts,
         catch_exceptions=False
     )

@@ -11,7 +11,6 @@ setup(name='datacube',
                    'integration_tests', 'integration_tests.*')
       ),
       package_data={
-          'gdf_tests': ['gdf_default.conf'],
           '': ['*.yaml'],
       },
       scripts=[
@@ -59,7 +58,7 @@ setup(name='datacube',
               'datacube-ingest = datacube.scripts.run_ingest:cli',
               'datacube-config = datacube.scripts.config_tool:cli',
               'datacube-search = datacube.scripts.search_tool:cli',
-              'datacube = datacube.scripts.datacube:cli'
+              'datacube = datacube.scripts.cli_app:cli'
           ]
       },
       )

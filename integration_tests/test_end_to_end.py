@@ -7,7 +7,7 @@ import pytest
 from click.testing import CliRunner
 from pathlib import Path
 
-import datacube.scripts.datacube
+import datacube.scripts.cli_app
 import datacube.scripts.config_tool
 
 PROJECT_ROOT = Path(__file__).parents[1]
@@ -94,18 +94,18 @@ def test_end_to_end(global_integration_cli_args, index, testdata_dir):
                       global_integration_cli_args + ['-vv', 'type', 'add', str(LS5_DATASET_TYPES)])
 
     # Index the Datasets
-    run_click_command(datacube.scripts.datacube.cli,
+    run_click_command(datacube.scripts.cli_app.cli,
                       global_integration_cli_args +
                       ['-vv', 'index', '--match-rules', str(MATCH_RULES),
                        str(lbg_nbar), str(lbg_pq)])
 
     # Ingest NBAR
-    run_click_command(datacube.scripts.datacube.cli,
+    run_click_command(datacube.scripts.cli_app.cli,
                       global_integration_cli_args +
                       ['-vv', 'ingest', '-c', str(ls5_nbar_albers_ingest_config)])
 
     # Ingest PQ
-    run_click_command(datacube.scripts.datacube.cli,
+    run_click_command(datacube.scripts.cli_app.cli,
                       global_integration_cli_args +
                       ['-vv', 'ingest', '-c', str(ls5_pq_albers_ingest_config)])
 
