@@ -196,7 +196,7 @@ class DatasetSource(object):
         return idx
 
 
-def write_dataset_to_netcdf(access_unit, variable_params, filename):
+def write_dataset_to_netcdf(access_unit, global_attributes, variable_params, filename):
     if filename.exists():
         raise RuntimeError('Storage Unit already exists: %s' % filename)
 
@@ -227,15 +227,13 @@ def write_dataset_to_netcdf(access_unit, variable_params, filename):
         # Write data
         data_var[:] = netcdf_writer.netcdfy_data(variable.values)
 
-        # Write extra attributes
-#         for key, value in variable_attributes.get(name, {}).items():
-#             if key == 'flags_definition':
-#                 netcdf_writer.write_flag_definition(data_var, value)
-#             else:
-#                 setattr(data_var, key, value)
+        # TODO: 'flags_definition', 'spectral_definition'?
+
+        for key, value in variable_params.get(name, {}).get('attrs', {}).items():
+            setattr(data_var, key, value)
 
     # write global atrributes
-#     for key, value in global_attributes.items():
-#         setattr(nco, key, value)
+    for key, value in global_attributes.items():
+        setattr(nco, key, value)
 
     nco.close()

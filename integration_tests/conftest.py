@@ -177,7 +177,7 @@ def ls5_nbar_ingest_config(tmpdir):
     config_path = dataset_dir.join('ls5_nbar_ingest_config.yaml')
     with open(str(config_path), 'w') as stream:
         yaml.dump(config, stream)
-    return config_path
+    return config_path, config
 
 
 def create_empty_geotiff(path):

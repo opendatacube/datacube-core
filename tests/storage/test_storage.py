@@ -39,10 +39,16 @@ def test_write_dataset_to_netcdf(tmpnetcdf_filename):
 
     dataset['B10'] = (geobox.dimensions, numpy.arange(10000).reshape(geobox.shape), {'nodata': 0, 'units': '1'})
 
-    write_dataset_to_netcdf(dataset, {}, Path(tmpnetcdf_filename))
+    write_dataset_to_netcdf(dataset, {'foo': 'bar'}, {'B10': {'attrs': {'abc': 'xyz'}}}, Path(tmpnetcdf_filename))
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
         nco.set_auto_mask(False)
         assert 'B10' in nco.variables
         var = nco.variables['B10']
         assert (var[:] == dataset['B10'].values).all()
+
+        assert 'foo' in nco.ncattrs()
+        assert nco.getncattr('foo') == 'bar'
+
+        assert 'abc' in var.ncattrs()
+        assert var.getncattr('abc') == 'xyz'

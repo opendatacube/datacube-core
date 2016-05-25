@@ -84,7 +84,7 @@ def create_coordinate(nco, name, labels, units):
     return var
 
 
-def create_variable(nco, name, var, **kwargs):
+def create_variable(nco, name, var, attrs=None, **kwargs):
     """
     :param nco:
     :param name:
@@ -209,6 +209,8 @@ def create_grid_mapping_variable(nco, crs):
     xres, xoff = _get_resolution_and_offset(nco[coords[0]])
     yres, yoff = _get_resolution_and_offset(nco[coords[1]])
     crs_var.GeoTransform = [xoff, xres, 0.0, yoff, 0.0, yres]
+
+    # TODO: write_geographical_extents_attributes
 
     return crs_var
 

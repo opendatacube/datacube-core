@@ -61,13 +61,15 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset,
 
     ensure_dataset_is_indexed(index)
 
+    config_path, config = ls5_nbar_ingest_config
+
     opts = list(global_integration_cli_args)
     opts.extend(
         [
             '-vv',
             'ingest',
             '--config',
-            str(ls5_nbar_ingest_config)
+            str(config_path)
         ]
     )
     result = CliRunner().invoke(
@@ -88,7 +90,10 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset,
         check_grid_mapping(nco)
         check_cf_compliance(nco)
         check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset)
-        # TODO: check_global_attributes(nco, su.storage_type.global_attributes)
+        check_attributes(nco, config['global_attributes'])
+
+        name = config['measurements'][0]['name']
+        check_attributes(nco[name], config['measurements'][0]['attrs'])
     check_open_with_xray(ds_path)
     check_open_with_api(index)
 
@@ -126,9 +131,10 @@ def check_cf_compliance(dataset):
     assert cs.passtree(groups, limit=COMPLIANCE_CHECKER_NORMAL_LIMIT)
 
 
-def check_global_attributes(nco, attrs):
+def check_attributes(obj, attrs):
     for k, v in attrs.items():
-        assert nco.getncattr(k) == v
+        assert k in obj.ncattrs()
+        assert obj.getncattr(k) == v
 
 
 def check_dataset_metadata_in_storage_unit(nco, dataset_dir):

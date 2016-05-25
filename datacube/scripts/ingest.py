@@ -118,9 +118,9 @@ def generate_dataset(data, sources, prod_info, uri):
     return nudata, datasets
 
 
-def write_product(data, sources, output_prod_info, var_params, path):
+def write_product(data, sources, output_prod_info, global_attrs, var_params, path):
     nudata, nudatasets = generate_dataset(data, sources, output_prod_info, path.absolute().as_uri())
-    write_dataset_to_netcdf(nudata, var_params, path)
+    write_dataset_to_netcdf(nudata, global_attrs, var_params, path)
     return nudatasets
 
 
@@ -225,7 +225,8 @@ def get_variable_params(config):
                                                                               'complevel',
                                                                               'shuffle',
                                                                               'fletcher32',
-                                                                              'contiguous'}}
+                                                                              'contiguous',
+                                                                              'attrs'}}
         variable_params[varname]['chunksizes'] = chunking
 
     return variable_params
@@ -275,7 +276,8 @@ def ingest_cmd(index, config, dry_run, executor):
                                               start_time=to_datetime(sources.time.values[0]).strftime('%Y%m%d%H%M%S%f'),
                                               end_time=to_datetime(sources.time.values[-1]).strftime('%Y%m%d%H%M%S%f'))
         # TODO: algorithm params
-        nudatasets = write_product(nudata, sources, output_type, variable_params, Path(file_path))
+        nudatasets = write_product(nudata, sources, output_type,
+                                   config['global_attributes'], variable_params, Path(file_path))
         return nudatasets
 
     do_work(tasks, ingest_work, index, executor)
