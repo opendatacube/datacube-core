@@ -24,6 +24,7 @@ from datacube.utils import datetime_to_seconds_since_1970
 _LOG = logging.getLogger(__name__)
 
 Range = namedtuple('Range', ('begin', 'end'))
+Coordinate = namedtuple('Coordinate', ('labels', 'units'))
 Variable = namedtuple('Variable', ('dtype', 'nodata', 'dimensions', 'units'))
 
 NETCDF_VAR_OPTIONS = {'zlib', 'complevel', 'shuffle', 'fletcher32', 'contiguous'}
@@ -586,22 +587,20 @@ class GeoBox(object):
 
     @property
     def coordinates(self):
-        coord_cls = namedtuple('Coordinate', ('labels', 'units'))  # TODO: replace Coordinate with this
-
         xs = numpy.arange(self.width) * self.affine.a + self.affine.c + self.affine.a / 2
         ys = numpy.arange(self.height) * self.affine.e + self.affine.f + self.affine.e / 2
 
         if self.crs.geographic:
             return {
-                'latitude': coord_cls(ys, 'degrees_north'),
-                'longitude': coord_cls(xs, 'degrees_east')
+                'latitude': Coordinate(ys, 'degrees_north'),
+                'longitude': Coordinate(xs, 'degrees_east')
             }
 
         elif self.crs.projected:
             units = self.crs['UNIT']
             return {
-                'x': coord_cls(xs, units),
-                'y': coord_cls(ys, units)
+                'x': Coordinate(xs, units),
+                'y': Coordinate(ys, units)
             }
 
     @property
