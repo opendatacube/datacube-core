@@ -49,7 +49,11 @@ definitions:
                 type: number
             units:
                 type: string
-
+            aliases:
+                description: A list of string aliases
+                type: array
+                items:
+                  type: string
             spectral_definition:
                 description: A structured measured relative spectral response with sample intervals
                 type: object
