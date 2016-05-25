@@ -124,7 +124,7 @@ def run_click_command(command, args):
 
 
 def check_open_with_api(index):
-    from datacube.api.core import API
+    from datacube.api._api import API
     api = API(index=index)
 
     # fields = api.list_fields()
