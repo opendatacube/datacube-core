@@ -25,7 +25,6 @@ from itertools import chain, groupby
 import numpy
 
 from ..model import GeoBox
-from ..index.postgres._fields import RangeDocField  # pylint: disable=protected-access
 from .core import Datacube, Group, get_bounds, datatset_type_to_row
 from .query import Query
 
@@ -181,7 +180,6 @@ class API(object):
         return all_datasets
 
     def _get_data_for_type(self, dataset_type, sources, variables, geopolygon, slices=None):
-        irregular_dims = ['time', 't']  # TODO: get irregular dims from dataset_type
         dt_data = {}
         datasets = list(chain.from_iterable(g for _, g in numpy.ndenumerate(sources)))
         if not geopolygon:
@@ -192,7 +190,7 @@ class API(object):
             geo_slices = [slices.get(dim, slice(None)) for dim in geobox.dimensions]
             geobox = geobox[geo_slices]
             for dim, dim_slice in slices.items():
-                if dim.lower() in irregular_dims:
+                if dim in sources.dims:
                     sources = sources.isel(dim=dim_slice)
         dt_data.update(self._get_data_for_dims(dataset_type, sources, geobox))
         dt_data.update(self._get_data_for_measurement(dataset_type, sources, variables, geobox))
@@ -200,7 +198,6 @@ class API(object):
 
     @staticmethod
     def _get_data_for_dims(dataset_type, sources, geobox):
-        irregular_dims = ['time', 't']  # TODO: get irregular dims from dataset_type
         dims = dataset_type.dimensions
         dt_data = {
             'dimensions': dims,
@@ -219,8 +216,7 @@ class API(object):
                     'reference_system_unit': geobox.coordinates[dim].units
                 })
                 dt_data['size'] += (geobox.coordinates[dim].labels.size, )
-            elif dim.lower() in irregular_dims:
-                # groups define irregular_dims
+            elif dim in sources.dims:
                 coords = sources.coords[dim].values
                 dt_data['indices'][dim] = coords
                 dt_data['size'] += (coords.size, )

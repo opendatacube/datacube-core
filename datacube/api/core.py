@@ -1,8 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-from itertools import groupby, chain
-from collections import defaultdict, namedtuple
+from itertools import groupby
+from collections import namedtuple
 from math import ceil
 
 import pandas
