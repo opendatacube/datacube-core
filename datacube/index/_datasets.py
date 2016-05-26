@@ -19,7 +19,7 @@ except ImportError:
 
 from datacube import compat
 from datacube.index.fields import InvalidDocException
-from datacube.model import Dataset, DatasetType, DatasetOffsets, MetadataType
+from datacube.model import Dataset, DatasetType, MetadataType
 from . import fields
 
 _LOG = logging.getLogger(__name__)
@@ -103,7 +103,7 @@ class MetadataTypeResource(object):
         dataset_ = definition['dataset']
         return MetadataType(
             query_row['name'],
-            DatasetOffsets(
+            dict(
                 uuid_field=dataset_.get('id_offset'),
                 label_field=dataset_.get('label_offset'),
                 creation_time_field=dataset_.get('creation_dt_offset'),

@@ -6,7 +6,7 @@ import datetime
 from contextlib import contextmanager
 
 from datacube.index._datasets import DatasetResource
-from datacube.model import DatasetType, DatasetOffsets, DatasetMatcher, MetadataType
+from datacube.model import DatasetType, MetadataType
 
 _nbar_uuid = 'f2f12372-8366-11e5-817e-1040f381a756'
 _ortho_uuid = '5cf41d98-eda9-11e4-8a8e-1040f381a756'
@@ -119,7 +119,7 @@ _EXAMPLE_NBAR = {
 
 _EXAMPLE_METADATA_TYPE = MetadataType(
     'eo',
-    DatasetOffsets(
+    dict(
         uuid_field=['id'],
         label_field=['ga_label'],
         creation_time_field=['creation_dt'],

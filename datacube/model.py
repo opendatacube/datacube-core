@@ -116,7 +116,7 @@ class Dataset(object):
 
     @property
     def id(self):
-        return self.metadata_doc['id']
+        return self.metadata.uuid_field
 
     @property
     def format(self):
@@ -200,7 +200,7 @@ class MetadataType(object):
         self.id = id_
 
     def dataset_reader(self, dataset_doc):
-        return _DocReader(self.dataset_offsets.__dict__, dataset_doc)
+        return _DocReader(self.dataset_offsets, dataset_doc)
 
     def __str__(self):
         return "MetadataType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
@@ -266,60 +266,6 @@ class DatasetType(object):
 
     def __repr__(self):
         return self.__str__()
-
-
-class DatasetOffsets(object):
-    """
-    Where to find certain mandatory fields in dataset metadata.
-    """
-
-    def __init__(self,
-                 uuid_field=None,
-                 label_field=None,
-                 creation_time_field=None,
-                 measurements_dict=None,
-                 sources=None):
-        # UUID for a dataset. Always unique.
-        #: :type: tuple[string]
-        self.uuid_field = uuid_field or ('id',)
-
-        # The dataset "label" is the logical identifier for a dataset.
-        #
-        # -> Multiple datasets may arrive with the same label, but only the 'latest' will be returned by default
-        #    in searches.
-        #
-        # Use case: reprocessing a dataset.
-        # -> When reprocessing a dataset, the new dataset should be produced with the same label as the old one.
-        # -> Because you probably don't want both datasets returned from typical searches. (they are the same data)
-        # -> When ingested, this reprocessed dataset will be the only one visible to typical searchers.
-        # -> But the old dataset will still exist in the database for provenance & historical record.
-        #       -> Existing higher-level/derived datasets will still link to the old dataset they were processed
-        #          from, even if it's not the latest.
-        #
-        # An example label used by GA (called "dataset_ids" on historical systems):
-        #      -> Eg. "LS7_ETM_SYS_P31_GALPGS01-002_114_73_20050107"
-        #
-        # But the collection owner can use any string to label their datasets.
-        #: :type: tuple[string]
-        self.label_field = label_field or ('label',)
-
-        # datetime the dataset was processed/created.
-        #: :type: tuple[string]
-        self.creation_time_field = creation_time_field or ('creation_dt',)
-
-        # Where to find a dict of measurements/bands in the dataset.
-        #  -> Dict key is measurement/band id,
-        #  -> Dict value is object with fields depending on the storage driver.
-        #     (such as path to band file, offset within file etc.)
-        #: :type: tuple[string]
-        self.measurements_dict = measurements_dict or ('measurements',)
-
-        # Where to find a dict of embedded source datasets
-        #  -> The dict is of form: classifier->source_dataset_doc
-        #  -> 'classifier' is how to classify/identify the relationship (usually the type of source it was eg. 'nbar').
-        #      An arbitrary string, but you should be consistent between datasets (to query relationships).
-        #: :type: tuple[string]
-        self.sources = sources or ('lineage', 'source_datasets')
 
 
 class GeoPolygon(object):
