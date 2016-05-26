@@ -12,6 +12,8 @@ from dask import array as da
 from rasterio.coords import BoundingBox
 from osgeo import ogr
 
+from ..config import LocalConfig
+from ..compat import string_types
 from ..index import index_connect
 from ..model import GeoPolygon, GeoBox, Range, CRS
 from ..model import _DocReader as DocReader
@@ -67,6 +69,8 @@ class Datacube(object):
         """
         if index is None:
             if config is not None:
+                if isinstance(config, string_types):
+                    config = LocalConfig.find([config])
                 self.index = index_connect(config, application_name=app)
             else:
                 self.index = index_connect(application_name=app)
