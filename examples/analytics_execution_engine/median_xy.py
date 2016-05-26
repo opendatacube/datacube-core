@@ -45,7 +45,7 @@ def main():
                   'y':    {'range': (-35.32, -35.28)},
                   'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
-    arrays = a.create_array(('LANDSAT_5', 'nbar'), ['band_4'], dimensions, 'get_data')
+    arrays = a.create_array(('LANDSAT_5', 'nbar'), ['nir'], dimensions, 'get_data')
 
     median_xy = a.apply_generic_reduction(arrays, ['y', 'x'], 'median(array1)', 'medianXY')
 

@@ -40,6 +40,7 @@ setup(name='datacube',
           'scipy',
           'matplotlib',
           'numexpr',
+          'future',
       ],
       tests_require=[
           'pytest',

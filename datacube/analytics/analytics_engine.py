@@ -51,8 +51,8 @@ class AnalyticsEngine(object):
             {
                 'sensors':
                 {
-                    'LANDSAT_5': {'input': ['band_4', 'band_3'], 'function': 'ndvi'},
-                    'LANDSAT_7': {'input': ['band_4', 'band_3'], 'function': 'ndvi'},
+                    'LANDSAT_5': {'input': ['nir', 'red'], 'function': 'ndvi'},
+                    'LANDSAT_7': {'input': ['nir', 'red'], 'function': 'ndvi'},
                 },
                 'functions':
                 {
@@ -65,12 +65,12 @@ class AnalyticsEngine(object):
             'median': 'median(array1)'
         }
 
-    def __init__(self, api=None):
+    def __init__(self, api=None, index=None):
         LOG.info('Initialise Analytics Module.')
         self.plan = []
         self.plan_dict = {}
 
-        self.api = api or API()
+        self.api = api or API(index=index)
         self.api_descriptors = {}
         self.api_products = []
 

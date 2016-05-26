@@ -45,7 +45,7 @@ def main():
                   'y':    {'range': (-35.32, -35.28)},
                   'time': {'range': (datetime(1990, 1, 1), datetime(1990, 12, 31))}}
 
-    arrays = a.create_array(('LANDSAT_5', 'nbar'), ['band_4', 'band_3'], dimensions, 'get_data')
+    arrays = a.create_array(('LANDSAT_5', 'nbar'), ['nir', 'red'], dimensions, 'get_data')
 
     ndvi = a.apply_bandmath(arrays, '((array1 - array2) / (array1 + array2))', 'ndvi')
 
@@ -53,8 +53,8 @@ def main():
 
     plot(e.cache['ndvi'])
 
-    b30_result = e.cache['get_data']['array_result']['band_3']
-    b40_result = e.cache['get_data']['array_result']['band_4']
+    b30_result = e.cache['get_data']['array_result']['red']
+    b40_result = e.cache['get_data']['array_result']['nir']
     ndvi_result = e.cache['ndvi']['array_result']['ndvi']
 
     b30_data = Data(x=b30_result[:, ::-1, :], label='B30')

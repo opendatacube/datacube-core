@@ -231,6 +231,8 @@ class NDexpr(object):
                 (variable + lpar + expr + rpar |
                  variable).setParseAction(self.push_expr1) |
                 fnumber.setParseAction(self.push_expr) |
+                (lpar + expr + ZeroOrMore(comma + expr).setParseAction(self.get_tuple) +
+                 rpar).setParseAction(self.push_tuple) |
                 (lpar + expr.suppress() +
                  rpar).setParseAction(self.push_uminus))
 
@@ -300,6 +302,15 @@ class NDexpr(object):
     def push_index(self, strg, loc, toks):
         self.expr_stack.append("[]")
 
+    def push_tuple(self, strg, loc, toks):
+        if ',' in toks.asList():
+            self.expr_stack.append("()")
+
+    def get_tuple(self, strg, loc, toks):
+        count = toks.asList().count(',')
+        if count > 0:
+            self.expr_stack.append(str(count+1))
+
     def push_colon(self, strg, loc, toks):
         self.expr_stack.append("::")
 
@@ -352,6 +363,13 @@ class NDexpr(object):
             return self.opn[op](op1, op2)
         elif op == "::":
             return slice(None, None, None)
+        elif op == "()":
+            num_args = int(self.evaluate_stack(s))
+            fn_args = ()
+            for i in range(0, num_args):
+                fn_args += self.evaluate_stack(s),
+            fn_args = fn_args[::-1]
+            return fn_args
         elif op in self.xrfn:
             dim = int(self.evaluate_stack(s))
             dims = ()
@@ -406,6 +424,7 @@ class NDexpr(object):
             fn_args = ()
             for i in range(0, num_args):
                 fn_args += self.evaluate_stack(s),
+            fn_args = fn_args[::-1]
 
             val = self.user_functions[op](*fn_args)
             return val
@@ -498,6 +517,8 @@ class NDexpr(object):
         if isinstance(result, int) or isinstance(result, float) or \
            isinstance(result, np.float64):
             r = e == result
+        elif isinstance(e, np.ndarray):
+            r = result.equals(xr.DataArray(e))
         else:
             r = e.equals(result)
         if r:
