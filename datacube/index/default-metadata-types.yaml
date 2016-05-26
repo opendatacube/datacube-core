@@ -42,6 +42,11 @@ dataset:
     #     (such as path to band file, offset within file etc.)
     measurements_offset: ['image', 'bands']
 
+    # Where to find a grid spatial information, like CRS and image bounds
+    grid_spatial: ['grid_spatial', 'projection']
+
+    # Where to find data format (GeoTiff, NetCDF, etc)
+    format: ['format', 'name']
 
     # Where to find a dict of embedded source datasets
     #  -> The dict is of form: classifier->source_dataset_doc
