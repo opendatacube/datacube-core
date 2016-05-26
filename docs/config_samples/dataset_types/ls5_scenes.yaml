@@ -1,6 +1,6 @@
 name: ls5_satellite_telemetry_data
 description: Landsat 5 Satellite Telemetry Data
-metadata_type: eo
+metadata_type: telemetry
 
 metadata:
     platform:

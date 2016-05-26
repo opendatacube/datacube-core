@@ -238,7 +238,7 @@ def test_searches_only_type(index, pseudo_telemetry_type, pseudo_telemetry_datas
 
     # No results for different metadata type.
     datasets = index.datasets.search_eager(
-        metadata_type='storage_unit',
+        metadata_type='telemetry',
         platform='LANDSAT_8',
         instrument='OLI_TIRS'
     )
@@ -275,7 +275,7 @@ def test_fetch_all_of_md_type(index, pseudo_telemetry_dataset):
 
     # No results for another.
     results = index.datasets.search_eager(
-        metadata_type='storage_unit'
+        metadata_type='telemetry'
     )
     assert len(results) == 0
 

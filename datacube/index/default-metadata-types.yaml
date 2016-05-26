@@ -105,11 +105,9 @@ dataset:
             min_offset:
             - [extent, from_dt]
             - [extent, center_dt]
-            - [acquisition, aos]
             max_offset:
             - [extent, to_dt]
             - [extent, center_dt]
-            - [acquisition, los]
 
         gsi:
             description: Ground Station Identifier (eg. ASA)
@@ -140,68 +138,84 @@ dataset:
             # If an end is not specified, use the start.
             - [image, satellite_ref_point_start, y]
 
-storage_unit:
+---
+
+name: telemetry
+description: |
+    telemetry datasets.
+
+    Type of datasets produced by the eodatasets library.
+    (or of similar structure)
+
+    https://github.com/GeoscienceAustralia/eo-datasets
+
+dataset:
+    # Where to find certain fields in dataset objects:
+
+    # UUID: Unique for this exact dataset. Reprocessed datasets have new UUIDs.
+    id_offset: ['id']
+
+    # datetime the dataset was processed/created.
+    # This is used to know which is the latest dataset (when multiple versions exist).
+    creation_dt_offset: ['creation_dt']
+
+    # The dataset "label" is the logical identifier for a dataset.
+    #
+    # -> Multiple datasets may arrive with the same label, but only the 'latest' will be returned by default
+    #    in searches.
+    #
+    # Use case: reprocessing a dataset.
+    # -> When reprocessing a dataset, the new dataset should be produced with the same label as the old one.
+    # -> Because you probably don't want both datasets returned from typical searches. (they are the same data)
+    # -> When ingested, this reprocessed dataset will be the only one visible to typical searchers.
+    # -> But the old dataset will still exist in the database for provenance & historical record.
+    #       -> Existing higher-level/derived datasets will still link to the old dataset they were processed
+    #          from, even if it's not the latest.
+    #
+    # An example label used by GA (called "dataset_ids" on historical systems):
+    #      -> Eg. "LS7_ETM_SYS_P31_GALPGS01-002_114_73_20050107"
+    #
+    # But the collection owner can use any string to label their datasets.
+    label_offset: ['ga_label']
+
+    # Where to find a dict of embedded source datasets
+    #  -> The dict is of form: classifier->source_dataset_doc
+    #  -> 'classifier' is how to classify/identify the relationship (usually the type of source it was eg. 'nbar').
+    #      An arbitrary string, but you should be consistent between datasets (to query relationships).
+    sources_offset: ['lineage', 'source_datasets']
+
     # Fields that we want indexed and searchable in the documents.
     # (the keys/names are arbitrary, but are specified by users when searching)
     search_fields:
-        time:
-            description: Acquisition time
-
-            type: datetime-range
-            min_offset:
-            - [extents, time_min]
-            max_offset:
-            - [extents, time_max]
-        lat:
-            description: Latitude range
-
-            type: float-range
-            min_offset:
-            - [extents, geospatial_lat_min]
-            max_offset:
-            - [extents, geospatial_lat_max]
-        lon:
-            description: Longitude range
-
-            type: float-range
-            min_offset:
-            - [extents, geospatial_lon_min]
-            max_offset:
-            - [extents, geospatial_lon_max]
----
-
-name: storage_unit
-description: |
-    Stacked storage units
-
-    Produced by the agdc storage module.
-
-dataset:
-    search_fields:
+        # When no 'type' is specified, it defaults to String.
         platform:
             description: Platform code
+
             offset: [platform, code]
+
         instrument:
             description: Instrument name
+
             offset: [instrument, name]
-        lat:
-            description: Latitude range
-            type: float-range
-            max_offset:
-            - [extents, geospatial_lat_max]
-            min_offset:
-            - [extents, geospatial_lat_min]
-        lon:
-            description: Longitude range
-            type: float-range
-            max_offset:
-            - [extents, geospatial_lon_max]
-            min_offset:
-            - [extents, geospatial_lon_min]
+
+        product:
+            description: Product code
+
+            offset: [product_type]
+
         time:
             description: Acquisition time
+
             type: datetime-range
-            max_offset:
-            - [extents, time_max]
             min_offset:
-            - [extents, time_min]
+            - [acquisition, aos]
+            max_offset:
+            - [acquisition, los]
+
+        gsi:
+            description: Ground Station Identifier (eg. ASA)
+            offset: [acquisition, groundstation, code]
+
+        orbit:
+            description: Orbit number
+            offset: [acquisition, platform_orbit]
