@@ -125,8 +125,11 @@ def test_end_to_end(global_integration_cli_args, index, example_ls5_dataset):
     check_get_descriptor(index)
     check_get_data(index)
     check_get_descriptor_data(index)
+    check_get_descriptor_data_storage_type(index)
     check_analytics_create_array(index)
     check_analytics_ndvi_mask_median_expression(index)
+    check_analytics_ndvi_mask_median_expression_storage_type(index)
+    check_analytics_pixel_drill(index)
 
 
 def check_open_with_api(index):
@@ -391,6 +394,59 @@ def check_get_descriptor_data(index):
         d2['arrays'][var1].shape == \
         d2['arrays'][var2].shape
 
+    assert d2['arrays'][var1].shape[0] > 0
+    assert d2['arrays'][var1].shape[1] > 0
+    assert d2['arrays'][var1].shape[2] > 0
+
+    assert d2['arrays'][var1].shape[0] > 0
+    assert d2['arrays'][var2].shape[1] > 0
+    assert d2['arrays'][var2].shape[2] > 0
+
+
+def check_get_descriptor_data_storage_type(index):
+    import numpy as np
+    import xarray as xr
+    from datetime import datetime
+    from datacube.api import API
+
+    g = API(index=index)
+
+    storage_type = 'ls5_nbar_albers'
+    var1 = 'red'
+    var2 = 'nir'
+
+    data_request_descriptor = {
+        'storage_type': storage_type,
+        'variables': (var1, var2),
+        'dimensions': {
+            'longitude': {
+                'range': (149.07, 149.18)
+            },
+            'latitude': {
+                'range': (-35.32, -35.28)
+            },
+            'time': {
+                'range': (datetime(1992, 1, 1), datetime(1992, 12, 31))
+            }
+        }
+    }
+
+    d1 = g.get_descriptor(data_request_descriptor)
+    d2 = g.get_data(data_request_descriptor)
+
+    assert list(d1.values())[0]['result_shape'] == \
+        d2['size'] == \
+        d2['arrays'][var1].shape == \
+        d2['arrays'][var2].shape
+
+    assert d2['arrays'][var1].shape[0] > 0
+    assert d2['arrays'][var1].shape[1] > 0
+    assert d2['arrays'][var1].shape[2] > 0
+
+    assert d2['arrays'][var1].shape[0] > 0
+    assert d2['arrays'][var2].shape[1] > 0
+    assert d2['arrays'][var2].shape[2] > 0
+
 
 def check_analytics_create_array(index):
     from datetime import datetime
@@ -446,6 +502,87 @@ def check_analytics_ndvi_mask_median_expression(index):
     median_t = a.apply_expression(mask, 'median(array1, 0)', 'medianT')
 
     result = e.execute_plan(a.plan)
+
+    assert e.cache['b40']
+    assert e.cache['b30']
+    assert e.cache['pq']
+    assert e.cache['b40']['array_result'][var1].size > 0
+    assert e.cache['b30']['array_result'][var2].size > 0
+    assert e.cache['pq']['array_result'][pq_var].size > 0
+
     assert e.cache['ndvi']
     assert e.cache['mask']
     assert e.cache['medianT']
+
+
+def check_analytics_ndvi_mask_median_expression_storage_type(index):
+    from datetime import datetime
+    from datacube.analytics.analytics_engine import AnalyticsEngine
+    from datacube.execution.execution_engine import ExecutionEngine
+
+    a = AnalyticsEngine(index=index)
+    e = ExecutionEngine(index=index)
+
+    nbar_storage_type = 'ls5_nbar_albers'
+    var1 = 'nir'
+    var2 = 'red'
+    pq_storage_type = 'ls5_pq_albers'
+    pq_var = 'pixelquality'
+
+    # Lake Burley Griffin
+    dimensions = {'x':    {'range': (149.07, 149.18)},
+                  'y':    {'range': (-35.32, -35.28)},
+                  'time': {'range': (datetime(1992, 1, 1), datetime(1992, 12, 31))}}
+
+    b40 = a.create_array(nbar_storage_type, [var1], dimensions, 'b40')
+    b30 = a.create_array(nbar_storage_type, [var2], dimensions, 'b30')
+    pq = a.create_array(pq_storage_type, [pq_var], dimensions, 'pq')
+
+    ndvi = a.apply_expression([b40, b30], '((array1 - array2) / (array1 + array2))', 'ndvi')
+    mask = a.apply_expression([ndvi, pq], 'array1{(array2 == 32767) | (array2 == 16383) | (array2 == 2457)}', 'mask')
+    median_t = a.apply_expression(mask, 'median(array1, 0)', 'medianT')
+
+    result = e.execute_plan(a.plan)
+
+    assert e.cache['b40']
+    assert e.cache['b30']
+    assert e.cache['pq']
+    assert e.cache['b40']['array_result'][var1].size > 0
+    assert e.cache['b30']['array_result'][var2].size > 0
+    assert e.cache['pq']['array_result'][pq_var].size > 0
+
+    assert e.cache['ndvi']
+    assert e.cache['mask']
+    assert e.cache['medianT']
+
+
+def check_analytics_pixel_drill(index):
+    from datetime import datetime
+    from datacube.analytics.analytics_engine import AnalyticsEngine
+    from datacube.execution.execution_engine import ExecutionEngine
+
+    a = AnalyticsEngine(index=index)
+    e = ExecutionEngine(index=index)
+
+    nbar_storage_type = 'ls5_nbar_albers'
+    var1 = 'nir'
+    var2 = 'red'
+    pq_storage_type = 'ls5_pq_albers'
+    pq_var = 'pixelquality'
+
+    # Lake Burley Griffin
+    dimensions = {'x':    {'range': (149.12)},
+                  'y':    {'range': (-35.30)},
+                  'time': {'range': (datetime(1992, 1, 1), datetime(1992, 12, 31))}}
+
+    b40 = a.create_array(nbar_storage_type, [var1], dimensions, 'b40')
+    b30 = a.create_array(nbar_storage_type, [var2], dimensions, 'b30')
+    pq = a.create_array(pq_storage_type, [pq_var], dimensions, 'pq')
+
+    result = e.execute_plan(a.plan)
+    assert e.cache['b40']
+    assert e.cache['b30']
+    assert e.cache['pq']
+    assert e.cache['b40']['array_result'][var1].size > 0
+    assert e.cache['b30']['array_result'][var2].size > 0
+    assert e.cache['pq']['array_result'][pq_var].size > 0
