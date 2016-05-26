@@ -45,8 +45,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset,
         [
             '-vv',
             'index',
-            '--match-rules',
-            str(LS5_MATCH_RULES),
+            '--auto-match',
             str(example_ls5_dataset)
         ]
     )
