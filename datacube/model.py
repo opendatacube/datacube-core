@@ -486,14 +486,20 @@ class GeoBox(object):
                    height=int(tile_size[0] / abs(tile_res[0])))
 
     @classmethod
-    def from_geopolygon(cls, geopolygon, resolution, align=True):
+    def from_geopolygon(cls, geopolygon, resolution, crs=None, align=True):
         """
         :type geopolygon: datacube.model.GeoPolygon
         :param resolution: (x_resolution, y_resolution)
+        :param crs: CRS to use, if different from the geopolygon
         :param align: Should the geobox be aligned to pixels of the given resolution. This assumes an origin of (0,0).
         :type align: boolean
         :rtype: GeoBox
         """
+        if crs is None:
+            crs = geopolygon.crs
+        else:
+            geopolygon = geopolygon.to_crs(crs)
+
         bounding_box = geopolygon.boundingbox
         left, top = float(bounding_box.left), float(bounding_box.top)
         if align:
@@ -505,7 +511,7 @@ class GeoBox(object):
         if align:
             width = math.ceil(width)
             height = math.ceil(height)
-        return GeoBox(crs=geopolygon.crs,
+        return GeoBox(crs=crs,
                       affine=affine,
                       width=int(width),
                       height=int(height))
