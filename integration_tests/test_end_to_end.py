@@ -14,6 +14,7 @@ import datacube.scripts.cli_app
 import datacube.scripts.config_tool
 from .conftest import LS5_NBAR_NAME, LS5_NBAR_ALBERS_NAME, EXAMPLE_LS5_DATASET_ID
 
+from datacube.compat import string_types
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
@@ -340,8 +341,8 @@ def check_get_data(index):
     for crs in d['coordinate_reference_systems']:
         assert 'reference_system_definition' in crs
         assert 'reference_system_unit' in crs
-        assert isinstance(crs['reference_system_definition'], basestring)
-        assert isinstance(crs['reference_system_unit'], basestring)
+        assert isinstance(crs['reference_system_definition'], string_types)
+        assert isinstance(crs['reference_system_unit'], string_types)
 
     for dim in d['indices']:
         assert isinstance(d['indices'][dim], np.ndarray)
