@@ -319,7 +319,7 @@ class PostgresDb(object):
 
         return self._connection.execute(query).fetchall()
 
-    def get_dataset_fields(self, collection_result):
+    def get_dataset_fields(self, metadata_type_result):
         # Native fields (hard-coded into the schema)
         fields = {
             'id': NativeField(
@@ -344,13 +344,13 @@ class PostgresDb(object):
                 None, DATASET_TYPE.c.id
             )
         }
-        dataset_search_fields = collection_result['definition']['dataset']['search_fields']
+        dataset_search_fields = metadata_type_result['definition']['dataset']['search_fields']
 
         # noinspection PyTypeChecker
         fields.update(
             parse_fields(
                 dataset_search_fields,
-                collection_result['id'],
+                metadata_type_result['id'],
                 DATASET.c.metadata
             )
         )
