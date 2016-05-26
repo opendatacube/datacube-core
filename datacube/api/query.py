@@ -45,6 +45,8 @@ class Query(object):
     def from_descriptor_request(cls, descriptor_request):
         if descriptor_request is None:
             descriptor_request = {}
+        if not hasattr(descriptor_request, '__getitem__'):
+            raise ValueError('Could not understand descriptor {}'.format(descriptor_request))
         query = cls()
 
         type_keys = ('type', 'storage_type', 'dataset_type')

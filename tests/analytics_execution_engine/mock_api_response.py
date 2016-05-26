@@ -36,7 +36,7 @@ def mock_get_descriptor(query_parameters):
                 (636419476.0, -3900012.5, 1500012.5): {
                     'storage_shape': (2, 400, 400),
                     'storage_min': (636419476.0, -3999987.5, 1500012.5),
-                    'irregular_indicies': {
+                    'irregular_indices': {
                         u'time': [636419476.0, 661302607.0]},
                     'storage_path': '/g/data/u46/public/datacube/data/LANDSAT_5_TM_NBAR_ALB_15_-40_1990.nc',
                     'storage_max': (661302607.0, -3900012.5, 1599987.5)

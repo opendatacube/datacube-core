@@ -422,14 +422,18 @@ class AnalyticsEngine(object):
         if len(self.api_products) == 0:
             self.api_products = self.api.list_products()
         for product in self.api_products:
-            storage_type = str(product['name'])
+            storage_type = str(product['dataset'])
             if storage_type not in self.api_descriptors.keys():
                 continue
-            items[storage_type]['platform'] = str(product['match']['metadata']['platform']['code'])
-            items[storage_type]['product_type'] = str(product['match']['metadata']['product_type'])
-            items[storage_type]['instrument'] = str(product['match']['metadata']['instrument']['name'])
-            items[storage_type]['bands'] = [str(x) for x in product['measurements'].keys()]
+            items[storage_type]['platform'] = str(product['platform'])
+            items[storage_type]['product_type'] = str(product['product'])
+            items[storage_type]['instrument'] = str(product['instrument'])
+        for variable in self.api.list_variables():
+            storage_type = str(variable['dataset'])
+            if storage_type not in self.api_descriptors.keys():
+                continue
+            if 'bands' not in items[storage_type]:
+                items[storage_type]['bands'] = []
+            items[storage_type]['bands'].append(variable['variable'])
             items[storage_type]['bands'].sort()
-
-
         return items
