@@ -1,19 +1,15 @@
 from __future__ import absolute_import
 
-import shutil
 import collections
+import shutil
 from subprocess import call
-from pathlib import Path
+
 import pytest
-
-import yaml
 from click.testing import CliRunner
+from pathlib import Path
 
-from datacube.compat import string_types
 import datacube.scripts.cli_app
 import datacube.scripts.config_tool
-from .conftest import LS5_NBAR_NAME, LS5_NBAR_ALBERS_NAME, EXAMPLE_LS5_DATASET_ID
-
 from datacube.compat import string_types
 
 PROJECT_ROOT = Path(__file__).parents[1]
@@ -365,8 +361,6 @@ def check_get_data(index):
 
 
 def check_get_descriptor_data(index):
-    import numpy as np
-    import xarray as xr
     from datetime import datetime
     from datacube.api import API
 
@@ -412,8 +406,6 @@ def check_get_descriptor_data(index):
 
 
 def check_get_descriptor_data_storage_type(index):
-    import numpy as np
-    import xarray as xr
     from datetime import datetime
     from datacube.api import API
 
