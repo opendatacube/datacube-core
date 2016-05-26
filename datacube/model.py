@@ -168,8 +168,12 @@ class Dataset(object):
 
         projection = self.metadata.grid_spatial
 
-        geo_ref_points = projection['geo_ref_points']
-        return GeoPolygon([xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr')], crs=self.crs)
+        if 'valid_data' in projection:
+            assert projection['valid_data']['type'].lower() == 'polygon'
+            return GeoPolygon(projection['valid_data']['coordinates'][0], crs=self.crs)
+        else:
+            geo_ref_points = projection['geo_ref_points']
+            return GeoPolygon([xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr')], crs=self.crs)
 
     def __str__(self):
         return "Dataset <id={id} type={type} location={loc}>".format(id=self.id,
