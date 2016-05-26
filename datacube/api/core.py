@@ -31,31 +31,31 @@ class Datacube(object):
 
     AA/EE functions
     ===============
-    get_descriptor
-    get_data
+    get_descriptor              -> Remain in API.get_descriptor
+    get_data                    -> Remain in API.det_data
 
     List search fields
     ==================
-    list_fields
-    list_field_values
-    list_all_field_values
+    list_fields                 -> Use Datacube.datasets
+    list_field_values           -> Use Datacube.datasets
+    list_all_field_values       -> Use Datacube.datasets
 
-    List collections (all questionable...)
+    List collections
     ================
-    list_storage_units
-    list_storage_type_names
-    list_products
-    list_variables
+    list_storage_units          -> *REMOVED*
+    list_storage_type_names     -> Use Datacube.datasets
+    list_products               -> Use Datacube.datasets
+    list_variables              -> Use Datacube.variables
 
     Data Access
     ===========
     get_dataset
-    get_data_array  (Just get_dataset with a hat)
+    get_data_array
 
     Legacy tile-based workflow
     ==========================
-    list_cells
-    list_tiles
+    list_cells                  -> Get dt, Get geobox for cell
+    list_tiles                  -> Get dt
     get_dataset_by_cell
     get_data_array_by_cell
 
@@ -161,11 +161,6 @@ class Datacube(object):
 
     @staticmethod
     def variable_data(sources, geobox, measurement, name=None, fuse_func=None):
-        print('!variable_data:')
-        print('!sources=', sources)
-        print('!geobox=', geobox)
-        print('!measurement=', measurement)
-        print('!name=', name)
         name = measurement.get('name', name)
         coords = {dim: coord for dim, coord in sources.coords.items()}
         for dim, coord in geobox.coordinates.items():
@@ -193,55 +188,30 @@ class Datacube(object):
                                       'nodata': measurement.get('nodata'),
                                       'units': measurement.get('units', '1')
                                   })
-
-        # TODO: Include source metadata
-        # extra_md = numpy.empty(len(groups), dtype=object)
-        # for index, (_, sources) in enumerate(groups):
-        #     extra_md[index] = sources
-        # result['sources'] = (['time'], extra_md)
-
         return result
 
-    # @staticmethod
-    # def variable_data_lazy(sources, geobox, measurement, name=None, fuse_func=None, grid_chunks=None):
-    #     coords = {dim: coord for dim, coord in sources.coords.items()}
-    #     for dim, coord in geobox.coordinates.items():
-    #         coords[dim] = xarray.Coordinate(dim, coord.labels, attrs={'units': coord.units})
-    #     dims = sources.dims + geobox.dimensions
-    #     name = measurement.get('name', name)
-    #     dsk_name = 'datacube_' + name
-    #     irr_chunks = (1,) * sources.ndim
-    #     grid_chunks = grid_chunks or (1000, 1000)
-    #     chunks = irr_chunks + grid_chunks
-    #     shape = sources.shape + geobox.shape
-    #     dtype = measurement['dtype']
-    #     dsk = {}
-    #
-    #     geobox_subsets = {}
-    #     num_grid_chunks = [int(ceil(s/float(c))) for s, c in zip(geobox.shape, grid_chunks)]
-    #     for grid_index in numpy.ndindex(*num_grid_chunks):
-    #         slices = [slice(min(d*c, stop), min((d+1)*c, stop))
-    #                   for d, c, stop in zip(grid_index, grid_chunks, geobox.shape)]
-    #         geobox_subsets[grid_index] = geobox[slices]
-    #
-    #     for irr_index, datasets in numpy.ndenumerate(sources.values):
-    #         for grid_index, subset_geobox in geobox_subsets.items():
-    #             index = (dsk_name,) + irr_index + grid_index
-    #             dsk[index] = (fuse_lazy, datasets, subset_geobox, measurement, name, fuse_func, sources.ndim)
-    #
-    #     data = da.Array(dsk, dsk_name, chunks=chunks, dtype=dtype, shape=shape)
-    #     result = xarray.DataArray(data,
-    #                               coords=coords,
-    #                               dims=dims,
-    #                               name=name,
-    #                               attrs={
-    #                                   'extent': geobox.extent,
-    #                                   'affine': geobox.affine,
-    #                                   'crs': geobox.crs,
-    #                                   'nodata': measurement.get('nodata'),
-    #                                   'units': measurement.get('units', '1')
-    #                               })
-    #     return result
+    @staticmethod
+    def variable_data_lazy(sources, geobox, measurement, name=None, fuse_func=None, grid_chunks=None):
+        name = measurement.get('name', name)
+        coords = {dim: coord for dim, coord in sources.coords.items()}
+        for dim, coord in geobox.coordinates.items():
+            coords[dim] = xarray.Coordinate(dim, coord.labels, attrs={'units': coord.units})
+        dims = sources.dims + geobox.dimensions
+
+        data = _make_dask_array(sources, geobox, measurement, name, fuse_func, grid_chunks)
+
+        result = xarray.DataArray(data,
+                                  coords=coords,
+                                  dims=dims,
+                                  name=name,
+                                  attrs={
+                                      'extent': geobox.extent,
+                                      'affine': geobox.affine,
+                                      'crs': geobox.crs,
+                                      'nodata': measurement.get('nodata'),
+                                      'units': measurement.get('units', '1')
+                                  })
+        return result
 
     def __repr__(self):
         return "Datacube<index={!r}>".format(self.index)
@@ -309,3 +279,32 @@ def datatset_type_to_row(dt):
             'resolution': dt.grid_spec.resolution,
         })
     return row
+
+
+def _chunk_geobox(geobox, chunk_size):
+    num_grid_chunks = [int(ceil(s/float(c))) for s, c in zip(geobox.shape, chunk_size)]
+    geobox_subsets = {}
+    for grid_index in numpy.ndindex(*num_grid_chunks):
+        slices = [slice(min(d*c, stop), min((d+1)*c, stop))
+                  for d, c, stop in zip(grid_index, chunk_size, geobox.shape)]
+        geobox_subsets[grid_index] = geobox[slices]
+    return geobox_subsets
+
+
+def _make_dask_array(sources, geobox, measurement, name=None, fuse_func=None, grid_chunks=None):
+    dsk_name = 'datacube_' + name
+    irr_chunks = (1,) * sources.ndim
+    grid_chunks = grid_chunks or (1000, 1000)
+    dsk = {}
+    geobox_subsets = _chunk_geobox(geobox, grid_chunks)
+
+    for irr_index, datasets in numpy.ndenumerate(sources.values):
+        for grid_index, subset_geobox in geobox_subsets.items():
+            index = (dsk_name,) + irr_index + grid_index
+            dsk[index] = (fuse_lazy, datasets, subset_geobox, measurement, name, fuse_func, sources.ndim)
+
+    data = da.Array(dsk, dsk_name,
+                    chunks=(irr_chunks + grid_chunks),
+                    dtype=measurement['dtype'],
+                    shape=(sources.shape + geobox.shape))
+    return data

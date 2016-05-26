@@ -33,13 +33,14 @@ _LOG = logging.getLogger(__name__)
 
 
 class API(object):
-    def __init__(self, index=None, datacube=None):
+    def __init__(self, index=None, app=None, datacube=None):
         if datacube is not None:
             self.datacube = datacube
         elif index is not None:
-            self.datacube = Datacube(index, app='Datacube-API')
+            self.datacube = Datacube(index)
         else:
-            self.datacube = Datacube(app='Datacube-API')
+            app = app or 'Datacube-API'
+            self.datacube = Datacube(app=app)
 
     def _get_descriptor_for_dataset(self, dataset_type, datasets, group_func, geopolygon=None,
                                     include_storage_units=True):
@@ -78,13 +79,13 @@ class API(object):
             dataset_descriptor['result_min'].append(min(coords))
             dataset_descriptor['result_max'] += (max(coords),)
             dataset_descriptor['result_shape'] += (len(coords),)
+
         if dataset_type.measurements:
             dataset_descriptor['variables'] = self._get_descriptor_for_measurements(dataset_type)
 
         dataset_descriptor['groups'] = (dataset_type, groups)
 
         if include_storage_units:
-
             dataset_descriptor['storage_units'] = self._compute_storage_units(dataset_type, datasets)
 
         return dataset_descriptor
@@ -131,7 +132,8 @@ class API(object):
         for dataset_type, datasets in datasets_by_type.items():
             dataset_descriptor = self._get_descriptor_for_dataset(dataset_type, datasets,
                                                                   query.group_by_func,
-                                                                  query.geopolygon)
+                                                                  query.geopolygon,
+                                                                  include_storage_units)
             if dataset_descriptor:
                 descriptor[dataset_type.name] = dataset_descriptor
         return descriptor
@@ -246,8 +248,8 @@ class API(object):
         }
         for measurement_name, measurement in dataset_type.measurements.items():
             if variables is None or measurement_name in variables:
-                dt_data['arrays'][measurement_name] = self.datacube.variable_data(sources, geobox, measurement,
-                                                                                  name=measurement_name)
+                dt_data['arrays'][measurement_name] = self.datacube.variable_data_lazy(sources, geobox, measurement,
+                                                                                       name=measurement_name)
         return dt_data
 
     def list_products(self):
