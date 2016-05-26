@@ -11,11 +11,11 @@ dataset:
     # Where to find certain fields in dataset objects:
 
     # UUID: Unique for this exact dataset. Reprocessed datasets have new UUIDs.
-    id_offset: ['id']
+    id: ['id']
 
     # datetime the dataset was processed/created.
     # This is used to know which is the latest dataset (when multiple versions exist).
-    creation_dt_offset: ['creation_dt']
+    creation_dt: ['creation_dt']
 
     # The dataset "label" is the logical identifier for a dataset.
     #
@@ -34,13 +34,13 @@ dataset:
     #      -> Eg. "LS7_ETM_SYS_P31_GALPGS01-002_114_73_20050107"
     #
     # But the collection owner can use any string to label their datasets.
-    label_offset: ['ga_label']
+    label: ['ga_label']
 
     # Where to find a dict of measurements/bands in the dataset.
     #  -> Dict key is measurement/band id,
     #  -> Dict value is object with fields depending on the storage driver.
     #     (such as path to band file, offset within file etc.)
-    measurements_offset: ['image', 'bands']
+    measurements: ['image', 'bands']
 
     # Where to find a grid spatial information, like CRS and image bounds
     grid_spatial: ['grid_spatial', 'projection']
@@ -52,7 +52,7 @@ dataset:
     #  -> The dict is of form: classifier->source_dataset_doc
     #  -> 'classifier' is how to classify/identify the relationship (usually the type of source it was eg. 'nbar').
     #      An arbitrary string, but you should be consistent between datasets (to query relationships).
-    sources_offset: ['lineage', 'source_datasets']
+    sources: ['lineage', 'source_datasets']
 
     # Fields that we want indexed and searchable in the documents.
     # (the keys/names are arbitrary, but are specified by users when searching)

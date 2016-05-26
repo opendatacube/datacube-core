@@ -120,10 +120,10 @@ _EXAMPLE_NBAR = {
 _EXAMPLE_METADATA_TYPE = MetadataType(
     'eo',
     dict(
-        uuid_field=['id'],
-        label_field=['ga_label'],
-        creation_time_field=['creation_dt'],
-        measurements_dict=['image', 'bands'],
+        id=['id'],
+        label=['ga_label'],
+        creation_time=['creation_dt'],
+        measurements=['image', 'bands'],
         sources=['lineage', 'source_datasets']
     ),
     dataset_search_fields={}

@@ -103,13 +103,7 @@ class MetadataTypeResource(object):
         dataset_ = definition['dataset']
         return MetadataType(
             query_row['name'],
-            dict(
-                uuid_field=dataset_.get('id_offset'),
-                label_field=dataset_.get('label_offset'),
-                creation_time_field=dataset_.get('creation_dt_offset'),
-                measurements_dict=dataset_.get('measurements_offset'),
-                sources=dataset_.get('sources_offset'),
-            ),
+            dataset_,
             dataset_search_fields=self._db.get_dataset_fields(query_row),
             id_=query_row['id']
         )

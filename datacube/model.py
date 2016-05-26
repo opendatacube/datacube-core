@@ -116,15 +116,15 @@ class Dataset(object):
 
     @property
     def id(self):
-        return self.metadata.uuid_field
+        return self.metadata.id
 
     @property
     def format(self):
-        return self.metadata_doc['format']['name']
+        return self.metadata.format
 
     @property
     def measurements(self):
-        return self.metadata.measurements_dict
+        return self.metadata.measurements
 
     @property
     def time(self):
@@ -135,9 +135,7 @@ class Dataset(object):
 
     @property
     def bounds(self):
-        geo_ref_points = self.metadata_doc['grid_spatial']['projection']['geo_ref_points']
-        return BoundingBox(geo_ref_points['ll']['x'], geo_ref_points['ll']['y'],
-                           geo_ref_points['ur']['x'], geo_ref_points['ur']['y'])
+        return self.extent.boundingbox
 
     @property
     def crs(self):
@@ -145,7 +143,7 @@ class Dataset(object):
         "rtype: datacube.model.CRS
         :return:
         """
-        projection = self.metadata_doc['grid_spatial']['projection']
+        projection = self.metadata.grid_spatial
 
         crs = projection.get('spatial_reference', None)
         if crs:
@@ -168,7 +166,9 @@ class Dataset(object):
         def xytuple(obj):
             return obj['x'], obj['y']
 
-        geo_ref_points = self.metadata_doc['grid_spatial']['projection']['geo_ref_points']
+        projection = self.metadata.grid_spatial
+
+        geo_ref_points = projection['geo_ref_points']
         return GeoPolygon([xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr')], crs=self.crs)
 
     def __str__(self):
