@@ -264,17 +264,7 @@ def datatset_type_to_row(dt):
         'dataset': dt.name,
         'description': dt.definition['description'],
     }
-    good_fields = {}
-    # TODO: Move to DatasetType
-    offsets = {name: field.offset if hasattr(field, 'offset') else [name]
-               for name, field in dt.metadata_type.dataset_fields.items()}
-    dr = DocReader(offsets, dt.metadata)
-    for k, v in dr._field_offsets.items():  # pylint: disable=protected-access
-        try:
-            good_fields[k] = dr.__getattr__(k)
-        except KeyError:
-            pass
-    row.update(good_fields)
+    row.update(dt.fields)
     if dt.grid_spec is not None:
         row.update({
             'crs': dt.grid_spec.crs,
