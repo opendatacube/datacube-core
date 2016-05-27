@@ -6,8 +6,6 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from contextlib import contextmanager
-from datetime import datetime
-from itertools import groupby
 
 from datacube.model import Variable, CRS
 from datacube.storage import netcdf_writer
@@ -36,21 +34,8 @@ RESAMPLING_METHODS = {
     'average': RESAMPLING.average,
 }
 
-
-def _group_datasets_by_time(datasets):
-    return [(time, list(group)) for time, group in groupby(datasets, lambda ds: ds.time)]
-
-
 def _rasterio_resampling_method(measurement_descriptor):
     return RESAMPLING_METHODS[measurement_descriptor['resampling_method'].lower()]
-
-
-def generate_filename(tile_index, datasets, storage_type):
-    return storage_type.generate_uri(
-        tile_index=tile_index,
-        start_time=_parse_time(datasets[0].time).strftime('%Y%m%d%H%M%S%f'),
-        end_time=_parse_time(datasets[-1].time).strftime('%Y%m%d%H%M%S%f'),
-    )
 
 
 def _parse_time(time):
