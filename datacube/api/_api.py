@@ -244,8 +244,7 @@ class API(object):
         }
         for measurement_name, measurement in dataset_type.measurements.items():
             if variables is None or measurement_name in variables:
-                dt_data['arrays'][measurement_name] = self.datacube.variable_data_lazy(sources, geobox, measurement,
-                                                                                       name=measurement_name)
+                dt_data['arrays'][measurement_name] = self.datacube.variable_data_lazy(sources, geobox, measurement)
         return dt_data
 
     def list_products(self):

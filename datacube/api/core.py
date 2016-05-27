@@ -165,8 +165,7 @@ class Datacube(object):
         return result
 
     @staticmethod
-    def variable_data(sources, geobox, measurement, name=None, fuse_func=None):
-        name = measurement.get('name', name)
+    def variable_data(sources, geobox, measurement, fuse_func=None):
         coords = {dim: coord for dim, coord in sources.coords.items()}
         for dim, coord in geobox.coordinates.items():
             coords[dim] = xarray.Coordinate(dim, coord.labels, attrs={'units': coord.units})
@@ -174,7 +173,7 @@ class Datacube(object):
 
         data = numpy.empty(sources.shape + geobox.shape, dtype=measurement['dtype'])
         for index, datasets in numpy.ndenumerate(sources.values):
-            fuse_sources([DatasetSource(dataset, name) for dataset in datasets],
+            fuse_sources([DatasetSource(dataset, measurement['name']) for dataset in datasets],
                          data[index],
                          geobox.affine,
                          geobox.crs,
@@ -185,7 +184,7 @@ class Datacube(object):
         result = xarray.DataArray(data,
                                   coords=coords,
                                   dims=dims,
-                                  name=name,
+                                  name=measurement['name'],
                                   attrs={
                                       'extent': geobox.extent,
                                       'affine': geobox.affine,
@@ -196,19 +195,18 @@ class Datacube(object):
         return result
 
     @staticmethod
-    def variable_data_lazy(sources, geobox, measurement, name=None, fuse_func=None, grid_chunks=None):
-        name = measurement.get('name', name)
+    def variable_data_lazy(sources, geobox, measurement, fuse_func=None, grid_chunks=None):
         coords = {dim: coord for dim, coord in sources.coords.items()}
         for dim, coord in geobox.coordinates.items():
             coords[dim] = xarray.Coordinate(dim, coord.labels, attrs={'units': coord.units})
         dims = sources.dims + geobox.dimensions
 
-        data = _make_dask_array(sources, geobox, measurement, name, fuse_func, grid_chunks)
+        data = _make_dask_array(sources, geobox, measurement, fuse_func, grid_chunks)
 
         result = xarray.DataArray(data,
                                   coords=coords,
                                   dims=dims,
-                                  name=name,
+                                  name=measurement['name'],
                                   attrs={
                                       'extent': geobox.extent,
                                       'affine': geobox.affine,
@@ -222,8 +220,8 @@ class Datacube(object):
         return "Datacube<index={!r}>".format(self.index)
 
 
-def fuse_lazy(datasets, geobox, measurement, name, fuse_func=None, prepend_dims=0):
-    name = measurement.get('name', name)
+def fuse_lazy(datasets, geobox, measurement, fuse_func=None, prepend_dims=0):
+    name = measurement['name']
     prepend_shape = (1,) * prepend_dims
     prepend_index = (0,) * prepend_dims
     data = numpy.empty(prepend_shape + geobox.shape, dtype=measurement['dtype'])
@@ -320,8 +318,8 @@ def _chunk_geobox(geobox, chunk_size):
     return geobox_subsets
 
 
-def _make_dask_array(sources, geobox, measurement, name=None, fuse_func=None, grid_chunks=None):
-    dsk_name = 'datacube_' + name
+def _make_dask_array(sources, geobox, measurement, fuse_func=None, grid_chunks=None):
+    dsk_name = 'datacube_' + measurement['name']
     irr_chunks = (1,) * sources.ndim
     grid_chunks = grid_chunks or (1000, 1000)
     dsk = {}
@@ -330,7 +328,7 @@ def _make_dask_array(sources, geobox, measurement, name=None, fuse_func=None, gr
     for irr_index, datasets in numpy.ndenumerate(sources.values):
         for grid_index, subset_geobox in geobox_subsets.items():
             index = (dsk_name,) + irr_index + grid_index
-            dsk[index] = (fuse_lazy, datasets, subset_geobox, measurement, name, fuse_func, sources.ndim)
+            dsk[index] = (fuse_lazy, datasets, subset_geobox, measurement, fuse_func, sources.ndim)
 
     data = da.Array(dsk, dsk_name,
                     chunks=(irr_chunks + grid_chunks),
