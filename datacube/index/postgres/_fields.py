@@ -14,6 +14,8 @@ from sqlalchemy import func
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 
+from datacube.utils import get_doc_offset
+from datacube.model import Range
 from datacube.index.fields import Expression, Field
 
 
@@ -109,6 +111,9 @@ class SimpleDocField(PgField):
         """
         raise NotImplementedError('Simple field between expression')
 
+    def extract(self, document):
+        return get_doc_offset(self.offset, document)
+
 
 class RangeDocField(PgField):
     """
@@ -155,6 +160,17 @@ class RangeDocField(PgField):
         :rtype: Expression
         """
         raise NotImplementedError('range equals expression')
+
+    def extract(self, document):
+        def safe_get_doc_offset(offset, document):
+            try:
+                return get_doc_offset(offset, document)
+            except KeyError:
+                return None
+
+        mins = (safe_get_doc_offset(offset, document) for offset in self.min_offset)
+        maxs = (safe_get_doc_offset(offset, document) for offset in self.max_offset)
+        return Range(min(v for v in mins if v), max(v for v in maxs if v))
 
 
 class FloatRangeDocField(RangeDocField):
