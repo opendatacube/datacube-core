@@ -78,13 +78,14 @@ class Datacube(object):
             self.index = index
 
     @property
-    def datasets(self):
+    def products(self):
         """
-        List of products as a Pandas DataTable
-        :return:
+        List of products as a Pandas DataFrame.
+        :rtype: pandas.DataFrame
         """
         return pandas.DataFrame([datatset_type_to_row(dataset_type)
-                                 for dataset_type in self.index.datasets.types.get_all()])
+                                 for dataset_type in self.index.datasets.types.get_all()],
+                                index='id')
 
     @property
     def variables(self):
@@ -261,7 +262,7 @@ def get_bounds(datasets, dataset_type):
 def datatset_type_to_row(dt):
     row = {
         'id': dt.id,
-        'dataset': dt.name,
+        'name': dt.name,
         'description': dt.definition['description'],
     }
     row.update(dt.fields)

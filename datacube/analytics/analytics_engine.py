@@ -422,7 +422,7 @@ class AnalyticsEngine(object):
         if len(self.api_products) == 0:
             self.api_products = self.api.list_products()
         for product in self.api_products:
-            storage_type = str(product['dataset'])
+            storage_type = str(product['name'])
             if storage_type not in self.api_descriptors.keys():
                 continue
             items[storage_type]['platform'] = str(product['platform'])
