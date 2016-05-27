@@ -10,6 +10,7 @@ import datetime
 
 from pathlib import Path
 
+from datacube.model import Dataset
 from datacube.index.postgres import PostgresDb
 
 _telemetry_uuid = '4ec8fe97-e8b9-11e4-87ff-1040f381a756'
@@ -108,10 +109,8 @@ def test_index_dataset_with_location(index, default_metadata_type):
     first_file = '/tmp/first/something.yaml'
     second_file = '/tmp/second/something.yaml'
     type_ = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
-    dataset = index.datasets.add_document(
-        _telemetry_dataset,
-        metadata_path=Path(first_file)
-    )
+    dataset = Dataset(type_, _telemetry_dataset, Path(first_file).as_uri())
+    dataset = index.datasets.add(dataset)
 
     assert dataset.id == _telemetry_uuid
     # TODO: Dataset types?
@@ -121,10 +120,7 @@ def test_index_dataset_with_location(index, default_metadata_type):
     assert dataset.local_path.absolute() == Path(first_file).absolute()
 
     # Ingesting again should have no effect.
-    index.datasets.add_document(
-        _telemetry_dataset,
-        metadata_path=Path(first_file)
-    )
+    index.datasets.add(dataset)
     locations = index.datasets.get_locations(dataset)
     assert len(locations) == 1
 
@@ -132,10 +128,8 @@ def test_index_dataset_with_location(index, default_metadata_type):
     second_as_uri = Path(second_file).absolute().as_uri()
 
     # Ingesting with a new path should add the second one too.
-    dataset = index.datasets.add_document(
-        _telemetry_dataset,
-        uri=second_as_uri
-    )
+    dataset.local_uri = second_as_uri
+    index.datasets.add(dataset)
     locations = index.datasets.get_locations(dataset)
     assert len(locations) == 2
     # Newest to oldest.

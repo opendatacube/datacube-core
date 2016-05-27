@@ -6,7 +6,7 @@ import datetime
 from contextlib import contextmanager
 
 from datacube.index._datasets import DatasetResource
-from datacube.model import DatasetType, MetadataType
+from datacube.model import DatasetType, MetadataType, Dataset
 
 _nbar_uuid = 'f2f12372-8366-11e5-817e-1040f381a756'
 _ortho_uuid = '5cf41d98-eda9-11e4-8a8e-1040f381a756'
@@ -135,6 +135,14 @@ _EXAMPLE_DATASET_TYPE = DatasetType(
 )
 
 
+def _build_dataset(doc):
+    sources = {name: _build_dataset(src) for name, src in doc['lineage']['source_datasets'].items()}
+    return Dataset(_EXAMPLE_DATASET_TYPE, doc, 'file://test.zzz', sources)
+
+
+_EXAMPLE_NBAR_DATASET = _build_dataset(_EXAMPLE_NBAR)
+
+
 class MockDb(object):
     def __init__(self):
         self.dataset = []
@@ -164,15 +172,12 @@ class MockTypesResource(object):
     def __init__(self, type_):
         self.type = type_
 
-    def get_for_dataset_doc(self, metadata_doc):
-        return self.type
-
 
 def test_index_dataset():
     mock_db = MockDb()
     mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
     datasets = DatasetResource(mock_db, mock_types)
-    datasets.add_document(_EXAMPLE_NBAR)
+    dataset = datasets.add(_EXAMPLE_NBAR_DATASET)
 
     ids = {d[0]['id'] for d in mock_db.dataset}
     assert ids == {_nbar_uuid, _ortho_uuid, _telemetry_uuid}
@@ -194,7 +199,7 @@ def test_index_already_ingested_dataset():
     mock_db.already_ingested = {_ortho_uuid, _telemetry_uuid, _nbar_uuid}
     mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
     datasets = DatasetResource(mock_db, mock_types)
-    datasets.add_document(_EXAMPLE_NBAR)
+    dataset = datasets.add(_EXAMPLE_NBAR_DATASET)
 
     # Nothing ingested, because we reported the first as already ingested.
     assert len(mock_db.dataset) == 0
@@ -207,7 +212,7 @@ def test_index_already_ingested_source_dataset():
     mock_db.already_ingested = {_ortho_uuid, _telemetry_uuid}
     mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
     datasets = DatasetResource(mock_db, mock_types)
-    datasets.add_document(_EXAMPLE_NBAR)
+    dataset = datasets.add(_EXAMPLE_NBAR_DATASET)
 
     # Only the first dataset ingested
     assert len(mock_db.dataset) == 1
@@ -226,7 +231,7 @@ def test_index_two_levels_already_ingested():
     mock_db.already_ingested = {_telemetry_uuid}
     mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
     datasets = DatasetResource(mock_db, mock_types)
-    datasets.add_document(_EXAMPLE_NBAR)
+    dataset = datasets.add(_EXAMPLE_NBAR_DATASET)
 
     ids = {d[0]['id'] for d in mock_db.dataset}
     assert ids == {_nbar_uuid, _ortho_uuid}

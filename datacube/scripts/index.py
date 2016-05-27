@@ -60,10 +60,9 @@ def match_dataset(dataset_doc, uri, rules):
     :rtype datacube.model.Dataset:
     """
     rule = match_doc(rules, dataset_doc)
-    dataset = Dataset(rule['type'], dataset_doc, uri, managed=rule.get('managed', False))
-    dataset.sources = {cls: match_dataset(source_doc, None, rules)
-                       for cls, source_doc in dataset.metadata.sources.items()}
-    return dataset
+    sources = {cls: match_dataset(source_doc, None, rules)
+               for cls, source_doc in rule['type'].dataset_reader(dataset_doc).sources.items()}
+    return Dataset(rule['type'], dataset_doc, uri, sources=sources, managed=rule.get('managed', False))
 
 
 def load_rules_from_file(filename, index):

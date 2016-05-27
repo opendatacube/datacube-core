@@ -128,8 +128,8 @@ class DatasetTypeResource(object):
         :rtype: datacube.model.DatasetType
         """
         # This column duplication is getting out of hand:
-        name = definition['name']
-        dataset_metadata = definition['metadata']
+        _ensure_valid(definition)
+
         metadata_type = definition['metadata_type']
 
         # They either specified the name of a metadata type, or specified a metadata type.
@@ -173,7 +173,6 @@ class DatasetTypeResource(object):
         :type definition: dict
         :rtype: datacube.model.DatasetType
         """
-        _ensure_valid(definition)
         type_ = self.from_doc(definition)
         return self.add(type_)
 
@@ -199,17 +198,6 @@ class DatasetTypeResource(object):
         result = self._db.get_dataset_type_by_name(name)
         if not result:
             return None
-        return self._make(result)
-
-    def get_for_dataset_doc(self, metadata_doc):
-        """
-        :type metadata_doc: dict
-        :rtype: datacube.model.DatasetType or None
-        """
-        result = self._db.determine_dataset_type_for_doc(metadata_doc)
-        if result is None:
-            return None
-
         return self._make(result)
 
     def get_with_fields(self, field_names):
@@ -289,34 +277,6 @@ class DatasetResource(object):
         """
         return self._db.contains_dataset(dataset.id)
 
-    def from_doc(self, dataset_doc, metadata_path=None, uri=None, allow_replacement=False):
-        """
-        Build a dataset from its document
-
-        A file path or URI should be specified if available.
-
-        :type metadata_doc: dict
-        :type metadata_path: pathlib.Path
-        :type uri: str
-        :rtype: datacube.model.Dataset
-        """
-        type_ = self.types.get_for_dataset_doc(dataset_doc)
-        if not type_:
-            _LOG.debug('Failed match on dataset doc %r', dataset_doc)
-            raise ValueError('No types match the dataset.')
-        _LOG.info('Matched type %r (%s)', type_.name, type_.id)
-
-        indexable_doc = copy.deepcopy(dataset_doc)
-        dataset = type_.metadata_type.dataset_reader(indexable_doc)
-
-        source_datasets = {classifier: self.from_doc(source_dataset_doc)
-                           for classifier, source_dataset_doc in dataset.sources.items()}
-
-        if metadata_path and not uri:
-            uri = metadata_path.absolute().as_uri()
-
-        return Dataset(type_, indexable_doc, uri, source_datasets, managed=allow_replacement)
-
     def add(self, dataset):
         """
         Ensure a dataset is in the index. Add it if not present.
@@ -329,7 +289,9 @@ class DatasetResource(object):
 
         _LOG.info('Indexing %s', dataset.id)
         with self._db.begin() as transaction:
-            was_inserted = self._db.insert_dataset(dataset.metadata_doc, dataset.id, dataset.type.id)
+            indexable_doc = copy.deepcopy(dataset.metadata_doc)
+            dataset.type.dataset_reader(indexable_doc).sources = {}
+            was_inserted = self._db.insert_dataset(indexable_doc, dataset.id, dataset.type.id)
 
             if was_inserted:
                 for classifier, source_dataset in dataset.sources.items():
@@ -339,20 +301,6 @@ class DatasetResource(object):
             self._db.ensure_dataset_location(dataset.id, dataset.local_uri, dataset.managed)
 
         return dataset
-
-    def add_document(self, metadata_doc, metadata_path=None, uri=None, allow_replacement=False):
-        """
-        Ensure a dataset is in the index. Add it if not present.
-
-        A file path or URI should be specified if available.
-
-        :type metadata_doc: dict
-        :type metadata_path: pathlib.Path
-        :type uri: str
-        :rtype: datacube.model.Dataset
-        """
-        dataset = self.from_doc(metadata_doc, metadata_path, uri, allow_replacement)
-        return self.add(dataset)
 
     def replace(self, old_datasets, new_datasets):
         """

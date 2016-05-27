@@ -420,25 +420,6 @@ class PostgresDb(object):
         for result in results:
             yield result
 
-    def determine_dataset_type_for_doc(self, metadata_doc):
-        """
-        :type metadata_doc: dict
-        :rtype: dict or None
-        """
-        matching_types = self._connection.execute(
-            DATASET_TYPE.select().where(
-                DATASET_TYPE.c.metadata.contained_by(metadata_doc)
-            )
-        ).fetchall()
-
-        if not matching_types:
-            return None
-
-        if len(matching_types) > 1:
-            raise ValueError('Dataset matches multiple types: %r' % [t['name'] for t in matching_types])
-
-        return matching_types[0]
-
     def get_dataset_type(self, id_):
         return self._connection.execute(
             DATASET_TYPE.select().where(DATASET_TYPE.c.id == id_)

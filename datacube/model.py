@@ -90,6 +90,8 @@ class Dataset(object):
         #: :type: bool
         self.managed = managed
 
+        assert set(self.metadata.sources.keys()) == set(self.sources.keys())
+
     @property
     def metadata_type(self):
         return self.type.metadata_type if self.type else None
@@ -257,6 +259,9 @@ class DatasetType(object):
             resolution = [storage['resolution'][dim] for dim in crs.dimensions]
 
         return GridSpec(crs=crs, tile_size=tile_size, resolution=resolution)
+
+    def dataset_reader(self, dataset_doc):
+        return self.metadata_type.dataset_reader(dataset_doc)
 
     def __str__(self):
         return "DatasetType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
