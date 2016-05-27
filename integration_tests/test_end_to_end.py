@@ -111,6 +111,7 @@ def test_end_to_end(global_integration_cli_args, index, testdata_dir):
                       ['-vv', 'ingest', '-c', str(ls5_pq_albers_ingest_config)])
 
     check_open_with_api(index)
+    check_open_with_dc(index)
     check_analytics_list_searchables(index)
     check_get_descriptor(index)
     check_get_data(index)
@@ -134,7 +135,7 @@ def run_click_command(command, args):
 
 
 def check_open_with_api(index):
-    from datacube.api._api import API
+    from datacube.api import API
     api = API(index=index)
 
     # fields = api.list_fields()
@@ -154,34 +155,39 @@ def check_open_with_api(index):
     assert abs(data['element_sizes'][1] - ALBERS_ELEMENT_SIZE) < .0000001
     assert abs(data['element_sizes'][2] - ALBERS_ELEMENT_SIZE) < .0000001
 
-    # data_array = api.get_data_array(storage_type='ls5_nbar_albers', variables=['blue'],
+
+def check_open_with_dc(index):
+    from datacube.api.core import Datacube
+    dc = Datacube(index=index)
+
+    # data_array = dc.get_data_array(storage_type='ls5_nbar_albers', variables=['blue'],
     #                                 latitude=(-34, -35), longitude=(149, 150))
     # assert data_array.size
     #
-    # dataset = api.get_dataset(storage_type='ls5_nbar_albers', variables=['blue'],
-    #                           latitude=(-34, -35), longitude=(149, 150))
-    # assert dataset['blue'].size
+    dataset = dc.get_dataset(storage_type='ls5_nbar_albers', variables=['blue'],
+                             latitude=(-34, -35), longitude=(149, 150))
+    assert dataset['blue'].size
     #
-    # data_array_cell = api.get_data_array_by_cell(LBG_CELL, storage_type='ls5_nbar_albers', variables=['blue'])
+    # data_array_cell = dc.get_data_array_by_cell(LBG_CELL, storage_type='ls5_nbar_albers', variables=['blue'])
     # assert data_array_cell.size
     #
-    # data_array_cell = api.get_data_array_by_cell(x_index=LBG_CELL_X, y_index=LBG_CELL_Y,
+    # data_array_cell = dc.get_data_array_by_cell(x_index=LBG_CELL_X, y_index=LBG_CELL_Y,
     #                                              storage_type='ls5_nbar_albers', variables=['blue'])
     # assert data_array_cell.size
     #
-    # dataset_cell = api.get_dataset_by_cell(LBG_CELL, storage_type='ls5_nbar_albers', variables=['blue'])
+    # dataset_cell = dc.get_dataset_by_cell(LBG_CELL, storage_type='ls5_nbar_albers', variables=['blue'])
     # assert dataset_cell['blue'].size
     #
-    # dataset_cell = api.get_dataset_by_cell([LBG_CELL], storage_type='ls5_nbar_albers', variables=['blue'])
+    # dataset_cell = dc.get_dataset_by_cell([LBG_CELL], storage_type='ls5_nbar_albers', variables=['blue'])
     # assert dataset_cell['blue'].size
     #
-    # dataset_cell = api.get_dataset_by_cell(x_index=LBG_CELL_X, y_index=LBG_CELL_Y, storage_type='ls5_nbar_albers',
+    # dataset_cell = dc.get_dataset_by_cell(x_index=LBG_CELL_X, y_index=LBG_CELL_Y, storage_type='ls5_nbar_albers',
     #                                        variables=['blue'])
     # assert dataset_cell['blue'].size
     #
-    # tiles = api.list_tiles(x_index=LBG_CELL_X, y_index=LBG_CELL_Y, storage_type='ls5_nbar_albers')
+    # tiles = dc.list_tiles(x_index=LBG_CELL_X, y_index=LBG_CELL_Y, storage_type='ls5_nbar_albers')
     # for tile_query, tile_attrs in tiles:
-    #     dataset = api.get_dataset_by_cell(**tile_query)
+    #     dataset = dc.get_dataset_by_cell(**tile_query)
     #     assert dataset['blue'].size
 
 

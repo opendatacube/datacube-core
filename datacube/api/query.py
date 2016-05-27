@@ -20,17 +20,20 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import datetime
+import collections
 
 from dateutil import tz
 
 from ..compat import string_types, integer_types
-from ..model import GeoBox, GeoPolygon, Range, CRS
+from ..model import GeoPolygon, Range, CRS
 from ..utils import datetime_to_seconds_since_1970
 
 _LOG = logging.getLogger(__name__)
 
 FLOAT_TOLERANCE = 0.0000001 # TODO: For DB query, use some sort of 'contains' query, rather than range overlap.
-
+TYPE_KEYS = ('type', 'storage_type', 'dataset_type')
+SPATIAL_KEYS = ('latitude', 'lat', 'y', 'longitude', 'lon', 'long', 'x')
+CRS_KEYS = ('crs', 'coordinate_reference_system')
 
 class Query(object):
     def __init__(self, dataset_type=None, variables=None, **kwargs):
@@ -40,6 +43,52 @@ class Query(object):
         self.geopolygon = None
         self.group_by = {}
         self.slices = {}
+        self.set_nan = False
+        self.resolution = None
+
+    @classmethod
+    def from_kwargs(cls, index, **kwargs):
+        """Parses a kwarg dict for query parameters
+
+        :param kwargs:
+         * `dataset_type` Name of the dataset type
+         * `variables` List of variables
+         * `crs` Spatial coordinate reference system to interpret the spatial dimensions
+        :return: :class:`Query`
+        """
+        query = cls()
+
+        dataset_type = [value for key, value in kwargs.items() if key in TYPE_KEYS]
+        if dataset_type:
+            query.type = dataset_type[0]
+
+        query.variables = _get_as_list(kwargs, 'variables', None)
+
+        spatial_dims = {dim: v for dim, v in kwargs.items() if dim in SPATIAL_KEYS}
+
+        crs = {v for k, v in kwargs.items() if k in CRS_KEYS}
+        if len(crs) == 1:
+            spatial_dims['crs'] = crs.pop()
+        elif len(crs) > 1:
+            raise ValueError('Spatial dimensions must be in the same coordinate reference system: {}'.format(crs))
+
+        query.geopolygon = _range_to_geopolygon(**spatial_dims)
+
+        if 'group_by' in kwargs:
+            group_name = kwargs['group_by']
+
+
+        remaining_keys = set(kwargs.keys()) - set(TYPE_KEYS + SPATIAL_KEYS + CRS_KEYS + ('variables', 'group_by'))
+        known_fields = set(index.datasets.get_field_names())
+
+        unknown_keys = remaining_keys - known_fields
+        if unknown_keys:
+            raise LookupError('Unknown agruments: ', unknown_keys)
+
+        for key in remaining_keys:
+            query.search.update(_values_to_search(**{key:kwargs[key]}))
+
+        return query
 
     @classmethod
     def from_descriptor_request(cls, descriptor_request):
@@ -49,11 +98,10 @@ class Query(object):
             raise ValueError('Could not understand descriptor {}'.format(descriptor_request))
         query = cls()
 
-        type_keys = ('type', 'storage_type', 'dataset_type')
-        dataset_type = [value for key, value in descriptor_request.items() if key in type_keys]
+        dataset_type = [value for key, value in descriptor_request.items() if key in TYPE_KEYS]
         if dataset_type:
             query.type = dataset_type[0]
-        defined_keys = ('dimensions', 'variables') + type_keys
+        defined_keys = ('dimensions', 'variables') + TYPE_KEYS
         query.search = {key: value for key, value in descriptor_request.items() if key not in defined_keys}
 
         if 'variables' in descriptor_request:
@@ -102,11 +150,28 @@ class Query(object):
         if not self.group_by:
             return _get_group_by_func()
         if len(self.group_by) == 1:
-            return _get_group_by_func(self.group_by.values().next())
+            return _get_group_by_func(self.group_by.values().pop())
         else:
             raise NotImplementedError('Grouping across multiple dimensions ({dims}) not yet supported'.format(
                 dims=', '.join(self.group_by.keys())
             ))
+
+    def __repr__(self):
+        return """Datacube Query:
+        type = {type}
+        variables = {variables}
+        search = {search}
+        geopolygon = {geopolygon}
+        group_by = {group_by}
+        slices = {slices}
+        set_nan = {set_nan}
+        """.format(type=self.type,
+                   variables=self.variables,
+                   search=self.search,
+                   geopolygon=self.geopolygon,
+                   group_by=self.group_by,
+                   slices=self.slices,
+                   set_nan=self.set_nan,)
 
 
 def _range_to_geopolygon(**kwargs):
@@ -144,9 +209,23 @@ def _range_to_search(**kwargs):
     search = {}
     for key, value in kwargs.items():
         if key.lower() in ('time', 't'):
+            time_range = value['range']
+            search['time'] = _time_to_search_dims(time_range)
+        elif key not in ['latitude', 'lat', 'y'] + ['longitude', 'lon', 'x']:
+            if isinstance(value, collections.Sequence) and len(value) == 2:
+                search[key] = Range(*value)
+            else:
+                search[key] = value
+    return search
+
+
+def _values_to_search(**kwargs):
+    search = {}
+    for key, value in kwargs.items():
+        if key.lower() in ('time', 't'):
             search['time'] = _time_to_search_dims(value)
         elif key not in ['latitude', 'lat', 'y'] + ['longitude', 'lon', 'x']:
-            if hasattr(value, '__iter__') and len(value) == 2:
+            if isinstance(value, collections.Sequence) and len(value) == 2:
                 search[key] = Range(*value)
             else:
                 search[key] = value
@@ -183,9 +262,6 @@ def _to_datetime(t):
 
 
 def _time_to_search_dims(time_range):
-    # TODO: Handle time formatting strings & other CRS's
-    # Assume dateime object or seconds since UNIX epoch 1970-01-01 for now...
-    time_range = time_range['range']
     if hasattr(time_range, '__iter__') and len(time_range) == 2:
         return Range(_to_datetime(time_range[0]), _to_datetime(time_range[1]))
     else:
@@ -211,3 +287,12 @@ def _get_group_by_func(group_by=None):
         raise NotImplementedError('The group by `solar_day` feature is coming soon.')
     else:
         raise LookupError('No group_by function found called {}'.format(group_by))
+
+
+def _get_as_list(mapping, key, default=None):
+    if key not in mapping:
+        return default
+    value = mapping[key]
+    if not isinstance(value, collections.Sequence):
+        value = list(value)
+    return value

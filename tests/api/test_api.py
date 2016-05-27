@@ -15,103 +15,10 @@
 
 from __future__ import absolute_import, division, print_function
 
-import datetime
-
-from dateutil import tz
-
-from ..util import isclose
-
-from datacube.model import Range
-from datacube.api.query import Query, _datetime_to_timestamp
-
-# HACK: to deal with https://github.com/mapbox/rasterio/issues/694
-try:
-    from rasterio.env import defenv
-    defenv()
-except ImportError:
-    pass
-
-
-def test_convert_descriptor_query_to_search_query():
-    descriptor_query = {
-        'dimensions': {
-            'latitude': {
-                'range': (-35.5, -36.5),
-            },
-            'longitude': {
-                'range': (148.3, 149.9)
-            },
-            'time': {
-                'range': (datetime.datetime(2001, 5, 7), datetime.datetime(2002, 3, 9))
-            }
-        }
-    }
-    descriptor_query_dimensions = descriptor_query['dimensions']
-    query = Query.from_descriptor_request(descriptor_query)
-    search_query = query.search_terms
-    assert min(descriptor_query_dimensions['latitude']['range']) == search_query['lat'].begin
-    assert max(descriptor_query_dimensions['latitude']['range']) == search_query['lat'].end
-    assert min(descriptor_query_dimensions['longitude']['range']) == search_query['lon'].begin
-    assert max(descriptor_query_dimensions['longitude']['range']) == search_query['lon'].end
-    assert datetime.datetime(2001, 5, 7, tzinfo=tz.tzutc()) == search_query['time'].begin
-    assert datetime.datetime(2002, 3, 9, tzinfo=tz.tzutc()) == search_query['time'].end
-
-
-def test_convert_descriptor_query_to_search_query_with_crs_conversion():
-    descriptor_query = {
-        'dimensions': {
-            'latitude': {
-                'range': (-3971790.0737348166, -4101004.3359463234),
-                'crs': 'EPSG:3577',
-            },
-            'longitude': {
-                'range': (1458629.8414059384, 1616407.8831088375),
-                'crs': 'EPSG:3577',
-            }
-        }
-    }
-    expected_result = {
-        'lat': Range(-36.6715565808, -35.3276413143),
-        'lon': Range(148.145408153, 150.070966341),
-    }
-    query = Query.from_descriptor_request(descriptor_query)
-    search_query = query.search_terms
-    assert all(map(isclose, search_query['lat'], expected_result['lat']))
-    assert all(map(isclose, search_query['lon'], expected_result['lon']))
-
-
-def test_convert_descriptor_query_to_search_query_with_single_value():
-    descriptor_query = {
-        'dimensions': {
-            'latitude': {
-                'range': -3971790.0737348166,
-                'crs': 'EPSG:3577',
-            },
-            'longitude': {
-                'range': 1458629.8414059384,
-                'crs': 'EPSG:3577',
-            }
-        }
-    }
-    expected_lat = -35.5160921229
-    expected_lon = 148.145408153
-    query = Query.from_descriptor_request(descriptor_query)
-    search_query = query.search_terms
-    assert min(*search_query['lat']) <= expected_lat <= max(*search_query['lat'])
-    assert search_query['lat'].begin != search_query['lat'].end
-    assert min(*search_query['lon']) <= expected_lon <= max(*search_query['lon'])
-    assert search_query['lon'].begin != search_query['lon'].end
-
-
-def test_datetime_to_timestamp():
-    assert _datetime_to_timestamp((1990, 1, 7)) == 631670400
-    assert _datetime_to_timestamp(datetime.datetime(1990, 1, 7)) == 631670400
-    assert _datetime_to_timestamp(631670400) == 631670400
-    assert _datetime_to_timestamp('1990-01-07T00:00:00.0Z') == 631670400
+from datacube.api import API
 
 
 def test_get_descriptor_no_data():
-    from datacube.api import API
     from mock import MagicMock
 
     mock_index = MagicMock()
@@ -124,7 +31,6 @@ def test_get_descriptor_no_data():
 
 
 def test_get_descriptor_some_data():
-    from datacube.api import API
     from mock import MagicMock
 
     band_10 = MagicMock(dtype='int16', )

@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from itertools import groupby
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 from math import ceil
 
 import pandas
@@ -18,11 +18,13 @@ from ..index import index_connect
 from ..model import GeoPolygon, GeoBox, Range, CRS
 from ..model import _DocReader as DocReader
 from ..storage.storage import DatasetSource, fuse_sources, RESAMPLING
+from .query import Query
 
 _LOG = logging.getLogger(__name__)
 
 
 Group = namedtuple('Group', ['key', 'datasets'])
+Grouper = namedtuple('Grouper', ['dimension', 'group_by', 'units'])
 
 
 class Datacube(object):
@@ -106,6 +108,37 @@ class Datacube(object):
                     row.update({k: v for k, v in measurement.items() if k != 'attrs'})
                     variables.append(row)
         return variables
+
+    def get_dataset(self, **indexers):
+        query = Query.from_kwargs(self.index, **indexers)
+        type_name = query.type  # TODO: Can type_name be optional?
+        query.type = None
+        observations = self.product_observations(type_name=type_name,
+                                                 geopolygon=query.geopolygon,
+                                                 **query.search_terms)
+        geopolygon = query.geopolygon
+        if not geopolygon:
+            crs = query.output_crs or get_crs(observations)
+            geopolygon = get_bounds(observations, crs)
+
+        resolution = query.resolution or get_resolution(observations)
+        geobox = GeoBox.from_geopolygon(geopolygon, resolution)
+
+        #TDOD: Make Grouper in Query
+        grouper = Grouper(dimension='time',
+                          group_by=lambda ds: ds.time,
+                          units='seconds since 1970-01-01 00:00:00')
+        sources = self.product_sources(observations, grouper.group_by, grouper.dimension, grouper.units)
+
+        all_measurements = get_measurements(observations)
+        if query.variables:
+            measurements = OrderedDict((variable, all_measurements[variable]) for variable in query.variables
+                                       if variable in all_measurements)
+        else:
+            measurements = all_measurements
+
+        dataset = self.product_data(sources, geobox, measurements)
+        return dataset
 
     def product_observations(self, type_name, geopolygon=None, **kwargs):
         if geopolygon:
