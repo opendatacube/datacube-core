@@ -193,7 +193,7 @@ class MetadataType(object):
         self.id = id_
 
     def dataset_reader(self, dataset_doc):
-        return _DocReader(self.dataset_offsets, dataset_doc)
+        return _DocReader(self.dataset_offsets, self.dataset_fields, dataset_doc)
 
     def __str__(self):
         return "MetadataType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
@@ -579,11 +579,11 @@ def _set_doc_offset(offset, document, value):
 
 
 class _DocReader(object):
-    def __init__(self, field_offsets, doc):
+    def __init__(self, field_offsets, search_fields, doc):
         """
         :type field_offsets: dict[str,list[str]]
         :type doc: dict
-        >>> d = _DocReader({'lat': ['extent', 'lat']}, doc={'extent': {'lat': 4}})
+        >>> d = _DocReader({'lat': ['extent', 'lat']}, {}, doc={'extent': {'lat': 4}})
         >>> d.lat
         4
         >>> d.lat = 5
@@ -592,27 +592,44 @@ class _DocReader(object):
         >>> d.lon
         Traceback (most recent call last):
         ...
-        ValueError: Unknown field 'lon'. Expected one of ['lat']
+        AttributeError: Unknown field 'lon'. Expected one of ['lat']
         """
-        self.__dict__['_field_offsets'] = field_offsets
         self.__dict__['_doc'] = doc
+        self.__dict__['_fields'] = {name: field for name, field in search_fields.items() if hasattr(field, 'extract')}
+        self._fields.update(field_offsets)
 
     def __getattr__(self, name):
-        offset = self._field_offsets.get(name)
-        if offset is None:
-            raise ValueError(
+        field = self._fields.get(name)
+        if field is None:
+            raise AttributeError(
                 'Unknown field %r. Expected one of %r' % (
-                    name, list(self._field_offsets.keys())
+                    name, list(self._fields.keys())
                 )
             )
-        return _get_doc_offset(offset, self._doc)
+        return self._unsafe_get_field(field)
 
     def __setattr__(self, name, val):
-        offset = self._field_offsets.get(name)
+        offset = self._fields.get(name)
         if offset is None:
-            raise ValueError(
+            raise AttributeError(
                 'Unknown field %r. Expected one of %r' % (
-                    name, list(self._field_offsets.keys())
+                    name, list(self._fields.keys())
                 )
             )
         return _set_doc_offset(offset, self._doc, val)
+
+    def _unsafe_get_field(self, field):
+        if isinstance(field, list):
+            return get_doc_offset(field, self._doc)
+        else:
+            return field.extract(self._doc)
+
+    @property
+    def fields(self):
+        fields = {}
+        for name, field in self._fields.items():
+            try:
+                fields[name] = self._unsafe_get_field(field)
+            except (AttributeError, KeyError, ValueError):
+                continue
+        return fields
