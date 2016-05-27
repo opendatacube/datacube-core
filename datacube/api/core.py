@@ -251,12 +251,46 @@ def _check_intersect(a, b):
     return a.Intersects(b) and not a.Touches(b)
 
 
-def get_bounds(datasets, dataset_type):
-    left = min([d.bounds.left for d in datasets])
-    right = max([d.bounds.right for d in datasets])
-    top = max([d.bounds.top for d in datasets])
-    bottom = min([d.bounds.bottom for d in datasets])
-    return GeoPolygon.from_boundingbox(BoundingBox(left, bottom, right, top), dataset_type.grid_spec.crs)
+def get_crs(datasets):
+    """
+    Returns a single CRS from a collection of datasets
+    Raises an error if no or multiple CRSs are found
+    :param datasets: [`model.Dataset`]
+    :return: `model.CRS`
+    """
+    crs_set = {d.type.grid_spec.crs for d in datasets if d.type.grid_spec}
+    if not crs_set:
+        raise ValueError('No valid CRS found.')
+    first = crs_set.pop()
+    if crs_set and any(first != another for another in crs_set):
+        raise ValueError('Could not determine a unique output CRS from: ', [first] + list(crs_set))
+    return first
+
+
+def get_resolution(datasets):
+    resolution_set = {tuple(d.type.grid_spec.resolution) for d in datasets if d.type.grid_spec}
+    if len(resolution_set) != 1:
+        raise ValueError('Could not determine an output resolution')
+    return resolution_set.pop()
+
+
+def get_bounds(datasets, crs):
+    left = min([d.extent.to_crs(crs).boundingbox.left for d in datasets])
+    right = max([d.extent.to_crs(crs).boundingbox.right for d in datasets])
+    top = max([d.extent.to_crs(crs).boundingbox.top for d in datasets])
+    bottom = min([d.extent.to_crs(crs).boundingbox.bottom for d in datasets])
+    return GeoPolygon.from_boundingbox(BoundingBox(left, bottom, right, top), crs)
+
+
+def get_measurements(datasets):
+    dataset_types = {d.type for d in datasets}
+    all_measurements = OrderedDict()
+    for dataset_type in dataset_types:
+        for name, measurement in dataset_type.measurements.items():
+            if name in all_measurements:
+                raise LookupError('Multiple values found for variable: ', name)
+            all_measurements[name] = measurement
+    return all_measurements
 
 
 def datatset_type_to_row(dt):

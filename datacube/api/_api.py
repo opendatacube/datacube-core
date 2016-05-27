@@ -50,7 +50,7 @@ class API(object):
             return None
 
         if not geopolygon:
-            geopolygon = get_bounds(datasets, dataset_type)
+            geopolygon = get_bounds(datasets, dataset_type.grid_spec.crs)
 
         datasets.sort(key=group_func)
         groups = [Group(key, list(group)) for key, group in groupby(datasets, group_func)]
@@ -183,7 +183,7 @@ class API(object):
         dt_data = {}
         datasets = list(chain.from_iterable(g for _, g in numpy.ndenumerate(sources)))
         if not geopolygon:
-            geopolygon = get_bounds(datasets, dataset_type)
+            geopolygon = get_bounds(datasets, dataset_type.grid_spec.crs)
         geobox = GeoBox.from_geopolygon(geopolygon.to_crs(dataset_type.grid_spec.crs),
                                         dataset_type.grid_spec.resolution)
         if slices:
