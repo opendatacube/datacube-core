@@ -236,6 +236,7 @@ measurements:
           values:
             16383: true
 
+---
 name: ls5_ledaps_scene
 description: Landsat 5 LEDAPS 25 metre
 metadata_type: eo
