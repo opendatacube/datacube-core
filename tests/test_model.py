@@ -45,7 +45,7 @@ def test_geobox():
         ]
     for points in points_list:
         polygon = GeoPolygon(points, CRS('EPSG:3577'))
-        resolution = (25, -25)
+        resolution = (-25, 25)
         geobox = GeoBox.from_geopolygon(polygon, resolution)
 
         assert abs(resolution[0]) > abs(geobox.extent.boundingbox.left - polygon.boundingbox.left)

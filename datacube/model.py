@@ -485,6 +485,10 @@ class GeoBox(object):
         :type align: boolean
         :rtype: GeoBox
         """
+        # TODO: currently only flipped Y-axis data is supported
+        assert resolution[1] > 0
+        assert resolution[0] < 0
+
         if crs is None:
             crs = geopolygon.crs
         else:
