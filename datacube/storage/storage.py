@@ -14,13 +14,11 @@ try:
     from yaml import CSafeDumper as SafeDumper
 except ImportError:
     from yaml import SafeDumper
-import dateutil.parser
 import numpy
 import rasterio.warp
 import rasterio.crs
 from rasterio.warp import RESAMPLING
 
-from datacube import compat
 from datacube.utils import clamp, datetime_to_seconds_since_1970
 
 _LOG = logging.getLogger(__name__)
@@ -36,12 +34,6 @@ RESAMPLING_METHODS = {
 
 def _rasterio_resampling_method(measurement_descriptor):
     return RESAMPLING_METHODS[measurement_descriptor['resampling_method'].lower()]
-
-
-def _parse_time(time):
-    if isinstance(time, compat.string_types):
-        return dateutil.parser.parse(time)
-    return time
 
 
 def _calc_offsets(off, src_size, dst_size):

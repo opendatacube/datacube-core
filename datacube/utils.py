@@ -6,7 +6,11 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from datetime import datetime
+
+import dateutil.parser
 from dateutil.tz import tzutc
+
+from datacube import compat
 
 _LOG = logging.getLogger(__name__)
 
@@ -67,3 +71,9 @@ def get_doc_offset(offset, document):
     for key in offset:
         value = value[key]
     return value
+
+
+def parse_time(time):
+    if isinstance(time, compat.string_types):
+        return dateutil.parser.parse(time)
+    return time
