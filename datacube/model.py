@@ -64,16 +64,6 @@ def _cross_platform_path(path):
         return path
 
 
-class DatasetMatcher(object):
-    def __init__(self, metadata):
-        # Match by exact metadata properties (a subset of the metadata doc)
-        #: :type: dict
-        self.metadata = metadata
-
-    def __repr__(self):
-        return "{}(metadata={!r})".format(self.__class__.__name__, self.metadata)
-
-
 class Dataset(object):
     def __init__(self, type_, metadata_doc, local_uri, sources=None, managed=False):
         """

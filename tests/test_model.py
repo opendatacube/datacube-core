@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from datacube.model import _uri_to_local_path, Dataset, DatasetMatcher, GeoPolygon, GeoBox, CRS
+from datacube.model import _uri_to_local_path, Dataset, GeoPolygon, GeoBox, CRS
 
 
 def test_uri_to_local_path():
@@ -34,14 +34,6 @@ def test_doctest_local_path():
 
     with pytest.raises(ValueError):
         Dataset(None, None, 'ftp://example.com/tmp/something.txt').local_path
-
-
-def test_dataset_matcher_repr():
-    ds_matcher = DatasetMatcher(metadata={'flim': 'flam'})
-
-    rep = repr(ds_matcher)
-    assert 'flim' in rep
-    assert 'flam' in rep
 
 
 def test_geobox():
