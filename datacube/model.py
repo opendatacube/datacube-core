@@ -4,14 +4,13 @@ Core classes used across modules.
 """
 from __future__ import absolute_import, division
 
-import math
-import codecs
 import logging
-import os
+import math
 from collections import namedtuple, OrderedDict
 
 import dateutil.parser
 import numpy
+import os
 from affine import Affine
 from osgeo import osr
 from pathlib import Path
@@ -19,7 +18,7 @@ from rasterio.coords import BoundingBox
 
 from datacube import compat
 from datacube.compat import parse_url
-from datacube.utils import datetime_to_seconds_since_1970
+from datacube.utils import get_doc_offset
 
 _LOG = logging.getLogger(__name__)
 
@@ -560,26 +559,6 @@ class GeoBox(object):
         return self.extent.to_crs(CRS('EPSG:4326'))
 
 
-def _get_doc_offset(offset, document):
-    """
-    :type offset: list[str]
-    :type document: dict
-
-    >>> _get_doc_offset(['a'], {'a': 4})
-    4
-    >>> _get_doc_offset(['a', 'b'], {'a': {'b': 4}})
-    4
-    >>> _get_doc_offset(['a'], {})
-    Traceback (most recent call last):
-    ...
-    KeyError: 'a'
-    """
-    value = document
-    for key in offset:
-        value = value[key]
-    return value
-
-
 def _set_doc_offset(offset, document, value):
     """
     :type offset: list[str]
@@ -595,7 +574,7 @@ def _set_doc_offset(offset, document, value):
     {'a': {'b': 'c'}}
     """
     read_offset = offset[:-1]
-    sub_doc = _get_doc_offset(read_offset, document)
+    sub_doc = get_doc_offset(read_offset, document)
     sub_doc[offset[-1]] = value
 
 

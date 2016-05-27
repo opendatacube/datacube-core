@@ -47,3 +47,23 @@ def clamp(x, l, u):
     10
     """
     return l if x < l else u if x > u else x
+
+
+def get_doc_offset(offset, document):
+    """
+    :type offset: list[str]
+    :type document: dict
+
+    >>> get_doc_offset(['a'], {'a': 4})
+    4
+    >>> get_doc_offset(['a', 'b'], {'a': {'b': 4}})
+    4
+    >>> get_doc_offset(['a'], {})
+    Traceback (most recent call last):
+    ...
+    KeyError: 'a'
+    """
+    value = document
+    for key in offset:
+        value = value[key]
+    return value
