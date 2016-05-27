@@ -226,6 +226,10 @@ class DatasetType(object):
         return self.definition['metadata']
 
     @property
+    def fields(self):
+        return self.metadata_type.dataset_reader(self.metadata).fields
+
+    @property
     def measurements(self):
         return OrderedDict((m['name'], m) for m in self.definition.get('measurements', []))
 
