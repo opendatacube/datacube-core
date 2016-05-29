@@ -126,7 +126,7 @@ class Datacube(object):
 
         #TDOD: Make Grouper in Query
         grouper = Grouper(dimension='time',
-                          group_by=lambda ds: ds.time,
+                          group_by=lambda ds: ds.center_time,
                           units='seconds since 1970-01-01 00:00:00')
         sources = self.product_sources(observations, grouper.group_by, grouper.dimension, grouper.units)
 

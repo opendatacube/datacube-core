@@ -168,13 +168,13 @@ def find_diff(input_type, output_type, bbox, datacube):
     for tile_index, geobox in generate_grid(output_type.grid_spec, bbox):
         observations = datacube.product_observations(input_type.name, geobox.extent)
         sources = datacube.product_sources(observations,
-                                           lambda ds: ds.time,
+                                           lambda ds: ds.center_time,
                                            'time',
                                            'seconds since 1970-01-01 00:00:00')
 
         created_obs = datacube.product_observations(output_type.name, geobox.extent)
         created_src = datacube.product_sources(created_obs,
-                                               lambda ds: ds.time,
+                                               lambda ds: ds.center_time,
                                                'time',
                                                'seconds since 1970-01-01 00:00:00')
 

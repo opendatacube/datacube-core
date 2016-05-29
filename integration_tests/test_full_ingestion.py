@@ -165,7 +165,8 @@ def check_open_with_api(index):
 
     geobox = GeoBox(200, 200, Affine(25, 0.0, 1500000, 0.0, -25, -3900000), CRS('EPSG:3577'))
     observations = datacube.product_observations('ls5_nbar_albers', geobox.extent)
-    sources = datacube.product_sources(observations, lambda ds: ds.time, 'time', 'seconds since 1970-01-01 00:00:00')
+    sources = datacube.product_sources(observations, lambda ds: ds.center_time, 'time',
+                                       'seconds since 1970-01-01 00:00:00')
     data = datacube.product_data(sources, geobox, input_type.measurements)
     assert data.blue.shape == (1, 200, 200)
 

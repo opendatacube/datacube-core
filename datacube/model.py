@@ -18,7 +18,7 @@ from rasterio.coords import BoundingBox
 
 from datacube import compat
 from datacube.compat import parse_url
-from datacube.utils import get_doc_offset
+from datacube.utils import get_doc_offset, parse_time
 
 _LOG = logging.getLogger(__name__)
 
@@ -118,11 +118,17 @@ class Dataset(object):
         return self.metadata.measurements
 
     @property
+    def center_time(self):
+        """
+        :rtype: datetime.datetime
+        """
+        time = self.time
+        return time.begin + (time.end - time.begin)//2
+
+    @property
     def time(self):
-        center_dt = self.metadata_doc['extent']['center_dt']
-        if isinstance(center_dt, compat.string_types):
-            center_dt = dateutil.parser.parse(center_dt)
-        return center_dt
+        time = self.metadata.time
+        return Range(parse_time(time.begin), parse_time(time.begin))
 
     @property
     def bounds(self):

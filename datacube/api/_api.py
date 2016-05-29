@@ -100,7 +100,7 @@ class API(object):
         for path, datasets in groupby(datasets, key=dataset_path):
             datasets = list(datasets)
             su = {}
-            times = [dataset.time for dataset in datasets]
+            times = [dataset.center_time for dataset in datasets]
             xs = [x for dataset in datasets for x in (dataset.bounds.left, dataset.bounds.right)]
             ys = [y for dataset in datasets for y in (dataset.bounds.top, dataset.bounds.bottom)]
             su['storage_shape'] = tuple([len(times)] + dataset_type.grid_spec.tile_resolution)

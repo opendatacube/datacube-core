@@ -276,13 +276,13 @@ def _get_group_by_func(group_by=None):
     if group_by is None or group_by == 'time':
         def just_time(ds):
             try:
-                return ds.time
+                return ds.center_time
             except KeyError:
                 # TODO: Remove this when issue #119 is resolved
                 return ds.metadata_doc['acquisition']['aos']
         return just_time
     elif group_by == 'day':
-        return lambda ds: ds.time.date()
+        return lambda ds: ds.center_time.date()
     elif group_by == 'solar_day':
         raise NotImplementedError('The group by `solar_day` feature is coming soon.')
     else:

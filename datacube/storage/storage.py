@@ -129,7 +129,7 @@ class DatasetSource(object):
         self.crs = None
         self.nodata = None
         self.format = dataset.format
-        self.time = dataset.time
+        self.time = dataset.center_time
         self.local_path = dataset.local_path
 
     @contextmanager
