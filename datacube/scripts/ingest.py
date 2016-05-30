@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import logging
-import math
 import uuid
 
 import click
@@ -53,41 +52,6 @@ def set_geobox_info(doc, crs, extent):
             }
         }
     })
-
-
-def grid_range(lower, upper, step):
-    """
-    Return indexes of a grid.
-
-    >>> list(grid_range(-4.0, -1.0, 3.0))
-    [-2, -1]
-    >>> list(grid_range(-3.0, 0.0, 3.0))
-    [-1]
-    >>> list(grid_range(-2.0, 1.0, 3.0))
-    [-1, 0]
-    >>> list(grid_range(-1.0, 2.0, 3.0))
-    [-1, 0]
-    >>> list(grid_range(0.0, 3.0, 3.0))
-    [0]
-    >>> list(grid_range(1.0, 4.0, 3.0))
-    [0, 1]
-    """
-    return range(int(math.floor(lower/step)), int(math.ceil(upper/step)))
-
-
-def generate_grid(grid_spec, bounds):
-    """
-    Return an iterator of GeoBox tiles across a grid.
-
-    :param grid_spec: GridSpec like object (must include tile_size, resolution and crs)
-    :param bounds: Boundary coordinates of the required grid
-    :return: iterator across geoboxes of tiles in a grid
-    """
-    grid_size = grid_spec.tile_size
-    for y in grid_range(bounds.bottom, bounds.top, grid_size[1]):
-        for x in grid_range(bounds.left, bounds.right, grid_size[0]):
-            tile_index = (x, y)
-            yield tile_index, GeoBox.from_grid_spec(grid_spec, tile_index)
 
 
 def generate_dataset(data, sources, prod_info, uri):
@@ -166,7 +130,7 @@ def sorted_diff(a, b, key_func=lambda x: x):
 
 def find_diff(input_type, output_type, bbox, datacube):
     tasks = []
-    for tile_index, geobox in generate_grid(output_type.grid_spec, bbox):
+    for tile_index, geobox in output_type.grid_spec.tiles(bbox):
         observations = datacube.product_observations(input_type.name, geobox.extent)
         sources = datacube.product_sources(observations,
                                            lambda ds: ds.center_time,
