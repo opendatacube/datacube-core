@@ -109,7 +109,7 @@ def test_index_dataset_with_location(index, default_metadata_type):
     first_file = '/tmp/first/something.yaml'
     second_file = '/tmp/second/something.yaml'
     type_ = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
-    dataset = Dataset(type_, _telemetry_dataset, Path(first_file).as_uri())
+    dataset = Dataset(type_, _telemetry_dataset, Path(first_file).absolute().as_uri())
     dataset = index.datasets.add(dataset)
 
     assert dataset.id == _telemetry_uuid
