@@ -10,7 +10,6 @@ import numpy
 import xarray
 from dask import array as da
 from rasterio.coords import BoundingBox
-from osgeo import ogr
 
 from ..config import LocalConfig
 from ..compat import string_types
@@ -18,6 +17,7 @@ from ..index import index_connect
 from ..model import GeoPolygon, GeoBox, Range, CRS
 from ..model import _DocReader as DocReader
 from ..storage.storage import DatasetSource, fuse_sources, RESAMPLING
+from ..utils import check_intersect
 from .query import Query
 
 _LOG = logging.getLogger(__name__)
@@ -150,7 +150,7 @@ class Datacube(object):
         # All datasets will be same type, can make assumptions
         if geopolygon:
             datasets = [dataset for dataset in datasets
-                        if _check_intersect(geopolygon, dataset.extent.to_crs(geopolygon.crs))]
+                        if check_intersect(geopolygon, dataset.extent.to_crs(geopolygon.crs))]
             # Check against the bounding box of the original scene, can throw away some portions
 
         return datasets
@@ -269,20 +269,6 @@ def fuse_lazy(datasets, geobox, measurement, fuse_func=None, prepend_dims=0):
                  resampling=RESAMPLING.nearest,
                  fuse_func=fuse_func)
     return data
-
-
-def _check_intersect(a, b):
-    def ogr_poly(poly):
-        ring = ogr.Geometry(ogr.wkbLinearRing)
-        for point in poly.points:
-            ring.AddPoint_2D(*point)
-        ring.AddPoint_2D(*poly.points[0])
-        poly = ogr.Geometry(ogr.wkbPolygon)
-        poly.AddGeometry(ring)
-        return poly
-    a = ogr_poly(a)
-    b = ogr_poly(b)
-    return a.Intersects(b) and not a.Touches(b)
 
 
 def get_crs(datasets):

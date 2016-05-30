@@ -10,6 +10,7 @@ from datetime import datetime
 
 import dateutil.parser
 from dateutil.tz import tzutc
+from osgeo import ogr
 
 from datacube import compat
 
@@ -99,3 +100,20 @@ def grid_range(lower, upper, step):
     """
     assert step > 0.0
     return range(int(math.floor(lower/step)), int(math.ceil(upper/step)))
+
+
+def check_intersect(a, b):
+    assert a.crs == b.crs
+
+    def ogr_poly(poly):
+        ring = ogr.Geometry(ogr.wkbLinearRing)
+        for point in poly.points:
+            ring.AddPoint_2D(*point)
+        ring.AddPoint_2D(*poly.points[0])
+        poly = ogr.Geometry(ogr.wkbPolygon)
+        poly.AddGeometry(ring)
+        return poly
+
+    a = ogr_poly(a)
+    b = ogr_poly(b)
+    return a.Intersects(b) and not a.Touches(b)
