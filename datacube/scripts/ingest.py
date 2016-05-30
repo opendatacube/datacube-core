@@ -129,22 +129,24 @@ def sorted_diff(a, b, key_func=lambda x: x):
 
 
 def find_diff(input_type, output_type, bbox, datacube):
+    from datacube.api.grid_workflow import GridWorkflow
+    workflow = GridWorkflow(datacube, output_type.grid_spec)
+
+    tiles_in = workflow.list_tiles(type=input_type.name).get(input_type.name, {})
+    tiles_out = workflow.list_tiles(type=output_type.name).get(output_type.name, {})
+
     tasks = []
-    for tile_index, geobox in output_type.grid_spec.tiles(bbox):
-        observations = datacube.product_observations(input_type.name, geobox.extent)
-        sources = datacube.product_sources(observations,
-                                           lambda ds: ds.center_time,
-                                           'time',
-                                           'seconds since 1970-01-01 00:00:00')
+    for tile_index in set(tiles_in.keys()) | set(tiles_out.keys()):
+        sources_in = datacube.product_sources(tiles_in.get(tile_index, []),
+                                              lambda ds: ds.center_time,
+                                              'time', 'seconds since 1970-01-01 00:00:00')
 
-        created_obs = datacube.product_observations(output_type.name, geobox.extent)
-        created_src = datacube.product_sources(created_obs,
+        sources_out = datacube.product_sources(tiles_out.get(tile_index, []),
                                                lambda ds: ds.center_time,
-                                               'time',
-                                               'seconds since 1970-01-01 00:00:00')
+                                               'time', 'seconds since 1970-01-01 00:00:00')
 
-        diff = numpy.setdiff1d(sources.time.values, created_src.time.values)
-        tasks += [(tile_index, sources.sel(time=[v])) for v in diff]
+        diff = numpy.setdiff1d(sources_in.time.values, sources_out.time.values)
+        tasks += [(tile_index, sources_in.sel(time=[v])) for v in diff]
     return tasks
 
 
