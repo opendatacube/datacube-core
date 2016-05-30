@@ -85,8 +85,7 @@ class Datacube(object):
         :rtype: pandas.DataFrame
         """
         return pandas.DataFrame([datatset_type_to_row(dataset_type)
-                                 for dataset_type in self.index.datasets.types.get_all()],
-                                index='id')
+                                 for dataset_type in self.index.datasets.types.get_all()])
 
     @property
     def variables(self):
