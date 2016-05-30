@@ -137,7 +137,7 @@ class Datacube(object):
         else:
             measurements = all_measurements
 
-        dataset = self.product_data(sources, geobox, measurements)
+        dataset = self.product_data(sources, geobox, measurements.values())
         return dataset
 
     def product_observations(self, type_name, geopolygon=None, **kwargs):
@@ -170,17 +170,20 @@ class Datacube(object):
 
     @staticmethod
     def product_data(sources, geobox, measurements, fuse_func=None):
-        # GeoPolygon defines a boundingbox with a CRS
-        # Geobox is a GeoPolygon with a resolution
-        # Geobox has named dimensions, eg lat/lon, x/y
-
+        """
+        :type sources: xarray.DataArray
+        :type geobox: datacube.model.GeoBox
+        :type measurements: list
+        :rtype: xarray.Dataset
+        """
         result = xarray.Dataset(attrs={'extent': geobox.extent, 'crs': geobox.crs})
         for name, coord in sources.coords.items():
             result[name] = coord
         for name, coord in geobox.coordinates.items():
             result[name] = (name, coord.labels, {'units': coord.units})
 
-        for name, measurement in measurements.items():
+        for measurement in measurements:
+            name = measurement['name']
             data = numpy.empty(sources.shape + geobox.shape, dtype=measurement['dtype'])
 
             for index, datasets in numpy.ndenumerate(sources.values):
