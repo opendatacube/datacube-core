@@ -230,6 +230,10 @@ class DatasetType(object):
         return self.definition['name']
 
     @property
+    def managed(self):
+        return self.definition.get('managed', False)
+
+    @property
     def metadata(self):
         return self.definition['metadata']
 
