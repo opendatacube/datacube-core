@@ -6,6 +6,8 @@ import uuid
 
 import click
 import numpy
+from copy import deepcopy
+from collections import OrderedDict
 from pathlib import Path
 from pandas import to_datetime
 from rasterio.coords import BoundingBox
@@ -197,20 +199,18 @@ def do_work(tasks, work_func, index, executor):
 
 
 def morph_dataset_type(source_type, config):
-    output_type = DatasetType(source_type.metadata_type, source_type.definition.copy())
+    output_type = DatasetType(source_type.metadata_type, deepcopy(source_type.definition))
     output_type.definition['name'] = config['output_type']
     output_type.definition['description'] = config['description']
     output_type.definition['storage'] = config['storage']
-
-    output_type.definition['metadata'] = source_type.metadata.copy()
     output_type.metadata['format'] = {'name': 'NetCDF'}
 
     def merge_measurement(measurement, spec):
         measurement.update({k: spec.get(k, measurement[k]) for k in ('name', 'nodata', 'dtype')})
         return measurement
 
-    output_type.definition['measurements'] = [merge_measurement(output_type.measurements[spec['src_varname']].copy(),
-                                                                spec) for spec in config['measurements']]
+    output_type.definition['measurements'] = [merge_measurement(output_type.measurements[spec['src_varname']], spec)
+                                              for spec in config['measurements']]
     return output_type
 
 
@@ -230,6 +230,15 @@ def get_variable_params(config):
         variable_params[varname]['chunksizes'] = chunking
 
     return variable_params
+
+
+def get_measurements(source_type, config):
+    def merge_measurement(measurement, spec):
+        measurement.update({k: spec.get(k, measurement[k]) for k in ('nodata', 'dtype')})
+        return measurement
+
+    return [merge_measurement(source_type.measurements[spec['src_varname']].copy(), spec)
+            for spec in config['measurements']]
 
 
 def get_namemap(config):
@@ -256,15 +265,15 @@ def ingest_cmd(index, config, dry_run, executor):
 
     datacube = Datacube(index=index)
 
+    grid_spec = output_type.grid_spec
+    namemap = get_namemap(config)
+    measurements = get_measurements(source_type, config)
+    variable_params = get_variable_params(config)
+    file_path_template = str(Path(config['location'], config['file_path_template']))
+
     bbox = BoundingBox(**config['ingestion_bounds'])
     # bbox = BoundingBox(1400000, -4000000, 1600000, -3800000)
     tasks = find_diff(source_type, output_type, bbox, datacube)
-
-    grid_spec = output_type.grid_spec
-    namemap = get_namemap(config)
-    measurements = source_type.measurements
-    variable_params = get_variable_params(config)
-    file_path_template = str(Path(config['location'], config['file_path_template']))
 
     def ingest_work(tile_index, sources):
         geobox = GeoBox.from_grid_spec(grid_spec, tile_index)
