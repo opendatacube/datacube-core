@@ -15,7 +15,6 @@ from ..config import LocalConfig
 from ..compat import string_types
 from ..index import index_connect
 from ..model import GeoPolygon, GeoBox, Range, CRS
-from ..model import _DocReader as DocReader
 from ..storage.storage import DatasetSource, fuse_sources, RESAMPLING
 from ..utils import check_intersect
 from .query import Query
@@ -124,7 +123,7 @@ class Datacube(object):
         resolution = query.resolution or get_resolution(observations)
         geobox = GeoBox.from_geopolygon(geopolygon, resolution)
 
-        #TDOD: Make Grouper in Query
+        # TODO: Make Grouper in Query
         grouper = Grouper(dimension='time',
                           group_by=lambda ds: ds.center_time,
                           units='seconds since 1970-01-01 00:00:00')
@@ -140,13 +139,44 @@ class Datacube(object):
         dataset = self.product_data(sources, geobox, measurements.values())
         return dataset
 
-    def product_observations(self, type_name, geopolygon=None, **kwargs):
+    def get_data_array(self, var_dim_name='variable', **indexers):
+        query = Query.from_kwargs(self.index, **indexers)
+        type_name = query.type  # TODO: Can type_name be optional?
+        query.type = None
+        observations = self.product_observations(type_name=type_name,
+                                                 geopolygon=query.geopolygon,
+                                                 **query.search_terms)
+        geopolygon = query.geopolygon or get_bounds(observations, crs=(query.output_crs or get_crs(observations)))
+        geobox = GeoBox.from_geopolygon(geopolygon, resolution=(query.resolution or get_resolution(observations)))
+
+        # TODO: Make Grouper in Query
+        grouper = Grouper(dimension='time',
+                          group_by=lambda ds: ds.center_time,
+                          units='seconds since 1970-01-01 00:00:00')
+        sources = self.product_sources(observations, grouper.group_by, grouper.dimension, grouper.units)
+
+        all_measurements = get_measurements(observations)
+        if query.variables:
+            measurements = OrderedDict((variable, all_measurements[variable]) for variable in query.variables
+                                       if variable in all_measurements)
+        else:
+            measurements = all_measurements
+
+        data_dict = OrderedDict()
+        for name, measurement in measurements.items():
+            data_dict[name] = self.variable_data(sources, geobox, measurements)
+
+        return _stack_vars(data_dict, var_dim_name)
+
+    def product_observations(self, type_name=None, geopolygon=None, **kwargs):
         if geopolygon:
             geo_bb = geopolygon.to_crs(CRS('EPSG:4326')).boundingbox
             kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
             kwargs['lon'] = Range(geo_bb.left, geo_bb.right)
         # TODO: pull out full datasets lineage?
-        datasets = self.index.datasets.search_eager(type=type_name, **kwargs)
+        if type_name is not None:
+            kwargs['type'] = type_name
+        datasets = self.index.datasets.search_eager(**kwargs)
         # All datasets will be same type, can make assumptions
         if geopolygon:
             datasets = [dataset for dataset in datasets
@@ -357,3 +387,16 @@ def _make_dask_array(sources, geobox, measurement, fuse_func=None, grid_chunks=N
                     dtype=measurement['dtype'],
                     shape=(sources.shape + geobox.shape))
     return data
+
+
+def _stack_vars(data_dict, var_dim_name, stack_name=None):
+    if len(data_dict) == 1:
+        return data_dict.pop()
+    labels = list(data_dict.keys())
+    stack = xarray.concat(
+        [data_dict[var_name] for var_name in labels],
+        dim=xarray.DataArray(labels, name=var_dim_name, dims=var_dim_name),
+        coords='minimal')
+    if stack_name:
+        stack.name = stack_name
+    return stack

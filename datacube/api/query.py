@@ -35,6 +35,7 @@ TYPE_KEYS = ('type', 'storage_type', 'dataset_type')
 SPATIAL_KEYS = ('latitude', 'lat', 'y', 'longitude', 'lon', 'long', 'x')
 CRS_KEYS = ('crs', 'coordinate_reference_system')
 
+
 class Query(object):
     def __init__(self, dataset_type=None, variables=None, **kwargs):
         self.type = dataset_type
@@ -45,11 +46,13 @@ class Query(object):
         self.slices = {}
         self.set_nan = False
         self.resolution = None
+        self.output_crs = None
 
     @classmethod
-    def from_kwargs(cls, index, **kwargs):
+    def from_kwargs(cls, index=None, **kwargs):
         """Parses a kwarg dict for query parameters
 
+        :param index: An optional `index` object, if checking of field names is desired.
         :param kwargs:
          * `dataset_type` Name of the dataset type
          * `variables` List of variables
@@ -77,13 +80,12 @@ class Query(object):
         if 'group_by' in kwargs:
             group_name = kwargs['group_by']
 
-
         remaining_keys = set(kwargs.keys()) - set(TYPE_KEYS + SPATIAL_KEYS + CRS_KEYS + ('variables', 'group_by'))
-        known_fields = set(index.datasets.get_field_names())
-
-        unknown_keys = remaining_keys - known_fields
-        if unknown_keys:
-            raise LookupError('Unknown agruments: ', unknown_keys)
+        if index:
+            known_fields = set(index.datasets.get_field_names())
+            unknown_keys = remaining_keys - known_fields
+            if unknown_keys:
+                raise LookupError('Unknown agruments: ', unknown_keys)
 
         for key in remaining_keys:
             query.search.update(_values_to_search(**{key:kwargs[key]}))
