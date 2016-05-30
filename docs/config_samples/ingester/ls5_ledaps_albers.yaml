@@ -3,7 +3,7 @@ output_type: ls5_ledaps_albers
 
 description: Landsat 5 LEDAPS 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
 
-location: 'c:\datacube\'
+location: '/media/simonaoliver/datacube/tiles'
 file_path_template: 'LS5_TM_LEDAPS/LS5_TM_LEDAPS_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
 global_attributes:
   title: CEOS Data Cube Landsat Surface Reflectance
@@ -102,73 +102,83 @@ measurements:
       attrs:
           long_name: "Surface Reflectance 2.08-2.35 microns (Short-wave Infrared)"
           alias: "band_7"
-    - name: cfmask
+    - name: cf_mask
       dtype: int16
       nodata: 255
-      units: '1'
       resampling_method: nearest
       src_varname: 'cfmask'
       zlib: True
-    - name: cfmask_conf
+      attrs:
+          long_name: "CFmask"
+    - name: cf_mask_conf
       dtype: int16
       nodata: 255
-      units: '1'
       resampling_method: nearest
       src_varname: 'cfmask_conf'
       zlib: True
-    - name: sr_adjacent_cloud_qa
+      attrs:
+          long_name: "CFmask Cloud Confidence"
+    - name: adjacent_cloud_qa
       dtype: int16
       nodata: 255
-      units: '1'
       resampling_method: nearest
       src_varname: 'sr_adjacent_cloud_qa'
       zlib: True
-    - name: sr_atmos_opacity
+      attrs:
+          long_name: "Adjacent Cloud QA"
+    - name: atmos_opacity
       dtype: int16
       nodata: -9999
-      units: '1'
       resampling_method: nearest
       src_varname: 'sr_atmos_opacity'
       zlib: True
-    - name: sr_cloud_qa
+      attrs:
+          long_name: "Atmospheric Opacity"
+    - name: cloud_qa
       dtype: int16
       nodata: 255
-      units: '1'
       resampling_method: nearest
       src_varname: 'sr_cloud_qa'
       zlib: True
-    - name: sr_cloud_shadow_qa
+      attrs:
+          long_name: "Cloud QA"
+    - name: cloud_shadow_qa
       dtype: int16
       nodata: 255
-      units: '1'
       resampling_method: nearest
       src_varname: 'sr_cloud_shadow_qa'
       zlib: True
-    - name: sr_ddv_qa
+      attrs:
+          long_name: "Cloud Shadow QA"
+    - name: ddv_qa
       dtype: int16
       nodata: 255
-      units: '1'
       resampling_method: nearest
       src_varname: 'sr_ddv_qa'
       zlib: True
-    - name: sr_fill_qa
+      attrs:
+          long_name: "DDV QA"
+    - name: fill_qa
       dtype: int16
       nodata: 255
-      units: '1'
       resampling_method: nearest
       src_varname: 'sr_fill_qa'
       zlib: True
-    - name: sr_land_water_qa
+      attrs:
+          long_name: "Fill QA"
+    - name: land_water_qa
       dtype: int16
       nodata: 255
-      units: '1'
       resampling_method: nearest
       src_varname: 'sr_land_water_qa'
       zlib: True
-    - name: sr_snow_qa
+      attrs:
+          long_name: "Land Water QA"
+    - name: snow_qa
       dtype: int16
       nodata: 255
-      units: '1'
       resampling_method: nearest
       src_varname: 'sr_snow_qa'
       zlib: True
+      attrs:
+          long_name: "Snow QA"

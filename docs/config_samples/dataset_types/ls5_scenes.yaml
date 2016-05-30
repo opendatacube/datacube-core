@@ -237,6 +237,7 @@ measurements:
             16383: true
 
 ---
+
 name: ls5_ledaps_scene
 description: Landsat 5 LEDAPS 25 metre
 metadata_type: eo
@@ -319,6 +320,15 @@ measurements:
       dtype: uint8
       nodata: 255
       units: '1'
+      flags_definition: 
+        cfmask_conf:
+          bits: [0,1,2,3,4,5,6,7]
+          description: CFmask confidence
+          values:
+            0: none
+            1: '<=12.5%'
+            2: '>12.5%&<= 22.5%'
+            3: '>22.5%'
     - name: 'sr_adjacent_cloud_qa'
       aliases: [adjacent_cloud]
       dtype: uint8
@@ -350,7 +360,7 @@ measurements:
             255: cloud
     - name: 'sr_cloud_shadow_qa'
       aliases: [cloud_shadow]
-      dtype: int16
+      dtype: uint8
       nodata: 255
       units: '1'
       flags_definition: 
@@ -362,7 +372,7 @@ measurements:
             255: cloud_shadow
     - name: 'sr_ddv_qa'
       aliases: [ddv]
-      dtype: int16
+      dtype: uint8
       nodata: 255
       units: '1'
       flags_definition: 
@@ -374,7 +384,7 @@ measurements:
             255: ddv
     - name: 'sr_fill_qa'
       aliases: [fill]
-      dtype: int16
+      dtype: uint8
       nodata: 255
       units: '1'
       flags_definition: 
@@ -386,7 +396,7 @@ measurements:
             255: fill
     - name: 'sr_land_water_qa'
       aliases: [land_water]
-      dtype: int16
+      dtype: uint8
       nodata: 255
       units: '1'
       flags_definition: 
@@ -398,7 +408,7 @@ measurements:
             255: water
     - name: 'sr_snow_qa'
       aliases: [snow]
-      dtype: int16
+      dtype: uint8
       nodata: 255
       units: '1'
       flags_definition: 
