@@ -77,8 +77,6 @@ DATASET_LOCATION = Table(
     Column('id', Integer, primary_key=True, autoincrement=True),
     Column('dataset_ref', None, ForeignKey(DATASET.c.id), nullable=False),
 
-    Column('managed', Boolean, nullable=False),
-
     # The base URI to find the dataset.
     #
     # All paths in the dataset metadata can be computed relative to this.

@@ -298,7 +298,7 @@ class DatasetResource(object):
                     self._db.insert_dataset_source(classifier, dataset.id, source_dataset.id)
 
         if dataset.local_uri:
-            self._db.ensure_dataset_location(dataset.id, dataset.local_uri, dataset.managed)
+            self._db.ensure_dataset_location(dataset.id, dataset.local_uri)
 
         return dataset
 

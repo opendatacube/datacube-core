@@ -46,18 +46,7 @@ _DATASET_SELECT_FIELDS = (
         )
     ).order_by(
         DATASET_LOCATION.c.added.desc()
-    ).limit(1).label('local_uri'),
-    # The most recent file uri. We may want more advanced path selection in the future...
-    select([
-        DATASET_LOCATION.c.managed,
-    ]).where(
-        and_(
-            DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
-            DATASET_LOCATION.c.uri_scheme == 'file'
-        )
-    ).order_by(
-        DATASET_LOCATION.c.added.desc()
-    ).limit(1).label('managed')
+    ).limit(1).label('local_uri')
 )
 
 PGCODE_UNIQUE_CONSTRAINT = '23505'
@@ -233,7 +222,7 @@ class PostgresDb(object):
                 # We're still going to raise it, because the transaction will have been invalidated.
             raise
 
-    def ensure_dataset_location(self, dataset_id, uri, allow_replacement):
+    def ensure_dataset_location(self, dataset_id, uri):
         """
         Add a location to a dataset if it is not already recorded.
         :type dataset_id: str or uuid.UUID
@@ -246,9 +235,9 @@ class PostgresDb(object):
         #      This is ok for our purposes.)
         self._connection.execute(
             DATASET_LOCATION.insert().from_select(
-                ['dataset_ref', 'uri_scheme', 'uri_body', 'managed'],
+                ['dataset_ref', 'uri_scheme', 'uri_body'],
                 select([
-                    bindparam('dataset_ref'), bindparam('uri_scheme'), bindparam('uri_body'), bindparam('managed')
+                    bindparam('dataset_ref'), bindparam('uri_scheme'), bindparam('uri_body')
                 ]).where(
                     ~exists(select([DATASET_LOCATION.c.id]).where(
                         and_(
@@ -262,7 +251,6 @@ class PostgresDb(object):
             dataset_ref=dataset_id,
             uri_scheme=scheme,
             uri_body=body,
-            managed=allow_replacement,
         )
 
     def contains_dataset(self, dataset_id):
