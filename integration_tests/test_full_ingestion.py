@@ -82,6 +82,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset,
 
     datasets = index.datasets.search_eager(type='ls5_nbar_albers')
     assert len(datasets) > 0
+    assert datasets[0].managed
 
     ds_path = str(datasets[0].local_path)
     with netCDF4.Dataset(ds_path) as nco:

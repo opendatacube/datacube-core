@@ -64,7 +64,7 @@ def _cross_platform_path(path):
 
 
 class Dataset(object):
-    def __init__(self, type_, metadata_doc, local_uri, sources=None, managed=False):
+    def __init__(self, type_, metadata_doc, local_uri, sources=None):
         """
         A dataset on disk.
 
@@ -87,9 +87,6 @@ class Dataset(object):
         #: :type: dict[str, Dataset]
         self.sources = sources or {}
 
-        #: :type: bool
-        self.managed = managed
-
         assert set(self.metadata.sources.keys()) == set(self.sources.keys())
 
     @property
@@ -108,6 +105,10 @@ class Dataset(object):
     @property
     def id(self):
         return self.metadata.id
+
+    @property
+    def managed(self):
+        return self.type.managed
 
     @property
     def format(self):

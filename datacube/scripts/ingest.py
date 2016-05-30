@@ -111,8 +111,7 @@ def generate_dataset(data, sources, prod_info, uri):
         dataset = Dataset(prod_info,
                           document,
                           local_uri=uri,
-                          sources={str(idx): dataset for idx, dataset in enumerate(sources)},
-                          managed=True)
+                          sources={str(idx): dataset for idx, dataset in enumerate(sources)})
         datasets.append(dataset)
     nudata['dataset'] = (['time'],
                          numpy.array([yaml.dump(dataset.metadata_doc, Dumper=SafeDumper, encoding='utf-8')
@@ -201,6 +200,7 @@ def do_work(tasks, work_func, index, executor):
 def morph_dataset_type(source_type, config):
     output_type = DatasetType(source_type.metadata_type, deepcopy(source_type.definition))
     output_type.definition['name'] = config['output_type']
+    output_type.definition['managed'] = True
     output_type.definition['description'] = config['description']
     output_type.definition['storage'] = config['storage']
     output_type.metadata['format'] = {'name': 'NetCDF'}

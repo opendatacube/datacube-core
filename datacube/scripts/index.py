@@ -62,7 +62,7 @@ def match_dataset(dataset_doc, uri, rules):
     rule = match_doc(rules, dataset_doc)
     sources = {cls: match_dataset(source_doc, None, rules)
                for cls, source_doc in rule['type'].dataset_reader(dataset_doc).sources.items()}
-    return Dataset(rule['type'], dataset_doc, uri, sources=sources, managed=rule.get('managed', False))
+    return Dataset(rule['type'], dataset_doc, uri, sources=sources)
 
 
 def load_rules_from_file(filename, index):

@@ -343,8 +343,7 @@ class DatasetResource(object):
         return Dataset(
             self.types.get(dataset_res.dataset_type_ref),
             dataset_res.metadata,
-            dataset_res.local_uri,
-            managed=dataset_res.managed
+            dataset_res.local_uri
         )
 
     def _make_many(self, query_result):
