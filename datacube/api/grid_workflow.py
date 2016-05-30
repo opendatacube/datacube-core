@@ -71,21 +71,18 @@ class GridWorkflow(object):
     def list_tiles(self, **indexers):
         query = Query.from_kwargs(self.datacube.index, **indexers)
         observations = self.datacube.product_observations(**query.search_terms)
+        if not observations:
+            return {}
 
-        tiles = []
+        tiles = {}
         # extents = [dataset.extent.to_crs(self.grid_spec.crs) for dataset in observations]
 
         bounds = get_bounds(observations, self.grid_spec.crs)
-        for tile_index, tile_geobox in self.grid_spec.tiles(bounds):
+        for tile_index, tile_geobox in self.grid_spec.tiles(bounds.boundingbox):
             tile_geopolygon = tile_geobox.extent
             for dataset in observations:
-                if check_intersect(tile_geopolygon, dataset.extent.to_crs(self.grid_spec.crs)):
-                    tile_query = {
-                        'xy_index': tile_index,
-                        'dataset_type': dataset.type.name,
-                    }
-                    tile_query.update({dim: dataset.__getattribute__(dim)
-                                       for dim in dataset.type.dimensions
-                                       if dim not in dataset.type.grid_spec.dimensions})
-                    tiles.append(tile_query)
+                if not check_intersect(tile_geopolygon, dataset.extent.to_crs(self.grid_spec.crs)):
+                    continue
+
+                tiles.setdefault(dataset.type.name, {}).setdefault(tile_index, []).append(dataset)
         return tiles
