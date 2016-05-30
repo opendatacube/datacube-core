@@ -18,7 +18,7 @@ from rasterio.coords import BoundingBox
 
 from datacube import compat
 from datacube.compat import parse_url
-from datacube.utils import get_doc_offset, parse_time
+from datacube.utils import get_doc_offset, parse_time, grid_range
 
 _LOG = logging.getLogger(__name__)
 
@@ -436,6 +436,19 @@ class GridSpec(object):
     @property
     def tile_resolution(self):
         return [int(abs(ts / res)) for ts, res in zip(self.tile_size, self.resolution)]
+
+    def tiles(self, bounds):
+        """
+        Return an iterator of tile_index and GeoBox pairs across a grid.
+
+        :param bounds: Boundary coordinates of the required grid
+        :return: iterator across geoboxes of tiles in a grid
+        """
+        grid_size = self.tile_size
+        for y in grid_range(bounds.bottom, bounds.top, grid_size[1]):
+            for x in grid_range(bounds.left, bounds.right, grid_size[0]):
+                tile_index = (x, y)
+                yield tile_index, GeoBox.from_grid_spec(self, tile_index)
 
     def __str__(self):
         return "GridSpec(crs=%s, tile_size=%s, resolution=%s)" % (self.crs, self.tile_size, self.resolution)

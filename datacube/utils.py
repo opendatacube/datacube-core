@@ -5,6 +5,7 @@ Utility functions used in storage modules
 from __future__ import absolute_import, division, print_function
 
 import logging
+import math
 from datetime import datetime
 
 import dateutil.parser
@@ -77,3 +78,24 @@ def parse_time(time):
     if isinstance(time, compat.string_types):
         return dateutil.parser.parse(time)
     return time
+
+
+def grid_range(lower, upper, step):
+    """
+    Return indexes of a grid.
+
+    >>> list(grid_range(-4.0, -1.0, 3.0))
+    [-2, -1]
+    >>> list(grid_range(-3.0, 0.0, 3.0))
+    [-1]
+    >>> list(grid_range(-2.0, 1.0, 3.0))
+    [-1, 0]
+    >>> list(grid_range(-1.0, 2.0, 3.0))
+    [-1, 0]
+    >>> list(grid_range(0.0, 3.0, 3.0))
+    [0]
+    >>> list(grid_range(1.0, 4.0, 3.0))
+    [0, 1]
+    """
+    assert step > 0.0
+    return range(int(math.floor(lower/step)), int(math.ceil(upper/step)))
