@@ -84,8 +84,13 @@ class Datacube(object):
         List of products as a Pandas DataFrame.
         :rtype: pandas.DataFrame
         """
-        return pandas.DataFrame([datatset_type_to_row(dataset_type)
-                                 for dataset_type in self.index.datasets.types.get_all()])
+        rows = [datatset_type_to_row(dataset_type) for dataset_type in self.index.datasets.types.get_all()]
+        keys = set(k for r in rows for k in r)
+        main_cols = ['id', 'name', 'description']
+        grid_cols = ['crs', 'resolution', 'tile_size', 'spatial_dimensions']
+        other_cols = list(keys - set(main_cols) - set(grid_cols))
+        cols = main_cols + other_cols + grid_cols
+        return pandas.DataFrame(rows, columns=cols).set_index('id')
 
     @property
     def variables(self):
