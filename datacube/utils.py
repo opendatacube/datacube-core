@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 import math
+import numpy
 from datetime import datetime
 
 import dateutil.parser
@@ -117,3 +118,15 @@ def check_intersect(a, b):
     a = ogr_poly(a)
     b = ogr_poly(b)
     return a.Intersects(b) and not a.Touches(b)
+
+
+def data_resolution_and_offset(data):
+    """
+    >>> data_resolution_and_offset(numpy.array([1.5, 2.5, 3.5]))
+    (1.0, 1.0)
+    >>> data_resolution_and_offset(numpy.array([5, 3, 1]))
+    (-2.0, 6.0)
+    """
+    res = (data[data.size-1] - data[0])/(data.size-1.0)
+    off = data[0] - 0.5*res
+    return numpy.asscalar(res), numpy.asscalar(off)

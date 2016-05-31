@@ -14,6 +14,8 @@ import numpy
 from datacube.api.masking import describe_flags_def
 
 # pylint: disable=ungrouped-imports,wrong-import-order
+from datacube.utils import data_resolution_and_offset
+
 try:
     from datacube.storage.netcdf_safestrings import SafeStringsDataset as Dataset
 except TypeError:  # The above fails when netCDF4.Dataset is mocked, eg in RTD
@@ -179,18 +181,6 @@ def write_geographical_extents_attributes(nco, geo_extents):
     # nco.geospatial_lon_resolution = "{} degrees".format(abs(geobox.affine.a))
 
 
-def _get_resolution_and_offset(data):
-    """
-    >>> _get_resolution_and_offset(numpy.array([1.5, 2.5, 3.5]))
-    (1.0, 1.0)
-    >>> _get_resolution_and_offset(numpy.array([5, 3, 1]))
-    (-2.0, 6.0)
-    """
-    res = (data[data.size-1] - data[0])/(data.size-1.0)
-    off = data[0] - 0.5*res
-    return res, off
-
-
 def create_grid_mapping_variable(nco, crs):
     if crs.geographic:
         crs_var = _create_latlon_grid_mapping_variable(nco, crs)
@@ -206,8 +196,8 @@ def create_grid_mapping_variable(nco, crs):
     crs_var.crs_wkt = crs.wkt
 
     crs_var.spatial_ref = crs.wkt
-    xres, xoff = _get_resolution_and_offset(nco[coords[0]])
-    yres, yoff = _get_resolution_and_offset(nco[coords[1]])
+    xres, xoff = data_resolution_and_offset(nco[coords[0]])
+    yres, yoff = data_resolution_and_offset(nco[coords[1]])
     crs_var.GeoTransform = [xoff, xres, 0.0, yoff, 0.0, yres]
 
     # TODO: write_geographical_extents_attributes
