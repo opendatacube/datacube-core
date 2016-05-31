@@ -11,11 +11,10 @@ from datetime import datetime
 import netCDF4
 import numpy
 
-from datacube.api.masking import describe_flags_def
-
-# pylint: disable=ungrouped-imports,wrong-import-order
+from datacube.storage.masking import describe_flags_def
 from datacube.utils import data_resolution_and_offset
 
+# pylint: disable=ungrouped-imports,wrong-import-order
 try:
     from datacube.storage.netcdf_safestrings import SafeStringsDataset as Dataset
 except TypeError:  # The above fails when netCDF4.Dataset is mocked, eg in RTD
