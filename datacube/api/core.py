@@ -397,7 +397,8 @@ def _make_dask_array(sources, geobox, measurement, fuse_func=None, grid_chunks=N
 
 def _stack_vars(data_dict, var_dim_name, stack_name=None):
     if len(data_dict) == 1:
-        return data_dict.pop()
+        key, value = data_dict.popitem()
+        return value
     labels = list(data_dict.keys())
     stack = xarray.concat(
         [data_dict[var_name] for var_name in labels],

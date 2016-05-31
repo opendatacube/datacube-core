@@ -60,8 +60,8 @@ class GridWorkflow(object):
         cells = set()
         extents = [dataset.extent.to_crs(self.grid_spec.crs) for dataset in observations]
 
-        bounds = get_bounds(observations, self.grid_spec.crs)
-        for tile_index, tile_geobox in self.grid_spec.tiles(bounds):
+        bounds_geopolygon = get_bounds(observations, self.grid_spec.crs)
+        for tile_index, tile_geobox in self.grid_spec.tiles(bounds_geopolygon.boundingbox):
             tile_geopolygon = tile_geobox.extent
             if any(check_intersect(tile_geopolygon, dataset_geopolygon) for dataset_geopolygon in extents):
                 cells.add(tile_index)
@@ -76,8 +76,8 @@ class GridWorkflow(object):
         tiles = {}
         # extents = [dataset.extent.to_crs(self.grid_spec.crs) for dataset in observations]
 
-        bounds = get_bounds(observations, self.grid_spec.crs)
-        for tile_index, tile_geobox in self.grid_spec.tiles(bounds.boundingbox):
+        bounds_geopolygon = get_bounds(observations, self.grid_spec.crs)
+        for tile_index, tile_geobox in self.grid_spec.tiles(bounds_geopolygon.boundingbox):
             tile_geopolygon = tile_geobox.extent
             for dataset in observations:
                 if not check_intersect(tile_geopolygon, dataset.extent.to_crs(self.grid_spec.crs)):

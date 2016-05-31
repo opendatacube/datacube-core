@@ -85,7 +85,7 @@ class Query(object):
             known_fields = set(index.datasets.get_field_names())
             unknown_keys = remaining_keys - known_fields
             if unknown_keys:
-                raise LookupError('Unknown agruments: ', unknown_keys)
+                raise LookupError('Unknown arguments: ', unknown_keys)
 
         for key in remaining_keys:
             query.search.update(_values_to_search(**{key:kwargs[key]}))
