@@ -112,6 +112,7 @@ def test_end_to_end(global_integration_cli_args, index, testdata_dir):
 
     check_open_with_api(index)
     check_open_with_dc(index)
+    check_open_with_grid_workflow(index)
     check_analytics_list_searchables(index)
     check_get_descriptor(index)
     check_get_data(index)
@@ -151,7 +152,6 @@ def check_open_with_api(index):
             'longitude': {'range': (149, 150)}}
     }
     data = api.get_data(query)  # , dataset_groups=groups)
-    print(data)
     assert abs(data['element_sizes'][1] - ALBERS_ELEMENT_SIZE) < .0000001
     assert abs(data['element_sizes'][2] - ALBERS_ELEMENT_SIZE) < .0000001
 
@@ -160,13 +160,41 @@ def check_open_with_dc(index):
     from datacube.api.core import Datacube
     dc = Datacube(index=index)
 
-    # data_array = dc.get_data_array(storage_type='ls5_nbar_albers', variables=['blue'],
-    #                                 latitude=(-34, -35), longitude=(149, 150))
-    # assert data_array.size
-    #
+    data_array = dc.get_data_array(storage_type='ls5_nbar_albers', variables=['blue'],
+                                   latitude=(-34, -35), longitude=(149, 150))
+    assert data_array.shape
+
     dataset = dc.get_dataset(storage_type='ls5_nbar_albers', variables=['blue'],
                              latitude=(-34, -35), longitude=(149, 150))
     assert dataset['blue'].size
+
+    products_df = dc.products
+    assert len(products_df)
+    assert len(products_df[products_df['name'].isin(['ls5_nbar_albers'])])
+    assert len(products_df[products_df['name'].isin(['ls5_pq_albers'])])
+
+    assert len(dc.variables)
+
+
+def check_open_with_grid_workflow(index):
+    from datacube.api.core import Datacube
+    dc = Datacube(index=index)
+
+    type_name = 'ls5_nbar_albers'
+    dt = dc.index.datasets.types.get_by_name(type_name)
+
+    from datacube.api.grid_workflow import GridWorkflow
+    gw = GridWorkflow(dc, dt.grid_spec)
+
+    cells = gw.list_cells(type=type_name)
+    assert LBG_CELL in cells
+
+    tiles = gw.list_tiles(type=type_name)
+    assert tiles
+
+    dataset_cell = gw.get_dataset(LBG_CELL, type=type_name, variables=['blue'])
+    assert dataset_cell['blue'].size
+
     #
     # data_array_cell = dc.get_data_array_by_cell(LBG_CELL, storage_type='ls5_nbar_albers', variables=['blue'])
     # assert data_array_cell.size
@@ -174,9 +202,6 @@ def check_open_with_dc(index):
     # data_array_cell = dc.get_data_array_by_cell(x_index=LBG_CELL_X, y_index=LBG_CELL_Y,
     #                                              storage_type='ls5_nbar_albers', variables=['blue'])
     # assert data_array_cell.size
-    #
-    # dataset_cell = dc.get_dataset_by_cell(LBG_CELL, storage_type='ls5_nbar_albers', variables=['blue'])
-    # assert dataset_cell['blue'].size
     #
     # dataset_cell = dc.get_dataset_by_cell([LBG_CELL], storage_type='ls5_nbar_albers', variables=['blue'])
     # assert dataset_cell['blue'].size
