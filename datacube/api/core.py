@@ -8,6 +8,7 @@ from math import ceil
 import pandas
 import numpy
 import xarray
+from affine import Affine
 from dask import array as da
 from rasterio.coords import BoundingBox
 
@@ -16,7 +17,7 @@ from ..compat import string_types
 from ..index import index_connect
 from ..model import GeoPolygon, GeoBox, Range, CRS
 from ..storage.storage import DatasetSource, fuse_sources, RESAMPLING
-from ..utils import check_intersect
+from ..utils import check_intersect, data_resolution_and_offset
 from .query import Query
 
 _LOG = logging.getLogger(__name__)
@@ -24,6 +25,31 @@ _LOG = logging.getLogger(__name__)
 
 Group = namedtuple('Group', ['key', 'datasets'])
 Grouper = namedtuple('Grouper', ['dimension', 'group_by', 'units'])
+
+
+def _xarray_affine(obj):
+    dims = obj.crs.dimensions
+    xres, xoff = data_resolution_and_offset(obj[dims[1]].values)
+    yres, yoff = data_resolution_and_offset(obj[dims[0]].values)
+    return Affine.translation(xoff, yoff) * Affine.scale(xres, yres)
+
+
+def _get_min_max(data):
+    res, off = data_resolution_and_offset(data)
+    left, right = numpy.asscalar(data[0]-0.5*res), numpy.asscalar(data[-1]+0.5*res)
+    return (right, left) if res < 0 else (left, right)
+
+
+def _xarray_extent(obj):
+    dims = obj.crs.dimensions
+    left, right = _get_min_max(obj[dims[1]].values)
+    bottom, top = _get_min_max(obj[dims[0]].values)
+    points = [[left, bottom], [left, top], [right, top], [right, bottom]]
+    return GeoPolygon(points, obj.crs)
+
+
+xarray.Dataset.affine = property(_xarray_affine)
+xarray.Dataset.extent = property(_xarray_extent)
 
 
 class Datacube(object):
@@ -203,7 +229,7 @@ class Datacube(object):
         :type fuse_func: function to merge successive arrays as an output
         :rtype: xarray.Dataset
         """
-        result = xarray.Dataset(attrs={'extent': geobox.extent, 'crs': geobox.crs})
+        result = xarray.Dataset(attrs={'crs': geobox.crs})
         for name, coord in sources.coords.items():
             result[name] = coord
         for name, coord in geobox.coordinates.items():
@@ -249,8 +275,6 @@ class Datacube(object):
                                   dims=dims,
                                   name=measurement['name'],
                                   attrs={
-                                      'extent': geobox.extent,
-                                      'affine': geobox.affine,
                                       'crs': geobox.crs,
                                       'nodata': measurement.get('nodata'),
                                       'units': measurement.get('units', '1')
@@ -271,8 +295,6 @@ class Datacube(object):
                                   dims=dims,
                                   name=measurement['name'],
                                   attrs={
-                                      'extent': geobox.extent,
-                                      'affine': geobox.affine,
                                       'crs': geobox.crs,
                                       'nodata': measurement.get('nodata'),
                                       'units': measurement.get('units', '1')
