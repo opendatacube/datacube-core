@@ -89,45 +89,6 @@ def write_product(data, sources, output_prod_info, global_attrs, var_params, pat
     return nudatasets
 
 
-def sorted_diff(a, b, key_func=lambda x: x):
-    """
-    >>> list(sorted_diff([1,2,3], []))
-    [1, 2, 3]
-    >>> list(sorted_diff([1,2,3], [1]))
-    [2, 3]
-    >>> list(sorted_diff([1,2,2,2,3], [2]))
-    [1, 3]
-    >>> list(sorted_diff([1,2,3], [-1,2,4,5,6]))
-    [1, 3]
-    """
-    aiter = iter(a)
-    biter = iter(b)
-
-    try:
-        val_b = next(biter)
-    except StopIteration:
-        for val_a in aiter:
-            yield val_a
-        return
-    val_a = next(aiter)
-
-    while True:
-        if key_func(val_a) < key_func(val_b):
-            yield val_a
-            val_a = next(aiter)
-        elif key_func(val_a) > key_func(val_b):
-            try:
-                val_b = next(biter)
-            except StopIteration:
-                break
-        else:
-            val_a = next(aiter)
-
-    yield val_a
-    for val_a in aiter:
-        yield val_a
-
-
 def find_diff(input_type, output_type, bbox, datacube):
     from datacube.api.grid_workflow import GridWorkflow
     workflow = GridWorkflow(datacube, output_type.grid_spec)
@@ -238,7 +199,6 @@ def ingest_cmd(index, config, dry_run, executor):
     file_path_template = str(Path(config['location'], config['file_path_template']))
 
     bbox = BoundingBox(**config['ingestion_bounds'])
-    # bbox = BoundingBox(1400000, -4000000, 1600000, -3800000)
     tasks = find_diff(source_type, output_type, bbox, datacube)
 
     def ingest_work(tile_index, sources):
