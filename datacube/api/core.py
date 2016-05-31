@@ -114,11 +114,7 @@ class Datacube(object):
 
     def get_dataset(self, **indexers):
         query = Query.from_kwargs(self.index, **indexers)
-        type_name = query.type  # TODO: Can type_name be optional?
-        query.type = None
-        observations = self.product_observations(type_name=type_name,
-                                                 geopolygon=query.geopolygon,
-                                                 **query.search_terms)
+        observations = self.product_observations(geopolygon=query.geopolygon, **query.search_terms)
         geopolygon = query.geopolygon
         if not geopolygon:
             crs = query.output_crs or get_crs(observations)
@@ -145,11 +141,8 @@ class Datacube(object):
 
     def get_data_array(self, var_dim_name='variable', **indexers):
         query = Query.from_kwargs(self.index, **indexers)
-        type_name = query.type  # TODO: Can type_name be optional?
-        query.type = None
-        observations = self.product_observations(type_name=type_name,
-                                                 geopolygon=query.geopolygon,
-                                                 **query.search_terms)
+        observations = self.product_observations(geopolygon=query.geopolygon, **query.search_terms)
+
         geopolygon = query.geopolygon or get_bounds(observations, crs=(query.output_crs or get_crs(observations)))
         geobox = GeoBox.from_geopolygon(geopolygon, resolution=(query.resolution or get_resolution(observations)))
 
@@ -181,7 +174,6 @@ class Datacube(object):
         if type_name is not None:
             kwargs['type'] = type_name
         datasets = self.index.datasets.search_eager(**kwargs)
-        # All datasets will be same type, can make assumptions
         if geopolygon:
             datasets = [dataset for dataset in datasets
                         if check_intersect(geopolygon, dataset.extent.to_crs(geopolygon.crs))]
@@ -207,7 +199,8 @@ class Datacube(object):
         """
         :type sources: xarray.DataArray
         :type geobox: datacube.model.GeoBox
-        :type measurements: list
+        :type measurements: list of measurement dict with keys: {'name', 'dtype', 'nodata', 'units'}
+        :type fuse_func: function to merge successive arrays as an output
         :rtype: xarray.Dataset
         """
         result = xarray.Dataset(attrs={'extent': geobox.extent, 'crs': geobox.crs})
@@ -286,8 +279,11 @@ class Datacube(object):
                                   })
         return result
 
-    def __repr__(self):
+    def __str__(self):
         return "Datacube<index={!r}>".format(self.index)
+
+    def __repr__(self):
+        return self.__str__()
 
 
 def fuse_lazy(datasets, geobox, measurement, fuse_func=None, prepend_dims=0):

@@ -229,13 +229,7 @@ class API(object):
                 else:
                     dt_data['element_sizes'].append(abs(coords[0] - coords[1]))
             else:
-                dt_data['indices'][dim] = []
-                dt_data['element_sizes'][dim] = numpy.NaN
-                dt_data['coordinate_reference_systems'].append({
-                    'reference_system_definition': 'undefined',
-                    'reference_system_unit': 'undefined'
-                })
-                dt_data['size'] += tuple(0)
+                raise NotImplementedError('Unsupported dimension type: ', dim)
         return dt_data
 
     def _get_data_for_measurement(self, dataset_type, sources, variables, geobox):

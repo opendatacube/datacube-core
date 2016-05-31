@@ -17,6 +17,7 @@ from __future__ import absolute_import, division, print_function
 
 import datetime
 
+import pytest
 from dateutil import tz
 
 from ..util import isclose
@@ -96,6 +97,31 @@ def test_convert_descriptor_query_to_search_query_with_single_value():
     assert search_query['lon'].begin != search_query['lon'].end
 
 
+def test_descriptor_handles_bad_input():
+    with pytest.raises(ValueError):
+        descriptor_query = "Not a descriptor"
+        Query.from_descriptor_request(descriptor_query)
+
+    with pytest.raises(ValueError):
+        descriptor_query = ["Not a descriptor"]
+        Query.from_descriptor_request(descriptor_query)
+
+    with pytest.raises(ValueError):
+        descriptor_query = {
+            'dimensions': {
+                'latitude': {
+                    'range': -35,
+                    'crs': 'EPSG:4326',
+                },
+                'longitude': {
+                    'range': 1458629.8414059384,
+                    'crs': 'EPSG:3577',
+                }
+            }
+        }
+        Query.from_descriptor_request(descriptor_query)
+
+
 def test_datetime_to_timestamp():
     assert _datetime_to_timestamp((1990, 1, 7)) == 631670400
     assert _datetime_to_timestamp(datetime.datetime(1990, 1, 7)) == 631670400
@@ -112,6 +138,7 @@ def test_query_kwargs():
                                                    u'gsi', 'type', 'id', ]
 
     query = Query.from_kwargs(index=mock_index, dataset_type='ls5_nbar_albers')
+    assert str(query)
     assert query.type == 'ls5_nbar_albers'
     assert query.search_terms['type'] == 'ls5_nbar_albers'
 
@@ -153,5 +180,10 @@ def test_query_kwargs():
     query = Query.from_kwargs(index=mock_index, time=('2001', '2002'))
     assert 'time' in query.search
 
-    # query = Query.from_kwargs(index=mock_index, group_by='time')
-    # assert query.group_by
+    with pytest.raises(ValueError):
+        Query.from_kwargs(index=mock_index,
+                          y=-4174726, coordinate_reference_system='WGS84',
+                          x=1515184, crs='EPSG:3577')
+
+    with pytest.raises(LookupError):
+        Query.from_kwargs(index=mock_index, y=-4174726, x=1515184, crs='EPSG:3577', made_up_key='NotReal')

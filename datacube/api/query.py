@@ -96,7 +96,7 @@ class Query(object):
     def from_descriptor_request(cls, descriptor_request):
         if descriptor_request is None:
             descriptor_request = {}
-        if not hasattr(descriptor_request, '__getitem__'):
+        if not isinstance(descriptor_request, collections.Mapping):
             raise ValueError('Could not understand descriptor {}'.format(descriptor_request))
         query = cls()
 
@@ -159,6 +159,9 @@ class Query(object):
             ))
 
     def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
         return """Datacube Query:
         type = {type}
         variables = {variables}
@@ -295,6 +298,6 @@ def _get_as_list(mapping, key, default=None):
     if key not in mapping:
         return default
     value = mapping[key]
-    if not isinstance(value, collections.Sequence):
-        value = list(value)
-    return value
+    if isinstance(value, string_types) or not isinstance(value, collections.Sequence):
+        value = [value]
+    return list(value)
