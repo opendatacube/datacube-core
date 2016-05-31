@@ -46,10 +46,9 @@ class GridWorkflow(object):
 
         all_measurements = get_measurements(observations)
         if query.variables:
-            measurements = OrderedDict((variable, all_measurements[variable]) for variable in query.variables
-                                       if variable in all_measurements)
+            measurements = [all_measurements[variable] for variable in query.variables if variable in all_measurements]
         else:
-            measurements = all_measurements
+            measurements = [measurement for measurement in all_measurements.values()]
 
         dataset = self.datacube.product_data(sources, geobox, measurements)
         return dataset

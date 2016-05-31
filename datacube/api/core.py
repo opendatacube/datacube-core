@@ -163,7 +163,7 @@ class Datacube(object):
 
         data_dict = OrderedDict()
         for name, measurement in measurements.items():
-            data_dict[name] = self.variable_data(sources, geobox, measurements)
+            data_dict[name] = self.variable_data(sources, geobox, measurement)
 
         return _stack_vars(data_dict, var_dim_name)
 
