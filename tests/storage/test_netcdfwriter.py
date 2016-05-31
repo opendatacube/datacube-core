@@ -68,6 +68,27 @@ def _ensure_spheroid(var):
     assert 'inverse_flattening' in var.ncattrs()
 
 
+def _ensure_gdal(var):
+    assert 'GeoTransform' in var.ncattrs()
+    assert 'spatial_ref' in var.ncattrs()
+
+
+def _ensure_geospatial(nco):
+    assert 'geospatial_bounds' in nco.ncattrs()
+    assert 'geospatial_bounds_crs' in nco.ncattrs()
+    assert nco.getncattr('geospatial_bounds_crs') == "EPSG:4326"
+
+    assert 'geospatial_lat_min' in nco.ncattrs()
+    assert 'geospatial_lat_max' in nco.ncattrs()
+    assert 'geospatial_lat_units' in nco.ncattrs()
+    assert nco.getncattr('geospatial_lat_units') == "degrees_north"
+
+    assert 'geospatial_lon_min' in nco.ncattrs()
+    assert 'geospatial_lon_max' in nco.ncattrs()
+    assert 'geospatial_lon_units' in nco.ncattrs()
+    assert nco.getncattr('geospatial_lon_units') == "degrees_east"
+
+
 def test_create_albers_projection_netcdf(tmpnetcdf_filename):
     nco = create_netcdf(tmpnetcdf_filename)
     create_coordinate(nco, 'x', numpy.array([1, 2, 3]), 'm')
@@ -82,6 +103,8 @@ def test_create_albers_projection_netcdf(tmpnetcdf_filename):
         assert 'longitude_of_central_meridian' in nco['crs'].ncattrs()
         assert 'latitude_of_projection_origin' in nco['crs'].ncattrs()
         _ensure_spheroid(nco['crs'])
+        _ensure_gdal(nco['crs'])
+        _ensure_geospatial(nco)
 
 
 def test_create_epsg4326_netcdf(tmpnetcdf_filename):
@@ -95,6 +118,7 @@ def test_create_epsg4326_netcdf(tmpnetcdf_filename):
         assert 'crs' in nco.variables
         assert nco['crs'].grid_mapping_name == 'latitude_longitude'
         _ensure_spheroid(nco['crs'])
+        _ensure_geospatial(nco)
 
 
 def test_create_sinus_netcdf(tmpnetcdf_filename):
@@ -109,6 +133,7 @@ def test_create_sinus_netcdf(tmpnetcdf_filename):
         assert nco['crs'].grid_mapping_name == 'sinusoidal'
         assert 'longitude_of_central_meridian' in nco['crs'].ncattrs()
         _ensure_spheroid(nco['crs'])
+        _ensure_geospatial(nco)
 
 
 def test_create_string_variable(tmpnetcdf_filename):

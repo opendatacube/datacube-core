@@ -12,6 +12,7 @@ import netCDF4
 import numpy
 
 from datacube.storage.masking import describe_flags_def
+from datacube.model import GeoPolygon, CRS
 from datacube.utils import data_resolution_and_offset
 
 # pylint: disable=ungrouped-imports,wrong-import-order
@@ -163,8 +164,9 @@ def _create_projected_grid_mapping_variable(nco, crs):
     return crs_var
 
 
-def write_geographical_extents_attributes(nco, geo_extents):
-    geo_extents = geo_extents + [geo_extents[0]]
+def _write_geographical_extents_attributes(nco, extent):
+    geo_extents = extent.to_crs(CRS("EPSG:4326")).points
+    geo_extents.append(geo_extents[0])
     nco.geospatial_bounds = "POLYGON((" + ", ".join("{0} {1}".format(*p) for p in geo_extents) + "))"
     nco.geospatial_bounds_crs = "EPSG:4326"
 
@@ -183,10 +185,8 @@ def write_geographical_extents_attributes(nco, geo_extents):
 def create_grid_mapping_variable(nco, crs):
     if crs.geographic:
         crs_var = _create_latlon_grid_mapping_variable(nco, crs)
-        coords = ['longitude', 'latitude']
     elif crs.projected:
         crs_var = _create_projected_grid_mapping_variable(nco, crs)
-        coords = ['x', 'y']
     else:
         raise ValueError('Unknown CRS')
     crs_var.semi_major_axis = crs.semi_major_axis
@@ -195,11 +195,16 @@ def create_grid_mapping_variable(nco, crs):
     crs_var.crs_wkt = crs.wkt
 
     crs_var.spatial_ref = crs.wkt
-    xres, xoff = data_resolution_and_offset(nco[coords[0]])
-    yres, yoff = data_resolution_and_offset(nco[coords[1]])
+
+    dims = crs.dimensions
+    xres, xoff = data_resolution_and_offset(nco[dims[1]])
+    yres, yoff = data_resolution_and_offset(nco[dims[0]])
     crs_var.GeoTransform = [xoff, xres, 0.0, yoff, 0.0, yres]
 
-    # TODO: write_geographical_extents_attributes
+    left, right = nco[dims[1]][0]-0.5*xres, nco[dims[1]][-1]+0.5*xres
+    bottom, top = nco[dims[0]][0]-0.5*yres, nco[dims[0]][-1]+0.5*yres
+    points = [[left, bottom], [left, top], [right, top], [right, bottom]]
+    _write_geographical_extents_attributes(nco, GeoPolygon(points, crs))
 
     return crs_var
 

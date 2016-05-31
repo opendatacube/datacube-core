@@ -189,7 +189,6 @@ def write_dataset_to_netcdf(access_unit, global_attributes, variable_params, fil
         netcdf_writer.create_coordinate(nco, name, coord.values, coord.units)
 
     netcdf_writer.create_grid_mapping_variable(nco, access_unit.crs)
-    netcdf_writer.write_geographical_extents_attributes(nco, access_unit.extent.to_crs(CRS('EPSG:4326')).points)
 
     for name, variable in access_unit.data_vars.items():
         # Create variable
