@@ -422,6 +422,12 @@ class CRS(object):
         assert isinstance(other, self.__class__)
         return self._crs.IsSame(other._crs) == 1  # pylint: disable=protected-access
 
+    def __ne__(self, other):
+        if isinstance(other, compat.string_types):
+            other = CRS(other)
+        assert isinstance(other, self.__class__)
+        return self._crs.IsSame(other._crs) != 1  # pylint: disable=protected-access
+
 
 class GridSpec(object):
     def __init__(self, crs=None, tile_size=None, resolution=None):

@@ -307,13 +307,15 @@ def get_crs(datasets):
     :param datasets: [`model.Dataset`]
     :return: `model.CRS`
     """
-    crs_set = {d.type.grid_spec.crs for d in datasets if d.type.grid_spec}
-    if not crs_set:
+    type_set = {d.type for d in datasets if d.type.grid_spec}
+    if not type_set:
         raise ValueError('No valid CRS found.')
-    first = crs_set.pop()
-    if crs_set and any(first != another for another in crs_set):
-        raise ValueError('Could not determine a unique output CRS from: ', [first] + list(crs_set))
-    return first
+    first_type = type_set.pop()
+    first_crs = first_type.grid_spec.crs
+    if first_type and any(first_crs != another.grid_spec.crs for another in type_set):
+        raise ValueError('Could not determine a unique output CRS from: ',
+                         [first_crs] + [another.grid_spec.crs for another in type_set])
+    return first_crs
 
 
 def get_resolution(datasets):
