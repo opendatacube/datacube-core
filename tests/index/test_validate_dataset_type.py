@@ -8,8 +8,8 @@ from copy import deepcopy
 
 import pytest
 
-from datacube.index._datasets import _ensure_valid
-from datacube.index.fields import InvalidDocException
+from datacube.model import DatasetType
+from datacube.utils import InvalidDocException
 
 only_mandatory_fields = {
     'name': 'ls7_nbar',
@@ -29,13 +29,13 @@ def test_accepts_valid_docs(valid_dataset_type_update):
     doc = deepcopy(only_mandatory_fields)
     doc.update(valid_dataset_type_update)
     # Should have no errors.
-    _ensure_valid(doc)
+    DatasetType.validate(doc)
 
 
 def test_incomplete_dataset_type_invalid():
     # Invalid: An empty doc.
     with pytest.raises(InvalidDocException) as e:
-        _ensure_valid({})
+        DatasetType.validate({})
 
 
 # Changes to the above dict that should render it invalid.
@@ -59,7 +59,7 @@ def test_rejects_invalid_docs(invalid_dataset_type_update):
     mapping = deepcopy(only_mandatory_fields)
     mapping.update(invalid_dataset_type_update)
     with pytest.raises(InvalidDocException) as e:
-        _ensure_valid(mapping)
+        DatasetType.validate(mapping)
 
 
 @pytest.mark.parametrize("valid_dataset_type_measurement", [
@@ -82,7 +82,7 @@ def test_accepts_valid_measurements(valid_dataset_type_measurement):
     mapping = deepcopy(only_mandatory_fields)
     mapping['measurements'] = [valid_dataset_type_measurement]
     # Should have no errors.
-    _ensure_valid(mapping)
+    DatasetType.validate(mapping)
 
 
 # Changes to the above dict that should render it invalid.
@@ -102,4 +102,4 @@ def test_rejects_invalid_measurements(invalid_dataset_type_measurement):
     mapping = deepcopy(only_mandatory_fields)
     mapping['measurements'] = {'10': invalid_dataset_type_measurement}
     with pytest.raises(InvalidDocException) as e:
-        _ensure_valid(mapping)
+        DatasetType.validate(mapping)

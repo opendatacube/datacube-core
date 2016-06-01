@@ -8,7 +8,6 @@ import logging
 import math
 from collections import namedtuple, OrderedDict
 
-import dateutil.parser
 import numpy
 import os
 from affine import Affine
@@ -18,7 +17,7 @@ from rasterio.coords import BoundingBox
 
 from datacube import compat
 from datacube.compat import parse_url
-from datacube.utils import get_doc_offset, parse_time, grid_range
+from datacube.utils import get_doc_offset, parse_time, grid_range, read_documents, validate_document
 
 _LOG = logging.getLogger(__name__)
 
@@ -28,6 +27,8 @@ Variable = namedtuple('Variable', ('dtype', 'nodata', 'dimensions', 'units'))
 
 NETCDF_VAR_OPTIONS = {'zlib', 'complevel', 'shuffle', 'fletcher32', 'contiguous'}
 VALID_VARIABLE_ATTRS = {'standard_name', 'long_name', 'units', 'flags_definition'}
+
+SCHEMA_PATH = Path(__file__).parent/'schema'
 
 
 def _uri_to_local_path(local_uri):
@@ -208,6 +209,19 @@ class MetadataType(object):
         return "MetadataType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
 
 
+def schema_validated(schema):
+    def validate(cls, document):
+        return validate_document(document, cls.schema)
+
+    def decorate(cls):
+        cls.schema = next(iter(read_documents(SCHEMA_PATH/schema)))[1]
+        cls.validate = classmethod(validate)
+        return cls
+
+    return decorate
+
+
+@schema_validated('dataset-type-schema.yaml')
 class DatasetType(object):
     def __init__(self,
                  metadata_type,
@@ -218,6 +232,8 @@ class DatasetType(object):
 
         :type metadata_type: MetadataType
         """
+        self.validate(definition)
+
         self.id = id_
 
         # All datasets in a collection must have the same metadata_type.

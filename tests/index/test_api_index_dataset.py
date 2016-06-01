@@ -131,7 +131,12 @@ _EXAMPLE_METADATA_TYPE = MetadataType(
 
 _EXAMPLE_DATASET_TYPE = DatasetType(
     _EXAMPLE_METADATA_TYPE,
-    {'name': 'eo'}
+    {
+        'name': 'eo',
+        'description': "",
+        'metadata_type': 'eo',
+        'metadata': {}
+    }
 )
 
 

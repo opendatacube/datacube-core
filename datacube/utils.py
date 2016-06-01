@@ -9,11 +9,15 @@ import json
 
 import logging
 import math
+
+import jsonschema
 import numpy
 from datetime import datetime
 
 import dateutil.parser
 from dateutil.tz import tzutc
+
+import pathlib
 from osgeo import ogr
 
 import yaml
@@ -194,3 +198,14 @@ def read_documents(*paths):
         else:
             raise ValueError('Unknown document type for {}; expected one of {!r}.'
                              .format(path.name, _ALL_SUPPORTED_EXTENSIONS))
+
+
+class InvalidDocException(Exception):
+    pass
+
+
+def validate_document(document, schema):
+    try:
+        jsonschema.validate(document, schema)
+    except jsonschema.ValidationError as e:
+        raise InvalidDocException(e.message)

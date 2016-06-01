@@ -7,10 +7,6 @@ from __future__ import absolute_import
 from datacube.model import Range
 
 
-class InvalidDocException(Exception):
-    pass
-
-
 class Field(object):
     """
     A searchable field within a dataset/storage metadata document.

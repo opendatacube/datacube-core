@@ -7,10 +7,7 @@ from __future__ import absolute_import
 import copy
 import logging
 
-import jsonschema
 import cachetools
-import pathlib
-import yaml
 
 try:
     from yaml import CSafeLoader as SafeLoader
@@ -18,24 +15,11 @@ except ImportError:
     from yaml import SafeLoader
 
 from datacube import compat
-from datacube.index.fields import InvalidDocException
+from datacube.utils import InvalidDocException
 from datacube.model import Dataset, DatasetType, MetadataType
 from . import fields
 
 _LOG = logging.getLogger(__name__)
-
-
-DATASET_TYPE_SCHEMA_PATH = pathlib.Path(__file__).parent.joinpath('dataset-type-schema.yaml')
-
-
-def _ensure_valid(descriptor):
-    try:
-        jsonschema.validate(
-            descriptor,
-            yaml.load(DATASET_TYPE_SCHEMA_PATH.open('r'), Loader=SafeLoader)
-        )
-    except jsonschema.ValidationError as e:
-        raise InvalidDocException(e.message)
 
 
 class MetadataTypeResource(object):
@@ -128,7 +112,7 @@ class DatasetTypeResource(object):
         :rtype: datacube.model.DatasetType
         """
         # This column duplication is getting out of hand:
-        _ensure_valid(definition)
+        DatasetType.validate(definition)
 
         metadata_type = definition['metadata_type']
 
