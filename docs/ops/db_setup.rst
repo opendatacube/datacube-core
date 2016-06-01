@@ -22,11 +22,11 @@ or specify connection details manually:
 
 .. note::
 
-    You can also delete the database by doing ``dropdb datacube``. This step is not reversible.
+    You can also delete the database by running ``dropdb datacube``. This step is not reversible.
 
 Create Configuration File
 -------------------------
-Datacube looks for configuration file in ~/.datacube.conf::
+Datacube looks for a configuration file in ~/.datacube.conf::
 
     [datacube]
     db_database: datacube

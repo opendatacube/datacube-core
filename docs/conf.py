@@ -43,6 +43,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.viewcode',
+    'sphinxcontrib.blockdiag'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -100,13 +101,17 @@ exclude_patterns = []
 #show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = 'friendly'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
 
 # If true, keep warnings as "system message" paragraphs in the built documents.
 #keep_warnings = False
+
+# Get rid of warnings about 'toctree contains reference to nonexisting document'
+# See https://github.com/phn/pytpm/issues/3#issuecomment-12133978 for more details
+numpydoc_show_class_members = False
 
 
 # -- Options for HTML output ----------------------------------------------
@@ -286,10 +291,8 @@ if on_rtd:
     # Mock modules that need native libraries.
     # See: http://read-the-docs.readthedocs.org/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
     NATIVE_MODULES = [
-#        'numpy',
         'rasterio',
         'netcdf4',
-#        'psycopg2',
         'pypeg2',
         'osgeo',
         'rasterio.warp',
