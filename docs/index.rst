@@ -13,7 +13,7 @@ The User Guide
 
 
 .. toctree::
-   :maxdepth: 2
+
 
   user/intro
 
@@ -22,7 +22,7 @@ Installation and Administration Guide
 
 
 .. toctree::
-   :maxdepth: 2
+
 
    ops/install
    ops/db_setup
@@ -36,7 +36,7 @@ Development and API Guide
 
 
 .. toctree::
-   :maxdepth: 2
+
 
   dev/developer
   dev/api
