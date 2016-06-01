@@ -7,6 +7,7 @@ from __future__ import absolute_import
 import logging
 from pathlib import Path
 
+import datacube.utils
 from datacube import ui
 from datacube.config import LocalConfig
 from ._datasets import DatasetResource, DatasetTypeResource, MetadataTypeResource
@@ -53,7 +54,7 @@ class Index(object):
 
         if is_new and with_default_types:
             _LOG.info('Adding default metadata types.')
-            for _, doc in ui.read_documents(_DEFAULT_METADATA_TYPES_PATH):
+            for _, doc in datacube.utils.read_documents(_DEFAULT_METADATA_TYPES_PATH):
                 self.metadata_types.add(doc, allow_table_lock=True)
 
         return is_new

@@ -4,6 +4,9 @@ Utility functions used in storage modules
 """
 from __future__ import absolute_import, division, print_function
 
+import gzip
+import json
+
 import logging
 import math
 import numpy
@@ -12,6 +15,12 @@ from datetime import datetime
 import dateutil.parser
 from dateutil.tz import tzutc
 from osgeo import ogr
+
+import yaml
+try:
+    from yaml import CSafeLoader as SafeLoader
+except ImportError:
+    from yaml import SafeLoader
 
 from datacube import compat
 
@@ -130,3 +139,58 @@ def data_resolution_and_offset(data):
     res = (data[data.size-1] - data[0])/(data.size-1.0)
     off = data[0] - 0.5*res
     return numpy.asscalar(res), numpy.asscalar(off)
+
+
+_DOCUMENT_EXTENSIONS = ('.yaml', '.yml', '.json')
+_COMPRESSION_EXTENSIONS = ('', '.gz')
+_ALL_SUPPORTED_EXTENSIONS = tuple(doc_type + compression_type
+                                  for doc_type in _DOCUMENT_EXTENSIONS
+                                  for compression_type in _COMPRESSION_EXTENSIONS)
+
+
+def is_supported_document_type(path):
+    """
+    Does a document path look like a supported type?
+    :type path: pathlib.Path
+    :rtype: bool
+    >>> from pathlib import Path
+    >>> is_supported_document_type(Path('/tmp/something.yaml'))
+    True
+    >>> is_supported_document_type(Path('/tmp/something.YML'))
+    True
+    >>> is_supported_document_type(Path('/tmp/something.yaml.gz'))
+    True
+    >>> is_supported_document_type(Path('/tmp/something.tif'))
+    False
+    >>> is_supported_document_type(Path('/tmp/something.tif.gz'))
+    False
+    """
+    return any([str(path).lower().endswith(suffix) for suffix in _ALL_SUPPORTED_EXTENSIONS])
+
+
+def read_documents(*paths):
+    """
+    Read & parse documents from the filesystem (yaml or json).
+
+    Note that a single yaml file can contain multiple documents.
+
+    :type paths: list[pathlib.Path]
+    :rtype: tuple[(pathlib.Path, dict)]
+    """
+    for path in paths:
+        suffix = path.suffix.lower()
+
+        # If compressed, open as gzip stream.
+        opener = open
+        if suffix == '.gz':
+            suffix = path.suffixes[-2].lower()
+            opener = gzip.open
+
+        if suffix in ('.yaml', '.yml'):
+            for parsed_doc in yaml.load_all(opener(str(path), 'r'), Loader=SafeLoader):
+                yield path, parsed_doc
+        elif suffix == '.json':
+            yield path, json.load(opener(str(path), 'r'))
+        else:
+            raise ValueError('Unknown document type for {}; expected one of {!r}.'
+                             .format(path.name, _ALL_SUPPORTED_EXTENSIONS))

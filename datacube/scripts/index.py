@@ -7,7 +7,7 @@ from pathlib import Path
 
 from datacube.compat import string_types
 from datacube.ui import click as ui
-from datacube.ui import read_documents
+from datacube.utils import read_documents
 from datacube.ui.common import get_metadata_path
 from datacube.ui.click import cli
 from datacube.model import Dataset

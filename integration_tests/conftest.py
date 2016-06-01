@@ -13,6 +13,8 @@ import rasterio
 import yaml
 from pathlib import Path
 
+import datacube.utils
+
 try:
     from yaml import CSafeLoader as SafeLoader
 except ImportError:
@@ -195,7 +197,7 @@ def create_empty_geotiff(path):
 
 @pytest.fixture
 def default_metadata_type_docs():
-    return [doc for (path, doc) in ui.read_documents(_DEFAULT_METADATA_TYPES_PATH)]
+    return [doc for (path, doc) in datacube.utils.read_documents(_DEFAULT_METADATA_TYPES_PATH)]
 
 
 @pytest.fixture

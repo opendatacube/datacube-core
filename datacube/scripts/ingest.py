@@ -15,7 +15,7 @@ from datacube.api.core import Datacube
 from datacube.model import DatasetType, Dataset, GeoBox, GeoPolygon, CRS
 from datacube.storage.storage import write_dataset_to_netcdf
 from datacube.ui import click as ui
-from datacube.ui import read_documents
+from datacube.utils import read_documents
 
 from datacube.ui.click import cli
 import yaml

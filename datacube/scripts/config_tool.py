@@ -16,7 +16,7 @@ from sqlalchemy.exc import OperationalError
 
 from datacube.index import index_connect
 from datacube.index.postgres._api import IndexSetupError
-from datacube.ui import read_documents
+from datacube.utils import read_documents
 from datacube.ui.click import global_cli_options, pass_index, pass_config, CLICK_SETTINGS
 
 USER_ROLES = ('user', 'ingest', 'manage', 'admin')
