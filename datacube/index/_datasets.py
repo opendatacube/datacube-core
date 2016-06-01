@@ -40,6 +40,8 @@ class MetadataTypeResource(object):
         :rtype: datacube.model.MetadataType
         """
         # This column duplication is getting out of hand:
+        MetadataType.validate(definition)
+
         name = definition['name']
 
         existing = self._db.get_metadata_type_by_name(name)

@@ -1,0 +1,38 @@
+"$schema": "http://json-schema.org/draft-04/schema#"
+description: Schema for metadata types.
+type: object
+
+properties:
+    name:
+        type: string
+    description:
+        type: string
+    dataset:
+        type: object
+        properties:
+            id:
+                "$ref": "#/definitions/offset"
+            creation_dt:
+                "$ref": "#/definitions/offset"
+            label:
+                "$ref": "#/definitions/offset"
+            sources:
+                "$ref": "#/definitions/offset"
+            search_fields:
+                type: object
+        required:
+            - id
+            - creation_dt
+            - label
+            - sources
+required:
+    - name
+    - description
+    - dataset
+additionalProperties: false
+
+definitions:
+    offset:
+        type: array
+        items:
+            type: string

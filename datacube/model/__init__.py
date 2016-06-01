@@ -187,6 +187,19 @@ class Dataset(object):
         return self.metadata_type.dataset_reader(self.metadata_doc)
 
 
+def schema_validated(schema):
+    def validate(cls, document):
+        return validate_document(document, cls.schema)
+
+    def decorate(cls):
+        cls.schema = next(iter(read_documents(SCHEMA_PATH/schema)))[1]
+        cls.validate = classmethod(validate)
+        return cls
+
+    return decorate
+
+
+@schema_validated('metadata-type-schema.yaml')
 class MetadataType(object):
     def __init__(self,
                  name,
@@ -207,19 +220,6 @@ class MetadataType(object):
 
     def __str__(self):
         return "MetadataType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
-
-
-def schema_validated(schema):
-    def validate(cls, document):
-        return validate_document(document, cls.schema)
-
-    def decorate(cls):
-        cls.schema = next(iter(read_documents(SCHEMA_PATH/schema)))[1]
-        cls.validate = classmethod(validate)
-        return cls
-
-    return decorate
-
 
 @schema_validated('dataset-type-schema.yaml')
 class DatasetType(object):
