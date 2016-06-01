@@ -30,6 +30,9 @@ from ..utils import datetime_to_seconds_since_1970
 
 _LOG = logging.getLogger(__name__)
 
+
+GroupBy = collections.namedtuple('GroupBy', ['dimension', 'group_by_func', 'units'])
+
 FLOAT_TOLERANCE = 0.0000001 # TODO: For DB query, use some sort of 'contains' query, rather than range overlap.
 TYPE_KEYS = ('type', 'storage_type', 'dataset_type')
 SPATIAL_KEYS = ('latitude', 'lat', 'y', 'longitude', 'lon', 'long', 'x')
@@ -42,7 +45,7 @@ class Query(object):
         self.variables = variables
         self.search = kwargs
         self.geopolygon = None
-        self.group_by = {}
+        self.group_by_name = None
         self.slices = {}
         self.set_nan = False
         self.resolution = None
@@ -78,7 +81,7 @@ class Query(object):
         query.geopolygon = _range_to_geopolygon(**spatial_dims)
 
         if 'group_by' in kwargs:
-            group_name = kwargs['group_by']
+            cls.group_by_name = kwargs['group_by']
 
         remaining_keys = set(kwargs.keys()) - set(TYPE_KEYS + SPATIAL_KEYS + CRS_KEYS + ('variables', 'group_by'))
         if index:
@@ -126,7 +129,9 @@ class Query(object):
                           if dim not in ['latitude', 'lat', 'y', 'longitude', 'lon', 'x']}
             query.search.update(_range_to_search(**other_dims))
             query.slices = {dim: slice(*v['array_range']) for dim, v in dims.items() if 'array_range' in v}
-            query.group_by = {dim: v['group_by'] for dim, v in dims.items() if 'group_by' in v}
+            groups = [v['group_by'] for dim, v in dims.items() if 'group_by' in v]
+            if groups:
+                query.group_by_name = groups[0]
         return query
 
     @property
@@ -148,15 +153,17 @@ class Query(object):
         return kwargs
 
     @property
-    def group_by_func(self):
-        if not self.group_by:
-            return _get_group_by_func()
-        if len(self.group_by) == 1:
-            return _get_group_by_func(self.group_by.values().pop())
+    def group_by(self):
+        if not self.group_by_name or self.group_by_name == 'time':
+            return GroupBy(dimension='time',
+                           group_by_func=lambda ds: ds.center_time,
+                           units='seconds since 1970-01-01 00:00:00')
+        elif self.group_by_name == 'solar_day':
+            return GroupBy(dimension='time',
+                           group_by_func=solar_day,
+                           units='seconds since 1970-01-01 00:00:00')
         else:
-            raise NotImplementedError('Grouping across multiple dimensions ({dims}) not yet supported'.format(
-                dims=', '.join(self.group_by.keys())
-            ))
+            raise NotImplementedError('No group by function for', self.group_by_name)
 
     def __repr__(self):
         return self.__str__()
@@ -280,11 +287,7 @@ def _get_group_by_func(group_by=None):
         return group_by
     if group_by is None or group_by == 'time':
         def just_time(ds):
-            try:
-                return ds.center_time
-            except KeyError:
-                # TODO: Remove this when issue #119 is resolved
-                return ds.metadata_doc['acquisition']['aos']
+            return ds.center_time
         return just_time
     elif group_by == 'day':
         return lambda ds: ds.center_time.date()
@@ -301,3 +304,18 @@ def _get_as_list(mapping, key, default=None):
     if isinstance(value, string_types) or not isinstance(value, collections.Sequence):
         value = [value]
     return list(value)
+
+
+def _convert_to_solar_time(utc, latitude):
+    seconds_per_degree = 240
+    offset_seconds = int(latitude * seconds_per_degree)
+    offset = datetime.timedelta(seconds=offset_seconds)
+    return utc + offset
+
+
+def solar_day(dataset):
+    utc = dataset.center_time
+    bb = dataset.extent.to_crs(CRS('WGS84')).boundingbox
+    latitude = (bb.left + bb.right) * 0.5
+    solar_time = _convert_to_solar_time(utc, latitude)
+    return solar_time.date()

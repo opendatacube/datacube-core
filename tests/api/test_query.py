@@ -75,6 +75,22 @@ def test_convert_descriptor_query_to_search_query_with_slices():
     assert query.slices['time'] == slice(5, 10)
 
 
+def test_convert_descriptor_query_to_search_query_with_groupby():
+    descriptor_query = {
+        'dimensions': {
+            'time': {
+                'range': (datetime.datetime(2001, 5, 7), datetime.datetime(2002, 3, 9)),
+                'group_by': 'solar_day'
+            }
+        }
+    }
+    query = Query.from_descriptor_request(descriptor_query)
+    assert query.group_by
+    assert callable(query.group_by.group_by_func)
+    assert query.group_by.dimension == 'time'
+    assert query.group_by.units == 'seconds since 1970-01-01 00:00:00'
+
+
 def test_convert_descriptor_query_to_search_query_with_crs_conversion():
     descriptor_query = {
         'dimensions': {

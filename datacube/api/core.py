@@ -24,7 +24,6 @@ _LOG = logging.getLogger(__name__)
 
 
 Group = namedtuple('Group', ['key', 'datasets'])
-Grouper = namedtuple('Grouper', ['dimension', 'group_by', 'units'])
 
 
 def _xarray_affine(obj):
@@ -149,11 +148,8 @@ class Datacube(object):
         resolution = query.resolution or get_resolution(observations)
         geobox = GeoBox.from_geopolygon(geopolygon, resolution, crs)
 
-        # TODO: Make Grouper in Query
-        grouper = Grouper(dimension='time',
-                          group_by=lambda ds: ds.center_time,
-                          units='seconds since 1970-01-01 00:00:00')
-        sources = self.product_sources(observations, grouper.group_by, grouper.dimension, grouper.units)
+        group_by = query.group_by
+        sources = self.product_sources(observations, group_by.group_by_func, group_by.dimension, group_by.units)
 
         all_measurements = get_measurements(observations)
         if query.variables:
@@ -176,11 +172,8 @@ class Datacube(object):
         resolution = query.resolution or get_resolution(observations)
         geobox = GeoBox.from_geopolygon(geopolygon, resolution, crs)
 
-        # TODO: Make Grouper in Query
-        grouper = Grouper(dimension='time',
-                          group_by=lambda ds: ds.center_time,
-                          units='seconds since 1970-01-01 00:00:00')
-        sources = self.product_sources(observations, grouper.group_by, grouper.dimension, grouper.units)
+        group_by = query.group_by
+        sources = self.product_sources(observations, group_by.group_by_func, group_by.dimension, group_by.units)
 
         all_measurements = get_measurements(observations)
         if query.variables:

@@ -13,8 +13,8 @@ from rasterio.coords import BoundingBox
 
 from ..model import GeoBox
 from ..utils import check_intersect
-from .query import Query
-from .core import Grouper, get_measurements, get_bounds
+from .query import Query, GroupBy
+from .core import get_measurements, get_bounds
 
 _LOG = logging.getLogger(__name__)
 
@@ -38,11 +38,9 @@ class GridWorkflow(object):
         geopolygon = geobox.extent  # intersection with query.geobox?
         observations = self.datacube.product_observations(geopolygon=geopolygon, **query.search_terms)
 
-        # TODO: Make Grouper in Query
-        grouper = Grouper(dimension='time',
-                          group_by=lambda ds: ds.center_time,
-                          units='seconds since 1970-01-01 00:00:00')
-        sources = self.datacube.product_sources(observations, grouper.group_by, grouper.dimension, grouper.units)
+        group_by = query.group_by
+        sources = self.datacube.product_sources(observations,
+                                                group_by.group_by_func, group_by.dimension, group_by.units)
 
         all_measurements = get_measurements(observations)
         if query.variables:

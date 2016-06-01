@@ -41,10 +41,9 @@ class API(object):
             app = app or 'Datacube-API'
             self.datacube = Datacube(app=app)
 
-    def _get_descriptor_for_dataset(self, dataset_type, datasets, group_func, geopolygon=None,
+    def _get_descriptor_for_dataset(self, dataset_type, datasets, group_by, geopolygon=None,
                                     include_storage_units=True):
         dataset_descriptor = {}
-        irregular_dims = ['time', 't', 'T']  # TODO: get irregular dims from dataset_type
 
         if not (dataset_type.grid_spec and dataset_type.grid_spec.dimensions):
             return None
@@ -52,8 +51,8 @@ class API(object):
         if not geopolygon:
             geopolygon = get_bounds(datasets, dataset_type.grid_spec.crs)
 
-        datasets.sort(key=group_func)
-        groups = [Group(key, list(group)) for key, group in groupby(datasets, group_func)]
+        datasets.sort(key=group_by.group_by_func)
+        groups = [Group(key, list(group)) for key, group in groupby(datasets, group_by.group_by_func)]
 
         dataset_descriptor['result_min'] = []
         dataset_descriptor['result_max'] = tuple()
@@ -68,8 +67,7 @@ class API(object):
         for dim in dims:
             if dim in spatial_dims:
                 coords = geobox.coordinates[dim].labels
-            elif dim in irregular_dims:
-                # groups will define irregular_dims
+            elif dim == group_by.dimension:
                 coords = [group.key for group in groups]
                 dataset_descriptor['irregular_indices'][dim] = coords
             else:
@@ -130,7 +128,7 @@ class API(object):
         datasets_by_type = self._search_datasets_by_type(**query.search_terms)
         for dataset_type, datasets in datasets_by_type.items():
             dataset_descriptor = self._get_descriptor_for_dataset(dataset_type, datasets,
-                                                                  query.group_by_func,
+                                                                  query.group_by,
                                                                   query.geopolygon,
                                                                   include_storage_units)
             if dataset_descriptor:
@@ -146,13 +144,15 @@ class API(object):
 
     def _get_dataset_groups(self, query):
         dataset_groups = {}
-        group_func = query.group_by_func
+        group_by = query.group_by
 
         datasets_by_type = self._search_datasets_by_type(**query.search_terms)
         for dataset_type, datasets in datasets_by_type.items():
             if dataset_type.grid_spec:
-                dataset_groups[dataset_type] = self.datacube.product_sources(datasets, group_func, 'time',
-                                                                             'seconds since 1970-01-01 00:00:00')
+                dataset_groups[dataset_type] = self.datacube.product_sources(datasets,
+                                                                             group_by.group_by_func,
+                                                                             group_by.dimension,
+                                                                             group_by.units)
         return dataset_groups
 
     def get_data(self, data_request, dataset_groups=None, return_all=False):
