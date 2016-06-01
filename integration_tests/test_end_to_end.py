@@ -116,6 +116,7 @@ def test_end_to_end(global_integration_cli_args, index, testdata_dir):
     check_analytics_list_searchables(index)
     check_get_descriptor(index)
     check_get_data(index)
+    check_get_data_subset(index)
     check_get_descriptor_data(index)
     check_get_descriptor_data_storage_type(index)
     check_analytics_create_array(index)
@@ -160,12 +161,16 @@ def check_open_with_dc(index):
     from datacube.api.core import Datacube
     dc = Datacube(index=index)
 
-    data_array = dc.get_data_array(storage_type='ls5_nbar_albers', variables=['blue'],
-                                   latitude=(-34, -35), longitude=(149, 150))
+    data_array = dc.get_data_array(storage_type='ls5_nbar_albers', variables=['blue'])
     assert data_array.shape
 
-    dataset = dc.get_dataset(storage_type='ls5_nbar_albers', variables=['blue'],
-                             latitude=(-34, -35), longitude=(149, 150))
+    data_array = dc.get_data_array(storage_type='ls5_nbar_albers', latitude=(-34, -35), longitude=(149, 150))
+    assert data_array.shape
+
+    dataset = dc.get_dataset(storage_type='ls5_nbar_albers', variables=['blue'])
+    assert dataset['blue'].size
+
+    dataset = dc.get_dataset(storage_type='ls5_nbar_albers', latitude=(-35.2, -35.3), longitude=(149.1, 149.2))
     assert dataset['blue'].size
 
     products_df = dc.products
@@ -389,6 +394,42 @@ def check_get_data(index):
     for dim in list(d['dimensions']):
         assert dim in list(d['arrays'][var1].dims)
         assert dim in list(d['arrays'][var2].dims)
+
+
+def check_get_data_subset(index):
+    from datetime import datetime
+    from datacube.api import API
+
+    g = API(index=index)
+
+    platform = 'LANDSAT_5'
+    product = 'nbar'
+    var1 = 'red'
+    var2 = 'nir'
+
+    data_request_descriptor = {
+        'platform': platform,
+        'product': product,
+        'variables': (var1, var2),
+        'dimensions': {
+            'x': {
+                'range': (149.07, 149.18),
+                'array_range': (5, 10)
+            },
+            'y': {
+                'range': (-35.32, -35.28),
+                'array_range': (5, 10)
+            },
+            'time': {
+                'range': (datetime(1992, 1, 1), datetime(1992, 12, 31))
+            }
+        }
+    }
+
+    d = g.get_data(data_request_descriptor)
+
+    assert d['arrays'][var1].shape == (1, 5, 5)
+    assert d['arrays'][var2].shape == (1, 5, 5)
 
 
 def check_get_descriptor_data(index):

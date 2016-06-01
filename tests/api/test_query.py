@@ -51,6 +51,30 @@ def test_convert_descriptor_query_to_search_query():
     assert datetime.datetime(2002, 3, 9, tzinfo=tz.tzutc()) == search_query['time'].end
 
 
+def test_convert_descriptor_query_to_search_query_with_slices():
+    descriptor_query = {
+        'dimensions': {
+            'latitude': {
+                'range': (-35.5, -36.5),
+                'array_range': (100, 200)
+            },
+            'longitude': {
+                'range': (148.3, 149.9),
+                'array_range': (100, 200)
+            },
+            'time': {
+                'range': (datetime.datetime(2001, 5, 7), datetime.datetime(2002, 3, 9)),
+                'array_range': (5, 10)
+            }
+        }
+    }
+    query = Query.from_descriptor_request(descriptor_query)
+    assert query.slices
+    assert query.slices['latitude'] == slice(100, 200)
+    assert query.slices['longitude'] == slice(100, 200)
+    assert query.slices['time'] == slice(5, 10)
+
+
 def test_convert_descriptor_query_to_search_query_with_crs_conversion():
     descriptor_query = {
         'dimensions': {

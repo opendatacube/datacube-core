@@ -187,6 +187,7 @@ class API(object):
         geobox = GeoBox.from_geopolygon(geopolygon.to_crs(dataset_type.grid_spec.crs),
                                         dataset_type.grid_spec.resolution)
         if slices:
+            _rename_spatial_keys(slices, geobox.dimensions)
             geo_slices = [slices.get(dim, slice(None)) for dim in geobox.dimensions]
             geobox = geobox[geo_slices]
             for dim, dim_slice in slices.items():
@@ -249,6 +250,18 @@ class API(object):
 
     def __repr__(self):
         return "API<datacube={!r}>".format(self.datacube.index)
+
+
+SPATIAL_KEYS = [('latitude', 'lat', 'y'), ('longitude', 'lon', 'long', 'x')]
+
+
+def _rename_spatial_keys(dictionary, dimensions):
+    for alt_keys in SPATIAL_KEYS:
+        match = [dim_key for dim_key in dimensions if dim_key in alt_keys]
+        for dim_key in match:
+            for old_key in alt_keys:
+                if old_key in dictionary:
+                    dictionary[dim_key] = dictionary.pop(old_key)
 
 
 def main():
