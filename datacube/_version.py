@@ -10,6 +10,8 @@
 
 """Git implementation of _version.py."""
 
+# pylint: skip-file
+
 import errno
 import os
 import re
