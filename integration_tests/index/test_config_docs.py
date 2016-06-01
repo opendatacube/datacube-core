@@ -8,69 +8,6 @@ import copy
 
 import pytest
 
-from datacube.model import Dataset
-
-_15M_STORAGE_TYPE = {
-    'name': '15m_bands',
-    'driver': 'NetCDF CF',
-    'base_path': '/short/v10/dra547/tmp/5/',
-    'chunking': {'t': 1, 'x': 500, 'y': 500},
-    'dimension_order': ['t', 'y', 'x'],
-    'filename_format': '{platform[code]}_{instrument[name]}_{tile_index[0]}_{tile_index[1]}_{start_time}.nc',
-    'projection': {
-        'spatial_ref': 'epsg:1234'
-    },
-    'resolution': {'x': 0.00015, 'y': -0.00015},
-    'tile_size': {'x': 1.0, 'y': -1.0}
-}
-
-_STORAGE_TYPE = {
-    'name': 'ls5_nbar',
-    'match': {
-        'metadata':
-            {
-                'instrument': {'name': 'TM'},
-                'platform': {'code': 'LANDSAT_5'},
-                'product_type': 'NBAR'
-            }
-    },
-    'location_name': 'eotiles',
-    'file_path_template': '/file_path_template/file.nc',
-    'measurements': {
-        'blue': {'dtype': 'int16',
-                 'nodata': -999,
-                 'units': '1',
-                 'resampling_method': 'cubic',
-                 'src_varname': '1'},
-        'green': {'dtype': 'int16',
-                  'nodata': -999,
-                  'units': '1',
-                  'resampling_method': 'cubic',
-                  'src_varname': '2'},
-        'red': {'dtype': 'int16',
-                'nodata': -999,
-                'units': '1',
-                'resampling_method': 'cubic',
-                'src_varname': '3'},
-    },
-    'storage': {
-        'driver': 'NetCDF CF',
-        'chunking': {'t': 1, 'x': 500, 'y': 500},
-        'dimension_order': ['t', 'y', 'x'],
-        'crs': 'GEOGCS["WGS 84",\n'
-               '    DATUM["WGS_1984",\n'
-               '        SPHEROID["WGS 84",6378137,298.257223563,\n'
-               '            AUTHORITY["EPSG","7030"]],\n'
-               '        AUTHORITY["EPSG","6326"]],\n'
-               '    PRIMEM["Greenwich",0,\n'
-               '        AUTHORITY["EPSG","8901"]],\n'
-               '    UNIT["degree",0.0174532925199433,\n'
-               '        AUTHORITY["EPSG","9122"]],\n'
-               '    AUTHORITY["EPSG","4326"]]\n',
-        'resolution': {'x': 0.00025, 'y': -0.00025},
-        'tile_size': {'x': 1.0, 'y': -1.0}
-    }
-}
 
 _DATASET_METADATA = {
     'id': 'f7018d80-8807-11e5-aeaa-1040f381a756',
