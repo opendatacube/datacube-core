@@ -141,13 +141,13 @@ class Datacube(object):
     def get_dataset(self, **indexers):
         query = Query.from_kwargs(self.index, **indexers)
         observations = self.product_observations(geopolygon=query.geopolygon, **query.search_terms)
-        geopolygon = query.geopolygon
-        if not geopolygon:
-            crs = query.output_crs or get_crs(observations)
-            geopolygon = get_bounds(observations, crs)
+        if not observations:
+            return xarray.Dataset()
 
+        crs = query.output_crs or get_crs(observations)
+        geopolygon = query.geopolygon or get_bounds(observations, crs)
         resolution = query.resolution or get_resolution(observations)
-        geobox = GeoBox.from_geopolygon(geopolygon, resolution)
+        geobox = GeoBox.from_geopolygon(geopolygon, resolution, crs)
 
         # TODO: Make Grouper in Query
         grouper = Grouper(dimension='time',
@@ -168,9 +168,13 @@ class Datacube(object):
     def get_data_array(self, var_dim_name='variable', **indexers):
         query = Query.from_kwargs(self.index, **indexers)
         observations = self.product_observations(geopolygon=query.geopolygon, **query.search_terms)
+        if not observations:
+            return None
 
-        geopolygon = query.geopolygon or get_bounds(observations, crs=(query.output_crs or get_crs(observations)))
-        geobox = GeoBox.from_geopolygon(geopolygon, resolution=(query.resolution or get_resolution(observations)))
+        crs = query.output_crs or get_crs(observations)
+        geopolygon = query.geopolygon or get_bounds(observations, crs)
+        resolution = query.resolution or get_resolution(observations)
+        geobox = GeoBox.from_geopolygon(geopolygon, resolution, crs)
 
         # TODO: Make Grouper in Query
         grouper = Grouper(dimension='time',
