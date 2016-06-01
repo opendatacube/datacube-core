@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
 from setuptools import setup, find_packages
-from datacube.version import get_version
+import versioneer
 
 
 setup(name='datacube',
-      version=get_version(),
+      version=versioneer.get_version(),
+      cmdclass=versioneer.get_cmdclass(),
       packages=find_packages(
           exclude=('tests', 'tests.*', 'examples',
                    'integration_tests', 'integration_tests.*')

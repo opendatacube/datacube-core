@@ -12,3 +12,4 @@ datacube/version.py  export-subst
 *.bin binary
 *.tif binary
 
+datacube/_version.py export-subst
