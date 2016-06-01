@@ -12,7 +12,7 @@ setup(name='datacube',
                    'integration_tests', 'integration_tests.*')
       ),
       package_data={
-          '': ['*.yaml'],
+          '': ['*.yaml', '*/*.yaml'],
       },
       scripts=[
       ],
