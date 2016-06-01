@@ -150,8 +150,12 @@ class DatasetSource(object):
         try:
             _LOG.debug("openening %s, band %s", filename, bandnumber)
             with rasterio.open(filename) as src:
+
                 if bandnumber is None:
-                    bandnumber = self.wheres_my_band(src, self.time)
+                    if 'netcdf' in self.format.lower():
+                        bandnumber = self.wheres_my_band(src, self.time)
+                    else:
+                        bandnumber = 1
 
                 self.transform = src.affine
                 self.crs = CRS(str(src.crs_wkt))
