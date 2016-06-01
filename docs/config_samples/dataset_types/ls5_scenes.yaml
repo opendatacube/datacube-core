@@ -323,12 +323,12 @@ measurements:
       flags_definition: 
         cfmask_conf:
           bits: [0,1,2,3,4,5,6,7]
-          description: CFmask confidence
+          description: CFmask confidence with low =12.5%, medium >12.5%&<= 22.5% and high 
           values:
             0: none
-            1: '<=12.5%'
-            2: '>12.5%&<= 22.5%'
-            3: '>22.5%'
+            1: low
+            2: medium
+            3: high
     - name: 'sr_adjacent_cloud_qa'
       aliases: [adjacent_cloud]
       dtype: uint8
