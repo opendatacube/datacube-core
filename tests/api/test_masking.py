@@ -1,7 +1,7 @@
 # coding=utf-8
 import yaml
 
-from datacube.api.masking import list_flag_names, create_mask_value, describe_variable_flags
+from datacube.storage.masking import list_flag_names, create_mask_value, describe_variable_flags
 
 
 def test_list_flag_names():
