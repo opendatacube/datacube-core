@@ -21,6 +21,8 @@ properties:
         # Each property is a measurement. Ensure they are alphanumeric+underscores.
         items:
             "$ref": "#/definitions/measurement"
+    managed:
+        type: boolean
 
 required:
     - name
@@ -46,7 +48,9 @@ definitions:
             dtype:
                 "$ref": "#/definitions/dtype"
             nodata:
-                type: number
+              oneOf:
+                - type: number
+                - enum: [NaN, Inf, -Inf]
             units:
                 type: string
             aliases:
@@ -107,4 +111,6 @@ definitions:
                 type: object
             tile_size:
                 type: object
+            driver:
+                type: string
         additionalProperties: false
