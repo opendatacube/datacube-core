@@ -23,6 +23,7 @@ import datetime
 import collections
 
 from dateutil import tz
+import numpy as np
 
 from ..compat import string_types, integer_types
 from ..model import GeoPolygon, Range, CRS
@@ -37,6 +38,7 @@ FLOAT_TOLERANCE = 0.0000001 # TODO: For DB query, use some sort of 'contains' qu
 TYPE_KEYS = ('type', 'storage_type', 'dataset_type')
 SPATIAL_KEYS = ('latitude', 'lat', 'y', 'longitude', 'lon', 'long', 'x')
 CRS_KEYS = ('crs', 'coordinate_reference_system')
+OTHER_KEYS = ('variables', 'group_by', 'output_crs', 'resolution')
 
 
 class Query(object):
@@ -83,7 +85,13 @@ class Query(object):
         if 'group_by' in kwargs:
             query.group_by_name = kwargs['group_by']
 
-        remaining_keys = set(kwargs.keys()) - set(TYPE_KEYS + SPATIAL_KEYS + CRS_KEYS + ('variables', 'group_by'))
+        if 'output_crs' in kwargs:
+            query.output_crs = CRS(kwargs['output_crs'])
+
+        if 'resolution' in kwargs:
+            query.resolution = kwargs['resolution']
+
+        remaining_keys = set(kwargs.keys()) - set(TYPE_KEYS + SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
         if index:
             known_fields = set(index.datasets.get_field_names())
             unknown_keys = remaining_keys - known_fields
@@ -306,9 +314,9 @@ def _get_as_list(mapping, key, default=None):
     return list(value)
 
 
-def _convert_to_solar_time(utc, latitude):
+def _convert_to_solar_time(utc, longitude):
     seconds_per_degree = 240
-    offset_seconds = int(latitude * seconds_per_degree)
+    offset_seconds = int(longitude * seconds_per_degree)
     offset = datetime.timedelta(seconds=offset_seconds)
     return utc + offset
 
@@ -316,6 +324,7 @@ def _convert_to_solar_time(utc, latitude):
 def solar_day(dataset):
     utc = dataset.center_time
     bb = dataset.extent.to_crs(CRS('WGS84')).boundingbox
-    latitude = (bb.left + bb.right) * 0.5
-    solar_time = _convert_to_solar_time(utc, latitude)
-    return solar_time.date()
+    assert bb.left < bb.right  # TODO: Handle dateline?
+    longitude = (bb.left + bb.right) * 0.5
+    solar_time = _convert_to_solar_time(utc, longitude)
+    return np.datetime64(solar_time.date(), 'D')
