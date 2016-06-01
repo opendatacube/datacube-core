@@ -81,7 +81,7 @@ class Query(object):
         query.geopolygon = _range_to_geopolygon(**spatial_dims)
 
         if 'group_by' in kwargs:
-            cls.group_by_name = kwargs['group_by']
+            query.group_by_name = kwargs['group_by']
 
         remaining_keys = set(kwargs.keys()) - set(TYPE_KEYS + SPATIAL_KEYS + CRS_KEYS + ('variables', 'group_by'))
         if index:
