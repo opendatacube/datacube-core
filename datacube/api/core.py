@@ -244,10 +244,15 @@ class Datacube(object):
                              measurement.get('nodata'),
                              resampling=RESAMPLING.nearest,
                              fuse_func=fuse_func)
-            result[name] = (sources.dims + geobox.dimensions, data, {
+            attrs = {
                 'nodata': measurement.get('nodata'),
                 'units': measurement.get('units', '1')
-            })
+            }
+            if 'flags_definition' in measurement:
+                attrs['flags_definition'] = measurement['flags_definition']
+            if 'spectral_definition' in measurement:
+                attrs['spectral_definition'] = measurement['spectral_definition']
+            result[name] = (sources.dims + geobox.dimensions, data, attrs)
         return result
 
     @staticmethod
