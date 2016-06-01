@@ -1,0 +1,97 @@
+name: h8_ahi_brf_granule
+description: H8 BRF, 2km, 1km and 500m granules
+metadata_type: eo
+
+metadata:
+        platform:
+            code: HIMAWARI_8
+        instrument:
+            name: AHI
+        product_type: BRF
+
+measurements:
+    - name: '03_500'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000
+    - name: '01_1000'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000
+    - name: '02_1000'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000
+    - name: '03_1000'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000
+    - name: '04_1000'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000
+    - name: '01_2000'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000
+    - name: '02_2000'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000
+    - name: '03_2000'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000
+    - name: '04_2000'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000 
+    - name: '05_2000'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000
+    - name: '06_2000'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000
+    - name: '07_2000'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000
+    - name: '08_2000'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000
+    - name: '09_2000'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000
+    - name: '10_2000'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000
+    - name: '11_2000'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000
+    - name: '12_2000'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000
+    - name: '13_2000'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000
+    - name: '14_2000'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000
+    - name: '15_2000'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000
+    - name: '16_2000'
+      dtype: float32
+      units: '1'
+      nodata: 10000000000
+ 
