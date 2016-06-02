@@ -426,7 +426,7 @@ class AnalyticsEngine(object):
             if storage_type not in self.api_descriptors.keys():
                 continue
             items[storage_type]['platform'] = str(product['platform'])
-            items[storage_type]['product_type'] = str(product['product'])
+            items[storage_type]['product_type'] = str(product['product_type'])
             items[storage_type]['instrument'] = str(product['instrument'])
         for variable in self.api.list_variables():
             storage_type = str(variable['product'])

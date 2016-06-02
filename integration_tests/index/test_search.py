@@ -204,7 +204,7 @@ def test_searches_only_type(index, pseudo_telemetry_type, pseudo_telemetry_datas
 
     # One result in the telemetry type
     datasets = index.datasets.search_eager(
-        type=pseudo_telemetry_type.name,
+        product=pseudo_telemetry_type.name,
         platform='LANDSAT_8',
         instrument='OLI_TIRS',
     )
@@ -222,7 +222,7 @@ def test_searches_only_type(index, pseudo_telemetry_type, pseudo_telemetry_datas
 
     # No results when searching for a different dataset type.
     datasets = index.datasets.search_eager(
-        type=ls5_nbar_gtiff_type.name,
+        product=ls5_nbar_gtiff_type.name,
         platform='LANDSAT_8',
         instrument='OLI_TIRS'
     )
@@ -248,7 +248,7 @@ def test_searches_only_type(index, pseudo_telemetry_type, pseudo_telemetry_datas
 def test_search_conflicting_types(index, pseudo_telemetry_dataset, pseudo_telemetry_type):
     # It prints a warning and returns no results.
     datasets = index.datasets.search_eager(
-        type=pseudo_telemetry_type.name,
+        product=pseudo_telemetry_type.name,
         # The telemetry type is not of type storage_unit.
         metadata_type='storage_unit'
     )
@@ -268,7 +268,7 @@ def test_fetch_all_of_md_type(index, pseudo_telemetry_dataset):
     assert results[0].id == pseudo_telemetry_dataset.id
     # Get every dataset of the type.
     results = index.datasets.search_eager(
-        type=pseudo_telemetry_dataset.type.name
+        product=pseudo_telemetry_dataset.type.name
     )
     assert len(results) == 1
     assert results[0].id == pseudo_telemetry_dataset.id

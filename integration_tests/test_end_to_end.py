@@ -155,19 +155,19 @@ def check_open_with_dc(index):
     from datacube.api.core import Datacube
     dc = Datacube(index=index)
 
-    data_array = dc.load(storage_type='ls5_nbar_albers', variables=['blue'], stack='variable')
+    data_array = dc.load(product='ls5_nbar_albers', variables=['blue'], stack='variable')
     assert data_array.shape
 
-    data_array = dc.load(storage_type='ls5_nbar_albers', latitude=(-34, -35), longitude=(149, 150), stack='variable')
+    data_array = dc.load(product='ls5_nbar_albers', latitude=(-34, -35), longitude=(149, 150), stack='variable')
     assert data_array.shape
 
-    dataset = dc.load(storage_type='ls5_nbar_albers', variables=['blue'])
+    dataset = dc.load(product='ls5_nbar_albers', variables=['blue'])
     assert dataset['blue'].size
 
-    dataset = dc.load(storage_type='ls5_nbar_albers', latitude=(-35.2, -35.3), longitude=(149.1, 149.2))
+    dataset = dc.load(product='ls5_nbar_albers', latitude=(-35.2, -35.3), longitude=(149.1, 149.2))
     assert dataset['blue'].size
 
-    data_array = dc.load(storage_type='ls5_nbar_albers',
+    data_array = dc.load(product='ls5_nbar_albers',
                          latitude=(-34, -35), longitude=(149, 150),
                          variables=['blue'], group_by='solar_day')
 
@@ -189,37 +189,17 @@ def check_open_with_grid_workflow(index):
     from datacube.api.grid_workflow import GridWorkflow
     gw = GridWorkflow(dc, dt.grid_spec)
 
-    cells = gw.list_cells(type=type_name)
+    cells = gw.list_cells(product=type_name)
     assert LBG_CELL in cells
 
-    tiles = gw.list_tiles(type=type_name)
+    tiles = gw.list_tiles(product=type_name)
     assert tiles
 
-    dataset_cell = gw.load(LBG_CELL, type=type_name, variables=['blue'])
+    dataset_cell = gw.load(LBG_CELL, product=type_name, variables=['blue'])
     assert dataset_cell['blue'].size
 
-    dataset_cell = gw.load(LBG_CELL, type=type_name)
+    dataset_cell = gw.load(LBG_CELL, product=type_name)
     assert all(m in dataset_cell for m in ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
-
-    #
-    # data_array_cell = dc.get_data_array_by_cell(LBG_CELL, storage_type='ls5_nbar_albers', variables=['blue'])
-    # assert data_array_cell.size
-    #
-    # data_array_cell = dc.get_data_array_by_cell(x_index=LBG_CELL_X, y_index=LBG_CELL_Y,
-    #                                              storage_type='ls5_nbar_albers', variables=['blue'])
-    # assert data_array_cell.size
-    #
-    # dataset_cell = dc.get_dataset_by_cell([LBG_CELL], storage_type='ls5_nbar_albers', variables=['blue'])
-    # assert dataset_cell['blue'].size
-    #
-    # dataset_cell = dc.get_dataset_by_cell(x_index=LBG_CELL_X, y_index=LBG_CELL_Y, storage_type='ls5_nbar_albers',
-    #                                        variables=['blue'])
-    # assert dataset_cell['blue'].size
-    #
-    # tiles = dc.list_tiles(x_index=LBG_CELL_X, y_index=LBG_CELL_Y, storage_type='ls5_nbar_albers')
-    # for tile_query, tile_attrs in tiles:
-    #     dataset = dc.get_dataset_by_cell(**tile_query)
-    #     assert dataset['blue'].size
 
 
 def check_analytics_list_searchables(index):

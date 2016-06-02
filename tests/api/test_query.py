@@ -177,10 +177,10 @@ def test_query_kwargs():
                                                    u'orbit', u'instrument', u'sat_row', u'platform', 'metadata_type',
                                                    u'gsi', 'type', 'id', ]
 
-    query = Query.from_kwargs(index=mock_index, dataset_type='ls5_nbar_albers')
+    query = Query.from_kwargs(index=mock_index, product='ls5_nbar_albers')
     assert str(query)
     assert query.type == 'ls5_nbar_albers'
-    assert query.search_terms['type'] == 'ls5_nbar_albers'
+    assert query.search_terms['product'] == 'ls5_nbar_albers'
 
     query = Query.from_kwargs(index=mock_index, measurements='red')
     assert 'red' in query.measurements

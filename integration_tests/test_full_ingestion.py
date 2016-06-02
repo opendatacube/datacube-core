@@ -81,7 +81,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset,
     assert not result.exception
     assert result.exit_code == 0
 
-    datasets = index.datasets.search_eager(type='ls5_nbar_albers')
+    datasets = index.datasets.search_eager(product='ls5_nbar_albers')
     assert len(datasets) > 0
     assert datasets[0].managed
 

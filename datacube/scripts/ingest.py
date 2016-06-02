@@ -93,8 +93,8 @@ def find_diff(input_type, output_type, bbox, datacube):
     from datacube.api.grid_workflow import GridWorkflow
     workflow = GridWorkflow(datacube, output_type.grid_spec)
 
-    tiles_in = workflow.list_tiles(type=input_type.name).get(input_type.name, {})
-    tiles_out = workflow.list_tiles(type=output_type.name).get(output_type.name, {})
+    tiles_in = workflow.list_tiles(product=input_type.name).get(input_type.name, {})
+    tiles_out = workflow.list_tiles(product=output_type.name).get(output_type.name, {})
 
     tasks = []
     for tile_index in set(tiles_in.keys()) | set(tiles_out.keys()):

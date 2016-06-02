@@ -194,14 +194,14 @@ class Datacube(object):
 
         return _stack_vars(data_dict, var_dim_name)
 
-    def product_observations(self, type_name=None, geopolygon=None, **kwargs):
+    def product_observations(self, product=None, geopolygon=None, **kwargs):
         if geopolygon:
             geo_bb = geopolygon.to_crs(CRS('EPSG:4326')).boundingbox
             kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
             kwargs['lon'] = Range(geo_bb.left, geo_bb.right)
         # TODO: pull out full datasets lineage?
-        if type_name is not None:
-            kwargs['type'] = type_name
+        if product is not None:
+            kwargs['product'] = product
         datasets = self.index.datasets.search_eager(**kwargs)
         if geopolygon:
             datasets = [dataset for dataset in datasets

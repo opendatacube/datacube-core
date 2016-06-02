@@ -35,7 +35,6 @@ _LOG = logging.getLogger(__name__)
 GroupBy = collections.namedtuple('GroupBy', ['dimension', 'group_by_func', 'units'])
 
 FLOAT_TOLERANCE = 0.0000001 # TODO: For DB query, use some sort of 'contains' query, rather than range overlap.
-TYPE_KEYS = ('type', 'storage_type', 'dataset_type')
 SPATIAL_KEYS = ('latitude', 'lat', 'y', 'longitude', 'lon', 'long', 'x')
 CRS_KEYS = ('crs', 'coordinate_reference_system')
 OTHER_KEYS = ('measurements', 'variables', 'group_by', 'output_crs', 'resolution', 'set_nan')
@@ -66,9 +65,8 @@ class Query(object):
         """
         query = cls()
 
-        dataset_type = [value for key, value in kwargs.items() if key in TYPE_KEYS]
-        if dataset_type:
-            query.type = dataset_type[0]
+        if 'product' in kwargs:
+            query.type = kwargs['product']
 
         query.measurements = _get_as_list(kwargs, 'measurements', None)
         if query.measurements is None:
@@ -96,7 +94,7 @@ class Query(object):
         if 'set_nan' in kwargs:
             query.set_nan = kwargs['set_nan']
 
-        remaining_keys = set(kwargs.keys()) - set(TYPE_KEYS + SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
+        remaining_keys = set(kwargs.keys()) - set(('product',) + SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
         if index:
             known_fields = set(index.datasets.get_field_names())
             unknown_keys = remaining_keys - known_fields
@@ -116,11 +114,13 @@ class Query(object):
             raise ValueError('Could not understand descriptor {}'.format(descriptor_request))
         query = cls()
 
-        dataset_type = [value for key, value in descriptor_request.items() if key in TYPE_KEYS]
-        if dataset_type:
-            query.type = dataset_type[0]
-        defined_keys = ('dimensions', 'variables') + TYPE_KEYS
+        if 'storage_type' in descriptor_request:
+            query.type = descriptor_request['storage_type']
+        defined_keys = ('dimensions', 'variables', 'product', 'storage_type')
         query.search = {key: value for key, value in descriptor_request.items() if key not in defined_keys}
+
+        if 'product' in descriptor_request:
+            query.search['product_type'] = descriptor_request['product']
 
         if 'variables' in descriptor_request:
             query.measurements = descriptor_request['variables']
@@ -162,7 +162,7 @@ class Query(object):
             else:
                 kwargs['lon'] = Range(geo_bb.left - FLOAT_TOLERANCE, geo_bb.right + FLOAT_TOLERANCE)
         if self.type:
-            kwargs['type'] = self.type
+            kwargs['product'] = self.type
         return kwargs
 
     @property

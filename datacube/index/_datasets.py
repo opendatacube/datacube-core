@@ -360,8 +360,8 @@ class DatasetResource(object):
     def _do_search(self, query, return_fields=False, with_source_ids=False):
         q = dict(query)
         metadata_types = set()
-        if 'type' in q.keys():
-            metadata_types.add(self.types.get_by_name(q['type']).metadata_type)
+        if 'product' in q.keys():
+            metadata_types.add(self.types.get_by_name(q['product']).metadata_type)
 
         # If they specified a metadata type, search using it.
         if 'metadata_type' in q.keys():
@@ -370,7 +370,7 @@ class DatasetResource(object):
         if len(metadata_types) > 1:
             _LOG.warning(
                 "Both a dataset type and metadata type were specified, but they're not compatible: %r, %r.",
-                query['type'], query['metadata_type']
+                query['product'], query['metadata_type']
             )
             # No datasets of this type can have the given metadata type.
             # No results.
