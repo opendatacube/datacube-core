@@ -118,10 +118,10 @@ class Datacube(object):
         return pandas.DataFrame(rows, columns=cols).set_index('id')
 
     @property
-    def variables(self):
-        return pandas.DataFrame.from_dict(self.list_variables()).set_index(['dataset', 'variable'])
+    def measurements(self):
+        return pandas.DataFrame.from_dict(self.list_measurements()).set_index(['dataset', 'variable'])
 
-    def list_variables(self):
+    def list_measurements(self):
         variables = []
         dts = self.index.datasets.types.get_all()
         for dt in dts:

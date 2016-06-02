@@ -246,7 +246,7 @@ class API(object):
         return [datatset_type_to_row(dataset_type) for dataset_type in self.datacube.index.datasets.types.get_all()]
 
     def list_variables(self):
-        return self.datacube.list_variables()
+        return self.datacube.list_measurements()
 
     def __repr__(self):
         return "API<datacube={!r}>".format(self.datacube.index)

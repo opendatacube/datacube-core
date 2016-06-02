@@ -179,7 +179,7 @@ def check_open_with_dc(index):
     assert len(products_df[products_df['name'].isin(['ls5_nbar_albers'])])
     assert len(products_df[products_df['name'].isin(['ls5_pq_albers'])])
 
-    assert len(dc.variables)
+    assert len(dc.measurements)
 
 
 def check_open_with_grid_workflow(index):
