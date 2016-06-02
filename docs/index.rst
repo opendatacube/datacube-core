@@ -13,35 +13,19 @@ The User Guide
 
 
 .. toctree::
+   :maxdepth: 2
+
+   user/intro
+   ops/index
+   dev/index
 
 
-  user/intro
+Support
+-------
 
-Installation and Administration Guide
--------------------------------------
+The best way to get help with the Data Cube is to open an issue on Github_.
 
-
-.. toctree::
-
-
-   ops/install
-   ops/db_setup
-   ops/ingest
-   ops/config
-   ops/tools
-
-
-Development and API Guide
--------------------------
-
-
-.. toctree::
-
-
-  dev/developer
-  dev/api
-
-
+.. _Github: http://github.com/data-cube/agdc-v2/issues
 
 
 Indices and tables

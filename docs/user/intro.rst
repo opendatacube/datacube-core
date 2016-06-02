@@ -1,7 +1,7 @@
 .. _introduction:
 
-Introduction
-============
+Overview
+========
 
 The Data Cube is a system designed to:
 
@@ -14,7 +14,23 @@ The Data Cube is a system designed to:
 Getting Started
 ---------------
 
-The
+If you're reading this, hopefully someone has already set up and loaded data into a Data Cube
+for you.
+
+Check out the :ref:`installation` for instructions on configuring and setting up
+
+
+Australian Users
+----------------
+
+If you have a login with the `NCI`_, check out the :ref:`nci_usage_guide`
+
+
+.. _NCI: http://www.nci.org.au/
+
+.. toctree::
+
+   nci_usage
 
 
 AGDC License

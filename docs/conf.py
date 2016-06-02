@@ -14,18 +14,15 @@
 
 import os
 import sys
+import datacube
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath('..'))
 print(sys.path)
 
-# Test Import
-import datacube
-
-from datacube.version import get_version
-__version = get_version()
+__version = datacube.__version__
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 

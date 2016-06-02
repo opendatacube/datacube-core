@@ -1,3 +1,5 @@
+.. _nci_usage_guide:
+
 NCI Usage Guide
 ===============
 

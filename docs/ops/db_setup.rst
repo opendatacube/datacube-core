@@ -1,5 +1,5 @@
-AGDC Database Setup
-===================
+Database Setup
+==============
 
 .. attention::
 
@@ -39,15 +39,7 @@ Datacube looks for a configuration file in ~/.datacube.conf::
     # db_username:
     # db_password:
 
-    [locations]
-    # Where to reach storage locations from the current machine.
-    #  -> Location names are arbitrary, but correspond to names used in the
-    #     storage type files.
-    #  -> We may eventually support remote protocols (http, S3, etc) to lazily fetch remote data.
-    eotiles: file:///short/public/democube/
-
-Change eotiles to point to the location where the datacube should store the storage units.
-Note the URI syntax (file:// prefix is required).
+Uncomment and fill in lines as required.
 
 See also :ref:`runtime-config-doc`
 
