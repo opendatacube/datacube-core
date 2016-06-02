@@ -57,8 +57,6 @@ setup(name='datacube',
       license='Apache License 2.0',
       entry_points={
           'console_scripts': [
-              'datacube-ingest = datacube.scripts.run_ingest:cli',
-              'datacube-config = datacube.scripts.config_tool:cli',
               'datacube-search = datacube.scripts.search_tool:cli',
               'datacube = datacube.scripts.cli_app:cli'
           ]

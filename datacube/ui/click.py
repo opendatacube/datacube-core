@@ -105,7 +105,7 @@ def pass_config(f):
     return functools.update_wrapper(new_func, f)
 
 
-def pass_index(app_name='cli', expect_initialised=True):
+def pass_index(app_name=None, expect_initialised=True):
     """Get a connection to the index as the first argument.
 
     A short name name of the application can be specified for logging purposes.
@@ -113,11 +113,11 @@ def pass_index(app_name='cli', expect_initialised=True):
 
     def decorate(f):
         def with_index(*args, **kwargs):
-            index = index_connect(
-                click.get_current_context().obj['config_file'],
-                application_name=app_name,
-                validate_connection=expect_initialised
-            )
+            ctx = click.get_current_context()
+            application_name = app_name or ctx.command_path.replace(' ', '-')
+            index = index_connect(ctx.obj['config_file'],
+                                  application_name=application_name,
+                                  validate_connection=expect_initialised)
             return f(index, *args, **kwargs)
 
         return functools.update_wrapper(with_index, f)

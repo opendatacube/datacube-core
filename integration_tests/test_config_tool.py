@@ -9,7 +9,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-import datacube.scripts.config_tool
+import datacube.scripts.cli_app
 from datacube.index.postgres.tables._core import drop_db, has_schema
 
 _LOG = logging.getLogger(__name__)
@@ -56,12 +56,12 @@ def test_add_example_dataset_types(global_integration_cli_args, db, default_meta
         opts = list(global_integration_cli_args)
         opts.extend(
             [
-                '-v', 'type', 'add',
+                '-v', 'product', 'add',
                 str(mapping_path)
             ]
         )
         result = _run_cli(
-            datacube.scripts.config_tool.cli,
+            datacube.scripts.cli_app.cli,
             opts
         )
         assert result.exit_code == 0, "Error for %r. output: %r" % (str(mapping_path), result.output)
@@ -81,13 +81,13 @@ def test_error_returned_on_invalid(global_integration_cli_args, db):
         opts = list(global_integration_cli_args)
         opts.extend(
             [
-                '-v', 'type', 'add',
+                '-v', 'product', 'add',
                 str(mapping_path)
             ]
         )
 
         result = _run_cli(
-            datacube.scripts.config_tool.cli,
+            datacube.scripts.cli_app.cli,
             opts,
             # TODO: Make this false when the cli is updated to print errors (rather than uncaught exceptions).
             catch_exceptions=True
@@ -107,11 +107,11 @@ def test_config_check(global_integration_cli_args, local_config):
     opts = list(global_integration_cli_args)
     opts.extend(
         [
-            '-v', 'check'
+            '-v', 'system', 'check'
         ]
     )
     result = _run_cli(
-        datacube.scripts.config_tool.cli,
+        datacube.scripts.cli_app.cli,
         opts
     )
     assert result.exit_code == 0
@@ -121,7 +121,7 @@ def test_config_check(global_integration_cli_args, local_config):
     assert user_line in result.output
 
 
-def list_users_does_not_fail(global_integration_cli_args, local_config):
+def test_list_users_does_not_fail(global_integration_cli_args, local_config):
     """
     :type global_integration_cli_args: tuple[str]
     :type local_config: datacube.config.LocalConfig
@@ -132,11 +132,11 @@ def list_users_does_not_fail(global_integration_cli_args, local_config):
     opts = list(global_integration_cli_args)
     opts.extend(
         [
-            '-v', 'users'
+            '-v', 'user', 'list'
         ]
     )
     result = _run_cli(
-        datacube.scripts.config_tool.cli,
+        datacube.scripts.cli_app.cli,
         opts
     )
     assert result.exit_code == 0
@@ -147,11 +147,11 @@ def test_db_init_noop(global_integration_cli_args, local_config):
     opts = list(global_integration_cli_args)
     opts.extend(
         [
-            '-v', 'database', 'init'
+            '-v', 'system', 'init'
         ]
     )
     result = _run_cli(
-        datacube.scripts.config_tool.cli,
+        datacube.scripts.cli_app.cli,
         opts
     )
     assert result.exit_code == 0
@@ -167,10 +167,10 @@ def test_db_init(global_integration_cli_args, db, local_config):
     opts = list(global_integration_cli_args)
     opts.extend(
         [
-            '-v', 'database', 'init'
+            '-v', 'system', 'init'
         ]
     )
-    cli_method = datacube.scripts.config_tool.cli
+    cli_method = datacube.scripts.cli_app.cli
     result = _run_cli(cli_method, opts)
     assert result.exit_code == 0
     assert 'Done.' in result.output

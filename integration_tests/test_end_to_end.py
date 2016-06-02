@@ -9,7 +9,6 @@ from click.testing import CliRunner
 from pathlib import Path
 
 import datacube.scripts.cli_app
-import datacube.scripts.config_tool
 from datacube.compat import string_types
 
 PROJECT_ROOT = Path(__file__).parents[1]
@@ -91,8 +90,8 @@ def test_end_to_end(global_integration_cli_args, index, testdata_dir):
     assert retcode == 0
 
     # Add the LS5 Dataset Types
-    run_click_command(datacube.scripts.config_tool.cli,
-                      global_integration_cli_args + ['-vv', 'type', 'add', str(LS5_DATASET_TYPES)])
+    run_click_command(datacube.scripts.cli_app.cli,
+                      global_integration_cli_args + ['-vv', 'product', 'add', str(LS5_DATASET_TYPES)])
 
     # Index the Datasets
     run_click_command(datacube.scripts.cli_app.cli,
