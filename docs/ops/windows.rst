@@ -30,6 +30,7 @@ Python 2.7 or Python 3.5 environment
     Scripts\virtualenv C:\envs\agdcv2
 
 .. note::
+
     **3.5 only workaround**: Copy ``vcruntime140.dll`` from Python install dir into
     virtualenv `Scripts\` folder.
 

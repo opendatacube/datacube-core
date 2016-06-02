@@ -1,22 +1,20 @@
+.. highlight:: console
+
 .. _nci_usage_guide:
 
 NCI Usage Guide
 ===============
 
 .. note::
-    This page is only relevant to using the AGDC at NCI.
+    These instructions are only relevant to using the :term:`AGDC` on the :term:`NCI` in Australia.
 
     For details on accessing the NCI, see http://nci.org.au/.
 
-To have access to the AGCD modules on ``raijin`` or ``VDI``, run the command:
-
-.. code-block:: console
+To have access to the AGCD modules on ``raijin`` or ``VDI``, run the command::
 
     [usr111@raijin ~]$ module use /g/data/v10/public/modules/modulefiles/
 
-You should now have access to the following modules:
-
-.. code-block:: console
+You should now have access to the following modules::
 
     [usr111@raijin ~]$ module avail agdc
 
@@ -43,8 +41,6 @@ Along with 2 versions of Python:
  * **py2** - Python 2.7
  * **py3** - Python 3.5
 
-To load the production module with Python 2, run:
-
-.. code-block:: console
+To load the production module with Python 2, run::
 
     [usr111@raijin ~]$ module load agdc-py2-prod

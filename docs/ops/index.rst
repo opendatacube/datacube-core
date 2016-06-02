@@ -12,4 +12,5 @@ Installation and Administration Guide
    indexing
    ingest
    config
+   prepare_scripts
    tools
