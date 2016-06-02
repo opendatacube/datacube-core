@@ -73,7 +73,7 @@ class Datacube(object):
     list_storage_units          -> *REMOVED*
     list_storage_type_names     -> Use Datacube.datasets
     list_products               -> Use Datacube.datasets
-    list_variables              -> Use Datacube.variables
+    list_variables              -> Use Datacube.measurements
 
     Data Access
     ===========
@@ -119,23 +119,23 @@ class Datacube(object):
 
     @property
     def measurements(self):
-        return pandas.DataFrame.from_dict(self.list_measurements()).set_index(['dataset', 'variable'])
+        return pandas.DataFrame.from_dict(self.list_measurements()).set_index(['product', 'measurement'])
 
     def list_measurements(self):
-        variables = []
+        measurements = []
         dts = self.index.datasets.types.get_all()
         for dt in dts:
             if dt.measurements:
                 for name, measurement in dt.measurements.items():
                     row = {
-                        'dataset': dt.name,
-                        'variable': name,
+                        'product': dt.name,
+                        'measurement': name,
                     }
                     if 'attrs' in measurement:
                         row.update(measurement['attrs'])
                     row.update({k: v for k, v in measurement.items() if k != 'attrs'})
-                    variables.append(row)
-        return variables
+                    measurements.append(row)
+        return measurements
 
     def load(self, stack=None, **indexers):
         if stack:
@@ -158,16 +158,16 @@ class Datacube(object):
         sources = self.product_sources(observations, group_by.group_by_func, group_by.dimension, group_by.units)
 
         all_measurements = get_measurements(observations)
-        if query.variables:
-            measurements = OrderedDict((variable, all_measurements[variable]) for variable in query.variables
-                                       if variable in all_measurements)
+        if query.measurements:
+            measurements = OrderedDict((measurement, all_measurements[measurement])
+                                       for measurement in query.measurements if measurement in all_measurements)
         else:
             measurements = all_measurements
 
         dataset = self.product_data(sources, geobox, measurements.values())
         return dataset
 
-    def _get_data_array(self, var_dim_name='variable', **indexers):
+    def _get_data_array(self, var_dim_name='measurement', **indexers):
         query = Query.from_kwargs(self.index, **indexers)
         observations = self.product_observations(geopolygon=query.geopolygon, **query.search_terms)
         if not observations:
@@ -182,15 +182,15 @@ class Datacube(object):
         sources = self.product_sources(observations, group_by.group_by_func, group_by.dimension, group_by.units)
 
         all_measurements = get_measurements(observations)
-        if query.variables:
-            measurements = OrderedDict((variable, all_measurements[variable]) for variable in query.variables
-                                       if variable in all_measurements)
+        if query.measurements:
+            measurements = OrderedDict((measurement, all_measurements[measurement])
+                                       for measurement in query.measurements if measurement in all_measurements)
         else:
             measurements = all_measurements
 
         data_dict = OrderedDict()
         for name, measurement in measurements.items():
-            data_dict[name] = self.variable_data(sources, geobox, measurement)
+            data_dict[name] = self.measurement_data(sources, geobox, measurement)
 
         return _stack_vars(data_dict, var_dim_name)
 
@@ -262,7 +262,7 @@ class Datacube(object):
         return result
 
     @staticmethod
-    def variable_data(sources, geobox, measurement, fuse_func=None):
+    def measurement_data(sources, geobox, measurement, fuse_func=None):
         coords = {dim: coord for dim, coord in sources.coords.items()}
         for dim, coord in geobox.coordinates.items():
             coords[dim] = xarray.Coordinate(dim, coord.labels, attrs={'units': coord.units})
@@ -290,7 +290,7 @@ class Datacube(object):
         return result
 
     @staticmethod
-    def variable_data_lazy(sources, geobox, measurement, fuse_func=None, grid_chunks=None):
+    def measurement_data_lazy(sources, geobox, measurement, fuse_func=None, grid_chunks=None):
         coords = {dim: coord for dim, coord in sources.coords.items()}
         for dim, coord in geobox.coordinates.items():
             coords[dim] = xarray.Coordinate(dim, coord.labels, attrs={'units': coord.units})
@@ -370,7 +370,7 @@ def get_measurements(datasets):
     for dataset_type in dataset_types:
         for name, measurement in dataset_type.measurements.items():
             if name in all_measurements:
-                raise LookupError('Multiple values found for variable: ', name)
+                raise LookupError('Multiple values found for measurement: ', name)
             all_measurements[name] = measurement
     return all_measurements
 

@@ -38,13 +38,13 @@ FLOAT_TOLERANCE = 0.0000001 # TODO: For DB query, use some sort of 'contains' qu
 TYPE_KEYS = ('type', 'storage_type', 'dataset_type')
 SPATIAL_KEYS = ('latitude', 'lat', 'y', 'longitude', 'lon', 'long', 'x')
 CRS_KEYS = ('crs', 'coordinate_reference_system')
-OTHER_KEYS = ('variables', 'group_by', 'output_crs', 'resolution', 'set_nan')
+OTHER_KEYS = ('measurements', 'variables', 'group_by', 'output_crs', 'resolution', 'set_nan')
 
 
 class Query(object):
-    def __init__(self, dataset_type=None, variables=None, **kwargs):
+    def __init__(self, dataset_type=None, measurements=None, **kwargs):
         self.type = dataset_type
-        self.variables = variables
+        self.measurements = measurements
         self.search = kwargs
         self.geopolygon = None
         self.group_by_name = None
@@ -60,7 +60,7 @@ class Query(object):
         :param index: An optional `index` object, if checking of field names is desired.
         :param kwargs:
          * `dataset_type` Name of the dataset type
-         * `variables` List of variables
+         * `measurements` List of measurements
          * `crs` Spatial coordinate reference system to interpret the spatial dimensions
         :return: :class:`Query`
         """
@@ -70,7 +70,9 @@ class Query(object):
         if dataset_type:
             query.type = dataset_type[0]
 
-        query.variables = _get_as_list(kwargs, 'variables', None)
+        query.measurements = _get_as_list(kwargs, 'measurements', None)
+        if query.measurements is None:
+            query.measurements = _get_as_list(kwargs, 'variables', None)
 
         spatial_dims = {dim: v for dim, v in kwargs.items() if dim in SPATIAL_KEYS}
 
@@ -121,7 +123,7 @@ class Query(object):
         query.search = {key: value for key, value in descriptor_request.items() if key not in defined_keys}
 
         if 'variables' in descriptor_request:
-            query.variables = descriptor_request['variables']
+            query.measurements = descriptor_request['variables']
 
         if 'dimensions' in descriptor_request:
             dims = descriptor_request['dimensions']
@@ -182,19 +184,19 @@ class Query(object):
     def __str__(self):
         return """Datacube Query:
         type = {type}
-        variables = {variables}
+        measurements = {measurements}
         search = {search}
         geopolygon = {geopolygon}
         group_by = {group_by}
         slices = {slices}
         set_nan = {set_nan}
         """.format(type=self.type,
-                   variables=self.variables,
+                   measurements=self.measurements,
                    search=self.search,
                    geopolygon=self.geopolygon,
                    group_by=self.group_by,
                    slices=self.slices,
-                   set_nan=self.set_nan,)
+                   set_nan=self.set_nan, )
 
 
 def _range_to_geopolygon(**kwargs):

@@ -429,11 +429,11 @@ class AnalyticsEngine(object):
             items[storage_type]['product_type'] = str(product['product'])
             items[storage_type]['instrument'] = str(product['instrument'])
         for variable in self.api.list_variables():
-            storage_type = str(variable['dataset'])
+            storage_type = str(variable['product'])
             if storage_type not in self.api_descriptors.keys():
                 continue
             if 'bands' not in items[storage_type]:
                 items[storage_type]['bands'] = []
-            items[storage_type]['bands'].append(variable['variable'])
+            items[storage_type]['bands'].append(variable['measurement'])
             items[storage_type]['bands'].sort()
         return items

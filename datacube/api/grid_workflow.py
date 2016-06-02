@@ -43,8 +43,9 @@ class GridWorkflow(object):
                                                 group_by.group_by_func, group_by.dimension, group_by.units)
 
         all_measurements = get_measurements(observations)
-        if query.variables:
-            measurements = [all_measurements[variable] for variable in query.variables if variable in all_measurements]
+        if query.measurements:
+            measurements = [all_measurements[measurement] for measurement in query.measurements
+                            if measurement in all_measurements]
         else:
             measurements = [measurement for measurement in all_measurements.values()]
 

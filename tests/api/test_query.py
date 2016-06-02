@@ -182,12 +182,19 @@ def test_query_kwargs():
     assert query.type == 'ls5_nbar_albers'
     assert query.search_terms['type'] == 'ls5_nbar_albers'
 
+    query = Query.from_kwargs(index=mock_index, measurements='red')
+    assert 'red' in query.measurements
+
+    query = Query.from_kwargs(index=mock_index, measurements=['red', 'green'])
+    assert 'red' in query.measurements
+    assert 'green' in query.measurements
+
     query = Query.from_kwargs(index=mock_index, variables='red')
-    assert 'red' in query.variables
+    assert 'red' in query.measurements
 
     query = Query.from_kwargs(index=mock_index, variables=['red', 'green'])
-    assert 'red' in query.variables
-    assert 'green' in query.variables
+    assert 'red' in query.measurements
+    assert 'green' in query.measurements
 
     query = Query.from_kwargs(index=mock_index, latitude=(-35, -36), longitude=(148, 149))
     assert query.geopolygon

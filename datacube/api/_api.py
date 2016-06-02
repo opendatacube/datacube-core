@@ -172,14 +172,15 @@ class API(object):
         if dataset_groups is None:
             dataset_groups = self._get_dataset_groups(query)
 
-        all_datasets = {dt.name: self._get_data_for_type(dt, sources, query.variables, query.geopolygon, query.slices)
+        all_datasets = {dt.name: self._get_data_for_type(dt, sources, query.measurements,
+                                                         query.geopolygon, query.slices)
                         for dt, sources in dataset_groups.items()}
         if all_datasets and not return_all:
             type_name, data_descriptor = all_datasets.popitem()
             return data_descriptor
         return all_datasets
 
-    def _get_data_for_type(self, dataset_type, sources, variables, geopolygon, slices=None):
+    def _get_data_for_type(self, dataset_type, sources, measurements, geopolygon, slices=None):
         dt_data = {}
         datasets = list(chain.from_iterable(g for _, g in numpy.ndenumerate(sources)))
         if not geopolygon:
@@ -194,7 +195,7 @@ class API(object):
                 if dim in sources.dims:
                     sources = sources.isel(dim=dim_slice)
         dt_data.update(self._get_data_for_dims(dataset_type, sources, geobox))
-        dt_data.update(self._get_data_for_measurement(dataset_type, sources, variables, geobox))
+        dt_data.update(self._get_data_for_measurement(dataset_type, sources, measurements, geobox))
         return dt_data
 
     @staticmethod
@@ -233,13 +234,13 @@ class API(object):
                 raise NotImplementedError('Unsupported dimension type: ', dim)
         return dt_data
 
-    def _get_data_for_measurement(self, dataset_type, sources, variables, geobox):
+    def _get_data_for_measurement(self, dataset_type, sources, measurements, geobox):
         dt_data = {
             'arrays': {}
         }
         for measurement_name, measurement in dataset_type.measurements.items():
-            if variables is None or measurement_name in variables:
-                dt_data['arrays'][measurement_name] = self.datacube.variable_data_lazy(sources, geobox, measurement)
+            if measurements is None or measurement_name in measurements:
+                dt_data['arrays'][measurement_name] = self.datacube.measurement_data_lazy(sources, geobox, measurement)
         return dt_data
 
     def list_products(self):
