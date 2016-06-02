@@ -176,7 +176,7 @@ class Query(object):
                            group_by_func=solar_day,
                            units='seconds since 1970-01-01 00:00:00')
         else:
-            raise NotImplementedError('No group by function for', self.group_by_name)
+            raise LookupError('No group by function for', self.group_by_name)
 
     def __repr__(self):
         return self.__str__()

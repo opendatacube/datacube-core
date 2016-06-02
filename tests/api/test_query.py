@@ -234,3 +234,7 @@ def test_query_kwargs():
 
     with pytest.raises(LookupError):
         Query.from_kwargs(index=mock_index, y=-4174726, x=1515184, crs='EPSG:3577', made_up_key='NotReal')
+
+    with pytest.raises(LookupError):
+        query = Query.from_kwargs(index=mock_index, y=-4174726, x=1515184, crs='EPSG:3577', group_by='magic')
+        query.group_by

@@ -201,6 +201,9 @@ def check_open_with_grid_workflow(index):
     dataset_cell = gw.load(LBG_CELL, type=type_name, variables=['blue'])
     assert dataset_cell['blue'].size
 
+    dataset_cell = gw.load(LBG_CELL, type=type_name)
+    assert all(m in dataset_cell for m in ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
+
     #
     # data_array_cell = dc.get_data_array_by_cell(LBG_CELL, storage_type='ls5_nbar_albers', variables=['blue'])
     # assert data_array_cell.size
