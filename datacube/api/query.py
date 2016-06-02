@@ -295,21 +295,6 @@ def _time_to_search_dims(time_range):
         return Range(single_query_time, end_time)
 
 
-def _get_group_by_func(group_by=None):
-    if hasattr(group_by, '__call__'):
-        return group_by
-    if group_by is None or group_by == 'time':
-        def just_time(ds):
-            return ds.center_time
-        return just_time
-    elif group_by == 'day':
-        return lambda ds: ds.center_time.date()
-    elif group_by == 'solar_day':
-        raise NotImplementedError('The group by `solar_day` feature is coming soon.')
-    else:
-        raise LookupError('No group_by function found called {}'.format(group_by))
-
-
 def _get_as_list(mapping, key, default=None):
     if key not in mapping:
         return default
