@@ -137,7 +137,13 @@ class Datacube(object):
                     variables.append(row)
         return variables
 
-    def get_dataset(self, **indexers):
+    def load(self, stack=None, **indexers):
+        if stack:
+            return self._get_data_array(var_dim_name=stack, **indexers)
+        else:
+            return self._get_dataset(**indexers)
+
+    def _get_dataset(self, **indexers):
         query = Query.from_kwargs(self.index, **indexers)
         observations = self.product_observations(geopolygon=query.geopolygon, **query.search_terms)
         if not observations:
@@ -161,7 +167,7 @@ class Datacube(object):
         dataset = self.product_data(sources, geobox, measurements.values())
         return dataset
 
-    def get_data_array(self, var_dim_name='variable', **indexers):
+    def _get_data_array(self, var_dim_name='variable', **indexers):
         query = Query.from_kwargs(self.index, **indexers)
         observations = self.product_observations(geopolygon=query.geopolygon, **query.search_terms)
         if not observations:

@@ -25,7 +25,7 @@ class GridWorkflow(object):
         self.grid_spec = grid_spec
         self.lazy = lazy
 
-    def get_dataset(self, xy_cell, lazy=None, **indexers):
+    def load(self, xy_cell, lazy=None, **indexers):
         if lazy is None:
             lazy = self.lazy
         assert isinstance(xy_cell, tuple)
