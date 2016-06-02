@@ -11,6 +11,8 @@ from pathlib import Path
 import datacube.scripts.cli_app
 from datacube.compat import string_types
 
+import imp
+
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
 LS5_DATASET_TYPES = CONFIG_SAMPLES / 'dataset_types/ls5_scenes.yaml'
@@ -22,6 +24,8 @@ LS5_NBAR_ALBERS = 'ls5_nbar_albers.yaml'
 LS5_PQ_ALBERS = 'ls5_pq_albers.yaml'
 
 GA_LS_PREPARE_SCRIPT = PROJECT_ROOT / 'utils/galsprepare.py'
+
+galsprepare = imp.load_source('module.name', str(GA_LS_PREPARE_SCRIPT))
 
 LBG_NBAR = 'LS5_TM_NBAR_P54_GANBAR01-002_090_084_19920323'
 LBG_PQ = 'LS5_TM_PQ_P55_GAPQ01-002_090_084_19920323'
@@ -78,14 +82,7 @@ def test_end_to_end(global_integration_cli_args, index, testdata_dir):
     ls5_pq_albers_ingest_config = testdata_dir / LS5_PQ_ALBERS
 
     # Run galsprepare.py on the NBAR and PQ scenes
-    retcode = call(
-        [
-            'python',
-            str(GA_LS_PREPARE_SCRIPT),
-            str(lbg_nbar)
-        ]
-    )
-    assert retcode == 0
+    run_click_command(galsprepare.main, [str(lbg_nbar)])
 
     # Add the LS5 Dataset Types
     run_click_command(datacube.scripts.cli_app.cli,
