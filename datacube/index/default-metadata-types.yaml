@@ -68,7 +68,7 @@ dataset:
 
             offset: [instrument, name]
 
-        product:
+        product_type:
             description: Product code
 
             offset: [product_type]
@@ -203,7 +203,7 @@ dataset:
 
             offset: [instrument, name]
 
-        product:
+        product_type:
             description: Product code
 
             offset: [product_type]
