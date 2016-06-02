@@ -64,3 +64,6 @@ target/
 # Mac OS X
 .DS_Store
 docs/html/
+
+# Generated Documentation
+docs/dev/generate/

@@ -15,6 +15,7 @@
 import os
 import sys
 import datacube
+import glob
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -40,8 +41,10 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.viewcode',
-    'sphinxcontrib.blockdiag'
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.extlinks'
 ]
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -106,9 +109,15 @@ pygments_style = 'friendly'
 # If true, keep warnings as "system message" paragraphs in the built documents.
 #keep_warnings = False
 
-# Get rid of warnings about 'toctree contains reference to nonexisting document'
-# See https://github.com/phn/pytpm/issues/3#issuecomment-12133978 for more details
-numpydoc_show_class_members = False
+autosummary_generate = True
+
+extlinks = {'issue': ('https://github.com/data-cube/agdc-v2/issues/%s', 'GH')}
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/2.7/', None),
+    'pandas': ('http://pandas.pydata.org/pandas-docs/stable/', None),
+    'iris': ('http://scitools.org.uk/iris/docs/latest/', None),
+    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
+}
 
 
 # -- Options for HTML output ----------------------------------------------
