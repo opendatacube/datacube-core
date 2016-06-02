@@ -44,7 +44,8 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset,
     opts.extend(
         [
             '-vv',
-            'index',
+            'dataset',
+            'add',
             '--auto-match',
             str(example_ls5_dataset)
         ]

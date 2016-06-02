@@ -7,12 +7,11 @@ Datacube command-line interface
 from __future__ import absolute_import
 
 from datacube.ui.click import cli
-import datacube.scripts.index
+import datacube.scripts.dataset
 import datacube.scripts.ingest
 import  datacube.scripts.product
 import  datacube.scripts.system
 import  datacube.scripts.user
-import  datacube.scripts.dataset
 
 
 if __name__ == '__main__':

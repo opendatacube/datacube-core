@@ -12,7 +12,12 @@ from datacube.ui.common import get_metadata_path
 from datacube.ui.click import cli
 from datacube.model import Dataset
 
-_LOG = logging.getLogger('agdc-index')
+_LOG = logging.getLogger('datacube-dataset')
+
+
+@cli.group(name='dataset', help='Dataset management commands')
+def dataset_cmd():
+    pass
 
 
 def contains(v1, v2):
@@ -98,7 +103,7 @@ def load_rules_from_types(index, type_names=None):
     return rules
 
 
-@cli.command('index', help="Index datasets into the Data Cube")
+@dataset_cmd.command('add', help="Add datasets to the Data Cube")
 @click.option('--match-rules', '-r', help='Rules to be used to find dataset types for datasets',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
 @click.option('--dtype', '-t', help='Dataset Type to be used to index datasets',
@@ -108,7 +113,7 @@ def load_rules_from_types(index, type_names=None):
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
 @click.argument('datasets',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
-@ui.pass_index(app_name='agdc-index')
+@ui.pass_index()
 def index_cmd(index, match_rules, dtype, auto_match, dry_run, datasets):
     if not (match_rules or dtype or auto_match):
         _LOG.error('Must specify one of [--match-rules, --type, --auto-match]')

@@ -21,8 +21,6 @@ INGESTER_CONFIGS = CONFIG_SAMPLES / 'ingester'
 LS5_NBAR_ALBERS = 'ls5_nbar_albers.yaml'
 LS5_PQ_ALBERS = 'ls5_pq_albers.yaml'
 
-MATCH_RULES = CONFIG_SAMPLES / 'match_rules/ls5_scenes.yaml'
-
 GA_LS_PREPARE_SCRIPT = PROJECT_ROOT / 'utils/galsprepare.py'
 
 LBG_NBAR = 'LS5_TM_NBAR_P54_GANBAR01-002_090_084_19920323'
@@ -96,7 +94,7 @@ def test_end_to_end(global_integration_cli_args, index, testdata_dir):
     # Index the Datasets
     run_click_command(datacube.scripts.cli_app.cli,
                       global_integration_cli_args +
-                      ['-vv', 'index', '--match-rules', str(MATCH_RULES),
+                      ['-vv', 'dataset', 'add', '--auto-match',
                        str(lbg_nbar), str(lbg_pq)])
 
     # Ingest NBAR
