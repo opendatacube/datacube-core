@@ -38,7 +38,7 @@ FLOAT_TOLERANCE = 0.0000001 # TODO: For DB query, use some sort of 'contains' qu
 TYPE_KEYS = ('type', 'storage_type', 'dataset_type')
 SPATIAL_KEYS = ('latitude', 'lat', 'y', 'longitude', 'lon', 'long', 'x')
 CRS_KEYS = ('crs', 'coordinate_reference_system')
-OTHER_KEYS = ('variables', 'group_by', 'output_crs', 'resolution')
+OTHER_KEYS = ('variables', 'group_by', 'output_crs', 'resolution', 'set_nan')
 
 
 class Query(object):
@@ -90,6 +90,9 @@ class Query(object):
 
         if 'resolution' in kwargs:
             query.resolution = kwargs['resolution']
+
+        if 'set_nan' in kwargs:
+            query.set_nan = kwargs['set_nan']
 
         remaining_keys = set(kwargs.keys()) - set(TYPE_KEYS + SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
         if index:
