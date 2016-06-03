@@ -22,6 +22,8 @@ Prerequisites for Indexing Data
  * A Product Type configuration loaded into the database for each Dataset
  * Dataset YAML files for each dataset
 
+.. _product-definitions:
+
 Product Definitions
 -------------------
 

@@ -44,6 +44,7 @@ facility for use by NCI users.
    :maxdepth: 2
    :caption: About Data Cube
 
+   about/whats_new
    about/glossary
    about/license
 

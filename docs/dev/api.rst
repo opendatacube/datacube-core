@@ -7,6 +7,8 @@ http://nbviewer.jupyter.org/github/data-cube/agdc-v2/blob/unification/examples/n
 
 .. currentmodule:: datacube
 
+.. _datacube-class:
+
 Datacube Class
 --------------
 
