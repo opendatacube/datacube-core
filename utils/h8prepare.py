@@ -135,25 +135,37 @@ def prepare_dataset(path):
     return [brf]
 
 
-@click.command(help="Prepare Himawari 8 dataset for ingestion into the Data Cube.")
-@click.argument('datasets',
-                type=click.Path(exists=True, readable=True, writable=True),
-                nargs=-1)
-def main(datasets):
-    logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
-
+def make_datasets(datasets):
     for dataset in datasets:
         path = Path(dataset)
 
         logging.info("Processing %s", path)
         documents = prepare_dataset(path)
-        if documents:
+        if not documents:
+            logging.info("No datasets found in %s", path)
+            continue
+        yield path, documents
+
+
+@click.command(help="Prepare Himawari 8 dataset for ingestion into the Data Cube.")
+@click.option('--output', help="Write datasets into this file",
+              type=click.Path(exists=False, writable=True, dir_okay=False))
+@click.argument('datasets',
+                type=click.Path(exists=True, readable=True, writable=True),
+                nargs=-1)
+def main(output, datasets):
+    logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
+
+    if output:
+        docs = ({'path': str(path), 'datasets': docs} for path, docs in make_datasets(datasets))
+        with open(output, 'w') as stream:
+            yaml.dump_all(docs, stream)
+    else:
+        for path, docs in make_datasets(datasets):
             yaml_path = str(path.joinpath('agdc-metadata.yaml'))
-            logging.info("Writing %s dataset(s) into %s", len(documents), yaml_path)
+            logging.info("Writing %s dataset(s) into %s", len(docs), yaml_path)
             with open(yaml_path, 'w') as stream:
-                yaml.dump_all(documents, stream)
-        else:
-            logging.info("No datasets discovered. Bye!")
+                yaml.dump_all(docs, stream)
 
 
 if __name__ == "__main__":
