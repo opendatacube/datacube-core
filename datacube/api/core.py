@@ -103,13 +103,18 @@ class Datacube(object):
         else:
             self.index = index
 
-    @property
-    def products(self):
+    def list_products(self, show_archived=False, with_pandas=True):
         """
-        List of products as a Pandas DataFrame.
-        :rtype: pandas.DataFrame
+        List of products in the datacube.
+
+        :param show_archived: include products that have been archived.
+        :param with_pandas: return the list as a Pandas DataFrame, otherwise as a list of dict.
+        :rtype: pandas.DataFrame or list(dict)
         """
         rows = [datatset_type_to_row(dataset_type) for dataset_type in self.index.datasets.types.get_all()]
+        if not with_pandas:
+            return rows
+
         keys = set(k for r in rows for k in r)
         main_cols = ['id', 'name', 'description']
         grid_cols = ['crs', 'resolution', 'tile_size', 'spatial_dimensions']
@@ -117,11 +122,20 @@ class Datacube(object):
         cols = main_cols + other_cols + grid_cols
         return pandas.DataFrame(rows, columns=cols).set_index('id')
 
-    @property
-    def measurements(self):
-        return pandas.DataFrame.from_dict(self.list_measurements()).set_index(['product', 'measurement'])
+    def list_measurements(self, show_archived=False, with_pandas=True):
+        """
+        List of measurements for each porduct available in the datacube.
 
-    def list_measurements(self):
+        :param show_archived: include products that have been archived.
+        :param with_pandas: return the list as a Pandas DataFrame, otherwise as a list of dict.
+        :rtype: pandas.DataFrame or list(dict)
+        """
+        measurements = self._list_measurements()
+        if not with_pandas:
+            return measurements
+        return pandas.DataFrame.from_dict(measurements).set_index(['product', 'measurement'])
+
+    def _list_measurements(self):
         measurements = []
         dts = self.index.datasets.types.get_all()
         for dt in dts:

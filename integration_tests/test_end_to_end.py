@@ -170,12 +170,12 @@ def check_open_with_dc(index):
                          latitude=(-34, -35), longitude=(149, 150),
                          variables=['blue'], group_by='solar_day')
 
-    products_df = dc.products
+    products_df = dc.list_products()
     assert len(products_df)
     assert len(products_df[products_df['name'].isin(['ls5_nbar_albers'])])
     assert len(products_df[products_df['name'].isin(['ls5_pq_albers'])])
 
-    assert len(dc.measurements)
+    assert len(dc.list_measurements())
 
 
 def check_open_with_grid_workflow(index):
