@@ -14,7 +14,6 @@
 
 import os
 import sys
-import datacube
 import glob
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -23,6 +22,7 @@ import glob
 sys.path.insert(0, os.path.abspath('..'))
 print(sys.path)
 
+import datacube
 __version = datacube.__version__
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
