@@ -147,6 +147,12 @@ def make_datasets(datasets):
         yield path, documents
 
 
+def absolutify_paths(doc, path):
+    for band in doc['image']['bands'].values():
+        band['path'] = str(path/band['path'])
+    return doc
+
+
 @click.command(help="Prepare Himawari 8 dataset for ingestion into the Data Cube.")
 @click.option('--output', help="Write datasets into this file",
               type=click.Path(exists=False, writable=True, dir_okay=False))
@@ -157,7 +163,7 @@ def main(output, datasets):
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
 
     if output:
-        docs = ({'path': str(path), 'datasets': docs} for path, docs in make_datasets(datasets))
+        docs = (absolutify_paths(doc, path) for path, docs in make_datasets(datasets) for doc in docs)
         with open(output, 'w') as stream:
             yaml.dump_all(docs, stream)
     else:
