@@ -21,8 +21,24 @@ import sys
 sys.path.insert(0, os.path.abspath('..'))
 print(sys.path)
 
-from versioneer import get_version
-__version = get_version()
+
+import versioneer
+
+versioneer.VCS = 'git'
+
+versioneer.versionfile_source = '../datacube/_version.py'
+
+versioneer.versionfile_build = '../datacube/_version.py'
+
+versioneer.tag_prefix = 'datacube' # tags are like datacube-1.2.0
+
+versioneer.parentdir_prefix = '..'
+
+__version = versioneer.get_version()
+
+del versioneer
+
+
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
