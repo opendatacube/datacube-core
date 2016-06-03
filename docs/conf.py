@@ -324,6 +324,7 @@ if on_rtd:
         'xarray',
         'dask',
         'dask.array',
+        'pandas'
 
     ]
 
