@@ -33,8 +33,8 @@ def fill_image_data(doc, granule_path):
     format_ = None
     bands = {}
 
-    gran_file = gdal.Open(granule_path)
-    quoted = '"' + granule_path + '"'
+    gran_file = gdal.Open(str(granule_path))
+    quoted = '"' + str(granule_path) + '"'
     for subds in gran_file.GetSubDatasets():
         index = subds[0].find(quoted)
         if not format_:
@@ -49,7 +49,7 @@ def fill_image_data(doc, granule_path):
 
         layer = subds[0][index + len(quoted) + 1:]
         bands[layer.split(':')[-1]] = {
-            'path': granule_path,
+            'path': granule_path.name,
             'layer': layer
         }
     del gran_file
@@ -106,7 +106,7 @@ def prepare_dataset(path):
             'lineage': {'source_datasets': {}},
         }
         documents.append(doc)
-        fill_image_data(doc, str(path.parent.joinpath(granule)))
+        fill_image_data(doc, path.parent.joinpath(granule))
         populate_coord(doc)
     return documents
 
