@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from contextlib import contextmanager
+from pathlib import Path
 
 from datacube.model import Variable, CRS
 from datacube.storage import netcdf_writer
@@ -135,7 +136,10 @@ class DatasetSource(object):
     @contextmanager
     def open(self):
         if self._descriptor['path']:
-            filename = str(self.local_path.parent.joinpath(self._descriptor['path']))
+            if Path(self._descriptor['path']).is_absolute():
+                filename = self._descriptor['path']
+            else:
+                filename = str(self.local_path.parent.joinpath(self._descriptor['path']))
         else:
             filename = str(self.local_path)
 
