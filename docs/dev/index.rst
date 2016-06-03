@@ -1,11 +1,40 @@
-.. _dev-guide:
+.. _dev-index:
 
-Development and API Guide
--------------------------
+Database and Indexing
+=====================
+
+Public Method
+-------------
+.. automodule:: datacube.index
+    :members:
+    :show-inheritance:
+
+Private Indexing Modules
+------------------------
+
+.. automodule:: datacube.index._api
+   :members:
+   :show-inheritance:
 
 
-.. toctree::
-   :maxdepth: 2
+.. automodule:: datacube.index._datasets
+   :members:
+   :show-inheritance:
 
-   developer
-   api
+
+PostgreSQL Backend
+------------------
+
+PostgreSQL Access API
+~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: datacube.index.postgres._api
+   :members:
+   :show-inheritance:
+
+Indexing Fields inside Documents
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: datacube.index.postgres._fields
+   :members:
+   :show-inheritance:

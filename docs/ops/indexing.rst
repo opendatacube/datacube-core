@@ -1,12 +1,17 @@
+.. highlight:: console
+
 .. _indexing:
 
 Loading Data into your Data Cube
 ================================
 
-Once you have the datacube software installed and connected to a database, you can start to load in some data. This step is performed using the **datacube** command line tool.
+Once you have the datacube software installed and connected to a database, you
+can start to load in some data. This step is performed using the **datacube**
+command line tool.
 
-When you load data into the Data Cube, all you are doing is recording the existence and detailed metadata about the
-data into the **database**, none of the raw data itself is copied or moved or transformed. This is therefore a
+When you load data into the Data Cube, all you are doing is recording the
+existence and detailed metadata about the data into the **database**, none of
+the raw data itself is copied or moved or transformed. This is therefore a
 relatively fast and lightweight process.
 
 Prerequisites for Indexing Data
@@ -17,8 +22,8 @@ Prerequisites for Indexing Data
  * A Product Type configuration loaded into the database for each Dataset
  * Dataset YAML files for each dataset
 
-Adding Product Type Descriptions
---------------------------------
+Product Type Descriptions
+-------------------------
 
 The Data Cube can handle many different types of Data, and requires a bit of information up front to know what to do with them. This is the task of the Product Type.
 
@@ -27,6 +32,9 @@ A Product Type provides a short **name**, a **description**, some basic source *
 The **measurements** is an ordered list of data, which specify a **name** and some **aliases**, a data type or **dtype**, and some options extras including what type of **units** the measurement is in, a **nodata** value, and even a way of specifying **bit level descriptions** or the **spectral response** in the case of reflectance data.
 
 A set of example Product Type descriptions are supplied in `docs/config_samples/dataset_types` to cover some common Geoscience Australia and other Earth Observation Data.
+
+Loading Product Type Descriptions
+---------------------------------
 
 To load Product Types into your Data Cube run::
 

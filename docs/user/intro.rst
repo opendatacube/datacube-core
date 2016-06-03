@@ -31,7 +31,3 @@ If you have a login with the :term:`NCI`, check out the :ref:`nci_usage_guide`
    nci_usage
 
 
-AGDC License
-------------
-
-    .. include:: ../../LICENSE

@@ -1,29 +1,51 @@
 Australian Geoscience Data Cube
 ===============================
 
-The Australian Geoscience Data Cube provides an integrated gridded data analysis environment for decades of analysis ready earth observation satellite and related data from multiple satellite and other acquisition systems.
+The Australian Geoscience Data Cube provides an integrated gridded data
+analysis environment for decades of analysis ready earth observation satellite
+and  related data from multiple satellite and other acquisition systems.
 
-In 2014, Geoscience Australia, CSIRO and the NCI established the Australian Geoscience Data Cube, building on  earlier work of Geoscience Australia and expanding it to include additional earth observation satellite and other gridded data collections (e.g. MODIS, DEM) in order to expand the range of integrated data analysis capabilities that were available. The complete software stack and petabytes of EO are deployed at the NCI petascale computing facility for use by NCI users.
+In 2014, Geoscience Australia, CSIRO and the NCI established the Australian
+Geoscience Data Cube, building on  earlier work of Geoscience Australia and
+expanding it to include additional earth observation satellite and other
+gridded data collections (e.g. MODIS, DEM) in order to expand the range of
+integrated data analysis capabilities that were available. The complete
+software stack and petabytes of EO are deployed at the NCI petascale computing
+facility for use by NCI users.
 
 .. toctree::
    :maxdepth: 3
    :caption: User Guide
 
    user/intro
-   glossary
 
 .. toctree::
    :maxdepth: 2
    :caption: Operations Guide
 
-   ops/index
+   ops/install
+   ops/db_setup
+   ops/indexing
+   ops/ingest
+   ops/config
+   ops/prepare_scripts
+   ops/tools
 
 .. toctree::
    :maxdepth: 2
    :caption: Developer Guide
 
+   dev/developer
+   dev/api
+   dev/model
    dev/index
 
+.. toctree::
+   :maxdepth: 2
+   :caption: About Data Cube
+
+   about/glossary
+   about/license
 
 .. _support:
 

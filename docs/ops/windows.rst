@@ -5,7 +5,8 @@ Microsoft Windows
 Python 2.7 or Python 3.5 environment
 ------------------------------------
 
-1. Download and install a standard python release from http://www.python.org/ . The AGDC supports versions 2.7 and
+1. Download and install a standard python release from http://www.python.org/
+. The :term:`AGDC` supports versions 2.7 and
 3.5.
 
 .. note::
