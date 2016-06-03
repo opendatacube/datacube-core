@@ -7,6 +7,7 @@ from __future__ import absolute_import
 import functools
 import logging
 import os
+import re
 
 import click
 
@@ -114,7 +115,7 @@ def pass_index(app_name=None, expect_initialised=True):
     def decorate(f):
         def with_index(*args, **kwargs):
             ctx = click.get_current_context()
-            application_name = app_name or ctx.command_path.replace(' ', '-')
+            application_name = app_name or re.sub('[^0-9a-zA-Z]+', '-', ctx.command_path)
             index = index_connect(ctx.obj['config_file'],
                                   application_name=application_name,
                                   validate_connection=expect_initialised)
