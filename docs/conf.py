@@ -326,7 +326,7 @@ if on_rtd:
         'dask',
         'dask.array',
         'pandas',
-        'datacube.api'
+        'rasterio.crs'
 
     ]
 
