@@ -104,11 +104,11 @@ def load_rules_from_types(index, type_names=None):
 
 
 @dataset_cmd.command('add', help="Add datasets to the Data Cube")
-@click.option('--match-rules', '-r', help='Rules to be used to find dataset types for datasets',
+@click.option('--match-rules', '-r', help='Rules to be used to associate datasets with products',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
-@click.option('--dtype', '-t', help='Dataset Type to be used to index datasets',
+@click.option('--dtype', '-t', help='Product to be associated with the datasets',
               multiple=True)
-@click.option('--auto-match', '-a', help="Automatically find dataset types by matching metadata",
+@click.option('--auto-match', '-a', help="Automatically associate datasets with products by matching metadata",
               is_flag=True, default=False)
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
 @click.argument('datasets',
