@@ -89,12 +89,12 @@ def get_ang_dataset(path):
     for image in path.glob('*-P1S-ABOM_GEOM_*-HIMAWARI8-AHI.nc'):
         match = band_re.match(str(image)).groups()
         images['%s_%s' % match] = {
-            'path': str(image),
+            'path': image.name,
             'layer': 'solar_zenith_angle',
         }
     if not images:
         return None
-    return get_skeleton(str(images['SOLAR_2000']['path']), 'GEOM_SOLAR', images)
+    return get_skeleton(str(path/images['SOLAR_2000']['path']), 'GEOM_SOLAR', images)
 
 
 def get_obs_dataset(path):
@@ -103,12 +103,12 @@ def get_obs_dataset(path):
     for image in path.glob('*-P1S-ABOM_OBS_*-HIMAWARI8-AHI.nc'):
         match = band_re.match(str(image)).groups()
         images['%s_%s' % match] = {
-            'path': str(image),
+            'path': image.name,
             'layer': 'channel_00' + match[0] + '_scaled_radiance',
         }
     if not images:
         return None
-    return get_skeleton(str(images['01_2000']['path']), 'OBS', images)
+    return get_skeleton(str(path/images['01_2000']['path']), 'OBS', images)
 
 
 def get_brf_dataset(path):
@@ -117,12 +117,12 @@ def get_brf_dataset(path):
     for image in path.glob('*-P1S-ABOM_BRF_*-HIMAWARI8-AHI.nc'):
         match = band_re.match(str(image)).groups()
         images['%s_%s' % match] = {
-            'path': str(image),
+            'path': image.name,
             'layer': 'channel_00' + match[0] + '_brf',
         }
     if not images:
         return None
-    return get_skeleton(str(images['01_2000']['path']), 'BRF', images)
+    return get_skeleton(str(path/images['01_2000']['path']), 'BRF', images)
 
 
 def prepare_dataset(path):
