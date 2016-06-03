@@ -289,7 +289,7 @@ def check_get_descriptor(index):
         assert isinstance(su['irregular_indices'], dict)
         assert isinstance(su['storage_max'], tuple)
         assert isinstance(su['storage_min'], tuple)
-        assert isinstance(su['storage_path'], basestring)
+        assert isinstance(su['storage_path'], string_types)
         assert isinstance(su['storage_shape'], tuple)
 
 
