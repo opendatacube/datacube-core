@@ -14,7 +14,6 @@
 
 import os
 import sys
-import glob
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -22,8 +21,8 @@ import glob
 sys.path.insert(0, os.path.abspath('..'))
 print(sys.path)
 
-import datacube
-__version = datacube.__version__
+from versioneer import get_version
+__version = get_version()
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
