@@ -54,43 +54,23 @@ xarray.Dataset.extent = property(_xarray_extent)
 class Datacube(object):
     """
     Interface to search, read and write a datacube
-
-    Functions in current API:
-
-    AA/EE functions
-    ===============
-    get_descriptor              -> Remain in API.get_descriptor
-    get_data                    -> Remain in API.det_data
-
-    List search fields
-    ==================
-    list_fields                 -> Use Datacube.datasets
-    list_field_values           -> Use Datacube.datasets
-    list_all_field_values       -> Use Datacube.datasets
-
-    List collections
-    ================
-    list_storage_units          -> *REMOVED*
-    list_storage_type_names     -> Use Datacube.datasets
-    list_products               -> Use Datacube.datasets
-    list_variables              -> Use Datacube.measurements
-
-    Data Access
-    ===========
-    get_dataset
-    get_data_array
-
-    Legacy tile-based workflow
-    ==========================
-    list_cells                  -> Get dt, Get geobox for cell
-    list_tiles                  -> Get dt
-    get_dataset_by_cell
-    get_data_array_by_cell
-
     """
     def __init__(self, index=None, config=None, app=None):
         """
-        Defines a connection to a datacube index and file storage
+        Creates the interface for the query and storage access.
+
+        If no index is given, the default configuration is used for database connection, etc.
+
+        :param index: The database index to use.
+        :type index: from :py:class:`datacube.index.index_connect` or None
+        :param config: A config object or a path to a config file that defines the connection.
+            If an index is supplied, config is ignored.
+        :type config: str or :class:`datacube.config.LocalConfig`
+        :param app: A short, alphanumeric name to identify this application.
+
+            The application name is used to track down problems with database queries, so it is strongly
+            advised that be used.  If an index is supplied, application name is ignored.
+        :type app: string, required if no index is given
         :return: Datacube object
         """
         if index is None:
@@ -124,7 +104,7 @@ class Datacube(object):
 
     def list_measurements(self, show_archived=False, with_pandas=True):
         """
-        List of measurements for each porduct available in the datacube.
+        List of measurements for each product available in the datacube.
 
         :param show_archived: include products that have been archived.
         :param with_pandas: return the list as a Pandas DataFrame, otherwise as a list of dict.
@@ -152,6 +132,40 @@ class Datacube(object):
         return measurements
 
     def load(self, stack=None, **indexers):
+        """
+        Loads data as an ``xarray`` object.
+
+        See http://xarray.pydata.org/en/stable/api.html for usage of the ``Dataset`` and ``DataArray`` objects.
+
+        **Search fields**
+            Search product fields. E.g.::
+                platform=['LANDSAT_5', 'LANDSAT_7'],
+                product_type='nbar'
+
+        **Measurements**
+            The ``measurements`` argument is a list of measurement names, as listed in :meth:`list_measurements`
+
+        **Dimensions**
+            Spatial dimensions can
+
+        ** Output **
+
+        :param product: the product to be included.
+                By default all available measurements are included.
+        :type measurements: list(str) or str, optional
+        :param measurements: measurements name or list of names to be included, as listed in :meth:`list_measurements`.
+                If a list is specified, the measurements will be returned in the order requested.
+                By default all available measurements are included.
+        :type measurements: list(str) or str, optional
+        :param indexers: Search parameters and dimension ranges as described above. E.g.::
+                product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5)
+
+            The default CRS interpretation for geospatial dimensions is WGS84/EPSG:4326,
+            even if the resulting dimension is in another projection.
+            The dimensions ``longitude``/``latitude`` and ``x``/``y`` can be used interchangeably.
+        :return: Requested data.
+        :rtype: :class:`xarray.Dataset` or :class:`xarray.DataArray`
+        """
         if stack:
             return self._get_data_array(var_dim_name=stack, **indexers)
         else:
@@ -209,6 +223,18 @@ class Datacube(object):
         return _stack_vars(data_dict, var_dim_name)
 
     def product_observations(self, product=None, geopolygon=None, **kwargs):
+        """
+        Finds datasets for a product.
+
+        :param product: Name of the product
+        :param geopolygon: Spatial area to search for datasets
+        :type geopolygon: :class:`datacube.model.GeoPolygon`
+        :param kwargs: mapping of additional search fields used.
+        :return: list of datasets
+        :rtype: list( :class:`datacube.model.Dataset` )
+
+        .. seealso:: :meth:`product_sources` :meth:`product_data`
+        """
         if geopolygon:
             geo_bb = geopolygon.to_crs(CRS('EPSG:4326')).boundingbox
             kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
@@ -226,6 +252,17 @@ class Datacube(object):
 
     @staticmethod
     def product_sources(datasets, group_func, dimension, units):
+        """
+        Groups the datasets along defined non-spatial dimensions.
+
+        :param datasets: a list of datasets, typically from :meth:`product_observations`
+        :param group_func: a function that returns a label for a dataset
+        :param dimension: name of the new dimension
+        :param units: unit for the new dimension
+        :return: :class:`xarray.Array`
+
+        .. seealso:: :meth:`product_observations` :meth:`product_data`
+        """
         datasets.sort(key=group_func)
         groups = [Group(key, tuple(group)) for key, group in groupby(datasets, group_func)]
 
@@ -240,11 +277,17 @@ class Datacube(object):
     @staticmethod
     def product_data(sources, geobox, measurements, fuse_func=None):
         """
-        :type sources: xarray.DataArray
-        :type geobox: datacube.model.GeoBox
-        :type measurements: list of measurement dict with keys: {'name', 'dtype', 'nodata', 'units'}
-        :type fuse_func: function to merge successive arrays as an output
-        :rtype: xarray.Dataset
+        Loads data from :meth:`product_sources` into a Dataset object.
+
+        :param sources: DataArray holding a list of :py:class:`datacube.model.Dataset` objects
+        :type sources: :py:class:`xarray.DataArray`
+        :param geobox: A GeoBox defining the output spatial projection and resolution
+        :type geobox: :class:`datacube.model.GeoBox`
+        :param measurements: list of measurement dicts with keys: {'name', 'dtype', 'nodata', 'units'}
+        :param fuse_func: function to merge successive arrays as an output
+        :rtype: :py:class:`xarray.Dataset`
+
+        .. seealso:: :meth:`product_observations` :meth:`product_sources`
         """
         result = xarray.Dataset(attrs={'crs': geobox.crs})
         for name, coord in sources.coords.items():

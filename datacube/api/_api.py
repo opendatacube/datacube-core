@@ -33,6 +33,20 @@ _LOG = logging.getLogger(__name__)
 
 class API(object):
     def __init__(self, index=None, app=None, datacube=None):
+        """
+        Creates the interface for the query and storage access.
+
+        If no datacube or index is given, the default configuration is used for database connection, etc.
+
+        :param index: The database index to use.
+        :type index: from :py:class:`datacube.index.index_connect` or None
+        :param app: A short, alphanumeric name to identify this application.
+            The application name is used to track down problems with database queries, so it is strongly
+            advised that be used.  If an index is supplied, application name is ignored.
+        :type app: string, required if no index is given
+        :param datacube:
+        :type datacube: :class:`datacube.Datacube`
+        """
         if datacube is not None:
             self.datacube = datacube
         elif index is not None:
@@ -123,6 +137,93 @@ class API(object):
         return data_vars
 
     def get_descriptor(self, descriptor_request=None, include_storage_units=True):
+        """
+        Gets the metadata for a ``AnalyticsEngine`` query.
+        All fields are optional.
+
+        **Dimensions**
+
+            Dimensions can specify a range by label, and optionally a CRS to interpret the label.
+            The default CRS interpretation for geospatial dimensions (longitude/latitude or x/y) is WGS84/EPSG:4326,
+            even if the resulting dimension is in another projection.
+
+        :param descriptor_request: The request query, formatted as:
+            ::
+
+                descriptor_request = {
+                    'platform': 'LANDSAT_8',
+                    'product_type': 'nbar',
+                    'dimensions': {
+                        'x': {
+                            'range': (140, 142),
+                            'crs': 'EPSG:4326'
+                        },
+                        'y': {
+                            'range': (-36, -35),
+                            'crs': 'EPSG:4326'
+                        },
+                        'time': {
+                            'range': ((1990, 6, 1), (1992, 7 ,1)),
+                            'group_by': 'solar_day'
+                        }
+                    },
+                }
+
+        :type descriptor_request: dict or None
+        :param include_storage_units: Include the list of storage units
+        :type include_storage_units: bool, optional
+        :return: A descriptor dict of the query, containing the metadata of the request
+            ::
+
+                descriptor = {
+                    'ls5_nbar_albers': { # product identifier
+                        'dimensions': ['x', 'y', 'time'],
+                        'variables': { # Variables which can be accessed as arrays
+                            'B10': {
+                                'datatype': 'int16',
+                                'nodata_value': -999
+                            },
+                            'B20': {
+                                'datatype': 'int16',
+                                'nodata_value': -999
+                            },
+                            'B30': {
+                                'datatype': 'int16',
+                                'nodata_value': -999
+                            }
+                        },
+                        'result_min': (140, -36, 1293840000),
+                        'result_max': (141, -35, 1325376000),
+                        'result_shape': (8000, 8000, 40), # Overall size of result set
+                        'irregular_indices': {
+                            # Regularly indexed dimensions (e.g. x & y) won't be specified
+                            'time': date_array # Array of days since 1/1/1970
+                        },
+                        'storage_units': {
+                            (140, -36, 1990): { # Storage unit indices
+                                'storage_min': (140, -36, 1293840000),
+                                'storage_max': (141, -35, 1293800400),
+                                'storage_shape': (4000, 4000, 24),
+                                'storage_path': '/path/to/storage/units/nbar_140_-36_1990.nc',
+                            },
+                            (140, -36, 1991): { # Storage unit indices
+                                'storage_min': (140, -36, 1293800400),
+                                'storage_max': (141, -35, 1325376000),
+                                'storage_shape': (4000, 4000, 23),
+                                'storage_path': '/path/to/storage/units/nbar_140_-36_1991.nc',
+                            },
+                            # ...
+                            # <more storage_unit sub-descriptors>
+                            # ...
+                        },
+                        # ...
+                        # <more storage unit type sub-descriptors>
+                        # ...
+                    }
+                }
+
+        .. seealso:: :meth:`get_descriptor`
+        """
         query = Query.from_descriptor_request(descriptor_request)
         descriptor = {}
         datasets_by_type = self._search_datasets_by_type(**query.search_terms)
@@ -157,14 +258,77 @@ class API(object):
 
     def get_data(self, data_request, dataset_groups=None, return_all=False):
         """
+        Gets the data for a ``ExecutionEngine`` query.
+        Function to return composite in-memory arrays.
 
-        :param data_request:
+        :param data_request: A dictionary containing the query parameters. All fields are optional.
+
+            **Search fields**
+
+            Search for any of the fields returned by :meth:`list_fields()`, using a value from
+            :meth:`list_field_values()`.
+
+            **Storage type field**
+
+            The ``storage_type`` can be any of the keys returned by :meth:`get_descriptor()` or
+            :meth:`list_storage_type_names()`.
+
+            **Variables field**
+
+            The ``variables`` field is a list of variable names matching those listed by :meth:`get_descriptor()` or
+            :meth:`list_variables()`.
+            If not specified, all variables are returned.
+
+            **Dimensions field**
+
+            The ``dimensions`` field can specify a range by label and/or index, and optionally a CRS to interpret
+            the label range request.
+
+            Times can be specified as :class:`datetime` objects, tuples of (year, month, day) or
+            (year, month, day, hour, minute, second), or by seconds since the Unix epoch.
+            Strings may also be used, with ISO format preferred.
+
+            The default CRS interpretation for geospatial dimensions (longitude/latitude or x/y) is WGS84/EPSG:4326,
+            even if the resulting dimension is in another projection.
+
+            The ``array_range`` field can be used to subset the request.
+            ::
+
+                descriptor = {
+                    'platform': 'LANDSAT_8',
+                    'product': 'NBAR',
+                    # <search_field>: <search value>,
+                    'storage_type': 'ls8_nbar',
+                    'variables': ('B30', 'B40'),
+                    'dimensions': {
+                        'x': {
+                            'range': (140, 142),
+                            'array_range': (0, 127),
+                            'crs': 'EPSG:4326'
+                        },
+                        'y': {
+                            'range': (-36, -35),
+                            'array_range': (0, 127),
+                            'crs': 'EPSG:4326'
+                        },
+                        'time': {
+                            'range': (1293840000, 1325376000),
+                            'array_range': (0, 127)
+                        }
+                    },
+                }
+
+        :type data_request: dict or None
         :param dataset_groups: dict mapping dataset_type to sequence of Group pairs.
             If not provided, the index is queried.
-        :param return_all: If True, data from all requested datatsets is returned,
+
+        :param return_all: If True, data from all requested products is returned,
             otherwise only the first result is returned.
+
         :type dataset_groups: dict{dataset_type: list(Group(key, list(datasets)))}
-        :return:
+        :return: A mapping product
+
+        .. seealso:: :meth:`get_descriptor`
         """
         query = Query.from_descriptor_request(data_request)
 
@@ -244,9 +408,20 @@ class API(object):
         return dt_data
 
     def list_products(self):
+        """
+        Lists the products in the Datacube
+
+        :return: list of dictionaries describing the products
+        """
         return [datatset_type_to_row(dataset_type) for dataset_type in self.datacube.index.datasets.types.get_all()]
 
     def list_variables(self):
+        """
+        Lists the variables
+
+        Variables are also referred to as measurements or bands.
+        :return: list of dictionaries describing the varaibles
+        """
         return self.datacube.list_measurements(with_pandas=False)
 
     def __repr__(self):
