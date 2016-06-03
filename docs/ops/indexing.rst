@@ -22,33 +22,48 @@ Prerequisites for Indexing Data
  * A Product Type configuration loaded into the database for each Dataset
  * Dataset YAML files for each dataset
 
-Product Type Descriptions
--------------------------
+Product Definitions
+-------------------
 
-The Data Cube can handle many different types of Data, and requires a bit of information up front to know what to do with them. This is the task of the Product Type.
+The Data Cube can handle many different types of Data, and requires a bit of information up front to know what to do with them. This is the task of the Product Definition.
 
-A Product Type provides a short **name**, a **description**, some basic source **metadata** and (optionally) a list of **measurements** describing the type of data that will be contained in the Datasets of it's type.
+A Product Definition provides a short **name**, a **description**, some basic
+source **metadata** and (optionally) a list of **measurements** describing the type of data that will be contained in the Datasets of it's type.
 
 The **measurements** is an ordered list of data, which specify a **name** and some **aliases**, a data type or **dtype**, and some options extras including what type of **units** the measurement is in, a **nodata** value, and even a way of specifying **bit level descriptions** or the **spectral response** in the case of reflectance data.
 
-A set of example Product Type descriptions are supplied in `docs/config_samples/dataset_types` to cover some common Geoscience Australia and other Earth Observation Data.
+A set of example Product definitions are supplied in `docs/config_samples/dataset_types` to cover some common Geoscience Australia and other Earth Observation Data.
 
-Loading Product Type Descriptions
----------------------------------
+Loading Product Definitions
+---------------------------
 
-To load Product Types into your Data Cube run::
+To load Products into your Data Cube run::
 
     datacube product add <path-to-dataset-type-yml>
 
 
 Dataset Documents
 -----------------
-As well as the type information loaded in the previous step, every Dataset requires some metadata describing what the data represents and where it has come from, as well has what sort of files it is stored in. We call this *blah* and it is expected to be stored in _YAML_ documents. It is what is loaded into the Database for searching, querying and accessing the data.
+As well as the product information loaded in the previous step, every Dataset
+requires some metadata describing what the data represents and where it has come from, as well has what sort of files it is stored in. We call this *blah* and it is expected to be stored in _YAML_ documents. It is what is loaded into the Database for searching, querying and accessing the data.
 
 In the case of data from Geoscience Australia, no further steps are required.
 
 For third party datasets, see :ref:`prepare-scripts`.
 
+:ref:`dataset-metadata-doc` is required to accompany the dataset for it to be
+ recognised by Data Cube. It defines critical metadata of the dataset such as:
+
+    - measurements
+    - platform and sensor names
+    - geospatial extents and projection
+    - acquisition time
+
+.. note::
+
+    Some metadata requires cleanup before they are ready to be loaded.
+
+For more information see :ref:`dataset-metadata-doc`.
 
 
 Adding Some Data

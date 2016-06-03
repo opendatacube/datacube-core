@@ -127,9 +127,11 @@ extlinks = {'issue': ('https://github.com/data-cube/agdc-v2/issues/%s', 'GH')}
 intersphinx_mapping = {
     'python': ('https://docs.python.org/2.7/', None),
     'pandas': ('http://pandas.pydata.org/pandas-docs/stable/', None),
-    'iris': ('http://scitools.org.uk/iris/docs/latest/', None),
     'numpy': ('http://docs.scipy.org/doc/numpy/', None),
 }
+
+click_utils_commands = {'datacube-search': 'datacube.scripts.search_tool:cli',
+                        'datacube': 'datacube.scripts.cli_app:cli'}
 
 
 # -- Options for HTML output ----------------------------------------------

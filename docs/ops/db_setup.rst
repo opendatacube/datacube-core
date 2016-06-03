@@ -43,8 +43,9 @@ Uncomment and fill in lines as required.
 
 See also :ref:`runtime-config-doc`
 
-Create the Database Schema
---------------------------
-:ref:`datacube-config-tool` can create and populate the datacube schema (agdc)::
+Initialise the Database Schema
+------------------------------
+:ref:`datacube-tool` can create and populate the Data Cube database schema
+(agdc)::
 
-    datacube-config -v database init
+    datacube -v system init
