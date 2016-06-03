@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-import collections
 import shutil
 from subprocess import call
 
@@ -256,12 +255,12 @@ def check_get_descriptor(index):
     assert 'result_shape' in list(d.values())[0].keys()
 
     assert isinstance(list(d.values())[0]['storage_units'], dict)
-    assert isinstance(list(d.values())[0]['dimensions'], collections.Sequence)
-    assert isinstance(list(d.values())[0]['result_max'], collections.Sequence)
+    assert isinstance(list(d.values())[0]['dimensions'], list)
+    assert isinstance(list(d.values())[0]['result_max'], tuple)
     assert isinstance(list(d.values())[0]['irregular_indices'], dict)
-    assert isinstance(list(d.values())[0]['result_min'], collections.Sequence)
+    assert isinstance(list(d.values())[0]['result_min'], tuple)
     assert isinstance(list(d.values())[0]['variables'], dict)
-    assert isinstance(list(d.values())[0]['result_shape'], collections.Sequence)
+    assert isinstance(list(d.values())[0]['result_shape'], tuple)
 
     assert len(list(d.values())[0]['dimensions']) == \
         len(list(d.values())[0]['dimensions']) == \
@@ -288,10 +287,10 @@ def check_get_descriptor(index):
         assert 'storage_path' in su
         assert 'storage_shape' in su
         assert isinstance(su['irregular_indices'], dict)
-        assert isinstance(su['storage_max'], collections.Sequence)
-        assert isinstance(su['storage_min'], collections.Sequence)
-        assert isinstance(su['storage_path'], string_types)
-        assert isinstance(su['storage_shape'], collections.Sequence)
+        assert isinstance(su['storage_max'], tuple)
+        assert isinstance(su['storage_min'], tuple)
+        assert isinstance(su['storage_path'], basestring)
+        assert isinstance(su['storage_shape'], tuple)
 
 
 def check_get_data(index):
@@ -332,12 +331,12 @@ def check_get_data(index):
     assert 'coordinate_reference_systems' in list(d.keys())
     assert 'size' in list(d.keys())
 
-    assert isinstance(d['dimensions'], collections.Sequence)
+    assert isinstance(d['dimensions'], list)
     assert isinstance(d['arrays'], dict)
-    assert isinstance(d['element_sizes'], collections.Sequence)
+    assert isinstance(d['element_sizes'], list)
     assert isinstance(d['indices'], dict)
-    assert isinstance(d['coordinate_reference_systems'], collections.Sequence)
-    assert isinstance(d['size'], collections.Sequence)
+    assert isinstance(d['coordinate_reference_systems'], list)
+    assert isinstance(d['size'], tuple)
 
     assert len(list(d['dimensions'])) == \
         len(list(d['coordinate_reference_systems'])) == \

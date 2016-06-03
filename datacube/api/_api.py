@@ -54,7 +54,7 @@ class API(object):
         datasets.sort(key=group_by.group_by_func)
         groups = [Group(key, list(group)) for key, group in groupby(datasets, group_by.group_by_func)]
 
-        dataset_descriptor['result_min'] = []
+        dataset_descriptor['result_min'] = tuple()
         dataset_descriptor['result_max'] = tuple()
         dataset_descriptor['result_shape'] = tuple()
         dataset_descriptor['irregular_indices'] = {}
@@ -73,7 +73,7 @@ class API(object):
             else:
                 # not supported yet...
                 continue
-            dataset_descriptor['result_min'].append(min(coords))
+            dataset_descriptor['result_min'] += (min(coords),)
             dataset_descriptor['result_max'] += (max(coords),)
             dataset_descriptor['result_shape'] += (len(coords),)
 
@@ -202,7 +202,7 @@ class API(object):
     def _get_data_for_dims(dataset_type, sources, geobox):
         dims = dataset_type.dimensions
         dt_data = {
-            'dimensions': dims,
+            'dimensions': list(dims),
             'indices': {},
             'element_sizes': [],
             'coordinate_reference_systems': [],
