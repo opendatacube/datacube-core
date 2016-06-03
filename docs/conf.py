@@ -35,7 +35,7 @@ versioneer.tag_prefix = 'datacube-' # tags are like datacube-1.2.0
 
 versioneer.parentdir_prefix = '..'
 
-__version = versioneer.get_version()
+__version = versioneer.get_version().replace('.dirty', '')
 
 del versioneer
 os.chdir("docs")
