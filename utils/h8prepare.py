@@ -151,7 +151,7 @@ def make_datasets(datasets):
 @click.option('--output', help="Write datasets into this file",
               type=click.Path(exists=False, writable=True, dir_okay=False))
 @click.argument('datasets',
-                type=click.Path(exists=True, readable=True, writable=True),
+                type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
 def main(output, datasets):
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
