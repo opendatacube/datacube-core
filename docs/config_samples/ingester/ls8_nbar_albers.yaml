@@ -21,7 +21,7 @@ global_attributes:
   product_suite: Australian Reflectance Grid 25m (ARG25)
   project: AGDC
   publisher_email: Australian-Geoscience-Data-Cube@ga.gov.au
-  publisher_name: AGDC Programme Director
+  publisher_name: AGDC Program Director
   publisher_url: www.ga.gov.au
   coverage_content_type: physicalMeasurement
   references:  http://dx.doi.org/10.4225/25/5487CC0D4F40B, http://dx.doi.org/10.1109/JSTARS.2010.2042281
@@ -68,7 +68,7 @@ measurements:
       src_varname: '2'
       zlib: True
       attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 0.45-0.52 microns (Blue)"
+          long_name: "Nadir BRDF Adjusted Reflectance 0.45-0.51 microns (Blue)"
           alias: "band_2"
     - name: green
       dtype: int16
@@ -77,7 +77,7 @@ measurements:
       src_varname: '3'
       zlib: True
       attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 0.52-0.60 microns (Green)"
+          long_name: "Nadir BRDF Adjusted Reflectance 0.53-0.59 microns (Green)"
           alias: "band_3"
     - name: red
       dtype: int16
@@ -86,7 +86,7 @@ measurements:
       src_varname: '4'
       zlib: True
       attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 0.63-0.69 microns (Red)"
+          long_name: "Nadir BRDF Adjusted Reflectance 0.64-0.67 microns (Red)"
           alias: "band_4"
     - name: nir
       dtype: int16
@@ -95,7 +95,7 @@ measurements:
       src_varname: '5'
       zlib: True
       attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 0.76-0.90 microns (Near Infrared)"
+          long_name: "Nadir BRDF Adjusted Reflectance 0.85-0.88 microns (Near Infrared)"
           alias: "band_5"
     - name: swir1
       dtype: int16
@@ -104,7 +104,7 @@ measurements:
       src_varname: '6'
       zlib: True
       attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 1.55-1.75 microns (Short-wave Infrared)"
+          long_name: "Nadir BRDF Adjusted Reflectance 1.57-1.65 microns (Short-wave Infrared)"
           alias: "band_6"
     - name: swir2
       dtype: int16
@@ -113,5 +113,5 @@ measurements:
       src_varname: '7'
       zlib: True
       attrs:
-          long_name: "Nadir BRDF Adjusted Reflectance 2.08-2.35 microns (Short-wave Infrared)"
+          long_name: "Nadir BRDF Adjusted Reflectance 2.11-2.29 microns (Short-wave Infrared)"
           alias: "band_7"

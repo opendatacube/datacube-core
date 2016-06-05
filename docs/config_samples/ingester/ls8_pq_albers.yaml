@@ -21,7 +21,7 @@ global_attributes:
   product_suite: Australian Reflectance Grid 25m (ARG25)
   project: AGDC
   publisher_email: Australian-Geoscience-Data-Cube@ga.gov.au
-  publisher_name: AGDC Programme Director
+  publisher_name: AGDC Program Director
   publisher_url: www.ga.gov.au
   coverage_content_type: physicalMeasurement
   references: http://dx.doi.org/10.4225/25/55EF55788BAC1
