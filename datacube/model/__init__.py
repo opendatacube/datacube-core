@@ -65,6 +65,10 @@ def _cross_platform_path(path):
 
 
 class Dataset(object):
+    """
+    A Dataset stored on disk
+
+    """
     def __init__(self, type_, metadata_doc, local_uri, sources=None):
         """
         A dataset on disk.
@@ -221,8 +225,12 @@ class MetadataType(object):
     def __str__(self):
         return "MetadataType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
 
+
 @schema_validated('dataset-type-schema.yaml')
 class DatasetType(object):
+    """
+    Definition of a Dataset
+    """
     def __init__(self,
                  metadata_type,
                  definition,
@@ -299,7 +307,7 @@ class DatasetType(object):
 
 class GeoPolygon(object):
     """
-    Polygon with a CRS
+    Polygon with a :py:class:`CRS`
     """
 
     def __init__(self, points, crs=None):
@@ -325,8 +333,10 @@ class GeoPolygon(object):
 
     def to_crs(self, crs):
         """
-        :param crs_str:
-        :return: new GeoPolygon with CRS specified by crs_str
+        Copy polygon to another CRS
+
+        :return: new GeoPolygon with CRS specified by crs
+        :rtype: GeoPolygon
         """
         if self.crs == crs:
             return self
@@ -355,7 +365,7 @@ class CRSProjProxy(object):
 
 class CRS(object):
     """
-    Wrapper around osr.SpatialReference providing more pythonic interface
+    Wrapper around `osr.SpatialReference` providing a more pythonic interface
 
     >>> crs = CRS('EPSG:3577')
     >>> crs.geographic
@@ -446,7 +456,20 @@ class CRS(object):
 
 
 class GridSpec(object):
+    """
+    Definition for a regular spatial grid
+
+
+    """
     def __init__(self, crs=None, tile_size=None, resolution=None):
+        """
+        Create a Grid Specification
+
+        :type crs: CRS
+        :param tile_size: Size of each area of the grid, in CRS units
+        :type tile_size: tuple(x, y)
+        :param resolution: Size of each pixel in the grid, in CRS units
+        """
         self.crs = crs
         self.tile_size = tile_size
         self.resolution = resolution
@@ -461,7 +484,8 @@ class GridSpec(object):
 
     def tiles(self, bounds):
         """
-        Return an iterator of tile_index and GeoBox pairs across a grid.
+        Return an iterator of tile_index, :py:class:`GeoBox` tuples across
+        the grid.
 
         :param bounds: Boundary coordinates of the required grid
         :return: iterator across geoboxes of tiles in a grid
@@ -481,7 +505,8 @@ class GridSpec(object):
 
 class GeoBox(object):
     """
-    Defines a single Storage Unit, its CRS, location, resolution, and global attributes
+    Defines the location and resolution of a rectangular grid of data,
+    including it's :py:class:`CRS`.
 
     >>> from affine import Affine
     >>> t = GeoBox(4000, 4000, Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0), CRS('EPSG:4326'))
@@ -495,8 +520,8 @@ class GeoBox(object):
     [(151.0, -29.0), (151.0, -30.0), (152.0, -30.0), (152.0, -29.0)]
 
 
-    :param crs_str: WKT representation of the coordinate reference system
-    :type crs_str: str
+    :param crs: Coordinate Reference System
+    :type crs: CRS
     :param affine: Affine transformation defining the location of the storage unit
     :type affine: affine.Affine
     """

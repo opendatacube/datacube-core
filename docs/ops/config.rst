@@ -91,7 +91,7 @@ storage
     tile_size
         Size of the tiles for the data to be stored in specified in projection units.
             - Use ``latitude`` and ``longitude`` if the projection is geographic,
-             otherwise use ``x`` and ``y``
+              otherwise use ``x`` and ``y``
 
     aggregation_period
         Storage unit aggregation period. One of 'month', 'year'
@@ -101,7 +101,7 @@ storage
         Negative values flip the axis.
 
             - Use ``latitude`` and ``longitude`` if the projection is geographic,
-             otherwise use ``x`` and ``y``
+              otherwise use ``x`` and ``y``
 
     chunking
         Size of the internal NetCDF chunks in 'pixels'.
@@ -109,7 +109,7 @@ storage
     dimension_order
         Order of the dimensions for the data to be stored in.
             - Use ``latitude`` and ``longitude`` if the projection is geographic,
-             otherwise use ``x`` and ``y``
+              otherwise use ``x`` and ``y``
             - TODO: currently ignored. Is it really needed?
 
 
@@ -140,7 +140,7 @@ Runtime Config document specifies various runtime configuration options such as:
 
 .. code-block:: text
 
-    [Data Cube]
+    [datacube]
     db_hostname: 130.56.244.227
     db_database: democube
     db_username: cube_user

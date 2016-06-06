@@ -100,11 +100,13 @@ def find_diff(input_type, output_type, bbox, datacube):
     for tile_index in set(tiles_in.keys()) | set(tiles_out.keys()):
         sources_in = datacube.product_sources(tiles_in.get(tile_index, []),
                                               lambda ds: ds.center_time,
-                                              'time', 'seconds since 1970-01-01 00:00:00')
+                                              'time',
+                                              'seconds since 1970-01-01 00:00:00')
 
         sources_out = datacube.product_sources(tiles_out.get(tile_index, []),
                                                lambda ds: ds.center_time,
-                                               'time', 'seconds since 1970-01-01 00:00:00')
+                                               'time',
+                                               'seconds since 1970-01-01 00:00:00')
 
         diff = numpy.setdiff1d(sources_in.time.values, sources_out.time.values)
         tasks += [(tile_index, sources_in.sel(time=[v])) for v in diff]

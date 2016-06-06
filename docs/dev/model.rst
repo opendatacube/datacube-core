@@ -6,4 +6,3 @@ Model
 
 .. automodule:: datacube.model
     :members:
-    :show-inheritance:

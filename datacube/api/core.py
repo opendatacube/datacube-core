@@ -247,6 +247,8 @@ class Datacube(object):
         """
         Finds datasets for a product.
 
+        Lower level function than most people will use.
+
         :param product: Name of the product
         :param geopolygon: Spatial area to search for datasets
         :type geopolygon: :class:`datacube.model.GeoPolygon`

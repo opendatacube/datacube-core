@@ -2,7 +2,7 @@ Data Access API
 ===============
 
 For examples on how to use the API, see the Jupyter notebooks at:
-http://nbviewer.jupyter.org/github/data-cube/agdc-v2/blob/unification/examples/notebooks/The%20Unified%20Datacube%20Notebook.ipynb
+http://nbviewer.jupyter.org/github/data-cube/agdc-v2/blob/develop/examples/notebooks/The%20Unified%20Datacube%20Notebook.ipynb
 
 
 .. currentmodule:: datacube
@@ -17,11 +17,12 @@ Datacube Class
 .. autosummary::
    :toctree: generate/
 
+   Datacube
    Datacube.__init__
 
 
-Core Functions
-~~~~~~~~~~~~~~
+Higher Level User Functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
    :toctree: generate/
@@ -31,8 +32,8 @@ Core Functions
    Datacube.load
 
 
-Advanced Functions
-~~~~~~~~~~~~~~~~~~
+Low-Level Internal Functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
    :toctree: generate/
@@ -40,6 +41,8 @@ Advanced Functions
    Datacube.product_observations
    Datacube.product_sources
    Datacube.product_data
+
+.. just gets a single variable
 
    Datacube.measurement_data
    Datacube.measurement_data_lazy
@@ -54,7 +57,11 @@ GridWorkflow Class
 .. autosummary::
    :toctree: generate/
 
+   GridWorkflow
    GridWorkflow.__init__
+   GridWorkflow.list_cells
+   GridWorkflow.list_tiles
+   GridWorkflow.load
 
    GridWorkflow.list_cells
    GridWorkflow.list_tiles
@@ -76,3 +83,12 @@ API for Analytics and Execution Engine
     API.get_descriptor
     API.get_data
 
+
+User Configuration
+------------------
+.. currentmodule:: datacube.config
+.. autosummary::
+  :toctree: generate/
+
+  LocalConfig
+  DEFAULT_CONF_PATHS
