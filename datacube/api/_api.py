@@ -32,9 +32,12 @@ _LOG = logging.getLogger(__name__)
 
 
 class API(object):
+    """
+    Interface for use by the ``AnalyticsEngine`` and ``ExecutionEngine`` modules.
+    """
     def __init__(self, index=None, app=None, datacube=None):
         """
-        Creates the interface for the query and storage access.
+        Creates the interface for query and storage access.
 
         If no datacube or index is given, the default configuration is used for database connection, etc.
 
@@ -409,7 +412,7 @@ class API(object):
 
     def list_products(self):
         """
-        Lists the products in the Datacube
+        Lists the products in the datacube.
 
         :return: list of dictionaries describing the products
         """
@@ -417,10 +420,10 @@ class API(object):
 
     def list_variables(self):
         """
-        Lists the variables
+        Lists the variables of products in the datacube.
 
         Variables are also referred to as measurements or bands.
-        :return: list of dictionaries describing the varaibles
+        :return: list of dictionaries describing the variables
         """
         return self.datacube.list_measurements(with_pandas=False)
 

@@ -53,7 +53,7 @@ xarray.Dataset.extent = property(_xarray_extent)
 
 class Datacube(object):
     """
-    Interface to search, read and write a datacube
+    Interface to search, read and write a datacube.
     """
     def __init__(self, index=None, config=None, app=None):
         """
@@ -104,7 +104,7 @@ class Datacube(object):
 
     def list_measurements(self, show_archived=False, with_pandas=True):
         """
-        List of measurements for each product available in the datacube.
+        List of measurements for each product.
 
         :param show_archived: include products that have been archived.
         :param with_pandas: return the list as a Pandas DataFrame, otherwise as a list of dict.
@@ -138,32 +138,53 @@ class Datacube(object):
         See http://xarray.pydata.org/en/stable/api.html for usage of the ``Dataset`` and ``DataArray`` objects.
 
         **Search fields**
-            Search product fields. E.g.::
+            Search product fields. E.g.
+            ::
+
                 platform=['LANDSAT_5', 'LANDSAT_7'],
                 product_type='nbar'
 
+                See :meth:`list_products` for more information on the fields that can be searched.
+
         **Measurements**
-            The ``measurements`` argument is a list of measurement names, as listed in :meth:`list_measurements`
+            The ``measurements`` argument is a list of measurement names, as listed in :meth:`list_measurements`.
 
         **Dimensions**
-            Spatial dimensions can
+            Spatial dimensions can specified using the ``longitude``/``latitude`` and ``x``/``y`` fields.
+            The CRS of this query is assumed to be **WGS84/EPSG:4326** unless the ``crs`` field is supplied.
 
-        ** Output **
+        **Output**
+            If the `stack` argument is supplied, the returned data is stacked in a single ``DataArray``.
+            A new dimension is created with the name supplied.
+            This requires all of the data to be of the same datatype.
+
+            To reproject or resample the data, supply the ``output_crs`` and ``resolution`` fileds.
 
         :param product: the product to be included.
                 By default all available measurements are included.
+        :type product: str
         :type measurements: list(str) or str, optional
         :param measurements: measurements name or list of names to be included, as listed in :meth:`list_measurements`.
                 If a list is specified, the measurements will be returned in the order requested.
                 By default all available measurements are included.
         :type measurements: list(str) or str, optional
         :param indexers: Search parameters and dimension ranges as described above. E.g.::
+
                 product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5)
 
             The default CRS interpretation for geospatial dimensions is WGS84/EPSG:4326,
             even if the resulting dimension is in another projection.
             The dimensions ``longitude``/``latitude`` and ``x``/``y`` can be used interchangeably.
-        :return: Requested data.
+        :param output_crs: The CRS of the returned data.  If no CRS is supplied, the CRS of the stored data is used.
+        :type output_crs: str
+        :param resolution: A tuple of the spatial resolution of the returned data.
+            E.g. (-25, 25) is 25m resolution for 'EPSG:3577'.
+
+            This includes the direction (as indicated by a positive or negative number).
+            Typically when using most CRSs, the first number would be negative.
+        :type resolution: tuple(float, float)
+
+        :return: Requested data.  As a ``DataArray`` if the ``stack`` variable is supplied.
         :rtype: :class:`xarray.Dataset` or :class:`xarray.DataArray`
         """
         if stack:
@@ -320,6 +341,19 @@ class Datacube(object):
 
     @staticmethod
     def measurement_data(sources, geobox, measurement, fuse_func=None):
+        """
+        Retrieves a single measurement variable as a :py:class:`xarray.DataArray`.
+
+        :param sources: DataArray holding a list of :py:class:`datacube.model.Dataset` objects
+        :type sources: :py:class:`xarray.DataArray`
+        :param geobox: A GeoBox defining the output spatial projection and resolution
+        :type geobox: :class:`datacube.model.GeoBox`
+        :param measurement: measurement definition with keys: {'name', 'dtype', 'nodata', 'units'}
+        :param fuse_func: function to merge successive arrays as an output
+        :rtype: :py:class:`xarray.DataArray`
+
+        ..seealso:: :meth:`product_data`
+        """
         coords = {dim: coord for dim, coord in sources.coords.items()}
         for dim, coord in geobox.coordinates.items():
             coords[dim] = xarray.Coordinate(dim, coord.labels, attrs={'units': coord.units})
@@ -348,6 +382,21 @@ class Datacube(object):
 
     @staticmethod
     def measurement_data_lazy(sources, geobox, measurement, fuse_func=None, grid_chunks=None):
+        """
+        Creates a lazy-loaded :py:class:`xarray.DataArray` for a single measurement variable.
+
+        The data will be loaded from disk as needed, or when the `load` method is called.
+
+        :param sources: DataArray holding a list of :py:class:`datacube.model.Dataset` objects
+        :type sources: :py:class:`xarray.DataArray`
+        :param geobox: A GeoBox defining the output spatial projection and resolution
+        :type geobox: :class:`datacube.model.GeoBox`
+        :param measurement: measurement definition with keys: {'name', 'dtype', 'nodata', 'units'}
+        :param fuse_func: function to merge successive arrays as an output
+        :rtype: :py:class:`xarray.DataArray`
+
+        ..seealso:: :meth:`product_data`
+        """
         coords = {dim: coord for dim, coord in sources.coords.items()}
         for dim, coord in geobox.coordinates.items():
             coords[dim] = xarray.Coordinate(dim, coord.labels, attrs={'units': coord.units})

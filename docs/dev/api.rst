@@ -12,6 +12,8 @@ http://nbviewer.jupyter.org/github/data-cube/agdc-v2/blob/unification/examples/n
 Datacube Class
 --------------
 
+.. autoclass:: Datacube
+
 .. autosummary::
    :toctree: generate/
 
@@ -47,16 +49,24 @@ GridWorkflow Class
 ------------------
 
 .. currentmodule:: datacube.api
+.. autoclass:: GridWorkflow
+
 .. autosummary::
    :toctree: generate/
 
    GridWorkflow.__init__
+
+   GridWorkflow.list_cells
+   GridWorkflow.list_tiles
+   GridWorkflow.load
 
 
 API for Analytics and Execution Engine
 --------------------------------------
 
 .. currentmodule:: datacube.api
+.. autoclass:: API
+
 .. autosummary::
    :toctree: generate/
 
