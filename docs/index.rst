@@ -39,6 +39,7 @@ facility for use by NCI users.
    dev/api
    dev/model
    dev/index
+   dev/analytics_engine
    dev/external
 
 .. toctree::
