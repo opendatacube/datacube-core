@@ -42,10 +42,10 @@ Low-Level Internal Functions
    Datacube.product_sources
    Datacube.product_data
 
-.. just gets a single variable
 
    Datacube.measurement_data
    Datacube.measurement_data_lazy
+   Datacube.grid_spec_for_product
 
 
 GridWorkflow Class
@@ -60,12 +60,11 @@ GridWorkflow Class
    GridWorkflow
    GridWorkflow.__init__
    GridWorkflow.list_cells
+   GridWorkflow.cell_observations
    GridWorkflow.list_tiles
+   GridWorkflow.list_tile_stacks
    GridWorkflow.load
 
-   GridWorkflow.list_cells
-   GridWorkflow.list_tiles
-   GridWorkflow.load
 
 
 API for Analytics and Execution Engine

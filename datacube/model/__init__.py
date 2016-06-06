@@ -77,7 +77,6 @@ class Dataset(object):
         :param metadata_doc: the document (typically a parsed json/yaml)
         :type metadata_doc: dict
         :param local_uri: A URI to access this dataset locally.
-        :param managed: Should dataset files be managed by the datacube instance (vs managed externally)
         :type local_uri: str
         """
         #: :type: DatasetType
@@ -126,7 +125,7 @@ class Dataset(object):
     @property
     def center_time(self):
         """
-        :rtype: datetime.datetime
+        :type: datetime.datetime
         """
         time = self.time
         return time.begin + (time.end - time.begin)//2
@@ -143,8 +142,7 @@ class Dataset(object):
     @property
     def crs(self):
         """
-        "rtype: datacube.model.CRS
-        :return:
+        :type: datacube.model.CRS
         """
         projection = self.metadata.grid_spatial
 
