@@ -193,11 +193,24 @@ def check_open_with_grid_workflow(index):
 
     tiles = gw.list_tiles(product=type_name)
     assert tiles
+    assert tiles[LBG_CELL]
 
-    dataset_cell = gw.load(LBG_CELL, product=type_name, variables=['blue'])
+    ts, tile = tiles[LBG_CELL].popitem()
+    dataset_cell = gw.load(LBG_CELL, tile, measurements=['blue'])
     assert dataset_cell['blue'].size
 
-    dataset_cell = gw.load(LBG_CELL, product=type_name)
+    dataset_cell = gw.load(LBG_CELL, tile)
+    assert all(m in dataset_cell for m in ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
+
+    tiles = gw.list_tile_stacks(product=type_name)
+    assert tiles
+    assert tiles[LBG_CELL]
+
+    tile = tiles[LBG_CELL]
+    dataset_cell = gw.load(LBG_CELL, tile, measurements=['blue'])
+    assert dataset_cell['blue'].size
+
+    dataset_cell = gw.load(LBG_CELL, tile)
     assert all(m in dataset_cell for m in ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
 
 
@@ -359,8 +372,8 @@ def check_get_data(index):
     for dim in d['indices']:
         assert isinstance(d['indices'][dim], np.ndarray)
 
-    assert isinstance(d['arrays'][var1], xr.DataArray)
-    assert isinstance(d['arrays'][var2], xr.DataArray)
+    assert isinstance(d['arrays'][var1], xr.core.dataarray.DataArray)
+    assert isinstance(d['arrays'][var2], xr.core.dataarray.DataArray)
 
     assert d['arrays'][var1].shape == d['size']
     assert d['arrays'][var2].shape == d['size']
