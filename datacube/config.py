@@ -8,7 +8,13 @@ import os
 
 from . import compat
 
-# Config locations in order. Properties found in latter locations override former.
+#: Config locations in order. Properties found in latter locations override
+#: earlier ones.
+#:
+#: - `/etc/datacube.conf`
+#: - file at `$DATACUBE_CONFIG_PATH` environment variable
+#: - `~/.datacube.conf`
+#: - `datacube.conf`
 DEFAULT_CONF_PATHS = (
     '/etc/datacube.conf',
     os.environ.get('DATACUBE_CONFIG_PATH'),
@@ -41,8 +47,11 @@ class LocalConfig(object):
     current user.
     """
 
-    def __init__(self, config):
+    def __init__(self, config, files_loaded=None):
         self._config = config
+        self._files_loaded = []
+        if files_loaded:
+            self._files_loaded = files_loaded
 
     @classmethod
     def find(cls, paths=DEFAULT_CONF_PATHS):
@@ -52,8 +61,8 @@ class LocalConfig(object):
         :rtype: LocalConfig
         """
         config = compat.read_config(_DEFAULT_CONF)
-        config.read([p for p in paths if p])
-        return LocalConfig(config)
+        files_loaded = config.read([p for p in paths if p])
+        return LocalConfig(config, files_loaded)
 
     def _prop(self, key, section='datacube'):
         try:
@@ -94,3 +103,10 @@ class LocalConfig(object):
     @property
     def db_port(self):
         return self._prop('db_port') or '5432'
+
+    def __str__(self):
+        return "LocalConfig<loaded_from={})".format(self._files_loaded or
+                                                    'defaults')
+
+    def __repr__(self):
+        return self.__str__()
