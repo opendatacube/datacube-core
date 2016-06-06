@@ -39,6 +39,7 @@ facility for use by NCI users.
    dev/api
    dev/model
    dev/index
+   dev/external
 
 .. toctree::
    :maxdepth: 2
