@@ -376,11 +376,9 @@ measurements:
           values: {0: false, 1: true}
         aerosol:
           bits: [4,5]
-          description: Cloud shadow
+          description: Aerosol with none = Climatology-level aerosol content, low = Low aerosol content, medium = Average aerosol content and high = High aerosol content
           values: 
-            00: Climatology-level aerosol content
-            01: Low aerosol content
-            10: Average aerosol content
-            11: High aerosol content
-            0: clear
-            255: snow
+            0: none
+            1: low
+            2: medium
+            3: high
