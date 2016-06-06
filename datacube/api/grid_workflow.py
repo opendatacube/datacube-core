@@ -1,19 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-from itertools import groupby
-from collections import namedtuple, OrderedDict, Sequence, defaultdict
-from math import ceil
-
-import pandas
-import numpy
-import xarray.core.dataarray
-from dask import array as da
-from rasterio.coords import BoundingBox
+from collections import defaultdict
 
 from ..model import GeoBox
 from ..utils import check_intersect
-from .query import Query, GroupBy
+from .query import Query
 from .core import get_measurements, get_bounds
 
 _LOG = logging.getLogger(__name__)
