@@ -111,11 +111,7 @@ class PostgresDb(object):
                 ))
 
             if not tables.schema_is_latest(_engine):
-                file_path = Path(__file__).parent.joinpath('unify-migration.sql')
-                raise IndexSetupError(
-                    '\n\nDB schema is out of date. Please run an update script:\n\t{update_command}'.format(
-                        update_command=_get_psql_command_for_file(database, file_path, hostname, port, username)
-                    ))
+                raise IndexSetupError('\n\nDB schema is out of date.')
 
         _connection = _engine.connect()
         return PostgresDb(_engine, _connection)
@@ -622,27 +618,6 @@ def _to_json(o):
 def _json_fallback(obj):
     """Fallback json serialiser."""
     raise TypeError("Type not serializable: {}".format(type(obj)))
-
-
-def _get_psql_command_for_file(database, file_path, hostname, port, username):
-    """
-    Get a psql command to run the given SQL file.
-
-    >>> _get_psql_command_for_file('datacube', '/tmp/test.sql', 'example.com', '5432', 'tyler')
-    'psql -h example.com -p 5432 -U tyler datacube -f /tmp/test.sql'
-    >>> _get_psql_command_for_file('datacube', '/tmp/test.sql', None, '5432', 'tyler')
-    'psql -U tyler datacube -f /tmp/test.sql'
-    """
-    p_cmd = ['psql']
-    if hostname:
-        p_cmd.append('-h ' + hostname)
-        if port:
-            p_cmd.append('-p ' + port)
-    if username:
-        p_cmd.append('-U ' + username)
-    p_cmd.append(database)
-    p_cmd.append('-f ' + str(file_path))
-    return ' '.join(p_cmd)
 
 
 class _BegunTransaction(object):
