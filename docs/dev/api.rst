@@ -2,7 +2,7 @@ Data Access API
 ===============
 
 For examples on how to use the API, see the Jupyter notebooks at:
-http://nbviewer.jupyter.org/github/data-cube/agdc-v2/blob/develop/examples/notebooks/The%20Unified%20Datacube%20Notebook.ipynb
+http://nbviewer.jupyter.org/github/data-cube/agdc-v2/blob/develop/examples/notebooks/Datacube_Summary.ipynb
 
 
 .. currentmodule:: datacube
