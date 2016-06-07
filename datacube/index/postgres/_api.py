@@ -107,7 +107,7 @@ class PostgresDb(object):
         if validate:
             if not tables.database_exists(_engine):
                 raise IndexSetupError('\n\nNo DB schema exists. Have you run init?\n\t{init_command}'.format(
-                    init_command='datacube-config database init'
+                    init_command='datacube system init'
                 ))
 
             if not tables.schema_is_latest(_engine):
