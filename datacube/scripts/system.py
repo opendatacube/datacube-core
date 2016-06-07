@@ -6,7 +6,7 @@ from click import echo
 
 from datacube.index import index_connect
 from datacube.ui import click as ui
-from datacube.ui.click import cli
+from datacube.ui.click import cli, handle_exception
 from datacube.index.postgres._api import IndexSetupError
 from sqlalchemy.exc import OperationalError
 
@@ -31,8 +31,10 @@ def system():
 @ui.pass_index(expect_initialised=False)
 def database_init(index, default_types, init_users):
     echo('Initialising database...')
+
     was_created = index.init_db(with_default_types=default_types,
                                 with_permissions=init_users)
+
     if was_created:
         echo('Done.')
     else:
@@ -55,8 +57,7 @@ def check(config_file):
         index_connect(local_config=config_file)
         echo('Success.')
     except OperationalError as e:
-        echo("Unable to connect to database: %s" % e)
-        click.get_current_context().exit(1)
+        handle_exception('Error Connecting to Database: %s', e)
     except IndexSetupError as e:
-        echo("Database not initialised: %s" % e)
-        click.get_current_context().exit(1)
+        handle_exception('Database not initialised: %s', e)
+

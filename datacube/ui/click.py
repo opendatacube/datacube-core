@@ -14,6 +14,7 @@ import click
 from datacube import config, __version__
 from datacube.executor import get_executor
 from datacube.index import index_connect
+from sqlalchemy.exc import OperationalError, ProgrammingError
 
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 
@@ -50,6 +51,11 @@ def _init_logging(ctx, param, value):
     logging_level = logging.WARN - 10 * value
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging_level)
     logging.getLogger('datacube').setLevel(logging_level)
+
+    if not ctx.obj:
+        ctx.obj = {}
+
+    ctx.obj['verbosity'] = value
 
 
 def _log_queries(ctx, param, value):
@@ -116,10 +122,13 @@ def pass_index(app_name=None, expect_initialised=True):
         def with_index(*args, **kwargs):
             ctx = click.get_current_context()
             application_name = app_name or re.sub('[^0-9a-zA-Z]+', '-', ctx.command_path)
-            index = index_connect(ctx.obj['config_file'],
-                                  application_name=application_name,
-                                  validate_connection=expect_initialised)
-            return f(index, *args, **kwargs)
+            try:
+                index = index_connect(ctx.obj['config_file'],
+                                      application_name=application_name,
+                                      validate_connection=expect_initialised)
+                return f(index, *args, **kwargs)
+            except (OperationalError, ProgrammingError) as e:
+                handle_exception('Error Connecting to database: %s', e)
 
         return functools.update_wrapper(with_index, f)
 
@@ -152,3 +161,27 @@ executor_cli_options = click.option('--executor',
                                          "--executor multiproc 4 (OR)\n"
                                          "--executor distributed 10.0.0.8:8888",
                                     callback=_setup_executor)
+
+
+def handle_exception(msg, e):
+    """
+    Exit following an exception in a CLI app
+
+    If verbosity (-v flag) specified, dump out a stack trace. Otherwise,
+    simply print the given error message.
+
+    Include a '%s' in the message to print the single line message from the
+    exception.
+
+    :param e: caught Exception
+    :param msg: Message to User with optional %s
+    """
+    ctx = click.get_current_context()
+    if ctx.obj['verbosity'] >= 1:
+        raise e
+    else:
+        if '%s' in msg:
+            click.echo(msg % e)
+        else:
+            click.echo(msg)
+        ctx.exit(1)
