@@ -209,3 +209,63 @@ def validate_document(document, schema):
         jsonschema.validate(document, schema)
     except jsonschema.ValidationError as e:
         raise InvalidDocException(e.message)
+
+
+def set_value_at_index(bitmask, index, value):
+    """
+    Set a bit value onto an integer bitmask
+
+    eg. set bits 2 and 4 to True
+    >>> mask = 0
+    >>> mask = set_value_at_index(mask, 2, True)
+    >>> mask = set_value_at_index(mask, 4, True)
+    >>> print(bin(mask))
+    0b10100
+    >>> mask = set_value_at_index(mask, 2, False)
+    >>> print(bin(mask))
+    0b10000
+
+    :param bitmask: existing int bitmask to alter
+    :type bitmask: int
+    :type index: int
+    :type value: bool
+    """
+    bit_val = 2 ** index
+    if value:
+        bitmask |= bit_val
+    else:
+        bitmask &= (~bit_val)
+    return bitmask
+
+
+def generate_table(rows):
+    """
+    Yields strings to print a table using the data in `rows`.
+
+    TODO: Maybe replace with Pandas
+
+    :param rows: A sequence of sequences with the 0th element being the table
+                 header
+    """
+
+    # - figure out column widths
+    widths = [len(max(columns, key=len)) for columns in zip(*rows)]
+
+    # - print the header
+    header, data = rows[0], rows[1:]
+    yield (
+        ' | '.join(format(title, "%ds" % width) for width, title in zip(widths, header))
+    )
+
+    # Print the separator
+    first_col = ''
+    # - print the data
+    for row in data:
+        if first_col == '' and row[0] != '':
+            # - print the separator
+            yield '-+-'.join('-' * width for width in widths)
+        first_col = row[0]
+
+        yield (
+            " | ".join(format(cdata, "%ds" % width) for width, cdata in zip(widths, row))
+        )

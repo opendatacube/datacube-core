@@ -4,6 +4,9 @@ Tools for masking data based on a bit-mask variable with attached definition.
 The main functions are `make_mask(variable)` `describe_flags(variable)`
 """
 import collections
+
+from datacube.utils import set_value_at_index, generate_table
+
 FLAGS_ATTR_NAME = 'flags_definition'
 
 
@@ -43,15 +46,7 @@ def describe_variable_flags(variable):
 
 
 def describe_flags_def(flags_def):
-    return '\n'.join(_yield_table(list(_table_contents(flags_def))))
-
-
-def _order_bitdefs_by_bits(bitdef):
-    name, defn = bitdef
-    try:
-        return min(defn['bits'])
-    except TypeError:
-        return defn['bits']
+    return '\n'.join(generate_table(list(_table_contents(flags_def))))
 
 
 def _table_contents(flags_def):
@@ -63,33 +58,12 @@ def _table_contents(flags_def):
             name, desc = '', ''
 
 
-def _yield_table(rows):
-    """
-    Prints out a table using the data in `rows`, which is assumed to be a
-    sequence of sequences with the 0th element being the header.
-    """
-
-    # - figure out column widths
-    widths = [len(max(columns, key=len)) for columns in zip(*rows)]
-
-    # - print the header
-    header, data = rows[0], rows[1:]
-    yield (
-        ' | '.join(format(title, "%ds" % width) for width, title in zip(widths, header))
-    )
-
-    # Print the separator
-    first_col = ''
-    # - print the data
-    for row in data:
-        if first_col == '' and row[0] != '':
-            # - print the separator
-            yield '-+-'.join('-' * width for width in widths)
-        first_col = row[0]
-
-        yield (
-            " | ".join(format(cdata, "%ds" % width) for width, cdata in zip(widths, row))
-        )
+def _order_bitdefs_by_bits(bitdef):
+    name, defn = bitdef
+    try:
+        return min(defn['bits'])
+    except TypeError:
+        return defn['bits']
 
 
 def make_mask(variable, **flags):
@@ -126,9 +100,13 @@ def create_mask_value(bits_def, **flags):
         defn = bits_def[flag_name]
 
         try:
-            [flag_value] = (bit_val for bit_val, val_ref in defn['values'].items() if val_ref == flag_ref)
+            [flag_value] = (bit_val
+                            for bit_val, val_ref
+                            in defn['values'].items()
+                            if val_ref == flag_ref)
         except ValueError:
-            raise ValueError('Unknown value %s specified for flag %s' % (flag_ref, flag_name))
+            raise ValueError('Unknown value %s specified for flag %s' %
+                             (flag_ref, flag_name))
 
         if isinstance(defn['bits'], collections.Iterable):  # Multi-bit flag
             # Set mask
@@ -163,40 +141,6 @@ def get_flags_def(variable):
         raise ValueError('No masking variable found')
 
 
-def set_value_at_index(bitmask, index, value):
-    """
-    Set a bit value onto an integer bitmask
-
-    eg. set bits 2 and 4 to True
-    >>> mask = 0
-    >>> mask = set_value_at_index(mask, 2, True)
-    >>> mask = set_value_at_index(mask, 4, True)
-    >>> print(bin(mask))
-    0b10100
-    >>> mask = set_value_at_index(mask, 2, False)
-    >>> print(bin(mask))
-    0b10000
-
-    :param bitmask: existing int bitmask to alter
-    :type bitmask: int
-    :type index: int
-    :type value: bool
-    """
-    bit_val = 2 ** index
-    if value:
-        bitmask |= bit_val
-    else:
-        bitmask &= (~bit_val)
-    return bitmask
-
-
 def _is_data_var(variable):
     return variable.name != 'crs' and len(variable.coords) > 1
 
-
-def is_set(x, n):
-    return x & 2 ** n != 0
-
-
-def all_set(max_bit):
-    return (2 << max_bit + 1) - 1
