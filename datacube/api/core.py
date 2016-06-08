@@ -330,7 +330,7 @@ class Datacube(object):
             if 'spectral_definition' in measurement:
                 attrs['spectral_definition'] = measurement['spectral_definition']
 
-            result[measurement['name']] = (tuple(coords.keys()) + geobox.dimensions, data, attrs)
+            result[measurement['name']] = (coords.dims + geobox.dimensions, data, attrs)
 
         return result
 
