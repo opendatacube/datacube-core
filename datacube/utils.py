@@ -6,21 +6,18 @@ from __future__ import absolute_import, division, print_function
 
 import gzip
 import json
-
 import logging
 import math
-
-import jsonschema
-import numpy
+import pathlib
 from datetime import datetime
 
 import dateutil.parser
+import jsonschema
+import numpy
+import yaml
 from dateutil.tz import tzutc
-
-import pathlib
 from osgeo import ogr
 
-import yaml
 try:
     from yaml import CSafeLoader as SafeLoader
 except ImportError:
@@ -200,10 +197,6 @@ def read_documents(*paths):
                              .format(path.name, _ALL_SUPPORTED_EXTENSIONS))
 
 
-class InvalidDocException(Exception):
-    pass
-
-
 def validate_document(document, schema):
     try:
         jsonschema.validate(document, schema)
@@ -269,3 +262,12 @@ def generate_table(rows):
         yield (
             " | ".join(format(cdata, "%ds" % width) for width, cdata in zip(widths, row))
         )
+
+
+class DatacubeException(Exception):
+    """Your Data Cube has malfunctioned"""
+    pass
+
+
+class InvalidDocException(Exception):
+    pass

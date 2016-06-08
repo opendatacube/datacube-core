@@ -140,10 +140,6 @@ def _parse_raw_expressions(*expression_text):
     return peg_parse(' '.join(expression_text), ExpressionList)
 
 
-class UnknownFieldException(Exception):
-    pass
-
-
 def parse_expressions(*expression_text):
     """
     Parse an expression string into a dictionary suitable for .search() methods.
