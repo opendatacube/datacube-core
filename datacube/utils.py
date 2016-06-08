@@ -10,14 +10,14 @@ import logging
 import math
 import pathlib
 from datetime import datetime
+from dateutil.tz import tzutc
 
 import dateutil.parser
 import jsonschema
 import numpy
-import yaml
-from dateutil.tz import tzutc
 from osgeo import ogr
 
+import yaml
 try:
     from yaml import CSafeLoader as SafeLoader
 except ImportError:
@@ -110,7 +110,7 @@ def grid_range(lower, upper, step):
     [0, 1]
     """
     assert step > 0.0
-    return range(int(math.floor(lower/step)), int(math.ceil(upper/step)))
+    return range(int(math.floor(lower / step)), int(math.ceil(upper / step)))
 
 
 def check_intersect(a, b):
@@ -137,8 +137,8 @@ def data_resolution_and_offset(data):
     >>> data_resolution_and_offset(numpy.array([5, 3, 1]))
     (-2.0, 6.0)
     """
-    res = (data[data.size-1] - data[0])/(data.size-1.0)
-    off = data[0] - 0.5*res
+    res = (data[data.size - 1] - data[0]) / (data.size - 1.0)
+    off = data[0] - 0.5 * res
     return numpy.asscalar(res), numpy.asscalar(off)
 
 
