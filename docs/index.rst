@@ -23,6 +23,7 @@ facility for use by NCI users.
    :maxdepth: 2
    :caption: Operations Guide
 
+   ops/overview
    ops/install
    ops/db_setup
    ops/indexing
@@ -36,6 +37,7 @@ facility for use by NCI users.
    :caption: Developer Guide
 
    dev/developer
+   dev/data_model
    dev/api
    dev/model
    dev/index

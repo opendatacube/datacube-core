@@ -2,8 +2,8 @@
 
 .. _indexing:
 
-Loading Data into your Data Cube
-================================
+Indexing Data
+=============
 
 Once you have the datacube software installed and connected to a database, you
 can start to load in some data. This step is performed using the **datacube**

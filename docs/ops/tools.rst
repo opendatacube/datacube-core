@@ -1,5 +1,5 @@
-Command Line Tool
-=================
+Command Line Tools
+==================
 
 .. _datacube-tool:
 
