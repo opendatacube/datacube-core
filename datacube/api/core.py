@@ -298,7 +298,7 @@ class Datacube(object):
         return sources
 
     @staticmethod
-    def create_storage(sources, geobox, measurements, fill_func=None):
+    def create_storage(coords, geobox, measurements, data_func=None):
         """
         Create empty xarry.Dataset to hold data from :meth:`product_sources`.
 
@@ -313,15 +313,13 @@ class Datacube(object):
         .. seealso:: :meth:`product_observations` :meth:`product_sources`
         """
         result = xarray.Dataset(attrs={'crs': geobox.crs})
-        for name, coord in sources.coords.items():
+        for name, coord in coords.items():
             result[name] = coord
         for name, coord in geobox.coordinates.items():
             result[name] = (name, coord.labels, {'units': coord.units})
 
         for measurement in measurements:
-            name = measurement['name']
-
-            data = numpy.full(sources.shape + geobox.shape, measurement.get('nodata'), dtype=measurement['dtype'])
+            data = data_func(measurement)
 
             attrs = {
                 'nodata': measurement.get('nodata'),
@@ -331,11 +329,9 @@ class Datacube(object):
                 attrs['flags_definition'] = measurement['flags_definition']
             if 'spectral_definition' in measurement:
                 attrs['spectral_definition'] = measurement['spectral_definition']
-            result[name] = (sources.dims + geobox.dimensions, data, attrs)
 
-            if fill_func:
-                for index, datasets in numpy.ndenumerate(sources.values):
-                    fill_func(datasets, data[index], geobox, measurement)
+            result[measurement['name']] = (tuple(coords.keys()) + geobox.dimensions, data, attrs)
+
         return result
 
     @staticmethod
@@ -353,16 +349,18 @@ class Datacube(object):
 
         .. seealso:: :meth:`product_observations` :meth:`product_sources`
         """
-        def fill_func(datasets, data, geobox, measurement):
-            name = measurement['name']
-            fuse_sources([DatasetSource(dataset, name) for dataset in datasets],
-                         data,  # Output goes here
-                         geobox.affine,
-                         geobox.crs,
-                         measurement.get('nodata'),
-                         resampling=RESAMPLING.nearest,
-                         fuse_func=fuse_func)
-        return Datacube.create_storage(sources, geobox, measurements, fill_func)
+        def data_func(measurement):
+            data = numpy.full(sources.shape + geobox.shape, measurement.get('nodata'), dtype=measurement['dtype'])
+            for index, datasets in numpy.ndenumerate(sources.values):
+                fuse_sources([DatasetSource(dataset, measurement['name']) for dataset in datasets],
+                             data[index],  # Output goes here
+                             geobox.affine,
+                             geobox.crs,
+                             measurement.get('nodata'),
+                             resampling=RESAMPLING.nearest,
+                             fuse_func=fuse_func)
+            return data
+        return Datacube.create_storage(sources.coords, geobox, measurements, data_func)
 
     @staticmethod
     def measurement_data(sources, geobox, measurement, fuse_func=None):
