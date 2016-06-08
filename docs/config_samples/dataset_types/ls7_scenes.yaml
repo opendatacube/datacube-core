@@ -216,19 +216,19 @@ measurements:
         cloud_acca:
           bits: 10
           description: Cloud Shadow (ACCA)
-          values: {0: no_cloud, 1: cloud}
+          values: {0: cloud, 1: no_cloud}
         cloud_fmask:
           bits: 11
           description: Cloud (Fmask)
-          values: {0: no_cloud, 1: cloud}
+          values: {0: cloud, 1: no_cloud}
         cloud_shadow_acca:
           bits: 12
           description: Cloud Shadow (ACCA)
-          values: {0: no_cloud_shadow, 1: cloud_shadow}
+          values: {0: cloud_shadow, 1: no_cloud_shadow}
         cloud_shadow_fmask:
           bits: 13
           description: Cloud Shadow (Fmask)
-          values: {0: no_cloud_shadow, 1: cloud_shadow}
+          values: {0: cloud_shadow, 1: no_cloud_shadow}
 
         ga_good_pixel:
           bits: [13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
