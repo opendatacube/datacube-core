@@ -17,7 +17,9 @@ def test_create_mask_value():
 
     assert create_mask_value(bits_def, contiguous=True) == (256, 256)
     assert create_mask_value(bits_def, contiguous=False) == (256, 0)
-    # assert create_mask_value(flags_def, contiguous=False, land_sea='land') == (768, 512)
+    assert create_mask_value(bits_def, contiguous=True, land_sea='land') == (
+        768, 768)
+    assert create_mask_value(bits_def, contiguous=False, land_sea='land') == (768, 512)
 
 
 def test_create_multi_mask_value():
@@ -37,6 +39,13 @@ def test_create_multi_mask_value():
     assert create_mask_value(multi_flags_def,
                              veg_confidence='maybe_veg',
                              water_confidence='water', filled=True) == (0b110011001, 0b100011001)
+
+
+def test_ga_good_pixel():
+    simple_var = SimpleVariableWithFlagsDef()
+    bits_def = simple_var.flags_definition
+
+    assert create_mask_value(bits_def, ga_good_pixel=True) == (16383, 16383)
 
 
 def test_describe_flags():

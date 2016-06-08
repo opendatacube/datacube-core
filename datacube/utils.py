@@ -204,33 +204,6 @@ def validate_document(document, schema):
         raise InvalidDocException(e.message)
 
 
-def set_value_at_index(bitmask, index, value):
-    """
-    Set a bit value onto an integer bitmask
-
-    eg. set bits 2 and 4 to True
-    >>> mask = 0
-    >>> mask = set_value_at_index(mask, 2, True)
-    >>> mask = set_value_at_index(mask, 4, True)
-    >>> print(bin(mask))
-    0b10100
-    >>> mask = set_value_at_index(mask, 2, False)
-    >>> print(bin(mask))
-    0b10000
-
-    :param bitmask: existing int bitmask to alter
-    :type bitmask: int
-    :type index: int
-    :type value: bool
-    """
-    bit_val = 2 ** index
-    if value:
-        bitmask |= bit_val
-    else:
-        bitmask &= (~bit_val)
-    return bitmask
-
-
 def generate_table(rows):
     """
     Yields strings to print a table using the data in `rows`.
