@@ -43,7 +43,6 @@ def test_create_multi_mask_value():
     assert create_mask_value(multi_flags_def, water_confidence='maybe_water') == (0b011000, 0b10000)
 
 
-
 def test_ga_good_pixel():
     simple_var = SimpleVariableWithFlagsDef()
     bits_def = simple_var.flags_definition
