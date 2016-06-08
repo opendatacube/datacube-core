@@ -104,6 +104,7 @@ def create_mask_value(bits_def, **flags):
                             for bit_val, val_ref
                             in defn['values'].items()
                             if val_ref == flag_ref)
+            flag_value = int(flag_value)  # Might be string if coming from DB
         except ValueError:
             raise ValueError('Unknown value %s specified for flag %s' %
                              (flag_ref, flag_name))

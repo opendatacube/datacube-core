@@ -40,6 +40,9 @@ def test_create_multi_mask_value():
                              veg_confidence='maybe_veg',
                              water_confidence='water', filled=True) == (0b110011001, 0b100011001)
 
+    assert create_mask_value(multi_flags_def, water_confidence='maybe_water') == (0b011000, 0b10000)
+
+
 
 def test_ga_good_pixel():
     simple_var = SimpleVariableWithFlagsDef()
@@ -59,26 +62,26 @@ class SimpleVariableWithFlagsDef(object):
           bits: 13
           description: Cloud Shadow (Fmask)
           values:
-            0: no_cloud_shadow
-            1: cloud_shadow
+            0: cloud_shadow
+            1: no_cloud_shadow
         cloud_shadow_acca:
           bits: 12
           description: Cloud Shadow (ACCA)
           values:
-            0: no_cloud_shadow
-            1: cloud_shadow
+            0: cloud_shadow
+            1: no_cloud_shadow
         cloud_fmask:
           bits: 11
           description: Cloud (Fmask)
           values:
-            0: no_cloud
-            1: cloud
+            0: cloud
+            1: no_cloud
         cloud_acca:
           bits: 10
           description: Cloud Shadow (ACCA)
           values:
-            0: no_cloud
-            1: cloud
+            0: cloud
+            1: no_cloud
         land_sea:
           bits: 9
           description: Land or Sea
