@@ -312,6 +312,11 @@ class Datacube(object):
 
         .. seealso:: :meth:`product_observations` :meth:`product_sources`
         """
+        def empty_func(measurement):
+            coord_shape = tuple(coord.size for coord in coords.values())
+            return numpy.full(coord_shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
+        data_func = data_func or empty_func
+
         result = xarray.Dataset(attrs={'crs': geobox.crs})
         for name, coord in coords.items():
             result[name] = coord
