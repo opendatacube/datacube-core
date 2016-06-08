@@ -23,8 +23,7 @@ Product
 
     Dataset -> CRS;
 
-    Dataset[label = "{Dataset|+ dataset_type\l+ local_path\l+ bounds\l+
-     crs\l+ measurements\l+ time\l...|...}"];
+    Dataset[label = "{Dataset|+ dataset_type\l+ local_path\l+ bounds\l+ crs\l+ measurements\l+ time\l...|...}"];
 
 
     Product [label="{Product/DatasetType|+ name\l+ managed\l+ grid_spec
