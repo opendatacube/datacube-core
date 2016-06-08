@@ -144,7 +144,7 @@ class Datacube(object):
                 platform=['LANDSAT_5', 'LANDSAT_7'],
                 product_type='nbar'
 
-                See :meth:`list_products` for more information on the fields that can be searched.
+            See :meth:`list_products` for more information on the fields that can be searched.
 
         **Measurements**
             The ``measurements`` argument is a list of measurement names, as listed in :meth:`list_measurements`.
@@ -176,9 +176,15 @@ class Datacube(object):
             even if the resulting dimension is in another projection.
             The dimensions ``longitude``/``latitude`` and ``x``/``y`` can be used interchangeably.
         :param output_crs: The CRS of the returned data.  If no CRS is supplied, the CRS of the stored data is used.
+            E.g.::
+
+                output_crs='EPSG:3577'
+
         :type output_crs: str
         :param resolution: A tuple of the spatial resolution of the returned data.
-            E.g. (-25, 25) is 25m resolution for 'EPSG:3577'.
+            E.g. 25m resolution for **EPSG:3577**::
+
+                resolution=(-25, 25)
 
             This includes the direction (as indicated by a positive or negative number).
             Typically when using most CRSs, the first number would be negative.
