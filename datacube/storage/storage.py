@@ -80,9 +80,9 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
                     # TODO: dtype and nodata conversion
                     assert src.dtype == dest.dtype
                     assert source.nodata == dst_nodata
-                    src.ds.read(indexes=src.bidx,
-                                out=dest[write[0]:write[0] + shape[0], write[1]:write[1] + shape[1]],
-                                window=((read[0], read[0] + shape[0]), (read[1], read[1] + shape[1])))
+                    window = ((read[0], read[0] + shape[0]), (read[1], read[1] + shape[1]))
+                    dest[write[0]:write[0] + shape[0], write[1]:write[1] + shape[1]] = src.ds.read(indexes=src.bidx,
+                                                                                                   window=window)
             else:
                 # HACK: dtype shenanigans to make sure 'NaN' string gets translated to NaN value
                 rasterio.warp.reproject(src,
