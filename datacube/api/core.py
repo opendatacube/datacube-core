@@ -350,16 +350,37 @@ class Datacube(object):
         .. seealso:: :meth:`product_observations` :meth:`product_sources`
         """
         def data_func(measurement):
-            data = numpy.full(sources.shape + geobox.shape, measurement.get('nodata'), dtype=measurement['dtype'])
+            data = numpy.full(sources.shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
             for index, datasets in numpy.ndenumerate(sources.values):
                 fuse_sources([DatasetSource(dataset, measurement['name']) for dataset in datasets],
                              data[index],  # Output goes here
                              geobox.affine,
                              geobox.crs,
-                             measurement.get('nodata'),
+                             measurement['nodata'],
                              resampling=RESAMPLING.nearest,
                              fuse_func=fuse_func)
             return data
+        return Datacube.create_storage(sources.coords, geobox, measurements, data_func)
+
+    @staticmethod
+    def product_data_lazy(sources, geobox, measurements, fuse_func=None, grid_chunks=None):
+        """
+        Creates a lazy-loaded :py:class:`xarray.Dataset` for measurements.
+
+        The data will be loaded from disk as needed, or when the `load` method is called.
+
+        :param sources: DataArray holding a list of :py:class:`datacube.model.Dataset` objects
+        :type sources: :py:class:`xarray.DataArray`
+        :param geobox: A GeoBox defining the output spatial projection and resolution
+        :type geobox: :class:`datacube.model.GeoBox`
+        :param measurement: measurement definition with keys: {'name', 'dtype', 'nodata', 'units'}
+        :param fuse_func: function to merge successive arrays as an output
+        :rtype: :py:class:`xarray.DataArray`
+
+        ..seealso:: :meth:`product_data`
+        """
+        def data_func(measurement):
+            return _make_dask_array(sources, geobox, measurement, fuse_func, grid_chunks)
         return Datacube.create_storage(sources.coords, geobox, measurements, data_func)
 
     @staticmethod
@@ -393,29 +414,16 @@ class Datacube(object):
         :type sources: :py:class:`xarray.DataArray`
         :param geobox: A GeoBox defining the output spatial projection and resolution
         :type geobox: :class:`datacube.model.GeoBox`
-        :param measurement: measurement definition with keys: {'name', 'dtype', 'nodata', 'units'}
+        :param measurements: list of measurement definitions with keys: {'name', 'dtype', 'nodata', 'units'}
         :param fuse_func: function to merge successive arrays as an output
         :rtype: :py:class:`xarray.DataArray`
 
         ..seealso:: :meth:`product_data`
         """
-        coords = {dim: coord for dim, coord in sources.coords.items()}
-        for dim, coord in geobox.coordinates.items():
-            coords[dim] = xarray.Coordinate(dim, coord.labels, attrs={'units': coord.units})
-        dims = sources.dims + geobox.dimensions
-
-        data = _make_dask_array(sources, geobox, measurement, fuse_func, grid_chunks)
-
-        result = xarray.DataArray(data,
-                                  coords=coords,
-                                  dims=dims,
-                                  name=measurement['name'],
-                                  attrs={
-                                      'crs': geobox.crs,
-                                      'nodata': measurement.get('nodata'),
-                                      'units': measurement.get('units', '1')
-                                  })
-        return result
+        dataset = Datacube.product_data_lazy(sources, geobox, [measurement], fuse_func, grid_chunks)
+        dataarray = dataset[measurement['name']]
+        dataarray.attrs['crs'] = dataset.crs
+        return dataarray
 
     def grid_spec_for_product(self, product):
         """
@@ -439,15 +447,14 @@ class Datacube(object):
 
 
 def fuse_lazy(datasets, geobox, measurement, fuse_func=None, prepend_dims=0):
-    name = measurement['name']
     prepend_shape = (1,) * prepend_dims
     prepend_index = (0,) * prepend_dims
-    data = numpy.empty(prepend_shape + geobox.shape, dtype=measurement['dtype'])
-    fuse_sources([DatasetSource(dataset, name) for dataset in datasets],
+    data = numpy.full(prepend_shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
+    fuse_sources([DatasetSource(dataset, measurement['name']) for dataset in datasets],
                  data[prepend_index],
                  geobox.affine,
                  geobox.crs,
-                 measurement.get('nodata'),
+                 measurement['nodata'],
                  resampling=RESAMPLING.nearest,
                  fuse_func=fuse_func)
     return data
