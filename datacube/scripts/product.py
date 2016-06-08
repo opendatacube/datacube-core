@@ -9,7 +9,6 @@ from pathlib import Path
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.utils import read_documents, InvalidDocException
-from datacube.exceptions import InvalidDocException
 
 _LOG = logging.getLogger('datacube-product')
 
