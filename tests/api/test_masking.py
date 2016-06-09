@@ -2,6 +2,7 @@
 import yaml
 
 from datacube.storage.masking import list_flag_names, create_mask_value, describe_variable_flags
+from datacube.storage.masking import mask_to_dict
 
 
 def test_list_flag_names():
@@ -53,6 +54,21 @@ def test_ga_good_pixel():
 def test_describe_flags():
     simple_var = SimpleVariableWithFlagsDef()
     describe_variable_flags(simple_var)
+
+
+def test_simple_mask_to_dict():
+    simple_var = SimpleVariableWithFlagsDef()
+    bits_def = simple_var.flags_definition
+
+    contiguous_true = mask_to_dict(bits_def, 256)
+    assert contiguous_true['contiguous']
+
+    test_dict = mask_to_dict(bits_def, 768)
+    assert test_dict['contiguous']
+    assert test_dict['land_sea'] == 'land'
+
+    test_dict = mask_to_dict(bits_def, 16383)
+    assert test_dict['ga_good_pixel']
 
 
 class SimpleVariableWithFlagsDef(object):

@@ -101,8 +101,7 @@ def create_mask_value(bits_def, **flags):
 
         try:
             [flag_value] = (bit_val
-                            for bit_val, val_ref
-                            in defn['values'].items()
+                            for bit_val, val_ref in defn['values'].items()
                             if val_ref == flag_ref)
             flag_value = int(flag_value)  # Might be string if coming from DB
         except ValueError:
@@ -125,6 +124,33 @@ def create_mask_value(bits_def, **flags):
             value = set_value_at_index(value, bit, flag_value)
 
     return mask, value
+
+
+def mask_to_dict(bits_def, mask_value):
+    """
+    Describe which flags are set for a mask value
+
+    :param bits_def:
+    :param mask_value:
+    :return: Mapping of flag_name -> set_value
+    :rtype: dict
+    """
+    return_dict = {}
+    for flag_name, flag_defn in bits_def.items():
+        shift = _get_minimum_bit(flag_defn['bits'])
+
+        for flag_value, value in flag_defn['values'].items():
+            shifted_value = int(flag_value) << shift
+            if mask_value & shifted_value == shifted_value:
+                return_dict[flag_name] = value
+    return return_dict
+
+
+def _get_minimum_bit(bit_or_bits):
+    try:
+        return min(bit_or_bits)
+    except TypeError:
+        return bit_or_bits
 
 
 def get_flags_def(variable):
