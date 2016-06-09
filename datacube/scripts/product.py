@@ -6,6 +6,7 @@ from click import echo
 
 from pathlib import Path
 
+from datacube import Datacube
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.utils import read_documents, InvalidDocException
@@ -25,7 +26,7 @@ def product():
 @ui.pass_index()
 def add_dataset_types(index, files):
     """
-    Add storage types to the index
+    Add product types to the index
     """
     for descriptor_path, parsed_doc in read_documents(*(Path(f) for f in files)):
         try:
@@ -36,3 +37,17 @@ def add_dataset_types(index, files):
             _LOG.exception(e)
             _LOG.error('Invalid product definition: %s', descriptor_path)
             continue
+
+
+@product.command('list')
+@ui.pass_index()
+def list_products(index):
+    """
+    List products that are defined in the index
+    """
+    dc = Datacube(index)
+    products = dc.list_products()
+
+    echo(products.to_string(columns=('name', 'description', 'product_type', 'instrument',
+                                     'format', 'platform'),
+                            justify='left'))
