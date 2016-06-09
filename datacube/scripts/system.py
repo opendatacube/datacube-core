@@ -47,6 +47,7 @@ def check(config_file):
     """
     Verify & view current configuration
     """
+    echo('Read configurations files from: %s' % config_file.files_loaded)
     echo('Host: {}:{}'.format(config_file.db_hostname or 'localhost', config_file.db_port or '5432'))
     echo('Database: {}'.format(config_file.db_database))
     echo('User: {}'.format(config_file.db_username))

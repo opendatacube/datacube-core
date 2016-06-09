@@ -49,9 +49,9 @@ class LocalConfig(object):
 
     def __init__(self, config, files_loaded=None):
         self._config = config
-        self._files_loaded = []
+        self.files_loaded = []
         if files_loaded:
-            self._files_loaded = files_loaded
+            self.files_loaded = files_loaded
 
     @classmethod
     def find(cls, paths=DEFAULT_CONF_PATHS):
