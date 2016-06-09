@@ -10,6 +10,50 @@ In many other cases the data you want to load into your Data Cube will not have 
 A specific example is the :download:`USGS Landsat Prepare Script <../../utils/usgslsprepare.py>`
 
 
+Using the USGS Landsat LEDAPS Prepare Script
+--------------------------------------------
+
+To prepare downloaded USGS LEDAPS Landsat scenes for use with the Data Cube,
+use the script provided in ``utils/usgslsprepare.py``.
+
+The following example generates the required Dataset Metadata files, named
+`agdc-metadata.yaml` for three landsat scenes.
+
+::
+
+    $ python utils/usgslsprepare.py --help
+    Usage: usgslsprepare.py [OPTIONS] [DATASETS]...
+
+      Prepare USGS LS dataset for ingestion into the Data Cube.
+
+    Options:
+      --help  Show this message and exit.
+
+    $ python utils/usgslsprepare.py ~/USGS_LandsatLEDAPS/*/
+    2016-06-09 15:32:51,641 INFO Processing ~/USGS_LandsatLEDAPS/LC80960852015365-SC20160211222236
+    2016-06-09 15:32:52,096 INFO Writing ~/USGS_LandsatLEDAPS/LC80960852015365-SC20160211222236/agdc-metadata.yaml
+    2016-06-09 15:32:52,119 INFO Processing ~/USGS_LandsatLEDAPS/LE70960852016024-SC20160211221824
+    2016-06-09 15:32:52,137 INFO Writing ~/USGS_LandsatLEDAPS/LE70960852016024-SC20160211221824/agdc-metadata.yaml
+    2016-06-09 15:32:52,151 INFO Processing ~/USGS_LandsatLEDAPS/LT50960852011290-SC20160211221617
+    2016-06-09 15:32:52,157 INFO Writing ~/USGS_LandsatLEDAPS/LT50960852011290-SC20160211221617/agdc-metadata.yaml
+
+
+The scenes are now ready to be :ref:`indexed <indexing>` and accessed using
+the Data Cube.
+
+First add the product definitions::
+
+    $ datacube product add docs/config_samples/dataset_types/*
+    ...
+    Added "ls5_ledaps_scene"
+    ...
+    Added "ls7_ledaps_scene"
+    ...
+    Added "ls8_ledaps_scene"
+    ...
+
+Then index the data.
+
 Custom Prepare Scripts
 ----------------------
 
