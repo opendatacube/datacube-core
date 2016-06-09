@@ -131,7 +131,8 @@ class Datacube(object):
                     measurements.append(row)
         return measurements
 
-    def load(self, stack=None, **indexers):
+    def load(self, product=None, measurements=None, output_crs=None, resolution=None, stack=False,
+             **indexers):
         """
         Loads data as an ``xarray`` object.
 
@@ -193,6 +194,15 @@ class Datacube(object):
         :return: Requested data.  As a ``DataArray`` if the ``stack`` variable is supplied.
         :rtype: :class:`xarray.Dataset` or :class:`xarray.DataArray`
         """
+        if product is not None:
+            indexers['product'] = product
+        if measurements is not None:
+            indexers['measurements'] = measurements
+        if output_crs is not None:
+            indexers['output_crs'] = output_crs
+        if resolution is not None:
+            indexers['resolution'] = resolution
+
         if stack:
             return self._get_data_array(var_dim_name=stack, **indexers)
         else:
