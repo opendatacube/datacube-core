@@ -4,7 +4,7 @@ output_type: ls8_pq_albers
 description: Landsat 8 PQ 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
 
 location: '/g/data/u46/gxr547/unicube'
-file_path_template: 'LS8_ETM_PQ/LS7_ETM_PQ_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+file_path_template: 'LS8_ETM_PQ/LS8_ETM_PQ_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
 global_attributes:
   title: Australian Geoscience Data Cube Landsat Pixel Quality Assessment
   summary: Landsat 8 Operational Land Imager Analysis Ready data prepared by Geoscience Australia on behalf of the Australian Government.
