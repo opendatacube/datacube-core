@@ -135,6 +135,7 @@ intersphinx_mapping = {
 click_utils_commands = {'datacube-search': 'datacube.scripts.search_tool:cli',
                         'datacube': 'datacube.scripts.cli_app:cli'}
 
+graphviz_output_format = 'svg'
 
 # -- Options for HTML output ----------------------------------------------
 

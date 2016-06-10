@@ -36,16 +36,16 @@ Follow the steps below to install and configure a new Data Cube instance.
 
     RunPrepScript -> IndexData [style=dashed];
 
-    InstallPackage [href="install.html", label="Install Data Cube Package and
+    InstallPackage [href="install.html", target="_top", label="Install Data Cube Package and
      Dependencies"];
-    CreateDB [href="db_setup.html", label="Create a Database to hold the
+    CreateDB [href="db_setup.html", target="_top", label="Create a Database to hold the
     Index"];
-    InitialiseDatabase [href="db_setup.html#initialise-the-database-schema", label="Initialise Database"];
-    IndexData [href="indexing.html", label="Index Datasets"];
-    WriteIngest [href="ingest.html#ingestion-configuration", label="Write
+    InitialiseDatabase [href="db_setup.html#initialise-the-database-schema", target="_top", label="Initialise Database"];
+    IndexData [href="indexing.html", target="_top", label="Index Datasets"];
+    WriteIngest [href="ingest.html#ingestion-configuration", target="_top", label="Write
      ingest config"];
-    RunIngest [href="ingest.html#ingest-some-data", label="Run ingestion"];
+    RunIngest [href="ingest.html#ingest-some-data", target="_top", label="Run ingestion"];
     Finished [label="Finished\nReady to analyse data"];
-    LoadProductTypes [href="indexing.html#product-definitions", label="Define Product Types"];
-    WritePrepScript [href="prepare_scripts.html", label="Write Prepare Script"];
-    RunPrepScript [href="prepare_scripts.html", label="Run Prepare Script"];
+    LoadProductTypes [href="indexing.html#product-definitions", target="_top", label="Define Product Types"];
+    WritePrepScript [href="prepare_scripts.html", target="_top", label="Write Prepare Script"];
+    RunPrepScript [href="prepare_scripts.html", target="_top", label="Run Prepare Script"];

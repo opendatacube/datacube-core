@@ -14,7 +14,7 @@ Product
     node [shape=record,style=filled,fillcolor=gray95];
     edge [dir=back, arrowhead=normal];
 
-    Product -> Measurements [arrowhead=diamond,style=dashed,label="conceptual"];
+    Product -> Measurements [arrowhead=diamond,style=dashed,label="conceptual "];
     GridSpec -> CRS;
     Dataset -> Measurements;
     Product -> Dataset [arrowhead=diamond];
@@ -27,5 +27,5 @@ Product
 
 
     Product [label="{Product/DatasetType|+ name\l+ managed\l+ grid_spec
-     (optional)\l+ dimensions\l|...}"];
+     (optional)\l+ dimensions\l...|...}"];
 
