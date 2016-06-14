@@ -118,7 +118,7 @@ def get_projection(path):
                 'ur': {'x': right, 'y': top},
                 'll': {'x': left, 'y': bottom},
                 'lr': {'x': right, 'y': bottom},
-                }
+            }
         }
 
 
@@ -144,7 +144,6 @@ def crazy_parse(timestr):
         if not timestr[-2:] == "60":
             raise
         return parser.parse(timestr[:-2]+'00') + timedelta(minutes=1)
-
 
 def prep_dataset(fields, path):
     images_list = []
@@ -177,8 +176,8 @@ def prep_dataset(fields, path):
     images = {band_name(im_path): {
         'path': str(im_path.relative_to(path))   
     } for im_path in path.glob('*.tif')}
-    
-    print path
+    projdict = get_projection(path/next(iter(images.values()))['path'])
+    projdict['valid_data'] = safe_valid_region(images_list)
     doc = {
         'id': str(uuid.uuid4()),
         'processing_level': fields["level"],
@@ -200,14 +199,14 @@ def prep_dataset(fields, path):
         },
         'format': {'name': 'GeoTiff'},
         'grid_spatial': {
-            'projection': get_projection(path/next(iter(images.values()))['path'])
+            'projection': projdict   
         },
         'image': {
             'satellite_ref_point_start': {'path': int(fields["path"]), 'row': int(fields["row"])},
             'satellite_ref_point_end': {'path': int(fields["path"]), 'row': int(fields["row"])},
             'bands': images
         },
-        'valid_data': safe_valid_region(images_list),        #TODO include 'lineage': {'source_datasets': {'lpgs_metadata_file': lpgs_metadata_file}}
+       
         'lineage': {'source_datasets': {}}
     }
     populate_coord(doc)
@@ -235,7 +234,6 @@ def prepare_datasets(nbar_path):
     fields.update({'level': 'sr_refl', 'type': 'LEDAPS', 'creation_dt': ((crazy_parse(fields["productyear"]+'0101T00:00:00'))+timedelta(days=int(fields["julianday"])))})
     nbar = prep_dataset(fields, nbar_path)
     return (nbar, nbar_path)
-
 
 @click.command(help="Prepare USGS LS dataset for ingestion into the Data Cube.")
 @click.argument('datasets',

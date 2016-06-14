@@ -67,7 +67,7 @@ def valid_region(images, mask_value=None):
                                                     transform.e, transform.xoff, transform.yoff))
 
     output = shapely.geometry.mapping(geom)
-    print output
+    
     return geom
     #output['coordinates'] = _to_lists(output['coordinates'])
     #return output
@@ -172,6 +172,11 @@ def prepare_dataset(path):
                 'projection': {
                     'geo_ref_points': geo_ref_points,
                     'spatial_reference': spatial_ref.ExportToWkt(),
+                    'valid_data': {
+                            'coordinates': _to_lists(shapely.geometry.mapping(shapely.ops.unary_union([safe_valid_region(images_sixty_list),\
+                                                safe_valid_region(images_ten_list),\
+                                                safe_valid_region(images_twenty_list)]))['coordinates']),
+                            'type': "Polygon"}
                 }
             },
             'image': {
@@ -182,13 +187,10 @@ def prepare_dataset(path):
                     } for image in images
                 }
             },
-            'valid_data': _to_lists(shapely.geometry.mapping(shapely.ops.unary_union([safe_valid_region(images_sixty_list),\
-                                                  safe_valid_region(images_ten_list),\
-                                                  safe_valid_region(images_twenty_list)]))['coordinates']),              
+                        
             'lineage': {'source_datasets': {}},
         })
     return documents
-
 
 @click.command(help="Prepare Sentinel 2 dataset for ingestion into the Data Cube.")
 @click.argument('datasets',
