@@ -11,7 +11,76 @@ from pathlib import Path
 import yaml
 import click
 from osgeo import osr
+import os
+# image boundary imports
+import rasterio
+from rasterio.errors import RasterioIOError
+import rasterio.features
+import shapely.affinity
+import shapely.geometry
+import shapely.ops
 
+###IMAGE BOUNDARY CODE
+
+def safe_valid_region(images, mask_value=None):
+    try:
+        return valid_region(images, mask_value)
+    except (OSError, RasterioIOError):
+        return None
+
+
+def valid_region(images, mask_value=None):
+    mask = None
+    for fname in images:
+        ## ensure formats match
+        with rasterio.open(str(fname), 'r') as ds:
+            transform = ds.affine
+            img = ds.read(1)
+
+            if mask_value is not None:
+                new_mask = img & mask_value == mask_value
+            else:
+                #new_mask = img != ds.nodata
+                new_mask = img != 0
+            if mask is None:
+                mask = new_mask
+            else:
+                mask |= new_mask
+
+    shapes = rasterio.features.shapes(mask.astype('uint8'), mask=mask)
+    shape = shapely.ops.unary_union([shapely.geometry.shape(shape) for shape, val in shapes if val == 1])
+    type(shapes)
+    # convex hull
+    geom = shape.convex_hull
+
+    # buffer by 1 pixel
+    geom = geom.buffer(1, join_style=3, cap_style=3)
+
+    # simplify with 1 pixel radius
+    geom = geom.simplify(1)
+
+    # intersect with image bounding box
+    geom = geom.intersection(shapely.geometry.box(0, 0, mask.shape[1], mask.shape[0]))
+
+    # transform from pixel space into CRS space
+    geom = shapely.affinity.affine_transform(geom, (transform.a, transform.b, transform.d,
+                                                    transform.e, transform.xoff, transform.yoff))
+
+    output = shapely.geometry.mapping(geom)
+    print output
+    return geom
+    #output['coordinates'] = _to_lists(output['coordinates'])
+    #return output
+
+
+def _to_lists(x):
+    """
+    Returns lists of lists when given tuples of tuples
+    """
+    if isinstance(x, tuple):
+        return [_to_lists(el) for el in x]
+
+    return x
 
 def get_geo_ref_points(root):
     nrows = int(root.findall('./*/Tile_Geocoding/Size[@resolution="10"]/NROWS')[0].text)
@@ -41,6 +110,7 @@ def get_coords(geo_ref_points, spatial_ref):
 
 
 def prepare_dataset(path):
+    
     root = ElementTree.parse(str(path)).getroot()
 
     level = root.findall('./*/Product_Info/PROCESSING_LEVEL')[0].text
@@ -52,10 +122,29 @@ def prepare_dataset(path):
 
     documents = []
     for granule_id, images in granules.items():
+        images_ten_list = []
+        images_twenty_list = []
+        images_sixty_list = []   
         gran_path = str(path.parent.joinpath('GRANULE', granule_id, granule_id[:-7].replace('MSI', 'MTD')+'.xml'))
         root = ElementTree.parse(gran_path).getroot()
         sensing_time = root.findall('./*/SENSING_TIME')[0].text
+        
+        img_data_path = str(path.parent.joinpath('GRANULE', granule_id,'IMG_DATA'))
+        for image in images:
+            ten_list = ['B02','B03','B04','B08']
+            twenty_list=['B05','B06','B07','B11','B12','B8A']
+            sixty_list=['B01','B09','B10']
 
+            for item in ten_list:
+                if item in image:
+                    images_ten_list.append(os.path.join(img_data_path,image+".jp2"))
+            for item in twenty_list:
+                if item in image:
+                    images_twenty_list.append(os.path.join(img_data_path,image+".jp2"))
+            for item in sixty_list:
+                if item in image:
+                    images_sixty_list.append(os.path.join(img_data_path,image+".jp2"))
+        
         station = root.findall('./*/Archiving_Info/ARCHIVING_CENTRE')[0].text
 
         cs_code = root.findall('./*/Tile_Geocoding/HORIZONTAL_CS_CODE')[0].text
@@ -93,6 +182,9 @@ def prepare_dataset(path):
                     } for image in images
                 }
             },
+            'valid_data': _to_lists(shapely.geometry.mapping(shapely.ops.unary_union([safe_valid_region(images_sixty_list),\
+                                                  safe_valid_region(images_ten_list),\
+                                                  safe_valid_region(images_twenty_list)]))['coordinates']),              
             'lineage': {'source_datasets': {}},
         })
     return documents
