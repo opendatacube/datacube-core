@@ -92,9 +92,14 @@ class GridWorkflow(object):
         if not observations:
             return {}
 
+        if xy_cell:
+            tile_iter = [(xy_cell, geobox)]
+        else:
+            bounds_geopolygon = get_bounds(observations, self.grid_spec.crs)
+            tile_iter = self.grid_spec.tiles(bounds_geopolygon.boundingbox)
+
         tiles = {}
-        bounds_geopolygon = get_bounds(observations, self.grid_spec.crs)
-        for tile_index, tile_geobox in self.grid_spec.tiles(bounds_geopolygon.boundingbox):
+        for tile_index, tile_geobox in tile_iter:
             tile_geopolygon = tile_geobox.extent
             for dataset in observations:
                 if not check_intersect(tile_geopolygon, dataset.extent.to_crs(self.grid_spec.crs)):
