@@ -155,19 +155,19 @@ def prep_dataset(fields, path):
             images_list.append(os.path.join(str(path),file))
     # Parse xml ElementTree gives me a headache so using lxml
     doc = ElementTree.parse(os.path.join(str(path), metafile))
-    #TODO root method doesn't work here - need to include xlmns...
 
-    for global_metadata in doc.findall('{http://espa.cr.usgs.gov/v1.2}global_metadata'):
-        satellite = (global_metadata.find('{http://espa.cr.usgs.gov/v1.2}satellite')).text
-        instrument = (global_metadata.find('{http://espa.cr.usgs.gov/v1.2}instrument')).text
-        acquisition_date = str((global_metadata.find('{http://espa.cr.usgs.gov/v1.2}acquisition_date')).text).replace("-","")
-        scene_center_time = (global_metadata.find('{http://espa.cr.usgs.gov/v1.2}scene_center_time')).text[:8]
-        center_dt = crazy_parse(acquisition_date+"T"+scene_center_time)
-        aos = crazy_parse(acquisition_date+"T"+scene_center_time)-timedelta(seconds=(24/2))
-        los = aos + timedelta(seconds=24)
-        lpgs_metadata_file = (global_metadata.find('{http://espa.cr.usgs.gov/v1.2}lpgs_metadata_file')).text
-        groundstation = lpgs_metadata_file[16:19]
-        fields.update({'instrument': instrument, 'satellite': satellite})
+    ns = {'espa12': "http://espa.cr.usgs.gov/v1.2"}
+
+    satellite = doc.find('//espa12:satellite', ns).text
+    instrument = doc.find('//espa12:instrument', ns).text
+    acquisition_date = doc.find('//espa12:acquisition_date', ns).text.replace("-", "")
+    scene_center_time = doc.find('//espa12:scene_center_time', ns).text[:8]
+    center_dt = crazy_parse(acquisition_date + "T" + scene_center_time)
+    aos = crazy_parse(acquisition_date + "T" + scene_center_time) - timedelta(seconds=(24 / 2))
+    los = aos + timedelta(seconds=24)
+    lpgs_metadata_file = doc.find('//espa12:lpgs_metadata_file', ns).text
+    groundstation = lpgs_metadata_file[16:19]
+    fields.update({'instrument': instrument, 'satellite': satellite})
 
 
 
@@ -231,7 +231,9 @@ def prepare_datasets(nbar_path):
         ), nbar_path.stem).groupdict()
 
     timedelta(days=int(fields["julianday"]))
-    fields.update({'level': 'sr_refl', 'type': 'LEDAPS', 'creation_dt': ((crazy_parse(fields["productyear"]+'0101T00:00:00'))+timedelta(days=int(fields["julianday"])))})
+    fields.update({'level': 'sr_refl',
+                   'type': 'LEDAPS',
+                   'creation_dt': ((crazy_parse(fields["productyear"]+'0101T00:00:00'))+timedelta(days=int(fields["julianday"])))})
     nbar = prep_dataset(fields, nbar_path)
     return (nbar, nbar_path)
 
