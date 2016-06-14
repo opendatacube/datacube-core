@@ -16,7 +16,13 @@ import rasterio.warp
 import click
 from osgeo import osr
 import os
-
+# image boundary imports
+import rasterio
+from rasterio.errors import RasterioIOError
+import rasterio.features
+import shapely.affinity
+import shapely.geometry
+import shapely.ops
 
 _STATIONS = {'023': 'TKSC', '022': 'SGS', '010': 'GNC', '011': 'HOA',
              '012': 'HEOC', '013': 'IKR', '014': 'KIS', '015': 'LGS',
@@ -25,6 +31,68 @@ _STATIONS = {'023': 'TKSC', '022': 'SGS', '010': 'GNC', '011': 'HOA',
              '007': 'DKI', '006': 'CUB', '005': 'CHM', '004': 'BKT', '009': 'GLC',
              '008': 'EDC', '029': 'JSA', '028': 'COA', '021': 'PFS', '020': 'PAC'}
 
+###IMAGE BOUNDARY CODE
+
+def safe_valid_region(images, mask_value=None):
+    try:
+        return valid_region(images, mask_value)
+    except (OSError, RasterioIOError):
+        return None
+
+
+def valid_region(images, mask_value=None):
+    mask = None
+
+    for fname in images:
+        ## ensure formats match
+        with rasterio.open(str(fname), 'r') as ds:
+            transform = ds.affine
+            img = ds.read(1)
+
+            if mask_value is not None:
+                new_mask = img & mask_value == mask_value
+            else:
+                new_mask = img != ds.nodata
+            if mask is None:
+                mask = new_mask
+            else:
+                mask |= new_mask
+
+    shapes = rasterio.features.shapes(mask.astype('uint8'), mask=mask)
+    shape = shapely.ops.unary_union([shapely.geometry.shape(shape) for shape, val in shapes if val == 1])
+
+    # convex hull
+    geom = shape.convex_hull
+
+    # buffer by 1 pixel
+    geom = geom.buffer(1, join_style=3, cap_style=3)
+
+    # simplify with 1 pixel radius
+    geom = geom.simplify(1)
+
+    # intersect with image bounding box
+    geom = geom.intersection(shapely.geometry.box(0, 0, mask.shape[1], mask.shape[0]))
+
+    # transform from pixel space into CRS space
+    geom = shapely.affinity.affine_transform(geom, (transform.a, transform.b, transform.d,
+                                                    transform.e, transform.xoff, transform.yoff))
+    
+    output = shapely.geometry.mapping(geom)
+    output['coordinates'] = _to_lists(output['coordinates'])
+    return output
+
+
+def _to_lists(x):
+    """
+    Returns lists of lists when given tuples of tuples
+    """
+    if isinstance(x, tuple):
+        return [_to_lists(el) for el in x]
+
+    return x
+
+
+###END IMAGE BOUNDARY CODE
 
 def band_name(path):
     name = path.stem
@@ -79,10 +147,13 @@ def crazy_parse(timestr):
 
 
 def prep_dataset(fields, path):
-
+    images_list = []
     for file in os.listdir(str(path)):
         if file.endswith(".xml") and (not file.endswith('aux.xml')):
             metafile = file
+        if file.endswith(".tif") and ("band" in file) :
+
+            images_list.append(os.path.join(str(path),file))
     # Parse xml ElementTree gives me a headache so using lxml
     doc = ElementTree.parse(os.path.join(str(path), metafile))
     #TODO root method doesn't work here - need to include xlmns...
@@ -99,12 +170,15 @@ def prep_dataset(fields, path):
         groundstation = lpgs_metadata_file[16:19]
         fields.update({'instrument': instrument, 'satellite': satellite})
 
+
+
     start_time = aos
     end_time = los
     images = {band_name(im_path): {
-        'path': str(im_path.relative_to(path))
+        'path': str(im_path.relative_to(path))   
     } for im_path in path.glob('*.tif')}
-
+    
+    print path
     doc = {
         'id': str(uuid.uuid4()),
         'processing_level': fields["level"],
@@ -133,7 +207,7 @@ def prep_dataset(fields, path):
             'satellite_ref_point_end': {'path': int(fields["path"]), 'row': int(fields["row"])},
             'bands': images
         },
-        #TODO include 'lineage': {'source_datasets': {'lpgs_metadata_file': lpgs_metadata_file}}
+        'valid_data': safe_valid_region(images_list),        #TODO include 'lineage': {'source_datasets': {'lpgs_metadata_file': lpgs_metadata_file}}
         'lineage': {'source_datasets': {}}
     }
     populate_coord(doc)
