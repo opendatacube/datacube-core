@@ -189,13 +189,6 @@ def test_query_kwargs():
     assert 'red' in query.measurements
     assert 'green' in query.measurements
 
-    query = Query.from_kwargs(index=mock_index, variables='red')
-    assert 'red' in query.measurements
-
-    query = Query.from_kwargs(index=mock_index, variables=['red', 'green'])
-    assert 'red' in query.measurements
-    assert 'green' in query.measurements
-
     query = Query.from_kwargs(index=mock_index, latitude=(-35, -36), longitude=(148, 149))
     assert query.geopolygon
     assert 'lat' in query.search_terms

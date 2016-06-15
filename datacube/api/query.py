@@ -37,7 +37,7 @@ GroupBy = collections.namedtuple('GroupBy', ['dimension', 'group_by_func', 'unit
 FLOAT_TOLERANCE = 0.0000001 # TODO: For DB query, use some sort of 'contains' query, rather than range overlap.
 SPATIAL_KEYS = ('latitude', 'lat', 'y', 'longitude', 'lon', 'long', 'x')
 CRS_KEYS = ('crs', 'coordinate_reference_system')
-OTHER_KEYS = ('measurements', 'variables', 'group_by', 'output_crs', 'resolution', 'set_nan')
+OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan', 'product', 'geopolygon')
 
 
 class Query(object):
@@ -53,7 +53,8 @@ class Query(object):
         self.output_crs = None
 
     @classmethod
-    def from_kwargs(cls, index=None, **kwargs):
+    def from_kwargs(cls, index=None, product=None, measurements=None, geopolygon=None, group_by=None, output_crs=None,
+                    resolution=None, set_nan=None, **kwargs):
         """Parses a kwarg dict for query parameters
 
         :param index: An optional `index` object, if checking of field names is desired.
@@ -64,43 +65,25 @@ class Query(object):
         :return: :class:`Query`
         """
         query = cls()
-
-        if 'product' in kwargs:
-            query.type = kwargs['product']
-
-        query.measurements = _get_as_list(kwargs, 'measurements', None)
-        if query.measurements is None:
-            query.measurements = _get_as_list(kwargs, 'variables', None)
+        query.type = product
+        query.measurements = measurements and _listify(measurements)
+        query.group_by_name = group_by
+        query.output_crs = output_crs
+        query.resolution = resolution
+        query.set_nan = set_nan
 
         spatial_dims = {dim: v for dim, v in kwargs.items() if dim in SPATIAL_KEYS}
-
         crs = {v for k, v in kwargs.items() if k in CRS_KEYS}
         if len(crs) == 1:
             spatial_dims['crs'] = crs.pop()
         elif len(crs) > 1:
             raise ValueError('Spatial dimensions must be in the same coordinate reference system: {}'.format(crs))
 
-        if 'geopolygon' in kwargs:
-            if spatial_dims:
-                raise ValueError('Cannot specify both "geopolygon" and one of %s at the same time' %
-                                 (SPATIAL_KEYS+CRS_KEYS))
-            query.geopolygon = kwargs['geopolygon']
-        else:
-            query.geopolygon = _range_to_geopolygon(**spatial_dims)
+        if geopolygon and spatial_dims:
+            raise ValueError('Cannot specify "geopolygon" and one of %s at the same time' % (SPATIAL_KEYS+CRS_KEYS))
+        query.geopolygon = geopolygon or _range_to_geopolygon(**spatial_dims)
 
-        if 'group_by' in kwargs:
-            query.group_by_name = kwargs['group_by']
-
-        if 'output_crs' in kwargs:
-            query.output_crs = CRS(kwargs['output_crs'])
-
-        if 'resolution' in kwargs:
-            query.resolution = kwargs['resolution']
-
-        if 'set_nan' in kwargs:
-            query.set_nan = kwargs['set_nan']
-
-        remaining_keys = set(kwargs.keys()) - set(('product', 'geopolygon') + SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
+        remaining_keys = set(kwargs.keys()) - set(SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
         if index:
             known_fields = set(index.datasets.get_field_names())
             unknown_keys = remaining_keys - known_fields
@@ -108,7 +91,7 @@ class Query(object):
                 raise LookupError('Unknown arguments: ', unknown_keys)
 
         for key in remaining_keys:
-            query.search.update(_values_to_search(**{key:kwargs[key]}))
+            query.search.update(_values_to_search(**{key: kwargs[key]}))
 
         return query
 
@@ -301,13 +284,11 @@ def _time_to_search_dims(time_range):
         return Range(single_query_time, end_time)
 
 
-def _get_as_list(mapping, key, default=None):
-    if key not in mapping:
-        return default
-    value = mapping[key]
+def _listify(value):
     if isinstance(value, string_types) or not isinstance(value, collections.Sequence):
-        value = [value]
-    return list(value)
+        return [value]
+    else:
+        return list(value)
 
 
 def _convert_to_solar_time(utc, longitude):

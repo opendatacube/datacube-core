@@ -154,13 +154,13 @@ def check_open_with_dc(index):
     from datacube.api.core import Datacube
     dc = Datacube(index=index)
 
-    data_array = dc.load(product='ls5_nbar_albers', variables=['blue'], stack='variable')
+    data_array = dc.load(product='ls5_nbar_albers', measurements=['blue'], stack='variable')
     assert data_array.shape
 
     data_array = dc.load(product='ls5_nbar_albers', latitude=(-34, -35), longitude=(149, 150), stack='variable')
     assert data_array.shape
 
-    dataset = dc.load(product='ls5_nbar_albers', variables=['blue'])
+    dataset = dc.load(product='ls5_nbar_albers', measurements=['blue'])
     assert dataset['blue'].size
 
     dataset = dc.load(product='ls5_nbar_albers', latitude=(-35.2, -35.3), longitude=(149.1, 149.2))
@@ -168,7 +168,7 @@ def check_open_with_dc(index):
 
     data_array = dc.load(product='ls5_nbar_albers',
                          latitude=(-34, -35), longitude=(149, 150),
-                         variables=['blue'], group_by='solar_day')
+                         measurements=['blue'], group_by='solar_day')
 
     products_df = dc.list_products()
     assert len(products_df)
