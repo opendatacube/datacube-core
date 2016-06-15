@@ -84,11 +84,8 @@ class Query(object):
         query.geopolygon = geopolygon or _range_to_geopolygon(**spatial_dims)
 
         remaining_keys = set(kwargs.keys()) - set(SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
-        if index:
-            known_fields = set(index.datasets.get_field_names())
-            unknown_keys = remaining_keys - known_fields
-            if unknown_keys:
-                raise LookupError('Unknown arguments: ', unknown_keys)
+        if index and remaining_keys - set(index.datasets.get_field_names()):
+            raise LookupError('Unknown arguments: ', remaining_keys - set(index.datasets.get_field_names()))
 
         for key in remaining_keys:
             query.search.update(_values_to_search(**{key: kwargs[key]}))
