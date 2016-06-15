@@ -33,6 +33,9 @@ RESAMPLING_METHODS = {
     'average': RESAMPLING.average,
 }
 
+GDAL_NETCDF_TIME = ('NETCDF_DIM_' if rasterio.__gdal_version__ >= '1.10.0' else 'NETCDF_DIMENSION_') + 'time'
+
+
 def _rasterio_resampling_method(measurement_descriptor):
     return RESAMPLING_METHODS[measurement_descriptor['resampling_method'].lower()]
 
@@ -183,7 +186,7 @@ class DatasetSource(object):
         idx = 0
         dist = float('+inf')
         for i in range(1, src.count+1):
-            v = float(src.tags(i).get('NETCDF_DIM_time') or src.tags(i).get('NETCDF_DIMENSION_time'))
+            v = float(src.tags(i)[GDAL_NETCDF_TIME])
             if abs(sec_since_1970 - v) < dist:
                 idx = i
                 dist = abs(sec_since_1970 - v)
