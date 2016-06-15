@@ -210,7 +210,7 @@ class Datacube(object):
 
     def _get_dataset(self, **indexers):
         query = Query.from_kwargs(self.index, **indexers)
-        observations = self.product_observations(geopolygon=query.geopolygon, **query.search_terms)
+        observations = self.product_observations(query=query)
         if not observations:
             return xarray.Dataset()
 
@@ -234,7 +234,7 @@ class Datacube(object):
 
     def _get_data_array(self, var_dim_name='measurement', **indexers):
         query = Query.from_kwargs(self.index, **indexers)
-        observations = self.product_observations(geopolygon=query.geopolygon, **query.search_terms)
+        observations = self.product_observations(query=query)
         if not observations:
             return None
 
@@ -259,32 +259,24 @@ class Datacube(object):
 
         return _stack_vars(data_dict, var_dim_name)
 
-    def product_observations(self, product=None, geopolygon=None, **kwargs):
+    def product_observations(self, query=None, **kwargs):
         """
         Finds datasets for a product.
 
         Lower level function than most people will use.
 
-        :param product: Name of the product
-        :param geopolygon: Spatial area to search for datasets
-        :type geopolygon: :class:`datacube.model.GeoPolygon`
-        :param kwargs: mapping of additional search fields used.
+        :param kwargs: query interface
         :return: list of datasets
         :rtype: list( :class:`datacube.model.Dataset` )
 
         .. seealso:: :meth:`product_sources` :meth:`product_data`
         """
-        if geopolygon:
-            geo_bb = geopolygon.to_crs(CRS('EPSG:4326')).boundingbox
-            kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
-            kwargs['lon'] = Range(geo_bb.left, geo_bb.right)
-        # TODO: pull out full datasets lineage?
-        if product is not None:
-            kwargs['product'] = product
-        datasets = self.index.datasets.search_eager(**kwargs)
-        if geopolygon:
+        if not query:
+            query = Query.from_kwargs(self.index, **kwargs)
+        datasets = self.index.datasets.search_eager(**query.search_terms)
+        if query.geopolygon:
             datasets = [dataset for dataset in datasets
-                        if check_intersect(geopolygon, dataset.extent.to_crs(geopolygon.crs))]
+                        if check_intersect(query.geopolygon, dataset.extent.to_crs(query.geopolygon.crs))]
             # Check against the bounding box of the original scene, can throw away some portions
 
         return datasets

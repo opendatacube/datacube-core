@@ -80,7 +80,13 @@ class Query(object):
         elif len(crs) > 1:
             raise ValueError('Spatial dimensions must be in the same coordinate reference system: {}'.format(crs))
 
-        query.geopolygon = _range_to_geopolygon(**spatial_dims)
+        if 'geopolygon' in kwargs:
+            if spatial_dims:
+                raise ValueError('Cannot specify both "geopolygon" and one of %s at the same time' %
+                                 (SPATIAL_KEYS+CRS_KEYS))
+            query.geopolygon = kwargs['geopolygon']
+        else:
+            query.geopolygon = _range_to_geopolygon(**spatial_dims)
 
         if 'group_by' in kwargs:
             query.group_by_name = kwargs['group_by']
@@ -94,7 +100,7 @@ class Query(object):
         if 'set_nan' in kwargs:
             query.set_nan = kwargs['set_nan']
 
-        remaining_keys = set(kwargs.keys()) - set(('product',) + SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
+        remaining_keys = set(kwargs.keys()) - set(('product', 'geopolygon') + SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
         if index:
             known_fields = set(index.datasets.get_field_names())
             unknown_keys = remaining_keys - known_fields

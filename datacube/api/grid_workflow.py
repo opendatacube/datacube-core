@@ -80,13 +80,13 @@ class GridWorkflow(object):
 
         .. seealso:: :meth:`datacube.Datacube.product_sources`
         """
-        query = Query.from_kwargs(self.datacube.index, **indexers)
         geopolygon = None
         if xy_cell:
             assert isinstance(xy_cell, tuple)
             assert len(xy_cell) == 2
             geobox = GeoBox.from_grid_spec(self.grid_spec, xy_cell)
             geopolygon = geobox.extent
+        query = Query.from_kwargs(self.datacube.index, geopolygon=geopolygon, **indexers)
 
         observations = self.datacube.product_observations(geopolygon=geopolygon, **query.search_terms)
         if not observations:
