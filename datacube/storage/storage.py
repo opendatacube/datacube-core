@@ -37,6 +37,14 @@ def _rasterio_resampling_method(measurement_descriptor):
     return RESAMPLING_METHODS[measurement_descriptor['resampling_method'].lower()]
 
 
+if rasterio.__version__ >= '0.36.0':
+    def _rasterio_crs_wkt(src):
+        return str(src.crs.wkt)
+else:
+    def _rasterio_crs_wkt(src):
+        return str(src.crs_wkt)
+
+
 def _calc_offsets(off, src_size, dst_size):
     """
     >>> _calc_offsets(11, 10, 12) # no overlap
@@ -162,7 +170,7 @@ class DatasetSource(object):
                         bandnumber = 1
 
                 self.transform = src.affine
-                self.crs = CRS(str(src.crs_wkt))
+                self.crs = CRS(_rasterio_crs_wkt(src))
                 self.nodata = src.nodatavals[0] or self._bandinfo.get('nodata')
                 yield rasterio.band(src, bandnumber)
         except Exception as e:
