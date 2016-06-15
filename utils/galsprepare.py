@@ -49,7 +49,7 @@ def get_projection(path):
     with rasterio.open(str(path)) as img:
         left, bottom, right, top = img.bounds
         return {
-            'spatial_reference': str(img.crs_wkt),
+            'spatial_reference': str(getattr(img, 'crs_wkt') or img.crs.wkt),
             'geo_ref_points': {
                 'ul': {'x': left, 'y': top},
                 'ur': {'x': right, 'y': top},
