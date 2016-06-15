@@ -183,7 +183,7 @@ class DatasetSource(object):
         idx = 0
         dist = float('+inf')
         for i in range(1, src.count+1):
-            v = float(src.tags(i)['NETCDF_DIM_time'])
+            v = float(src.tags(i).get('NETCDF_DIM_time') or src.tags(i).get('NETCDF_DIMENSION_time'))
             if abs(sec_since_1970 - v) < dist:
                 idx = i
                 dist = abs(sec_since_1970 - v)
