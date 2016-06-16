@@ -15,10 +15,10 @@ from rasterio.coords import BoundingBox
 from ..config import LocalConfig
 from ..compat import string_types
 from ..index import index_connect
-from ..model import GeoPolygon, GeoBox, Range, CRS
+from ..model import GeoPolygon, GeoBox
 from ..storage.storage import DatasetSource, fuse_sources, RESAMPLING
 from ..utils import check_intersect, data_resolution_and_offset
-from .query import Query
+from .query import Query, GroupByQuery
 
 _LOG = logging.getLogger(__name__)
 
@@ -54,6 +54,7 @@ xarray.Dataset.extent = property(_xarray_extent)
 class Datacube(object):
     """
     Interface to search, read and write a datacube.
+    :type index: datacube.index._api.Index
     """
     def __init__(self, index=None, config=None, app=None):
         """
@@ -131,8 +132,7 @@ class Datacube(object):
                     measurements.append(row)
         return measurements
 
-    def load(self, product=None, measurements=None, output_crs=None, resolution=None, stack=False,
-             **indexers):
+    def load(self, product=None, measurements=None, output_crs=None, resolution=None, stack=False, **indexers):
         """
         Loads data as an ``xarray`` object.
 
@@ -196,60 +196,60 @@ class Datacube(object):
         """
         if product is not None:
             indexers['product'] = product
-        if measurements is not None:
-            indexers['measurements'] = measurements
-        if output_crs is not None:
-            indexers['output_crs'] = output_crs
-        if resolution is not None:
-            indexers['resolution'] = resolution
+        query = GroupByQuery(**indexers)
 
         if stack:
-            return self._get_data_array(var_dim_name=stack, **indexers)
+            return self._get_data_array(measurements=measurements,
+                                        output_crs=output_crs,
+                                        resolution=resolution,
+                                        query=query)
         else:
-            return self._get_dataset(**indexers)
+            return self._get_dataset(measurements=measurements,
+                                     output_crs=output_crs,
+                                     resolution=resolution,
+                                     query=query)
 
-    def _get_dataset(self, **indexers):
-        query = Query.from_kwargs(self.index, **indexers)
+    def _get_dataset(self, measurements=None, output_crs=None, resolution=None, query=None):
         observations = self.product_observations(query=query)
         if not observations:
             return xarray.Dataset()
 
-        crs = query.output_crs or get_crs(observations)
+        crs = output_crs or get_crs(observations)
         geopolygon = query.geopolygon or get_bounds(observations, crs)
-        resolution = query.resolution or get_resolution(observations)
+        resolution = resolution or get_resolution(observations)
         geobox = GeoBox.from_geopolygon(geopolygon, resolution, crs)
 
         group_by = query.group_by
         sources = self.product_sources(observations, group_by.group_by_func, group_by.dimension, group_by.units)
 
         all_measurements = get_measurements(observations)
-        if query.measurements:
+        if measurements:
             measurements = OrderedDict((measurement, all_measurements[measurement])
-                                       for measurement in query.measurements if measurement in all_measurements)
+                                       for measurement in measurements if measurement in all_measurements)
         else:
             measurements = all_measurements
 
         dataset = self.product_data(sources, geobox, measurements.values())
         return dataset
 
-    def _get_data_array(self, var_dim_name='measurement', **indexers):
-        query = Query.from_kwargs(self.index, **indexers)
+    def _get_data_array(self, var_dim_name='measurement', measurements=None,
+                        output_crs=None, resolution=None, query=None):
         observations = self.product_observations(query=query)
         if not observations:
             return None
 
-        crs = query.output_crs or get_crs(observations)
+        crs = output_crs or get_crs(observations)
         geopolygon = query.geopolygon or get_bounds(observations, crs)
-        resolution = query.resolution or get_resolution(observations)
+        resolution = resolution or get_resolution(observations)
         geobox = GeoBox.from_geopolygon(geopolygon, resolution, crs)
 
         group_by = query.group_by
         sources = self.product_sources(observations, group_by.group_by_func, group_by.dimension, group_by.units)
 
         all_measurements = get_measurements(observations)
-        if query.measurements:
+        if measurements:
             measurements = OrderedDict((measurement, all_measurements[measurement])
-                                       for measurement in query.measurements if measurement in all_measurements)
+                                       for measurement in measurements if measurement in all_measurements)
         else:
             measurements = all_measurements
 
@@ -272,7 +272,8 @@ class Datacube(object):
         .. seealso:: :meth:`product_sources` :meth:`product_data`
         """
         if not query:
-            query = Query.from_kwargs(self.index, **kwargs)
+            query = Query(self.index, **kwargs)
+
         datasets = self.index.datasets.search_eager(**query.search_terms)
         if query.geopolygon:
             datasets = [dataset for dataset in datasets

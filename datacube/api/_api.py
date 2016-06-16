@@ -26,7 +26,7 @@ import numpy
 
 from ..model import GeoBox
 from .core import Datacube, Group, get_bounds, datatset_type_to_row
-from .query import Query
+from .query import Query, DescriptorQuery
 
 _LOG = logging.getLogger(__name__)
 
@@ -227,7 +227,7 @@ class API(object):
 
         .. seealso:: :meth:`get_descriptor`
         """
-        query = Query.from_descriptor_request(descriptor_request)
+        query = DescriptorQuery(descriptor_request)
         descriptor = {}
         datasets_by_type = self._search_datasets_by_type(**query.search_terms)
         for dataset_type, datasets in datasets_by_type.items():
@@ -333,7 +333,7 @@ class API(object):
 
         .. seealso:: :meth:`get_descriptor`
         """
-        query = Query.from_descriptor_request(data_request)
+        query = DescriptorQuery(data_request)
 
         # If the user has not provided `groups` from get_descriptor call, retrieve them from the index
         if dataset_groups is None:

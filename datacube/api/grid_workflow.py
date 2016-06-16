@@ -5,7 +5,7 @@ from collections import defaultdict
 
 from ..model import GeoBox
 from ..utils import check_intersect
-from .query import Query
+from .query import Query, GroupByQuery
 from .core import get_measurements, get_bounds
 
 _LOG = logging.getLogger(__name__)
@@ -57,7 +57,7 @@ class GridWorkflow(object):
             [(14, -42), (14, -41), (14, -40), (14, -39), (15, -42), (15, -41), (15, -40), (15, -39)]
 
         """
-        query = Query.from_kwargs(self.datacube.index, **indexers)
+        query = GroupByQuery(index=self.datacube.index, **indexers)
         observations = self.datacube.product_observations(**query.search_terms)
 
         cells = set()
@@ -70,7 +70,7 @@ class GridWorkflow(object):
                 cells.add(tile_index)
         return cells
 
-    def cell_observations(self, xy_cell=None, **indexers):
+    def cell_observations(self, xy_cell=None, geopolygon=None, **indexers):
         """
         Lists datasets, grouped by cell.
 
@@ -80,15 +80,14 @@ class GridWorkflow(object):
 
         .. seealso:: :meth:`datacube.Datacube.product_sources`
         """
-        geopolygon = None
         if xy_cell:
             assert isinstance(xy_cell, tuple)
             assert len(xy_cell) == 2
             geobox = GeoBox.from_grid_spec(self.grid_spec, xy_cell)
             geopolygon = geobox.extent
-        query = Query.from_kwargs(self.datacube.index, geopolygon=geopolygon, **indexers)
+        query = Query(self.datacube.index, geopolygon=geopolygon, **indexers)
 
-        observations = self.datacube.product_observations(geopolygon=geopolygon, **query.search_terms)
+        observations = self.datacube.index.datasets.search_eager(**query.search_terms)
         if not observations:
             return {}
 
@@ -122,7 +121,7 @@ class GridWorkflow(object):
 
         .. seealso:: :meth:`load`
         """
-        query = Query.from_kwargs(self.datacube.index, **indexers)
+        query = GroupByQuery(index=self.datacube.index, **indexers)
         gb = query.group_by
 
         cell_observations = self.cell_observations(xy_cell, **indexers)
@@ -151,7 +150,7 @@ class GridWorkflow(object):
 
         .. seealso:: :meth:`load`
         """
-        query = Query.from_kwargs(self.datacube.index, **indexers)
+        query = GroupByQuery(index=self.datacube.index, **indexers)
         gb = query.group_by
 
         cell_observations = self.cell_observations(xy_cell, **indexers)

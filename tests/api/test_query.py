@@ -22,7 +22,7 @@ from dateutil import tz
 
 from ..util import isclose
 
-from datacube.api.query import Query, _datetime_to_timestamp
+from datacube.api.query import Query, GroupByQuery, DescriptorQuery, _datetime_to_timestamp
 from datacube.model import Range
 
 
@@ -41,7 +41,7 @@ def test_convert_descriptor_query_to_search_query():
         }
     }
     descriptor_query_dimensions = descriptor_query['dimensions']
-    query = Query.from_descriptor_request(descriptor_query)
+    query = DescriptorQuery(descriptor_query)
     search_query = query.search_terms
     assert min(descriptor_query_dimensions['latitude']['range']) == search_query['lat'].begin
     assert max(descriptor_query_dimensions['latitude']['range']) == search_query['lat'].end
@@ -68,7 +68,7 @@ def test_convert_descriptor_query_to_search_query_with_slices():
             }
         }
     }
-    query = Query.from_descriptor_request(descriptor_query)
+    query = DescriptorQuery(descriptor_query)
     assert query.slices
     assert query.slices['latitude'] == slice(100, 200)
     assert query.slices['longitude'] == slice(100, 200)
@@ -84,7 +84,7 @@ def test_convert_descriptor_query_to_search_query_with_groupby():
             }
         }
     }
-    query = Query.from_descriptor_request(descriptor_query)
+    query = DescriptorQuery(descriptor_query)
     assert query.group_by
     assert callable(query.group_by.group_by_func)
     assert query.group_by.dimension == 'time'
@@ -108,7 +108,7 @@ def test_convert_descriptor_query_to_search_query_with_crs_conversion():
         'lat': Range(-36.6715565808, -35.3276413143),
         'lon': Range(148.145408153, 150.070966341),
     }
-    query = Query.from_descriptor_request(descriptor_query)
+    query = DescriptorQuery(descriptor_query)
     search_query = query.search_terms
     assert all(map(isclose, search_query['lat'], expected_result['lat']))
     assert all(map(isclose, search_query['lon'], expected_result['lon']))
@@ -129,7 +129,7 @@ def test_convert_descriptor_query_to_search_query_with_single_value():
     }
     expected_lat = -35.5160921229
     expected_lon = 148.145408153
-    query = Query.from_descriptor_request(descriptor_query)
+    query = DescriptorQuery(descriptor_query)
     search_query = query.search_terms
     assert min(*search_query['lat']) <= expected_lat <= max(*search_query['lat'])
     assert search_query['lat'].begin != search_query['lat'].end
@@ -140,11 +140,11 @@ def test_convert_descriptor_query_to_search_query_with_single_value():
 def test_descriptor_handles_bad_input():
     with pytest.raises(ValueError):
         descriptor_query = "Not a descriptor"
-        Query.from_descriptor_request(descriptor_query)
+        DescriptorQuery(descriptor_query)
 
     with pytest.raises(ValueError):
         descriptor_query = ["Not a descriptor"]
-        Query.from_descriptor_request(descriptor_query)
+        DescriptorQuery(descriptor_query)
 
     with pytest.raises(ValueError):
         descriptor_query = {
@@ -159,7 +159,7 @@ def test_descriptor_handles_bad_input():
                 }
             }
         }
-        Query.from_descriptor_request(descriptor_query)
+        DescriptorQuery(descriptor_query)
 
 
 def test_datetime_to_timestamp():
@@ -177,57 +177,50 @@ def test_query_kwargs():
                                                    u'orbit', u'instrument', u'sat_row', u'platform', 'metadata_type',
                                                    u'gsi', 'type', 'id', ]
 
-    query = Query.from_kwargs(index=mock_index, product='ls5_nbar_albers')
+    query = Query(index=mock_index, product='ls5_nbar_albers')
     assert str(query)
     assert query.type == 'ls5_nbar_albers'
     assert query.search_terms['product'] == 'ls5_nbar_albers'
 
-    query = Query.from_kwargs(index=mock_index, measurements='red')
-    assert 'red' in query.measurements
-
-    query = Query.from_kwargs(index=mock_index, measurements=['red', 'green'])
-    assert 'red' in query.measurements
-    assert 'green' in query.measurements
-
-    query = Query.from_kwargs(index=mock_index, latitude=(-35, -36), longitude=(148, 149))
+    query = Query(index=mock_index, latitude=(-35, -36), longitude=(148, 149))
     assert query.geopolygon
     assert 'lat' in query.search_terms
     assert 'lon' in query.search_terms
 
-    query = Query.from_kwargs(index=mock_index, latitude=-35, longitude=148)
+    query = Query(index=mock_index, latitude=-35, longitude=148)
     assert query.geopolygon
     assert 'lat' in query.search_terms
     assert 'lon' in query.search_terms
 
-    query = Query.from_kwargs(index=mock_index, y=(-4174726, -4180011), x=(1515184, 1523263), crs='EPSG:3577')
+    query = Query(index=mock_index, y=(-4174726, -4180011), x=(1515184, 1523263), crs='EPSG:3577')
     assert query.geopolygon
     assert 'lat' in query.search_terms
     assert 'lon' in query.search_terms
 
-    query = Query.from_kwargs(index=mock_index, y=-4174726, x=1515184, crs='EPSG:3577')
+    query = Query(index=mock_index, y=-4174726, x=1515184, crs='EPSG:3577')
     assert query.geopolygon
     assert 'lat' in query.search_terms
     assert 'lon' in query.search_terms
 
-    query = Query.from_kwargs(index=mock_index, y=-4174726, x=1515184, crs='EPSG:3577')
+    query = Query(index=mock_index, y=-4174726, x=1515184, crs='EPSG:3577')
     assert query.geopolygon
     assert 'lat' in query.search_terms
     assert 'lon' in query.search_terms
 
-    query = Query.from_kwargs(index=mock_index, time='2001')
+    query = Query(index=mock_index, time='2001')
     assert 'time' in query.search
 
-    query = Query.from_kwargs(index=mock_index, time=('2001', '2002'))
+    query = Query(index=mock_index, time=('2001', '2002'))
     assert 'time' in query.search
 
     with pytest.raises(ValueError):
-        Query.from_kwargs(index=mock_index,
-                          y=-4174726, coordinate_reference_system='WGS84',
-                          x=1515184, crs='EPSG:3577')
+        Query(index=mock_index,
+              y=-4174726, coordinate_reference_system='WGS84',
+              x=1515184, crs='EPSG:3577')
 
     with pytest.raises(LookupError):
-        Query.from_kwargs(index=mock_index, y=-4174726, x=1515184, crs='EPSG:3577', made_up_key='NotReal')
+        Query(index=mock_index, y=-4174726, x=1515184, crs='EPSG:3577', made_up_key='NotReal')
 
     with pytest.raises(LookupError):
-        query = Query.from_kwargs(index=mock_index, y=-4174726, x=1515184, crs='EPSG:3577', group_by='magic')
+        query = GroupByQuery(index=mock_index, y=-4174726, x=1515184, crs='EPSG:3577', group_by='magic')
         query.group_by
