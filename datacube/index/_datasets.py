@@ -237,7 +237,7 @@ class DatasetResource(object):
         Get dataset by id
 
         :param include_sources: get the full provenance graph?
-        :rtype datacube.model.Dataset
+        :rtype: datacube.model.Dataset
         """
         if not include_sources:
             return self._make(self._db.get_dataset(id_))
@@ -345,7 +345,7 @@ class DatasetResource(object):
         Caution – slow! This will usually not use indexes.
 
         :type metadata: dict
-        :rtype list[datacube.model.Dataset]
+        :rtype: list[datacube.model.Dataset]
         """
         return self._make_many(self._db.search_datasets_by_metadata(metadata))
 
@@ -414,6 +414,6 @@ class DatasetResource(object):
     def search_eager(self, **query):
         """
         :type query: dict[str,str|float|datacube.model.Range]
-        :rtype list[datacube.model.Dataset]
+        :rtype: list[datacube.model.Dataset]
         """
         return list(self.search(**query))
