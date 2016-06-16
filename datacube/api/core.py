@@ -439,20 +439,6 @@ class Datacube(object):
         dataarray.attrs['crs'] = dataset.crs
         return dataarray
 
-    def grid_spec_for_product(self, product):
-        """
-        Gets the grid specification for a product.
-
-         The GridSpec specifies the projection, resolution and tile size of the product.
-
-        :param product: Name of the product. E.g. `'ls5_nbar_albers'`
-        :return: :class:`datacube.model.GridSpec`
-
-        .. seealso :class:`datacube.api.GridWorkflow`
-        """
-        dataset_type = self.index.datasets.types.get_by_name(product)
-        return dataset_type.grid_spec if dataset_type else None
-
     def __str__(self):
         return "Datacube<index={!r}>".format(self.index)
 
