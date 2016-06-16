@@ -17,7 +17,7 @@ class GridWorkflow(object):
     """
     def __init__(self, index, grid_spec=None, product=None, lazy=False):
         """
-        Creates a grid workflow tool.
+        Create a grid workflow tool.
 
         Either grid_spec or product must be supplied.
 
@@ -39,20 +39,25 @@ class GridWorkflow(object):
         self.grid_spec = grid_spec
         self.lazy = lazy
 
-    def cell_observations(self, xy_cell=None, geopolygon=None, **indexers):
+    def cell_observations(self, cell_index=None, geopolygon=None, **indexers):
         """
-        Lists datasets, grouped by cell.
+        List datasets, grouped by cell.
 
-        :param xy_cell: The cell index. E.g. (14, -40)
-        :param indexers: Query to match the datasets
-        :return: A dict of dicts of :py:class:`datacube.model.Dataset`
+        :param cell_index: The cell index. E.g. (14, -40)
+        :type cell_index: tuple(int, int)
+        :param indexers: Query to match the datasets, see :py:class:`datacube.api.query.Query`
+        :return: Datsets grouped by cell index
+        :rtype: dict[tuple(int, int), list[:py:class:`datacube.model.Dataset`]]
 
-        .. seealso:: :meth:`datacube.Datacube.product_sources`
+        .. seealso::
+            :meth:`datacube.Datacube.product_observations`
+
+            :py:class:`datacube.api.query.Query`
         """
-        if xy_cell:
-            assert isinstance(xy_cell, tuple)
-            assert len(xy_cell) == 2
-            geobox = GeoBox.from_grid_spec(self.grid_spec, xy_cell)
+        if cell_index:
+            assert isinstance(cell_index, tuple)
+            assert len(cell_index) == 2
+            geobox = GeoBox.from_grid_spec(self.grid_spec, cell_index)
             geopolygon = geobox.extent
         query = Query(index=self.index, geopolygon=geopolygon, **indexers)
 
@@ -63,8 +68,8 @@ class GridWorkflow(object):
         if not observations:
             return {}
 
-        if xy_cell:
-            tile_iter = [(xy_cell, geobox)]
+        if cell_index:
+            tile_iter = [(cell_index, geobox)]
         else:
             bounds_geopolygon = get_bounds(observations, self.grid_spec.crs)
             tile_iter = self.grid_spec.tiles(bounds_geopolygon.boundingbox)
@@ -82,6 +87,19 @@ class GridWorkflow(object):
 
     @staticmethod
     def cell_sources(observations, group_by):
+        """
+        Group observations into sources
+
+        :param observations: datasets grouped by cell index, like from :meth:`datacube.GridWorkflow.cell_observations`
+        :param group_by: grouping method, one of "time", "solar_day"
+        :return: sources grouped by cell index
+        :rtype: dict[tuple(int, int), :py:class:`xarray.DataArray`]
+
+        .. seealso::
+            :meth:`load`
+
+            :meth:`datacube.Datacube.product_sources`
+        """
         stack = defaultdict(dict)
         for cell_index, observation in observations.items():
             sources = Datacube.product_sources(observation['datasets'],
@@ -96,6 +114,19 @@ class GridWorkflow(object):
 
     @staticmethod
     def tile_sources(observations, group_by):
+        """
+        Split observations into tiles and group into sources
+
+        :param observations: datasets grouped by cell index, like from :meth:`datacube.GridWorkflow.cell_observations`
+        :param group_by: grouping method, one of "time", "solar_day"
+        :return: sources grouped by cell index and time
+        :rtype: dict[tuple(int, int, numpy.datetime64), :py:class:`xarray.DataArray`]
+
+        .. seealso::
+            :meth:`load`
+
+            :meth:`datacube.Datacube.product_sources`
+        """
         stack = defaultdict(dict)
         for cell_index, observation in observations.items():
             sources = Datacube.product_sources(observation['datasets'],
@@ -109,9 +140,9 @@ class GridWorkflow(object):
                 }
         return stack
 
-    def list_cells(self, xy_cell=None, **indexers):
+    def list_cells(self, cell_index=None, **indexers):
         """
-        Lists cell indices that match the query.
+        List cell that match the query.
 
         Cells are included if they contain any datasets that match the query using the same format as
         :meth:`datacube.Datacube.load`.
@@ -122,51 +153,53 @@ class GridWorkflow(object):
                           platform=['LANDSAT_5', 'LANDSAT_7', 'LANDSAT_8'],
                           time=('2001-1-1 00:00:00', '2001-3-31 23:59:59'))
 
-        :param indexers: same as :meth:`datacube.Datacube.load`
-        :return: list of cell index tuples. E.g.::
-
-            [(14, -42), (14, -41), (14, -40), (14, -39), (15, -42), (15, -41), (15, -40), (15, -39)]
-
+        :param cell_index: The cell index. E.g. (14, -40)
+        :type cell_index: tuple(int, int)
+        :param indexers: see :py:class:`datacube.api.query.Query`
+        :return:
+        :rtype: dict[tuple(int, int), :py:class:`xarray.DataArray`]
         """
         query = GroupByQuery(index=self.index, **indexers)
-        observations = self.cell_observations(xy_cell, **indexers)
+        observations = self.cell_observations(cell_index, **indexers)
         return self.cell_sources(observations, query.group_by)
 
-    def list_tiles(self, xy_cell=None, **indexers):
+    def list_tiles(self, cell_index=None, **indexers):
         """
-        Lists tiles of data, sorted by cell.
+        List tiles of data, sorted by cell.
         ::
 
             tiles = gw.list_tiles(product_type=['nbar', 'pq'], platform='LANDSAT_5')
 
         The values can be passed to :meth:`load`
 
-        :param xy_cell: The cell index. E.g. (14, -40)
-        :param indexers: Query to match the datasets
+        :param cell_index: The cell index. E.g. (14, -40)
+        :param indexers: see :py:class:`datacube.api.query.Query`
         :return: A dict of dicts, which can be used to call :meth:`load`
+        :rtype: dict[tuple(int, int, numpy.datetime64), :py:class:`xarray.DataArray`]
 
         .. seealso:: :meth:`load`
         """
         query = GroupByQuery(index=self.index, **indexers)
-        observations = self.cell_observations(xy_cell, **indexers)
+        observations = self.cell_observations(cell_index, **indexers)
         return self.tile_sources(observations, query.group_by)
 
     @staticmethod
     def load(tile, measurements=None):
         """
-        Loads data for a cell.
+        Load data for a tile.
 
         The data to be loaded is defined by the output of :meth:`list_tiles`.
 
-        :param xy_cell: The cell to load. E.g. (-13, 40)
-        :param sources: A DataArray of the input data, as made by :meth:`list_tiles`.
-        :type sources: :py:class:`xarray.DataArray`
+        :param tile: The tile to load.
 
         :param measurements: The name or list of names of measurements to load
         :return: The requested data.
         :rtype: :py:class:`xarray.Dataset`
 
-        .. seealso:: :meth:`list_tiles`
+        .. seealso::
+            :meth:`list_tiles`
+
+            :meth:`list_cells`
         """
         sources = tile['sources']
         geobox = tile['geobox']

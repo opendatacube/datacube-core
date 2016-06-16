@@ -59,10 +59,11 @@ GridWorkflow Class
 
    GridWorkflow
    GridWorkflow.__init__
-   GridWorkflow.list_cells
    GridWorkflow.cell_observations
+   GridWorkflow.cell_sources
+   GridWorkflow.tile_sources
+   GridWorkflow.list_cells
    GridWorkflow.list_tiles
-   GridWorkflow.list_tile_stacks
    GridWorkflow.load
 
 
