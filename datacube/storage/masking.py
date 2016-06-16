@@ -92,6 +92,15 @@ def make_mask(variable, **flags):
     return variable & mask == mask_value
 
 
+def valid_data_mask(dataset):
+    """
+
+    :param dataset:
+    :return:
+    """
+    return dataset.apply(lambda data_array: data_array != data_array.nodata)
+
+
 def create_mask_value(bits_def, **flags):
     mask = 0
     value = 0
