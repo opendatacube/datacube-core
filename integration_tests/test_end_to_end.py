@@ -3,6 +3,8 @@ from __future__ import absolute_import
 import shutil
 from subprocess import call
 
+import numpy
+
 import pytest
 from click.testing import CliRunner
 from pathlib import Path
@@ -179,39 +181,35 @@ def check_open_with_dc(index):
 
 
 def check_open_with_grid_workflow(index):
-    from datacube.api.core import Datacube
-    dc = Datacube(index=index)
-
     type_name = 'ls5_nbar_albers'
-    dt = dc.index.datasets.types.get_by_name(type_name)
+    dt = index.datasets.types.get_by_name(type_name)
 
     from datacube.api.grid_workflow import GridWorkflow
-    gw = GridWorkflow(dc, dt.grid_spec)
+    gw = GridWorkflow(index, dt.grid_spec)
 
     cells = gw.list_cells(product=type_name)
     assert LBG_CELL in cells
 
+    tile = cells[LBG_CELL]
+    dataset_cell = gw.load(tile, measurements=['blue'])
+    assert dataset_cell['blue'].size
+
+    dataset_cell = gw.load(tile)
+    assert all(m in dataset_cell for m in ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
+
+    ts = numpy.datetime64('1992-03-23T23:14:13.000000000')
+    tile_key = LBG_CELL + (ts,)
     tiles = gw.list_tiles(product=type_name)
     assert tiles
-    assert tiles[LBG_CELL]
+    assert tile_key in tiles
 
-    ts, tile = tiles[LBG_CELL].popitem()
-    dataset_cell = gw.load(LBG_CELL, tile, measurements=['blue'])
+    tile = tiles[tile_key]
+    dataset_cell = gw.load(tile, measurements=['blue'])
     assert dataset_cell['blue'].size
 
-    dataset_cell = gw.load(LBG_CELL, tile)
+    dataset_cell = gw.load(tile)
     assert all(m in dataset_cell for m in ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
 
-    tiles = gw.list_tile_stacks(product=type_name)
-    assert tiles
-    assert tiles[LBG_CELL]
-
-    tile = tiles[LBG_CELL]
-    dataset_cell = gw.load(LBG_CELL, tile, measurements=['blue'])
-    assert dataset_cell['blue'].size
-
-    dataset_cell = gw.load(LBG_CELL, tile)
-    assert all(m in dataset_cell for m in ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
 
 
 def check_analytics_list_searchables(index):

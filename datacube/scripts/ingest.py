@@ -89,34 +89,26 @@ def write_product(data, sources, output_prod_info, global_attrs, var_params, pat
     return nudatasets
 
 
-def find_diff(input_type, output_type, bbox, datacube):
+def find_diff(input_type, output_type, bbox, index):
     from datacube.api.grid_workflow import GridWorkflow
-    workflow = GridWorkflow(datacube, output_type.grid_spec)
+    workflow = GridWorkflow(index, output_type.grid_spec)
 
-    tiles_in = workflow.cell_observations(product=input_type.name)
-    tiles_out = workflow.cell_observations(product=output_type.name)
+    tiles_in = workflow.list_tiles(product=input_type.name)
+    tiles_out = workflow.list_tiles(product=output_type.name)
 
-    tasks = []
-    for tile_index in set(tiles_in.keys()) | set(tiles_out.keys()):
-        sources_in = datacube.product_sources(tiles_in.get(tile_index, []),
-                                              lambda ds: ds.center_time,
-                                              'time',
-                                              'seconds since 1970-01-01 00:00:00')
+    def update_dict(d, **kwargs):
+        result = d.copy()
+        result.update(kwargs)
+        return result
 
-        sources_out = datacube.product_sources(tiles_out.get(tile_index, []),
-                                               lambda ds: ds.center_time,
-                                               'time',
-                                               'seconds since 1970-01-01 00:00:00')
-
-        diff = numpy.setdiff1d(sources_in.time.values, sources_out.time.values)
-        tasks += [(tile_index, sources_in.sel(time=[v])) for v in diff]
+    tasks = [update_dict(tile, index=key) for key, tile in tiles_in.items() if key not in tiles_out]
     return tasks
 
 
 def do_work(tasks, work_func, index, executor):
     results = []
-    for tile_index, groups in tasks:
-        results.append(executor.submit(work_func, tile_index, groups))
+    for task in tasks:
+        results.append(executor.submit(work_func, **task))
 
     for result in results:
         # TODO: try/catch
@@ -192,24 +184,20 @@ def ingest_cmd(index, config, dry_run, executor):
     _LOG.info('Created DatasetType %s', output_type.name)
     output_type = index.datasets.types.add(output_type)
 
-    datacube = Datacube(index=index)
-
-    grid_spec = output_type.grid_spec
     namemap = get_namemap(config)
     measurements = get_measurements(source_type, config)
     variable_params = get_variable_params(config)
     file_path_template = str(Path(config['location'], config['file_path_template']))
 
     bbox = BoundingBox(**config['ingestion_bounds'])
-    tasks = find_diff(source_type, output_type, bbox, datacube)
+    tasks = find_diff(source_type, output_type, bbox, index)
 
-    def ingest_work(tile_index, sources):
-        geobox = GeoBox.from_grid_spec(grid_spec, tile_index)
+    def ingest_work(index, sources, geobox):
         data = Datacube.product_data(sources, geobox, measurements)
 
         nudata = data.rename(namemap)
 
-        file_path = file_path_template.format(tile_index=tile_index,
+        file_path = file_path_template.format(tile_index=index,
                                               start_time=to_datetime(sources.time.values[0]).strftime('%Y%m%d%H%M%S%f'),
                                               end_time=to_datetime(sources.time.values[-1]).strftime('%Y%m%d%H%M%S%f'))
         # TODO: algorithm params
