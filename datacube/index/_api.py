@@ -46,8 +46,8 @@ class Index(object):
         self._db = db
 
         self.metadata_types = MetadataTypeResource(db)
-        dataset_types = DatasetTypeResource(db, self.metadata_types)
-        self.datasets = DatasetResource(db, dataset_types)
+        self.products = DatasetTypeResource(db, self.metadata_types)
+        self.datasets = DatasetResource(db, self.products)
 
     def init_db(self, with_default_types=True, with_permissions=True):
         is_new = self._db.init(with_permissions=with_permissions)
