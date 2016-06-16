@@ -47,22 +47,11 @@ class Query(object):
         :param index: An optional `index` object, if checking of field names is desired.
         :param kwargs:
          * `product` Name of the dataset type
-         * `measurements` List of measurements
          * `crs` Spatial coordinate reference system to interpret the spatial dimensions
         :return: :class:`Query`
         """
         self.product = product
-
-        spatial_dims = {dim: v for dim, v in kwargs.items() if dim in SPATIAL_KEYS}
-        crs = {v for k, v in kwargs.items() if k in CRS_KEYS}
-        if len(crs) == 1:
-            spatial_dims['crs'] = crs.pop()
-        elif len(crs) > 1:
-            raise ValueError('Spatial dimensions must be in the same coordinate reference system: {}'.format(crs))
-
-        if geopolygon and spatial_dims:
-            raise ValueError('Cannot specify "geopolygon" and one of %s at the same time' % (SPATIAL_KEYS+CRS_KEYS))
-        self.geopolygon = geopolygon or _range_to_geopolygon(**spatial_dims)
+        self.geopolygon = query_geopolygon(geopolygon=geopolygon, **kwargs)
 
         remaining_keys = set(kwargs.keys()) - set(SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
         if index:
@@ -105,30 +94,7 @@ class Query(object):
                    geopolygon=self.geopolygon)
 
 
-class GroupByQuery(Query):
-    def __init__(self, group_by='time', **kwargs):
-        super(GroupByQuery, self).__init__(**kwargs)
-
-        time_grouper = GroupBy(dimension='time',
-                               group_by_func=lambda ds: ds.center_time,
-                               units='seconds since 1970-01-01 00:00:00')
-
-        solar_day_grouper = GroupBy(dimension='time',
-                                    group_by_func=solar_day,
-                                    units='seconds since 1970-01-01 00:00:00')
-
-        group_by_map = {
-            'time': time_grouper,
-            'solar_day': solar_day_grouper
-        }
-
-        try:
-            self.group_by = group_by_map[group_by]
-        except KeyError:
-            raise LookupError('No group by function for', group_by)
-
-
-class DescriptorQuery(GroupByQuery):
+class DescriptorQuery(Query):
     def __init__(self, descriptor_request=None):
         super(DescriptorQuery, self).__init__()
 
@@ -148,6 +114,7 @@ class DescriptorQuery(GroupByQuery):
         if 'variables' in descriptor_request:
             self.measurements = descriptor_request['variables']
 
+        group_by_name = 'time'
         if 'dimensions' in descriptor_request:
             dims = descriptor_request['dimensions']
 
@@ -166,7 +133,43 @@ class DescriptorQuery(GroupByQuery):
             self.slices = {dim: slice(*v['array_range']) for dim, v in dims.items() if 'array_range' in v}
             groups = [v['group_by'] for dim, v in dims.items() if 'group_by' in v]
             if groups:
-                self.group_by_name = groups[0]
+                group_by_name = groups[0]
+        self.group_by = query_group_by(group_by_name)
+
+
+def query_geopolygon(geopolygon=None, **kwargs):
+    spatial_dims = {dim: v for dim, v in kwargs.items() if dim in SPATIAL_KEYS}
+    crs = {v for k, v in kwargs.items() if k in CRS_KEYS}
+    if len(crs) == 1:
+        spatial_dims['crs'] = crs.pop()
+    elif len(crs) > 1:
+        raise ValueError('Spatial dimensions must be in the same coordinate reference system: {}'.format(crs))
+
+    if geopolygon and spatial_dims:
+        raise ValueError('Cannot specify "geopolygon" and one of %s at the same time' % (SPATIAL_KEYS + CRS_KEYS))
+
+    return geopolygon or _range_to_geopolygon(**spatial_dims)
+
+
+def query_group_by(group_by='time', **kwargs):
+    time_grouper = GroupBy(dimension='time',
+                           group_by_func=lambda ds: ds.center_time,
+                           units='seconds since 1970-01-01 00:00:00')
+
+    solar_day_grouper = GroupBy(dimension='time',
+                                group_by_func=solar_day,
+                                units='seconds since 1970-01-01 00:00:00')
+
+    group_by_map = {
+        None: time_grouper,
+        'time': time_grouper,
+        'solar_day': solar_day_grouper
+    }
+
+    try:
+        return group_by_map[group_by]
+    except KeyError:
+        raise LookupError('No group by function for', group_by)
 
 
 def _range_to_geopolygon(**kwargs):
@@ -263,13 +266,6 @@ def _time_to_search_dims(time_range):
         single_query_time = _to_datetime(time_range)
         end_time = single_query_time + datetime.timedelta(milliseconds=1)
         return Range(single_query_time, end_time)
-
-
-def _listify(value):
-    if isinstance(value, string_types) or not isinstance(value, collections.Sequence):
-        return [value]
-    else:
-        return list(value)
 
 
 def _convert_to_solar_time(utc, longitude):

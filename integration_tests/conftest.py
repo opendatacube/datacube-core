@@ -20,7 +20,6 @@ try:
 except ImportError:
     from yaml import SafeLoader
 
-from datacube import ui
 from datacube.api import API
 from datacube.config import LocalConfig
 from datacube.index._api import Index, _DEFAULT_METADATA_TYPES_PATH

@@ -18,7 +18,7 @@ from ..index import index_connect
 from ..model import GeoPolygon, GeoBox
 from ..storage.storage import DatasetSource, fuse_sources, RESAMPLING
 from ..utils import check_intersect, data_resolution_and_offset
-from .query import Query, GroupByQuery
+from .query import Query, query_group_by, query_geopolygon
 
 _LOG = logging.getLogger(__name__)
 
@@ -132,7 +132,7 @@ class Datacube(object):
                     measurements.append(row)
         return measurements
 
-    def load(self, product=None, measurements=None, output_crs=None, resolution=None, stack=False, **indexers):
+    def load(self, product=None, measurements=None, output_crs=None, resolution=None, stack=False, **query):
         """
         Loads data as an ``xarray`` object.
 
@@ -169,7 +169,7 @@ class Datacube(object):
                 If a list is specified, the measurements will be returned in the order requested.
                 By default all available measurements are included.
         :type measurements: list(str) or str, optional
-        :param indexers: Search parameters and dimension ranges as described above. E.g.::
+        :param query: Search parameters and dimension ranges as described above. E.g.::
 
                 product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5)
 
@@ -195,31 +195,30 @@ class Datacube(object):
         :rtype: :class:`xarray.Dataset` or :class:`xarray.DataArray`
         """
         if product is not None:
-            indexers['product'] = product
-        query = GroupByQuery(**indexers)
+            query['product'] = product
 
         if stack:
             return self._get_data_array(measurements=measurements,
                                         output_crs=output_crs,
                                         resolution=resolution,
-                                        query=query)
+                                        **query)
         else:
             return self._get_dataset(measurements=measurements,
                                      output_crs=output_crs,
                                      resolution=resolution,
-                                     query=query)
+                                     **query)
 
-    def _get_dataset(self, measurements=None, output_crs=None, resolution=None, query=None):
-        observations = self.product_observations(query=query)
+    def _get_dataset(self, measurements=None, output_crs=None, resolution=None, **query):
+        observations = self.product_observations(**query)
         if not observations:
             return xarray.Dataset()
 
         crs = output_crs or get_crs(observations)
-        geopolygon = query.geopolygon or get_bounds(observations, crs)
+        geopolygon = query_geopolygon(**query) or get_bounds(observations, crs)
         resolution = resolution or get_resolution(observations)
         geobox = GeoBox.from_geopolygon(geopolygon, resolution, crs)
 
-        group_by = query.group_by
+        group_by = query_group_by(**query)
         sources = self.product_sources(observations, group_by.group_by_func, group_by.dimension, group_by.units)
 
         all_measurements = get_measurements(observations)
@@ -233,17 +232,17 @@ class Datacube(object):
         return dataset
 
     def _get_data_array(self, var_dim_name='measurement', measurements=None,
-                        output_crs=None, resolution=None, query=None):
-        observations = self.product_observations(query=query)
+                        output_crs=None, resolution=None, **query):
+        observations = self.product_observations(**query)
         if not observations:
             return None
 
         crs = output_crs or get_crs(observations)
-        geopolygon = query.geopolygon or get_bounds(observations, crs)
+        geopolygon = query_geopolygon(**query) or get_bounds(observations, crs)
         resolution = resolution or get_resolution(observations)
         geobox = GeoBox.from_geopolygon(geopolygon, resolution, crs)
 
-        group_by = query.group_by
+        group_by = query_group_by(**query)
         sources = self.product_sources(observations, group_by.group_by_func, group_by.dimension, group_by.units)
 
         all_measurements = get_measurements(observations)
@@ -259,7 +258,7 @@ class Datacube(object):
 
         return _stack_vars(data_dict, var_dim_name)
 
-    def product_observations(self, query=None, **kwargs):
+    def product_observations(self, **kwargs):
         """
         Finds datasets for a product.
 
@@ -271,8 +270,7 @@ class Datacube(object):
 
         .. seealso:: :meth:`product_sources` :meth:`product_data`
         """
-        if not query:
-            query = Query(self.index, **kwargs)
+        query = Query(self.index, **kwargs)
 
         datasets = self.index.datasets.search_eager(**query.search_terms)
         if query.geopolygon:

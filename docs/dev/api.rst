@@ -58,12 +58,28 @@ GridWorkflow Class
 
    GridWorkflow
    GridWorkflow.__init__
-   GridWorkflow.cell_observations
-   GridWorkflow.cell_sources
-   GridWorkflow.tile_sources
+
+
+Higher Level User Functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generate/
+
    GridWorkflow.list_cells
    GridWorkflow.list_tiles
    GridWorkflow.load
+
+
+Low-Level Internal Functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generate/
+
+   GridWorkflow.cell_observations
+   GridWorkflow.cell_sources
+   GridWorkflow.tile_sources
 
 
 

@@ -5,7 +5,7 @@ from collections import defaultdict
 
 from ..model import GeoBox
 from ..utils import check_intersect
-from .query import Query, GroupByQuery
+from .query import Query, query_group_by
 from .core import Datacube, get_measurements, get_bounds
 
 _LOG = logging.getLogger(__name__)
@@ -140,7 +140,7 @@ class GridWorkflow(object):
                 }
         return stack
 
-    def list_cells(self, cell_index=None, **indexers):
+    def list_cells(self, cell_index=None, **query):
         """
         List cell that match the query.
 
@@ -155,15 +155,13 @@ class GridWorkflow(object):
 
         :param cell_index: The cell index. E.g. (14, -40)
         :type cell_index: tuple(int, int)
-        :param indexers: see :py:class:`datacube.api.query.Query`
-        :return:
-        :rtype: dict[tuple(int, int), :py:class:`xarray.DataArray`]
+        :param query: see :py:class:`datacube.api.query.Query`
+        :rtype: dict[tuple(int, int), Cell]
         """
-        query = GroupByQuery(index=self.index, **indexers)
-        observations = self.cell_observations(cell_index, **indexers)
-        return self.cell_sources(observations, query.group_by)
+        observations = self.cell_observations(cell_index, **query)
+        return self.cell_sources(observations, query_group_by(**query))
 
-    def list_tiles(self, cell_index=None, **indexers):
+    def list_tiles(self, cell_index=None, **query):
         """
         List tiles of data, sorted by cell.
         ::
@@ -173,20 +171,18 @@ class GridWorkflow(object):
         The values can be passed to :meth:`load`
 
         :param cell_index: The cell index. E.g. (14, -40)
-        :param indexers: see :py:class:`datacube.api.query.Query`
-        :return: A dict of dicts, which can be used to call :meth:`load`
-        :rtype: dict[tuple(int, int, numpy.datetime64), :py:class:`xarray.DataArray`]
+        :param query: see :py:class:`datacube.api.query.Query`
+        :rtype: dict[tuple(int, int, numpy.datetime64), Tile]
 
         .. seealso:: :meth:`load`
         """
-        query = GroupByQuery(index=self.index, **indexers)
-        observations = self.cell_observations(cell_index, **indexers)
-        return self.tile_sources(observations, query.group_by)
+        observations = self.cell_observations(cell_index, **query)
+        return self.tile_sources(observations, query_group_by(**query))
 
     @staticmethod
     def load(tile, measurements=None):
         """
-        Load data for a tile.
+        Load data for a cell/tile.
 
         The data to be loaded is defined by the output of :meth:`list_tiles`.
 

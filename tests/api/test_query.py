@@ -22,7 +22,7 @@ from dateutil import tz
 
 from ..util import isclose
 
-from datacube.api.query import Query, GroupByQuery, DescriptorQuery, _datetime_to_timestamp
+from datacube.api.query import Query, DescriptorQuery, _datetime_to_timestamp, query_group_by
 from datacube.model import Range
 
 
@@ -222,5 +222,4 @@ def test_query_kwargs():
         Query(index=mock_index, y=-4174726, x=1515184, crs='EPSG:3577', made_up_key='NotReal')
 
     with pytest.raises(LookupError):
-        query = GroupByQuery(index=mock_index, y=-4174726, x=1515184, crs='EPSG:3577', group_by='magic')
-        query.group_by
+        query_group_by(group_by='magic')
