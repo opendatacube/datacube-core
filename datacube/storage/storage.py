@@ -33,14 +33,16 @@ RESAMPLING_METHODS = {
     'average': RESAMPLING.average,
 }
 
-GDAL_NETCDF_TIME = ('NETCDF_DIM_' if rasterio.__gdal_version__ >= '1.10.0' else 'NETCDF_DIMENSION_') + 'time'
+GDAL_NETCDF_TIME = ('NETCDF_DIM_'
+                    if str(rasterio.__gdal_version__) >= '1.10.0' else
+                    'NETCDF_DIMENSION_') + 'time'
 
 
 def _rasterio_resampling_method(measurement_descriptor):
     return RESAMPLING_METHODS[measurement_descriptor['resampling_method'].lower()]
 
 
-if rasterio.__version__ >= '0.36.0':
+if str(rasterio.__version__) >= '0.36.0':
     def _rasterio_crs_wkt(src):
         return str(src.crs.wkt)
 else:

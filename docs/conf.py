@@ -310,35 +310,38 @@ texinfo_documents = [
 #texinfo_no_detailmenu = False
 
 
-if on_rtd:
-    # Mock modules that need native libraries.
-    # See: http://read-the-docs.readthedocs.org/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
-    NATIVE_MODULES = [
-        'rasterio',
-        'netcdf4',
-        'pypeg2',
-        'osgeo',
-        'rasterio.warp',
-        'cachetools',
-        'rasterio.coords',
-        'netCDF4',
-        'netCDF4.Dataset',
-        'jsonschema',
-        'xarray',
-        'dask',
-        'dask.array',
-        'pandas',
-        'rasterio.crs'
 
-    ]
+# Mock modules that need native libraries.
+# See: http://read-the-docs.readthedocs.org/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
+NATIVE_MODULES = [
+    'rasterio',
+    'netcdf4',
+    'pypeg2',
+    'osgeo',
+    'rasterio.warp',
+    'cachetools',
+    'numexpr',
+    'rasterio.coords',
+    'netCDF4',
+    'netCDF4.Dataset',
+    'jsonschema',
+    'xarray',
+    'dask',
+    'dask.array',
+    'pandas',
+    'rasterio.crs',
+    'gdal', 'osgeo.gdal',
+    'osr',
 
-    from mock import Mock as MagicMock
+]
 
-
-    class Mock(MagicMock):
-        @classmethod
-        def __getattr__(cls, name):
-            return Mock()
+from mock import Mock as MagicMock
 
 
-    sys.modules.update((mod_name, Mock()) for mod_name in NATIVE_MODULES)
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+        return Mock()
+
+
+sys.modules.update((mod_name, Mock()) for mod_name in NATIVE_MODULES)
