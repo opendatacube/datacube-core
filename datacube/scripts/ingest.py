@@ -176,13 +176,13 @@ def get_namemap(config):
 @ui.pass_index(app_name='agdc-ingest')
 def ingest_cmd(index, config, dry_run, executor):
     _, config = next(read_documents(Path(config)))
-    source_type = index.datasets.types.get_by_name(config['source_type'])
+    source_type = index.products.get_by_name(config['source_type'])
     if not source_type:
         _LOG.error("Source DatasetType %s does not exist", config['source_type'])
 
     output_type = morph_dataset_type(source_type, config)
     _LOG.info('Created DatasetType %s', output_type.name)
-    output_type = index.datasets.types.add(output_type)
+    output_type = index.products.add(output_type)
 
     namemap = get_namemap(config)
     measurements = get_measurements(source_type, config)

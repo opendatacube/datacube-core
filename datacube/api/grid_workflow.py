@@ -34,8 +34,8 @@ class GridWorkflow(object):
             raise NotImplementedError('Lazy loading not fully implemented yet.')
         self.index = index
         if grid_spec is None:
-            dataset_type = self.index.types.get_by_name(product)
-            grid_spec = dataset_type and dataset_type.grid_spec
+            product = self.index.products.get_by_name(product)
+            grid_spec = product and product.grid_spec
         self.grid_spec = grid_spec
         self.lazy = lazy
 

@@ -92,7 +92,7 @@ class Datacube(object):
         :param with_pandas: return the list as a Pandas DataFrame, otherwise as a list of dict.
         :rtype: pandas.DataFrame or list(dict)
         """
-        rows = [datatset_type_to_row(dataset_type) for dataset_type in self.index.datasets.types.get_all()]
+        rows = [datatset_type_to_row(dataset_type) for dataset_type in self.index.products.get_all()]
         if not with_pandas:
             return rows
 
@@ -118,7 +118,7 @@ class Datacube(object):
 
     def _list_measurements(self):
         measurements = []
-        dts = self.index.datasets.types.get_all()
+        dts = self.index.products.get_all()
         for dt in dts:
             if dt.measurements:
                 for name, measurement in dt.measurements.items():

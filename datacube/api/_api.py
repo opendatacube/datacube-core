@@ -416,7 +416,7 @@ class API(object):
 
         :return: list of dictionaries describing the products
         """
-        return [datatset_type_to_row(dataset_type) for dataset_type in self.datacube.index.datasets.types.get_all()]
+        return [datatset_type_to_row(dataset_type) for dataset_type in self.datacube.index.products.get_all()]
 
     def list_variables(self):
         """

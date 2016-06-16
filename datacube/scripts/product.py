@@ -30,8 +30,8 @@ def add_dataset_types(index, files):
     """
     for descriptor_path, parsed_doc in read_documents(*(Path(f) for f in files)):
         try:
-            type_ = index.datasets.types.from_doc(parsed_doc)
-            index.datasets.types.add(type_)
+            type_ = index.products.from_doc(parsed_doc)
+            index.products.add(type_)
             echo('Added "%s"' % type_.name)
         except InvalidDocException as e:
             _LOG.exception(e)

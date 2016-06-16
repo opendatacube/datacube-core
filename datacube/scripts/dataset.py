@@ -75,7 +75,7 @@ def load_rules_from_file(filename, index):
     # TODO: verify schema
 
     for rule in rules:
-        type_ = index.datasets.types.get_by_name(rule['type'])
+        type_ = index.products.get_by_name(rule['type'])
         if not type_:
             _LOG.error('DatasetType %s does not exists', rule['type'])
             return
@@ -91,13 +91,13 @@ def load_rules_from_types(index, type_names=None):
     types = []
     if type_names:
         for name in type_names:
-            type_ = index.datasets.types.get_by_name(name)
+            type_ = index.products.get_by_name(name)
             if not type_:
                 _LOG.error('DatasetType %s does not exists', name)
                 return
             types += type_
     else:
-        types += index.datasets.types.get_all()
+        types += index.products.get_all()
 
     rules = [{'type': type_, 'metadata': type_.metadata} for type_ in types]
     return rules
