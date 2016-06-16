@@ -51,7 +51,7 @@ class Query(object):
          * `crs` Spatial coordinate reference system to interpret the spatial dimensions
         :return: :class:`Query`
         """
-        self.type = product
+        self.product = product
 
         spatial_dims = {dim: v for dim, v in kwargs.items() if dim in SPATIAL_KEYS}
         crs = {v for k, v in kwargs.items() if k in CRS_KEYS}
@@ -88,8 +88,8 @@ class Query(object):
                 kwargs['lon'] = Range(geo_bb.left, geo_bb.right)
             else:
                 kwargs['lon'] = Range(geo_bb.left - FLOAT_TOLERANCE, geo_bb.right + FLOAT_TOLERANCE)
-        if self.type:
-            kwargs['product'] = self.type
+        if self.product:
+            kwargs['product'] = self.product
         return kwargs
 
     def __repr__(self):
@@ -100,7 +100,7 @@ class Query(object):
         type = {type}
         search = {search}
         geopolygon = {geopolygon}
-        """.format(type=self.type,
+        """.format(type=self.product,
                    search=self.search,
                    geopolygon=self.geopolygon)
 
@@ -138,7 +138,7 @@ class DescriptorQuery(GroupByQuery):
             raise ValueError('Could not understand descriptor {}'.format(descriptor_request))
 
         if 'storage_type' in descriptor_request:
-            self.type = descriptor_request['storage_type']
+            self.product = descriptor_request['storage_type']
         defined_keys = ('dimensions', 'variables', 'product', 'storage_type')
         self.search = {key: value for key, value in descriptor_request.items() if key not in defined_keys}
 

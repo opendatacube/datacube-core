@@ -179,7 +179,7 @@ def test_query_kwargs():
 
     query = Query(index=mock_index, product='ls5_nbar_albers')
     assert str(query)
-    assert query.type == 'ls5_nbar_albers'
+    assert query.product == 'ls5_nbar_albers'
     assert query.search_terms['product'] == 'ls5_nbar_albers'
 
     query = Query(index=mock_index, latitude=(-35, -36), longitude=(148, 149))
