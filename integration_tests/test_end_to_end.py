@@ -211,7 +211,6 @@ def check_open_with_grid_workflow(index):
     assert all(m in dataset_cell for m in ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
 
 
-
 def check_analytics_list_searchables(index):
     from datacube.analytics.analytics_engine import AnalyticsEngine
 
