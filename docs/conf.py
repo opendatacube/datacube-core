@@ -332,8 +332,10 @@ NATIVE_MODULES = [
     'rasterio.crs',
     'gdal', 'osgeo.gdal',
     'osr',
+    'numpy',
     'matplotlib',
-    'matplotlib.pyplot'
+    'matplotlib.pyplot',
+    'scipy', 'scipy.io'
 
 ]
 
