@@ -26,7 +26,7 @@ import numpy
 
 from ..model import GeoBox
 from .core import Datacube, Group, get_bounds, datatset_type_to_row
-from .query import Query, DescriptorQuery
+from .query import DescriptorQuery
 
 _LOG = logging.getLogger(__name__)
 

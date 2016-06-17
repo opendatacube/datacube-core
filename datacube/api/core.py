@@ -196,21 +196,9 @@ class Datacube(object):
         if product is not None:
             query['product'] = product
 
-        if stack:
-            return self._get_data_array(measurements=measurements,
-                                        output_crs=output_crs,
-                                        resolution=resolution,
-                                        **query)
-        else:
-            return self._get_dataset(measurements=measurements,
-                                     output_crs=output_crs,
-                                     resolution=resolution,
-                                     **query)
-
-    def _get_dataset(self, measurements=None, output_crs=None, resolution=None, **query):
         observations = self.product_observations(**query)
         if not observations:
-            return xarray.Dataset()
+            return None if stack else xarray.Dataset()
 
         crs = output_crs or get_crs(observations)
         geopolygon = query_geopolygon(**query) or get_bounds(observations, crs)
@@ -227,32 +215,15 @@ class Datacube(object):
         else:
             measurements = all_measurements
 
-        dataset = self.product_data(sources, geobox, measurements.values())
-        return dataset
-
-    def _get_data_array(self, var_dim_name='measurement', measurements=None,
-                        output_crs=None, resolution=None, **query):
-        observations = self.product_observations(**query)
-        if not observations:
-            return None
-
-        crs = output_crs or get_crs(observations)
-        geopolygon = query_geopolygon(**query) or get_bounds(observations, crs)
-        resolution = resolution or get_resolution(observations)
-        geobox = GeoBox.from_geopolygon(geopolygon, resolution, crs)
-
-        group_by = query_group_by(**query)
-        sources = self.product_sources(observations, group_by.group_by_func, group_by.dimension, group_by.units)
-
-        all_measurements = get_measurements(observations)
-        if measurements:
-            measurements = OrderedDict((measurement, all_measurements[measurement])
-                                       for measurement in measurements if measurement in all_measurements)
+        if not stack:
+            return self.product_data(sources, geobox, measurements.values())
         else:
-            measurements = all_measurements
+            return self._get_data_array(sources, geobox, measurements.values())
 
+    def _get_data_array(self, sources, geobox, measurements, var_dim_name='measurement'):
         data_dict = OrderedDict()
-        for name, measurement in measurements.items():
+        for measurement in measurements:
+            name = measurement['name']
             data_dict[name] = self.measurement_data(sources, geobox, measurement)
 
         return _stack_vars(data_dict, var_dim_name)
