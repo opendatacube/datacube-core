@@ -61,18 +61,22 @@ class Datacube(object):
         """
         Creates the interface for the query and storage access.
 
-        If no index is given, the default configuration is used for database connection, etc.
+        If no index or config is given, the default configuration is used for database connection.
 
         :param index: The database index to use.
-        :type index: from :py:class:`datacube.index.index_connect` or None
+
+            Can be created by :py:class:`datacube.index.index_connect`.
+        :type index: :py:class:`datacube.index._api.Index`
+
         :param config: A config object or a path to a config file that defines the connection.
+
             If an index is supplied, config is ignored.
         :type config: str or :class:`datacube.config.LocalConfig`
         :param app: A short, alphanumeric name to identify this application.
 
             The application name is used to track down problems with database queries, so it is strongly
-            advised that be used.  If an index is supplied, application name is ignored.
-        :type app: string, required if no index is given
+            advised that be used.  Required if an index is not supplied, otherwise ignored.
+        :type app: str
         :return: Datacube object
         """
         if index is None:
@@ -137,7 +141,8 @@ class Datacube(object):
         """
         Loads data as an ``xarray`` object.
 
-        See http://xarray.pydata.org/en/stable/api.html for usage of the ``Dataset`` and ``DataArray`` objects.
+        See the `xarray documentation <http://xarray.pydata.org/en/stable/data-structures.html>`_ for usage of the
+        :class:`xarray.Dataset` and :class:`xarray.DataArray` objects.
 
         **Search fields**
             Search product fields. E.g.
@@ -361,7 +366,7 @@ class Datacube(object):
         :param fuse_func: function to merge successive arrays as an output
         :rtype: :py:class:`xarray.DataArray`
 
-        ..seealso:: :meth:`product_data`
+        .. seealso:: :meth:`product_data`
         """
         def data_func(measurement):
             return _make_dask_array(sources, geobox, measurement, fuse_func, grid_chunks)
@@ -380,7 +385,7 @@ class Datacube(object):
         :param fuse_func: function to merge successive arrays as an output
         :rtype: :py:class:`xarray.DataArray`
 
-        ..seealso:: :meth:`product_data`
+        .. seealso:: :meth:`product_data`
         """
         dataset = Datacube.product_data(sources, geobox, [measurement], fuse_func=fuse_func)
         dataarray = dataset[measurement['name']]
@@ -402,7 +407,7 @@ class Datacube(object):
         :param fuse_func: function to merge successive arrays as an output
         :rtype: :py:class:`xarray.DataArray`
 
-        ..seealso:: :meth:`product_data`
+        .. seealso:: :meth:`product_data`
         """
         dataset = Datacube.product_data_lazy(sources, geobox, [measurement], fuse_func, grid_chunks)
         dataarray = dataset[measurement['name']]

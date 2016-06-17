@@ -24,7 +24,7 @@ class GridWorkflow(object):
         :param index: The database index to use.
         :type index: from :py:class:`datacube.index.index_connect` or None
         :param grid_spec: The grid projection and resolution
-        :type grid_spec: :class:`model.GridSpec`
+        :type grid_spec: :class:`datacube.model.GridSpec`
         :param product: The name of an existing product, if no grid_spec is supplied.
         :type product: str
         :param lazy: If the data should be wrapped in a `dask` array.
