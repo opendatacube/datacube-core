@@ -175,7 +175,7 @@ class GridWorkflow(object):
         return self.tile_sources(observations, query_group_by(**query))
 
     @staticmethod
-    def load(tile, measurements=None, lazy=False):
+    def load(tile, measurements=None, use_dask=False):
         """
         Load data for a cell/tile.
 
@@ -188,8 +188,8 @@ class GridWorkflow(object):
 
         :param measurements: The name or list of names of measurements to load
 
-        :param lazy: If the data should be loaded as needed, using :py:class:`dask.array.Array`.
-        :type lazy: bool
+        :param use_dask: If the data should be loaded as needed, using :py:class:`dask.array.Array`.
+        :type use_dask: bool
 
         :return: The requested data.
         :rtype: :py:class:`xarray.Dataset`
@@ -211,7 +211,7 @@ class GridWorkflow(object):
         else:
             measurements = [measurement for measurement in all_measurements.values()]
 
-        if lazy:
+        if use_dask:
             dataset = Datacube.product_data_lazy(sources, geobox, measurements)
         else:
             dataset = Datacube.product_data(sources, geobox, measurements)
