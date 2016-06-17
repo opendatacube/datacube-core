@@ -5,16 +5,16 @@ Database and Indexing
 
 Public Method
 -------------
+
 .. automodule:: datacube.index
-    :members:
+    :members: index_connect
     :show-inheritance:
 
 Private Indexing Modules
 ------------------------
 
 .. automodule:: datacube.index._api
-   :members:
-   :show-inheritance:
+   :members: Index
 
 
 .. automodule:: datacube.index._datasets

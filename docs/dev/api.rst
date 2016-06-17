@@ -12,13 +12,10 @@ http://nbviewer.jupyter.org/github/data-cube/agdc-v2/blob/develop/examples/noteb
 Datacube Class
 --------------
 
-.. autoclass:: Datacube
-
 .. autosummary::
    :toctree: generate/
 
    Datacube
-   Datacube.__init__
 
 
 Higher Level User Functions
@@ -51,13 +48,11 @@ GridWorkflow Class
 ------------------
 
 .. currentmodule:: datacube.api
-.. autoclass:: GridWorkflow
 
 .. autosummary::
    :toctree: generate/
 
    GridWorkflow
-   GridWorkflow.__init__
 
 
 Higher Level User Functions
@@ -87,7 +82,6 @@ API for Analytics and Execution Engine
 --------------------------------------
 
 .. currentmodule:: datacube.api
-.. autoclass:: API
 
 .. autosummary::
    :toctree: generate/

@@ -35,11 +35,6 @@ See :doc:`api` for more details
 Datacube Storage
 ----------------
 
- .. automodule:: datacube.storage
+.. automodule:: datacube.storage
    :members:
 
-Datacube Index
---------------
-
- .. automodule:: datacube.index
-   :members:

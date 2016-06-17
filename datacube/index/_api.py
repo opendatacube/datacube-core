@@ -17,16 +17,20 @@ _LOG = logging.getLogger(__name__)
 _DEFAULT_METADATA_TYPES_PATH = Path(__file__).parent.joinpath('default-metadata-types.yaml')
 
 
-def connect(local_config=LocalConfig.find(), application_name=None, validate_connection=True):
+def connect(local_config=None, application_name=None, validate_connection=True):
     """
     Connect to the index. Default Postgres implementation.
 
     :param application_name: A short, alphanumeric name to identify this application.
     :param local_config: Config object to use.
     :type local_config: :py:class:`datacube.config.LocalConfig`, optional
+    :param validate_connection: Validate database schema and schema version is correct
     :rtype: Index
-    :raises: datacube.index.postgres._api.EnvironmentError
+    :raises datacube.index.postgres._api.EnvironmentError:
     """
+    if local_config is None:
+        local_config = LocalConfig.find()
+
     return Index(
         PostgresDb.from_config(local_config, application_name=application_name, validate_db=validate_connection),
         local_config

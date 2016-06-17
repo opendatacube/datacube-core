@@ -54,7 +54,6 @@ xarray.Dataset.extent = property(_xarray_extent)
 class Datacube(object):
     """
     Interface to search, read and write a datacube.
-    :type index: datacube.index._api.Index
     """
     def __init__(self, index=None, config=None, app=None):
         """
