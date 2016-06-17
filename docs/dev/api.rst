@@ -39,9 +39,7 @@ Low-Level Internal Functions
    Datacube.product_sources
    Datacube.product_data
 
-
    Datacube.measurement_data
-   Datacube.measurement_data_lazy
 
 
 GridWorkflow Class
