@@ -12,7 +12,7 @@ The Data Cube is a system designed to:
 * Track the providence of all the contained data to allow for quality control and updates
 
 Getting Started
----------------
+===============
 
 If you're reading this, hopefully someone has already set up and loaded data into a Data Cube
 for you.
@@ -21,7 +21,7 @@ Check out the :ref:`installation` for instructions on configuring and setting up
 
 
 Australian Users
-----------------
+================
 
 If you have a login with the :term:`NCI`, check out the :ref:`nci_usage_guide`
 
@@ -32,7 +32,7 @@ If you have a login with the :term:`NCI`, check out the :ref:`nci_usage_guide`
 
 
 Types of Datasets in a Data Cube
---------------------------------
+================================
 
 When using the Data Cube, it will contain records about 3 different types of
 products and datasets.
@@ -79,3 +79,15 @@ Example:
 
 - Tiled GA Landsat Data, ingested into Australian Albers Equal Area
   Projection (EPSG:3577) and stored in 100km tiles in NetCDF4
+
+
+Providence
+==========
+
+.. digraph:: providence
+
+    node[style=filled, fontname="Helvetica", colorscheme=greens3, color=1];
+    RAW -> "Ortho Rectified" -> "NBAR Scene" -> "NBAR Tile"
+
+
+    rankdir=LR;
