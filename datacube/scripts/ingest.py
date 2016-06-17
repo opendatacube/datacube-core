@@ -155,7 +155,7 @@ def get_variable_params(config):
 
 def get_measurements(source_type, config):
     def merge_measurement(measurement, spec):
-        measurement.update({k: spec.get(k, measurement[k]) for k in ('nodata', 'dtype')})
+        measurement.update({k: spec.get(k) or measurement[k] for k in ('nodata', 'dtype', 'resampling_method')})
         return measurement
 
     return [merge_measurement(source_type.measurements[spec['src_varname']].copy(), spec)
