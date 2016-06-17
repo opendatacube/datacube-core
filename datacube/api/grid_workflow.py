@@ -15,7 +15,7 @@ class GridWorkflow(object):
     """
     GridWorkflow deals with cell- and tile-based processing using a grid defining a projection and resolution.
     """
-    def __init__(self, index, grid_spec=None, product=None, lazy=False):
+    def __init__(self, index, grid_spec=None, product=None):
         """
         Create a grid workflow tool.
 
@@ -27,17 +27,12 @@ class GridWorkflow(object):
         :type grid_spec: :class:`datacube.model.GridSpec`
         :param product: The name of an existing product, if no grid_spec is supplied.
         :type product: str
-        :param lazy: If the data should be wrapped in a `dask` array.
-        :type lazy: bool
         """
-        if lazy:
-            raise NotImplementedError('Lazy loading not fully implemented yet.')
         self.index = index
         if grid_spec is None:
             product = self.index.products.get_by_name(product)
             grid_spec = product and product.grid_spec
         self.grid_spec = grid_spec
-        self.lazy = lazy
 
     def cell_observations(self, cell_index=None, geopolygon=None, **indexers):
         """
@@ -180,22 +175,27 @@ class GridWorkflow(object):
         return self.tile_sources(observations, query_group_by(**query))
 
     @staticmethod
-    def load(tile, measurements=None):
+    def load(tile, measurements=None, lazy=False):
         """
         Load data for a cell/tile.
 
         The data to be loaded is defined by the output of :meth:`list_tiles`.
 
+        See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
+        for more information.
+
         :param tile: The tile to load.
 
         :param measurements: The name or list of names of measurements to load
+
+        :param lazy: If the data should be loaded as needed, using :py:class:`dask.array.Array`.
+        :type lazy: bool
+
         :return: The requested data.
         :rtype: :py:class:`xarray.Dataset`
 
         .. seealso::
-            :meth:`list_tiles`
-
-            :meth:`list_cells`
+            :meth:`list_tiles` :meth:`list_cells`
         """
         sources = tile['sources']
         geobox = tile['geobox']
@@ -211,5 +211,9 @@ class GridWorkflow(object):
         else:
             measurements = [measurement for measurement in all_measurements.values()]
 
-        dataset = Datacube.product_data(sources, geobox, measurements)
+        if lazy:
+            dataset = Datacube.product_data_lazy(sources, geobox, measurements)
+        else:
+            dataset = Datacube.product_data(sources, geobox, measurements)
+
         return dataset

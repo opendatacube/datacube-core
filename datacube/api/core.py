@@ -358,6 +358,8 @@ class Datacube(object):
 
         The data will be loaded from disk as needed, or when the `load` method is called.
 
+        See :py:class:`dask.array.Array`
+
         :param sources: DataArray holding a list of :py:class:`datacube.model.Dataset` objects
         :type sources: :py:class:`xarray.DataArray`
         :param geobox: A GeoBox defining the output spatial projection and resolution
@@ -366,7 +368,7 @@ class Datacube(object):
         :param fuse_func: function to merge successive arrays as an output
         :rtype: :py:class:`xarray.DataArray`
 
-        .. seealso:: :meth:`product_data`
+        .. seealso:: :meth:`product_data` :py:class:`dask.array.Array`
         """
         def data_func(measurement):
             return _make_dask_array(sources, geobox, measurement, fuse_func, grid_chunks)

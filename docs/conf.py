@@ -130,6 +130,7 @@ intersphinx_mapping = {
     'pandas': ('http://pandas.pydata.org/pandas-docs/stable/', None),
     'numpy': ('http://docs.scipy.org/doc/numpy/', None),
     'xarray': ('http://xarray.pydata.org/en/stable/', None),
+    'dask': ('http://dask.pydata.org/en/stable/', None),
 }
 
 click_utils_commands = {'datacube-search': 'datacube.scripts.search_tool:cli',
