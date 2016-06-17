@@ -38,8 +38,8 @@ GDAL_NETCDF_TIME = ('NETCDF_DIM_'
                     'NETCDF_DIMENSION_') + 'time'
 
 
-def _rasterio_resampling_method(measurement_descriptor):
-    return RESAMPLING_METHODS[measurement_descriptor['resampling_method'].lower()]
+def _rasterio_resampling_method(resampling):
+    return RESAMPLING_METHODS[resampling.lower()]
 
 
 if str(rasterio.__version__) >= '0.36.0':
@@ -71,9 +71,10 @@ def _calc_offsets(off, src_size, dst_size):
     return read_off, write_off, size
 
 
-def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata,
-                 resampling=RESAMPLING.nearest, fuse_func=None):
+def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata, resampling='nearest', fuse_func=None):
     assert len(destination.shape) == 2
+
+    resampling = _rasterio_resampling_method(resampling)
 
     def no_scale(affine, eps=0.01):
         return abs(affine.a - 1.0) < eps and abs(affine.e - 1.0) < eps

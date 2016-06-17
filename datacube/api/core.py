@@ -16,7 +16,7 @@ from ..config import LocalConfig
 from ..compat import string_types
 from ..index import index_connect
 from ..model import GeoPolygon, GeoBox
-from ..storage.storage import DatasetSource, fuse_sources, RESAMPLING
+from ..storage.storage import DatasetSource, fuse_sources
 from ..utils import check_intersect, data_resolution_and_offset
 from .query import Query, query_group_by, query_geopolygon
 
@@ -341,13 +341,7 @@ class Datacube(object):
         def data_func(measurement):
             data = numpy.full(sources.shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
             for index, datasets in numpy.ndenumerate(sources.values):
-                fuse_sources([DatasetSource(dataset, measurement['name']) for dataset in datasets],
-                             data[index],  # Output goes here
-                             geobox.affine,
-                             geobox.crs,
-                             measurement['nodata'],
-                             resampling=RESAMPLING.nearest,
-                             fuse_func=fuse_func)
+                _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func)
             return data
         return Datacube.create_storage(sources.coords, geobox, measurements, data_func)
 
@@ -427,14 +421,18 @@ def fuse_lazy(datasets, geobox, measurement, fuse_func=None, prepend_dims=0):
     prepend_shape = (1,) * prepend_dims
     prepend_index = (0,) * prepend_dims
     data = numpy.full(prepend_shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
+    _fuse_measurement(data[prepend_index], datasets, geobox, measurement, fuse_func)
+    return data
+
+
+def _fuse_measurement(dest, datasets, geobox, measurement, fuse_func=None):
     fuse_sources([DatasetSource(dataset, measurement['name']) for dataset in datasets],
-                 data[prepend_index],
+                 dest,
                  geobox.affine,
                  geobox.crs,
                  measurement['nodata'],
-                 resampling=RESAMPLING.nearest,
+                 resampling=measurement.get('resampling', 'nearest'),
                  fuse_func=fuse_func)
-    return data
 
 
 def get_crs(datasets):
