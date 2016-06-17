@@ -405,9 +405,11 @@ class API(object):
         dt_data = {
             'arrays': {}
         }
+        dask_chunks = {dim: 1000 for dim in geobox.dimensions}
         for measurement_name, measurement in dataset_type.measurements.items():
             if measurements is None or measurement_name in measurements:
-                dt_data['arrays'][measurement_name] = self.datacube.measurement_data_lazy(sources, geobox, measurement)
+                dt_data['arrays'][measurement_name] = self.datacube.measurement_data(sources, geobox, measurement,
+                                                                                     dask_chunks=dask_chunks)
         return dt_data
 
     def list_products(self):

@@ -137,7 +137,8 @@ class Datacube(object):
                     measurements.append(row)
         return measurements
 
-    def load(self, product=None, measurements=None, output_crs=None, resolution=None, stack=False, **query):
+    def load(self, product=None, measurements=None, output_crs=None, resolution=None, stack=False, dask_chunks=None,
+             **query):
         """
         Loads data as an ``xarray`` object.
 
@@ -188,6 +189,7 @@ class Datacube(object):
                 output_crs='EPSG:3577'
 
         :type output_crs: str
+
         :param resolution: A tuple of the spatial resolution of the returned data.
             E.g. 25m resolution for **EPSG:3577**::
 
@@ -196,6 +198,13 @@ class Datacube(object):
             This includes the direction (as indicated by a positive or negative number).
             Typically when using most CRSs, the first number would be negative.
         :type resolution: tuple(float, float)
+
+        :param dask_chunks: If the data should be loaded as needed using :py:class:`dask.array.Array`,
+            specify the chunk size in each output direction.
+
+            See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
+            for more information.
+        :type dask_chunks: dict
 
         :return: Requested data.  As a ``DataArray`` if the ``stack`` variable is supplied.
         :rtype: :class:`xarray.Dataset` or :class:`xarray.DataArray`
@@ -223,15 +232,15 @@ class Datacube(object):
             measurements = all_measurements
 
         if not stack:
-            return self.product_data(sources, geobox, measurements.values())
+            return self.product_data(sources, geobox, measurements.values(), dask_chunks=dask_chunks)
         else:
-            return self._get_data_array(sources, geobox, measurements.values())
+            return self._get_data_array(sources, geobox, measurements.values(), dask_chunks=dask_chunks)
 
-    def _get_data_array(self, sources, geobox, measurements, var_dim_name='measurement'):
+    def _get_data_array(self, sources, geobox, measurements, var_dim_name='measurement', dask_chunks=None):
         data_dict = OrderedDict()
         for measurement in measurements:
             name = measurement['name']
-            data_dict[name] = self.measurement_data(sources, geobox, measurement)
+            data_dict[name] = self.measurement_data(sources, geobox, measurement, dask_chunks=dask_chunks)
 
         return _stack_vars(data_dict, var_dim_name)
 
@@ -312,7 +321,8 @@ class Datacube(object):
 
             attrs = {
                 'nodata': measurement.get('nodata'),
-                'units': measurement.get('units', '1')
+                'units': measurement.get('units', '1'),
+                'crs': geobox.crs
             }
             if 'flags_definition' in measurement:
                 attrs['flags_definition'] = measurement['flags_definition']
@@ -324,7 +334,7 @@ class Datacube(object):
         return result
 
     @staticmethod
-    def product_data(sources, geobox, measurements, fuse_func=None):
+    def product_data(sources, geobox, measurements, fuse_func=None, dask_chunks=None):
         """
         Loads data from :meth:`product_sources` into a Dataset object.
 
@@ -334,42 +344,30 @@ class Datacube(object):
         :type geobox: :class:`datacube.model.GeoBox`
         :param measurements: list of measurement dicts with keys: {'name', 'dtype', 'nodata', 'units'}
         :param fuse_func: function to merge successive arrays as an output
+        :param dask_chunks: If the data should be loaded as needed using :py:class:`dask.array.Array`,
+            specify the chunk size in each output direction.
+
+            See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
+            for more information.
+        :type dask_chunks: dict
         :rtype: :py:class:`xarray.Dataset`
 
         .. seealso:: :meth:`product_observations` :meth:`product_sources`
         """
-        def data_func(measurement):
-            data = numpy.full(sources.shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
-            for index, datasets in numpy.ndenumerate(sources.values):
-                _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func)
-            return data
+        if dask_chunks is None:
+            def data_func(measurement):
+                data = numpy.full(sources.shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
+                for index, datasets in numpy.ndenumerate(sources.values):
+                    _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func)
+                return data
+        else:
+            def data_func(measurement):
+                return _make_dask_array(sources, geobox, measurement, fuse_func, dask_chunks)
+
         return Datacube.create_storage(sources.coords, geobox, measurements, data_func)
 
     @staticmethod
-    def product_data_lazy(sources, geobox, measurements, fuse_func=None, grid_chunks=None):
-        """
-        Creates a lazy-loaded :py:class:`xarray.Dataset` for measurements.
-
-        The data will be loaded from disk as needed, or when the `load` method is called.
-
-        See :py:class:`dask.array.Array`
-
-        :param sources: DataArray holding a list of :py:class:`datacube.model.Dataset` objects
-        :type sources: :py:class:`xarray.DataArray`
-        :param geobox: A GeoBox defining the output spatial projection and resolution
-        :type geobox: :class:`datacube.model.GeoBox`
-        :param measurement: measurement definition with keys: {'name', 'dtype', 'nodata', 'units'}
-        :param fuse_func: function to merge successive arrays as an output
-        :rtype: :py:class:`xarray.DataArray`
-
-        .. seealso:: :meth:`product_data` :py:class:`dask.array.Array`
-        """
-        def data_func(measurement):
-            return _make_dask_array(sources, geobox, measurement, fuse_func, grid_chunks)
-        return Datacube.create_storage(sources.coords, geobox, measurements, data_func)
-
-    @staticmethod
-    def measurement_data(sources, geobox, measurement, fuse_func=None):
+    def measurement_data(sources, geobox, measurement, fuse_func=None, dask_chunks=None):
         """
         Retrieves a single measurement variable as a :py:class:`xarray.DataArray`.
 
@@ -379,33 +377,17 @@ class Datacube(object):
         :type geobox: :class:`datacube.model.GeoBox`
         :param measurement: measurement definition with keys: {'name', 'dtype', 'nodata', 'units'}
         :param fuse_func: function to merge successive arrays as an output
+        :param dask_chunks: If the data should be loaded as needed using :py:class:`dask.array.Array`,
+            specify the chunk size in each output direction.
+
+            See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
+            for more information.
+        :type dask_chunks: dict
         :rtype: :py:class:`xarray.DataArray`
 
         .. seealso:: :meth:`product_data`
         """
-        dataset = Datacube.product_data(sources, geobox, [measurement], fuse_func=fuse_func)
-        dataarray = dataset[measurement['name']]
-        dataarray.attrs['crs'] = dataset.crs
-        return dataarray
-
-    @staticmethod
-    def measurement_data_lazy(sources, geobox, measurement, fuse_func=None, grid_chunks=None):
-        """
-        Creates a lazy-loaded :py:class:`xarray.DataArray` for a single measurement variable.
-
-        The data will be loaded from disk as needed, or when the `load` method is called.
-
-        :param sources: DataArray holding a list of :py:class:`datacube.model.Dataset` objects
-        :type sources: :py:class:`xarray.DataArray`
-        :param geobox: A GeoBox defining the output spatial projection and resolution
-        :type geobox: :class:`datacube.model.GeoBox`
-        :param measurements: list of measurement definitions with keys: {'name', 'dtype', 'nodata', 'units'}
-        :param fuse_func: function to merge successive arrays as an output
-        :rtype: :py:class:`xarray.DataArray`
-
-        .. seealso:: :meth:`product_data`
-        """
-        dataset = Datacube.product_data_lazy(sources, geobox, [measurement], fuse_func, grid_chunks)
+        dataset = Datacube.product_data(sources, geobox, [measurement], fuse_func=fuse_func, dask_chunks=dask_chunks)
         dataarray = dataset[measurement['name']]
         dataarray.attrs['crs'] = dataset.crs
         return dataarray
@@ -506,22 +488,45 @@ def _chunk_geobox(geobox, chunk_size):
     return geobox_subsets
 
 
-def _make_dask_array(sources, geobox, measurement, fuse_func=None, grid_chunks=None):
+def _calculate_chunk_sizes(sources, geobox, dask_chunks):
+    valid_keys = sources.dims + geobox.dimensions
+    bad_keys = set(dask_chunks) - set(valid_keys)
+    if bad_keys:
+        raise KeyError('Unknown dask_chunk dimension {}. Valid dimensions are: {}', bad_keys, valid_keys)
+
+    # If chunk size is not specified, the entire dimension length is used, as in xarray
+    chunks = {dim: size for dim, size in zip(sources.dims, sources.shape)}
+    chunks.update({dim: size for dim, size in zip(geobox.dimensions, geobox.shape)})
+
+    chunks.update(dask_chunks)
+
+    irr_chunks = tuple(chunks[dim] for dim in sources.dims)
+    grid_chunks = tuple(chunks[dim] for dim in geobox.dimensions)
+
+    return irr_chunks, grid_chunks
+
+
+def _make_dask_array(sources, geobox, measurement, fuse_func=None, dask_chunks=None):
     dsk_name = 'datacube_' + measurement['name']
-    irr_chunks = (1,) * sources.ndim
-    grid_chunks = grid_chunks or (1000, 1000)
+
+    irr_chunks, grid_chunks = _calculate_chunk_sizes(sources, geobox, dask_chunks)
+    sliced_irr_chunks = (1,) * sources.ndim
+
     dsk = {}
     geobox_subsets = _chunk_geobox(geobox, grid_chunks)
 
     for irr_index, datasets in numpy.ndenumerate(sources.values):
         for grid_index, subset_geobox in geobox_subsets.items():
-            index = (dsk_name,) + irr_index + grid_index
-            dsk[index] = (fuse_lazy, datasets, subset_geobox, measurement, fuse_func, sources.ndim)
+            dsk[(dsk_name,) + irr_index + grid_index] = (fuse_lazy,
+                                                         datasets, subset_geobox, measurement, fuse_func, sources.ndim)
 
     data = da.Array(dsk, dsk_name,
-                    chunks=(irr_chunks + grid_chunks),
+                    chunks=(sliced_irr_chunks + grid_chunks),
                     dtype=measurement['dtype'],
                     shape=(sources.shape + geobox.shape))
+
+    if irr_chunks != sliced_irr_chunks:
+        data = data.rechunk(chunks=(irr_chunks + grid_chunks))
     return data
 
 
