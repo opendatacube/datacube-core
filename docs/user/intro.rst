@@ -86,8 +86,12 @@ Providence
 
 .. digraph:: providence
 
-    node[style=filled, fontname="Helvetica", colorscheme=greens3, color=1];
-    RAW -> "Ortho Rectified" -> "NBAR Scene" -> "NBAR Tile"
+    node[fontname="Helvetica"] //, colorscheme=greens3, color=1];
 
+    raw[label="RAW Telemetry", style=dashed]
+    ortho[label="Ortho Rectified", style=dashed]
+    nbar[style=solid, label="NBAR Scene", styled=solid]
+    nbartile[label="NBAR Albers Tile", shape=box, style=filled]
 
-    rankdir=LR;
+    raw -> ortho -> nbar -> nbartile;
+    //rankdir=LR;
