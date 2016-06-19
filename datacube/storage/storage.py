@@ -16,6 +16,7 @@ try:
 except ImportError:
     from yaml import SafeDumper
 import numpy
+from osgeo import gdal
 import rasterio.warp
 import rasterio.crs
 from rasterio.warp import RESAMPLING
@@ -34,7 +35,7 @@ RESAMPLING_METHODS = {
 }
 
 GDAL_NETCDF_TIME = ('NETCDF_DIM_'
-                    if str(rasterio.__gdal_version__) >= '1.10.0' else
+                    if str(gdal.__version__) >= '1.10.0' else
                     'NETCDF_DIMENSION_') + 'time'
 
 
