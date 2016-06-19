@@ -17,7 +17,7 @@ from osgeo import osr
 def get_projection(img):
     left, bottom, right, top = img.bounds
     return {
-        'spatial_reference': str(img.crs_wkt),
+        'spatial_reference': str(str(getattr(img, 'crs_wkt', None) or img.crs.wkt)),
         'geo_ref_points': {
             'ul': {'x': left, 'y': top},
             'ur': {'x': right, 'y': top},
