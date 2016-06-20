@@ -21,12 +21,9 @@ class GridWorkflow(object):
 
         Either grid_spec or product must be supplied.
 
-        :param index: The database index to use.
-        :type index: from :py:class:`datacube.index.index_connect` or None
-        :param grid_spec: The grid projection and resolution
-        :type grid_spec: :class:`datacube.model.GridSpec`
-        :param product: The name of an existing product, if no grid_spec is supplied.
-        :type product: str
+        :param Index index: The database index to use.
+        :param GridSpec grid_spec: The grid projection and resolution
+        :param str product: The name of an existing product, if no grid_spec is supplied.
         """
         self.index = index
         if grid_spec is None:
@@ -38,11 +35,10 @@ class GridWorkflow(object):
         """
         List datasets, grouped by cell.
 
-        :param cell_index: The cell index. E.g. (14, -40)
-        :type cell_index: tuple(int, int)
+        :param (int,int) cell_index: The cell index. E.g. (14, -40)
         :param indexers: Query to match the datasets, see :py:class:`datacube.api.query.Query`
         :return: Datsets grouped by cell index
-        :rtype: dict[tuple(int, int), list[:py:class:`datacube.model.Dataset`]]
+        :rtype: dict[(int,int), list[:py:class:`datacube.model.Dataset`]]
 
         .. seealso::
             :meth:`datacube.Datacube.product_observations`
@@ -86,9 +82,9 @@ class GridWorkflow(object):
         Group observations into sources
 
         :param observations: datasets grouped by cell index, like from :meth:`datacube.GridWorkflow.cell_observations`
-        :param group_by: grouping method, one of "time", "solar_day"
+        :param str group_by: grouping method, one of "time", "solar_day"
         :return: sources grouped by cell index
-        :rtype: dict[tuple(int, int), :py:class:`xarray.DataArray`]
+        :rtype: dict[(int,int), :py:class:`xarray.DataArray`]
 
         .. seealso::
             :meth:`load`
@@ -113,7 +109,7 @@ class GridWorkflow(object):
         Split observations into tiles and group into sources
 
         :param observations: datasets grouped by cell index, like from :meth:`datacube.GridWorkflow.cell_observations`
-        :param group_by: grouping method, one of "time", "solar_day"
+        :param str group_by: grouping method, one of "time", "solar_day"
         :return: sources grouped by cell index and time
         :rtype: dict[tuple(int, int, numpy.datetime64), :py:class:`xarray.DataArray`]
 
@@ -148,10 +144,9 @@ class GridWorkflow(object):
                           platform=['LANDSAT_5', 'LANDSAT_7', 'LANDSAT_8'],
                           time=('2001-1-1 00:00:00', '2001-3-31 23:59:59'))
 
-        :param cell_index: The cell index. E.g. (14, -40)
-        :type cell_index: tuple(int, int)
+        :param (int,int) cell_index: The cell index. E.g. (14, -40)
         :param query: see :py:class:`datacube.api.query.Query`
-        :rtype: dict[tuple(int, int), Cell]
+        :rtype: dict[(int, int), Cell]
         """
         observations = self.cell_observations(cell_index, **query)
         return self.cell_sources(observations, query_group_by(**query))
@@ -165,9 +160,9 @@ class GridWorkflow(object):
 
         The values can be passed to :meth:`load`
 
-        :param cell_index: The cell index. E.g. (14, -40)
+        :param (int,int) cell_index: The cell index. E.g. (14, -40)
         :param query: see :py:class:`datacube.api.query.Query`
-        :rtype: dict[tuple(int, int, numpy.datetime64), Tile]
+        :rtype: dict[(int, int, numpy.datetime64), Tile]
 
         .. seealso:: :meth:`load`
         """
@@ -188,12 +183,11 @@ class GridWorkflow(object):
 
         :param measurements: The name or list of names of measurements to load
 
-        :param dask_chunks: If the data should be loaded as needed using :py:class:`dask.array.Array`,
+        :param dict dask_chunks: If the data should be loaded as needed using :py:class:`dask.array.Array`,
             specify the chunk size in each output direction.
 
             See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
             for more information.
-        :type dask_chunks: dict
 
         :return: The requested data.
         :rtype: :py:class:`xarray.Dataset`

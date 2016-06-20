@@ -64,20 +64,17 @@ class Datacube(object):
 
         If no index or config is given, the default configuration is used for database connection.
 
-        :param index: The database index to use.
+        :param Index index: The database index to use.
 
             Can be created by :py:class:`datacube.index.index_connect`.
-        :type index: :py:class:`datacube.index._api.Index`
 
-        :param config: A config object or a path to a config file that defines the connection.
+        :param LocalConfig config: A config object or a path to a config file that defines the connection.
 
             If an index is supplied, config is ignored.
-        :type config: str or :class:`datacube.config.LocalConfig`
-        :param app: A short, alphanumeric name to identify this application.
+        :param str app: A short, alphanumeric name to identify this application.
 
             The application name is used to track down problems with database queries, so it is strongly
             advised that be used.  Required if an index is not supplied, otherwise ignored.
-        :type app: str
         :return: Datacube object
         """
         if index is None:
@@ -169,10 +166,8 @@ class Datacube(object):
 
             To reproject or resample the data, supply the ``output_crs`` and ``resolution`` fileds.
 
-        :param product: the product to be included.
+        :param str product: the product to be included.
                 By default all available measurements are included.
-        :type product: str
-        :type measurements: list(str) or str, optional
         :param measurements: measurements name or list of names to be included, as listed in :meth:`list_measurements`.
                 If a list is specified, the measurements will be returned in the order requested.
                 By default all available measurements are included.
@@ -184,28 +179,24 @@ class Datacube(object):
             The default CRS interpretation for geospatial dimensions is WGS84/EPSG:4326,
             even if the resulting dimension is in another projection.
             The dimensions ``longitude``/``latitude`` and ``x``/``y`` can be used interchangeably.
-        :param output_crs: The CRS of the returned data.  If no CRS is supplied, the CRS of the stored data is used.
+        :param str output_crs: The CRS of the returned data.  If no CRS is supplied, the CRS of the stored data is used.
             E.g.::
 
                 output_crs='EPSG:3577'
 
-        :type output_crs: str
-
-        :param resolution: A tuple of the spatial resolution of the returned data.
+        :param (float,float) resolution: A tuple of the spatial resolution of the returned data.
             E.g. 25m resolution for **EPSG:3577**::
 
                 resolution=(-25, 25)
 
             This includes the direction (as indicated by a positive or negative number).
             Typically when using most CRSs, the first number would be negative.
-        :type resolution: tuple(float, float)
 
-        :param dask_chunks: If the data should be loaded as needed using :py:class:`dask.array.Array`,
+        :param dict dask_chunks: If the data should be loaded as needed using :py:class:`dask.array.Array`,
             specify the chunk size in each output direction.
 
             See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
             for more information.
-        :type dask_chunks: dict
 
         :return: Requested data.  As a ``DataArray`` if the ``stack`` variable is supplied.
         :rtype: :class:`xarray.Dataset` or :class:`xarray.DataArray`
@@ -251,9 +242,9 @@ class Datacube(object):
 
         Lower level function than most people will use.
 
-        :param kwargs: query interface
+        :param kwargs: see :py:class:`datacube.api.query.Query`
         :return: list of datasets
-        :rtype: list( :class:`datacube.model.Dataset` )
+        :rtype: list[:class:`datacube.model.Dataset`]
 
         .. seealso:: :meth:`product_sources` :meth:`product_data`
         """
@@ -296,10 +287,8 @@ class Datacube(object):
         """
         Create empty xarry.Dataset to hold data from :meth:`product_sources`.
 
-        :param sources: DataArray holding a list of :py:class:`datacube.model.Dataset` objects
-        :type sources: :py:class:`xarray.DataArray`
-        :param geobox: A GeoBox defining the output spatial projection and resolution
-        :type geobox: :class:`datacube.model.GeoBox`
+        :param xarray.DataArray sources: DataArray holding a list of :py:class:`datacube.model.Dataset` objects
+        :param GeoBox geobox: A GeoBox defining the output spatial projection and resolution
         :param measurements: list of measurement dicts with keys: {'name', 'dtype', 'nodata', 'units'}
         :param fill_func: function to fill the data
         :rtype: :py:class:`xarray.Dataset`
@@ -339,19 +328,16 @@ class Datacube(object):
         """
         Loads data from :meth:`product_sources` into a Dataset object.
 
-        :param sources: DataArray holding a list of :py:class:`datacube.model.Dataset` objects
-        :type sources: :py:class:`xarray.DataArray`
-        :param geobox: A GeoBox defining the output spatial projection and resolution
-        :type geobox: :class:`datacube.model.GeoBox`
+        :param xarray.DataArray sources: DataArray holding a list of :py:class:`datacube.model.Dataset` objects
+        :param GeoBox geobox: A GeoBox defining the output spatial projection and resolution
         :param measurements: list of measurement dicts with keys: {'name', 'dtype', 'nodata', 'units'}
         :param fuse_func: function to merge successive arrays as an output
-        :param dask_chunks: If the data should be loaded as needed using :py:class:`dask.array.Array`,
+        :param dict dask_chunks: If the data should be loaded as needed using :py:class:`dask.array.Array`,
             specify the chunk size in each output direction.
 
             See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
             for more information.
-        :type dask_chunks: dict
-        :rtype: :py:class:`xarray.Dataset`
+        :rtype: xarray.Dataset
 
         .. seealso:: :meth:`product_observations` :meth:`product_sources`
         """
@@ -372,18 +358,15 @@ class Datacube(object):
         """
         Retrieves a single measurement variable as a :py:class:`xarray.DataArray`.
 
-        :param sources: DataArray holding a list of :py:class:`datacube.model.Dataset` objects
-        :type sources: :py:class:`xarray.DataArray`
-        :param geobox: A GeoBox defining the output spatial projection and resolution
-        :type geobox: :class:`datacube.model.GeoBox`
+        :param xarray.DataArray sources: DataArray holding a list of :py:class:`datacube.model.Dataset` objects
+        :param GeoBox geobox: A GeoBox defining the output spatial projection and resolution
         :param measurement: measurement definition with keys: {'name', 'dtype', 'nodata', 'units'}
         :param fuse_func: function to merge successive arrays as an output
-        :param dask_chunks: If the data should be loaded as needed using :py:class:`dask.array.Array`,
+        :param dict dask_chunks: If the data should be loaded as needed using :py:class:`dask.array.Array`,
             specify the chunk size in each output direction.
 
             See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
             for more information.
-        :type dask_chunks: dict
         :rtype: :py:class:`xarray.DataArray`
 
         .. seealso:: :meth:`product_data`
