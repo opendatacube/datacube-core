@@ -486,9 +486,9 @@ class PostgresDb(object):
         for row in result:
             yield _from_pg_role(row['role_name']), row['user_name'], row['description']
 
-    def create_user(self, username, key, role):
+    def create_user(self, username, password, role):
         pg_role = _to_pg_role(role)
-        tables.create_user(self._engine, username, key, pg_role)
+        tables.create_user(self._engine, username, password, pg_role)
 
     def grant_role(self, role, users):
         """

@@ -51,12 +51,12 @@ def create_user(config, index, role, user):
     """
     Create a User
     """
-    key = base64.urlsafe_b64encode(os.urandom(12)).decode('utf-8')
-    index.create_user(user, key, role)
+    password = base64.urlsafe_b64encode(os.urandom(12)).decode('utf-8')
+    index.create_user(user, password, role)
 
-    click.echo('{host}:{port}:*:{username}:{key}'.format(
+    click.echo('{host}:{port}:*:{username}:{password}'.format(
         host=config.db_hostname or 'localhost',
         port=config.db_port,
         username=user,
-        key=key
+        password=password
     ))

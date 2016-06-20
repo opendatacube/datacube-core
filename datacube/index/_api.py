@@ -68,15 +68,15 @@ class Index(object):
         """
         self._db.grant_role(role, users)
 
-    def create_user(self, user, key, role):
+    def create_user(self, user_name, password, role):
         """
         Create a new user.
         """
-        self._db.create_user(user, key, role)
+        self._db.create_user(user_name, password, role)
 
     def list_users(self):
         """
-        :returns list of (role, user, description)
+        :return: list of (role, user, description)
         :rtype: list[(str, str, str)]
         """
         return self._db.list_users()
