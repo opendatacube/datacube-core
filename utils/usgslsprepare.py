@@ -158,14 +158,14 @@ def prep_dataset(fields, path):
 
     ns = {'espa12': "http://espa.cr.usgs.gov/v1.2"}
 
-    satellite = doc.find('//espa12:satellite', ns).text
-    instrument = doc.find('//espa12:instrument', ns).text
-    acquisition_date = doc.find('//espa12:acquisition_date', ns).text.replace("-", "")
-    scene_center_time = doc.find('//espa12:scene_center_time', ns).text[:8]
+    satellite = doc.find('.//espa12:satellite', ns).text
+    instrument = doc.find('.//espa12:instrument', ns).text
+    acquisition_date = doc.find('.//espa12:acquisition_date', ns).text.replace("-", "")
+    scene_center_time = doc.find('.//espa12:scene_center_time', ns).text[:8]
     center_dt = crazy_parse(acquisition_date + "T" + scene_center_time)
     aos = crazy_parse(acquisition_date + "T" + scene_center_time) - timedelta(seconds=(24 / 2))
     los = aos + timedelta(seconds=24)
-    lpgs_metadata_file = doc.find('//espa12:lpgs_metadata_file', ns).text
+    lpgs_metadata_file = doc.find('.//espa12:lpgs_metadata_file', ns).text
     groundstation = lpgs_metadata_file[16:19]
     fields.update({'instrument': instrument, 'satellite': satellite})
 
