@@ -212,3 +212,9 @@ class GridWorkflow(object):
         dataset = Datacube.product_data(sources, geobox, measurements, dask_chunks=dask_chunks)
 
         return dataset
+
+    def __str__(self):
+        return "GridWorkflow<index={!r},\n\tgridspec={!r}>".format(self.grid_spec, self.index)
+
+    def __repr__(self):
+        return self.__str__()
