@@ -13,6 +13,7 @@ from datacube.model.utils import generate_dataset, append_datasets_to_data, xr_i
 from datacube.storage.storage import write_dataset_to_netcdf
 from datacube.ui import click as ui
 from datacube.utils import read_documents
+from datacube.executor import SerialExecutor
 
 from datacube.ui.click import cli
 
@@ -48,8 +49,11 @@ def do_work(tasks, work_func, index, executor):
         results.append(executor.submit(work_func, **task))
 
     for result in results:
-        # TODO: try/catch
-        datasets = executor.result(result)
+        try:
+            datasets = executor.result(result)
+        except Exception:  # pylint: disable=broad-except
+            _LOG.exception('Task failed')
+            continue
 
         for i, labels, dataset in xr_iter(datasets):
             index.datasets.add(dataset)
@@ -149,17 +153,32 @@ def ingest_cmd(index, config, dry_run, executor):
 
     bbox = BoundingBox(**config['ingestion_bounds'])
     tasks = find_diff(source_type, output_type, bbox, index)
+    _LOG.info('%s tasks discovered', len(tasks))
 
-    def ingest_work(index, sources, geobox):
-        data = Datacube.product_data(sources, geobox, measurements)
+    if dry_run:
+        def ingest_work(index, sources, geobox):
+            file_path = file_path_template.format(tile_index=index,
+                                                  start_time=to_datetime(sources.time.values[0]).strftime(
+                                                      '%Y%m%d%H%M%S%f'),
+                                                  end_time=to_datetime(sources.time.values[-1]).strftime(
+                                                      '%Y%m%d%H%M%S%f'))
+            _LOG.info('Would create %s', file_path)
+            return []
 
-        nudata = data.rename(namemap)
+        executor = SerialExecutor()
+    else:
+        def ingest_work(index, sources, geobox):
+            data = Datacube.product_data(sources, geobox, measurements)
 
-        file_path = file_path_template.format(tile_index=index,
-                                              start_time=to_datetime(sources.time.values[0]).strftime('%Y%m%d%H%M%S%f'),
-                                              end_time=to_datetime(sources.time.values[-1]).strftime('%Y%m%d%H%M%S%f'))
-        nudatasets = write_product(nudata, sources, output_type, app_metadata,
-                                   config['global_attributes'], variable_params, Path(file_path))
-        return nudatasets
+            nudata = data.rename(namemap)
+
+            file_path = file_path_template.format(tile_index=index,
+                                                  start_time=to_datetime(sources.time.values[0]).strftime(
+                                                      '%Y%m%d%H%M%S%f'),
+                                                  end_time=to_datetime(sources.time.values[-1]).strftime(
+                                                      '%Y%m%d%H%M%S%f'))
+            nudatasets = write_product(nudata, sources, output_type, app_metadata,
+                                       config['global_attributes'], variable_params, Path(file_path))
+            return nudatasets
 
     do_work(tasks, ingest_work, index, executor)
