@@ -32,17 +32,17 @@ def connect(local_config=None, application_name=None, validate_connection=True):
         local_config = LocalConfig.find()
 
     return Index(
-        PostgresDb.from_config(local_config, application_name=application_name, validate_db=validate_connection),
-        local_config
+        PostgresDb.from_config(local_config, application_name=application_name, validate_db=validate_connection)
     )
 
 
 class Index(object):
     """
     :type datasets: datacube.index._datasets.DatasetResource
+    :type products: datacube.index._datasets.DatasetTypeResource
     :type metadata_types: datacube.index._datasets.MetadataTypeResource
     """
-    def __init__(self, db, local_config):
+    def __init__(self, db):
         """
         :type db: datacube.index.postgres._api.PostgresDb
         """

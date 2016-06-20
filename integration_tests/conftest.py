@@ -105,11 +105,11 @@ def remove_dynamic_indexes():
 
 
 @pytest.fixture
-def index(db, local_config):
+def index(db):
     """
     :type db: datacube.index.postgres._api.PostgresDb
     """
-    return Index(db, local_config)
+    return Index(db)
 
 
 @pytest.fixture
