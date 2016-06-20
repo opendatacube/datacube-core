@@ -1,92 +1,29 @@
 from __future__ import absolute_import
 
 import logging
-import uuid
-
 import click
-import numpy
 from copy import deepcopy
-from collections import OrderedDict
 from pathlib import Path
 from pandas import to_datetime
 from rasterio.coords import BoundingBox
 
 from datacube.api.core import Datacube
-from datacube.model import DatasetType, Dataset, GeoBox, GeoPolygon, CRS
+from datacube.model import DatasetType
+from datacube.model.utils import generate_dataset, append_datasets_to_data, xr_iter, merge
 from datacube.storage.storage import write_dataset_to_netcdf
 from datacube.ui import click as ui
 from datacube.utils import read_documents
 
 from datacube.ui.click import cli
-import yaml
-try:
-    from yaml import CSafeDumper as SafeDumper
-except ImportError:
-    from yaml import SafeDumper
 
 _LOG = logging.getLogger('agdc-ingest')
 
 
-def set_geobox_info(doc, crs, extent):
-    bb = extent.boundingbox
-    gp = GeoPolygon([(bb.left, bb.top), (bb.right, bb.top), (bb.right, bb.bottom), (bb.left, bb.bottom)],
-                    crs).to_crs(CRS('EPSG:4326'))
-    doc.update({
-        'extent': {
-            'coord': {
-                'ul': {'lon': gp.points[0][0], 'lat': gp.points[0][1]},
-                'ur': {'lon': gp.points[1][0], 'lat': gp.points[1][1]},
-                'lr': {'lon': gp.points[2][0], 'lat': gp.points[2][1]},
-                'll': {'lon': gp.points[3][0], 'lat': gp.points[3][1]},
-            }
-        },
-        'grid_spatial': {
-            'projection': {
-                'spatial_reference': str(crs),
-                'geo_ref_points': {
-                    'ul': {'x': bb.left, 'y': bb.top},
-                    'ur': {'x': bb.right, 'y': bb.top},
-                    'll': {'x': bb.left, 'y': bb.bottom},
-                    'lr': {'x': bb.right, 'y': bb.bottom},
-                }
-            }
-        }
-    })
-
-
-def generate_dataset(data, sources, prod_info, uri):
-    nudata = data.copy()
-
-    datasets = []
-    for idx, (time, sources) in enumerate(zip(sources.time.values, sources.values)):
-        document = {
-            'id': str(uuid.uuid4()),
-            'image': {
-                'bands': {name: {'path': '', 'layer': name} for name in nudata.data_vars}
-            },
-            'lineage': {'source_datasets': {str(idx): dataset.metadata_doc for idx, dataset in enumerate(sources)}}
-        }
-        # TODO: extent is a bad thing to store - it duplicates coordinates
-        set_geobox_info(document, data.crs, data.extent)
-        document['extent']['from_dt'] = str(time)
-        document['extent']['to_dt'] = str(time)
-        document['extent']['center_dt'] = str(time)
-        document.update(prod_info.metadata)
-        dataset = Dataset(prod_info,
-                          document,
-                          local_uri=uri,
-                          sources={str(idx): dataset for idx, dataset in enumerate(sources)})
-        datasets.append(dataset)
-    nudata['dataset'] = (['time'],
-                         numpy.array([yaml.dump(dataset.metadata_doc, Dumper=SafeDumper, encoding='utf-8')
-                                      for dataset in datasets], dtype='S'))
-    return nudata, datasets
-
-
-def write_product(data, sources, output_prod_info, global_attrs, var_params, path):
-    nudata, nudatasets = generate_dataset(data, sources, output_prod_info, path.absolute().as_uri())
-    write_dataset_to_netcdf(nudata, global_attrs, var_params, path)
-    return nudatasets
+def write_product(data, sources, output_dataset_type, app_metadata, global_attrs, var_params, path):
+    datasets = generate_dataset(data, sources, output_dataset_type, path.absolute().as_uri(), app_metadata)
+    data = append_datasets_to_data(data, datasets)
+    write_dataset_to_netcdf(data, global_attrs, var_params, path)
+    return datasets
 
 
 def find_diff(input_type, output_type, bbox, index):
@@ -114,7 +51,7 @@ def do_work(tasks, work_func, index, executor):
         # TODO: try/catch
         datasets = executor.result(result)
 
-        for dataset in datasets:
+        for i, labels, dataset in xr_iter(datasets):
             index.datasets.add(dataset)
 
 
@@ -153,6 +90,25 @@ def get_variable_params(config):
     return variable_params
 
 
+def get_app_metadata(config):
+    doc = {
+        'lineage': {
+            'algorithm': {
+                'name': 'ingest',
+                'version': '1.0'
+            },
+            # 'machine': {
+            #     'software_versions': {
+            #         'ingester':
+            #     }
+            # }
+        }
+    }
+    if 'app_metadata' in config:
+        merge(doc, config['app_metadata'])
+    return doc
+
+
 def get_measurements(source_type, config):
     def merge_measurement(measurement, spec):
         measurement.update({k: spec.get(k) or measurement[k] for k in ('nodata', 'dtype', 'resampling_method')})
@@ -184,6 +140,8 @@ def ingest_cmd(index, config, dry_run, executor):
     _LOG.info('Created DatasetType %s', output_type.name)
     output_type = index.products.add(output_type)
 
+    app_metadata = get_app_metadata(config)
+
     namemap = get_namemap(config)
     measurements = get_measurements(source_type, config)
     variable_params = get_variable_params(config)
@@ -200,8 +158,7 @@ def ingest_cmd(index, config, dry_run, executor):
         file_path = file_path_template.format(tile_index=index,
                                               start_time=to_datetime(sources.time.values[0]).strftime('%Y%m%d%H%M%S%f'),
                                               end_time=to_datetime(sources.time.values[-1]).strftime('%Y%m%d%H%M%S%f'))
-        # TODO: algorithm params
-        nudatasets = write_product(nudata, sources, output_type,
+        nudatasets = write_product(nudata, sources, output_type, app_metadata,
                                    config['global_attributes'], variable_params, Path(file_path))
         return nudatasets
 
