@@ -438,7 +438,7 @@ class CRS(object):
         return self.crs_str
 
     def __repr__(self):
-        return self.__str__()
+        return "CRS('%s')" % self.crs_str
 
     def __eq__(self, other):
         if isinstance(other, compat.string_types):
@@ -565,6 +565,7 @@ class GeoBox(object):
         :rtype: GeoBox
         """
         # TODO: currently only flipped Y-axis data is supported
+
         assert resolution[1] > 0
         assert resolution[0] < 0
 

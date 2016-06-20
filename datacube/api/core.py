@@ -12,6 +12,7 @@ from affine import Affine
 from dask import array as da
 from rasterio.coords import BoundingBox
 
+from datacube.model import CRS
 from ..config import LocalConfig
 from ..compat import string_types
 from ..index import index_connect
@@ -216,7 +217,7 @@ class Datacube(object):
         if not observations:
             return None if stack else xarray.Dataset()
 
-        crs = output_crs or get_crs(observations)
+        crs = CRS(output_crs) if output_crs else get_crs(observations)
         geopolygon = query_geopolygon(**query) or get_bounds(observations, crs)
         resolution = resolution or get_resolution(observations)
         geobox = GeoBox.from_geopolygon(geopolygon, resolution, crs)
