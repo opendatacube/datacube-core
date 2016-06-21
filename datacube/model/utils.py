@@ -180,6 +180,7 @@ def generate_dataset(data, sources, dataset_type, uri, app_info):
         document = {}
         merge(document, dataset_type.metadata)
         merge(document, new_dataset_info())
+        merge(document, machine_info())
         merge(document, band_info(data.data_vars))
         merge(document, source_info(source_datasets))
         merge(document, geobox_info(data.crs, data.extent))
