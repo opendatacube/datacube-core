@@ -99,18 +99,11 @@ def get_app_metadata(config):
     doc = {
         'lineage': {
             'algorithm': {
-                'name': 'ingest',
-                'version': '1.0'
+                'name': 'datacube-ingest',
+                'version': config.get('version', 'unknown')
             },
-            # 'machine': {
-            #     'software_versions': {
-            #         'ingester':
-            #     }
-            # }
         }
     }
-    if 'app_metadata' in config:
-        merge(doc, config['app_metadata'])
     return doc
 
 
