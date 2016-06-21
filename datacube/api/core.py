@@ -192,6 +192,11 @@ class Datacube(object):
             This includes the direction (as indicated by a positive or negative number).
             Typically when using most CRSs, the first number would be negative.
 
+        :param stack: The name of the new dimension used to stack the measurements.
+            If provided, the data is returned as a ``DataArray`` rather than a ``Dataset``.
+            If only one measurement is returned, the dimension name is not used and the dimension is dropped.
+        :type stack: str or bool
+
         :param dict dask_chunks: If the data should be loaded as needed using :py:class:`dask.array.Array`,
             specify the chunk size in each output direction.
 
@@ -226,7 +231,10 @@ class Datacube(object):
         if not stack:
             return self.product_data(sources, geobox, measurements.values(), dask_chunks=dask_chunks)
         else:
-            return self._get_data_array(sources, geobox, measurements.values(), dask_chunks=dask_chunks)
+            if not isinstance(stack, string_types):
+                stack = 'measurement'
+            return self._get_data_array(sources, geobox, measurements.values(),
+                                        var_dim_name=stack, dask_chunks=dask_chunks)
 
     def _get_data_array(self, sources, geobox, measurements, var_dim_name='measurement', dask_chunks=None):
         data_dict = OrderedDict()

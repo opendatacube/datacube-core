@@ -160,7 +160,8 @@ def check_open_with_dc(index):
     assert data_array.shape
 
     data_array = dc.load(product='ls5_nbar_albers', latitude=(-34, -35), longitude=(149, 150), stack='variable')
-    assert data_array.shape
+    assert data_array.shape == 4
+    assert 'variable' in data_array.dims
 
     dataset = dc.load(product='ls5_nbar_albers', measurements=['blue'])
     assert dataset['blue'].size
