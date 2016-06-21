@@ -17,7 +17,7 @@ from rasterio.coords import BoundingBox
 
 from datacube import compat
 from datacube.compat import parse_url
-from datacube.utils import get_doc_offset, parse_time, grid_range, read_documents, validate_document
+from datacube.utils import get_doc_offset, parse_time, read_documents, validate_document
 
 _LOG = logging.getLogger(__name__)
 
@@ -68,17 +68,11 @@ class Dataset(object):
     """
     A Dataset stored on disk
 
+    :type type_: DatasetType
+    :param dict metadata_doc: the document (typically a parsed json/yaml)
+    :param str local_uri: A URI to access this dataset locally.
     """
     def __init__(self, type_, metadata_doc, local_uri, sources=None):
-        """
-        A dataset on disk.
-
-        :type type_: DatasetType
-        :param metadata_doc: the document (typically a parsed json/yaml)
-        :type metadata_doc: dict
-        :param local_uri: A URI to access this dataset locally.
-        :type local_uri: str
-        """
         #: :type: DatasetType
         self.type = type_
 
@@ -125,7 +119,7 @@ class Dataset(object):
     @property
     def center_time(self):
         """
-        :type: datetime.datetime
+        :rtype: datetime.datetime
         """
         time = self.time
         return time.begin + (time.end - time.begin)//2
@@ -142,7 +136,7 @@ class Dataset(object):
     @property
     def crs(self):
         """
-        :type: datacube.model.CRS
+        :rtype: datacube.model.CRS
         """
         projection = self.metadata.grid_spatial
 
@@ -190,6 +184,14 @@ class Dataset(object):
 
 
 def schema_validated(schema):
+    """
+    Decorator function to enable validating a class against a JSON Schema file.
+
+    Adds a self.validate() method which takes a dict used to populate the instantiated class.
+
+    :param str schema: filename of the json schema, relative to :var:`SCHEMA_PATH`
+    :return: wrapped class
+    """
     def validate(cls, document):
         return validate_document(document, cls.schema)
 
@@ -306,6 +308,9 @@ class DatasetType(object):
 class GeoPolygon(object):
     """
     Polygon with a :py:class:`CRS`
+
+    :param points: list of (x,y) points
+    :param CRS crs: coordinate system for the polygon
     """
 
     def __init__(self, points, crs=None):
@@ -333,6 +338,7 @@ class GeoPolygon(object):
         """
         Copy polygon to another CRS
 
+        :param CRS crs: Target CRS
         :return: new GeoPolygon with CRS specified by crs
         :rtype: GeoPolygon
         """
@@ -457,17 +463,22 @@ class GridSpec(object):
     """
     Definition for a regular spatial grid
 
+    >>> gs = GridSpec(crs=CRS('EPSG:4326'), tile_size=(1, 1), resolution=(-0.001, 0.001))
+    >>> gs.tile_resolution
+    (1000, 1000)
+    >>> list(gs.tiles(BoundingBox(140, -50, 142, -48)))
+    [((140, -50), GeoBox(1000, 1000, Affine(0.001, 0.0, 140.0,
+           0.0, -0.001, -49.0), EPSG:4326)), ((141, -50), GeoBox(1000, 1000, Affine(0.001, 0.0, 141.0,
+           0.0, -0.001, -49.0), EPSG:4326)), ((140, -49), GeoBox(1000, 1000, Affine(0.001, 0.0, 140.0,
+           0.0, -0.001, -48.0), EPSG:4326)), ((141, -49), GeoBox(1000, 1000, Affine(0.001, 0.0, 141.0,
+           0.0, -0.001, -48.0), EPSG:4326))]
 
+    :param CRS crs: Coordinate System used to define the grid
+    :param tuple(y, x) tile_size: Size of each tile, in CRS units
+    :param tuple(y, x) resolution: Size of each data point in the grid, in CRS units. Y will
+                                   usually be negative.
     """
     def __init__(self, crs=None, tile_size=None, resolution=None):
-        """
-        Create a Grid Specification
-
-        :type crs: CRS
-        :param tile_size: Size of each area of the grid, in CRS units
-        :type tile_size: tuple(x, y)
-        :param resolution: Size of each pixel in the grid, in CRS units
-        """
         self.crs = crs
         self.tile_size = tile_size
         self.resolution = resolution
@@ -490,19 +501,48 @@ class GridSpec(object):
     def tiles(self, bounds):
         """
         Return an iterator of tile_index, :py:class:`GeoBox` tuples across
-        the grid.
+        the grid and inside the specified `bounds`.
 
-        :param bounds: Boundary coordinates of the required grid
-        :return: iterator across geoboxes of tiles in a grid
+        .. note::
+
+           Grid cells are referenced by coordinates `(x, y)`, which is the opposite to the usual CRS
+           dimension order.
+
+        :param BoundingBox bounds: Boundary coordinates of the required grid
+        :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
-        grid_size = self.tile_size
-        for y in grid_range(bounds.bottom, bounds.top, grid_size[1]):
-            for x in grid_range(bounds.left, bounds.right, grid_size[0]):
+        tile_size_y, tile_size_x = self.tile_size
+        for y in GridSpec.grid_range(bounds.bottom, bounds.top, tile_size_y):
+            for x in GridSpec.grid_range(bounds.left, bounds.right, tile_size_x):
                 tile_index = (x, y)
                 yield tile_index, GeoBox.from_grid_spec(self, tile_index)
 
+    @staticmethod
+    def grid_range(lower, upper, step):
+        """
+        Return indices along a 1D scale.
+
+        Used for producing 2D grid indices.
+
+        >>> list(GridSpec.grid_range(-4.0, -1.0, 3.0))
+        [-2, -1]
+        >>> list(GridSpec.grid_range(-3.0, 0.0, 3.0))
+        [-1]
+        >>> list(GridSpec.grid_range(-2.0, 1.0, 3.0))
+        [-1, 0]
+        >>> list(GridSpec.grid_range(-1.0, 2.0, 3.0))
+        [-1, 0]
+        >>> list(GridSpec.grid_range(0.0, 3.0, 3.0))
+        [0]
+        >>> list(GridSpec.grid_range(1.0, 4.0, 3.0))
+        [0, 1]
+        """
+        assert step > 0.0
+        return range(int(math.floor(lower / step)), int(math.ceil(upper / step)))
+
     def __str__(self):
-        return "GridSpec(crs=%s, tile_size=%s, resolution=%s)" % (self.crs, self.tile_size, self.resolution)
+        return "GridSpec(crs=%s, tile_size=%s, resolution=%s)" % (
+            self.crs, self.tile_size, self.resolution)
 
     def __repr__(self):
         return self.__str__()
@@ -525,10 +565,8 @@ class GeoBox(object):
     [(151.0, -29.0), (151.0, -30.0), (152.0, -30.0), (152.0, -29.0)]
 
 
-    :param crs: Coordinate Reference System
-    :type crs: CRS
-    :param affine: Affine transformation defining the location of the storage unit
-    :type affine: affine.Affine
+    :param CRS crs: Coordinate Reference System
+    :param affine.Affine affine: Affine transformation defining the location of the storage unit
     """
 
     def __init__(self, width, height, affine, crs):
@@ -546,29 +584,30 @@ class GeoBox(object):
         """
         Returns the GeoBox for a tile index in the specified grid.
 
-        :type grid_spec:  datacube.model.GridSpec
-        :type tile_index: tuple(int,int)
-        :rtype: datacube.model.GeoBox
+        :type grid_spec:  GridSpec
+        :type tile_index: tuple(x, y)
+        :rtype: GeoBox
         """
-        tile_size = grid_spec.tile_size
-        tile_res = grid_spec.resolution
+        tile_index_x, tile_index_y = tile_index
+        tile_size_y, tile_size_x = grid_spec.tile_size
+        tile_res_y, tile_res_x = grid_spec.resolution
 
-        x = (tile_index[0] + (1 if tile_res[1] < 0 else 0)) * tile_size[1]
-        y = (tile_index[1] + (1 if tile_res[0] < 0 else 0)) * tile_size[0]
+        x = (tile_index_x + (1 if tile_res_x < 0 else 0)) * tile_size_x
+        y = (tile_index_y + (1 if tile_res_y < 0 else 0)) * tile_size_y
 
         return cls(crs=grid_spec.crs,
-                   affine=Affine(tile_res[1], 0.0, x, 0.0, tile_res[0], y),
-                   width=int(tile_size[1] / abs(tile_res[1])),
-                   height=int(tile_size[0] / abs(tile_res[0])))
+                   affine=Affine(tile_res_x, 0.0, x, 0.0, tile_res_y, y),
+                   width=int(tile_size_x / abs(tile_res_x)),
+                   height=int(tile_size_y / abs(tile_res_y)))
 
     @classmethod
     def from_geopolygon(cls, geopolygon, resolution, crs=None, align=True):
         """
-        :type geopolygon: datacube.model.GeoPolygon
+        :type geopolygon: GeoPolygon
         :param resolution: (x_resolution, y_resolution)
-        :param crs: CRS to use, if different from the geopolygon
-        :param align: Should the geobox be aligned to pixels of the given resolution. This assumes an origin of (0,0).
-        :type align: boolean
+        :param CRS crs: CRS to use, if different from the geopolygon
+        :param bool align: Should the geobox be aligned to pixels of the given resolution.
+                           This assumes an origin of (0,0).
         :rtype: GeoBox
         """
         # TODO: currently only flipped Y-axis data is supported
@@ -645,6 +684,17 @@ class GeoBox(object):
         if self.crs.geographic:
             return self.extent
         return self.extent.to_crs(CRS('EPSG:4326'))
+
+    def __str__(self):
+        return "GeoBox({})".format(self.geographic_extent.points)
+
+    def __repr__(self):
+        return "GeoBox({width}, {height}, {affine!r}, {crs})".format(
+            width=self.width,
+            height=self.height,
+            affine=self.affine,
+            crs=self.extent.crs
+        )
 
 
 def _set_doc_offset(offset, document, value):
