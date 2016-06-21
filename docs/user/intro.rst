@@ -81,10 +81,10 @@ Example:
   Projection (EPSG:3577) and stored in 100km tiles in NetCDF4
 
 
-Providence
+Provenance
 ==========
 
-.. digraph:: providence
+.. digraph:: provenance
 
     node[fontname="Helvetica"] //, colorscheme=greens3, color=1];
 
