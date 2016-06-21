@@ -55,8 +55,9 @@ def do_work(tasks, work_func, index, executor):
             _LOG.exception('Task failed')
             continue
 
-        for i, labels, dataset in xr_iter(datasets):
-            index.datasets.add(dataset)
+        if datasets:
+            for i, labels, dataset in xr_iter(datasets):
+                index.datasets.add(dataset)
 
 
 def morph_dataset_type(source_type, config):
@@ -163,7 +164,7 @@ def ingest_cmd(index, config, dry_run, executor):
                                                   end_time=to_datetime(sources.time.values[-1]).strftime(
                                                       '%Y%m%d%H%M%S%f'))
             _LOG.info('Would create %s', file_path)
-            return []
+            return None
 
         executor = SerialExecutor()
     else:
