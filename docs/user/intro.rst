@@ -50,7 +50,7 @@ products and datasets.
 Referenced Datasets
 ~~~~~~~~~~~~~~~~~~~
 
-The existence of these datasets is know about through the providence history
+The existence of these datasets is know about through the provenance history
 of datasets, but the raw data files are not tracked by the Data Cube.
 
 Example:
