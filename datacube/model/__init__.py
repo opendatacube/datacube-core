@@ -478,7 +478,14 @@ class GridSpec(object):
 
     @property
     def tile_resolution(self):
-        return [int(abs(ts / res)) for ts, res in zip(self.tile_size, self.resolution)]
+        """
+        Tile Resolution, or the size of each tile in pixels.
+
+        Units will be in CRS dimension order (Usually y,x or lat,lon)
+
+        :return: tuple()
+        """
+        return tuple(int(abs(ts / res)) for ts, res in zip(self.tile_size, self.resolution))
 
     def tiles(self, bounds):
         """

@@ -118,7 +118,7 @@ class API(object):
             times = [dataset.center_time for dataset in datasets]
             xs = [x for dataset in datasets for x in (dataset.bounds.left, dataset.bounds.right)]
             ys = [y for dataset in datasets for y in (dataset.bounds.top, dataset.bounds.bottom)]
-            su['storage_shape'] = tuple([len(times)] + dataset_type.grid_spec.tile_resolution)
+            su['storage_shape'] = (len(times),) + dataset_type.grid_spec.tile_resolution
             su['storage_min'] = min(times), min(ys), min(xs)
             su['storage_max'] = max(times), max(ys), max(xs)
             su['storage_path'] = path
