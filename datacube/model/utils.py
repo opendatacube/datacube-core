@@ -42,10 +42,10 @@ def machine_info():
     return {'machine': info}
 
 
-def geobox_info(crs, extent):
+def geobox_info(extent):
     bb = extent.boundingbox
     gp = GeoPolygon([(bb.left, bb.top), (bb.right, bb.top), (bb.right, bb.bottom), (bb.left, bb.bottom)],
-                    crs).to_crs(CRS('EPSG:4326'))
+                    extent.crs).to_crs(CRS('EPSG:4326'))
     doc = {
         'extent': {
             'coord': {
@@ -57,7 +57,7 @@ def geobox_info(crs, extent):
         },
         'grid_spatial': {
             'projection': {
-                'spatial_reference': str(crs),
+                'spatial_reference': str(extent.crs),
                 'geo_ref_points': {
                     'ul': {'x': bb.left, 'y': bb.top},
                     'ur': {'x': bb.right, 'y': bb.top},
@@ -160,7 +160,7 @@ def xr_apply(data_array, func, dtype):
     return xarray.DataArray(data, coords=data_array.coords, dims=data_array.dims)
 
 
-def generate_dataset(data, sources, dataset_type, uri, app_info):
+def generate_dataset(extent, sources, dataset_type, uri, app_info):
     """
     Creates Datasets for the data
     :param data: The data to be used
@@ -181,9 +181,9 @@ def generate_dataset(data, sources, dataset_type, uri, app_info):
         merge(document, dataset_type.metadata)
         merge(document, new_dataset_info())
         merge(document, machine_info())
-        merge(document, band_info(data.data_vars))
+        merge(document, band_info(dataset_type.measurements.keys()))
         merge(document, source_info(source_datasets))
-        merge(document, geobox_info(data.crs, data.extent))
+        merge(document, geobox_info(extent))
         if 'time' in index:
             merge(document, time_info(index['time']))
         merge(document, app_info)

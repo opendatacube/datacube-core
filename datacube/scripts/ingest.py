@@ -21,7 +21,7 @@ _LOG = logging.getLogger('agdc-ingest')
 
 
 def write_product(data, sources, output_dataset_type, app_metadata, global_attrs, var_params, path):
-    datasets = generate_dataset(data, sources, output_dataset_type, path.absolute().as_uri(), app_metadata)
+    datasets = generate_dataset(data.extent, sources, output_dataset_type, path.absolute().as_uri(), app_metadata)
     data = append_datasets_to_data(data, datasets)
     write_dataset_to_netcdf(data, global_attrs, var_params, path)
     return datasets
