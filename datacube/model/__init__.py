@@ -33,7 +33,7 @@ SCHEMA_PATH = Path(__file__).parent/'schema'
 
 def _uri_to_local_path(local_uri):
     """
-    Platform dependent URI to Path
+    Transforms a URI to a platform dependent Path
     :type local_uri: str
     :rtype: pathlib.Path
 
@@ -43,7 +43,8 @@ def _uri_to_local_path(local_uri):
     On Windows:
     'file:///C:/tmp/something.txt' -> 'C:\\tmp\\test.tmp'
 
-    Only supports file:// schema URIs
+    .. note:
+        Only supports file:// schema URIs
     """
     if not local_uri:
         return None
@@ -185,11 +186,11 @@ class Dataset(object):
 
 def schema_validated(schema):
     """
-    Decorator function to enable validating a class against a JSON Schema file.
+    Decorates a class to enable validating it's definition against a JSON Schema file.
 
     Adds a self.validate() method which takes a dict used to populate the instantiated class.
 
-    :param str schema: filename of the json schema, relative to :var:`SCHEMA_PATH`
+    :param str schema: filename of the json schema, relative to `SCHEMA_PATH`
     :return: wrapped class
     """
     def validate(cls, document):
@@ -230,16 +231,13 @@ class MetadataType(object):
 class DatasetType(object):
     """
     Definition of a Dataset
+
+    :type metadata_type: MetadataType
     """
     def __init__(self,
                  metadata_type,
                  definition,
                  id_=None):
-        """
-        DatasetType of datasets & storage.
-
-        :type metadata_type: MetadataType
-        """
         self.validate(definition)
 
         self.id = id_
@@ -336,7 +334,7 @@ class GeoPolygon(object):
 
     def to_crs(self, crs):
         """
-        Copy polygon to another CRS
+        Duplicates polygon while transforming to a new CRS
 
         :param CRS crs: Target CRS
         :return: new GeoPolygon with CRS specified by crs
@@ -500,7 +498,7 @@ class GridSpec(object):
 
     def tiles(self, bounds):
         """
-        Return an iterator of tile_index, :py:class:`GeoBox` tuples across
+        Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and inside the specified `bounds`.
 
         .. note::
@@ -520,7 +518,7 @@ class GridSpec(object):
     @staticmethod
     def grid_range(lower, upper, step):
         """
-        Return indices along a 1D scale.
+        Returns the indices along a 1D scale.
 
         Used for producing 2D grid indices.
 
