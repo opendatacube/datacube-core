@@ -23,7 +23,7 @@ _LOG = logging.getLogger(__name__)
 
 Range = namedtuple('Range', ('begin', 'end'))
 Coordinate = namedtuple('Coordinate', ('labels', 'units'))
-Variable = namedtuple('Variable', ('dtype', 'nodata', 'dimensions', 'units'))
+Variable = namedtuple('Variable', ('dtype', 'nodata', 'dims', 'units'))
 
 NETCDF_VAR_OPTIONS = {'zlib', 'complevel', 'shuffle', 'fletcher32', 'contiguous'}
 VALID_VARIABLE_ATTRS = {'standard_name', 'long_name', 'units', 'flags_definition'}

@@ -95,7 +95,7 @@ def create_variable(nco, name, var, attrs=None, **kwargs):
     :return:
     """
     if 'chunksizes' in kwargs:
-        maxsizes = [len(nco.dimensions[dim]) for dim in var.dimensions]
+        maxsizes = [len(nco.dimensions[dim]) for dim in var.dims]
         kwargs['chunksizes'] = [min(chunksize, maxsize) if chunksize and maxsize else chunksize
                                 for maxsize, chunksize in zip(maxsizes, kwargs['chunksizes'])]
 
@@ -104,17 +104,18 @@ def create_variable(nco, name, var, attrs=None, **kwargs):
         nco.createDimension(name + '_nchar', size=var.dtype.itemsize)
         data_var = nco.createVariable(varname=name,
                                       datatype='S1',
-                                      dimensions=tuple(var.dimensions) + (name + '_nchar',),
-                                      fill_value=var.nodata,
+                                      dimensions=tuple(var.dims) + (name + '_nchar',),
+                                      fill_value=getattr(var, 'nodata', None),
                                       **kwargs)
     else:
         data_var = nco.createVariable(varname=name,
                                       datatype=var.dtype,
-                                      dimensions=var.dimensions,
-                                      fill_value=var.nodata,
+                                      dimensions=var.dims,
+                                      fill_value=getattr(var, 'nodata', None),
                                       **kwargs)
+    if getattr(var, 'crs', None):
         data_var.grid_mapping = 'crs'
-    if var.units is not None:
+    if getattr(var, 'units', None):
         data_var.units = var.units
     data_var.set_auto_maskandscale(False)
     return data_var

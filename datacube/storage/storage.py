@@ -8,7 +8,7 @@ import logging
 from contextlib import contextmanager
 from pathlib import Path
 
-from datacube.model import Variable, CRS
+from datacube.model import CRS
 from datacube.storage import netcdf_writer
 
 try:
@@ -218,12 +218,7 @@ def write_dataset_to_netcdf(access_unit, global_attributes, variable_params, fil
     for name, variable in access_unit.data_vars.items():
         # Create variable
         var_params = variable_params.get(name, {})
-        data_var = netcdf_writer.create_variable(nco, name,
-                                                 Variable(variable.dtype,
-                                                          getattr(variable, 'nodata', None),
-                                                          variable.dims,
-                                                          getattr(variable, 'units', '1')),
-                                                 **var_params)
+        data_var = netcdf_writer.create_variable(nco, name, variable, **var_params)
 
         # Write data
         data_var[:] = netcdf_writer.netcdfy_data(variable.values)
