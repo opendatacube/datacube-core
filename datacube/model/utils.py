@@ -1,6 +1,5 @@
 from __future__ import absolute_import, division, print_function
 
-import collections
 import datetime
 import os
 import platform
@@ -42,9 +41,13 @@ def machine_info():
     return {'lineage': {'machine': info}}
 
 
-def geobox_info(extent):
-    bb = extent.boundingbox
-    gp = GeoPolygon([(bb.left, bb.top), (bb.right, bb.top), (bb.right, bb.bottom), (bb.left, bb.bottom)],
+def geobox_info(extent, valid_data=None):
+    image_bounds = extent.boundingbox
+    data_bounds = valid_data.boundingbox if valid_data else image_bounds
+    gp = GeoPolygon([(data_bounds.left, data_bounds.top),
+                     (data_bounds.right, data_bounds.top),
+                     (data_bounds.right, data_bounds.bottom),
+                     (data_bounds.left, data_bounds.bottom)],
                     extent.crs).to_crs(CRS('EPSG:4326'))
     doc = {
         'extent': {
@@ -59,14 +62,19 @@ def geobox_info(extent):
             'projection': {
                 'spatial_reference': str(extent.crs),
                 'geo_ref_points': {
-                    'ul': {'x': bb.left, 'y': bb.top},
-                    'ur': {'x': bb.right, 'y': bb.top},
-                    'll': {'x': bb.left, 'y': bb.bottom},
-                    'lr': {'x': bb.right, 'y': bb.bottom},
+                    'ul': {'x': image_bounds.left, 'y': image_bounds.top},
+                    'ur': {'x': image_bounds.right, 'y': image_bounds.top},
+                    'll': {'x': image_bounds.left, 'y': image_bounds.bottom},
+                    'lr': {'x': image_bounds.right, 'y': image_bounds.bottom},
                 }
             }
         }
     }
+    if valid_data:
+        doc['grid_spatial']['projection']['valid_data'] = {
+            'type': 'Polygon',
+            'coordinates': [valid_data.points+[valid_data.points[0]]]
+        }
     return doc
 
 
@@ -160,56 +168,33 @@ def xr_apply(data_array, func, dtype):
     return xarray.DataArray(data, coords=data_array.coords, dims=data_array.dims)
 
 
-def generate_dataset(extent, sources, dataset_type, uri, app_info):
+def make_dataset(dataset_type, sources, extent, center_time, valid_data=None, uri=None, app_info=None):
     """
     Creates Datasets for the data
-    :param data: The data to be used
-    :type: :py:class:`xarray.Dataset`
-    :param sources: an array of source datasets
-    :type sources: :py:class:`xarray.DataArray`
-    :param dataset_type:
-    :type dataset_type: datacube.model.DatasetType
-    :param uri: The uri of the file
-    :type uri: str
-    :param app_info: Additional metadata to be stored about the generation of the product
-    :type app_info: dict
-    :return: An array of Dataset objects
-    :rtype: :py:class:`xarray.DataArray`
+    :param DatasetType dataset_type:
+    :param sources: source datasets of source datasets
+    :type sources: list[:py:class:`Dataset`]
+    :param GeoPolygon extent: extent of the dataset
+    :param GeoPolygon valid_data: extent of the valid data
+    :param center_time: time of the central point of the dataset
+    :param str uri: The uri of the dataset
+    :param dict app_info: Additional metadata to be stored about the generation of the product
+    :rtype: :py:class:`dataset`
     """
-    def make_dataset(index, source_datasets):
-        document = {}
-        merge(document, dataset_type.metadata)
-        merge(document, new_dataset_info())
-        merge(document, machine_info())
-        merge(document, band_info(dataset_type.measurements.keys()))
-        merge(document, source_info(source_datasets))
-        merge(document, geobox_info(extent))
-        if 'time' in index:
-            merge(document, time_info(index['time']))
-        merge(document, app_info)
+    document = {}
+    merge(document, dataset_type.metadata)
+    merge(document, new_dataset_info())
+    merge(document, machine_info())
+    merge(document, band_info(dataset_type.measurements.keys()))
+    merge(document, source_info(sources))
+    merge(document, geobox_info(extent, valid_data))
+    merge(document, time_info(center_time))
+    merge(document, app_info or {})
 
-        dataset = Dataset(dataset_type,
-                          document,
-                          local_uri=uri,
-                          sources={str(idx): dataset for idx, dataset in enumerate(source_datasets)})
-        return dataset
-
-    output_datasets = xr_apply(sources, make_dataset, dtype='O')
-    return output_datasets
-
-
-def append_datasets_to_data(data, datasets):
-    """
-    :param data: The data to be output
-    :type data: :py:class:`xarray.Dataset`
-    :param datasets: The array containing the :class:`datacube.model.Dataset` objects.
-        All dimensions of ``datasets`` must be the same length as those found in the ``data`` object
-    :type datasets: :py:class:`xarray.DataArray`
-    :return: Data with a new ``dataset`` variable
-    """
-    new_data = data.copy()
-    new_data['dataset'] = datasets_to_doc(datasets)
-    return new_data
+    return Dataset(dataset_type,
+                   document,
+                   local_uri=uri,
+                   sources={str(idx): dataset for idx, dataset in enumerate(sources)})
 
 
 def merge(a, b, path=None):

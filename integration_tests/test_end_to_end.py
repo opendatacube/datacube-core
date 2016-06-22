@@ -144,7 +144,7 @@ def check_open_with_api(index):
     query = {
         'variables': ['blue'],
         'dimensions': {
-            'latitude': {'range': (-34, -35)},
+            'latitude': {'range': (-35, -36)},
             'longitude': {'range': (149, 150)}}
     }
     data = api.get_data(query)  # , dataset_groups=groups)
@@ -159,7 +159,7 @@ def check_open_with_dc(index):
     data_array = dc.load(product='ls5_nbar_albers', measurements=['blue'], stack='variable')
     assert data_array.shape
 
-    data_array = dc.load(product='ls5_nbar_albers', latitude=(-34, -35), longitude=(149, 150), stack='variable')
+    data_array = dc.load(product='ls5_nbar_albers', latitude=(-35, -36), longitude=(149, 150), stack='variable')
     assert data_array.ndim == 4
     assert 'variable' in data_array.dims
 
@@ -170,7 +170,7 @@ def check_open_with_dc(index):
     assert dataset['blue'].size
 
     data_array = dc.load(product='ls5_nbar_albers',
-                         latitude=(-34, -35), longitude=(149, 150),
+                         latitude=(-35, -36), longitude=(149, 150),
                          measurements=['blue'], group_by='solar_day')
 
     products_df = dc.list_products()

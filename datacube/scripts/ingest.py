@@ -7,22 +7,15 @@ from pathlib import Path
 from pandas import to_datetime
 
 from datacube.api.core import Datacube
-from datacube.model import DatasetType
-from datacube.model.utils import generate_dataset, append_datasets_to_data, xr_iter, datasets_to_doc
+from datacube.model import DatasetType, GeoPolygon
+from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.storage.storage import write_dataset_to_netcdf, append_variable_to_netcdf
 from datacube.ui import click as ui
-from datacube.utils import read_documents
+from datacube.utils import read_documents, intersect_points
 
 from datacube.ui.click import cli
 
 _LOG = logging.getLogger('agdc-ingest')
-
-
-def write_product(data, sources, output_dataset_type, app_metadata, global_attrs, var_params, path):
-    datasets = generate_dataset(data.extent, sources, output_dataset_type, path.absolute().as_uri(), app_metadata)
-    data = append_datasets_to_data(data, datasets)
-    write_dataset_to_netcdf(data, global_attrs, var_params, path)
-    return datasets
 
 
 def find_diff(input_type, output_type, index):
@@ -159,22 +152,29 @@ def ingest_cmd(index, config, dry_run, executor):
     for task in tasks:
         results.append(executor.submit(ingest_work, config=config, source_type=source_type, **task))
 
+    failed = 0
     for task, result in zip(tasks, results):
+        def _make_dataset(labels, sources):
+            assert len(sources) == 1
+            geobox = task['geobox']
+            valid_data = intersect_points(geobox.extent.points, sources[0].extent.to_crs(geobox.crs).points)
+            dataset = make_dataset(dataset_type=output_type,
+                                   sources=sources,
+                                   extent=geobox.extent,
+                                   center_time=labels['time'],
+                                   uri=Path(file_path).absolute().as_uri(),
+                                   app_info=get_app_metadata(config, config_name),
+                                   valid_data=GeoPolygon(valid_data, geobox.crs))
+            dataset = index.datasets.add(dataset)
+            dataset = index.datasets.get(dataset.id, include_sources=True)
+            return dataset
+
         try:
             file_path = executor.result(result)
+            datasets = xr_apply(task['sources'], _make_dataset, dtype='O')
+            append_variable_to_netcdf(file_path, 'dataset', datasets_to_doc(datasets), zlib=True)
         except Exception:  # pylint: disable=broad-except
             _LOG.exception('Task failed')
+            failed += 1
             continue
-
-        datasets = generate_dataset(task['geobox'].extent,
-                                    task['sources'],
-                                    output_type,
-                                    Path(file_path).absolute().as_uri(),
-                                    get_app_metadata(config, config_name))
-
-        for idx, _, dataset in xr_iter(datasets):
-            dataset = index.datasets.add(dataset)
-            datasets[idx] = index.datasets.get(dataset.id, include_sources=True)
-
-        append_variable_to_netcdf(file_path, 'dataset', datasets_to_doc(datasets), zlib=True)
-
+    _LOG.info('%d successful, %d failed', len(tasks)-failed, failed)
