@@ -12,7 +12,7 @@ FLAGS_ATTR_NAME = 'flags_definition'
 
 def list_flag_names(variable):
     """
-    Return the available masking flags for the variable
+    Returns the available masking flags for the variable
 
     :param variable: Masking xarray.Dataset or xarray.DataArray
     :return: list
@@ -23,7 +23,7 @@ def list_flag_names(variable):
 
 def describe_variable_flags(variable):
     """
-    Return a string describing the available flags for a masking variable
+    Returns a string describing the available flags for a masking variable
 
     Interprets the `flags_definition` attribute on the provided variable and returns
     a string like:
@@ -68,7 +68,7 @@ def _order_bitdefs_by_bits(bitdef):
 
 def make_mask(variable, **flags):
     """
-    Return a mask array, based on provided flags
+    Returns a mask array, based on provided flags
 
     For example:
 
@@ -137,7 +137,7 @@ def create_mask_value(bits_def, **flags):
 
 def mask_to_dict(bits_def, mask_value):
     """
-    Describe which flags are set for a mask value
+    Describes which flags are set for a mask value
 
     :param bits_def:
     :param mask_value:

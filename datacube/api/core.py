@@ -89,7 +89,7 @@ class Datacube(object):
 
     def list_products(self, show_archived=False, with_pandas=True):
         """
-        List of products in the datacube.
+        Lists products in the datacube
 
         :param show_archived: include products that have been archived.
         :param with_pandas: return the list as a Pandas DataFrame, otherwise as a list of dict.
@@ -108,7 +108,7 @@ class Datacube(object):
 
     def list_measurements(self, show_archived=False, with_pandas=True):
         """
-        List of measurements for each product.
+        Lists measurements for each product
 
         :param show_archived: include products that have been archived.
         :param with_pandas: return the list as a Pandas DataFrame, otherwise as a list of dict.
@@ -248,7 +248,9 @@ class Datacube(object):
         """
         Finds datasets for a product.
 
-        Lower level function than most people will use.
+        .. note:
+            This is a lower level function than most people will use. See :meth:`load` for
+            a simpler to use function.
 
         :param kwargs: see :py:class:`datacube.api.query.Query`
         :return: list of datasets
@@ -293,7 +295,7 @@ class Datacube(object):
     @staticmethod
     def create_storage(coords, geobox, measurements, data_func=None):
         """
-        Create empty xarry.Dataset to hold data from :meth:`product_sources`.
+        Creates an empty :class:`xarray.Dataset` to hold data from :meth:`product_sources`.
 
         :param xarray.DataArray sources: DataArray holding a list of :py:class:`datacube.model.Dataset` objects
         :param GeoBox geobox: A GeoBox defining the output spatial projection and resolution
