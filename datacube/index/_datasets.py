@@ -9,11 +9,6 @@ import logging
 
 import cachetools
 
-try:
-    from yaml import CSafeLoader as SafeLoader
-except ImportError:
-    from yaml import SafeLoader
-
 from datacube import compat
 from datacube.utils import InvalidDocException
 from datacube.model import Dataset, DatasetType, MetadataType

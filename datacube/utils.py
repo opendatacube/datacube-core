@@ -7,7 +7,6 @@ from __future__ import absolute_import, division, print_function
 import gzip
 import json
 import logging
-import math
 import pathlib
 from datetime import datetime
 from dateutil.tz import tzutc
@@ -148,11 +147,38 @@ def is_supported_document_type(path):
     return any([str(path).lower().endswith(suffix) for suffix in _ALL_SUPPORTED_EXTENSIONS])
 
 
+class NoDatesSafeLoader(SafeLoader):  # pylint: disable=too-many-ancestors
+    @classmethod
+    def remove_implicit_resolver(cls, tag_to_remove):
+        """
+        Removes implicit resolvers for a particular tag
+
+        Takes care not to modify resolvers in super classes.
+
+        We want to load datetimes as strings, not dates. We go on to
+        serialise as json which doesn't have the advanced types of
+        yaml, and leads to slightly different objects down the track.
+        """
+        if 'yaml_implicit_resolvers' not in cls.__dict__:
+            cls.yaml_implicit_resolvers = cls.yaml_implicit_resolvers.copy()
+
+        for first_letter, mappings in cls.yaml_implicit_resolvers.items():
+            cls.yaml_implicit_resolvers[first_letter] = [(tag, regexp)
+                                                         for tag, regexp in mappings
+                                                         if tag != tag_to_remove]
+
+NoDatesSafeLoader.remove_implicit_resolver('tag:yaml.org,2002:timestamp')
+
+
 def read_documents(*paths):
     """
     Read & parse documents from the filesystem (yaml or json).
 
     Note that a single yaml file can contain multiple documents.
+
+    This function will load any dates in the documents as strings. In
+    the datacube we use JSON in PostgreSQL and it will turn our dates
+    to strings anyway.
 
     :type paths: list[pathlib.Path]
     :rtype: tuple[(pathlib.Path, dict)]
@@ -167,7 +193,7 @@ def read_documents(*paths):
             opener = gzip.open
 
         if suffix in ('.yaml', '.yml'):
-            for parsed_doc in yaml.load_all(opener(str(path), 'r'), Loader=SafeLoader):
+            for parsed_doc in yaml.load_all(opener(str(path), 'r'), Loader=NoDatesSafeLoader):
                 yield path, parsed_doc
         elif suffix == '.json':
             yield path, json.load(opener(str(path), 'r'))

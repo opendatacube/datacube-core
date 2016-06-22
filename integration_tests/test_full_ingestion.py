@@ -15,6 +15,7 @@ from affine import Affine
 
 import datacube.scripts.cli_app
 from datacube.model import GeoBox, CRS
+from datacube.utils import read_documents
 from .conftest import EXAMPLE_LS5_DATASET_ID
 
 PROJECT_ROOT = Path(__file__).parents[1]
@@ -95,7 +96,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset,
 
         name = config['measurements'][0]['name']
         check_attributes(nco[name], config['measurements'][0]['attrs'])
-    check_open_with_xray(ds_path)
+    check_open_with_xarray(ds_path)
     check_open_with_api(index)
 
 
@@ -145,15 +146,14 @@ def check_dataset_metadata_in_storage_unit(nco, dataset_dir):
         stored_metadata = netCDF4.chartostring(stored_metadata)
         stored_metadata = str(np.char.decode(stored_metadata))
     ds_filename = dataset_dir / 'agdc-metadata.yaml'
-    with ds_filename.open() as f:
-        orig_metadata = f.read()
-    stored = make_pgsqljson_match_yaml_load(yaml.safe_load(stored_metadata))
-    original = make_pgsqljson_match_yaml_load(yaml.safe_load(orig_metadata))
+
+    stored = yaml.safe_load(stored_metadata)
+    [(_, original)] = read_documents(ds_filename)
     assert len(stored['lineage']['source_datasets']) == 1
     assert next(iter(stored['lineage']['source_datasets'].values())) == original
 
 
-def check_open_with_xray(file_path):
+def check_open_with_xarray(file_path):
     import xarray
     xarray.open_dataset(str(file_path))
 
@@ -171,15 +171,3 @@ def check_open_with_api(index):
                                        'seconds since 1970-01-01 00:00:00')
     data = datacube.product_data(sources, geobox, input_type.measurements.values())
     assert data.blue.shape == (1, 200, 200)
-
-
-def make_pgsqljson_match_yaml_load(data):
-    """Un-munge YAML data passed through PostgreSQL JSON"""
-    for key, value in data.items():
-        if isinstance(value, dict):
-            data[key] = make_pgsqljson_match_yaml_load(value)
-        elif isinstance(value, datetime):
-            data[key] = value.strftime(JSON_DATE_FORMAT)
-        elif value is None:
-            data[key] = {}
-    return data
