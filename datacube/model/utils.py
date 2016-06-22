@@ -39,7 +39,7 @@ def machine_info():
                                   platform.version(),
                                   platform.machine()])
 
-    return {'machine': info}
+    return {'lineage': {'machine': info}}
 
 
 def geobox_info(extent):
