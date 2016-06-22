@@ -9,8 +9,8 @@ from rasterio.coords import BoundingBox
 
 from datacube.api.core import Datacube
 from datacube.model import DatasetType
-from datacube.model.utils import generate_dataset, append_datasets_to_data, xr_iter, merge
-from datacube.storage.storage import write_dataset_to_netcdf
+from datacube.model.utils import generate_dataset, append_datasets_to_data, xr_iter, merge, datasets_to_doc
+from datacube.storage.storage import write_dataset_to_netcdf, append_variable_to_netcdf
 from datacube.ui import click as ui
 from datacube.utils import read_documents
 from datacube.executor import SerialExecutor
@@ -27,7 +27,7 @@ def write_product(data, sources, output_dataset_type, app_metadata, global_attrs
     return datasets
 
 
-def find_diff(input_type, output_type, bbox, index):
+def find_diff(input_type, output_type, index):
     from datacube.api.grid_workflow import GridWorkflow
     workflow = GridWorkflow(index, output_type.grid_spec)
 
@@ -41,23 +41,6 @@ def find_diff(input_type, output_type, bbox, index):
 
     tasks = [update_dict(tile, index=key) for key, tile in tiles_in.items() if key not in tiles_out]
     return tasks
-
-
-def do_work(tasks, work_func, index, executor):
-    results = []
-    for task in tasks:
-        results.append(executor.submit(work_func, **task))
-
-    for result in results:
-        try:
-            datasets = executor.result(result)
-        except Exception:  # pylint: disable=broad-except
-            _LOG.exception('Task failed')
-            continue
-
-        if datasets:
-            for i, labels, dataset in xr_iter(datasets):
-                index.datasets.add(dataset)
 
 
 def morph_dataset_type(source_type, config):
@@ -107,6 +90,13 @@ def get_app_metadata(config):
     return doc
 
 
+def get_filename(config, index, sources):
+    file_path_template = str(Path(config['location'], config['file_path_template']))
+    return file_path_template.format(tile_index=index,
+                                     start_time=to_datetime(sources.time.values[0]).strftime('%Y%m%d%H%M%S%f'),
+                                     end_time=to_datetime(sources.time.values[-1]).strftime('%Y%m%d%H%M%S%f'))
+
+
 def get_measurements(source_type, config):
     def merge_measurement(measurement, spec):
         measurement.update({k: spec.get(k) or measurement[k] for k in ('nodata', 'dtype', 'resampling_method')})
@@ -114,6 +104,21 @@ def get_measurements(source_type, config):
 
     return [merge_measurement(source_type.measurements[spec['src_varname']].copy(), spec)
             for spec in config['measurements']]
+
+
+def ingest_work(config, source_type, index, sources, geobox):
+    namemap = get_namemap(config)
+    measurements = get_measurements(source_type, config)
+    variable_params = get_variable_params(config)
+    global_attributes = config['global_attributes']
+
+    data = Datacube.product_data(sources, geobox, measurements)
+    nudata = data.rename(namemap)
+
+    file_path = get_filename(config, index, sources)
+    write_dataset_to_netcdf(nudata, global_attributes, variable_params, Path(file_path))
+
+    return file_path
 
 
 def get_namemap(config):
@@ -133,46 +138,39 @@ def ingest_cmd(index, config, dry_run, executor):
     source_type = index.products.get_by_name(config['source_type'])
     if not source_type:
         _LOG.error("Source DatasetType %s does not exist", config['source_type'])
+        return 1
 
     output_type = morph_dataset_type(source_type, config)
     _LOG.info('Created DatasetType %s', output_type.name)
+    # TODO: don't add output_type in dry_run mode?
     output_type = index.products.add(output_type)
 
-    app_metadata = get_app_metadata(config)
-
-    namemap = get_namemap(config)
-    measurements = get_measurements(source_type, config)
-    variable_params = get_variable_params(config)
-    file_path_template = str(Path(config['location'], config['file_path_template']))
-
-    bbox = BoundingBox(**config['ingestion_bounds'])
-    tasks = find_diff(source_type, output_type, bbox, index)
+    tasks = find_diff(source_type, output_type, index)
     _LOG.info('%s tasks discovered', len(tasks))
 
     if dry_run:
-        def ingest_work(index, sources, geobox):
-            file_path = file_path_template.format(tile_index=index,
-                                                  start_time=to_datetime(sources.time.values[0]).strftime(
-                                                      '%Y%m%d%H%M%S%f'),
-                                                  end_time=to_datetime(sources.time.values[-1]).strftime(
-                                                      '%Y%m%d%H%M%S%f'))
+        for task in tasks:
+            file_path = get_filename(config, task['index'], task['sources'])
             _LOG.info('Would create %s', file_path)
-            return None
+        return
 
-        executor = SerialExecutor()
-    else:
-        def ingest_work(index, sources, geobox):
-            data = Datacube.product_data(sources, geobox, measurements)
+    results = []
+    for task in tasks:
+        results.append(executor.submit(ingest_work, config=config, source_type=source_type, **task))
 
-            nudata = data.rename(namemap)
+    for task, result in zip(tasks, results):
+        try:
+            file_path = executor.result(result)
+        except Exception:  # pylint: disable=broad-except
+            _LOG.exception('Task failed')
+            continue
 
-            file_path = file_path_template.format(tile_index=index,
-                                                  start_time=to_datetime(sources.time.values[0]).strftime(
-                                                      '%Y%m%d%H%M%S%f'),
-                                                  end_time=to_datetime(sources.time.values[-1]).strftime(
-                                                      '%Y%m%d%H%M%S%f'))
-            nudatasets = write_product(nudata, sources, output_type, app_metadata,
-                                       config['global_attributes'], variable_params, Path(file_path))
-            return nudatasets
+        datasets = generate_dataset(task['geobox'].extent,
+                                    task['sources'],
+                                    output_type,
+                                    Path(file_path).absolute().as_uri(),
+                                    get_app_metadata(config))
+        append_variable_to_netcdf(file_path, 'dataset', datasets_to_doc(datasets), zlib=True)
 
-    do_work(tasks, ingest_work, index, executor)
+        for _, _, dataset in xr_iter(datasets):
+            index.datasets.add(dataset)
