@@ -76,12 +76,14 @@ def get_variable_params(config):
     return variable_params
 
 
-def get_app_metadata(config):
+def get_app_metadata(config, config_file):
     doc = {
         'lineage': {
             'algorithm': {
                 'name': 'datacube-ingest',
-                'version': config.get('version', 'unknown')
+                'version': config.get('version', 'unknown'),
+                'repo_url': 'https://github.com/GeoscienceAustralia/datacube-ingester.git',
+                'parameters': {'configuration_file': config_file}
             },
         }
     }
@@ -132,6 +134,7 @@ def get_namemap(config):
 @click.option('--dry-run', '-d', is_flag=True, default=False, help='Check if everything is ok')
 @ui.pass_index(app_name='agdc-ingest')
 def ingest_cmd(index, config, dry_run, executor):
+    config_name = Path(config).name
     _, config = next(read_documents(Path(config)))
     source_type = index.products.get_by_name(config['source_type'])
     if not source_type:
@@ -167,7 +170,7 @@ def ingest_cmd(index, config, dry_run, executor):
                                     task['sources'],
                                     output_type,
                                     Path(file_path).absolute().as_uri(),
-                                    get_app_metadata(config))
+                                    get_app_metadata(config, config_name))
 
         for idx, _, dataset in xr_iter(datasets):
             dataset = index.datasets.add(dataset)
