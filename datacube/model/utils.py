@@ -24,8 +24,8 @@ except ImportError:
 def machine_info():
     info = {
         'software_versions': {
-            'python': sys.version,
-            'datacube': datacube.__version__,
+            'python': {'version': sys.version},
+            'datacube': {'version': datacube.__version__, 'repo_url': 'https://github.com/data-cube/agdc-v2.git'},
         },
         'hostname': platform.node(),
     }
