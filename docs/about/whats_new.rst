@@ -1,6 +1,31 @@
 What's New
 ==========
 
+v1.1.1 Unleash the Ingester (23 June 2016)
+------------------------------------------
+
+This release contains lots of fixes in preparation for the first large
+ingestion of Geoscience Australia data into a production version of
+AGDCv2.
+
+  - General improvements to documentation and user friendliness.
+
+  - Updated metadata in configuration files for ingested products.
+
+  - Full provenance history is saved into ingested files. This includes
+    software versions, machine info and other details of the ingestion
+    run.
+
+  - Fixed bugs relating to changes in Rasterio and GDAL versions.
+
+  - Refactored :class:`GridWorkflow` to be easier to use, and include
+    preliminary code for saving created products.
+
+  - Improvements and fixes for bit mask generation.
+
+  - Lots of other minor but important fixes throughout the codebase.
+
+
 v1.1-prerelease Unification (3 June 2016)
 -----------------------------------------
 
