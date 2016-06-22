@@ -65,6 +65,10 @@ def create_netcdf(netcdf_path):
     return nco
 
 
+def append_netcdf(netcdf_path):
+    return Dataset(netcdf_path, 'a')
+
+
 def create_coordinate(nco, name, labels, units):
     """
     :type nco: netCDF4.Dataset
