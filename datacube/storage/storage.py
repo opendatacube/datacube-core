@@ -198,6 +198,15 @@ class DatasetSource(object):
         return idx
 
 
+def _write_variable_to_netcdf(nco, name, variable, **var_params):
+    data_var = netcdf_writer.create_variable(nco, name, variable, **var_params)
+    data_var[:] = netcdf_writer.netcdfy_data(variable.values)
+
+    # TODO: 'flags_definition', 'spectral_definition'?
+    for key, value in var_params.get('attrs', {}).items():
+        setattr(data_var, key, value)
+
+
 def write_dataset_to_netcdf(access_unit, global_attributes, variable_params, filename):
     if filename.exists():
         raise RuntimeError('Storage Unit already exists: %s' % filename)
@@ -207,7 +216,6 @@ def write_dataset_to_netcdf(access_unit, global_attributes, variable_params, fil
     except OSError:
         pass
 
-#    _LOG.info("Writing storage unit: %s", filename)
     nco = netcdf_writer.create_netcdf(str(filename))
 
     for name, coord in access_unit.coords.items():
@@ -216,20 +224,16 @@ def write_dataset_to_netcdf(access_unit, global_attributes, variable_params, fil
     netcdf_writer.create_grid_mapping_variable(nco, access_unit.crs)
 
     for name, variable in access_unit.data_vars.items():
-        # Create variable
-        var_params = variable_params.get(name, {})
-        data_var = netcdf_writer.create_variable(nco, name, variable, **var_params)
-
-        # Write data
-        data_var[:] = netcdf_writer.netcdfy_data(variable.values)
-
-        # TODO: 'flags_definition', 'spectral_definition'?
-
-        for key, value in variable_params.get(name, {}).get('attrs', {}).items():
-            setattr(data_var, key, value)
+        _write_variable_to_netcdf(nco, name, variable, **variable_params.get(name, {}))
 
     # write global atrributes
     for key, value in global_attributes.items():
         setattr(nco, key, value)
 
+    nco.close()
+
+
+def append_variable_to_netcdf(filename, name, variable, **var_params):
+    nco = netcdf_writer.append_netcdf(str(filename))
+    _write_variable_to_netcdf(nco, name, variable, **var_params)
     nco.close()
