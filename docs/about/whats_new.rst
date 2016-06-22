@@ -12,9 +12,12 @@ AGDCv2.
 
   - Updated metadata in configuration files for ingested products.
 
-  - Full provenance history is saved into ingested files. This includes
-    software versions, machine info and other details of the ingestion
-    run.
+  - Full provenance history is saved into ingested files.
+
+  - Added software versions, machine info and other details of the
+    ingestion run into the provenance.
+
+  - Added valid data region information into metadata for ingested data.
 
   - Fixed bugs relating to changes in Rasterio and GDAL versions.
 
