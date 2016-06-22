@@ -5,15 +5,13 @@ import click
 from copy import deepcopy
 from pathlib import Path
 from pandas import to_datetime
-from rasterio.coords import BoundingBox
 
 from datacube.api.core import Datacube
 from datacube.model import DatasetType
-from datacube.model.utils import generate_dataset, append_datasets_to_data, xr_iter, merge, datasets_to_doc
+from datacube.model.utils import generate_dataset, append_datasets_to_data, xr_iter, datasets_to_doc
 from datacube.storage.storage import write_dataset_to_netcdf, append_variable_to_netcdf
 from datacube.ui import click as ui
 from datacube.utils import read_documents
-from datacube.executor import SerialExecutor
 
 from datacube.ui.click import cli
 
@@ -170,7 +168,10 @@ def ingest_cmd(index, config, dry_run, executor):
                                     output_type,
                                     Path(file_path).absolute().as_uri(),
                                     get_app_metadata(config))
+
+        for idx, _, dataset in xr_iter(datasets):
+            dataset = index.datasets.add(dataset)
+            datasets[idx] = index.datasets.get(dataset.id, include_sources=True)
+
         append_variable_to_netcdf(file_path, 'dataset', datasets_to_doc(datasets), zlib=True)
 
-        for _, _, dataset in xr_iter(datasets):
-            index.datasets.add(dataset)
