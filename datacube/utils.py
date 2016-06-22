@@ -91,21 +91,33 @@ def parse_time(time):
     return time
 
 
+def _points_to_ogr(points):
+    ring = ogr.Geometry(ogr.wkbLinearRing)
+    for point in points:
+        ring.AddPoint_2D(*point)
+    ring.AddPoint_2D(*points[0])
+    poly = ogr.Geometry(ogr.wkbPolygon)
+    poly.AddGeometry(ring)
+    return poly
+
+
+def _ogr_to_points(geom):
+    assert geom.GetGeometryType() == ogr.wkbPolygon
+    return geom.GetGeometryRef(0).GetPoints()[:-1]
+
+
 def check_intersect(a, b):
     assert a.crs == b.crs
 
-    def ogr_poly(poly):
-        ring = ogr.Geometry(ogr.wkbLinearRing)
-        for point in poly.points:
-            ring.AddPoint_2D(*point)
-        ring.AddPoint_2D(*poly.points[0])
-        poly = ogr.Geometry(ogr.wkbPolygon)
-        poly.AddGeometry(ring)
-        return poly
-
-    a = ogr_poly(a)
-    b = ogr_poly(b)
+    a = _points_to_ogr(a.points)
+    b = _points_to_ogr(b.points)
     return a.Intersects(b) and not a.Touches(b)
+
+
+def intersect_points(a, b):
+    a = _points_to_ogr(a)
+    b = _points_to_ogr(b)
+    return _ogr_to_points(a.Intersection(b))
 
 
 def data_resolution_and_offset(data):
