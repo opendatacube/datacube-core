@@ -132,10 +132,10 @@ class GridWorkflow(object):
                 data = numpy.empty(1, dtype=object)
                 data[0] = datasets
                 variable = xarray.Variable((group_by.dimension,), data,
-                                           attrs={'units': group_by.units},
                                            fastpath=True)
                 coord = xarray.Variable((group_by.dimension,),
                                         numpy.array([key], dtype='datetime64[ns]'),
+                                        attrs={'units': group_by.units},
                                         fastpath=True)
                 coords = OrderedDict([(group_by.dimension, coord)])
                 sources = xarray.DataArray(variable, coords=coords, fastpath=True)
