@@ -59,21 +59,23 @@ class GridWorkflow(object):
         if not observations:
             return {}
 
-        if cell_index:
-            tile_iter = [(cell_index, geobox)]
-        else:
-            bounds_geopolygon = get_bounds(observations, self.grid_spec.crs)
-            tile_iter = self.grid_spec.tiles(bounds_geopolygon.boundingbox)
-
         tiles = {}
-        for tile_index, tile_geobox in tile_iter:
-            tile_geopolygon = tile_geobox.extent
+        if cell_index:
+            tile_geopolygon = geobox.extent
             datasets = [dataset for dataset in observations
                         if check_intersect(tile_geopolygon, dataset.extent.to_crs(self.grid_spec.crs))]
-            tiles[tile_index] = {
+            tiles[cell_index] = {
                 'datasets': datasets,
-                'geobox': tile_geobox
+                'geobox': geobox
             }
+        else:
+            for dataset in observations:
+                dataset_extent = dataset.extent.to_crs(self.grid_spec.crs)
+                for tile_index, tile_geobox in self.grid_spec.tiles(dataset_extent.boundingbox):
+                    if check_intersect(tile_geobox.extent, dataset_extent):
+                        tiles.setdefault(tile_index,
+                                         {'datasets': [],
+                                          'geobox': tile_geobox})['datasets'].append(dataset)
         return tiles
 
     @staticmethod
