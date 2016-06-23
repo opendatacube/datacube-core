@@ -17,7 +17,7 @@ from rasterio.coords import BoundingBox
 
 from datacube import compat
 from datacube.compat import parse_url
-from datacube.utils import get_doc_offset, parse_time, read_documents, validate_document
+from datacube.utils import get_doc_offset, parse_time, read_documents, validate_document, cached_property
 
 _LOG = logging.getLogger(__name__)
 
@@ -117,7 +117,7 @@ class Dataset(object):
     def measurements(self):
         return self.metadata.measurements
 
-    @property
+    @cached_property
     def center_time(self):
         """
         :rtype: datetime.datetime
