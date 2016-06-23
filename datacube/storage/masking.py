@@ -146,11 +146,25 @@ def mask_to_dict(bits_def, mask_value):
     """
     return_dict = {}
     for flag_name, flag_defn in bits_def.items():
-        shift = _get_minimum_bit(flag_defn['bits'])
+
+        # Make bits a list, even if there is only one
+        flag_bits = flag_defn['bits']
+        if not isinstance(flag_defn['bits'], list):
+            flag_bits = [flag_bits]
+
+        # The amount to shift flag_value to line up with mask_value
+        flag_shift = min(flag_bits)
+
+        # Mask our mask_value, we are only interested in the bits for this flag
+        flag_mask = 0
+        for i in flag_bits:
+            flag_mask |= (1 << i)
+        masked_mask_value = mask_value & flag_mask
 
         for flag_value, value in flag_defn['values'].items():
-            shifted_value = int(flag_value) << shift
-            if mask_value & shifted_value == shifted_value:
+            shifted_value = int(flag_value) << flag_shift
+            if shifted_value == masked_mask_value:
+                assert flag_name not in return_dict
                 return_dict[flag_name] = value
     return return_dict
 
