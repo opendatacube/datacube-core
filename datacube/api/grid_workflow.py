@@ -1,12 +1,15 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-from collections import defaultdict
+import numpy
+import xarray
+from itertools import groupby
+from collections import defaultdict, OrderedDict
 
 from ..model import GeoBox
 from ..utils import check_intersect
 from .query import Query, query_group_by
-from .core import Datacube, get_measurements, get_bounds
+from .core import Datacube, get_measurements
 
 _LOG = logging.getLogger(__name__)
 
@@ -122,13 +125,23 @@ class GridWorkflow(object):
         """
         stack = defaultdict(dict)
         for cell_index, observation in observations.items():
-            sources = Datacube.product_sources(observation['datasets'],
-                                               group_func=group_by.group_by_func,
-                                               dimension=group_by.dimension,
-                                               units=group_by.units)
-            for tile_index in sources[group_by.dimension].values:
-                stack[cell_index + (tile_index,)] = {
-                    'sources': sources.sel(**{group_by.dimension: [tile_index]}),
+            observation['datasets'].sort(key=group_by.group_by_func)
+            groups = [(key, tuple(group)) for key, group in groupby(observation['datasets'], group_by.group_by_func)]
+
+            for key, datasets in groups:
+                data = numpy.empty(1, dtype=object)
+                data[0] = datasets
+                variable = xarray.Variable((group_by.dimension,), data,
+                                           attrs={'units': group_by.units},
+                                           fastpath=True)
+                coord = xarray.Variable((group_by.dimension,),
+                                        numpy.array([key], dtype='datetime64[ns]'),
+                                        fastpath=True)
+                coords = OrderedDict([(group_by.dimension, coord)])
+                sources = xarray.DataArray(variable, coords=coords, fastpath=True)
+
+                stack[cell_index + (coord.values[0],)] = {
+                    'sources': sources,
                     'geobox': observation['geobox']
                 }
         return stack
