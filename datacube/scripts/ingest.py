@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import logging
 import click
+import cachetools
 from copy import deepcopy
 from pathlib import Path
 from pandas import to_datetime
@@ -99,7 +100,11 @@ def get_measurements(source_type, config):
             for spec in config['measurements']]
 
 
-def ingest_work(config, source_type, index, sources, geobox):
+def get_namemap(config):
+    return {spec['src_varname']: spec['name'] for spec in config['measurements']}
+
+
+def ingest_work(config, source_type, output_type, index, sources, geobox):
     namemap = get_namemap(config)
     measurements = get_measurements(source_type, config)
     variable_params = get_variable_params(config)
@@ -107,15 +112,30 @@ def ingest_work(config, source_type, index, sources, geobox):
 
     data = Datacube.product_data(sources, geobox, measurements)
     nudata = data.rename(namemap)
+    file_path = Path(get_filename(config, index, sources))
 
-    file_path = get_filename(config, index, sources)
-    write_dataset_to_netcdf(nudata, global_attributes, variable_params, Path(file_path))
+    def _make_dataset(labels, sources):
+        assert len(sources) == 1
+        valid_data = intersect_points(geobox.extent.points, sources[0].extent.to_crs(geobox.crs).points)
+        dataset = make_dataset(dataset_type=output_type,
+                               sources=sources,
+                               extent=geobox.extent,
+                               center_time=labels['time'],
+                               uri=file_path.absolute().as_uri(),
+                               app_info=get_app_metadata(config, config['filename']),
+                               valid_data=GeoPolygon(valid_data, geobox.crs))
+        return dataset
+    datasets = xr_apply(sources, _make_dataset, dtype='O')
+    nudata['dataset'] = datasets_to_doc(datasets)
 
-    return file_path
+    write_dataset_to_netcdf(nudata, global_attributes, variable_params, file_path)
+
+    return datasets
 
 
-def get_namemap(config):
-    return {spec['src_varname']: spec['name'] for spec in config['measurements']}
+@cachetools.cached(cache={}, key=lambda index, id_: id_)
+def get_full_lineage(index, id_):
+    return index.datasets.get(id_, include_sources=True)
 
 
 @cli.command('ingest', help="Ingest datasets")
@@ -129,6 +149,7 @@ def get_namemap(config):
 def ingest_cmd(index, config, dry_run, executor):
     config_name = Path(config).name
     _, config = next(read_documents(Path(config)))
+    config['filename'] = config_name
     source_type = index.products.get_by_name(config['source_type'])
     if not source_type:
         _LOG.error("Source DatasetType %s does not exist", config['source_type'])
@@ -142,39 +163,32 @@ def ingest_cmd(index, config, dry_run, executor):
     tasks = find_diff(source_type, output_type, index)
     _LOG.info('%s tasks discovered', len(tasks))
 
+    def update_sources(labels, sources):
+        return tuple(get_full_lineage(index, dataset.id) for dataset in sources)
+
     if dry_run:
         for task in tasks:
-            file_path = get_filename(config, task['index'], task['sources'])
-            _LOG.info('Would create %s', file_path)
+            _LOG.info('Would create %s', get_filename(config, task['index'], task['sources']))
         return
 
     results = []
     for task in tasks:
-        results.append(executor.submit(ingest_work, config=config, source_type=source_type, **task))
+        task['sources'] = xr_apply(task['sources'], update_sources, dtype='O')
+        results.append(executor.submit(ingest_work,
+                                       config=config,
+                                       source_type=source_type,
+                                       output_type=output_type,
+                                       **task))
 
     failed = 0
-    for task, result in zip(tasks, results):
-        def _make_dataset(labels, sources):
-            assert len(sources) == 1
-            geobox = task['geobox']
-            valid_data = intersect_points(geobox.extent.points, sources[0].extent.to_crs(geobox.crs).points)
-            dataset = make_dataset(dataset_type=output_type,
-                                   sources=sources,
-                                   extent=geobox.extent,
-                                   center_time=labels['time'],
-                                   uri=Path(file_path).absolute().as_uri(),
-                                   app_info=get_app_metadata(config, config_name),
-                                   valid_data=GeoPolygon(valid_data, geobox.crs))
-            dataset = index.datasets.add(dataset)
-            dataset = index.datasets.get(dataset.id, include_sources=True)
-            return dataset
-
+    for result in results:
         try:
-            file_path = executor.result(result)
-            datasets = xr_apply(task['sources'], _make_dataset, dtype='O')
-            append_variable_to_netcdf(file_path, 'dataset', datasets_to_doc(datasets), zlib=True)
+            datasets = executor.result(result)
+            for dataset in datasets.values:
+                index.datasets.add(dataset)
         except Exception:  # pylint: disable=broad-except
             _LOG.exception('Task failed')
             failed += 1
             continue
+
     _LOG.info('%d successful, %d failed', len(tasks)-failed, failed)
