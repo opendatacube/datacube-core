@@ -270,11 +270,15 @@ class PostgresDb(object):
         # recursively build the list of (dataset_ref, source_dataset_ref) pairs starting from dataset_id
         # include (dataset_ref, NULL) [hence the left join]
         sources = select(
-            [DATASET_SOURCE.c.dataset_ref,
+            [DATASET.c.id.label('dataset_ref'),
              DATASET_SOURCE.c.source_dataset_ref,
              DATASET_SOURCE.c.classifier]
+        ).select_from(
+            DATASET.join(DATASET_SOURCE,
+                         DATASET.c.id == DATASET_SOURCE.c.dataset_ref,
+                         isouter=True)
         ).where(
-            DATASET_SOURCE.c.dataset_ref == dataset_id
+            DATASET.c.id == dataset_id
         ).cte(name="sources", recursive=True)
 
         sources = sources.union_all(
