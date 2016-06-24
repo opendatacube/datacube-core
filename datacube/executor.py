@@ -35,67 +35,34 @@ class SerialExecutor(object):
         return func(*args, **kwargs)
 
 
-class MultiprocessingExecutor(object):
-    def __init__(self, pool):
-        self._pool = pool
-
-    def submit(self, func, *args, **kwargs):
-        return self._pool.submit(func, *args, **kwargs)
-
-    def map(self, func, iterable):
-        return [self.submit(func, data) for data in iterable]
-
-    @staticmethod
-    def as_completed(futures):
-        from concurrent.futures import as_completed
-        return as_completed(futures)
-
-    @staticmethod
-    def result(value):
-        return value.result()
-
-
-class DistributedExecutor(object):
-    def __init__(self, executor):
-        """
-        :type executor: distributed.Executor
-        :return:
-        """
-        self._executor = executor
-
-    def submit(self, func, *args, **kwargs):
-        return self._executor.submit(func, *args, **kwargs)
-
-    def map(self, func, iterable):
-        return self._executor.map(func, iterable)
-
-    @staticmethod
-    def as_completed(futures):
-        from distributed import as_completed
-        return as_completed(futures)
-
-    @staticmethod
-    def result(value):
-        return value.result()
-
-
-def _get_ipyparallel_executor(workers):
-    try:
-        import ipyparallel
-    except ImportError:
-        return None
-    try:
-        rc = ipyparallel.Client()
-    except (IOError, ipyparallel.TimeoutError):
-        return None
-    return rc.load_balanced_view()
-
-
 def _get_distributed_executor(scheduler, workers):
     try:
         import distributed
     except ImportError:
         return None
+
+    class DistributedExecutor(object):
+        def __init__(self, executor):
+            """
+            :type executor: distributed.Executor
+            :return:
+            """
+            self._executor = executor
+
+        def submit(self, func, *args, **kwargs):
+            return self._executor.submit(func, *args, **kwargs)
+
+        def map(self, func, iterable):
+            return self._executor.map(func, iterable)
+
+        @staticmethod
+        def as_completed(futures):
+            return distributed.as_completed(futures)
+
+        @staticmethod
+        def result(value):
+            return value.result()
+
     try:
         executor = DistributedExecutor(distributed.Executor(scheduler))
         return executor
@@ -105,9 +72,27 @@ def _get_distributed_executor(scheduler, workers):
 
 def _get_concurrent_executor(workers):
     try:
-        from concurrent.futures import ProcessPoolExecutor
+        from concurrent.futures import ProcessPoolExecutor, as_completed
     except ImportError:
         return None
+
+    class MultiprocessingExecutor(object):
+        def __init__(self, pool):
+            self._pool = pool
+
+        def submit(self, func, *args, **kwargs):
+            return self._pool.submit(func, *args, **kwargs)
+
+        def map(self, func, iterable):
+            return [self.submit(func, data) for data in iterable]
+
+        @staticmethod
+        def as_completed(futures):
+            return as_completed(futures)
+
+        @staticmethod
+        def result(value):
+            return value.result()
 
     return MultiprocessingExecutor(ProcessPoolExecutor(workers if workers > 0 else None))
 
