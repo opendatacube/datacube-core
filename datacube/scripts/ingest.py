@@ -181,7 +181,7 @@ def ingest_cmd(index, config, dry_run, executor):
                                        **task))
 
     failed = 0
-    for result in results:
+    for result in executor.as_completed(results):
         try:
             datasets = executor.result(result)
             for dataset in datasets.values:
