@@ -25,6 +25,11 @@ class SerialExecutor(object):
         return [SerialExecutor.submit(func, data) for data in iterable]
 
     @staticmethod
+    def as_completed(futures):
+        for future in futures:
+            yield future
+
+    @staticmethod
     def result(value):
         func, args, kwargs = value
         return func(*args, **kwargs)
@@ -39,6 +44,11 @@ class MultiprocessingExecutor(object):
 
     def map(self, func, iterable):
         return [self.submit(func, data) for data in iterable]
+
+    @staticmethod
+    def as_completed(futures):
+        from concurrent.futures import as_completed
+        return as_completed(futures)
 
     @staticmethod
     def result(value):
@@ -58,6 +68,11 @@ class DistributedExecutor(object):
 
     def map(self, func, iterable):
         return self._executor.map(func, iterable)
+
+    @staticmethod
+    def as_completed(futures):
+        from distributed import as_completed
+        return as_completed(futures)
 
     @staticmethod
     def result(value):
