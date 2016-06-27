@@ -72,7 +72,9 @@ def unsqueeze_data_array(da, dim, pos, coord=None):
     return xarray.DataArray(new_data, dims=new_dims, coords=new_coords)
 
 
-def unsqueeze_dataset(ds, dim, coord=[0], pos=0):
+def unsqueeze_dataset(ds, dim, coord=None, pos=0):
+    if coord is None:
+        coord = [0]
     ds = ds.apply(unsqueeze_data_array, dim=dim, pos=pos, keep_attrs=True, coord=coord)
     return ds
 
