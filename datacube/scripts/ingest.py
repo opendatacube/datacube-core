@@ -10,9 +10,10 @@ except ImportError:
 from copy import deepcopy
 from pathlib import Path
 from pandas import to_datetime
+from datetime import datetime
 
 from datacube.api.core import Datacube
-from datacube.model import DatasetType, GeoPolygon
+from datacube.model import DatasetType, GeoPolygon, Range
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.storage.storage import write_dataset_to_netcdf
 from datacube.ui import click as ui
@@ -23,12 +24,12 @@ from datacube.ui.click import cli
 _LOG = logging.getLogger('agdc-ingest')
 
 
-def find_diff(input_type, output_type, index):
+def find_diff(input_type, output_type, index, **query):
     from datacube.api.grid_workflow import GridWorkflow
     workflow = GridWorkflow(index, output_type.grid_spec)
 
-    tiles_in = workflow.list_tiles(product=input_type.name)
-    tiles_out = workflow.list_tiles(product=output_type.name)
+    tiles_in = workflow.list_tiles(product=input_type.name, **query)
+    tiles_out = workflow.list_tiles(product=output_type.name, **query)
 
     def update_dict(d, **kwargs):
         result = d.copy()
@@ -155,14 +156,18 @@ def get_full_lineage(index, id_):
     return index.datasets.get(id_, include_sources=True)
 
 
-def config_loader(index, config):
+def config_loader(index, config, year):
     config_name = Path(config).name
     _, config = next(read_documents(Path(config)))
     config['filename'] = config_name
 
     source_type, output_type = make_output_type(index, config)
 
-    tasks = find_diff(source_type, output_type, index)
+    query = {}
+    if year:
+        query['time'] = Range(datetime(year=year, month=1, day=1), datetime(year=year+1, month=1, day=1))
+
+    tasks = find_diff(source_type, output_type, index, **query)
     _LOG.info('%s tasks discovered', len(tasks))
 
     def update_sources(sources):
@@ -235,20 +240,21 @@ def process_tasks(index, config, source_type, output_type, tasks, executor):
 @click.option('--config-file', '-c',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
               help='Ingest configuration file')
-@ui.executor_cli_options
+@click.option('--year', type=click.IntRange(1960, 2060))
 @click.option('--save-tasks', help='Save tasks to the specified file',
               type=click.Path(exists=False))
 @click.option('--load-tasks', help='Load tasks from the specified file',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
 @click.option('--dry-run', '-d', is_flag=True, default=False, help='Check if everything is ok')
 @ui.pass_index(app_name='agdc-ingest')
-def ingest_cmd(index, config_file, save_tasks, load_tasks, dry_run, executor):
+@ui.executor_cli_options
+def ingest_cmd(index, config_file, year, save_tasks, load_tasks, dry_run, executor):
     if (config_file is None) == (load_tasks is None):
         click.echo('Must specify exactly one of --config, --load-tasks')
         click.get_current_context().exit(1)
 
     if config_file:
-        config, source_type, output_type, tasks = config_loader(index, config_file)
+        config, source_type, output_type, tasks = config_loader(index, config_file, year)
 
     if load_tasks:
         config, source_type, output_type, tasks = task_loader(index, load_tasks)
