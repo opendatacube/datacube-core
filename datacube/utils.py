@@ -15,6 +15,7 @@ import dateutil.parser
 import jsonschema
 import numpy
 from osgeo import ogr
+import xarray
 
 import yaml
 try:
@@ -49,6 +50,31 @@ def attrs_all_equal(iterable, attr_name):
     :rtype: bool
     """
     return len({getattr(item, attr_name, float('nan')) for item in iterable}) <= 1
+
+
+def unsqueeze_data_array(da, dim, pos, coord=None):
+    """
+    Adds a 1-length dimension to a data array
+    :param xarray.DataArray da: array to add a 1-length dimension
+    :param str dim: name of new dimension
+    :param int pos: position of dim
+    :param dict coord:
+    :return: A new xarray with a dimension added
+    :rtype: xarray.DataArray
+    """
+    new_dims = list(da.dims)
+    new_dims.insert(pos, dim)
+    new_shape = da.data.shape[:pos] + (1,) + da.data.shape[pos:]
+    new_data = da.data.reshape(new_shape)
+    new_coords = {k: v for k, v in da.coords.items()}
+    if coord:
+        new_coords[dim] = coord
+    return xarray.DataArray(new_data, dims=new_dims, coords=new_coords)
+
+
+def unsqueeze_dataset(ds, dim, coord=[0], pos=0):
+    ds = ds.apply(unsqueeze_data_array, dim=dim, pos=pos, keep_attrs=True, coord=coord)
+    return ds
 
 
 def clamp(x, l, u):
@@ -118,6 +144,12 @@ def intersect_points(a, b):
     a = _points_to_ogr(a)
     b = _points_to_ogr(b)
     return _ogr_to_points(a.Intersection(b))
+
+
+def union_points(a, b):
+    a = _points_to_ogr(a)
+    b = _points_to_ogr(b)
+    return _ogr_to_points(a.Union(b))
 
 
 def data_resolution_and_offset(data):
