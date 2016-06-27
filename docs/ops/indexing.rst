@@ -73,7 +73,7 @@ Adding Some Data
 
 Everything is now ready, and we can use the **datacube** tool to add one or more datasets into our Cube by running::
 
-    datacube dataset add <path-to-dataset>
+    datacube dataset add --auto-match <path-to-dataset>
 
 
 
