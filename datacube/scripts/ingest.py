@@ -165,11 +165,12 @@ def config_loader(index, config):
     tasks = find_diff(source_type, output_type, index)
     _LOG.info('%s tasks discovered', len(tasks))
 
-    def update_sources(labels, sources):
+    def update_sources(sources):
         return tuple(get_full_lineage(index, dataset.id) for dataset in sources)
 
     def update_task(task):
-        task['sources'] = xr_apply(task['sources'], update_sources, dtype='O')
+        for i in range(task['sources'].size):
+            task['sources'].values[i] = update_sources(task['sources'].values[i])
         return task
 
     tasks = (update_task(task) for task in tasks)
