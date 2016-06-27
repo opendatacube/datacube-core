@@ -69,7 +69,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset,
         [
             '-vv',
             'ingest',
-            '--config',
+            '--config-file',
             str(config_path)
         ]
     )

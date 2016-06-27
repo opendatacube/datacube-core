@@ -3,6 +3,10 @@ from __future__ import absolute_import
 import logging
 import click
 import cachetools
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 from copy import deepcopy
 from pathlib import Path
 from pandas import to_datetime
@@ -10,7 +14,7 @@ from pandas import to_datetime
 from datacube.api.core import Datacube
 from datacube.model import DatasetType, GeoPolygon
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
-from datacube.storage.storage import write_dataset_to_netcdf, append_variable_to_netcdf
+from datacube.storage.storage import write_dataset_to_netcdf
 from datacube.ui import click as ui
 from datacube.utils import read_documents, intersect_points
 
@@ -104,6 +108,75 @@ def get_namemap(config):
     return {spec['src_varname']: spec['name'] for spec in config['measurements']}
 
 
+def make_output_type(index, config):
+    source_type = index.products.get_by_name(config['source_type'])
+    if not source_type:
+        click.echo("Source DatasetType %s does not exist", config['source_type'])
+        click.get_current_context().exit(1)
+
+    output_type = morph_dataset_type(source_type, config)
+    _LOG.info('Created DatasetType %s', output_type.name)
+    # TODO: don't add output_type in dry_run mode?
+    output_type = index.products.add(output_type)
+
+    return source_type, output_type
+
+
+def task_saver(config, tasks, taskfile):
+    with open(taskfile, 'wb') as stream:
+        pickler = pickle.Pickler(stream, pickle.HIGHEST_PROTOCOL)
+        pickler.dump(config)
+        for task in tasks:
+            pickler.dump(task)
+    _LOG.info('Saved config and tasks to %s', taskfile)
+
+
+def _task_loader(taskfile):
+    with open(taskfile, 'rb') as stream:
+        unpickler = pickle.Unpickler(stream)
+        _ = unpickler.load()  # skip config
+        while True:
+            try:
+                yield unpickler.load()
+            except EOFError:
+                break
+
+
+def task_loader(index, taskfile):
+    with open(taskfile, 'rb') as stream:
+        config = pickle.load(stream)
+    source_type, output_type = make_output_type(index, config)
+    tasks = _task_loader(taskfile)
+    return config, source_type, output_type, tasks
+
+
+@cachetools.cached(cache={}, key=lambda index, id_: id_)
+def get_full_lineage(index, id_):
+    return index.datasets.get(id_, include_sources=True)
+
+
+def config_loader(index, config):
+    config_name = Path(config).name
+    _, config = next(read_documents(Path(config)))
+    config['filename'] = config_name
+
+    source_type, output_type = make_output_type(index, config)
+
+    tasks = find_diff(source_type, output_type, index)
+    _LOG.info('%s tasks discovered', len(tasks))
+
+    def update_sources(labels, sources):
+        return tuple(get_full_lineage(index, dataset.id) for dataset in sources)
+
+    def update_task(task):
+        task['sources'] = xr_apply(task['sources'], update_sources, dtype='O')
+        return task
+
+    tasks = (update_task(task) for task in tasks)
+
+    return config, source_type, output_type, tasks
+
+
 def ingest_work(config, source_type, output_type, index, sources, geobox):
     namemap = get_namemap(config)
     measurements = get_measurements(source_type, config)
@@ -133,62 +206,60 @@ def ingest_work(config, source_type, output_type, index, sources, geobox):
     return datasets
 
 
-@cachetools.cached(cache={}, key=lambda index, id_: id_)
-def get_full_lineage(index, id_):
-    return index.datasets.get(id_, include_sources=True)
-
-
-@cli.command('ingest', help="Ingest datasets")
-@click.option('--config', '-c',
-              type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
-              required=True,
-              help='Ingest configuration file')
-@ui.executor_cli_options
-@click.option('--dry-run', '-d', is_flag=True, default=False, help='Check if everything is ok')
-@ui.pass_index(app_name='agdc-ingest')
-def ingest_cmd(index, config, dry_run, executor):
-    config_name = Path(config).name
-    _, config = next(read_documents(Path(config)))
-    config['filename'] = config_name
-    source_type = index.products.get_by_name(config['source_type'])
-    if not source_type:
-        _LOG.error("Source DatasetType %s does not exist", config['source_type'])
-        return 1
-
-    output_type = morph_dataset_type(source_type, config)
-    _LOG.info('Created DatasetType %s', output_type.name)
-    # TODO: don't add output_type in dry_run mode?
-    output_type = index.products.add(output_type)
-
-    tasks = find_diff(source_type, output_type, index)
-    _LOG.info('%s tasks discovered', len(tasks))
-
-    def update_sources(labels, sources):
-        return tuple(get_full_lineage(index, dataset.id) for dataset in sources)
-
-    if dry_run:
-        for task in tasks:
-            _LOG.info('Would create %s', get_filename(config, task['index'], task['sources']))
-        return
-
+def process_tasks(index, config, source_type, output_type, tasks, executor):
     results = []
     for task in tasks:
-        task['sources'] = xr_apply(task['sources'], update_sources, dtype='O')
         results.append(executor.submit(ingest_work,
                                        config=config,
                                        source_type=source_type,
                                        output_type=output_type,
                                        **task))
 
-    failed = 0
+    successful = failed = 0
     for result in executor.as_completed(results):
         try:
             datasets = executor.result(result)
             for dataset in datasets.values:
                 index.datasets.add(dataset)
+            successful += 1
         except Exception:  # pylint: disable=broad-except
             _LOG.exception('Task failed')
             failed += 1
             continue
 
-    _LOG.info('%d successful, %d failed', len(tasks)-failed, failed)
+    return successful, failed
+
+
+@cli.command('ingest', help="Ingest datasets")
+@click.option('--config-file', '-c',
+              type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
+              help='Ingest configuration file')
+@ui.executor_cli_options
+@click.option('--save-tasks', help='Save tasks to the specified file',
+              type=click.Path(exists=False))
+@click.option('--load-tasks', help='Load tasks from the specified file',
+              type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
+@click.option('--dry-run', '-d', is_flag=True, default=False, help='Check if everything is ok')
+@ui.pass_index(app_name='agdc-ingest')
+def ingest_cmd(index, config_file, save_tasks, load_tasks, dry_run, executor):
+    if (config_file is None) == (load_tasks is None):
+        click.echo('Must specify exactly one of --config, --load-tasks')
+        click.get_current_context().exit(1)
+
+    if config_file:
+        config, source_type, output_type, tasks = config_loader(index, config_file)
+
+    if load_tasks:
+        config, source_type, output_type, tasks = task_loader(index, load_tasks)
+
+    if dry_run:
+        for task in tasks:
+            click.echo('Would create %s' % get_filename(config, task['index'], task['sources']))
+        return
+
+    if save_tasks:
+        task_saver(config, tasks, save_tasks)
+        return
+
+    successful, failed = process_tasks(index, config, source_type, output_type, tasks, executor)
+    click.echo('%d successful, %d failed' % (successful, failed))
