@@ -20,6 +20,7 @@ from ..model import GeoPolygon, GeoBox
 from ..storage.storage import DatasetSource, fuse_sources
 from ..utils import check_intersect, data_resolution_and_offset
 from .query import Query, query_group_by, query_geopolygon
+from .query import query_geopolygon_like, query_resolution_like, query_crs_like
 
 _LOG = logging.getLogger(__name__)
 
@@ -136,7 +137,7 @@ class Datacube(object):
         return measurements
 
     def load(self, product=None, measurements=None, output_crs=None, resolution=None, stack=False, dask_chunks=None,
-             **query):
+             like=None, **query):
         """
         Loads data as an ``xarray`` object.
 
@@ -164,7 +165,7 @@ class Datacube(object):
             A new dimension is created with the name supplied.
             This requires all of the data to be of the same datatype.
 
-            To reproject or resample the data, supply the ``output_crs`` and ``resolution`` fileds.
+            To reproject or resample the data, supply the ``output_crs`` and ``resolution`` fields.
 
         :param str product: the product to be included.
                 By default all available measurements are included.
@@ -203,19 +204,29 @@ class Datacube(object):
             See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
             for more information.
 
+        :param like: Uses the output of a previous ``load()`` to form the basis of a request for another product.
+            E.g.::
+
+                pq = dc.load(product='ls5_pq_albers`, like='ls5_nbar_albers')
+
+        :type like: xarray.Dataset
+
         :return: Requested data.  As a ``DataArray`` if the ``stack`` variable is supplied.
         :rtype: :class:`xarray.Dataset` or :class:`xarray.DataArray`
         """
         if product is not None:
             query['product'] = product
 
+        if like is not None:
+            query['like'] = like
+
         observations = self.product_observations(**query)
         if not observations:
             return None if stack else xarray.Dataset()
 
-        crs = CRS(output_crs) if output_crs else get_crs(observations)
-        geopolygon = query_geopolygon(**query) or get_bounds(observations, crs)
-        resolution = resolution or get_resolution(observations)
+        crs = CRS(output_crs) if output_crs else query_crs_like(like) or get_crs(observations)
+        geopolygon = query_geopolygon(**query) or query_geopolygon_like(like) or get_bounds(observations, crs)
+        resolution = resolution or query_resolution_like(like) or get_resolution(observations)
         geobox = GeoBox.from_geopolygon(geopolygon, resolution, crs)
 
         group_by = query_group_by(**query)

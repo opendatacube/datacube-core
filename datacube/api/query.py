@@ -37,11 +37,11 @@ GroupBy = collections.namedtuple('GroupBy', ['dimension', 'group_by_func', 'unit
 FLOAT_TOLERANCE = 0.0000001 # TODO: For DB query, use some sort of 'contains' query, rather than range overlap.
 SPATIAL_KEYS = ('latitude', 'lat', 'y', 'longitude', 'lon', 'long', 'x')
 CRS_KEYS = ('crs', 'coordinate_reference_system')
-OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan', 'product', 'geopolygon')
+OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan', 'product', 'geopolygon', 'like')
 
 
 class Query(object):
-    def __init__(self, index=None, product=None, geopolygon=None, **kwargs):
+    def __init__(self, index=None, product=None, geopolygon=None, like=None, **kwargs):
         """Parses a kwarg dict for query parameters
 
         :param index: An optional `index` object, if checking of field names is desired.
@@ -51,7 +51,7 @@ class Query(object):
         :return: :class:`Query`
         """
         self.product = product
-        self.geopolygon = query_geopolygon(geopolygon=geopolygon, **kwargs)
+        self.geopolygon = query_geopolygon(geopolygon=geopolygon, **kwargs) or query_geopolygon_like(like)
 
         remaining_keys = set(kwargs.keys()) - set(SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
         if index:
@@ -60,6 +60,8 @@ class Query(object):
                 raise LookupError('Unknown arguments: ', unknown_keys)
 
         self.search = {}
+        if like:
+            self.search.update(_like_to_search(like))
         for key in remaining_keys:
             self.search.update(_values_to_search(**{key: kwargs[key]}))
 
@@ -149,6 +151,25 @@ def query_geopolygon(geopolygon=None, **kwargs):
         raise ValueError('Cannot specify "geopolygon" and one of %s at the same time' % (SPATIAL_KEYS + CRS_KEYS))
 
     return geopolygon or _range_to_geopolygon(**spatial_dims)
+
+
+def query_geopolygon_like(dataset):
+    if dataset is None:
+        return None
+    return getattr(dataset, 'extent')
+
+
+def query_resolution_like(dataset):
+    if dataset is None:
+        return None
+    affine = dataset.affine
+    return affine.e, affine.a
+
+
+def query_crs_like(dataset):
+    if dataset is None:
+        return None
+    return dataset.data_vars.values()[0].attrs.get('crs')
 
 
 def query_group_by(group_by='time', **kwargs):
@@ -246,26 +267,28 @@ def _to_datetime(t):
             t = datetime.datetime.strptime(t, "%Y-%m-%dT%H:%M:%S.%fZ")
         except ValueError:
             pass
+
+    elif isinstance(t, datetime.datetime):
+        if t.tzinfo is None:
+            t = t.replace(tzinfo=tz.tzutc())
+        return t
+    else:
         try:
             from pandas import to_datetime as pandas_to_datetime
             return pandas_to_datetime(t, utc=True, infer_datetime_format=True).to_pydatetime()
         except ImportError:
             pass
-
-    if isinstance(t, datetime.datetime):
-        if t.tzinfo is None:
-            t = t.replace(tzinfo=tz.tzutc())
-        return t
     raise ValueError('Could not parse the time for {}'.format(t))
 
 
 def _time_to_search_dims(time_range):
     if hasattr(time_range, '__iter__') and len(time_range) == 2:
-        return Range(_to_datetime(time_range[0]), _to_datetime(time_range[1]))
+        range = Range(_to_datetime(time_range[0]), _to_datetime(time_range[1]))
+        if range[0] == range[1]:
+            return Range(range[0], range[1] + datetime.timedelta(milliseconds=1))
     else:
         single_query_time = _to_datetime(time_range)
-        end_time = single_query_time + datetime.timedelta(milliseconds=1)
-        return Range(single_query_time, end_time)
+        return Range(single_query_time, single_query_time + datetime.timedelta(milliseconds=1))
 
 
 def _convert_to_solar_time(utc, longitude):
@@ -282,3 +305,13 @@ def solar_day(dataset):
     longitude = (bb.left + bb.right) * 0.5
     solar_time = _convert_to_solar_time(utc, longitude)
     return np.datetime64(solar_time.date(), 'D')
+
+
+def _like_to_search(dataset):
+    search = {}
+    for name, coord in dataset.coords.items():
+        if name == 'time':
+            search['time'] = _time_to_search_dims((coord[0].values, coord[-1].values))
+        elif name not in SPATIAL_KEYS:
+            search[name] = Range(dataset.coords[0].values, dataset.coords[-1].values)
+    return search
