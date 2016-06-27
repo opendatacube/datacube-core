@@ -389,6 +389,8 @@ class CRS(object):
     False
     """
     def __init__(self, crs_str):
+        if isinstance(crs_str, CRS):
+            crs_str = crs_str.crs_str
         self.crs_str = crs_str
         self._crs = osr.SpatialReference()
         self._crs.SetFromUserInput(crs_str)
