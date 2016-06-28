@@ -86,6 +86,8 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
 
     def reproject(source, dest):
         with source.open() as src:
+            # HACK: dtype shenanigans to make sure 'NaN' string gets translated to NaN value
+            src_nodata = numpy.dtype(src.dtype).type(source.nodata)
             array_transform = ~source.transform * dst_transform
             if (source.crs == dst_projection and no_scale(array_transform) and
                     (resampling == RESAMPLING.nearest or no_fractional_translate(array_transform))):
@@ -93,19 +95,16 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
                 read, write, shape = zip(*map(_calc_offsets, dydx, src.shape, dest.shape))
 
                 if all(shape):
-                    # TODO: dtype and nodata conversion
-                    assert src.dtype == dest.dtype
-                    assert source.nodata == dst_nodata
                     window = ((read[0], read[0] + shape[0]), (read[1], read[1] + shape[1]))
-                    dest[write[0]:write[0] + shape[0], write[1]:write[1] + shape[1]] = src.ds.read(indexes=src.bidx,
-                                                                                                   window=window)
+                    tmp = src.ds.read(indexes=src.bidx, window=window)
+                    numpy.copyto(dest[write[0]:write[0] + shape[0], write[1]:write[1] + shape[1]],
+                                 tmp, where=(tmp != src_nodata))
             else:
-                # HACK: dtype shenanigans to make sure 'NaN' string gets translated to NaN value
                 rasterio.warp.reproject(src,
                                         dest,
                                         src_transform=source.transform,
                                         src_crs=str(source.crs),
-                                        src_nodata=numpy.dtype(src.dtype).type(source.nodata),
+                                        src_nodata=src_nodata,
                                         dst_transform=dst_transform,
                                         dst_crs=str(dst_projection),
                                         dst_nodata=dest.dtype.type(dst_nodata),
