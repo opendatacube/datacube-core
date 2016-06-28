@@ -132,10 +132,9 @@ def task_saver(config, tasks, taskfile):
     _LOG.info('Saved config and tasks to %s', taskfile)
 
 
-def _task_loader(taskfile):
+def stream_unpickler(taskfile):
     with open(taskfile, 'rb') as stream:
         unpickler = pickle.Unpickler(stream)
-        _ = unpickler.load()  # skip config
         while True:
             try:
                 yield unpickler.load()
@@ -144,11 +143,10 @@ def _task_loader(taskfile):
 
 
 def task_loader(index, taskfile):
-    with open(taskfile, 'rb') as stream:
-        config = pickle.load(stream)
+    stream = stream_unpickler(taskfile)
+    config = next(stream)
     source_type, output_type = make_output_type(index, config)
-    tasks = _task_loader(taskfile)
-    return config, source_type, output_type, tasks
+    return config, source_type, output_type, stream
 
 
 @cachetools.cached(cache={}, key=lambda index, id_: id_)
