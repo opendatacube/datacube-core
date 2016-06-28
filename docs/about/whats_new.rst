@@ -1,8 +1,24 @@
 What's New
 ==========
 
-v1.1.1 Unleash the Ingester (23 June 2016)
-------------------------------------------
+v1.1.2 Wind Chill (28 June 2016)
+--------------------------------
+
+This release brings major performance and usability improvements
+
+  - Major performance improvements to GridWorkflow and Ingester
+
+  - Ability to limit ingestion to one year at a time (to limit memory usage)
+
+  - Ability to storage ingestion tasks to be executed later (to reduce idle time in distributed processing case)
+
+  - General improvements to documentation and user friendliness.
+
+  - Lots of other minor but important fixes throughout the codebase.
+
+
+v1.1.1 Good Idea (23 June 2016)
+-------------------------------
 
 This release contains lots of fixes in preparation for the first large
 ingestion of Geoscience Australia data into a production version of
@@ -29,8 +45,8 @@ AGDCv2.
   - Lots of other minor but important fixes throughout the codebase.
 
 
-v1.1-prerelease Unification (3 June 2016)
------------------------------------------
+v1.1.0 No Spoon (3 June 2016)
+-----------------------------
 
 This release includes restructuring of code, APIs, tools, configurations
 and concepts. The result of this churn is cleaner code, faster performance and
