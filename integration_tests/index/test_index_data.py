@@ -28,7 +28,7 @@ _telemetry_dataset = {
     },
     # We're unlikely to have extent info for a raw dataset, we'll use it for search tests.
     'extent': {
-        'center_dt': datetime.datetime(2014, 7, 26, 23, 49, 0, 343853),
+        'center_dt': datetime.datetime(2014, 7, 26, 23, 49, 0, 343853).isoformat(),
         'coord': {
             'll': {'lat': -31.33333, 'lon': 149.78434},
             'lr': {'lat': -31.37116, 'lon': 152.20094},
@@ -36,7 +36,7 @@ _telemetry_dataset = {
             'ur': {'lat': -29.26873, 'lon': 152.21782}
         }
     },
-    'creation_dt': datetime.datetime(2015, 4, 22, 6, 32, 4),
+    'creation_dt': datetime.datetime(2015, 4, 22, 6, 32, 4).isoformat(),
     'instrument': {'name': 'OLI_TIRS'},
     'format': {
         'name': 'MD'

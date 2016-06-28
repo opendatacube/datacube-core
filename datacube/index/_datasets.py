@@ -265,18 +265,29 @@ class DatasetResource(object):
         :type dataset: datacube.model.Dataset
         :rtype: datacube.model.Dataset
         """
-        for source in dataset.sources.values():
-            self.add(source)
+        indexable_doc = copy.deepcopy(dataset.metadata_doc)
+        dataset.type.dataset_reader(indexable_doc).sources = {}
 
-        _LOG.info('Indexing %s', dataset.id)
-        with self._db.begin() as transaction:
-            indexable_doc = copy.deepcopy(dataset.metadata_doc)
-            dataset.type.dataset_reader(indexable_doc).sources = {}
-            was_inserted = self._db.insert_dataset(indexable_doc, dataset.id, dataset.type.id)
+        existing = self._db.get_dataset(dataset.id)
+        if existing:
+            fields.check_doc_unchanged(
+                existing.metadata,
+                indexable_doc,
+                'Dataset {}'.format(dataset.id)
+            )
+        else:
+            for source in dataset.sources.values():
+                self.add(source)
 
-            if was_inserted:
-                for classifier, source_dataset in dataset.sources.items():
-                    self._db.insert_dataset_source(classifier, dataset.id, source_dataset.id)
+            _LOG.info('Indexing %s', dataset.id)
+            with self._db.begin() as transaction:
+                was_inserted = self._db.insert_dataset(indexable_doc,
+                                                       dataset.id,
+                                                       dataset.type.id)
+
+                if was_inserted:
+                    for classifier, source_dataset in dataset.sources.items():
+                        self._db.insert_dataset_source(classifier, dataset.id, source_dataset.id)
 
         if dataset.local_uri:
             self._db.ensure_dataset_location(dataset.id, dataset.local_uri)
