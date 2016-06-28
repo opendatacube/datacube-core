@@ -8,13 +8,13 @@ This release brings major performance and usability improvements
 
   - Major performance improvements to GridWorkflow and Ingester
 
-  - Ability to limit ingestion to one year at a time (to limit memory usage)
+  - Ingestion can be limited to one year at a time to limit memory usage
 
-  - Ability to storage ingestion tasks to be executed later (to reduce idle time in distributed processing case)
+  - Ingestion can be done in two stages (serial followed by highly parallel) by using
+    --save-tasks/load-task options.
+    This should help reduce idle time in distributed processing case.
 
-  - General improvements to documentation and user friendliness.
-
-  - Lots of other minor but important fixes throughout the codebase.
+  - General improvements to documentation.
 
 
 v1.1.1 Good Idea (23 June 2016)
