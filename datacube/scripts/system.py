@@ -4,6 +4,7 @@ import logging
 import click
 from click import echo
 
+import datacube
 from datacube.index import index_connect
 from datacube.ui import click as ui
 from datacube.ui.click import cli, handle_exception
@@ -47,6 +48,7 @@ def check(config_file):
     """
     Verify & view current configuration
     """
+    echo('Version: %s' % datacube.__version__)
     echo('Read configurations files from: %s' % config_file.files_loaded)
     echo('Host: {}:{}'.format(config_file.db_hostname or 'localhost', config_file.db_port or '5432'))
     echo('Database: {}'.format(config_file.db_database))
