@@ -80,12 +80,16 @@ def _set_config(ctx, param, value):
     ctx.obj['config_file'] = parsed_config
 
 
+#: pylint: disable=invalid-name
 version_option = click.option('--version', is_flag=True, callback=_print_version,
                               expose_value=False, is_eager=True)
+#: pylint: disable=invalid-name
 verbose_option = click.option('--verbose', '-v', count=True, callback=_init_logging,
                               is_eager=True, expose_value=False, help="Use multiple times for more verbosity")
+#: pylint: disable=invalid-name
 config_option = click.option('--config_file', '-C', multiple=True, default='', callback=_set_config,
                              expose_value=False)
+#: pylint: disable=invalid-name
 log_queries_option = click.option('--log-queries', is_flag=True, callback=_log_queries,
                                   expose_value=False, help="Print database queries.")
 
