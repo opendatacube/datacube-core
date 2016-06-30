@@ -81,7 +81,7 @@ def geobox_info(extent, valid_data=None):
 def new_dataset_info():
     doc = {
         'id': str(uuid.uuid4()),
-        'creation_dt': datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
+        'creation_dt': datetime.datetime.utcnow().isoformat(),
     }
     return doc
 
@@ -96,12 +96,12 @@ def band_info(band_names):
 
 
 def time_info(time):
-    time = to_datetime(time)
+    time_str = to_datetime(time).isoformat()
     doc = {
         'extent': {
-            'from_dt': '{:%Y-%m-%d %H:%M:%S}'.format(time),
-            'to_dt': '{:%Y-%m-%d %H:%M:%S}'.format(time),
-            'center_dt': '{:%Y-%m-%d %H:%M:%S}'.format(time),
+            'from_dt': time_str,
+            'to_dt': time_str,
+            'center_dt': time_str,
 
         }
     }
