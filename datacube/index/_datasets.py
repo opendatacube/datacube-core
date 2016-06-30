@@ -131,6 +131,8 @@ class DatasetTypeResource(object):
         :type type_: datacube.model.DatasetType
         :rtype: datacube.model.DatasetType
         """
+        DatasetType.validate(type_.definition)
+
         existing = self._db.get_dataset_type_by_name(type_.name)
         if existing:
             # TODO: Support for adding/updating match rules?
