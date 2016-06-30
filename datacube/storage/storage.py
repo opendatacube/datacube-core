@@ -10,6 +10,7 @@ from pathlib import Path
 
 from datacube.model import CRS
 from datacube.storage import netcdf_writer
+from datacube.options import OPTIONS
 
 try:
     from yaml import CSafeDumper as SafeDumper
@@ -109,7 +110,7 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
                                         dst_crs=str(dst_projection),
                                         dst_nodata=dest.dtype.type(dst_nodata),
                                         resampling=resampling,
-                                        NUM_THREADS=4)
+                                        NUM_THREADS=OPTIONS['reproject_threads'])
 
     def copyto_fuser(dest, src):
         numpy.copyto(dest, src, where=(src != dst_nodata))
