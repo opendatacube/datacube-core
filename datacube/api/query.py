@@ -267,25 +267,24 @@ def _to_datetime(t):
             t = datetime.datetime.strptime(t, "%Y-%m-%dT%H:%M:%S.%fZ")
         except ValueError:
             pass
-
     elif isinstance(t, datetime.datetime):
         if t.tzinfo is None:
             t = t.replace(tzinfo=tz.tzutc())
         return t
-    else:
-        try:
-            from pandas import to_datetime as pandas_to_datetime
-            return pandas_to_datetime(t, utc=True, infer_datetime_format=True).to_pydatetime()
-        except ImportError:
-            pass
+    
+    try:
+        from pandas import to_datetime as pandas_to_datetime
+        return pandas_to_datetime(t, utc=True, infer_datetime_format=True).to_pydatetime()
+    except ImportError:
+        pass
     raise ValueError('Could not parse the time for {}'.format(t))
 
 
 def _time_to_search_dims(time_range):
     if hasattr(time_range, '__iter__') and len(time_range) == 2:
-        range = Range(_to_datetime(time_range[0]), _to_datetime(time_range[1]))
-        if range[0] == range[1]:
-            return Range(range[0], range[1] + datetime.timedelta(milliseconds=1))
+        time_range = Range(_to_datetime(time_range[0]), _to_datetime(time_range[1]))
+        if time_range[0] == time_range[1]:
+            return Range(time_range[0], time_range[1] + datetime.timedelta(milliseconds=1))
     else:
         single_query_time = _to_datetime(time_range)
         return Range(single_query_time, single_query_time + datetime.timedelta(milliseconds=1))
