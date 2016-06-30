@@ -10,7 +10,7 @@ except ImportError:
     import pickle
 from pathlib import Path
 
-from . import click as ui
+from datacube.ui import click as dc_ui
 from ..utils import read_documents
 
 
@@ -60,22 +60,27 @@ def task_loader(index, taskfile):
     return config, stream
 
 
+# This is a function, so it's valid to be lowercase.
+#: pylint: disable=invalid-name
 app_config_option = click.option('--app-config', help='App configuration file',
-                          type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
+                                 type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
+#: pylint: disable=invalid-name
 load_tasks_option = click.option('--load-tasks', help='Load tasks from the specified file',
-                          type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
+                                 type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
+#: pylint: disable=invalid-name
 save_tasks_option = click.option('--save-tasks', help='Save tasks to the specified file',
-                          type=click.Path(exists=False))
+                                 type=click.Path(exists=False))
 
-task_app_options = ui.compose(
+#: pylint: disable=invalid-name
+task_app_options = dc_ui.compose(
     app_config_option,
     load_tasks_option,
     save_tasks_option,
 
-    ui.config_option,
-    ui.verbose_option,
-    ui.log_queries_option,
-    ui.executor_cli_options,
+    dc_ui.config_option,
+    dc_ui.verbose_option,
+    dc_ui.log_queries_option,
+    dc_ui.executor_cli_options,
 )
 
 
@@ -87,7 +92,7 @@ def task_app(make_config, make_tasks):
                 click.get_current_context().exit(1)
 
             if app_config:
-                config, tasks = config_loader(index, app_config, make_config, make_tasks,  *args, **kwargs)
+                config, tasks = config_loader(index, app_config, make_config, make_tasks, *args, **kwargs)
 
             if load_tasks:
                 config, tasks = task_loader(index, load_tasks)
