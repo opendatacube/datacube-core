@@ -260,6 +260,7 @@ def _datetime_to_timestamp(dt):
 def _to_datetime(t):
     if isinstance(t, integer_types + (float,)):
         t = datetime.datetime.fromtimestamp(t, tz=tz.tzutc())
+
     if isinstance(t, tuple):
         t = datetime.datetime(*t, tzinfo=tz.tzutc())
     elif isinstance(t, string_types):
@@ -271,7 +272,7 @@ def _to_datetime(t):
         if t.tzinfo is None:
             t = t.replace(tzinfo=tz.tzutc())
         return t
-    
+
     try:
         from pandas import to_datetime as pandas_to_datetime
         return pandas_to_datetime(t, utc=True, infer_datetime_format=True).to_pydatetime()
@@ -284,7 +285,8 @@ def _time_to_search_dims(time_range):
     if hasattr(time_range, '__iter__') and len(time_range) == 2:
         time_range = Range(_to_datetime(time_range[0]), _to_datetime(time_range[1]))
         if time_range[0] == time_range[1]:
-            return Range(time_range[0], time_range[1] + datetime.timedelta(milliseconds=1))
+            time_range[1] = time_range[0] + datetime.timedelta(milliseconds=1)
+        return Range(time_range[0], time_range[1])
     else:
         single_query_time = _to_datetime(time_range)
         return Range(single_query_time, single_query_time + datetime.timedelta(milliseconds=1))
