@@ -221,29 +221,18 @@ class PostgresDb(object):
         :type uri: str
         """
         scheme, body = _split_uri(uri)
-        # Insert if not exists.
-        #     (there's still a tiny chance of a race condition: It will throw an integrity error if another
-        #      connection inserts the same location in the time between the subquery and the main query.
-        #      This is ok for our purposes.)
-        self._connection.execute(
-            DATASET_LOCATION.insert().from_select(
-                ['dataset_ref', 'uri_scheme', 'uri_body'],
-                select([
-                    bindparam('dataset_ref'), bindparam('uri_scheme'), bindparam('uri_body')
-                ]).where(
-                    ~exists(select([DATASET_LOCATION.c.id]).where(
-                        and_(
-                            DATASET_LOCATION.c.dataset_ref == bindparam('dataset_ref'),
-                            DATASET_LOCATION.c.uri_scheme == bindparam('uri_scheme'),
-                            DATASET_LOCATION.c.uri_body == bindparam('uri_body'),
-                        ),
-                    ))
-                )
-            ),
-            dataset_ref=dataset_id,
-            uri_scheme=scheme,
-            uri_body=body,
-        )
+
+        try:
+            self._connection.execute(
+                DATASET_LOCATION.insert(),
+                dataset_ref=dataset_id,
+                uri_scheme=scheme,
+                uri_body=body,
+            )
+        except IntegrityError as e:
+            if e.orig.pgcode == PGCODE_UNIQUE_CONSTRAINT:
+                raise DuplicateRecordError('Location already exists: %s', uri)
+            raise
 
     def contains_dataset(self, dataset_id):
         return bool(self._connection.execute(select([DATASET.c.id]).where(DATASET.c.id == dataset_id)).fetchone())
