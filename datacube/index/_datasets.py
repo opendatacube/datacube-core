@@ -260,11 +260,12 @@ class DatasetResource(object):
         """
         return self._db.contains_dataset(dataset.id)
 
-    def add(self, dataset):
+    def add(self, dataset, skip_sources=False):
         """
         Ensure a dataset is in the index. Add it if not present.
 
         :type dataset: datacube.model.Dataset
+        :param bool skip_sources: use when sources are already indexed
         :rtype: datacube.model.Dataset
         """
         indexable_doc = copy.deepcopy(dataset.metadata_doc)
@@ -278,8 +279,9 @@ class DatasetResource(object):
                 'Dataset {}'.format(dataset.id)
             )
         else:
-            for source in dataset.sources.values():
-                self.add(source)
+            if not skip_sources:
+                for source in dataset.sources.values():
+                    self.add(source)
 
             _LOG.info('Indexing %s', dataset.id)
             with self._db.begin() as transaction:

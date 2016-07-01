@@ -224,7 +224,7 @@ def process_tasks(index, config, source_type, output_type, tasks, executor):
         try:
             datasets = executor.result(result)
             for dataset in datasets.values:
-                index.datasets.add(dataset)
+                index.datasets.add(dataset, skip_sources=True)
             successful += 1
         except Exception:  # pylint: disable=broad-except
             _LOG.exception('Task failed')
