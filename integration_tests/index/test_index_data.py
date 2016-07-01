@@ -6,11 +6,13 @@ Integration tests: these depend on a local Postgres instance.
 """
 from __future__ import absolute_import
 
+import pytest
 import datetime
 
 from pathlib import Path
 
 from datacube.model import Dataset
+from datacube.index.exceptions import DuplicateRecordError
 from datacube.index.postgres import PostgresDb
 
 _telemetry_uuid = '4ec8fe97-e8b9-11e4-87ff-1040f381a756'
@@ -63,7 +65,7 @@ _pseudo_telemetry_dataset_type = {
 _EXAMPLE_LS7_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('ls7-nbar-example.yaml')
 
 
-def test_index_dataset_in_transactions(index, db, local_config, default_metadata_type):
+def test_index_duplicate_dataset(index, db, local_config, default_metadata_type):
     """
     :type index: datacube.index._api.Index
     :type db: datacube.index.postgres._api.PostgresDb
@@ -79,26 +81,19 @@ def test_index_dataset_in_transactions(index, db, local_config, default_metadata
             dataset_type.id
         )
 
-        assert was_inserted
-        assert db.contains_dataset(_telemetry_uuid)
+    assert was_inserted
+    assert db.contains_dataset(_telemetry_uuid)
 
+    was_inserted = False
+    with pytest.raises(DuplicateRecordError):
         # Insert again. It should be ignored.
         was_inserted = db.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,
             dataset_type.id
         )
-        assert not was_inserted
-        assert db.contains_dataset(_telemetry_uuid)
-
-        transaction.rollback()
-
-    # Rollback should leave a blank database:
-    assert not db.contains_dataset(_telemetry_uuid)
-
-    # Check with a new connection too:
-    db = PostgresDb.from_config(local_config)
-    assert not db.contains_dataset(_telemetry_uuid)
+    assert not was_inserted
+    assert db.contains_dataset(_telemetry_uuid)
 
 
 def test_index_dataset_with_location(index, default_metadata_type):

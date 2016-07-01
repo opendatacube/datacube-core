@@ -9,6 +9,7 @@ from copy import deepcopy
 from collections import namedtuple
 from contextlib import contextmanager
 
+from datacube.index.exceptions import DuplicateRecordError
 from datacube.index._datasets import DatasetResource
 from datacube.model import DatasetType, MetadataType, Dataset
 
@@ -152,7 +153,7 @@ def _build_dataset(doc):
 _EXAMPLE_NBAR_DATASET = _build_dataset(_EXAMPLE_NBAR)
 
 
-DatasetRecord = namedtuple('DatasetRecord', ['id', 'metadata', 'dataset_type_ref'])
+DatasetRecord = namedtuple('DatasetRecord', ['id', 'metadata', 'dataset_type_ref', 'local_uri'])
 
 
 class MockDb(object):
@@ -173,9 +174,9 @@ class MockDb(object):
     def insert_dataset(self, metadata_doc, dataset_id, dataset_type_id):
         # Will we pretend this one was already ingested?
         if dataset_id in self.dataset:
-            raise RuntimeError('already ingested')
+            raise DuplicateRecordError('already ingested')
 
-        self.dataset[dataset_id] = DatasetRecord(dataset_id, metadata_doc, dataset_type_id)
+        self.dataset[dataset_id] = DatasetRecord(dataset_id, metadata_doc, dataset_type_id, None)
         return True
 
     def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
@@ -185,6 +186,9 @@ class MockDb(object):
 class MockTypesResource(object):
     def __init__(self, type_):
         self.type = type_
+
+    def get(self, *args, **kwargs):
+        return self.type
 
 
 def test_index_dataset():

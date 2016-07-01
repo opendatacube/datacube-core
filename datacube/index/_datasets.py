@@ -4,7 +4,6 @@ API for dataset indexing, access and search.
 """
 from __future__ import absolute_import
 
-import copy
 import logging
 
 import cachetools
@@ -12,6 +11,7 @@ import cachetools
 from datacube import compat
 from datacube.utils import InvalidDocException
 from datacube.model import Dataset, DatasetType, MetadataType
+from .exceptions import DuplicateRecordError
 from . import fields
 
 _LOG = logging.getLogger(__name__)
@@ -229,6 +229,7 @@ class DatasetResource(object):
         self._db = db
         self.types = dataset_type_resource
 
+    @cachetools.cached(cachetools.TTLCache(100, 60))
     def get(self, id_, include_sources=False):
         """
         Get dataset by id
@@ -268,33 +269,39 @@ class DatasetResource(object):
         :param bool skip_sources: use when sources are already indexed
         :rtype: datacube.model.Dataset
         """
-        indexable_doc = copy.deepcopy(dataset.metadata_doc)
-        dataset.type.dataset_reader(indexable_doc).sources = {}
+        if not skip_sources:
+            for source in dataset.sources.values():
+                self.add(source)
 
-        existing = self._db.get_dataset(dataset.id)
-        if existing:
-            fields.check_doc_unchanged(
-                existing.metadata,
-                indexable_doc,
-                'Dataset {}'.format(dataset.id)
-            )
-        else:
-            if not skip_sources:
-                for source in dataset.sources.values():
-                    self.add(source)
-
+        was_inserted = False
+        sources_tmp = dataset.type.dataset_reader(dataset.metadata_doc).sources
+        dataset.type.dataset_reader(dataset.metadata_doc).sources = {}
+        try:
             _LOG.info('Indexing %s', dataset.id)
             with self._db.begin() as transaction:
-                was_inserted = self._db.insert_dataset(indexable_doc,
-                                                       dataset.id,
-                                                       dataset.type.id)
-
-                if was_inserted:
+                try:
+                    was_inserted = self._db.insert_dataset(dataset.metadata_doc, dataset.id, dataset.type.id)
                     for classifier, source_dataset in dataset.sources.items():
                         self._db.insert_dataset_source(classifier, dataset.id, source_dataset.id)
+                except DuplicateRecordError:
+                    _LOG.exception('')
+
+            if not was_inserted:
+                existing = self.get(dataset.id)
+                if existing:
+                    fields.check_doc_unchanged(
+                        existing.metadata_doc,
+                        dataset.metadata_doc,
+                        'Dataset {}'.format(dataset.id)
+                    )
+        finally:
+            dataset.type.dataset_reader(dataset.metadata_doc).sources = sources_tmp
 
         if dataset.local_uri:
-            self._db.ensure_dataset_location(dataset.id, dataset.local_uri)
+            try:
+                self._db.ensure_dataset_location(dataset.id, dataset.local_uri)
+            except DuplicateRecordError:
+                _LOG.exception('')
 
         return dataset
 

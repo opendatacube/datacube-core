@@ -26,6 +26,7 @@ from sqlalchemy.exc import IntegrityError
 import datacube
 from datacube.config import LocalConfig
 from datacube.index.fields import OrExpression
+from datacube.index.exceptions import DuplicateRecordError
 from . import tables
 from ._fields import parse_fields, NativeField
 from .tables import DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
@@ -191,10 +192,6 @@ class PostgresDb(object):
         try:
             dataset_type_ref = bindparam('dataset_type_ref')
             ret = self._connection.execute(
-                # Insert if not exists.
-                #     (there's still a tiny chance of a race condition: It will throw an integrity error if another
-                #      connection inserts the same dataset in the time between the subquery and the main query.
-                #      This is ok for our purposes.)
                 DATASET.insert().from_select(
                     ['id', 'dataset_type_ref', 'metadata_type_ref', 'metadata'],
                     select([
@@ -205,7 +202,7 @@ class PostgresDb(object):
                             DATASET_TYPE.c.id == dataset_type_ref
                         ).label('metadata_type_ref'),
                         bindparam('metadata', type_=JSONB)
-                    ]).where(~exists(select([DATASET.c.id]).where(DATASET.c.id == bindparam('id'))))
+                    ])
                 ),
                 id=dataset_id,
                 dataset_type_ref=dataset_type_id,
@@ -214,8 +211,7 @@ class PostgresDb(object):
             return ret.rowcount > 0
         except IntegrityError as e:
             if e.orig.pgcode == PGCODE_UNIQUE_CONSTRAINT:
-                _LOG.info('Duplicate dataset, not inserting: %s', dataset_id)
-                # We're still going to raise it, because the transaction will have been invalidated.
+                raise DuplicateRecordError('Duplicate dataset, not inserting: %s', dataset_id)
             raise
 
     def ensure_dataset_location(self, dataset_id, uri):
