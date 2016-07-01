@@ -249,13 +249,18 @@ class PostgresDb(object):
         return bool(self._connection.execute(select([DATASET.c.id]).where(DATASET.c.id == dataset_id)).fetchone())
 
     def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
-        res = self._connection.execute(
-            DATASET_SOURCE.insert(),
-            classifier=classifier,
-            dataset_ref=dataset_id,
-            source_dataset_ref=source_dataset_id
-        )
-        return res.inserted_primary_key[0]
+        try:
+            res = self._connection.execute(
+                DATASET_SOURCE.insert(),
+                classifier=classifier,
+                dataset_ref=dataset_id,
+                source_dataset_ref=source_dataset_id
+            )
+            return res.inserted_primary_key[0]
+        except IntegrityError as e:
+            if e.orig.pgcode == PGCODE_UNIQUE_CONSTRAINT:
+                raise DuplicateRecordError('Source already exists')
+            raise
 
     def get_dataset(self, dataset_id):
         return self._connection.execute(
