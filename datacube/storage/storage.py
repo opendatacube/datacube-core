@@ -224,6 +224,7 @@ def write_dataset_to_netcdf(access_unit, global_attributes, variable_params, fil
     netcdf_writer.create_grid_mapping_variable(nco, access_unit.crs)
 
     for name, variable in access_unit.data_vars.items():
+        assert all(dim in variable.dims for dim in access_unit.crs.dimensions) == ('crs' in variable.attrs), 'crs err'
         _write_variable_to_netcdf(nco, name, variable, **variable_params.get(name, {}))
 
     # write global atrributes
