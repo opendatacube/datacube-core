@@ -1,6 +1,14 @@
 What's New
 ==========
 
+v1.1.3 Speeding Snowball (5 July 2016)
+--------------------------------------
+
+  - Added framework for developing distributed, task-based application
+
+  - Several additional Ingester performance improvements
+
+
 v1.1.2 Wind Chill (28 June 2016)
 --------------------------------
 
