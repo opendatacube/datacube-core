@@ -57,8 +57,11 @@ def check(config_file):
     echo('\n')
     echo('Attempting connect')
     try:
-        index_connect(local_config=config_file)
+        index = index_connect(local_config=config_file)
         echo('Success.')
+        for role, user, description in index.list_users():
+            if user == config_file.db_username:
+                echo('You have %s privileges.' % role.upper())
     except OperationalError as e:
         handle_exception('Error Connecting to Database: %s', e)
     except IndexSetupError as e:
