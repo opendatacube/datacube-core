@@ -5,6 +5,7 @@ import os
 import platform
 import sys
 import uuid
+import copy
 
 import numpy
 import xarray
@@ -73,7 +74,7 @@ def geobox_info(extent, valid_data=None):
     if valid_data:
         doc['grid_spatial']['projection']['valid_data'] = {
             'type': 'Polygon',
-            'coordinates': [valid_data.points+[valid_data.points[0]]]
+            'coordinates': [valid_data.points+[copy.copy(valid_data.points[0])]]  # HACK: to disable yaml aliases
         }
     return doc
 
