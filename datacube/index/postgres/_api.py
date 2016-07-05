@@ -309,12 +309,20 @@ class PostgresDb(object):
             'product': NativeField(
                 'product',
                 'Dataset type name',
-                None, DATASET_TYPE.c.name
+                None,
+                DATASET_TYPE.c.name
             ),
             'metadata_type': NativeField(
                 'metadata_type',
                 'Metadata type of dataset',
-                None, METADATA_TYPE.c.name
+                None,
+                DATASET.c.metadata_type_ref
+            ),
+            'metadata_type_name': NativeField(
+                'metadata_type_name',
+                'Metadata type of dataset',
+                None,
+                METADATA_TYPE.c.name
             )
         }
         dataset_search_fields = metadata_type_result['definition']['dataset']['search_fields']

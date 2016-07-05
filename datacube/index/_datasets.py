@@ -403,7 +403,7 @@ class DatasetResource(object):
 
         # Perform one search per metadata type.
         for metadata_type in metadata_types:
-            q['metadata_type'] = metadata_type.name
+            q['metadata_type'] = metadata_type.id
             query_exprs = tuple(fields.to_expressions(metadata_type.dataset_fields.get, **q))
             select_fields = None
             if return_fields:
