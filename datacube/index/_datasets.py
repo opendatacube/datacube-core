@@ -283,8 +283,8 @@ class DatasetResource(object):
                     was_inserted = self._db.insert_dataset(dataset.metadata_doc, dataset.id, dataset.type.id)
                     for classifier, source_dataset in dataset.sources.items():
                         self._db.insert_dataset_source(classifier, dataset.id, source_dataset.id)
-                except DuplicateRecordError:
-                    _LOG.exception('')
+                except DuplicateRecordError as e:
+                    _LOG.warning(str(e))
 
             if not was_inserted:
                 existing = self.get(dataset.id)
@@ -300,8 +300,8 @@ class DatasetResource(object):
         if dataset.local_uri:
             try:
                 self._db.ensure_dataset_location(dataset.id, dataset.local_uri)
-            except DuplicateRecordError:
-                _LOG.exception('')
+            except DuplicateRecordError as e:
+                _LOG.warning(str(e))
 
         return dataset
 
