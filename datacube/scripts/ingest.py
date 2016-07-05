@@ -12,6 +12,7 @@ from pathlib import Path
 from pandas import to_datetime
 from datetime import datetime
 
+import datacube
 from datacube.api.core import Datacube
 from datacube.model import DatasetType, GeoPolygon, Range
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
@@ -187,7 +188,8 @@ def ingest_work(config, source_type, output_type, index, sources, geobox):
     variable_params = get_variable_params(config)
     global_attributes = config['global_attributes']
 
-    data = Datacube.product_data(sources, geobox, measurements)
+    with datacube.set_options(reproject_threads=1):
+        data = Datacube.product_data(sources, geobox, measurements)
     nudata = data.rename(namemap)
     file_path = Path(get_filename(config, index, sources))
 
