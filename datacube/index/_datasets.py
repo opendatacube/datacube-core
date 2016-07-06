@@ -397,7 +397,7 @@ class DatasetResource(object):
 
         if not metadata_types:
             # Otherwise search any metadata type that has all the given search fields.
-            applicable_dataset_types = self.types.get_with_fields(q.keys())
+            applicable_dataset_types = self.types.get_with_fields(tuple(q.keys()))
             if not applicable_dataset_types:
                 raise ValueError('No type of dataset has fields: %r', tuple(q.keys()))
             # Unique metadata types we're searching.
