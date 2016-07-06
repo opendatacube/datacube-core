@@ -57,7 +57,16 @@ def match_doc(rules, doc):
 
 
 def check_dataset_consistent(dataset):
-    return set(dataset.type.measurements.keys()).issubset(dataset.measurements.keys())
+    """
+    :type dataset: datacube.model.Dataset
+    :return: (Is consistent, error message)
+    :rtype: (bool, str or None)
+    """
+    # It the type expects measurements, ensure our dataset contains them all.
+    if not set(dataset.type.measurements.keys()).issubset(dataset.measurements.keys()):
+        return False, "measurement fields don't match type specification"
+
+    return True, None
 
 
 def match_dataset(dataset_doc, uri, rules):
@@ -142,8 +151,9 @@ def index_cmd(index, match_rules, dtype, auto_match, dry_run, datasets):
                 _LOG.error('Unable to create Dataset for %s: %s', uri, e)
                 continue
 
-            if not check_dataset_consistent(dataset):
-                _LOG.error("Dataset measurements don't match it's type specification %s", dataset.id)
+            is_consistent, reason = check_dataset_consistent(dataset)
+            if not is_consistent:
+                _LOG.error("Dataset %s inconsistency: %s", dataset.id, reason)
                 continue
 
             _LOG.info('Matched %s', dataset)

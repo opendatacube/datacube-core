@@ -115,6 +115,9 @@ class Dataset(object):
 
     @property
     def measurements(self):
+        # It's an optional field in documents.
+        if not hasattr(self.metadata, 'measurements'):
+            return {}
         return self.metadata.measurements
 
     @cached_property
@@ -727,6 +730,10 @@ class _DocReader(object):
         >>> d.lat = 5
         >>> d._doc
         {'extent': {'lat': 5}}
+        >>> hasattr(d, 'lat')
+        True
+        >>> hasattr(d, 'lon')
+        False
         >>> d.lon
         Traceback (most recent call last):
         ...
