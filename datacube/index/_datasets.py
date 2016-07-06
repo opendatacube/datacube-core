@@ -383,6 +383,8 @@ class DatasetResource(object):
         # If they specified a metadata type, search using it.
         if 'metadata_type' in q.keys():
             metadata_types.add(self.types.metadata_type_resource.get_by_name(q['metadata_type']))
+            # Don't need to duplicate the param.
+            del q['metadata_type']
 
         if len(metadata_types) > 1:
             _LOG.warning(
@@ -403,7 +405,7 @@ class DatasetResource(object):
 
         # Perform one search per metadata type.
         for metadata_type in metadata_types:
-            q['metadata_type'] = metadata_type.id
+            q['metadata_type_id'] = metadata_type.id
             query_exprs = tuple(fields.to_expressions(metadata_type.dataset_fields.get, **q))
             select_fields = None
             if return_fields:
