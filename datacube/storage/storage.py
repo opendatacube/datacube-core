@@ -95,7 +95,7 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
                 dydx = (int(round(array_transform.f)), int(round(array_transform.c)))
                 read, write, shape = zip(*map(_calc_offsets, dydx, src.shape, dest.shape))
 
-                dest.fill(dest.dtype.type(dst_nodata))
+                dest.fill(dst_nodata)
                 if all(shape):
                     window = ((read[0], read[0] + shape[0]), (read[1], read[1] + shape[1]))
                     tmp = src.ds.read(indexes=src.bidx, window=window)
@@ -109,7 +109,7 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
                                         src_nodata=src_nodata,
                                         dst_transform=dst_transform,
                                         dst_crs=str(dst_projection),
-                                        dst_nodata=dest.dtype.type(dst_nodata),
+                                        dst_nodata=dst_nodata,
                                         resampling=resampling,
                                         NUM_THREADS=OPTIONS['reproject_threads'])
 

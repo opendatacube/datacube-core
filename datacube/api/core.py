@@ -416,7 +416,7 @@ def _fuse_measurement(dest, datasets, geobox, measurement, fuse_func=None):
                  dest,
                  geobox.affine,
                  geobox.crs,
-                 measurement['nodata'],
+                 dest.dtype.type(measurement['nodata']),
                  resampling=measurement.get('resampling_method', 'nearest'),
                  fuse_func=fuse_func)
 
