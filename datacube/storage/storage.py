@@ -87,8 +87,6 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
 
     def reproject(source, dest):
         with source.open() as src:
-            # HACK: dtype shenanigans to make sure 'NaN' string gets translated to NaN value
-            src_nodata = numpy.dtype(src.dtype).type(source.nodata)
             array_transform = ~source.transform * dst_transform
             if (source.crs == dst_projection and no_scale(array_transform) and
                     (resampling == RESAMPLING.nearest or no_fractional_translate(array_transform))):
@@ -100,13 +98,13 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
                     window = ((read[0], read[0] + shape[0]), (read[1], read[1] + shape[1]))
                     tmp = src.ds.read(indexes=src.bidx, window=window)
                     numpy.copyto(dest[write[0]:write[0] + shape[0], write[1]:write[1] + shape[1]],
-                                 tmp, where=(tmp != src_nodata))
+                                 tmp, where=(tmp != source.nodata))
             else:
                 rasterio.warp.reproject(src,
                                         dest,
                                         src_transform=source.transform,
                                         src_crs=str(source.crs),
-                                        src_nodata=src_nodata,
+                                        src_nodata=source.nodata,
                                         dst_transform=dst_transform,
                                         dst_crs=str(dst_projection),
                                         dst_nodata=dst_nodata,
@@ -145,6 +143,7 @@ class DatasetSource(object):
         self._descriptor = dataset.measurements[measurement_id]
         self.transform = None
         self.crs = None
+        self.dtype = None
         self.nodata = None
         self.format = dataset.format
         self.time = dataset.center_time
@@ -180,7 +179,9 @@ class DatasetSource(object):
 
                 self.transform = src.affine
                 self.crs = CRS(_rasterio_crs_wkt(src))
-                self.nodata = src.nodatavals[0] or self._bandinfo.get('nodata')
+                self.dtype = numpy.dtype(src.dtypes[0])
+                self.nodata = self.dtype.type(src.nodatavals[0] if src.nodatavals[0] is not None else
+                                              self._bandinfo.get('nodata'))
                 yield rasterio.band(src, bandnumber)
         except Exception as e:
             _LOG.error("Error opening source dataset: %s", filename)
