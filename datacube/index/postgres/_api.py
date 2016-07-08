@@ -211,7 +211,7 @@ class PostgresDb(object):
             return ret.rowcount > 0
         except IntegrityError as e:
             if e.orig.pgcode == PGCODE_UNIQUE_CONSTRAINT:
-                raise DuplicateRecordError('Duplicate dataset, not inserting: %s', dataset_id)
+                raise DuplicateRecordError('Duplicate dataset, not inserting: %s' % dataset_id)
             raise
 
     def ensure_dataset_location(self, dataset_id, uri):
@@ -231,7 +231,7 @@ class PostgresDb(object):
             )
         except IntegrityError as e:
             if e.orig.pgcode == PGCODE_UNIQUE_CONSTRAINT:
-                raise DuplicateRecordError('Location already exists: %s', uri)
+                raise DuplicateRecordError('Location already exists: %s' % uri)
             raise
 
     def contains_dataset(self, dataset_id):
