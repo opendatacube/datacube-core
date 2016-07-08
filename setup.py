@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 
-import os
 from setuptools import setup, find_packages
 import versioneer
 
 
-here = os.path.dirname(os.path.abspath(__file__))
-long_description = open(os.path.join(here, 'README.md'), 'r').read()
-
+long_description = """Data Cube provides an integrated gridded data analysis environment
+for earth observation satellite and related data from multiple satellite and other acquisition systems"""
 
 setup(name='datacube',
       version=versioneer.get_version(),
