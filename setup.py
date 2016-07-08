@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 
+import os
 from setuptools import setup, find_packages
 import versioneer
+
+
+here = os.path.dirname(os.path.abspath(__file__))
+long_description = open(os.path.join(here, 'README.md'), 'r').read()
 
 
 setup(name='datacube',
@@ -53,7 +58,7 @@ setup(name='datacube',
       maintainer='AGDC Collaboration',
       maintainer_email='',
       description='AGDC v2',
-      long_description=open('README.md', 'r').read(),
+      long_description=long_description,
       license='Apache License 2.0',
       entry_points={
           'console_scripts': [
