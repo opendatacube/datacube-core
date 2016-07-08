@@ -449,7 +449,7 @@ class PostgresDb(object):
         # Initialise search fields.
         _setup_collection_fields(
             self._connection, name, 'dataset', self.get_dataset_fields(record),
-            and_(DATASET.c.metadata_type_ref == type_id, DATASET.c.archived == None),
+            metadata_type_id=type_id,
             concurrently=concurrently
         )
 
@@ -546,11 +546,13 @@ def _pg_exists(conn, name):
     return conn.execute("SELECT to_regclass(%s)", name).scalar() is not None
 
 
-def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_expression, concurrently=False):
+def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, metadata_type_id, concurrently=False):
     """
     Create indexes and views for a collection's search fields.
     """
     name = '{}_{}'.format(collection_prefix.lower(), doc_prefix.lower())
+
+    where_expression = and_(DATASET.c.archived == None, DATASET.c.metadata_type_ref == metadata_type_id)
 
     # Create indexes for the search fields.
     for field in fields.values():
@@ -561,9 +563,9 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_
                 prefix=name.lower(),
                 field_name=field.name.lower()
             )
-            _LOG.debug('Creating index: %s', index_name)
 
             if not _pg_exists(conn, tables.schema_qualified(index_name)):
+                _LOG.debug('Creating index: %s', index_name)
                 Index(
                     index_name,
                     field.alchemy_expression,
@@ -572,6 +574,8 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_
                     # Don't lock the table (in the future we'll allow indexing new fields...)
                     postgresql_concurrently=concurrently
                 ).create(conn)
+            else:
+                _LOG.debug('Index exists: %s', index_name)
 
     # Create a view of search fields (for debugging convenience).
     view_name = tables.schema_qualified(name)
@@ -581,6 +585,8 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, where_
                 view_name,
                 select(
                     [field.alchemy_expression.label(field.name) for field in fields.values()]
+                ).select_from(
+                    DATASET.join(DATASET_TYPE).join(METADATA_TYPE)
                 ).where(where_expression)
             )
         )
