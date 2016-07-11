@@ -1,1 +1,0 @@
-application software scripts codes
