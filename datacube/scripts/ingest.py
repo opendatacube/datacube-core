@@ -246,8 +246,8 @@ def process_tasks(index, config, source_type, output_type, tasks, executor):
 @click.option('--load-tasks', help='Load tasks from the specified file',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
 @click.option('--dry-run', '-d', is_flag=True, default=False, help='Check if everything is ok')
-@ui.pass_index(app_name='agdc-ingest')
 @ui.executor_cli_options
+@ui.pass_index(app_name='agdc-ingest')
 def ingest_cmd(index, config_file, year, save_tasks, load_tasks, dry_run, executor):
     if (config_file is None) == (load_tasks is None):
         click.echo('Must specify exactly one of --config, --load-tasks')
