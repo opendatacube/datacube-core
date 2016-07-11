@@ -185,7 +185,7 @@ class GridWorkflow(object):
         return self.tile_sources(observations, query_group_by(**query))
 
     @staticmethod
-    def load(tile, measurements=None, dask_chunks=None):
+    def load(tile, measurements=None, chunk=None, dask_chunks=None):
         """
         Load data for a cell/tile.
 
@@ -197,6 +197,8 @@ class GridWorkflow(object):
         :param tile: The tile to load.
 
         :param measurements: The name or list of names of measurements to load
+
+        :param dict chunk: Load a chunk of a cell/tile. Specify the slice in each output dimension.
 
         :param dict dask_chunks: If the data should be loaded as needed using :py:class:`dask.array.Array`,
             specify the chunk size in each output direction.
@@ -212,6 +214,11 @@ class GridWorkflow(object):
         """
         sources = tile['sources']
         geobox = tile['geobox']
+
+        if chunk:
+            assert not set(chunk.keys()) - set(sources.dims+geobox.dimensions), 'bad dimensions'
+            sources = sources[tuple(chunk.get(dim, slice(None)) for dim in sources.dims)]
+            geobox = geobox[tuple(chunk.get(dim, slice(None)) for dim in geobox.dimensions)]
 
         observations = []
         for dataset in sources.values:
