@@ -9,7 +9,7 @@ import logging
 import cachetools
 
 from datacube import compat
-from datacube.utils import InvalidDocException
+from datacube.utils import InvalidDocException, jsonify_document
 from datacube.model import Dataset, DatasetType, MetadataType
 from .exceptions import DuplicateRecordError
 from . import fields
@@ -291,7 +291,7 @@ class DatasetResource(object):
                 if existing:
                     fields.check_doc_unchanged(
                         existing.metadata_doc,
-                        dataset.metadata_doc,
+                        jsonify_document(dataset.metadata_doc),
                         'Dataset {}'.format(dataset.id)
                     )
         finally:

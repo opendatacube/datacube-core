@@ -4,11 +4,12 @@ Utility functions used in storage modules
 """
 from __future__ import absolute_import, division, print_function
 
+import datetime
 import gzip
 import json
 import logging
 import pathlib
-from datetime import datetime
+from datetime import datetime, date
 from dateutil.tz import tzutc
 
 import dateutil.parser
@@ -18,6 +19,7 @@ from osgeo import ogr
 import xarray
 
 import yaml
+
 try:
     from yaml import CSafeLoader as SafeLoader
 except ImportError:
@@ -314,3 +316,31 @@ class cached_property(object):  # pylint: disable=invalid-name
             return self
         value = obj.__dict__[self.func.__name__] = self.func(obj)
         return value
+
+
+def transform_object_tree(o, f):
+    if isinstance(o, dict):
+        return {k: transform_object_tree(v, f) for k, v in o.items()}
+    if isinstance(o, list):
+        return [transform_object_tree(v, f) for v in o]
+    if isinstance(o, tuple):
+        return tuple(transform_object_tree(v, f) for v in o)
+    return f(o)
+
+
+def jsonify_document(doc):
+    def fixup_value(v):
+        if isinstance(v, float):
+            if v != v:
+                return "NaN"
+            if v == float("inf"):
+                return "Infinity"
+            if v == float("-inf"):
+                return "-Infinity"
+        if isinstance(v, (datetime, date)):
+            return v.isoformat()
+        if isinstance(v, numpy.dtype):
+            return v.name
+        return v
+
+    return transform_object_tree(doc, fixup_value)

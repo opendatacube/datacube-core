@@ -26,11 +26,11 @@ _EXAMPLE_NBAR = {
     'ga_level': 'P54',
     'size_bytes': 4550,
     'platform': {'code': 'LANDSAT_8'},
-    'creation_dt': datetime.datetime(2014, 1, 26, 2, 5, 23, 126373),
+    'creation_dt': datetime.datetime(2014, 1, 26, 2, 5, 23, 126373).isoformat(),
     'instrument': {'name': 'OLI_TIRS'},
     'format': {'name': 'GeoTIFF'},
     'extent': {
-        'center_dt': datetime.datetime(2014, 1, 26, 2, 5, 23, 126373),
+        'center_dt': datetime.datetime(2014, 1, 26, 2, 5, 23, 126373).isoformat(),
         'coord': {
             'ul': {'lat': -26.37259, 'lon': 116.58914},
             'lr': {'lat': -28.48062, 'lon': 118.96145},
@@ -49,7 +49,7 @@ _EXAMPLE_NBAR = {
                     'scene_id': 'LC81120792014026ASA00'
                 },
                 'extent': {
-                    'center_dt': datetime.datetime(2014, 1, 26, 2, 5, 23, 126373),
+                    'center_dt': datetime.datetime(2014, 1, 26, 2, 5, 23, 126373).isoformat(),
                     'coord': {
                         'ul': {'lat': -26.37259, 'lon': 116.58914},
                         'lr': {'lat': -28.48062, 'lon': 118.96145},
@@ -60,7 +60,7 @@ _EXAMPLE_NBAR = {
                 'size_bytes': 1854924494,
                 'platform': {
                     'code': 'LANDSAT_8'},
-                'creation_dt': datetime.datetime(2015, 4, 7, 0, 58, 8),
+                'creation_dt': datetime.datetime(2015, 4, 7, 0, 58, 8).isoformat(),
                 'instrument': {'name': 'OLI_TIRS'},
                 'checksum_path': 'package.sha1',
                 'ga_label': 'LS8_OLITIRS_OTH_P51_GALPGS01-002_112_079_20140126',
@@ -107,7 +107,7 @@ _EXAMPLE_NBAR = {
                             'size_bytes': 637660782,
                             'platform': {
                                 'code': 'LANDSAT_8'},
-                            'creation_dt': datetime.datetime(2015, 4, 22, 6, 32, 4),
+                            'creation_dt': datetime.datetime(2015, 4, 22, 6, 32, 4).isoformat(),
                             'instrument': {'name': 'OLI_TIRS'},
                             'format': {
                                 'name': 'MD'},
