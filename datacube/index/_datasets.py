@@ -9,7 +9,7 @@ import logging
 import cachetools
 
 from datacube import compat
-from datacube.utils import InvalidDocException, jsonify_document
+from datacube.utils import InvalidDocException, check_doc_unchanged, jsonify_document
 from datacube.model import Dataset, DatasetType, MetadataType
 from .exceptions import DuplicateRecordError
 from . import fields
@@ -43,7 +43,7 @@ class MetadataTypeResource(object):
         if existing:
             # They've passed us the same one again. Make sure it matches what is stored.
             # TODO: Support for adding/updating search fields?
-            fields.check_doc_unchanged(
+            check_doc_unchanged(
                 existing.definition,
                 definition,
                 'Metadata Type {}'.format(name)
@@ -137,7 +137,7 @@ class DatasetTypeResource(object):
         if existing:
             # TODO: Support for adding/updating match rules?
             # They've passed us the same collection again. Make sure it matches what is stored.
-            fields.check_doc_unchanged(
+            check_doc_unchanged(
                 existing.definition,
                 type_.definition,
                 'Dataset type {}'.format(type_.name)
@@ -289,7 +289,7 @@ class DatasetResource(object):
             if not was_inserted:
                 existing = self.get(dataset.id)
                 if existing:
-                    fields.check_doc_unchanged(
+                    check_doc_unchanged(
                         existing.metadata_doc,
                         jsonify_document(dataset.metadata_doc),
                         'Dataset {}'.format(dataset.id)
