@@ -1,6 +1,21 @@
 What's New
 ==========
 
+v1.1.4 Pimply Pig (12 July 2016)
+--------------------------------
+
+  - Improved dataset search performance
+
+  - Restored ability to index telemetry data
+
+  - Fixed an issue with data access API returning uninitialized memory in some cases
+
+  - Fixed an issue where dataset center_time would be calculated incorrectly
+
+  - General improvements to documentation and usablity
+
+
+
 v1.1.3 Speeding Snowball (5 July 2016)
 --------------------------------------
 
