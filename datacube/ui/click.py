@@ -8,6 +8,7 @@ import functools
 import logging
 import os
 import re
+import copy
 
 import click
 
@@ -16,6 +17,7 @@ from datacube.executor import get_executor
 from datacube.index import index_connect
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
+_LOG_FORMAT_STRING = '%(asctime)s %(levelname)s %(message)s'
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
@@ -58,6 +60,14 @@ def _init_logging(ctx, param, value):
     ctx.obj['verbosity'] = value
 
 
+def _add_logfile(ctx, param, value):
+    formatter = logging.Formatter(_LOG_FORMAT_STRING)
+    for logfile in value:
+        handler = logging.FileHandler(logfile)
+        handler.formatter = formatter
+        logging.root.addHandler(handler)
+
+
 def _log_queries(ctx, param, value):
     if value:
         logging.getLogger('sqlalchemy.engine').setLevel('INFO')
@@ -87,6 +97,9 @@ version_option = click.option('--version', is_flag=True, callback=_print_version
 verbose_option = click.option('--verbose', '-v', count=True, callback=_init_logging,
                               is_eager=True, expose_value=False, help="Use multiple times for more verbosity")
 #: pylint: disable=invalid-name
+logfile_option = click.option('--log-file', multiple=True, callback=_add_logfile,
+                              is_eager=True, expose_value=False, help="Specify log file")
+#: pylint: disable=invalid-name
 config_option = click.option('--config_file', '-C', multiple=True, default='', callback=_set_config,
                              expose_value=False)
 #: pylint: disable=invalid-name
@@ -98,6 +111,7 @@ log_queries_option = click.option('--log-queries', is_flag=True, callback=_log_q
 global_cli_options = compose(
     version_option,
     verbose_option,
+    logfile_option,
     config_option,
     log_queries_option
 )
