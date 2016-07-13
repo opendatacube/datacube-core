@@ -49,9 +49,41 @@ def compose(*functions):
     return functools.reduce(compose2, functions, lambda x: x)
 
 
+class ColorFormatter(logging.Formatter):
+    colors = {
+        'info': dict(fg='white'),
+        'error': dict(fg='red'),
+        'exception': dict(fg='red'),
+        'critical': dict(fg='red'),
+        'debug': dict(fg='blue'),
+        'warning': dict(fg='yellow')
+    }
+
+    def format(self, record):
+        if not record.exc_info:
+            record = copy.copy(record)
+            record.levelname = click.style(record.levelname, **self.colors.get(record.levelname.lower(), {}))
+        return logging.Formatter.format(self, record)
+
+
+class ClickHandler(logging.Handler):
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            click.echo(msg, err=True)
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except:  # pylint: disable=bare-except
+            self.handleError(record)
+
+
 def _init_logging(ctx, param, value):
+    handler = ClickHandler()
+    handler.formatter = ColorFormatter(_LOG_FORMAT_STRING)
+    logging.root.addHandler(handler)
+
     logging_level = logging.WARN - 10 * value
-    logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging_level)
+    logging.root.setLevel(logging_level)
     logging.getLogger('datacube').setLevel(logging_level)
 
     if not ctx.obj:
