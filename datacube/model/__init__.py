@@ -131,7 +131,7 @@ class Dataset(object):
     @property
     def time(self):
         time = self.metadata.time
-        return Range(parse_time(time.begin), parse_time(time.begin))
+        return Range(parse_time(time.begin), parse_time(time.end))
 
     @property
     def bounds(self):

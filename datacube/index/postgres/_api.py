@@ -11,22 +11,20 @@ Lower-level database access.
 """
 from __future__ import absolute_import
 
-import datetime
 import json
 import logging
-import re
 
-import numpy
-from pathlib import Path
-from sqlalchemy import create_engine, select, text, bindparam, exists, and_, or_, Index, func, alias
+import re
+from sqlalchemy import create_engine, select, text, bindparam, and_, or_, Index, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.url import URL as EngineUrl
 from sqlalchemy.exc import IntegrityError
 
 import datacube
 from datacube.config import LocalConfig
-from datacube.index.fields import OrExpression
 from datacube.index.exceptions import DuplicateRecordError
+from datacube.index.fields import OrExpression
+from datacube.utils import jsonify_document
 from . import tables
 from ._fields import parse_fields, NativeField
 from .tables import DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
@@ -592,34 +590,9 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, metada
         )
 
 
-def _transform_object_tree(o, f):
-    if isinstance(o, dict):
-        return {k: _transform_object_tree(v, f) for k, v in o.items()}
-    if isinstance(o, list):
-        return [_transform_object_tree(v, f) for v in o]
-    if isinstance(o, tuple):
-        return tuple(_transform_object_tree(v, f) for v in o)
-    return f(o)
-
-
 def _to_json(o):
     # Postgres <=9.5 doesn't support NaN and Infinity
-    def fixup_value(v):
-        if isinstance(v, float):
-            if v != v:
-                return "NaN"
-            if v == float("inf"):
-                return "Infinity"
-            if v == float("-inf"):
-                return "-Infinity"
-        if isinstance(v, (datetime.datetime, datetime.date)):
-            return v.isoformat()
-        if isinstance(v, numpy.dtype):
-            return v.name
-        return v
-
-    fixedup = _transform_object_tree(o, fixup_value)
-
+    fixedup = jsonify_document(o)
     return json.dumps(fixedup, default=_json_fallback)
 
 

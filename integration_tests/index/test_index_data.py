@@ -44,7 +44,8 @@ _telemetry_dataset = {
         'name': 'MD'
     },
     'lineage': {
-        'source_datasets': {}
+        'source_datasets': {},
+        'blah': float('NaN')
     }
 }
 
