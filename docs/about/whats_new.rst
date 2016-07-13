@@ -1,8 +1,8 @@
 What's New
 ==========
 
-v1.1.4 Pimply Pig (12 July 2016)
---------------------------------
+v1.1.4 Imperfect Furball (12 July 2016)
+---------------------------------------
 
   - Improved dataset search performance
 
