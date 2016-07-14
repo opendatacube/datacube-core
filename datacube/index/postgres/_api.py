@@ -415,7 +415,7 @@ class PostgresDb(object):
             select(
                 [func.count('*')]
             ).select_from(
-                DATASET
+                DATASET.join(DATASET_TYPE).join(METADATA_TYPE)
             ).where(
                 and_(DATASET.c.archived == None, *raw_expressions)
             )
