@@ -87,23 +87,23 @@ def test_end_to_end(global_integration_cli_args, index, testdata_dir):
 
     # Add the LS5 Dataset Types
     run_click_command(datacube.scripts.cli_app.cli,
-                      global_integration_cli_args + ['-vv', 'product', 'add', str(LS5_DATASET_TYPES)])
+                      global_integration_cli_args + ['-v', 'product', 'add', str(LS5_DATASET_TYPES)])
 
     # Index the Datasets
     run_click_command(datacube.scripts.cli_app.cli,
                       global_integration_cli_args +
-                      ['-vv', 'dataset', 'add', '--auto-match',
+                      ['-v', 'dataset', 'add', '--auto-match',
                        str(lbg_nbar), str(lbg_pq)])
 
     # Ingest NBAR
     run_click_command(datacube.scripts.cli_app.cli,
                       global_integration_cli_args +
-                      ['-vv', 'ingest', '-c', str(ls5_nbar_albers_ingest_config)])
+                      ['-v', 'ingest', '-c', str(ls5_nbar_albers_ingest_config)])
 
     # Ingest PQ
     run_click_command(datacube.scripts.cli_app.cli,
                       global_integration_cli_args +
-                      ['-vv', 'ingest', '-c', str(ls5_pq_albers_ingest_config)])
+                      ['-v', 'ingest', '-c', str(ls5_pq_albers_ingest_config)])
 
     check_open_with_api(index)
     check_open_with_dc(index)
