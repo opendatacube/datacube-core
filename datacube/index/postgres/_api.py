@@ -399,6 +399,30 @@ class PostgresDb(object):
         for result in results:
             yield result
 
+    def count_datasets(self, expressions):
+        """
+        :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
+        :rtype: int
+        """
+        def raw_expr(expression):
+            if isinstance(expression, OrExpression):
+                return or_(raw_expr(expr) for expr in expression.exprs)
+            return expression.alchemy_expression
+
+        raw_expressions = [raw_expr(expression) for expression in expressions]
+
+        select_query = (
+            select(
+                [func.count('*')]
+            ).select_from(
+                DATASET
+            ).where(
+                and_(DATASET.c.archived == None, *raw_expressions)
+            )
+        )
+
+        return self._connection.scalar(select_query)
+
     def get_dataset_type(self, id_):
         return self._connection.execute(
             DATASET_TYPE.select().where(DATASET_TYPE.c.id == id_)

@@ -374,8 +374,15 @@ class DatasetResource(object):
         """
         return self._make_many(self._do_search(query))
 
-    def _do_search(self, query, return_fields=False, with_source_ids=False):
-        q = dict(query)
+    def count(self, **query):
+        """
+        Perform a search, returning count of results.
+        :type query: dict[str,str|float|datacube.model.Range]
+        :rtype: int
+        """
+        return self._do_count(query)
+
+    def _get_metadata_types(self, q):
         metadata_types = set()
         if 'product' in q.keys():
             metadata_types.add(self.types.get_by_name(q['product']).metadata_type)
@@ -389,7 +396,7 @@ class DatasetResource(object):
         if len(metadata_types) > 1:
             _LOG.warning(
                 "Both a dataset type and metadata type were specified, but they're not compatible: %r, %r.",
-                query['product'], query['metadata_type']
+                q['product'], q['metadata_type']
             )
             # No datasets of this type can have the given metadata type.
             # No results.
@@ -403,6 +410,12 @@ class DatasetResource(object):
             # Unique metadata types we're searching.
             metadata_types = set(d.metadata_type for d in applicable_dataset_types)
 
+        return metadata_types
+
+    def _do_search(self, query, return_fields=False, with_source_ids=False):
+        q = dict(query)
+        metadata_types = self._get_metadata_types(q)
+
         # Perform one search per metadata type.
         for metadata_type in metadata_types:
             q['metadata_type_id'] = metadata_type.id
@@ -414,6 +427,16 @@ class DatasetResource(object):
                                                     select_fields=select_fields,
                                                     with_source_ids=with_source_ids):
                 yield dataset
+
+    def _do_count(self, query):
+        q = dict(query)
+        metadata_types = self._get_metadata_types(q)
+        result = 0
+        for metadata_type in metadata_types:
+            q['metadata_type_id'] = metadata_type.id
+            query_exprs = tuple(fields.to_expressions(metadata_type.dataset_fields.get, **q))
+            result += self._db.count_datasets(query_exprs)
+        return result
 
     def search_summaries(self, **query):
         """
