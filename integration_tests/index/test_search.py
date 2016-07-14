@@ -247,12 +247,12 @@ def test_searches_only_type(index, pseudo_telemetry_type, pseudo_telemetry_datas
 
 def test_search_conflicting_types(index, pseudo_telemetry_dataset, pseudo_telemetry_type):
     # It prints a warning and returns no results.
-    datasets = index.datasets.search_eager(
-        product=pseudo_telemetry_type.name,
-        # The telemetry type is not of type storage_unit.
-        metadata_type='storage_unit'
-    )
-    assert len(datasets) == 0
+    with pytest.raises(KeyError):
+        datasets = index.datasets.search_eager(
+            product=pseudo_telemetry_type.name,
+            # The telemetry type is not of type storage_unit.
+            metadata_type='storage_unit'
+        )
 
 
 def test_fetch_all_of_md_type(index, pseudo_telemetry_dataset):

@@ -394,13 +394,7 @@ class DatasetResource(object):
             del q['metadata_type']
 
         if len(metadata_types) > 1:
-            _LOG.warning(
-                "Both a dataset type and metadata type were specified, but they're not compatible: %r, %r.",
-                q['product'], q['metadata_type']
-            )
-            # No datasets of this type can have the given metadata type.
-            # No results.
-            return
+            raise KeyError('Incompatible product and metadata type: %r, %r' % (q['product'], q['metadata_type']))
 
         if not metadata_types:
             # Otherwise search any metadata type that has all the given search fields.
