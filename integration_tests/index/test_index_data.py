@@ -102,43 +102,44 @@ def test_index_dataset_with_location(index, default_metadata_type):
     :type index: datacube.index._api.Index
     :type default_collection: datacube.model.DatasetType
     """
-    first_file = '/tmp/first/something.yaml'
-    second_file = '/tmp/second/something.yaml'
+    first_file = Path('/tmp/first/something.yaml')
+    second_file = Path('/tmp/second/something.yaml')
+
     type_ = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
-    dataset = Dataset(type_, _telemetry_dataset, Path(first_file).absolute().as_uri())
-    dataset = index.datasets.add(dataset)
+    dataset = Dataset(type_, _telemetry_dataset, first_file.as_uri())
+    index.datasets.add(dataset)
+    stored = index.datasets.get(dataset.id)
 
-    assert dataset.id == _telemetry_uuid
+    assert stored.id == _telemetry_uuid
     # TODO: Dataset types?
-    assert dataset.type.id == type_.id
-    assert dataset.metadata_type.id == default_metadata_type.id
-
-    assert dataset.local_path.absolute() == Path(first_file).absolute()
+    assert stored.type.id == type_.id
+    assert stored.metadata_type.id == default_metadata_type.id
+    assert stored.local_path == Path(first_file)
 
     # Ingesting again should have no effect.
     index.datasets.add(dataset)
+    stored = index.datasets.get(dataset.id)
     locations = index.datasets.get_locations(dataset)
     assert len(locations) == 1
 
-    first_as_uri = Path(first_file).absolute().as_uri()
-    second_as_uri = Path(second_file).absolute().as_uri()
-
     # Ingesting with a new path should add the second one too.
-    dataset.local_uri = second_as_uri
+    dataset.local_uri = second_file.as_uri()
     index.datasets.add(dataset)
+    stored = index.datasets.get(dataset.id)
     locations = index.datasets.get_locations(dataset)
     assert len(locations) == 2
     # Newest to oldest.
-    assert locations == [second_as_uri, first_as_uri]
+    assert locations == [second_file.as_uri(), first_file.as_uri()]
     # And the second one is newer, so it should be returned as the default local path:
-    assert dataset.local_path.absolute() == Path(second_file).absolute()
+    assert stored.local_path == Path(second_file)
 
     # Ingestion again without location should have no effect.
     dataset.local_uri = None
     index.datasets.add(dataset)
+    stored = index.datasets.get(dataset.id)
     locations = index.datasets.get_locations(dataset)
     assert len(locations) == 2
     # Newest to oldest.
-    assert locations == [second_as_uri, first_as_uri]
+    assert locations == [second_file.as_uri(), first_file.as_uri()]
     # And the second one is newer, so it should be returned as the default local path:
-    assert dataset.local_path.absolute() == Path(second_file).absolute()
+    assert stored.local_path == Path(second_file)
