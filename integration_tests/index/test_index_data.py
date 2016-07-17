@@ -132,3 +132,13 @@ def test_index_dataset_with_location(index, default_metadata_type):
     assert locations == [second_as_uri, first_as_uri]
     # And the second one is newer, so it should be returned as the default local path:
     assert dataset.local_path.absolute() == Path(second_file).absolute()
+
+    # Ingestion again without location should have no effect.
+    dataset.local_uri = None
+    index.datasets.add(dataset)
+    locations = index.datasets.get_locations(dataset)
+    assert len(locations) == 2
+    # Newest to oldest.
+    assert locations == [second_as_uri, first_as_uri]
+    # And the second one is newer, so it should be returned as the default local path:
+    assert dataset.local_path.absolute() == Path(second_file).absolute()
