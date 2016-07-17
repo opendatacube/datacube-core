@@ -176,7 +176,7 @@ class MockDb(object):
         if dataset_id in self.dataset:
             raise DuplicateRecordError('already ingested')
 
-        self.dataset[dataset_id] = DatasetRecord(dataset_id, metadata_doc, dataset_type_id, None)
+        self.dataset[dataset_id] = DatasetRecord(dataset_id, deepcopy(metadata_doc), dataset_type_id, None)
         return True
 
     def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
