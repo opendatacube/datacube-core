@@ -229,7 +229,6 @@ class DatasetResource(object):
         self._db = db
         self.types = dataset_type_resource
 
-    @cachetools.cached(cachetools.TTLCache(100, 60))
     def get(self, id_, include_sources=False):
         """
         Get dataset by id
