@@ -217,14 +217,14 @@ def create_netcdf_storage_unit(filename, crs, coordinates, variables, variable_p
     netcdf_writer.create_grid_mapping_variable(nco, crs)
 
     for name, variable in variables.items():
-        assert all(dim in variable.dims for dim in crs.dimensions) == ('crs' in variable.attrs), 'crs err'
+        set_crs = all(dim in variable.dims for dim in crs.dimensions)
         var_params = variable_params.get(name, {})
-        data_var = netcdf_writer.create_variable(nco, name, variable, **var_params)
+        data_var = netcdf_writer.create_variable(nco, name, variable, set_crs=set_crs, **var_params)
 
         for key, value in var_params.get('attrs', {}).items():
             setattr(data_var, key, value)
 
-    for key, value in global_attributes.items():
+    for key, value in (global_attributes or {}).items():
         setattr(nco, key, value)
 
     return nco

@@ -90,7 +90,7 @@ def create_coordinate(nco, name, labels, units):
     return var
 
 
-def create_variable(nco, name, var, attrs=None, **kwargs):
+def create_variable(nco, name, var, set_crs=False, attrs=None, **kwargs):
     """
     :param nco:
     :param name:
@@ -117,7 +117,7 @@ def create_variable(nco, name, var, attrs=None, **kwargs):
                                       dimensions=var.dims,
                                       fill_value=getattr(var, 'nodata', None),
                                       **kwargs)
-    if getattr(var, 'crs', None):
+    if set_crs:
         data_var.grid_mapping = 'crs'
     if getattr(var, 'units', None):
         data_var.units = var.units
