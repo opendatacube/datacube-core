@@ -22,7 +22,7 @@ from datacube.utils import get_doc_offset, parse_time, read_documents, validate_
 _LOG = logging.getLogger(__name__)
 
 Range = namedtuple('Range', ('begin', 'end'))
-Coordinate = namedtuple('Coordinate', ('labels', 'units'))
+Coordinate = namedtuple('Coordinate', ('values', 'units'))
 Variable = namedtuple('Variable', ('dtype', 'nodata', 'dims', 'units'))
 
 NETCDF_VAR_OPTIONS = {'zlib', 'complevel', 'shuffle', 'fletcher32', 'contiguous'}
@@ -558,10 +558,10 @@ class GeoBox(object):
 
     >>> from affine import Affine
     >>> t = GeoBox(4000, 4000, Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0), CRS('EPSG:4326'))
-    >>> t.coordinates['latitude'].labels
+    >>> t.coordinates['latitude'].values
     array([-29.000125, -29.000375, -29.000625, ..., -29.999375, -29.999625,
            -29.999875])
-    >>> t.coordinates['longitude'].labels
+    >>> t.coordinates['longitude'].values
     array([ 151.000125,  151.000375,  151.000625, ...,  151.999375,
             151.999625,  151.999875])
     >>> t.geographic_extent.points

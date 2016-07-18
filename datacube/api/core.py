@@ -317,7 +317,7 @@ class Datacube(object):
         .. seealso:: :meth:`product_observations` :meth:`product_sources`
         """
         def empty_func(measurement):
-            coord_shape = tuple(coord.size for coord in coords.values())
+            coord_shape = tuple(coord.size for coord in coords.values)
             return numpy.full(coord_shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
         data_func = data_func or empty_func
 
@@ -325,7 +325,7 @@ class Datacube(object):
         for name, coord in coords.items():
             result[name] = coord
         for name, coord in geobox.coordinates.items():
-            result[name] = (name, coord.labels, {'units': coord.units})
+            result[name] = (name, coord.values, {'units': coord.units})
 
         for measurement in measurements:
             data = data_func(measurement)

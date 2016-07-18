@@ -35,7 +35,7 @@ def test_write_dataset_to_netcdf(tmpnetcdf_filename):
     geobox = GeoBox(100, 100, affine, CRS(GEO_PROJ))
     dataset = xarray.Dataset(attrs={'extent': geobox.extent, 'crs': geobox.crs})
     for name, coord in geobox.coordinates.items():
-        dataset[name] = (name, coord.labels, {'units': coord.units, 'crs': geobox.crs})
+        dataset[name] = (name, coord.values, {'units': coord.units, 'crs': geobox.crs})
 
     dataset['B10'] = (geobox.dimensions,
                       numpy.arange(10000).reshape(geobox.shape),

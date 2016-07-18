@@ -83,7 +83,7 @@ class API(object):
         dataset_descriptor['dimensions'] = list(dims)
         for dim in dims:
             if dim in spatial_dims:
-                coords = geobox.coordinates[dim].labels
+                coords = geobox.coordinates[dim].values
             elif dim == group_by.dimension:
                 coords = [group.key for group in groups]
                 dataset_descriptor['irregular_indices'][dim] = coords
@@ -377,14 +377,14 @@ class API(object):
         }
         for dim in dims:
             if dim in dataset_type.grid_spec.dimensions:
-                dt_data['indices'][dim] = geobox.coordinates[dim].labels
+                dt_data['indices'][dim] = geobox.coordinates[dim].values
                 dim_i = dataset_type.grid_spec.dimensions.index(dim)
                 dt_data['element_sizes'].append(abs(dataset_type.grid_spec.resolution[dim_i]))
                 dt_data['coordinate_reference_systems'].append({
                     'reference_system_definition': str(geobox.crs),
                     'reference_system_unit': geobox.coordinates[dim].units
                 })
-                dt_data['size'] += (geobox.coordinates[dim].labels.size, )
+                dt_data['size'] += (geobox.coordinates[dim].values.size, )
             elif dim in sources.dims:
                 coords = sources.coords[dim].values
                 dt_data['indices'][dim] = coords
