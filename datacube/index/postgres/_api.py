@@ -476,7 +476,7 @@ class PostgresDb(object):
         )
 
     def get_all_dataset_types(self):
-        return self._connection.execute(DATASET_TYPE.select()).fetchall()
+        return self._connection.execute(DATASET_TYPE.select().order_by(DATASET_TYPE.c.name.asc())).fetchall()
 
     def get_locations(self, dataset_id):
         return [
