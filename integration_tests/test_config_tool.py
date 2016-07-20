@@ -142,7 +142,7 @@ def test_list_users_does_not_fail(global_integration_cli_args, local_config):
     assert result.exit_code == 0
 
 
-def test_db_init_noop(global_integration_cli_args, local_config):
+def test_db_init_noop(global_integration_cli_args, local_config, default_metadata_type):
     # Run on an existing database.
     opts = list(global_integration_cli_args)
     opts.extend(
@@ -156,6 +156,27 @@ def test_db_init_noop(global_integration_cli_args, local_config):
     )
     assert result.exit_code == 0
     assert 'Updated.' in result.output
+
+
+def test_db_init_rebuild(global_integration_cli_args, local_config, default_metadata_type):
+    # Run on an existing database.
+    opts = list(global_integration_cli_args)
+    opts.extend(
+        [
+            '-v', 'system', 'init', '--rebuilq'
+        ]
+    )
+    result = _run_cli(
+        datacube.scripts.cli_app.cli,
+        opts
+    )
+    assert result.exit_code == 0
+    assert 'Updated.' in result.output
+    # It should have recreated views and indexes.
+    assert 'Dropping index: dix_field_{}'.format(default_metadata_type.name) in result.output
+    assert 'Creating index: dix_field_{}'.format(default_metadata_type.name) in result.output
+    assert 'Dropping view: {}_dataset'.format(default_metadata_type.name) in result.output
+    assert 'Creating view: {}_dataset'.format(default_metadata_type.name) in result.output
 
 
 def test_db_init(global_integration_cli_args, db, local_config):
