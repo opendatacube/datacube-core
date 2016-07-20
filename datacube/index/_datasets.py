@@ -415,10 +415,11 @@ class DatasetResource(object):
         # Perform one search per type.
         for dataset_type in dataset_types:
             q['dataset_type_id'] = dataset_type.id
-            query_exprs = tuple(fields.to_expressions(dataset_type.dataset_fields.get, **q))
+            dataset_fields = dataset_type.metadata_type.dataset_fields
+            query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             select_fields = None
             if return_fields:
-                select_fields = tuple(dataset_type.dataset_fields.values())
+                select_fields = tuple(dataset_fields.values())
             for dataset in self._db.search_datasets(query_exprs,
                                                     select_fields=select_fields,
                                                     with_source_ids=with_source_ids):
