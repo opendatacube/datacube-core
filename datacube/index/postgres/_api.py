@@ -310,6 +310,12 @@ class PostgresDb(object):
                 None,
                 DATASET_TYPE.c.name
             ),
+            'dataset_type_id': NativeField(
+                'dataset_type_id',
+                'ID of a dataset type',
+                None,
+                DATASET.c.dataset_type_ref
+            ),
             'metadata_type': NativeField(
                 'metadata_type',
                 'Metadata type of dataset',
@@ -447,7 +453,10 @@ class PostgresDb(object):
                          name,
                          metadata,
                          metadata_type_id,
-                         definition):
+                         definition, concurrently=False):
+
+        metadata_type_record = self.get_metadata_type(metadata_type_id)
+
         res = self._connection.execute(
             DATASET_TYPE.insert().values(
                 name=name,
@@ -456,7 +465,16 @@ class PostgresDb(object):
                 definition=definition
             )
         )
-        return res.inserted_primary_key[0]
+
+        type_id = res.inserted_primary_key[0]
+
+        # Initialise search fields.
+        _setup_collection_fields(
+            self._connection, name, self.get_dataset_fields(metadata_type_record),
+            where_expression=and_(DATASET.c.archived == None, DATASET.c.dataset_type_ref == type_id),
+            concurrently=concurrently
+        )
+        return type_id
 
     def add_metadata_type(self, name, definition, concurrently=False):
         res = self._connection.execute(
@@ -470,8 +488,8 @@ class PostgresDb(object):
 
         # Initialise search fields.
         _setup_collection_fields(
-            self._connection, name, 'dataset', self.get_dataset_fields(record),
-            metadata_type_id=type_id,
+            self._connection, name, self.get_dataset_fields(record),
+            where_expression=and_(DATASET.c.archived == None, DATASET.c.metadata_type_ref == type_id),
             concurrently=concurrently
         )
 
@@ -479,10 +497,18 @@ class PostgresDb(object):
         _LOG.info('Rebuilding dynamic views/indexes.')
         for metadata_type in self.get_all_metadata_types():
             _setup_collection_fields(
-                self._connection, metadata_type['name'], 'dataset', self.get_dataset_fields(metadata_type),
-                metadata_type_id=metadata_type['id'],
+                self._connection, metadata_type['name'], self.get_dataset_fields(metadata_type),
+                where_expression=and_(DATASET.c.archived == None, DATASET.c.metadata_type_ref == metadata_type['id']),
                 concurrently=concurrently,
                 replace_existing=True
+            )
+
+        for dataset_type in self.get_all_dataset_types():
+            _setup_collection_fields(
+                self._connection, dataset_type['name'],
+                self.get_dataset_fields(self.get_metadata_type(dataset_type['metadata_type_ref'])),
+                where_expression=and_(DATASET.c.archived == None, DATASET.c.dataset_type_ref == dataset_type['id']),
+                concurrently=concurrently
             )
 
     def get_all_dataset_types(self):
@@ -581,21 +607,19 @@ def _pg_exists(conn, name):
     return conn.execute("SELECT to_regclass(%s)", name).scalar() is not None
 
 
-def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, metadata_type_id,
+def _setup_collection_fields(conn, collection_prefix, fields, where_expression,
                              concurrently=False, replace_existing=False):
     """
     Create indexes and views for a collection's search fields.
     """
-    name = '{}_{}'.format(collection_prefix.lower(), doc_prefix.lower())
-
-    where_expression = and_(DATASET.c.archived == None, DATASET.c.metadata_type_ref == metadata_type_id)
+    name = collection_prefix.lower()
 
     # Create indexes for the search fields.
     for field in fields.values():
         index_type = field.postgres_index_type
         if index_type:
             # Our normal indexes start with "ix_", dynamic indexes with "dix_"
-            index_name = 'dix_field_{prefix}_{field_name}'.format(
+            index_name = 'dix_f_{prefix}_{field_name}'.format(
                 prefix=name.lower(),
                 field_name=field.name.lower()
             )
@@ -622,7 +646,7 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, metada
                 _LOG.debug('Index exists: %s  (replace=%r)', index_name, replace_existing)
 
     # Create a view of search fields (for debugging convenience).
-    view_name = tables.schema_qualified(name)
+    view_name = tables.schema_qualified('dv_'+name)
     exists = _pg_exists(conn, view_name)
 
     # This currently leaves a window of time without the views: it's primarily intended for development.
