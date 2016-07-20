@@ -156,6 +156,8 @@ def test_db_init_noop(global_integration_cli_args, local_config, default_metadat
     )
     assert result.exit_code == 0
     assert 'Updated.' in result.output
+    # It should not rebuild indexes by default
+    assert 'Dropping index: dix_field_{}'.format(default_metadata_type.name) not in result.output
 
 
 def test_db_init_rebuild(global_integration_cli_args, local_config, default_metadata_type):

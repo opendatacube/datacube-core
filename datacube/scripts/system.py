@@ -30,7 +30,7 @@ def system():
     help="Include user roles and grants. (default: true)"
 )
 @click.option(
-    '--rebuild/--no-rebuild', is_flag=True, default=True,
+    '--rebuild/--no-rebuild', is_flag=True, default=False,
     help="Rebuild dynamic indexes & views"
 )
 @ui.pass_index(expect_initialised=False)
