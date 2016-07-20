@@ -158,9 +158,9 @@ def grant_role(engine, role, users):
     if role not in USER_ROLES:
         raise ValueError('Unknown role %r. Expected one of %r' % (role, USER_ROLES))
 
-    engine.execute(
-        'grant {role} to {users}'.format(users=', '.join(users), role=role)
-    )
+    with engine.begin():
+        engine.execute('revoke {roles} from {users}'.format(users=', '.join(users), roles=', '.join(USER_ROLES)))
+        engine.execute('grant {role} to {users}'.format(users=', '.join(users), role=role))
 
 
 def has_role(engine, role_name):
