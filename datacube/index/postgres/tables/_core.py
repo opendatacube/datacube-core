@@ -175,13 +175,13 @@ def drop_db(connection):
     connection.execute('drop schema if exists %s cascade;' % SCHEMA_NAME)
 
 
-class View(Executable, ClauseElement):
+class CreateView(Executable, ClauseElement):
     def __init__(self, name, select):
         self.name = name
         self.select = select
 
 
-@compiles(View)
+@compiles(CreateView)
 def visit_create_view(element, compiler, **kw):
     return "CREATE VIEW %s AS %s" % (
         element.name,

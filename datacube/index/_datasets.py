@@ -73,6 +73,17 @@ class MetadataTypeResource(object):
             return None
         return self._make(record)
 
+    def rebuild_field_indexes(self, allow_table_lock=False):
+        """
+        Rebuild per-field indexes and views.
+        :param allow_table_lock:
+            Allow an exclusive lock to be taken on the table while creating the indexes.
+            This will halt other user's requests until completed.
+
+            If false, creation will be slightly slower and cannot be done in a transaction.
+        """
+        self._db.rebuild_dynamic_fields(concurrently=not allow_table_lock)
+
     def _make_many(self, query_rows):
         return (self._make(c) for c in query_rows)
 

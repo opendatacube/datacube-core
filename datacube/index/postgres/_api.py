@@ -475,8 +475,21 @@ class PostgresDb(object):
             concurrently=concurrently
         )
 
+    def rebuild_dynamic_fields(self, concurrently=False):
+        _LOG.info('Rebuilding dynamic views/indexes.')
+        for metadata_type in self.get_all_metadata_types():
+            _setup_collection_fields(
+                self._connection, metadata_type['name'], 'dataset', self.get_dataset_fields(metadata_type),
+                metadata_type_id=metadata_type['id'],
+                concurrently=concurrently,
+                replace_existing=True
+            )
+
     def get_all_dataset_types(self):
         return self._connection.execute(DATASET_TYPE.select().order_by(DATASET_TYPE.c.name.asc())).fetchall()
+
+    def get_all_metadata_types(self):
+        return self._connection.execute(METADATA_TYPE.select().order_by(METADATA_TYPE.c.name.asc())).fetchall()
 
     def get_locations(self, dataset_id):
         return [
@@ -568,7 +581,8 @@ def _pg_exists(conn, name):
     return conn.execute("SELECT to_regclass(%s)", name).scalar() is not None
 
 
-def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, metadata_type_id, concurrently=False):
+def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, metadata_type_id,
+                             concurrently=False, replace_existing=False):
     """
     Create indexes and views for a collection's search fields.
     """
@@ -585,25 +599,42 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, metada
                 prefix=name.lower(),
                 field_name=field.name.lower()
             )
+            index = Index(
+                index_name,
+                field.alchemy_expression,
+                postgresql_where=where_expression,
+                postgresql_using=index_type,
+                # Don't lock the table (in the future we'll allow indexing new fields...)
+                postgresql_concurrently=concurrently
+            )
+            exists = _pg_exists(conn, tables.schema_qualified(index_name))
 
-            if not _pg_exists(conn, tables.schema_qualified(index_name)):
+            # This currently leaves a window of time without indexes: it's primarily intended for development.
+            if exists and replace_existing:
+                _LOG.debug('Dropping index: %s (replace=%r)', index_name, replace_existing)
+                index.drop(conn)
+                exists = False
+
+            if not exists:
                 _LOG.debug('Creating index: %s', index_name)
-                Index(
-                    index_name,
-                    field.alchemy_expression,
-                    postgresql_where=where_expression,
-                    postgresql_using=index_type,
-                    # Don't lock the table (in the future we'll allow indexing new fields...)
-                    postgresql_concurrently=concurrently
-                ).create(conn)
+                index.create(conn)
             else:
-                _LOG.debug('Index exists: %s', index_name)
+                _LOG.debug('Index exists: %s  (replace=%r)', index_name, replace_existing)
 
     # Create a view of search fields (for debugging convenience).
     view_name = tables.schema_qualified(name)
-    if not _pg_exists(conn, view_name):
+    exists = _pg_exists(conn, view_name)
+
+    # This currently leaves a window of time without the views: it's primarily intended for development.
+    if exists and replace_existing:
+        _LOG.debug('Dropping view: %s (replace=%r)', view_name, replace_existing)
+        conn.execute('drop view %s' % view_name)
+        exists = False
+
+    if not exists:
+        _LOG.debug('Creating view: %s', view_name)
         conn.execute(
-            tables.View(
+            tables.CreateView(
                 view_name,
                 select(
                     [field.alchemy_expression.label(field.name) for field in fields.values()]
@@ -612,6 +643,8 @@ def _setup_collection_fields(conn, collection_prefix, doc_prefix, fields, metada
                 ).where(where_expression)
             )
         )
+    else:
+        _LOG.debug('View exists: %s  (replace=%r)', view_name, replace_existing)
 
 
 def _to_json(o):
