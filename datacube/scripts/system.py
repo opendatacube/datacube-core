@@ -46,7 +46,9 @@ def database_init(index, default_types, init_users, rebuild):
         echo('Updated.')
 
     if rebuild:
+        echo('Rebuilding indexes/views.')
         index.metadata_types.rebuild_field_indexes()
+        echo('Done.')
 
 
 @system.command('check', help='Initialise the system')

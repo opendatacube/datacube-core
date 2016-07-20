@@ -147,7 +147,7 @@ def test_db_init_noop(global_integration_cli_args, local_config, default_metadat
     opts = list(global_integration_cli_args)
     opts.extend(
         [
-            '-v', 'system', 'init'
+            '-vv', 'system', 'init'
         ]
     )
     result = _run_cli(
@@ -165,7 +165,7 @@ def test_db_init_rebuild(global_integration_cli_args, local_config, default_meta
     opts = list(global_integration_cli_args)
     opts.extend(
         [
-            '-v', 'system', 'init', '--rebuild'
+            '-vv', 'system', 'init', '--rebuild'
         ]
     )
     result = _run_cli(
@@ -200,6 +200,6 @@ def test_db_init(global_integration_cli_args, db, local_config):
     cli_method = datacube.scripts.cli_app.cli
     result = _run_cli(cli_method, opts)
     assert result.exit_code == 0
-    assert 'Done.' in result.output
+    assert 'Created.' in result.output
 
     assert has_schema(db._engine, db._connection)
