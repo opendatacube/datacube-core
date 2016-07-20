@@ -619,7 +619,7 @@ def _setup_collection_fields(conn, collection_prefix, fields, where_expression,
         index_type = field.postgres_index_type
         if index_type:
             # Our normal indexes start with "ix_", dynamic indexes with "dix_"
-            index_name = 'dix_f_{prefix}_{field_name}'.format(
+            index_name = 'dix_{prefix}_{field_name}'.format(
                 prefix=name.lower(),
                 field_name=field.name.lower()
             )
@@ -646,7 +646,8 @@ def _setup_collection_fields(conn, collection_prefix, fields, where_expression,
                 _LOG.debug('Index exists: %s  (replace=%r)', index_name, replace_existing)
 
     # Create a view of search fields (for debugging convenience).
-    view_name = tables.schema_qualified('dv_'+name)
+    # 'dv_' prefix: dynamic view. To distinguish from views that are created as part of the schema itself.
+    view_name = tables.schema_qualified('dv_{}_dataset'.format(name))
     exists = _pg_exists(conn, view_name)
 
     # This currently leaves a window of time without the views: it's primarily intended for development.

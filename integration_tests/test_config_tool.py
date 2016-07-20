@@ -157,7 +157,7 @@ def test_db_init_noop(global_integration_cli_args, local_config, default_metadat
     assert result.exit_code == 0
     assert 'Updated.' in result.output
     # It should not rebuild indexes by default
-    assert 'Dropping index: dix_field_{}'.format(default_metadata_type.name) not in result.output
+    assert 'Dropping index: dix_{}'.format(default_metadata_type.name) not in result.output
 
 
 def test_db_init_rebuild(global_integration_cli_args, local_config, default_metadata_type):
@@ -175,12 +175,12 @@ def test_db_init_rebuild(global_integration_cli_args, local_config, default_meta
     assert result.exit_code == 0
     assert 'Updated.' in result.output
     # It should have recreated views and indexes.
-    assert 'Dropping index: dix_field_{}'.format(default_metadata_type.name) in result.output
-    assert 'Creating index: dix_field_{}'.format(default_metadata_type.name) in result.output
-    assert 'Dropping view: {schema}.{name}_dataset'.format(
+    assert 'Dropping index: dix_{}'.format(default_metadata_type.name) in result.output
+    assert 'Creating index: dix_{}'.format(default_metadata_type.name) in result.output
+    assert 'Dropping view: {schema}.dv_{name}_dataset'.format(
         schema=SCHEMA_NAME, name=default_metadata_type.name
     ) in result.output
-    assert 'Creating view: {schema}.{name}_dataset'.format(
+    assert 'Creating view: {schema}.dv_{name}_dataset'.format(
         schema=SCHEMA_NAME, name=default_metadata_type.name
     ) in result.output
 
