@@ -149,10 +149,12 @@ def intersect_points(a, b):
     return _ogr_to_points(a.Intersection(b))
 
 
-def union_points(a, b):
-    a = _points_to_ogr(a)
-    b = _points_to_ogr(b)
-    return _ogr_to_points(a.Union(b))
+def union_points(a, *other):
+    _a = _points_to_ogr(a)
+    for b in other:
+        _b = _points_to_ogr(b)
+        _a = _a.Union(_b)
+    return _ogr_to_points(_a)
 
 
 def data_resolution_and_offset(data):
