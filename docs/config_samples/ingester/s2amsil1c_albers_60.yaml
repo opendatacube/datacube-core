@@ -50,6 +50,8 @@ storage:
       time: 1
   dimension_order: ['time', 'y', 'x']
 
+fuse_data: copy
+
 measurements:
     - name: aerosol
       dtype: int16
