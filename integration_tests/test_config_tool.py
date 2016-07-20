@@ -10,7 +10,7 @@ from pathlib import Path
 from click.testing import CliRunner
 
 import datacube.scripts.cli_app
-from datacube.index.postgres.tables._core import drop_db, has_schema
+from datacube.index.postgres.tables._core import drop_db, has_schema, SCHEMA_NAME
 
 _LOG = logging.getLogger(__name__)
 
@@ -165,7 +165,7 @@ def test_db_init_rebuild(global_integration_cli_args, local_config, default_meta
     opts = list(global_integration_cli_args)
     opts.extend(
         [
-            '-v', 'system', 'init', '--rebuilq'
+            '-v', 'system', 'init', '--rebuild'
         ]
     )
     result = _run_cli(
@@ -177,8 +177,12 @@ def test_db_init_rebuild(global_integration_cli_args, local_config, default_meta
     # It should have recreated views and indexes.
     assert 'Dropping index: dix_field_{}'.format(default_metadata_type.name) in result.output
     assert 'Creating index: dix_field_{}'.format(default_metadata_type.name) in result.output
-    assert 'Dropping view: {}_dataset'.format(default_metadata_type.name) in result.output
-    assert 'Creating view: {}_dataset'.format(default_metadata_type.name) in result.output
+    assert 'Dropping view: {schema}.{name}_dataset'.format(
+        schema=SCHEMA_NAME, name=default_metadata_type.name
+    ) in result.output
+    assert 'Creating view: {schema}.{name}_dataset'.format(
+        schema=SCHEMA_NAME, name=default_metadata_type.name
+    ) in result.output
 
 
 def test_db_init(global_integration_cli_args, db, local_config):
