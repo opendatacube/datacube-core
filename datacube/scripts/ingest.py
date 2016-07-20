@@ -18,11 +18,13 @@ from datacube.model import DatasetType, GeoPolygon, Range
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.storage.storage import write_dataset_to_netcdf
 from datacube.ui import click as ui
-from datacube.utils import read_documents, intersect_points
+from datacube.utils import read_documents, intersect_points, union_points
 
 from datacube.ui.click import cli
 
 _LOG = logging.getLogger('agdc-ingest')
+
+FUSER_KEY = 'fuse_data'
 
 
 def find_diff(input_type, output_type, index, **query):
@@ -189,13 +191,14 @@ def ingest_work(config, source_type, output_type, index, sources, geobox):
     global_attributes = config['global_attributes']
 
     with datacube.set_options(reproject_threads=1):
-        data = Datacube.product_data(sources, geobox, measurements)
+        fuse_func = {'copy': None}[config.get(FUSER_KEY, 'copy')]
+        data = Datacube.product_data(sources, geobox, measurements, fuse_func=fuse_func)
     nudata = data.rename(namemap)
     file_path = Path(get_filename(config, index, sources))
 
     def _make_dataset(labels, sources):
-        assert len(sources) == 1
-        valid_data = intersect_points(geobox.extent.points, sources[0].extent.to_crs(geobox.crs).points)
+        sources_union = union_points(*[source.extent.to_crs(geobox.crs).points for source in sources])
+        valid_data = intersect_points(geobox.extent.points, sources_union)
         dataset = make_dataset(dataset_type=output_type,
                                sources=sources,
                                extent=geobox.extent,
@@ -213,15 +216,29 @@ def ingest_work(config, source_type, output_type, index, sources, geobox):
 
 
 def process_tasks(index, config, source_type, output_type, tasks, executor):
+    def check_valid(task):
+        if FUSER_KEY in config:
+            return True
+
+        require_fusing = [source for source in task['sources'].values if len(source) > 1]
+        if require_fusing:
+            _LOG.warning('Skipping %s - no "%s" specified in config: %s', task['index'], FUSER_KEY, require_fusing)
+
+        return not require_fusing
+
     results = []
+    successful = failed = 0
     for task in tasks:
+        if not check_valid(task):
+            failed += 1
+            continue
+
         results.append(executor.submit(ingest_work,
                                        config=config,
                                        source_type=source_type,
                                        output_type=output_type,
                                        **task))
 
-    successful = failed = 0
     for result in executor.as_completed(results):
         try:
             datasets = executor.result(result)
