@@ -392,41 +392,33 @@ class DatasetResource(object):
         """
         return self._do_count(query)
 
-    def _get_metadata_types(self, q):
-        metadata_types = set()
+    def _get_dataset_types(self, q):
+        types = set()
         if 'product' in q.keys():
-            metadata_types.add(self.types.get_by_name(q['product']).metadata_type)
-
-        # If they specified a metadata type, search using it.
-        if 'metadata_type' in q.keys():
-            metadata_types.add(self.types.metadata_type_resource.get_by_name(q['metadata_type']))
-            # Don't need to duplicate the param.
-            del q['metadata_type']
-
-        if len(metadata_types) > 1:
-            raise KeyError('Incompatible product and metadata type: %r, %r' % (q['product'], q['metadata_type']))
-
-        if not metadata_types:
+            types.add(self.types.get_by_name(q['product']))
+        else:
             # Otherwise search any metadata type that has all the given search fields.
-            applicable_dataset_types = self.types.get_with_fields(tuple(q.keys()))
-            if not applicable_dataset_types:
+            types = self.types.get_with_fields(tuple(q.keys()))
+            if not types:
                 raise ValueError('No type of dataset has fields: %r', tuple(q.keys()))
-            # Unique metadata types we're searching.
-            metadata_types = set(d.metadata_type for d in applicable_dataset_types)
 
-        return metadata_types
+        return types
 
     def _do_search(self, query, return_fields=False, with_source_ids=False):
         q = dict(query)
-        metadata_types = self._get_metadata_types(q)
+        dataset_types = self._get_dataset_types(q)
 
-        # Perform one search per metadata type.
-        for metadata_type in metadata_types:
-            q['metadata_type_id'] = metadata_type.id
-            query_exprs = tuple(fields.to_expressions(metadata_type.dataset_fields.get, **q))
+        # We don't need to match product name as we're searching via product (ie 'dataset_type')
+        if 'product' in q:
+            del q['product']
+
+        # Perform one search per type.
+        for dataset_type in dataset_types:
+            q['dataset_type_id'] = dataset_type.id
+            query_exprs = tuple(fields.to_expressions(dataset_type.dataset_fields.get, **q))
             select_fields = None
             if return_fields:
-                select_fields = tuple(metadata_type.dataset_fields.values())
+                select_fields = tuple(dataset_type.dataset_fields.values())
             for dataset in self._db.search_datasets(query_exprs,
                                                     select_fields=select_fields,
                                                     with_source_ids=with_source_ids):
@@ -434,7 +426,7 @@ class DatasetResource(object):
 
     def _do_count(self, query):
         q = dict(query)
-        metadata_types = self._get_metadata_types(q)
+        metadata_types = self._get_dataset_types(q)
         result = 0
         for metadata_type in metadata_types:
             q['metadata_type_id'] = metadata_type.id
