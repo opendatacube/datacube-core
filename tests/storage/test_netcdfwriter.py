@@ -91,8 +91,8 @@ def _ensure_geospatial(nco):
 
 def test_create_albers_projection_netcdf(tmpnetcdf_filename):
     nco = create_netcdf(tmpnetcdf_filename)
-    create_coordinate(nco, 'x', numpy.array([1, 2, 3]), 'm')
-    create_coordinate(nco, 'y', numpy.array([1, 2, 3]), 'm')
+    create_coordinate(nco, 'x', numpy.array([1., 2., 3.]), 'm')
+    create_coordinate(nco, 'y', numpy.array([1., 2., 3.]), 'm')
     create_grid_mapping_variable(nco, ALBERS_PROJ)
     nco.close()
 
@@ -109,8 +109,8 @@ def test_create_albers_projection_netcdf(tmpnetcdf_filename):
 
 def test_create_epsg4326_netcdf(tmpnetcdf_filename):
     nco = create_netcdf(tmpnetcdf_filename)
-    create_coordinate(nco, 'latitude', numpy.array([1, 2, 3]), 'm')
-    create_coordinate(nco, 'longitude', numpy.array([1, 2, 3]), 'm')
+    create_coordinate(nco, 'latitude', numpy.array([1., 2., 3.]), 'm')
+    create_coordinate(nco, 'longitude', numpy.array([1., 2., 3.]), 'm')
     create_grid_mapping_variable(nco, GEO_PROJ)
     nco.close()
 
@@ -123,8 +123,8 @@ def test_create_epsg4326_netcdf(tmpnetcdf_filename):
 
 def test_create_sinus_netcdf(tmpnetcdf_filename):
     nco = create_netcdf(tmpnetcdf_filename)
-    create_coordinate(nco, 'x', numpy.array([1, 2, 3]), 'm')
-    create_coordinate(nco, 'y', numpy.array([1, 2, 3]), 'm')
+    create_coordinate(nco, 'x', numpy.array([1., 2., 3.]), 'm')
+    create_coordinate(nco, 'y', numpy.array([1., 2., 3.]), 'm')
     create_grid_mapping_variable(nco, SINIS_PROJ)
     nco.close()
 
@@ -157,8 +157,8 @@ def test_chunksizes(tmpnetcdf_filename):
     coord1 = create_coordinate(nco, 'greg', numpy.array([1.0, 2.0, 3.0]), 'cubic gregs')
     coord2 = create_coordinate(nco, 'bleh', numpy.array([1.0, 2.0, 3.0, 4.0, 5.0]), 'metric blehs')
 
-    no_chunks = create_variable(nco, 'no_chunks', Variable(numpy.dtype(int), None, ('greg', 'bleh'), None))
-    min_max_chunks = create_variable(nco, 'min_max_chunks', Variable(numpy.dtype(int), None, ('greg', 'bleh'), None),
+    no_chunks = create_variable(nco, 'no_chunks', Variable(numpy.dtype('int16'), None, ('greg', 'bleh'), None))
+    min_max_chunks = create_variable(nco, 'min_max_chunks', Variable(numpy.dtype('int16'), None, ('greg', 'bleh'), None),
                                      chunksizes=[2, 50])
     nco.close()
 

@@ -38,7 +38,7 @@ def test_write_dataset_to_netcdf(tmpnetcdf_filename):
         dataset[name] = (name, coord.values, {'units': coord.units, 'crs': geobox.crs})
 
     dataset['B10'] = (geobox.dimensions,
-                      numpy.arange(10000).reshape(geobox.shape),
+                      numpy.arange(10000, dtype='int16').reshape(geobox.shape),
                       {'nodata': 0, 'units': '1', 'crs': geobox.crs})
 
     write_dataset_to_netcdf(dataset, {'foo': 'bar'}, {'B10': {'attrs': {'abc': 'xyz'}}}, Path(tmpnetcdf_filename))
