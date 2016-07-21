@@ -394,7 +394,7 @@ class PostgresDb(object):
             select(
                 select_columns
             ).select_from(
-                DATASET
+                self._from_expression(DATASET, expressions)
             ).where(
                 and_(DATASET.c.archived == None, *raw_expressions)
             )
@@ -420,13 +420,21 @@ class PostgresDb(object):
             select(
                 [func.count('*')]
             ).select_from(
-                DATASET
+                self._from_expression(DATASET, expressions)
             ).where(
                 and_(DATASET.c.archived == None, *raw_expressions)
             )
         )
 
         return self._connection.scalar(select_query)
+
+    def _from_expression(self, source_table, expressions):
+        join_tables = set([expression.field.required_alchemy_table for expression in expressions])
+        from_expression = source_table
+        for table in join_tables:
+            if table != source_table:
+                from_expression = from_expression.join(table)
+        return from_expression
 
     def get_dataset_type(self, id_):
         return self._connection.execute(
