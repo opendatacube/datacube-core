@@ -390,12 +390,11 @@ class PostgresDb(object):
 
         raw_expressions = [raw_expr(expression) for expression in expressions]
 
-        from_tables = DATASET.join(DATASET_TYPE).join(METADATA_TYPE)
         select_query = (
             select(
                 select_columns
             ).select_from(
-                from_tables
+                DATASET
             ).where(
                 and_(DATASET.c.archived == None, *raw_expressions)
             )
@@ -421,7 +420,7 @@ class PostgresDb(object):
             select(
                 [func.count('*')]
             ).select_from(
-                DATASET.join(DATASET_TYPE).join(METADATA_TYPE)
+                DATASET
             ).where(
                 and_(DATASET.c.archived == None, *raw_expressions)
             )
@@ -664,7 +663,7 @@ def _setup_collection_fields(conn, collection_prefix, fields, where_expression,
                 select(
                     [field.alchemy_expression.label(field.name) for field in fields.values()]
                 ).select_from(
-                    DATASET.join(DATASET_TYPE).join(METADATA_TYPE)
+                    DATASET
                 ).where(where_expression)
             )
         )
