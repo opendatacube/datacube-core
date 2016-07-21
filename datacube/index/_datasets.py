@@ -427,11 +427,17 @@ class DatasetResource(object):
 
     def _do_count(self, query):
         q = dict(query)
-        metadata_types = self._get_dataset_types(q)
+        dataset_types = self._get_dataset_types(q)
         result = 0
-        for metadata_type in metadata_types:
-            q['metadata_type_id'] = metadata_type.id
-            query_exprs = tuple(fields.to_expressions(metadata_type.dataset_fields.get, **q))
+
+        # We don't need to match product name as we're searching via product (ie 'dataset_type')
+        if 'product' in q:
+            del q['product']
+
+        for dataset_type in dataset_types:
+            q['dataset_type_id'] = dataset_type.id
+            dataset_fields = dataset_type.metadata_type.dataset_fields
+            query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             result += self._db.count_datasets(query_exprs)
         return result
 

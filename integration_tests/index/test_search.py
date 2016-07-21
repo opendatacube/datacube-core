@@ -280,6 +280,56 @@ def test_fetch_all_of_md_type(index, pseudo_telemetry_dataset):
     assert len(results) == 0
 
 
+def test_count_searches(index, pseudo_telemetry_type, pseudo_telemetry_dataset, ls5_nbar_gtiff_type):
+    """
+    :type index: datacube.index._api.Index
+    :type pseudo_telemetry_type: datacube.model.DatasetType
+    :type pseudo_telemetry_dataset: datacube.model.Dataset
+    """
+    # The dataset should have been matched to the telemetry type.
+    assert pseudo_telemetry_dataset.type.id == pseudo_telemetry_type.id
+    assert index.datasets.search_eager()
+
+    # One result in the telemetry type
+    datasets = index.datasets.count(
+        product=pseudo_telemetry_type.name,
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS',
+    )
+    assert datasets == 1
+
+    # One result in the metadata type
+    datasets = index.datasets.count(
+        metadata_type=pseudo_telemetry_type.metadata_type.name,
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS',
+    )
+    assert datasets == 1
+
+    # No results when searching for a different dataset type.
+    datasets = index.datasets.count(
+        product=ls5_nbar_gtiff_type.name,
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS'
+    )
+    assert datasets == 0
+
+    # One result when no types specified.
+    datasets = index.datasets.count(
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS',
+    )
+    assert datasets == 1
+
+    # No results for different metadata type.
+    datasets = index.datasets.count(
+        metadata_type='telemetry',
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS'
+    )
+    assert datasets == 0
+
+
 def test_search_cli_basic(global_integration_cli_args, default_metadata_type, pseudo_telemetry_dataset):
     """
     Search datasets using the cli.
