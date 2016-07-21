@@ -55,8 +55,8 @@ _STANDARD_COORDINATES = {
 }
 
 
-def create_netcdf(netcdf_path):
-    nco = Dataset(netcdf_path, 'w')
+def create_netcdf(netcdf_path, **kwargs):
+    nco = Dataset(netcdf_path, 'w', **kwargs)
     nco.date_created = datetime.today().isoformat()
     nco.setncattr('Conventions', 'CF-1.6, ACDD-1.3')
     nco.history = ("NetCDF-CF file created by "

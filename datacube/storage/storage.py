@@ -200,7 +200,9 @@ class DatasetSource(object):
         return idx
 
 
-def create_netcdf_storage_unit(filename, crs, coordinates, variables, variable_params, global_attributes=None):
+def create_netcdf_storage_unit(filename,
+                               crs, coordinates, variables, variable_params, global_attributes=None,
+                               netcdfparams=None):
     if filename.exists():
         raise RuntimeError('Storage Unit already exists: %s' % filename)
 
@@ -209,7 +211,7 @@ def create_netcdf_storage_unit(filename, crs, coordinates, variables, variable_p
     except OSError:
         pass
 
-    nco = netcdf_writer.create_netcdf(str(filename))
+    nco = netcdf_writer.create_netcdf(str(filename), **(netcdfparams or {}))
 
     for name, coord in coordinates.items():
         netcdf_writer.create_coordinate(nco, name, coord.values, coord.units)
@@ -230,13 +232,14 @@ def create_netcdf_storage_unit(filename, crs, coordinates, variables, variable_p
     return nco
 
 
-def write_dataset_to_netcdf(access_unit, global_attributes, variable_params, filename):
+def write_dataset_to_netcdf(access_unit, global_attributes, variable_params, filename, netcdfparams=None):
     nco = create_netcdf_storage_unit(filename,
                                      access_unit.crs,
                                      access_unit.coords,
                                      access_unit.data_vars,
                                      variable_params,
-                                     global_attributes)
+                                     global_attributes,
+                                     netcdfparams)
 
     for name, variable in access_unit.data_vars.items():
         nco[name][:] = netcdf_writer.netcdfy_data(variable.values)
