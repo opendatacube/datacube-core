@@ -51,12 +51,27 @@ def test_metadata_indexes_views_exist(db, default_metadata_type):
     """
     # Ensure indexes were created for the eo metadata type (following the naming conventions):
     val = db._connection.execute(
-        "SELECT to_regclass('agdc.dix_field_eo_dataset_platform')").scalar()
-    assert val == 'agdc.dix_field_eo_dataset_platform'
+        "SELECT to_regclass('agdc.dix_eo_platform')").scalar()
+    assert val == 'agdc.dix_eo_platform'
 
     # Ensure view was created (following naming conventions)
-    val = db._connection.execute("SELECT to_regclass('agdc.eo_dataset')").scalar()
-    assert val == 'agdc.eo_dataset'
+    val = db._connection.execute("SELECT to_regclass('agdc.dv_eo_dataset')").scalar()
+    assert val == 'agdc.dv_eo_dataset'
+
+
+def test_dataset_indexes_views_exist(db, ls5_nbar_gtiff_type):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    :type default_metadata_type: datacube.model.MetadataType
+    """
+    # Ensure indexes were created for the dataset type (following the naming conventions):
+    val = db._connection.execute(
+        "SELECT to_regclass('agdc.dix_ls5_nbart_p54_gtiff_platform')").scalar()
+    assert val == 'agdc.dix_ls5_nbart_p54_gtiff_platform'
+
+    # Ensure view was created (following naming conventions)
+    val = db._connection.execute("SELECT to_regclass('agdc.dv_ls5_nbart_p54_gtiff_dataset')").scalar()
+    assert val == 'agdc.dv_ls5_nbart_p54_gtiff_dataset'
 
 
 def test_idempotent_add_dataset_type(index, ls5_nbar_gtiff_type, ls5_nbar_gtiff_doc):
