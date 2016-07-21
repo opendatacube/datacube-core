@@ -252,6 +252,7 @@ def test_search_conflicting_types(index, pseudo_telemetry_dataset, pseudo_teleme
         # The telemetry type is not of type storage_unit.
         metadata_type='storage_unit'
     )
+    assert len(datasets) == 0
 
 
 def test_fetch_all_of_md_type(index, pseudo_telemetry_dataset):
