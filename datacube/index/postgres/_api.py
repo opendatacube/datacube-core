@@ -13,8 +13,8 @@ from __future__ import absolute_import
 
 import json
 import logging
-
 import re
+
 from sqlalchemy import create_engine, select, text, bindparam, and_, or_, Index, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.url import URL as EngineUrl
@@ -409,6 +409,7 @@ class PostgresDb(object):
         :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
         :rtype: int
         """
+
         def raw_expr(expression):
             if isinstance(expression, OrExpression):
                 return or_(raw_expr(expr) for expr in expression.exprs)
@@ -500,14 +501,14 @@ class PostgresDb(object):
             concurrently=concurrently
         )
 
-    def rebuild_dynamic_fields(self, concurrently=False):
+    def check_dynamic_fields(self, concurrently=False):
         _LOG.info('Rebuilding dynamic views/indexes.')
         for metadata_type in self.get_all_metadata_types():
             _setup_collection_fields(
                 self._connection, metadata_type['name'], self.get_dataset_fields(metadata_type),
                 where_expression=and_(DATASET.c.archived == None, DATASET.c.metadata_type_ref == metadata_type['id']),
                 concurrently=concurrently,
-                replace_existing=True
+                replace_existing=False
             )
 
         for dataset_type in self.get_all_dataset_types():
@@ -630,6 +631,11 @@ def _setup_collection_fields(conn, collection_prefix, fields, where_expression,
                 prefix=name.lower(),
                 field_name=field.name.lower()
             )
+            # Previous naming scheme
+            legacy_name = 'dix_field_{prefix}_dataset_{field_name}'.format(
+                prefix=name.lower(),
+                field_name=field.name.lower()
+            )
             index = Index(
                 index_name,
                 field.alchemy_expression,
@@ -639,14 +645,20 @@ def _setup_collection_fields(conn, collection_prefix, fields, where_expression,
                 postgresql_concurrently=concurrently
             )
             exists = _pg_exists(conn, tables.schema_qualified(index_name))
+            legacy_exists = _pg_exists(conn, tables.schema_qualified(legacy_name))
 
             # This currently leaves a window of time without indexes: it's primarily intended for development.
-            if exists and replace_existing:
-                _LOG.debug('Dropping index: %s (replace=%r)', index_name, replace_existing)
-                index.drop(conn)
-                exists = False
+            if replace_existing:
+                if exists:
+                    _LOG.debug('Dropping index: %s (replace=%r)', index_name, replace_existing)
+                    index.drop(conn)
+                    exists = False
+                if legacy_exists:
+                    _LOG.debug('Dropping legacy index: %s (replace=%r)', legacy_name, replace_existing)
+                    Index(legacy_name, field.alchemy_expression).drop(conn)
+                    legacy_exists = False
 
-            if not exists:
+            if not (exists or legacy_exists):
                 _LOG.debug('Creating index: %s', index_name)
                 index.create(conn)
             else:
@@ -676,7 +688,12 @@ def _setup_collection_fields(conn, collection_prefix, fields, where_expression,
             )
         )
     else:
-        _LOG.debug('View exists: %s  (replace=%r)', view_name, replace_existing)
+        _LOG.debug('View exists: %s (replace=%r)', view_name, replace_existing)
+
+    legacy_name = tables.schema_qualified('{}_dataset'.format(name))
+    if _pg_exists(conn, legacy_name):
+        _LOG.debug('Dropping legacy view: %s', legacy_name)
+        conn.execute('drop view %s' % legacy_name)
 
 
 def _to_json(o):
