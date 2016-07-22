@@ -262,6 +262,17 @@ class PostgresDb(object):
             select(_DATASET_SELECT_FIELDS).where(DATASET.c.id == dataset_id)
         ).first()
 
+    def get_derived_datasets(self, dataset_id):
+        return self._connection.execute(
+            select(
+                _DATASET_SELECT_FIELDS
+            ).select_from(
+                DATASET.join(DATASET_SOURCE, DATASET.c.id == DATASET_SOURCE.c.dataset_ref)
+            ).where(
+                DATASET_SOURCE.c.source_dataset_ref == dataset_id
+            )
+        ).fetchall()
+
     def get_dataset_sources(self, dataset_id):
         # recursively build the list of (dataset_ref, source_dataset_ref) pairs starting from dataset_id
         # include (dataset_ref, NULL) [hence the left join]

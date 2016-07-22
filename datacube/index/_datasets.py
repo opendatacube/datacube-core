@@ -262,6 +262,9 @@ class DatasetResource(object):
             }
         return datasets[id_][0]
 
+    def get_derived(self, id_):
+        return [self._make(result) for result in self._db.get_derived_datasets(id_)]
+
     def has(self, dataset):
         """
         Have we already indexed this dataset?
