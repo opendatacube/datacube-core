@@ -31,10 +31,14 @@ def system():
 )
 @click.option(
     '--rebuild/--no-rebuild', is_flag=True, default=False,
-    help="Rebuild dynamic indexes & views"
+    help="Rebuild dynamic indexes & views (caution: slow)"
+)
+@click.option(
+    '--lock-table/--no-lock-table', is_flag=True, default=False,
+    help="Allow table to be locked (eg. while creating missing indexes)"
 )
 @ui.pass_index(expect_initialised=False)
-def database_init(index, default_types, init_users, rebuild):
+def database_init(index, default_types, init_users, rebuild, lock_table):
     echo('Initialising database...')
 
     was_created = index.init_db(with_default_types=default_types,
@@ -45,10 +49,12 @@ def database_init(index, default_types, init_users, rebuild):
     else:
         echo('Updated.')
 
-    if rebuild:
-        echo('Rebuilding indexes/views.')
-        index.metadata_types.rebuild_field_indexes()
-        echo('Done.')
+    echo('Checking indexes/views.')
+    index.metadata_types.check_field_indexes(
+        allow_table_lock=lock_table,
+        rebuild_all=rebuild
+    )
+    echo('Done.')
 
 
 @system.command('check', help='Initialise the system')

@@ -501,14 +501,14 @@ class PostgresDb(object):
             concurrently=concurrently
         )
 
-    def check_dynamic_fields(self, concurrently=False):
-        _LOG.info('Rebuilding dynamic views/indexes.')
+    def check_dynamic_fields(self, concurrently=False, rebuild_all=False):
+        _LOG.info('Checking dynamic views/indexes. (rebuild all = %s)', rebuild_all)
         for metadata_type in self.get_all_metadata_types():
             _setup_collection_fields(
                 self._connection, metadata_type['name'], self.get_dataset_fields(metadata_type),
                 where_expression=and_(DATASET.c.archived == None, DATASET.c.metadata_type_ref == metadata_type['id']),
                 concurrently=concurrently,
-                replace_existing=False
+                replace_existing=rebuild_all
             )
 
         for dataset_type in self.get_all_dataset_types():
@@ -516,7 +516,8 @@ class PostgresDb(object):
                 self._connection, dataset_type['name'],
                 self.get_dataset_fields(self.get_metadata_type(dataset_type['metadata_type_ref'])),
                 where_expression=and_(DATASET.c.archived == None, DATASET.c.dataset_type_ref == dataset_type['id']),
-                concurrently=concurrently
+                concurrently=concurrently,
+                replace_existing=rebuild_all
             )
 
     def get_all_dataset_types(self):
