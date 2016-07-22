@@ -80,7 +80,7 @@ measurements:
       attrs:
           long_name: "Level 1 Top of Atmosphere Reflectance 783 nanometers (Vegetation classification)"
           alias: "Band7"
-    - name: snowicecloud1
+    - name: snowicecloud2
       dtype: int16
       nodata: -999
       resampling_method: nearest
@@ -89,7 +89,7 @@ measurements:
       attrs:
           long_name: "Level 1 Top of Atmosphere Reflectance 1610 nanometers (Snow / ice / cloud discrimination)"
           alias: "Band11"
-    - name: snowicecloud12
+    - name: snowicecloud2
       dtype: int16
       nodata: -999
       resampling_method: nearest
@@ -98,7 +98,7 @@ measurements:
       attrs:
           long_name: "Level 1 Top of Atmosphere Reflectance 2190 nanometers (Snow / ice / cloud discrimination)"
           alias: "Band12"
-    - name: snowicecloud12
+    - name: veg4
       dtype: int16
       nodata: -999
       resampling_method: nearest
