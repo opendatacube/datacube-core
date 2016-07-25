@@ -207,7 +207,7 @@ class Datacube(object):
         :param like: Uses the output of a previous ``load()`` to form the basis of a request for another product.
             E.g.::
 
-                pq = dc.load(product='ls5_pq_albers`, like='ls5_nbar_albers')
+                pq = dc.load(product='ls5_pq_albers', like=nbar_dataset)
 
         :type like: xarray.Dataset
 

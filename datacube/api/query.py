@@ -312,7 +312,8 @@ def _like_to_search(dataset):
     search = {}
     for name, coord in dataset.coords.items():
         if name == 'time':
-            search['time'] = _time_to_search_dims((coord[0].values, coord[-1].values))
+            search['time'] = _time_to_search_dims((coord[0].values,
+                                                   coord[-1].values + datetime.timedelta(milliseconds=1)))
         elif name not in SPATIAL_KEYS:
             search[name] = Range(dataset.coords[0].values, dataset.coords[-1].values)
     return search
