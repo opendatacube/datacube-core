@@ -6,7 +6,7 @@ from __future__ import absolute_import
 
 import logging
 
-from sqlalchemy import ForeignKey, UniqueConstraint, CheckConstraint, SmallInteger
+from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, SmallInteger
 from sqlalchemy import Table, Column, Integer, String, DateTime, Boolean
 from sqlalchemy.dialects import postgres
 from sqlalchemy.sql import func
@@ -97,14 +97,14 @@ DATASET_LOCATION = Table(
 # Link datasets to their source datasets.
 DATASET_SOURCE = Table(
     'dataset_source', _core.METADATA,
-    Column('dataset_ref', None, ForeignKey(DATASET.c.id), primary_key=True, nullable=False),
+    Column('dataset_ref', None, ForeignKey(DATASET.c.id), nullable=False),
 
     # An identifier for this source dataset.
     #    -> Usually it's the dataset type ('ortho', 'nbar'...), as there's typically only one source
     #       of each type.
-    Column('classifier', String, primary_key=True, nullable=False),
+    Column('classifier', String, nullable=False),
     Column('source_dataset_ref', None, ForeignKey(DATASET.c.id), nullable=False),
 
-    UniqueConstraint('dataset_ref', 'classifier'),
+    PrimaryKeyConstraint('dataset_ref', 'classifier'),
     UniqueConstraint('source_dataset_ref', 'dataset_ref'),
 )
