@@ -158,8 +158,8 @@ def test_chunksizes(tmpnetcdf_filename):
     coord2 = create_coordinate(nco, 'bleh', numpy.array([1.0, 2.0, 3.0, 4.0, 5.0]), 'metric blehs')
 
     no_chunks = create_variable(nco, 'no_chunks', Variable(numpy.dtype('int16'), None, ('greg', 'bleh'), None))
-    min_max_chunks = create_variable(nco, 'min_max_chunks', Variable(numpy.dtype('int16'), None, ('greg', 'bleh'), None),
-                                     chunksizes=[2, 50])
+    min_max_chunks = create_variable(nco, 'min_max_chunks', Variable(numpy.dtype('int16'), None,
+                                                                     ('greg', 'bleh'), None), chunksizes=[2, 50])
     nco.close()
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
