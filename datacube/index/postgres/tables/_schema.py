@@ -97,13 +97,12 @@ DATASET_LOCATION = Table(
 # Link datasets to their source datasets.
 DATASET_SOURCE = Table(
     'dataset_source', _core.METADATA,
-    Column('id', Integer, primary_key=True, autoincrement=True),
-    Column('dataset_ref', None, ForeignKey(DATASET.c.id), nullable=False),
+    Column('dataset_ref', None, ForeignKey(DATASET.c.id), primary_key=True, nullable=False),
 
     # An identifier for this source dataset.
     #    -> Usually it's the dataset type ('ortho', 'nbar'...), as there's typically only one source
     #       of each type.
-    Column('classifier', String, nullable=False),
+    Column('classifier', String, primary_key=True, nullable=False),
     Column('source_dataset_ref', None, ForeignKey(DATASET.c.id), nullable=False),
 
     UniqueConstraint('dataset_ref', 'classifier'),

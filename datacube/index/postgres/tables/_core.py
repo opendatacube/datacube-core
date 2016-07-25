@@ -124,9 +124,31 @@ def schema_is_latest(engine):
     """
     Is the schema up-to-date?
     """
+    is_unification = _pg_exists(engine, schema_qualified('dataset_type'))
+    is_updated = not _pg_exists(engine, schema_qualified('uq_dataset_source_dataset_ref'))
+
     # We may have versioned schema in the future.
     # For now, we know updates ahve been applied if the dataset_type table exists,
-    return _pg_exists(engine, schema_qualified('dataset_type'))
+    return is_unification and is_updated
+
+
+def update_schema(engine):
+    is_unification = _pg_exists(engine, schema_qualified('dataset_type'))
+    if not is_unification:
+        raise ValueError('Pre-unification database cannot be updated.')
+
+    # Remove surrogate key from dataset_source: it makes the table larger for no benefit.
+    if _pg_exists(engine, schema_qualified('uq_dataset_source_dataset_ref')):
+        _LOG.info('Applying surrogate-key update')
+        engine.execute("""
+        begin;
+          alter table agdc.dataset_source drop constraint pk_dataset_source;
+          alter table agdc.dataset_source drop constraint uq_dataset_source_dataset_ref;
+          alter table agdc.dataset_source add constraint pk_dataset_source primary key(dataset_ref, classifier);
+          alter table agdc.dataset_source drop column id;
+        commit;
+        """)
+        _LOG.info('Completed surrogate-key update')
 
 
 def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=False):

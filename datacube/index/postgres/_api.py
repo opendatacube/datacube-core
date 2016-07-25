@@ -110,7 +110,11 @@ class PostgresDb(object):
                 ))
 
             if not tables.schema_is_latest(_engine):
-                raise IndexSetupError('\n\nDB schema is out of date.')
+                raise IndexSetupError(
+                    '\n\nDB schema is out of date. '
+                    'An administrator must run init:\n\t{init_command}'.format(
+                        init_command='datacube -v system init'
+                    ))
 
         _connection = _engine.connect()
         return PostgresDb(_engine, _connection)
@@ -162,7 +166,11 @@ class PostgresDb(object):
 
         :return: If it was newly created.
         """
-        return tables.ensure_db(self._engine, with_permissions=with_permissions)
+        is_new = tables.ensure_db(self._engine, with_permissions=with_permissions)
+        if not is_new:
+            tables.update_schema(self._engine)
+
+        return is_new
 
     def begin(self):
         """
