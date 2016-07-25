@@ -10,6 +10,8 @@ NCI Usage Guide
 
     For details on accessing the NCI, see http://nci.org.au/.
 
+    For details on accessing the :term:`VDI` at NCI, see http://vdi.nci.org.au/help.
+
 To have access to the AGCD modules on ``raijin`` or ``VDI``, run the command::
 
     [usr111@raijin ~]$ module use /g/data/v10/public/modules/modulefiles/
@@ -44,3 +46,29 @@ Along with 2 versions of Python:
 To load the production module with Python 2, run::
 
     [usr111@raijin ~]$ module load agdc-py2-prod
+
+The first time you load the module, it will register your account with the database, granting you read-only access.
+It will store your password in the file `~/.pgpass`.
+This file must have secure permission rights set, so you may need to run::
+
+    chmod 0600 ~/.pgpass
+
+.. note::
+    If you are running on VDI, and would also like to use the datacube from raijin,
+    you can copy your pgpass file to raijin by running on a terminal window in VDI::
+
+        remote-hpc-cmd init
+        ssh raijin "cat >>.pgpass" <~/.pgpass
+        ssh raijin "chmod 0600 .pgpass
+
+    On VDI, you will be prompted to unlock the private key. Enter your NCI password when prompted.
+
+    If you have previously used the module on raijin, you will need to copy your pgpass file to your VDI home folder.
+    From a terminal window in VDI, run::
+
+        ssh raijin "cat .pgpass" >> ~/.pgpass
+        chmod 0600 ~/.pgpass
+
+.. warning::
+    If you have created a ``.datacube.conf`` file in your home folder from previous versions, you should rename or remove it
+    to avoid it conflicting with the settings loaded by the module.

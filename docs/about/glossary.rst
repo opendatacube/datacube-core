@@ -29,6 +29,11 @@ Glossary
       while still allowing high performance access and processing capabilities.
       See http://www.python.org/ for more.
 
+   VDI
+      Virtual Desktop Interface is a virtual laboratory at NCI that provides a
+      linux desktop environment for scientific computing. For more see
+      http://vdi.nci.org.au/help.
+
    YAML
       YAML is a human friendly data serialization standard for all programming
       languages. It is used for all on disk metadata files and product
