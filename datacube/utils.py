@@ -10,6 +10,7 @@ import logging
 import pathlib
 from datetime import datetime, date
 from dateutil.tz import tzutc
+from math import ceil
 
 import dateutil.parser
 import jsonschema
@@ -430,3 +431,25 @@ def get_doc_changes(original, new, base_prefix=()):
             )
 
     return sorted(changed_fields, key=lambda a: a[0])
+
+
+def iter_slices(shape, chunk_size):
+    """
+    Generates slices for a given shape
+
+    E.g. ``shape=(4000, 4000), chunk_size=(500, 500)``
+    Would yield 64 tuples of slices, each indexing 500x500.
+
+    If the shape is not divisible by the chunk_size, the last chunk in each dimension will be smaller.
+
+    :param tuple(int) shape: Shape of an array
+    :param tuple(int) chunk_size: length of each slice for each dimension
+    :return: Yields slices that can be used on an array of the given shape
+
+    >>> list(iter_slices((5,), (2,)))
+    [(slice(0, 2, None),), (slice(2, 4, None),), (slice(4, 5, None),)]
+    """
+    assert len(shape) == len(chunk_size)
+    num_grid_chunks = [int(ceil(s/float(c))) for s, c in zip(shape, chunk_size)]
+    for grid_index in numpy.ndindex(*num_grid_chunks):
+        yield tuple(slice(min(d*c, stop), min((d+1)*c, stop)) for d, c, stop in zip(grid_index, chunk_size, shape))
