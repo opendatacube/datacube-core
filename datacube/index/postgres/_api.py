@@ -245,13 +245,12 @@ class PostgresDb(object):
 
     def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
         try:
-            res = self._connection.execute(
+            self._connection.execute(
                 DATASET_SOURCE.insert(),
                 classifier=classifier,
                 dataset_ref=dataset_id,
                 source_dataset_ref=source_dataset_id
             )
-            return res.inserted_primary_key[0]
         except IntegrityError as e:
             if e.orig.pgcode == PGCODE_UNIQUE_CONSTRAINT:
                 raise DuplicateRecordError('Source already exists')
