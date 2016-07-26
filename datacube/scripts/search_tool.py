@@ -93,6 +93,18 @@ def datasets(ctx, index, expression):
     )
 
 
+@cli.command(help='Counts')
+@click.argument('period', nargs=1)
+@click.argument('expression', nargs=-1)
+@PASS_INDEX
+@click.pass_context
+def counts(ctx, index, period, expression):
+    ctx.obj['write_results'](
+        index.datasets.get_field_names(),
+        index.datasets.count_through_time(period, **parse_expressions(*expression))
+    )
+
+
 @cli.command(help='Storage units')
 @click.argument('expression', nargs=-1)
 @PASS_INDEX

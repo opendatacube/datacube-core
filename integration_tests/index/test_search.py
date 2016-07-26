@@ -330,6 +330,39 @@ def test_count_searches(index, pseudo_telemetry_type, pseudo_telemetry_dataset, 
     assert datasets == 0
 
 
+def test_count_time_groups(index, pseudo_telemetry_type, pseudo_telemetry_dataset):
+    """
+    :type index: datacube.index._api.Index
+    """
+
+    # 'from_dt': datetime.datetime(2014, 7, 26, 23, 48, 0, 343853),
+    # 'to_dt': datetime.datetime(2014, 7, 26, 23, 52, 0, 343853),
+    products = index.datasets.count_through_time(
+        '1 day',
+        product=pseudo_telemetry_type.name,
+        time=Range(
+            datetime.datetime(2014, 7, 25),
+            datetime.datetime(2014, 7, 27)
+        )
+    )
+    assert len(products) == 1
+
+    assert pseudo_telemetry_type.name in products
+
+    telem_range = products[pseudo_telemetry_type.name]
+    assert len(telem_range) == 3
+
+    assert telem_range == {
+        pseudo_telemetry_type.name: [
+            (Range(datetime.datetime(2014, 7, 25), datetime.datetime(2014, 7, 26)), 0),
+            (Range(datetime.datetime(2014, 7, 26), datetime.datetime(2014, 7, 27)), 1),
+            (Range(datetime.datetime(2014, 7, 27), datetime.datetime(2014, 7, 28)), 0)
+        ]
+    }
+
+
+
+
 def test_search_cli_basic(global_integration_cli_args, default_metadata_type, pseudo_telemetry_dataset):
     """
     Search datasets using the cli.

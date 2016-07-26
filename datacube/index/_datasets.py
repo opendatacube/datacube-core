@@ -9,10 +9,10 @@ import logging
 import cachetools
 
 from datacube import compat
-from datacube.utils import InvalidDocException, check_doc_unchanged, jsonify_document
 from datacube.model import Dataset, DatasetType, MetadataType
-from .exceptions import DuplicateRecordError
+from datacube.utils import InvalidDocException, check_doc_unchanged, jsonify_document
 from . import fields
+from .exceptions import DuplicateRecordError
 
 _LOG = logging.getLogger(__name__)
 
@@ -106,6 +106,7 @@ class DatasetTypeResource(object):
     :type _db: datacube.index.postgres._api.PostgresDb
     :type metadata_type_resource: MetadataTypeResource
     """
+
     def __init__(self, db, metadata_type_resource):
         """
         :type db: datacube.index.postgres._api.PostgresDb
@@ -232,6 +233,7 @@ class DatasetResource(object):
     :type _db: datacube.index.postgres._api.PostgresDb
     :type types: datacube.index._datasets.DatasetTypeResource
     """
+
     def __init__(self, db, dataset_type_resource):
         """
         :type db: datacube.index.postgres._api.PostgresDb
@@ -259,7 +261,7 @@ class DatasetResource(object):
             dataset.sources = {
                 classifier: datasets[str(source)][0]
                 for source, classifier in zip(result['sources'], result['classes']) if source
-            }
+                }
         return datasets[id_][0]
 
     def get_derived(self, id_):
@@ -414,6 +416,15 @@ class DatasetResource(object):
         """
         return self._do_count(query)
 
+    def count_through_time(self, period, **query):
+        """
+        Perform a search, returning count of results.
+        :type query: dict[str,str|float|datacube.model.Range]
+        :type period: str
+        :rtype: int
+        """
+        return self._do_time_count(period, query)
+
     def _get_dataset_types(self, q):
         types = set()
         if 'product' in q.keys():
@@ -461,6 +472,36 @@ class DatasetResource(object):
             dataset_fields = dataset_type.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             result += self._db.count_datasets(query_exprs)
+        return result
+
+    def _do_time_count(self, period, query):
+        q = dict(query)
+        dataset_types = self._get_dataset_types(q)
+
+        if 'time' not in query:
+            raise ValueError('Counting through time requires a "time" range query argument')
+
+        start, end = query['time']
+        del query['time']
+
+        # We don't need to match product name as we're searching via product (ie 'dataset_type')
+        if 'product' in q:
+            del q['product']
+
+        result = {}
+
+        for dataset_type in dataset_types:
+            q['dataset_type_id'] = dataset_type.id
+            dataset_fields = dataset_type.metadata_type.dataset_fields
+            query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
+            result[dataset_type.name] = list(self._db.count_datasets_through_time(
+                start,
+                end,
+                period,
+                dataset_fields.get('time'),
+                query_exprs
+            ))
+
         return result
 
     def search_summaries(self, **query):

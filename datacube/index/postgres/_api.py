@@ -15,7 +15,9 @@ import json
 import logging
 import re
 
+from sqlalchemy import cast
 from sqlalchemy import create_engine, select, text, bindparam, and_, or_, Index, func
+from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.url import URL as EngineUrl
 from sqlalchemy.exc import IntegrityError
@@ -24,6 +26,7 @@ import datacube
 from datacube.config import LocalConfig
 from datacube.index.exceptions import DuplicateRecordError
 from datacube.index.fields import OrExpression
+from datacube.model import Range
 from datacube.utils import jsonify_document
 from . import tables
 from ._fields import parse_fields, NativeField
@@ -466,6 +469,56 @@ class PostgresDb(object):
         )
 
         return self._connection.scalar(select_query)
+
+    def count_datasets_through_time(self, start, end, period, time_field, expressions):
+        """
+        :type period: str
+        :type start: datetime.datetime
+        :type end: datetime.datetime
+        :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
+        :rtype: list[((datetime.datetime, datetime.datetime), int)]
+        """
+
+        def raw_expr(expression):
+            if isinstance(expression, OrExpression):
+                return or_(raw_expr(expr) for expr in expression.exprs)
+            return expression.alchemy_expression
+
+        raw_expressions = [raw_expr(expression) for expression in expressions]
+
+        start_times = select((
+            func.generate_series(start, end, cast(period, INTERVAL)).label('start_time'),
+        )).alias('start_times')
+
+        time_range_select = (
+            select((
+                func.tstzrange(
+                    start_times.c.start_time,
+                    func.lead(start_times.c.start_time).over()
+                ).label('time_period'),
+            ))
+        ).alias('time_ranges')
+
+        count_query = select((
+                func.count('*'),
+            )).select_from(
+                self._from_expression(DATASET, expressions)
+            ).where(
+                and_(
+                    time_field.alchemy_expression.overlaps(time_range_select.c.time_period),
+                    DATASET.c.archived == None,
+                    *raw_expressions
+                )
+            )
+
+        results = self._connection.execute(select((
+            time_range_select.c.time_period,
+            count_query.label('dataset_count')
+        )))
+
+        for time_period, dataset_count in results:
+            # if not time_period.upper_inf:
+            yield Range(time_period.lower, time_period.upper), dataset_count
 
     def _from_expression(self, source_table, expressions):
         join_tables = set([expression.field.required_alchemy_table for expression in expressions])
