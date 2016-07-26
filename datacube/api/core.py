@@ -308,7 +308,7 @@ class Datacube(object):
         """
         Creates an empty :class:`xarray.Dataset` to hold data from :meth:`product_sources`.
 
-        :param dict coords: Dict-like object holding the `DataArray` objects of the dimensions not specified by `geobox`
+        :param dict coords: OrderedDict-like holding `DataArray` objects of the dimensions not specified by `geobox`
         :param GeoBox geobox: A GeoBox defining the output spatial projection and resolution
         :param measurements: list of measurement dicts with keys: {'name', 'dtype', 'nodata', 'units'}
         :param fill_func: function to fill the data
