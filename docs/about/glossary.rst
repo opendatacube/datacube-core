@@ -30,7 +30,7 @@ Glossary
       See http://www.python.org/ for more.
 
    VDI
-      Virtual Desktop Interface is a virtual laboratory at NCI that provides a
+      Virtual Desktop Infrastructure is a virtual laboratory at NCI that provides a
       linux desktop environment for scientific computing. For more see
       http://vdi.nci.org.au/help.
 
