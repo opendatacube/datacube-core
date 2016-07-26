@@ -308,7 +308,7 @@ class Datacube(object):
         """
         Creates an empty :class:`xarray.Dataset` to hold data from :meth:`product_sources`.
 
-        :param xarray.DataArray sources: DataArray holding a list of :py:class:`datacube.model.Dataset` objects
+        :param dict coords: Dict-like object holding the `DataArray` objects of the dimensions not specified by `geobox`
         :param GeoBox geobox: A GeoBox defining the output spatial projection and resolution
         :param measurements: list of measurement dicts with keys: {'name', 'dtype', 'nodata', 'units'}
         :param fill_func: function to fill the data
@@ -317,7 +317,7 @@ class Datacube(object):
         .. seealso:: :meth:`product_observations` :meth:`product_sources`
         """
         def empty_func(measurement):
-            coord_shape = tuple(coord.size for coord in coords.values)
+            coord_shape = tuple(coord.size for coord in coords.values())
             return numpy.full(coord_shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
         data_func = data_func or empty_func
 
@@ -340,7 +340,8 @@ class Datacube(object):
             if 'spectral_definition' in measurement:
                 attrs['spectral_definition'] = measurement['spectral_definition']
 
-            result[measurement['name']] = (coords.dims + geobox.dimensions, data, attrs)
+            dims = tuple(coords.keys()) + tuple(geobox.dimensions)
+            result[measurement['name']] = (dims, data, attrs)
 
         return result
 
