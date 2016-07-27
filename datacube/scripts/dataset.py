@@ -197,3 +197,12 @@ def info_cmd(index, show_sources, show_derived, ids):
 
         yaml.safe_dump(build_dataset_info(index, dataset, show_derived), stream=sys.stdout)
 
+
+@dataset_cmd.command('archive', help="Archive datasets")
+@click.option('--archive-derived', help='Also archive derived', is_flag=True, default=False)
+@click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
+@click.argument('ids', nargs=-1)
+@ui.pass_index()
+def archive_cmd(index, archive_derived, dry_run, ids):
+    for id_ in ids:
+        dataset = index.datasets.archive(id_, archive_derived)
