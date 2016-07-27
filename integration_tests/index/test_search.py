@@ -354,9 +354,50 @@ def test_count_time_groups(index, pseudo_telemetry_type, pseudo_telemetry_datase
     assert len(telem_range) == 2
 
     assert telem_range == [
-        (Range(datetime.datetime(2014, 7, 25, tzinfo=tz.tzutc()), datetime.datetime(2014, 7, 26, tzinfo=tz.tzutc())), 0),
-        (Range(datetime.datetime(2014, 7, 26, tzinfo=tz.tzutc()), datetime.datetime(2014, 7, 27, tzinfo=tz.tzutc())), 1)
+        (
+            Range(datetime.datetime(2014, 7, 25, tzinfo=tz.tzutc()),
+                  datetime.datetime(2014, 7, 26, tzinfo=tz.tzutc())),
+            0
+        ),
+        (
+            Range(datetime.datetime(2014, 7, 26, tzinfo=tz.tzutc()),
+                  datetime.datetime(2014, 7, 27, tzinfo=tz.tzutc())),
+            1
+        )
     ]
+
+
+def test_count_time_groups_cli(global_integration_cli_args, pseudo_telemetry_type, pseudo_telemetry_dataset):
+    """
+    Search datasets using the cli.
+    :type global_integration_cli_args: tuple[str]
+    :type default_metadata_type: datacube.model.Collection
+    :type pseudo_telemetry_dataset: datacube.model.Dataset
+    """
+    opts = list(global_integration_cli_args)
+    opts.extend(
+        [
+            'counts',
+            '1 day',
+            '2014-07-25 < time < 2014-07-27'
+        ]
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        datacube.scripts.search_tool.cli,
+        opts,
+        catch_exceptions=False
+    )
+    assert result.exit_code == 0
+
+    expected_out = (
+        '{}\n'
+        '    2014-07-25: 0\n'
+        '    2014-07-26: 1\n'
+    ).format(pseudo_telemetry_type.name)
+
+    assert result.output == expected_out
 
 
 def test_search_cli_basic(global_integration_cli_args, default_metadata_type, pseudo_telemetry_dataset):

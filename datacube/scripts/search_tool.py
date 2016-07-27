@@ -101,7 +101,7 @@ def counts(index, period, expression):
     for product, series in index.datasets.count_through_time(period, **parse_expressions(*expression)).items():
         click.echo(product)
         for timerange, count in series:
-            click.echo('\t{}: {}'.format(timerange[0], count))
+            click.echo('    {}: {}'.format(timerange[0].strftime("%Y-%m-%d"), count))
 
 
 @cli.command(help='Storage units')
