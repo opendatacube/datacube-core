@@ -1,7 +1,9 @@
 from __future__ import absolute_import
 
+import sys
 import logging
 import click
+import yaml
 
 from pathlib import Path
 
@@ -159,3 +161,39 @@ def index_cmd(index, match_rules, dtype, auto_match, dry_run, datasets):
             _LOG.info('Matched %s', dataset)
             if not dry_run:
                 index.datasets.add(dataset)
+
+
+def build_dataset_info(index, dataset, show_derived=False):
+    deriveds = []
+    if show_derived:
+        deriveds = index.datasets.get_derived(dataset.id)
+
+    # def find_me(derived):
+    #     for key, source in derived.sources.items():
+    #         print(dataset.id, source.id)
+    #         if dataset.id == source.id:
+    #             return key
+
+    return {
+        'id': dataset.id,
+        'product': dataset.type.name,
+        'location': dataset.local_uri,
+        'sources': {key: build_dataset_info(index, source) for key, source in dataset.sources.items()},
+        'derived': [build_dataset_info(index, derived) for derived in deriveds]
+    }
+
+
+@dataset_cmd.command('info', help="Archive datasets")
+@click.option('--show-sources', help='Also show sources', is_flag=True, default=False)
+@click.option('--show-derived', help='Also show sources', is_flag=True, default=False)
+@click.argument('ids', nargs=-1)
+@ui.pass_index()
+def info_cmd(index, show_sources, show_derived, ids):
+    for id_ in ids:
+        dataset = index.datasets.get(id_, include_sources=show_sources)
+        if not dataset:
+            click.echo('%s missing' % id_)
+            continue
+
+        yaml.safe_dump(build_dataset_info(index, dataset, show_derived), stream=sys.stdout)
+
