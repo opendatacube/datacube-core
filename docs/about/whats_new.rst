@@ -8,7 +8,7 @@ v1.1.5 Untranslatable Sign  (26 July 2016)
 
   - Added `fuse_data` ingester configuration parameter to control overlaping data fusion
 
-  - Added `--log-file` ingester command line option for saving logs to a file
+  - Added `--log-file` option to `datacube dataset add` command for saving logs to a file
 
   - Added index.datasets.count method returning number of datasets matching the query
 
