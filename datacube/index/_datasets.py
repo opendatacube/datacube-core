@@ -263,6 +263,12 @@ class DatasetResource(object):
         return datasets[id_][0]
 
     def get_derived(self, id_):
+        """
+        Get drived datasets
+
+        :param uuid id_: dataset id
+        :rtype: list[datacube.model.Dataset]
+        """
         return [self._make(result) for result in self._db.get_derived_datasets(id_)]
 
     def has(self, dataset):
@@ -317,6 +323,32 @@ class DatasetResource(object):
                 _LOG.warning(str(e))
 
         return dataset
+
+    def archive(self, id_, archive_derived=False):
+        """
+        Mark dataset as archived
+
+        :param uuid id_: dataset id
+        :param bool archive_derived: also archive derived datasets recursively
+        """
+        if not archive_derived:
+            self._db.archive_dataset(id_)
+            return
+
+        raise NotImplementedError()
+
+    def restore(self, id_, restore_derived=False):
+        """
+        Mark dataset as not archived
+
+        :param uuid id_: dataset id
+        :param bool restore_derived: also restore derived datasets recursively
+        """
+        if not restore_derived:
+            self._db.restore_dataset(id_)
+            return
+
+        raise NotImplementedError()
 
     def get_field_names(self, type_name=None):
         """

@@ -256,6 +256,26 @@ class PostgresDb(object):
                 raise DuplicateRecordError('Source already exists')
             raise
 
+    def archive_dataset(self, dataset_id):
+        self._connection.execute(
+            DATASET.update().where(
+                DATASET.c.id == dataset_id
+            ).where(
+                DATASET.c.archived == None
+            ).values(
+                archived=func.now()
+            )
+        )
+
+    def restore_dataset(self, dataset_id):
+        self._connection.execute(
+            DATASET.update().where(
+                DATASET.c.id == dataset_id
+            ).values(
+                archived=None
+            )
+        )
+
     def get_dataset(self, dataset_id):
         return self._connection.execute(
             select(_DATASET_SELECT_FIELDS).where(DATASET.c.id == dataset_id)

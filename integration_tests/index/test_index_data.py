@@ -66,6 +66,30 @@ _pseudo_telemetry_dataset_type = {
 _EXAMPLE_LS7_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('ls7-nbar-example.yaml')
 
 
+def test_archive_datasets(index, db, local_config, default_metadata_type):
+    with db.begin() as transaction:
+        dataset_type = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
+        was_inserted = db.insert_dataset(
+            _telemetry_dataset,
+            _telemetry_uuid,
+            dataset_type.id
+        )
+
+    assert was_inserted
+    assert db.contains_dataset(_telemetry_uuid)
+
+    datsets = index.datasets.search_eager()
+    assert len(datsets) == 1
+
+    index.datasets.archive(_telemetry_uuid)
+    datsets = index.datasets.search_eager()
+    assert len(datsets) == 0
+
+    index.datasets.restore(_telemetry_uuid)
+    datsets = index.datasets.search_eager()
+    assert len(datsets) == 1
+
+
 def test_index_duplicate_dataset(index, db, local_config, default_metadata_type):
     """
     :type index: datacube.index._api.Index
