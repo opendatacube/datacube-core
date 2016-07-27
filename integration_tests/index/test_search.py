@@ -11,6 +11,7 @@ import uuid
 
 import pytest
 from click.testing import CliRunner
+from dateutil import tz
 from pathlib import Path
 
 import datacube.scripts.search_tool
@@ -341,8 +342,8 @@ def test_count_time_groups(index, pseudo_telemetry_type, pseudo_telemetry_datase
         '1 day',
         product=pseudo_telemetry_type.name,
         time=Range(
-            datetime.datetime(2014, 7, 25),
-            datetime.datetime(2014, 7, 27)
+            datetime.datetime(2014, 7, 25, tzinfo=tz.tzutc()),
+            datetime.datetime(2014, 7, 27, tzinfo=tz.tzutc())
         )
     )
     assert len(products) == 1
@@ -350,17 +351,12 @@ def test_count_time_groups(index, pseudo_telemetry_type, pseudo_telemetry_datase
     assert pseudo_telemetry_type.name in products
 
     telem_range = products[pseudo_telemetry_type.name]
-    assert len(telem_range) == 3
+    assert len(telem_range) == 2
 
-    assert telem_range == {
-        pseudo_telemetry_type.name: [
-            (Range(datetime.datetime(2014, 7, 25), datetime.datetime(2014, 7, 26)), 0),
-            (Range(datetime.datetime(2014, 7, 26), datetime.datetime(2014, 7, 27)), 1),
-            (Range(datetime.datetime(2014, 7, 27), datetime.datetime(2014, 7, 28)), 0)
-        ]
-    }
-
-
+    assert telem_range == [
+        (Range(datetime.datetime(2014, 7, 25, tzinfo=tz.tzutc()), datetime.datetime(2014, 7, 26, tzinfo=tz.tzutc())), 0),
+        (Range(datetime.datetime(2014, 7, 26, tzinfo=tz.tzutc()), datetime.datetime(2014, 7, 27, tzinfo=tz.tzutc())), 1)
+    ]
 
 
 def test_search_cli_basic(global_integration_cli_args, default_metadata_type, pseudo_telemetry_dataset):

@@ -497,6 +497,15 @@ class PostgresDb(object):
                     func.lead(start_times.c.start_time).over()
                 ).label('time_period'),
             ))
+        ).alias('all_time_ranges')
+
+        # Exclude the trailing (end time to infinite) row. Is there a simpler way?
+        time_ranges = (
+            select((
+                time_range_select,
+            )).where(
+                ~func.upper_inf(time_range_select.c.time_period)
+            )
         ).alias('time_ranges')
 
         count_query = (
@@ -506,7 +515,7 @@ class PostgresDb(object):
                 self._from_expression(DATASET, expressions)
             ).where(
                 and_(
-                    time_field.alchemy_expression.overlaps(time_range_select.c.time_period),
+                    time_field.alchemy_expression.overlaps(time_ranges.c.time_period),
                     DATASET.c.archived == None,
                     *raw_expressions
                 )
@@ -514,7 +523,7 @@ class PostgresDb(object):
         )
 
         results = self._connection.execute(select((
-            time_range_select.c.time_period,
+            time_ranges.c.time_period,
             count_query.label('dataset_count')
         )))
 
