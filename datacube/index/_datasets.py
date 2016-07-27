@@ -318,19 +318,6 @@ class DatasetResource(object):
 
         return dataset
 
-    def replace(self, old_datasets, new_datasets):
-        """
-        :type old_datasets: list[datacube.model.Dataset]
-        :type new_datasets: list[datacube.model.Dataset]
-        """
-        with self._db.begin() as transaction:
-            for unit in old_datasets:
-                self._db.archive_storage_unit(unit.id)
-
-            for unit in new_datasets:
-                unit = self.add(unit)
-                _LOG.debug('Indexed dataset %s @ %s', unit.id, unit.local_uri)
-
     def get_field_names(self, type_name=None):
         """
         :type type_name: str
