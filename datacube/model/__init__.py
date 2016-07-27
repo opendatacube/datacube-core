@@ -6,10 +6,10 @@ from __future__ import absolute_import, division
 
 import logging
 import math
+import os
 from collections import namedtuple, OrderedDict
 
 import numpy
-import os
 from affine import Affine
 from osgeo import osr
 from pathlib import Path
@@ -28,7 +28,7 @@ Variable = namedtuple('Variable', ('dtype', 'nodata', 'dims', 'units'))
 NETCDF_VAR_OPTIONS = {'zlib', 'complevel', 'shuffle', 'fletcher32', 'contiguous'}
 VALID_VARIABLE_ATTRS = {'standard_name', 'long_name', 'units', 'flags_definition'}
 
-SCHEMA_PATH = Path(__file__).parent/'schema'
+SCHEMA_PATH = Path(__file__).parent / 'schema'
 
 
 def _uri_to_local_path(local_uri):
@@ -73,6 +73,7 @@ class Dataset(object):
     :param dict metadata_doc: the document (typically a parsed json/yaml)
     :param str local_uri: A URI to access this dataset locally.
     """
+
     def __init__(self, type_, metadata_doc, local_uri, sources=None):
         #: :type: DatasetType
         self.type = type_
@@ -126,7 +127,7 @@ class Dataset(object):
         :rtype: datetime.datetime
         """
         time = self.time
-        return time.begin + (time.end - time.begin)//2
+        return time.begin + (time.end - time.begin) // 2
 
     @property
     def time(self):
@@ -196,11 +197,12 @@ def schema_validated(schema):
     :param str schema: filename of the json schema, relative to `SCHEMA_PATH`
     :return: wrapped class
     """
+
     def validate(cls, document):
         return validate_document(document, cls.schema)
 
     def decorate(cls):
-        cls.schema = next(iter(read_documents(SCHEMA_PATH/schema)))[1]
+        cls.schema = next(iter(read_documents(SCHEMA_PATH / schema)))[1]
         cls.validate = classmethod(validate)
         return cls
 
@@ -237,6 +239,7 @@ class DatasetType(object):
 
     :type metadata_type: MetadataType
     """
+
     def __init__(self,
                  metadata_type,
                  definition,
@@ -260,12 +263,16 @@ class DatasetType(object):
         return self.definition.get('managed', False)
 
     @property
-    def metadata(self):
+    def metadata_doc(self):
         return self.definition['metadata']
 
     @property
+    def metadata(self):
+        return self.metadata_type.dataset_reader(self.metadata_doc)
+
+    @property
     def fields(self):
-        return self.metadata_type.dataset_reader(self.metadata).fields
+        return self.metadata_type.dataset_reader(self.metadata_doc).fields
 
     @property
     def measurements(self):
@@ -274,7 +281,44 @@ class DatasetType(object):
     @property
     def dimensions(self):
         assert self.metadata_type.name == 'eo'
-        return ('time', ) + self.grid_spec.dimensions
+        return ('time',) + self.grid_spec.dimensions
+
+    @property
+    def fixed_fields(self):
+        """
+        Search fields identical to all datasets of this type.
+        """
+        fs = {k: v for (k, v) in self.metadata.fields.items() if v is not None}
+        fs['product'] = self.name
+        fs['metadata_type'] = self.metadata_type.name
+        return fs
+
+    def matches(self, **query):
+        """
+        May this dataset type return results for the given query?
+        """
+        # Fixed (non-document) fields
+        if 'product' in query:
+            if query['product'] != self.name:
+                return False
+            query = dict(query)
+            del query['product']
+        if 'metadata_type' in query:
+            if query['metadata_type'] != self.metadata_type.name:
+                return False
+            query = dict(query)
+            del query['metadata_type']
+
+        for key, value in query.items():
+            if key not in self.metadata_type.dataset_fields:
+                return False
+
+            expected_value = getattr(self.metadata, key)
+            # If there's an expected value it should match
+            if (expected_value is not None) and expected_value != value:
+                return False
+
+        return True
 
     @property
     def grid_spec(self):
@@ -304,6 +348,15 @@ class DatasetType(object):
 
     def __repr__(self):
         return self.__str__()
+
+    def __eq__(self, other):
+        if self is other:
+            return True
+
+        if self.__class__ != other.__class__:
+            return False
+
+        return self.definition == other.definition
 
 
 class GeoPolygon(object):
@@ -346,7 +399,7 @@ class GeoPolygon(object):
         if self.crs == crs:
             return self
 
-        transform = osr.CoordinateTransformation(self.crs._crs, crs._crs) # pylint: disable=protected-access
+        transform = osr.CoordinateTransformation(self.crs._crs, crs._crs)  # pylint: disable=protected-access
         return GeoPolygon([p[:2] for p in transform.TransformPoints(self.points)], crs)
 
     def __str__(self):
@@ -391,6 +444,7 @@ class CRS(object):
     >>> CRS('EPSG:3577') == CRS('EPSG:4326')
     False
     """
+
     def __init__(self, crs_str):
         if isinstance(crs_str, CRS):
             crs_str = crs_str.crs_str
@@ -481,6 +535,7 @@ class GridSpec(object):
     :param tuple(y, x) resolution: Size of each data point in the grid, in CRS units. Y will
                                    usually be negative.
     """
+
     def __init__(self, crs=None, tile_size=None, resolution=None):
         self.crs = crs
         self.tile_size = tile_size

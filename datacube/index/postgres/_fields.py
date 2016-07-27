@@ -168,9 +168,16 @@ class RangeDocField(PgField):
             except KeyError:
                 return None
 
-        mins = (safe_get_doc_offset(offset, document) for offset in self.min_offset)
-        maxs = (safe_get_doc_offset(offset, document) for offset in self.max_offset)
-        return Range(min(v for v in mins if v), max(v for v in maxs if v))
+        min_vals = [v for v in (safe_get_doc_offset(offset, document) for offset in self.min_offset) if v]
+        max_vals = [v for v in (safe_get_doc_offset(offset, document) for offset in self.max_offset) if v]
+
+        min_val = min(min_vals) if min_vals else None
+        max_val = max(max_vals) if max_vals else None
+
+        if not min_val and not max_val:
+            return None
+
+        return Range(min_val, max_val)
 
 
 class FloatRangeDocField(RangeDocField):

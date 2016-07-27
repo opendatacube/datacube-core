@@ -499,9 +499,10 @@ class PostgresDb(object):
             ))
         ).alias('time_ranges')
 
-        count_query = select((
-                func.count('*'),
-            )).select_from(
+        count_query = (
+            select(
+                (func.count('*'),)
+            ).select_from(
                 self._from_expression(DATASET, expressions)
             ).where(
                 and_(
@@ -510,6 +511,7 @@ class PostgresDb(object):
                     *raw_expressions
                 )
             )
+        )
 
         results = self._connection.execute(select((
             time_range_select.c.time_period,

@@ -157,7 +157,7 @@ class DatasetTypeResource(object):
         else:
             self._db.add_dataset_type(
                 name=type_.name,
-                metadata=type_.metadata,
+                metadata=type_.metadata_doc,
                 metadata_type_id=type_.metadata_type.id,
                 definition=type_.definition
             )
@@ -206,6 +206,16 @@ class DatasetTypeResource(object):
                 if name not in type_.metadata_type.dataset_fields:
                     break
             else:
+                yield type_
+
+    def search(self, **query):
+        """
+        Return dataset types that have all the given fields.
+        :type query: dict
+        :rtype: __generator[DatasetType]
+        """
+        for type_ in self.get_all():
+            if type_.matches(**query):
                 yield type_
 
     def get_all(self):
@@ -437,17 +447,20 @@ class DatasetResource(object):
 
         return types
 
-    def _do_search(self, query, return_fields=False, with_source_ids=False):
-        q = dict(query)
-        dataset_types = self._get_dataset_types(q)
-
-        # We don't need to match product name as we're searching via product (ie 'dataset_type')
-        if 'product' in q:
-            del q['product']
-
-        # Perform one search per type.
+    def _get_product_queries(self, query):
+        dataset_types = self.types.search(**query)
         for dataset_type in dataset_types:
+            q = dict(query)
+            # We've already matched all fixed fields for the product (in the above types.search())
+            for field_name in dataset_type.fixed_fields.keys():
+                if field_name in q:
+                    del q[field_name]
             q['dataset_type_id'] = dataset_type.id
+
+            yield q, dataset_type
+
+    def _do_search(self, query, return_fields=False, with_source_ids=False):
+        for q, dataset_type in self._get_product_queries(query):
             dataset_fields = dataset_type.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             select_fields = None
@@ -459,39 +472,25 @@ class DatasetResource(object):
                 yield dataset
 
     def _do_count(self, query):
-        q = dict(query)
-        dataset_types = self._get_dataset_types(q)
         result = 0
 
-        # We don't need to match product name as we're searching via product (ie 'dataset_type')
-        if 'product' in q:
-            del q['product']
-
-        for dataset_type in dataset_types:
-            q['dataset_type_id'] = dataset_type.id
+        for q, dataset_type in self._get_product_queries(query):
             dataset_fields = dataset_type.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             result += self._db.count_datasets(query_exprs)
         return result
 
     def _do_time_count(self, period, query):
-        q = dict(query)
-        dataset_types = self._get_dataset_types(q)
-
         if 'time' not in query:
             raise ValueError('Counting through time requires a "time" range query argument')
+
+        query = dict(query)
 
         start, end = query['time']
         del query['time']
 
-        # We don't need to match product name as we're searching via product (ie 'dataset_type')
-        if 'product' in q:
-            del q['product']
-
         result = {}
-
-        for dataset_type in dataset_types:
-            q['dataset_type_id'] = dataset_type.id
+        for q, dataset_type in self._get_product_queries(query):
             dataset_fields = dataset_type.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             result[dataset_type.name] = list(self._db.count_datasets_through_time(

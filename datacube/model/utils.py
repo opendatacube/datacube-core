@@ -183,7 +183,7 @@ def make_dataset(dataset_type, sources, extent, center_time, valid_data=None, ur
     :rtype: :py:class:`dataset`
     """
     document = {}
-    merge(document, dataset_type.metadata)
+    merge(document, dataset_type.metadata_doc)
     merge(document, new_dataset_info())
     merge(document, machine_info())
     merge(document, band_info(dataset_type.measurements.keys()))

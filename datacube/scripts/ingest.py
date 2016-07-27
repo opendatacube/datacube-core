@@ -49,7 +49,7 @@ def morph_dataset_type(source_type, config):
     output_type.definition['managed'] = True
     output_type.definition['description'] = config['description']
     output_type.definition['storage'] = config['storage']
-    output_type.metadata['format'] = {'name': 'NetCDF'}
+    output_type.metadata_doc['format'] = {'name': 'NetCDF'}
 
     def merge_measurement(measurement, spec):
         measurement.update({k: spec.get(k, measurement[k]) for k in ('name', 'nodata', 'dtype')})

@@ -8,6 +8,7 @@ import copy
 
 import pytest
 
+from datacube.model import Range
 
 _DATASET_METADATA = {
     'id': 'f7018d80-8807-11e5-aeaa-1040f381a756',
@@ -91,3 +92,67 @@ def test_idempotent_add_dataset_type(index, ls5_nbar_gtiff_type, ls5_nbar_gtiff_
         index.datasets.types.add_document(different_telemetry_type)
 
         # TODO: Support for adding/changing search fields?
+
+
+def test_filter_types_by_fields(index, ls5_nbar_gtiff_type):
+    """
+    :type ls5_nbar_gtiff_type: datacube.model.DatasetType
+    :type index: datacube.index._api.Index
+    """
+    assert index.datasets.types
+    res = list(index.datasets.types.get_with_fields(['lat', 'lon', 'platform']))
+    assert res == [ls5_nbar_gtiff_type]
+
+    res = list(index.datasets.types.get_with_fields(['lat', 'lon', 'platform', 'favorite_icecream']))
+    assert len(res) == 0
+
+
+def test_fixed_fields(ls5_nbar_gtiff_type):
+    assert set(ls5_nbar_gtiff_type.fixed_fields.keys()) == {
+        # Native fields
+        'product', 'metadata_type',
+        # Doc fields
+        'platform', 'format', 'product_type'
+    }
+
+
+def test_filter_types_by_search(index, ls5_nbar_gtiff_type):
+    """
+    :type ls5_nbar_gtiff_type: datacube.model.DatasetType
+    :type index: datacube.index._api.Index
+    """
+    assert index.datasets.types
+
+    # No arguments, return all.
+    res = list(index.datasets.types.search())
+    assert res == [ls5_nbar_gtiff_type]
+
+    # Matching fields
+    res = list(index.datasets.types.search(
+        product_type='nbart',
+        product='ls5_nbart_p54_gtiff'
+    ))
+    assert res == [ls5_nbar_gtiff_type]
+
+    # Matching fields and available fields
+    res = list(index.datasets.types.search(
+        product_type='nbart',
+        product='ls5_nbart_p54_gtiff',
+        lat=Range(142.015625, 142.015625),
+        lon=Range(-12.046875, -12.046875)
+    ))
+    assert res == [ls5_nbar_gtiff_type]
+
+    # Mismatching fields
+    res = list(index.datasets.types.search(
+        product_type='nbar',
+    ))
+    assert res == []
+
+    # Matching fields and non-available fields
+    res = list(index.datasets.types.search(
+        product_type='nbart',
+        product='ls5_nbart_p54_gtiff',
+        beverage='frappuccino'
+    ))
+    assert res == []

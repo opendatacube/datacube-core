@@ -90,7 +90,7 @@ def load_rules_from_file(filename, index):
         if not type_:
             _LOG.error('DatasetType %s does not exists', rule['type'])
             return
-        if not contains(type_.metadata, rule['metadata']):
+        if not contains(type_.metadata_doc, rule['metadata']):
             _LOG.error('DatasetType %s can\'t be matched by its own rule', rule['type'])
             return
         rule['type'] = type_
@@ -110,7 +110,7 @@ def load_rules_from_types(index, type_names=None):
     else:
         types += index.products.get_all()
 
-    rules = [{'type': type_, 'metadata': type_.metadata} for type_ in types]
+    rules = [{'type': type_, 'metadata': type_.metadata_doc} for type_ in types]
     return rules
 
 
@@ -150,6 +150,7 @@ def index_cmd(index, match_rules, dtype, auto_match, dry_run, datasets):
             try:
                 dataset = match_dataset(metadata_doc, uri, rules)
             except RuntimeError as e:
+                _LOG.exception("Error creating dataset")
                 _LOG.error('Unable to create Dataset for %s: %s', uri, e)
                 continue
 
