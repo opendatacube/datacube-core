@@ -349,6 +349,8 @@ class DatasetType(object):
     def __repr__(self):
         return self.__str__()
 
+    # Types are uniquely identifiable by name:
+
     def __eq__(self, other):
         if self is other:
             return True
@@ -356,7 +358,10 @@ class DatasetType(object):
         if self.__class__ != other.__class__:
             return False
 
-        return self.definition == other.definition
+        return self.name == other.name
+
+    def __hash__(self):
+        return hash(self.name)
 
 
 class GeoPolygon(object):
