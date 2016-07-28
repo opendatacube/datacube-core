@@ -210,28 +210,28 @@ def get_derived_set(index, id_):
 
 
 @dataset_cmd.command('archive', help="Archive datasets")
-@click.option('--archive-derived', '-d', help='Also archive derived datasets recursively', is_flag=True, default=False)
-@click.option('--dry-run', help="Only display datasets that would get archived", is_flag=True, default=False)
+@click.option('--archive-derived', '-d', help='Also recursively archive derived datasets', is_flag=True, default=False)
+@click.option('--dry-run', help="Don't archive. Display datasets that would get archived",
+              is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
 def archive_cmd(index, archive_derived, dry_run, ids):
     for id_ in ids:
         to_process = get_derived_set(index, id_) if archive_derived else [id_]
-        if dry_run:
-            click.echo('Would archive %s' % ', '.join(to_process))
-        else:
+        click.echo('Archiving %s' % ', '.join(to_process))
+        if not dry_run:
             index.datasets.archive(to_process)
 
 
 @dataset_cmd.command('restore', help="Restore datasets")
-@click.option('--restore-derived', '-d', help='Also restore derived datasets recursively', is_flag=True, default=False)
-@click.option('--dry-run', help='Only display datasets that would get restored', is_flag=True, default=False)
+@click.option('--restore-derived', '-d', help='Also recursively restore derived datasets', is_flag=True, default=False)
+@click.option('--dry-run', help="Don't restore. Display datasets that would get restored",
+              is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
 def restore_cmd(index, restore_derived, dry_run, ids):
     for id_ in ids:
         to_process = get_derived_set(index, id_) if restore_derived else [id_]
-        if dry_run:
-            click.echo('Would restore %s' % ', '.join(to_process))
-        else:
+        click.echo('Restoring %s' % ', '.join(to_process))
+        if not dry_run:
             index.datasets.restore(to_process)
