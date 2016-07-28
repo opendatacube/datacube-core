@@ -786,7 +786,7 @@ def _setup_collection_fields(conn, collection_prefix, fields, where_expression,
                 select(
                     [field.alchemy_expression.label(field.name) for field in fields.values()]
                 ).select_from(
-                    DATASET
+                    DATASET.join(DATASET_TYPE).join(METADATA_TYPE)
                 ).where(where_expression)
             )
         )
