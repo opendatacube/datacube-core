@@ -93,11 +93,11 @@ def datasets(ctx, index, expression):
     )
 
 
-@cli.command(help='Counts')
+@cli.command('product-counts', help='Counts')
 @click.argument('period', nargs=1)
 @click.argument('expression', nargs=-1)
 @PASS_INDEX
-def counts(index, period, expression):
+def product_counts(index, period, expression):
     for product, series in index.datasets.count_by_product_through_time(period, **parse_expressions(*expression)):
         click.echo(product)
         for timerange, count in series:

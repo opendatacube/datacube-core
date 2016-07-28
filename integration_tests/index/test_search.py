@@ -402,7 +402,7 @@ def test_count_time_groups_cli(global_integration_cli_args, pseudo_telemetry_typ
     opts = list(global_integration_cli_args)
     opts.extend(
         [
-            'counts',
+            'product-counts',
             '1 day',
             '2014-07-25 < time < 2014-07-27'
         ]
