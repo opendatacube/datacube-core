@@ -314,6 +314,12 @@ class DatasetResource(object):
                     was_inserted = self._db.insert_dataset(dataset.metadata_doc, dataset.id, dataset.type.id)
                     for classifier, source_dataset in dataset.sources.items():
                         self._db.insert_dataset_source(classifier, dataset.id, source_dataset.id)
+
+                    # try to update location in the same transaction as insertion.
+                    # if insertion fails we'll try updating location later
+                    # if insertion succeeds the location bit can't possibly fail
+                    if dataset.local_uri:
+                        self._db.ensure_dataset_location(dataset.id, dataset.local_uri)
                 except DuplicateRecordError as e:
                     _LOG.warning(str(e))
 
@@ -325,14 +331,15 @@ class DatasetResource(object):
                         jsonify_document(dataset.metadata_doc),
                         'Dataset {}'.format(dataset.id)
                     )
+
+                # reinsert attempt? try updating the location
+                if dataset.local_uri:
+                    try:
+                        self._db.ensure_dataset_location(dataset.id, dataset.local_uri)
+                    except DuplicateRecordError as e:
+                        _LOG.warning(str(e))
         finally:
             dataset.type.dataset_reader(dataset.metadata_doc).sources = sources_tmp
-
-        if dataset.local_uri:
-            try:
-                self._db.ensure_dataset_location(dataset.id, dataset.local_uri)
-            except DuplicateRecordError as e:
-                _LOG.warning(str(e))
 
         return dataset
 
