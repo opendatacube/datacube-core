@@ -98,6 +98,8 @@ def ensure_db(engine, with_permissions=True):
         -- (We're only granting deletion of types that have nothing written yet: they can't delete the data itself)
         grant insert, delete on {schema}.dataset_type,
                                 {schema}.metadata_type to agdc_manage;
+        -- Allow creation of indexes, views
+        grant create on schema {schema} to agdc_manage;
         """.format(schema=SCHEMA_NAME))
 
     c.close()
