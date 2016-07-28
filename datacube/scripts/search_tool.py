@@ -104,17 +104,6 @@ def product_counts(index, period, expression):
             click.echo('    {}: {}'.format(timerange[0].strftime("%Y-%m-%d"), count))
 
 
-@cli.command(help='Storage units')
-@click.argument('expression', nargs=-1)
-@PASS_INDEX
-@click.pass_context
-def units(ctx, index, expression):
-    ctx.obj['write_results'](
-        index.storage.get_fields().keys(),
-        index.storage.search_summaries(**parse_expressions(*expression))
-    )
-
-
 @singledispatch
 def printable(val):
     return val
