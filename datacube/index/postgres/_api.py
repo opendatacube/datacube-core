@@ -664,6 +664,9 @@ class PostgresDb(object):
         pg_role = _to_pg_role(role)
         tables.create_user(self._engine, username, password, pg_role)
 
+    def drop_user(self, username):
+        tables.drop_user(self._engine, username)
+
     def grant_role(self, role, users):
         """
         Grant a role to a user.

@@ -74,6 +74,12 @@ class Index(object):
         """
         self._db.create_user(user_name, password, role)
 
+    def delete_user(self, user_name):
+        """
+        Delete a user
+        """
+        self._db.drop_user(user_name)
+
     def list_users(self):
         """
         :return: list of (role, user, description)

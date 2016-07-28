@@ -178,6 +178,10 @@ def create_user(engine, username, key, role):
     )
 
 
+def drop_user(engine, username):
+    engine.execute('drop role {username}'.format(username=username))
+
+
 def grant_role(engine, role, users):
     if role not in USER_ROLES:
         raise ValueError('Unknown role %r. Expected one of %r' % (role, USER_ROLES))

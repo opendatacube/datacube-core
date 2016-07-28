@@ -60,3 +60,14 @@ def create_user(config, index, role, user):
         username=user,
         password=password
     ))
+
+
+@user_cmd.command('delete')
+@click.argument('user', nargs=1)
+@ui.pass_index()
+@ui.pass_config
+def delete_user(config, index, user):
+    """
+    Delete a User
+    """
+    index.delete_user(user)
