@@ -41,7 +41,7 @@ def grant(index, role, users):
     index.grant_role(role, *users)
 
 
-@cli.command('create')
+@user_cmd.command('create')
 @click.argument('role',
                 type=click.Choice(USER_ROLES), nargs=1)
 @click.argument('user', nargs=1)
