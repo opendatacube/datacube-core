@@ -18,7 +18,7 @@ class ClickHelpDirective(Directive):
 
         group = find_script_callable_from_env(root_cmd, env)
 
-        return generate_help_text(group, [root_cmd])
+        return [generate_help_text(group, [root_cmd])]
 
 
 def find_script_callable_from_env(name, env):
