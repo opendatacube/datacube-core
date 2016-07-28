@@ -1,5 +1,5 @@
 import pkg_resources
-from docutils.nodes import literal_block
+from docutils.nodes import literal_block, section, title, make_id
 from sphinx.domains import Domain
 from sphinx.util.compat import Directive
 import importlib
@@ -18,7 +18,7 @@ class ClickHelpDirective(Directive):
 
         group = find_script_callable_from_env(root_cmd, env)
 
-        return list(generate_help_texts(group, [root_cmd]))
+        return generate_help_text(group, [root_cmd])
 
 
 def find_script_callable_from_env(name, env):
@@ -34,28 +34,29 @@ def find_script_callable(name):
         'console_scripts', name))[0].load()
 
 
-def generate_help_texts(command, prefix):
+def generate_help_text(command, prefix):
     ctx = click.Context(command)
     help_opts = command.get_help_option(ctx).opts
+    full_cmd = ' '.join(prefix)
+    block = section(None, title(None, full_cmd), ids=[make_id(full_cmd)], names=[full_cmd])
     if help_opts:
-        yield make_block(
-            ' '.join(prefix),
-            help_opts[0],
-            command.get_help(ctx),
-        )
+        h = "$ {} {}\n".format(full_cmd, help_opts[0]) + command.get_help(ctx)
+        block.append(literal_block(None, h, language='console'))
 
     if isinstance(command, click.core.MultiCommand):
         for c in command.list_commands(ctx):
             c = command.resolve_command(ctx, [c])[1]
-            prefix.append(c.name)
-            for h in generate_help_texts(c, prefix):
-                yield h
-            prefix.pop()
+            block.append(generate_help_text(c, prefix+[c.name]))
+
+    return block
 
 
 def make_block(command, opt, content):
     h = "$ {} {}\n".format(command, opt) + content
-    return literal_block(h, h, language='console')
+    return section(None,
+                   title(None, command),
+                   literal_block(None, h, language='console'),
+                   ids=[make_id(command)], names=[command])
 
 
 class DatacubeDomain(Domain):
