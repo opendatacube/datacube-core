@@ -199,11 +199,39 @@ def info_cmd(index, show_sources, show_derived, ids):
         yaml.safe_dump(build_dataset_info(index, dataset, show_derived), stream=sys.stdout)
 
 
+def get_derived_set(index, id_):
+    derived_set = {id_}
+    to_process = {id_}
+    while to_process:
+        derived = index.datasets.get_derived(to_process.pop())
+        to_process.update(d.id for d in derived)
+        derived_set.update(d.id for d in derived)
+    return derived_set
+
+
 @dataset_cmd.command('archive', help="Archive datasets")
-@click.option('--archive-derived', help='Also archive derived', is_flag=True, default=False)
-@click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
+@click.option('--archive-derived', '-d', help='Also archive derived datasets recursively', is_flag=True, default=False)
+@click.option('--dry-run', help="Only display datasets that would get archived", is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
 def archive_cmd(index, archive_derived, dry_run, ids):
     for id_ in ids:
-        dataset = index.datasets.archive(id_, archive_derived)
+        to_process = get_derived_set(index, id_) if archive_derived else [id_]
+        if dry_run:
+            click.echo('Would archive %s' % ', '.join(to_process))
+        else:
+            index.datasets.archive(to_process)
+
+
+@dataset_cmd.command('restore', help="Restore datasets")
+@click.option('--restore-derived', '-d', help='Also restore derived datasets recursively', is_flag=True, default=False)
+@click.option('--dry-run', help='Only display datasets that would get restored', is_flag=True, default=False)
+@click.argument('ids', nargs=-1)
+@ui.pass_index()
+def restore_cmd(index, restore_derived, dry_run, ids):
+    for id_ in ids:
+        to_process = get_derived_set(index, id_) if restore_derived else [id_]
+        if dry_run:
+            click.echo('Would restore %s' % ', '.join(to_process))
+        else:
+            index.datasets.restore(to_process)
