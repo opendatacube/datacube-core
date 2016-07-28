@@ -427,14 +427,33 @@ class DatasetResource(object):
         """
         return self._do_count(query)
 
-    def count_through_time(self, period, **query):
+    def count_by_product_through_time(self, period, **query):
         """
-        Perform a search, returning count of results.
+        Perform a search, returning counts for each product grouped in time slices
+        of the given period.
+
         :type query: dict[str,str|float|datacube.model.Range]
         :type period: str
-        :rtype: int
+        :param period: Time range for each slice: '1 month', '1 day' etc.
+        :returns: For each matching product type, a list of time ranges and their count.
+        :rtype: __generator[(str, list[(datetime.datetime, datetime.datetime), int)]]
         """
         return self._do_time_count(period, query)
+
+    def count_product_through_time(self, period, **query):
+        """
+        Perform a search, returning counts for a single product grouped in time slices
+        of the given period.
+
+        Will raise an error if the search terms match more than one product.
+
+        :type query: dict[str,str|float|datacube.model.Range]
+        :type period: str
+        :param period: Time range for each slice: '1 month', '1 day' etc.
+        :returns: For each matching product type, a list of time ranges and their count.
+        :rtype: list[(str, list[(datetime.datetime, datetime.datetime), int)]]
+        """
+        return next(self._do_time_count(period, query, ensure_single=True))[1]
 
     def _get_dataset_types(self, q):
         types = set()
@@ -481,7 +500,7 @@ class DatasetResource(object):
             result += self._db.count_datasets(query_exprs)
         return result
 
-    def _do_time_count(self, period, query):
+    def _do_time_count(self, period, query, ensure_single=False):
         if 'time' not in query:
             raise ValueError('Counting through time requires a "time" range query argument')
 
@@ -490,19 +509,24 @@ class DatasetResource(object):
         start, end = query['time']
         del query['time']
 
-        result = {}
-        for q, dataset_type in self._get_product_queries(query):
+        product_quries = list(self._get_product_queries(query))
+        if ensure_single:
+            if len(product_quries) == 0:
+                raise ValueError('No products match search terms: %r' % query)
+            if len(product_quries) > 1:
+                raise ValueError('Multiple products match single query search: %r' %
+                                 ([dt.name for q, dt in product_quries],))
+
+        for q, dataset_type in product_quries:
             dataset_fields = dataset_type.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
-            result[dataset_type.name] = list(self._db.count_datasets_through_time(
+            yield dataset_type.name, list(self._db.count_datasets_through_time(
                 start,
                 end,
                 period,
                 dataset_fields.get('time'),
                 query_exprs
             ))
-
-        return result
 
     def search_summaries(self, **query):
         """

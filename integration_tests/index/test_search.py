@@ -368,22 +368,17 @@ def test_count_time_groups(index, pseudo_telemetry_type, pseudo_telemetry_datase
 
     # 'from_dt': datetime.datetime(2014, 7, 26, 23, 48, 0, 343853),
     # 'to_dt': datetime.datetime(2014, 7, 26, 23, 52, 0, 343853),
-    products = index.datasets.count_through_time(
+    timeline = list(index.datasets.count_product_through_time(
         '1 day',
         product=pseudo_telemetry_type.name,
         time=Range(
             datetime.datetime(2014, 7, 25, tzinfo=tz.tzutc()),
             datetime.datetime(2014, 7, 27, tzinfo=tz.tzutc())
         )
-    )
-    assert len(products) == 1
+    ))
 
-    assert pseudo_telemetry_type.name in products
-
-    telem_range = products[pseudo_telemetry_type.name]
-    assert len(telem_range) == 2
-
-    assert telem_range == [
+    assert len(timeline) == 2
+    assert timeline == [
         (
             Range(datetime.datetime(2014, 7, 25, tzinfo=tz.tzutc()),
                   datetime.datetime(2014, 7, 26, tzinfo=tz.tzutc())),

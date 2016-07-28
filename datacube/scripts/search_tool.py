@@ -98,7 +98,7 @@ def datasets(ctx, index, expression):
 @click.argument('expression', nargs=-1)
 @PASS_INDEX
 def counts(index, period, expression):
-    for product, series in index.datasets.count_through_time(period, **parse_expressions(*expression)).items():
+    for product, series in index.datasets.count_by_product_through_time(period, **parse_expressions(*expression)):
         click.echo(product)
         for timerange, count in series:
             click.echo('    {}: {}'.format(timerange[0].strftime("%Y-%m-%d"), count))
