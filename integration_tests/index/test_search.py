@@ -232,7 +232,7 @@ def test_searches_only_type(index, pseudo_telemetry_type, pseudo_telemetry_datas
     # One result when no types specified.
     datasets = index.datasets.search_eager(
         platform='LANDSAT_8',
-        instrument='OLI_TIRS',
+        instrument='OLI_TIRS'
     )
     assert len(datasets) == 1
     assert datasets[0].id == pseudo_telemetry_dataset.id
@@ -242,6 +242,36 @@ def test_searches_only_type(index, pseudo_telemetry_type, pseudo_telemetry_datas
         metadata_type='telemetry',
         platform='LANDSAT_8',
         instrument='OLI_TIRS'
+    )
+    assert len(datasets) == 0
+
+
+def test_search_special_fields(index, pseudo_telemetry_type, pseudo_telemetry_dataset, ls5_nbar_gtiff_type):
+    """
+    :type index: datacube.index._api.Index
+    :type pseudo_telemetry_type: datacube.model.DatasetType
+    :type pseudo_telemetry_dataset: datacube.model.Dataset
+    """
+
+    # 'Format' is a fixed field
+    datasets = index.datasets.search_eager(
+        platform='LANDSAT_8',
+        format='PSEUDOMD',
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == pseudo_telemetry_dataset.id
+
+    # 'product' is a special case
+    datasets = index.datasets.search_eager(
+        product=pseudo_telemetry_type.name
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == pseudo_telemetry_dataset.id
+
+    # Unknown field: no results
+    datasets = index.datasets.search_eager(
+        platform='LANDSAT_8',
+        flavour='chocolate',
     )
     assert len(datasets) == 0
 

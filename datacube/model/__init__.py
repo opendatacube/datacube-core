@@ -310,7 +310,7 @@ class DatasetType(object):
             del query['metadata_type']
 
         for key, value in query.items():
-            if key not in self.metadata_type.dataset_fields:
+            if key not in self.metadata.fields:
                 return False
 
             expected_value = getattr(self.metadata, key)
