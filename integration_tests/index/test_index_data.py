@@ -81,11 +81,11 @@ def test_archive_datasets(index, db, local_config, default_metadata_type):
     datsets = index.datasets.search_eager()
     assert len(datsets) == 1
 
-    index.datasets.archive(_telemetry_uuid)
+    index.datasets.archive([_telemetry_uuid])
     datsets = index.datasets.search_eager()
     assert len(datsets) == 0
 
-    index.datasets.restore(_telemetry_uuid)
+    index.datasets.restore([_telemetry_uuid])
     datsets = index.datasets.search_eager()
     assert len(datsets) == 1
 

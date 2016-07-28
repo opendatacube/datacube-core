@@ -336,31 +336,25 @@ class DatasetResource(object):
 
         return dataset
 
-    def archive(self, id_, archive_derived=False):
+    def archive(self, ids):
         """
-        Mark dataset as archived
+        Mark datasets as archived
 
-        :param uuid id_: dataset id
-        :param bool archive_derived: also archive derived datasets recursively
+        :param list[uuid] ids: list of dataset ids to archive
         """
-        if not archive_derived:
-            self._db.archive_dataset(id_)
-            return
+        with self._db.begin() as transaction:
+            for id_ in ids:
+                self._db.archive_dataset(id_)
 
-        raise NotImplementedError()
-
-    def restore(self, id_, restore_derived=False):
+    def restore(self, ids):
         """
-        Mark dataset as not archived
+        Mark datasets as not archived
 
-        :param uuid id_: dataset id
-        :param bool restore_derived: also restore derived datasets recursively
+        :param list[uuid] ids: list of dataset ids to restore
         """
-        if not restore_derived:
-            self._db.restore_dataset(id_)
-            return
-
-        raise NotImplementedError()
+        with self._db.begin() as transaction:
+            for id_ in ids:
+                self._db.restore_dataset(id_)
 
     def get_field_names(self, type_name=None):
         """
