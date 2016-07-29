@@ -153,19 +153,20 @@ def prep_dataset(fields, path):
         if file.endswith(".tif") and ("band" in file) :
 
             images_list.append(os.path.join(str(path),file))
-    # Parse xml ElementTree gives me a headache so using lxml
-    doc = ElementTree.parse(os.path.join(str(path), metafile))
+    with open(os.path.join(str(path), metafile)) as f:
+        xmlstring = f.read()
+    xmlstring = re.sub(r'\sxmlns="[^"]+"', '', xmlstring, count=1)
+    doc = ElementTree.fromstring(xmlstring)
 
-    ns = {'espa12': "http://espa.cr.usgs.gov/v1.2"}
 
-    satellite = doc.find('.//espa12:satellite', ns).text
-    instrument = doc.find('.//espa12:instrument', ns).text
-    acquisition_date = doc.find('.//espa12:acquisition_date', ns).text.replace("-", "")
-    scene_center_time = doc.find('.//espa12:scene_center_time', ns).text[:8]
+    satellite = doc.find('.//satellite').text
+    instrument = doc.find('.//instrument').text
+    acquisition_date = doc.find('.//acquisition_date').text.replace("-", "")
+    scene_center_time = doc.find('.//scene_center_time').text[:8]
     center_dt = crazy_parse(acquisition_date + "T" + scene_center_time)
     aos = crazy_parse(acquisition_date + "T" + scene_center_time) - timedelta(seconds=(24 / 2))
     los = aos + timedelta(seconds=24)
-    lpgs_metadata_file = doc.find('.//espa12:lpgs_metadata_file', ns).text
+    lpgs_metadata_file = doc.find('.//lpgs_metadata_file').text
     groundstation = lpgs_metadata_file[16:19]
     fields.update({'instrument': instrument, 'satellite': satellite})
 
