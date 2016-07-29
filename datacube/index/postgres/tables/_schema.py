@@ -8,7 +8,7 @@ import logging
 
 from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, SmallInteger
 from sqlalchemy import Table, Column, Integer, String, DateTime, Boolean
-from sqlalchemy.dialects import postgres
+from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.sql import func
 
 from . import _core
