@@ -4,7 +4,7 @@ import yaml
 import pytest
 
 from datacube.storage.masking import list_flag_names, create_mask_value, describe_variable_flags
-from datacube.storage.masking import mask_to_dict
+from datacube.storage.masking import mask_to_dict, valid_data_mask
 
 
 def test_list_flag_names():
@@ -313,3 +313,31 @@ def test_simple_mask_to_dict(bits_def):
     assert test_dict['contiguous']
     assert test_dict['land_sea'] == 'land'
     assert not test_dict['blue_saturated']
+
+
+def test_valid_data_mask():
+    from xarray import DataArray, Dataset
+    import numpy as np
+    test_attrs = {
+        'one': 1,
+        'nodata': -999,
+    }
+
+    expected_data_array = DataArray(np.array([[1., np.nan, np.nan], [2, 3, np.nan], [np.nan, np.nan, np.nan]],
+                                             dtype='float'),
+                                    attrs=test_attrs, name='var_one')
+
+    data_array = DataArray([[1, -999, -999], [2, 3, -999], [-999, -999, -999]], attrs=test_attrs)
+    dataset = Dataset(data_vars={'var_one': data_array}, attrs={'ds_attr': 'still here'})
+
+    # Make sure test is actually changing something
+    assert not data_array.equals(expected_data_array)
+
+    output_ds = valid_data_mask(dataset, keep_attrs=True)
+    assert output_ds.attrs['ds_attr'] == 'still here'
+    assert output_ds.data_vars['var_one'].equals(expected_data_array)
+    assert output_ds.data_vars['var_one'].attrs['one'] == 1
+
+    output_da = valid_data_mask(data_array, keep_attrs=True)
+    assert output_da.equals(expected_data_array)
+    assert output_da.attrs['one'] == 1

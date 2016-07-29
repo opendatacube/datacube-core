@@ -7,6 +7,8 @@ import collections
 
 from datacube.utils import generate_table
 
+from xarray import DataArray, Dataset
+
 FLAGS_ATTR_NAME = 'flags_definition'
 
 
@@ -92,13 +94,27 @@ def make_mask(variable, **flags):
     return variable & mask == mask_value
 
 
-def valid_data_mask(dataset):
+def valid_data_mask(data, keep_attrs=True):
     """
+    Sets all `nodata` values to ``nan``.
+    This will convert converts numeric data to type `float`.
+    :param Dataset or DataArray data:
+    :param bool keep_attrs: If the attributes of the data should be included in the returned .
+    :return: Dataset or DataArray
+    """
+    if isinstance(data, Dataset):
+        # Pass keep_attrs as a positional arg to the DataArray func
+        return data.apply(valid_data_mask, keep_attrs=keep_attrs, args=(keep_attrs,))
 
-    :param dataset:
-    :return:
-    """
-    return dataset.apply(lambda data_array: data_array != data_array.nodata)
+    if isinstance(data, DataArray):
+        if 'nodata' not in data.attrs:
+            return data
+        out_data_array = data.where(data != data.nodata)
+        if keep_attrs:
+            out_data_array.attrs = data.attrs
+        return out_data_array
+
+    raise TypeError('valid_data_mask not supported for type %s', type(data))
 
 
 def create_mask_value(bits_def, **flags):
