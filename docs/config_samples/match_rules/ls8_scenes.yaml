@@ -1,0 +1,52 @@
+- type: ls8_satellite_telemetry_data
+  managed: False
+  metadata:
+    platform:
+        code: LANDSAT_8
+    instrument:
+        name: OLI
+    product_type: satellite_telemetry_data
+
+- type: ls8_level1_scene
+  managed: False
+  metadata:
+    platform:
+        code: LANDSAT_8
+    instrument:
+        name: OLI
+    product_type: level1
+    format:
+        name: GeoTIFF
+
+- type: ls7_nbar_scene
+  managed: False
+  metadata:
+    platform:
+        code: LANDSAT_8
+    instrument:
+        name: OLI
+    product_type: nbar
+    format:
+        name: GeoTIFF
+
+- type: ls7_nbart_scene
+  managed: False
+  metadata:
+    platform:
+        code: LANDSAT_8
+    instrument:
+        name: OLI
+    product_type: nbart
+    format:
+        name: GeoTIFF
+
+- type: ls7_pq_scene
+  managed: False
+  metadata:
+    platform:
+        code: LANDSAT_8
+    instrument:
+        name: OLI
+    product_type: pqa
+    format:
+        name: GeoTIFF

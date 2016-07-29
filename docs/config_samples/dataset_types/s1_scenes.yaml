@@ -1,0 +1,22 @@
+name: s1a_gamma0_scene
+description: Sentinel-1 SAR Gamma 0
+metadata_type: eo
+
+metadata:
+  format: {name: GeoTIFF}
+  instrument: {name: SAR}
+  platform: {code: SENTINEL_1A}
+  product_type: gamma0
+
+measurements:
+- name: 'vh_gamma0'
+  aliases: [band_01, B01, Band1]
+  units: '1'
+  dtype: int16
+  nodata: -999
+
+- name: 'vv_gamma0'
+  aliases: [band_02, B02, Band2]
+  units: '1'
+  dtype: int16
+  nodata: -999

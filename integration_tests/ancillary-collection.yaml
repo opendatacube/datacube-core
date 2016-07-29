@@ -1,0 +1,17 @@
+name: ls8_bpf
+description: LS8 Bias Parameter Files
+
+# What datasets should we include in this collection?
+match:
+    metadata:
+        product_type: 'ls8_bpf'
+    priority: 100
+
+metadata_type:
+    name: ls8_bpf
+    dataset:
+        search_fields:
+            name:
+                offset: ['name']
+            instrument:
+                offset: [instrument, name]

@@ -1,37 +1,68 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+from setuptools import setup, find_packages
+import versioneer
 
-version = '0.0.0'
 
-setup(name='agdc-v2',
-      version=version,
-      packages=[
-          'gdf',
-          'analytics',
-          'analytics_utils',
-          'execution_engine',
-      ],
+long_description = """Data Cube provides an integrated gridded data analysis environment
+for earth observation satellite and related data from multiple satellite and other acquisition systems"""
+
+setup(name='datacube',
+      version=versioneer.get_version(),
+      cmdclass=versioneer.get_cmdclass(),
+      packages=find_packages(
+          exclude=('tests', 'tests.*', 'examples',
+                   'integration_tests', 'integration_tests.*')
+      ),
       package_data={
-          'gdf': ['gdf_default.conf']
+          '': ['*.yaml', '*/*.yaml'],
       },
       scripts=[
       ],
-      requires=[
-          'psycopg2',
-          'gdal',
-          'numexpr',
+      setup_requires=[
+          'pytest-runner'
+      ],
+      install_requires=[
+          'click>=5.0',
+          'pathlib',
+          'pyyaml',
+          'sqlalchemy',
+          'python-dateutil',
+          'jsonschema',
+          'cachetools',
           'numpy',
-          'matplotlib',
+          'rasterio>=0.34',
+          'singledispatch',
           'netcdf4',
+          'pypeg2',
+          'psycopg2',
+          'gdal>=1.9',
+          'dask',
+          'setuptools',
+          'toolz',
+          'xarray',
           'scipy',
-          'pytz'
+          'matplotlib',
+          'numexpr',
+          'future',
+      ],
+      tests_require=[
+          'pytest',
+          'pytest-cov',
+          'mock'
       ],
       url='https://github.com/data-cube/agdc-v2',
       author='AGDC Collaboration',
       maintainer='AGDC Collaboration',
       maintainer_email='',
       description='AGDC v2',
-      long_description='Australian Geoscience Data Cube v2',
-      license='Apache License 2.0'
+      long_description=long_description,
+      license='Apache License 2.0',
+      entry_points={
+          'console_scripts': [
+              'datacube-search = datacube.scripts.search_tool:cli',
+              'datacube = datacube.scripts.cli_app:cli'
+          ]
+      },
       )
+

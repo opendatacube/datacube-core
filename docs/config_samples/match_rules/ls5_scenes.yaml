@@ -1,0 +1,52 @@
+- type: ls5_satellite_telemetry_data
+  managed: False
+  metadata:
+    platform:
+        code: LANDSAT_5
+    instrument:
+        name: TM
+    product_type: satellite_telemetry_data
+
+- type: ls5_level1_scene
+  managed: False
+  metadata:
+    platform:
+        code: LANDSAT_5
+    instrument:
+        name: TM
+    product_type: level1
+    format:
+        name: GeoTIFF
+
+- type: ls5_nbar_scene
+  managed: False
+  metadata:
+    platform:
+        code: LANDSAT_5
+    instrument:
+        name: TM
+    product_type: nbar
+    format:
+        name: GeoTIFF
+
+- type: ls5_nbart_scene
+  managed: False
+  metadata:
+    platform:
+        code: LANDSAT_5
+    instrument:
+        name: TM
+    product_type: nbart
+    format:
+        name: GeoTIFF
+
+- type: ls5_pq_scene
+  managed: False
+  metadata:
+    platform:
+        code: LANDSAT_5
+    instrument:
+        name: TM
+    product_type: pqa
+    format:
+        name: GeoTIFF

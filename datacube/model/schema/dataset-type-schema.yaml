@@ -1,0 +1,116 @@
+"$schema": "http://json-schema.org/draft-04/schema#"
+description: Schema for dataset types.
+type: object
+properties:
+    name:
+        type: string
+        # Alphanumeric, underscore or hyphen
+        pattern: '^\w+$'
+    description:
+        type: string
+    metadata_type:
+        type: string
+    metadata:
+        type: object
+    storage:
+        "$ref": "#/definitions/storage"
+    measurements:
+        type: array
+        additionalProperties: false
+        description: Describes how data is stored
+        # Each property is a measurement. Ensure they are alphanumeric+underscores.
+        items:
+            "$ref": "#/definitions/measurement"
+    managed:
+        type: boolean
+
+required:
+    - name
+    - description
+    - metadata_type
+    - metadata
+additionalProperties: false
+
+# Some people define default objects for reference elsewhere in the document.
+patternProperties:
+    'default_\w+':
+        tpye: object
+
+definitions:
+    dtype:
+        enum: ["float16", "float32", "float64", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"]
+    measurement:
+        type: object
+        properties:
+            name:
+                type: string
+                pattern: '^\w+$'
+            dtype:
+                "$ref": "#/definitions/dtype"
+            nodata:
+              oneOf:
+                - type: number
+                - enum: [NaN, Inf, -Inf]
+            units:
+                type: string
+            aliases:
+                description: A list of string aliases
+                type: array
+                items:
+                    type: string
+            spectral_definition:
+                description: A structured measured relative spectral response with sample intervals
+                type: object
+                properties:
+                  wavelength:
+                    description: List of comma delimited wavelength values
+                    type: array
+                    items:
+                      type: number
+                  response:
+                    description: The relative spectral response of the sensor band at a given wavelength
+                    type: array
+                    items:
+                      type: number
+
+            flags_definition:
+                description: A structured definition of bit flags and meanings
+                type: object
+                patternProperties:
+                  ".*":
+                    required: [bits, values]
+                    properties:
+                      bits:
+                        type: [number, array]
+                      values:
+                        description: Dictionary of value -> meaning
+                        type: object
+#                        patternProperties:
+#                          ".*":
+#                            type: [string, boolean]
+                      description:
+                        description: A string describing this flag
+                        type: string
+        required:
+          - name
+          - dtype
+          - nodata
+          - units
+        additionalProperties: false
+
+    storage:
+        type: object
+        properties:
+            chunking:
+                type: object
+            crs:
+                type: string
+            dimension_order:
+                type: array
+            resolution:
+                type: object
+            tile_size:
+                type: object
+            driver:
+                type: string
+        additionalProperties: false

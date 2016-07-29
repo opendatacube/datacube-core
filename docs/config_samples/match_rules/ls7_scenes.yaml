@@ -1,0 +1,52 @@
+- type: ls7_satellite_telemetry_data
+  managed: False
+  metadata:
+    platform:
+        code: LANDSAT_7
+    instrument:
+        name: ETM
+    product_type: satellite_telemetry_data
+
+- type: ls7_level1_scene
+  managed: False
+  metadata:
+    platform:
+        code: LANDSAT_7
+    instrument:
+        name: ETM
+    product_type: level1
+    format:
+        name: GeoTIFF
+
+- type: ls7_nbar_scene
+  managed: False
+  metadata:
+    platform:
+        code: LANDSAT_7
+    instrument:
+        name: ETM
+    product_type: nbar
+    format:
+        name: GeoTIFF
+
+- type: ls7_nbart_scene
+  managed: False
+  metadata:
+    platform:
+        code: LANDSAT_7
+    instrument:
+        name: ETM
+    product_type: nbart
+    format:
+        name: GeoTIFF
+
+- type: ls7_pq_scene
+  managed: False
+  metadata:
+    platform:
+        code: LANDSAT_7
+    instrument:
+        name: ETM
+    product_type: pqa
+    format:
+        name: GeoTIFF

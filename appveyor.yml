@@ -1,0 +1,82 @@
+build: false
+
+environment:
+  global:
+    # SDK v7.0 MSVC Express 2008's SetEnv.cmd script will fail if the
+    # /E:ON and /V:ON options are not enabled in the batch script intepreter
+    # See: http://stackoverflow.com/a/13751649/163740
+    CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\.appveyor\\run_with_env.cmd"
+
+  PGUSER: postgres
+  PGPASSWORD: Password12!
+  POSTGRES: C:\Program Files\PostgreSQL\9.4\bin\
+
+
+  matrix:
+
+    # For Python versions available on Appveyor, see
+    # http://www.appveyor.com/docs/installed-software#python
+
+    - PYTHON: C:\\Python27-x64
+      PYTHON_VERSION: 2.7
+      PYTHON_ARCH: 64
+    - PYTHON: C:\\Python35-x64
+      PYTHON_VERSION: 3.5
+      PYTHON_ARCH: 64
+
+cache: C:\tmp\pip
+
+services:
+  - postgresql94
+
+
+init:
+  - ECHO %PYTHON% %PGUSER% %PGPASSWORD%
+  - SET PATH=%PYTHON%;%PYTHON%\Scripts;%POSTGRES%;%PATH%
+  - ps: mkdir c:\tmp\pip -force
+
+install:
+  - SET
+  - ECHO "Filesystem root:"
+  - ps: "ls \"C:/\""
+
+  - ECHO "System Path"
+  - ps: $env:Path
+
+  - ECHO "Local Path"
+  - ps: ls
+
+  - ECHO "pip cache"
+  - ps: ls  C:\tmp\pip\
+
+  # Upgrade to the latest version of pip to avoid it displaying warnings
+  # about it being out of date.
+  - pip install --disable-pip-version-check --user --upgrade pip
+
+#  - "%CMD_IN_ENV% pip wheel --cache-dir=C:\\tmp\\pip numpy"
+  - "%CMD_IN_ENV% pip install --cache-dir=C:\\tmp\\pip -r .appveyor/requirements.txt"
+  - "%CMD_IN_ENV% pip install --cache-dir=C:\\tmp\\pip --upgrade click pytest pytest-cov mock pep8 pylint==1.5
+  coveralls"
+  - "%CMD_IN_ENV% pip install --cache-dir=C:\\tmp\\pip -e ."
+
+before_test:
+  - createdb agdcintegration
+
+test_script:
+  - pip --version
+  - python --version
+  - pylint --version
+  - pep8 --version
+  - py.test --version
+  - pep8 tests integration_tests --max-line-length 120
+
+  - ps: pylint --reports no datacube version.py (ls examples\*.py | % FullName)
+
+  # Run tests, save coverage and test results
+  - py.test --junit-xml=junit-results.xml --cov datacube --durations=5 datacube examples
+   tests integration_tests
+
+  # upload results to AppVeyor
+  - ps: $wc = New-Object 'System.Net.WebClient'
+  - ps: '$wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path
+  .\junit-results.xml))'
