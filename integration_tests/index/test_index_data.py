@@ -150,8 +150,8 @@ def test_index_dataset_with_location(index, default_metadata_type):
     :type index: datacube.index._api.Index
     :type default_collection: datacube.model.DatasetType
     """
-    first_file = Path('/tmp/first/something.yaml')
-    second_file = Path('/tmp/second/something.yaml')
+    first_file = Path('/tmp/first/something.yaml').absolute()
+    second_file = Path('/tmp/second/something.yaml').absolute()
 
     type_ = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
     dataset = Dataset(type_, _telemetry_dataset, first_file.as_uri())
