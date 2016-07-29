@@ -58,15 +58,15 @@ This file must have secure permission rights set, so you may need to run::
     you can copy your pgpass file to raijin by running on a terminal window in VDI::
 
         remote-hpc-cmd init
-        ssh raijin "cat >>.pgpass" <~/.pgpass
-        ssh raijin "chmod 0600 .pgpass
+        ssh raijin "cat >> ~/.pgpass" < ~/.pgpass
+        ssh raijin "chmod 0600 ~/.pgpass"
 
     On VDI, you will be prompted to unlock the private key. Enter your NCI password when prompted.
 
     If you have previously used the module on raijin, you will need to copy your pgpass file to your VDI home folder.
     From a terminal window in VDI, run::
 
-        ssh raijin "cat .pgpass" >> ~/.pgpass
+        ssh raijin "cat ~/.pgpass" >> ~/.pgpass
         chmod 0600 ~/.pgpass
 
 .. warning::
