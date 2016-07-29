@@ -41,6 +41,7 @@ Low-Level Internal Functions
 
    Datacube.measurement_data
 
+.. _grid-workflow-class:
 
 GridWorkflow Class
 ------------------
