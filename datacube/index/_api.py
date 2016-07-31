@@ -24,7 +24,7 @@ def connect(local_config=None, application_name=None, validate_connection=True):
     :param application_name: A short, alphanumeric name to identify this application.
     :param local_config: Config object to use.
     :type local_config: :py:class:`datacube.config.LocalConfig`, optional
-    :param validate_connection: Validate database schema and schema version is correct
+    :param validate_connection: Validate database connection and schema immediately
     :rtype: Index
     :raises datacube.index.postgres._api.EnvironmentError:
     """
@@ -32,12 +32,18 @@ def connect(local_config=None, application_name=None, validate_connection=True):
         local_config = LocalConfig.find()
 
     return Index(
-        PostgresDb.from_config(local_config, application_name=application_name, validate_db=validate_connection)
+        PostgresDb.from_config(local_config, application_name=application_name, validate_connection=validate_connection)
     )
 
 
 class Index(object):
     """
+    Access to the datacube index.
+
+    Thread safe. But not multiprocess safe once a connection is made (db connections cannot be shared between processes)
+    You can close idle connections before forking by calling close(), provided you know no other connections are active.
+    Or else use a separate instance of this class in each process.
+
     :type datasets: datacube.index._datasets.DatasetResource
     :type products: datacube.index._datasets.DatasetTypeResource
     :type metadata_types: datacube.index._datasets.MetadataTypeResource
@@ -88,6 +94,14 @@ class Index(object):
         return self._db.list_users()
 
     def close(self):
+        """
+        Close any idle connections database connections.
+
+        This is good practice if you are keeping the Index instance in scope
+        but wont be using it for a while.
+
+        (Connections are normally closed automatically when this object is deleted: ie. no references exist)
+        """
         self._db.close()
 
     def __enter__(self):

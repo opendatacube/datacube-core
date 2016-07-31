@@ -6,7 +6,7 @@ from __future__ import absolute_import
 
 import logging
 
-import cachetools
+from cachetools.func import lru_cache
 
 from datacube import compat
 from datacube.model import Dataset, DatasetType, MetadataType
@@ -56,14 +56,14 @@ class MetadataTypeResource(object):
             )
         return self.get_by_name(name)
 
-    @cachetools.cached(cachetools.TTLCache(100, 60))
+    @lru_cache()
     def get(self, id_):
         """
         :rtype datacube.model.MetadataType
         """
         return self._make(self._db.get_metadata_type(id_))
 
-    @cachetools.cached(cachetools.TTLCache(100, 60))
+    @lru_cache()
     def get_by_name(self, name):
         """
         :rtype datacube.model.MetadataType
@@ -178,14 +178,14 @@ class DatasetTypeResource(object):
         for definition in definitions:
             self.add_document(definition)
 
-    @cachetools.cached(cachetools.TTLCache(100, 60))
+    @lru_cache()
     def get(self, id_):
         """
         :rtype datacube.model.DatasetType
         """
         return self._make(self._db.get_dataset_type(id_))
 
-    @cachetools.cached(cachetools.TTLCache(100, 60))
+    @lru_cache()
     def get_by_name(self, name):
         """
         :rtype datacube.model.DatasetType

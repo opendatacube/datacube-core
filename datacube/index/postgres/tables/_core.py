@@ -168,11 +168,11 @@ def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=Fal
     engine.execute(' '.join(sql))
 
 
-def create_user(engine, username, key, role):
+def create_user(conn, username, key, role):
     if role not in USER_ROLES:
         raise ValueError('Unknown role %r. Expected one of %r' % (role, USER_ROLES))
 
-    engine.execute(
+    conn.execute(
         'create user {username} password %s in role {role}'.format(username=username, role=role),
         key
     )
@@ -191,8 +191,8 @@ def grant_role(engine, role, users):
         engine.execute('grant {role} to {users}'.format(users=', '.join(users), role=role))
 
 
-def has_role(engine, role_name):
-    return bool(engine.execute('select rolname from pg_roles where rolname=%s', role_name).fetchall())
+def has_role(conn, role_name):
+    return bool(conn.execute('select rolname from pg_roles where rolname=%s', role_name).fetchall())
 
 
 def has_schema(engine, connection):

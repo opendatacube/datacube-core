@@ -84,15 +84,16 @@ class PostgresDb(object):
     It exists so that higher level modules are not tied to SQLAlchemy, connections or specifics of database-access.
 
     (and can be unit tested without any actual databases)
+
+    Thread safe: the only shared state is the (thread-safe) sqlalchemy connection pool.
+
+    But not multiprocess safe once the first connections are made! A connection must not be shared between multiple
+    processes. You can call close() before forking if you know no other threads currently hold connections,
+    or else use a separate instance of this class in each process.
     """
 
-    def __init__(self, engine, connection):
-        self._engine = engine
-        self._connection = connection
-
-    @classmethod
-    def connect(cls, hostname, database, username=None, password=None, port=None, application_name=None, validate=True):
-        _engine = create_engine(
+    def __init__(self, hostname, database, username=None, password=None, port=None, application_name=None, validate=True):
+        self._engine = create_engine(
             EngineUrl(
                 'postgresql',
                 host=hostname, database=database, port=port,
@@ -109,37 +110,53 @@ class PostgresDb(object):
             connect_args={'application_name': application_name}
         )
         if validate:
-            if not tables.database_exists(_engine):
+            if not tables.database_exists(self._engine):
                 raise IndexSetupError('\n\nNo DB schema exists. Have you run init?\n\t{init_command}'.format(
                     init_command='datacube system init'
                 ))
 
-            if not tables.schema_is_latest(_engine):
+            if not tables.schema_is_latest(self._engine):
                 raise IndexSetupError(
                     '\n\nDB schema is out of date. '
                     'An administrator must run init:\n\t{init_command}'.format(
                         init_command='datacube -v system init'
                     ))
 
-        _connection = _engine.connect()
-        return PostgresDb(_engine, _connection)
-
     @classmethod
-    def from_config(cls, config=LocalConfig.find(), application_name=None, validate_db=True):
+    def from_config(cls, config=LocalConfig.find(), application_name=None, validate_connection=True):
         app_name = cls._expand_app_name(application_name)
 
-        return PostgresDb.connect(
+        return PostgresDb(
             config.db_hostname,
             config.db_database,
             config.db_username,
             config.db_password,
             config.db_port,
             application_name=app_name,
-            validate=validate_db
+            validate=validate_connection
         )
 
+    @property
+    def _connection(self):
+        """
+        Borrow a connection from the pool.
+        """
+        return self._engine.connect()
+
     def close(self):
-        self._connection.close()
+        """
+        Close any idle connections in the pool.
+
+        This is good practice if you are keeping this object in scope
+        but wont be using it for a while.
+
+        Connections should not be shared between processes, so this should be called
+        before forking if the same instance will be used.
+
+        (connections are normally closed automatically when this object is
+         garbage collected)
+        """
+        self._engine.dispose()
 
     @classmethod
     def _expand_app_name(cls, application_name):
@@ -190,7 +207,7 @@ class PostgresDb(object):
             with db.begin() as transaction:
                 db.insert_dataset(...)
 
-        :return: Tranasction object
+        :return: Transaction object
         """
         return _BegunTransaction(self._connection)
 

@@ -87,7 +87,7 @@ def local_config(integration_config_paths):
 
 @pytest.fixture
 def db(local_config):
-    db = PostgresDb.from_config(local_config, application_name='test-run', validate_db=False)
+    db = PostgresDb.from_config(local_config, application_name='test-run', validate_connection=False)
     # Drop and recreate tables so our tests have a clean db.
     drop_db(db._connection)
     remove_dynamic_indexes()
