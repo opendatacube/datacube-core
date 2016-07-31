@@ -404,6 +404,18 @@ class Datacube(object):
     def __repr__(self):
         return self.__str__()
 
+    def close(self):
+        """
+        Close any open connections
+        """
+        self.index.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type_, value, traceback):
+        self.close()
+
 
 def fuse_lazy(datasets, geobox, measurement, fuse_func=None, prepend_dims=0):
     prepend_shape = (1,) * prepend_dims

@@ -87,5 +87,14 @@ class Index(object):
         """
         return self._db.list_users()
 
+    def close(self):
+        self._db.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type_, value, traceback):
+        self.close()
+
     def __repr__(self):
         return "Index<db={!r}>".format(self._db)

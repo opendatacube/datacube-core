@@ -99,6 +99,8 @@ class PostgresDb(object):
                 username=username, password=password,
             ),
             echo=False,
+            echo_pool=False,
+
             # 'AUTOCOMMIT' here means READ-COMMITTED isolation level with autocommit on.
             # When a transaction is needed we will do an explicit begin/commit.
             isolation_level='AUTOCOMMIT',
@@ -135,6 +137,9 @@ class PostgresDb(object):
             application_name=app_name,
             validate=validate_db
         )
+
+    def close(self):
+        self._connection.close()
 
     @classmethod
     def _expand_app_name(cls, application_name):
