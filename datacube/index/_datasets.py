@@ -311,15 +311,15 @@ class DatasetResource(object):
             _LOG.info('Indexing %s', dataset.id)
             with self._db.begin() as transaction:
                 try:
-                    was_inserted = self._db.insert_dataset(dataset.metadata_doc, dataset.id, dataset.type.id)
+                    was_inserted = transaction.insert_dataset(dataset.metadata_doc, dataset.id, dataset.type.id)
                     for classifier, source_dataset in dataset.sources.items():
-                        self._db.insert_dataset_source(classifier, dataset.id, source_dataset.id)
+                        transaction.insert_dataset_source(classifier, dataset.id, source_dataset.id)
 
                     # try to update location in the same transaction as insertion.
                     # if insertion fails we'll try updating location later
                     # if insertion succeeds the location bit can't possibly fail
                     if dataset.local_uri:
-                        self._db.ensure_dataset_location(dataset.id, dataset.local_uri)
+                        transaction.ensure_dataset_location(dataset.id, dataset.local_uri)
                 except DuplicateRecordError as e:
                     _LOG.warning(str(e))
 
@@ -351,7 +351,7 @@ class DatasetResource(object):
         """
         with self._db.begin() as transaction:
             for id_ in ids:
-                self._db.archive_dataset(id_)
+                transaction.archive_dataset(id_)
 
     def restore(self, ids):
         """
@@ -361,7 +361,7 @@ class DatasetResource(object):
         """
         with self._db.begin() as transaction:
             for id_ in ids:
-                self._db.restore_dataset(id_)
+                transaction.restore_dataset(id_)
 
     def get_field_names(self, type_name=None):
         """

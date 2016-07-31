@@ -163,7 +163,7 @@ class MockDb(object):
 
     @contextmanager
     def begin(self):
-        yield
+        yield self
 
     def get_dataset(self, id):
         return self.dataset.get(id, None)

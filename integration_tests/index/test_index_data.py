@@ -6,14 +6,13 @@ Integration tests: these depend on a local Postgres instance.
 """
 from __future__ import absolute_import
 
-import pytest
 import datetime
 
+import pytest
 from pathlib import Path
 
-from datacube.model import Dataset
 from datacube.index.exceptions import DuplicateRecordError
-from datacube.index.postgres import PostgresDb
+from datacube.model import Dataset
 
 _telemetry_uuid = '4ec8fe97-e8b9-11e4-87ff-1040f381a756'
 _telemetry_dataset = {
@@ -98,9 +97,9 @@ def test_index_duplicate_dataset(index, db, local_config, default_metadata_type)
 
     assert not db.contains_dataset(_telemetry_uuid)
 
+    dataset_type = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
     with db.begin() as transaction:
-        dataset_type = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
-        was_inserted = db.insert_dataset(
+        was_inserted = transaction.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,
             dataset_type.id
@@ -119,6 +118,31 @@ def test_index_duplicate_dataset(index, db, local_config, default_metadata_type)
         )
     assert not was_inserted
     assert db.contains_dataset(_telemetry_uuid)
+
+
+def test_transactions(index, db, local_config, default_metadata_type):
+    """
+    :type index: datacube.index._api.Index
+    :type db: datacube.index.postgres._api.PostgresDb
+    """
+    assert not db.contains_dataset(_telemetry_uuid)
+
+    dataset_type = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
+    with db.begin() as transaction:
+        was_inserted = transaction.insert_dataset(
+            _telemetry_dataset,
+            _telemetry_uuid,
+            dataset_type.id
+        )
+        assert was_inserted
+        assert transaction.contains_dataset(_telemetry_uuid)
+        # Normal DB uses a separate connection: No dataset visible yet.
+        assert not db.contains_dataset(_telemetry_uuid)
+
+        transaction.rollback()
+
+    # Should have been rolled back.
+    assert not db.contains_dataset(_telemetry_uuid)
 
 
 def test_index_dataset_with_location(index, default_metadata_type):

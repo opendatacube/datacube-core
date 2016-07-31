@@ -92,8 +92,14 @@ class PostgresDb(object):
     or else use a separate instance of this class in each process.
     """
 
-    def __init__(self, hostname, database, username=None, password=None, port=None, application_name=None, validate=True):
-        self._engine = create_engine(
+    def __init__(self, engine):
+        # We don't recommend using this constructor directly as it may change.
+        # Use static methods PostgresDb.create() or PostgresDb.from_config()
+        self._engine = engine
+
+    @classmethod
+    def create(cls, hostname, database, username=None, password=None, port=None, application_name=None, validate=True):
+        engine = create_engine(
             EngineUrl(
                 'postgresql',
                 host=hostname, database=database, port=port,
@@ -110,23 +116,24 @@ class PostgresDb(object):
             connect_args={'application_name': application_name}
         )
         if validate:
-            if not tables.database_exists(self._engine):
+            if not tables.database_exists(engine):
                 raise IndexSetupError('\n\nNo DB schema exists. Have you run init?\n\t{init_command}'.format(
                     init_command='datacube system init'
                 ))
 
-            if not tables.schema_is_latest(self._engine):
+            if not tables.schema_is_latest(engine):
                 raise IndexSetupError(
                     '\n\nDB schema is out of date. '
                     'An administrator must run init:\n\t{init_command}'.format(
                         init_command='datacube -v system init'
                     ))
+        return PostgresDb(engine)
 
     @classmethod
     def from_config(cls, config=LocalConfig.find(), application_name=None, validate_connection=True):
         app_name = cls._expand_app_name(application_name)
 
-        return PostgresDb(
+        return PostgresDb.create(
             config.db_hostname,
             config.db_database,
             config.db_username,
@@ -201,15 +208,16 @@ class PostgresDb(object):
         """
         Start a transaction.
 
-        Returns a transaction object. Call commit() or rollback() to complete the
-        transaction or use a context manager:
+        Returns an instance that will maintain a single connection in a transaction.
 
-            with db.begin() as transaction:
-                db.insert_dataset(...)
+        Call commit() or rollback() to complete the transaction or use a context manager:
 
-        :return: Transaction object
+            with db.begin() as trans:
+                trans.insert_dataset(...)
+
+        :rtype: _PostgresDbInTransaction
         """
-        return _BegunTransaction(self._connection)
+        return _PostgresDbInTransaction(self._engine)
 
     def insert_dataset(self, metadata_doc, dataset_id, dataset_type_id):
         """
@@ -835,10 +843,27 @@ def _json_fallback(obj):
     raise TypeError("Type not serializable: {}".format(type(obj)))
 
 
-class _BegunTransaction(object):
-    def __init__(self, connection):
-        self._connection = connection
+class _PostgresDbInTransaction(PostgresDb):
+    """
+    Identical to PostgresDb class, but all operations
+    are run against a single connection in a transaction.
+
+    Call commit() or rollback() to complete the transaction or use a context manager:
+
+        with db.begin() as transaction:
+            transaction.insert_dataset(...)
+
+    (Don't share an instance between threads)
+    """
+    def __init__(self, engine):
+        super(_PostgresDbInTransaction, self).__init__(engine)
+        self.__connection = engine.connect()
         self.begin()
+
+    @property
+    def _connection(self):
+        # Override parent so that we use the same connection in transaction
+        return self.__connection
 
     def begin(self):
         self._connection.execute(text('BEGIN'))
