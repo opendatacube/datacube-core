@@ -548,10 +548,16 @@ def _make_dask_array(sources, geobox, measurement, fuse_func=None, dask_chunks=N
 
 
 def _stack_vars(data_dict, var_dim_name, stack_name=None):
+    if not data_dict:
+        return xarray.DataArray(None)
     if len(data_dict) == 1:
         key, value = data_dict.popitem()
+        value.coords[var_dim_name] = key
+        if stack_name:
+            value.name = stack_name
         return value
     labels = list(data_dict.keys())
+
     stack = xarray.concat(
         [data_dict[var_name] for var_name in labels],
         dim=xarray.DataArray(labels, name=var_dim_name, dims=var_dim_name),
