@@ -670,34 +670,29 @@ class PostgresDb(object):
     def _ensure_composite_index(self, type_name, field_names, available_fields, where_clause,
                                 concurrently=True, pg_index_type='gist'):
         """
-        Create a composite index if one does not exist.
-
-        Is a no-op if the given field names don't exist.
+        Create a composite index for the given field names if one does not exist and all fields are available.
         """
         parsed_fields = [available_fields.get(name) for name in field_names]
         if not all(parsed_fields):
             _LOG.debug('Skipping composite index %r: Product does not have all fields.', field_names)
             return
 
-        if ('time' in available_fields) and ('lat' in available_fields) and ('lon' in available_fields):
-            index_name = 'dix_{prefix}_c_{field_name}'.format(
-                prefix=type_name.lower(),
-                field_name='_'.join(field_names)
-            )
-            index = Index(
-                index_name,
-                available_fields['lat'].alchemy_expression,
-                available_fields['lon'].alchemy_expression,
-                available_fields['time'].alchemy_expression,
-                postgresql_where=where_clause,
-                postgresql_using=pg_index_type,
-                postgresql_concurrently=concurrently
-            )
-            conn = self._connection
-            exists = _pg_exists(conn, tables.schema_qualified(index_name))
-            if not exists:
-                _LOG.info('Creating index: %s', index_name)
-                index.create(conn)
+        index_name = 'dix_{prefix}_c_{field_name}'.format(
+            prefix=type_name.lower(),
+            field_name='_'.join(field_names)
+        )
+        index = Index(
+            index_name,
+            *(f.alchemy_expression for f in parsed_fields),
+            postgresql_where=where_clause,
+            postgresql_using=pg_index_type,
+            postgresql_concurrently=concurrently
+        )
+        conn = self._connection
+        exists = _pg_exists(conn, tables.schema_qualified(index_name))
+        if not exists:
+            _LOG.info('Creating index: %s', index_name)
+            index.create(conn)
 
     def _get_active_field_names(self, metadata_type_id, metadata_doc):
         fields = self.get_dataset_fields(self.get_metadata_type(metadata_type_id))
