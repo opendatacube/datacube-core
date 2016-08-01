@@ -4,7 +4,7 @@ import yaml
 import pytest
 
 from datacube.storage.masking import list_flag_names, create_mask_value, describe_variable_flags
-from datacube.storage.masking import mask_to_dict, valid_data_mask
+from datacube.storage.masking import mask_to_dict, mask_valid_data, valid_data_mask
 
 
 def test_list_flag_names():
@@ -315,7 +315,7 @@ def test_simple_mask_to_dict(bits_def):
     assert not test_dict['blue_saturated']
 
 
-def test_valid_data_mask():
+def test_mask_valid_data():
     from xarray import DataArray, Dataset
     import numpy as np
     test_attrs = {
@@ -333,11 +333,31 @@ def test_valid_data_mask():
     # Make sure test is actually changing something
     assert not data_array.equals(expected_data_array)
 
-    output_ds = valid_data_mask(dataset, keep_attrs=True)
+    output_ds = mask_valid_data(dataset, keep_attrs=True)
     assert output_ds.attrs['ds_attr'] == 'still here'
     assert output_ds.data_vars['var_one'].equals(expected_data_array)
     assert output_ds.data_vars['var_one'].attrs['one'] == 1
 
-    output_da = valid_data_mask(data_array, keep_attrs=True)
+    output_da = mask_valid_data(data_array, keep_attrs=True)
     assert output_da.equals(expected_data_array)
     assert output_da.attrs['one'] == 1
+
+
+def test_valid_data_mask():
+    from xarray import DataArray, Dataset
+    import numpy as np
+    attrs = {
+        'nodata': -999,
+    }
+
+    expected_data_array = DataArray(np.array([[True, False, False], [True, True, False], [False, False, False]],
+                                             dtype='bool'))
+
+    data_array = DataArray([[1, -999, -999], [2, 3, -999], [-999, -999, -999]], attrs=attrs)
+    dataset = Dataset(data_vars={'var_one': data_array})
+
+    output_ds = valid_data_mask(dataset)
+    assert output_ds.data_vars['var_one'].equals(expected_data_array)
+
+    output_da = valid_data_mask(data_array)
+    assert output_da.equals(expected_data_array)
