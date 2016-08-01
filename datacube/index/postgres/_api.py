@@ -609,11 +609,7 @@ class PostgresDb(object):
         type_id = res.inserted_primary_key[0]
 
         # Initialise search fields.
-        _setup_collection_fields(
-            self._connection, name, self.get_dataset_fields(metadata_type_record),
-            where_expression=and_(DATASET.c.archived == None, DATASET.c.dataset_type_ref == type_id),
-            concurrently=concurrently
-        )
+        self._setup_dataset_type_fields(type_id, name, metadata_type_id, definition['metadata'])
         return type_id
 
     def add_metadata_type(self, name, definition, concurrently=False):
@@ -644,13 +640,38 @@ class PostgresDb(object):
             )
 
         for dataset_type in self.get_all_dataset_types():
-            _setup_collection_fields(
-                self._connection, dataset_type['name'],
-                self.get_dataset_fields(self.get_metadata_type(dataset_type['metadata_type_ref'])),
-                where_expression=and_(DATASET.c.archived == None, DATASET.c.dataset_type_ref == dataset_type['id']),
-                concurrently=concurrently,
-                replace_existing=rebuild_all
+            self._setup_dataset_type_fields(
+                dataset_type['id'],
+                dataset_type['name'],
+                dataset_type['metadata_type_ref'],
+                dataset_type['definition']['metadata'],
+                rebuild_all,
+                concurrently
             )
+
+    def _setup_dataset_type_fields(self, id_, name, metadata_type_id, metadata_doc,
+                                   rebuild_all=False, concurrently=True):
+        fields = self.get_dataset_fields(self.get_metadata_type(metadata_type_id))
+        fixed_field_names = tuple(self._get_active_field_names(metadata_type_id, metadata_doc))
+        _setup_collection_fields(
+            self._connection, name,
+            fields,
+            where_expression=and_(DATASET.c.archived == None, DATASET.c.dataset_type_ref == id_),
+            exclude_field_names=fixed_field_names,
+            concurrently=concurrently,
+            replace_existing=rebuild_all
+        )
+
+    def _get_active_field_names(self, metadata_type_id, metadata_doc):
+        fields = self.get_dataset_fields(self.get_metadata_type(metadata_type_id))
+        for field in fields.values():
+            if hasattr(field, 'extract'):
+                try:
+                    value = field.extract(metadata_doc)
+                    if value is not None:
+                        yield field.name
+                except (AttributeError, KeyError, ValueError):
+                    continue
 
     def get_all_dataset_types(self):
         return self._connection.execute(DATASET_TYPE.select().order_by(DATASET_TYPE.c.name.asc())).fetchall()
@@ -752,6 +773,7 @@ def _pg_exists(conn, name):
 
 
 def _setup_collection_fields(conn, collection_prefix, fields, where_expression,
+                             exclude_field_names=(),
                              concurrently=False, replace_existing=False):
     """
     Create indexes and views for a collection's search fields.
@@ -760,8 +782,8 @@ def _setup_collection_fields(conn, collection_prefix, fields, where_expression,
 
     # Create indexes for the search fields.
     for field in fields.values():
-        index_type = field.postgres_index_type
-        if index_type:
+        is_excluded = (field.name in exclude_field_names)
+        if field.postgres_index_type:
             # Our normal indexes start with "ix_", dynamic indexes with "dix_"
             index_name = 'dix_{prefix}_{field_name}'.format(
                 prefix=name.lower(),
@@ -776,7 +798,7 @@ def _setup_collection_fields(conn, collection_prefix, fields, where_expression,
                 index_name,
                 field.alchemy_expression,
                 postgresql_where=where_expression,
-                postgresql_using=index_type,
+                postgresql_using=field.postgres_index_type,
                 # Don't lock the table (in the future we'll allow indexing new fields...)
                 postgresql_concurrently=concurrently
             )
@@ -784,7 +806,7 @@ def _setup_collection_fields(conn, collection_prefix, fields, where_expression,
             legacy_exists = _pg_exists(conn, tables.schema_qualified(legacy_name))
 
             # This currently leaves a window of time without indexes: it's primarily intended for development.
-            if replace_existing:
+            if replace_existing or is_excluded:
                 if exists:
                     _LOG.debug('Dropping index: %s (replace=%r)', index_name, replace_existing)
                     index.drop(conn)
@@ -795,8 +817,9 @@ def _setup_collection_fields(conn, collection_prefix, fields, where_expression,
                     legacy_exists = False
 
             if not (exists or legacy_exists):
-                _LOG.debug('Creating index: %s', index_name)
-                index.create(conn)
+                if not is_excluded:
+                    _LOG.debug('Creating index: %s', index_name)
+                    index.create(conn)
             else:
                 _LOG.debug('Index exists: %s  (replace=%r)', index_name, replace_existing)
 
@@ -855,6 +878,7 @@ class _PostgresDbInTransaction(PostgresDb):
 
     (Don't share an instance between threads)
     """
+
     def __init__(self, engine):
         super(_PostgresDbInTransaction, self).__init__(engine)
         self.__connection = engine.connect()
