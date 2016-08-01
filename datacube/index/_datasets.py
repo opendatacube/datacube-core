@@ -6,7 +6,7 @@ from __future__ import absolute_import
 
 import logging
 
-from cachetools.func import lru_cache
+from cachetools import lru_cache
 
 from datacube import compat
 from datacube.model import Dataset, DatasetType, MetadataType
