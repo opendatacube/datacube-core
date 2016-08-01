@@ -75,6 +75,13 @@ def test_dataset_indexes_views_exist(db, ls5_nbar_gtiff_type):
     assert _object_exists(db, 'dv_ls5_nbart_p54_gtiff_dataset')
 
 
+def test_dataset_conposit_indexes_exist(db, ls5_nbar_gtiff_type):
+    # This type has fields named lat/lon/time, so composite indexes should now exist for them:
+    # (following the naming conventions)
+    assert _object_exists(db, "dix_ls5_nbart_p54_gtiff_c_time_lat_lon")
+    assert _object_exists(db, "dix_ls5_nbart_p54_gtiff_c_lat_lon_time")
+
+
 def _object_exists(db, index_name):
     val = db._connection.execute("SELECT to_regclass('agdc.%s')" % index_name).scalar()
     return val == ('agdc.%s' % index_name)
