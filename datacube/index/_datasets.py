@@ -231,7 +231,7 @@ class DatasetTypeResource(object):
             if q.pop('metadata_type', type_.metadata_type.name) != type_.metadata_type.name:
                 continue
 
-            for key, value in q.items():
+            for key, value in list(q.items()):
                 try:
                     exprs = fields.to_expressions(type_.metadata_type.dataset_fields.get, **{key: value})
                 except RuntimeError:
