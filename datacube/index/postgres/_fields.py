@@ -114,6 +114,9 @@ class SimpleDocField(PgField):
     def extract(self, document):
         return get_doc_offset(self.offset, document)
 
+    def evaluate(self, ctx):
+        return self.extract(ctx)
+
 
 class RangeDocField(PgField):
     """
@@ -259,6 +262,9 @@ class EqualsExpression(PgExpression):
     @property
     def alchemy_expression(self):
         return self.field.alchemy_expression == self.value
+
+    def evaluate(self, ctx):
+        return self.field.evaluate(ctx) == self.value
 
 
 def parse_fields(doc, metadata_type_id, table_column):

@@ -47,6 +47,9 @@ class OrExpression(Expression):
         super(OrExpression, self).__init__()
         self.exprs = exprs
 
+    def evaluate(self, ctx):
+        return any(expr.evaluate(ctx) for expr in self.exprs)
+
 
 def _to_expression(get_field, name, value):
     field = get_field(name)
