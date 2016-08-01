@@ -253,14 +253,6 @@ def test_search_special_fields(index, pseudo_telemetry_type, pseudo_telemetry_da
     :type pseudo_telemetry_dataset: datacube.model.Dataset
     """
 
-    # 'Format' is a fixed field
-    datasets = index.datasets.search_eager(
-        platform='LANDSAT_8',
-        format='PSEUDOMD',
-    )
-    assert len(datasets) == 1
-    assert datasets[0].id == pseudo_telemetry_dataset.id
-
     # 'product' is a special case
     datasets = index.datasets.search_eager(
         product=pseudo_telemetry_type.name

@@ -214,9 +214,38 @@ class DatasetTypeResource(object):
         :type query: dict
         :rtype: __generator[DatasetType]
         """
-        for type_ in self.get_all():
-            if type_.matches(**query):
+        for type_, q in self.search_robust(**query):
+            if not q:
                 yield type_
+
+    def search_robust(self, **query):
+        """
+        Return dataset types that match match-able fields and dict of remaining un-matchable fields.
+        :type query: dict
+        :rtype: __generator[DatasetType, dict]
+        """
+        for type_ in self.get_all():
+            q = query.copy()
+            if q.pop('product', type_.name) != type_.name:
+                continue
+            if q.pop('metadata_type', type_.metadata_type.name) != type_.metadata_type.name:
+                continue
+
+            for key, value in q.items():
+                try:
+                    exprs = fields.to_expressions(type_.metadata_type.dataset_fields.get, **{key: value})
+                except RuntimeError:
+                    break
+
+                try:
+                    if all(expr.evaluate(type_.metadata_doc) for expr in exprs):
+                        q.pop(key)
+                    else:
+                        break
+                except (AttributeError, KeyError, ValueError) as e:
+                    continue
+            else:
+                yield type_, q
 
     def get_all(self):
         """
@@ -468,15 +497,8 @@ class DatasetResource(object):
         return types
 
     def _get_product_queries(self, query):
-        dataset_types = self.types.search(**query)
-        for dataset_type in dataset_types:
-            q = dict(query)
-            # We've already matched all fixed fields for the product (in the above types.search())
-            for field_name in dataset_type.fixed_fields.keys():
-                if field_name in q:
-                    del q[field_name]
+        for dataset_type, q in self.types.search_robust(**query):
             q['dataset_type_id'] = dataset_type.id
-
             yield q, dataset_type
 
     def _do_search(self, query, return_fields=False, with_source_ids=False):

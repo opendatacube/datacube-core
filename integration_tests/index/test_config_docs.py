@@ -119,15 +119,6 @@ def test_filter_types_by_fields(index, ls5_nbar_gtiff_type):
     assert len(res) == 0
 
 
-def test_fixed_fields(ls5_nbar_gtiff_type):
-    assert set(ls5_nbar_gtiff_type.fixed_fields.keys()) == {
-        # Native fields
-        'product', 'metadata_type',
-        # Doc fields
-        'platform', 'format', 'product_type'
-    }
-
-
 def test_filter_types_by_search(index, ls5_nbar_gtiff_type):
     """
     :type ls5_nbar_gtiff_type: datacube.model.DatasetType
@@ -146,25 +137,34 @@ def test_filter_types_by_search(index, ls5_nbar_gtiff_type):
     ))
     assert res == [ls5_nbar_gtiff_type]
 
-    # Matching fields and available fields
+    # Matching fields and non-available fields
     res = list(index.datasets.types.search(
         product_type='nbart',
         product='ls5_nbart_p54_gtiff',
         lat=Range(142.015625, 142.015625),
         lon=Range(-12.046875, -12.046875)
     ))
+    assert res == []
+
+    # Matching fields and available fields
+    [(res, q)] = list(index.datasets.types.search_robust(
+        product_type='nbart',
+        product='ls5_nbart_p54_gtiff',
+        lat=Range(142.015625, 142.015625),
+        lon=Range(-12.046875, -12.046875)
+    ))
+    assert res == ls5_nbar_gtiff_type
+    assert 'lat' in q
+    assert 'lon' in q
+
+    # Or expression test
+    res = list(index.datasets.types.search(
+        product_type=['nbart', 'nbar'],
+    ))
     assert res == [ls5_nbar_gtiff_type]
 
     # Mismatching fields
     res = list(index.datasets.types.search(
         product_type='nbar',
-    ))
-    assert res == []
-
-    # Matching fields and non-available fields
-    res = list(index.datasets.types.search(
-        product_type='nbart',
-        product='ls5_nbart_p54_gtiff',
-        beverage='frappuccino'
     ))
     assert res == []

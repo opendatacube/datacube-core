@@ -284,43 +284,6 @@ class DatasetType(object):
         return ('time',) + self.grid_spec.dimensions
 
     @property
-    def fixed_fields(self):
-        """
-        Search fields identical to all datasets of this type.
-        """
-        fs = {k: v for (k, v) in self.metadata.fields.items() if v is not None}
-        fs['product'] = self.name
-        fs['metadata_type'] = self.metadata_type.name
-        return fs
-
-    def matches(self, **query):
-        """
-        May this dataset type return results for the given query?
-        """
-        # Fixed (non-document) fields
-        if 'product' in query:
-            if query['product'] != self.name:
-                return False
-            query = dict(query)
-            del query['product']
-        if 'metadata_type' in query:
-            if query['metadata_type'] != self.metadata_type.name:
-                return False
-            query = dict(query)
-            del query['metadata_type']
-
-        for key, value in query.items():
-            if key not in self.metadata.fields:
-                return False
-
-            expected_value = getattr(self.metadata, key)
-            # If there's an expected value it should match
-            if (expected_value is not None) and expected_value != value:
-                return False
-
-        return True
-
-    @property
     def grid_spec(self):
         if 'storage' not in self.definition:
             return None
