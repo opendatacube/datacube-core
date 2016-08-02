@@ -177,12 +177,6 @@ class DatasetTypeResource(object):
         type_ = self.from_doc(definition)
         return self.add(type_)
 
-    def add_many(self, definitions):
-        """
-        :type definitions: list[dict]
-        """
-        for definition in definitions:
-            self.add_document(definition)
     @lru_cache()
     def get(self, id_):
         """
