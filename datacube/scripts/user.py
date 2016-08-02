@@ -24,7 +24,7 @@ def list_users(index):
     """
     List users
     """
-    for role, user, description in index.list_users():
+    for role, user, description in index.users.list_users():
         click.echo('{0:6}\t{1:15}\t{2}'.format(role, user, description if description else ''))
 
 
@@ -38,7 +38,7 @@ def grant(index, role, users):
     """
     Grant a role to users
     """
-    index.grant_role(role, *users)
+    index.users.grant_role(role, *users)
 
 
 @user_cmd.command('create')
@@ -52,7 +52,7 @@ def create_user(config, index, role, user):
     Create a User
     """
     password = base64.urlsafe_b64encode(os.urandom(12)).decode('utf-8')
-    index.create_user(user, password, role)
+    index.users.create_user(user, password, role)
 
     click.echo('{host}:{port}:*:{username}:{password}'.format(
         host=config.db_hostname or 'localhost',
@@ -70,4 +70,4 @@ def delete_user(config, index, user):
     """
     Delete a User
     """
-    index.delete_user(user)
+    index.users.delete_user(user)

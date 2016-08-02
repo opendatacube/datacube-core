@@ -74,7 +74,7 @@ def check(config_file):
     try:
         index = index_connect(local_config=config_file)
         echo('Success.')
-        for role, user, description in index.list_users():
+        for role, user, description in index.users.list_users():
             if user == config_file.db_username:
                 echo('You have %s privileges.' % role.upper())
     except OperationalError as e:

@@ -49,7 +49,9 @@ class Index(object):
     (should really be called Product)
     :ivar datacube.index._datasets.MetadataTypeResource metadata_types: store and retrieve \
     :class:`datacube.model.MetadataType`
+    :ivar UserResource users: user management
 
+    :type users: UserResource
     :type datasets: datacube.index._datasets.DatasetResource
     :type products: datacube.index._datasets.DatasetTypeResource
     :type metadata_types: datacube.index._datasets.MetadataTypeResource
@@ -60,6 +62,7 @@ class Index(object):
         """
         self._db = db
 
+        self.users = UserResource(db)
         self.metadata_types = MetadataTypeResource(db)
         self.products = DatasetTypeResource(db, self.metadata_types)
         self.datasets = DatasetResource(db, self.products)
@@ -73,6 +76,31 @@ class Index(object):
                 self.metadata_types.add(doc, allow_table_lock=True)
 
         return is_new
+
+    def close(self):
+        """
+        Close any idle connections database connections.
+
+        This is good practice if you are keeping the Index instance in scope
+        but wont be using it for a while.
+
+        (Connections are normally closed automatically when this object is deleted: ie. no references exist)
+        """
+        self._db.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type_, value, traceback):
+        self.close()
+
+    def __repr__(self):
+        return "Index<db={!r}>".format(self._db)
+
+
+class UserResource(object):
+    def __init__(self, db):
+        self._db = db
 
     def grant_role(self, role, *users):
         """
@@ -98,23 +126,3 @@ class Index(object):
         :rtype: list[(str, str, str)]
         """
         return self._db.list_users()
-
-    def close(self):
-        """
-        Close any idle connections database connections.
-
-        This is good practice if you are keeping the Index instance in scope
-        but wont be using it for a while.
-
-        (Connections are normally closed automatically when this object is deleted: ie. no references exist)
-        """
-        self._db.close()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type_, value, traceback):
-        self.close()
-
-    def __repr__(self):
-        return "Index<db={!r}>".format(self._db)
