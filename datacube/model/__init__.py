@@ -592,7 +592,7 @@ class GeoBox(object):
 
 
     :param CRS crs: Coordinate Reference System
-    :param affine.Affine affine: Affine transformation defining the location of the storage unit
+    :param affine.Affine affine: Affine transformation defining the location of the geobox
     """
 
     def __init__(self, width, height, affine, crs):

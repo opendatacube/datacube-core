@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 """
-Query datasets and storage units.
+Query datasets.
 """
 from __future__ import absolute_import
 from __future__ import print_function

@@ -203,6 +203,7 @@ class DatasetTypeResource(object):
     def get_with_fields(self, field_names):
         """
         Return dataset types that have all the given fields.
+
         :param tuple[str] field_names:
         :rtype: __generator[DatasetType]
         """
@@ -445,7 +446,7 @@ class DatasetResource(object):
 
         Caution – slow! This will usually not use indexes.
 
-        :type metadata: dict
+        :param dict metadata:
         :rtype: list[datacube.model.Dataset]
         """
         return self._make_many(self._db.search_datasets_by_metadata(metadata))
@@ -453,7 +454,8 @@ class DatasetResource(object):
     def search(self, **query):
         """
         Perform a search, returning results as Dataset objects.
-        :type query: dict[str,str|float|datacube.model.Range]
+
+        :param dict[str,str|float|datacube.model.Range] query:
         :rtype: __generator[datacube.model.Dataset]
         """
         return self._make_many(self._do_search(query))
@@ -461,7 +463,8 @@ class DatasetResource(object):
     def count(self, **query):
         """
         Perform a search, returning count of results.
-        :type query: dict[str,str|float|datacube.model.Range]
+
+        :param dict[str,str|float|datacube.model.Range] query:
         :rtype: int
         """
         return self._do_count(query)
@@ -471,9 +474,8 @@ class DatasetResource(object):
         Perform a search, returning counts for each product grouped in time slices
         of the given period.
 
-        :type query: dict[str,str|float|datacube.model.Range]
-        :type period: str
-        :param period: Time range for each slice: '1 month', '1 day' etc.
+        :param dict[str,str|float|datacube.model.Range] query:
+        :param str period: Time range for each slice: '1 month', '1 day' etc.
         :returns: For each matching product type, a list of time ranges and their count.
         :rtype: __generator[(str, list[(datetime.datetime, datetime.datetime), int)]]
         """
@@ -486,9 +488,8 @@ class DatasetResource(object):
 
         Will raise an error if the search terms match more than one product.
 
-        :type query: dict[str,str|float|datacube.model.Range]
-        :type period: str
-        :param period: Time range for each slice: '1 month', '1 day' etc.
+        :param dict[str,str|float|datacube.model.Range] query:
+        :param str period: Time range for each slice: '1 month', '1 day' etc.
         :returns: For each matching product type, a list of time ranges and their count.
         :rtype: list[(str, list[(datetime.datetime, datetime.datetime), int)]]
         """
@@ -564,7 +565,7 @@ class DatasetResource(object):
         """
         Perform a search, returning just the search fields of each dataset.
 
-        :type query: dict[str,str|float|datacube.model.Range]
+        :param dict[str,str|float|datacube.model.Range] query:
         :rtype: dict
         """
         return (
@@ -577,7 +578,9 @@ class DatasetResource(object):
 
     def search_eager(self, **query):
         """
-        :type query: dict[str,str|float|datacube.model.Range]
+        Perform a search, returning results as Dataset objects.
+
+        :param dict[str,str|float|datacube.model.Range] query:
         :rtype: list[datacube.model.Dataset]
         """
         return list(self.search(**query))

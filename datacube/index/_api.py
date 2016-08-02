@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Access methods for indexing datasets & storage units.
+Access methods for indexing datasets & products.
 """
 from __future__ import absolute_import
 
