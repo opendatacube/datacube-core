@@ -622,21 +622,18 @@ class PostgresDb(object):
         type_id = res.inserted_primary_key[0]
         record = self.get_metadata_type(type_id)
 
-        # Initialise search fields.
-        _setup_collection_fields(
-            self._connection, name, self.get_dataset_fields(record),
-            where_expression=and_(DATASET.c.archived == None, DATASET.c.metadata_type_ref == type_id),
-            concurrently=concurrently
+        self._setup_metadata_type_fields(
+            type_id, name, record, concurrently=concurrently
         )
 
     def check_dynamic_fields(self, concurrently=False, rebuild_all=False):
         _LOG.info('Checking dynamic views/indexes. (rebuild all = %s)', rebuild_all)
         for metadata_type in self.get_all_metadata_types():
-            _setup_collection_fields(
-                self._connection, metadata_type['name'], self.get_dataset_fields(metadata_type),
-                where_expression=and_(DATASET.c.archived == None, DATASET.c.metadata_type_ref == metadata_type['id']),
-                concurrently=concurrently,
-                replace_existing=rebuild_all
+            self._setup_metadata_type_fields(
+                metadata_type['id'],
+                metadata_type['name'],
+                metadata_type,
+                rebuild_all, concurrently
             )
 
         for dataset_type in self.get_all_dataset_types():
@@ -649,50 +646,20 @@ class PostgresDb(object):
                 concurrently
             )
 
+    def _setup_metadata_type_fields(self, id_, name, record, rebuild_all=False, concurrently=True):
+        fields = self.get_dataset_fields(record)
+        dataset_filter = and_(DATASET.c.archived == None, DATASET.c.metadata_type_ref == id_)
+        _check_dynamic_fields(self._connection, concurrently, dataset_filter,
+                              (), fields, name, rebuild_all)
+
     def _setup_dataset_type_fields(self, id_, name, metadata_type_id, metadata_doc,
                                    rebuild_all=False, concurrently=True):
         fields = self.get_dataset_fields(self.get_metadata_type(metadata_type_id))
-        fixed_field_names = tuple(self._get_active_field_names(metadata_type_id, metadata_doc))
-        index_filter = and_(DATASET.c.archived == None, DATASET.c.dataset_type_ref == id_)
-        _setup_collection_fields(
-            self._connection, name,
-            fields,
-            where_expression=index_filter,
-            exclude_field_names=fixed_field_names,
-            concurrently=concurrently,
-            replace_existing=rebuild_all
-        )
+        dataset_filter = and_(DATASET.c.archived == None, DATASET.c.dataset_type_ref == id_)
+        excluded_field_names = tuple(self._get_active_field_names(metadata_type_id, metadata_doc))
 
-        # If this type has time/space fields, create composite indexes (as they are often searched together)
-        self._ensure_composite_index(name, ('lat', 'lon', 'time'), fields, index_filter, concurrently=concurrently)
-        self._ensure_composite_index(name, ('time', 'lat', 'lon'), fields, index_filter, concurrently=concurrently)
-
-    def _ensure_composite_index(self, type_name, field_names, available_fields, where_clause,
-                                concurrently=True, pg_index_type='gist'):
-        """
-        Create a composite index for the given field names if one does not exist and all fields are available.
-        """
-        parsed_fields = [available_fields.get(name) for name in field_names]
-        if not all(parsed_fields):
-            _LOG.debug('Skipping composite index %r: Product does not have all fields.', field_names)
-            return
-
-        index_name = 'dix_{prefix}_c_{field_name}'.format(
-            prefix=type_name.lower(),
-            field_name='_'.join(field_names)
-        )
-        index = Index(
-            index_name,
-            *(f.alchemy_expression for f in parsed_fields),
-            postgresql_where=where_clause,
-            postgresql_using=pg_index_type,
-            postgresql_concurrently=concurrently
-        )
-        conn = self._connection
-        exists = _pg_exists(conn, tables.schema_qualified(index_name))
-        if not exists:
-            _LOG.info('Creating index: %s', index_name)
-            index.create(conn)
+        _check_dynamic_fields(self._connection, concurrently, dataset_filter,
+                              excluded_field_names, fields, name, rebuild_all)
 
     def _get_active_field_names(self, metadata_type_id, metadata_doc):
         fields = self.get_dataset_fields(self.get_metadata_type(metadata_type_id))
@@ -804,68 +771,126 @@ def _pg_exists(conn, name):
     return conn.execute("SELECT to_regclass(%s)", name).scalar() is not None
 
 
-def _setup_collection_fields(conn, collection_prefix, fields, where_expression,
-                             exclude_field_names=(),
-                             concurrently=False, replace_existing=False):
+def contains_all(d_, *keys):
     """
-    Create indexes and views for a collection's search fields.
-    """
-    name = collection_prefix.lower()
+    Does the dictionary have values for all of the given keys?
 
-    # Create indexes for the search fields.
+    >>> contains_all({'a': 4}, 'a')
+    True
+    >>> contains_all({'a': 4, 'b': 5}, 'a', 'b')
+    True
+    >>> contains_all({'b': 5}, 'a')
+    False
+    """
+    return all([d_.get(key) for key in keys])
+
+
+def _check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_names, fields, name, rebuild_all):
+    """
+    Check that we have expected indexes and views for the given fields
+    """
+    # If type has both lat/lon fields we'll create a composite index instead.
+    if ('lat' in fields) and ('lon' in fields):
+        excluded_field_names += ('lat', 'lon', 'time')
+
+    # Create indexes for the individual fields.
     for field in fields.values():
-        is_excluded = (field.name in exclude_field_names)
-        if field.postgres_index_type:
-            # Our normal indexes start with "ix_", dynamic indexes with "dix_"
-            index_name = 'dix_{prefix}_{field_name}'.format(
-                prefix=name.lower(),
-                field_name=field.name.lower()
-            )
-            # Previous naming scheme
-            legacy_name = 'dix_field_{prefix}_dataset_{field_name}'.format(
-                prefix=name.lower(),
-                field_name=field.name.lower()
-            )
-            index = Index(
-                index_name,
-                field.alchemy_expression,
-                postgresql_where=where_expression,
-                postgresql_using=field.postgres_index_type,
-                # Don't lock the table (in the future we'll allow indexing new fields...)
-                postgresql_concurrently=concurrently
-            )
-            exists = _pg_exists(conn, tables.schema_qualified(index_name))
-            legacy_exists = _pg_exists(conn, tables.schema_qualified(legacy_name))
+        if not field.postgres_index_type:
+            continue
+        _check_field_index(
+            conn, [field],
+            name, dataset_filter,
+            should_exist=(field.name not in excluded_field_names),
+            concurrently=concurrently,
+            replace_existing=rebuild_all,
+        )
+    # A view of all fields
+    _ensure_view(conn, fields, name, rebuild_all, dataset_filter)
 
-            # This currently leaves a window of time without indexes: it's primarily intended for development.
-            if replace_existing or is_excluded:
-                if exists:
-                    _LOG.debug('Dropping index: %s (replace=%r)', index_name, replace_existing)
-                    index.drop(conn)
-                    exists = False
-                if legacy_exists:
-                    _LOG.debug('Dropping legacy index: %s (replace=%r)', legacy_name, replace_existing)
-                    Index(legacy_name, field.alchemy_expression).drop(conn)
-                    legacy_exists = False
+    # If this type has time/space fields, create composite indexes (as they are often searched together)
+    def _check_composite(*field_names):
+        _check_field_index(
+            conn,
+            [fields.get(f) for f in field_names],
+            name, dataset_filter,
+            concurrently=concurrently,
+            replace_existing=rebuild_all,
+            index_type='gist'
+        )
 
-            if not (exists or legacy_exists):
-                if not is_excluded:
-                    _LOG.info('Creating index: %s', index_name)
-                    index.create(conn)
-            else:
-                _LOG.debug('Index exists: %s  (replace=%r)', index_name, replace_existing)
+    if contains_all(fields, 'lat', 'lon', 'time'):
+        _check_composite('lat', 'lon', 'time')
+        _check_composite('time', 'lat', 'lon', )
+    elif contains_all(fields, 'lat', 'lon'):
+        _check_composite('lat', 'lon')
 
+
+def _check_field_index(conn, fields, name_prefix, filter_expression,
+                       should_exist=True, concurrently=False,
+                       replace_existing=False, index_type=None):
+    """
+    Check the status of a given index: add or remove it as needed
+    """
+    if index_type is None:
+        if len(fields) > 1:
+            raise ValueError('Must specify index type for composite indexes.')
+        index_type = fields[0].postgres_index_type
+
+    field_name = '_'.join([f.name.lower() for f in fields])
+    # Our normal indexes start with "ix_", dynamic indexes with "dix_"
+    index_name = 'dix_{prefix}_{field_name}'.format(
+        prefix=name_prefix.lower(),
+        field_name=field_name
+    )
+    # Previous naming scheme
+    legacy_name = 'dix_field_{prefix}_dataset_{field_name}'.format(
+        prefix=name_prefix.lower(),
+        field_name=field_name,
+    )
+    indexed_expressions = [f.alchemy_expression for f in fields]
+    index = Index(
+        index_name,
+        *indexed_expressions,
+        postgresql_where=filter_expression,
+        postgresql_using=index_type,
+        # Don't lock the table (in the future we'll allow indexing new fields...)
+        postgresql_concurrently=concurrently
+    )
+    exists = _pg_exists(conn, tables.schema_qualified(index_name))
+    legacy_exists = _pg_exists(conn, tables.schema_qualified(legacy_name))
+
+    # This currently leaves a window of time without indexes: it's primarily intended for development.
+    if replace_existing or (not should_exist):
+        if exists:
+            _LOG.debug('Dropping index: %s (replace=%r)', index_name, replace_existing)
+            index.drop(conn)
+            exists = False
+        if legacy_exists:
+            _LOG.debug('Dropping legacy index: %s (replace=%r)', legacy_name, replace_existing)
+            Index(legacy_name, *indexed_expressions).drop(conn)
+            legacy_exists = False
+
+    if should_exist:
+        if not (exists or legacy_exists):
+            _LOG.info('Creating index: %s', index_name)
+            index.create(conn)
+        else:
+            _LOG.debug('Index exists: %s  (replace=%r)', index_name, replace_existing)
+
+
+def _ensure_view(conn, fields, name, replace_existing, where_expression):
+    """
+    Ensure a view exists for the given fields
+    """
     # Create a view of search fields (for debugging convenience).
     # 'dv_' prefix: dynamic view. To distinguish from views that are created as part of the schema itself.
     view_name = tables.schema_qualified('dv_{}_dataset'.format(name))
     exists = _pg_exists(conn, view_name)
-
     # This currently leaves a window of time without the views: it's primarily intended for development.
     if exists and replace_existing:
         _LOG.debug('Dropping view: %s (replace=%r)', view_name, replace_existing)
         conn.execute('drop view %s' % view_name)
         exists = False
-
     if not exists:
         _LOG.debug('Creating view: %s', view_name)
         conn.execute(
@@ -880,7 +905,6 @@ def _setup_collection_fields(conn, collection_prefix, fields, where_expression,
         )
     else:
         _LOG.debug('View exists: %s (replace=%r)', view_name, replace_existing)
-
     legacy_name = tables.schema_qualified('{}_dataset'.format(name))
     if _pg_exists(conn, legacy_name):
         _LOG.debug('Dropping legacy view: %s', legacy_name)

@@ -78,8 +78,13 @@ def test_dataset_indexes_views_exist(db, ls5_nbar_gtiff_type):
 def test_dataset_conposit_indexes_exist(db, ls5_nbar_gtiff_type):
     # This type has fields named lat/lon/time, so composite indexes should now exist for them:
     # (following the naming conventions)
-    assert _object_exists(db, "dix_ls5_nbart_p54_gtiff_c_time_lat_lon")
-    assert _object_exists(db, "dix_ls5_nbart_p54_gtiff_c_lat_lon_time")
+    assert _object_exists(db, "dix_ls5_nbart_p54_gtiff_time_lat_lon")
+    assert _object_exists(db, "dix_ls5_nbart_p54_gtiff_lat_lon_time")
+
+    # But no individual field indexes for these
+    assert not _object_exists(db, "dix_ls5_nbart_p54_gtiff_lat")
+    assert not _object_exists(db, "dix_ls5_nbart_p54_gtiff_lon")
+    assert not _object_exists(db, "dix_ls5_nbart_p54_gtiff_time")
 
 
 def _object_exists(db, index_name):
