@@ -117,6 +117,7 @@ class Dataset(object):
     @property
     def measurements(self):
         # It's an optional field in documents.
+        # Dictionary of key -> measurement descriptor
         if not hasattr(self.metadata, 'measurements'):
             return {}
         return self.metadata.measurements
@@ -207,6 +208,17 @@ def schema_validated(schema):
         return cls
 
     return decorate
+
+
+class Measurement(object):
+    def __init__(self, measurement_dict):
+        self.name = measurement_dict['name']
+        self.dtype = measurement_dict['dtype']
+        self.nodata = measurement_dict['nodata']
+        self.units = measurement_dict['units']
+        self.aliases = measurement_dict['aliases']
+        self.spectral_definition = measurement_dict['spectral_definition']
+        self.flags_definition = measurement_dict['flags_definition']
 
 
 @schema_validated('metadata-type-schema.yaml')
@@ -378,7 +390,30 @@ class GeoPolygon(object):
 
 
 class FlagsDefinition(object):
-    pass
+    def __init__(self, flags_def_dict):
+        self.flags_def_dict = flags_def_dict
+
+        # blue_saturated:
+        #   bits: 0
+        #   description: Blue band is saturated
+        #   values: {0: true, 1: false}
+        # green_saturated:
+        #   bits: 1
+        #   description: Green band is saturated
+        #   values: {0: true, 1: false}
+        # red_saturated:
+        #   bits: 2
+        #   description: Red band is saturated
+        #   values: {0: true, 1: false}
+        # nir_saturated:
+        #   bits: 3
+        #   description: NIR band is saturated
+        #   values: {0: true, 1: false}
+
+
+class SpectralDefinition(object):
+    def __init__(self, spec_def_dict):
+        self.spec_def_dict = spec_def_dict
 
 
 class CRSProjProxy(object):
