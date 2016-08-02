@@ -76,7 +76,7 @@ dataset:
         lat:
             description: Latitude range
 
-            type: float-range
+            type: double-range
             max_offset:
             - [extent, coord, ur, lat]
             - [extent, coord, lr, lat]
@@ -91,7 +91,7 @@ dataset:
         lon:
             description: Longitude range
 
-            type: float-range
+            type: double-range
             max_offset:
             - [extent, coord, ul, lon]
             - [extent, coord, ur, lon]
@@ -120,11 +120,12 @@ dataset:
         orbit:
             description: Orbit number
             offset: [acquisition, platform_orbit]
+            type: integer
 
         sat_path:
             description: Landsat path
 
-            type: float-range
+            type: integer-range
             min_offset:
             - [image, satellite_ref_point_start, x]
             max_offset:
@@ -135,7 +136,7 @@ dataset:
         sat_row:
             description: Landsat row
 
-            type: float-range
+            type: integer-range
             min_offset:
             - [image, satellite_ref_point_start, y]
             max_offset:
@@ -224,3 +225,26 @@ dataset:
         orbit:
             description: Orbit number
             offset: [acquisition, platform_orbit]
+            type: integer
+
+        sat_path:
+            description: Landsat path
+
+            type: integer-range
+            min_offset:
+            - [image, satellite_ref_point_start, x]
+            max_offset:
+            - [image, satellite_ref_point_end, x]
+            # If an end is not specified, use the start.
+            - [image, satellite_ref_point_start, x]
+
+        sat_row:
+            description: Landsat row
+
+            type: integer-range
+            min_offset:
+            - [image, satellite_ref_point_start, y]
+            max_offset:
+            - [image, satellite_ref_point_end, y]
+            # If an end is not specified, use the start.
+            - [image, satellite_ref_point_start, y]

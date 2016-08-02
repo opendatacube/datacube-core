@@ -4,7 +4,7 @@ Module
 """
 from __future__ import absolute_import
 
-from datacube.index.postgres._fields import SimpleDocField, FloatRangeDocField, parse_fields
+from datacube.index.postgres._fields import SimpleDocField, NumericRangeDocField, parse_fields
 from datacube.index.postgres.tables import DATASET
 
 
@@ -43,7 +43,7 @@ def test_get_field():
     }, 2, DATASET.c.metadata)
     _assert_same(
         storage_fields['lat'],
-        FloatRangeDocField(
+        NumericRangeDocField(
             'lat', None,
             2,
             DATASET.c.metadata,

@@ -5,18 +5,21 @@ Build and index fields within documents.
 """
 from __future__ import absolute_import
 
-import functools
+from functools import partial
 
 from dateutil import tz
 from psycopg2.extras import NumericRange, DateTimeTZRange
 from sqlalchemy import cast
 from sqlalchemy import func
 from sqlalchemy.dialects import postgresql as postgres
+from sqlalchemy.dialects.postgresql import INT4RANGE
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
+from sqlalchemy.dialects.postgresql.base import DOUBLE_PRECISION
 
-from datacube.utils import get_doc_offset
-from datacube.model import Range
 from datacube.index.fields import Expression, Field
+from datacube.index.postgres.tables import FLOAT8RANGE
+from datacube.model import Range
+from datacube.utils import get_doc_offset
 
 
 class PgField(Field):
@@ -94,6 +97,12 @@ class SimpleDocField(PgField):
         # Default no cast: string
         return None
 
+    def from_string(self, s):
+        """
+        Parse the value from a string. May be overridden by subclasses.
+        """
+        return s
+
     @property
     def alchemy_expression(self):
         _field = self.alchemy_column[self.offset].astext
@@ -112,10 +121,32 @@ class SimpleDocField(PgField):
         raise NotImplementedError('Simple field between expression')
 
     def extract(self, document):
-        return get_doc_offset(self.offset, document)
+        v = get_doc_offset(self.offset, document)
+        if v is None:
+            return None
+
+        return self.from_string(v)
 
     def evaluate(self, ctx):
         return self.extract(ctx)
+
+
+class IntDocField(SimpleDocField):
+    @property
+    def alchemy_casted_type(self):
+        return postgres.INTEGER
+
+    def from_string(self, s):
+        return int(s)
+
+
+class DoubleDocField(SimpleDocField):
+    @property
+    def alchemy_casted_type(self):
+        return postgres.DOUBLE_PRECISION
+
+    def from_string(self, s):
+        return float(s)
 
 
 class RangeDocField(PgField):
@@ -183,14 +214,45 @@ class RangeDocField(PgField):
         return Range(min_val, max_val)
 
 
-class FloatRangeDocField(RangeDocField):
+class NumericRangeDocField(RangeDocField):
     def alchemy_parse_value(self, value):
         return cast(value, postgres.NUMERIC)
 
     @property
     def alchemy_create_range(self):
         # Call the postgres 'numrange()' function, hinting to SQLAlchemy that it returns a NUMRANGE.
-        return functools.partial(func.numrange, type_=NUMRANGE)
+        return partial(func.numrange, type_=NUMRANGE)
+
+    def between(self, low, high):
+        """
+        :rtype: Expression
+        """
+        return RangeBetweenExpression(self, low, high, _range_class=NumericRange)
+
+
+class IntRangeDocField(RangeDocField):
+    def alchemy_parse_value(self, value):
+        return cast(value, postgres.INTEGER)
+
+    @property
+    def alchemy_create_range(self):
+        return partial(func.numrange, type_=INT4RANGE)
+
+    def between(self, low, high):
+        """
+        :rtype: Expression
+        """
+        return RangeBetweenExpression(self, low, high, _range_class=NumericRange)
+
+
+
+class DoubleRangeDocField(RangeDocField):
+    def alchemy_parse_value(self, value):
+        return cast(value, DOUBLE_PRECISION)
+
+    @property
+    def alchemy_create_range(self):
+        return partial(func.agdc.float8range, type_=FLOAT8RANGE)
 
     def between(self, low, high):
         """
@@ -206,7 +268,7 @@ class DateRangeDocField(RangeDocField):
     @property
     def alchemy_create_range(self):
         # Call the postgres 'tstzrange()' function, hinting to SQLAlchemy that it returns a TSTZRANGE.
-        return functools.partial(func.tstzrange, type_=TSTZRANGE)
+        return partial(func.tstzrange, type_=TSTZRANGE)
 
     def _default_utc(self, d):
         if d.tzinfo is None:
@@ -306,14 +368,23 @@ def parse_fields(doc, metadata_type_id, table_column):
         :rtype: PgField
         """
         type_map = {
-            'float-range': FloatRangeDocField,
+            'numeric-range': NumericRangeDocField,
+            'double-range': DoubleRangeDocField,
+            'integer-range': IntRangeDocField,
             'datetime-range': DateRangeDocField,
-            'string': SimpleDocField
+            'string': SimpleDocField,
+            'integer': IntDocField,
+            'double': DoubleDocField,
+            # For backwards compatibility
+            'float-range': NumericRangeDocField,
         }
         type_name = descriptor.pop('type', 'string')
         description = descriptor.pop('description', None)
 
         field_class = type_map.get(type_name)
+        if not field_class:
+            raise ValueError(('Field %r has unknown type %r.'
+                              ' Available types are: %r') % (name, type_name, list(type_map.keys())))
         try:
             return field_class(name, description, metadata_type_id, column, **descriptor)
         except TypeError as e:

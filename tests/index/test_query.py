@@ -8,13 +8,13 @@ from psycopg2.extras import NumericRange
 
 from datacube.index.fields import to_expressions
 from datacube.index.postgres._fields import SimpleDocField, RangeBetweenExpression, EqualsExpression, \
-    FloatRangeDocField
+    NumericRangeDocField
 from datacube.model import Range
 from datacube.ui import parse_expressions
 
 _sat_field = SimpleDocField('platform', None, None, None)
 _sens_field = SimpleDocField('instrument', None, None, None)
-_lat_field = FloatRangeDocField('lat', None, None, None)
+_lat_field = NumericRangeDocField('lat', None, None, None)
 _fields = {
     'platform': _sat_field,
     'instrument': _sens_field,

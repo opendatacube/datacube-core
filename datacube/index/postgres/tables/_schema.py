@@ -11,7 +11,7 @@ from sqlalchemy import Table, Column, Integer, String, DateTime, Boolean
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.sql import func
 
-from . import _core
+from . import _core, _sql
 
 _LOG = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ METADATA_TYPE = Table(
 
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
-    Column('added_by', _core.PGNAME, server_default=func.current_user(), nullable=False),
+    Column('added_by', _sql.PGNAME, server_default=func.current_user(), nullable=False),
 
     # Name must be alphanumeric + underscores.
     CheckConstraint(r"name ~* '^\w+$'", name='alphanumeric_name'),
@@ -49,7 +49,7 @@ DATASET_TYPE = Table(
 
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
-    Column('added_by', _core.PGNAME, server_default=func.current_user(), nullable=False),
+    Column('added_by', _sql.PGNAME, server_default=func.current_user(), nullable=False),
 
     # Name must be alphanumeric + underscores.
     CheckConstraint(r"name ~* '^\w+$'", name='alphanumeric_name'),
@@ -69,7 +69,7 @@ DATASET = Table(
 
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
-    Column('added_by', _core.PGNAME, server_default=func.current_user(), nullable=False),
+    Column('added_by', _sql.PGNAME, server_default=func.current_user(), nullable=False),
 )
 
 DATASET_LOCATION = Table(
@@ -89,7 +89,7 @@ DATASET_LOCATION = Table(
 
     # When it was added and by whom.
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
-    Column('added_by', _core.PGNAME, server_default=func.current_user(), nullable=False),
+    Column('added_by', _sql.PGNAME, server_default=func.current_user(), nullable=False),
 
     UniqueConstraint('dataset_ref', 'uri_scheme', 'uri_body'),
 )

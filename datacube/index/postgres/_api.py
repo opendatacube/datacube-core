@@ -830,7 +830,6 @@ def _check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_nam
             )
 
 
-
 def _check_field_index(conn, fields, name_prefix, filter_expression,
                        should_exist=True, concurrently=False,
                        replace_existing=False, index_type=None):

@@ -6,12 +6,10 @@ from __future__ import absolute_import
 
 import logging
 
-import sqlalchemy.sql.sqltypes
-from sqlalchemy import MetaData, TIMESTAMP
-from sqlalchemy.ext.compiler import compiles
+from sqlalchemy import MetaData
 from sqlalchemy.schema import CreateSchema
-from sqlalchemy.sql.expression import Executable, ClauseElement
-from sqlalchemy.sql.functions import GenericFunction
+
+from ._sql import TYPES_INIT_SQL
 
 USER_ROLES = ('agdc_user', 'agdc_ingest', 'agdc_manage', 'agdc_admin')
 
@@ -71,7 +69,7 @@ def ensure_db(engine, with_permissions=True):
             _LOG.info('Creating schema.')
             c.execute(CreateSchema(SCHEMA_NAME))
             _LOG.info('Creating tables.')
-            c.execute(_FUNCTIONS)
+            c.execute(TYPES_INIT_SQL)
             METADATA.create_all(c)
             c.execute('commit')
         except:
@@ -152,6 +150,9 @@ def update_schema(engine):
         """)
         _LOG.info('Completed surrogate-key update')
 
+    if not engine.execute("SELECT 1 FROM pg_type WHERE typname = 'float8range'").scalar():
+        engine.execute(TYPES_INIT_SQL)
+
 
 def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=False):
     if has_role(engine, name):
@@ -201,45 +202,3 @@ def has_schema(engine, connection):
 
 def drop_db(connection):
     connection.execute('drop schema if exists %s cascade;' % SCHEMA_NAME)
-
-
-class CreateView(Executable, ClauseElement):
-    def __init__(self, name, select):
-        self.name = name
-        self.select = select
-
-
-@compiles(CreateView)
-def visit_create_view(element, compiler, **kw):
-    return "CREATE VIEW %s AS %s" % (
-        element.name,
-        compiler.process(element.select, literal_binds=True)
-    )
-
-
-_FUNCTIONS = """
-create or replace function {schema}.common_timestamp(text)
-returns timestamp with time zone as $$
-select ($1)::timestamp at time zone 'utc';
-$$ language sql immutable returns null on null input;
-""".format(schema=SCHEMA_NAME)
-
-
-# Register the function with SQLAlchemhy.
-# pylint: disable=too-many-ancestors
-class CommonTimestamp(GenericFunction):
-    type = TIMESTAMP(timezone=True)
-    package = 'agdc'
-    identifier = 'common_timestamp'
-
-    name = '%s.common_timestamp' % SCHEMA_NAME
-
-
-class PGNAME(sqlalchemy.sql.sqltypes.Text):
-    """Postgres 'NAME' type."""
-    __visit_name__ = 'NAME'
-
-
-@compiles(PGNAME)
-def visit_name(element, compiler, **kw):
-    return "NAME"
