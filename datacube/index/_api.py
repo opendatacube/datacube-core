@@ -44,6 +44,12 @@ class Index(object):
     You can close idle connections before forking by calling close(), provided you know no other connections are active.
     Or else use a separate instance of this class in each process.
 
+    :ivar datacube.index._datasets.DatasetResource datasets: store and retrieve :class:`datacube.model.Dataset`
+    :ivar datacube.index._datasets.DatasetTypeResource products: store and retrieve :class:`datacube.model.DatasetType`\
+    (should really be called Product)
+    :ivar datacube.index._datasets.MetadataTypeResource metadata_types: store and retrieve \
+    :class:`datacube.model.MetadataType`
+
     :type datasets: datacube.index._datasets.DatasetResource
     :type products: datacube.index._datasets.DatasetTypeResource
     :type metadata_types: datacube.index._datasets.MetadataTypeResource
