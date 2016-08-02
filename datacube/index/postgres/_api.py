@@ -789,9 +789,20 @@ def _check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_nam
     """
     Check that we have expected indexes and views for the given fields
     """
-    # If type has both lat/lon fields we'll create a composite index instead.
-    if ('lat' in fields) and ('lon' in fields):
-        excluded_field_names += ('lat', 'lon', 'time')
+
+    # If this type has time/space fields, create composite indexes (as they are often searched together)
+    # We will probably move these into product configuration in the future.
+    composite_indexes = (
+        ('lat', 'lon', 'time'),
+        ('time', 'lat', 'lon'),
+        ('sat_path', 'sat_row', 'time')
+    )
+
+    for field_composite in composite_indexes:
+        # If all of the fields are available in this product, we'll create a composite index
+        # for them instead of individual indexes.
+        if contains_all(fields, *field_composite):
+            excluded_field_names += field_composite
 
     # Create indexes for the individual fields.
     for field in fields.values():
@@ -807,22 +818,17 @@ def _check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_nam
     # A view of all fields
     _ensure_view(conn, fields, name, rebuild_all, dataset_filter)
 
-    # If this type has time/space fields, create composite indexes (as they are often searched together)
-    def _check_composite(*field_names):
-        _check_field_index(
-            conn,
-            [fields.get(f) for f in field_names],
-            name, dataset_filter,
-            concurrently=concurrently,
-            replace_existing=rebuild_all,
-            index_type='gist'
-        )
+    for field_composite in composite_indexes:
+        if contains_all(fields, *field_composite):
+            _check_field_index(
+                conn,
+                [fields.get(f) for f in field_composite],
+                name, dataset_filter,
+                concurrently=concurrently,
+                replace_existing=rebuild_all,
+                index_type='gist'
+            )
 
-    if contains_all(fields, 'lat', 'lon', 'time'):
-        _check_composite('lat', 'lon', 'time')
-        _check_composite('time', 'lat', 'lon', )
-    elif contains_all(fields, 'lat', 'lon'):
-        _check_composite('lat', 'lon')
 
 
 def _check_field_index(conn, fields, name_prefix, filter_expression,

@@ -65,7 +65,7 @@ def test_dataset_indexes_views_exist(db, ls5_nbar_gtiff_type):
     assert ls5_nbar_gtiff_type.name == 'ls5_nbart_p54_gtiff'
 
     # Ensure field indexes were created for the dataset type (following the naming conventions):
-    assert _object_exists(db, "dix_ls5_nbart_p54_gtiff_sat_path")
+    assert _object_exists(db, "dix_ls5_nbart_p54_gtiff_orbit")
 
     # Ensure it does not create a 'platform' index, because that's a fixed field
     # (ie. identical in every dataset of the type)
