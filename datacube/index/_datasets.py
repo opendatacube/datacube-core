@@ -117,7 +117,9 @@ class DatasetTypeResource(object):
 
     def from_doc(self, definition):
         """
-        :type definition: dict
+        Create a Product from its definitions
+
+        :param dict definition: product definition document
         :rtype: datacube.model.DatasetType
         """
         # This column duplication is getting out of hand:
@@ -140,7 +142,9 @@ class DatasetTypeResource(object):
 
     def add(self, type_):
         """
-        :type type_: datacube.model.DatasetType
+        Add a Product
+
+        :param datacube.model.DatasetType type_: Product to add
         :rtype: datacube.model.DatasetType
         """
         DatasetType.validate(type_.definition)
@@ -165,7 +169,9 @@ class DatasetTypeResource(object):
 
     def add_document(self, definition):
         """
-        :type definition: dict
+        Add a Product using its difinition
+
+        :param dict definition: product definition document
         :rtype: datacube.model.DatasetType
         """
         type_ = self.from_doc(definition)
@@ -177,10 +183,12 @@ class DatasetTypeResource(object):
         """
         for definition in definitions:
             self.add_document(definition)
-
     @lru_cache()
     def get(self, id_):
         """
+        Retrieve Product by id
+
+        :param int id_: id of the Product
         :rtype datacube.model.DatasetType
         """
         return self._make(self._db.get_dataset_type(id_))
@@ -188,6 +196,9 @@ class DatasetTypeResource(object):
     @lru_cache()
     def get_by_name(self, name):
         """
+        Retrieve Product by name
+
+        :param str name: name of the Product
         :rtype datacube.model.DatasetType
         """
         result = self._db.get_dataset_type_by_name(name)
@@ -198,7 +209,7 @@ class DatasetTypeResource(object):
     def get_with_fields(self, field_names):
         """
         Return dataset types that have all the given fields.
-        :type field_names: tuple[str]
+        :param tuple[str] field_names:
         :rtype: __generator[DatasetType]
         """
         for type_ in self.get_all():
@@ -211,7 +222,8 @@ class DatasetTypeResource(object):
     def search(self, **query):
         """
         Return dataset types that have all the given fields.
-        :type query: dict
+
+        :param dict query:
         :rtype: __generator[DatasetType]
         """
         for type_, q in self.search_robust(**query):
@@ -221,8 +233,9 @@ class DatasetTypeResource(object):
     def search_robust(self, **query):
         """
         Return dataset types that match match-able fields and dict of remaining un-matchable fields.
-        :type query: dict
-        :rtype: __generator[DatasetType, dict]
+
+        :param dict query:
+        :rtype: __generator[(DatasetType, dict)]
         """
         for type_ in self.get_all():
             q = query.copy()
@@ -249,6 +262,8 @@ class DatasetTypeResource(object):
 
     def get_all(self):
         """
+        Retrieve all Products
+
         :rtype: iter[datacube.model.DatasetType]
         """
         return (self._make(record) for record in self._db.get_all_dataset_types())
@@ -285,6 +300,7 @@ class DatasetResource(object):
         """
         Get dataset by id
 
+        :param uuid id_: id of the dataset to retrieve
         :param include_sources: get the full provenance graph?
         :rtype: datacube.model.Dataset
         """
@@ -316,7 +332,7 @@ class DatasetResource(object):
         """
         Have we already indexed this dataset?
 
-        :type dataset: datacube.model.Dataset
+        :param datacube.model.Dataset dataset: dataset to check
         :rtype: bool
         """
         return self._db.contains_dataset(dataset.id)
@@ -325,8 +341,8 @@ class DatasetResource(object):
         """
         Ensure a dataset is in the index. Add it if not present.
 
-        :type dataset: datacube.model.Dataset
-        :param bool skip_sources: use when sources are already indexed
+        :param datacube.model.Dataset dataset: dataset to add
+        :param bool skip_sources: don't attempt to index source (use when sources are already indexed)
         :rtype: datacube.model.Dataset
         """
         if not skip_sources:
@@ -394,7 +410,7 @@ class DatasetResource(object):
 
     def get_field_names(self, type_name=None):
         """
-        :type type_name: str
+        :param str type_name:
         :rtype: __generator[str]
         """
         if type_name is None:
@@ -408,7 +424,7 @@ class DatasetResource(object):
 
     def get_locations(self, dataset):
         """
-        :type dataset: datacube.model.Dataset
+        :param datacube.model.Dataset dataset: dataset
         :rtype: list[str]
         """
         return self._db.get_locations(dataset.id)
