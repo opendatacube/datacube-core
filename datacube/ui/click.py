@@ -15,6 +15,7 @@ import click
 from datacube import config, __version__
 from datacube.executor import get_executor
 from datacube.index import index_connect
+from pathlib import Path
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 _LOG_FORMAT_STRING = '%(asctime)s %(levelname)s %(message)s'
@@ -238,3 +239,10 @@ def handle_exception(msg, e):
         else:
             click.echo(msg)
         ctx.exit(1)
+
+
+def to_pathlib(ctx, param, value):
+    if value:
+        return Path(value)
+    else:
+        return None

@@ -1,11 +1,9 @@
-
 from __future__ import absolute_import, print_function
 
 import click
 import numpy
 from datetime import datetime
-from pathlib import Path
-from itertools import product
+from itertools import product, repeat
 
 from pandas import to_datetime
 
@@ -13,6 +11,7 @@ from datacube.api import make_mask
 from datacube.model import GridSpec, CRS, Coordinate, Variable
 from datacube.api.grid_workflow import GridWorkflow
 from datacube.ui import click as ui
+from datacube.ui.click import to_pathlib
 from datacube.utils import read_documents
 from datacube.storage.storage import create_netcdf_storage_unit
 
@@ -35,7 +34,7 @@ def _tuplify(keys, values, defaults):
 
 
 def _slicify(step, size):
-    return (slice(i, min(i+step, size)) for i in range(0, size, step))
+    return (slice(i, min(i + step, size)) for i in range(0, size, step))
 
 
 def block_iter(steps, shape):
@@ -51,7 +50,7 @@ def tile_dims(tile):
 def tile_shape(tile):
     sources = tile['sources']
     geobox = tile['geobox']
-    return sources.shape+geobox.shape
+    return sources.shape + geobox.shape
 
 
 def slice_tile(tile, chunk):
@@ -151,30 +150,30 @@ def make_tasks(index, config):
         masks = [workflow.list_cells(product=mask['product'], cell_index=(15, -40), **query)
                  for mask in source['masks']]
 
-        tasks = [{
-            'source': source,
-            'index': key,
-            'data': data[key],
-            'masks': [mask[key] for mask in masks]
-        } for key in data.keys()]
-
-    return tasks
+        for key in data.keys():
+            yield {
+                'source': source,
+                'index': key,
+                'data': data[key],
+                'masks': [mask[key] for mask in masks]
+            }
 
 
 @click.command(name='stats')
 @click.option('--app-config', '-c',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
-              help='configuration file location')
+              help='configuration file location', callback=to_pathlib)
 @click.option('--year', type=click.IntRange(1960, 2060))
 @ui.global_cli_options
 @ui.executor_cli_options
 @ui.pass_index(app_name='agdc-stats')
 def main(index, app_config, year, executor):
-    _, config = next(read_documents(Path(app_config)))
+    _, config = next(read_documents(app_config))
 
     tasks = make_tasks(index, config)
 
     futures = [executor.submit(do_stats, task, config) for task in tasks]
+
     for future in executor.as_completed(futures):
         result = executor.result(future)
         print(result)
