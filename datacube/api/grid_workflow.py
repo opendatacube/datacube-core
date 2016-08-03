@@ -46,7 +46,7 @@ class GridWorkflow(object):
         .. seealso::
             :meth:`datacube.Datacube.product_observations`
 
-            :py:class:`datacube.api.query.Query`
+            :class:`datacube.api.query.Query`
         """
         if cell_index:
             assert isinstance(cell_index, tuple)
@@ -148,7 +148,7 @@ class GridWorkflow(object):
 
     def list_cells(self, cell_index=None, **query):
         """
-        List cell that match the query.
+        List cells that match the query.
 
         Cells are included if they contain any datasets that match the query using the same format as
         :meth:`datacube.Datacube.load`.
@@ -236,7 +236,7 @@ class GridWorkflow(object):
         return dataset
 
     def __str__(self):
-        return "GridWorkflow<index={!r},\n\tgridspec={!r}>".format(self.grid_spec, self.index)
+        return "GridWorkflow<index={!r},\n\tgridspec={!r}>".format(self.index, self.grid_spec)
 
     def __repr__(self):
         return self.__str__()
