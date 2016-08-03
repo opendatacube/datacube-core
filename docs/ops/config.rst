@@ -19,7 +19,7 @@ description
 
 metadata
     Dictionary containing bits of metadata common to all the datasets in the product.
-    It is used during indexing (if `--auto-match` options is used) to match datasets to thier products.
+    It is used during indexing (if ``--auto-match`` options is used) to match datasets to thier products.
 
 storage (optional)
     Describes some of common storage attributes of all the datasets. While optional defining this will make
@@ -30,7 +30,7 @@ storage (optional)
 
     resolution
         Resolution of the data of all the datasets in the product specified in projection units.
-            - Use ``latitude`` and ``longitude`` if the projection is geographic, otherwise use ``x`` and ``y``
+        Use ``latitude``, ``longitude`` if the projection is geographic and ``x``, ``y`` otherwise
 
 measurements
     List of measurements in this product
@@ -42,7 +42,7 @@ measurements
          Units of the measurement
 
     dtype
-         Data type. One of (u)int(8,16,32,64), float32, float64
+         Data type. One of ``(u)int(8,16,32,64), float32, float64``
 
     nodata
          No data value
