@@ -34,7 +34,7 @@ _LOG = logging.getLogger(__name__)
 
 GroupBy = collections.namedtuple('GroupBy', ['dimension', 'group_by_func', 'units'])
 
-FLOAT_TOLERANCE = 0.0000001 # TODO: For DB query, use some sort of 'contains' query, rather than range overlap.
+FLOAT_TOLERANCE = 0.0000001  # TODO: For DB query, use some sort of 'contains' query, rather than range overlap.
 SPATIAL_KEYS = ('latitude', 'lat', 'y', 'longitude', 'lon', 'long', 'x')
 CRS_KEYS = ('crs', 'coordinate_reference_system')
 OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan', 'product', 'geopolygon', 'like')
@@ -44,11 +44,15 @@ class Query(object):
     def __init__(self, index=None, product=None, geopolygon=None, like=None, **kwargs):
         """Parses a kwarg dict for query parameters
 
-        :param index: An optional `index` object, if checking of field names is desired.
+        :param datacube.index._api.Index index: An optional `index` object, if checking of field names is desired.
+        :param str product: name of product
+        :param datacube.model.GeoPolygon geopolygon: spatial bounds of the search
+        :param xarray.Dataset like: spatio-temporal bounds of `like` are used for the search
         :param kwargs:
-         * `product` Name of the dataset type
-         * `crs` Spatial coordinate reference system to interpret the spatial dimensions
-        :return: :class:`Query`
+         * `measurements` - list of measurements to retrieve
+         * `latitude`, `lat`, `y`, `longitude`, `lon`, `long`, `x` - tuples (min, max) bounding spatial dimensions
+         * `crs` - spatial coordinate reference system to interpret the spatial bounds
+         * `group_by` - observation grouping method. One of 'time', 'solar_day'. Default is 'time'
         """
         self.product = product
         self.geopolygon = query_geopolygon(geopolygon=geopolygon, **kwargs) or query_geopolygon_like(like)
