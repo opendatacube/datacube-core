@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Reproject xarray.DatArray objects.
+Reproject :class:`xarray.DataArray` objects.
 
 Makes assumptions on the data that it matches certain NetCDF-CF criteria
 The CRS is stored as the 'spatial_ref' attribute of the 'crs' data variable
@@ -21,12 +21,14 @@ from rasterio import Affine
 import xarray as xr
 
 
-def reproject_like(src_data_array, like_data_array, resampling=Resampling.nearest,):
+def reproject_like(src_data_array, like_data_array, resampling=Resampling.nearest):
     """
-    Reprojects a DataArray object to match the resolution and projection of another DataArray.
+    Reproject a DataArray object to match the resolution and projection of another DataArray.
+
     Note: Only 2D arrays with dimensions named 'latitude'/'longitude' or 'x'/'y' are currently supported.
     Requires an attr 'spatial_ref' to be set containing a valid CRS.
     If using a WKT (e.g. from spatiareference.org), make sure it is an OGC WKT.
+
     :param src_data_array: a `xarray.DataArray` that will be reprojected
     :param like_data_array: a `xarray.DataArray` of the target resolution and projection
     :return: a `xarray.DataArray` containing the data from the src_data_array, reprojected to match like_data_array
@@ -61,7 +63,8 @@ def reproject_like(src_data_array, like_data_array, resampling=Resampling.neares
 def reproject(src_data_array, src_crs, dst_crs, resolution=None, resampling=Resampling.nearest,
               set_nan=False, copy_attrs=True):
     """
-    Reprojects a `xarray.DataArray` objects
+    Reproject :class:`xarray.DataArray` objects
+
     Note: Only 2D arrays with dimensions named 'latitude'/'longitude' or 'x'/'y' are currently supported.
     Requires an attr 'spatial_ref' to be set containing a valid CRS.
     If using a WKT (e.g. from spatiareference.org), make sure it is an OGC WKT.
@@ -83,7 +86,7 @@ def reproject(src_data_array, src_crs, dst_crs, resolution=None, resampling=Resa
         Note: this causes the data type to be cast to float.
     :param copy_attrs: Should the attributes be copied to the destination.
         Note: No attempt is made to update spatial attributes, e.g. spatial_ref, bounds, etc
-    :return: A reprojected `xarray.DataArray`
+    :return: A reprojected :class:`xarray.DataArray`
     """
     #TODO: Support lazy loading of data with dask imperative function
     src_data = np.copy(src_data_array.load().data)
@@ -114,7 +117,8 @@ def reproject(src_data_array, src_crs, dst_crs, resolution=None, resampling=Resa
 
 
 def append_solar_day(dataset, longitude=None):
-    """Appends a ``solar_day`` data variable on the given dataset.
+    """
+    Append a ``solar_day`` data variable on the given dataset.
 
     The resulting dataset could then have ``groupby`` operations performed on it, such as finding the max value for
     each day::
@@ -186,11 +190,11 @@ def _get_spatial_dims(data_array):
     else:
         raise KeyError
 
-    return (x_dim, y_dim)
+    return x_dim, y_dim
 
 
 def _get_bounds(data_array):
-    (x_dim, y_dim) = _get_spatial_dims(data_array)
+    x_dim, y_dim = _get_spatial_dims(data_array)
 
     left = float(data_array[x_dim][0])
     right = float(data_array[x_dim][-1])
@@ -233,10 +237,11 @@ def _warp_spatial_coords(data_array, affine, width, height):
     lr = affine * (width, height)
     x_coords = np.linspace(ul[0], lr[0], num=width)
     y_coords = np.linspace(ul[1], lr[1], num=height)
-    (x_dim, y_dim) = _get_spatial_dims(data_array)
+    x_dim, y_dim = _get_spatial_dims(data_array)
 
-    coords = {}
-    coords[x_dim] = x_coords
-    coords[y_dim] = y_coords
+    coords = {
+        x_dim: x_coords,
+        y_dim: y_coords
+    }
 
     return coords

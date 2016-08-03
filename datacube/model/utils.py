@@ -80,25 +80,23 @@ def geobox_info(extent, valid_data=None):
 
 
 def new_dataset_info():
-    doc = {
+    return {
         'id': str(uuid.uuid4()),
         'creation_dt': datetime.datetime.utcnow().isoformat(),
     }
-    return doc
 
 
 def band_info(band_names):
-    doc = {
+    return {
         'image': {
             'bands': {name: {'path': '', 'layer': name} for name in band_names}
         }
     }
-    return doc
 
 
 def time_info(time):
     time_str = to_datetime(time).isoformat()
-    doc = {
+    return {
         'extent': {
             'from_dt': time_str,
             'to_dt': time_str,
@@ -106,21 +104,19 @@ def time_info(time):
 
         }
     }
-    return doc
 
 
 def source_info(source_datasets):
-    doc = {
+    return {
         'lineage': {
             'source_datasets': {str(idx): dataset.metadata_doc for idx, dataset in enumerate(source_datasets)}
         }
     }
-    return doc
 
 
 def datasets_to_doc(output_datasets):
     """
-    Creates a yaml document version of every dataset
+    Create a yaml document version of every dataset
 
     :param output_datasets: An array of :class:`datacube.model.Dataset`
     :type output_datasets: :py:class:`xarray.DataArray`
@@ -135,7 +131,7 @@ def datasets_to_doc(output_datasets):
 
 def xr_iter(data_array):
     """
-    Iterates over every element in an xarray, returning::
+    Iterate over every element in an xarray, returning::
 
         * the numerical index eg ``(10, 1)``
         * the labeled index eg ``{'time': datetime(), 'band': 'red'}``
@@ -154,12 +150,13 @@ def xr_iter(data_array):
 
 def xr_apply(data_array, func, dtype):
     """
-    Applies a function to every element of an xarray
+    Apply a function to every element of a :class:`xarray.DataArray`
+
     :type data_array: xarray.DataArray
     :param func: function that takes a dict of labels and an element of the array,
         and returns a value of the given dtype
     :param dtype: The dtype of the returned array
-    :return: The array with output of the function for every element
+    :return: The array with output of the function for every element.
     :rtype: xarray.DataArray
     """
     data = numpy.empty(shape=data_array.shape, dtype=dtype)
@@ -171,16 +168,17 @@ def xr_apply(data_array, func, dtype):
 
 def make_dataset(dataset_type, sources, extent, center_time, valid_data=None, uri=None, app_info=None):
     """
-    Creates Datasets for the data
+    Create Dataset for the data
+
     :param DatasetType dataset_type:
     :param sources: source datasets of source datasets
-    :type sources: list[:py:class:`Dataset`]
+    :type sources: list[:class:`Dataset`]
     :param GeoPolygon extent: extent of the dataset
     :param GeoPolygon valid_data: extent of the valid data
     :param center_time: time of the central point of the dataset
     :param str uri: The uri of the dataset
     :param dict app_info: Additional metadata to be stored about the generation of the product
-    :rtype: :py:class:`dataset`
+    :rtype: class:`Dataset`
     """
     document = {}
     merge(document, dataset_type.metadata_doc)
