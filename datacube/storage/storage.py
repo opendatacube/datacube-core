@@ -142,7 +142,7 @@ class DatasetSource(object):
         self._bandinfo = dataset.type.measurements[measurement_id]
         self._descriptor = dataset.measurements[measurement_id]
         self.transform = None
-        self.crs = None
+        self.crs = dataset.crs
         self.dtype = None
         self.nodata = None
         self.format = dataset.format
@@ -178,7 +178,11 @@ class DatasetSource(object):
                         bandnumber = 1
 
                 self.transform = src.affine
-                self.crs = CRS(_rasterio_crs_wkt(src))
+
+                try:
+                    self.crs = CRS(_rasterio_crs_wkt(src))
+                except ValueError:
+                    pass
                 self.dtype = numpy.dtype(src.dtypes[0])
                 self.nodata = self.dtype.type(src.nodatavals[0] if src.nodatavals[0] is not None else
                                               self._bandinfo.get('nodata'))
