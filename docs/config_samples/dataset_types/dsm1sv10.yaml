@@ -16,7 +16,6 @@ storage:
     resolution:
         longitude: 0.000277777777780
         latitude: -0.000277777777780
-    dimension_order: ["time", "latitude", "longitude"]
 
 measurements:
       - name: elevation
