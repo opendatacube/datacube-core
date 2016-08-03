@@ -640,13 +640,12 @@ class GeoBox(object):
                    height=int(tile_size_y / abs(tile_res_y)))
 
     @classmethod
-    def from_geopolygon(cls, geopolygon, resolution, crs=None, align=True):
+    def from_geopolygon(cls, geopolygon, resolution, crs=None, align=None):
         """
         :type geopolygon: GeoPolygon
         :param resolution: (x_resolution, y_resolution)
         :param CRS crs: CRS to use, if different from the geopolygon
-        :param bool align: Should the geobox be aligned to pixels of the given resolution.
-                           This assumes an origin of (0,0).
+        :param (float,float) align: Alight geobox such that point 'align' lies on the pixel boundary.
         :rtype: GeoBox
         """
         # TODO: currently only flipped Y-axis data is supported
@@ -654,26 +653,26 @@ class GeoBox(object):
         assert resolution[1] > 0
         assert resolution[0] < 0
 
+        align = align or (0.0, 0.0)
+        assert 0.0 <= align[1] <= abs(resolution[1])
+        assert 0.0 <= align[0] <= abs(resolution[0])
+
         if crs is None:
             crs = geopolygon.crs
         else:
             geopolygon = geopolygon.to_crs(crs)
 
+        def align_pix(val, res, off):
+            return math.floor((val-off)/res) * res + off
+
         bounding_box = geopolygon.boundingbox
-        left, top = float(bounding_box.left), float(bounding_box.top)
-        if align:
-            left = math.floor(left / resolution[1]) * resolution[1]
-            top = math.floor(top / resolution[0]) * resolution[0]
+        left = align_pix(bounding_box.left, resolution[1], align[1])
+        top = align_pix(bounding_box.top, resolution[0], align[0])
         affine = (Affine.translation(left, top) * Affine.scale(resolution[1], resolution[0]))
-        right, bottom = float(bounding_box.right), float(bounding_box.bottom)
-        width, height = ~affine * (right, bottom)
-        if align:
-            width = math.ceil(width)
-            height = math.ceil(height)
         return GeoBox(crs=crs,
                       affine=affine,
-                      width=int(width),
-                      height=int(height))
+                      width=int(math.ceil((bounding_box.right-left)/resolution[1])),
+                      height=int(math.ceil((bounding_box.bottom-top)/resolution[0])))
 
     def __getitem__(self, item):
         indexes = [slice(index.start or 0, index.stop or size, index.step or 1)

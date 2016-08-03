@@ -137,7 +137,7 @@ class Datacube(object):
         return measurements
 
     def load(self, product=None, measurements=None, output_crs=None, resolution=None, stack=False, dask_chunks=None,
-             like=None, fuse_func=None, **query):
+             like=None, fuse_func=None, align=None, **query):
         """
         Loads data as an ``xarray`` object.
 
@@ -193,6 +193,8 @@ class Datacube(object):
             This includes the direction (as indicated by a positive or negative number).
             Typically when using most CRSs, the first number would be negative.
 
+        :param (float,float) align: Load data such that point 'align' lies on the pixel boundary. Default is (0,0)
+
         :param stack: The name of the new dimension used to stack the measurements.
             If provided, the data is returned as a ``DataArray`` rather than a ``Dataset``.
             If only one measurement is returned, the dimension name is not used and the dimension is dropped.
@@ -221,7 +223,7 @@ class Datacube(object):
         if not observations:
             return None if stack else xarray.Dataset()
 
-        geobox = self._get_geobox(observations, output_crs, resolution, **query)
+        geobox = self._get_geobox(observations, output_crs, resolution, align=align, **query)
 
         group_by = query_group_by(**query)
         sources = self.product_sources(observations, group_by.group_by_func, group_by.dimension, group_by.units)
@@ -243,11 +245,11 @@ class Datacube(object):
                                         var_dim_name=stack, fuse_func=fuse_func, dask_chunks=dask_chunks)
 
     @staticmethod
-    def _get_geobox(observations, output_crs=None, resolution=None, like=None, **query):
+    def _get_geobox(observations, output_crs=None, resolution=None, like=None, align=None, **query):
         crs = CRS(output_crs) if output_crs else query_crs_like(like) or get_crs(observations)
         geopolygon = query_geopolygon(**query) or query_geopolygon_like(like) or get_bounds(observations, crs)
         resolution = resolution or query_resolution_like(like) or get_resolution(observations)
-        geobox = GeoBox.from_geopolygon(geopolygon, resolution, crs)
+        geobox = GeoBox.from_geopolygon(geopolygon, resolution, crs, align)
         return geobox
 
     def _get_data_array(self, sources, geobox, measurements, var_dim_name='measurement',
