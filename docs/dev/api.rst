@@ -92,6 +92,20 @@ API for Analytics and Execution Engine
     API.get_data
 
 
+
+.. _query-class:
+
+Query Class
+-----------
+
+.. currentmodule:: datacube.api.query
+
+.. autosummary::
+   :toctree: generate/
+
+   Query
+
+
 User Configuration
 ------------------
 .. currentmodule:: datacube.config
