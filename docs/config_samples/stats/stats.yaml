@@ -15,6 +15,8 @@ epoch_duration: 1
 epoch_increment: 1
 seasons: [calendar_year]
 
+location: '/g/data/u46/users/gxr547/gregcube/data'
+
 storage:
   driver: NetCDF CF
 
@@ -29,12 +31,19 @@ storage:
       x: 200
       y: 200
       time: 1
+  dimension_order: [time, y, x]
 
 
 stats:
  - name: mean
    zlib: True
+   dtype: int16
+   nodata: -999
    fletcher32: True
+   file_path_template: 'STATS_MEAN/MEAN_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
  - name: median
    zlib: True
+   dtype: int16
+   nodata: -999
    fletcher32: True
+   file_path_template: 'STATS_MEDIAN/MEDIAN_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'

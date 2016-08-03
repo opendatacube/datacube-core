@@ -7,59 +7,26 @@ from datetime import datetime
 from pathlib import Path
 from itertools import product
 
+from pandas import to_datetime
+
 from datacube.api import make_mask
 from datacube.model import GridSpec, CRS, Coordinate, Variable
 from datacube.api.grid_workflow import GridWorkflow
 from datacube.ui import click as ui
 from datacube.utils import read_documents
-from datacube.storage import netcdf_writer
+from datacube.storage.storage import create_netcdf_storage_unit
 
 
-class StorageUnit(object):
-    def __init__(self, filename, crs, coordinates, variables, variable_params):
-        if filename.exists():
-            raise RuntimeError('Storage Unit already exists: %s' % filename)
+def nco_from_sources(sources, geobox, measurements, variable_params, filename):
+    coordinates = {name: Coordinate(coord.values, coord.units) for name, coord in sources.coords.items()}
+    coordinates.update(geobox.coordinates)
 
-        try:
-            filename.parent.mkdir(parents=True)
-        except OSError:
-            pass
+    variables = {variable['name']: Variable(numpy.dtype(variable['dtype']),
+                                            variable['nodata'],
+                                            sources.dims + geobox.dimensions,
+                                            variable['units']) for variable in measurements}
 
-        self._nco = netcdf_writer.create_netcdf(str(filename))
-
-        for name, coord in coordinates.items():
-            netcdf_writer.create_coordinate(self._nco, name, coord.labels, coord.units)
-
-        netcdf_writer.create_grid_mapping_variable(self._nco, crs)
-
-        for name, variable in variables.items():
-            var_params = variable_params.get(name, {})
-            data_var = netcdf_writer.create_variable(self._nco, name, variable, **var_params)
-
-    def __del__(self):
-        self._nco.close()
-
-    @classmethod
-    def from_sources(cls, sources, geobox, type_, variable_params, filename):
-        coordinates = {name: Coordinate(coord.values, coord.units) for name, coord in sources.coords.items()}
-        coordinates.update(geobox.coordinates)
-
-        variables = {name: Variable(numpy.dtype(variable['dtype']),
-                                    variable['nodata'],
-                                    type_.dimensions,
-                                    variable['units']) for name, variable in type_.measurements.items()}
-
-        return cls(filename, geobox.crs, coordinates, variables, variable_params)
-
-    def __setitem__(self, key, value):
-        for name, var in value.data_vars.items():
-            self.write_var(key, name, var)
-            # self._nco.sync()
-
-    def write_var(self, key, name, var):
-        dst = self._nco[name]
-        index = tuple(key.get(dim, slice(None)) for dim in dst.dimensions)
-        dst[index] = var.values
+    return create_netcdf_storage_unit(filename, geobox.crs, coordinates, variables, variable_params)
 
 
 def _tuplify(keys, values, defaults):
@@ -101,9 +68,49 @@ def tile_iter(tile, chunk):
     return block_iter(steps, tile_shape(tile))
 
 
+def get_variable_params(config):
+    chunking = config['storage']['chunking']
+    chunking = [chunking[dim] for dim in config['storage']['dimension_order']]
+
+    variable_params = {}
+    for mapping in config['stats']:
+        varname = mapping['name']
+        variable_params[varname] = {k: v for k, v in mapping.items() if k in {'zlib',
+                                                                              'complevel',
+                                                                              'shuffle',
+                                                                              'fletcher32',
+                                                                              'contiguous',
+                                                                              'attrs'}}
+        variable_params[varname]['chunksizes'] = chunking
+
+    return variable_params
+
+
+def get_filename(path_template, index, sources):
+    return Path(str(path_template).format(tile_index=index,
+                                          start_time=to_datetime(sources.time.values[0]).strftime('%Y%m%d%H%M%S%f'),
+                                          end_time=to_datetime(sources.time.values[-1]).strftime('%Y%m%d%H%M%S%f')))
+
+
 def do_stats(task, config):
     source = task['source']
     measurement = source['measurements'][0]
+    var_params = get_variable_params(config)
+
+    results = {}
+    for stat in config['stats']:
+        measurements = [{'name': measurement,
+                         'units': '1',  # TODO: where does this come from???
+                         'dtype': stat['dtype'],
+                         'nodata': stat['nodata']}]
+        results[stat['name']] = nco_from_sources(task['data']['sources'],
+                                                 task['data']['geobox'],
+                                                 measurements,
+                                                 {measurement: var_params[stat['name']]},
+                                                 get_filename(Path(config['location'],
+                                                                   stat['file_path_template']),
+                                                              task['index'],
+                                                              task['data']['sources']))
 
     for index in tile_iter(task['data'], {'x': 1000, 'y': 1000}):
         data = GridWorkflow.load(slice_tile(task['data'], index), measurements=[measurement])[measurement]
@@ -117,7 +124,12 @@ def do_stats(task, config):
             del mask
 
         for stat in config['stats']:
-            print(getattr(data, stat['name'])(dim='time'))
+            data_stats = getattr(data, stat['name'])(dim='time')
+            results[stat['name']][measurement][index][0] = data_stats
+            print(data_stats)
+
+    for nco in config['stats'].values:
+        nco.close()
 
 
 def get_grid_spec(config):
