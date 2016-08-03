@@ -85,6 +85,14 @@ task_app_options = dc_ui.compose(
 
 
 def task_app(make_config, make_tasks):
+    """
+    Create a `Task App` from a function
+
+    Decorates a function
+    :param make_config: callable(index, config, **query)
+    :param make_tasks: callable(index, config, **kwargs)
+    :return:
+    """
     def decorate(app_func):
         def with_app_args(index, app_config=None, load_tasks=None, save_tasks=None, *args, **kwargs):
             if (app_config is None) == (load_tasks is None):

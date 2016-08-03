@@ -3,9 +3,10 @@ from __future__ import absolute_import, print_function
 import click
 import numpy
 from datetime import datetime
-from itertools import product, repeat
+from itertools import product
 
 from pandas import to_datetime
+from pathlib import Path
 
 from datacube.api import make_mask
 from datacube.model import GridSpec, CRS, Coordinate, Variable
@@ -17,13 +18,15 @@ from datacube.storage.storage import create_netcdf_storage_unit
 
 
 def nco_from_sources(sources, geobox, measurements, variable_params, filename):
-    coordinates = {name: Coordinate(coord.values, coord.units) for name, coord in sources.coords.items()}
+    coordinates = {name: Coordinate(coord.values, coord.units)
+                   for name, coord in sources.coords.items()}
     coordinates.update(geobox.coordinates)
 
-    variables = {variable['name']: Variable(numpy.dtype(variable['dtype']),
-                                            variable['nodata'],
-                                            sources.dims + geobox.dimensions,
-                                            variable['units']) for variable in measurements}
+    variables = {variable['name']: Variable(dtype=numpy.dtype(variable['dtype']),
+                                            nodata=variable['nodata'],
+                                            dims=sources.dims + geobox.dimensions,
+                                            units=variable['units'])
+                 for variable in measurements}
 
     return create_netcdf_storage_unit(filename, geobox.crs, coordinates, variables, variable_params)
 
@@ -102,21 +105,23 @@ def do_stats(task, config):
                          'units': '1',  # TODO: where does this come from???
                          'dtype': stat['dtype'],
                          'nodata': stat['nodata']}]
+
+        output_filename = get_filename(config['location'],
+                                       stat['file_path_template'],
+                                       task['index'],
+                                       task['data']['sources'])
         results[stat['name']] = nco_from_sources(task['data']['sources'],
                                                  task['data']['geobox'],
                                                  measurements,
                                                  {measurement: var_params[stat['name']]},
-                                                 get_filename(Path(config['location'],
-                                                                   stat['file_path_template']),
-                                                              task['index'],
-                                                              task['data']['sources']))
+                                                 output_filename)
 
-    for index in tile_iter(task['data'], {'x': 1000, 'y': 1000}):
-        data = GridWorkflow.load(slice_tile(task['data'], index), measurements=[measurement])[measurement]
+    for tile_index in tile_iter(task['data'], {'x': 1000, 'y': 1000}):
+        data = GridWorkflow.load(slice_tile(task['data'], tile_index), measurements=[measurement])[measurement]
         data = data.where(data != data.attrs['nodata'])
 
         for spec, sources in zip(source['masks'], task['masks']):
-            mask = GridWorkflow.load(slice_tile(sources, index),
+            mask = GridWorkflow.load(slice_tile(sources, tile_index),
                                      measurements=[spec['measurement']])[spec['measurement']]
             mask = make_mask(mask, **spec['flags'])
             data = data.where(mask)
@@ -124,7 +129,7 @@ def do_stats(task, config):
 
         for stat in config['stats']:
             data_stats = getattr(data, stat['name'])(dim='time')
-            results[stat['name']][measurement][index][0] = data_stats
+            results[stat['name']][measurement][tile_index][0] = data_stats
             print(data_stats)
 
     for nco in config['stats'].values:
