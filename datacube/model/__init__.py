@@ -411,6 +411,17 @@ class CRS(object):
     True
     >>> CRS('EPSG:3577') == CRS('EPSG:4326')
     False
+    >>> CRS('blah')
+    Traceback (most recent call last):
+        ...
+    ValueError: Not a valid CRS: blah
+    >>> CRS('PROJCS["unnamed",\
+    ... GEOGCS["WGS 84", DATUM["WGS_1984", SPHEROID["WGS 84",6378137,298.257223563, AUTHORITY["EPSG","7030"]],\
+    ... AUTHORITY["EPSG","6326"]], PRIMEM["Greenwich",0, AUTHORITY["EPSG","8901"]],\
+    ... UNIT["degree",0.0174532925199433, AUTHORITY["EPSG","9122"]], AUTHORITY["EPSG","4326"]]]')
+    Traceback (most recent call last):
+        ...
+    ValueError: Not a valid CRS: ...
     """
 
     def __init__(self, crs_str):
@@ -419,7 +430,7 @@ class CRS(object):
         self.crs_str = crs_str
         self._crs = osr.SpatialReference()
         self._crs.SetFromUserInput(crs_str)
-        if self.geographic == self.projected:
+        if not self._crs.ExportToProj4() or self.geographic == self.projected:
             raise ValueError('Not a valid CRS: %s' % crs_str)
 
     def __getitem__(self, item):
