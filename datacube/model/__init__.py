@@ -419,6 +419,8 @@ class CRS(object):
         self.crs_str = crs_str
         self._crs = osr.SpatialReference()
         self._crs.SetFromUserInput(crs_str)
+        if self.geographic == self.projected:
+            raise ValueError('Not a valid CRS: %s' % crs_str)
 
     def __getitem__(self, item):
         return self._crs.GetAttrValue(item)
