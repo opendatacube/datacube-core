@@ -1,0 +1,486 @@
+#!/usr/bin/env python
+"""
+Interactive Pixel Drill for AGDCv2.
+
+"""
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+import matplotlib; matplotlib.use('TkAgg')
+
+import matplotlib.pyplot as plt
+import xarray.plot as xp
+import numpy as np
+import warnings
+import datacube
+import xarray
+import sys
+import os
+
+import Tkinter as tk
+
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg, ToolTip
+from datetime import datetime
+from os.path import join as pjoin
+
+# Set our plot parameters
+
+plt.rcParams.update({
+        'legend.fontsize': 8,
+        'legend.handlelength': 3,
+        'axes.titlesize': 9,
+        'axes.labelsize': 9,
+        'xtick.labelsize': 9,
+        'ytick.labelsize': 9,
+        'font.family': 'sans'})
+
+
+class Toolbar(NavigationToolbar2TkAgg):
+
+    def __init__(self, canvas, parent):
+        self.toolitems = (
+             ('Home', 'Reset original view', 'home', 'home'),
+             ('Back', 'Back to  previous view', 'back', 'back'),
+             ('Forward', 'Forward to next view', 'forward', 'forward'),
+             (None, None, None, None),
+             ('Pan', 'Pan axes with left mouse, zoom with right', 'move', 'pan'),
+             ('Zoom', 'Zoom to rectangle', 'zoom_to_rect', 'zoom'),
+             ('Subplots', 'Configure subplots', 'subplots', 'configure_subplots'),
+             (None, None, None, None),
+             ('Save', 'Save', 'filesave', 'save_figure'),
+           )
+        NavigationToolbar2TkAgg.__init__(self, canvas, parent)
+        self._init_toolbar()
+        self.configure(background='black')
+
+    def _Button(self, text, file, command, extension='.gif'):
+        b = tk.Button(master=self, text=text, padx=2, pady=2, command=command)
+        b.pack(side=tk.LEFT)
+        return b
+
+    def _init_toolbar(self):
+        xmin, xmax = self.canvas.figure.bbox.intervalx
+        height, width = 50, xmax-xmin
+        tk.Frame.__init__(self, master=self.window,
+                          width=int(width), height=int(height),
+                          borderwidth=2)
+
+        self.update()  # Make axes menu
+
+        for text, tooltip_text, image_file, callback in self.toolitems:
+            if text is None:
+                # spacer, unhandled in Tk
+                pass
+            else:
+                button = self._Button(text=text, file=image_file,
+                                      command=getattr(self, callback))
+                if tooltip_text is not None:
+                    ToolTip.createToolTip(button, tooltip_text)
+                button.configure(background='black', foreground='white')
+
+        self.message = tk.StringVar(master=self)
+        self._message_label = tk.Label(master=self, textvariable=self.message)
+        self._message_label.pack(side=tk.RIGHT)
+        self.pack(side=tk.BOTTOM, fill=tk.X)
+        self._message_label.configure(background='black', foreground='white')
+
+
+class Formatter:
+
+    def __init__(self, vi, names, data):
+        self.vi = vi
+        self.names = names
+        self.data = data
+
+    def __call__(self, x, y):
+        xi, yi = int(round(x,0)), int(round(y,0))
+        values = ','.join(['{}:{}'.format(n,d) for n,d in 
+                           zip(self.names, self.data[yi,xi,:,vi])])
+        return 'i:{} x:{} y:{} [{}]  '.format(vi+1, xi, yi, values)
+
+
+def dcmap(N, base_cmap=None):
+    """Create an N-bin discrete colormap from the specified input map."""
+    base = plt.cm.get_cmap(base_cmap)
+    color_list = base(np.linspace(0, 1, N))
+    cmap_name = base.name + str(N)
+    return base.from_list(cmap_name, color_list, N)
+
+def sizefmt(num, suffix='B'):
+    for unit in ['','K','M','G','T','P','E','Z']:
+        if abs(num) < 1024.0:
+            return "%3.1f%s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f%s%s" % (num, 'Yi', suffix)
+
+def setfg(ax, color):
+    """Set the color of the frame, major ticks, tick labels, axis labels,
+    title and legend."""
+
+    for tl in ax.get_xticklines() + ax.get_yticklines():
+        tl.set_color(color)
+    for spine in ax.spines:
+        ax.spines[spine].set_edgecolor(color)
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label1.set_color(color)
+    for tick in ax.yaxis.get_major_ticks():
+        tick.label1.set_color(color)
+    ax.axes.xaxis.label.set_color(color)
+    ax.axes.yaxis.label.set_color(color)
+    ax.axes.xaxis.get_offset_text().set_color(color)
+    ax.axes.yaxis.get_offset_text().set_color(color)
+    ax.axes.title.set_color(color)
+    lh = ax.get_legend()
+    if lh != None:
+        lh.get_title().set_color(color)
+        lh.legendPatch.set_edgecolor('none')
+        labels = lh.get_texts()
+        for lab in labels:
+            lab.set_color(color)
+    for tl in ax.get_xticklabels():
+        tl.set_color(color)
+    for tl in ax.get_yticklabels():
+        tl.set_color(color)
+
+def setbg(ax, color):
+     """Set the background color of the current axes (and legend)."""
+     ax.patch.set_facecolor(color)
+     lh = ax.get_legend()
+     if lh != None:
+         lh.legendPatch.set_facecolor(color)
+
+def run(latrange=None, lonrange=None, timerange=None, measurements=None,
+        valuemax=None, product=None, groupby=None, verbose=False):
+    """Do all the work."""
+
+    try:
+        print('loading data from the datacube...', end='')
+
+        # Query the data
+        
+        dc = datacube.Datacube()
+        dcdata = dc.load(product=product,
+                         measurements=measurements,
+                         time=timerange,
+                         latitude=latrange,
+                         longitude=lonrange,
+                         group_by=groupby,
+                         stack='band')
+
+        # Check that we have data returned
+        
+        if dcdata is None:
+            print('loading data failed, no data in that range.')
+            sys.exit(1)
+
+        # Extract times and band information
+
+        times = dcdata.coords['time'].to_index().tolist()
+        bands = dcdata.coords['band'].to_index().tolist()
+        bcols = {b:i for i,b in enumerate(bands)}
+
+        nband = len(bands)
+        ntime = len(times)
+
+        # Work out what to show for images
+        
+        visible = ['red', 'green', 'blue']
+        if all([b in bands for b in visible]):
+            vbnds = [bcols[b] for b in visible]
+        elif len(bands) >= 3:
+            vbnds = [bcols[b] for b in bands[:3]]
+        else:
+            vbnds = [0, 0, 0]
+
+        print('done')
+
+    except LookupError:
+        print('failed')
+
+        # Display a list of valid products
+         
+        if product is None:
+            print('valid products are:')
+            prods = dc.list_products()[['name', 'description']]
+            print(prods.to_string(index=False,
+                                  justify='left',
+                                  header=False,
+                                  formatters={'description': lambda s: '('+s+')'}))
+        sys.exit(1)
+
+    except Exception:
+        print('failed')
+
+        sys.exit(2)
+        
+    # Nasty but it has to be done
+   
+    data = dcdata.transpose('y', 'x', 'band', 'time').data.astype(np.float32)
+    data[data == -999] = np.nan
+
+    # Keep track of some variables globally
+    
+    global vi
+    global memusage
+    global lastclick
+
+    vi = 0
+    lastclick = (0, 0)
+    memusage = sizefmt(data.nbytes)
+
+    # Setup the main figure
+
+    mainfig = plt.figure(figsize=(10, 10))
+    mainfig.canvas.set_window_title('[{}/{}] {}. Data mem usage: {}'.format(1, ntime, times[0], memusage))
+    mainfig.patch.set_facecolor('black')
+
+    ax = mainfig.add_subplot(111, frame_on=False, xmargin=0)
+    ax.format_coord = Formatter(vi, bands, data)
+    ax.xaxis.set_visible(False)
+    ax.yaxis.set_visible(False)
+    ax.invert_yaxis()
+
+    canvas = mainfig.canvas
+    window = mainfig.canvas.toolbar.window
+    mainfig.canvas.toolbar.pack_forget()
+    #mainfig.canvas.toolbar.destroy()
+    mainfig.canvas.toolbar = Toolbar(mainfig.canvas, window)
+    mainfig.canvas.toolbar.update()
+    mainfig.canvas.toolbar.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=1)
+    canvas.show()
+
+
+    # Scale and fix visible image
+
+    img = data[:,:,vbnds,0].copy()
+    mask = (img > valuemax).any(axis=2)
+    img = img/valuemax
+    img[mask] = 1.0
+    mask = np.isnan(img).any(axis=2)
+    img[mask] = 0.0
+
+    # Show the image
+
+    mainimg = plt.imshow(img, interpolation='nearest', origin='upper', aspect='auto', vmin=0, vmax=1)
+
+    # Tighten it up
+    
+    mainfig.set_tight_layout(True)
+
+    # Setup the drill figure
+    
+    drillfig = plt.figure(figsize=(5, 3.5))
+    drillfig.patch.set_facecolor('black')
+    drillfig.canvas.toolbar.pack_forget()
+
+    # Spectral profile graph
+    
+    ax1 = drillfig.add_subplot(211, xmargin=0)
+    ax1.set_xticks(range(nband))
+    ax1.set_xticklabels(bands)
+    ax1.set_title('Spectral profiles through time')
+    ax1.set_xlim((-0.2, nband-0.8))
+    ax1.set_ylim((0, 10000))
+    ax1.xaxis.grid(color='white', linestyle='dotted')
+
+    setfg(ax1, 'white')
+    setbg(ax1, 'black')
+
+    box = ax1.get_position()
+    ax1.set_position([box.x0, box.y0 + box.height * 0.2,
+                      box.width, box.height * 0.8])
+
+    # Time series graph
+    
+    tindex = range(1, len(times) + 1)
+
+    ax2 = drillfig.add_subplot(212, xmargin=0)
+    ax2.set_title('Band time series')
+
+    ax2.set_xticks(tindex)
+    #ax2.set_xticklabels(times)
+    ax2.set_xlim(0.9, tindex[-1] + 0.1)
+
+    ax2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2),
+               labelspacing=0, handletextpad=0, handlelength=2,
+               borderaxespad=0, ncol=nband, columnspacing=0)
+
+    setfg(ax2, 'white')
+    setbg(ax2, 'black')
+    
+    box = ax2.get_position()
+    ax2.set_position([box.x0, box.y0 + box.height * 0.2,
+                      box.width, box.height * 0.8])
+    
+
+    # Work out colors for bands in time series
+    
+    colors = [m[0] for m in bands if m[0] in ['r', 'g', 'b']]
+    ntoadd = max(0, len(bands) - len(colors))
+    cmap = dcmap(ntoadd, 'spring')
+    colors = colors + [cmap(i) for i in range(ntoadd)]
+
+    def drill(x=0, y=0):
+        """Do the pixel drill."""
+
+        # Get slice
+        
+        ts = data[y,x,:,:]
+
+        # Plot spectral profile
+        
+        ax1.lines = []
+        for i, p in enumerate(ts.T):
+            ax1.plot(range(nband), p, c='w')
+        ax1.set_ylim((0, np.nanmax(ts)*1.2))
+
+        # Plot time series
+        
+        ax2.lines = []
+        for i in range(ts.shape[0]):
+            tt = ts[i, :]
+            ax2.plot(tindex, tt, lw=1,
+                     marker='.', linestyle='-', color=colors[i],
+                     label=bands[i])
+        #ax2.set_xlim(-0.1, tindex[-1] + 0.1)
+        #ax2.set_xticks(tindex)
+
+        ax2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2),
+                   labelspacing=0.8, handletextpad=0, handlelength=2,
+                   borderaxespad=0, ncol=nband, columnspacing=0.5)
+
+        setfg(ax2, 'white')
+        setbg(ax2, 'black')
+
+        # Update figure
+       
+        drillfig.canvas.set_window_title('Pixel drill @ ({},{})'.format(x,y))
+        drillfig.canvas.draw()
+
+    def changeimg(i):
+        """Change image shown."""
+
+        # Scale and fix image
+        img = data[:,:,vbnds,i].copy()
+        mask = (img > valuemax).any(axis=2)
+        img = img/valuemax
+        img[mask] = 1.0
+        mask = np.isnan(img).any(axis=2)
+        img[mask] = 0.0
+
+        # Draw it
+        mainimg.set_data(img)
+        mainfig.canvas.set_window_title('[{}/{}] {}. Data mem usage: {}'.format(i+1, ntime, times[0], memusage))
+        mainfig.canvas.draw()
+
+
+    def onclick(event):
+        """Handle a click event on the main image."""
+        global lastclick
+        try:
+            x = int(round(event.xdata))
+            y = int(round(event.ydata))
+            b = int(event.button)
+            if b in [2, 3]:
+                lastclick = (x,y)
+                drill(x, y)
+        except TypeError:
+            pass
+
+    def onclickpd(event):
+        """Handle a click event in the pixel drill."""
+        global vi
+        vi = int(round(event.xdata))
+        changeimg(vi)
+
+    def onpress(event):
+        """Handle a keyboard event."""
+        global vi
+
+        if event.key == 'right':
+            vi = min(vi + 1, data.shape[3]-1)
+            changeimg(vi)
+
+        if event.key == 'left':
+            vi = max(0, vi - 1)
+            changeimg(vi)
+
+    drill(*lastclick)
+
+    # Hook up the event handlers
+    
+    mainfig.canvas.mpl_connect('button_press_event', onclick)
+    mainfig.canvas.mpl_connect('key_press_event', onpress)
+    mainfig.canvas.mpl_connect('close_event', lambda x: plt.close())
+
+    drillfig.canvas.mpl_connect('close_event', lambda x: plt.close())
+    drillfig.canvas.mpl_connect('button_press_event', onclickpd)
+
+    # Show it
+    
+    plt.show()
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-latrange',
+                        help='latitude range',
+                        nargs=2,
+                        default=[-34.5, -35],
+                        required=False)
+
+    parser.add_argument('-lonrange',
+                        help='longitude range',
+                        nargs=2,
+                        default=[148.5, 149],
+                        required=False)
+
+    parser.add_argument('-timerange',
+                        help='time range',
+                        nargs=2,
+                        default=['2011-3-2', '2011-6-5'],
+                        type=str,
+                        required=False)
+
+    parser.add_argument('-measurements',
+                        help='measurement',
+                        action='append',
+                        type=str,
+                        required=False)
+
+    parser.add_argument('-product',
+                        help='product',
+                        required=False)
+
+    parser.add_argument('-groupby',
+                        help='groupby',
+                        required=False)
+
+    parser.add_argument('-valuemax',
+                        help='max value',
+                        type=float,
+                        default=4000,
+                        required=False)
+
+    parser.add_argument('-verbose',
+                        help='verbose output',
+                        default=True,
+                        required=False)
+
+    kwargs = vars(parser.parse_args())
+
+    if kwargs['verbose']:
+        print(kwargs)
+
+    run(**kwargs) 
+
+if __name__ == '__main__':
+    try: 
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
+            main()
+    except KeyboardInterrupt:
+        pass
