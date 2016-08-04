@@ -155,7 +155,7 @@ class DatasetTypeResource(object):
             # They've passed us the same collection again. Make sure it matches what is stored.
             check_doc_unchanged(
                 existing.definition,
-                type_.definition,
+                jsonify_document(type_.definition),
                 'Dataset type {}'.format(type_.name)
             )
         else:
