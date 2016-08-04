@@ -142,10 +142,12 @@ def xr_iter(data_array):
     :return: i-index, label-index, value of da element
     :rtype tuple, dict, da.dtype
     """
+    values = data_array.values
+    coords = {coord_name: v.values for coord_name, v in data_array.coords.items()}
     for i in numpy.ndindex(data_array.shape):
-        entry = data_array[i]
-        index = {k: v.data for k, v in entry.coords.items()}
-        yield i, index, entry.data
+        entry = values[i]
+        index = {coord_name: v[i] for coord_name, v in coords.items()}
+        yield i, index, entry
 
 
 def xr_apply(data_array, func, dtype):
