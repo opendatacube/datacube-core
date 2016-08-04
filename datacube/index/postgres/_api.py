@@ -569,9 +569,12 @@ class PostgresDb(object):
             join_tables.update(field.required_alchemy_table for field in fields)
         join_tables.remove(source_table)
 
+        table_order_hack = [DATASET_SOURCE, DATASET_LOCATION, DATASET, DATASET_TYPE, METADATA_TYPE]
+
         from_expression = source_table
-        for table in join_tables:
-            from_expression = from_expression.join(table)
+        for table in table_order_hack:
+            if table in join_tables:
+                from_expression = from_expression.join(table)
         return from_expression
 
     def get_dataset_type(self, id_):
