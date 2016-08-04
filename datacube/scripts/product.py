@@ -48,6 +48,10 @@ def list_products(index):
     dc = Datacube(index)
     products = dc.list_products()
 
+    if products.empty:
+        echo('No products discovered :(')
+        return
+
     echo(products.to_string(columns=('name', 'description', 'product_type', 'instrument',
                                      'format', 'platform'),
                             justify='left'))
