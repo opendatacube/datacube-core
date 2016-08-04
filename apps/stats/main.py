@@ -17,6 +17,14 @@ from datacube.utils import read_documents
 from datacube.storage.storage import create_netcdf_storage_unit
 
 
+STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
+                                 'complevel',
+                                 'shuffle',
+                                 'fletcher32',
+                                 'contiguous',
+                                 'attrs'}
+
+
 def nco_from_sources(sources, geobox, measurements, variable_params, filename):
     coordinates = {name: Coordinate(coord.values, coord.units)
                    for name, coord in sources.coords.items()}
@@ -77,47 +85,29 @@ def get_variable_params(config):
     variable_params = {}
     for mapping in config['stats']:
         varname = mapping['name']
-        variable_params[varname] = {k: v for k, v in mapping.items() if k in {'zlib',
-                                                                              'complevel',
-                                                                              'shuffle',
-                                                                              'fletcher32',
-                                                                              'contiguous',
-                                                                              'attrs'}}
+        variable_params[varname] = {k: v for k, v in mapping.items() if k in STANDARD_VARIABLE_PARAM_NAMES}
         variable_params[varname]['chunksizes'] = chunking
 
     return variable_params
 
 
 def get_filename(path_template, index, sources):
+    date_format = '%Y%m%d%H%M%S%f'
     return Path(str(path_template).format(tile_index=index,
-                                          start_time=to_datetime(sources.time.values[0]).strftime('%Y%m%d%H%M%S%f'),
-                                          end_time=to_datetime(sources.time.values[-1]).strftime('%Y%m%d%H%M%S%f')))
+                                          start_time=to_datetime(sources.time.values[0]).strftime(date_format),
+                                          end_time=to_datetime(sources.time.values[-1]).strftime(date_format)))
 
 
 def do_stats(task, config):
     source = task['source']
-    measurement = source['measurements'][0]
+    measurement_name = source['measurements'][0]
     var_params = get_variable_params(config)
 
-    results = {}
-    for stat in config['stats']:
-        measurements = [{'name': measurement,
-                         'units': '1',  # TODO: where does this come from???
-                         'dtype': stat['dtype'],
-                         'nodata': stat['nodata']}]
-
-        output_filename = get_filename(config['location'],
-                                       stat['file_path_template'],
-                                       task['index'],
-                                       task['data']['sources'])
-        results[stat['name']] = nco_from_sources(task['data']['sources'],
-                                                 task['data']['geobox'],
-                                                 measurements,
-                                                 {measurement: var_params[stat['name']]},
-                                                 output_filename)
+    results = create_output_files(config['stats'], config['location'], measurement_name, task, var_params)
 
     for tile_index in tile_iter(task['data'], {'x': 1000, 'y': 1000}):
-        data = GridWorkflow.load(slice_tile(task['data'], tile_index), measurements=[measurement])[measurement]
+        data = GridWorkflow.load(slice_tile(task['data'], tile_index),
+                                 measurements=[measurement_name])[measurement_name]
         data = data.where(data != data.attrs['nodata'])
 
         for spec, sources in zip(source['masks'], task['masks']):
@@ -129,11 +119,34 @@ def do_stats(task, config):
 
         for stat in config['stats']:
             data_stats = getattr(data, stat['name'])(dim='time')
-            results[stat['name']][measurement][tile_index][0] = data_stats
+            results[stat['name']][measurement_name][tile_index][0] = data_stats
             print(data_stats)
 
     for nco in config['stats'].values:
         nco.close()
+
+
+def create_output_files(stats, output_dir, measurement, task, var_params):
+    """
+    Create output files and return a map of statistic name to writable NetCDF Dataset
+    """
+    results = {}
+    for stat in stats:
+        measurements = [{'name': measurement,
+                         'units': '1',  # TODO: where does this come from???
+                         'dtype': stat['dtype'],
+                         'nodata': stat['nodata']}]
+
+        filename_template = str(Path(output_dir, stat['file_path_template']))
+        output_filename = get_filename(filename_template,
+                                       task['index'],
+                                       task['data']['sources'])
+        results[stat['name']] = nco_from_sources(task['data']['sources'],
+                                                 task['data']['geobox'],
+                                                 measurements,
+                                                 {measurement: var_params[stat['name']]},
+                                                 output_filename)
+    return results
 
 
 def get_grid_spec(config):
