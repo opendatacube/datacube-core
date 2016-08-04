@@ -465,7 +465,7 @@ class PostgresDb(object):
             select(
                 select_columns
             ).select_from(
-                self._from_expression(DATASET, expressions)
+                self._from_expression(DATASET, expressions, select_fields)
             ).where(
                 and_(DATASET.c.archived == None, *raw_expressions)
             )
@@ -561,12 +561,17 @@ class PostgresDb(object):
             # if not time_period.upper_inf:
             yield Range(time_period.lower, time_period.upper), dataset_count
 
-    def _from_expression(self, source_table, expressions):
-        join_tables = set([expression.field.required_alchemy_table for expression in expressions])
+    def _from_expression(self, source_table, expressions=None, fields=None):
+        join_tables = set()
+        if expressions:
+            join_tables.update(expression.field.required_alchemy_table for expression in expressions)
+        if fields:
+            join_tables.update(field.required_alchemy_table for field in fields)
+        join_tables.remove(source_table)
+
         from_expression = source_table
         for table in join_tables:
-            if table != source_table:
-                from_expression = from_expression.join(table)
+            from_expression = from_expression.join(table)
         return from_expression
 
     def get_dataset_type(self, id_):
