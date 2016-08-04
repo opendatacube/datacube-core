@@ -193,6 +193,21 @@ def test_search_globally(index, pseudo_telemetry_dataset):
     assert len(results) == 1
 
 
+def test_search_by_product(index, pseudo_telemetry_type, pseudo_telemetry_dataset, ls5_nbar_gtiff_type):
+    """
+    :type index: datacube.index._api.Index
+    """
+    # Expect one product with our one dataset.
+    products = list(index.datasets.search_by_product(
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS',
+    ))
+    assert len(products) == 1
+    product, datasets = products[0]
+    assert product.id == pseudo_telemetry_type.id
+    assert next(datasets).id == pseudo_telemetry_dataset.id
+
+
 def test_searches_only_type(index, pseudo_telemetry_type, pseudo_telemetry_dataset, ls5_nbar_gtiff_type):
     """
     :type index: datacube.index._api.Index

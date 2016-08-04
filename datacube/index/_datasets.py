@@ -458,7 +458,19 @@ class DatasetResource(object):
         :param dict[str,str|float|datacube.model.Range] query:
         :rtype: __generator[datacube.model.Dataset]
         """
-        return self._make_many(self._do_search(query))
+        for dataset_type, datasets in self._do_search_by_product(query):
+            for dataset in self._make_many(datasets):
+                yield dataset
+
+    def search_by_product(self, **query):
+        """
+        Perform a search, returning datasets grouped by product type.
+
+        :param dict[str,str|float|datacube.model.Range] query:
+        :rtype: __generator[(datacube.model.DatasetType,  __generator[datacube.model.Dataset])]]
+        """
+        for dataset_type, datasets in self._do_search_by_product(query):
+            yield dataset_type, self._make_many(datasets)
 
     def count(self, **query):
         """
@@ -466,6 +478,16 @@ class DatasetResource(object):
 
         :param dict[str,str|float|datacube.model.Range] query:
         :rtype: int
+        """
+        return self._do_count(query)
+
+    def count_by_product(self, **query):
+        """
+        Perform a search, returning a count of for each matching product type.
+
+        :param dict[str,str|float|datacube.model.Range] query:
+        :returns: Sequence of (product, count)
+        :rtype: __generator[(datacube.model.DatasetType,  int)]]
         """
         return self._do_count(query)
 
@@ -477,7 +499,7 @@ class DatasetResource(object):
         :param dict[str,str|float|datacube.model.Range] query:
         :param str period: Time range for each slice: '1 month', '1 day' etc.
         :returns: For each matching product type, a list of time ranges and their count.
-        :rtype: __generator[(str, list[(datetime.datetime, datetime.datetime), int)]]
+        :rtype: __generator[(datacube.model.DatasetType, list[(datetime.datetime, datetime.datetime), int)]]
         """
         return self._do_time_count(period, query)
 
@@ -512,17 +534,19 @@ class DatasetResource(object):
             q['dataset_type_id'] = dataset_type.id
             yield q, dataset_type
 
-    def _do_search(self, query, return_fields=False, with_source_ids=False):
+    def _do_search_by_product(self, query, return_fields=False, with_source_ids=False):
         for q, dataset_type in self._get_product_queries(query):
             dataset_fields = dataset_type.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
             select_fields = None
             if return_fields:
                 select_fields = tuple(dataset_fields.values())
-            for dataset in self._db.search_datasets(query_exprs,
-                                                    select_fields=select_fields,
-                                                    with_source_ids=with_source_ids):
-                yield dataset
+            yield (dataset_type,
+                   self._db.search_datasets(
+                       query_exprs,
+                       select_fields=select_fields,
+                       with_source_ids=with_source_ids
+                   ))
 
     def _do_count(self, query):
         result = 0
@@ -553,7 +577,7 @@ class DatasetResource(object):
         for q, dataset_type in product_quries:
             dataset_fields = dataset_type.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
-            yield dataset_type.name, list(self._db.count_datasets_through_time(
+            yield dataset_type, list(self._db.count_datasets_through_time(
                 start,
                 end,
                 period,
@@ -568,13 +592,9 @@ class DatasetResource(object):
         :param dict[str,str|float|datacube.model.Range] query:
         :rtype: dict
         """
-        return (
-            dict(fs) for fs in
-            self._do_search(
-                query,
-                return_fields=True
-            )
-        )
+        for dataset_type, results in self._do_search_by_product(query, return_fields=True):
+            for columns in results:
+                yield dict(columns)
 
     def search_eager(self, **query):
         """

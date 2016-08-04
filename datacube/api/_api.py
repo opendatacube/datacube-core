@@ -229,9 +229,9 @@ class API(object):
         """
         query = DescriptorQuery(descriptor_request)
         descriptor = {}
-        datasets_by_type = self._search_datasets_by_type(**query.search_terms)
-        for dataset_type, datasets in datasets_by_type.items():
-            dataset_descriptor = self._get_descriptor_for_dataset(dataset_type, datasets,
+
+        for dataset_type, datasets in self.datacube.index.datasets.search_by_product(**query.search_terms):
+            dataset_descriptor = self._get_descriptor_for_dataset(dataset_type, list(datasets),
                                                                   query.group_by,
                                                                   query.geopolygon,
                                                                   include_storage_units)
@@ -240,20 +240,15 @@ class API(object):
         return descriptor
 
     def _search_datasets_by_type(self, **query):
-        datasets = self.datacube.index.datasets.search(**query)
-        datasets_by_type = defaultdict(list)
-        for dataset in datasets:
-            datasets_by_type[dataset.type].append(dataset)
-        return datasets_by_type
+        return dict(self.datacube.index.datasets.search_by_product(**query))
 
     def _get_dataset_groups(self, query):
         dataset_groups = {}
         group_by = query.group_by
 
-        datasets_by_type = self._search_datasets_by_type(**query.search_terms)
-        for dataset_type, datasets in datasets_by_type.items():
+        for dataset_type, datasets in self.datacube.index.datasets.search_by_product(**query.search_terms):
             if dataset_type.grid_spec:
-                dataset_groups[dataset_type] = self.datacube.product_sources(datasets,
+                dataset_groups[dataset_type] = self.datacube.product_sources(list(datasets),
                                                                              group_by.group_by_func,
                                                                              group_by.dimension,
                                                                              group_by.units)
