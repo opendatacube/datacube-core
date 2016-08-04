@@ -202,6 +202,7 @@ lineage
 
         .. code-block:: yaml
 
+                ancillary:
                     ephemeris:
                         name: L52011318DEFEPH.S00
                         uri: /g/data/v10/eoancillarydata/sensor-specific/LANDSAT5/DefinitiveEphemeris/LS5_YEAR/2011/L52011318DEFEPH.S00
