@@ -424,6 +424,14 @@ class PostgresDb(object):
             select(_DATASET_SELECT_FIELDS).where(DATASET.c.metadata.contains(metadata))
         ).fetchall()
 
+    def _alchemify_expressions(self, expressions):
+        def raw_expr(expression):
+            if isinstance(expression, OrExpression):
+                return or_(raw_expr(expr) for expr in expression.exprs)
+            return expression.alchemy_expression
+
+        return [raw_expr(expression) for expression in expressions]
+
     def search_datasets(self, expressions, select_fields=None, with_source_ids=False):
         """
         :type with_source_ids: bool
@@ -454,12 +462,7 @@ class PostgresDb(object):
                 ).label('dataset_refs'),
             )
 
-        def raw_expr(expression):
-            if isinstance(expression, OrExpression):
-                return or_(raw_expr(expr) for expr in expression.exprs)
-            return expression.alchemy_expression
-
-        raw_expressions = [raw_expr(expression) for expression in expressions]
+        raw_expressions = self._alchemify_expressions(expressions)
 
         select_query = (
             select(
@@ -481,12 +484,7 @@ class PostgresDb(object):
         :rtype: int
         """
 
-        def raw_expr(expression):
-            if isinstance(expression, OrExpression):
-                return or_(raw_expr(expr) for expr in expression.exprs)
-            return expression.alchemy_expression
-
-        raw_expressions = [raw_expr(expression) for expression in expressions]
+        raw_expressions = self._alchemify_expressions(expressions)
 
         select_query = (
             select(
@@ -509,12 +507,7 @@ class PostgresDb(object):
         :rtype: list[((datetime.datetime, datetime.datetime), int)]
         """
 
-        def raw_expr(expression):
-            if isinstance(expression, OrExpression):
-                return or_(raw_expr(expr) for expr in expression.exprs)
-            return expression.alchemy_expression
-
-        raw_expressions = [raw_expr(expression) for expression in expressions]
+        raw_expressions = self._alchemify_expressions(expressions)
 
         start_times = select((
             func.generate_series(start, end, cast(period, INTERVAL)).label('start_time'),
