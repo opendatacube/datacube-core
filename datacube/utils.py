@@ -243,10 +243,16 @@ def read_documents(*paths):
             opener = gzip.open
 
         if suffix in ('.yaml', '.yml'):
-            for parsed_doc in yaml.load_all(opener(str(path), 'r'), Loader=NoDatesSafeLoader):
-                yield path, parsed_doc
+            try:
+                for parsed_doc in yaml.load_all(opener(str(path), 'r'), Loader=NoDatesSafeLoader):
+                    yield path, parsed_doc
+            except yaml.YAMLError as e:
+                raise InvalidDocException('Failed to load %s: %s' % (path, e))
         elif suffix == '.json':
-            yield path, json.load(opener(str(path), 'r'))
+            try:
+                yield path, json.load(opener(str(path), 'r'))
+            except ValueError as e:
+                raise InvalidDocException('Failed to load %s: %s' % (path, e))
         else:
             raise ValueError('Unknown document type for {}; expected one of {!r}.'
                              .format(path.name, _ALL_SUPPORTED_EXTENSIONS))
