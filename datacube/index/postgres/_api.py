@@ -804,6 +804,14 @@ def _check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_nam
         # for them instead of individual indexes.
         if contains_all(fields, *field_composite):
             excluded_field_names += field_composite
+            _check_field_index(
+                conn,
+                [fields.get(f) for f in field_composite],
+                name, dataset_filter,
+                concurrently=concurrently,
+                replace_existing=rebuild_all,
+                index_type='gist'
+            )
 
     # Create indexes for the individual fields.
     for field in fields.values():
@@ -818,17 +826,6 @@ def _check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_nam
         )
     # A view of all fields
     _ensure_view(conn, fields, name, rebuild_all, dataset_filter)
-
-    for field_composite in composite_indexes:
-        if contains_all(fields, *field_composite):
-            _check_field_index(
-                conn,
-                [fields.get(f) for f in field_composite],
-                name, dataset_filter,
-                concurrently=concurrently,
-                replace_existing=rebuild_all,
-                index_type='gist'
-            )
 
 
 def _check_field_index(conn, fields, name_prefix, filter_expression,
