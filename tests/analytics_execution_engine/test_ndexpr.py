@@ -21,7 +21,6 @@ def test_1():
     test_ndexpr = NDexpr()
 
 
-@pytest.mark.xfail(xr.__version__ >= '0.8', reason='xarray 0.8.0 api changes')
 def test_2():
     # perform language test
 
@@ -56,7 +55,6 @@ def test_2():
     assert ne.test("fabs(z1)", xr.ufuncs.fabs(z1))
     assert ne.test("fix(z1)", xr.ufuncs.fix(z1))
     assert ne.test("floor(z1)", xr.ufuncs.floor(z1))
-    assert ne.test("frexp(z3)", xr.DataArray(xr.ufuncs.frexp(z3)))  # FIXME TODO Fails with xarray >= 0.8
     assert ne.test("imag(z1)", xr.ufuncs.imag(z1))
     assert ne.test("iscomplex(z1)", xr.ufuncs.iscomplex(z1))
     assert ne.test("isfinite(z1)", xr.ufuncs.isfinite(z1))
@@ -191,6 +189,16 @@ def test_2():
 
     assert ne.test("-z1", -z1)
     assert ne.test("z1{!(z1<2)}", xr.DataArray.where(z1, xr.ufuncs.logical_not(z1 < 2)))
+
+
+@pytest.mark.xfail(xr.__version__ >= '0.8', reason='xarray 0.8.0 api changes')
+def test_broken_frexp():
+
+    ne = NDexpr()
+    ne.set_ae(False)
+
+    z3 = np.arange(27)
+    assert ne.test("frexp(z3)", xr.DataArray(xr.ufuncs.frexp(z3)))  # FIXME TODO Fails with xarray >= 0.8
 
 
 def test_3():
