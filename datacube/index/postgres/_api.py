@@ -567,7 +567,7 @@ class PostgresDb(object):
             join_tables.update(expression.field.required_alchemy_table for expression in expressions)
         if fields:
             join_tables.update(field.required_alchemy_table for field in fields)
-        join_tables.remove(source_table)
+        join_tables.discard(source_table)
 
         table_order_hack = [DATASET_SOURCE, DATASET_LOCATION, DATASET, DATASET_TYPE, METADATA_TYPE]
 
