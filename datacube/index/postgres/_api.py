@@ -28,12 +28,12 @@ from datacube.index.exceptions import DuplicateRecordError
 from datacube.index.fields import OrExpression
 from datacube.model import Range
 from datacube.utils import jsonify_document
+from datacube.compat import string_types
 from . import tables
 from ._fields import parse_fields, NativeField
 from .tables import DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
 
 _LIB_ID = 'agdc-' + str(datacube.__version__)
-APP_NAME_PATTERN = re.compile('^[a-zA-Z0-9-]+$')
 
 DATASET_URI_FIELD = DATASET_LOCATION.c.uri_scheme + ':' + DATASET_LOCATION.c.uri_body
 _DATASET_SELECT_FIELDS = (
@@ -170,27 +170,27 @@ class PostgresDb(object):
         """
         >>> PostgresDb._expand_app_name(None) #doctest: +ELLIPSIS
         'agdc-...'
+        >>> PostgresDb._expand_app_name('') #doctest: +ELLIPSIS
+        'agdc-...'
         >>> PostgresDb._expand_app_name('cli') #doctest: +ELLIPSIS
         'cli agdc-...'
-        >>> PostgresDb._expand_app_name('not valid')
+        >>> PostgresDb._expand_app_name('a b.c/d')
+        'a-b-c-d agdc-...'
+        >>> PostgresDb._expand_app_name(5)
         Traceback (most recent call last):
         ...
-        ValueError: Invalid application name 'not valid': Must be alphanumeric with dashes.
-        >>> PostgresDb._expand_app_name('') #doctest: +ELLIPSIS
-        Traceback (most recent call last):
-        ...
-        ValueError: Invalid application name '': Must be alphanumeric with dashes.
+        TypeError: Application name must be a string
         """
         full_name = _LIB_ID
-        if application_name is not None:
-            if not APP_NAME_PATTERN.match(application_name):
-                raise ValueError('Invalid application name %r: Must be alphanumeric with dashes.' % application_name)
+        if application_name:
+            if not isinstance(application_name, string_types):
+                raise TypeError('Application name must be a string')
 
-            full_name = application_name + ' ' + _LIB_ID
+            full_name = re.sub('[^0-9a-zA-Z]+', '-', application_name) + ' ' + full_name
 
         if len(full_name) > 64:
-            raise ValueError('Application name is too long: Maximum %s chars' % (64 - len(_LIB_ID)))
-        return full_name
+            _LOG.warning('Application name is too long: Truncating to %s chars', (64 - len(_LIB_ID) - 1))
+        return full_name[-64:]
 
     def init(self, with_permissions=True):
         """

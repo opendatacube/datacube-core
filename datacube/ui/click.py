@@ -175,10 +175,9 @@ def pass_index(app_name=None, expect_initialised=True):
     def decorate(f):
         def with_index(*args, **kwargs):
             ctx = click.get_current_context()
-            application_name = app_name or re.sub('[^0-9a-zA-Z]+', '-', ctx.command_path)
             try:
                 index = index_connect(ctx.obj['config_file'],
-                                      application_name=application_name,
+                                      application_name=app_name or ctx.command_path,
                                       validate_connection=expect_initialised)
                 return f(index, *args, **kwargs)
             except (OperationalError, ProgrammingError) as e:
