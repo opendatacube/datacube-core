@@ -296,13 +296,14 @@ class DatasetResource(object):
         Get dataset by id
 
         :param uuid id_: id of the dataset to retrieve
-        :param include_sources: get the full provenance graph?
+        :param bool include_sources: get the full provenance graph?
         :rtype: datacube.model.Dataset
         """
         if not include_sources:
-            return self._make(self._db.get_dataset(id_))
+            return self._make(self._db.get_dataset(id_), full_info=True)
 
-        datasets = {result['id']: (self._make(result), result) for result in self._db.get_dataset_sources(id_)}
+        datasets = {result['id']: (self._make(result, full_info=True), result)
+                    for result in self._db.get_dataset_sources(id_)}
         for dataset, result in datasets.values():
             dataset.metadata_doc['lineage']['source_datasets'] = {
                 classifier: datasets[str(source)][0].metadata_doc
@@ -424,14 +425,18 @@ class DatasetResource(object):
         """
         return self._db.get_locations(dataset.id)
 
-    def _make(self, dataset_res):
+    def _make(self, dataset_res, full_info=False):
         """
         :rtype datacube.model.Dataset
+
+        :param bool full_info: Include all available fields
         """
         return Dataset(
             self.types.get(dataset_res.dataset_type_ref),
             dataset_res.metadata,
-            dataset_res.local_uri
+            dataset_res.local_uri,
+            indexed_by=dataset_res.added_by if full_info else None,
+            indexed_time=dataset_res.added if full_info else None
         )
 
     def _make_many(self, query_result):

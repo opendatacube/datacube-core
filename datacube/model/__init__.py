@@ -74,7 +74,7 @@ class Dataset(object):
     :param str local_uri: A URI to access this dataset locally.
     """
 
-    def __init__(self, type_, metadata_doc, local_uri, sources=None):
+    def __init__(self, type_, metadata_doc, local_uri, sources=None, indexed_by=None, indexed_time=None):
         #: :type: DatasetType
         self.type = type_
 
@@ -88,6 +88,11 @@ class Dataset(object):
         self.sources = sources or {}
 
         assert set(self.metadata.sources.keys()) == set(self.sources.keys())
+
+        # User who indexed this dataset
+        #: :type: str
+        self.indexed_by = indexed_by
+        self.indexed_time = indexed_time
 
     @property
     def metadata_type(self):
