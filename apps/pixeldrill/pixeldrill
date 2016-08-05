@@ -11,6 +11,7 @@ from __future__ import unicode_literals
 import matplotlib; matplotlib.use('TkAgg')
 
 import matplotlib.pyplot as plt
+import matplotlib.animation as anim
 import xarray.plot as xp
 import numpy as np
 import warnings
@@ -19,11 +20,22 @@ import xarray
 import sys
 import os
 
-import Tkinter as tk
+try:
+    import tkinter as tk
+    import tkinter.ttk as ttk
+    import tkinter.font as font
+except ImportError: # Python 2
+    import Tkinter as tk
+    import ttk
+    import tkFont as font
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg, ToolTip
 from datetime import datetime
 from os.path import join as pjoin
+
+import six
+from six.moves import tkinter_filedialog as FileDialog
+from six.moves import tkinter_tkfiledialog, tkinter_messagebox
 
 # Set our plot parameters
 
@@ -41,22 +53,23 @@ class Toolbar(NavigationToolbar2TkAgg):
 
     def __init__(self, canvas, parent):
         self.toolitems = (
-             ('Home', 'Reset original view', 'home', 'home'),
-             ('Back', 'Back to  previous view', 'back', 'back'),
-             ('Forward', 'Forward to next view', 'forward', 'forward'),
-             (None, None, None, None),
-             ('Pan', 'Pan axes with left mouse, zoom with right', 'move', 'pan'),
+             ('Unzoom', 'Reset original view', 'home', 'home'),
              ('Zoom', 'Zoom to rectangle', 'zoom_to_rect', 'zoom'),
-             ('Subplots', 'Configure subplots', 'subplots', 'configure_subplots'),
+             ('Pan', 'Pan axes with left mouse, zoom with right', 'move', 'pan'),
              (None, None, None, None),
              ('Save', 'Save', 'filesave', 'save_figure'),
+             (None, None, None, None),
+             ('Prev', 'Previous observation', 'back', 'back'),
+             ('Next', 'Next observation', 'forward', 'forward'),
+             (None, None, None, None),
            )
         NavigationToolbar2TkAgg.__init__(self, canvas, parent)
         self._init_toolbar()
         self.configure(background='black')
 
     def _Button(self, text, file, command, extension='.gif'):
-        b = tk.Button(master=self, text=text, padx=2, pady=2, command=command)
+        b = tk.Button(master=self, text=text, padx=2, pady=2, command=command,
+                      relief=tk.FLAT)
         b.pack(side=tk.LEFT)
         return b
 
@@ -66,8 +79,7 @@ class Toolbar(NavigationToolbar2TkAgg):
         tk.Frame.__init__(self, master=self.window,
                           width=int(width), height=int(height),
                           borderwidth=2)
-
-        self.update()  # Make axes menu
+        self.update()
 
         for text, tooltip_text, image_file, callback in self.toolitems:
             if text is None:
@@ -86,6 +98,66 @@ class Toolbar(NavigationToolbar2TkAgg):
         self.pack(side=tk.BOTTOM, fill=tk.X)
         self._message_label.configure(background='black', foreground='white')
 
+    def mouse_move(self, event):
+        self._set_cursor(event)
+        if event.inaxes and event.inaxes.get_navigate():
+            try:
+                s = event.inaxes.format_coord(event.xdata, event.ydata)
+                self.set_message(s)
+            except (ValueError, OverflowError):
+                pass
+
+    def forward(self, *args):
+        fwdimg()
+   
+    def back(self, *args):
+        backimg()
+
+    def save_figure(self, *args):
+        filetypes = self.canvas.get_supported_filetypes().copy()
+        default_filetype = self.canvas.get_default_filetype()
+
+        default_filetype_name = filetypes[default_filetype]
+        del filetypes[default_filetype]
+
+        sorted_filetypes = list(six.iteritems(filetypes))
+        sorted_filetypes.sort()
+        sorted_filetypes.insert(0, (default_filetype, default_filetype_name))
+
+        defaultextension = ''
+        initialdir = plt.rcParams.get('savefig.directory', '')
+        initialdir = os.path.expanduser(initialdir)
+        initialfile = 'movie.mp4'
+        fname = tkinter_tkfiledialog.asksaveasfilename(
+            master=self.window,
+            title='Save the stack',
+            filetypes=[('MPEG 4', '*.mp4')],
+            defaultextension=defaultextension,
+            initialdir=initialdir,
+            initialfile=initialfile,
+            )
+
+        if fname == "" or fname == ():
+            return
+        else:
+            if initialdir == '':
+                plt.rcParams['savefig.directory'] = initialdir
+            else:
+                plt.rcParams['savefig.directory'] = os.path.dirname(six.text_type(fname))
+            try:
+                writer = anim.writers['ffmpeg']
+                mwriter = writer(fps=1,
+                                 bitrate=0,
+                                 codec='h264',
+                                 #extra_args=['-crf', '23', '-pix_fmt' 'yuv420p'],
+                                 metadata={})
+                with mwriter.saving(mainfig, fname, 140):
+                    print(' '.join(mwriter._args()))
+                    for i in range(ntime):
+                        changeimg(i)
+                        mwriter.grab_frame()
+            except Exception as e:
+                tkinter_messagebox.showerror("Error saving file", str(e))
 
 class Formatter:
 
@@ -98,7 +170,7 @@ class Formatter:
         xi, yi = int(round(x,0)), int(round(y,0))
         values = ','.join(['{}:{}'.format(n,d) for n,d in 
                            zip(self.names, self.data[yi,xi,:,vi])])
-        return 'i:{} x:{} y:{} [{}]  '.format(vi+1, xi, yi, values)
+        return 'x:{} y:{} [{}]  '.format(xi, yi, values)
 
 
 def dcmap(N, base_cmap=None):
@@ -118,7 +190,6 @@ def sizefmt(num, suffix='B'):
 def setfg(ax, color):
     """Set the color of the frame, major ticks, tick labels, axis labels,
     title and legend."""
-
     for tl in ax.get_xticklines() + ax.get_yticklines():
         tl.set_color(color)
     for spine in ax.spines:
@@ -151,9 +222,116 @@ def setbg(ax, color):
      if lh != None:
          lh.legendPatch.set_facecolor(color)
 
+def drill(x=0, y=0):
+    """Do the pixel drill."""
+
+    # Get slice
+    
+    ts = data[y,x,:,:]
+
+    # Plot spectral profile
+    
+    ax1.lines = []
+    for i, p in enumerate(ts.T):
+        ax1.plot(range(nband), p, c='w')
+    #ax1.set_ylim((0, np.nanmax(ts)*1.2))
+
+    # Plot time series
+    
+    ax2.lines = []
+    for i in range(ts.shape[0]):
+        tt = ts[i, :]
+        ax2.plot(tindex, tt, lw=1,
+                 marker='.', linestyle='-', color=colors[i],
+                 label=bands[i])
+    #ax2.set_xlim(-0.1, tindex[-1] + 0.1)
+    #ax2.set_xticks(tindex)
+
+    ax2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2),
+               labelspacing=0.8, handletextpad=0, handlelength=2,
+               borderaxespad=0, ncol=nband, columnspacing=0.5)
+
+    setfg(ax2, 'white')
+    setbg(ax2, 'black')
+
+    # Update figure
+   
+    drillfig.canvas.set_window_title('Pixel drill @ ({},{})'.format(x,y))
+    drillfig.canvas.draw()
+
+def changeimg(i):
+    """Change image shown."""
+
+    # Scale and fix image
+    img = data[:,:,vbnds,i].copy()
+    mask = (img > maxvalue).any(axis=2)
+    img = img/maxvalue
+    img[mask] = 1.0
+    mask = np.isnan(img).any(axis=2)
+    img[mask] = 0.0
+
+    # Draw it
+    mainimg.set_data(img)
+    mainfig.canvas.set_window_title('[{}/{}] {}. Data mem usage: {}'.format(i+1, ntime, times[0], memusage))
+    mainfig.canvas.draw()
+
+
+def onclick(event):
+    """Handle a click event on the main image."""
+    global lastclick
+    try:
+        x = int(round(event.xdata))
+        y = int(round(event.ydata))
+        b = int(event.button)
+        if b in [2, 3]:
+            lastclick = (x,y)
+            drill(x, y)
+    except TypeError:
+        pass
+
+def onclickpd(event):
+    """Handle a click event in the pixel drill."""
+    global vi
+    vi = int(round(event.xdata))
+    changeimg(vi)
+
+def onpress(event):
+    """Handle a keyboard event."""
+
+    if event.key == 'right':
+        fwdimg()
+
+    if event.key == 'left':
+        backimg()
+
+def fwdimg():
+    """Show next observation."""
+    global vi
+    vi = min(vi + 1, data.shape[3]-1)
+    changeimg(vi)
+
+def backimg():
+    """Show previous observation."""
+    global vi
+    vi = max(0, vi - 1)
+    changeimg(vi)
+
 def run(latrange=None, lonrange=None, timerange=None, measurements=None,
         valuemax=None, product=None, groupby=None, verbose=False):
     """Do all the work."""
+
+    # Keep track of some variables globally instead of wrapping
+    # everything in a big object
+    
+    global vi
+    global lastclick
+    global data
+    global ax, ax1, ax2
+    global nband, tindex, colors, bands, vbnds, ntime, times
+    global drillfig, mainfig, mainimg
+    global maxvalue, memusage
+
+    # Try to get data
 
     try:
         print('loading data from the datacube...', end='')
@@ -212,23 +390,20 @@ def run(latrange=None, lonrange=None, timerange=None, measurements=None,
 
     except Exception:
         print('failed')
-
         sys.exit(2)
         
+
     # Nasty but it has to be done
    
     data = dcdata.transpose('y', 'x', 'band', 'time').data.astype(np.float32)
     data[data == -999] = np.nan
 
-    # Keep track of some variables globally
+    # Set variables
     
-    global vi
-    global memusage
-    global lastclick
-
     vi = 0
     lastclick = (0, 0)
     memusage = sizefmt(data.nbytes)
+    maxvalue = valuemax
 
     # Setup the main figure
 
@@ -236,27 +411,27 @@ def run(latrange=None, lonrange=None, timerange=None, measurements=None,
     mainfig.canvas.set_window_title('[{}/{}] {}. Data mem usage: {}'.format(1, ntime, times[0], memusage))
     mainfig.patch.set_facecolor('black')
 
-    ax = mainfig.add_subplot(111, frame_on=False, xmargin=0)
+    ax = plt.Axes(mainfig, [0., 0., 1., 1.])
     ax.format_coord = Formatter(vi, bands, data)
-    ax.xaxis.set_visible(False)
-    ax.yaxis.set_visible(False)
+    ax.set_axis_off()
     ax.invert_yaxis()
+    mainfig.add_axes(ax) 
 
+    # Surgery on the toolbar
+    
     canvas = mainfig.canvas
     window = mainfig.canvas.toolbar.window
     mainfig.canvas.toolbar.pack_forget()
-    #mainfig.canvas.toolbar.destroy()
     mainfig.canvas.toolbar = Toolbar(mainfig.canvas, window)
     mainfig.canvas.toolbar.update()
-    mainfig.canvas.toolbar.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=1)
+    mainfig.canvas.toolbar.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=0)
     canvas.show()
-
 
     # Scale and fix visible image
 
     img = data[:,:,vbnds,0].copy()
-    mask = (img > valuemax).any(axis=2)
-    img = img/valuemax
+    mask = (img > maxvalue).any(axis=2)
+    img = img/maxvalue
     img[mask] = 1.0
     mask = np.isnan(img).any(axis=2)
     img[mask] = 0.0
@@ -264,10 +439,6 @@ def run(latrange=None, lonrange=None, timerange=None, measurements=None,
     # Show the image
 
     mainimg = plt.imshow(img, interpolation='nearest', origin='upper', aspect='auto', vmin=0, vmax=1)
-
-    # Tighten it up
-    
-    mainfig.set_tight_layout(True)
 
     # Setup the drill figure
     
@@ -282,7 +453,7 @@ def run(latrange=None, lonrange=None, timerange=None, measurements=None,
     ax1.set_xticklabels(bands)
     ax1.set_title('Spectral profiles through time')
     ax1.set_xlim((-0.2, nband-0.8))
-    ax1.set_ylim((0, 10000))
+    ax1.set_ylim((0, np.nanmax(data)))
     ax1.xaxis.grid(color='white', linestyle='dotted')
 
     setfg(ax1, 'white')
@@ -302,6 +473,7 @@ def run(latrange=None, lonrange=None, timerange=None, measurements=None,
     ax2.set_xticks(tindex)
     #ax2.set_xticklabels(times)
     ax2.set_xlim(0.9, tindex[-1] + 0.1)
+    ax2.set_ylim((0, np.nanmax(data)))
 
     ax2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2),
                labelspacing=0, handletextpad=0, handlelength=2,
@@ -322,90 +494,6 @@ def run(latrange=None, lonrange=None, timerange=None, measurements=None,
     cmap = dcmap(ntoadd, 'spring')
     colors = colors + [cmap(i) for i in range(ntoadd)]
 
-    def drill(x=0, y=0):
-        """Do the pixel drill."""
-
-        # Get slice
-        
-        ts = data[y,x,:,:]
-
-        # Plot spectral profile
-        
-        ax1.lines = []
-        for i, p in enumerate(ts.T):
-            ax1.plot(range(nband), p, c='w')
-        ax1.set_ylim((0, np.nanmax(ts)*1.2))
-
-        # Plot time series
-        
-        ax2.lines = []
-        for i in range(ts.shape[0]):
-            tt = ts[i, :]
-            ax2.plot(tindex, tt, lw=1,
-                     marker='.', linestyle='-', color=colors[i],
-                     label=bands[i])
-        #ax2.set_xlim(-0.1, tindex[-1] + 0.1)
-        #ax2.set_xticks(tindex)
-
-        ax2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2),
-                   labelspacing=0.8, handletextpad=0, handlelength=2,
-                   borderaxespad=0, ncol=nband, columnspacing=0.5)
-
-        setfg(ax2, 'white')
-        setbg(ax2, 'black')
-
-        # Update figure
-       
-        drillfig.canvas.set_window_title('Pixel drill @ ({},{})'.format(x,y))
-        drillfig.canvas.draw()
-
-    def changeimg(i):
-        """Change image shown."""
-
-        # Scale and fix image
-        img = data[:,:,vbnds,i].copy()
-        mask = (img > valuemax).any(axis=2)
-        img = img/valuemax
-        img[mask] = 1.0
-        mask = np.isnan(img).any(axis=2)
-        img[mask] = 0.0
-
-        # Draw it
-        mainimg.set_data(img)
-        mainfig.canvas.set_window_title('[{}/{}] {}. Data mem usage: {}'.format(i+1, ntime, times[0], memusage))
-        mainfig.canvas.draw()
-
-
-    def onclick(event):
-        """Handle a click event on the main image."""
-        global lastclick
-        try:
-            x = int(round(event.xdata))
-            y = int(round(event.ydata))
-            b = int(event.button)
-            if b in [2, 3]:
-                lastclick = (x,y)
-                drill(x, y)
-        except TypeError:
-            pass
-
-    def onclickpd(event):
-        """Handle a click event in the pixel drill."""
-        global vi
-        vi = int(round(event.xdata))
-        changeimg(vi)
-
-    def onpress(event):
-        """Handle a keyboard event."""
-        global vi
-
-        if event.key == 'right':
-            vi = min(vi + 1, data.shape[3]-1)
-            changeimg(vi)
-
-        if event.key == 'left':
-            vi = max(0, vi - 1)
-            changeimg(vi)
 
     drill(*lastclick)
 
@@ -470,9 +558,19 @@ def main():
                         default=True,
                         required=False)
 
-    kwargs = vars(parser.parse_args())
 
-    if kwargs['verbose']:
+    args = parser.parse_args()
+    kwargs = vars(args)
+
+    if not args.product:
+        parser.print_help()
+        print('\n\nValid choices for PRODUCT are:')
+        dc = datacube.Datacube()
+        prods = dc.list_products()['name']
+        print(prods.to_string(index=False, header=False))
+        parser.exit()
+
+    if args.verbose:
         print(kwargs)
 
     run(**kwargs) 
