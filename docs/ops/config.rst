@@ -17,6 +17,9 @@ name
 description
     Product description
 
+metadata_type
+    `Metadata Type`_ name
+
 metadata
     Dictionary containing bits of metadata common to all the datasets in the product.
     It is used during indexing (if ``--auto-match`` options is used) to match datasets to thier products.
@@ -76,9 +79,9 @@ measurements
 
 .. _dataset-metadata-doc:
 
-Dataset Metadata
-----------------
-Dataset Metadata is a document that defines critical metadata of the dataset such as:
+Dataset
+-------
+Dataset document defines critical metadata of the dataset such as:
 
     - measurements
     - platform and sensor names
@@ -141,7 +144,7 @@ grid_spatial/projection
     valid_data (optional)
         `GeoJSON Geometry Object <http://geojson.org/geojson-spec.html#geometry-objects>`_ for the 'data-full'
         (non no-data) region of the data. Coordinates are assumed to be in the CRS of the data.
-        Used to reduce loading useless parts of the dataset into memory.
+        Used to avoid loading useless parts of the dataset into memory.
         Only needs to be roughly correct. Prefer simpler geometry over accuracy.
 
 image/bands
@@ -211,6 +214,10 @@ lineage
                         checksum_sha1: f66265314fc12e005deb356b69721a7031a71374
 
 .. _ingestion-config:
+
+Metadata Type
+-------------
+Metadata Type document defines searchable bits of metadata within `Dataset`_ documents.
 
 Ingestion Config
 ----------------
