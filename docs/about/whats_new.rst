@@ -4,7 +4,7 @@ What's New
 v1.1.6 Lightning Roll (8 August 2016)
 -------------------------------------
 
-  - Improved spatio-temporal search performance. `datacube system init --rebuild` must be run to benefit
+  - Improved spatio-temporal search performance. `datacube system init` must be run to benefit
 
   - Added `info`, `archive` and `restore` commands to `datacube dataset`
 
