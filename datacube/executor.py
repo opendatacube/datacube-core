@@ -29,10 +29,23 @@ class SerialExecutor(object):
         for future in futures:
             yield future
 
+    @classmethod
+    def next_completed(cls, futures, default):
+        results = list(futures)
+        if not results:
+            return default, results
+        result = next(cls.as_completed(results), default)
+        results.remove(result)
+        return result, results
+
     @staticmethod
     def result(value):
         func, args, kwargs = value
         return func(*args, **kwargs)
+
+    @staticmethod
+    def release(value):
+        pass
 
 
 def _get_distributed_executor(scheduler, workers):
@@ -59,9 +72,22 @@ def _get_distributed_executor(scheduler, workers):
         def as_completed(futures):
             return distributed.as_completed(futures)
 
+        @classmethod
+        def next_completed(cls, futures, default):
+            results = list(futures)
+            if not results:
+                return default, results
+            result = next(cls.as_completed(results), default)
+            results.remove(result)
+            return result, results
+
         @staticmethod
         def result(value):
             return value.result()
+
+        @staticmethod
+        def release(value):
+            value.release()
 
     try:
         executor = DistributedExecutor(distributed.Executor(scheduler))
@@ -90,9 +116,22 @@ def _get_concurrent_executor(workers):
         def as_completed(futures):
             return as_completed(futures)
 
+        @classmethod
+        def next_completed(cls, futures, default):
+            results = list(futures)
+            if not results:
+                return default, results
+            result = next(cls.as_completed(results), default)
+            results.remove(result)
+            return result, results
+
         @staticmethod
         def result(value):
             return value.result()
+
+        @staticmethod
+        def release(value):
+            pass
 
     return MultiprocessingExecutor(ProcessPoolExecutor(workers if workers > 0 else None))
 
