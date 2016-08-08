@@ -307,7 +307,7 @@ storage
 
 
 measurements
-    Mapping of the input measurement names as specified in `Dataset Metadata`_
+    Mapping of the input measurement names as specified in `Dataset`_
     to the per-measurement ingestion parameters
 
     dtype
@@ -328,8 +328,8 @@ measurements
 
 Runtime Config
 --------------
-Runtime Config document specifies various runtime configuration options such as:
- database connection parameters and location mappings
+
+Runtime Config document specifies database connection configuration options:
 
 .. code-block:: text
 
