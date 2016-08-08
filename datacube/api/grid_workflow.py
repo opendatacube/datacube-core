@@ -55,6 +55,9 @@ class GridWorkflow(object):
             geopolygon = geobox.extent
         query = Query(index=self.index, geopolygon=geopolygon, **indexers)
 
+        if not query.product:
+            raise RuntimeError('must specify a product')
+
         observations = self.index.datasets.search_eager(**query.search_terms)
         if not observations:
             return {}
