@@ -1,6 +1,8 @@
 Configuration Files
 ===================
 
+See also :ref:`create-configuration-file` for the datacube config file.
+
 .. _product-doc:
 
 Product
