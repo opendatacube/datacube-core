@@ -143,7 +143,7 @@ class GridWorkflow(object):
                 stack[cell_index + (coord.values[0],)] = {
                     'sources': sources,
                     'geobox': observation['geobox']
-                }
+                }  # TODO: Should be a Tile Obj
         return stack
 
     def list_cells(self, cell_index=None, **query):
