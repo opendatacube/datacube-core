@@ -334,7 +334,7 @@ Runtime Config document specifies database connection configuration options:
 .. code-block:: text
 
     [datacube]
-    db_hostname: 130.56.244.227
-    db_database: democube
-    db_username: cube_user
+    db_hostname: 127.0.0.0
+    db_database: datacube
+    db_username: cubeuser
 
