@@ -1,8 +1,26 @@
 What's New
 ==========
 
-v1.1.5 Untranslatable Sign  (26 July 2016)
-------------------------------------------
+v1.1.6 Lightning Roll (8 August 2016)
+-------------------------------------
+
+  - Improved spatio-temporal search performance. `datacube system init --rebuild` must be run to benefit
+
+  - Added `info`, `archive` and `restore` commands to `datacube dataset`
+
+  - Added `product-counts` command to `datacube-search` tool
+
+  - Made Index object thread-safe
+
+  - Multiple masking API improvements
+
+  - Improved database Index API documentation
+
+  - Improved system configuration documentation
+
+
+v1.1.5 Untranslatable Sign (26 July 2016)
+-----------------------------------------
 
   - Updated the way database indexes are patitioned. Use `datacube system init --rebuild` to rebuild indexes
 
@@ -13,8 +31,8 @@ v1.1.5 Untranslatable Sign  (26 July 2016)
   - Added index.datasets.count method returning number of datasets matching the query
 
 
-v1.1.4 Imperfect Inspiration  (12 July 2016)
---------------------------------------------
+v1.1.4 Imperfect Inspiration (12 July 2016)
+-------------------------------------------
 
   - Improved dataset search performance
 
