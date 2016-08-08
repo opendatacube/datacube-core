@@ -26,7 +26,7 @@ or specify connection details manually:
 
 Create Configuration File
 -------------------------
-Datacube looks for a configuration file in ~/.datacube.conf::
+Datacube looks for a configuration file in ~/.datacube.conf or in the location specified by the DATACUBE_CONFIG_PATH environment variable. The file has this format::
 
     [datacube]
     db_database: datacube
