@@ -185,7 +185,7 @@ class GridWorkflow(object):
         return self.tile_sources(observations, query_group_by(**query))
 
     @staticmethod
-    def load(tile, measurements=None, chunk=None, dask_chunks=None):
+    def load(tile, measurements=None, chunk=None, dask_chunks=None, fuse_func=None):
         """
         Load data for a cell/tile.
 
@@ -205,6 +205,9 @@ class GridWorkflow(object):
 
             See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
             for more information.
+
+        :param fuse_func: Function to fuse together a tile that has been pre-grouped by calling
+            :meth:`list_cells` with a ``group_by`` parameter.
 
         :return: The requested data.
         :rtype: :py:class:`xarray.Dataset`
@@ -231,7 +234,8 @@ class GridWorkflow(object):
         else:
             measurements = [measurement for measurement in all_measurements.values()]
 
-        dataset = Datacube.product_data(sources, geobox, measurements, dask_chunks=dask_chunks)
+        dataset = Datacube.product_data(sources, geobox, measurements, dask_chunks=dask_chunks,
+                                        fuse_func=fuse_func)
 
         return dataset
 
