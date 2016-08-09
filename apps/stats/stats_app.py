@@ -318,27 +318,15 @@ def load_data(dc, products, acq_min, acq_max, season, band, stats, masks, epoch,
                            'CALENDAR_YEAR': 'year', 'QTR_1': '1', 'QTR_2': '2',
                            'QTR_3': '3', 'QTR_4': '4'}
             if "QTR" in season:
-                try:
-                    data = data.isel(solar_day=data.groupby('solar_day.quarter').groups[int(season_dict[season])])
-                except KeyError as e:
-                    print(repr(e))
-                    continue
-            elif "CALENDAR" in season:
+                data = data.isel(solar_day=data.groupby('solar_day.quarter').groups[int(season_dict[season])])
+             elif "CALENDAR" in season:
                 if epoch == 1:
-                    try:
-                        year = int(str(data.groupby('solar_day.year').groups.keys()).strip('[]'))
-                        data = data.isel(solar_day=data.groupby('solar_day.year').groups[year])
-                    except KeyError as e:
-                        print(repr(e))
-                        continue
+                    year = int(str(data.groupby('solar_day.year').groups.keys()).strip('[]'))
+                    data = data.isel(solar_day=data.groupby('solar_day.year').groups[year])
 
             else:
                 print("Loading data for ", season, season_dict[season])
-                try:
-                    data = data.isel(solar_day=data.groupby('solar_day.season').groups[season_dict[season]])
-                except KeyError as e:
-                    print(repr(e))
-                    continue
+                data = data.isel(solar_day=data.groupby('solar_day.season').groups[season_dict[season]])
 
             print("Loaded data for ", prodname, acq_min, acq_max)
             if band in [t.name for t in Ls57Arg25Bands]:
