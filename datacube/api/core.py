@@ -206,12 +206,18 @@ class Datacube(object):
             See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
             for more information.
 
-        :param like: Uses the output of a previous ``load()`` to form the basis of a request for another product.
+        :param xarray.Dataset like: Uses the output of a previous ``load()`` to form the basis of a request for
+            another product.
             E.g.::
 
                 pq = dc.load(product='ls5_pq_albers', like=nbar_dataset)
 
-        :type like: xarray.Dataset
+        :param str group_by: When specified, perform basic combining/reducing of data before returning. Eg.
+            group_by="solar_day"
+
+        :param fuse_func: Function used to fuse/combine/reduce data with the ``group_by`` parameter. By default,
+            data is simply copied over the top of each other, in a relatively undefined manner. This function can
+            perform a specific combining step, eg. for combining GA PQ data.
 
         :return: Requested data.  As a ``DataArray`` if the ``stack`` variable is supplied.
         :rtype: :class:`xarray.Dataset` or :class:`xarray.DataArray`
