@@ -14,14 +14,12 @@ import click
 import Queue
 import threading
 import time
-import getopt
 import numpy as np
 from datetime import datetime
 from collections import defaultdict
 import logging
 import rasterio
 import datacube.api
-import xarray as xr
 from datacube.ui.expression import parse_expressions
 
 from dateutil.relativedelta import relativedelta
@@ -164,7 +162,7 @@ def do_compute(data, stats, odata):
 @ui.global_cli_options
 @ui.executor_cli_options
 @ui.pass_index(app_name='agdc-stats-app')
-def main(index, season, band, stats, start, end, epoch, masks, expression, executor):
+def main(index, season, band, stats, start, end, epoch, masks, expression, executor):  # pylint: disable=too-many-locals
     index.datasets.search_summaries(**parse_expressions(*expression))
 
     start_date = datetime.strptime(start, "%Y-%m-%d").date()
@@ -223,7 +221,7 @@ def get_epochs(epoch, start, end):
         yield acq_min, acq_max
 
 
-def get_derive_data(band, dataset, ls, data):
+def get_derive_data(band, dataset, prodname, data):
     blue = data.blue.where(data.blue != NDV)
     green = data.green.where(data.green != NDV)
     red = data.red.where(data.red != NDV)
@@ -241,7 +239,7 @@ def get_derive_data(band, dataset, ls, data):
     if band == "NBR":
         return (nir - sw2) / (nir + sw2)
     if dataset == "TCI":
-        return calculate_tci(band, ls, blue, green, red, nir, sw1, sw2)
+        return calculate_tci(prodname, blue=blue, green=green, red=red, nir=nir, sw1=sw1, sw2=sw2)
 
 
 def get_band_data(band, data):
@@ -295,6 +293,7 @@ def create_mask_def(masks):
     return ga_pixel_bit
 
 
+# pylint: disable=too-many-locals
 def load_data(dc, products, acq_min, acq_max, season, band, stats, masks, epoch, expression):
     data = None
     datasets = []
@@ -319,7 +318,7 @@ def load_data(dc, products, acq_min, acq_max, season, band, stats, masks, epoch,
                            'QTR_3': '3', 'QTR_4': '4'}
             if "QTR" in season:
                 data = data.isel(solar_day=data.groupby('solar_day.quarter').groups[int(season_dict[season])])
-             elif "CALENDAR" in season:
+            elif "CALENDAR" in season:
                 if epoch == 1:
                     year = int(str(data.groupby('solar_day.year').groups.keys()).strip('[]'))
                     data = data.isel(solar_day=data.groupby('solar_day.year').groups[year])
@@ -370,8 +369,6 @@ def mask_data_with_pq(dc, data, prodname, acq_max, acq_min, expression, mask_cle
 
 
 class TasselCapIndex(Enum):
-    __order__ = "BRIGHTNESS GREENNESS WETNESS FOURTH FIFTH SIXTH"
-
     BRIGHTNESS = 1
     GREENNESS = 2
     WETNESS = 3
@@ -380,18 +377,17 @@ class TasselCapIndex(Enum):
     SIXTH = 6
 
 
-class SatTwo(Enum):
+class Landsats(Enum):
     """
      Needs two satellites two use Tassel Cap Index properties as LS5 and LS7 are same
     """
-    __order__ = "LANDSAT_5 LANDSAT_8"
 
-    LANDSAT_5 = "LANDSAT_5"
-    LANDSAT_8 = "LANDSAT_8"
+    LANDSAT_5 = "ls5_nbar_albers"
+    LANDSAT_7 = "ls7_nbar_albers"
+    LANDSAT_8 = "ls8_nbar_albers"
 
 
 class SixUniBands(Enum):
-    __order__ = "BLUE GREEN RED NEAR_INFRARED SHORT_WAVE_INFRARED_1 SHORT_WAVE_INFRARED_2"
     BLUE = 'blue'
     GREEN = 'green'
     RED = 'red'
@@ -401,7 +397,7 @@ class SixUniBands(Enum):
 
 
 TCI_COEFF = {
-    SatTwo.LANDSAT_5:
+    Landsats.LANDSAT_5:
         {
             TasselCapIndex.BRIGHTNESS: {
                 SixUniBands.BLUE: 0.3037,
@@ -451,7 +447,7 @@ TCI_COEFF = {
                 SixUniBands.SHORT_WAVE_INFRARED_1: -0.0251,
                 SixUniBands.SHORT_WAVE_INFRARED_2: 0.0238}
         },
-    SatTwo.LANDSAT_8:
+    Landsats.LANDSAT_8:
         {
             TasselCapIndex.BRIGHTNESS: {
                 SixUniBands.BLUE: 0.3029,
@@ -503,48 +499,21 @@ TCI_COEFF = {
         }
 }
 
+TCI_COEFF[Landsats.LANDSAT_7] = TCI_COEFF[Landsats.LANDSAT_5]
 
-def calculate_tci(band, sat, blue, green, red, nir, sw1, sw2):
-    all_bands = dict()
-    bn = None
-    masked_bands = dict()
 
-    for t in SixUniBands:
-        if t.name == "BLUE":
-            bn = blue
-        elif t.name == "GREEN":
-            bn = green
-        elif t.name == "RED":
-            bn = red
-        elif t.name == "NEAR_INFRARED":
-            bn = nir
-        elif t.name == "SHORT_WAVE_INFRARED_1":
-            bn = sw1
-        elif t.name == "SHORT_WAVE_INFRARED_2":
-            bn = sw2
-        all_bands.update({t: bn})
+def calculate_tci(prodname, **bands):
+    bands_masked = {SixUniBands(colour): data.astype(np.float16) for colour, data in bands.items()}
 
-    for b in all_bands.keys():
-        masked_bands[b] = all_bands[b].astype(np.float16)
-        _log.info("mask band for %s is %s", b, masked_bands[b])
+    coefficients = TCI_COEFF[Landsats(prodname)]
+
     tci = 0
-    tci_cat = None
-    for i in TasselCapIndex:
-        if i.name == band:
-            tci_cat = i
-            break
 
-    if sat == "LANDSAT_7":
-        sat = "LANDSAT_5"
-    for i in SatTwo:
-        if i.name == sat:
-            sat = i
     for b in SixUniBands:
-        if b in TCI_COEFF[sat][tci_cat]:
-            tci += masked_bands[b] * TCI_COEFF[sat][tci_cat][b]
-            _log.info(" tci value for %s - %s of %s", b, tci, TCI_COEFF[sat][tci_cat])
-    # tci = tci.filled(numpy.nan)
-    _log.info(" TCI values calculated for %s %s - %s", sat, band, tci)
+        if b in coefficients:
+            tci += bands_masked[b] * coefficients[b]
+
+    tci = tci.filled(NDV)
     return tci
 
 
