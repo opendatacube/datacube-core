@@ -11,9 +11,6 @@ from __future__ import division
 import sys
 import dask
 import click
-import Queue
-import threading
-import time
 import numpy as np
 from datetime import datetime
 from collections import defaultdict
@@ -37,9 +34,6 @@ _log.setLevel(logging.DEBUG)
 # dt = datetime(2010,2,22,23,33,54)
 # with open('/g/data/u46/users/bxb547/bb/Darwin_all.txt', 'a') as f:
 
-EXIT_FLAG = 0
-QUEUE_LOCK = threading.Lock()
-WORK_QUEUE = Queue.Queue(30)
 MY_DATA = {}
 NDV = -999
 
@@ -53,21 +47,6 @@ class Ls57Arg25Bands(Enum):
     NEAR_INFRARED = 4
     SHORT_WAVE_INFRARED_1 = 5
     SHORT_WAVE_INFRARED_2 = 6
-
-
-def process_result(acq_min, acq_max, work_queue):
-    while not EXIT_FLAG:
-        QUEUE_LOCK.acquire()
-        if not WORK_QUEUE.empty():
-            data = work_queue.get()
-            _log.info("\t my data for epoch %s-%s is %s", str(acq_min), str(acq_max), data)
-            print(" do your job with computed data")
-            MY_DATA.update({str(acq_min): data})
-            QUEUE_LOCK.release()
-            print("%s processing %s" % (acq_min, data))
-        else:
-            QUEUE_LOCK.release()
-        time.sleep(1)
 
 
 def initialise_odata(dtype, y, x):
