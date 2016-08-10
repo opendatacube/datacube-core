@@ -3,6 +3,7 @@ import os
 import sys
 import xarray as xr
 import numpy as np
+import numexpr
 import pytest
 
 from datacube.ndexpr import NDexpr
@@ -158,11 +159,7 @@ def test_2():
 
     assert ne.test("percentile(z1, 50)", np.percentile(z1, 50))
     assert ne.test("percentile(z1, 50)+percentile(z1, 50)", np.percentile(z1, 50) + np.percentile(z1, 50))
-    assert ne.test("percentile(z1, (50))", np.percentile(z1, (50)))
-    assert ne.test("percentile(z1, (50, 60))", np.percentile(z1, (50, 60)))
-    assert ne.test("percentile(z1, (50, 60, 70))", np.percentile(z1, (50, 60, 70)))
-    assert ne.test("percentile(z1, (50, 60, 70)) + percentile(z1, (50, 60, 70))",
-                   np.percentile(z1, (50, 60, 70)) + np.percentile(z1, (50, 60, 70)))
+
     assert ne.test("1 + var(z1, 0, 0+1, 2) + 1", 1+xr.DataArray.var(z1, axis=(0, 0+1, 2))+1)
 
     assert ne.test("z1{mask1}", xr.DataArray.where(z1, mask1))
@@ -199,6 +196,22 @@ def test_broken_frexp():
 
     z3 = np.arange(27)
     assert ne.test("frexp(z3)", xr.DataArray(xr.ufuncs.frexp(z3)))  # FIXME TODO Fails with xarray >= 0.8
+
+
+@pytest.mark.xfail(numexpr.__version__ >= '2.6.0', reason='broken with numexpr >= 2.6.0')
+def test_broken_percentile_tuple():
+    ne = NDexpr()
+    ne.set_ae(False)
+    z1 = xr.DataArray(np.array([[[0,  1,  2], [3,  4,  5], [6,  7,  8]],
+                                [[9, 10, 11], [12, 13, 14], [15, 16, 17]],
+                                [[18, 19, 20], [21, 22, 23], [24, 25, 26]]
+                                ]))
+
+    assert ne.test("percentile(z1, (50))", np.percentile(z1, (50)))
+    assert ne.test("percentile(z1, (50, 60))", np.percentile(z1, (50, 60)))
+    assert ne.test("percentile(z1, (50, 60, 70))", np.percentile(z1, (50, 60, 70)))
+    assert ne.test("percentile(z1, (50, 60, 70)) + percentile(z1, (50, 60, 70))",
+                   np.percentile(z1, (50, 60, 70)) + np.percentile(z1, (50, 60, 70)))
 
 
 def test_3():
