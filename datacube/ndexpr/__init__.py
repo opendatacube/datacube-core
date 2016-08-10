@@ -78,7 +78,11 @@ class NDexpr(object):
                     "!=": operator.ne,
                     "|": operator.or_,
                     "&": operator.and_,
-                    "!": operator.inv}
+                    "!": operator.inv,
+                    "^": operator.pow,
+                    "**": operator.pow,
+                    "<<": np.left_shift,
+                    ">>": np.right_shift}
 
         # Define xarray DataArray operators with 1 input parameter
         self.xfn1 = {"angle": xr.ufuncs.angle,
@@ -143,7 +147,8 @@ class NDexpr(object):
                      "nextafter": xr.ufuncs.nextafter}
 
         # Define non-xarray DataArray operators with 2 input parameter
-        self.fn2 = {"percentile": np.percentile}
+        self.fn2 = {"percentile": np.percentile,
+                    "pow": np.power}
 
         # Define xarray DataArray reduction operators
         self.xrfn = {"all": xr.DataArray.all,
@@ -176,6 +181,8 @@ class NDexpr(object):
         minus = Literal("-")
         mult = Literal("*")
         div = Literal("/")
+        ls = Literal("<<")
+        rs = Literal(">>")
         gt = Literal(">")
         gte = Literal(">=")
         lt = Literal("<")
@@ -198,13 +205,14 @@ class NDexpr(object):
         addop = plus | minus
         multop = mult | div
         sliceop = colon
+        shiftop = ls | rs
         compop = gte | lte | gt | lt
         eqop = eq | neq
         bitcompop = b_or | b_and
         bitnotop = b_not
         logicalnotop = l_not
         assignop = seq
-        expop = Literal("^")
+        expop = Literal("^") | Literal("**")
 
         expr = Forward()
         indexexpr = Forward()
@@ -242,11 +250,12 @@ class NDexpr(object):
         factor << atom + ZeroOrMore((expop + factor).setParseAction(self.push_op))
         term = factor + ZeroOrMore((multop + factor).setParseAction(self.push_op))
         term2 = term + ZeroOrMore((addop + term).setParseAction(self.push_op))
-        term3 = term2 + ZeroOrMore((sliceop + term2).setParseAction(self.push_op))
-        term4 = term3 + ZeroOrMore((compop + term3).setParseAction(self.push_op))
-        term5 = term4 + ZeroOrMore((eqop + term4).setParseAction(self.push_op))
-        term6 = term5 + ZeroOrMore((bitcompop + term5).setParseAction(self.push_op))
-        expr << term6 + ZeroOrMore((assignop + term6).setParseAction(self.push_op))
+        term3 = term2 + ZeroOrMore((shiftop + term2).setParseAction(self.push_op))
+        term4 = term3 + ZeroOrMore((sliceop + term3).setParseAction(self.push_op))
+        term5 = term4 + ZeroOrMore((compop + term4).setParseAction(self.push_op))
+        term6 = term5 + ZeroOrMore((eqop + term5).setParseAction(self.push_op))
+        term7 = term6 + ZeroOrMore((bitcompop + term6).setParseAction(self.push_op))
+        expr << term7 + ZeroOrMore((assignop + term7).setParseAction(self.push_op))
 
         # Define index operators
 
@@ -360,6 +369,8 @@ class NDexpr(object):
             if op == '+' and isinstance(op2, xr.DataArray) and \
                op2.dtype.type == np.bool_:
                 return xr.DataArray.where(op1, op2)
+            elif op == "<<" or op == ">>":
+                return self.opn[op](op1, int(op2))
             return self.opn[op](op1, op2)
         elif op == "::":
             return slice(None, None, None)
