@@ -150,8 +150,7 @@ def _get_mean_longitude(dataset):
     mean_lat = float(dataset[x][0] + dataset[x][-1])/2.
     mean_lon = float(dataset[y][0] + dataset[y][-1])/2.
     bounds = {'left': mean_lon, 'right': mean_lon, 'top': mean_lat, 'bottom': mean_lat}
-    input_crs = dataset.crs.attrs['spatial_ref']
-    left, bottom, right, top = rasterio.warp.transform_bounds(input_crs, 'EPSG:4326', **bounds)
+    left, bottom, right, top = rasterio.warp.transform_bounds(str(dataset.crs), 'EPSG:4326', **bounds)
     return left
 
 
