@@ -530,6 +530,8 @@ class NDexpr(object):
             r = e == result
         elif isinstance(e, np.ndarray):
             r = result.equals(xr.DataArray(e))
+        elif isinstance(e, tuple):
+            r = (np.array(result.item()).flatten() == np.array(e).flatten()).all()
         else:
             r = e.equals(result)
         if r:
