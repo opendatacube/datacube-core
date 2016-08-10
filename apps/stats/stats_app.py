@@ -9,11 +9,10 @@ from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import division
 import sys
-import dask
 import click
+import functools
 import numpy as np
 from datetime import datetime
-from collections import defaultdict
 import logging
 import rasterio
 import datacube.api
@@ -26,21 +25,17 @@ from dateutil.rrule import rrule, YEARLY
 from datacube.ui import click as ui
 from enum import Enum
 
-dask.set_options(get=dask.async.get_sync)
 _log = logging.getLogger()
 
-_log.setLevel(logging.DEBUG)
-# dt = datetime(2015,2,5,01,15,31)
-# dt = datetime(2010,2,22,23,33,54)
-# with open('/g/data/u46/users/bxb547/bb/Darwin_all.txt', 'a') as f:
 
 MY_DATA = {}
 NDV = -999
+SEASONAL_OPTIONS = {'SUMMER': 'DJF', 'AUTUMN': 'MAM', 'WINTER': 'JJA', 'SPRING': 'SON',
+                    'CALENDAR_YEAR': 'year', 'QTR_1': '1', 'QTR_2': '2',
+                    'QTR_3': '3', 'QTR_4': '4'}
 
 
 class Ls57Arg25Bands(Enum):
-    __order__ = "BLUE GREEN RED NEAR_INFRARED SHORT_WAVE_INFRARED_1 SHORT_WAVE_INFRARED_2"
-
     BLUE = 1
     GREEN = 2
     RED = 3
@@ -53,32 +48,6 @@ def initialise_odata(dtype, y, x):
     odata = np.empty(shape=(y, x), dtype=dtype)
     odata.fill(NDV)
     return odata
-
-
-def product_lookup(sat, dataset_type):
-    """
-    Finds product name from dataset type and sensor name
-    :param sat: input dataset type and sensor name
-    :param dataset_type: It can be pqa within nbar
-    :return: product name like 'ls8_nbar_albers'
-    """
-    prod_list = [('ls5_nbar_albers', 'LANDSAT_5'), ('ls5_nbar_albers', 'nbar'),
-                 ('ls7_nbar_albers', 'LANDSAT_7'), ('ls7_nbar_albers', 'nbar'),
-                 ('ls8_nbar_albers', 'LANDSAT_8'), ('ls8_nbar_albers', 'nbar'),
-                 ('ls5_nbart_albers', 'LANDSAT_5'), ('ls5_nbart_albers', 'nbart'),
-                 ('ls7_nbart_albers', 'LANDSAT_7'), ('ls7_nbart_albers', 'nbart'),
-                 ('ls8_nbart_albers', 'LANDSAT_8'), ('ls8_nbart_albers', 'nbart'),
-                 ('ls5_pq_albers', 'LANDSAT_5'), ('ls5_pq_albers', 'pqa'),
-                 ('ls7_pq_albers', 'LANDSAT_7'), ('ls7_pq_albers', 'pqa'),
-                 ('ls8_pq_albers', 'LANDSAT_8'), ('ls8_pq_albers', 'pqa')]
-
-    my_dict = defaultdict(list)
-    for k, v in prod_list:
-        my_dict[k].append(v)
-    for k, v in my_dict.items():
-        if sat in v[0] and dataset_type in v[1]:
-            return k
-    return None
 
 
 def get_mean_longitude(cell_dataset):
@@ -129,40 +98,59 @@ def do_compute(data, stats, odata):
     return odata
 
 
+def parse_date(context, param, value):  # TODO: Convert to a click.ParamType subclass
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except TypeError:
+        return None
+
+
+required_option = functools.partial(click.option, required=True)
+
+
 @click.command(name='stats')
 @click.argument('expression', nargs=-1)
-@click.option('--season')
-@click.option('--band')
-@click.option('--stats')
-@click.option('--epoch')
-@click.option('--start')
-@click.option('--end')
+@required_option('--season', type=click.Choice(SEASONAL_OPTIONS.keys()))
+@required_option('--band')
+@required_option('--stats')
+@required_option('--epoch')
+@required_option('--start', callback=parse_date)
+@required_option('--end', callback=parse_date)
 @click.option('--masks', multiple=True)
 @ui.global_cli_options
 @ui.executor_cli_options
 @ui.pass_index(app_name='agdc-stats-app')
-def main(index, season, band, stats, start, end, epoch, masks, expression, executor):  # pylint: disable=too-many-locals
-    index.datasets.search_summaries(**parse_expressions(*expression))
+def main(index, season, band, stats, start, end, epoch, masks, expression, executor):
+    tasks = create_stats_tasks(band, end, epoch, masks, season, start, stats, expression)
 
-    start_date = datetime.strptime(start, "%Y-%m-%d").date()
-    end_date = datetime.strptime(end, "%Y-%m-%d").date()
+    results = execute_tasks(executor, index, tasks)
 
-    dc = datacube.Datacube(app='jupyter-test', index=index)
+    process_results(executor, results)
 
+
+def create_stats_tasks(band, end, epoch, masks, season, start, stats, expression):
     tasks = []
-    # Create tasks
-    for acq_min, acq_max in get_epochs(epoch, start_date, end_date):
-        tasks.append(dict(acq_min=acq_min, acq_max=acq_max, season=season, band=band,
-                          stats=stats, masks=masks, epoch=epoch))
+    for acq_min, acq_max in get_epochs(epoch, start, end):
+        task = dict(acq_min=acq_min, acq_max=acq_max, season=season, band=band,
+                    stats=stats, masks=masks, epoch=epoch, expression=expression)
+        tasks.append(task)
+    return tasks
 
-    # Execute tasks
+
+def execute_tasks(executor, index, tasks):
     results = []
+    dc = datacube.Datacube(index=index)
     for task in tasks:
-        results.append(executor.submit(load_data, dc=dc, **task))
+        result_future = executor.submit(load_data, dc=dc, **task)
+        results.append(result_future)
+    return results
 
+
+def process_results(executor, results):
     for result in executor.as_completed(results):
         acq_min, data = executor.result(result)
         MY_DATA[acq_min] = data
+
 
 # def old_main(argv):
 #     season = 'WINTER'
@@ -191,7 +179,6 @@ def main(index, season, band, stats, start, end, epoch, masks, expression, execu
 
 
 def get_epochs(epoch, start, end):
-    print("gettting epochs")
     for dt in rrule(YEARLY, interval=epoch, dtstart=start, until=end):
         acq_min = dt.date()
         acq_max = acq_min + relativedelta(years=epoch, days=-1)
@@ -200,7 +187,7 @@ def get_epochs(epoch, start, end):
         yield acq_min, acq_max
 
 
-def get_derive_data(band, dataset, prodname, data):
+def derive_data(band, dataset, prodname, data):
     blue = data.blue.where(data.blue != NDV)
     green = data.green.where(data.green != NDV)
     red = data.red.where(data.red != NDV)
@@ -272,7 +259,6 @@ def create_mask_def(masks):
     return ga_pixel_bit
 
 
-# pylint: disable=too-many-locals
 def load_data(dc, products, acq_min, acq_max, season, band, stats, masks, epoch, expression):
     data = None
     datasets = []
@@ -286,38 +272,22 @@ def load_data(dc, products, acq_min, acq_max, season, band, stats, masks, epoch,
         if len(data) == 0:
             _log.info("\t No data found")
             continue
-        mask_clear = None
         if masks:
-            data = mask_data_with_pq(dc, data, prodname, acq_max, acq_min, expression, mask_clear, masks)
+            data = mask_data_with_pq(dc, data, prodname, acq_max, acq_min, expression, masks)
 
-            append_solar_day(data, get_mean_longitude(data))
-            data = data.groupby('solar_day').max(dim='time')
-            season_dict = {'SUMMER': 'DJF', 'AUTUMN': 'MAM', 'WINTER': 'JJA', 'SPRING': 'SON',
-                           'CALENDAR_YEAR': 'year', 'QTR_1': '1', 'QTR_2': '2',
-                           'QTR_3': '3', 'QTR_4': '4'}
-            if "QTR" in season:
-                data = data.isel(solar_day=data.groupby('solar_day.quarter').groups[int(season_dict[season])])
-            elif "CALENDAR" in season:
-                if epoch == 1:
-                    year = int(str(data.groupby('solar_day.year').groups.keys()).strip('[]'))
-                    data = data.isel(solar_day=data.groupby('solar_day.year').groups[year])
-
-            else:
-                print("Loading data for ", season, season_dict[season])
-                data = data.isel(solar_day=data.groupby('solar_day.season').groups[season_dict[season]])
+            data = group_by_season_epoch(data, epoch, season)
 
             print("Loaded data for ", prodname, acq_min, acq_max)
+
             if band in [t.name for t in Ls57Arg25Bands]:
                 data = get_band_data(band, data)
             else:
-                data = get_derive_data(band, "dataset", prodname, data)
+                data = derive_data(band, "dataset", prodname, data)
             datasets.append(data)
 
     # xr.concat(datasets, dim='solar_day')
 
-    dtype = np.float32
-    if stats == "COUNT_OBSERVED" or band in [t.name for t in Ls57Arg25Bands]:
-        dtype = np.int16
+    dtype = determine_output_dtype(band, stats)
     if data.nbytes > 0:
         odata = initialise_odata(dtype, data.shape[1], data.shape[2])
         odata = do_compute(data, stats, odata)
@@ -328,7 +298,30 @@ def load_data(dc, products, acq_min, acq_max, season, band, stats, masks, epoch,
         return None
 
 
-def mask_data_with_pq(dc, data, prodname, acq_max, acq_min, expression, mask_clear, masks):
+def determine_output_dtype(band, stats):
+    dtype = np.float32
+    if stats == "COUNT_OBSERVED" or band in [t.name for t in Ls57Arg25Bands]:
+        dtype = np.int16
+    return dtype
+
+
+def group_by_season_epoch(data, epoch, season):
+    append_solar_day(data, get_mean_longitude(data))
+    data = data.groupby('solar_day').max(dim='time')
+    if "QTR" in season:
+        data = data.isel(solar_day=data.groupby('solar_day.quarter').groups[int(SEASONAL_OPTIONS[season])])
+    elif "CALENDAR" in season:
+        if epoch == 1:
+            year = int(str(data.groupby('solar_day.year').groups.keys()).strip('[]'))
+            data = data.isel(solar_day=data.groupby('solar_day.year').groups[year])
+    else:
+        print("Loading data for ", season, SEASONAL_OPTIONS[season])
+        data = data.isel(solar_day=data.groupby('solar_day.season').groups[SEASONAL_OPTIONS[season]])
+    return data
+
+
+def mask_data_with_pq(dc, data, prodname, acq_max, acq_min, expression, masks):
+    mask_clear = None
     pq_prodname = prodname.replace('nbar', 'pqa')
     pq = dc.load(product=pq_prodname, time=(acq_min, acq_max),
                  dask_chunks={'time': 1, 'y': 200, 'x': 200},
