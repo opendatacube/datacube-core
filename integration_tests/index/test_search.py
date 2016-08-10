@@ -409,11 +409,13 @@ def test_count_by_product_searches(index, pseudo_telemetry_type, pseudo_telemetr
     ))
     assert products == ((pseudo_telemetry_type, 1),)
 
+    # Only types with datasets should be returned (these params match ls5_gtiff too)
+    products = tuple(index.datasets.count_by_product())
+    assert products == ((pseudo_telemetry_type, 1),)
+
     # No results for different metadata type.
     products = tuple(index.datasets.count_by_product(
         metadata_type='telemetry',
-        platform='LANDSAT_8',
-        instrument='OLI_TIRS'
     ))
     assert products == ()
 
