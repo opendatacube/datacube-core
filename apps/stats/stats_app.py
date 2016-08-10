@@ -30,9 +30,15 @@ _log = logging.getLogger()
 
 MY_DATA = {}
 NDV = -999
-SEASONAL_OPTIONS = {'SUMMER': 'DJF', 'AUTUMN': 'MAM', 'WINTER': 'JJA', 'SPRING': 'SON',
-                    'CALENDAR_YEAR': 'year', 'QTR_1': '1', 'QTR_2': '2',
-                    'QTR_3': '3', 'QTR_4': '4'}
+SEASONAL_OPTIONS = {'SUMMER': 'DJF',
+                    'AUTUMN': 'MAM',
+                    'WINTER': 'JJA',
+                    'SPRING': 'SON',
+                    'CALENDAR_YEAR': 'year',
+                    'QTR_1': '1',
+                    'QTR_2': '2',
+                    'QTR_3': '3',
+                    'QTR_4': '4'}
 
 
 class Ls57Arg25Bands(Enum):
@@ -58,6 +64,9 @@ def get_mean_longitude(cell_dataset):
     input_crs = cell_dataset.crs.wkt
     left, bottom, right, top = rasterio.warp.transform_bounds(input_crs, 'EPSG:4326', **bounds)
     return left
+
+available_statistics = ['MIN', 'MAX', 'MEAN', 'GEOMEDIAN', 'MEDIAN', 'VARIANCE', 'STANDARD_DEVIATION',
+                        'COUNT_OBSERVED', 'PERCENTILE']
 
 
 def do_compute(data, stats, odata):
@@ -98,43 +107,47 @@ def do_compute(data, stats, odata):
     return odata
 
 
-def parse_date(context, param, value):  # TODO: Convert to a click.ParamType subclass
-    try:
-        return datetime.strptime(value, "%Y-%m-%d").date()
-    except TypeError:
-        return None
-
-
 required_option = functools.partial(click.option, required=True)
 
 
 @click.command(name='stats')
-@click.argument('expression', nargs=-1)
+@click.argument('expressions', nargs=-1)
+@click.option('--measurement', 'measurements', multiple=True)
+@click.option('--computed-measurement', 'computed_measurements', multiple=True)
 @required_option('--season', type=click.Choice(SEASONAL_OPTIONS.keys()))
-@required_option('--band')
 @required_option('--stats')
 @required_option('--epoch')
-@required_option('--start', callback=parse_date)
-@required_option('--end', callback=parse_date)
 @click.option('--masks', multiple=True)
 @ui.global_cli_options
 @ui.executor_cli_options
 @ui.pass_index(app_name='agdc-stats-app')
-def main(index, season, band, stats, start, end, epoch, masks, expression, executor):
-    tasks = create_stats_tasks(band, end, epoch, masks, season, start, stats, expression)
+def main(index, season, measurements, computed_measurement, stats, epoch, masks, expressions, executor):
+    """
+    Compute Statistical Summaries
+
+    Select data using [EXPRESSIONS] to limit in space and time
+    """
+    tasks = create_stats_tasks(measurements, epoch, masks, season, stats, expressions)
 
     results = execute_tasks(executor, index, tasks)
 
     process_results(executor, results)
 
 
-def create_stats_tasks(band, end, epoch, masks, season, start, stats, expression):
+def create_stats_tasks(measurements, epoch, masks, season, stats, expressions):
     tasks = []
-    for acq_min, acq_max in get_epochs(epoch, start, end):
-        task = dict(acq_min=acq_min, acq_max=acq_max, season=season, band=band,
-                    stats=stats, masks=masks, epoch=epoch, expression=expression)
+    start_date, end_date = get_start_end_dates(expressions)
+    for acq_min, acq_max in get_epochs(epoch, start_date, end_date):
+        task = dict(acq_min=acq_min, acq_max=acq_max, season=season, measurements=measurements,
+                    stats=stats, masks=masks, epoch=epoch, expressions=expressions)
         tasks.append(task)
     return tasks
+
+
+def get_start_end_dates(expressions):
+    parsed = parse_expressions(*expressions)
+    time_range = parsed['time']
+    return time_range.begin, time_range.end
 
 
 def execute_tasks(executor, index, tasks):
@@ -238,13 +251,13 @@ def create_mask_def(masks):
 
     for mask in masks.split(','):
         if mask == "PQ_MASK_CONTIGUITY":
-            ga_pixel_bit.update(dict(contiguous=True))
+            ga_pixel_bit['contiguous'] = True
         if mask == "PQ_MASK_CLOUD_FMASK":
-            ga_pixel_bit.update(dict(cloud_fmask='no_cloud'))
+            ga_pixel_bit['cloud_fmask'] = 'no_cloud'
         if mask == "PQ_MASK_CLOUD_ACCA":
-            ga_pixel_bit.update(dict(cloud_acca='no_cloud_shadow'))
+            ga_pixel_bit['cloud_acca'] = 'no_cloud_shadow'
         if mask == "PQ_MASK_CLOUD_SHADOW_ACCA":
-            ga_pixel_bit.update(dict(cloud_shadow_acca='no_cloud_shadow'))
+            ga_pixel_bit['cloud_shadow_acca'] = 'no_cloud_shadow'
         if mask == "PQ_MASK_SATURATION":
             ga_pixel_bit.update(dict(blue_saturated=False, green_saturated=False, red_saturated=False,
                                      nir_saturated=False, swir1_saturated=False, tir_saturated=False,
@@ -253,27 +266,30 @@ def create_mask_def(masks):
             ga_pixel_bit.update(dict(blue_saturated=False, green_saturated=False, red_saturated=False,
                                      nir_saturated=False, swir1_saturated=False, swir2_saturated=False))
         if mask == "PQ_MASK_SATURATION_THERMAL":
-            ga_pixel_bit.update(dict(tir_saturated=False))
+            ga_pixel_bit['tir_saturated'] = False
         _log.info("applying bit mask %s on %s ", mask, ga_pixel_bit)
 
     return ga_pixel_bit
 
 
-def load_data(dc, products, acq_min, acq_max, season, band, stats, masks, epoch, expression):
+def load_data(dc, products, season, acq_min, acq_max, band, stats, masks, epoch, expressions):
     data = None
     datasets = []
+
+    parsed_expressions = parse_expressions(*expressions)
+
     for prodname in products:
-        _log.info("\t loading data found for product %s the date range %s %s expression %s", prodname,
-                  acq_min, acq_max, expression)
+        _log.info("\t loading data found for product %s the date range %s %s expressions %s", prodname,
+                  acq_min, acq_max, expressions)
         data = dc.load(product=prodname,
                        measurements=['blue', 'green', 'red', 'nir', 'swir1', 'swir2'],
                        dask_chunks={'time': 1, 'y': 200, 'x': 200},
-                       **parse_expressions(*expression))
+                       **parsed_expressions)
         if len(data) == 0:
             _log.info("\t No data found")
             continue
         if masks:
-            data = mask_data_with_pq(dc, data, prodname, acq_max, acq_min, expression, masks)
+            data = mask_data_with_pq(dc, data, prodname, acq_max, acq_min, expressions, masks)
 
             data = group_by_season_epoch(data, epoch, season)
 
