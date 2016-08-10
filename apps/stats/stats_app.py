@@ -104,7 +104,7 @@ required_option = functools.partial(click.option, required=True)
 @click.option('--measurement')
 @click.option('--computed-measurement')
 @click.option('--season', type=click.Choice(SEASONAL_OPTIONS.keys()))
-@required_option('--stats', multiple=True, type=click.Choice())
+@required_option('--stats', multiple=True, type=click.Choice(AVAILABLE_STATS))
 @required_option('--epoch', help='Compute stats multiple times, grouped by epoch. Eg. 1month')
 @click.option('--masks', multiple=True)
 @ui.global_cli_options
