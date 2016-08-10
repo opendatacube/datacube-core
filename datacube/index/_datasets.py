@@ -484,7 +484,12 @@ class DatasetResource(object):
         :param dict[str,str|float|datacube.model.Range] query:
         :rtype: int
         """
-        return self._do_count(query)
+        # This may be optimised into one query in the future.
+        result = 0
+        for product_type, count in self._do_count_by_product(query):
+            result += count
+
+        return result
 
     def count_by_product(self, **query):
         """
@@ -494,7 +499,7 @@ class DatasetResource(object):
         :returns: Sequence of (product, count)
         :rtype: __generator[(datacube.model.DatasetType,  int)]]
         """
-        return self._do_count(query)
+        return self._do_count_by_product(query)
 
     def count_by_product_through_time(self, period, **query):
         """
@@ -553,14 +558,13 @@ class DatasetResource(object):
                        with_source_ids=with_source_ids
                    ))
 
-    def _do_count(self, query):
-        result = 0
-
+    def _do_count_by_product(self, query):
         for q, dataset_type in self._get_product_queries(query):
             dataset_fields = dataset_type.metadata_type.dataset_fields
             query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
-            result += self._db.count_datasets(query_exprs)
-        return result
+            count = self._db.count_datasets(query_exprs)
+            if count > 0:
+                yield dataset_type, count
 
     def _do_time_count(self, period, query, ensure_single=False):
         if 'time' not in query:

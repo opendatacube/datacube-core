@@ -368,6 +368,56 @@ def test_count_searches(index, pseudo_telemetry_type, pseudo_telemetry_dataset, 
     assert datasets == 0
 
 
+def test_count_by_product_searches(index, pseudo_telemetry_type, pseudo_telemetry_dataset, ls5_nbar_gtiff_type):
+    """
+    :type index: datacube.index._api.Index
+    :type pseudo_telemetry_type: datacube.model.DatasetType
+    :type pseudo_telemetry_dataset: datacube.model.Dataset
+    """
+    # The dataset should have been matched to the telemetry type.
+    assert pseudo_telemetry_dataset.type.id == pseudo_telemetry_type.id
+    assert index.datasets.search_eager()
+
+    # One result in the telemetry type
+    products = tuple(index.datasets.count_by_product(
+        product=pseudo_telemetry_type.name,
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS',
+    ))
+    assert products == ((pseudo_telemetry_type, 1),)
+
+    # One result in the metadata type
+    products = tuple(index.datasets.count_by_product(
+        metadata_type=pseudo_telemetry_type.metadata_type.name,
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS',
+    ))
+    assert products == ((pseudo_telemetry_type, 1),)
+
+    # No results when searching for a different dataset type.
+    products = tuple(index.datasets.count_by_product(
+        product=ls5_nbar_gtiff_type.name,
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS'
+    ))
+    assert products == ()
+
+    # One result when no types specified.
+    products = tuple(index.datasets.count_by_product(
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS',
+    ))
+    assert products == ((pseudo_telemetry_type, 1),)
+
+    # No results for different metadata type.
+    products = tuple(index.datasets.count_by_product(
+        metadata_type='telemetry',
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS'
+    ))
+    assert products == ()
+
+
 def test_count_time_groups(index, pseudo_telemetry_type, pseudo_telemetry_dataset):
     """
     :type index: datacube.index._api.Index
