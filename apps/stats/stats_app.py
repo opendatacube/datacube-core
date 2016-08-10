@@ -8,18 +8,16 @@ __author__ = 'u81051'
 from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import division
-import sys
 import click
 import functools
 import numpy as np
 from datetime import datetime
 import logging
-import rasterio
 import datacube.api
 from datacube.ui.expression import parse_expressions
 
 from dateutil.relativedelta import relativedelta
-from datacube.api.geo_xarray import append_solar_day, _get_spatial_dims
+from datacube.api.geo_xarray import append_solar_day
 from datacube.storage.masking import make_mask
 from dateutil.rrule import rrule, YEARLY
 from datacube.ui import click as ui
@@ -28,17 +26,15 @@ from enum import Enum
 _log = logging.getLogger()
 
 
-MY_DATA = {}
-NDV = -999
 SEASONAL_OPTIONS = {'SUMMER': 'DJF',
                     'AUTUMN': 'MAM',
                     'WINTER': 'JJA',
                     'SPRING': 'SON',
                     'CALENDAR_YEAR': 'year',
-                    'QTR_1': '1',
-                    'QTR_2': '2',
-                    'QTR_3': '3',
-                    'QTR_4': '4'}
+                    'QTR_1': 1,
+                    'QTR_2': 2,
+                    'QTR_3': 3,
+                    'QTR_4': 4}
 
 
 class Ls57Arg25Bands(Enum):
@@ -50,23 +46,14 @@ class Ls57Arg25Bands(Enum):
     SHORT_WAVE_INFRARED_2 = 6
 
 
-def initialise_odata(dtype, y, x):
+def initialise_odata(dtype, y, x, ndv):
     odata = np.empty(shape=(y, x), dtype=dtype)
-    odata.fill(NDV)
+    odata.fill(ndv)
     return odata
 
 
-def get_mean_longitude(cell_dataset):
-    x, y = _get_spatial_dims(cell_dataset)
-    mean_lat = float(cell_dataset[x][0] + cell_dataset[x][-1]) / 2.
-    mean_lon = float(cell_dataset[y][0] + cell_dataset[y][-1]) / 2.
-    bounds = {'left': mean_lon, 'right': mean_lon, 'top': mean_lat, 'bottom': mean_lat}
-    input_crs = cell_dataset.crs.wkt
-    left, bottom, right, top = rasterio.warp.transform_bounds(input_crs, 'EPSG:4326', **bounds)
-    return left
-
-available_statistics = ['MIN', 'MAX', 'MEAN', 'GEOMEDIAN', 'MEDIAN', 'VARIANCE', 'STANDARD_DEVIATION',
-                        'COUNT_OBSERVED', 'PERCENTILE']
+AVAILABLE_STATS = ['MIN', 'MAX', 'MEAN', 'GEOMEDIAN', 'MEDIAN', 'VARIANCE', 'STANDARD_DEVIATION',
+                   'COUNT_OBSERVED', 'PERCENTILE']
 
 
 def do_compute(data, stats, odata):
@@ -107,39 +94,51 @@ def do_compute(data, stats, odata):
     return odata
 
 
+#: pylint: disable=invalid-name
 required_option = functools.partial(click.option, required=True)
 
 
 @click.command(name='stats')
 @click.argument('expressions', nargs=-1)
-@click.option('--measurement', 'measurements', multiple=True)
-@click.option('--computed-measurement', 'computed_measurements', multiple=True)
-@required_option('--season', type=click.Choice(SEASONAL_OPTIONS.keys()))
-@required_option('--stats')
-@required_option('--epoch')
+@required_option('--products', multiple=True)
+@click.option('--measurement')
+@click.option('--computed-measurement')
+@click.option('--season', type=click.Choice(SEASONAL_OPTIONS.keys()))
+@required_option('--stats', multiple=True, type=click.Choice())
+@required_option('--epoch', help='Compute stats multiple times, grouped by epoch. Eg. 1month')
 @click.option('--masks', multiple=True)
 @ui.global_cli_options
 @ui.executor_cli_options
 @ui.pass_index(app_name='agdc-stats-app')
-def main(index, season, measurements, computed_measurement, stats, epoch, masks, expressions, executor):
+def main(index, season, products, measurement, computed_measurement, stats, epoch, masks, expressions, executor):
     """
     Compute Statistical Summaries
 
     Select data using [EXPRESSIONS] to limit in space and time
+
+    Must select one or more products.
+
+    May select a single measurement, or a single computed measurement
+
+    Tassel Cap Index is a problem
+
+
     """
-    tasks = create_stats_tasks(measurements, epoch, masks, season, stats, expressions)
+    tasks = create_stats_tasks(products, measurement, computed_measurement, epoch, masks, season, stats, expressions)
 
     results = execute_tasks(executor, index, tasks)
 
     process_results(executor, results)
 
 
-def create_stats_tasks(measurements, epoch, masks, season, stats, expressions):
+def create_stats_tasks(products, measurements, computed_measurements, epoch, masks, season, stats, expressions):
     tasks = []
     start_date, end_date = get_start_end_dates(expressions)
     for acq_min, acq_max in get_epochs(epoch, start_date, end_date):
-        task = dict(acq_min=acq_min, acq_max=acq_max, season=season, measurements=measurements,
-                    stats=stats, masks=masks, epoch=epoch, expressions=expressions)
+        task = dict(products=products, acq_range=(acq_min, acq_max), season=season,
+                    measurements=measurements,
+                    stats=stats, masks=masks, epoch=epoch, expressions=expressions,
+                    computed_measurements=computed_measurements)
         tasks.append(task)
     return tasks
 
@@ -162,7 +161,7 @@ def execute_tasks(executor, index, tasks):
 def process_results(executor, results):
     for result in executor.as_completed(results):
         acq_min, data = executor.result(result)
-        MY_DATA[acq_min] = data
+        print(acq_min, data)
 
 
 # def old_main(argv):
@@ -200,13 +199,15 @@ def get_epochs(epoch, start, end):
         yield acq_min, acq_max
 
 
-def derive_data(band, dataset, prodname, data):
-    blue = data.blue.where(data.blue != NDV)
-    green = data.green.where(data.green != NDV)
-    red = data.red.where(data.red != NDV)
-    nir = data.nir.where(data.nir != NDV)
-    sw1 = data.swir1.where(data.swir1 != NDV)
-    sw2 = data.swir2.where(data.swir2 != NDV)
+def compute_measurement(band, dataset, prodname, data):
+    # Return a Dataset instead of a DataArray
+
+    blue = data.blue.where(data.blue != data.blue.nodata)
+    green = data.green.where(data.green != data.green.nodata)
+    red = data.red.where(data.red != data.red.nodata)
+    nir = data.nir.where(data.nir != data.nir.nodata)
+    sw1 = data.swir1.where(data.swir1 != data.swir1.nodata)
+    sw2 = data.swir2.where(data.swir2 != data.swir2.nodata)
     if band == "NDFI":
         return (sw1 - nir) / (sw1 + nir)
     if band == "NDVI":
@@ -220,92 +221,93 @@ def derive_data(band, dataset, prodname, data):
     if dataset == "TCI":
         return calculate_tci(prodname, blue=blue, green=green, red=red, nir=nir, sw1=sw1, sw2=sw2)
 
+COMPUTED_MEASUREMENT_REQS = {
+    'NDFI': {'sw1', 'nir'},
+    'NDVI': {'nir', 'red'},
+    'NDWI': {'green', 'nir'},
+    'MNDWI': {'green', 'sw1'},
+    'NBR': {'nir', 'sw2'}
+}
 
-def get_band_data(band, data):
-    if band == "BLUE":
-        return data.blue.where(data.blue != NDV)
-    if band == "GREEN":
-        return data.green.where(data.green != NDV)
-    if band == "RED":
-        return data.red.where(data.red != NDV)
-    if band == "NEAR_INFRARED":
-        return data.nir.where(data.nir != NDV)
-    if band == "SHORT_WAVE_INFRARED_1":
-        return data.swir1.where(data.swir1 != NDV)
-    if band == "SHORT_WAVE_INFRARED_2":
-        return data.swir2.where(data.swir2 != NDV)
+
+def get_band_data(data, measurement):
+    return data[measurement].where(data[measurement] != data[measurement].nodata)
+
+VALID_MASKS = {"PQ_MASK_CONTIGUITY", "PQ_MASK_CLOUD_FMASK", "PQ_MASK_CLOUD_ACCA", "PQ_MASK_CLOUD_SHADOW_ACCA",
+               "PQ_MASK_SATURATION", "PQ_MASK_SATURATION_OPTICAL", "PQ_MASK_SATURATION_THERMAL"}
 
 
 def create_mask_def(masks):
-    ga_pixel_bit = {name: True for name in
-                    ('swir2_saturated',
-                     'red_saturated',
-                     'blue_saturated',
-                     'nir_saturated',
-                     'green_saturated',
-                     'tir_saturated',
-                     'swir1_saturated')}
-    ga_pixel_bit.update(dict(contiguous=False, land_sea='land', cloud_shadow_acca='no_cloud_shadow',
-                             cloud_acca='no_cloud', cloud_fmask='no_cloud',
-                             cloud_shadow_fmask='no_cloud_shadow'))
+    ga_pqa_mask_def = {name: True for name in
+                       ('swir2_saturated',
+                        'red_saturated',
+                        'blue_saturated',
+                        'nir_saturated',
+                        'green_saturated',
+                        'tir_saturated',
+                        'swir1_saturated')}
+    ga_pqa_mask_def.update(dict(contiguous=False, land_sea='land', cloud_shadow_acca='no_cloud_shadow',
+                                cloud_acca='no_cloud', cloud_fmask='no_cloud',
+                                cloud_shadow_fmask='no_cloud_shadow'))
 
-    for mask in masks.split(','):
+    for mask in masks:
         if mask == "PQ_MASK_CONTIGUITY":
-            ga_pixel_bit['contiguous'] = True
+            ga_pqa_mask_def['contiguous'] = True
         if mask == "PQ_MASK_CLOUD_FMASK":
-            ga_pixel_bit['cloud_fmask'] = 'no_cloud'
+            ga_pqa_mask_def['cloud_fmask'] = 'no_cloud'
         if mask == "PQ_MASK_CLOUD_ACCA":
-            ga_pixel_bit['cloud_acca'] = 'no_cloud_shadow'
+            ga_pqa_mask_def['cloud_acca'] = 'no_cloud_shadow'
         if mask == "PQ_MASK_CLOUD_SHADOW_ACCA":
-            ga_pixel_bit['cloud_shadow_acca'] = 'no_cloud_shadow'
+            ga_pqa_mask_def['cloud_shadow_acca'] = 'no_cloud_shadow'
         if mask == "PQ_MASK_SATURATION":
-            ga_pixel_bit.update(dict(blue_saturated=False, green_saturated=False, red_saturated=False,
-                                     nir_saturated=False, swir1_saturated=False, tir_saturated=False,
-                                     swir2_saturated=False))
+            ga_pqa_mask_def.update(dict(blue_saturated=False, green_saturated=False, red_saturated=False,
+                                        nir_saturated=False, swir1_saturated=False, tir_saturated=False,
+                                        swir2_saturated=False))
         if mask == "PQ_MASK_SATURATION_OPTICAL":
-            ga_pixel_bit.update(dict(blue_saturated=False, green_saturated=False, red_saturated=False,
-                                     nir_saturated=False, swir1_saturated=False, swir2_saturated=False))
+            ga_pqa_mask_def.update(dict(blue_saturated=False, green_saturated=False, red_saturated=False,
+                                        nir_saturated=False, swir1_saturated=False, swir2_saturated=False))
         if mask == "PQ_MASK_SATURATION_THERMAL":
-            ga_pixel_bit['tir_saturated'] = False
-        _log.info("applying bit mask %s on %s ", mask, ga_pixel_bit)
+            ga_pqa_mask_def['tir_saturated'] = False
 
-    return ga_pixel_bit
+    return ga_pqa_mask_def
 
 
-def load_data(dc, products, season, acq_min, acq_max, band, stats, masks, epoch, expressions):
+def load_data(dc, products, season, measurement, computed_measurement, acq_range, stats, masks, epoch,
+              expressions):
     data = None
     datasets = []
 
     parsed_expressions = parse_expressions(*expressions)
 
+    parsed_expressions['time'] = acq_range
+
+    required_measurements = calc_required_measurements(measurement, computed_measurement)
+
     for prodname in products:
-        _log.info("\t loading data found for product %s the date range %s %s expressions %s", prodname,
-                  acq_min, acq_max, expressions)
+        _log.info("\t loading data found for product %s the date range %s expressions %s", prodname,
+                  acq_range, expressions)
         data = dc.load(product=prodname,
-                       measurements=['blue', 'green', 'red', 'nir', 'swir1', 'swir2'],
-                       dask_chunks={'time': 1, 'y': 200, 'x': 200},
+                       measurements=required_measurements,
                        **parsed_expressions)
+        data.attrs['product'] = prodname
         if len(data) == 0:
             _log.info("\t No data found")
             continue
         if masks:
-            data = mask_data_with_pq(dc, data, prodname, acq_max, acq_min, expressions, masks)
+            data = mask_data_with_pq(dc, data, prodname, parsed_expressions, masks)
 
-            data = group_by_season_epoch(data, epoch, season)
+            data = select_by_season(data, epoch, season)
 
-            print("Loaded data for ", prodname, acq_min, acq_max)
-
-            if band in [t.name for t in Ls57Arg25Bands]:
-                data = get_band_data(band, data)
-            else:
-                data = derive_data(band, "dataset", prodname, data)
+            if measurement:
+                data = get_band_data(data, measurement)
+            elif computed_measurement:
+                data = compute_measurement(data, computed_measurement)
             datasets.append(data)
 
     # xr.concat(datasets, dim='solar_day')
 
-    dtype = determine_output_dtype(band, stats)
     if data.nbytes > 0:
-        odata = initialise_odata(dtype, data.shape[1], data.shape[2])
+        odata = initialise_odata(output_dtype(stats, measurement), data.shape[1], data.shape[2])
         odata = do_compute(data, stats, odata)
         data = data.isel(solar_day=0).drop('solar_day')
         data.data = odata
@@ -314,36 +316,41 @@ def load_data(dc, products, season, acq_min, acq_max, band, stats, masks, epoch,
         return None
 
 
-def determine_output_dtype(band, stats):
-    dtype = np.float32
-    if stats == "COUNT_OBSERVED" or band in [t.name for t in Ls57Arg25Bands]:
-        dtype = np.int16
-    return dtype
+def calc_required_measurements(measurement, computed_measurement):
+    if measurement:
+        return measurement
+    else:
+        return list(COMPUTED_MEASUREMENT_REQS[computed_measurement])
 
 
-def group_by_season_epoch(data, epoch, season):
-    append_solar_day(data, get_mean_longitude(data))
-    data = data.groupby('solar_day').max(dim='time')
+def output_dtype(stats, measurement):
+    if stats == "COUNT_OBSERVED" or measurement in [t.name for t in Ls57Arg25Bands]:
+        return np.int16
+    else:
+        return np.float32
+
+
+def select_by_season(data, epoch, season):
+    append_solar_day(data)
+    data = data.groupby('solar_day').max(dim='time')  # TODO: I don't think this is good for PQ... MAYBE
     if "QTR" in season:
-        data = data.isel(solar_day=data.groupby('solar_day.quarter').groups[int(SEASONAL_OPTIONS[season])])
+        data = data.isel(solar_day=data.groupby('solar_day.quarter').groups[SEASONAL_OPTIONS[season]])
     elif "CALENDAR" in season:
         if epoch == 1:
-            year = int(str(data.groupby('solar_day.year').groups.keys()).strip('[]'))
-            data = data.isel(solar_day=data.groupby('solar_day.year').groups[year])
+            data = next(iter(data.groupby('solar_day.year')))
     else:
         print("Loading data for ", season, SEASONAL_OPTIONS[season])
         data = data.isel(solar_day=data.groupby('solar_day.season').groups[SEASONAL_OPTIONS[season]])
     return data
 
 
-def mask_data_with_pq(dc, data, prodname, acq_max, acq_min, expression, masks):
+def mask_data_with_pq(dc, data, prodname, parsed_expressions, masks):
     mask_clear = None
-    pq_prodname = prodname.replace('nbar', 'pqa')
-    pq = dc.load(product=pq_prodname, time=(acq_min, acq_max),
-                 dask_chunks={'time': 1, 'y': 200, 'x': 200},
-                 **parse_expressions(*expression))
+    pq_prodname = prodname.replace('nbar', 'pq')
+    pq = dc.load(product=pq_prodname,
+                 **parsed_expressions)
     if len(pq) > 0:
-        for mask in masks.split(','):
+        for mask in masks:
             if mask == "PQ_MASK_CLEAR_ELB":
                 mask_clear = pq['pixelquality'] & 15871 == 15871
             elif mask == "PQ_MASK_CLEAR":
@@ -366,10 +373,6 @@ class TasselCapIndex(Enum):
 
 
 class Landsats(Enum):
-    """
-     Needs two satellites two use Tassel Cap Index properties as LS5 and LS7 are same
-    """
-
     LANDSAT_5 = "ls5_nbar_albers"
     LANDSAT_7 = "ls7_nbar_albers"
     LANDSAT_8 = "ls8_nbar_albers"
@@ -501,10 +504,22 @@ def calculate_tci(prodname, **bands):
         if b in coefficients:
             tci += bands_masked[b] * coefficients[b]
 
-    tci = tci.filled(NDV)
+    tci = tci.filled(np.nan)
     return tci
 
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
-    main(sys.argv[1:])
+# https://gist.github.com/andrewdhicks/57c0503c0117695cdf136540bfae0749
+# from datacube.api.masking import get_flags_def
+# fd = get_flags_def(pq.pixelquality)
+# valid_bit = fd['contiguous']['bits']
+#
+#
+# def pq_fuser(dest, src):
+#     valid_val = (1 << valid_bit)
+#
+#     no_data_dest_mask = ~(dest & valid_val).astype(bool)
+#     np.copyto(dest, src, where=no_data_dest_mask)
+#
+#     both_data_mask = (valid_val & dest & src).astype(bool)
+#     np.copyto(dest, src & dest, where=both_data_mask)
+
