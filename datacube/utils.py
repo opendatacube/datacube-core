@@ -115,10 +115,28 @@ def get_doc_offset(offset, document):
     return value
 
 
-def parse_time(time):
+def _parse_time_generic(time):
     if isinstance(time, compat.string_types):
         return dateutil.parser.parse(time)
     return time
+
+
+try:
+    import ciso8601  # pylint: disable=wrong-import-position
+
+    def parse_time(time):
+        try:
+            result = ciso8601.parse_datetime(time)
+        except TypeError:
+            return time
+
+        if result is not None:
+            return result
+
+        return _parse_time_generic(time)
+except ImportError:
+    def parse_time(time):
+        return _parse_time_generic(time)
 
 
 def _points_to_ogr(points):
