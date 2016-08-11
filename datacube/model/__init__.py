@@ -261,8 +261,6 @@ class DatasetType(object):
                  metadata_type,
                  definition,
                  id_=None):
-        self.validate(definition)
-
         self.id = id_
 
         # All datasets in a collection must have the same metadata_type.
