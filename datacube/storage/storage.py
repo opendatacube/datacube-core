@@ -74,42 +74,43 @@ def _calc_offsets(off, src_size, dst_size):
     return read_off, write_off, size
 
 
-def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata, resampling='nearest', fuse_func=None):
-    assert len(destination.shape) == 2
-
-    resampling = _rasterio_resampling_method(resampling)
-
+def reproject(source, dest, dst_transform, dst_nodata, dst_projection, resampling):
     def no_scale(affine, eps=0.01):
         return abs(affine.a - 1.0) < eps and abs(affine.e - 1.0) < eps
 
     def no_fractional_translate(affine, eps=0.01):
         return abs(affine.c % 1.0) < eps and abs(affine.f % 1.0) < eps
 
-    def reproject(source, dest):
-        with source.open() as src:
-            array_transform = ~source.transform * dst_transform
-            if (source.crs == dst_projection and no_scale(array_transform) and
-                    (resampling == RESAMPLING.nearest or no_fractional_translate(array_transform))):
-                dydx = (int(round(array_transform.f)), int(round(array_transform.c)))
-                read, write, shape = zip(*map(_calc_offsets, dydx, src.shape, dest.shape))
+    with source.open() as src:
+        array_transform = ~source.transform * dst_transform
+        if (source.crs == dst_projection and no_scale(array_transform) and
+                (resampling == RESAMPLING.nearest or no_fractional_translate(array_transform))):
+            dydx = (int(round(array_transform.f)), int(round(array_transform.c)))
+            read, write, shape = zip(*map(_calc_offsets, dydx, src.shape, dest.shape))
 
-                dest.fill(dst_nodata)
-                if all(shape):
-                    window = ((read[0], read[0] + shape[0]), (read[1], read[1] + shape[1]))
-                    tmp = src.ds.read(indexes=src.bidx, window=window)
-                    numpy.copyto(dest[write[0]:write[0] + shape[0], write[1]:write[1] + shape[1]],
-                                 tmp, where=(tmp != source.nodata))
-            else:
-                rasterio.warp.reproject(src,
-                                        dest,
-                                        src_transform=source.transform,
-                                        src_crs=str(source.crs),
-                                        src_nodata=source.nodata,
-                                        dst_transform=dst_transform,
-                                        dst_crs=str(dst_projection),
-                                        dst_nodata=dst_nodata,
-                                        resampling=resampling,
-                                        NUM_THREADS=OPTIONS['reproject_threads'])
+            dest.fill(dst_nodata)
+            if all(shape):
+                window = ((read[0], read[0] + shape[0]), (read[1], read[1] + shape[1]))
+                tmp = src.ds.read(indexes=src.bidx, window=window)
+                numpy.copyto(dest[write[0]:write[0] + shape[0], write[1]:write[1] + shape[1]],
+                             tmp, where=(tmp != source.nodata))
+        else:
+            rasterio.warp.reproject(src,
+                                    dest,
+                                    src_transform=source.transform,
+                                    src_crs=str(source.crs),
+                                    src_nodata=source.nodata,
+                                    dst_transform=dst_transform,
+                                    dst_crs=str(dst_projection),
+                                    dst_nodata=dst_nodata,
+                                    resampling=resampling,
+                                    NUM_THREADS=OPTIONS['reproject_threads'])
+
+
+def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata, resampling='nearest', fuse_func=None):
+    assert len(destination.shape) == 2
+
+    resampling = _rasterio_resampling_method(resampling)
 
     def copyto_fuser(dest, src):
         numpy.copyto(dest, src, where=(src != dst_nodata))
@@ -117,7 +118,7 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
     fuse_func = fuse_func or copyto_fuser
 
     if len(sources) == 1:
-        reproject(sources[0], destination)
+        reproject(sources[0], destination, dst_transform, dst_nodata, dst_projection, resampling)
         return destination
 
     destination.fill(dst_nodata)
@@ -126,7 +127,7 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
 
     buffer_ = numpy.empty(destination.shape, dtype=destination.dtype)
     for source in sources:
-        reproject(source, buffer_)
+        reproject(source, buffer_, dst_transform, dst_nodata, dst_projection, resampling)
         fuse_func(destination, buffer_)
 
     return destination
