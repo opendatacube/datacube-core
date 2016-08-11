@@ -10,6 +10,7 @@ import os
 from collections import namedtuple, OrderedDict
 
 import numpy
+import cachetools
 from affine import Affine
 from osgeo import osr
 from pathlib import Path
@@ -427,6 +428,15 @@ class CRSProjProxy(object):
         return self._crs.GetProjParm(item)
 
 
+@cachetools.cached({})
+def _make_crs(crs_str):
+    crs = osr.SpatialReference()
+    crs.SetFromUserInput(crs_str)
+    if not crs.ExportToProj4() or crs.IsGeographic() == crs.IsProjected():
+        raise ValueError('Not a valid CRS: %s' % crs_str)
+    return crs
+
+
 class CRS(object):
     """
     Wrapper around `osr.SpatialReference` providing a more pythonic interface
@@ -466,10 +476,7 @@ class CRS(object):
         if isinstance(crs_str, CRS):
             crs_str = crs_str.crs_str
         self.crs_str = crs_str
-        self._crs = osr.SpatialReference()
-        self._crs.SetFromUserInput(crs_str)
-        if not self._crs.ExportToProj4() or self.geographic == self.projected:
-            raise ValueError('Not a valid CRS: %s' % crs_str)
+        self._crs = _make_crs(crs_str)
 
     def __getitem__(self, item):
         return self._crs.GetAttrValue(item)
