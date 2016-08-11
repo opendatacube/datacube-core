@@ -424,7 +424,8 @@ class PostgresDb(object):
             select(_DATASET_SELECT_FIELDS).where(DATASET.c.metadata.contains(metadata))
         ).fetchall()
 
-    def _alchemify_expressions(self, expressions):
+    @staticmethod
+    def _alchemify_expressions(expressions):
         def raw_expr(expression):
             if isinstance(expression, OrExpression):
                 return or_(raw_expr(expr) for expr in expression.exprs)
@@ -432,14 +433,8 @@ class PostgresDb(object):
 
         return [raw_expr(expression) for expression in expressions]
 
-    def search_datasets(self, expressions, select_fields=None, with_source_ids=False):
-        """
-        :type with_source_ids: bool
-        :type select_fields: tuple[datacube.index.postgres._fields.PgField]
-        :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
-        :rtype: dict
-        """
-
+    @staticmethod
+    def search_datasets_query(expressions, select_fields=None, with_source_ids=False):
         if select_fields:
             select_columns = tuple(
                 f.alchemy_expression.label(f.name)
@@ -462,18 +457,28 @@ class PostgresDb(object):
                 ).label('dataset_refs'),
             )
 
-        raw_expressions = self._alchemify_expressions(expressions)
+        raw_expressions = PostgresDb._alchemify_expressions(expressions)
 
         select_query = (
             select(
                 select_columns
             ).select_from(
-                self._from_expression(DATASET, expressions, select_fields)
+                PostgresDb._from_expression(DATASET, expressions, select_fields)
             ).where(
                 and_(DATASET.c.archived == None, *raw_expressions)
             )
         )
 
+        return select_query
+
+    def search_datasets(self, expressions, select_fields=None, with_source_ids=False):
+        """
+        :type with_source_ids: bool
+        :type select_fields: tuple[datacube.index.postgres._fields.PgField]
+        :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
+        :rtype: dict
+        """
+        select_query = self.search_datasets_query(expressions, select_fields, with_source_ids)
         results = self._connection.execute(select_query)
         for result in results:
             yield result
@@ -554,7 +559,8 @@ class PostgresDb(object):
             # if not time_period.upper_inf:
             yield Range(time_period.lower, time_period.upper), dataset_count
 
-    def _from_expression(self, source_table, expressions=None, fields=None):
+    @staticmethod
+    def _from_expression(source_table, expressions=None, fields=None):
         join_tables = set()
         if expressions:
             join_tables.update(expression.field.required_alchemy_table for expression in expressions)
