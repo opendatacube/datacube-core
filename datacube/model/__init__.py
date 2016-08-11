@@ -168,7 +168,7 @@ class Dataset(object):
 
         raise RuntimeError('Cant figure out the projection: %s %s' % (projection['datum'], projection['zone']))
 
-    @property
+    @cached_property
     def extent(self):
         def xytuple(obj):
             return obj['x'], obj['y']
@@ -299,7 +299,7 @@ class DatasetType(object):
         assert self.metadata_type.name == 'eo'
         return ('time',) + self.grid_spec.dimensions
 
-    @property
+    @cached_property
     def grid_spec(self):
         if 'storage' not in self.definition:
             return None
