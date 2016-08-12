@@ -13,6 +13,7 @@ import matplotlib; matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.animation as anim
 import xarray.plot as xp
+import pandas as pd
 import numpy as np
 import warnings
 import datacube
@@ -57,7 +58,7 @@ class Toolbar(NavigationToolbar2TkAgg):
              ('Zoom', 'Zoom to rectangle', 'zoom_to_rect', 'zoom'),
              ('Pan', 'Pan axes with left mouse, zoom with right', 'move', 'pan'),
              (None, None, None, None),
-             ('Save', 'Save', 'filesave', 'save_figure'),
+             ('Save', 'Save', 'filesave', 'save_movie'),
              (None, None, None, None),
              ('Prev', 'Previous observation', 'back', 'back'),
              ('Next', 'Next observation', 'forward', 'forward'),
@@ -113,7 +114,7 @@ class Toolbar(NavigationToolbar2TkAgg):
     def back(self, *args):
         backimg()
 
-    def save_figure(self, *args):
+    def save_movie(self, *args):
         filetypes = self.canvas.get_supported_filetypes().copy()
         default_filetype = self.canvas.get_default_filetype()
 
@@ -156,6 +157,148 @@ class Toolbar(NavigationToolbar2TkAgg):
                     for i in range(ntime):
                         changeimg(i)
                         mwriter.grab_frame()
+            except Exception as e:
+                tkinter_messagebox.showerror("Error saving file", str(e))
+
+class DrillToolbar(NavigationToolbar2TkAgg):
+
+    def __init__(self, canvas, parent):
+        self.toolitems = (
+             ('CSV', 'Save CSV', 'filesave', 'save_csv'),
+             ('FIG', 'Save figure', 'filesave', 'save_figure'),
+           )
+        NavigationToolbar2TkAgg.__init__(self, canvas, parent)
+        self._init_toolbar()
+        self.configure(background='black')
+
+    def _Button(self, text, file, command, extension='.gif'):
+        b = tk.Button(master=self, text=text, padx=2, pady=2, command=command,
+                      relief=tk.FLAT)
+        b.pack(side=tk.LEFT)
+        return b
+
+    def _init_toolbar(self):
+        xmin, xmax = self.canvas.figure.bbox.intervalx
+        height, width = 30, xmax-xmin
+        tk.Frame.__init__(self, master=self.window,
+                          width=int(width), height=int(height),
+                          borderwidth=2)
+        self.update()
+
+        for text, tooltip_text, image_file, callback in self.toolitems:
+            if text is None:
+                # spacer, unhandled in Tk
+                pass
+            else:
+                button = self._Button(text=text, file=image_file,
+                                      command=getattr(self, callback))
+                if tooltip_text is not None:
+                    ToolTip.createToolTip(button, tooltip_text)
+                button.configure(background='black', foreground='white')
+
+        self.message = tk.StringVar(master=self)
+
+    def save_csv(self, *args):
+        initialdir = plt.rcParams.get('savefig.directory', '')
+        initialdir = os.path.expanduser(initialdir)
+        initialfile = 'pixeldrill.csv'
+        fname = tkinter_tkfiledialog.asksaveasfilename(
+            master=self.window,
+            title='Save the pixel drill',
+            filetypes=[('CSV', '*.csv')],
+            defaultextension='',
+            initialdir=initialdir,
+            initialfile='pixeldrill.csv',
+            )
+
+        if fname == "" or fname == ():
+            return
+        else:
+            if initialdir == '':
+                plt.rcParams['savefig.directory'] = initialdir
+            else:
+                plt.rcParams['savefig.directory'] = os.path.dirname(six.text_type(fname))
+            try:
+                ds = pd.DataFrame(data=ts,
+                                  index=times,
+                                  columns=bands)
+                ds.to_csv(fname)
+
+            except Exception as e:
+                tkinter_messagebox.showerror("Error saving file", str(e))
+
+
+    def save_figure(self, *args):
+        filetypes = self.canvas.get_supported_filetypes().copy()
+        default_filetype = self.canvas.get_default_filetype()
+
+        default_filetype_name = filetypes[default_filetype]
+        del filetypes[default_filetype]
+
+        sorted_filetypes = list(six.iteritems(filetypes))
+        sorted_filetypes.sort()
+        sorted_filetypes.insert(0, (default_filetype, default_filetype_name))
+
+        initialdir = plt.rcParams.get('savefig.directory', '')
+        initialdir = os.path.expanduser(initialdir)
+        initialfile = 'pixeldrill.pdf'
+        fname = tkinter_tkfiledialog.asksaveasfilename(
+            master=self.window,
+            title='Save the pixel drill',
+            filetypes=[('PNG', '*.png'), ('PDF', '*.pdf')],
+            defaultextension='',
+            initialdir=initialdir,
+            initialfile=initialfile,
+            )
+
+        if fname == "" or fname == ():
+            return
+        else:
+            if initialdir == '':
+                plt.rcParams['savefig.directory'] = initialdir
+            else:
+                plt.rcParams['savefig.directory'] = os.path.dirname(six.text_type(fname))
+            try:
+                fig = plt.figure(figsize=(6, 4.5))
+
+                ax3 = fig.add_subplot(211, xmargin=0, ymargin=0)
+                ax3.set_xticks(range(nband))
+                ax3.set_xticklabels(bands)
+                ax3.set_title('Spectral profiles through time')
+                ax3.set_xlim((-0.2, nband-0.8))
+                ax3.set_ylim((0, np.nanmax(data)))
+                ax3.xaxis.grid(color='black', linestyle='dotted')
+
+                box = ax3.get_position()
+                ax3.set_position([box.x0, box.y0 + box.height * 0.1,
+                                  box.width, box.height * 0.8])
+
+                tindex = range(1, len(times) + 1)
+
+                ax4 = fig.add_subplot(212, xmargin=0, ymargin=0)
+                ax4.set_title('Band time series')
+
+                ax4.set_xticks(tindex)
+                ax4.set_xlim(0.9, tindex[-1] + 0.1)
+                ax4.set_ylim((0, np.nanmax(data)))
+
+                for i, p in enumerate(ts.T):
+                    ax3.plot(range(nband), p, c='k')
+
+                for i in range(ts.shape[0]):
+                    tt = ts[i, :]
+                    ax4.plot(tindex, tt, lw=1,
+                             marker='.', linestyle='-', color=colors[i],
+                             label=bands[i])
+
+                ax4.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2),
+                           labelspacing=0.8, handletextpad=0, handlelength=2,
+                           borderaxespad=0, ncol=nband, columnspacing=0.5)
+
+                fig.savefig(fname, bbox_inches='tight')
+
+                #plt.close(fig)
+ 
             except Exception as e:
                 tkinter_messagebox.showerror("Error saving file", str(e))
 
@@ -226,7 +369,8 @@ def drill(x=0, y=0):
     """Do the pixel drill."""
 
     # Get slice
-    
+
+    global ts
     ts = data[y,x,:,:]
 
     # Plot spectral profile
@@ -446,6 +590,16 @@ def run(latrange=None, lonrange=None, timerange=None, measurements=None,
     drillfig.patch.set_facecolor('black')
     drillfig.canvas.toolbar.pack_forget()
 
+    # Surgery on the toolbar
+    
+    canvas = drillfig.canvas
+    window = drillfig.canvas.toolbar.window
+    drillfig.canvas.toolbar.pack_forget()
+    drillfig.canvas.toolbar = DrillToolbar(drillfig.canvas, window)
+    drillfig.canvas.toolbar.update()
+    drillfig.canvas.toolbar.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=0)
+    canvas.show()
+
     # Spectral profile graph
     
     ax1 = drillfig.add_subplot(211, xmargin=0)
@@ -474,10 +628,6 @@ def run(latrange=None, lonrange=None, timerange=None, measurements=None,
     #ax2.set_xticklabels(times)
     ax2.set_xlim(0.9, tindex[-1] + 0.1)
     ax2.set_ylim((0, np.nanmax(data)))
-
-    ax2.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2),
-               labelspacing=0, handletextpad=0, handlelength=2,
-               borderaxespad=0, ncol=nband, columnspacing=0)
 
     setfg(ax2, 'white')
     setbg(ax2, 'black')
