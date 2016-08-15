@@ -89,51 +89,51 @@ required_option = functools.partial(click.option, required=True)
 
 
 @click.command(name='stats')
-@click.argument('expressions', nargs=-1)
-@required_option('--products', multiple=True)
-@click.option('--measurement')
-@click.option('--computed-measurement')
-@click.option('--interval')
-@click.option('--duration')
-@required_option('--stats', multiple=True, type=click.Choice(AVAILABLE_STATS))
-@click.option('--masks', multiple=True)
 @ui.global_cli_options
 @ui.executor_cli_options
+@click.argument('expressions', nargs=-1)
+@required_option('--product', 'products', multiple=True)
+@click.option('--measurement')
+@click.option('--computed-measurement')
+@click.option('--crs')
+@required_option('--interval', help="int[y|m] eg. 1y, 6m, 3m")
+@required_option('--duration', help="int[y|m] eg. 2y, 1y, 6m, 3m")
+@required_option('--stat', 'stats', multiple=True, type=click.Choice(AVAILABLE_STATS))
+@click.option('--mask', 'masks', multiple=True)
 @ui.pass_index(app_name='agdc-stats-app')
-def main(index, products, measurement, computed_measurement, interval, duration, stats, masks, expressions, executor):
+def main(index, products, measurement, computed_measurement, interval, duration, stats, masks, crs,
+         expressions, executor):
     """
     Compute Statistical Summaries
 
-    Select data using [EXPRESSIONS] to limit in space and time
+    Select data using [EXPRESSIONS] to limit by date and spatial extent.
+    eg. 1996-01-01<time<1996-12-31
 
-    Must select one or more products.
 
     May select a single measurement, or a single computed measurement
 
     Tassel Cap Index is a problem
-
-    Epoch should be specified as duration, and increment, which may be different values.
 
     Interval: Eg. 1 year, 6 months, 3 months, 1 month, 1 week.
 
 
     """
     tasks = create_stats_tasks(products, measurement, computed_measurement, interval, duration, masks, stats,
-                               expressions)
+                               crs, expressions)
 
     results = execute_tasks(executor, index, tasks)
 
     process_results(executor, results)
 
 
-def create_stats_tasks(products, measurements, computed_measurements, interval, masks, duration, stats, expressions):
+def create_stats_tasks(products, measurement, computed_measurement, interval, duration, masks, stats,
+                       crs, expressions):
     tasks = []
     start_date, end_date = get_start_end_dates(expressions)
-    for acq_min, acq_max in get_epochs(interval, duration, start_date, end_date):
-        task = dict(products=products, acq_range=(acq_min, acq_max), duration=duration,
-                    measurements=measurements,
-                    stats=stats, masks=masks, interval=interval, expressions=expressions,
-                    computed_measurements=computed_measurements)
+    for acq_range in get_epochs(interval, duration, start_date, end_date):
+        task = dict(products=products, acq_range=acq_range, measurement=measurement, crs=crs,
+                    stats=stats, masks=masks, expressions=expressions,
+                    computed_measurement=computed_measurement)
         tasks.append(task)
     return tasks
 
@@ -187,9 +187,9 @@ def process_results(executor, results):
 
 def get_epochs(interval, duration, start, end):
     freq, interval = parse_interval(interval)
-    duration = calc_duration(freq, duration)
+    duration = parse_duration(duration)
     for start_dt in rrule(freq, interval=interval, dtstart=start, until=end):
-        acq_min = start_dt.date()
+        acq_min = start_dt
         acq_max = acq_min + duration
         acq_min = max(start, acq_min)
         acq_max = min(end, acq_max)
@@ -207,11 +207,15 @@ def parse_interval(interval):
     return freq, interval
 
 
-def calc_duration(freq, duration):
-    if freq == YEARLY:
-        return relativedelta(years=duration, days=-1)
-    elif freq == MONTHLY:
-        return relativedelta(months=duration, days=-1)
+def parse_duration(duration):
+    if duration[-1:] == 'y':
+        delta = {'years': int(duration[:-1])}
+    elif duration[-1:] == 'm':
+        delta = {'months': int(duration[:-1])}
+    else:
+        raise ValueError('Duration "{}" not in months or years'.format(duration))
+
+    return relativedelta(days=-1, **delta)
 
 
 def compute_measurement(measurement, data, prodname=None):
@@ -287,57 +291,63 @@ def create_mask_def(masks):
     return ga_pqa_mask_def
 
 
-def load_data(dc, products, measurement, computed_measurement, acq_range, stats, masks, expressions):
-    data = None
+def load_data(dc, products, measurement, computed_measurement, acq_range, stats, masks,
+              expressions, crs=None):
     datasets = []
 
-    parsed_expressions = parse_expressions(*expressions)
+    search_filters = parse_expressions(*expressions)
 
-    parsed_expressions['time'] = acq_range
+    search_filters['time'] = acq_range
+    if crs:
+        search_filters['crs'] = crs
 
     required_measurements = calc_required_measurements(measurement, computed_measurement)
 
     for prodname in products:
         _log.info("\t loading data found for product %s the date range %s expressions %s", prodname,
                   acq_range, expressions)
-        data = dc.load(product=prodname,
-                       measurements=required_measurements,
-                       **parsed_expressions)
-        data.attrs['product'] = prodname
-        if len(data) == 0:
+        import ipdb; ipdb.set_trace()
+        dataset = dc.load(product=prodname,
+                          measurements=required_measurements,
+                          **search_filters)
+        dataset.attrs['product'] = prodname
+        if len(dataset) == 0:
             _log.info("\t No data found")
             continue
         if masks:
-            data = mask_data_with_pq(dc, data, prodname, parsed_expressions, masks)
+            dataset = mask_data_with_pq(dc, dataset, prodname, search_filters, masks)
 
-        append_solar_day(data)
-        # data = select_by_season(data, epoch, season)
+        dataset = group_by_solar_day(dataset)
 
+        import ipdb; ipdb.set_trace()
         if measurement:
-            data = get_band_data(data, measurement)
+            dataset = get_band_data(dataset, measurement)
         elif computed_measurement:
-            data = compute_measurement(data, computed_measurement, prodname)
+            dataset = compute_measurement(dataset, computed_measurement, prodname)
         # These aren't actually datasets here at the moment, they're DataArrays
         # Lets make them datasets, so that we can compute stats on multiple measurements at once
-        datasets.append(data)
+        datasets.append(dataset)
 
     datasets = xr.concat(datasets, dim='solar_day')
 
     if datasets.nbytes > 0:
-        odataset = initialise_odata(output_dtype(stats, measurement), data.shape[1], data.shape[2])
+        odataset = initialise_odata(output_dtype(stats, measurement), datasets)
         odataset = do_compute(datasets, stats, odataset)
-        data = data.isel(solar_day=0).drop('solar_day')
-        data.data = odataset
-        return data
+        return odataset
     else:
         return None
 
 
 def calc_required_measurements(measurement, computed_measurement):
     if measurement:
-        return measurement
+        return [measurement]
     else:
         return list(COMPUTED_MEASUREMENT_REQS[computed_measurement])
+
+
+def group_by_solar_day(dataset):
+    append_solar_day(dataset)
+    return dataset.groupby('solar_day').max(dim='time', keep_attrs=True)
 
 
 def output_dtype(stats, measurement):
@@ -533,3 +543,5 @@ def calculate_tci(prodname, **bands):
 #     both_data_mask = (valid_val & dest & src).astype(bool)
 #     np.copyto(dest, src & dest, where=both_data_mask)
 
+if __name__ == '__main__':
+    main()
