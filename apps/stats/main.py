@@ -91,11 +91,16 @@ def get_variable_params(config):
     return variable_params
 
 
-def get_filename(path_template, index, sources):
-    date_format = '%Y%m%d%H%M%S%f'
+def get_filename(path_template, index, start_time):
+    date_format = '%Y%m%d'
     return Path(str(path_template).format(tile_index=index,
-                                          start_time=to_datetime(sources.time.values[0]).strftime(date_format),
-                                          end_time=to_datetime(sources.time.values[-1]).strftime(date_format)))
+                                          start_time=start_time.strftime(date_format)))
+
+
+def fudge_sources(sources, start_time):
+    fudge = sources.isel(time=slice(0, 1))
+    fudge.time[0] = start_time
+    return fudge
 
 
 def do_stats(task, config):
@@ -140,8 +145,9 @@ def create_output_files(stats, output_dir, measurement, task, var_params):
         filename_template = str(Path(output_dir, stat['file_path_template']))
         output_filename = get_filename(filename_template,
                                        task['index'],
-                                       task['data']['sources'])
-        results[stat['name']] = nco_from_sources(task['data']['sources'],
+                                       task['start_time'])
+        fudge = fudge_sources(task['data']['sources'], task['start_time'])
+        results[stat['name']] = nco_from_sources(fudge,
                                                  task['data']['geobox'],
                                                  measurements,
                                                  {measurement: var_params[stat['name']]},
@@ -158,7 +164,9 @@ def get_grid_spec(config):
 
 
 def make_tasks(index, config):
-    query = dict(time=(datetime(2011, 1, 1), datetime(2011, 2, 1)))
+    start_time = datetime(2011, 1, 1)
+    end_time = datetime(2011, 2, 1)
+    query = dict(time=(start_time, end_time))
 
     workflow = GridWorkflow(index, grid_spec=get_grid_spec(config))
 
@@ -173,7 +181,9 @@ def make_tasks(index, config):
                 'source': source,
                 'index': key,
                 'data': data[key],
-                'masks': [mask[key] for mask in masks]
+                'masks': [mask[key] for mask in masks],
+                'start_time': start_time,
+                'end_time': end_time
             }
 
 
