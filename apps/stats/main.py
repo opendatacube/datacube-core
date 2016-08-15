@@ -115,8 +115,8 @@ def do_stats(task, config):
                                  measurements=[measurement_name])[measurement_name]
         data = data.where(data != data.attrs['nodata'])
 
-        for spec, sources in zip(source['masks'], task['masks']):
-            mask = GridWorkflow.load(slice_tile(sources, tile_index),
+        for spec, mask_tile in zip(source['masks'], task['masks']):
+            mask = GridWorkflow.load(slice_tile(mask_tile, tile_index),
                                      measurements=[spec['measurement']])[spec['measurement']]
             mask = make_mask(mask, **spec['flags'])
             data = data.where(mask)
@@ -125,9 +125,12 @@ def do_stats(task, config):
         for stat in config['stats']:
             data_stats = getattr(data, stat['name'])(dim='time')
             results[stat['name']][measurement_name][tile_index][0] = data_stats
-            print(data_stats)
 
-    for nco in config['stats'].values:
+    sources = task['data']['sources'].sum()
+    for spec, mask_tile in zip(source['masks'], task['masks']):
+        sources += mask_tile['sources'].sum()
+
+    for nco in results.values():
         nco.close()
 
 
