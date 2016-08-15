@@ -11,7 +11,6 @@ from __future__ import division
 import click
 import functools
 import numpy as np
-from datetime import datetime
 import logging
 from datacube import Datacube
 from datacube.ui.expression import parse_expressions
@@ -87,10 +86,10 @@ required_option = functools.partial(click.option, required=True)
 @click.option('--crs')
 @required_option('--interval', help="int[y|m] eg. 1y, 6m, 3m")
 @required_option('--duration', help="int[y|m] eg. 2y, 1y, 6m, 3m")
-@required_option('--stat', 'stats', multiple=True, type=click.Choice(AVAILABLE_STATS))
+@required_option('--stat', 'stat', type=click.Choice(AVAILABLE_STATS))
 @click.option('--mask', 'masks', multiple=True)
 @ui.pass_index(app_name='agdc-stats-app')
-def main(index, products, measurement, computed_measurement, interval, duration, stats, masks, crs,
+def main(index, products, measurement, computed_measurement, interval, duration, masks, crs, stat,
          expressions, executor):
     """
     Compute Statistical Summaries
@@ -107,7 +106,7 @@ def main(index, products, measurement, computed_measurement, interval, duration,
 
 
     """
-    tasks = create_stats_tasks(products, measurement, computed_measurement, interval, duration, masks, stats,
+    tasks = create_stats_tasks(products, measurement, computed_measurement, interval, duration, masks, stat,
                                crs, expressions)
 
     results = execute_tasks(executor, index, tasks)
@@ -115,13 +114,13 @@ def main(index, products, measurement, computed_measurement, interval, duration,
     process_results(executor, results)
 
 
-def create_stats_tasks(products, measurement, computed_measurement, interval, duration, masks, stats,
+def create_stats_tasks(products, measurement, computed_measurement, interval, duration, masks, stat,
                        crs, expressions):
     tasks = []
     start_date, end_date = get_start_end_dates(expressions)
     for acq_range in get_epochs(interval, duration, start_date, end_date):
         task = dict(products=products, acq_range=acq_range, measurement=measurement, crs=crs,
-                    stats=stats, masks=masks, expressions=expressions,
+                    stat=stat, masks=masks, expressions=expressions,
                     computed_measurement=computed_measurement)
         tasks.append(task)
     return tasks
@@ -144,8 +143,8 @@ def execute_tasks(executor, index, tasks):
 
 def process_results(executor, results):
     for result in executor.as_completed(results):
-        acq_min, data = executor.result(result)
-        print(acq_min, data)
+        epoch_start_date, dataset = executor.result(result)
+        print(epoch_start_date, dataset)
 
 
 # def old_main(argv):
@@ -239,7 +238,8 @@ COMPUTED_MEASUREMENT_REQS = {
 
 
 def get_band_data(data, measurement):
-    return data[measurement].where(data[measurement] != data[measurement].nodata)
+    data[measurement] = data[measurement].where(data[measurement] != data[measurement].nodata)
+    return data
 
 VALID_MASKS = {"PQ_MASK_CONTIGUITY", "PQ_MASK_CLOUD_FMASK", "PQ_MASK_CLOUD_ACCA", "PQ_MASK_CLOUD_SHADOW_ACCA",
                "PQ_MASK_SATURATION", "PQ_MASK_SATURATION_OPTICAL", "PQ_MASK_SATURATION_THERMAL"}
@@ -283,6 +283,7 @@ def create_mask_def(masks):
 def load_data(dc, products, measurement, computed_measurement, acq_range, stat, masks,
               expressions, crs=None):
     datasets = []
+    epoch_start_date, _ = acq_range
 
     search_filters = parse_expressions(*expressions)
 
@@ -293,15 +294,16 @@ def load_data(dc, products, measurement, computed_measurement, acq_range, stat, 
     required_measurements = calc_required_measurements(measurement, computed_measurement)
 
     for prodname in products:
-        _log.info("\t loading data found for product %s the date range %s expressions %s", prodname,
-                  acq_range, expressions)
-        import ipdb; ipdb.set_trace()
+        _log.debug("Loading data found for product %s the date range %s expressions %s", prodname,
+                   acq_range, expressions)
+
         dataset = dc.load(product=prodname,
                           measurements=required_measurements,
                           **search_filters)
         dataset.attrs['product'] = prodname
+
         if len(dataset) == 0:
-            _log.info("\t No data found")
+            _log.info("No data found for {} matching {}", prodname, search_filters)
             continue
         if masks:
             dataset = mask_data_with_pq(dc, dataset, prodname, search_filters, masks)
@@ -320,8 +322,8 @@ def load_data(dc, products, measurement, computed_measurement, acq_range, stat, 
     datasets = xr.concat(datasets, dim='solar_day')
 
     if datasets.nbytes > 0:
-        odataset = do_compute(datasets, stat)
-        return odataset
+        output_dataset = do_compute(datasets, stat)
+        return epoch_start_date, output_dataset
     else:
         return None
 
@@ -338,8 +340,8 @@ def group_by_solar_day(dataset):
     return dataset.groupby('solar_day').max(dim='time', keep_attrs=True)
 
 
-def output_dtype(stats, measurement):
-    if stats == "COUNT_OBSERVED" or measurement in [t.name for t in Ls57Arg25Bands]:
+def output_dtype(stat, measurement):
+    if stat == "COUNT_OBSERVED" or measurement in [t.name for t in Ls57Arg25Bands]:
         return np.int16
     else:
         return np.float32
