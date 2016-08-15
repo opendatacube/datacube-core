@@ -147,32 +147,6 @@ def process_results(executor, results):
         print(epoch_start_date, dataset)
 
 
-# def old_main(argv):
-#     season = 'WINTER'
-#     sat = 'LANDSAT_5'
-#     band = 'NDVI'
-#     epoch = 1
-#     start_str = '2009-01-01'
-#     end_str = '2011-01-01'
-#     masks = 'PQ_MASK_CLEAR_ELB'
-#     stats = 'PERCENTILE_25'
-#     dataset = 'nbar'
-#     interpolation = 'nearest'
-#     opts, args = getopt.getopt(argv, "hn:l:d:b:i:m:p:s:e:work_queue:z:o:x",
-#                                ["lon=", "lat=", "dataset=", "band=", "stats=", "masks=", "epoch=", "start=", "end=",
-#                                 "season=", "sat=", "odir=", "interpolation="])
-#     for opt, arg in opts:
-#         if opt == '-h':
-#             print('pass lon lat min max value like 130.378239-130.7823 -30.78276/-30.238')
-#             print(' For ex. python stats_jupyter.py -n 146.002/146.202 -l -34.970/-34.999 -i PERCENTILE_10 -s '
-#                   '2009-01-01 -e 2010-12-03 -z LANDSAT_5,LANDSAT_7 -work_queue CALENDAR_YEAR -m PQ_MASK_CLEAR '
-#                   '-b NDVI -p 2 -d nbar')
-#             print('python stats_jupyter.py -o <output_dir> -n <lon> -l <lat> -d <dataset> -i <stats> '
-#                   '-m <masks> -p <epoch> -s <start_date> -e <end_date> '
-#                   '-z <sat> -work_queue <season> -x <interpolation>')
-#             sys.exit()
-
-
 def get_epochs(interval, duration, start, end):
     freq, interval = parse_interval(interval)
     duration = parse_duration(duration)
