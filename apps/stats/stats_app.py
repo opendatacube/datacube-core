@@ -13,28 +13,18 @@ import functools
 import numpy as np
 from datetime import datetime
 import logging
-import datacube.api
+from datacube import Datacube
 from datacube.ui.expression import parse_expressions
 
 from dateutil.relativedelta import relativedelta
 from datacube.api.geo_xarray import append_solar_day
 from datacube.storage.masking import make_mask
-from dateutil.rrule import rrule, YEARLY
+from dateutil.rrule import rrule, YEARLY, MONTHLY
 from datacube.ui import click as ui
 from enum import Enum
+import xarray as xr
 
 _log = logging.getLogger()
-
-
-SEASONAL_OPTIONS = {'SUMMER': 'DJF',
-                    'AUTUMN': 'MAM',
-                    'WINTER': 'JJA',
-                    'SPRING': 'SON',
-                    'CALENDAR_YEAR': 'year',
-                    'QTR_1': 1,
-                    'QTR_2': 2,
-                    'QTR_3': 3,
-                    'QTR_4': 4}
 
 
 class Ls57Arg25Bands(Enum):
@@ -103,14 +93,14 @@ required_option = functools.partial(click.option, required=True)
 @required_option('--products', multiple=True)
 @click.option('--measurement')
 @click.option('--computed-measurement')
-@click.option('--season', type=click.Choice(SEASONAL_OPTIONS.keys()))
+@click.option('--interval')
+@click.option('--duration')
 @required_option('--stats', multiple=True, type=click.Choice(AVAILABLE_STATS))
-@required_option('--epoch', help='Compute stats multiple times, grouped by epoch. Eg. 1month')
 @click.option('--masks', multiple=True)
 @ui.global_cli_options
 @ui.executor_cli_options
 @ui.pass_index(app_name='agdc-stats-app')
-def main(index, season, products, measurement, computed_measurement, stats, epoch, masks, expressions, executor):
+def main(index, products, measurement, computed_measurement, interval, duration, stats, masks, expressions, executor):
     """
     Compute Statistical Summaries
 
@@ -122,22 +112,27 @@ def main(index, season, products, measurement, computed_measurement, stats, epoc
 
     Tassel Cap Index is a problem
 
+    Epoch should be specified as duration, and increment, which may be different values.
+
+    Interval: Eg. 1 year, 6 months, 3 months, 1 month, 1 week.
+
 
     """
-    tasks = create_stats_tasks(products, measurement, computed_measurement, epoch, masks, season, stats, expressions)
+    tasks = create_stats_tasks(products, measurement, computed_measurement, interval, duration, masks, stats,
+                               expressions)
 
     results = execute_tasks(executor, index, tasks)
 
     process_results(executor, results)
 
 
-def create_stats_tasks(products, measurements, computed_measurements, epoch, masks, season, stats, expressions):
+def create_stats_tasks(products, measurements, computed_measurements, interval, masks, duration, stats, expressions):
     tasks = []
     start_date, end_date = get_start_end_dates(expressions)
-    for acq_min, acq_max in get_epochs(epoch, start_date, end_date):
-        task = dict(products=products, acq_range=(acq_min, acq_max), season=season,
+    for acq_min, acq_max in get_epochs(interval, duration, start_date, end_date):
+        task = dict(products=products, acq_range=(acq_min, acq_max), duration=duration,
                     measurements=measurements,
-                    stats=stats, masks=masks, epoch=epoch, expressions=expressions,
+                    stats=stats, masks=masks, interval=interval, expressions=expressions,
                     computed_measurements=computed_measurements)
         tasks.append(task)
     return tasks
@@ -151,7 +146,7 @@ def get_start_end_dates(expressions):
 
 def execute_tasks(executor, index, tasks):
     results = []
-    dc = datacube.Datacube(index=index)
+    dc = Datacube(index=index)
     for task in tasks:
         result_future = executor.submit(load_data, dc=dc, **task)
         results.append(result_future)
@@ -190,16 +185,36 @@ def process_results(executor, results):
 #             sys.exit()
 
 
-def get_epochs(epoch, start, end):
-    for dt in rrule(YEARLY, interval=epoch, dtstart=start, until=end):
-        acq_min = dt.date()
-        acq_max = acq_min + relativedelta(years=epoch, days=-1)
+def get_epochs(interval, duration, start, end):
+    freq, interval = parse_interval(interval)
+    duration = calc_duration(freq, duration)
+    for start_dt in rrule(freq, interval=interval, dtstart=start, until=end):
+        acq_min = start_dt.date()
+        acq_max = acq_min + duration
         acq_min = max(start, acq_min)
         acq_max = min(end, acq_max)
         yield acq_min, acq_max
 
 
-def compute_measurement(band, dataset, prodname, data):
+def parse_interval(interval):
+    if interval[-1:] == 'y':
+        freq = YEARLY
+    elif interval[-1:] == 'm':
+        freq = MONTHLY
+    else:
+        raise ValueError('Interval "{}" not in months or years'.format(interval))
+    interval = int(interval[:-1])
+    return freq, interval
+
+
+def calc_duration(freq, duration):
+    if freq == YEARLY:
+        return relativedelta(years=duration, days=-1)
+    elif freq == MONTHLY:
+        return relativedelta(months=duration, days=-1)
+
+
+def compute_measurement(measurement, data, prodname=None):
     # Return a Dataset instead of a DataArray
 
     blue = data.blue.where(data.blue != data.blue.nodata)
@@ -208,17 +223,17 @@ def compute_measurement(band, dataset, prodname, data):
     nir = data.nir.where(data.nir != data.nir.nodata)
     sw1 = data.swir1.where(data.swir1 != data.swir1.nodata)
     sw2 = data.swir2.where(data.swir2 != data.swir2.nodata)
-    if band == "NDFI":
+    if measurement == "NDFI":
         return (sw1 - nir) / (sw1 + nir)
-    if band == "NDVI":
+    if measurement == "NDVI":
         return (nir - red) / (nir + red)
-    if band == "NDWI":
+    if measurement == "NDWI":
         return (green - nir) / (green + nir)
-    if band == "MNDWI":
+    if measurement == "MNDWI":
         return (green - sw1) / (green + sw1)
-    if band == "NBR":
+    if measurement == "NBR":
         return (nir - sw2) / (nir + sw2)
-    if dataset == "TCI":
+    if measurement == "TCI":
         return calculate_tci(prodname, blue=blue, green=green, red=red, nir=nir, sw1=sw1, sw2=sw2)
 
 COMPUTED_MEASUREMENT_REQS = {
@@ -272,8 +287,7 @@ def create_mask_def(masks):
     return ga_pqa_mask_def
 
 
-def load_data(dc, products, season, measurement, computed_measurement, acq_range, stats, masks, epoch,
-              expressions):
+def load_data(dc, products, measurement, computed_measurement, acq_range, stats, masks, expressions):
     data = None
     datasets = []
 
@@ -296,21 +310,24 @@ def load_data(dc, products, season, measurement, computed_measurement, acq_range
         if masks:
             data = mask_data_with_pq(dc, data, prodname, parsed_expressions, masks)
 
-            data = select_by_season(data, epoch, season)
+        append_solar_day(data)
+        # data = select_by_season(data, epoch, season)
 
-            if measurement:
-                data = get_band_data(data, measurement)
-            elif computed_measurement:
-                data = compute_measurement(data, computed_measurement)
-            datasets.append(data)
+        if measurement:
+            data = get_band_data(data, measurement)
+        elif computed_measurement:
+            data = compute_measurement(data, computed_measurement, prodname)
+        # These aren't actually datasets here at the moment, they're DataArrays
+        # Lets make them datasets, so that we can compute stats on multiple measurements at once
+        datasets.append(data)
 
-    # xr.concat(datasets, dim='solar_day')
+    datasets = xr.concat(datasets, dim='solar_day')
 
-    if data.nbytes > 0:
-        odata = initialise_odata(output_dtype(stats, measurement), data.shape[1], data.shape[2])
-        odata = do_compute(data, stats, odata)
+    if datasets.nbytes > 0:
+        odataset = initialise_odata(output_dtype(stats, measurement), data.shape[1], data.shape[2])
+        odataset = do_compute(datasets, stats, odataset)
         data = data.isel(solar_day=0).drop('solar_day')
-        data.data = odata
+        data.data = odataset
         return data
     else:
         return None
@@ -330,24 +347,10 @@ def output_dtype(stats, measurement):
         return np.float32
 
 
-def select_by_season(data, epoch, season):
-    append_solar_day(data)
-    data = data.groupby('solar_day').max(dim='time')  # TODO: I don't think this is good for PQ... MAYBE
-    if "QTR" in season:
-        data = data.isel(solar_day=data.groupby('solar_day.quarter').groups[SEASONAL_OPTIONS[season]])
-    elif "CALENDAR" in season:
-        if epoch == 1:
-            data = next(iter(data.groupby('solar_day.year')))
-    else:
-        print("Loading data for ", season, SEASONAL_OPTIONS[season])
-        data = data.isel(solar_day=data.groupby('solar_day.season').groups[SEASONAL_OPTIONS[season]])
-    return data
-
-
 def mask_data_with_pq(dc, data, prodname, parsed_expressions, masks):
     mask_clear = None
-    pq_prodname = prodname.replace('nbar', 'pq')
-    pq = dc.load(product=pq_prodname,
+    mask_product_name = find_product_mask_name(prodname)
+    pq = dc.load(product=mask_product_name,
                  **parsed_expressions)
     if len(pq) > 0:
         for mask in masks:
@@ -361,6 +364,13 @@ def mask_data_with_pq(dc, data, prodname, parsed_expressions, masks):
     else:
         _log.info("\t No PQ data exists")
     return data
+
+
+def find_product_mask_name(datavar_name):
+    if 'nbart' in datavar_name:
+        return datavar_name.replace('nbart', 'pq')
+    else:
+        return datavar_name.replace('nbar', 'pq')
 
 
 class TasselCapIndex(Enum):
