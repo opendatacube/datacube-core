@@ -44,38 +44,38 @@ def initialise_odata(dtype, y, x, ndv):
 AVAILABLE_STATS = ['MIN', 'MAX', 'MEAN', 'GEOMEDIAN', 'MEDIAN', 'VARIANCE', 'STANDARD_DEVIATION',
                    'COUNT_OBSERVED', 'PERCENTILE']
 
+SIMPLE_REDUCTIONS = {
+    "MIN": np.nanmin,
+    "MAX": np.nanmax,
+    "MEAN": np.nanmean,
+    "MEDIAN": np.nanmedian,
+    "STANDARD_DEVIATION": np.nanstd,
+    "VARIANCE": np.nanvar
+}
+
 
 def do_compute(dataset, stat, reduction_dim='solar_day'):
     dataset.load()
-    if stat == "MIN":
-        return dataset.min(dim=reduction_dim, keep_attrs=True)
-    elif stat == "MAX":
-        return dataset.max(dim=reduction_dim, keep_attrs=True)
-    elif stat == "MEAN":
-        return dataset.mean(dim=reduction_dim, keep_attrs=True)
+    if stat in SIMPLE_REDUCTIONS:
+        return dataset.reduce(SIMPLE_REDUCTIONS[stat], dim=reduction_dim, keep_attrs=True)
     elif stat == "GEOMEDIAN":  # Not implemented
         # tran_data = np.transpose(stack)
         # _log.info("\t shape of data array to pass %s", np.shape(tran_data))
         # stack_stat = geomedian(tran_data, 1e-3, maxiters=20)
         raise ValueError('GeoMedian statistics are not yet implemented')
-    elif stat == "MEDIAN":
-        return dataset.median(dim=reduction_dim, keep_attrs=True)
-    elif stat == "VARIANCE":
-        return dataset.var(dim=reduction_dim, keep_attrs=True)
-    elif stat == "STANDARD_DEVIATION":
-        return dataset.std(dim=reduction_dim, keep_attrs=True)
     elif stat == "COUNT_OBSERVED":
         return dataset.count(dim=reduction_dim, keep_attrs=True)
     elif 'PERCENTILE' in stat.split('_'):
         percent = int(str(stat).split('_')[1])
         _log.info("\tcalculating percentile %d", percent)
-        return dataset.reduce(np.nanpercentile, dim=reduction_dim, q=percent, interpolation='nearest')
+        return dataset.reduce(np.nanpercentile, dim=reduction_dim, q=percent, keep_attrs=True, interpolation='nearest')
 
 
 #: pylint: disable=invalid-name
 required_option = functools.partial(click.option, required=True)
 
 
+#: pylint: disable=too-many-arguments
 @click.command(name='stats')
 @ui.global_cli_options
 @ui.executor_cli_options
@@ -84,8 +84,10 @@ required_option = functools.partial(click.option, required=True)
 @click.option('--measurement')
 @click.option('--computed-measurement')
 @click.option('--crs')
+@click.option('--epoch', default=(1, 1), help='(increment) (duration)')
 @required_option('--interval', help="int[y|m] eg. 1y, 6m, 3m")
 @required_option('--duration', help="int[y|m] eg. 2y, 1y, 6m, 3m")
+@click.option('--interval-groups')
 @required_option('--stat', 'stat', type=click.Choice(AVAILABLE_STATS))
 @click.option('--mask', 'masks', multiple=True)
 @ui.pass_index(app_name='agdc-stats-app')
@@ -104,6 +106,13 @@ def main(index, products, measurement, computed_measurement, interval, duration,
 
     Interval: Eg. 1 year, 6 months, 3 months, 1 month, 1 week.
 
+    Duration:
+
+    Stat of 5 years of winters.
+    Interval = 5 years, IGroup = 5 (same unit as interval), Duration = 3 months, Start Date = 01-June-Year
+
+    Yearly median from
+    Interval = 1year, Duration = 1year
 
     """
     tasks = create_stats_tasks(products, measurement, computed_measurement, interval, duration, masks, stat,
@@ -277,14 +286,13 @@ def load_data(dc, products, measurement, computed_measurement, acq_range, stat, 
         dataset.attrs['product'] = prodname
 
         if len(dataset) == 0:
-            _log.info("No data found for {} matching {}", prodname, search_filters)
+            _log.info("No data found for %s matching %s", prodname, search_filters)
             continue
         if masks:
             dataset = mask_data_with_pq(dc, dataset, prodname, search_filters, masks)
 
         dataset = group_by_solar_day(dataset)
 
-        import ipdb; ipdb.set_trace()
         if measurement:
             dataset = get_band_data(dataset, measurement)
         elif computed_measurement:
@@ -293,11 +301,11 @@ def load_data(dc, products, measurement, computed_measurement, acq_range, stat, 
         # Lets make them datasets, so that we can compute stat on multiple measurements at once
         datasets.append(dataset)
 
-    datasets = xr.concat(datasets, dim='solar_day')
+    dataset = xr.concat(datasets, dim='solar_day')
 
-    if datasets.nbytes > 0:
-        output_dataset = do_compute(datasets, stat)
-        return epoch_start_date, output_dataset
+    if dataset.nbytes > 0:
+        dataset = do_compute(dataset, stat)
+        return epoch_start_date, dataset
     else:
         return None
 
