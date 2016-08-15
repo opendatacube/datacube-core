@@ -46,42 +46,31 @@ AVAILABLE_STATS = ['MIN', 'MAX', 'MEAN', 'GEOMEDIAN', 'MEDIAN', 'VARIANCE', 'STA
                    'COUNT_OBSERVED', 'PERCENTILE']
 
 
-def do_compute(data, stats, odata):
-
-    _log.info("doing computations for %s on  %s of on odata shape %s",
-              stats, datetime.now(), odata.shape)
-    ndv = np.nan
-    _log.info("\t data shape %s", data.shape)
-
-    stack = data.isel(x=slice(0, data.shape[2]), y=slice(0, data.shape[1])).load().data
-    _log.info("data stack is  %s", stack)
-    stack_stat = None
-    if stats == "MIN":
-        stack_stat = np.nanmin(stack, axis=0)
-    elif stats == "MAX":
-        stack_stat = np.nanmax(stack, axis=0)
-    elif stats == "MEAN":
-        stack_stat = np.nanmean(stack, axis=0)
-    elif stats == "GEOMEDIAN":  # Not implemented
-        tran_data = np.transpose(stack)
-        _log.info("\t shape of data array to pass %s", np.shape(tran_data))
+def do_compute(dataset, stat, reduction_dim='solar_day'):
+    dataset.load()
+    if stat == "MIN":
+        return dataset.min(dim=reduction_dim, keep_attrs=True)
+    elif stat == "MAX":
+        return dataset.max(dim=reduction_dim, keep_attrs=True)
+    elif stat == "MEAN":
+        return dataset.mean(dim=reduction_dim, keep_attrs=True)
+    elif stat == "GEOMEDIAN":  # Not implemented
+        # tran_data = np.transpose(stack)
+        # _log.info("\t shape of data array to pass %s", np.shape(tran_data))
         # stack_stat = geomedian(tran_data, 1e-3, maxiters=20)
-    elif stats == "MEDIAN":
-        stack_stat = np.nanmedian(stack, axis=0)
-    elif stats == "VARIANCE":
-        stack_stat = np.var(stack, axis=0).filled(ndv)
-    elif stats == "STANDARD_DEVIATION":
-        stack_stat = np.std(stack, axis=0).filled(ndv)
-    elif stats == "COUNT_OBSERVED":
-        stack_stat = np.ma.masked_invalid(stack, copy=False).count(axis=0)
-    elif 'PERCENTILE' in stats.split('_'):
-        percent = int(str(stats).split('_')[1])
+        raise ValueError('GeoMedian statistics are not yet implemented')
+    elif stat == "MEDIAN":
+        return dataset.median(dim=reduction_dim, keep_attrs=True)
+    elif stat == "VARIANCE":
+        return dataset.var(dim=reduction_dim, keep_attrs=True)
+    elif stat == "STANDARD_DEVIATION":
+        return dataset.std(dim=reduction_dim, keep_attrs=True)
+    elif stat == "COUNT_OBSERVED":
+        return dataset.count(dim=reduction_dim, keep_attrs=True)
+    elif 'PERCENTILE' in stat.split('_'):
+        percent = int(str(stat).split('_')[1])
         _log.info("\tcalculating percentile %d", percent)
-        stack_stat = np.nanpercentile(a=stack, q=percent, axis=0, interpolation='nearest')
-
-    odata[0:data.shape[1], 0:data.shape[2]] = stack_stat
-    _log.info("stats finished for data  %s", odata)
-    return odata
+        return dataset.reduce(np.nanpercentile, dim=reduction_dim, q=percent, interpolation='nearest')
 
 
 #: pylint: disable=invalid-name
@@ -291,7 +280,7 @@ def create_mask_def(masks):
     return ga_pqa_mask_def
 
 
-def load_data(dc, products, measurement, computed_measurement, acq_range, stats, masks,
+def load_data(dc, products, measurement, computed_measurement, acq_range, stat, masks,
               expressions, crs=None):
     datasets = []
 
@@ -325,14 +314,13 @@ def load_data(dc, products, measurement, computed_measurement, acq_range, stats,
         elif computed_measurement:
             dataset = compute_measurement(dataset, computed_measurement, prodname)
         # These aren't actually datasets here at the moment, they're DataArrays
-        # Lets make them datasets, so that we can compute stats on multiple measurements at once
+        # Lets make them datasets, so that we can compute stat on multiple measurements at once
         datasets.append(dataset)
 
     datasets = xr.concat(datasets, dim='solar_day')
 
     if datasets.nbytes > 0:
-        odataset = initialise_odata(output_dtype(stats, measurement), datasets)
-        odataset = do_compute(datasets, stats, odataset)
+        odataset = do_compute(datasets, stat)
         return odataset
     else:
         return None
