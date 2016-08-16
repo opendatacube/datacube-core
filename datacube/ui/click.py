@@ -261,23 +261,28 @@ def parsed_search_expressions(f):
     as click arguments, which means your command must take only click options
     or a specified number of arguments.
     """
+    if not f.__doc__:
+        f.__doc__ = ""
     f.__doc__ += """
     \b
-    SEARCH EXPRESSIONS
+    Search Expressions
     ------------------
 
     Select data using multiple [EXPRESSIONS] to limit by date, product type,
     spatial extent and other searchable fields.
 
-    Specify either an Equals Expression with param=value, or a Between
+    Specify either an Equals Expression with param=value, or a Range
     Expression with less<param<greater. Numbers or Dates are supported.
 
     Searchable fields include: x, y, time, product and more.
 
+    NOTE: Range expressions using <,> symbols should be escaped with '', otherwise
+    the shell will try to interpret them.
+
     \b
-    eg. 1996-01-01<time<1996-12-31\b
-        130<x<140 -30>y>-40\b
-        product=ls5_nbar_albers\b
+    eg. '1996-01-01<time<1996-12-31'
+        '130<x<140 -30>y>-40'
+        product=ls5_nbar_albers
     """
 
     def my_parse(ctx, param, value):
@@ -295,5 +300,6 @@ def parsed_search_expressions(f):
             ctx.obj['crs'] = value
 
     f = click.argument('expressions', callback=my_parse, nargs=-1)(f)
-    f = click.option('--crs', expose_value=False, callback=store_crs)(f)
+    f = click.option('--crs', expose_value=False, help='Coordinate Reference used for x,y search expressions',
+                     callback=store_crs)(f)
     return f

@@ -82,23 +82,31 @@ def cli(ctx, f):
     ctx.obj['write_results'] = partial(OUTPUT_FORMATS[f], sys.stdout)
 
 
-@cli.command(help='Datasets')
-@click.argument('expression', nargs=-1)
+@cli.command()
+@ui.parsed_search_expressions
 @PASS_INDEX
 @click.pass_context
-def datasets(ctx, index, expression):
+def datasets(ctx, index, expressions):
+    """
+    Search available Datasets
+    """
     ctx.obj['write_results'](
         index.datasets.get_field_names(),
-        index.datasets.search_summaries(**parse_expressions(*expression))
+        index.datasets.search_summaries(**expressions)
     )
 
 
-@cli.command('product-counts', help='Counts')
+@cli.command('product-counts')
 @click.argument('period', nargs=1)
-@click.argument('expression', nargs=-1)
+@ui.parsed_search_expressions
 @PASS_INDEX
-def product_counts(index, period, expression):
-    for product, series in index.datasets.count_by_product_through_time(period, **parse_expressions(*expression)):
+def product_counts(index, period, expressions):
+    """
+    Count product Datasets available by period
+
+    PERIOD: eg. 1 month, 6 months, 1 year
+    """
+    for product, series in index.datasets.count_by_product_through_time(period, **expressions):
         click.echo(product.name)
         for timerange, count in series:
             click.echo('    {}: {}'.format(timerange[0].strftime("%Y-%m-%d"), count))
