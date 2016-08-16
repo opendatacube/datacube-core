@@ -13,7 +13,6 @@ import functools
 import numpy as np
 import logging
 from datacube import Datacube
-from datacube.ui.expression import parse_expressions
 
 from dateutil.relativedelta import relativedelta
 from datacube.api.geo_xarray import append_solar_day
@@ -79,25 +78,21 @@ required_option = functools.partial(click.option, required=True)
 @click.command(name='stats')
 @ui.global_cli_options
 @ui.executor_cli_options
-@click.argument('expressions', nargs=-1)
 @required_option('--product', 'products', multiple=True)
 @click.option('--measurement')
 @click.option('--computed-measurement')
-@click.option('--crs')
 @click.option('--epoch', default=(1, 1), help='(increment) (duration)')
 @required_option('--interval', help="int[y|m] eg. 1y, 6m, 3m")
 @required_option('--duration', help="int[y|m] eg. 2y, 1y, 6m, 3m")
 @click.option('--interval-groups')
 @required_option('--stat', 'stat', type=click.Choice(AVAILABLE_STATS))
 @click.option('--mask', 'masks', multiple=True)
+@ui.parsed_search_expressions
 @ui.pass_index(app_name='agdc-stats-app')
-def main(index, products, measurement, computed_measurement, interval, duration, masks, crs, stat,
+def main(index, products, measurement, computed_measurement, interval, duration, masks, stat,
          expressions, executor):
     """
     Compute Statistical Summaries
-
-    Select data using [EXPRESSIONS] to limit by date and spatial extent.
-    eg. 1996-01-01<time<1996-12-31
 
 
     May select a single measurement, or a single computed measurement
@@ -116,7 +111,7 @@ def main(index, products, measurement, computed_measurement, interval, duration,
 
     """
     tasks = create_stats_tasks(products, measurement, computed_measurement, interval, duration, masks, stat,
-                               crs, expressions)
+                               expressions)
 
     results = execute_tasks(executor, index, tasks)
 
@@ -136,8 +131,7 @@ def create_stats_tasks(products, measurement, computed_measurement, interval, du
 
 
 def get_start_end_dates(expressions):
-    parsed = parse_expressions(*expressions)
-    time_range = parsed['time']
+    time_range = expressions['time']
     return time_range.begin, time_range.end
 
 
@@ -268,7 +262,7 @@ def load_data(dc, products, measurement, computed_measurement, acq_range, stat, 
     datasets = []
     epoch_start_date, _ = acq_range
 
-    search_filters = parse_expressions(*expressions)
+    search_filters = expressions.copy()
 
     search_filters['time'] = acq_range
     if crs:

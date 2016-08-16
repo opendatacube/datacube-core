@@ -7,7 +7,6 @@ from __future__ import absolute_import
 import functools
 import logging
 import os
-import re
 import copy
 
 import click
@@ -16,6 +15,8 @@ from datacube import config, __version__
 from datacube.executor import get_executor
 from datacube.index import index_connect
 from pathlib import Path
+
+from datacube.ui.expression import parse_expressions
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 _LOG_FORMAT_STRING = '%(asctime)s %(levelname)s %(message)s'
@@ -245,3 +246,54 @@ def to_pathlib(ctx, param, value):
         return Path(value)
     else:
         return None
+
+
+def parsed_search_expressions(f):
+    """
+    Add [expression] arguments and --crs option to a click application
+
+    Passes a parsed dict of search expressions to the `expressions` argument
+    of the command. The dict may include a `crs`.
+
+    Also appends documentation on using search expressions to the command.
+
+    WARNING: This wrapped expects an unlimited number of search expressions
+    as click arguments, which means your command must take only click options
+    or a specified number of arguments.
+    """
+    f.__doc__ += """
+    \b
+    SEARCH EXPRESSIONS
+    ------------------
+
+    Select data using multiple [EXPRESSIONS] to limit by date, product type,
+    spatial extent and other searchable fields.
+
+    Specify either an Equals Expression with param=value, or a Between
+    Expression with less<param<greater. Numbers or Dates are supported.
+
+    Searchable fields include: x, y, time, product and more.
+
+    \b
+    eg. 1996-01-01<time<1996-12-31\b
+        130<x<140 -30>y>-40\b
+        product=ls5_nbar_albers\b
+    """
+
+    def my_parse(ctx, param, value):
+        parsed_expressions = parse_expressions(*list(value))
+        ctx.ensure_object(dict)
+        try:
+            parsed_expressions['crs'] = ctx.obj['crs']
+        except KeyError:
+            pass
+        return parsed_expressions
+
+    def store_crs(ctx, param, value):
+        ctx.ensure_object(dict)
+        if value:
+            ctx.obj['crs'] = value
+
+    f = click.argument('expressions', callback=my_parse, nargs=-1)(f)
+    f = click.option('--crs', expose_value=False, callback=store_crs)(f)
+    return f
