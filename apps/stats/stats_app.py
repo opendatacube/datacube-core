@@ -75,7 +75,7 @@ required_option = functools.partial(click.option, required=True)
 
 
 #: pylint: disable=too-many-arguments
-@click.command(name='stats')
+@ui.cli.command(name='stats')
 @ui.global_cli_options
 @ui.executor_cli_options
 @required_option('--product', 'products', multiple=True)
