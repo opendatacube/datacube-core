@@ -1,0 +1,18 @@
+name: bom_rainfall_grids
+description: Interpolated Rain Gauge Precipitation 1-Day Australia 5km Gridded
+metadata_type: eo
+
+metadata:
+        platform:
+            code: BoM
+        instrument:
+            name: rain gauge
+        product_type: Grid
+        format:
+            name: NETCDF
+
+measurements:
+    - name: rainfall
+      dtype: float32
+      units: '1'
+      nodata: -999
