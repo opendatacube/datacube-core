@@ -60,12 +60,12 @@ def prepare_dataset(path):
             },
             'image': {
                 'bands': {
-                    'Band 1': {
+                    'rainfall': {
                         'path': str(image.filepath()),
                     }
                 }
             },
-            'lineage': {'source_datasets': 'Interpolated surface observations'},
+            'lineage': {'source_datasets': {}},
         })
     return documents
 
