@@ -62,6 +62,7 @@ def prepare_dataset(path):
                 'bands': {
                     'rainfall': {
                         'path': str(image.filepath()),
+                        'layer': 'rain_day',
                     }
                 }
             },
