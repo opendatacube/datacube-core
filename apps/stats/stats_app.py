@@ -11,12 +11,14 @@ from __future__ import division
 import click
 import functools
 import numpy as np
+from pathlib import Path
 import logging
 from datacube import Datacube
 
 from dateutil.relativedelta import relativedelta
 from datacube.api.geo_xarray import append_solar_day
 from datacube.storage.masking import make_mask
+from datacube.storage.storage import write_dataset_to_netcdf
 from dateutil.rrule import rrule, YEARLY, MONTHLY
 from datacube.ui import click as ui
 from enum import Enum
@@ -81,10 +83,9 @@ required_option = functools.partial(click.option, required=True)
 @required_option('--product', 'products', multiple=True)
 @click.option('--measurement')
 @click.option('--computed-measurement')
-@click.option('--epoch', default=(1, 1), help='(increment) (duration)')
+# @click.option('--epoch', default=(1, 1), help='(increment) (duration)')
 @required_option('--interval', help="int[y|m] eg. 1y, 6m, 3m")
 @required_option('--duration', help="int[y|m] eg. 2y, 1y, 6m, 3m")
-@click.option('--interval-groups')
 @required_option('--stat', 'stat', type=click.Choice(AVAILABLE_STATS))
 @click.option('--mask', 'masks', multiple=True)
 @ui.parsed_search_expressions
@@ -108,7 +109,6 @@ def main(index, products, measurement, computed_measurement, interval, duration,
 
     Yearly median from
     Interval = 1year, Duration = 1year
-
     """
     tasks = create_stats_tasks(products, measurement, computed_measurement, interval, duration, masks, stat,
                                expressions)
@@ -119,11 +119,11 @@ def main(index, products, measurement, computed_measurement, interval, duration,
 
 
 def create_stats_tasks(products, measurement, computed_measurement, interval, duration, masks, stat,
-                       crs, expressions):
+                       expressions):
     tasks = []
     start_date, end_date = get_start_end_dates(expressions)
     for acq_range in get_epochs(interval, duration, start_date, end_date):
-        task = dict(products=products, acq_range=acq_range, measurement=measurement, crs=crs,
+        task = dict(products=products, acq_range=acq_range, measurement=measurement,
                     stat=stat, masks=masks, expressions=expressions,
                     computed_measurement=computed_measurement)
         tasks.append(task)
@@ -145,9 +145,10 @@ def execute_tasks(executor, index, tasks):
 
 
 def process_results(executor, results):
-    for result in executor.as_completed(results):
+    for i, result in enumerate(executor.as_completed(results)):
         epoch_start_date, dataset = executor.result(result)
         print(epoch_start_date, dataset)
+        write_dataset_to_netcdf(dataset, {}, {}, Path('test_{:02d}.nc'.format(i)))
 
 
 def get_epochs(interval, duration, start, end):
@@ -258,15 +259,13 @@ def create_mask_def(masks):
 
 
 def load_data(dc, products, measurement, computed_measurement, acq_range, stat, masks,
-              expressions, crs=None):
+              expressions):
     datasets = []
     epoch_start_date, _ = acq_range
 
     search_filters = expressions.copy()
 
     search_filters['time'] = acq_range
-    if crs:
-        search_filters['crs'] = crs
 
     required_measurements = calc_required_measurements(measurement, computed_measurement)
 
@@ -328,6 +327,8 @@ def mask_data_with_pq(dc, data, prodname, parsed_expressions, masks):
     mask_product_name = find_product_mask_name(prodname)
     pq = dc.load(product=mask_product_name,
                  **parsed_expressions)
+    mask_clear = make_mask(pq, ga_good_pixel=True)
+    data = data.where(mask_clear)
     if len(pq) > 0:
         for mask in masks:
             if mask == "PQ_MASK_CLEAR_ELB":
