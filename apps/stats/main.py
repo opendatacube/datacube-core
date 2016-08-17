@@ -10,10 +10,11 @@ from pathlib import Path
 
 from datacube.api import make_mask
 from datacube.model import GridSpec, CRS, Coordinate, Variable
+from datacube.model.utils import make_dataset, datasets_to_doc
 from datacube.api.grid_workflow import GridWorkflow
 from datacube.ui import click as ui
 from datacube.ui.click import to_pathlib
-from datacube.utils import read_documents
+from datacube.utils import read_documents, unsqueeze_data_array
 from datacube.storage.storage import create_netcdf_storage_unit
 
 
@@ -99,7 +100,7 @@ def get_filename(path_template, index, start_time):
 
 def fudge_sources(sources, start_time):
     fudge = sources.isel(time=slice(0, 1))
-    fudge.time[0] = start_time
+    fudge.time.values[0] = start_time  # HACK:
     return fudge
 
 
@@ -129,8 +130,16 @@ def do_stats(task, config):
     sources = task['data']['sources'].sum()
     for spec, mask_tile in zip(source['masks'], task['masks']):
         sources += mask_tile['sources'].sum()
+    # sources = unsqueeze_data_array(sources, 'time', 0, task['start_time'])
 
-    for nco in results.values():
+    for stat, nco in results.items():
+        dataset = make_dataset(dataset_type=config['products'][stat],
+                               sources=sources.item(),
+                               extent=task['data']['geobox'].extent,
+                               center_time=task['start_time'],
+                               uri=None,  # TODO:
+                               app_info=None,
+                               valid_data=None)
         nco.close()
 
 
@@ -190,6 +199,33 @@ def make_tasks(index, config):
             }
 
 
+def make_products(index, config):
+    results = {}
+    for stat in config['stats']:
+        name = stat['name']
+        definition = {
+            'name': name,
+            'description': name,
+            'metadata_type': 'eo',
+            'metadata': {
+                'format': 'NetCDF',
+                'product_type': name,
+            },
+            'storage': config['storage'],
+            'measurements': [
+                {
+                    'name': measurement,
+                    'dtype': stat['dtype'],
+                    'nodata': stat['nodata'],
+                    'units': '1'
+                }
+                for measurement in config['sources'][0]['measurements']
+            ]
+        }
+        results[name] = index.products.from_doc(definition)
+    return results
+
+
 @click.command(name='stats')
 @click.option('--app-config', '-c',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
@@ -201,6 +237,7 @@ def make_tasks(index, config):
 def main(index, app_config, year, executor):
     _, config = next(read_documents(app_config))
 
+    config['products'] = make_products(index, config)
     tasks = make_tasks(index, config)
 
     futures = [executor.submit(do_stats, task, config) for task in tasks]
