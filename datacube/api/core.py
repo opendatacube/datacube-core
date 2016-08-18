@@ -284,7 +284,7 @@ class Datacube(object):
         datasets = self.index.datasets.search_eager(**query.search_terms)
         if query.geopolygon:
             datasets = [dataset for dataset in datasets
-                        if check_intersect(query.geopolygon, dataset.extent.to_crs(query.geopolygon.crs))]
+                        if check_intersect(query.geopolygon.to_crs(dataset.crs), dataset.extent)]
             # Check against the bounding box of the original scene, can throw away some portions
 
         return datasets
