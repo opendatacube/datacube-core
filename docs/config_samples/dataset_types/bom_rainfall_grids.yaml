@@ -7,12 +7,18 @@ metadata:
             code: BoM
         instrument:
             name: rain gauge
-        product_type: Grid
+        product_type: rainfall
         format:
             name: NETCDF
+
+storage:
+    crs: EPSG:4326
+    resolution:
+        longitude: 0.05
+        latitude: -0.05
 
 measurements:
     - name: rainfall
       dtype: float32
-      units: '1'
+      units: 'mm'
       nodata: -999
