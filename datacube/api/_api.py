@@ -342,7 +342,7 @@ class API(object):
             return data_descriptor
         return all_datasets
 
-    def _get_data_for_type(self, dataset_type, sources, measurements, geopolygon, slices=None):
+    def _get_data_for_type(self, dataset_type, sources, measurements, geopolygon, slices=None, chunks=None):
         dt_data = {}
         datasets = list(chain.from_iterable(g for _, g in numpy.ndenumerate(sources)))
         if not geopolygon:
@@ -357,7 +357,7 @@ class API(object):
                 if dim in sources.dims:
                     sources = sources.isel(dim=dim_slice)
         dt_data.update(self._get_data_for_dims(dataset_type, sources, geobox))
-        dt_data.update(self._get_data_for_measurement(dataset_type, sources, measurements, geobox))
+        dt_data.update(self._get_data_for_measurement(dataset_type, sources, measurements, geobox, dask_chunks=chunks))
         return dt_data
 
     @staticmethod
@@ -396,11 +396,10 @@ class API(object):
                 raise NotImplementedError('Unsupported dimension type: ', dim)
         return dt_data
 
-    def _get_data_for_measurement(self, dataset_type, sources, measurements, geobox):
+    def _get_data_for_measurement(self, dataset_type, sources, measurements, geobox, dask_chunks=None):
         dt_data = {
             'arrays': {}
         }
-        dask_chunks = {dim: 1000 for dim in geobox.dimensions}
         for measurement_name, measurement in dataset_type.measurements.items():
             if measurements is None or measurement_name in measurements:
                 dt_data['arrays'][measurement_name] = self.datacube.measurement_data(sources, geobox, measurement,
