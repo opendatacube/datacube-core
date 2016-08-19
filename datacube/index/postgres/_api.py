@@ -23,12 +23,12 @@ from sqlalchemy.engine.url import URL as EngineUrl
 from sqlalchemy.exc import IntegrityError
 
 import datacube
+from datacube.compat import string_types
 from datacube.config import LocalConfig
 from datacube.index.exceptions import DuplicateRecordError
 from datacube.index.fields import OrExpression
 from datacube.model import Range
 from datacube.utils import jsonify_document
-from datacube.compat import string_types
 from . import tables
 from ._fields import parse_fields, NativeField
 from .tables import DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
@@ -612,6 +612,27 @@ class PostgresDb(object):
         )
 
         type_id = res.inserted_primary_key[0]
+
+        # Initialise search fields.
+        self._setup_dataset_type_fields(type_id, name, metadata_type_id, definition['metadata'],
+                                        concurrently=concurrently)
+        return type_id
+
+    def update_dataset_type(self,
+                            name,
+                            metadata,
+                            metadata_type_id,
+                            definition, concurrently=False):
+        res = self._connection.execute(
+            DATASET_TYPE.update().returning(DATASET_TYPE.c.id).where(
+                DATASET_TYPE.c.name == name
+            ).values(
+                metadata=metadata,
+                metadata_type_ref=metadata_type_id,
+                definition=definition
+            )
+        )
+        type_id = res.fetchall()[0]
 
         # Initialise search fields.
         self._setup_dataset_type_fields(type_id, name, metadata_type_id, definition['metadata'],

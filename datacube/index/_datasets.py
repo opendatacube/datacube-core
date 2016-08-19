@@ -10,7 +10,7 @@ from cachetools import lru_cache
 
 from datacube import compat
 from datacube.model import Dataset, DatasetType, MetadataType
-from datacube.utils import InvalidDocException, check_doc_unchanged, jsonify_document
+from datacube.utils import InvalidDocException, check_doc_unchanged, jsonify_document, get_doc_changes, contains
 from . import fields
 from .exceptions import DuplicateRecordError
 
@@ -166,6 +166,62 @@ class DatasetTypeResource(object):
                 definition=type_.definition
             )
         return self.get_by_name(type_.name)
+
+    def update(self, type_, allow_unsafe_update=False):
+        """
+        Update a product
+
+        :param datacube.model.DatasetType type_: Product to add
+        :rtype: datacube.model.DatasetType
+        """
+        DatasetType.validate(type_.definition)
+
+        existing = self._db.get_dataset_type_by_name(type_.name)
+        if not existing:
+            raise ValueError('Unknown product %s, cannot update – did you intend to add it?' % type_.name)
+
+        # We'll probably want to use offsets in the future (ie. nested dicts), not just keys, but for now this suffices.
+        safe_keys_to_change = ('description', 'metadata')
+
+        doc_changes = get_doc_changes(existing.definition, jsonify_document(type_.definition))
+        for offset, old_value, new_value in doc_changes:
+            _LOG.info('Changing %s %s: %r -> %r', type_.name, '.'.join(offset), old_value, new_value)
+
+            key_name = offset[0]
+            if key_name not in safe_keys_to_change:
+                raise ValueError('Unsafe update: cannot change %r of product definition.' % key_name)
+
+            # You can safely make the match rules looser but not tighter.
+            if key_name == 'metadata':
+                # Tightening them could exclude datasets already matched to the product.
+                # (which would make search results wrong)
+                if not contains(old_value, new_value, case_sensitive=True):
+                    raise ValueError('Unsafe update: new product match rules are not a superset of old ones.')
+
+        if doc_changes:
+            _LOG.info("Updating product %s", type_.name)
+            self._db.update_dataset_type(
+                name=type_.name,
+                metadata=type_.metadata_doc,
+                metadata_type_id=type_.metadata_type.id,
+                definition=type_.definition
+            )
+            # Clear our local cache. Note that other users may still have
+            # cached copies for the duration of their connections.
+            self.get_by_name.cache_clear()
+            self.get.cache_clear()
+        else:
+            _LOG.info("No changes detected for product %s", type_.name)
+
+    def update_document(self, definition, allow_unsafe_update=False):
+        """
+        Update a Product using its difinition
+
+        :param dict definition: product definition document
+        :rtype: datacube.model.DatasetType
+        """
+        type_ = self.from_doc(definition)
+        return self.update(type_, allow_unsafe_update=allow_unsafe_update)
 
     def add_document(self, definition):
         """

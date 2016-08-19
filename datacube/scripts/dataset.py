@@ -1,18 +1,17 @@
 from __future__ import absolute_import
 
-import sys
 import logging
+import sys
+
 import click
 import yaml
-
 from pathlib import Path
 
-from datacube.compat import string_types
-from datacube.ui import click as ui
-from datacube.utils import read_documents
-from datacube.ui.common import get_metadata_path
-from datacube.ui.click import cli
 from datacube.model import Dataset
+from datacube.ui import click as ui
+from datacube.ui.click import cli
+from datacube.ui.common import get_metadata_path
+from datacube.utils import read_documents, contains
 
 _LOG = logging.getLogger('datacube-dataset')
 
@@ -20,33 +19,6 @@ _LOG = logging.getLogger('datacube-dataset')
 @cli.group(name='dataset', help='Dataset management commands')
 def dataset_cmd():
     pass
-
-
-def contains(v1, v2):
-    """
-    Check that v1 contains v2
-
-    For dicts contains(v1[k], v2[k]) for all k in v2
-    For other types v1 == v2
-
-    >>> contains("bob", "BOB")
-    True
-    >>> contains({'a':1, 'b': 2}, {'a':1})
-    True
-    >>> contains({'a':{'b': 'BOB'}}, {'a':{'b': 'bob'}})
-    True
-    >>> contains("bob", "alice")
-    False
-    >>> contains({'a':1}, {'a':1, 'b': 2})
-    False
-    """
-    if isinstance(v1, string_types):
-        return isinstance(v2, string_types) and v1.lower() == v2.lower()
-
-    if isinstance(v1, dict):
-        return isinstance(v2, dict) and all(contains(v1.get(k, object()), v) for k, v in v2.items())
-
-    return v1 == v2
 
 
 def match_doc(rules, doc):

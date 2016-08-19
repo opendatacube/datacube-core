@@ -111,6 +111,37 @@ def test_idempotent_add_dataset_type(index, ls5_nbar_gtiff_type, ls5_nbar_gtiff_
         # TODO: Support for adding/changing search fields?
 
 
+def test_safe_update_dataset_type(index, ls5_nbar_gtiff_type, ls5_nbar_gtiff_doc):
+    """
+    :type ls5_nbar_gtiff_type: datacube.model.DatasetType
+    :type index: datacube.index._api.Index
+    """
+    assert index.datasets.types.get_by_name(ls5_nbar_gtiff_type.name) is not None
+
+    # Update with a new description
+    ls5_nbar_gtiff_doc['description'] = "New description"
+    index.datasets.types.update_document(ls5_nbar_gtiff_doc)
+    # Ensure was updated
+    assert index.datasets.types.get_by_name(ls5_nbar_gtiff_type.name).definition['description'] == "New description"
+
+    # Remove some match rules (looser rules -- that match more datasets -- should be allowed)
+    assert 'format' in ls5_nbar_gtiff_doc['metadata']
+    del ls5_nbar_gtiff_doc['metadata']['format']['name']
+    del ls5_nbar_gtiff_doc['metadata']['format']
+
+    index.datasets.types.update_document(ls5_nbar_gtiff_doc)
+    # Ensure was updated
+    updated_type = index.datasets.types.get_by_name(ls5_nbar_gtiff_type.name)
+    assert updated_type.definition['metadata'] == ls5_nbar_gtiff_doc['metadata']
+
+    # But if we make metadata more restrictive we get an error:
+    different_telemetry_type = copy.deepcopy(ls5_nbar_gtiff_doc)
+    assert 'ga_label' not in different_telemetry_type['metadata']
+    different_telemetry_type['metadata']['ga_label'] = 'something'
+    with pytest.raises(ValueError):
+        index.datasets.types.update_document(different_telemetry_type)
+
+
 def test_filter_types_by_fields(index, ls5_nbar_gtiff_type):
     """
     :type ls5_nbar_gtiff_type: datacube.model.DatasetType

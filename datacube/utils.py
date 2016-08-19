@@ -479,3 +479,36 @@ def iter_slices(shape, chunk_size):
     num_grid_chunks = [int(ceil(s/float(c))) for s, c in zip(shape, chunk_size)]
     for grid_index in numpy.ndindex(*num_grid_chunks):
         yield tuple(slice(min(d*c, stop), min((d+1)*c, stop)) for d, c, stop in zip(grid_index, chunk_size, shape))
+
+
+def contains(v1, v2, case_sensitive=False):
+    """
+    Check that v1 contains v2
+
+    For dicts contains(v1[k], v2[k]) for all k in v2
+    For other types v1 == v2
+
+    >>> contains("bob", "BOB")
+    True
+    >>> contains("bob", "BOB", case_sensitive=True)
+    False
+    >>> contains({'a':1, 'b': 2}, {'a':1})
+    True
+    >>> contains({'a':{'b': 'BOB'}}, {'a':{'b': 'bob'}})
+    True
+    >>> contains({'a':{'b': 'BOB'}}, {'a':{'b': 'bob'}}, case_sensitive=True)
+    False
+    >>> contains("bob", "alice")
+    False
+    >>> contains({'a':1}, {'a':1, 'b': 2})
+    False
+    """
+    if not case_sensitive:
+        if isinstance(v1, compat.string_types):
+            return isinstance(v2, compat.string_types) and v1.lower() == v2.lower()
+
+    if isinstance(v1, dict):
+        return isinstance(v2, dict) and all(contains(v1.get(k, object()), v, case_sensitive=case_sensitive)
+                                            for k, v in v2.items())
+
+    return v1 == v2
