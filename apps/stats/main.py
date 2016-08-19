@@ -10,12 +10,13 @@ from pathlib import Path
 
 from datacube.api import make_mask
 from datacube.model import GridSpec, CRS, Coordinate, Variable
-from datacube.model.utils import make_dataset, datasets_to_doc
+from datacube.model.utils import make_dataset, datasets_to_doc, xr_apply
 from datacube.api.grid_workflow import GridWorkflow
 from datacube.ui import click as ui
 from datacube.ui.click import to_pathlib
 from datacube.utils import read_documents, unsqueeze_data_array
 from datacube.storage.storage import create_netcdf_storage_unit
+from datacube.storage import netcdf_writer
 
 
 STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
@@ -100,16 +101,17 @@ def get_filename(path_template, index, start_time):
 
 def fudge_sources(sources, start_time):
     fudge = sources.isel(time=slice(0, 1))
-    fudge.time.values[0] = start_time  # HACK:
+    fudge['time'] = [start_time]
+    fudge.time.attrs.update(sources.time.attrs)
     return fudge
 
 
 def do_stats(task, config):
     source = task['source']
     measurement_name = source['measurements'][0]
-    var_params = get_variable_params(config)
 
-    results = create_output_files(config['stats'], config['location'], measurement_name, task, var_params)
+    results = create_output_files(config['stats'], config['location'], measurement_name, task,
+                                  get_variable_params(config))
 
     for tile_index in tile_iter(task['data'], {'x': 1000, 'y': 1000}):
         data = GridWorkflow.load(slice_tile(task['data'], tile_index),
@@ -130,16 +132,23 @@ def do_stats(task, config):
     sources = task['data']['sources'].sum()
     for spec, mask_tile in zip(source['masks'], task['masks']):
         sources += mask_tile['sources'].sum()
-    # sources = unsqueeze_data_array(sources, 'time', 0, task['start_time'])
+    sources = unsqueeze_data_array(sources, 'time', 0, task['start_time'])
 
-    for stat, nco in results.items():
+    def _make_dataset(labels, sources):
         dataset = make_dataset(dataset_type=config['products'][stat],
-                               sources=sources.item(),
+                               sources=sources,
                                extent=task['data']['geobox'].extent,
-                               center_time=task['start_time'],
+                               center_time=labels['time'],
                                uri=None,  # TODO:
                                app_info=None,
                                valid_data=None)
+        return dataset
+
+    for stat, nco in results.items():
+        datasets = xr_apply(sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
+        datasets = datasets_to_doc(datasets)
+        netcdf_writer.create_variable(nco, 'dataset', datasets, zlib=True)
+        nco['dataset'][:] = netcdf_writer.netcdfy_data(datasets.values)
         nco.close()
 
 
