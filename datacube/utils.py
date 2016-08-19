@@ -54,7 +54,7 @@ def attrs_all_equal(iterable, attr_name):
     return len({getattr(item, attr_name, float('nan')) for item in iterable}) <= 1
 
 
-def unsqueeze_data_array(da, dim, pos, coord=None):
+def unsqueeze_data_array(da, dim, pos, coord=None, attrs=None):
     """
     Adds a 1-length dimension to a data array
     :param xarray.DataArray da: array to add a 1-length dimension
@@ -70,7 +70,9 @@ def unsqueeze_data_array(da, dim, pos, coord=None):
     new_data = da.data.reshape(new_shape)
     new_coords = {k: v for k, v in da.coords.items()}
     if coord:
-        new_coords[dim] = [coord]
+        new_coords[dim] = xarray.DataArray([coord], dims=[dim])
+    if attrs:
+        new_coords[dim].attrs.update(attrs)
     return xarray.DataArray(new_data, dims=new_dims, coords=new_coords, attrs=da.attrs)
 
 
