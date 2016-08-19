@@ -99,19 +99,54 @@ def get_filename(path_template, index, start_time):
                                           start_time=start_time.strftime(date_format)))
 
 
-def fudge_sources(sources, start_time):
-    fudge = sources.isel(time=slice(0, 1))
-    fudge['time'] = [start_time]
-    fudge.time.attrs.update(sources.time.attrs)
-    return fudge
+def create_storage_unit(config, task, stat):
+    def _make_dataset(labels, sources):
+        dataset = make_dataset(dataset_type=config['products'][stat['name']],
+                               sources=sources,
+                               extent=task['data']['geobox'].extent,
+                               center_time=labels['time'],
+                               uri=None,  # TODO:
+                               app_info=None,
+                               valid_data=None)
+        return dataset
+
+    source = task['source']
+    measurement_name = source['measurements'][0]
+
+    sources = task['data']['sources'].sum()
+    for spec, mask_tile in zip(source['masks'], task['masks']):
+        sources += mask_tile['sources'].sum()
+    sources = unsqueeze_data_array(sources, 'time', 0, task['start_time'], task['data']['sources'].time.attrs)
+
+    var_params = get_variable_params(config)
+
+    measurements = [{'name': measurement_name,
+                     'units': '1',  # TODO: where does this come from???
+                     'dtype': stat['dtype'],
+                     'nodata': stat['nodata']}]
+    filename_template = str(Path(config['location'], stat['file_path_template']))
+    output_filename = get_filename(filename_template,
+                                   task['index'],
+                                   task['start_time'])
+    nco = nco_from_sources(sources,
+                           task['data']['geobox'],
+                           measurements,
+                           {measurement_name: var_params[stat['name']]},
+                           output_filename)
+    datasets = xr_apply(sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
+    datasets = datasets_to_doc(datasets)
+    netcdf_writer.create_variable(nco, 'dataset', datasets, zlib=True)
+    nco['dataset'][:] = netcdf_writer.netcdfy_data(datasets.values)
+    return nco
 
 
 def do_stats(task, config):
     source = task['source']
-    measurement_name = source['measurements'][0]
+    measurement_name = task['source']['measurements'][0]
 
-    results = create_output_files(config['stats'], config['location'], measurement_name, task,
-                                  get_variable_params(config))
+    results = {}
+    for stat in config['stats']:
+        results[stat['name']] = create_storage_unit(config, task, stat)
 
     for tile_index in tile_iter(task['data'], {'x': 1000, 'y': 1000}):
         data = GridWorkflow.load(slice_tile(task['data'], tile_index),
@@ -129,51 +164,8 @@ def do_stats(task, config):
             data_stats = getattr(data, stat['name'])(dim='time')
             results[stat['name']][measurement_name][tile_index][0] = data_stats
 
-    sources = task['data']['sources'].sum()
-    for spec, mask_tile in zip(source['masks'], task['masks']):
-        sources += mask_tile['sources'].sum()
-    sources = unsqueeze_data_array(sources, 'time', 0, task['start_time'])
-
-    def _make_dataset(labels, sources):
-        dataset = make_dataset(dataset_type=config['products'][stat],
-                               sources=sources,
-                               extent=task['data']['geobox'].extent,
-                               center_time=labels['time'],
-                               uri=None,  # TODO:
-                               app_info=None,
-                               valid_data=None)
-        return dataset
-
     for stat, nco in results.items():
-        datasets = xr_apply(sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
-        datasets = datasets_to_doc(datasets)
-        netcdf_writer.create_variable(nco, 'dataset', datasets, zlib=True)
-        nco['dataset'][:] = netcdf_writer.netcdfy_data(datasets.values)
         nco.close()
-
-
-def create_output_files(stats, output_dir, measurement, task, var_params):
-    """
-    Create output files and return a map of statistic name to writable NetCDF Dataset
-    """
-    results = {}
-    for stat in stats:
-        measurements = [{'name': measurement,
-                         'units': '1',  # TODO: where does this come from???
-                         'dtype': stat['dtype'],
-                         'nodata': stat['nodata']}]
-
-        filename_template = str(Path(output_dir, stat['file_path_template']))
-        output_filename = get_filename(filename_template,
-                                       task['index'],
-                                       task['start_time'])
-        fudge = fudge_sources(task['data']['sources'], task['start_time'])
-        results[stat['name']] = nco_from_sources(fudge,
-                                                 task['data']['geobox'],
-                                                 measurements,
-                                                 {measurement: var_params[stat['name']]},
-                                                 output_filename)
-    return results
 
 
 def get_grid_spec(config):
