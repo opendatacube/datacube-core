@@ -100,6 +100,11 @@ def reproject(source, dest, dst_transform, dst_nodata, dst_projection, resamplin
         else:
             if source.override:
                 src = src.ds.read(indexes=src.bidx)
+
+            if dest.dtype == numpy.dtype('int8'):
+                dest = dest.view(dtype='uint8')
+                dst_nodata = dst_nodata.astype('uint8')
+
             rasterio.warp.reproject(src,
                                     dest,
                                     src_transform=source.transform,
