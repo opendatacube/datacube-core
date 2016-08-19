@@ -126,6 +126,7 @@ def _parse_time_generic(time):
 try:
     import ciso8601  # pylint: disable=wrong-import-position
 
+
     def parse_time(time):
         try:
             result = ciso8601.parse_datetime(time)
@@ -236,6 +237,7 @@ class NoDatesSafeLoader(SafeLoader):  # pylint: disable=too-many-ancestors
             cls.yaml_implicit_resolvers[first_letter] = [(tag, regexp)
                                                          for tag, regexp in mappings
                                                          if tag != tag_to_remove]
+
 
 NoDatesSafeLoader.remove_implicit_resolver('tag:yaml.org,2002:timestamp')
 
@@ -476,9 +478,10 @@ def iter_slices(shape, chunk_size):
     [(slice(0, 2, None),), (slice(2, 4, None),), (slice(4, 5, None),)]
     """
     assert len(shape) == len(chunk_size)
-    num_grid_chunks = [int(ceil(s/float(c))) for s, c in zip(shape, chunk_size)]
+    num_grid_chunks = [int(ceil(s / float(c))) for s, c in zip(shape, chunk_size)]
     for grid_index in numpy.ndindex(*num_grid_chunks):
-        yield tuple(slice(min(d*c, stop), min((d+1)*c, stop)) for d, c, stop in zip(grid_index, chunk_size, shape))
+        yield tuple(
+            slice(min(d * c, stop), min((d + 1) * c, stop)) for d, c, stop in zip(grid_index, chunk_size, shape))
 
 
 def contains(v1, v2, case_sensitive=False):
@@ -487,6 +490,7 @@ def contains(v1, v2, case_sensitive=False):
 
     For dicts contains(v1[k], v2[k]) for all k in v2
     For other types v1 == v2
+    Everything contains None
 
     >>> contains("bob", "BOB")
     True
@@ -502,7 +506,12 @@ def contains(v1, v2, case_sensitive=False):
     False
     >>> contains({'a':1}, {'a':1, 'b': 2})
     False
+    >>> contains({'a': {'b': 1}}, {'a': None})
+    True
     """
+    if v2 is None:
+        return True
+
     if not case_sensitive:
         if isinstance(v1, compat.string_types):
             return isinstance(v2, compat.string_types) and v1.lower() == v2.lower()
