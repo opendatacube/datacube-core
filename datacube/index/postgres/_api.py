@@ -600,9 +600,7 @@ class PostgresDb(object):
                          name,
                          metadata,
                          metadata_type_id,
-                         definition, concurrently=False):
-
-        metadata_type_record = self.get_metadata_type(metadata_type_id)
+                         definition, concurrently=True):
 
         res = self._connection.execute(
             DATASET_TYPE.insert().values(
@@ -616,7 +614,8 @@ class PostgresDb(object):
         type_id = res.inserted_primary_key[0]
 
         # Initialise search fields.
-        self._setup_dataset_type_fields(type_id, name, metadata_type_id, definition['metadata'])
+        self._setup_dataset_type_fields(type_id, name, metadata_type_id, definition['metadata'],
+                                        concurrently=concurrently)
         return type_id
 
     def add_metadata_type(self, name, definition, concurrently=False):
