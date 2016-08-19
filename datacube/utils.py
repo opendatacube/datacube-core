@@ -70,7 +70,7 @@ def unsqueeze_data_array(da, dim, pos, coord=None):
     new_data = da.data.reshape(new_shape)
     new_coords = {k: v for k, v in da.coords.items()}
     if coord:
-        new_coords[dim] = coord
+        new_coords[dim] = [coord]
     return xarray.DataArray(new_data, dims=new_dims, coords=new_coords, attrs=da.attrs)
 
 
