@@ -18,6 +18,7 @@ except ImportError:
     from yaml import SafeDumper
 import numpy
 
+from affine import Affine
 import rasterio.warp
 import rasterio.crs
 from rasterio.warp import RESAMPLING
@@ -74,17 +75,19 @@ def _calc_offsets(off, src_size, dst_size):
     return read_off, write_off, size
 
 
+def _no_scale(affine, eps=0.01):
+    return abs(affine.a - 1.0) < eps and abs(affine.e - 1.0) < eps
+
+
+def _no_fractional_translate(affine, eps=0.01):
+    return abs(affine.c % 1.0) < eps and abs(affine.f % 1.0) < eps
+
+
 def reproject(source, dest, dst_transform, dst_nodata, dst_projection, resampling):
-    def no_scale(affine, eps=0.01):
-        return abs(affine.a - 1.0) < eps and abs(affine.e - 1.0) < eps
-
-    def no_fractional_translate(affine, eps=0.01):
-        return abs(affine.c % 1.0) < eps and abs(affine.f % 1.0) < eps
-
     with source.open() as src:
         array_transform = ~source.transform * dst_transform
-        if (source.crs == dst_projection and no_scale(array_transform) and
-                (resampling == RESAMPLING.nearest or no_fractional_translate(array_transform))):
+        if (source.crs == dst_projection and _no_scale(array_transform) and
+                (resampling == RESAMPLING.nearest or _no_fractional_translate(array_transform))):
             dydx = (int(round(array_transform.f)), int(round(array_transform.c)))
             read, write, shape = zip(*map(_calc_offsets, dydx, src.shape, dest.shape))
 
@@ -95,6 +98,8 @@ def reproject(source, dest, dst_transform, dst_nodata, dst_projection, resamplin
                 numpy.copyto(dest[write[0]:write[0] + shape[0], write[1]:write[1] + shape[1]],
                              tmp, where=(tmp != source.nodata))
         else:
+            if source.override:
+                src = src.ds.read(indexes=src.bidx)
             rasterio.warp.reproject(src,
                                     dest,
                                     src_transform=source.transform,
@@ -140,8 +145,10 @@ class DatasetSource(object):
         :type dataset: datacube.model.Dataset
         :param measurement_id:
         """
+        self._dataset = dataset
         self._bandinfo = dataset.type.measurements[measurement_id]
         self._descriptor = dataset.measurements[measurement_id]
+        self.override = False
         self.transform = None
         self.crs = dataset.crs
         self.dtype = None
@@ -171,23 +178,26 @@ class DatasetSource(object):
         try:
             _LOG.debug("openening %s, band %s", filename, bandnumber)
             with rasterio.open(filename) as src:
-
                 if bandnumber is None:
                     if 'netcdf' in self.format.lower():
                         bandnumber = self.wheres_my_band(src, self.time)
                     else:
                         bandnumber = 1
 
-                self.transform = src.affine
+                self.transform = self.whats_my_transform(src)
 
                 try:
                     self.crs = CRS(_rasterio_crs_wkt(src))
                 except ValueError:
-                    pass
+                    _LOG.warning('No CRS in %s, band %s. Falling back to dataset CRS. Gonna be slow...')
+                    self.override = True  # HACK: mmmm... side effects! See reproject above
+
                 self.dtype = numpy.dtype(src.dtypes[0])
                 self.nodata = self.dtype.type(src.nodatavals[0] if src.nodatavals[0] is not None else
                                               self._bandinfo.get('nodata'))
+
                 yield rasterio.band(src, bandnumber)
+
         except Exception as e:
             _LOG.error("Error opening source dataset: %s", filename)
             raise e
@@ -203,6 +213,20 @@ class DatasetSource(object):
                 idx = i
                 dist = abs(sec_since_1970 - v)
         return idx
+
+    def whats_my_transform(self, src):
+        if not src.affine.is_identity:
+            return src.affine
+
+        # source probably doesn't have transform
+        _LOG.warning('No GeoTransform in %s, band %s. Falling back to dataset GeoTransform. Gonna be slow...')
+        self.override = True  # HACK: mmmm... side effects! See reproject above
+
+        bounds = self._dataset.metadata.grid_spatial['geo_ref_points']
+        width = bounds['lr']['x'] - bounds['ul']['x']
+        height = bounds['lr']['y'] - bounds['ul']['y']
+        return (Affine.translation(bounds['ul']['x'], bounds['ul']['y']) *
+                Affine.scale(width/src.shape[1], height/src.shape[0]))
 
 
 def create_netcdf_storage_unit(filename,
