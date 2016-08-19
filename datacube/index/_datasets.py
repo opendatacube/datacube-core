@@ -167,9 +167,9 @@ class DatasetTypeResource(object):
             )
         return self.get_by_name(type_.name)
 
-    def update(self, type_, allow_unsafe_update=False):
+    def update(self, type_, allow_unsafe_updates=False):
         """
-        Update a product
+        Update a product. ValueError will be thrown for potentially unsafe updates.
 
         :param datacube.model.DatasetType type_: Product to add
         :rtype: datacube.model.DatasetType
@@ -180,6 +180,12 @@ class DatasetTypeResource(object):
         if not existing:
             raise ValueError('Unknown product %s, cannot update – did you intend to add it?' % type_.name)
 
+        def handle_unsafe(msg):
+            if not allow_unsafe_updates:
+                raise ValueError(msg)
+            else:
+                _LOG.warning("Ignoring %s", msg)
+
         # We'll probably want to use offsets in the future (ie. nested dicts), not just keys, but for now this suffices.
         safe_keys_to_change = ('description', 'metadata')
 
@@ -189,14 +195,14 @@ class DatasetTypeResource(object):
 
             key_name = offset[0]
             if key_name not in safe_keys_to_change:
-                raise ValueError('Unsafe update: cannot change %r of product definition.' % key_name)
+                handle_unsafe('Potentially unsafe update: changing %r of product definition.' % key_name)
 
             # You can safely make the match rules looser but not tighter.
             if key_name == 'metadata':
                 # Tightening them could exclude datasets already matched to the product.
                 # (which would make search results wrong)
                 if not contains(old_value, new_value, case_sensitive=True):
-                    raise ValueError('Unsafe update: new product match rules are not a superset of old ones.')
+                    handle_unsafe('Unsafe update: new product match rules are not a superset of old ones.')
 
         if doc_changes:
             _LOG.info("Updating product %s", type_.name)
@@ -221,7 +227,7 @@ class DatasetTypeResource(object):
         :rtype: datacube.model.DatasetType
         """
         type_ = self.from_doc(definition)
-        return self.update(type_, allow_unsafe_update=allow_unsafe_update)
+        return self.update(type_, allow_unsafe_updates=allow_unsafe_update)
 
     def add_document(self, definition):
         """
