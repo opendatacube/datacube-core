@@ -141,6 +141,11 @@ def test_safe_update_dataset_type(index, ls5_nbar_gtiff_type, ls5_nbar_gtiff_doc
     with pytest.raises(ValueError):
         index.datasets.types.update_document(different_telemetry_type)
 
+    # But works when unsafe updates are allowed.
+    index.datasets.types.update_document(different_telemetry_type, allow_unsafe_update=True)
+    updated_type = index.datasets.types.get_by_name(ls5_nbar_gtiff_type.name)
+    assert updated_type.definition['metadata']['ga_label'] == 'something'
+
 
 def test_filter_types_by_fields(index, ls5_nbar_gtiff_type):
     """
