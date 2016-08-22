@@ -5,13 +5,13 @@ What's New
 v1.1.7 Bit Shift (22 August 2016)
 ---------------------------------
 
-  - Added bit **shift** and power operators to Analytics Expression Language
+  - Added bit shift and power operators to Analytics Expression Language
 
   - Added `datacube product update` which can be used to update product definitions
 
   - Fixed an issue where dataset geo-registration would be ignored in some cases
 
-  - Fixed an issue where Execution Engined was using dask arrays by default
+  - Fixed an issue where Execution Engine was using dask arrays by default
 
   - Fixed an issue where int8 data could not sometimes be retrieved
 
