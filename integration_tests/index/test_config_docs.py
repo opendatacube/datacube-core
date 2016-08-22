@@ -111,7 +111,7 @@ def test_idempotent_add_dataset_type(index, ls5_nbar_gtiff_type, ls5_nbar_gtiff_
         # TODO: Support for adding/changing search fields?
 
 
-def test_safe_update_dataset_type(index, ls5_nbar_gtiff_type, ls5_nbar_gtiff_doc):
+def test_update_dataset_type(index, ls5_nbar_gtiff_type, ls5_nbar_gtiff_doc):
     """
     :type ls5_nbar_gtiff_type: datacube.model.DatasetType
     :type index: datacube.index._api.Index

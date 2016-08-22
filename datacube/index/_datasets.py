@@ -169,9 +169,13 @@ class DatasetTypeResource(object):
 
     def update(self, type_, allow_unsafe_updates=False):
         """
-        Update a product. ValueError will be thrown for potentially unsafe updates.
+        Update a product. Unsafe changes will throw a ValueError by default.
+
+        (An unsafe change is anything that may potentially make the product
+        incompatible with existing datasets of that type)
 
         :param datacube.model.DatasetType type_: Product to add
+        :param allow_unsafe_updates bool: Allow unsafe changes. Use with caution.
         :rtype: datacube.model.DatasetType
         """
         DatasetType.validate(type_.definition)

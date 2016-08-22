@@ -5,9 +5,9 @@ Module
 from __future__ import absolute_import, print_function
 
 import logging
-from pathlib import Path
 
 from click.testing import CliRunner
+from pathlib import Path
 
 import datacube.scripts.cli_app
 from datacube.index.postgres.tables._core import drop_db, has_schema, SCHEMA_NAME

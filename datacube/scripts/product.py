@@ -1,9 +1,9 @@
 from __future__ import absolute_import
 
 import logging
+
 import click
 from click import echo
-
 from pathlib import Path
 
 from datacube import Datacube
@@ -33,6 +33,35 @@ def add_dataset_types(index, files):
             type_ = index.products.from_doc(parsed_doc)
             index.products.add(type_)
             echo('Added "%s"' % type_.name)
+        except InvalidDocException as e:
+            _LOG.exception(e)
+            _LOG.error('Invalid product definition: %s', descriptor_path)
+            continue
+
+
+@product.command('update')
+@click.option(
+    '--allow-unsafe/--forbid-unsafe', is_flag=True, default=False,
+    help="Allow unsafe updates (default: false)"
+)
+@click.argument('files',
+                type=click.Path(exists=True, readable=True, writable=False),
+                nargs=-1)
+@ui.pass_index()
+def update_dataset_types(index, allow_unsafe, files):
+    """
+    Update existing products.
+
+    An error will be thrown if a change is potentially unsafe.
+
+    (An unsafe change is anything that may potentially make the product
+    incompatible with existing datasets of that type)
+    """
+    for descriptor_path, parsed_doc in read_documents(*(Path(f) for f in files)):
+        try:
+            type_ = index.products.from_doc(parsed_doc)
+            index.products.update(type_, allow_unsafe_updates=allow_unsafe)
+            echo('Updated "%s"' % type_.name)
         except InvalidDocException as e:
             _LOG.exception(e)
             _LOG.error('Invalid product definition: %s', descriptor_path)
