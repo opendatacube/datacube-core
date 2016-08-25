@@ -56,7 +56,7 @@ class Query(object):
          * `group_by` - observation grouping method. One of 'time', 'solar_day'. Default is 'time'
         """
         self.product = product
-        self.geopolygon = query_geopolygon(geopolygon=geopolygon, **kwargs) or query_geopolygon_like(like)
+        self.geopolygon = query_geopolygon(geopolygon=geopolygon, **kwargs) or (like and getattr(like, 'extent'))
 
         remaining_keys = set(kwargs.keys()) - set(SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
         if index:
@@ -156,12 +156,6 @@ def query_geopolygon(geopolygon=None, **kwargs):
         raise ValueError('Cannot specify "geopolygon" and one of %s at the same time' % (SPATIAL_KEYS + CRS_KEYS))
 
     return geopolygon or _range_to_geopolygon(**spatial_dims)
-
-
-def query_geopolygon_like(dataset):
-    if dataset is None:
-        return None
-    return getattr(dataset, 'extent')
 
 
 def query_group_by(group_by='time', **kwargs):
