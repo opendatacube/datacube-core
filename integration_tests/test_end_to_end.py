@@ -169,6 +169,9 @@ def check_open_with_dc(index):
     dataset = dc.load(product='ls5_nbar_albers', latitude=(-35.2, -35.3), longitude=(149.1, 149.2))
     assert dataset['blue'].size
 
+    dataset_like = dc.load(product='ls5_nbar_albers', measurements=['blue'], like=dataset)
+    assert (dataset.blue == dataset_like.blue).all()
+
     data_array = dc.load(product='ls5_nbar_albers',
                          latitude=(-35, -36), longitude=(149, 150),
                          measurements=['blue'], group_by='solar_day')
