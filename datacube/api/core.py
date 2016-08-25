@@ -42,13 +42,15 @@ def _get_min_max(data):
 
 
 def _xarray_extent(obj):
+    return obj.geobox.extent
+
+
+def _xarray_geobox(obj):
     dims = obj.crs.dimensions
-    left, right = _get_min_max(obj[dims[1]].values)
-    bottom, top = _get_min_max(obj[dims[0]].values)
-    points = [[left, bottom], [left, top], [right, top], [right, bottom]]
-    return GeoPolygon(points, obj.crs)
+    return GeoBox(obj[dims[1]].size, obj[dims[0]].size, obj.affine, obj.crs)
 
 
+xarray.Dataset.geobox = property(_xarray_geobox)
 xarray.Dataset.affine = property(_xarray_affine)
 xarray.Dataset.extent = property(_xarray_extent)
 
