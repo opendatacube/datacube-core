@@ -310,8 +310,8 @@ class Datacube(object):
         groups = [Group(key, tuple(group)) for key, group in groupby(datasets, group_func)]
 
         data = numpy.empty(len(groups), dtype=object)
-        for index, (_, sources) in enumerate(groups):
-            data[index] = sources
+        for index, group in enumerate(groups):
+            data[index] = group.datasets
         coords = [v.key for v in groups]
         sources = xarray.DataArray(data, dims=[dimension], coords=[coords])
         sources[dimension].attrs['units'] = units
