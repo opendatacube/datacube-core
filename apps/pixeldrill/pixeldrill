@@ -61,8 +61,8 @@ class Toolbar(NavigationToolbar2TkAgg):
              (None, None, None, None),
              ('Save', 'Save', 'filesave', 'save_movie'),
              (None, None, None, None),
-             ('Prev', 'Previous observation', 'back', 'fwdimg'),
-             ('Next', 'Next observation', 'forward', 'backimg'),
+             ('Prev', 'Previous observation', 'back', 'backimg'),
+             ('Next', 'Next observation', 'forward', 'fwdimg'),
              (None, None, None, None),
            )
         NavigationToolbar2TkAgg.__init__(self, canvas, parent)
