@@ -65,10 +65,17 @@ class Query(object):
                 raise LookupError('Unknown arguments: ', unknown_keys)
 
         self.search = {}
-        if like:
-            self.search.update(_like_to_search(like))
         for key in remaining_keys:
             self.search.update(_values_to_search(**{key: kwargs[key]}))
+
+        if like:
+            self.geopolygon = getattr(like, 'extent', self.geopolygon)
+
+            time_coord = like.coords.get('time')
+            if time_coord:
+                self.search['time'] = _time_to_search_dims((pandas_to_datetime(time_coord[0].values).to_pydatetime(),
+                                                            pandas_to_datetime(time_coord[-1].values).to_pydatetime() +
+                                                            datetime.timedelta(milliseconds=1)))
 
     @property
     def search_terms(self):
@@ -287,14 +294,3 @@ def solar_day(dataset):
     longitude = (bb.left + bb.right) * 0.5
     solar_time = _convert_to_solar_time(utc, longitude)
     return np.datetime64(solar_time.date(), 'D')
-
-
-def _like_to_search(dataset):
-    search = {}
-    for name, coord in dataset.coords.items():
-        if name == 'time':
-            search['time'] = _time_to_search_dims((coord[0].values,
-                                                   coord[-1].values + datetime.timedelta(milliseconds=1)))
-        elif name not in SPATIAL_KEYS:
-            search[name] = Range(dataset.coords[0].values, dataset.coords[-1].values)
-    return search
