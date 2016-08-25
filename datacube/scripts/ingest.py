@@ -211,7 +211,7 @@ def ingest_work(config, source_type, output_type, index, sources, geobox):
     datasets = xr_apply(sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
     nudata['dataset'] = datasets_to_doc(datasets)
 
-    write_dataset_to_netcdf(nudata, global_attributes, variable_params, file_path)
+    write_dataset_to_netcdf(nudata, file_path, global_attributes, variable_params)
 
     return datasets
 

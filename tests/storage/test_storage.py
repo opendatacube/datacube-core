@@ -41,7 +41,8 @@ def test_write_dataset_to_netcdf(tmpnetcdf_filename):
                       numpy.arange(10000, dtype='int16').reshape(geobox.shape),
                       {'nodata': 0, 'units': '1', 'crs': geobox.crs})
 
-    write_dataset_to_netcdf(dataset, {'foo': 'bar'}, {'B10': {'attrs': {'abc': 'xyz'}}}, Path(tmpnetcdf_filename))
+    write_dataset_to_netcdf(dataset, tmpnetcdf_filename, global_attributes={'foo': 'bar'},
+                            variable_params={'B10': {'attrs': {'abc': 'xyz'}}})
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
         nco.set_auto_mask(False)

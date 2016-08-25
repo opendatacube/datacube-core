@@ -266,16 +266,35 @@ def create_netcdf_storage_unit(filename,
     return nco
 
 
-def write_dataset_to_netcdf(access_unit, global_attributes, variable_params, filename, netcdfparams=None):
+def write_dataset_to_netcdf(dataset, filename, global_attributes=None, variable_params=None,
+                            netcdfparams=None):
+    """
+    Write a Data Cube style xarray Dataset to a NetCDF file
+
+    Requires a spatial Dataset, with attached coordinates and global crs attribute.
+
+    :param `xarray.Dataset` dataset:
+    :param filename: Output filename
+    :param global_attributes: Global file attributes. dict of attr_name: attr_value
+    :param variable_params: dict of variable_name: {param_name: param_value, [...]}
+                            Allows setting storage and compression options per variable.
+                            See the `netCDF4.Dataset.createVariable` for available
+                            parameters.
+    :param netcdfparams: Optional params affecting netCDF file creation
+    """
+    global_attributes = global_attributes or {}
+    variable_params = variable_params or {}
+    filename = Path(filename)
+
     nco = create_netcdf_storage_unit(filename,
-                                     access_unit.crs,
-                                     access_unit.coords,
-                                     access_unit.data_vars,
+                                     dataset.crs,
+                                     dataset.coords,
+                                     dataset.data_vars,
                                      variable_params,
                                      global_attributes,
                                      netcdfparams)
 
-    for name, variable in access_unit.data_vars.items():
+    for name, variable in dataset.data_vars.items():
         nco[name][:] = netcdf_writer.netcdfy_data(variable.values)
 
     nco.close()

@@ -148,7 +148,7 @@ def process_results(executor, results):
     for i, result in enumerate(executor.as_completed(results)):
         epoch_start_date, dataset = executor.result(result)
         print(epoch_start_date, dataset)
-        write_dataset_to_netcdf(dataset, {}, {}, Path('test_{:02d}.nc'.format(i)))
+        write_dataset_to_netcdf(dataset, 'test_{:02d}.nc'.format(i))
 
 
 def get_epochs(interval, duration, start, end):
