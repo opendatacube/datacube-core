@@ -20,7 +20,6 @@ from ..model import GeoPolygon, GeoBox
 from ..storage.storage import DatasetSource, fuse_sources
 from ..utils import check_intersect, data_resolution_and_offset
 from .query import Query, query_group_by, query_geopolygon
-from .query import query_geopolygon_like, query_resolution_like, query_crs_like
 
 _LOG = logging.getLogger(__name__)
 
@@ -253,10 +252,10 @@ class Datacube(object):
                                         var_dim_name=stack, fuse_func=fuse_func, dask_chunks=dask_chunks)
 
     @staticmethod
-    def _get_geobox(observations, output_crs=None, resolution=None, like=None, align=None, **query):
-        crs = CRS(output_crs) if output_crs else query_crs_like(like) or get_crs(observations)
-        geopolygon = query_geopolygon(**query) or query_geopolygon_like(like) or get_bounds(observations, crs)
-        resolution = resolution or query_resolution_like(like) or get_resolution(observations)
+    def _get_geobox(observations, output_crs=None, resolution=None, align=None, **query):
+        crs = CRS(output_crs) if output_crs else get_crs(observations)
+        geopolygon = query_geopolygon(**query) or get_bounds(observations, crs)
+        resolution = resolution or get_resolution(observations)
         geobox = GeoBox.from_geopolygon(geopolygon, resolution, crs, align)
         return geobox
 

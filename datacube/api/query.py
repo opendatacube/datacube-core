@@ -164,19 +164,6 @@ def query_geopolygon_like(dataset):
     return getattr(dataset, 'extent')
 
 
-def query_resolution_like(dataset):
-    if dataset is None:
-        return None
-    affine = dataset.affine
-    return affine.e, affine.a
-
-
-def query_crs_like(dataset):
-    if dataset is None:
-        return None
-    return dataset.data_vars.values()[0].attrs.get('crs')
-
-
 def query_group_by(group_by='time', **kwargs):
     time_grouper = GroupBy(dimension='time',
                            group_by_func=lambda ds: ds.center_time,
