@@ -176,6 +176,12 @@ def check_open_with_dc(index):
                          latitude=(-35, -36), longitude=(149, 150),
                          measurements=['blue'], group_by='solar_day')
 
+    dataset = dc.load(product='ls5_nbar_albers', latitude=(-35.2, -35.3), longitude=(149.1, 149.2), align=(5, 20))
+    assert dataset.geobox.affine.f % abs(dataset.geobox.affine.e) == 5
+    assert dataset.geobox.affine.c % abs(dataset.geobox.affine.a) == 20
+    dataset_like = dc.load(product='ls5_nbar_albers', measurements=['blue'], like=dataset)
+    assert (dataset.blue == dataset_like.blue).all()
+
     products_df = dc.list_products()
     assert len(products_df)
     assert len(products_df[products_df['name'].isin(['ls5_nbar_albers'])])
