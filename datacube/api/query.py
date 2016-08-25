@@ -23,6 +23,7 @@ import datetime
 import collections
 
 from dateutil import tz
+from pandas import to_datetime as pandas_to_datetime
 import numpy as np
 
 from ..compat import string_types, integer_types
@@ -277,12 +278,7 @@ def _to_datetime(t):
             t = t.replace(tzinfo=tz.tzutc())
         return t
 
-    try:
-        from pandas import to_datetime as pandas_to_datetime
-        return pandas_to_datetime(t, utc=True, infer_datetime_format=True).to_pydatetime()
-    except ImportError:
-        pass
-    raise ValueError('Could not parse the time for {}'.format(t))
+    return pandas_to_datetime(t, utc=True, infer_datetime_format=True).to_pydatetime()
 
 
 def _time_to_search_dims(time_range):
