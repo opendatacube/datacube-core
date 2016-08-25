@@ -38,6 +38,8 @@ import six
 from six.moves import tkinter_filedialog as FileDialog
 from six.moves import tkinter_tkfiledialog, tkinter_messagebox
 
+FONT = ("Helvetica", 9)
+
 # Set our plot parameters
 
 plt.rcParams.update({
@@ -49,7 +51,6 @@ plt.rcParams.update({
         'ytick.labelsize': 9,
         'font.family': 'sans'})
 
-
 class Toolbar(NavigationToolbar2TkAgg):
 
     def __init__(self, canvas, parent):
@@ -60,8 +61,8 @@ class Toolbar(NavigationToolbar2TkAgg):
              (None, None, None, None),
              ('Save', 'Save', 'filesave', 'save_movie'),
              (None, None, None, None),
-             ('Prev', 'Previous observation', 'back', 'back'),
-             ('Next', 'Next observation', 'forward', 'forward'),
+             ('Prev', 'Previous observation', 'back', 'fwdimg'),
+             ('Next', 'Next observation', 'forward', 'backimg'),
              (None, None, None, None),
            )
         NavigationToolbar2TkAgg.__init__(self, canvas, parent)
@@ -70,13 +71,13 @@ class Toolbar(NavigationToolbar2TkAgg):
 
     def _Button(self, text, file, command, extension='.gif'):
         b = tk.Button(master=self, text=text, padx=2, pady=2, command=command,
-                      relief=tk.FLAT)
+                      relief=tk.FLAT, font=FONT, justify=tk.CENTER)
         b.pack(side=tk.LEFT)
         return b
 
     def _init_toolbar(self):
         xmin, xmax = self.canvas.figure.bbox.intervalx
-        height, width = 50, xmax-xmin
+        height, width = 40, xmax-xmin
         tk.Frame.__init__(self, master=self.window,
                           width=int(width), height=int(height),
                           borderwidth=2)
@@ -84,7 +85,6 @@ class Toolbar(NavigationToolbar2TkAgg):
 
         for text, tooltip_text, image_file, callback in self.toolitems:
             if text is None:
-                # spacer, unhandled in Tk
                 pass
             else:
                 button = self._Button(text=text, file=image_file,
@@ -94,10 +94,11 @@ class Toolbar(NavigationToolbar2TkAgg):
                 button.configure(background='black', foreground='white')
 
         self.message = tk.StringVar(master=self)
-        self._message_label = tk.Label(master=self, textvariable=self.message)
-        self._message_label.pack(side=tk.RIGHT)
+        self._label = tk.Label(master=self, textvariable=self.message,
+                               font=FONT)
+        self._label.pack(side=tk.RIGHT)
         self.pack(side=tk.BOTTOM, fill=tk.X)
-        self._message_label.configure(background='black', foreground='white')
+        self._label.configure(background='black', foreground='white')
 
     def mouse_move(self, event):
         self._set_cursor(event)
@@ -108,10 +109,10 @@ class Toolbar(NavigationToolbar2TkAgg):
             except (ValueError, OverflowError):
                 pass
 
-    def forward(self, *args):
+    def fwdimg(self, *args):
         fwdimg()
    
-    def back(self, *args):
+    def backimg(self, *args):
         backimg()
 
     def save_movie(self, *args):
@@ -173,7 +174,7 @@ class DrillToolbar(NavigationToolbar2TkAgg):
 
     def _Button(self, text, file, command, extension='.gif'):
         b = tk.Button(master=self, text=text, padx=2, pady=2, command=command,
-                      relief=tk.FLAT)
+                      relief=tk.FLAT, font=FONT)
         b.pack(side=tk.LEFT)
         return b
 
@@ -311,9 +312,9 @@ class Formatter:
 
     def __call__(self, x, y):
         xi, yi = int(round(x,0)), int(round(y,0))
-        values = ','.join(['{}:{}'.format(n,d) for n,d in 
+        values = ' '.join(['{}:{}'.format(n,d) for n,d in 
                            zip(self.names, self.data[yi,xi,:,vi])])
-        return 'x:{} y:{} [{}]  '.format(xi, yi, values)
+        return 'x:{} y:{}\n{}'.format(xi, yi, values)
 
 
 def dcmap(N, base_cmap=None):
@@ -405,6 +406,10 @@ def drill(x=0, y=0):
 
 def changeimg(i):
     """Change image shown."""
+    global vi
+
+    if vi == i:
+        return
 
     # Scale and fix image
     img = data[:,:,vbnds,i].copy()
@@ -416,9 +421,10 @@ def changeimg(i):
 
     # Draw it
     mainimg.set_data(img)
-    mainfig.canvas.set_window_title('[{}/{}] {}. Data mem usage: {}'.format(i+1, ntime, times[0], memusage))
+    mainfig.canvas.set_window_title('[{}/{}] {}. Data mem usage: {}'.format(i+1, ntime, times[i], memusage))
     mainfig.canvas.draw()
 
+    vi = i
 
 def onclick(event):
     """Handle a click event on the main image."""
@@ -444,21 +450,23 @@ def onpress(event):
 
     if event.key == 'right':
         fwdimg()
+        return
 
     if event.key == 'left':
         backimg()
+        return
 
 def fwdimg():
     """Show next observation."""
     global vi
-    vi = min(vi + 1, data.shape[3]-1)
-    changeimg(vi)
+    i = min(vi + 1, data.shape[3]-1)
+    changeimg(i)
 
 def backimg():
     """Show previous observation."""
     global vi
-    vi = max(0, vi - 1)
-    changeimg(vi)
+    i = max(0, vi - 1)
+    changeimg(i)
 
 def run(latrange=None, lonrange=None, timerange=None, measurements=None,
         valuemax=None, product=None, groupby=None, verbose=False):
@@ -551,7 +559,7 @@ def run(latrange=None, lonrange=None, timerange=None, measurements=None,
 
     # Setup the main figure
 
-    mainfig = plt.figure(figsize=(10, 10))
+    mainfig = plt.figure(figsize=(6, 6))
     mainfig.canvas.set_window_title('[{}/{}] {}. Data mem usage: {}'.format(1, ntime, times[0], memusage))
     mainfig.patch.set_facecolor('black')
 
@@ -564,6 +572,8 @@ def run(latrange=None, lonrange=None, timerange=None, measurements=None,
     # Surgery on the toolbar
     
     canvas = mainfig.canvas
+    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
     window = mainfig.canvas.toolbar.window
     mainfig.canvas.toolbar.pack_forget()
     mainfig.canvas.toolbar = Toolbar(mainfig.canvas, window)
@@ -586,7 +596,7 @@ def run(latrange=None, lonrange=None, timerange=None, measurements=None,
 
     # Setup the drill figure
     
-    drillfig = plt.figure(figsize=(5, 3.5))
+    drillfig = plt.figure(figsize=(4, 3))
     drillfig.patch.set_facecolor('black')
     drillfig.canvas.toolbar.pack_forget()
 
