@@ -228,7 +228,10 @@ class Datacube(object):
         if not observations:
             return None if stack else xarray.Dataset()
 
-        geobox = self._get_geobox(observations, output_crs, resolution, like=like, align=align, **query)
+        if like:
+            geobox = like.geobox
+        else:
+            geobox = self._get_geobox(observations, output_crs, resolution, align=align, **query)
 
         group_by = query_group_by(**query)
         sources = self.product_sources(observations, group_by.group_by_func, group_by.dimension, group_by.units)
