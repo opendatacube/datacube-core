@@ -22,12 +22,13 @@
 # ------------------------------------------------------------------------------
 
 # pylint: disable=consider-using-enumerate
+# Use of optional matplotlib
+# pylint: disable=import-error
 
 from __future__ import absolute_import
 from __future__ import print_function
 import math
 import csv
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy import ndimage
 from scipy.io import netcdf
@@ -62,7 +63,7 @@ def plot_1d(array_result):
     img = array_result['array_result'].values()[0]
 
     no_data_value = array_result['array_output']['no_data_value']
-
+    import matplotlib.pyplot as plt
     ticks = np.arange(0, len(img), 1.0)
     plt.plot(ticks, img)
     plt.ylabel('Value')
@@ -79,7 +80,7 @@ def plot_2d(array_result):
         array_result: computed array as a result of execution
     '''
     print('plot2D')
-
+    import matplotlib.pyplot as plt
     img = array_result['array_result'].values()[0]
     fig = plt.figure(1)
     fig.clf()
@@ -101,7 +102,7 @@ def plot_3d(array_result):
         array_result: computed array as a result of execution
     '''
     print('plot3D')
-
+    import matplotlib.pyplot as plt
     img = array_result['array_result'].values()[0]
     num_t = img.shape[0]
     num_rowcol = math.ceil(math.sqrt(num_t))

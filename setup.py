@@ -43,10 +43,12 @@ setup(name='datacube',
           'xarray',
           'scipy',
           'pyparsing==2.1.5',
-          'matplotlib',
           'numexpr',
           'future',
       ],
+      extras_require={
+          'interactive': ['matplotlib'],
+      },
       tests_require=[
           'pytest',
           'pytest-cov',

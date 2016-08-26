@@ -40,7 +40,6 @@ import numpy as np
 import xarray as xr
 from xarray import ufuncs
 from scipy import ndimage
-import matplotlib.pyplot as plt
 
 from pyparsing import Literal, CaselessLiteral, Word, Combine, Group,\
     Optional, ZeroOrMore, Forward, nums, alphas, delimitedList,\
@@ -590,6 +589,9 @@ class NDexpr(object):
 
     def plot_3d(self, array_result):
         print('plot3D')
+        # Matplotlib is an optional requirement, so it's not imported globally.
+        # pylint: disable=import-error
+        import matplotlib.pyplot as plt
 
         img = array_result
         num_t = img.shape[0]
