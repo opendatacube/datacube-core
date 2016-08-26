@@ -19,4 +19,6 @@ Line Transect
 
 Multi-Product Time Series
 -------------------------
-TBD
+
+.. literalinclude:: recipes/multi_prod_series.py
+    :language: python
