@@ -3,9 +3,11 @@
 Recipes
 =======
 
+Plot RGB
+--------
 
-Multi-Product Time Series
--------------------------
+.. literalinclude:: recipes/plot_rgb.py
+    :language: python
 
 
 Line Transect
@@ -15,5 +17,6 @@ Line Transect
     :language: python
 
 
-Plot RGB
---------
+Multi-Product Time Series
+-------------------------
+TBD

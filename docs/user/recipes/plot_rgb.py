@@ -1,0 +1,20 @@
+import datacube
+from datacube.storage.masking import mask_valid_data as mask_invalid_data
+
+query = {
+    'time': ('1990-01-01', '1991-01-01'),
+    'lat': (-35.2, -35.4),
+    'lon': (149.0, 149.2),
+}
+
+dc = datacube.Datacube()
+data = dc.load(product='ls5_nbar_albers', measurements=['red', 'green', 'blue'], **query)
+data = mask_invalid_data(data)
+
+fake_saturation = 5000
+rgb = data.to_array(dim='color')
+rgb = rgb.transpose(*(rgb.dims[1:]+rgb.dims[:1]))  # make 'color' the last dimension
+rgb = rgb.where(rgb <= fake_saturation)/fake_saturation
+
+rgb.plot.imshow(x=data.crs.dimensions[1], y=data.crs.dimensions[0],
+                col='time', col_wrap=5, add_colorbar=False)
