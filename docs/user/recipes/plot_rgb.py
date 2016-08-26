@@ -15,7 +15,7 @@ fake_saturation = 4000
 rgb = data.to_array(dim='color')
 rgb = rgb.transpose(*(rgb.dims[1:]+rgb.dims[:1]))  # make 'color' the last dimension
 rgb = rgb.where((rgb <= fake_saturation).all(dim='color'))  # mask out pixels where any band is 'saturated'
-rgb /= fake_saturation #  scale to [0, 1] range for imshow
+rgb /= fake_saturation  # scale to [0, 1] range for imshow
 
 rgb.plot.imshow(x=data.crs.dimensions[1], y=data.crs.dimensions[0],
                 col='time', col_wrap=5, add_colorbar=False)
