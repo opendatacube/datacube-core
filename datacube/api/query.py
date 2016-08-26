@@ -72,9 +72,9 @@ class Query(object):
             self.geopolygon = getattr(like, 'extent', self.geopolygon)
 
             time_coord = like.coords.get('time')
-            if time_coord:
-                self.search['time'] = _time_to_search_dims((pandas_to_datetime(time_coord[0].values).to_pydatetime(),
-                                                            pandas_to_datetime(time_coord[-1].values).to_pydatetime() +
+            if time_coord is not None:
+                self.search['time'] = _time_to_search_dims((pandas_to_datetime(time_coord.values[0]).to_pydatetime(),
+                                                            pandas_to_datetime(time_coord.values[-1]).to_pydatetime() +
                                                             datetime.timedelta(milliseconds=1)))
 
     @property
