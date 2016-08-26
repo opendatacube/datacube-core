@@ -7,11 +7,10 @@ from __future__ import absolute_import
 import logging
 
 from cachetools import lru_cache
-from datacube import compat
-from datacube.index import changes
-from datacube.model import Dataset, DatasetType, MetadataType
-from datacube.utils import InvalidDocException, check_doc_unchanged, jsonify_document
 
+from datacube import compat
+from datacube.model import Dataset, DatasetType, MetadataType
+from datacube.utils import InvalidDocException, check_doc_unchanged, jsonify_document, get_doc_changes, contains
 from . import fields
 from .exceptions import DuplicateRecordError
 
@@ -185,28 +184,29 @@ class DatasetTypeResource(object):
         if not existing:
             raise ValueError('Unknown product %s, cannot update – did you intend to add it?' % type_.name)
 
-        def handle_unsafe(offset, msg):
+        def handle_unsafe(msg):
             if not allow_unsafe_updates:
                 raise ValueError(msg)
             else:
                 _LOG.warning("Ignoring %s", msg)
 
-        updates_allowed = {
-            'description': changes.allow_any,
-            # You can safely make the match rules looser but not tighter.
-            # Tightening them could exclude datasets already matched to the product.
-            # (which would make search results wrong)
-            'metadata': changes.allow_subset
-        }
+        # We'll probably want to use offsets in the future (ie. nested dicts), not just keys, but for now this suffices.
+        safe_keys_to_change = ('description', 'metadata')
 
-        doc_changes = changes.validate_dict_changes(
-            existing.definition,
-            jsonify_document(type_.definition),
-            updates_allowed,
-            on_failure=handle_unsafe,
-            on_change=lambda offset, old, new: _LOG.info('Changing %s %s: %r -> %r',
-                                                         type_.name, '.'.join(offset), old, new)
-        )
+        doc_changes = get_doc_changes(existing.definition, jsonify_document(type_.definition))
+        for offset, old_value, new_value in doc_changes:
+            _LOG.info('Changing %s %s: %r -> %r', type_.name, '.'.join(offset), old_value, new_value)
+
+            key_name = offset[0]
+            if key_name not in safe_keys_to_change:
+                handle_unsafe('Potentially unsafe update: changing %r of product definition.' % key_name)
+
+            # You can safely make the match rules looser but not tighter.
+            if key_name == 'metadata':
+                # Tightening them could exclude datasets already matched to the product.
+                # (which would make search results wrong)
+                if not contains(old_value, new_value, case_sensitive=True):
+                    handle_unsafe('Unsafe update: new product match rules are not a superset of old ones.')
 
         if doc_changes:
             _LOG.info("Updating product %s", type_.name)

@@ -429,8 +429,6 @@ def get_doc_changes(original, new, base_prefix=()):
     [(('a', 'b'), 1, 2)]
     >>> get_doc_changes({}, {'b': 1})
     [(('b',), None, 1)]
-    >>> get_doc_changes({'a': {'c': 1}}, {'a': {'b': 1}})
-    [(('a', 'b'), None, 1), (('a', 'c'), 1, None)]
     >>> get_doc_changes({}, None, base_prefix=('a',))
     [(('a',), {}, None)]
     """
