@@ -19,21 +19,6 @@ Uses
 .. literalinclude:: recipes/plot_rgb.py
     :language: python
 
-
-Line Transect
--------------
-
-Uses
-:class:`datacube.Datacube`
-:class:`xarray.DataArray`
-:class:`datacube.model.CRS`
-:meth:`datacube.Datacube.load`
-:meth:`xarray.Dataset.sel_points`
-
-.. literalinclude:: recipes/line_transect.py
-    :language: python
-
-
 Multi-Product Time Series
 -------------------------
 
@@ -46,4 +31,17 @@ Uses
 :meth:`xarray.concat`
 
 .. literalinclude:: recipes/multi_prod_series.py
+    :language: python
+
+Line Transect
+-------------
+
+Uses
+:class:`datacube.Datacube`
+:class:`xarray.DataArray`
+:class:`datacube.model.CRS`
+:meth:`datacube.Datacube.load`
+:meth:`xarray.Dataset.sel_points`
+
+.. literalinclude:: recipes/line_transect.py
     :language: python
