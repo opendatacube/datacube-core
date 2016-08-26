@@ -1,8 +1,17 @@
 #!/usr/bin/env python
 
-from setuptools import setup, find_packages
 import versioneer
+from setuptools import setup, find_packages
 
+extras_require = {
+    'performance': ['ciso8601'],
+    'interactive': ['matplotlib'],
+    'distributed': ['distributed', 'dask[distributed]'],
+    'doc': ['Sphinx'],
+    'test': ['pytest', 'pytest-cov', 'mock', 'pep8', 'pylint'],
+}
+# An 'all' option, following ipython naming conventions.
+extras_require['all'] = sorted(set(sum(extras_require.values(), [])))
 
 long_description = """Data Cube provides an integrated gridded data analysis environment
 for earth observation satellite and related data from multiple satellite and other acquisition systems"""
@@ -46,9 +55,7 @@ setup(name='datacube',
           'numexpr',
           'future',
       ],
-      extras_require={
-          'interactive': ['matplotlib'],
-      },
+      extras_require=extras_require,
       tests_require=[
           'pytest',
           'pytest-cov',
@@ -68,4 +75,3 @@ setup(name='datacube',
           ]
       },
       )
-
