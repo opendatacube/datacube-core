@@ -15,9 +15,15 @@ facility for use by NCI users.
 
 .. toctree::
    :maxdepth: 3
-   :caption: User Guide
+   :caption: Overview
 
    user/intro
+
+.. toctree::
+   :maxdepth: 3
+   :caption: User Guide
+
+   user/guide
 
 .. toctree::
    :maxdepth: 2
