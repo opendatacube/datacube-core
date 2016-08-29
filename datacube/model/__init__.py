@@ -76,7 +76,7 @@ class Dataset(object):
     """
 
     def __init__(self, type_, metadata_doc, local_uri, sources=None, indexed_by=None, indexed_time=None):
-        #: :type: DatasetType
+        # :type: DatasetType
         self.type = type_
 
         #: :type: dict
@@ -229,6 +229,7 @@ class Measurement(object):
 
 @schema_validated('metadata-type-schema.yaml')
 class MetadataType(object):
+    """Metadata Type definition"""
     def __init__(self,
                  name,
                  dataset_offsets,
@@ -253,25 +254,29 @@ class MetadataType(object):
 @schema_validated('dataset-type-schema.yaml')
 class DatasetType(object):
     """
-    Definition of a Dataset
+    Product definition
 
-    :type metadata_type: MetadataType
+    :param MetadataType metadata_type:
+    :param dict definition:
     """
-
     def __init__(self,
                  metadata_type,
                  definition,
                  id_=None):
+        #: :type: int
         self.id = id_
 
-        # All datasets in a collection must have the same metadata_type.
+        #: :type: MetadataType
         self.metadata_type = metadata_type
 
-        # DatasetType definition.
+        #: product definition document
+        #:
+        #: :type: dict
         self.definition = definition
 
     @property
     def name(self):
+        """:type: str"""
         return self.definition['name']
 
     @property
@@ -292,15 +297,30 @@ class DatasetType(object):
 
     @property
     def measurements(self):
+        """
+        Dictionary of measurements in this product
+
+        :type: dict[str, dict]
+        """
         return OrderedDict((m['name'], m) for m in self.definition.get('measurements', []))
 
     @property
     def dimensions(self):
+        """
+        List of dimensions for data in this product
+
+        :type: tuple[str]
+        """
         assert self.metadata_type.name == 'eo'
         return ('time',) + self.grid_spec.dimensions
 
     @cached_property
     def grid_spec(self):
+        """
+        Grid specification for this product
+
+        :type: GridSpec
+        """
         if 'storage' not in self.definition:
             return None
         storage = self.definition['storage']
@@ -367,6 +387,7 @@ class GeoPolygon(object):
 
     @property
     def boundingbox(self):
+        """:type: BoundingBox"""
         return BoundingBox(left=min(x for x, y in self.points),
                            bottom=min(y for x, y in self.points),
                            right=max(x for x, y in self.points),
@@ -489,6 +510,11 @@ class CRS(object):
 
     @property
     def wkt(self):
+        """
+        WKT representation of the CRS
+
+        :type: str
+        """
         return self._crs.ExportToWkt()
 
     @property
@@ -509,14 +535,25 @@ class CRS(object):
 
     @property
     def geographic(self):
+        """
+        :type: bool
+        """
         return self._crs.IsGeographic() == 1
 
     @property
     def projected(self):
+        """
+        :type: bool
+        """
         return self._crs.IsProjected() == 1
 
     @property
     def dimensions(self):
+        """
+        List of dimension names of the CRS
+
+        :type: (str,str)
+        """
         if self.geographic:
             return 'latitude', 'longitude'
 
@@ -569,6 +606,11 @@ class GridSpec(object):
 
     @property
     def dimensions(self):
+        """
+        List of dimension names of the grid spec
+
+        :type: (str,str)
+        """
         return self.crs.dimensions
 
     @property
@@ -578,7 +620,7 @@ class GridSpec(object):
 
         Units will be in CRS dimension order (Usually y,x or lat,lon)
 
-        :return: tuple()
+        :type: tuple()
         """
         return tuple(int(abs(ts / res)) for ts, res in zip(self.tile_size, self.resolution))
 
@@ -734,18 +776,34 @@ class GeoBox(object):
 
     @property
     def shape(self):
+        """
+        :type: (int,int)
+        """
         return self.height, self.width
 
     @property
     def crs(self):
+        """
+        :type: CRS
+        """
         return self.extent.crs
 
     @property
     def dimensions(self):
+        """
+        List of dimension names of the GeoBox
+
+        :type: (str,str)
+        """
         return self.crs.dimensions
 
     @property
     def coordinates(self):
+        """
+        dict of coordinate labels
+
+        :type: dict[str,numpy.array]
+        """
         xs = numpy.arange(self.width) * self.affine.a + self.affine.c + self.affine.a / 2
         ys = numpy.arange(self.height) * self.affine.e + self.affine.f + self.affine.e / 2
 
@@ -764,6 +822,9 @@ class GeoBox(object):
 
     @property
     def geographic_extent(self):
+        """
+        :type: GeoPolygon
+        """
         if self.crs.geographic:
             return self.extent
         return self.extent.to_crs(CRS('EPSG:4326'))
