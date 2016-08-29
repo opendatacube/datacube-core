@@ -137,6 +137,7 @@ class Datacube(object):
                     measurements.append(row)
         return measurements
 
+    #: pylint: disable=too-many-arguments, too-many-locals
     def load(self, product=None, measurements=None,
              output_crs=None, resolution=None, resampling=None,
              stack=False, dask_chunks=None,
@@ -171,7 +172,7 @@ class Datacube(object):
         **Dimensions**
             Spatial dimensions can specified using the ``longitude``/``latitude`` and ``x``/``y`` fields.
 
-            The CRS of this query is assumed to be **WGS84/EPSG:4326** unless the ``crs`` field is supplied,
+            The CRS of this query is assumed to be WGS84/EPSG:4326 unless the ``crs`` field is supplied,
             even if the stored data is in another projection or the `output_crs` is specified.
             The dimensions ``longitude``/``latitude`` and ``x``/``y`` can be used interchangeably.
             ::
@@ -215,7 +216,7 @@ class Datacube(object):
             To reproject or resample the data, supply the ``output_crs``, ``resolution``, ``resampling`` and ``align``
             fields.
 
-            To reproject data to 25m resolution for **EPSG:3577**::
+            To reproject data to 25m resolution for EPSG:3577::
 
                 output_crs='EPSG:3577`, resolution=(-25, 25), resampling='cubic'
 
@@ -289,10 +290,7 @@ class Datacube(object):
         else:
             measurements = all_measurements
 
-        if resampling is not None:
-            measurements = {name: measurement.copy() for name, measurement in measurements.items()}
-            for measurement in measurements.values():
-                measurement['resampling_method'] = resampling
+        measurements = self._set_resampling_method(measurements, resampling)
 
         if not stack:
             return self.product_data(sources, geobox, measurements.values(),
@@ -302,6 +300,20 @@ class Datacube(object):
                 stack = 'measurement'
             return self._get_data_array(sources, geobox, measurements.values(),
                                         var_dim_name=stack, fuse_func=fuse_func, dask_chunks=dask_chunks)
+
+    @staticmethod
+    def _set_resampling_method(measurements, resampling=None):
+        if resampling is None:
+            return measurements
+
+        def make_resampled_measurement(measurement):
+            measurement = measurement.copy()
+            measurement['resampling_method'] = resampling
+            return measurement
+
+        measurements = OrderedDict((name, make_resampled_measurement(measurement))
+                                   for name, measurement in measurements.items())
+        return measurements
 
     @staticmethod
     def _get_geobox(observations, output_crs=None, resolution=None, align=None, **query):
