@@ -76,7 +76,7 @@ class Dataset(object):
     """
 
     def __init__(self, type_, metadata_doc, local_uri, sources=None, indexed_by=None, indexed_time=None):
-        # :type: DatasetType
+        #: :rtype: DatasetType
         self.type = type_
 
         #: :type: dict
@@ -247,10 +247,10 @@ class MetadataType(object):
         #: :type: str
         self.name = name
 
-        #: :type: DatasetOffsets
+        #: :rtype: DatasetOffsets
         self.dataset_offsets = dataset_offsets
 
-        #: :type: dict[str, datacube.index.fields.Field]
+        #: :rtype: dict[str,datacube.index.fields.Field]
         self.dataset_fields = dataset_search_fields
 
         #: :type: int
@@ -278,12 +278,10 @@ class DatasetType(object):
         #: :type: int
         self.id = id_
 
-        #: :type: MetadataType
+        #: :rtype: MetadataType
         self.metadata_type = metadata_type
 
         #: product definition document
-        #:
-        #: :type: dict
         self.definition = definition
 
     @property
@@ -610,14 +608,17 @@ class GridSpec(object):
            0.0, -0.001, -48.0), EPSG:4326))]
 
     :param CRS crs: Coordinate System used to define the grid
-    :param tuple(y, x) tile_size: Size of each tile, in CRS units
-    :param tuple(y, x) resolution: Size of each data point in the grid, in CRS units. Y will
+    :param (float,float) tile_size: (Y, X) size of each tile, in CRS units
+    :param (float,float) resolution: (Y, X) size of each data point in the grid, in CRS units. Y will
                                    usually be negative.
     """
 
     def __init__(self, crs=None, tile_size=None, resolution=None):
+        #: :rtype: CRS
         self.crs = crs
+        #: :type: (float,float)
         self.tile_size = tile_size
+        #: :type: (float,float)
         self.resolution = resolution
 
     @property
@@ -713,12 +714,16 @@ class GeoBox(object):
 
     def __init__(self, width, height, affine, crs):
         assert height > 0 and width > 0
+        #: :type: int
         self.width = width
+        #: :type: int
         self.height = height
+        #: :rtype: affine.Affine
         self.affine = affine
 
         points = [(0, 0), (0, height), (width, height), (width, 0)]
         self.affine.itransform(points)
+        #: :rtype: GeoPolygon
         self.extent = GeoPolygon(points, crs)
 
     @classmethod
