@@ -216,7 +216,7 @@ class NDexpr(object):
         expr = Forward()
         indexexpr = Forward()
 
-        atom = (Optional("-") +
+        atom = (
                 (variable + seq + expr).setParseAction(self.push_assign) |
                 indexexpr.setParseAction(self.push_index) |
                 (lpar + expr + qmark.setParseAction(self.push_ternary1) + expr +
@@ -232,8 +232,8 @@ class NDexpr(object):
                 (variable + lpar + expr + rpar | variable).setParseAction(self.push_expr1) |
                 fnumber.setParseAction(self.push_expr) |
                 (lpar + expr + ZeroOrMore(comma + expr).setParseAction(self.get_tuple) +
-                 rpar).setParseAction(self.push_tuple) |
-                (lpar + expr.suppress() + rpar).setParseAction(self.push_uminus))
+                 rpar).setParseAction(self.push_tuple)
+        )
 
         # Define order of operations for operators
 
