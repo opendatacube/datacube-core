@@ -59,14 +59,14 @@ class MetadataTypeResource(object):
     @lru_cache()
     def get(self, id_):
         """
-        :rtype datacube.model.MetadataType
+        :rtype: datacube.model.MetadataType
         """
         return self._make(self._db.get_metadata_type(id_))
 
     @lru_cache()
     def get_by_name(self, name):
         """
-        :rtype datacube.model.MetadataType
+        :rtype: datacube.model.MetadataType
         """
         record = self._db.get_metadata_type_by_name(name)
         if not record:
@@ -249,7 +249,7 @@ class DatasetTypeResource(object):
         Retrieve Product by id
 
         :param int id_: id of the Product
-        :rtype datacube.model.DatasetType
+        :rtype: datacube.model.DatasetType
         """
         return self._make(self._db.get_dataset_type(id_))
 
@@ -259,7 +259,7 @@ class DatasetTypeResource(object):
         Retrieve Product by name
 
         :param str name: name of the Product
-        :rtype datacube.model.DatasetType
+        :rtype: datacube.model.DatasetType
         """
         result = self._db.get_dataset_type_by_name(name)
         if not result:
