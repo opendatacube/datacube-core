@@ -222,8 +222,6 @@ class NDexpr(object):
                 (lpar + expr + qmark.setParseAction(self.push_ternary1) + expr +
                  scolon.setParseAction(self.push_ternary2) + expr +
                  rpar).setParseAction(self.push_ternary) |
-                (lpar + expr + qmark + expr + scolon + expr +
-                 rpar).setParseAction(self.push_ternary) |
                 (logicalnotop + expr).setParseAction(self.push_ulnot) |
                 (bitnotop + expr).setParseAction(self.push_unot) |
                 (minus + expr).setParseAction(self.push_uminus) |
