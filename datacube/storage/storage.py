@@ -302,3 +302,4 @@ def write_dataset_to_netcdf(dataset, filename, global_attributes=None, variable_
         nco[name][:] = netcdf_writer.netcdfy_data(variable.values)
 
     nco.close()
+
