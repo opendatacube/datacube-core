@@ -142,64 +142,109 @@ class Datacube(object):
              stack=False, dask_chunks=None,
              like=None, fuse_func=None, align=None, **query):
         """
-        Loads data as an ``xarray`` object.
+        Loads data as an ``xarray`` object.  Each measurement will be a data variable in the :class:`xarray.Dataset`.
 
         See the `xarray documentation <http://xarray.pydata.org/en/stable/data-structures.html>`_ for usage of the
         :class:`xarray.Dataset` and :class:`xarray.DataArray` objects.
 
-        **Search fields**
-            Search product fields. E.g.
+        **Product and Measurements**
+            A product can be specified using the product name, or by search fields that uniquely describe a single
+            product.
             ::
 
-                platform=['LANDSAT_5', 'LANDSAT_7'],
-                product_type='nbar'
+                product='ls5_ndvi_albers'
 
-            See :meth:`list_products` for more information on the fields that can be searched.
+            See :meth:`list_products` for the list of products with their names and properties.
 
-        **Measurements**
+            A product can also be selected by searched using fields, but must only match one product.
+            ::
+
+                platform='LANDSAT_5',
+                product_type='ndvi'
+
             The ``measurements`` argument is a list of measurement names, as listed in :meth:`list_measurements`.
+            If not provided, all measurements for the product will be returned.
+            ::
+
+                measurements=['red', 'nir', swir2']
 
         **Dimensions**
             Spatial dimensions can specified using the ``longitude``/``latitude`` and ``x``/``y`` fields.
-            The CRS of this query is assumed to be **WGS84/EPSG:4326** unless the ``crs`` field is supplied.
+
+            The CRS of this query is assumed to be **WGS84/EPSG:4326** unless the ``crs`` field is supplied,
+            even if the stored data is in another projection or the `output_crs` is specified.
+            The dimensions ``longitude``/``latitude`` and ``x``/``y`` can be used interchangeably.
+            ::
+
+                latitude=(-34.5, -35.2), longitude=(148.3, 148.7)
+
+            or ::
+
+                x=(1516200, 1541300), y=(-3867375, -3867350), crs='EPSG:3577'
+
+            The ``time`` dimension can be specified using a tuple of datetime objects or strings with
+            `YYYY-MM-DD hh:mm:ss` format. E.g::
+
+                time=('2001-04', '2001-07')
+
+            For EO-specific datasets that are based around scenes, the time dimension can be reduced to the day level,
+            using solar day to keep scenes together.
+            ::
+
+                group_by='solar_day'
+
+            For data that has different values for the scene overlap the requires more complex rules for combining data,
+            such as GA's Pixel Quality dataset, a function can be provided to the merging into a single time slice.
+            ::
+
+                def pq_fuser(dest, src):
+                    valid_bit = 8
+                    valid_val = (1 << valid_bit)
+
+                    no_data_dest_mask = ~(dest & valid_val).astype(bool)
+                    np.copyto(dest, src, where=no_data_dest_mask)
+
+                    both_data_mask = (valid_val & dest & src).astype(bool)
+                    np.copyto(dest, src & dest, where=both_data_mask)
 
         **Output**
             If the `stack` argument is supplied, the returned data is stacked in a single ``DataArray``.
             A new dimension is created with the name supplied.
             This requires all of the data to be of the same datatype.
 
-            To reproject or resample the data, supply the ``output_crs`` and ``resolution`` fields.
+            To reproject or resample the data, supply the ``output_crs``, ``resolution``, ``resampling`` and ``align``
+            fields.
+
+            To reproject data to 25m resolution for **EPSG:3577**::
+
+                output_crs='EPSG:3577`, resolution=(-25, 25), resampling='cubic'
 
         :param str product: the product to be included.
-                By default all available measurements are included.
         :param measurements: measurements name or list of names to be included, as listed in :meth:`list_measurements`.
                 If a list is specified, the measurements will be returned in the order requested.
                 By default all available measurements are included.
-        :type measurements: list(str) or str, optional
-        :param query: Search parameters and dimension ranges as described above. E.g.::
+        :type measurements: list(str), optional
+        :param query: Search parameters for products and dimension ranges as described above.
 
-                product='NBAR', platform='LANDSAT_5', latitude=(-35.5, -34.5)
-
-            The default CRS interpretation for geospatial dimensions is WGS84/EPSG:4326,
-            even if the resulting dimension is in another projection.
-            The dimensions ``longitude``/``latitude`` and ``x``/``y`` can be used interchangeably.
         :param str output_crs: The CRS of the returned data.  If no CRS is supplied, the CRS of the stored data is used.
-            E.g.::
-
-                output_crs='EPSG:3577'
-
         :param (float,float) resolution: A tuple of the spatial resolution of the returned data.
-            E.g. 25m resolution for **EPSG:3577**::
-
-                resolution=(-25, 25)
-
             This includes the direction (as indicated by a positive or negative number).
+
             Typically when using most CRSs, the first number would be negative.
 
-        :param (float,float) align: Load data such that point 'align' lies on the pixel boundary. Default is (0,0)
+        :param str resampling: The resampling method to use if re-projection is required.
+
+            Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average'``
+
+            Defaults to ``'nearest'``.
+
+        :param (float,float) align: Load data such that point 'align' lies on the pixel boundary.
+
+            Default is (0,0)
 
         :param stack: The name of the new dimension used to stack the measurements.
-            If provided, the data is returned as a ``DataArray`` rather than a ``Dataset``.
+            If provided, the data is returned as a :class:`xarray.DataArray` rather than a :class:`xarray.Dataset`.
+
             If only one measurement is returned, the dimension name is not used and the dimension is dropped.
         :type stack: str or bool
 
@@ -215,14 +260,14 @@ class Datacube(object):
 
                 pq = dc.load(product='ls5_pq_albers', like=nbar_dataset)
 
-        :param str group_by: When specified, perform basic combining/reducing of data before returning. Eg.
-            group_by="solar_day"
+        :param str group_by: When specified, perform basic combining/reducing of the data.
 
         :param fuse_func: Function used to fuse/combine/reduce data with the ``group_by`` parameter. By default,
             data is simply copied over the top of each other, in a relatively undefined manner. This function can
             perform a specific combining step, eg. for combining GA PQ data.
 
-        :return: Requested data.  As a ``DataArray`` if the ``stack`` variable is supplied.
+        :return: Requested data as a :class:`xarray.Dataset`.
+            As a :class:`xarray.DataArray` if the ``stack`` variable is supplied.
         :rtype: :class:`xarray.Dataset` or :class:`xarray.DataArray`
         """
         observations = self.product_observations(product=product, like=like, **query)
