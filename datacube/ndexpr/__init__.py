@@ -225,21 +225,15 @@ class NDexpr(object):
                 (logicalnotop + expr).setParseAction(self.push_ulnot) |
                 (bitnotop + expr).setParseAction(self.push_unot) |
                 (minus + expr).setParseAction(self.push_uminus) |
-                (variable + lcurl + expr +
-                 rcurl).setParseAction(self.push_mask) |
-                (variable + lpar + expr + (comma + expr)*3 +
-                 rpar).setParseAction(self.push_expr4) |
-                (variable + lpar + expr + (comma + expr)*2 +
-                 rpar).setParseAction(self.push_expr3) |
-                (variable + lpar + expr + comma + expr +
-                 rpar).setParseAction(self.push_expr2) |
-                (variable + lpar + expr + rpar |
-                 variable).setParseAction(self.push_expr1) |
+                (variable + lcurl + expr + rcurl).setParseAction(self.push_mask) |
+                (variable + lpar + expr + (comma + expr)*3 + rpar).setParseAction(self.push_expr4) |
+                (variable + lpar + expr + (comma + expr)*2 + rpar).setParseAction(self.push_expr3) |
+                (variable + lpar + expr + comma + expr + rpar).setParseAction(self.push_expr2) |
+                (variable + lpar + expr + rpar | variable).setParseAction(self.push_expr1) |
                 fnumber.setParseAction(self.push_expr) |
                 (lpar + expr + ZeroOrMore(comma + expr).setParseAction(self.get_tuple) +
                  rpar).setParseAction(self.push_tuple) |
-                (lpar + expr.suppress() +
-                 rpar).setParseAction(self.push_uminus))
+                (lpar + expr.suppress() + rpar).setParseAction(self.push_uminus))
 
         # Define order of operations for operators
 
@@ -256,11 +250,9 @@ class NDexpr(object):
 
         # Define index operators
 
-        colon_expr = (colon + FollowedBy(comma) ^ colon +
-                      FollowedBy(rbrac)).setParseAction(self.push_colon)
+        colon_expr = (colon + FollowedBy(comma) ^ colon + FollowedBy(rbrac)).setParseAction(self.push_colon)
         range_expr = colon_expr | expr | colon
-        indexexpr << (variable + lbrac + delimitedList(range_expr, delim=',') +
-                      rbrac).setParseAction(self.push_expr)
+        indexexpr << (variable + lbrac + delimitedList(range_expr, delim=',') + rbrac).setParseAction(self.push_expr)
 
         self.parser = expr
 
