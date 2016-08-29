@@ -320,7 +320,6 @@ NATIVE_MODULES = [
     'pypeg2',
     'osgeo',
     'rasterio.warp',
-    'cachetools',
     'numexpr',
     'rasterio.coords',
     'netCDF4',

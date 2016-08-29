@@ -6,3 +6,4 @@ SQLAlchemy==1.0.9
 pyyaml
 singledispatch
 pyparsing
+cachetools
