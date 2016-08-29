@@ -137,7 +137,9 @@ class Datacube(object):
                     measurements.append(row)
         return measurements
 
-    def load(self, product=None, measurements=None, output_crs=None, resolution=None, stack=False, dask_chunks=None,
+    def load(self, product=None, measurements=None,
+             output_crs=None, resolution=None, resampling=None,
+             stack=False, dask_chunks=None,
              like=None, fuse_func=None, align=None, **query):
         """
         Loads data as an ``xarray`` object.
@@ -241,6 +243,11 @@ class Datacube(object):
                                        for measurement in measurements if measurement in all_measurements)
         else:
             measurements = all_measurements
+
+        if resampling is not None:
+            measurements = {name: measurement.copy() for name, measurement in measurements.items()}
+            for measurement in measurements.values():
+                measurement['resampling_method'] = resampling
 
         if not stack:
             return self.product_data(sources, geobox, measurements.values(),
