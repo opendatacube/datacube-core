@@ -14,7 +14,8 @@ Uses
 :meth:`xarray.DataArray.transpose`
 :meth:`xarray.DataArray.where`
 :meth:`xarray.DataArray.all`
-:meth:`xarray.plot.imshow`
+:func:`xarray.plot.imshow`
+
 
 .. literalinclude:: recipes/plot_rgb.py
     :language: python
@@ -28,7 +29,7 @@ Uses
 :meth:`datacube.index._datasets.DatasetTypeResource.get_by_name`
 :meth:`datacube.Datacube.load`
 :meth:`xarray.Dataset.isel`
-:meth:`xarray.concat`
+:func:`xarray.concat`
 
 .. literalinclude:: recipes/multi_prod_series.py
     :language: python
