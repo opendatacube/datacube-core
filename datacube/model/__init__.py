@@ -110,6 +110,9 @@ class Dataset(object):
 
     @property
     def id(self):
+        """
+        :rtype: uuid
+        """
         return self.metadata.id
 
     @property
@@ -143,12 +146,15 @@ class Dataset(object):
 
     @property
     def bounds(self):
+        """
+        :rtype: rasterio.coords.BoundingBox
+        """
         return self.extent.boundingbox
 
     @property
     def crs(self):
         """
-        :rtype: datacube.model.CRS
+        :rtype: CRS
         """
         projection = self.metadata.grid_spatial
 
@@ -170,6 +176,9 @@ class Dataset(object):
 
     @cached_property
     def extent(self):
+        """
+        :rtype: GeoPolygon
+        """
         def xytuple(obj):
             return obj['x'], obj['y']
 
@@ -235,13 +244,16 @@ class MetadataType(object):
                  dataset_offsets,
                  dataset_search_fields,
                  id_=None):
+        #: :type: str
         self.name = name
+
         #: :type: DatasetOffsets
         self.dataset_offsets = dataset_offsets
 
         #: :type: dict[str, datacube.index.fields.Field]
         self.dataset_fields = dataset_search_fields
 
+        #: :type: int
         self.id = id_
 
     def dataset_reader(self, dataset_doc):
@@ -276,7 +288,9 @@ class DatasetType(object):
 
     @property
     def name(self):
-        """:type: str"""
+        """
+        :type: str
+        """
         return self.definition['name']
 
     @property
@@ -319,7 +333,7 @@ class DatasetType(object):
         """
         Grid specification for this product
 
-        :type: GridSpec
+        :rtype: GridSpec
         """
         if 'storage' not in self.definition:
             return None
@@ -387,7 +401,9 @@ class GeoPolygon(object):
 
     @property
     def boundingbox(self):
-        """:type: BoundingBox"""
+        """
+        :rtype: rasterio.coords.BoundingBox
+        """
         return BoundingBox(left=min(x for x, y in self.points),
                            bottom=min(y for x, y in self.points),
                            right=max(x for x, y in self.points),
@@ -620,7 +636,7 @@ class GridSpec(object):
 
         Units will be in CRS dimension order (Usually y,x or lat,lon)
 
-        :type: tuple()
+        :type: (float, float)
         """
         return tuple(int(abs(ts / res)) for ts, res in zip(self.tile_size, self.resolution))
 
@@ -784,7 +800,7 @@ class GeoBox(object):
     @property
     def crs(self):
         """
-        :type: CRS
+        :rtype: CRS
         """
         return self.extent.crs
 
@@ -823,7 +839,7 @@ class GeoBox(object):
     @property
     def geographic_extent(self):
         """
-        :type: GeoPolygon
+        :rtype: GeoPolygon
         """
         if self.crs.geographic:
             return self.extent
