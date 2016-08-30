@@ -228,13 +228,9 @@ class NDexpr(object):
             (bitnotop + expr).setParseAction(self.push_unot) |
             (minus + expr).setParseAction(self.push_uminus) |
             (variable + lcurl + expr + rcurl).setParseAction(self.push_mask) |
-            (variable + lpar + expr + (comma + expr) * 3 + rpar).setParseAction(self.push_expr4) |
-            (variable + lpar + expr + (comma + expr) * 2 + rpar).setParseAction(self.push_expr3) |
-            (variable + lpar + expr + comma + expr + rpar).setParseAction(self.push_expr2) |
-            (variable + lpar + expr + rpar).setParseAction(self.push_expr1) |
+            (variable + lpar + delimitedList(Group(expr)) + rpar).setParseAction(self.push_call) |
             (fnumber | variable).setParseAction(self.push_expr) |
-            (lpar + expr + ZeroOrMore(comma + expr).setParseAction(self.get_tuple) +
-             rpar).setParseAction(self.push_tuple)
+            (lpar + delimitedList(Group(expr)) + rpar).setParseAction(self.push_tuple)
         )
 
         # Define order of operations for operators
@@ -264,24 +260,9 @@ class NDexpr(object):
     def push_expr(self, strg, loc, toks):
         self.expr_stack.append(toks[0])
 
-    def push_expr1(self, strg, loc, toks):
+    def push_call(self, strg, loc, toks):
         if toks[0] in self.xrfn:
-            self.expr_stack.append('1')
-        self.expr_stack.append(toks[0])
-
-    def push_expr2(self, strg, loc, toks):
-        if toks[0] in self.xrfn:
-            self.expr_stack.append('2')
-        self.expr_stack.append(toks[0])
-
-    def push_expr3(self, strg, loc, toks):
-        if toks[0] in self.xrfn:
-            self.expr_stack.append('3')
-        self.expr_stack.append(toks[0])
-
-    def push_expr4(self, strg, loc, toks):
-        if toks[0] in self.xrfn:
-            self.expr_stack.append('4')
+            self.expr_stack.append(str(len(toks)-1))
         self.expr_stack.append(toks[0])
 
     def push_op(self, strg, loc, toks):
@@ -303,13 +284,9 @@ class NDexpr(object):
         self.expr_stack.append("[]")
 
     def push_tuple(self, strg, loc, toks):
-        if ',' in toks.asList():
+        if len(toks) != 1:
+            self.expr_stack.append(str(len(toks)))
             self.expr_stack.append("()")
-
-    def get_tuple(self, strg, loc, toks):
-        count = toks.asList().count(',')
-        if count > 0:
-            self.expr_stack.append(str(count+1))
 
     def push_colon(self, strg, loc, toks):
         self.expr_stack.append("::")
