@@ -195,6 +195,9 @@ def test_2():
     assert ne.test("z1>>1", np.right_shift(z1, 1))
     assert ne.test("z1<<1", np.left_shift(z1, 1))
 
+    assert ne.test("(z1+z1)", z1+z1)
+    assert ne.evaluate("(z1, z1)") == (z1, z1)
+
 
 def test_3():
     # perform assignment stack level testing
@@ -207,6 +210,16 @@ def test_3():
 
 @pytest.mark.xfail(reason="Not sure what's up with this... look into this later")
 def test_fails():
+    ne = NDexpr()
+
+    # Is this related???
+    assert ne.evaluate('(1, (4, 5))') == (1, (4, 5))
+
+    z1 = xr.DataArray(np.array([[[0,  1,  2], [3,  4,  5], [6,  7,  8]],
+                                [[9, 10, 11], [12, 13, 14], [15, 16, 17]],
+                                [[18, 19, 20], [21, 22, 23], [24, 25, 26]]
+                                ]))
+
     # z1 gets pushed onto the stack twice somehow...
     assert ne.test("percentile(z1, (50))", np.percentile(z1, (50)))
     assert ne.test("percentile(z1, (50, 60))", np.percentile(z1, (50, 60)))
