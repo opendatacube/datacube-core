@@ -208,6 +208,10 @@ class DatasetSource(object):
             raise e
 
     def wheres_my_band(self, src, time):
+        if GDAL_NETCDF_TIME not in src.tags(1):
+            _LOG.warning("NetCDF dataset has no time dimension")  # HACK: should support time-less datasets
+            return 1
+
         sec_since_1970 = datetime_to_seconds_since_1970(time)
 
         idx = 0
