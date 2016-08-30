@@ -231,8 +231,8 @@ class NDexpr(object):
             (variable + lpar + expr + (comma + expr) * 3 + rpar).setParseAction(self.push_expr4) |
             (variable + lpar + expr + (comma + expr) * 2 + rpar).setParseAction(self.push_expr3) |
             (variable + lpar + expr + comma + expr + rpar).setParseAction(self.push_expr2) |
-            (variable + lpar + expr + rpar | variable).setParseAction(self.push_expr1) |
-            fnumber.setParseAction(self.push_expr) |
+            (variable + lpar + expr + rpar).setParseAction(self.push_expr1) |
+            (fnumber | variable).setParseAction(self.push_expr) |
             (lpar + expr + ZeroOrMore(comma + expr).setParseAction(self.get_tuple) +
              rpar).setParseAction(self.push_tuple)
         )
