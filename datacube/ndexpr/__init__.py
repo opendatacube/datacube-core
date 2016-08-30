@@ -216,37 +216,39 @@ class NDexpr(object):
         expr = Forward()
         indexexpr = Forward()
 
+        ternary_p = (lpar + expr + qmark.setParseAction(self.push_ternary1) + expr +
+                     scolon.setParseAction(self.push_ternary2) + expr +
+                     rpar).setParseAction(self.push_ternary)
+
         atom = (
-                (variable + seq + expr).setParseAction(self.push_assign) |
-                indexexpr.setParseAction(self.push_index) |
-                (lpar + expr + qmark.setParseAction(self.push_ternary1) + expr +
-                 scolon.setParseAction(self.push_ternary2) + expr +
-                 rpar).setParseAction(self.push_ternary) |
-                (logicalnotop + expr).setParseAction(self.push_ulnot) |
-                (bitnotop + expr).setParseAction(self.push_unot) |
-                (minus + expr).setParseAction(self.push_uminus) |
-                (variable + lcurl + expr + rcurl).setParseAction(self.push_mask) |
-                (variable + lpar + expr + (comma + expr)*3 + rpar).setParseAction(self.push_expr4) |
-                (variable + lpar + expr + (comma + expr)*2 + rpar).setParseAction(self.push_expr3) |
-                (variable + lpar + expr + comma + expr + rpar).setParseAction(self.push_expr2) |
-                (variable + lpar + expr + rpar | variable).setParseAction(self.push_expr1) |
-                fnumber.setParseAction(self.push_expr) |
-                (lpar + expr + ZeroOrMore(comma + expr).setParseAction(self.get_tuple) +
-                 rpar).setParseAction(self.push_tuple)
+            (variable + seq + expr).setParseAction(self.push_assign) |
+            indexexpr.setParseAction(self.push_index) |
+            ternary_p |
+            (logicalnotop + expr).setParseAction(self.push_ulnot) |
+            (bitnotop + expr).setParseAction(self.push_unot) |
+            (minus + expr).setParseAction(self.push_uminus) |
+            (variable + lcurl + expr + rcurl).setParseAction(self.push_mask) |
+            (variable + lpar + expr + (comma + expr) * 3 + rpar).setParseAction(self.push_expr4) |
+            (variable + lpar + expr + (comma + expr) * 2 + rpar).setParseAction(self.push_expr3) |
+            (variable + lpar + expr + comma + expr + rpar).setParseAction(self.push_expr2) |
+            (variable + lpar + expr + rpar | variable).setParseAction(self.push_expr1) |
+            fnumber.setParseAction(self.push_expr) |
+            (lpar + expr + ZeroOrMore(comma + expr).setParseAction(self.get_tuple) +
+             rpar).setParseAction(self.push_tuple)
         )
 
         # Define order of operations for operators
 
-        factor = Forward()
-        factor << atom + ZeroOrMore((expop + factor).setParseAction(self.push_op))
-        term = factor + ZeroOrMore((multop + factor).setParseAction(self.push_op))
-        term2 = term + ZeroOrMore((addop + term).setParseAction(self.push_op))
-        term3 = term2 + ZeroOrMore((shiftop + term2).setParseAction(self.push_op))
-        term4 = term3 + ZeroOrMore((sliceop + term3).setParseAction(self.push_op))
-        term5 = term4 + ZeroOrMore((compop + term4).setParseAction(self.push_op))
-        term6 = term5 + ZeroOrMore((eqop + term5).setParseAction(self.push_op))
-        term7 = term6 + ZeroOrMore((bitcompop + term6).setParseAction(self.push_op))
-        expr << term7 + ZeroOrMore((assignop + term7).setParseAction(self.push_op))
+        exp_p = Forward()
+        exp_p << atom + ZeroOrMore((expop + exp_p).setParseAction(self.push_op))
+        mult_p = exp_p + ZeroOrMore((multop + exp_p).setParseAction(self.push_op))
+        add_p = mult_p + ZeroOrMore((addop + mult_p).setParseAction(self.push_op))
+        shift_p = add_p + ZeroOrMore((shiftop + add_p).setParseAction(self.push_op))
+        slice_p = shift_p + ZeroOrMore((sliceop + shift_p).setParseAction(self.push_op))
+        comp_p = slice_p + ZeroOrMore((compop + slice_p).setParseAction(self.push_op))
+        eq_p = comp_p + ZeroOrMore((eqop + comp_p).setParseAction(self.push_op))
+        bitcmp_p = eq_p + ZeroOrMore((bitcompop + eq_p).setParseAction(self.push_op))
+        expr << bitcmp_p + ZeroOrMore((assignop + bitcmp_p).setParseAction(self.push_op))
 
         # Define index operators
 
