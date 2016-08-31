@@ -17,6 +17,7 @@ from datacube.ui.click import to_pathlib
 from datacube.utils import read_documents, unsqueeze_data_array
 from datacube.storage.storage import create_netcdf_storage_unit
 from datacube.storage import netcdf_writer
+from datacube.storage.masking import mask_valid_data as mask_invalid_data
 
 
 STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
@@ -111,7 +112,6 @@ def create_storage_unit(config, task, stat):
         return dataset
 
     source = task['source']
-    measurement_name = source['measurements'][0]
 
     sources = task['data']['sources'].sum()
     for spec, mask_tile in zip(source['masks'], task['masks']):
@@ -120,10 +120,7 @@ def create_storage_unit(config, task, stat):
 
     var_params = get_variable_params(config)
 
-    measurements = [{'name': measurement_name,
-                     'units': '1',  # TODO: where does this come from???
-                     'dtype': stat['dtype'],
-                     'nodata': stat['nodata']}]
+    measurements = list(config['products'][stat['name']].measurements.values())
     filename_template = str(Path(config['location'], stat['file_path_template']))
     output_filename = get_filename(filename_template,
                                    task['index'],
@@ -131,7 +128,7 @@ def create_storage_unit(config, task, stat):
     nco = nco_from_sources(sources,
                            task['data']['geobox'],
                            measurements,
-                           {measurement_name: var_params[stat['name']]},
+                           {measurement['name']: var_params[stat['name']] for measurement in measurements},
                            output_filename)
     datasets = xr_apply(sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
     datasets = datasets_to_doc(datasets)
@@ -142,7 +139,6 @@ def create_storage_unit(config, task, stat):
 
 def do_stats(task, config):
     source = task['source']
-    measurement_name = task['source']['measurements'][0]
 
     results = {}
     for stat in config['stats']:
@@ -150,8 +146,8 @@ def do_stats(task, config):
 
     for tile_index in tile_iter(task['data'], {'x': 1000, 'y': 1000}):
         data = GridWorkflow.load(slice_tile(task['data'], tile_index),
-                                 measurements=[measurement_name])[measurement_name]
-        data = data.where(data != data.attrs['nodata'])
+                                 measurements=task['source']['measurements'])
+        data = mask_invalid_data(data)
 
         for spec, mask_tile in zip(source['masks'], task['masks']):
             mask = GridWorkflow.load(slice_tile(mask_tile, tile_index),
@@ -162,7 +158,8 @@ def do_stats(task, config):
 
         for stat in config['stats']:
             data_stats = getattr(data, stat['name'])(dim='time')
-            results[stat['name']][measurement_name][tile_index][0] = data_stats
+            for name, var in data_stats.data_vars.items():
+                results[stat['name']][name][(0,) + tile_index[1:]] = var.values  # HACK: make netcdf slicing nicer?...
 
     for stat, nco in results.items():
         nco.close()
@@ -220,7 +217,7 @@ def make_products(index, config):
                     'nodata': stat['nodata'],
                     'units': '1'
                 }
-                for measurement in config['sources'][0]['measurements']
+                for measurement in config['sources'][0]['measurements']  # TODO: multiple source products
             ]
         }
         results[name] = index.products.from_doc(definition)
