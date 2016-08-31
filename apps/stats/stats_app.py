@@ -11,7 +11,6 @@ from __future__ import division
 import click
 import functools
 import numpy as np
-from pathlib import Path
 import logging
 from datacube import Datacube
 

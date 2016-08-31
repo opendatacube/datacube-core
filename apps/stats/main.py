@@ -1,3 +1,8 @@
+"""
+Create statistical summaries command
+
+"""
+
 from __future__ import absolute_import, print_function
 
 import click
@@ -150,6 +155,43 @@ def get_grid_spec(config):
     return GridSpec(crs=crs,
                     tile_size=[storage['tile_size'][dim] for dim in crs.dimensions],
                     resolution=[storage['resolution'][dim] for dim in crs.dimensions])
+
+
+from dateutil.rrule import rrule, YEARLY, MONTHLY
+from dateutil.relativedelta import relativedelta
+
+
+def parse_duration(duration):
+    if duration[-1:] == 'y':
+        delta = {'years': int(duration[:-1])}
+    elif duration[-1:] == 'm':
+        delta = {'months': int(duration[:-1])}
+    else:
+        raise ValueError('Duration "{}" not in months or years'.format(duration))
+
+    return relativedelta(days=-1, **delta)
+
+
+def get_epochs(interval, duration, start, end):
+    freq, interval = parse_interval(interval)
+    duration = parse_duration(duration)
+    for start_dt in rrule(freq, interval=interval, dtstart=start, until=end):
+        acq_min = start_dt
+        acq_max = acq_min + duration
+        acq_min = max(start, acq_min)
+        acq_max = min(end, acq_max)
+        yield acq_min, acq_max
+
+
+def parse_interval(interval):
+    if interval[-1:] == 'y':
+        freq = YEARLY
+    elif interval[-1:] == 'm':
+        freq = MONTHLY
+    else:
+        raise ValueError('Interval "{}" not in months or years'.format(interval))
+    interval = int(interval[:-1])
+    return freq, interval
 
 
 def make_tasks(index, config):

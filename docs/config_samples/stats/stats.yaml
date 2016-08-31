@@ -5,14 +5,18 @@ sources:
       - product: ls5_pq_albers
         measurement: pixelquality
         flags:
-          contiguous: True
-          cloud_acca: no_cloud
-          cloud_fmask: no_cloud
-          cloud_shadow_acca: no_cloud_shadow
-          cloud_shadow_fmask: no_cloud_shadow
+          ga_good_pixel: True
+#          contiguous: True
+#          cloud_acca: no_cloud
+#          cloud_fmask: no_cloud
+#          cloud_shadow_acca: no_cloud_shadow
+#          cloud_shadow_fmask: no_cloud_shadow
 
-epoch_duration: 1
-epoch_increment: 1
+start_date: 1990-03-01
+end_date: 1999-05-31
+duration: 1 year
+interval: 1
+increment: 1
 seasons: [calendar_year]
 
 location: '/g/data/u46/users/gxr547/gregcube/data'
