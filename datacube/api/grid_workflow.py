@@ -9,7 +9,7 @@ from collections import defaultdict, OrderedDict
 from ..model import GeoBox
 from ..utils import check_intersect
 from .query import Query, query_group_by
-from .core import Datacube, get_measurements
+from .core import Datacube, get_measurements, set_resampling_method
 
 _LOG = logging.getLogger(__name__)
 
@@ -185,7 +185,7 @@ class GridWorkflow(object):
         return self.tile_sources(observations, query_group_by(**query))
 
     @staticmethod
-    def load(tile, measurements=None, chunk=None, dask_chunks=None, fuse_func=None):
+    def load(tile, measurements=None, chunk=None, dask_chunks=None, fuse_func=None, resampling=None):
         """
         Load data for a cell/tile.
 
@@ -208,6 +208,12 @@ class GridWorkflow(object):
 
         :param fuse_func: Function to fuse together a tile that has been pre-grouped by calling
             :meth:`list_cells` with a ``group_by`` parameter.
+
+        :param str resampling: The resampling method to use if re-projection is required.
+
+            Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average'``
+
+            Defaults to ``'nearest'``.
 
         :return: The requested data.
         :rtype: :py:class:`xarray.Dataset`
@@ -233,6 +239,8 @@ class GridWorkflow(object):
                             if measurement in all_measurements]
         else:
             measurements = [measurement for measurement in all_measurements.values()]
+
+        measurements = set_resampling_method(measurements, resampling)
 
         dataset = Datacube.product_data(sources, geobox, measurements, dask_chunks=dask_chunks,
                                         fuse_func=fuse_func)

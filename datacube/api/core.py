@@ -218,7 +218,8 @@ class Datacube(object):
 
             To reproject data to 25m resolution for EPSG:3577::
 
-                output_crs='EPSG:3577`, resolution=(-25, 25), resampling='cubic'
+                dc.load(product='ls5_nbar_albers', x=(148.15, 148.2), y=(-35.15, -35.2), time=('1990', '1991'),
+                        output_crs='EPSG:3577`, resolution=(-25, 25), resampling='cubic')
 
         :param str product: the product to be included.
         :param measurements: measurements name or list of names to be included, as listed in :meth:`list_measurements`.
@@ -240,6 +241,7 @@ class Datacube(object):
             Defaults to ``'nearest'``.
 
         :param (float,float) align: Load data such that point 'align' lies on the pixel boundary.
+            Units are in the co-ordinate space of the output CRS.
 
             Default is (0,0)
 
@@ -290,7 +292,7 @@ class Datacube(object):
         else:
             measurements = all_measurements
 
-        measurements = self._set_resampling_method(measurements, resampling)
+        measurements = set_resampling_method(measurements, resampling)
 
         if not stack:
             return self.product_data(sources, geobox, measurements.values(),
@@ -300,20 +302,6 @@ class Datacube(object):
                 stack = 'measurement'
             return self._get_data_array(sources, geobox, measurements.values(),
                                         var_dim_name=stack, fuse_func=fuse_func, dask_chunks=dask_chunks)
-
-    @staticmethod
-    def _set_resampling_method(measurements, resampling=None):
-        if resampling is None:
-            return measurements
-
-        def make_resampled_measurement(measurement):
-            measurement = measurement.copy()
-            measurement['resampling_method'] = resampling
-            return measurement
-
-        measurements = OrderedDict((name, make_resampled_measurement(measurement))
-                                   for name, measurement in measurements.items())
-        return measurements
 
     @staticmethod
     def _get_geobox(observations, output_crs=None, resolution=None, align=None, **query):
@@ -554,6 +542,20 @@ def get_measurements(datasets):
                 raise LookupError('Multiple values found for measurement: ', name)
             all_measurements[name] = measurement
     return all_measurements
+
+
+def set_resampling_method(measurements, resampling=None):
+    if resampling is None:
+        return measurements
+
+    def make_resampled_measurement(measurement):
+        measurement = measurement.copy()
+        measurement['resampling_method'] = resampling
+        return measurement
+
+    measurements = OrderedDict((name, make_resampled_measurement(measurement))
+                               for name, measurement in measurements.items())
+    return measurements
 
 
 def datatset_type_to_row(dt):
