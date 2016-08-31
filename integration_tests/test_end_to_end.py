@@ -189,6 +189,26 @@ def check_open_with_dc(index):
 
     assert len(dc.list_measurements())
 
+    resamp = ['nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average']
+    results = {}
+
+    def calc_max_change(da):
+        midline = int(da.shape[0] * 0.5)
+        a = int(abs(da[midline, :-1].data - da[midline, 1:].data).max())
+
+        centerline = int(da.shape[1] * 0.5)
+        b = int(abs(da[:-1, centerline].data - da[1:, centerline].data).max())
+        return a + b
+
+    for resamp_meth in resamp:
+        dataset = dc.load(product='ls5_nbar_albers', measurements=['blue'],
+                          latitude=(-35.28, -35.285), longitude=(149.15, 149.155),
+                          output_crs='EPSG:4326', resolution=(-0.0000125, 0.0000125), resampling=resamp_meth)
+        results[resamp_meth] = calc_max_change(dataset.blue.isel(time=0))
+
+    assert results['cubic_spline'] < results['nearest']
+    assert results['lanczos'] < results['average']
+
 
 def check_open_with_grid_workflow(index):
     type_name = 'ls5_nbar_albers'
