@@ -55,30 +55,9 @@ def block_iter(steps, shape):
     return product(*(_slicify(step, size) for step, size in zip(steps, shape)))
 
 
-def tile_dims(tile):
-    sources = tile['sources']
-    geobox = tile['geobox']
-    return sources.dims + geobox.dimensions
-
-
-def tile_shape(tile):
-    sources = tile['sources']
-    geobox = tile['geobox']
-    return sources.shape + geobox.shape
-
-
-def slice_tile(tile, chunk):
-    sources = tile['sources']
-    geobox = tile['geobox']
-    tile_cpy = tile.copy()
-    tile_cpy['sources'] = sources[chunk[:len(sources.shape)]]
-    tile_cpy['geobox'] = geobox[chunk[len(sources.shape):]]
-    return tile_cpy
-
-
 def tile_iter(tile, chunk):
-    steps = _tuplify(tile_dims(tile), chunk, tile_shape(tile))
-    return block_iter(steps, tile_shape(tile))
+    steps = _tuplify(tile.dims, chunk, tile.shape)
+    return block_iter(steps, tile.shape)
 
 
 def get_variable_params(config):
@@ -145,12 +124,12 @@ def do_stats(task, config):
         results[stat['name']] = create_storage_unit(config, task, stat)
 
     for tile_index in tile_iter(task['data'], {'x': 1000, 'y': 1000}):
-        data = GridWorkflow.load(slice_tile(task['data'], tile_index),
+        data = GridWorkflow.load(task['data'][tile_index],
                                  measurements=task['source']['measurements'])
         data = mask_invalid_data(data)
 
         for spec, mask_tile in zip(source['masks'], task['masks']):
-            mask = GridWorkflow.load(slice_tile(mask_tile, tile_index),
+            mask = GridWorkflow.load(mask_tile[tile_index],
                                      measurements=[spec['measurement']])[spec['measurement']]
             mask = make_mask(mask, **spec['flags'])
             data = data.where(mask)
