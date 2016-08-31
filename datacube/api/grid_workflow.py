@@ -28,6 +28,11 @@ class Tile(object):
     def shape(self):
         return self.sources.shape + self.geobox.shape
 
+    def __getitem__(self, chunk):
+        sources = self.sources[chunk[:len(self.sources.shape)]]
+        geobox = self.geobox[chunk[len(self.sources.shape):]]
+        return Tile(sources, geobox, None)
+
 
 class GridWorkflow(object):
     """
