@@ -20,6 +20,14 @@ class Tile(object):
         self.geobox = geobox
         self.index = index
 
+    @property
+    def dims(self):
+        return self.sources.dims + self.geobox.dimensions
+
+    @property
+    def shape(self):
+        return self.sources.shape + self.geobox.shape
+
 
 class GridWorkflow(object):
     """
