@@ -15,10 +15,9 @@ _LOG = logging.getLogger(__name__)
 
 
 class Tile(object):
-    def __init__(self, sources, geobox, index):
+    def __init__(self, sources, geobox):
         self.sources = sources
         self.geobox = geobox
-        self.index = index
 
     @property
     def dims(self):
@@ -31,7 +30,7 @@ class Tile(object):
     def __getitem__(self, chunk):
         sources = self.sources[chunk[:len(self.sources.shape)]]
         geobox = self.geobox[chunk[len(self.sources.shape):]]
-        return Tile(sources, geobox, None)
+        return Tile(sources, geobox)
 
 
 class GridWorkflow(object):
@@ -122,7 +121,7 @@ class GridWorkflow(object):
                                                group_func=group_by.group_by_func,
                                                dimension=group_by.dimension,
                                                units=group_by.units)
-            stack[cell_index] = Tile(sources, observation['geobox'], cell_index)
+            stack[cell_index] = Tile(sources, observation['geobox'])
         return stack
 
     @staticmethod
@@ -158,7 +157,7 @@ class GridWorkflow(object):
                 sources = xarray.DataArray(variable, coords=coords, fastpath=True)
 
                 tile_index = cell_index + (coord.values[0],)
-                stack[tile_index] = Tile(sources, observation['geobox'], tile_index)
+                stack[tile_index] = Tile(sources, observation['geobox'])
         return stack
 
     def list_cells(self, cell_index=None, **query):

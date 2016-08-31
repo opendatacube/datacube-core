@@ -34,7 +34,7 @@ def find_diff(input_type, output_type, index, **query):
     tiles_in = workflow.list_tiles(product=input_type.name, **query)
     tiles_out = workflow.list_tiles(product=output_type.name, **query)
 
-    tasks = [tile for key, tile in tiles_in.items() if key not in tiles_out]
+    tasks = [{'tile': tile, 'tile_index': key} for key, tile in tiles_in.items() if key not in tiles_out]
     return tasks
 
 
@@ -172,15 +172,16 @@ def create_task_list(index, output_type, year, source_type):
         return tuple(get_full_lineage(index, dataset.id) for dataset in sources)
 
     def update_task(task):
-        for i in range(task.sources.size):
-            task.sources.values[i] = update_sources(task.sources.values[i])
+        tile = task['tile']
+        for i in range(tile.sources.size):
+            tile.sources.values[i] = update_sources(tile.sources.values[i])
         return task
 
     tasks = (update_task(task) for task in tasks)
     return tasks
 
 
-def ingest_work(config, source_type, output_type, tile):
+def ingest_work(config, source_type, output_type, tile, tile_index):
     namemap = get_namemap(config)
     measurements = get_measurements(source_type, config)
     variable_params = get_variable_params(config)
@@ -190,7 +191,7 @@ def ingest_work(config, source_type, output_type, tile):
         fuse_func = {'copy': None}[config.get(FUSER_KEY, 'copy')]
         data = Datacube.product_data(tile.sources, tile.geobox, measurements, fuse_func=fuse_func)
     nudata = data.rename(namemap)
-    file_path = get_filename(config, tile.index, tile.sources)
+    file_path = get_filename(config, tile_index, tile.sources)
 
     def _make_dataset(labels, sources):
         sources_union = union_points(*[source.extent.to_crs(tile.geobox.crs).points for source in sources])
@@ -212,25 +213,25 @@ def ingest_work(config, source_type, output_type, tile):
 
 
 def process_tasks(index, config, source_type, output_type, tasks, executor):
-    def check_valid(task):
+    def check_valid(tile, tile_index):
         if FUSER_KEY in config:
             return True
 
-        require_fusing = [source for source in task.sources.values if len(source) > 1]
+        require_fusing = [source for source in tile.sources.values if len(source) > 1]
         if require_fusing:
-            _LOG.warning('Skipping %s - no "%s" specified in config: %s', task.index, FUSER_KEY, require_fusing)
+            _LOG.warning('Skipping %s - no "%s" specified in config: %s', index, FUSER_KEY, require_fusing)
 
         return not require_fusing
 
     results = []
     successful = failed = 0
     for task in tasks:
-        if check_valid(task):
+        if check_valid(**task):
             results.append(executor.submit(ingest_work,
                                            config=config,
                                            source_type=source_type,
                                            output_type=output_type,
-                                           tile=task))
+                                           **task))
         else:
             failed += 1
 
@@ -275,7 +276,7 @@ def ingest_cmd(index, config_file, year, save_tasks, load_tasks, dry_run, execut
 
     if dry_run:
         for task in tasks:
-            click.echo('Would create %s' % get_filename(config, task['index'], task['sources']))
+            click.echo('Would create %s' % get_filename(config, task['tile_index'], task['tile'].sources))
         return
 
     if save_tasks:
