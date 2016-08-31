@@ -14,6 +14,13 @@ from .core import Datacube, get_measurements, set_resampling_method
 _LOG = logging.getLogger(__name__)
 
 
+class Tile(object):
+    def __init__(self, sources, geobox, index):
+        self.sources = sources
+        self.geobox = geobox
+        self.index = index
+
+
 class GridWorkflow(object):
     """
     GridWorkflow deals with cell- and tile-based processing using a grid defining a projection and resolution.
@@ -102,10 +109,7 @@ class GridWorkflow(object):
                                                group_func=group_by.group_by_func,
                                                dimension=group_by.dimension,
                                                units=group_by.units)
-            stack[cell_index] = {
-                'sources': sources,
-                'geobox': observation['geobox']
-            }
+            stack[cell_index] = Tile(sources, observation['geobox'], cell_index)
         return stack
 
     @staticmethod
@@ -140,10 +144,8 @@ class GridWorkflow(object):
                 coords = OrderedDict([(group_by.dimension, coord)])
                 sources = xarray.DataArray(variable, coords=coords, fastpath=True)
 
-                stack[cell_index + (coord.values[0],)] = {
-                    'sources': sources,
-                    'geobox': observation['geobox']
-                }  # TODO: Should be a Tile Obj
+                tile_index = cell_index + (coord.values[0],)
+                stack[tile_index] = Tile(sources, observation['geobox'], tile_index)
         return stack
 
     def list_cells(self, cell_index=None, **query):
@@ -219,11 +221,8 @@ class GridWorkflow(object):
         .. seealso::
             :meth:`list_tiles` :meth:`list_cells`
         """
-        sources = tile['sources']
-        geobox = tile['geobox']
-
         observations = []
-        for dataset in sources.values:
+        for dataset in tile.sources.values:
             observations += dataset
 
         all_measurements = get_measurements(observations)
@@ -235,7 +234,7 @@ class GridWorkflow(object):
 
         measurements = set_resampling_method(measurements, resampling)
 
-        dataset = Datacube.product_data(sources, geobox, measurements, dask_chunks=dask_chunks,
+        dataset = Datacube.product_data(tile.sources, tile.geobox, measurements, dask_chunks=dask_chunks,
                                         fuse_func=fuse_func)
 
         return dataset

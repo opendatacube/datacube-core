@@ -34,12 +34,7 @@ def find_diff(input_type, output_type, index, **query):
     tiles_in = workflow.list_tiles(product=input_type.name, **query)
     tiles_out = workflow.list_tiles(product=output_type.name, **query)
 
-    def update_dict(d, **kwargs):
-        result = d.copy()
-        result.update(kwargs)
-        return result
-
-    tasks = [update_dict(tile, index=key) for key, tile in tiles_in.items() if key not in tiles_out]
+    tasks = [tile for key, tile in tiles_in.items() if key not in tiles_out]
     return tasks
 
 
@@ -177,15 +172,15 @@ def create_task_list(index, output_type, year, source_type):
         return tuple(get_full_lineage(index, dataset.id) for dataset in sources)
 
     def update_task(task):
-        for i in range(task['sources'].size):
-            task['sources'].values[i] = update_sources(task['sources'].values[i])
+        for i in range(task.sources.size):
+            task.sources.values[i] = update_sources(task.sources.values[i])
         return task
 
     tasks = (update_task(task) for task in tasks)
     return tasks
 
 
-def ingest_work(config, source_type, output_type, index, sources, geobox):
+def ingest_work(config, source_type, output_type, tile):
     namemap = get_namemap(config)
     measurements = get_measurements(source_type, config)
     variable_params = get_variable_params(config)
@@ -193,22 +188,22 @@ def ingest_work(config, source_type, output_type, index, sources, geobox):
 
     with datacube.set_options(reproject_threads=1):
         fuse_func = {'copy': None}[config.get(FUSER_KEY, 'copy')]
-        data = Datacube.product_data(sources, geobox, measurements, fuse_func=fuse_func)
+        data = Datacube.product_data(tile.sources, tile.geobox, measurements, fuse_func=fuse_func)
     nudata = data.rename(namemap)
-    file_path = get_filename(config, index, sources)
+    file_path = get_filename(config, tile.index, tile.sources)
 
     def _make_dataset(labels, sources):
-        sources_union = union_points(*[source.extent.to_crs(geobox.crs).points for source in sources])
-        valid_data = intersect_points(geobox.extent.points, sources_union)
+        sources_union = union_points(*[source.extent.to_crs(tile.geobox.crs).points for source in sources])
+        valid_data = intersect_points(tile.geobox.extent.points, sources_union)
         dataset = make_dataset(dataset_type=output_type,
                                sources=sources,
-                               extent=geobox.extent,
+                               extent=tile.geobox.extent,
                                center_time=labels['time'],
                                uri=file_path.absolute().as_uri(),
                                app_info=get_app_metadata(config, config['filename']),
-                               valid_data=GeoPolygon(valid_data, geobox.crs))
+                               valid_data=GeoPolygon(valid_data, tile.geobox.crs))
         return dataset
-    datasets = xr_apply(sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
+    datasets = xr_apply(tile.sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
     nudata['dataset'] = datasets_to_doc(datasets)
 
     write_dataset_to_netcdf(nudata, file_path, global_attributes, variable_params)
@@ -221,9 +216,9 @@ def process_tasks(index, config, source_type, output_type, tasks, executor):
         if FUSER_KEY in config:
             return True
 
-        require_fusing = [source for source in task['sources'].values if len(source) > 1]
+        require_fusing = [source for source in task.sources.values if len(source) > 1]
         if require_fusing:
-            _LOG.warning('Skipping %s - no "%s" specified in config: %s', task['index'], FUSER_KEY, require_fusing)
+            _LOG.warning('Skipping %s - no "%s" specified in config: %s', task.index, FUSER_KEY, require_fusing)
 
         return not require_fusing
 
@@ -235,7 +230,7 @@ def process_tasks(index, config, source_type, output_type, tasks, executor):
                                            config=config,
                                            source_type=source_type,
                                            output_type=output_type,
-                                           **task))
+                                           tile=task))
         else:
             failed += 1
 
