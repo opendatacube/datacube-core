@@ -4,7 +4,6 @@ Useful functions for Datacube users
 Not used internally, those should go in `utils.py`
 """
 import rasterio
-from affine import Affine
 
 DEFAULT_PROFILE = {
     'blockxsize': 256,
@@ -25,20 +24,16 @@ def write_geotiff(filename, dataset, time_index=None):
 
     :attr bands: ordered list of dataset names
     """
-    xres = float(dataset.x[1] - dataset.x[0])
-    yres = float(dataset.y[1] - dataset.y[0])
-    left = float(dataset.x[0]) - xres / 2
-    top = float(dataset.y[0] - yres / 2)
 
     dtypes = {val.dtype for val in dataset.data_vars.values()}
     assert len(dtypes) == 1  # Check for multiple dtypes
 
     profile = DEFAULT_PROFILE.copy()
     profile.update({
-        'width': dataset.dims['x'],
-        'height': dataset.dims['y'],
-        'affine': Affine(xres, 0, left, 0, yres, top),
-        'crs': rasterio.crs.CRS(dict(init=dataset.crs.crs_str)),
+        'width': dataset.dims[dataset.crs.dimensions[1]],
+        'height': dataset.dims[dataset.crs.dimensions[0]],
+        'affine': dataset.affine,
+        'crs': dataset.crs.crs_str,
         'count': len(dataset.data_vars),
         'dtype': str(dtypes.pop()),
         'photometric': 'RGB'
