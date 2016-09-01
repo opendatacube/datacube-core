@@ -52,6 +52,9 @@ def _xarray_geobox(obj):
 xarray.Dataset.geobox = property(_xarray_geobox)
 xarray.Dataset.affine = property(_xarray_affine)
 xarray.Dataset.extent = property(_xarray_extent)
+xarray.DataArray.geobox = property(_xarray_geobox)
+xarray.DataArray.affine = property(_xarray_affine)
+xarray.DataArray.extent = property(_xarray_extent)
 
 
 class Datacube(object):
