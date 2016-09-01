@@ -7,7 +7,11 @@ from __future__ import absolute_import, print_function
 
 import click
 import numpy
+import xarray
+
 from itertools import product
+from functools import reduce as reduce_
+from collections import namedtuple
 
 from pandas import to_datetime
 from pathlib import Path
@@ -30,6 +34,20 @@ STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
                                  'fletcher32',
                                  'contiguous',
                                  'attrs'}
+
+
+StatAlgorithm = namedtuple('StatAlgorithm', ['dtype', 'nodata', 'units', 'masked', 'compute'])
+Stat = namedtuple('Stat', ['product', 'algorithm', 'definition'])
+
+
+def make_stat_metadata(definition):
+    return StatAlgorithm(
+        dtype=lambda x: definition['dtype'],
+        nodata=definition['nodata'],
+        units='1',
+        masked=True,
+        compute=lambda x: getattr(x, definition['name'])(dim='time')
+    )
 
 
 def nco_from_sources(sources, geobox, measurements, variable_params, filename):
@@ -83,37 +101,38 @@ def get_filename(path_template, index, start_time):
                                           start_time=start_time.strftime(date_format)))
 
 
-def create_storage_unit(config, task, stat):
+def create_storage_unit(config, task, stat, filename_template):
     def _make_dataset(labels, sources):
-        dataset = make_dataset(dataset_type=config['products'][stat['name']],
+        dataset = make_dataset(dataset_type=stat.product,
                                sources=sources,
-                               extent=task['data']['geobox'].extent,
+                               extent=task['data'].geobox.extent,
                                center_time=labels['time'],
                                uri=None,  # TODO:
                                app_info=None,
                                valid_data=None)
         return dataset
 
-    source = task['source']
+    if stat.algorithm.masked:
+        sources = reduce_(lambda a, b: a + b, (sources.sum() for sources in
+                                               xarray.align(task['data'].sources,
+                                                            *[mask_tile.sources for mask_tile in task['masks']])))
+    else:
+        sources = task['data'].sources.sum()
+    sources = unsqueeze_data_array(sources, 'time', 0, task['start_time'], task['data'].sources.time.attrs)
 
-    sources = task['data']['sources'].sum()
-    for spec, mask_tile in zip(source['masks'], task['masks']):
-        sources += mask_tile['sources'].sum()
-    sources = unsqueeze_data_array(sources, 'time', 0, task['start_time'], task['data']['sources'].time.attrs)
+    # var_params = get_variable_params(config)  # TODO: better way?
 
-    var_params = get_variable_params(config)
-
-    measurements = list(config['products'][stat['name']].measurements.values())
-    filename_template = str(Path(config['location'], stat['file_path_template']))
+    measurements = list(stat.product.measurements.values())
+    #filename_template = str(Path(config['location'], stat['file_path_template']))
     output_filename = get_filename(filename_template,
                                    task['index'],
                                    task['start_time'])
     nco = nco_from_sources(sources,
-                           task['data']['geobox'],
+                           task['data'].geobox,
                            measurements,
-                           {measurement['name']: var_params[stat['name']] for measurement in measurements},
+                           {},  # TODO: {measurement['name']: var_params[stat['name']] for measurement in measurements},
                            output_filename)
-    datasets = xr_apply(sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
+    datasets = xr_apply(sources, _make_dataset, dtype='O')  # Store in DataArray to associate Time -> Dataset
     datasets = datasets_to_doc(datasets)
     netcdf_writer.create_variable(nco, 'dataset', datasets, zlib=True)
     nco['dataset'][:] = netcdf_writer.netcdfy_data(datasets.values)
@@ -121,28 +140,27 @@ def create_storage_unit(config, task, stat):
 
 
 def do_stats(task, config):
-    source = task['source']
-
     results = {}
-    for stat in config['stats']:
-        results[stat['name']] = create_storage_unit(config, task, stat)
+    for stat_name, stat in task['products'].items():
+        filename_template = str(Path(config['location'], stat.definition['file_path_template']))
+        results[stat_name] = create_storage_unit(config, task, stat, filename_template)
 
     for tile_index in tile_iter(task['data'], {'x': 1000, 'y': 1000}):
         data = GridWorkflow.load(task['data'][tile_index],
                                  measurements=task['source']['measurements'])
         data = mask_invalid_data(data)
 
-        for spec, mask_tile in zip(source['masks'], task['masks']):
+        for spec, mask_tile in zip(task['source']['masks'], task['masks']):
             mask = GridWorkflow.load(mask_tile[tile_index],
                                      measurements=[spec['measurement']])[spec['measurement']]
             mask = make_mask(mask, **spec['flags'])
             data = data.where(mask)
             del mask
 
-        for stat in config['stats']:
-            data_stats = getattr(data, stat['name'])(dim='time')
-            for name, var in data_stats.data_vars.items():
-                results[stat['name']][name][(0,) + tile_index[1:]] = var.values  # HACK: make netcdf slicing nicer?...
+        for stat_name, stat in task['products'].items():
+            data_stats = stat.algorithm.compute(data)  # TODO: if stat.algorithm.masked
+            for var_name, var in data_stats.data_vars.items():
+                results[stat_name][var_name][(0,) + tile_index[1:]] = var.values  # HACK: make netcdf slicing nicer?...
 
     for stat, nco in results.items():
         nco.close()
@@ -156,7 +174,7 @@ def get_grid_spec(config):
                     resolution=[storage['resolution'][dim] for dim in crs.dimensions])
 
 
-def make_tasks(index, config):
+def make_tasks(index, products, config):
     start_time = to_datetime(config['start_date'])
     end_time = to_datetime(config['end_date'])
     stats_duration = config['stats_duration']
@@ -176,6 +194,7 @@ def make_tasks(index, config):
 
             for key in data.keys():
                 yield {
+                    'products': products,
                     'source': source,
                     'index': key,
                     'data': data[key],
@@ -187,7 +206,15 @@ def make_tasks(index, config):
 
 def make_products(index, config):
     results = {}
+
+    # TODO: multiple source products
+    prod = index.products.get_by_name(config['sources'][0]['product'])
+    measurements = [measurement for name, measurement in prod.measurements.items()
+                    if name in config['sources'][0]['measurements']]
+
     for stat in config['stats']:
+        algorithm = make_stat_metadata(stat)
+
         name = stat['name']
         definition = {
             'name': name,
@@ -200,16 +227,18 @@ def make_products(index, config):
             'storage': config['storage'],
             'measurements': [
                 {
-                    'name': measurement,
-                    'dtype': stat['dtype'],
-                    'nodata': stat['nodata'],
-                    'units': '1'
+                    'name': measurement['name'],
+                    'dtype': algorithm.dtype(measurement['dtype']),
+                    'nodata': algorithm.nodata,
+                    'units': algorithm.units
                 }
-                for measurement in config['sources'][0]['measurements']  # TODO: multiple source products
+                for measurement in measurements  # TODO: multiple source products
             ]
 
         }
-        results[name] = index.products.from_doc(definition)
+        results[name] = Stat(product=index.products.from_doc(definition),
+                             algorithm=algorithm,
+                             definition=stat)
     return results
 
 
@@ -224,8 +253,8 @@ def make_products(index, config):
 def main(index, app_config, year, executor):
     _, config = next(read_documents(app_config))
 
-    config['products'] = make_products(index, config)
-    tasks = make_tasks(index, config)
+    products = make_products(index, config)
+    tasks = make_tasks(index, products, config)
 
     futures = [executor.submit(do_stats, task, config) for task in tasks]
 
