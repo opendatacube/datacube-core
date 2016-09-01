@@ -8,6 +8,7 @@ extras_require = {
     'interactive': ['matplotlib'],
     'distributed': ['distributed', 'dask[distributed]'],
     'analytics': ['scipy', 'pyparsing', 'numexpr'],
+    'analysis': ['bottleneck'],
     'doc': ['Sphinx'],
     'test': ['pytest', 'pytest-cov', 'mock', 'pep8', 'pylint'],
 }
