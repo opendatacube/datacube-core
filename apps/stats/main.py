@@ -5,28 +5,27 @@ Create statistical summaries command
 
 from __future__ import absolute_import, print_function
 
+from collections import namedtuple
+from functools import reduce as reduce_
+from itertools import product
+from pathlib import Path
+
 import click
 import numpy
 import xarray
-
-from itertools import product
-from functools import reduce as reduce_
-from collections import namedtuple
-
 from pandas import to_datetime
-from pathlib import Path
 
 from datacube.api import make_mask
-from datacube.dates import date_sequence
+from datacube.api.grid_workflow import GridWorkflow
 from datacube.model import GridSpec, CRS, Coordinate, Variable
 from datacube.model.utils import make_dataset, datasets_to_doc, xr_apply
-from datacube.api.grid_workflow import GridWorkflow
+from datacube.storage import netcdf_writer
+from datacube.storage.masking import mask_valid_data as mask_invalid_data
+from datacube.storage.storage import create_netcdf_storage_unit
 from datacube.ui import click as ui
 from datacube.ui.click import to_pathlib
 from datacube.utils import read_documents, unsqueeze_data_array
-from datacube.storage.storage import create_netcdf_storage_unit
-from datacube.storage import netcdf_writer
-from datacube.storage.masking import mask_valid_data as mask_invalid_data
+from datacube.utils.dates import date_sequence
 
 STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
                                  'complevel',

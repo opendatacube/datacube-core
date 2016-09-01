@@ -4,8 +4,9 @@ Test date sequence generation functions as used by statistics apps
 
 """
 from dateutil.parser import parse
-from datacube.dates import date_sequence
 from pandas import to_datetime
+
+from datacube.utils.dates import date_sequence
 
 
 def test_stats_dates():
