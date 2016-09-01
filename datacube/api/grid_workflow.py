@@ -135,14 +135,14 @@ class GridWorkflow(object):
 
             :meth:`datacube.Datacube.product_sources`
         """
-        stack = defaultdict(dict)
+        cells = {}
         for cell_index, observation in observations.items():
             sources = Datacube.product_sources(observation['datasets'],
                                                group_func=group_by.group_by_func,
                                                dimension=group_by.dimension,
                                                units=group_by.units)
-            stack[cell_index] = Tile(sources, observation['geobox'])
-        return stack
+            cells[cell_index] = Tile(sources, observation['geobox'])
+        return cells
 
     @staticmethod
     def tile_sources(observations, group_by):
@@ -159,7 +159,7 @@ class GridWorkflow(object):
 
             :meth:`datacube.Datacube.product_sources`
         """
-        stack = defaultdict(dict)
+        tiles = {}
         for cell_index, observation in observations.items():
             observation['datasets'].sort(key=group_by.group_by_func)
             groups = [(key, tuple(group)) for key, group in groupby(observation['datasets'], group_by.group_by_func)]
@@ -177,8 +177,8 @@ class GridWorkflow(object):
                 sources = xarray.DataArray(variable, coords=coords, fastpath=True)
 
                 tile_index = cell_index + (coord.values[0],)
-                stack[tile_index] = Tile(sources, observation['geobox'])
-        return stack
+                tiles[tile_index] = Tile(sources, observation['geobox'])
+        return tiles
 
     def list_cells(self, cell_index=None, **query):
         """
@@ -194,7 +194,7 @@ class GridWorkflow(object):
 
         :param (int,int) cell_index: The cell index. E.g. (14, -40)
         :param query: see :py:class:`datacube.api.query.Query`
-        :rtype: dict[(int, int), Cell]
+        :rtype: dict[(int, int), Tile]
         """
         observations = self.cell_observations(cell_index, **query)
         return self.cell_sources(observations, query_group_by(**query))
