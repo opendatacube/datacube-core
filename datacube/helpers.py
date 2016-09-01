@@ -9,21 +9,23 @@ DEFAULT_PROFILE = {
     'blockxsize': 256,
     'blockysize': 256,
     'compress': 'lzw',
-    'count': 4,
     'driver': 'GTiff',
-    'dtype': 'uint8',
-    'height': 42720,
     'interleave': 'band',
     'nodata': 0.0,
+    'photometric': 'RGBA',
     'tiled': True}
 
 
-def write_geotiff(filename, dataset, time_index=None):
+def write_geotiff(filename, dataset, time_index=None, profile_override=None):
     """
     Write an xarray dataset to a geotiff
 
     :attr bands: ordered list of dataset names
+    :attr time_index: time index to write to file
+    :attr dataset: xarray dataset containing multiple bands to write to file
+    :attr profile_override: option dict, overrides rasterio file creation options.
     """
+    profile_override = profile_override or {}
 
     dtypes = {val.dtype for val in dataset.data_vars.values()}
     assert len(dtypes) == 1  # Check for multiple dtypes
@@ -35,9 +37,9 @@ def write_geotiff(filename, dataset, time_index=None):
         'affine': dataset.affine,
         'crs': dataset.crs.crs_str,
         'count': len(dataset.data_vars),
-        'dtype': str(dtypes.pop()),
-        'photometric': 'RGB'
+        'dtype': str(dtypes.pop())
     })
+    profile.update(profile_override)
 
     with rasterio.open(filename, 'w', **profile) as dest:
         for bandnum, data in enumerate(dataset.data_vars.values(), start=1):
