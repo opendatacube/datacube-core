@@ -4,11 +4,10 @@ import versioneer
 from setuptools import setup, find_packages
 
 extras_require = {
-    'performance': ['ciso8601'],
+    'performance': ['ciso8601', 'bottleneck'],
     'interactive': ['matplotlib'],
     'distributed': ['distributed', 'dask[distributed]'],
     'analytics': ['scipy', 'pyparsing', 'numexpr'],
-    'analysis': ['bottleneck'],
     'doc': ['Sphinx'],
     'test': ['pytest', 'pytest-cov', 'mock', 'pep8', 'pylint'],
 }

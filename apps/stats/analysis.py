@@ -7,7 +7,10 @@ import numpy as np
 try:
     from hdmedians import nanmedoid
 except ImportError:  #
-    import bottleneck as bn
+    try:
+        import bottleneck as bn
+    except ImportError:
+        bn = np
 
     def nanmedoid(x, axis=1, return_index=False):
         def naneuclidean(x, y):
