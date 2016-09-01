@@ -7,13 +7,13 @@ from __future__ import absolute_import, print_function
 
 import click
 import numpy
-from datetime import datetime
 from itertools import product
 
 from pandas import to_datetime
 from pathlib import Path
 
 from datacube.api import make_mask
+from datacube.dates import date_sequence
 from datacube.model import GridSpec, CRS, Coordinate, Variable
 from datacube.model.utils import make_dataset, datasets_to_doc, xr_apply
 from datacube.api.grid_workflow import GridWorkflow
@@ -23,7 +23,6 @@ from datacube.utils import read_documents, unsqueeze_data_array
 from datacube.storage.storage import create_netcdf_storage_unit
 from datacube.storage import netcdf_writer
 from datacube.storage.masking import mask_valid_data as mask_invalid_data
-
 
 STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
                                  'complevel',
@@ -157,65 +156,33 @@ def get_grid_spec(config):
                     resolution=[storage['resolution'][dim] for dim in crs.dimensions])
 
 
-from dateutil.rrule import rrule, YEARLY, MONTHLY
-from dateutil.relativedelta import relativedelta
-
-
-def parse_duration(duration):
-    if duration[-1:] == 'y':
-        delta = {'years': int(duration[:-1])}
-    elif duration[-1:] == 'm':
-        delta = {'months': int(duration[:-1])}
-    else:
-        raise ValueError('Duration "{}" not in months or years'.format(duration))
-
-    return relativedelta(days=-1, **delta)
-
-
-def get_epochs(interval, duration, start, end):
-    freq, interval = parse_interval(interval)
-    duration = parse_duration(duration)
-    for start_dt in rrule(freq, interval=interval, dtstart=start, until=end):
-        acq_min = start_dt
-        acq_max = acq_min + duration
-        acq_min = max(start, acq_min)
-        acq_max = min(end, acq_max)
-        yield acq_min, acq_max
-
-
-def parse_interval(interval):
-    if interval[-1:] == 'y':
-        freq = YEARLY
-    elif interval[-1:] == 'm':
-        freq = MONTHLY
-    else:
-        raise ValueError('Interval "{}" not in months or years'.format(interval))
-    interval = int(interval[:-1])
-    return freq, interval
-
-
 def make_tasks(index, config):
-    start_time = datetime(2011, 1, 1)
-    end_time = datetime(2011, 2, 1)
-    query = dict(time=(start_time, end_time))
+    start_time = to_datetime(config['start_date'])
+    end_time = to_datetime(config['end_date'])
+    stats_duration = config['stats_duration']
+    step_size = config['step_size']
 
-    workflow = GridWorkflow(index, grid_spec=get_grid_spec(config))
+    for time_period in date_sequence(start=start_time, end=end_time, stats_duration=stats_duration,
+                                     step_size=step_size):
+        query = dict(time=time_period)
 
-    assert len(config['sources']) == 1  # TODO: merge multiple sources
-    for source in config['sources']:
-        data = workflow.list_cells(product=source['product'], cell_index=(15, -40), **query)
-        masks = [workflow.list_cells(product=mask['product'], cell_index=(15, -40), **query)
-                 for mask in source['masks']]
+        workflow = GridWorkflow(index, grid_spec=get_grid_spec(config))
 
-        for key in data.keys():
-            yield {
-                'source': source,
-                'index': key,
-                'data': data[key],
-                'masks': [mask[key] for mask in masks],
-                'start_time': start_time,
-                'end_time': end_time
-            }
+        assert len(config['sources']) == 1  # TODO: merge multiple sources
+        for source in config['sources']:
+            data = workflow.list_cells(product=source['product'], cell_index=(15, -40), **query)
+            masks = [workflow.list_cells(product=mask['product'], cell_index=(15, -40), **query)
+                     for mask in source['masks']]
+
+            for key in data.keys():
+                yield {
+                    'source': source,
+                    'index': key,
+                    'data': data[key],
+                    'masks': [mask[key] for mask in masks],
+                    'start_time': start_time,
+                    'end_time': end_time
+                }
 
 
 def make_products(index, config):
@@ -240,6 +207,7 @@ def make_products(index, config):
                 }
                 for measurement in config['sources'][0]['measurements']  # TODO: multiple source products
             ]
+
         }
         results[name] = index.products.from_doc(definition)
     return results
