@@ -191,6 +191,12 @@ class Dataset(object):
             geo_ref_points = projection['geo_ref_points']
             return GeoPolygon([xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr')], crs=self.crs)
 
+    def __eq__(self, other):
+        return self.id == other.id
+
+    def __hash__(self):
+        return hash(self.id)
+
     def __str__(self):
         return "Dataset <id={id} type={type} location={loc}>".format(id=self.id,
                                                                      type=self.type.name,
