@@ -10,7 +10,7 @@ from pathlib import Path
 
 from datacube.model import CRS
 from datacube.storage import netcdf_writer
-from datacube.options import OPTIONS
+from datacube.config import OPTIONS
 
 try:
     from yaml import CSafeDumper as SafeDumper

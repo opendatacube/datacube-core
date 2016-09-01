@@ -19,4 +19,4 @@ To initialise this class, you will need a config pointing to a database, such as
 from __future__ import absolute_import
 from .version import __version__
 from .api import Datacube
-from .options import set_options
+from .config import set_options
