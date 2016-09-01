@@ -26,7 +26,6 @@ def date_sequence(start, end, stats_duration, step_size):
     :param str step_size: How far apart should the start dates be
     :return: sequence of (start_date, end_date) tuples
     """
-    start, end = parse(start), parse(end)
     step_size, freq = parse_interval(step_size)
     stats_duration = parse_duration(stats_duration)
     for start_date in rrule(freq, interval=step_size, dtstart=start, until=end):

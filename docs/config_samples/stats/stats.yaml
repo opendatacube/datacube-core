@@ -14,10 +14,8 @@ sources:
 
 start_date: 1990-03-01
 end_date: 1999-05-31
-duration: 1 year
-interval: 1
-increment: 1
-seasons: [calendar_year]
+stats_duration: 3m
+step_size: 1y
 
 location: '/g/data/u46/users/gxr547/gregcube/data'
 
