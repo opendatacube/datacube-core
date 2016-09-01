@@ -14,6 +14,19 @@ from .core import Datacube, get_measurements, set_resampling_method
 _LOG = logging.getLogger(__name__)
 
 
+def _fast_slice(array, indexers):
+    data = array.values[indexers]
+    dims = [dim for dim, indexer in zip(array.dims, indexers) if isinstance(indexer, slice)]
+    variable = xarray.Variable(dims, data, attrs=array.attrs, fastpath=True)
+    coords = OrderedDict((dim,
+                          xarray.Variable((dim,),
+                                          array.coords[dim].values[indexer],
+                                          attrs=array.coords[dim].attrs,
+                                          fastpath=True))
+                         for dim, indexer in zip(array.dims, indexers) if isinstance(indexer, slice))
+    return xarray.DataArray(variable, coords=coords, fastpath=True)
+
+
 class Tile(object):
     def __init__(self, sources, geobox):
         self.sources = sources
@@ -28,9 +41,16 @@ class Tile(object):
         return self.sources.shape + self.geobox.shape
 
     def __getitem__(self, chunk):
-        sources = self.sources[chunk[:len(self.sources.shape)]]
+        sources = _fast_slice(self.sources, chunk[:len(self.sources.shape)])
         geobox = self.geobox[chunk[len(self.sources.shape):]]
         return Tile(sources, geobox)
+
+    def split(self, dim):
+        axis = self.dims.index(dim)
+        indexer = [slice(None)]*len(self.dims)
+        for i in range(self.sources[dim].size):
+            indexer[axis] = slice(i, i+1)
+            yield self.sources[dim].values[i], self[tuple(indexer)]
 
 
 class GridWorkflow(object):
