@@ -29,7 +29,9 @@ def date_sequence(start, end, stats_duration, step_size):
     step_size, freq = parse_interval(step_size)
     stats_duration = parse_duration(stats_duration)
     for start_date in rrule(freq, interval=step_size, dtstart=start, until=end):
-        yield start_date, start_date + stats_duration
+        end_date = start_date + stats_duration
+        if end_date <= end:
+            yield start_date, start_date + stats_duration
 
 
 def parse_interval(interval):
