@@ -27,6 +27,82 @@ from datacube.ui.click import to_pathlib
 from datacube.utils import read_documents, unsqueeze_data_array
 from datacube.utils.dates import date_sequence
 
+
+def nanmedoid(x, axis=1, return_index=False):
+    def naneuclidean(x, y):
+        return numpy.sqrt(numpy.nansum(numpy.square(x - y)))
+
+    if axis == 0:
+        x = x.T
+
+    p, n = x.shape
+    d = numpy.empty(n)
+    for i in range(n):
+        if numpy.isnan(x[0, i]):
+            d[i] = numpy.nan
+        else:
+            d[i] = numpy.nansum([naneuclidean(x[:, i], x[:, j])
+                                 for j in range(n) if j != i])
+
+    i = numpy.nanargmin(d)
+
+    if return_index:
+        return (x[:, i], i)
+    else:
+        return x[:, i]
+
+
+def apply_cross_measurement_reduction(dataset, method=nanmedoid, dim='time', keep_attrs=True):
+    """
+    Apply a cross measurement reduction (like medioid) to an xarray dataset
+
+    :param dataset: Input `xarray.Dataset`
+    :param method: function to apply. Defaults to nanmedoid
+    :param bool keep_attrs: Should dataset attributes be retained, defaults to True.
+    :param dim: Dimension to apply reduction along
+    :return: xarray.Dataset with same data_variables but one less dimension
+    """
+    flattened = dataset.to_array(dim='variable')
+
+    hdmedian_out = flattened.reduce(_array_hdmedian, dim=dim, keep_attrs=keep_attrs, method=method)
+
+    hdmedian_out = hdmedian_out.to_dataset(dim='variable')
+
+    if keep_attrs:
+        for k, v in dataset.attrs.items():
+            hdmedian_out.attrs[k] = v
+
+    return hdmedian_out
+
+
+def _array_hdmedian(inarray, method, axis=1, **kwargs):
+    """
+    Apply cross band reduction across time for each x/y coordinate in a 4-D nd-array
+
+    ND-Array is expected to have dimensions of (bands, time, y, x)
+
+    :param inarray:
+    :param method:
+    :param axis:
+    :param kwargs:
+    :return:
+    """
+    if len(inarray.shape) != 4:
+        raise ValueError("Can only operate on 4-D arrays")
+    if axis != 1:
+        raise ValueError("Reduction axis must be 1")
+
+    variable, time, y, x = inarray.shape
+    output = numpy.empty((variable, y, x), dtype='float64')
+    for iy in range(y):
+        for ix in range(x):
+            try:
+                output[:, iy, ix] = method(inarray[:, :, iy, ix])
+            except ValueError:
+                output[:, iy, ix] = numpy.nan
+    return output
+
+
 STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
                                  'complevel',
                                  'shuffle',
@@ -39,13 +115,38 @@ StatAlgorithm = namedtuple('StatAlgorithm', ['dtype', 'nodata', 'units', 'masked
 Stat = namedtuple('Stat', ['product', 'algorithm', 'definition'])
 
 
+class Lambda(object):
+    def __init__(self, func):
+        self.func = func
+
+    def __call__(self, x):
+        return getattr(x, self.func)(dim='time')
+
+
+class Ident(object):
+    def __init__(self, x):
+        self.x = x
+
+    def __call__(self, x):
+        return self.x
+
+
+def stats_funcs():
+    funcs = {}
+    for func in ['mean', 'median']:
+        funcs[func] = Lambda(func)
+        funcs['medoid'] = apply_cross_measurement_reduction
+    return funcs
+STAT_FUNCS = stats_funcs()
+
+
 def make_stat_metadata(definition):
     return StatAlgorithm(
-        dtype=lambda x: definition['dtype'],
+        dtype=Ident(definition['dtype']),
         nodata=definition['nodata'],
         units='1',
         masked=True,
-        compute=lambda x: getattr(x, definition['name'])(dim='time')
+        compute=STAT_FUNCS[definition['name']]
     )
 
 
@@ -181,26 +282,31 @@ def make_tasks(index, products, config):
 
     for time_period in date_sequence(start=start_time, end=end_time, stats_duration=stats_duration,
                                      step_size=step_size):
-        query = dict(time=time_period)
-
+        print(*time_period)
         workflow = GridWorkflow(index, grid_spec=get_grid_spec(config))
 
         assert len(config['sources']) == 1  # TODO: merge multiple sources
         for source in config['sources']:
-            data = workflow.list_cells(product=source['product'], cell_index=(15, -40), **query)
-            masks = [workflow.list_cells(product=mask['product'], cell_index=(15, -40), **query)
+            data = workflow.list_cells(product=source['product'], time=time_period, cell_index=(15, -40))
+            masks = [workflow.list_cells(product=mask['product'], time=time_period, cell_index=(15, -40))
                      for mask in source['masks']]
 
+            from datetime import datetime
+            print(datetime.now())
             for key in data.keys():
-                yield {
-                    'products': products,
-                    'source': source,
-                    'index': key,
-                    'data': data[key],
-                    'masks': [mask[key] for mask in masks],
-                    'start_time': start_time,
-                    'end_time': end_time
-                }
+                try:
+                    yield {
+                        'products': products,
+                        'source': source,
+                        'index': key,
+                        'data': data[key],
+                        'masks': [mask[key] for mask in masks],
+                        'start_time': time_period[0],
+                        'end_time': time_period[1]
+                    }
+                except KeyError:
+                    continue
+            print(datetime.now())
 
 
 def make_products(index, config):
