@@ -1,21 +1,28 @@
 sources:
-  - product: ls5_nbar_albers
-    measurements: [blue, green, red]
+  - product: ls8_nbar_albers
+    measurements: [blue, green, red, nir, swir1, swir2]
     masks:
-      - product: ls5_pq_albers
+      - product: ls8_pq_albers
         measurement: pixelquality
         flags:
-          ga_good_pixel: True
-#          contiguous: True
-#          cloud_acca: no_cloud
-#          cloud_fmask: no_cloud
-#          cloud_shadow_acca: no_cloud_shadow
-#          cloud_shadow_fmask: no_cloud_shadow
+          contiguous: True
+          cloud_acca: no_cloud
+          cloud_fmask: no_cloud
+          cloud_shadow_acca: no_cloud_shadow
+          cloud_shadow_fmask: no_cloud_shadow
+          land_sea: land
+          blue_saturated: False
+          green_saturated: False
+          red_saturated: False
+          nir_saturated: False
+          swir1_saturated: False
+          swir2_saturated: False
 
-start_date: 1990-03-01
-end_date: 1999-05-31
+
+start_date: 2015-01-01
+end_date: 2016-01-01
 stats_duration: 3m
-step_size: 1y
+step_size: 3m
 
 location: '/g/data/u46/users/gxr547/gregcube/data'
 
@@ -43,9 +50,17 @@ stats:
    nodata: -999
    fletcher32: True
    file_path_template: 'STATS_MEAN/MEAN_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+
  - name: median
    zlib: True
    dtype: int16
    nodata: -999
    fletcher32: True
    file_path_template: 'STATS_MEDIAN/MEDIAN_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+
+ - name: medoid
+   zlib: True
+   dtype: int16
+   nodata: -999
+   fletcher32: True
+   file_path_template: 'STATS_MEDOID/MEDOID_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
