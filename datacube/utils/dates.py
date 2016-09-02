@@ -47,7 +47,7 @@ def parse_duration(duration):
     except KeyError:
         raise ValueError('Duration "{}" not in months or years'.format(duration))
 
-    return relativedelta(days=-1, **delta)
+    return relativedelta(**delta)
 
 
 def split_duration(duration):
