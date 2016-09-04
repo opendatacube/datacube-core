@@ -712,6 +712,8 @@ class GeoBox(object):
             151.999625,  151.999875])
     >>> t.geographic_extent.points
     [(151.0, -29.0), (151.0, -30.0), (152.0, -30.0), (152.0, -29.0)]
+    >>> t.resolution
+    (-0.00025, 0.00025)
 
 
     :param CRS crs: Coordinate Reference System
@@ -823,6 +825,24 @@ class GeoBox(object):
         :type: (str,str)
         """
         return self.crs.dimensions
+
+    @property
+    def resolution(self):
+        """
+        Resolution in Y,X dimensions
+
+        :type: (float,float)
+        """
+        return self.affine.e, self.affine.a
+
+    @property
+    def alignment(self):
+        """
+        Alignment of pixel boundaries in Y,X dimensions
+
+        :type: (float,float)
+        """
+        return self.affine.yoff % abs(self.affine.e), self.affine.xoff % abs(self.affine.a)
 
     @property
     def coordinates(self):
