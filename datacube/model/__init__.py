@@ -787,8 +787,8 @@ class GeoBox(object):
         affine = (Affine.translation(left, top) * Affine.scale(resolution[1], resolution[0]))
         return GeoBox(crs=crs,
                       affine=affine,
-                      width=int(math.ceil((bounding_box.right-left)/resolution[1])),
-                      height=int(math.ceil((bounding_box.bottom-top)/resolution[0])))
+                      width=max(1, int(math.ceil((bounding_box.right-left-0.1*resolution[1])/resolution[1]))),
+                      height=max(1, int(math.ceil((bounding_box.bottom-top-0.1*resolution[0])/resolution[0]))))
 
     def __getitem__(self, item):
         indexes = [slice(index.start or 0, index.stop or size, index.step or 1)
