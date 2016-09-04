@@ -721,7 +721,7 @@ class GeoBox(object):
     """
 
     def __init__(self, width, height, affine, crs):
-        assert height > 0 and width > 0
+        assert height > 0 and width > 0, "Can't create GeoBox of zero size"
         #: :type: int
         self.width = width
         #: :type: int
@@ -766,12 +766,12 @@ class GeoBox(object):
         """
         # TODO: currently only flipped Y-axis data is supported
 
-        assert resolution[1] > 0
-        assert resolution[0] < 0
+        assert resolution[1] > 0, "decreasing X coordinates are not supported"
+        assert resolution[0] < 0, "increasing Y coordinates are not supported"
 
         align = align or (0.0, 0.0)
-        assert 0.0 <= align[1] <= abs(resolution[1])
-        assert 0.0 <= align[0] <= abs(resolution[0])
+        assert 0.0 <= align[1] <= abs(resolution[1]), "X align must be in [0, abs(x_resolution)] range"
+        assert 0.0 <= align[0] <= abs(resolution[0]), "Y align must be in [0, abs(y_resolution)] range"
 
         if crs is None:
             crs = geopolygon.crs
