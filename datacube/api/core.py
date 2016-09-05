@@ -281,6 +281,9 @@ class Datacube(object):
             return None if stack else xarray.Dataset()
 
         if like:
+            assert output_crs is None, "'like' and 'output_crs' are not supported together"
+            assert resolution is None, "'like' and 'resolution' are not supported together"
+            assert align is None, "'like' and 'align' are not supported together"
             geobox = like.geobox
         else:
             geobox = self._get_geobox(observations, output_crs, resolution, align=align, **query)

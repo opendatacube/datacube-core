@@ -69,6 +69,7 @@ class Query(object):
             self.search.update(_values_to_search(**{key: kwargs[key]}))
 
         if like:
+            assert self.geopolygon is None, "'like' with other spatial bounding parameters is not supported"
             self.geopolygon = getattr(like, 'extent', self.geopolygon)
 
             if 'time' not in self.search:
