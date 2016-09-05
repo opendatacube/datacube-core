@@ -9,11 +9,19 @@ v1.1.8 Last Mammoth (5 September 2016)
 
   - Added `resampling` parameter to :meth:`.Datacube.load` and :meth:`.GridWorkflow.load`. Will only be used if the requested data requires resampling.
 
-  - Improved :meth:`.Datcube.load` `like` parameter behaviour. This allows passing in a :class:`xarray.Dataset` to retrieve data for the same region.
+  - Improved :meth:`.Datacube.load` `like` parameter behaviour. This allows passing in a :class:`xarray.Dataset` to retrieve data for the same region.
 
   - Fixed an issue with passing tuples to functions in Analytics Expression Language
 
-  - Added a :ref:`user_guide` section to documentation containing useful code snippets
+  - Added a :ref:`user_guide` section to the documentation containing useful code snippets
+
+  - Reorganized project dependencies into required packages and optional 'extras'
+
+  - Added `performance` dependency extras for improving run-time performance
+
+  - Added `analytics` dependency extras for analytics features
+
+  - Added `interactive` dependency extras for interactivity features
 
 
 v1.1.7 Bit Shift (22 August 2016)
