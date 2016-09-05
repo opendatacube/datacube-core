@@ -33,6 +33,8 @@ VALID_BIT = 8  # GA Landsat PQ Contiguity Bit
               help='Shapefile to calculate boundary coordinates from.')
 @click.option('--start-date')
 @click.option('--end-date')
+@click.option('--stats-duration', help='eg. 1y, 3m')
+@click.option('--step-size', help='eg. 1y, 3m')
 @ui.global_cli_options
 @ui.executor_cli_options
 @ui.parsed_search_expressions
@@ -49,12 +51,18 @@ def sequencer(index, app_config, load_bounds_from, start_date, end_date, product
         'right': 1213611.437
     },
 
-    left, right, top, bottom = job['left'], job['right'], job['top'], job['bottom']
+    if load_bounds_from:
+        crs, (left, bottom, right, top) = bounds_from_file(load_bounds_from)
+    else:
+        left, right, top, bottom = job['left'], job['right'], job['top'], job['bottom']
 
     results = []
-    for filenum, acq_range in enumerate(date_sequence(start_date, end_date, '1y', '1y')):
-        task = dict(output_name=jobname, filenum=filenum, products=products, time=acq_range, x=(left, right),
+
+    for filenum, date_range in enumerate(date_sequence(start_date, end_date, '1y', '1y')):
+        task = dict(output_name=jobname, filenum=filenum, products=products, time=date_range, x=(left, right),
                     y=(top, bottom))
+        if crs:
+            task['crs'] = crs
 
         result_future = executor.submit(write_median, **task)
         results.append(result_future)
@@ -66,19 +74,27 @@ def sequencer(index, app_config, load_bounds_from, start_date, end_date, product
         except MemoryError as e:
             print(e)
 
+    # Write subtitle file
+
+    # Write video file
+
     print("Finished!")
 
 
+def bounds_from_file(filename):
+    with fiona.open(filename) as c:
+        return c.crs_wkt, c.bounds
+
+
 def write_median(filenum, output_name, **expression):
-    year, median = load_data(**expression)
+    year, median = load_and_compute(**expression)
     filename = output_name + "_{:03d}_{}.png".format(filenum, year)
     write_xarray_to_image(filename, median)
     return 'Wrote {}.'.format(filename)
 
 
-def load_data(products, **parsed_expressions):
+def load_and_compute(products, **parsed_expressions):
     with Datacube() as dc:
-        #     test_no = 0
         acq_range = parsed_expressions['time']
         print("Processing time range {}".format(acq_range))
         data = None
