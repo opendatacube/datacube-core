@@ -4,15 +4,16 @@ What's New
 v1.1.8 Last Mammoth (5 September 2016)
 --------------------------------------
 
-  - `GridWorkflow` `list_tiles` and `list_cell` now return a `Tile` object
+  - :meth:`.GridWorkflow.list_tiles` and :meth:`.GridWorkflow.list_cells` now
+    return a :class:`.Tile` object
 
-  - Added `resampling` parameter to `Datcube.load` and `GridWorkflow.load`
+  - Added `resampling` parameter to :meth:`.Datacube.load` and :meth:`.GridWorkflow.load`. Will only be used if the requested data requires resampling.
 
-  - Improved `Datcube.load` `like` behaviour
+  - Improved :meth:`.Datcube.load` `like` parameter behaviour. This allows passing in a :class:`xarray.Dataset` to retrieve data for the same region.
 
-  - Fixed and issue with passing tuples to functions in Analytics Expression Language
+  - Fixed an issue with passing tuples to functions in Analytics Expression Language
 
-  - Added Recipes section containing useful snippets to documentation
+  - Added a :ref:`user_guide` section to documentation containing useful code snippets
 
 
 v1.1.7 Bit Shift (22 August 2016)
