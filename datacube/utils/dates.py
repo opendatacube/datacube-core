@@ -22,7 +22,7 @@ def date_sequence(start, end, stats_duration, step_size):
 
     :param str start: Start date of first interval
     :param str end: End date. The end of the last time span may extend past this date.
-    :param str stats_duration: What period of time shouuld be grouped
+    :param str stats_duration: What period of time should be grouped
     :param str step_size: How far apart should the start dates be
     :return: sequence of (start_date, end_date) tuples
     """
