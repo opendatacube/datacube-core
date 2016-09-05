@@ -56,7 +56,7 @@ class Query(object):
          * `group_by` - observation grouping method. One of 'time', 'solar_day'. Default is 'time'
         """
         self.product = product
-        self.geopolygon = query_geopolygon(geopolygon=geopolygon, **kwargs) or (like and getattr(like, 'extent'))
+        self.geopolygon = query_geopolygon(geopolygon=geopolygon, **kwargs)
 
         remaining_keys = set(kwargs.keys()) - set(SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
         if index:
@@ -71,11 +71,14 @@ class Query(object):
         if like:
             self.geopolygon = getattr(like, 'extent', self.geopolygon)
 
-            time_coord = like.coords.get('time')
-            if time_coord is not None:
-                self.search['time'] = _time_to_search_dims((pandas_to_datetime(time_coord.values[0]).to_pydatetime(),
-                                                            pandas_to_datetime(time_coord.values[-1]).to_pydatetime() +
-                                                            datetime.timedelta(milliseconds=1)))
+            if 'time' not in self.search:
+                time_coord = like.coords.get('time')
+                if time_coord is not None:
+                    self.search['time'] = _time_to_search_dims(
+                        (pandas_to_datetime(time_coord.values[0]).to_pydatetime(),
+                         pandas_to_datetime(time_coord.values[-1]).to_pydatetime()
+                         + datetime.timedelta(milliseconds=1))
+                    )
 
     @property
     def search_terms(self):
