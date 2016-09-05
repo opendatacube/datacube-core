@@ -1,6 +1,19 @@
 What's New
 ==========
 
+v1.1.8 Last Mammoth (5 September 2016)
+--------------------------------------
+
+  - `GridWorkflow` `list_tiles` and `list_cell` now return a `Tile` object
+
+  - Added `resampling` parameter to `Datcube.load` and `GridWorkflow.load`
+
+  - Improved `Datcube.load` `like` behaviour
+
+  - Fixed and issue with passing tuples to functions in Analytics Expression Language
+
+  - Added Recipes section containing useful snippets to documentation
+
 
 v1.1.7 Bit Shift (22 August 2016)
 ---------------------------------
