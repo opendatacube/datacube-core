@@ -281,25 +281,25 @@ def parsed_search_expressions(f):
 
     \b
     eg. '1996-01-01<time<1996-12-31'
-        '130<x<140 -30>y>-40'
+        '130<lon<140' '-30>lat>-40'
         product=ls5_nbar_albers
     """
 
     def my_parse(ctx, param, value):
         parsed_expressions = parse_expressions(*list(value))
-        ctx.ensure_object(dict)
-        try:
-            parsed_expressions['crs'] = ctx.obj['crs']
-        except KeyError:
-            pass
+        # ctx.ensure_object(dict)
+        # try:
+        #     parsed_expressions['crs'] = ctx.obj['crs']
+        # except KeyError:
+        #     pass
         return parsed_expressions
 
     def store_crs(ctx, param, value):
         ctx.ensure_object(dict)
-        if value:
-            ctx.obj['crs'] = value
+        # if value:
+        #     ctx.obj['crs'] = value
 
     f = click.argument('expressions', callback=my_parse, nargs=-1)(f)
-    f = click.option('--crs', expose_value=False, help='Coordinate Reference used for x,y search expressions',
-                     callback=store_crs)(f)
+    # f = click.option('--crs', expose_value=False, help='Coordinate Reference used for x,y search expressions',
+    #                  callback=store_crs)(f)
     return f
