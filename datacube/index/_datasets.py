@@ -12,7 +12,7 @@ from datacube import compat
 from datacube.model import Dataset, DatasetType, MetadataType
 from datacube.utils import InvalidDocException, check_doc_unchanged, jsonify_document, get_doc_changes, contains
 from . import fields
-from .exceptions import DuplicateRecordError
+from .exceptions import DuplicateRecordError, UnknownFieldError
 
 _LOG = logging.getLogger(__name__)
 
@@ -308,7 +308,7 @@ class DatasetTypeResource(object):
             for key, value in list(q.items()):
                 try:
                     exprs = fields.to_expressions(type_.metadata_type.dataset_fields.get, **{key: value})
-                except RuntimeError:
+                except UnknownFieldError as e:
                     break
 
                 try:
