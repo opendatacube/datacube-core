@@ -72,6 +72,8 @@ def make_mask(variable, **flags):
     """
     Returns a mask array, based on provided flags
 
+    When multiple flags are provided, they will be combined in a logical AND fashion.
+
     For example:
 
     make_mask(pqa, cloud_acca=False, cloud_fmask=False, land_obs=True)
@@ -85,7 +87,7 @@ def make_mask(variable, **flags):
     :param variable:
     :type variable: xarray.Dataset or xarray.DataArray
     :param flags: list of boolean flags
-    :return:
+    :return: boolean xarray.DataArray or xarray.Dataset
     """
     flags_def = get_flags_def(variable)
 
@@ -97,6 +99,7 @@ def make_mask(variable, **flags):
 def valid_data_mask(data):
     """
     Returns bool arrays where the data is not `nodata`
+
     :param Dataset or DataArray data:
     :return: Dataset or DataArray
     """
@@ -114,7 +117,9 @@ def valid_data_mask(data):
 def mask_valid_data(data, keep_attrs=True):
     """
     Sets all `nodata` values to ``nan``.
+
     This will convert converts numeric data to type `float`.
+
     :param Dataset or DataArray data:
     :param bool keep_attrs: If the attributes of the data should be included in the returned .
     :return: Dataset or DataArray
