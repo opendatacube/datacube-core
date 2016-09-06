@@ -1,3 +1,4 @@
+## Define inputs to perform statistics on
 sources:
   - product: ls8_nbar_albers
     measurements: [blue, green, red, nir, swir1, swir2]
@@ -19,6 +20,7 @@ sources:
           swir2_saturated: False
 
 
+## Define whether and how to chunk over time
 step_size: 1y
 
 
@@ -43,6 +45,9 @@ stats_duration: 5 year
 stats_inc: 1 year
 stats_inc: 5 year
 
+
+## Define output directory and file structure
+
 location: '/g/data/u46/users/gxr547/gregcube/data'
 
 storage:
@@ -61,6 +66,7 @@ storage:
       time: 1
   dimension_order: [time, y, x]
 
+## Define statistics to perform and how to store the data
 
 stats:
  - name: mean
