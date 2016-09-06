@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Convert dates from filenames to SRT
+Convert dates from filenames to SRT_FORMAT
 """
 import sys
 import re
@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, time, date
 
 DISPLAY = '%d %B %Y'
 TIMEFMT = '%H:%M:%S,%f'
-SRT ="""
+SRT = """
 {i}
 {start} --> {end}
 {txt}"""
