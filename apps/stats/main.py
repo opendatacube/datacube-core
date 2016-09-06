@@ -56,13 +56,13 @@ def nanmedoid(x, axis=1, return_index=False):
     if axis == 0:
         x = x.T
 
+    invalid = numpy.isnan(x).any(axis=0)
     p, n = x.shape
     diff = x.reshape(1, p, n) - x.T.reshape(n, p, 1)
-    dist = numpy.sqrt(numpy.sum(diff*diff, axis=1))
-    all_nan = numpy.isnan(dist).all(axis=0)
+    dist = numpy.sqrt(numpy.sum(diff*diff, axis=1))  # dist = numpy.linalg.norm(diff, axis=1) is slower somehow...
     dist_sum = numpy.nansum(dist, axis=0)
-    dist_sum[all_nan] = numpy.nan
-    i = numpy.nanargmin(dist_sum)
+    dist_sum[invalid] = numpy.inf
+    i = numpy.argmin(dist_sum)
 
     return (x[:, i], i) if return_index else x[:, i]
 
