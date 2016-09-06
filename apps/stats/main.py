@@ -59,7 +59,10 @@ def nanmedoid(x, axis=1, return_index=False):
     p, n = x.shape
     diff = x.reshape(1, p, n) - x.T.reshape(n, p, 1)
     dist = numpy.sqrt(numpy.sum(diff*diff, axis=1))
-    i = numpy.nanargmin(numpy.sum(dist, axis=0))
+    all_nan = numpy.isnan(dist).all(axis=0)
+    dist_sum = numpy.nansum(dist, axis=0)
+    dist_sum[all_nan] = numpy.nan
+    i = numpy.nanargmin(dist_sum)
 
     return (x[:, i], i) if return_index else x[:, i]
 
