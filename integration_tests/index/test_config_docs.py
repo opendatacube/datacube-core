@@ -7,7 +7,7 @@ from __future__ import absolute_import
 import copy
 
 import pytest
-
+from datacube.index.postgres._fields import NumericRangeDocField
 from datacube.model import Range
 
 _DATASET_METADATA = {
@@ -145,6 +145,41 @@ def test_update_dataset_type(index, ls5_nbar_gtiff_type, ls5_nbar_gtiff_doc):
     index.datasets.types.update_document(different_telemetry_type, allow_unsafe_update=True)
     updated_type = index.datasets.types.get_by_name(ls5_nbar_gtiff_type.name)
     assert updated_type.definition['metadata']['ga_label'] == 'something'
+
+
+def test_update_metadata_type(index, default_metadata_type_docs, default_metadata_type):
+    """
+    :type default_metadata_type_docs: list[dict]
+    :type index: datacube.index._api.Index
+    """
+    mt_doc = [d for d in default_metadata_type_docs if d['name'] == default_metadata_type.name][0]
+
+    assert index.metadata_types.get_by_name(mt_doc['name']) is not None
+
+    # Update with no changes should work.
+    index.metadata_types.update_document(mt_doc)
+
+    # Add search field
+    mt_doc['dataset']['search_fields']['testfield'] = {
+        'description': "Field added for testing",
+        'offset': ['test']
+    }
+
+    index.metadata_types.update_document(mt_doc)
+    # Ensure was updated
+    updated_type = index.metadata_types.get_by_name(mt_doc['name'])
+    assert 'testfield' in updated_type.dataset_fields
+
+    # But if we change an existing field type we get an error:
+    different_mt_doc = copy.deepcopy(mt_doc)
+    different_mt_doc['dataset']['search_fields']['time']['type'] = 'numeric-range'
+    with pytest.raises(ValueError):
+        index.metadata_types.update_document(different_mt_doc)
+
+    # But works when unsafe updates are allowed.
+    index.metadata_types.update_document(different_mt_doc, allow_unsafe_update=True)
+    updated_type = index.metadata_types.get_by_name(mt_doc['name'])
+    assert isinstance(updated_type.dataset_fields['time'], NumericRangeDocField)
 
 
 def test_filter_types_by_fields(index, ls5_nbar_gtiff_type):
