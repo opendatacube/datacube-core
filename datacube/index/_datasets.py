@@ -192,11 +192,11 @@ class DatasetTypeResource(object):
                 _LOG.warning("Ignoring %s", msg)
 
         updates_allowed = {
-            'description': changes.allow_any,
+            ('description',): changes.allow_any,
             # You can safely make the match rules looser but not tighter.
             # Tightening them could exclude datasets already matched to the product.
             # (which would make search results wrong)
-            'metadata': changes.allow_subset
+            ('metadata',): changes.allow_subset
         }
 
         doc_changes = changes.validate_dict_changes(

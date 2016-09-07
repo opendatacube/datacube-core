@@ -32,13 +32,13 @@ def validate_dict_changes(old, new, allowed_changes,
                           offset_context=()):
     """
     Validate the changes of a dictionary. Takes the old version, the new version,
-    and a mirroring dictionary of functions to validate changes.
+    and a dictionary (mirroring their structure) of validation functions
 
     >>> validate_dict_changes({}, {}, {})
     ()
     >>> validate_dict_changes({'a': 1}, {'a': 1}, {})
     ()
-    >>> validate_dict_changes({'a': 1}, {'a': 2}, {'a': allow_any})
+    >>> validate_dict_changes({'a': 1}, {'a': 2}, {('a',): allow_any})
     ((('a',), 1, 2),)
     >>> validate_dict_changes({'a': 1}, {'a': 2}, {})
     Traceback (most recent call last):
@@ -48,42 +48,58 @@ def validate_dict_changes(old, new, allowed_changes,
     Traceback (most recent call last):
     ...
     ValueError: Potentially unsafe update: changing 'a2'
-    >>> validate_dict_changes({'a1': 1, 'a2': {'b1': 1}}, {'a1': 1, 'a2': {'b1': 2}}, {'a2': {'b1': allow_any}})
+    >>> # A change in a nested dict
+    >>> validate_dict_changes({'a1': 1, 'a2': {'b1': 1}}, {'a1': 1, 'a2': {'b1': 2}}, {('a2', 'b1'): allow_any})
     ((('a2', 'b1'), 1, 2),)
-    >>> validate_dict_changes({'a1': 1, 'a2': {'b1': 1}}, {'a1': 1}, {'a2': {'b1': allow_any}})
-    ((('a2', 'b1'), 1, None),)
+    >>> # A disallowed change in a nested dict
+    >>> validate_dict_changes({'a1': 1, 'a2': {'b1': 1}}, {'a1': 1}, {('a2', 'b1'): allow_any})
+    Traceback (most recent call last):
+    ...
+    ValueError: Potentially unsafe update: changing 'a2'
+    >>> # Removal of a value
+    >>> validate_dict_changes({'a1': 1, 'a2': {'b1': 1}}, {'a1': 1}, {('a2',): allow_any})
+    ((('a2',), {'b1': 1}, None),)
+    >>> # There's no allowance for the specific leaf change, but a parent allows all changes.
+    >>> validate_dict_changes({'a1': 1, 'a2': {'b1': 1}}, {'a1': 1, 'a2': {'b1': 2}}, {('a2',): allow_any})
+    ((('a2', 'b1'), 1, 2),)
     >>>
 
     :param dict old: Old value
     :param dict new: New value
-    :param dict allowed_changes:
-        Dict of offsets that are allowed to change: leaves are functions that validate the value.
+    :param allowed_changes: Offsets that are allowed to change.
+        Keys are tuples (offset in dictionary), values are functions to validate.
+    :type allowed_changes: dict[tuple[str], (tuple[str], dict, dict) -> bool]
     :param tuple offset_context: Prefix to append to all key offsets
     :type on_failure: (tuple[str], dict, dict) -> None
     :type on_change: (tuple[str], dict, dict) -> None
     :rtype: tuple[(tuple, object, object)]
     """
-    doc_changes = get_doc_changes(old, new)
-    for offset, old_value, new_value in doc_changes:
-        key_name = offset[0]
-        global_offset = offset_context + (key_name,)
+    if old == new:
+        return ()
 
-        on_change(global_offset, old_value, new_value)
+    allowed_changes_index = dict(allowed_changes)
 
-        if key_name not in allowed_changes:
-            on_failure(offset, 'Potentially unsafe update: changing %r' % key_name)
+    changes = get_doc_changes(old, new)
+    for offset, old_val, new_val in changes:
+        on_change(offset_context, old_val, new_val)
 
-        allowed_change = allowed_changes[key_name]
-        if hasattr(allowed_change, '__call__'):
-            is_allowed, message = allowed_change(global_offset, old_value, new_value)
+        allowance = allowed_changes_index.get(offset)
+        allowance_offset = offset
+        # If no allowance on this leaf, find if any parents have allowances.
+        while allowance is None:
+            if not allowance_offset:
+                break
+
+            allowance_offset = allowance_offset[:-1]
+            allowance = allowed_changes_index.get(allowance_offset)
+
+        if allowance is None:
+            on_failure(offset_context, 'Potentially unsafe update: changing %r' % ('.'.join(offset),))
+        elif hasattr(allowance, '__call__'):
+            is_allowed, message = allowance(offset, old_val, new_val)
             if not is_allowed:
-                on_failure(offset, message)
-        elif isinstance(allowed_change, dict):
-            validate_dict_changes(old[key_name], new[key_name], allowed_change,
-                                  on_failure=on_failure,
-                                  on_change=on_change,
-                                  offset_context=global_offset)
+                on_failure(offset_context, message)
         else:
-            raise RuntimeError('Unknown change type: expecting dict or valiadation function at %r' % global_offset)
+            raise RuntimeError('Unknown change type: expecting validation function at %r' % offset)
 
-    return tuple(doc_changes)
+    return tuple(changes)
