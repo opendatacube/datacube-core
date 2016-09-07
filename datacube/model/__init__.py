@@ -494,8 +494,15 @@ class CRS(object):
     True
     >>> crs.projected
     False
+    >>> crs.epsg
+    4326
     >>> crs.dimensions
     ('latitude', 'longitude')
+    >>> crs = CRS('EPSG:3577')
+    >>> crs.epsg
+    3577
+    >>> crs.dimensions
+    ('y', 'x')
     >>> CRS('EPSG:3577') == CRS('EPSG:3577')
     True
     >>> CRS('EPSG:3577') == CRS('EPSG:4326')
@@ -536,6 +543,19 @@ class CRS(object):
         :type: str
         """
         return self._crs.ExportToWkt()
+
+    @property
+    def epsg(self):
+        """
+        EPSG Code of the CRS
+
+        :type: int
+        """
+        if self.projected:
+            return int(self._crs.GetAuthorityCode('PROJCS'))
+
+        if self.geographic:
+            return int(self._crs.GetAuthorityCode('GEOGCS'))
 
     @property
     def proj(self):
