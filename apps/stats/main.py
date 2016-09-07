@@ -27,6 +27,14 @@ from datacube.ui.click import to_pathlib
 from datacube.utils import read_documents, unsqueeze_data_array
 from datacube.utils.dates import date_sequence
 
+try:
+    from bottleneck import anynan, nansum
+except ImportError:
+    nansum = numpy.nansum
+
+    def anynan(x, axis=None):
+        return numpy.isnan(x).any(axis=axis)
+
 
 # def nanmedoid(x, axis=1, return_index=False):
 #     def naneuclidean(x, y):
@@ -56,11 +64,11 @@ def nanmedoid(x, axis=1, return_index=False):
     if axis == 0:
         x = x.T
 
-    invalid = numpy.isnan(x).any(axis=0)
+    invalid = anynan(x, axis=0)
     p, n = x.shape
     diff = x.reshape(1, p, n) - x.T.reshape(n, p, 1)
     dist = numpy.sqrt(numpy.sum(diff*diff, axis=1))  # dist = numpy.linalg.norm(diff, axis=1) is slower somehow...
-    dist_sum = numpy.nansum(dist, axis=0)
+    dist_sum = nansum(dist, axis=0)
     dist_sum[invalid] = numpy.inf
     i = numpy.argmin(dist_sum)
 
