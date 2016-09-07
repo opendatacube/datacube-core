@@ -27,52 +27,31 @@ from datacube.ui.click import to_pathlib
 from datacube.utils import read_documents, unsqueeze_data_array
 from datacube.utils.dates import date_sequence
 
+
 try:
-    from bottleneck import anynan, nansum
+    from hdmedians import nanmedoid
 except ImportError:
-    nansum = numpy.nansum
+    try:
+        from bottleneck import anynan, nansum
+    except ImportError:
+        nansum = numpy.nansum
 
-    def anynan(x, axis=None):
-        return numpy.isnan(x).any(axis=axis)
+        def anynan(x, axis=None):
+            return numpy.isnan(x).any(axis=axis)
 
+    def nanmedoid(x, axis=1, return_index=False):
+        if axis == 0:
+            x = x.T
 
-# def nanmedoid(x, axis=1, return_index=False):
-#     def naneuclidean(x, y):
-#         return numpy.sqrt(numpy.nansum(numpy.square(x - y)))
-#
-#     if axis == 0:
-#         x = x.T
-#
-#     p, n = x.shape
-#     d = numpy.empty(n)
-#     for i in range(n):
-#         if numpy.isnan(x[0, i]):
-#             d[i] = numpy.nan
-#         else:
-#             d[i] = numpy.nansum([naneuclidean(x[:, i], x[:, j])
-#                                  for j in range(n) if j != i])
-#
-#     i = numpy.nanargmin(d)
-#
-#     if return_index:
-#         return (x[:, i], i)
-#     else:
-#         return x[:, i]
+        invalid = anynan(x, axis=0)
+        band, time = x.shape
+        diff = x.reshape(band, time, 1) - x.reshape(band, 1, time)
+        dist = numpy.sqrt(numpy.sum(diff*diff, axis=0))  # dist = numpy.linalg.norm(diff, axis=0) is slower somehow...
+        dist_sum = nansum(dist, axis=0)
+        dist_sum[invalid] = numpy.inf
+        i = numpy.argmin(dist_sum)
 
-
-def nanmedoid(x, axis=1, return_index=False):
-    if axis == 0:
-        x = x.T
-
-    invalid = anynan(x, axis=0)
-    p, n = x.shape
-    diff = x.reshape(1, p, n) - x.T.reshape(n, p, 1)
-    dist = numpy.sqrt(numpy.sum(diff*diff, axis=1))  # dist = numpy.linalg.norm(diff, axis=1) is slower somehow...
-    dist_sum = nansum(dist, axis=0)
-    dist_sum[invalid] = numpy.inf
-    i = numpy.argmin(dist_sum)
-
-    return (x[:, i], i) if return_index else x[:, i]
+        return (x[:, i], i) if return_index else x[:, i]
 
 
 def apply_cross_measurement_reduction(dataset, method=nanmedoid, dim='time', keep_attrs=True):
