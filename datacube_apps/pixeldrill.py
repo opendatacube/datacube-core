@@ -3,14 +3,9 @@
 Interactive Pixel Drill for AGDCv2.
 
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+# pylint: disable=import-error
+from __future__ import absolute_import, division, print_function, unicode_literals
 
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.animation as anim
 import pandas as pd
 import numpy as np
 import argparse
@@ -28,10 +23,17 @@ except ImportError:  # Python 2
     import ttk
     import tkFont as font
 
+import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.animation as anim
 from matplotlib.backends.backend_tkagg import NavigationToolbar2TkAgg, ToolTip
 
 import six
 from six.moves import tkinter_tkfiledialog, tkinter_messagebox
+
+
+# pylint: disable=invalid-name, too-many-locals, global-variable-undefined, too-many-statements, redefined-outer-name
+# pylint: disable=broad-except
 
 matplotlib.use('TkAgg')
 
@@ -151,7 +153,7 @@ class Toolbar(NavigationToolbar2TkAgg):
                                  # extra_args=['-crf', '23', '-pix_fmt' 'yuv420p'],
                                  metadata={})
                 with mwriter.saving(mainfig, fname, 140):
-                    print(' '.join(mwriter._args()))
+                    print(' '.join(mwriter._args()))  # pylint: disable=protected-access
                     for i in range(ntime):
                         changeimg(i)
                         mwriter.grab_frame()
@@ -462,14 +464,12 @@ def onpress(event):
 
 def fwdimg():
     """Show next observation."""
-    global vi
     i = min(vi + 1, data.shape[3] - 1)
     changeimg(i)
 
 
 def backimg():
     """Show previous observation."""
-    global vi
     i = max(0, vi - 1)
     changeimg(i)
 
