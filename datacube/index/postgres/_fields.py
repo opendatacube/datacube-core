@@ -7,6 +7,10 @@ from __future__ import absolute_import
 
 from functools import partial
 
+from datacube.index.fields import Expression, Field
+from datacube.index.postgres.tables import FLOAT8RANGE
+from datacube.model import Range
+from datacube.utils import get_doc_offset
 from dateutil import tz
 from psycopg2.extras import NumericRange, DateTimeTZRange
 from sqlalchemy import cast
@@ -15,11 +19,6 @@ from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import INT4RANGE
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 from sqlalchemy.dialects.postgresql.base import DOUBLE_PRECISION
-
-from datacube.index.fields import Expression, Field
-from datacube.index.postgres.tables import FLOAT8RANGE
-from datacube.model import Range
-from datacube.utils import get_doc_offset
 
 
 class PgField(Field):
@@ -243,7 +242,6 @@ class IntRangeDocField(RangeDocField):
         :rtype: Expression
         """
         return RangeBetweenExpression(self, low, high, _range_class=NumericRange)
-
 
 
 class DoubleRangeDocField(RangeDocField):
