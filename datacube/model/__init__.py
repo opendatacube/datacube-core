@@ -779,7 +779,7 @@ class GeoBox(object):
     def from_geopolygon(cls, geopolygon, resolution, crs=None, align=None):
         """
         :type geopolygon: GeoPolygon
-        :param resolution: (x_resolution, y_resolution)
+        :param resolution: (y_resolution, x_resolution)
         :param CRS crs: CRS to use, if different from the geopolygon
         :param (float,float) align: Alight geobox such that point 'align' lies on the pixel boundary.
         :rtype: GeoBox
