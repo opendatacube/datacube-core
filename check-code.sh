@@ -6,9 +6,9 @@ set -x
 
 pep8 tests integration_tests --max-line-length 120
 
-pylint -j 2 --reports no datacube examples apps/stats
+pylint -j 2 --reports no datacube examples datacube_apps
 
 # Run tests, taking coverage.
 # Users can specify extra folders as arguments.
-py.test -r sx --cov datacube --durations=5 datacube tests apps $@
+py.test -r sx --cov datacube --durations=5 datacube tests datacube_apps $@
 

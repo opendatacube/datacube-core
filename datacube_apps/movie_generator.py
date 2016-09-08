@@ -43,6 +43,8 @@ def to_datetime(ctx, param, value):
     else:
         return None
 
+
+# pylint: disable=too-many-arguments, too-many-locals
 @click.command(name='moviemaker')
 @click.option('--load-bounds-from', type=click.Path(exists=True, readable=True, dir_okay=False),
               help='Shapefile to calculate boundary coordinates from.')
@@ -62,7 +64,7 @@ def to_datetime(ctx, param, value):
 @ui.global_cli_options
 @ui.executor_cli_options
 def moviemaker(bounds, base_output_name, load_bounds_from, start_date, end_date, product, measurement, executor,
-               step_size, stats_duration, time_incr, ffmpeg_path, crs):  # pylint: disable=too-many-arguments
+               step_size, stats_duration, time_incr, ffmpeg_path, crs):
     """
     Create an mp4 movie file based on datacube data
 
