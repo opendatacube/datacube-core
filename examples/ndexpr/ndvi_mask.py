@@ -20,12 +20,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-if __name__ == '__main__' and __package__ is None:
-    from os import sys, path
-    sys.path.append(path.dirname(path.dirname(path.dirname(path.abspath(__file__)))))
-
 from datetime import datetime
-import xarray as xr
 from datacube.api import API
 from datacube.ndexpr import NDexpr
 

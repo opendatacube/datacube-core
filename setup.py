@@ -21,7 +21,7 @@ setup(name='datacube',
       version=versioneer.get_version(),
       cmdclass=versioneer.get_cmdclass(),
       packages=find_packages(
-          exclude=('tests', 'tests.*', 'examples',
+          exclude=('tests', 'tests.*',
                    'integration_tests', 'integration_tests.*')
       ),
       package_data={
