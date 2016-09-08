@@ -10,9 +10,10 @@ import click
 
 import fiona
 import xarray as xr
-import pandas as pd
 import numpy as np
 import rasterio
+import subprocess
+from glob import glob
 from dateutil.parser import parse
 from datetime import datetime, timedelta, time, date
 
@@ -21,19 +22,19 @@ from datacube.ui import click as ui
 from datacube import Datacube
 from datacube.utils.dates import date_sequence
 
-COLOUR_BANDS = ('red', 'green', 'blue')
+DEFAULT_MEASUREMENTS = ('red', 'green', 'blue')
 
 DEFAULT_PRODUCTS = ('ls5_nbar_albers', 'ls7_nbar_albers', 'ls8_nbar_albers')
-
+DEFAULT_CRS = 'EPSG:3577'
+FFMPEG_PATH = '~/ffmpeg-3.1.2-64bit-static/ffmpeg'
 VALID_BIT = 8  # GA Landsat PQ Contiguity Bit
 
-DISPLAY_FORMAT = '%d %B %Y'
+SUBTITLE_FORMAT = '%d %B %Y'
 SRT_TIMEFMT = '%H:%M:%S,%f'
 SRT_FORMAT = """
 {i}
 {start} --> {end}
 {txt}"""
-PATTERN = '\d\d\d\d'
 
 
 def to_datetime(ctx, param, value):
@@ -42,30 +43,34 @@ def to_datetime(ctx, param, value):
     else:
         return None
 
-
 @click.command(name='moviemaker')
-# @click.option('--app-config', '-c',
-#               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
-#               help='configuration file location', callback=to_pathlib)
 @click.option('--load-bounds-from', type=click.Path(exists=True, readable=True, dir_okay=False),
               help='Shapefile to calculate boundary coordinates from.')
-@click.option('--start-date', callback=to_datetime)
-@click.option('--end-date', callback=to_datetime)
+@click.option('--start-date', callback=to_datetime, help='YYYY-MM-DD')
+@click.option('--end-date', callback=to_datetime, help='YYYY-MM-DD')
 @click.option('--stats-duration', default='1y', help='eg. 1y, 3m')
 @click.option('--step-size', default='1y', help='eg. 1y, 3m')
 @click.option('--bounds', nargs=4, help='LEFT, BOTTOM, RIGHT, TOP')
-@click.option('--output-name')
+@click.option('--base-output-name', default='output', help="Base name to use for images and video. Eg.  "
+                                                           "--base-output-name stromlo will produce "
+                                                           "stromlo_001_*.png and stromlo.mp4")
 @click.option('--time-incr', default=2, help='Time to display each image, in seconds')
-@click.option('--product', multiple=True)
+@click.option('--product', multiple=True, default=DEFAULT_PRODUCTS)
+@click.option('--measurement', '-m', multiple=True, default=DEFAULT_MEASUREMENTS)
+@click.option('--ffmpeg-path', default=FFMPEG_PATH, help='Path to ffmpeg executable')
+@click.option('--crs', default=DEFAULT_CRS, help='Used if specifying --bounds. eg. EPSG:3577. ')
 @ui.global_cli_options
 @ui.executor_cli_options
-# @ui.parsed_search_expressions
-# @ui.pass_index(app_name='agdc-moviemaker')
-def moviemaker(bounds, output_name, load_bounds_from, start_date, end_date, product, executor,
-               step_size, stats_duration, time_incr):
-    products = product or DEFAULT_PRODUCTS
-    click.echo(products)
+def moviemaker(bounds, base_output_name, load_bounds_from, start_date, end_date, product, measurement, executor,
+               step_size, stats_duration, time_incr, ffmpeg_path, crs):  # pylint: disable=too-many-arguments
+    """
+    Create an mp4 movie file based on datacube data
 
+    Use only clear pixels, and mosaic over time to produce full frames.
+
+    Can combine products, specify multiple --product
+
+    """
     if load_bounds_from:
         crs, (left, bottom, right, top) = bounds_from_file(load_bounds_from)
     elif bounds:
@@ -74,31 +79,29 @@ def moviemaker(bounds, output_name, load_bounds_from, start_date, end_date, prod
         raise click.UsageError('Must specify one of --load-bounds-from or --bounds')
 
     tasks = []
-    for filenum, date_range in enumerate(date_sequence(start_date, end_date, stats_duration, step_size)):
-        task = dict(output_name=output_name, filenum=filenum, products=products, time=date_range, x=(left, right),
-                    y=(top, bottom))
-        if crs:
-            task['crs'] = crs
+    for filenum, date_range in enumerate(date_sequence(start_date, end_date, stats_duration, step_size), start=1):
+        filename = "{}_{:03d}_{:%Y-%m-%d}.png".format(base_output_name, filenum, start_date)
+        task = dict(filename=filename, products=product, time=date_range, x=(left, right),
+                    y=(top, bottom), crs=crs, measurements=measurement)
         tasks.append(task)
 
     results = []
     for task in tasks:
-        result_future = executor.submit(write_median, **task)
+        result_future = executor.submit(write_mosaic_to_file, **task)
         results.append(result_future)
 
-    filenames = []
-    for result in executor.as_completed(results):
-        try:
-            filenames.append(executor.result(result))
-        except MemoryError as e:
-            print(e)
+    for _ in executor.as_completed(results):
+        pass
 
     # Write subtitle file
-    write_subtitle_file(tasks, output_name="{}.srt".format(output_name), display_format=DISPLAY_FORMAT,
+    subtitle_filename = "{}.srt".format(base_output_name)
+    write_subtitle_file(tasks, subtitle_filename=subtitle_filename, display_format=SUBTITLE_FORMAT,
                         time_incr=time_incr)
 
     # Write video file
-    write_video_file(tasks, filenames)
+    filenames_pattern = '%s*.png' % base_output_name
+    video_filename = "{}.mp4".format(base_output_name)
+    write_video_file(filenames_pattern, video_filename, time_incr=time_incr, ffmpeg_path=ffmpeg_path)
 
     click.echo("Finished!")
 
@@ -108,26 +111,22 @@ def bounds_from_file(filename):
         return c.crs_wkt, c.bounds
 
 
-def write_median(filenum, output_name, **expression):
-    start_date, median = load_and_compute(**expression)
-    filename = "{}_{:03d}_{:%Y-%m-%d}.png".format(output_name, filenum, start_date)
-    write_xarray_to_image(filename, median)
+def write_mosaic_to_file(filename, **expression):
+    image_data = compute_mosaic(**expression)
+    write_xarray_to_image(filename, image_data)
     click.echo('Wrote {}.'.format(filename))
     return filename
 
 
-def load_and_compute(products, **parsed_expressions):
+def compute_mosaic(products, measurements, **parsed_expressions):
     with Datacube() as dc:
         acq_range = parsed_expressions['time']
-        start_date, _ = acq_range
         click.echo("Processing time range {}".format(acq_range))
         datasets = []
 
-        parsed_expressions['crs'] = 'EPSG:3577'
-
         for prodname in products:
             dataset = dc.load(product=prodname,
-                              measurements=COLOUR_BANDS,
+                              measurements=measurements,
                               group_by='solar_day',
                               **parsed_expressions)
             if len(dataset) == 0:
@@ -140,7 +139,7 @@ def load_and_compute(products, **parsed_expressions):
                          fuse_func=pq_fuser,
                          **parsed_expressions)
 
-            crs = dataset.crs
+            crs = dataset.attrs['crs']
             dataset = dataset.where(dataset != -999)
             dataset.attrs['product'] = prodname
             dataset.attrs['crs'] = crs
@@ -156,7 +155,7 @@ def load_and_compute(products, **parsed_expressions):
 
     dataset = xr.concat(datasets, dim='time')
 
-    return start_date, dataset.median(dim='time')
+    return dataset.median(dim='time')
 
 
 def pq_fuser(dest, src):
@@ -170,7 +169,7 @@ def pq_fuser(dest, src):
 
 
 def write_xarray_to_image(filename, dataset, dtype='uint16'):
-    img = np.stack([dataset[colour].data for colour in COLOUR_BANDS])
+    img = np.stack([dataset[colour].data for colour in DEFAULT_MEASUREMENTS])
 
     maxvalue = 3000
     nmask = np.isnan(img).any(axis=0)
@@ -194,14 +193,13 @@ def write_xarray_to_image(filename, dataset, dtype='uint16'):
         dst.write(img.astype(dtype))
 
 
-# Write subtitle file
-def write_subtitle_file(tasks, output_name, display_format, time_incr):
+def write_subtitle_file(tasks, subtitle_filename, display_format, time_incr):
     if time_incr < 1.0:
         incr = timedelta(microseconds=time_incr * 1000000)
     else:
         incr = timedelta(seconds=time_incr)
 
-    with open(output_name, mode='w') as output:
+    with open(subtitle_filename, mode='w') as output:
         start_time_vid = time(0, 0, 0, 0)
         for i, task in enumerate(tasks):
             end_time_vid = (datetime.combine(date.today(), start_time_vid) + incr).time()
@@ -217,28 +215,38 @@ def write_subtitle_file(tasks, output_name, display_format, time_incr):
             start_time_vid = end_time_vid
 
 
-# Write video file
-def write_video_file(tasks, output_name):
-    # resize images
-    dims = `identify $filename | cut - d' ' - f3`
-    newdims = `python - c
-    "x, y = map(int, '$dims'.split('x')); scale = y / 1080; y = 1080; x = int(x/scale); x = x + 1 if x %2 == 1 else x; print('%sx%s' % (x,y))"
-    `
-    mogrify - geometry $newdims\! tmp / *.png
-    ~ / ffmpeg - 3.1
-    .2 - 64
-    bit - static / ffmpeg - framerate
-    1 /$timeincr - pattern_type
-    glob - i
-    tmp /\ *.png - c:v
-    libx264 - pix_fmt
-    yuv420p - r
-    30 - vf
-    subtitles = subs.srt:force_style = 'FontName=DejaVu Sans' $1
-    _video.mp4
+def write_video_file(filename_pattern, video_filename, subtitle_filename, time_incr, ffmpeg_path):
+    resize_images(filename_pattern)
 
     # Run ffmpeg
+    movie_cmd = [ffmpeg_path, '-framerate', '1/%s' % time_incr, '-pattern_type', 'glob',
+                 '-i', filename_pattern, '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', '30',
+                 '-vf', "subtitles='%s':force_style='FontName=DejaVu Sans'" % subtitle_filename, video_filename]
 
+    subprocess.check_call(movie_cmd)
+
+
+def resize_images(filename_pattern):
+    """
+    Resize images files in place to a safe size for movie generation
+
+    - Maximum height of 1080
+    - Ensure dimensions are divisible by 2.
+
+    Uses the ImageMagick mogrify command.
+    """
+    sample_file = glob('artemis*.png')[0]
+    width, height = subprocess.check_output(['identify', sample_file]).decode('ascii').split()[2].split('x')
+    x, y = int(width), int(height)
+    if y > 1080:
+        scale = y / 1080
+        y = 1080
+        x = int(x / scale)
+    x = x + 1 if x % 2 == 1 else x
+    y = y + 1 if y % 2 == 1 else y
+    newdims = '%sx%s!' % (x, y)
+    resize_cmd = ['mogrify', '-geometry', newdims, filename_pattern]
+    subprocess.check_call(resize_cmd)
 
 
 if __name__ == '__main__':
