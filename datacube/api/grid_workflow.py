@@ -52,6 +52,12 @@ class Tile(object):
             indexer[axis] = slice(i, i+1)
             yield self.sources[dim].values[i], self[tuple(indexer)]
 
+    def __str__(self):
+        return "Tile<sources={!r},\n\tgeobox={!r}>".format(self.sources, self.geobox)
+
+    def __repr__(self):
+        return self.__str__()
+
 
 class GridWorkflow(object):
     """
@@ -106,6 +112,10 @@ class GridWorkflow(object):
             tile_geopolygon = geobox.extent
             datasets = [dataset for dataset in observations
                         if check_intersect(tile_geopolygon, dataset.extent.to_crs(self.grid_spec.crs))]
+
+            if not datasets:
+                return {}
+
             tiles[cell_index] = {
                 'datasets': datasets,
                 'geobox': geobox
