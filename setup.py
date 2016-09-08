@@ -68,7 +68,8 @@ setup(name='datacube',
       entry_points={
           'console_scripts': [
               'datacube-search = datacube.scripts.search_tool:cli',
-              'datacube = datacube.scripts.cli_app:cli'
+              'datacube = datacube.scripts.cli_app:cli',
+              'pixeldrill = datacube_apps.pixeldrill:main'
           ]
       },
       )
