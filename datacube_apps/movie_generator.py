@@ -22,11 +22,11 @@ from datacube.ui import click as ui
 from datacube import Datacube
 from datacube.utils.dates import date_sequence
 
-DEFAULT_MEASUREMENTS = ('red', 'green', 'blue')
+DEFAULT_MEASUREMENTS = ['red', 'green', 'blue']
 
-DEFAULT_PRODUCTS = ('ls5_nbar_albers', 'ls7_nbar_albers', 'ls8_nbar_albers')
+DEFAULT_PRODUCTS = ['ls5_nbar_albers', 'ls7_nbar_albers', 'ls8_nbar_albers']
 DEFAULT_CRS = 'EPSG:3577'
-FFMPEG_PATH = '~/ffmpeg-3.1.2-64bit-static/ffmpeg'
+FFMPEG_PATH = 'ffmpeg'
 VALID_BIT = 8  # GA Landsat PQ Contiguity Bit
 
 SUBTITLE_FORMAT = '%d %B %Y'
@@ -63,8 +63,8 @@ def to_datetime(ctx, param, value):
 @click.option('--crs', default=DEFAULT_CRS, help='Used if specifying --bounds. eg. EPSG:3577. ')
 @ui.global_cli_options
 @ui.executor_cli_options
-def moviemaker(bounds, base_output_name, load_bounds_from, start_date, end_date, product, measurement, executor,
-               step_size, stats_duration, time_incr, ffmpeg_path, crs):
+def main(bounds, base_output_name, load_bounds_from, start_date, end_date, product, measurement, executor,
+         step_size, stats_duration, time_incr, ffmpeg_path, crs):
     """
     Create an mp4 movie file based on datacube data
 
@@ -92,8 +92,9 @@ def moviemaker(bounds, base_output_name, load_bounds_from, start_date, end_date,
         result_future = executor.submit(write_mosaic_to_file, **task)
         results.append(result_future)
 
-    for _ in executor.as_completed(results):
-        pass
+    filenames = []
+    for result in executor.as_completed(results):
+        filenames.append(executor.result(result))
 
     # Write subtitle file
     subtitle_filename = "{}.srt".format(base_output_name)
@@ -103,7 +104,7 @@ def moviemaker(bounds, base_output_name, load_bounds_from, start_date, end_date,
     # Write video file
     filenames_pattern = '%s*.png' % base_output_name
     video_filename = "{}.mp4".format(base_output_name)
-    write_video_file(filenames_pattern, video_filename, time_incr=time_incr, ffmpeg_path=ffmpeg_path)
+    write_video_file(filenames_pattern, video_filename, subtitle_filename, time_incr=time_incr, ffmpeg_path=ffmpeg_path)
 
     click.echo("Finished!")
 
@@ -134,12 +135,16 @@ def compute_mosaic(products, measurements, **parsed_expressions):
             if len(dataset) == 0:
                 continue
             else:
-                print("Found {} time slices of {} during {}.".format(len(dataset['time']), prodname, acq_range))
+                click.echo("Found {} time slices of {} during {}.".format(len(dataset['time']), prodname, acq_range))
 
             pq = dc.load(product=prodname.replace('nbar', 'pq'),
                          group_by='solar_day',
                          fuse_func=pq_fuser,
                          **parsed_expressions)
+
+            if len(pq) == 0:
+                click.echo('No PQ found, skipping')
+                continue
 
             crs = dataset.attrs['crs']
             dataset = dataset.where(dataset != -999)
@@ -150,7 +155,7 @@ def compute_mosaic(products, measurements, **parsed_expressions):
             dataset = dataset.where(cloud_free)
 
             if len(dataset) == 0:
-                print("Nothing left after PQ masking")
+                click.echo("Nothing left after PQ masking")
                 continue
 
             datasets.append(dataset)
@@ -237,7 +242,7 @@ def resize_images(filename_pattern):
 
     Uses the ImageMagick mogrify command.
     """
-    sample_file = glob('artemis*.png')[0]
+    sample_file = glob(filename_pattern)[0]
     width, height = subprocess.check_output(['identify', sample_file]).decode('ascii').split()[2].split('x')
     x, y = int(width), int(height)
     if y > 1080:
@@ -252,4 +257,4 @@ def resize_images(filename_pattern):
 
 
 if __name__ == '__main__':
-    moviemaker()
+    main()
