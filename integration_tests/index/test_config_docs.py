@@ -142,7 +142,7 @@ def test_update_dataset_type(index, ls5_nbar_gtiff_type, ls5_nbar_gtiff_doc):
         index.datasets.types.update_document(different_telemetry_type)
 
     # But works when unsafe updates are allowed.
-    index.datasets.types.update_document(different_telemetry_type, allow_unsafe_update=True)
+    index.datasets.types.update_document(different_telemetry_type, allow_unsafe_updates=True)
     updated_type = index.datasets.types.get_by_name(ls5_nbar_gtiff_type.name)
     assert updated_type.definition['metadata']['ga_label'] == 'something'
 
@@ -165,6 +165,10 @@ def test_update_metadata_type(index, default_metadata_type_docs, default_metadat
         'offset': ['test']
     }
 
+    # TODO: Able to remove fields?
+    # Indexes will be difficult to handle, as dropping them may affect other users. But leaving them there may
+    # lead to issues if a different field is created with the same name.
+
     index.metadata_types.update_document(mt_doc)
     # Ensure was updated
     updated_type = index.metadata_types.get_by_name(mt_doc['name'])
@@ -177,7 +181,7 @@ def test_update_metadata_type(index, default_metadata_type_docs, default_metadat
         index.metadata_types.update_document(different_mt_doc)
 
     # But works when unsafe updates are allowed.
-    index.metadata_types.update_document(different_mt_doc, allow_unsafe_update=True)
+    index.metadata_types.update_document(different_mt_doc, allow_unsafe_updates=True)
     updated_type = index.metadata_types.get_by_name(mt_doc['name'])
     assert isinstance(updated_type.dataset_fields['time'], NumericRangeDocField)
 

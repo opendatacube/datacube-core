@@ -14,6 +14,14 @@ def allow_subset(offset, old_value, new_value):
     valid = contains(old_value, new_value, case_sensitive=True)
     return (
         valid,
+        None if valid else 'not a subset'
+    )
+
+
+def allow_superset(offset, old_value, new_value):
+    valid = contains(new_value, old_value, case_sensitive=True)
+    return (
+        valid,
         None if valid else 'not a superset'
     )
 

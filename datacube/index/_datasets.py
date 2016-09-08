@@ -57,6 +57,60 @@ class MetadataTypeResource(object):
             )
         return self.get_by_name(name)
 
+    def update_document(self, definition, allow_unsafe_updates=False):
+        """
+        Update a metadata type from the document. Unsafe changes will throw a ValueError by default.
+
+        Safe updates currently allow new search fields to be added, description to be changed.
+
+        :param dict definition: Updated definition
+        :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
+        :rtype: datacube.model.MetadataType
+        """
+        MetadataType.validate(definition)
+
+        name = definition['name']
+        existing = self._db.get_metadata_type_by_name(name)
+        if not existing:
+            raise ValueError('Unknown metadata type %s, cannot update – did you intend to add it?' % name)
+
+        def handle_unsafe(offset, msg):
+            if not allow_unsafe_updates:
+                raise ValueError(msg)
+            else:
+                _LOG.warning("Ignoring %s", msg)
+
+        updates_allowed = {
+            ('description',): changes.allow_any,
+            # You can safely make the match rules looser but not tighter.
+            # Tightening them could exclude datasets already matched to the product.
+            # (which would make search results wrong)
+            ('dataset', 'search_fields'): changes.allow_superset
+        }
+
+        doc_changes = changes.validate_dict_changes(
+            existing.definition,
+            jsonify_document(definition),
+            updates_allowed,
+            on_failure=handle_unsafe,
+            on_change=lambda offset, old, new: _LOG.info('Changing metadata type %s %s: %r -> %r',
+                                                         name, '.'.join(offset), old, new)
+        )
+
+        if doc_changes:
+            _LOG.info("Updating metadata type %s", name)
+            self._db.update_metadata_type(
+                name=name,
+                definition=definition,
+                concurrently=True
+            )
+            # Clear our local cache. Note that other users may still have
+            # cached copies for the duration of their connections.
+            self.get_by_name.cache_clear()
+            self.get.cache_clear()
+        else:
+            _LOG.info("No changes detected for metadata type %s", name)
+
     @lru_cache()
     def get(self, id_):
         """
@@ -175,8 +229,8 @@ class DatasetTypeResource(object):
         (An unsafe change is anything that may potentially make the product
         incompatible with existing datasets of that type)
 
-        :param datacube.model.DatasetType type_: Product to add
-        :param allow_unsafe_updates bool: Allow unsafe changes. Use with caution.
+        :param datacube.model.DatasetType type_: Product to update
+        :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :rtype: datacube.model.DatasetType
         """
         DatasetType.validate(type_.definition)
@@ -223,7 +277,7 @@ class DatasetTypeResource(object):
         else:
             _LOG.info("No changes detected for product %s", type_.name)
 
-    def update_document(self, definition, allow_unsafe_update=False):
+    def update_document(self, definition, allow_unsafe_updates=False):
         """
         Update a Product using its difinition
 
@@ -231,7 +285,7 @@ class DatasetTypeResource(object):
         :rtype: datacube.model.DatasetType
         """
         type_ = self.from_doc(definition)
-        return self.update(type_, allow_unsafe_updates=allow_unsafe_update)
+        return self.update(type_, allow_unsafe_updates=allow_unsafe_updates)
 
     def add_document(self, definition):
         """

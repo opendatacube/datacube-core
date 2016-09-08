@@ -653,6 +653,24 @@ class PostgresDb(object):
             type_id, name, record, concurrently=concurrently
         )
 
+    def update_metadata_type(self, name, definition, concurrently=False):
+        res = self._connection.execute(
+            METADATA_TYPE.update().returning(METADATA_TYPE.c.id).where(
+                METADATA_TYPE.c.name == name
+            ).values(
+                name=name,
+                definition=definition
+            )
+        )
+        type_id = res.fetchone()[0]
+        record = self.get_metadata_type(type_id)
+
+        self._setup_metadata_type_fields(
+            type_id, name, record, concurrently=concurrently
+        )
+
+        return type_id
+
     def check_dynamic_fields(self, concurrently=False, rebuild_all=False):
         _LOG.info('Checking dynamic views/indexes. (rebuild all = %s)', rebuild_all)
         for metadata_type in self.get_all_metadata_types():
