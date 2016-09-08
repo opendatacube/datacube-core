@@ -4,9 +4,9 @@
 set -eu
 set -x
 
-pep8 tests integration_tests --max-line-length 120
+pep8 tests integration_tests examples --max-line-length 120
 
-pylint -j 2 --reports no datacube examples datacube_apps
+pylint -j 2 --reports no datacube datacube_apps
 
 # Run tests, taking coverage.
 # Users can specify extra folders as arguments.

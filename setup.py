@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 extras_require = {
     'performance': ['ciso8601', 'bottleneck'],
-    'interactive': ['matplotlib'],
+    'interactive': ['matplotlib', 'fiona'],
     'distributed': ['distributed', 'dask[distributed]'],
     'analytics': ['scipy', 'pyparsing', 'numexpr'],
     'doc': ['Sphinx'],
