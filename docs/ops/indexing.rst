@@ -44,6 +44,9 @@ __ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a2
 __ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a3
 __ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a4
 
+Once you have downloaded some data, it will need :ref:`metadata preparation
+<prepare-scripts>` before use in the Data Cube.
+
 
 .. _product-definitions:
 
