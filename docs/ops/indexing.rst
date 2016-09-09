@@ -5,14 +5,14 @@
 Indexing Data
 =============
 
-Once you have the datacube software installed and connected to a database, you
+Once you have the Data Cube software installed and connected to a database, you
 can start to load in some data. This step is performed using the **datacube**
 command line tool.
 
 When you load data into the Data Cube, all you are doing is recording the
-existence and detailed metadata about the data into the **database**, none of
-the raw data itself is copied or moved or transformed. This is therefore a
-relatively fast and lightweight process.
+existence of and detailed metadata about the data into the **database**. None of
+the data itself is copied, moved or transformed. This is therefore a relatively
+safe and fase process.
 
 Prerequisites for Indexing Data
 -------------------------------
@@ -22,19 +22,52 @@ Prerequisites for Indexing Data
  * A Product Type configuration loaded into the database for each Dataset
  * Dataset YAML files for each dataset
 
+
+Sample Earth Observation Data
+-----------------------------
+
+The U.S. Geological Survey provides many freely available, Analysis Ready,
+earth observation data products. The following are a good place to start
+looking.
+
+* Landsat
+    * `USGS Landsat Surface Reflectance - LEDAPS 30m`__
+* MODIS
+    * `MCD43A1 - BRDF-Albedo Model Parameters 16-Day L3 Global 500m`__
+    * `MCD43A2 - BRDF-Albedo Quality 16-Day L3 Global 500m`__
+    * `MCD43A3 - Albedo 16-Day L3 Global 500m`__
+    * `MCD43A4 - Nadir BRDF-Adjusted Reflectance 16-Day L3 Global 500m`__
+
+__ http://landsat.usgs.gov/CDR_LSR.php
+__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a1
+__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a2
+__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a3
+__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a4
+
+
 .. _product-definitions:
 
 Product Definitions
 -------------------
 
-The Data Cube can handle many different types of Data, and requires a bit of information up front to know what to do with them. This is the task of the Product Definition.
+The Data Cube can handle many different types of data, and requires a bit of
+information up front to know what to do with them. This is the task of the
+Product Definition.
 
 A Product Definition provides a short **name**, a **description**, some basic
-source **metadata** and (optionally) a list of **measurements** describing the type of data that will be contained in the Datasets of it's type.
+source **metadata** and (optionally) a list of **measurements** describing the
+type of data that will be contained in the Datasets of it's type.
 
-The **measurements** is an ordered list of data, which specify a **name** and some **aliases**, a data type or **dtype**, and some options extras including what type of **units** the measurement is in, a **nodata** value, and even a way of specifying **bit level descriptions** or the **spectral response** in the case of reflectance data.
+The **measurements** is an ordered list of data, which specify a **name** and
+some **aliases**, a data type or **dtype**, and some options extras including
+what type of **units** the measurement is in, a **nodata** value, and even a way
+of specifying **bit level descriptions** or the **spectral response** in the
+case of reflectance data.
 
-A set of example Product definitions are supplied in `docs/config_samples/dataset_types` to cover some common Geoscience Australia and other Earth Observation Data.
+
+A set of example Product definitions are supplied in
+`docs/config_samples/dataset_types` to cover some common Geoscience Australia
+and other Earth Observation Data.
 
 Loading Product Definitions
 ---------------------------
@@ -47,7 +80,10 @@ To load Products into your Data Cube run::
 Dataset Documents
 -----------------
 As well as the product information loaded in the previous step, every Dataset
-requires some metadata describing what the data represents and where it has come from, as well has what sort of files it is stored in. We call this *blah* and it is expected to be stored in _YAML_ documents. It is what is loaded into the Database for searching, querying and accessing the data.
+requires some metadata describing what the data represents and where it has come
+from, as well has what sort of files it is stored in. We call this *blah* and it
+is expected to be stored in _YAML_ documents. It is what is loaded into the
+Database for searching, querying and accessing the data.
 
 In the case of data from Geoscience Australia, no further steps are required.
 
@@ -71,7 +107,8 @@ For more information see :ref:`dataset-metadata-doc`.
 Adding Some Data
 ----------------
 
-Everything is now ready, and we can use the **datacube** tool to add one or more datasets into our Cube by running::
+Everything is now ready, and we can use the **datacube** tool to add one or more
+datasets into our Cube by running::
 
     datacube dataset add --auto-match <path-to-dataset>
 
