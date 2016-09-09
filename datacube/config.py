@@ -28,6 +28,8 @@ _DEFAULT_CONF = u"""
 # Blank implies localhost
 db_hostname:
 db_database: datacube
+# If a connection is unused for this length of time, expect it to be invalidated.
+db_connection_timeout: 60
 
 [locations]
 # Where to reach storage locations from the current machine.
@@ -77,6 +79,10 @@ class LocalConfig(object):
     @property
     def db_database(self):
         return self._prop('db_database')
+
+    @property
+    def db_connection_timeout(self):
+        return int(self._prop('db_connection_timeout'))
 
     @property
     def location_mappings(self):

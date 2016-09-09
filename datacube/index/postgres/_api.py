@@ -99,7 +99,8 @@ class PostgresDb(object):
         self._engine = engine
 
     @classmethod
-    def create(cls, hostname, database, username=None, password=None, port=None, application_name=None, validate=True):
+    def create(cls, hostname, database, username=None, password=None, port=None,
+               application_name=None, validate=True, pool_timeout=60):
         engine = create_engine(
             EngineUrl(
                 'postgresql',
@@ -114,6 +115,10 @@ class PostgresDb(object):
             isolation_level='AUTOCOMMIT',
 
             json_serializer=_to_json,
+            # If a connection is idle for this many seconds, SQLAlchemy will renew it rather
+            # than assuming it's still open. Allows servers to close idle connections without clients
+            # getting errors.
+            pool_recycle=pool_timeout,
             connect_args={'application_name': application_name}
         )
         if validate:
@@ -141,7 +146,8 @@ class PostgresDb(object):
             config.db_password,
             config.db_port,
             application_name=app_name,
-            validate=validate_connection
+            validate=validate_connection,
+            pool_timeout=config.db_connection_timeout
         )
 
     @property
