@@ -1,5 +1,23 @@
 ## Define inputs to perform statistics on
 sources:
+  - product: ls7_nbar_albers
+    measurements: [blue, green, red, nir, swir1, swir2]
+    masks:
+      - product: ls7_pq_albers
+        measurement: pixelquality
+        flags:
+          contiguous: True
+          cloud_acca: no_cloud
+          cloud_fmask: no_cloud
+          cloud_shadow_acca: no_cloud_shadow
+          cloud_shadow_fmask: no_cloud_shadow
+          land_sea: land
+          blue_saturated: False
+          green_saturated: False
+          red_saturated: False
+          nir_saturated: False
+          swir1_saturated: False
+          swir2_saturated: False
   - product: ls8_nbar_albers
     measurements: [blue, green, red, nir, swir1, swir2]
     masks:
@@ -21,33 +39,12 @@ sources:
 
 
 ## Define whether and how to chunk over time
-step_size: 1y
-
-
-
-duration to aggregate: 5 years
-how to slide: 1 y
-which portion: winter
-    start_offset: June 01
-    portion duration: 3 months
-
-
-
-start_year: 1990
-end_year: 1999
-stats_duration: 5 year
-   grouped_ranges:
-      - Winter
-      - March-01, May 31
-      - Jan 01, Dec 31
-      - Summer Dec 01 - Feb 31???
-               Dec 01 + 3 months
-stats_inc: 1 year
-stats_inc: 5 year
-
+start_date: 2015-01-01
+end_date: 2016-01-01
+stats_duration: 3m
+step_size: 3m
 
 ## Define output directory and file structure
-
 location: '/g/data/u46/users/gxr547/gregcube/data'
 
 storage:

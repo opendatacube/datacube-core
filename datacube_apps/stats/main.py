@@ -27,31 +27,28 @@ from datacube.ui.click import to_pathlib
 from datacube.utils import read_documents, unsqueeze_data_array
 from datacube.utils.dates import date_sequence
 
-
 try:
-    from hdmedians import nanmedoid
+    from bottleneck import anynan, nansum
 except ImportError:
-    try:
-        from bottleneck import anynan, nansum
-    except ImportError:
-        nansum = numpy.nansum
+    nansum = numpy.nansum
 
-        def anynan(x, axis=None):
-            return numpy.isnan(x).any(axis=axis)
+    def anynan(x, axis=None):
+        return numpy.isnan(x).any(axis=axis)
 
-    def nanmedoid(x, axis=1, return_index=False):
-        if axis == 0:
-            x = x.T
 
-        invalid = anynan(x, axis=0)
-        band, time = x.shape
-        diff = x.reshape(band, time, 1) - x.reshape(band, 1, time)
-        dist = numpy.sqrt(numpy.sum(diff*diff, axis=0))  # dist = numpy.linalg.norm(diff, axis=0) is slower somehow...
-        dist_sum = nansum(dist, axis=0)
-        dist_sum[invalid] = numpy.inf
-        i = numpy.argmin(dist_sum)
+def nanmedoid(x, axis=1, return_index=False):
+    if axis == 0:
+        x = x.T
 
-        return (x[:, i], i) if return_index else x[:, i]
+    invalid = anynan(x, axis=0)
+    band, time = x.shape
+    diff = x.reshape(band, time, 1) - x.reshape(band, 1, time)
+    dist = numpy.sqrt(numpy.sum(diff*diff, axis=0))  # dist = numpy.linalg.norm(diff, axis=0) is slower somehow...
+    dist_sum = nansum(dist, axis=0)
+    dist_sum[invalid] = numpy.inf
+    i = numpy.argmin(dist_sum)
+
+    return (x[:, i], i) if return_index else x[:, i]
 
 
 def apply_cross_measurement_reduction(dataset, method=nanmedoid, dim='time', keep_attrs=True):
@@ -204,23 +201,28 @@ def get_filename(path_template, index, start_time):
 
 
 def create_storage_unit(config, task, stat, filename_template):
+    geobox = task['sources'][0]['data'].geobox
+
     def _make_dataset(labels, sources):
         dataset = make_dataset(dataset_type=stat.product,
                                sources=sources,
-                               extent=task['data'].geobox.extent,
+                               extent=geobox.extent,
                                center_time=labels['time'],
                                uri=None,  # TODO:
                                app_info=None,
                                valid_data=None)
         return dataset
 
-    if stat.algorithm.masked:
-        sources = reduce_(lambda a, b: a + b, (sources.sum() for sources in
-                                               xarray.align(task['data'].sources,
-                                                            *[mask_tile.sources for mask_tile in task['masks']])))
-    else:
-        sources = task['data'].sources.sum()
-    sources = unsqueeze_data_array(sources, 'time', 0, task['start_time'], task['data'].sources.time.attrs)
+    def merge_sources(prod):
+        if stat.algorithm.masked:
+            return reduce_(lambda a, b: a + b, (sources.sum() for sources in
+                                                xarray.align(prod['data'].sources,
+                                                             *[mask_tile.sources for mask_tile in prod['masks']])))
+        else:
+            return prod['data'].sources.sum()
+    sources = reduce_(lambda a, b: a + b, (merge_sources(prod) for prod in task['sources']))
+    sources = unsqueeze_data_array(sources, 'time', 0, task['start_time'],
+                                   task['sources'][0]['data'].sources.time.attrs)
 
     # var_params = get_variable_params(config)  # TODO: better way?
 
@@ -230,7 +232,7 @@ def create_storage_unit(config, task, stat, filename_template):
                                    task['index'],
                                    task['start_time'])
     nco = nco_from_sources(sources,
-                           task['data'].geobox,
+                           geobox,
                            measurements,
                            {},  # TODO: {measurement['name']: var_params[stat['name']] for measurement in measurements},
                            output_filename)
@@ -241,28 +243,37 @@ def create_storage_unit(config, task, stat, filename_template):
     return nco
 
 
+def load_data(tile_index, prod):
+    data = GridWorkflow.load(prod['data'][tile_index],
+                             measurements=prod['spec']['measurements'])
+    data = mask_invalid_data(data)
+
+    for spec, mask_tile in zip(prod['spec']['masks'], prod['masks']):
+        mask = GridWorkflow.load(mask_tile[tile_index],
+                                 measurements=[spec['measurement']])[spec['measurement']]
+        mask = make_mask(mask, **spec['flags'])
+        data = data.where(mask)
+        del mask
+    return data
+
+
 def do_stats(task, config):
     results = {}
     for stat_name, stat in task['products'].items():
         filename_template = str(Path(config['location'], stat.definition['file_path_template']))
         results[stat_name] = create_storage_unit(config, task, stat, filename_template)
 
-    for tile_index in tile_iter(task['data'], {'x': 1000, 'y': 1000}):
-        data = GridWorkflow.load(task['data'][tile_index],
-                                 measurements=task['source']['measurements'])
-        data = mask_invalid_data(data)
-
-        for spec, mask_tile in zip(task['source']['masks'], task['masks']):
-            mask = GridWorkflow.load(mask_tile[tile_index],
-                                     measurements=[spec['measurement']])[spec['measurement']]
-            mask = make_mask(mask, **spec['flags'])
-            data = data.where(mask)
-            del mask
+    for tile_index in tile_iter(task['sources'][0]['data'], {'x': 1000, 'y': 1000}):
+        datasets = [load_data(tile_index, prod) for prod in task['sources']]
+        data = xarray.concat(datasets, dim='time')
+        data = data.isel(time=data.time.argsort())  # sort along time dim
 
         for stat_name, stat in task['products'].items():
             data_stats = stat.algorithm.compute(data)  # TODO: if stat.algorithm.masked
             for var_name, var in data_stats.data_vars.items():
                 results[stat_name][var_name][(0,) + tile_index[1:]] = var.values  # HACK: make netcdf slicing nicer?...
+                results[stat_name].sync()
+                print(stat_name, tile_index[1:])
 
     for stat, nco in results.items():
         nco.close()
@@ -287,28 +298,27 @@ def make_tasks(index, products, config):
         print(*time_period)
         workflow = GridWorkflow(index, grid_spec=get_grid_spec(config))
 
-        assert len(config['sources']) == 1  # TODO: merge multiple sources
+        tasks = {}
         for source in config['sources']:
             data = workflow.list_cells(product=source['product'], time=time_period, cell_index=(15, -40))
             masks = [workflow.list_cells(product=mask['product'], time=time_period, cell_index=(15, -40))
                      for mask in source['masks']]
 
-            from datetime import datetime
-            print(datetime.now())
             for key in data.keys():
-                try:
-                    yield {
-                        'products': products,
-                        'source': source,
-                        'index': key,
-                        'data': data[key],
-                        'masks': [mask[key] for mask in masks],
-                        'start_time': time_period[0],
-                        'end_time': time_period[1]
-                    }
-                except KeyError:
-                    continue
-            print(datetime.now())
+                tasks.setdefault(key, {
+                    'index': key,
+                    'products': products,
+                    'start_time': time_period[0],
+                    'end_time': time_period[1],
+                    'sources': [],
+                })['sources'].append({
+                    'data': data[key],
+                    'masks': [mask.get(key) for mask in masks],
+                    'spec': source,
+                })
+
+        for task in tasks.values():
+            yield task
 
 
 def make_products(index, config):
