@@ -28,16 +28,34 @@ def _fast_slice(array, indexers):
 
 
 class Tile(object):
+    """
+    The Tile object holds a lightweight representation of a datacube result.
+
+    It is produced by GridWorkflow.`list_cells` or `GridWorkflow.list_tiles`.
+    The Tile object can be passed to `GridWorkflow.load` to be loaded into memory as an `xarray.Dataset`.
+    """
     def __init__(self, sources, geobox):
+        """Create a Tile representing a dataset that can be loaded.
+
+        :param xarray.DataArray sources: An array of non-spatial dimensions of the request, holding lists of
+            datacube.storage.DatasetSource objects.
+        :param model.GeoBox geobox: The spatial footprint of the Tile
+        """
         self.sources = sources
         self.geobox = geobox
 
     @property
     def dims(self):
+        """Names of the dimensions, eg ``('time', 'y', 'x')``
+        :return: tuple(str)
+        """
         return self.sources.dims + self.geobox.dimensions
 
     @property
     def shape(self):
+        """Lengths of each dimension, eg ``(285, 4000, 4000)``
+        :return: tuple(int)
+        """
         return self.sources.shape + self.geobox.shape
 
     def __getitem__(self, chunk):
@@ -46,6 +64,12 @@ class Tile(object):
         return Tile(sources, geobox)
 
     def split(self, dim):
+        """
+        Splits along a non-spatial dimension into Tile objects with a length of 1 in the `dim` dimension.
+
+        :param dim: Name of the non-spatial dimension to split
+        :return: tuple(key, Tile)
+        """
         axis = self.dims.index(dim)
         indexer = [slice(None)]*len(self.dims)
         for i in range(self.sources[dim].size):
@@ -62,6 +86,12 @@ class Tile(object):
 class GridWorkflow(object):
     """
     GridWorkflow deals with cell- and tile-based processing using a grid defining a projection and resolution.
+
+    Use GridWorkflow to specify your desired output grid.  The methods :meth:`list_cells` and :meth:`list_tiles`
+    query the index and return a dictionary of cell or tile keys, each mapping to a :class:`Tile` object.
+
+    The :class:`.Tile` object can then be used to load the data without needing the index,
+    and can be serialized for use with the `distributed` package.
     """
     def __init__(self, index, grid_spec=None, product=None):
         """
@@ -133,12 +163,13 @@ class GridWorkflow(object):
     @staticmethod
     def cell_sources(observations, group_by):
         """
-        Group observations into sources
+        Group observations into source tiles
 
-        :param observations: datasets grouped by cell index, like from :meth:`datacube.GridWorkflow.cell_observations`
-        :param str group_by: grouping method, one of "time", "solar_day"
-        :return: sources grouped by cell index
-        :rtype: dict[(int,int), :py:class:`xarray.DataArray`]
+        :param observations: datasets grouped by cell index, like from :py:meth:`cell_observations`
+        :param group_by: grouping method, as returned by :py:meth:`datacube.api.query.query_group_by`
+        :type group_by: :py:class:`datacube.api.query.GroupBy`
+        :return: tiles grouped by cell index
+        :rtype: dict[(int,int), :class:`.Tile`]
 
         .. seealso::
             :meth:`load`
@@ -157,12 +188,13 @@ class GridWorkflow(object):
     @staticmethod
     def tile_sources(observations, group_by):
         """
-        Split observations into tiles and group into sources
+        Split observations into tiles and group into source tiles
 
-        :param observations: datasets grouped by cell index, like from :meth:`datacube.GridWorkflow.cell_observations`
-        :param str group_by: grouping method, one of "time", "solar_day"
-        :return: sources grouped by cell index and time
-        :rtype: dict[tuple(int, int, numpy.datetime64), :py:class:`xarray.DataArray`]
+        :param observations: datasets grouped by cell index, like from :meth:`cell_observations`
+        :param group_by: grouping method, as returned by :py:meth:`datacube.api.query.query_group_by`
+        :type group_by: :py:class:`datacube.api.query.GroupBy`
+        :return: tiles grouped by cell index and time
+        :rtype: dict[tuple(int, int, numpy.datetime64), :py:class:`.Tile`]
 
         .. seealso::
             :meth:`load`
@@ -194,6 +226,8 @@ class GridWorkflow(object):
         """
         List cells that match the query.
 
+        Returns a dictionary of cell indexes to :class:`.Tile` objects.
+
         Cells are included if they contain any datasets that match the query using the same format as
         :meth:`datacube.Datacube.load`.
 
@@ -204,7 +238,7 @@ class GridWorkflow(object):
 
         :param (int,int) cell_index: The cell index. E.g. (14, -40)
         :param query: see :py:class:`datacube.api.query.Query`
-        :rtype: dict[(int, int), Tile]
+        :rtype: dict[(int, int), :class:`.Tile`]
         """
         observations = self.cell_observations(cell_index, **query)
         return self.cell_sources(observations, query_group_by(**query))
@@ -219,9 +253,9 @@ class GridWorkflow(object):
 
         The values can be passed to :meth:`load`
 
-        :param (int,int) cell_index: The cell index. E.g. (14, -40)
+        :param (int,int) cell_index: The cell index (optional). E.g. (14, -40)
         :param query: see :py:class:`datacube.api.query.Query`
-        :rtype: dict[(int, int, numpy.datetime64), Tile]
+        :rtype: dict[(int, int, numpy.datetime64), :class:`.Tile`]
 
         .. seealso:: :meth:`load`
         """
@@ -235,10 +269,13 @@ class GridWorkflow(object):
 
         The data to be loaded is defined by the output of :meth:`list_tiles`.
 
+        This is a static function and does not use the index. This can be useful when running as a worker in a
+        distributed environment and you wish to minimize database connections.
+
         See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
         for more information.
 
-        :param tile: The tile to load.
+        :param `.Tile` tile: The tile to load.
 
         :param measurements: The name or list of names of measurements to load
 
@@ -257,7 +294,6 @@ class GridWorkflow(object):
 
             Defaults to ``'nearest'``.
 
-        :return: The requested data.
         :rtype: :py:class:`xarray.Dataset`
 
         .. seealso::
