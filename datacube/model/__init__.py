@@ -650,15 +650,18 @@ class GridSpec(object):
     :param (float,float) tile_size: (Y, X) size of each tile, in CRS units
     :param (float,float) resolution: (Y, X) size of each data point in the grid, in CRS units. Y will
                                    usually be negative.
+    :param (float,float) origin: (Y, X) coordinates of a corner of the (0,0) tile in CRS units. default is (0.0, 0.0)
     """
 
-    def __init__(self, crs=None, tile_size=None, resolution=None):
+    def __init__(self, crs, tile_size, resolution, origin=None):
         #: :rtype: CRS
         self.crs = crs
         #: :type: (float,float)
         self.tile_size = tile_size
         #: :type: (float,float)
         self.resolution = resolution
+        #: :type: (float, float)
+        self.origin = origin or (0.0, 0.0)
 
     @property
     def dimensions(self):
@@ -672,7 +675,7 @@ class GridSpec(object):
     @property
     def tile_resolution(self):
         """
-        Tile Resolution, or the size of each tile in pixels.
+        Tile size in pixels.
 
         Units will be in CRS dimension order (Usually y,x or lat,lon)
 
@@ -690,6 +693,7 @@ class GridSpec(object):
         tile_index_x, tile_index_y = tile_index
         tile_size_y, tile_size_x = self.tile_size
         tile_res_y, tile_res_x = self.resolution
+        tile_origin_y, tile_origin_x = self.origin
 
         x = (tile_index_x + (1 if tile_res_x < 0 else 0)) * tile_size_x + tile_origin_x
         y = (tile_index_y + (1 if tile_res_y < 0 else 0)) * tile_size_y + tile_origin_y
@@ -713,8 +717,9 @@ class GridSpec(object):
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
         tile_size_y, tile_size_x = self.tile_size
-        for y in GridSpec.grid_range(bounds.bottom, bounds.top, tile_size_y):
-            for x in GridSpec.grid_range(bounds.left, bounds.right, tile_size_x):
+        tile_origin_y, tile_origin_x = self.origin
+        for y in GridSpec.grid_range(bounds.bottom-tile_origin_y, bounds.top-tile_origin_y, tile_size_y):
+            for x in GridSpec.grid_range(bounds.left-tile_origin_x, bounds.right-tile_origin_x, tile_size_x):
                 tile_index = (x, y)
                 yield tile_index, self.tile_geobox(tile_index)
 
