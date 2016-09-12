@@ -317,6 +317,13 @@ class GridWorkflow(object):
 
         return dataset
 
+    def update_tile_lineage(self, tile):
+        for i in range(tile.sources.size):
+            sources = tile.sources.values[i]
+            tile.sources.values[i] = tuple(self.index.datasets.get(dataset.id, include_sources=True)
+                                           for dataset in sources)
+        return tile
+
     def __str__(self):
         return "GridWorkflow<index={!r},\n\tgridspec={!r}>".format(self.index, self.grid_spec)
 
