@@ -34,7 +34,7 @@ _LOG = logging.getLogger(__name__)
 
 def namedtuples2dicts(namedtuples):
     """
-    Convert a dict of namedtuples to a dict of dicts
+    Convert a dict of namedtuples to a dict of dicts.
 
     :param namedtuples: dict of namedtuples
     :return: dict of dicts
@@ -49,7 +49,7 @@ def datetime_to_seconds_since_1970(dt):
 
 def attrs_all_equal(iterable, attr_name):
     """
-    Return true if everything in the iterable has the same value for `attr_name`
+    Return true if everything in the iterable has the same value for `attr_name`.
 
     :rtype: bool
     """
@@ -58,7 +58,8 @@ def attrs_all_equal(iterable, attr_name):
 
 def unsqueeze_data_array(da, dim, pos, coord=None, attrs=None):
     """
-    Adds a 1-length dimension to a data array
+    Add a 1-length dimension to a data array.
+
     :param xarray.DataArray da: array to add a 1-length dimension
     :param str dim: name of new dimension
     :param int pos: position of dim
@@ -291,7 +292,7 @@ def validate_document(document, schema):
 
 def generate_table(rows):
     """
-    Yields strings to print a table using the data in `rows`.
+    Yield strings to print a table using the data in `rows`.
 
     TODO: Maybe replace with Pandas
 
@@ -381,6 +382,7 @@ def jsonify_document(doc):
 def check_doc_unchanged(original, new, doc_name):
     """
     Complain if any fields have been modified on a document.
+
     :param original:
     :param new:
     :param doc_name:
@@ -408,8 +410,7 @@ def check_doc_unchanged(original, new, doc_name):
 
 def get_doc_changes(original, new, base_prefix=()):
     """
-    Return a list of changed fields between
-    two dict structures.
+    Return a list of changed fields between two dict structures.
 
     :type original: dict
     :rtype: list[(tuple, object, object)]
@@ -467,7 +468,7 @@ def get_doc_changes(original, new, base_prefix=()):
 
 def iter_slices(shape, chunk_size):
     """
-    Generates slices for a given shape
+    Generate slices for a given shape.
 
     E.g. ``shape=(4000, 4000), chunk_size=(500, 500)``
     Would yield 64 tuples of slices, each indexing 500x500.
@@ -490,7 +491,7 @@ def iter_slices(shape, chunk_size):
 
 def contains(v1, v2, case_sensitive=False):
     """
-    Check that v1 contains v2
+    Check that v1 contains v2.
 
     For dicts contains(v1[k], v2[k]) for all k in v2
     For other types v1 == v2
@@ -529,7 +530,8 @@ def contains(v1, v2, case_sensitive=False):
 
 def uri_to_local_path(local_uri):
     """
-    Transforms a URI to a platform dependent Path
+    Transform a URI to a platform dependent Path.
+
     :type local_uri: str
     :rtype: pathlib.Path
 
