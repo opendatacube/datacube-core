@@ -96,7 +96,7 @@ class GridWorkflow(object):
         if cell_index:
             assert isinstance(cell_index, tuple)
             assert len(cell_index) == 2
-            geobox = GeoBox.from_grid_spec(self.grid_spec, cell_index)
+            geobox = self.grid_spec.tile_geobox(cell_index)
             geopolygon = geobox.extent
         query = Query(index=self.index, geopolygon=geopolygon, **indexers)
 

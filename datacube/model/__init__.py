@@ -680,6 +680,25 @@ class GridSpec(object):
         """
         return tuple(int(abs(ts / res)) for ts, res in zip(self.tile_size, self.resolution))
 
+    def tile_geobox(self, tile_index):
+        """
+        Tile geobox tile.
+
+        :param (int,int) tile_index:
+        :rtype: GeoBox
+        """
+        tile_index_x, tile_index_y = tile_index
+        tile_size_y, tile_size_x = self.tile_size
+        tile_res_y, tile_res_x = self.resolution
+
+        x = (tile_index_x + (1 if tile_res_x < 0 else 0)) * tile_size_x + tile_origin_x
+        y = (tile_index_y + (1 if tile_res_y < 0 else 0)) * tile_size_y + tile_origin_y
+
+        return GeoBox(crs=self.crs,
+                      affine=Affine(tile_res_x, 0.0, x, 0.0, tile_res_y, y),
+                      width=int(tile_size_x / abs(tile_res_x)),
+                      height=int(tile_size_y / abs(tile_res_y)))
+
     def tiles(self, bounds):
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
@@ -697,7 +716,7 @@ class GridSpec(object):
         for y in GridSpec.grid_range(bounds.bottom, bounds.top, tile_size_y):
             for x in GridSpec.grid_range(bounds.left, bounds.right, tile_size_x):
                 tile_index = (x, y)
-                yield tile_index, GeoBox.from_grid_spec(self, tile_index)
+                yield tile_index, self.tile_geobox(tile_index)
 
     @staticmethod
     def grid_range(lower, upper, step):
@@ -766,27 +785,6 @@ class GeoBox(object):
         self.affine.itransform(points)
         #: :rtype: GeoPolygon
         self.extent = GeoPolygon(points, crs)
-
-    @classmethod
-    def from_grid_spec(cls, grid_spec, tile_index):
-        """
-        Returns the GeoBox for a tile index in the specified grid.
-
-        :type grid_spec:  GridSpec
-        :type tile_index: tuple(x, y)
-        :rtype: GeoBox
-        """
-        tile_index_x, tile_index_y = tile_index
-        tile_size_y, tile_size_x = grid_spec.tile_size
-        tile_res_y, tile_res_x = grid_spec.resolution
-
-        x = (tile_index_x + (1 if tile_res_x < 0 else 0)) * tile_size_x
-        y = (tile_index_y + (1 if tile_res_y < 0 else 0)) * tile_size_y
-
-        return cls(crs=grid_spec.crs,
-                   affine=Affine(tile_res_x, 0.0, x, 0.0, tile_res_y, y),
-                   width=int(tile_size_x / abs(tile_res_x)),
-                   height=int(tile_size_y / abs(tile_res_y)))
 
     @classmethod
     def from_geopolygon(cls, geopolygon, resolution, crs=None, align=None):
