@@ -3,9 +3,13 @@ Test date sequence generation functions as used by statistics apps
 
 
 """
+import os
+
+import pytest
 from dateutil.parser import parse
 from pandas import to_datetime
 
+from datacube.utils import uri_to_local_path
 from datacube.utils.dates import date_sequence
 
 
@@ -53,3 +57,16 @@ def test_stats_dates():
 
     # Complex
     # I want the average over 5 years
+
+
+def test_uri_to_local_path():
+    if os.name == 'nt':
+        assert 'C:\\tmp\\test.tmp' == str(uri_to_local_path('file:///C:/tmp/test.tmp'))
+
+    else:
+        assert '/tmp/something.txt' == str(uri_to_local_path('file:///tmp/something.txt'))
+
+    assert uri_to_local_path(None) is None
+
+    with pytest.raises(ValueError):
+        uri_to_local_path('ftp://example.com/tmp/something.txt')
