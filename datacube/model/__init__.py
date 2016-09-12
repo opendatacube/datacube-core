@@ -648,25 +648,30 @@ class GridSpec(object):
         """
         return tuple(int(abs(ts / res)) for ts, res in zip(self.tile_size, self.resolution))
 
+    def tile_coords(self, tile_index):
+        """
+        Tile coordinates in (Y,X) order
+
+        :param (int,int) tile_index: in X,Y order
+        :rtype: (float,float)
+        """
+        def coord(index, resolution, size, origin):
+            return (index + (1 if resolution < 0 else 0)) * size + origin
+
+        return tuple(coord(index, res, size, origin) for index, res, size, origin in
+                     zip(tile_index[::-1], self.resolution, self.tile_size, self.origin))
+
     def tile_geobox(self, tile_index):
         """
-        Tile geobox tile.
+        Tile geobox.
 
         :param (int,int) tile_index:
         :rtype: GeoBox
         """
-        tile_index_x, tile_index_y = tile_index
-        tile_size_y, tile_size_x = self.tile_size
-        tile_res_y, tile_res_x = self.resolution
-        tile_origin_y, tile_origin_x = self.origin
-
-        x = (tile_index_x + (1 if tile_res_x < 0 else 0)) * tile_size_x + tile_origin_x
-        y = (tile_index_y + (1 if tile_res_y < 0 else 0)) * tile_size_y + tile_origin_y
-
-        return GeoBox(crs=self.crs,
-                      affine=Affine(tile_res_x, 0.0, x, 0.0, tile_res_y, y),
-                      width=int(tile_size_x / abs(tile_res_x)),
-                      height=int(tile_size_y / abs(tile_res_y)))
+        res_y, res_x = self.resolution
+        y, x = self.tile_coords(tile_index)
+        h, w = self.tile_resolution
+        return GeoBox(crs=self.crs, affine=Affine(res_x, 0.0, x, 0.0, res_y, y), width=w, height=h)
 
     def tiles(self, bounds):
         """
