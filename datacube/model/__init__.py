@@ -6,19 +6,18 @@ from __future__ import absolute_import, division
 
 import logging
 import math
-import os
 from collections import namedtuple, OrderedDict
+from pathlib import Path
 
 import numpy
 import cachetools
 from affine import Affine
 from osgeo import osr
-from pathlib import Path
 from rasterio.coords import BoundingBox
 
 from datacube import compat
-from datacube.compat import parse_url
-from datacube.utils import get_doc_offset, parse_time, read_documents, validate_document, cached_property
+from datacube.utils import get_doc_offset, parse_time, read_documents, validate_document, cached_property, \
+    uri_to_local_path
 
 _LOG = logging.getLogger(__name__)
 
@@ -30,40 +29,6 @@ NETCDF_VAR_OPTIONS = {'zlib', 'complevel', 'shuffle', 'fletcher32', 'contiguous'
 VALID_VARIABLE_ATTRS = {'standard_name', 'long_name', 'units', 'flags_definition'}
 
 SCHEMA_PATH = Path(__file__).parent / 'schema'
-
-
-def _uri_to_local_path(local_uri):
-    """
-    Transforms a URI to a platform dependent Path
-    :type local_uri: str
-    :rtype: pathlib.Path
-
-    For example on Unix:
-    'file:///tmp/something.txt' -> '/tmp/something.txt'
-
-    On Windows:
-    'file:///C:/tmp/something.txt' -> 'C:\\tmp\\test.tmp'
-
-    .. note:
-        Only supports file:// schema URIs
-    """
-    if not local_uri:
-        return None
-
-    components = parse_url(local_uri)
-    if components.scheme != 'file':
-        raise ValueError('Only file URIs currently supported. Tried %r.' % components.scheme)
-
-    path = _cross_platform_path(components.path)
-
-    return Path(path)
-
-
-def _cross_platform_path(path):
-    if os.name == 'nt':
-        return path[1:]
-    else:
-        return path
 
 
 class Dataset(object):
@@ -106,7 +71,7 @@ class Dataset(object):
 
         :rtype: pathlib.Path
         """
-        return _uri_to_local_path(self.local_uri)
+        return uri_to_local_path(self.local_uri)
 
     @property
     def id(self):

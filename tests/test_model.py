@@ -3,20 +3,21 @@ import os
 
 import pytest
 
-from datacube.model import _uri_to_local_path, GeoPolygon, GeoBox, CRS
+from datacube.model import GeoPolygon, GeoBox, CRS
+from datacube.utils import uri_to_local_path
 
 
 def test_uri_to_local_path():
     if os.name == 'nt':
-        assert 'C:\\tmp\\test.tmp' == str(_uri_to_local_path('file:///C:/tmp/test.tmp'))
+        assert 'C:\\tmp\\test.tmp' == str(uri_to_local_path('file:///C:/tmp/test.tmp'))
 
     else:
-        assert '/tmp/something.txt' == str(_uri_to_local_path('file:///tmp/something.txt'))
+        assert '/tmp/something.txt' == str(uri_to_local_path('file:///tmp/something.txt'))
 
-    assert _uri_to_local_path(None) is None
+    assert uri_to_local_path(None) is None
 
     with pytest.raises(ValueError):
-        _uri_to_local_path('ftp://example.com/tmp/something.txt')
+        uri_to_local_path('ftp://example.com/tmp/something.txt')
 
 
 def test_geobox():

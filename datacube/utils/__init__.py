@@ -7,8 +7,10 @@ from __future__ import absolute_import, division, print_function
 import gzip
 import json
 import logging
+import os
 import pathlib
 from datetime import datetime, date
+
 from dateutil.tz import tzutc
 from math import ceil
 
@@ -523,3 +525,37 @@ def contains(v1, v2, case_sensitive=False):
                                             for k, v in v2.items())
 
     return v1 == v2
+
+
+def uri_to_local_path(local_uri):
+    """
+    Transforms a URI to a platform dependent Path
+    :type local_uri: str
+    :rtype: pathlib.Path
+
+    For example on Unix:
+    'file:///tmp/something.txt' -> '/tmp/something.txt'
+
+    On Windows:
+    'file:///C:/tmp/something.txt' -> 'C:\\tmp\\test.tmp'
+
+    .. note:
+        Only supports file:// schema URIs
+    """
+    if not local_uri:
+        return None
+
+    components = compat.parse_url(local_uri)
+    if components.scheme != 'file':
+        raise ValueError('Only file URIs currently supported. Tried %r.' % components.scheme)
+
+    path = _cross_platform_path(components.path)
+
+    return pathlib.Path(path)
+
+
+def _cross_platform_path(path):
+    if os.name == 'nt':
+        return path[1:]
+    else:
+        return path
