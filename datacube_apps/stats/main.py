@@ -5,7 +5,7 @@ Create statistical summaries command
 
 from __future__ import absolute_import, print_function
 
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 from functools import reduce as reduce_
 from itertools import product
 from pathlib import Path
@@ -150,15 +150,15 @@ def make_stat_metadata(definition):
 
 
 def nco_from_sources(sources, geobox, measurements, variable_params, filename):
-    coordinates = {name: Coordinate(coord.values, coord.units)
-                   for name, coord in sources.coords.items()}
+    coordinates = OrderedDict((name, Coordinate(coord.values, coord.units))
+                              for name, coord in sources.coords.items())
     coordinates.update(geobox.coordinates)
 
-    variables = {variable['name']: Variable(dtype=numpy.dtype(variable['dtype']),
-                                            nodata=variable['nodata'],
-                                            dims=sources.dims + geobox.dimensions,
-                                            units=variable['units'])
-                 for variable in measurements}
+    variables = OrderedDict((variable['name'], Variable(dtype=numpy.dtype(variable['dtype']),
+                                                        nodata=variable['nodata'],
+                                                        dims=sources.dims + geobox.dimensions,
+                                                        units=variable['units']))
+                            for variable in measurements)
 
     return create_netcdf_storage_unit(filename, geobox.crs, coordinates, variables, variable_params)
 
