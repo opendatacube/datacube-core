@@ -887,18 +887,8 @@ class GeoBox(object):
         xs = numpy.arange(self.width) * self.affine.a + self.affine.c + self.affine.a / 2
         ys = numpy.arange(self.height) * self.affine.e + self.affine.f + self.affine.e / 2
 
-        if self.crs.geographic:
-            return {
-                'latitude': Coordinate(ys, 'degrees_north'),
-                'longitude': Coordinate(xs, 'degrees_east')
-            }
-
-        elif self.crs.projected:
-            units = self.crs['UNIT']
-            return {
-                'x': Coordinate(xs, units),
-                'y': Coordinate(ys, units)
-            }
+        return OrderedDict((dim, Coordinate(labels, units)) for dim, labels, units in zip(self.crs.dimensions,
+                                                                                          (ys, xs), self.crs.units))
 
     @property
     def geographic_extent(self):
