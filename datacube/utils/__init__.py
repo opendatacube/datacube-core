@@ -56,14 +56,15 @@ def attrs_all_equal(iterable, attr_name):
     return len({getattr(item, attr_name, float('nan')) for item in iterable}) <= 1
 
 
-def unsqueeze_data_array(da, dim, pos, coord=None, attrs=None):
+def unsqueeze_data_array(da, dim, pos, coord=0, attrs=None):
     """
     Add a 1-length dimension to a data array.
 
     :param xarray.DataArray da: array to add a 1-length dimension
     :param str dim: name of new dimension
     :param int pos: position of dim
-    :param dict coord:
+    :param coord: label of the coordinate on the unsqueezed dimension
+    :param attrs: attributes for the coordinate dimension
     :return: A new xarray with a dimension added
     :rtype: xarray.DataArray
     """
@@ -72,16 +73,11 @@ def unsqueeze_data_array(da, dim, pos, coord=None, attrs=None):
     new_shape = da.data.shape[:pos] + (1,) + da.data.shape[pos:]
     new_data = da.data.reshape(new_shape)
     new_coords = {k: v for k, v in da.coords.items()}
-    if coord:
-        new_coords[dim] = xarray.DataArray([coord], dims=[dim])
-    if attrs:
-        new_coords[dim].attrs.update(attrs)
+    new_coords[dim] = xarray.DataArray([coord], dims=[dim], attrs=attrs)
     return xarray.DataArray(new_data, dims=new_dims, coords=new_coords, attrs=da.attrs)
 
 
-def unsqueeze_dataset(ds, dim, coord=None, pos=0):
-    if coord is None:
-        coord = [0]
+def unsqueeze_dataset(ds, dim, coord=0, pos=0):
     ds = ds.apply(unsqueeze_data_array, dim=dim, pos=pos, keep_attrs=True, coord=coord)
     return ds
 
