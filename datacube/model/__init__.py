@@ -884,8 +884,8 @@ class GeoBox(object):
 
         :type: dict[str,numpy.array]
         """
-        xs = numpy.arange(self.width) * self.affine.a + self.affine.c + self.affine.a / 2
-        ys = numpy.arange(self.height) * self.affine.e + self.affine.f + self.affine.e / 2
+        xs = numpy.arange(self.width) * self.affine.a + (self.affine.c + self.affine.a / 2)
+        ys = numpy.arange(self.height) * self.affine.e + (self.affine.f + self.affine.e / 2)
 
         return OrderedDict((dim, Coordinate(labels, units)) for dim, labels, units in zip(self.crs.dimensions,
                                                                                           (ys, xs), self.crs.units))
@@ -898,6 +898,9 @@ class GeoBox(object):
         if self.crs.geographic:
             return self.extent
         return self.extent.to_crs(CRS('EPSG:4326'))
+
+    coords = coordinates
+    dims = dimensions
 
     def __str__(self):
         return "GeoBox({})".format(self.geographic_extent.points)
