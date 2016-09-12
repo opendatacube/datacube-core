@@ -52,6 +52,7 @@ GridWorkflow Class
    :toctree: generate/
 
    GridWorkflow
+   grid_workflow.Tile
 
 
 Higher Level User Functions
