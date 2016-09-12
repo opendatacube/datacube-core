@@ -600,6 +600,19 @@ class CRS(object):
         if self.projected:
             return 'y', 'x'
 
+    @property
+    def units(self):
+        """
+        List of dimension units of the CRS
+
+        :type: (str,str)
+        """
+        if self.geographic:
+            return 'degrees_north', 'degrees_east'
+
+        if self.projected:
+            return self['UNIT'], self['UNIT']
+
     def __str__(self):
         return self.crs_str
 
