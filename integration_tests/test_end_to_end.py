@@ -217,12 +217,21 @@ def check_open_with_grid_workflow(index):
     from datacube.api.grid_workflow import GridWorkflow
     gw = GridWorkflow(index, dt.grid_spec)
 
+    cells = gw.list_cells(product=type_name, cell_index=LBG_CELL)
+    assert LBG_CELL in cells
+
     cells = gw.list_cells(product=type_name)
     assert LBG_CELL in cells
 
     tile = cells[LBG_CELL]
+    assert 'x' in tile.dims
+    assert 'y' in tile.dims
+    assert 'time' in tile.dims
+    assert tile.shape[1] == 4000
+    assert tile.shape[2] == 4000
+    assert tile[:1, :100, :100].shape == (1, 100, 100)
     dataset_cell = gw.load(tile, measurements=['blue'])
-    assert dataset_cell['blue'].size
+    assert dataset_cell['blue'].shape == tile.shape
 
     dataset_cell = gw.load(tile)
     assert all(m in dataset_cell for m in ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
