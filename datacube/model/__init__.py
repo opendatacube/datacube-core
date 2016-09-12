@@ -601,15 +601,15 @@ class GridSpec(object):
     """
     Definition for a regular spatial grid
 
-    >>> gs = GridSpec(crs=CRS('EPSG:4326'), tile_size=(1, 1), resolution=(-0.001, 0.001))
+    >>> gs = GridSpec(crs=CRS('EPSG:4326'), tile_size=(1, 1), resolution=(-0.1, 0.1), origin=(-50.05, 139.95))
     >>> gs.tile_resolution
-    (1000, 1000)
-    >>> list(gs.tiles(BoundingBox(140, -50, 142, -48)))
-    [((140, -50), GeoBox(1000, 1000, Affine(0.001, 0.0, 140.0,
-           0.0, -0.001, -49.0), EPSG:4326)), ((141, -50), GeoBox(1000, 1000, Affine(0.001, 0.0, 141.0,
-           0.0, -0.001, -49.0), EPSG:4326)), ((140, -49), GeoBox(1000, 1000, Affine(0.001, 0.0, 140.0,
-           0.0, -0.001, -48.0), EPSG:4326)), ((141, -49), GeoBox(1000, 1000, Affine(0.001, 0.0, 141.0,
-           0.0, -0.001, -48.0), EPSG:4326))]
+    (10, 10)
+    >>> list(gs.tiles(BoundingBox(140, -50, 141.5, -48.5)))
+    [((0, 0), GeoBox(10, 10, Affine(0.1, 0.0, 139.95,
+           0.0, -0.1, -49.05), EPSG:4326)), ((1, 0), GeoBox(10, 10, Affine(0.1, 0.0, 140.95,
+           0.0, -0.1, -49.05), EPSG:4326)), ((0, 1), GeoBox(10, 10, Affine(0.1, 0.0, 139.95,
+           0.0, -0.1, -48.05), EPSG:4326)), ((1, 1), GeoBox(10, 10, Affine(0.1, 0.0, 140.95,
+           0.0, -0.1, -48.05), EPSG:4326))]
 
     :param CRS crs: Coordinate System used to define the grid
     :param (float,float) tile_size: (Y, X) size of each tile, in CRS units
