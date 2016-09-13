@@ -17,13 +17,14 @@ from rasterio.coords import BoundingBox
 
 from datacube import compat
 from datacube.utils import get_doc_offset, parse_time, read_documents, validate_document, cached_property, \
-    uri_to_local_path
+    uri_to_local_path, check_intersect
 
 _LOG = logging.getLogger(__name__)
 
 Range = namedtuple('Range', ('begin', 'end'))
 Coordinate = namedtuple('Coordinate', ('values', 'units'))
 Variable = namedtuple('Variable', ('dtype', 'nodata', 'dims', 'units'))
+CellIndex = namedtuple('CellIndex', ('x', 'y'))
 
 NETCDF_VAR_OPTIONS = {'zlib', 'complevel', 'shuffle', 'fletcher32', 'contiguous'}
 VALID_VARIABLE_ATTRS = {'standard_name', 'long_name', 'units', 'flags_definition'}
@@ -692,6 +693,24 @@ class GridSpec(object):
             for x in GridSpec.grid_range(bounds.left-tile_origin_x, bounds.right-tile_origin_x, tile_size_x):
                 tile_index = (x, y)
                 yield tile_index, self.tile_geobox(tile_index)
+
+    def tiles2(self, geopolygon):
+        """
+        Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
+        the grid and inside the specified `polygon`.
+
+        .. note::
+
+           Grid cells are referenced by coordinates `(x, y)`, which is the opposite to the usual CRS
+           dimension order.
+
+        :param GeoPolygon geopolygon: Polygon to tile
+        :return: iterator of grid cells with :py:class:`GeoBox` tiles
+        """
+        geopolygon = geopolygon.to_crs(self.crs)
+        for tile_index, tile_geobox in self.tiles(geopolygon.boundingbox):
+            if check_intersect(tile_geobox.extent, geopolygon):
+                yield tile_index, tile_geobox
 
     @staticmethod
     def grid_range(lower, upper, step):

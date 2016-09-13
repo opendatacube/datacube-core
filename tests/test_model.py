@@ -1,6 +1,6 @@
 # coding=utf-8
 
-from datacube.model import GeoPolygon, GeoBox, CRS
+from datacube.model import GeoPolygon, GeoBox, CRS, GridSpec
 
 
 def test_geobox():
@@ -19,3 +19,10 @@ def test_geobox():
         assert abs(resolution[0]) > abs(geobox.extent.boundingbox.right - polygon.boundingbox.right)
         assert abs(resolution[1]) > abs(geobox.extent.boundingbox.top - polygon.boundingbox.top)
         assert abs(resolution[1]) > abs(geobox.extent.boundingbox.bottom - polygon.boundingbox.bottom)
+
+
+def test_grispec():
+    gs = GridSpec(crs=CRS('EPSG:4326'), tile_size=(1, 1), resolution=(-0.1, 0.1), origin=(10, 10))
+    poly = GeoPolygon([(10, 12.2), (10.8, 13), (13, 10.8), (12.2, 10)], CRS('EPSG:4326'))
+    cells = {index for index, _ in list(gs.tiles2(poly))}
+    assert cells == {(0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1)}
