@@ -134,31 +134,33 @@ class GridWorkflow(object):
             raise RuntimeError('must specify a product')
 
         observations = self.index.datasets.search_eager(**query.search_terms)
-        if not observations:
-            return {}
+        cells = {}
 
-        tiles = {}
+        def return_dataset(tile_index, tile_geobox, dataset):
+            cells.setdefault(tile_index,
+                             {'datasets': [],
+                              'geobox': tile_geobox})['datasets'].append(dataset)
+
         if cell_index:
-            tile_geopolygon = geobox.extent
-            datasets = [dataset for dataset in observations
-                        if check_intersect(tile_geopolygon, dataset.extent.to_crs(self.grid_spec.crs))]
+            for dataset in observations:
+                if check_intersect(geobox.extent, dataset.extent.to_crs(self.grid_spec.crs)):
+                    return_dataset(cell_index, geobox, dataset)
 
-            if not datasets:
-                return {}
+        elif query.geopolygon:
+            query_tiles = set(tile_index for tile_index, tile_geobox in self.grid_spec.tiles2(query.geopolygon))
 
-            tiles[cell_index] = {
-                'datasets': datasets,
-                'geobox': geobox
-            }
-        else:
             for dataset in observations:
                 dataset_extent = dataset.extent.to_crs(self.grid_spec.crs)
                 for tile_index, tile_geobox in self.grid_spec.tiles(dataset_extent.boundingbox):
-                    if check_intersect(tile_geobox.extent, dataset_extent):
-                        tiles.setdefault(tile_index,
-                                         {'datasets': [],
-                                          'geobox': tile_geobox})['datasets'].append(dataset)
-        return tiles
+                    if tile_index in query_tiles and check_intersect(tile_geobox.extent, dataset_extent):
+                        return_dataset(tile_index, tile_geobox, dataset)
+
+        else:
+            for dataset in observations:
+                for tile_index, tile_geobox in self.grid_spec.tiles2(dataset.extent):
+                    return_dataset(tile_index, tile_geobox, dataset)
+
+        return cells
 
     @staticmethod
     def cell_sources(observations, group_by):
