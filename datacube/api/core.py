@@ -291,13 +291,7 @@ class Datacube(object):
         group_by = query_group_by(**query)
         sources = self.product_sources(observations, group_by.group_by_func, group_by.dimension, group_by.units)
 
-        all_measurements = get_measurements(observations)
-        if measurements:
-            measurements = OrderedDict((measurement, all_measurements[measurement])
-                                       for measurement in measurements if measurement in all_measurements)
-        else:
-            measurements = all_measurements
-
+        measurements = self.index.products.get_by_name(product).lookup_measurements(measurements)
         measurements = set_resampling_method(measurements, resampling)
 
         if not stack:
@@ -537,17 +531,6 @@ def get_bounds(datasets, crs):
     top = max([d.extent.to_crs(crs).boundingbox.top for d in datasets])
     bottom = min([d.extent.to_crs(crs).boundingbox.bottom for d in datasets])
     return GeoPolygon.from_boundingbox(BoundingBox(left, bottom, right, top), crs)
-
-
-def get_measurements(datasets):
-    dataset_types = {d.type for d in datasets}
-    all_measurements = OrderedDict()
-    for dataset_type in dataset_types:
-        for name, measurement in dataset_type.measurements.items():
-            if name in all_measurements:
-                raise LookupError('Multiple values found for measurement: ', name)
-            all_measurements[name] = measurement
-    return all_measurements
 
 
 def set_resampling_method(measurements, resampling=None):

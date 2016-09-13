@@ -4,12 +4,11 @@ import logging
 import numpy
 import xarray
 from itertools import groupby
-from collections import defaultdict, OrderedDict
+from collections import OrderedDict
 
-from ..model import GeoBox
 from ..utils import check_intersect
 from .query import Query, query_group_by
-from .core import Datacube, get_measurements, set_resampling_method
+from .core import Datacube, set_resampling_method
 
 _LOG = logging.getLogger(__name__)
 
@@ -312,16 +311,10 @@ class GridWorkflow(object):
         for dataset in tile.sources.values:
             observations += dataset
 
-        all_measurements = get_measurements(observations)
-        if measurements:
-            measurements = [all_measurements[measurement] for measurement in measurements
-                            if measurement in all_measurements]
-        else:
-            measurements = [measurement for measurement in all_measurements.values()]
-
+        measurements = tile.product.lookup_measurements(measurements)
         measurements = set_resampling_method(measurements, resampling)
 
-        dataset = Datacube.product_data(tile.sources, tile.geobox, measurements, dask_chunks=dask_chunks,
+        dataset = Datacube.product_data(tile.sources, tile.geobox, measurements.values(), dask_chunks=dask_chunks,
                                         fuse_func=fuse_func)
 
         return dataset
