@@ -168,7 +168,7 @@ def check_open_with_dc(index):
     assert lazy_data_array.data.dask
     assert lazy_data_array.ndim == data_array.ndim
     assert 'variable' in lazy_data_array.dims
-    # assert lazy_data_array.equals(data_array)
+    assert lazy_data_array[:2, 950:1050, 950:1050].equals(data_array[:2, 950:1050, 950:1050])
 
     dataset = dc.load(product='ls5_nbar_albers', measurements=['blue'])
     assert dataset['blue'].size
