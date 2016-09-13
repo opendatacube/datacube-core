@@ -234,13 +234,16 @@ An Ingestion Config is written in YAML and contains the following:
    - Output Product name - ``output_type``
    - Output file location and file name template
    - Global metadata attributes
-   - Outer boundary of data to ingest
    - Storage format, specifying:
+
         - Driver
         - CRS
         - Resolution
         - Tile size
+        - Tile Origin
+
    - Details about **measurements**:
+
         - Output measurement name
         - Source measurement name
         - Resampling method
@@ -259,20 +262,10 @@ location
     Directory to write the output storage units.
 
 file_path_template
-    File path pattern defining the name of the storage unit files.
-
-        - TODO: list available substitutions
-
-ingestion_bounds
-    Outer boundary of the region to ingest. Specified as ``left``,
-    ``bottom``, ``right``, ``top`` in Storage CRS coordinates. They will be
-    expanded out to the nearest tile boundary.
-
-    Define region of interest for the subset of the data to be ingested.
-    Currently only bounding box specified in projection units is supported
+    File path pattern defining the name of the storage unit files. **TODO:** list available substitutions
 
 global_attributes
-    TODO: list useful attributes
+    File level (NetCDF) attributes
 
 storage
     driver
@@ -283,37 +276,24 @@ storage
         stored in. May be specified as an EPSG code or WKT.
 
     tile_size
-        Size of the tiles for the data to be stored in specified in projection units.
-
-            - Use ``latitude`` and ``longitude`` if the projection is geographic,
-              otherwise use ``x`` and ``y``
+        Size of the tiles for the data to be stored in specified in projection units. Use ``latitude`` and ``longitude``
+        if the projection is geographic, otherwise use ``x`` and ``y``
 
     origin
-        Coordinates of the bottom-left(?) corner of the (0,0) tile specified in projection units.
-
-            - Use ``latitude`` and ``longitude`` if the projection is geographic,
-              otherwise use ``x`` and ``y``
-
-    aggregation_period
-        Storage unit aggregation period. One of 'month', 'year'
+        Coordinates of the bottom-left(?) corner of the (0,0) tile specified in projection units. Use ``latitude`` and
+        ``longitude`` if the projection is geographic, otherwise use ``x`` and ``y``
 
     resolution
         Resolution for the data to be stored in specified in projection units.
-        Negative values flip the axis.
-
-            - Use ``latitude`` and ``longitude`` if the projection is geographic,
-              otherwise use ``x`` and ``y``
+        Negative values flip the axis. Use ``latitude`` and ``longitude`` if the projection is geographic,
+        otherwise use ``x`` and ``y``
 
     chunking
         Size of the internal NetCDF chunks in 'pixels'.
 
     dimension_order
-        Order of the dimensions for the data to be stored in.
-
-            - Use ``latitude`` and ``longitude`` if the projection is geographic,
-              otherwise use ``x`` and ``y``
-
-            - TODO: currently ignored. Is it really needed?
+        Order of the dimensions for the data to be stored in. Use ``latitude`` and ``longitude`` if the projection
+        is geographic, otherwise use ``x`` and ``y``. **TODO:** currently ignored. Is it really needed?
 
 
 measurements
