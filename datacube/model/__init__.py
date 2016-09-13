@@ -323,6 +323,18 @@ class DatasetType(object):
 
         return GridSpec(crs=crs, tile_size=tile_size, resolution=resolution)
 
+    def lookup_measurements(self, measurements=None):
+        """
+        Find measurements by name
+
+        :param list[str] measurements: list of measurement names
+        :rtype: OrderedDict[str,dict]
+        """
+        my_measurements = self.measurements
+        if measurements is None:
+            return my_measurements
+        return OrderedDict((measurement, my_measurements[measurement]) for measurement in measurements)
+
     def dataset_reader(self, dataset_doc):
         return self.metadata_type.dataset_reader(dataset_doc)
 
