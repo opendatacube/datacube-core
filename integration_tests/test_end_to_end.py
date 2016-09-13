@@ -168,7 +168,7 @@ def check_open_with_dc(index):
     assert lazy_data_array.data.dask
     assert lazy_data_array.ndim == data_array.ndim
     assert 'variable' in lazy_data_array.dims
-    assert lazy_data_array[:2, 950:1050, 950:1050].equals(data_array[:2, 950:1050, 950:1050])
+    assert lazy_data_array[1, :2, 950:1050, 950:1050].equals(data_array[1, :2, 950:1050, 950:1050])
 
     dataset = dc.load(product='ls5_nbar_albers', measurements=['blue'])
     assert dataset['blue'].size
@@ -180,8 +180,8 @@ def check_open_with_dc(index):
                            dask_chunks={'time': 1})
     assert lazy_dataset['blue'].data.dask
     assert lazy_dataset.blue[:2, :100, :100].equals(dataset.blue[:2, :100, :100])
-    assert lazy_dataset.isel(x=slice(950, 1050), y=slice(950, 1050)).equals(
-        dataset.isel(x=slice(950, 1050), y=slice(950, 1050)))
+    assert lazy_dataset.isel(time=slice(0, 2), x=slice(950, 1050), y=slice(950, 1050)).equals(
+        dataset.isel(time=slice(0, 2), x=slice(950, 1050), y=slice(950, 1050)))
 
     dataset_like = dc.load(product='ls5_nbar_albers', measurements=['blue'], like=dataset)
     assert (dataset.blue == dataset_like.blue).all()
