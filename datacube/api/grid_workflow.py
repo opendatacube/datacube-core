@@ -58,6 +58,13 @@ class Tile(object):
         """
         return self.sources.shape + self.geobox.shape
 
+    @property
+    def product(self):
+        """
+        :rtype: datacube.model.DatasetType
+        """
+        return self.sources.values[0][0].type
+
     def __getitem__(self, chunk):
         sources = _fast_slice(self.sources, chunk[:len(self.sources.shape)])
         geobox = self.geobox[chunk[len(self.sources.shape):]]
