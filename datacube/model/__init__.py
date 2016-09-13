@@ -321,7 +321,11 @@ class DatasetType(object):
         if 'resolution' in storage:
             resolution = [storage['resolution'][dim] for dim in crs.dimensions]
 
-        return GridSpec(crs=crs, tile_size=tile_size, resolution=resolution)
+        origin = None
+        if 'origin' in storage:
+            origin = [storage['origin'][dim] for dim in crs.dimensions]
+
+        return GridSpec(crs=crs, tile_size=tile_size, resolution=resolution, origin=origin)
 
     def lookup_measurements(self, measurements=None):
         """

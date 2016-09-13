@@ -111,6 +111,8 @@ definitions:
                 type: object
             tile_size:
                 type: object
+            origin:
+                type: object
             driver:
                 type: string
         additionalProperties: false

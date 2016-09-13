@@ -224,8 +224,8 @@ Metadata Type document defines searchable bits of metadata within `Dataset`_ doc
 Ingestion Config
 ----------------
 An ingestion config is a document which defines the way data should be prepared
- for high performance access. This can include  slicing the data into regular
- chunks, reprojecting into to the desired projection and compressing the data.
+for high performance access. This can include  slicing the data into regular
+chunks, reprojecting into to the desired projection and compressing the data.
 
 
 An Ingestion Config is written in YAML and contains the following:
@@ -250,7 +250,7 @@ An Ingestion Config is written in YAML and contains the following:
 
 output_type
     Name of the output Product. It's used as a human-readable identifer. Must
-     be unique and consist of alphanumeric characters and/or underscores.
+    be unique and consist of alphanumeric characters and/or underscores.
 
 description (optional)
     A human-readable description of the output Product.
@@ -260,6 +260,7 @@ location
 
 file_path_template
     File path pattern defining the name of the storage unit files.
+
         - TODO: list available substitutions
 
 ingestion_bounds
@@ -283,6 +284,13 @@ storage
 
     tile_size
         Size of the tiles for the data to be stored in specified in projection units.
+
+            - Use ``latitude`` and ``longitude`` if the projection is geographic,
+              otherwise use ``x`` and ``y``
+
+    origin
+        Coordinates of the bottom-left(?) corner of the (0,0) tile specified in projection units.
+
             - Use ``latitude`` and ``longitude`` if the projection is geographic,
               otherwise use ``x`` and ``y``
 
@@ -301,8 +309,10 @@ storage
 
     dimension_order
         Order of the dimensions for the data to be stored in.
+
             - Use ``latitude`` and ``longitude`` if the projection is geographic,
               otherwise use ``x`` and ``y``
+
             - TODO: currently ignored. Is it really needed?
 
 
