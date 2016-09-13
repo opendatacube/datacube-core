@@ -420,23 +420,6 @@ class FlagsDefinition(object):
     def __init__(self, flags_def_dict):
         self.flags_def_dict = flags_def_dict
 
-        # blue_saturated:
-        #   bits: 0
-        #   description: Blue band is saturated
-        #   values: {0: true, 1: false}
-        # green_saturated:
-        #   bits: 1
-        #   description: Green band is saturated
-        #   values: {0: true, 1: false}
-        # red_saturated:
-        #   bits: 2
-        #   description: Red band is saturated
-        #   values: {0: true, 1: false}
-        # nir_saturated:
-        #   bits: 3
-        #   description: NIR band is saturated
-        #   values: {0: true, 1: false}
-
 
 class SpectralDefinition(object):
     def __init__(self, spec_def_dict):
