@@ -165,9 +165,9 @@ def check_open_with_dc(index):
 
     lazy_data_array = dc.load(product='ls5_nbar_albers', latitude=(-35, -36), longitude=(149, 150),
                               stack='variable', dask_chunks={'time': 1, 'x': 1000, 'y': 1000})
-    # assert lazy_data_array.data.dask
-    # assert lazy_data_array.ndim == data_array.ndim
-    # assert 'variable' in lazy_data_array.dims
+    assert lazy_data_array.data.dask
+    assert lazy_data_array.ndim == data_array.ndim
+    assert 'variable' in lazy_data_array.dims
     # assert lazy_data_array.equals(data_array)
 
     dataset = dc.load(product='ls5_nbar_albers', measurements=['blue'])
