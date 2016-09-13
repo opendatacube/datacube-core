@@ -176,8 +176,8 @@ def check_open_with_dc(index):
     dataset = dc.load(product='ls5_nbar_albers', latitude=(-35.2, -35.3), longitude=(149.1, 149.2))
     assert dataset['blue'].size
 
-    # lazy_dataset = dc.load(product='ls5_nbar_albers', latitude=(-35.2, -35.3), longitude=(149.1, 149.2),
-    #                        dask_chunks={'time': 1, 'x': 1000, 'y': 1000})
+    lazy_dataset = dc.load(product='ls5_nbar_albers', latitude=(-35.2, -35.3), longitude=(149.1, 149.2),
+                           dask_chunks={'time': 1})
     # assert lazy_dataset['blue'].data.dask
     # assert lazy_dataset.equals(dataset)
 
