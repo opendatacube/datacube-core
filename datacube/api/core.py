@@ -285,8 +285,26 @@ class Datacube(object):
             assert resolution is None, "'like' and 'resolution' are not supported together"
             assert align is None, "'like' and 'align' are not supported together"
             geobox = like.geobox
+        elif output_crs:
+            if not resolution:
+                raise RuntimeError("Must specify 'resolution' when specifying 'output_crs'")
+            crs = CRS(output_crs)
+            geobox = GeoBox.from_geopolygon(query_geopolygon(**query) or get_bounds(observations, crs),
+                                            resolution, crs, align)
         else:
-            geobox = self._get_geobox(observations, output_crs, resolution, align=align, **query)
+            grid_spec = self.index.products.get_by_name(product).grid_spec
+            if not (grid_spec and grid_spec.crs):
+                raise RuntimeError("Product has no CRS. Must specify 'output_crs' and 'resolution'")
+
+            if not resolution:
+                if not (grid_spec and grid_spec.resolution):
+                    raise RuntimeError("Product has no resolution. Must specify 'resolution'")
+                resolution = resolution or grid_spec.resolution
+                align = align or grid_spec.alignment
+
+            crs = CRS(output_crs) if output_crs else grid_spec.crs
+            geobox = GeoBox.from_geopolygon(query_geopolygon(**query) or get_bounds(observations, crs),
+                                            resolution, crs, align)
 
         group_by = query_group_by(**query)
         sources = self.product_sources(observations, group_by.group_by_func, group_by.dimension, group_by.units)
@@ -302,14 +320,6 @@ class Datacube(object):
                 stack = 'measurement'
             return self._get_data_array(sources, geobox, measurements.values(),
                                         var_dim_name=stack, fuse_func=fuse_func, dask_chunks=dask_chunks)
-
-    @staticmethod
-    def _get_geobox(observations, output_crs=None, resolution=None, align=None, **query):
-        crs = CRS(output_crs) if output_crs else get_crs(observations)
-        geopolygon = query_geopolygon(**query) or get_bounds(observations, crs)
-        resolution = resolution or get_resolution(observations)
-        geobox = GeoBox.from_geopolygon(geopolygon, resolution, crs, align)
-        return geobox
 
     def _get_data_array(self, sources, geobox, measurements, var_dim_name='measurement',
                         fuse_func=None, dask_chunks=None):
@@ -336,6 +346,8 @@ class Datacube(object):
         .. seealso:: :meth:`product_sources` :meth:`product_data`
         """
         query = Query(self.index, **kwargs)
+        if not query.product:
+            raise RuntimeError('must specify a product')
 
         datasets = self.index.datasets.search_eager(**query.search_terms)
         if query.geopolygon:
@@ -498,31 +510,6 @@ def _fuse_measurement(dest, datasets, geobox, measurement, fuse_func=None):
                  dest.dtype.type(measurement['nodata']),
                  resampling=measurement.get('resampling_method', 'nearest'),
                  fuse_func=fuse_func)
-
-
-def get_crs(datasets):
-    """
-    Returns a single CRS from a collection of datasets
-    Raises an error if no or multiple CRSs are found
-    :param datasets: [`model.Dataset`]
-    :return: `model.CRS`
-    """
-    type_set = {d.type for d in datasets if d.type.grid_spec}
-    if not type_set:
-        raise ValueError('No valid CRS found.')
-    first_type = type_set.pop()
-    first_crs = first_type.grid_spec.crs
-    if first_type and any(first_crs != another.grid_spec.crs for another in type_set):
-        raise ValueError('Could not determine a unique output CRS from: ',
-                         [first_crs] + [another.grid_spec.crs for another in type_set])
-    return first_crs
-
-
-def get_resolution(datasets):
-    resolution_set = {tuple(d.type.grid_spec.resolution) for d in datasets if d.type.grid_spec}
-    if len(resolution_set) != 1:
-        raise ValueError('Could not determine an output resolution')
-    return resolution_set.pop()
 
 
 def get_bounds(datasets, crs):
