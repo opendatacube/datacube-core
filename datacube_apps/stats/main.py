@@ -215,18 +215,18 @@ def make_tasks(index, products, config):
             masks = [workflow.list_cells(product=mask['product'], time=time_period, cell_index=(15, -40))
                      for mask in source['masks']]
 
-        for tile_index, value in data.items():
-            tasks.setdefault(tile_index, {
-                'tile_index': tile_index,
-                'products': products,
-                'start_time': time_period[0],
-                'end_time': time_period[1],
-                'sources': [],
-            })['sources'].append({
-                'data': value,
-                'masks': [mask.get(tile_index) for mask in masks],
-                'spec': source,
-            })
+            for tile_index, value in data.items():
+                tasks.setdefault(tile_index, {
+                    'tile_index': tile_index,
+                    'products': products,
+                    'start_time': time_period[0],
+                    'end_time': time_period[1],
+                    'sources': [],
+                })['sources'].append({
+                    'data': value,
+                    'masks': [mask.get(tile_index) for mask in masks],
+                    'spec': source,
+                })
 
         for task in tasks.values():
             yield task
