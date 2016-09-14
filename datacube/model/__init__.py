@@ -16,8 +16,7 @@ from osgeo import osr
 from rasterio.coords import BoundingBox
 
 from datacube import compat
-from datacube.utils import get_doc_offset, parse_time, read_documents, validate_document, cached_property, \
-    uri_to_local_path, check_intersect
+from datacube.utils import parse_time, cached_property, uri_to_local_path, check_intersect, schema_validated, DocReader
 
 _LOG = logging.getLogger(__name__)
 
@@ -208,7 +207,7 @@ class MetadataType(object):
         self.id = id_
 
     def dataset_reader(self, dataset_doc):
-        return _DocReader(self.dataset_offsets, self.dataset_fields, dataset_doc)
+        return DocReader(self.dataset_offsets, self.dataset_fields, dataset_doc)
 
     def __str__(self):
         return "MetadataType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
@@ -891,83 +890,3 @@ class GeoBox(object):
             affine=self.affine,
             crs=self.extent.crs
         )
-
-
-def _set_doc_offset(offset, document, value):
-    """
-    :type offset: list[str]
-    :type document: dict
-
-    >>> doc = {'a': 4}
-    >>> _set_doc_offset(['a'], doc, 5)
-    >>> doc
-    {'a': 5}
-    >>> doc = {'a': {'b': 4}}
-    >>> _set_doc_offset(['a', 'b'], doc, 'c')
-    >>> doc
-    {'a': {'b': 'c'}}
-    """
-    read_offset = offset[:-1]
-    sub_doc = get_doc_offset(read_offset, document)
-    sub_doc[offset[-1]] = value
-
-
-class _DocReader(object):
-    def __init__(self, field_offsets, search_fields, doc):
-        """
-        :type field_offsets: dict[str,list[str]]
-        :type doc: dict
-        >>> d = _DocReader({'lat': ['extent', 'lat']}, {}, doc={'extent': {'lat': 4}})
-        >>> d.lat
-        4
-        >>> d.lat = 5
-        >>> d._doc
-        {'extent': {'lat': 5}}
-        >>> hasattr(d, 'lat')
-        True
-        >>> hasattr(d, 'lon')
-        False
-        >>> d.lon
-        Traceback (most recent call last):
-        ...
-        AttributeError: Unknown field 'lon'. Expected one of ['lat']
-        """
-        self.__dict__['_doc'] = doc
-        self.__dict__['_fields'] = {name: field for name, field in search_fields.items() if hasattr(field, 'extract')}
-        self._fields.update(field_offsets)
-
-    def __getattr__(self, name):
-        field = self._fields.get(name)
-        if field is None:
-            raise AttributeError(
-                'Unknown field %r. Expected one of %r' % (
-                    name, list(self._fields.keys())
-                )
-            )
-        return self._unsafe_get_field(field)
-
-    def __setattr__(self, name, val):
-        offset = self._fields.get(name)
-        if offset is None:
-            raise AttributeError(
-                'Unknown field %r. Expected one of %r' % (
-                    name, list(self._fields.keys())
-                )
-            )
-        return _set_doc_offset(offset, self._doc, val)
-
-    def _unsafe_get_field(self, field):
-        if isinstance(field, list):
-            return get_doc_offset(field, self._doc)
-        else:
-            return field.extract(self._doc)
-
-    @property
-    def fields(self):
-        fields = {}
-        for name, field in self._fields.items():
-            try:
-                fields[name] = self._unsafe_get_field(field)
-            except (AttributeError, KeyError, ValueError):
-                continue
-        return fields
