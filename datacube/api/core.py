@@ -299,12 +299,11 @@ class Datacube(object):
             if not resolution:
                 if not (grid_spec and grid_spec.resolution):
                     raise RuntimeError("Product has no resolution. Must specify 'resolution'")
-                resolution = resolution or grid_spec.resolution
+                resolution = grid_spec.resolution
                 align = align or grid_spec.alignment
 
-            crs = CRS(output_crs) if output_crs else grid_spec.crs
-            geobox = GeoBox.from_geopolygon(query_geopolygon(**query) or get_bounds(observations, crs),
-                                            resolution, crs, align)
+            geobox = GeoBox.from_geopolygon(query_geopolygon(**query) or get_bounds(observations, grid_spec.crs),
+                                            resolution, grid_spec.crs, align)
 
         group_by = query_group_by(**query)
         sources = self.product_sources(observations, group_by.group_by_func, group_by.dimension, group_by.units)
