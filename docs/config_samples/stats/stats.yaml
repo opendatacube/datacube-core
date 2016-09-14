@@ -71,26 +71,25 @@ stats:
    dtype: int16
    nodata: -999
    fletcher32: True
-   file_path_template: 'STATS_MEAN/MEAN_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+   file_path_template: 'STATS_MEAN/MEAN_3577_{tile_index[0]}_{tile_index[1]}_{start_time:%Y%m%d}.nc'
 
  - name: median
    zlib: True
    dtype: int16
    nodata: -999
    fletcher32: True
-   file_path_template: 'STATS_MEDIAN/MEDIAN_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+   file_path_template: 'STATS_MEDIAN/MEDIAN_3577_{tile_index[0]}_{tile_index[1]}_{start_time:%Y%m%d}.nc'
 
  - name: medoid
    zlib: True
    dtype: int16
    nodata: -999
    fletcher32: True
-   file_path_template: 'STATS_MEDOID/MEDOID_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+   file_path_template: 'STATS_MEDOID/MEDOID_3577_{tile_index[0]}_{tile_index[1]}_{start_time:%Y%m%d}.nc'
 
  - name: percentile_10
    zlib: True
    dtype: int16
    nodata: -999
    fletcher32: True
-   file_path_template: 'STATS_PERCENTILE_10/PERCENTILE_10_3577_{tile_index[0]}_
-   {tile_index[1]}_{start_time}.nc'
+   file_path_template: 'STATS_PERCENTILE_10/PERCENTILE_10_3577_{tile_index[0]}_{tile_index[1]}_{start_time:%Y%m%d}.nc'

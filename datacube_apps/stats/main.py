@@ -28,7 +28,7 @@ from datacube.ui.click import to_pathlib
 from datacube.utils import read_documents, unsqueeze_data_array
 from datacube.utils.dates import date_sequence
 
-from .statistics import apply_cross_measurement_reduction
+from statistics import apply_cross_measurement_reduction
 
 STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
                                  'complevel',
@@ -149,9 +149,8 @@ def tile_iter(tile, chunk):
 
 
 def get_filename(path_template, tile_index, start_time):
-    date_format = '%Y%m%d'
     return Path(str(path_template).format(tile_index=tile_index,
-                                          start_time=start_time.strftime(date_format)))
+                                          start_time=start_time))
 
 
 def create_storage_unit(config, task, stat, filename_template):
@@ -160,6 +159,8 @@ def create_storage_unit(config, task, stat, filename_template):
 
     datasets, sources = find_source_datasets(task, stat, geobox)
 
+    # var_params = config.get_variable_params()  # TODO: better way?
+    # filename_template = str(Path(config['location'], stat['file_path_template']))
     output_filename = get_filename(filename_template,
                                    task['tile_index'],
                                    task['start_time'])
@@ -196,8 +197,7 @@ def find_source_datasets(task, stat, geobox):
     sources = reduce_(lambda a, b: a + b, (merge_sources(prod) for prod in task['sources']))
     sources = unsqueeze_data_array(sources, 'time', 0, task['start_time'],
                                    task['sources'][0]['data'].sources.time.attrs)
-    # var_params = config.get_variable_params()  # TODO: better way?
-    # filename_template = str(Path(config['location'], stat['file_path_template']))
+
     datasets = xr_apply(sources, _make_dataset, dtype='O')  # Store in DataArray to associate Time -> Dataset
     datasets = datasets_to_doc(datasets)
     return datasets, sources
@@ -242,7 +242,7 @@ def do_stats(task, config):
 def make_tasks(index, products, config):
     for time_period in date_sequence(start=config.start_time, end=config.end_time,
                                      stats_duration=config.stats_duration, step_size=config.step_size):
-        _LOG('Making tasks for: ', *time_period)
+        _LOG.debug('Making tasks for: ', *time_period)
         workflow = GridWorkflow(index, grid_spec=config.grid_spec)
 
         tasks = {}
@@ -269,8 +269,8 @@ def make_tasks(index, products, config):
 
 
 def make_products(index, config):
-    results = {}
-
+    _LOG.debug('Creating output products')
+    created_products = {}
     # TODO: multiple source products
     prod = index.products.get_by_name(config.sources[0]['product'])
     measurements = [measurement for name, measurement in prod.measurements.items()
@@ -300,10 +300,10 @@ def make_products(index, config):
                 ]
 
         }
-        results[name] = Stat(product=index.products.from_doc(definition),
-                             algorithm=algorithm,
-                             definition=stat)
-    return results
+        created_products[name] = Stat(product=index.products.from_doc(definition),
+                                      algorithm=algorithm,
+                                      definition=stat)
+    return created_products
 
 
 @click.command(name='stats')
