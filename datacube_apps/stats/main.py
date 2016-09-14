@@ -8,6 +8,7 @@ from __future__ import absolute_import, print_function
 from collections import namedtuple, OrderedDict
 from functools import reduce as reduce_
 from itertools import product
+import logging
 from pathlib import Path
 
 import click
@@ -38,6 +39,8 @@ STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
 
 StatAlgorithm = namedtuple('StatAlgorithm', ['dtype', 'nodata', 'units', 'masked', 'compute'])
 Stat = namedtuple('Stat', ['product', 'algorithm', 'definition'])
+
+_LOG = logging.getLogger(__name__)
 
 
 class Lambda(object):
@@ -109,19 +112,6 @@ def tile_iter(tile, chunk):
     return block_iter(steps, tile.shape)
 
 
-def get_variable_params(config):
-    chunking = config.storage['chunking']
-    chunking = [chunking[dim] for dim in config.storage['dimension_order']]
-
-    variable_params = {}
-    for mapping in config.stats:
-        varname = mapping['name']
-        variable_params[varname] = {k: v for k, v in mapping.items() if k in STANDARD_VARIABLE_PARAM_NAMES}
-        variable_params[varname]['chunksizes'] = chunking
-
-    return variable_params
-
-
 def get_filename(path_template, tile_index, start_time):
     date_format = '%Y%m%d'
     return Path(str(path_template).format(tile_index=tile_index,
@@ -130,7 +120,25 @@ def get_filename(path_template, tile_index, start_time):
 
 def create_storage_unit(config, task, stat, filename_template):
     geobox = task['sources'][0]['data'].geobox
+    measurements = list(stat.product.measurements.values())
 
+    datasets, sources = find_source_datasets(task, stat, geobox)
+
+    output_filename = get_filename(filename_template,
+                                   task['tile_index'],
+                                   task['start_time'])
+    nco = nco_from_sources(sources,
+                           geobox,
+                           measurements,
+                           {},  # TODO: {measurement['name']: var_params[stat['name']] for measurement in measurements},
+                           output_filename)
+
+    netcdf_writer.create_variable(nco, 'dataset', datasets, zlib=True)
+    nco['dataset'][:] = netcdf_writer.netcdfy_data(datasets.values)
+    return nco
+
+
+def find_source_datasets(task, stat, geobox):
     def _make_dataset(labels, sources):
         dataset = make_dataset(dataset_type=stat.product,
                                sources=sources,
@@ -152,24 +160,11 @@ def create_storage_unit(config, task, stat, filename_template):
     sources = reduce_(lambda a, b: a + b, (merge_sources(prod) for prod in task['sources']))
     sources = unsqueeze_data_array(sources, 'time', 0, task['start_time'],
                                    task['sources'][0]['data'].sources.time.attrs)
-
-    # var_params = get_variable_params(config)  # TODO: better way?
-
-    measurements = list(stat.product.measurements.values())
+    # var_params = config.get_variable_params()  # TODO: better way?
     # filename_template = str(Path(config['location'], stat['file_path_template']))
-    output_filename = get_filename(filename_template,
-                                   task['tile_index'],
-                                   task['start_time'])
-    nco = nco_from_sources(sources,
-                           geobox,
-                           measurements,
-                           {},  # TODO: {measurement['name']: var_params[stat['name']] for measurement in measurements},
-                           output_filename)
     datasets = xr_apply(sources, _make_dataset, dtype='O')  # Store in DataArray to associate Time -> Dataset
     datasets = datasets_to_doc(datasets)
-    netcdf_writer.create_variable(nco, 'dataset', datasets, zlib=True)
-    nco['dataset'][:] = netcdf_writer.netcdfy_data(datasets.values)
-    return nco
+    return datasets, sources
 
 
 def load_data(tile_index, prod):
@@ -211,7 +206,7 @@ def do_stats(task, config):
 def make_tasks(index, products, config):
     for time_period in date_sequence(start=config.start_time, end=config.end_time,
                                      stats_duration=config.stats_duration, step_size=config.step_size):
-        print(*time_period)
+        _LOG('Making tasks for: ', *time_period)
         workflow = GridWorkflow(index, grid_spec=config.grid_spec)
 
         tasks = {}
@@ -220,16 +215,16 @@ def make_tasks(index, products, config):
             masks = [workflow.list_cells(product=mask['product'], time=time_period, cell_index=(15, -40))
                      for mask in source['masks']]
 
-        for key in data.keys():
-            tasks.setdefault(key, {
-                'tile_index': key,
+        for tile_index, value in data.items():
+            tasks.setdefault(tile_index, {
+                'tile_index': tile_index,
                 'products': products,
                 'start_time': time_period[0],
                 'end_time': time_period[1],
                 'sources': [],
             })['sources'].append({
-                'data': data[key],
-                'masks': [mask.get(key) for mask in masks],
+                'data': value,
+                'masks': [mask.get(tile_index) for mask in masks],
                 'spec': source,
             })
 
@@ -259,6 +254,18 @@ class StatsConfig(object):
         return GridSpec(crs=crs,
                         tile_size=[storage['tile_size'][dim] for dim in crs.dimensions],
                         resolution=[storage['resolution'][dim] for dim in crs.dimensions])
+
+    def get_variable_params(self):
+        chunking = self.storage['chunking']
+        chunking = [chunking[dim] for dim in config.storage['dimension_order']]
+
+        variable_params = {}
+        for mapping in self.stats:
+            varname = mapping['name']
+            variable_params[varname] = {k: v for k, v in mapping.items() if k in STANDARD_VARIABLE_PARAM_NAMES}
+            variable_params[varname]['chunksizes'] = chunking
+
+        return variable_params
 
 
 def make_products(index, config):
