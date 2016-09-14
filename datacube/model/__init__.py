@@ -176,27 +176,6 @@ class Dataset(object):
         return self.metadata_type.dataset_reader(self.metadata_doc)
 
 
-def schema_validated(schema):
-    """
-    Decorates a class to enable validating it's definition against a JSON Schema file.
-
-    Adds a self.validate() method which takes a dict used to populate the instantiated class.
-
-    :param str schema: filename of the json schema, relative to `SCHEMA_PATH`
-    :return: wrapped class
-    """
-
-    def validate(cls, document):
-        return validate_document(document, cls.schema)
-
-    def decorate(cls):
-        cls.schema = next(iter(read_documents(SCHEMA_PATH / schema)))[1]
-        cls.validate = classmethod(validate)
-        return cls
-
-    return decorate
-
-
 class Measurement(object):
     def __init__(self, measurement_dict):
         self.name = measurement_dict['name']
@@ -208,7 +187,7 @@ class Measurement(object):
         self.flags_definition = measurement_dict['flags_definition']
 
 
-@schema_validated('metadata-type-schema.yaml')
+@schema_validated(SCHEMA_PATH / 'metadata-type-schema.yaml')
 class MetadataType(object):
     """Metadata Type definition"""
     def __init__(self,
@@ -235,7 +214,7 @@ class MetadataType(object):
         return "MetadataType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
 
 
-@schema_validated('dataset-type-schema.yaml')
+@schema_validated(SCHEMA_PATH / 'dataset-type-schema.yaml')
 class DatasetType(object):
     """
     Product definition

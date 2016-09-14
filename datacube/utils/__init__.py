@@ -557,3 +557,24 @@ def _cross_platform_path(path):
         return path[1:]
     else:
         return path
+
+
+def schema_validated(schema):
+    """
+    Decorates a class to enable validating it's definition against a JSON Schema file.
+
+    Adds a self.validate() method which takes a dict used to populate the instantiated class.
+
+    :param str schema: filename of the json schema, relative to `SCHEMA_PATH`
+    :return: wrapped class
+    """
+
+    def validate(cls, document):
+        return validate_document(document, cls.schema)
+
+    def decorate(cls):
+        cls.schema = next(iter(read_documents(schema)))[1]
+        cls.validate = classmethod(validate)
+        return cls
+
+    return decorate
