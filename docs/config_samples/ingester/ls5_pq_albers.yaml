@@ -86,11 +86,6 @@ global_attributes:
     - Vincenty, T. (1975) Direct and Inverse Solutions of Geodesies on the Ellipsoid with Application of Nested Equations. Survey Review 23, 88-93. 
     - Zhu, Z. and Woodcock, C. E. (2012) Object-based cloud and cloud shadow detection in Landsat imagery. Remote Sensing of Environment 118, 83-94.
     - http://dx.doi.org/10.4225/25/55EF55788BAC1
-ingestion_bounds:
-  left: -2700000
-  bottom: -5100000
-  right: 2600000
-  top: -1270000
 
 storage:
   driver: NetCDF CF

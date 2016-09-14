@@ -25,12 +25,6 @@ global_attributes:
   naming_authority: gov.usgs
   acknowledgment: MODIS data is provided by the United States Geological Survey (USGS).
 
-ingestion_bounds: 
-  left: -2700000
-  bottom: -5100000
-  right: 2600000
-  top: -1270000
-
 storage:
     driver: NetCDF CF
 
