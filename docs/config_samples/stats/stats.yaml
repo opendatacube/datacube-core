@@ -86,3 +86,11 @@ stats:
    nodata: -999
    fletcher32: True
    file_path_template: 'STATS_MEDOID/MEDOID_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+
+ - name: percentile_10
+   zlib: True
+   dtype: int16
+   nodata: -999
+   fletcher32: True
+   file_path_template: 'STATS_PERCENTILE_10/PERCENTILE_10_3577_{tile_index[0]}_
+   {tile_index[1]}_{start_time}.nc'

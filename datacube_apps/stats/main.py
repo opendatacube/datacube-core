@@ -32,6 +32,7 @@ try:
 except ImportError:
     nansum = numpy.nansum
 
+
     def anynan(x, axis=None):
         return numpy.isnan(x).any(axis=axis)
 
@@ -43,7 +44,7 @@ def nanmedoid(x, axis=1, return_index=False):
     invalid = anynan(x, axis=0)
     band, time = x.shape
     diff = x.reshape(band, time, 1) - x.reshape(band, 1, time)
-    dist = numpy.sqrt(numpy.sum(diff*diff, axis=0))  # dist = numpy.linalg.norm(diff, axis=0) is slower somehow...
+    dist = numpy.sqrt(numpy.sum(diff * diff, axis=0))  # dist = numpy.linalg.norm(diff, axis=0) is slower somehow...
     dist_sum = nansum(dist, axis=0)
     dist_sum[invalid] = numpy.inf
     i = numpy.argmin(dist_sum)
@@ -109,17 +110,17 @@ STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
                                  'contiguous',
                                  'attrs'}
 
-
 StatAlgorithm = namedtuple('StatAlgorithm', ['dtype', 'nodata', 'units', 'masked', 'compute'])
 Stat = namedtuple('Stat', ['product', 'algorithm', 'definition'])
 
 
 class Lambda(object):
-    def __init__(self, func):
-        self.func = func
+    def __init__(self, function, **kwargs):
+        self.function = function
+        self.kwargs = kwargs
 
     def __call__(self, x):
-        return getattr(x, self.func)(dim='time')
+        return getattr(x, self.function)(dim='time', **self.kwargs)
 
 
 class Ident(object):
@@ -130,13 +131,14 @@ class Ident(object):
         return self.x
 
 
-def stats_funcs():
-    funcs = {}
-    for func in ['mean', 'median']:
-        funcs[func] = Lambda(func)
-        funcs['medoid'] = apply_cross_measurement_reduction
-    return funcs
-STAT_FUNCS = stats_funcs()
+STAT_FUNCS = {
+    'mean': Lambda('mean'),
+    'median': Lambda('median'),
+    'medoid': apply_cross_measurement_reduction,
+    'percentile_10': Lambda('reduce', func=numpy.nanpercentile, q=10),
+    'percentile_50': Lambda('reduce', func=numpy.nanpercentile, q=50),
+    'percentile_90': Lambda('reduce', func=numpy.nanpercentile, q=90),
+}
 
 
 def make_stat_metadata(definition):
@@ -182,11 +184,11 @@ def tile_iter(tile, chunk):
 
 
 def get_variable_params(config):
-    chunking = config['storage']['chunking']
-    chunking = [chunking[dim] for dim in config['storage']['dimension_order']]
+    chunking = config.storage['chunking']
+    chunking = [chunking[dim] for dim in config.storage['dimension_order']]
 
     variable_params = {}
-    for mapping in config['stats']:
+    for mapping in config.stats:
         varname = mapping['name']
         variable_params[varname] = {k: v for k, v in mapping.items() if k in STANDARD_VARIABLE_PARAM_NAMES}
         variable_params[varname]['chunksizes'] = chunking
@@ -194,9 +196,9 @@ def get_variable_params(config):
     return variable_params
 
 
-def get_filename(path_template, index, start_time):
+def get_filename(path_template, tile_index, start_time):
     date_format = '%Y%m%d'
-    return Path(str(path_template).format(tile_index=index,
+    return Path(str(path_template).format(tile_index=tile_index,
                                           start_time=start_time.strftime(date_format)))
 
 
@@ -220,6 +222,7 @@ def create_storage_unit(config, task, stat, filename_template):
                                                              *[mask_tile.sources for mask_tile in prod['masks']])))
         else:
             return prod['data'].sources.sum()
+
     sources = reduce_(lambda a, b: a + b, (merge_sources(prod) for prod in task['sources']))
     sources = unsqueeze_data_array(sources, 'time', 0, task['start_time'],
                                    task['sources'][0]['data'].sources.time.attrs)
@@ -227,9 +230,9 @@ def create_storage_unit(config, task, stat, filename_template):
     # var_params = get_variable_params(config)  # TODO: better way?
 
     measurements = list(stat.product.measurements.values())
-    #filename_template = str(Path(config['location'], stat['file_path_template']))
+    # filename_template = str(Path(config['location'], stat['file_path_template']))
     output_filename = get_filename(filename_template,
-                                   task['index'],
+                                   task['tile_index'],
                                    task['start_time'])
     nco = nco_from_sources(sources,
                            geobox,
@@ -260,7 +263,7 @@ def load_data(tile_index, prod):
 def do_stats(task, config):
     results = {}
     for stat_name, stat in task['products'].items():
-        filename_template = str(Path(config['location'], stat.definition['file_path_template']))
+        filename_template = str(Path(config.location, stat.definition['file_path_template']))
         results[stat_name] = create_storage_unit(config, task, stat, filename_template)
 
     for tile_index in tile_iter(task['sources'][0]['data'], {'x': 1000, 'y': 1000}):
@@ -279,57 +282,68 @@ def do_stats(task, config):
         nco.close()
 
 
-def get_grid_spec(config):
-    storage = config['storage']
-    crs = CRS(storage['crs'])
-    return GridSpec(crs=crs,
-                    tile_size=[storage['tile_size'][dim] for dim in crs.dimensions],
-                    resolution=[storage['resolution'][dim] for dim in crs.dimensions])
-
-
 def make_tasks(index, products, config):
-    start_time = to_datetime(config['start_date'])
-    end_time = to_datetime(config['end_date'])
-    stats_duration = config['stats_duration']
-    step_size = config['step_size']
-
-    for time_period in date_sequence(start=start_time, end=end_time, stats_duration=stats_duration,
-                                     step_size=step_size):
+    for time_period in date_sequence(start=config.start_time, end=config.end_time,
+                                     stats_duration=config.stats_duration, step_size=config.step_size):
         print(*time_period)
-        workflow = GridWorkflow(index, grid_spec=get_grid_spec(config))
+        workflow = GridWorkflow(index, grid_spec=config.grid_spec)
 
         tasks = {}
-        for source in config['sources']:
+        for source in config.sources:
             data = workflow.list_cells(product=source['product'], time=time_period, cell_index=(15, -40))
             masks = [workflow.list_cells(product=mask['product'], time=time_period, cell_index=(15, -40))
                      for mask in source['masks']]
 
-            for key in data.keys():
-                tasks.setdefault(key, {
-                    'index': key,
-                    'products': products,
-                    'start_time': time_period[0],
-                    'end_time': time_period[1],
-                    'sources': [],
-                })['sources'].append({
-                    'data': data[key],
-                    'masks': [mask.get(key) for mask in masks],
-                    'spec': source,
-                })
+        for key in data.keys():
+            tasks.setdefault(key, {
+                'tile_index': key,
+                'products': products,
+                'start_time': time_period[0],
+                'end_time': time_period[1],
+                'sources': [],
+            })['sources'].append({
+                'data': data[key],
+                'masks': [mask.get(key) for mask in masks],
+                'spec': source,
+            })
 
         for task in tasks.values():
             yield task
+
+
+class StatsConfig(object):
+    def __init__(self, config):
+        self.config = config
+
+        self.storage = config['storage']
+
+        self.sources = config['sources']
+        self.stats = config['stats']
+
+        self.start_time = to_datetime(config['start_date'])
+        self.end_time = to_datetime(config['end_date'])
+        self.stats_duration = config['stats_duration']
+        self.step_size = config['step_size']
+        self.grid_spec = self.create_grid_spec()
+        self.location = config['location']
+
+    def create_grid_spec(self):
+        storage = self.storage
+        crs = CRS(storage['crs'])
+        return GridSpec(crs=crs,
+                        tile_size=[storage['tile_size'][dim] for dim in crs.dimensions],
+                        resolution=[storage['resolution'][dim] for dim in crs.dimensions])
 
 
 def make_products(index, config):
     results = {}
 
     # TODO: multiple source products
-    prod = index.products.get_by_name(config['sources'][0]['product'])
+    prod = index.products.get_by_name(config.sources[0]['product'])
     measurements = [measurement for name, measurement in prod.measurements.items()
-                    if name in config['sources'][0]['measurements']]
+                    if name in config.sources[0]['measurements']]
 
-    for stat in config['stats']:
+    for stat in config.stats:
         algorithm = make_stat_metadata(stat)
 
         name = stat['name']
@@ -341,7 +355,7 @@ def make_products(index, config):
                 'format': 'NetCDF',
                 'product_type': name,
             },
-            'storage': config['storage'],
+            'storage': config.storage,
             'measurements': [
                 {
                     'name': measurement['name'],
@@ -350,7 +364,7 @@ def make_products(index, config):
                     'units': algorithm.units
                 }
                 for measurement in measurements  # TODO: multiple source products
-            ]
+                ]
 
         }
         results[name] = Stat(product=index.products.from_doc(definition),
@@ -369,6 +383,8 @@ def make_products(index, config):
 @ui.pass_index(app_name='agdc-stats')
 def main(index, app_config, year, executor):
     _, config = next(read_documents(app_config))
+
+    config = StatsConfig(config)
 
     products = make_products(index, config)
     tasks = make_tasks(index, products, config)
