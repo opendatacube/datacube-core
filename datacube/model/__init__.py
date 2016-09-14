@@ -638,6 +638,15 @@ class GridSpec(object):
         return self.crs.dimensions
 
     @property
+    def alignment(self):
+        """
+        Pixel boundary alignment
+
+        :type: (float,float)
+        """
+        return tuple(orig % abs(res) for orig, res in zip(self.origin, self.resolution))
+
+    @property
     def tile_resolution(self):
         """
         Tile size in pixels.
