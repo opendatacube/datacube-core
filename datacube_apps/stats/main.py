@@ -68,7 +68,7 @@ class StatsConfig(object):
 
     def get_variable_params(self):
         chunking = self.storage['chunking']
-        chunking = [chunking[dim] for dim in config.storage['dimension_order']]
+        chunking = [chunking[dim] for dim in self.config.storage['dimension_order']]
 
         variable_params = {}
         for mapping in self.stats:
