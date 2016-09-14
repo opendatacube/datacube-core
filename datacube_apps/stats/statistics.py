@@ -3,37 +3,31 @@ Useful tools for performing data analysis
 """
 from __future__ import absolute_import
 
-import numpy as np
+import numpy
+
 try:
-    from hdmedians import nanmedoid
-except ImportError:  #
-    try:
-        import bottleneck as bn
-    except ImportError:
-        bn = np
+    from bottleneck import anynan, nansum
+except ImportError:
+    nansum = numpy.nansum
 
-    def nanmedoid(x, axis=1, return_index=False):
-        def naneuclidean(x, y):
-            return np.sqrt(bn.nansum(np.square(x - y)))
 
-        if axis == 0:
-            x = x.T
+    def anynan(x, axis=None):
+        return numpy.isnan(x).any(axis=axis)
 
-        p, n = x.shape
-        d = np.empty(n)
-        for i in range(n):
-            if np.isnan(x[0, i]):
-                d[i] = np.nan
-            else:
-                d[i] = bn.nansum([naneuclidean(x[:, i], x[:, j])
-                                  for j in range(n) if j != i])
 
-        i = bn.nanargmin(d)
+def nanmedoid(x, axis=1, return_index=False):
+    if axis == 0:
+        x = x.T
 
-        if return_index:
-            return (x[:, i], i)
-        else:
-            return x[:, i]
+    invalid = anynan(x, axis=0)
+    band, time = x.shape
+    diff = x.reshape(band, time, 1) - x.reshape(band, 1, time)
+    dist = numpy.sqrt(numpy.sum(diff * diff, axis=0))  # dist = numpy.linalg.norm(diff, axis=0) is slower somehow...
+    dist_sum = nansum(dist, axis=0)
+    dist_sum[invalid] = numpy.inf
+    i = numpy.argmin(dist_sum)
+
+    return (x[:, i], i) if return_index else x[:, i]
 
 
 def apply_cross_measurement_reduction(dataset, method=nanmedoid, dim='time', keep_attrs=True):
@@ -77,11 +71,11 @@ def _array_hdmedian(inarray, method, axis=1, **kwargs):
         raise ValueError("Reduction axis must be 1")
 
     variable, time, y, x = inarray.shape
-    output = np.empty((variable, y, x), dtype='float64')
+    output = numpy.empty((variable, y, x), dtype='float64')
     for iy in range(y):
         for ix in range(x):
             try:
                 output[:, iy, ix] = method(inarray[:, :, iy, ix])
             except ValueError:
-                output[:, iy, ix] = np.nan
+                output[:, iy, ix] = numpy.nan
     return output
