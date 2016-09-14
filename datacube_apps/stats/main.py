@@ -43,6 +43,42 @@ Stat = namedtuple('Stat', ['product', 'algorithm', 'definition'])
 _LOG = logging.getLogger(__name__)
 
 
+class StatsConfig(object):
+    def __init__(self, config):
+        self.config = config
+
+        self.storage = config['storage']
+
+        self.sources = config['sources']
+        self.stats = config['stats']
+
+        self.start_time = to_datetime(config['start_date'])
+        self.end_time = to_datetime(config['end_date'])
+        self.stats_duration = config['stats_duration']
+        self.step_size = config['step_size']
+        self.grid_spec = self.create_grid_spec()
+        self.location = config['location']
+
+    def create_grid_spec(self):
+        storage = self.storage
+        crs = CRS(storage['crs'])
+        return GridSpec(crs=crs,
+                        tile_size=[storage['tile_size'][dim] for dim in crs.dimensions],
+                        resolution=[storage['resolution'][dim] for dim in crs.dimensions])
+
+    def get_variable_params(self):
+        chunking = self.storage['chunking']
+        chunking = [chunking[dim] for dim in config.storage['dimension_order']]
+
+        variable_params = {}
+        for mapping in self.stats:
+            varname = mapping['name']
+            variable_params[varname] = {k: v for k, v in mapping.items() if k in STANDARD_VARIABLE_PARAM_NAMES}
+            variable_params[varname]['chunksizes'] = chunking
+
+        return variable_params
+
+
 class Lambda(object):
     def __init__(self, function, **kwargs):
         self.function = function
@@ -230,42 +266,6 @@ def make_tasks(index, products, config):
 
         for task in tasks.values():
             yield task
-
-
-class StatsConfig(object):
-    def __init__(self, config):
-        self.config = config
-
-        self.storage = config['storage']
-
-        self.sources = config['sources']
-        self.stats = config['stats']
-
-        self.start_time = to_datetime(config['start_date'])
-        self.end_time = to_datetime(config['end_date'])
-        self.stats_duration = config['stats_duration']
-        self.step_size = config['step_size']
-        self.grid_spec = self.create_grid_spec()
-        self.location = config['location']
-
-    def create_grid_spec(self):
-        storage = self.storage
-        crs = CRS(storage['crs'])
-        return GridSpec(crs=crs,
-                        tile_size=[storage['tile_size'][dim] for dim in crs.dimensions],
-                        resolution=[storage['resolution'][dim] for dim in crs.dimensions])
-
-    def get_variable_params(self):
-        chunking = self.storage['chunking']
-        chunking = [chunking[dim] for dim in config.storage['dimension_order']]
-
-        variable_params = {}
-        for mapping in self.stats:
-            varname = mapping['name']
-            variable_params[varname] = {k: v for k, v in mapping.items() if k in STANDARD_VARIABLE_PARAM_NAMES}
-            variable_params[varname]['chunksizes'] = chunking
-
-        return variable_params
 
 
 def make_products(index, config):
