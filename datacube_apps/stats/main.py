@@ -28,7 +28,7 @@ from datacube.ui.click import to_pathlib
 from datacube.utils import read_documents, unsqueeze_data_array
 from datacube.utils.dates import date_sequence
 
-from statistics import apply_cross_measurement_reduction
+from .statistics import apply_cross_measurement_reduction, nan_percentile
 
 STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
                                  'complevel',
@@ -100,9 +100,9 @@ STAT_FUNCS = {
     'mean': Lambda('mean'),
     'median': Lambda('median'),
     'medoid': apply_cross_measurement_reduction,
-    'percentile_10': Lambda('reduce', func=numpy.nanpercentile, q=10),
-    'percentile_50': Lambda('reduce', func=numpy.nanpercentile, q=50),
-    'percentile_90': Lambda('reduce', func=numpy.nanpercentile, q=90),
+    'percentile_10': Lambda('reduce', func=nan_percentile, q=10),
+    'percentile_50': Lambda('reduce', func=nan_percentile, q=50),
+    'percentile_90': Lambda('reduce', func=nan_percentile, q=90),
 }
 
 
@@ -229,11 +229,14 @@ def do_stats(task, config):
         data = data.isel(time=data.time.argsort())  # sort along time dim
 
         for stat_name, stat in task['products'].items():
+            # Compute the data
+            _LOG.debug("Computing %s in tile %s", stat_name, tile_index)
             data_stats = stat.algorithm.compute(data)  # TODO: if stat.algorithm.masked
+            # For each of the data variables, shove this chunk into the output results
             for var_name, var in data_stats.data_vars.items():
                 results[stat_name][var_name][(0,) + tile_index[1:]] = var.values  # HACK: make netcdf slicing nicer?...
                 results[stat_name].sync()
-                print(stat_name, tile_index[1:])
+                _LOG.debug("Updated %s %s", var_name, tile_index[1:])
 
     for stat, nco in results.items():
         nco.close()
