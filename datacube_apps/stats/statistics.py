@@ -98,6 +98,30 @@ def _zvalue_from_index(arr, ind):
     return numpy.take(arr, idx)
 
 
+def argpercentile(a, q, axis=0):
+    """
+    Compute the index of qth percentile of the data along the specified axis.
+    Returns the index of qth percentile of the array elements.
+    Parameters
+    ----------
+    a : array_like
+        Input array or object that can be converted to an array.
+    q : float in range of [0,100] (or sequence of floats)
+        Percentile to compute which must be between 0 and 100 inclusive.
+    axis : int or sequence of int, optional
+        Axis along which the percentiles are computed. The default is 0.
+    """
+    # TODO: pass ndv?
+    q = numpy.array(q, dtype=numpy.float64, copy=True) / 100.0
+    nans = numpy.isnan(a).sum(axis=axis)
+    q = q.reshape(q.shape + (1,) * nans.ndim)
+    # NOTE: index = (q*(a.shape[axis]-1-nans) + nans + 0.5).astype(int) for ndv that is smaller than values
+    index = (q * (a.shape[axis] - 1 - nans) + 0.5).astype(numpy.int32)
+    indices = numpy.indices(a.shape[:axis] + a.shape[axis + 1:])
+    index = tuple(indices[:axis]) + (index,) + tuple(indices[axis:])
+    return numpy.argsort(a, axis=axis)[index]
+
+
 def nan_percentile(arr, q, axis=0):
     """
     Return requested percentile(s) of a 3D array, ignoring NaNs
