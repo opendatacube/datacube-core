@@ -3,6 +3,7 @@ Useful tools for performing data analysis
 """
 from __future__ import absolute_import
 
+import collections
 import numpy
 
 try:
@@ -121,7 +122,7 @@ def nan_percentile(arr, q, axis=0):
     arr = numpy.sort(arr, axis=0)
 
     # loop over requested quantiles
-    if type(q) is list:
+    if isinstance(q, collections.Sequence):
         qs = []
         qs.extend(q)
     else:
@@ -132,8 +133,7 @@ def nan_percentile(arr, q, axis=0):
         quant_arr = numpy.zeros(shape=(len(qs), arr.shape[1], arr.shape[2]))
 
     result = []
-    for i in range(len(qs)):
-        quant = qs[i]
+    for quant in qs:
         # desired position as well as floor and ceiling of it
         k_arr = (valid_obs - 1) * (quant / 100.0)
         f_arr = numpy.floor(k_arr).astype(numpy.int32)
