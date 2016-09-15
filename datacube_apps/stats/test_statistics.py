@@ -26,9 +26,9 @@ def test_nan_percentile():
     assert np.allclose(std_np_func, new_func)
 
     # Test with all qs
-    q = range(0, 100)
+    qs = range(0, 100)
     input_arr = np.array(test_arr, copy=True)
-    std_np_func = np.nanpercentile(input_arr, q=q, axis=0)
-    new_func = nan_percentile(input_arr, q=q)
+    std_np_func = np.nanpercentile(input_arr, q=qs, axis=0)
+    new_func = nan_percentile(input_arr, q=qs)
 
     assert np.allclose(std_np_func, new_func)
