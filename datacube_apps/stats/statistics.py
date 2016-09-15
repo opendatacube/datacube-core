@@ -150,4 +150,7 @@ def nan_percentile(arr, q, axis=0):
 
         result.append(quant_arr)
 
-    return result
+    if len(result) == 1:
+        return result[0]
+    else:
+        return result
