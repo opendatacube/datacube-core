@@ -172,12 +172,12 @@ def info_cmd(index, show_sources, show_derived, ids):
 
 
 def get_derived_set(index, id_):
-    derived_set = {id_}
+    derived_set = {index.datasets.get(id_)}
     to_process = {id_}
     while to_process:
         derived = index.datasets.get_derived(to_process.pop())
         to_process.update(d.id for d in derived)
-        derived_set.update(d.id for d in derived)
+        derived_set.update(derived)
     return derived_set
 
 
@@ -189,8 +189,9 @@ def get_derived_set(index, id_):
 @ui.pass_index()
 def archive_cmd(index, archive_derived, dry_run, ids):
     for id_ in ids:
-        to_process = get_derived_set(index, id_) if archive_derived else [id_]
-        click.echo('Archiving %s' % ', '.join(to_process))
+        to_process = get_derived_set(index, id_) if archive_derived else [index.datasets.get(id_)]
+        for d in to_process:
+            click.echo('archiving %s %s %s' % (d.type.name, d.id, d.local_uri))
         if not dry_run:
             index.datasets.archive(to_process)
 
@@ -203,7 +204,8 @@ def archive_cmd(index, archive_derived, dry_run, ids):
 @ui.pass_index()
 def restore_cmd(index, restore_derived, dry_run, ids):
     for id_ in ids:
-        to_process = get_derived_set(index, id_) if restore_derived else [id_]
-        click.echo('Restoring %s' % ', '.join(to_process))
+        to_process = get_derived_set(index, id_) if restore_derived else [index.datasets.get(id_)]
+        for d in to_process:
+            click.echo('restoring %s %s %s' % (d.type.name, d.id, d.local_uri))
         if not dry_run:
             index.datasets.restore(to_process)
