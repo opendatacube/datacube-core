@@ -34,7 +34,7 @@ additionalProperties: false
 # Some people define default objects for reference elsewhere in the document.
 patternProperties:
     'default_\w+':
-        tpye: object
+        type: object
 
 definitions:
     dtype:
