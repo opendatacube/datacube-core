@@ -4,7 +4,7 @@ Tests for the custom statistics functions
 """
 from __future__ import absolute_import
 
-from .statistics import nan_percentile, argpercentile
+from .statistics import nan_percentile, argpercentile, axisindex
 import numpy
 
 
@@ -35,11 +35,13 @@ def test_nan_percentile():
 
 
 def test_argpercentile():
-    stack = numpy.full((20, 20, 20), numpy.nan)
-    stack[10:, ...] = numpy.arange(10).reshape(10, 1, 1)
+    test_arr = numpy.random.randint(0, 10000, 50000).reshape(5, 100, 100).astype(numpy.float32)
+    numpy.random.shuffle(test_arr)
+    # place random NaN
+    rand_nan = numpy.random.randint(0, 50000, 500).astype(numpy.float32)
+    for r in rand_nan:
+        test_arr[test_arr == r] = numpy.NaN
 
-    index = argpercentile(stack, 10, axis=0)
-    indices = numpy.indices(stack.shape[1:])
-    index = (index,) + tuple(indices)
-
-    assert numpy.all(stack[index] == 1)
+    npres = numpy.nanpercentile(test_arr, q=25, axis=0, interpolation='nearest')
+    gregres = axisindex(test_arr, argpercentile(test_arr, q=25, axis=0), axis=0)
+    assert numpy.isclose(npres, gregres).all()
