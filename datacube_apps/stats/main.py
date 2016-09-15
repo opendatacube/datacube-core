@@ -275,10 +275,8 @@ def make_tasks(index, products, config):
 def make_products(index, config):
     _LOG.debug('Creating output products')
     created_products = {}
-    # TODO: multiple source products
-    prod = index.products.get_by_name(config.sources[0]['product'])
-    measurements = [measurement for name, measurement in prod.measurements.items()
-                    if name in config.sources[0]['measurements']]
+
+    measurements = calc_output_measurements(index, config.sources)
 
     for stat in config.stats:
         algorithm = make_stat_metadata(stat)
@@ -295,12 +293,12 @@ def make_products(index, config):
             'storage': config.storage,
             'measurements': [
                 {
-                    'name': measurement['name'],
+                    'name': measurement_name,
                     'dtype': algorithm.dtype(measurement['dtype']),
                     'nodata': algorithm.nodata,
                     'units': algorithm.units
                 }
-                for measurement in measurements  # TODO: multiple source products
+                for measurement_name, measurement in measurements.items()
                 ]
 
         }
@@ -308,6 +306,21 @@ def make_products(index, config):
                                       algorithm=algorithm,
                                       definition=stat)
     return created_products
+
+
+def calc_output_measurements(index, sources):
+    # Check consistent measurements
+    first_source = sources[0]
+    if not all(first_source['measurements'] == source['measurements'] for source in sources):
+        raise RuntimeError("Configuration Error: listed measurements of source products are not all the same.")
+
+    source_defn = sources[0]
+
+    source_product = index.products.get_by_name(source_defn['product'])
+    measurements = [measurement for name, measurement in source_product.measurements.items()
+                    if name in source_defn['measurements']]
+
+    return measurements
 
 
 @click.command(name='stats')
