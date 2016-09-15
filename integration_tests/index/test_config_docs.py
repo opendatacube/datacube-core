@@ -134,6 +134,15 @@ def test_update_dataset_type(index, ls5_nbar_gtiff_type, ls5_nbar_gtiff_doc):
     updated_type = index.datasets.types.get_by_name(ls5_nbar_gtiff_type.name)
     assert updated_type.definition['metadata'] == ls5_nbar_gtiff_doc['metadata']
 
+    # Remove fixed field, forcing a new index to be created (as datasets can now differ for the field).
+    assert not _object_exists(index._db, 'dix_ls5_nbart_p54_gtiff_product_type')
+    del ls5_nbar_gtiff_doc['metadata']['product_type']
+    index.datasets.types.update_document(ls5_nbar_gtiff_doc)
+    # Ensure was updated
+    assert _object_exists(index._db, 'dix_ls5_nbart_p54_gtiff_product_type')
+    updated_type = index.datasets.types.get_by_name(ls5_nbar_gtiff_type.name)
+    assert updated_type.definition['metadata'] == ls5_nbar_gtiff_doc['metadata']
+
     # But if we make metadata more restrictive we get an error:
     different_telemetry_type = copy.deepcopy(ls5_nbar_gtiff_doc)
     assert 'ga_label' not in different_telemetry_type['metadata']
