@@ -82,29 +82,28 @@ def _array_hdmedian(inarray, method, axis=1, **kwargs):
     return output
 
 
-def _zvalue_from_index(arr, ind):
-    """
-    Private helper function to work around the limitation of np.choose() by employing np.take()
-    arr has to be a 3D array
-    ind has to be a 2D array containing values for z-indicies to take from arr
-    See: http://stackoverflow.com/a/32091712/4169585
-    This is faster and more memory efficient than using the ogrid based solution with fancy indexing.
-    """
-    # get number of columns and rows
-    _, n_c, n_r = arr.shape
-
-    # get linear indices and extract elements with np.take()
-    idx = n_c * n_r * ind + n_r * numpy.arange(n_r)[:, None] + numpy.arange(n_c)
-    return numpy.take(arr, idx)
-
-
 def axisindex(a, index, axis=0):
     """
     Index array 'a' using 'index' as depth along 'axis'
     """
-    indices = numpy.indices(a.shape[:axis] + a.shape[axis + 1:])
-    index = tuple(indices[:axis]) + (index,) + tuple(indices[axis:])
-    return a[index]
+    idx = numpy.zeros(index.shape, dtype=numpy.int32)
+    mul = 1
+    for i in range(index.ndim-1, axis-1, -1):
+        nushape = [1]*index.ndim
+        nushape[i] = index.shape[i]
+        idx += numpy.arange(0, index.shape[i]*mul, mul).reshape(nushape)
+        mul *= index.shape[i]
+
+    idx += index*mul
+    mul *= a.shape[axis]
+
+    for i in range(axis-1, -1, -1):
+        nushape = [1]*index.ndim
+        nushape[i] = index.shape[i]
+        idx += numpy.arange(0, index.shape[i]*mul, mul).reshape(nushape)
+        mul *= index.shape[i]
+
+    return a.take(idx)
 
 
 def argpercentile(a, q, axis=0):
@@ -171,12 +170,12 @@ def nan_percentile(arr, q, axis=0):
         fc_equal_k_mask = f_arr == c_arr
 
         # linear interpolation (like numpy percentile) takes the fractional part of desired position
-        floor_val = _zvalue_from_index(arr=arr, ind=f_arr) * (c_arr - k_arr)
-        ceil_val = _zvalue_from_index(arr=arr, ind=c_arr) * (k_arr - f_arr)
+        floor_val = axisindex(a=arr, index=f_arr) * (c_arr - k_arr)
+        ceil_val = axisindex(a=arr, index=c_arr) * (k_arr - f_arr)
 
         quant_arr = floor_val + ceil_val
-        quant_arr[fc_equal_k_mask] = _zvalue_from_index(arr=arr, ind=k_arr.astype(numpy.int32))[
-            fc_equal_k_mask]  # if floor == ceiling take floor value
+        # if floor == ceiling take floor value
+        quant_arr[fc_equal_k_mask] = axisindex(a=arr, index=k_arr.astype(numpy.int32))[fc_equal_k_mask]
 
         result.append(quant_arr)
 
