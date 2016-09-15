@@ -6,6 +6,7 @@ Create statistical summaries command
 from __future__ import absolute_import, print_function
 
 from collections import namedtuple, OrderedDict
+from datetime import datetime
 from functools import reduce as reduce_
 from itertools import product
 import logging
@@ -30,6 +31,7 @@ from datacube.utils.dates import date_sequence
 
 from .statistics import apply_cross_measurement_reduction, nan_percentile
 
+_LOG = logging.getLogger(__name__)
 STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
                                  'complevel',
                                  'shuffle',
@@ -38,9 +40,13 @@ STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
                                  'attrs'}
 
 StatAlgorithm = namedtuple('StatAlgorithm', ['dtype', 'nodata', 'units', 'masked', 'compute'])
-Stat = namedtuple('Stat', ['product', 'algorithm', 'definition'])
 
-_LOG = logging.getLogger(__name__)
+
+class Stat(object):
+    def __init__(self, product, algorithm, definition):
+        self.product = product
+        self.algorithm = algorithm
+        self.definition = definition
 
 
 class StatsConfig(object):
@@ -160,7 +166,6 @@ def create_storage_unit(config, task, stat, filename_template):
     datasets, sources = find_source_datasets(task, stat, geobox)
 
     # var_params = config.get_variable_params()  # TODO: better way?
-    # filename_template = str(Path(config['location'], stat['file_path_template']))
     output_filename = get_filename(filename_template,
                                    task['tile_index'],
                                    task['start_time'])
@@ -229,7 +234,6 @@ def do_stats(task, config):
         data = data.isel(time=data.time.argsort())  # sort along time dim
 
         for stat_name, stat in task['products'].items():
-            # Compute the data
             _LOG.debug("Computing %s in tile %s", stat_name, tile_index)
             data_stats = stat.algorithm.compute(data)  # TODO: if stat.algorithm.masked
             # For each of the data variables, shove this chunk into the output results
@@ -249,23 +253,25 @@ def make_tasks(index, products, config):
         workflow = GridWorkflow(index, grid_spec=config.grid_spec)
 
         # Tasks are grouped by tile_index, and may contain sources from multiple places
+        # Each source may be masked by multiple masks
         tasks = {}
-        for source in config.sources:
-            data = workflow.list_cells(product=source['product'], time=time_period, cell_index=(15, -40))
+        for source_spec in config.sources:
+            data = workflow.list_cells(product=source_spec['product'], time=time_period, cell_index=(15, -40))
             masks = [workflow.list_cells(product=mask['product'], time=time_period, cell_index=(15, -40))
-                     for mask in source['masks']]
+                     for mask in source_spec['masks']]
 
             for tile_index, value in data.items():
-                tasks.setdefault(tile_index, {
+                task = tasks.setdefault(tile_index, {
                     'tile_index': tile_index,
                     'products': products,
                     'start_time': time_period[0],
                     'end_time': time_period[1],
                     'sources': [],
-                })['sources'].append({
+                })
+                task['sources'].append({
                     'data': value,
                     'masks': [mask.get(tile_index) for mask in masks],
-                    'spec': source,
+                    'spec': source_spec,
                 })
 
         for task in tasks.values():
@@ -281,6 +287,32 @@ def make_products(index, config):
     for stat in config.stats:
         algorithm = make_stat_metadata(stat)
 
+        data_measurements = [
+            {
+                'name': measurement['name'],
+                'dtype': algorithm.dtype(measurement['dtype']),
+                'nodata': algorithm.nodata,
+                'units': algorithm.units
+            }
+            for measurement in measurements]
+        data_platform_measurements = [
+            {
+                'name': measurement['name'] + '_platform',
+                'dtype': 'int8',
+                'nodata': -1,
+                'units': 'index of source'
+            }
+            for measurement in measurements
+        ]
+        data_observed_date_measurements = [
+            {
+                'name': measurement['name'] + '_observed',
+                'dtype': algorithm.dtype(datetime),
+                'nodata': 0,
+                'units': 'seconds since 1970-01-01 00:00:00'
+            }
+            for measurement in measurements
+        ]
         name = stat['name']
         definition = {
             'name': name,
@@ -291,15 +323,7 @@ def make_products(index, config):
                 'product_type': name,
             },
             'storage': config.storage,
-            'measurements': [
-                {
-                    'name': measurement_name,
-                    'dtype': algorithm.dtype(measurement['dtype']),
-                    'nodata': algorithm.nodata,
-                    'units': algorithm.units
-                }
-                for measurement_name, measurement in measurements.items()
-                ]
+            'measurements': data_measurements + data_platform_measurements + data_observed_date_measurements
 
         }
         created_products[name] = Stat(product=index.products.from_doc(definition),
@@ -309,6 +333,11 @@ def make_products(index, config):
 
 
 def calc_output_measurements(index, sources):
+    """
+    Look up desired measurements in of sources from the database index
+
+    :return: list of measurement definitions
+    """
     # Check consistent measurements
     first_source = sources[0]
     if not all(first_source['measurements'] == source['measurements'] for source in sources):
