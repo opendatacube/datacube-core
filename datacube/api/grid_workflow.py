@@ -285,7 +285,7 @@ class GridWorkflow(object):
 
         :param `.Tile` tile: The tile to load.
 
-        :param measurements: The name or list of names of measurements to load
+        :param list(str) measurements: The names of measurements to load
 
         :param dict dask_chunks: If the data should be loaded as needed using :py:class:`dask.array.Array`,
             specify the chunk size in each output direction.

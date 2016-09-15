@@ -116,23 +116,22 @@ def task_app(make_config, make_tasks):
     return decorate
 
 
-def check_existing_files(tasks, path_key='filename', name_key='tile_index'):
+def check_existing_files(paths):
     """Check for existing files and optionally delete them.
 
-    :param list(dict) tasks: list of task dictionaries
-    :param path_key: the key of the task dict that stores the file path
-    :param name_key: the key of the task dict that stores the name of the task
+    :param paths: sequence of path strings or path objects
     """
+    click.echo('Files to be created:')
     existing_files = []
     total = 0
-    for task in tasks:
+    for path in paths:
         total += 1
-        file_path = Path(task[path_key])
+        file_path = Path(path)
         file_info = ''
         if file_path.exists():
             existing_files.append(file_path)
-            file_info = ' - ALREADY EXISTS: {}'.format(file_path)
-        click.echo('Task: {}{}'.format(task[name_key], file_info))
+            file_info = ' - ALREADY EXISTS'
+        click.echo('{}{}'.format(path, file_info))
 
     if existing_files:
         if click.confirm('There were {} existing files found that are not indexed. Delete those files now?'.format(
@@ -140,7 +139,6 @@ def check_existing_files(tasks, path_key='filename', name_key='tile_index'):
             for file_path in existing_files:
                 file_path.unlink()
 
-    click.echo('{total} tasks total to be run ({valid} valid tasks, {invalid} invalid tasks)'.format(
+    click.echo('{total} tasks files to be created ({valid} valid files, {invalid} existing paths)'.format(
         total=total, valid=total - len(existing_files), invalid=len(existing_files)
     ))
-    click.echo('Existing file check complete')
