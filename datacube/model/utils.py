@@ -74,7 +74,7 @@ def geobox_info(extent, valid_data=None):
     if valid_data:
         doc['grid_spatial']['projection']['valid_data'] = {
             'type': 'Polygon',
-            'coordinates': [valid_data.points+[copy.copy(valid_data.points[0])]]  # HACK: to disable yaml aliases
+            'coordinates': [valid_data.points + [copy.copy(valid_data.points[0])]]  # HACK: to disable yaml aliases
         }
     return doc
 
@@ -123,6 +123,7 @@ def datasets_to_doc(output_datasets):
     :return: An array of yaml document strings
     :rtype: :py:class:`xarray.DataArray`
     """
+
     def dataset_to_yaml(index, dataset):
         return yaml.dump(dataset.metadata_doc, Dumper=SafeDumper, encoding='utf-8')
 

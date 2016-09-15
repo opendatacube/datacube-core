@@ -9,7 +9,9 @@ properties:
     description:
         type: string
     metadata_type:
-        type: string
+        oneOf:
+            - type: string
+            - "$ref": "metadata-type-schema.yaml"
     metadata:
         type: object
     storage:

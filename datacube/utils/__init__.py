@@ -279,9 +279,23 @@ def read_documents(*paths):
                              .format(path.name, _ALL_SUPPORTED_EXTENSIONS))
 
 
-def validate_document(document, schema):
+def validate_document(document, schema, schema_folder=None):
     try:
-        jsonschema.validate(document, schema)
+        # Allow schemas to reference other schemas in the given folder.
+        def doc_reference(path):
+            path = pathlib.Path(schema_folder).joinpath(path)
+            if not path.exists():
+                raise ValueError("Reference not found: %s" % path)
+            schema = next(iter(read_documents(path)))[1]
+            return schema
+
+        jsonschema.Draft4Validator.check_schema(schema)
+        ref_resolver = jsonschema.RefResolver.from_schema(
+            schema,
+            handlers={'': doc_reference} if schema_folder else ()
+        )
+        validator = jsonschema.Draft4Validator(schema, resolver=ref_resolver)
+        validator.validate(document)
     except jsonschema.ValidationError as e:
         raise InvalidDocException(e.message)
 
@@ -565,12 +579,12 @@ def schema_validated(schema):
 
     Adds a self.validate() method which takes a dict used to populate the instantiated class.
 
-    :param str schema: filename of the json schema, relative to `SCHEMA_PATH`
+    :param pathlib.Path schema: filename of the json schema, relative to `SCHEMA_PATH`
     :return: wrapped class
     """
 
     def validate(cls, document):
-        return validate_document(document, cls.schema)
+        return validate_document(document, cls.schema, schema.parent)
 
     def decorate(cls):
         cls.schema = next(iter(read_documents(schema)))[1]
