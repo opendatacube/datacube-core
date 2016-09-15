@@ -98,6 +98,15 @@ def _zvalue_from_index(arr, ind):
     return numpy.take(arr, idx)
 
 
+def axisindex(a, index, axis=0):
+    """
+    Index array 'a' using 'index' as depth along 'axis'
+    """
+    indices = numpy.indices(a.shape[:axis] + a.shape[axis + 1:])
+    index = tuple(indices[:axis]) + (index,) + tuple(indices[axis:])
+    return a[index]
+
+
 def argpercentile(a, q, axis=0):
     """
     Compute the index of qth percentile of the data along the specified axis.
@@ -111,15 +120,12 @@ def argpercentile(a, q, axis=0):
     axis : int or sequence of int, optional
         Axis along which the percentiles are computed. The default is 0.
     """
-    # TODO: pass ndv?
     q = numpy.array(q, dtype=numpy.float64, copy=True) / 100.0
     nans = numpy.isnan(a).sum(axis=axis)
     q = q.reshape(q.shape + (1,) * nans.ndim)
-    # NOTE: index = (q*(a.shape[axis]-1-nans) + nans + 0.5).astype(int) for ndv that is smaller than values
-    index = (q * (a.shape[axis] - 1 - nans) + 0.5).astype(numpy.int32)
-    indices = numpy.indices(a.shape[:axis] + a.shape[axis + 1:])
-    index = tuple(indices[:axis]) + (index,) + tuple(indices[axis:])
-    return numpy.argsort(a, axis=axis)[index]
+    index = numpy.round(q * (a.shape[axis] - 1 - nans)).astype(numpy.int32)
+    # NOTE: assuming nans are gonna sort larger than everything else
+    return axisindex(numpy.argsort(a, axis=axis), index, axis=axis)
 
 
 def nan_percentile(arr, q, axis=0):
