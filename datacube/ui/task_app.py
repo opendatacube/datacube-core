@@ -32,7 +32,7 @@ def config_loader(index, app_config_file, make_config, make_tasks, *args, **kwar
     tasks = make_tasks(index, config, **kwargs)
     _LOG.info('%s tasks discovered', len(tasks))
 
-    return config, tasks
+    return config, iter(tasks)
 
 
 def task_saver(config, tasks, taskfile):
