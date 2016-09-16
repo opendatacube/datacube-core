@@ -196,7 +196,7 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
     def _make_dataset(labels, sources):
         sources_union = union_points(*[source.extent.to_crs(tile.geobox.crs).points for source in sources])
         valid_data = intersect_points(tile.geobox.extent.points, sources_union)
-        dataset = make_dataset(dataset_type=output_type,
+        dataset = make_dataset(product=output_type,
                                sources=sources,
                                extent=tile.geobox.extent,
                                center_time=labels['time'],

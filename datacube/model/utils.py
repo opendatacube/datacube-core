@@ -169,13 +169,12 @@ def xr_apply(data_array, func, dtype):
     return xarray.DataArray(data, coords=data_array.coords, dims=data_array.dims)
 
 
-def make_dataset(dataset_type, sources, extent, center_time, valid_data=None, uri=None, app_info=None):
+def make_dataset(product, sources, extent, center_time, valid_data=None, uri=None, app_info=None):
     """
     Create Dataset for the data
 
-    :param DatasetType dataset_type:
-    :param sources: source datasets of source datasets
-    :type sources: list[:class:`Dataset`]
+    :param DatasetType product: Product the dataset is part of
+    :param list[:class:`Dataset`] sources: datasets used to produce the dataset
     :param GeoPolygon extent: extent of the dataset
     :param GeoPolygon valid_data: extent of the valid data
     :param center_time: time of the central point of the dataset
@@ -184,16 +183,16 @@ def make_dataset(dataset_type, sources, extent, center_time, valid_data=None, ur
     :rtype: class:`Dataset`
     """
     document = {}
-    merge(document, dataset_type.metadata_doc)
+    merge(document, product.metadata_doc)
     merge(document, new_dataset_info())
     merge(document, machine_info())
-    merge(document, band_info(dataset_type.measurements.keys()))
+    merge(document, band_info(product.measurements.keys()))
     merge(document, source_info(sources))
     merge(document, geobox_info(extent, valid_data))
     merge(document, time_info(center_time))
     merge(document, app_info or {})
 
-    return Dataset(dataset_type,
+    return Dataset(product,
                    document,
                    local_uri=uri,
                    sources={str(idx): dataset for idx, dataset in enumerate(sources)})

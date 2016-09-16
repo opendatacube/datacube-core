@@ -217,7 +217,7 @@ def create_storage_unit(config, task, stat, filename_template):
 
 def find_source_datasets(task, stat, geobox):
     def _make_dataset(labels, sources):
-        dataset = make_dataset(dataset_type=stat.product,
+        dataset = make_dataset(product=stat.product,
                                sources=sources,
                                extent=geobox.extent,
                                center_time=labels['time'],
