@@ -43,10 +43,15 @@ StatAlgorithm = namedtuple('StatAlgorithm', ['dtype', 'nodata', 'units', 'masked
 
 
 class Stat(object):
-    def __init__(self, product, algorithm, definition):
+    def __init__(self, name, product, algorithm, definition, data_measurements, index_measurements,
+                 observed_measurements):
+        self.name = name
         self.product = product
         self.algorithm = algorithm
         self.definition = definition
+        self.data_measurements = data_measurements
+        self.index_measurements = index_measurements
+        self.observed_measurements = observed_measurements
 
 
 class StatsConfig(object):
@@ -74,7 +79,7 @@ class StatsConfig(object):
 
     def get_variable_params(self):
         chunking = self.storage['chunking']
-        chunking = [chunking[dim] for dim in self.config.storage['dimension_order']]
+        chunking = [chunking[dim] for dim in self.storage['dimension_order']]
 
         variable_params = {}
         for mapping in self.stats:
@@ -161,18 +166,24 @@ def get_filename(path_template, tile_index, start_time):
 
 def create_storage_unit(config, task, stat, filename_template):
     geobox = task['sources'][0]['data'].geobox
-    measurements = list(stat.product.measurements.values())
+    all_measurement_defns = list(stat.product.measurements.values())
+    measurement_names = [m['name'] for m in stat.data_measurements]
 
     datasets, sources = find_source_datasets(task, stat, geobox)
 
-    # var_params = config.get_variable_params()  # TODO: better way?
+    var_params = config.get_variable_params()[stat.name]
+    measurement_params = {
+        measurement_name: var_params
+        for measurement_name in measurement_names
+        }
+
     output_filename = get_filename(filename_template,
                                    task['tile_index'],
                                    task['start_time'])
     nco = nco_from_sources(sources,
                            geobox,
-                           measurements,
-                           {},  # TODO: {measurement['name']: var_params[stat['name']] for measurement in measurements},
+                           all_measurement_defns,
+                           measurement_params,
                            output_filename)
 
     netcdf_writer.create_variable(nco, 'dataset', datasets, zlib=True)
@@ -295,7 +306,7 @@ def make_products(index, config):
                 'units': algorithm.units
             }
             for measurement in measurements]
-        data_platform_measurements = [
+        data_source_index_measurements = [
             {
                 'name': measurement['name'] + '_platform',
                 'dtype': 'int8',
@@ -303,7 +314,7 @@ def make_products(index, config):
                 'units': 'index of source'
             }
             for measurement in measurements
-        ]
+            ]
         data_observed_date_measurements = [
             {
                 'name': measurement['name'] + '_observed',
@@ -312,7 +323,7 @@ def make_products(index, config):
                 'units': 'seconds since 1970-01-01 00:00:00'
             }
             for measurement in measurements
-        ]
+            ]
         name = stat['name']
         definition = {
             'name': name,
@@ -323,12 +334,17 @@ def make_products(index, config):
                 'product_type': name,
             },
             'storage': config.storage,
-            'measurements': data_measurements + data_platform_measurements + data_observed_date_measurements
+            'measurements': data_measurements + data_source_index_measurements + data_observed_date_measurements
 
         }
-        created_products[name] = Stat(product=index.products.from_doc(definition),
+        created_products[name] = Stat(name=name,
+                                      product=index.products.from_doc(definition),
                                       algorithm=algorithm,
-                                      definition=stat)
+                                      definition=stat,
+                                      data_measurements=data_measurements,
+                                      observed_measurements=data_observed_date_measurements,
+                                      index_measurements=data_source_index_measurements
+                                      )
     return created_products
 
 
