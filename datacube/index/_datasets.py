@@ -75,10 +75,11 @@ class MetadataTypeResource(object):
             raise ValueError('Unknown metadata type %s, cannot update – did you intend to add it?' % name)
 
         def handle_unsafe(offset, msg):
+            full_message = "unsafe change to {} {!r}: {}".format(name, ".".join(offset), msg)
             if not allow_unsafe_updates:
-                raise ValueError(msg)
+                raise ValueError(full_message.capitalize())
             else:
-                _LOG.warning("Ignoring %s", msg)
+                _LOG.warning("Ignoring %s", full_message)
 
         updates_allowed = {
             ('description',): changes.allow_any,
@@ -93,7 +94,7 @@ class MetadataTypeResource(object):
             jsonify_document(definition),
             updates_allowed,
             on_failure=handle_unsafe,
-            on_change=lambda offset, old, new: _LOG.info('Changing metadata type %s %s: %r -> %r',
+            on_change=lambda offset, old, new: _LOG.info('Changing metadata type %s %s: %r → %r',
                                                          name, '.'.join(offset), old, new)
         )
 
@@ -240,10 +241,11 @@ class DatasetTypeResource(object):
             raise ValueError('Unknown product %s, cannot update – did you intend to add it?' % type_.name)
 
         def handle_unsafe(offset, msg):
+            full_message = "unsafe change to {} {!r}: {}".format(type_.name, ".".join(offset), msg)
             if not allow_unsafe_updates:
-                raise ValueError(msg)
+                raise ValueError(full_message.capitalize())
             else:
-                _LOG.warning("Ignoring %s", msg)
+                _LOG.warning("Ignoring %s", full_message)
 
         updates_allowed = {
             ('description',): changes.allow_any,
@@ -258,7 +260,7 @@ class DatasetTypeResource(object):
             jsonify_document(type_.definition),
             updates_allowed,
             on_failure=handle_unsafe,
-            on_change=lambda offset, old, new: _LOG.info('Changing %s %s: %r -> %r',
+            on_change=lambda offset, old, new: _LOG.info('Changing %s %s: %r → %r',
                                                          type_.name, '.'.join(offset), old, new)
         )
 

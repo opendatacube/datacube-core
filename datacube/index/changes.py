@@ -14,7 +14,7 @@ def allow_subset(offset, old_value, new_value):
     valid = contains(old_value, new_value, case_sensitive=True)
     return (
         valid,
-        None if valid else 'not a subset'
+        None if valid else 'not a subset ({!r} → {!r})'.format(old_value, new_value)
     )
 
 
@@ -22,7 +22,7 @@ def allow_superset(offset, old_value, new_value):
     valid = contains(new_value, old_value, case_sensitive=True)
     return (
         valid,
-        None if valid else 'not a superset'
+        None if valid else 'not a superset ({!r} → {!r})'.format(old_value, new_value)
     )
 
 
@@ -31,7 +31,7 @@ def allow_any(offset, old, new):
 
 
 def default_failure(offset, msg):
-    raise ValueError(msg)
+    raise ValueError("Change to {!r}: {}".format(".".join(offset), msg))
 
 
 def validate_dict_changes(old, new, allowed_changes,
@@ -51,11 +51,11 @@ def validate_dict_changes(old, new, allowed_changes,
     >>> validate_dict_changes({'a': 1}, {'a': 2}, {})
     Traceback (most recent call last):
     ...
-    ValueError: Potentially unsafe update: changing 'a'
+    ValueError: Change to 'a': value differs
     >>> validate_dict_changes({'a1': 1, 'a2': {'b1': 1}}, {'a1': 1}, {})
     Traceback (most recent call last):
     ...
-    ValueError: Potentially unsafe update: changing 'a2'
+    ValueError: Change to 'a2': value differs
     >>> # A change in a nested dict
     >>> validate_dict_changes({'a1': 1, 'a2': {'b1': 1}}, {'a1': 1, 'a2': {'b1': 2}}, {('a2', 'b1'): allow_any})
     ((('a2', 'b1'), 1, 2),)
@@ -63,7 +63,7 @@ def validate_dict_changes(old, new, allowed_changes,
     >>> validate_dict_changes({'a1': 1, 'a2': {'b1': 1}}, {'a1': 1}, {('a2', 'b1'): allow_any})
     Traceback (most recent call last):
     ...
-    ValueError: Potentially unsafe update: changing 'a2'
+    ValueError: Change to 'a2': value differs
     >>> # Removal of a value
     >>> validate_dict_changes({'a1': 1, 'a2': {'b1': 1}}, {'a1': 1}, {('a2',): allow_any})
     ((('a2',), {'b1': 1}, None),)
@@ -102,11 +102,11 @@ def validate_dict_changes(old, new, allowed_changes,
             allowance = allowed_changes_index.get(allowance_offset)
 
         if allowance is None:
-            on_failure(offset_context, 'Potentially unsafe update: changing %r' % ('.'.join(offset),))
+            on_failure(offset, 'value differs')
         elif hasattr(allowance, '__call__'):
             is_allowed, message = allowance(offset, old_val, new_val)
             if not is_allowed:
-                on_failure(offset_context, message)
+                on_failure(offset, message)
         else:
             raise RuntimeError('Unknown change type: expecting validation function at %r' % offset)
 
