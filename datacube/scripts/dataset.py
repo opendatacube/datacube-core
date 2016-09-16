@@ -193,7 +193,7 @@ def archive_cmd(index, archive_derived, dry_run, ids):
         for d in to_process:
             click.echo('archiving %s %s %s' % (d.type.name, d.id, d.local_uri))
         if not dry_run:
-            index.datasets.archive(to_process)
+            index.datasets.archive(d.id for d in to_process)
 
 
 @dataset_cmd.command('restore', help="Restore datasets")
@@ -208,4 +208,4 @@ def restore_cmd(index, restore_derived, dry_run, ids):
         for d in to_process:
             click.echo('restoring %s %s %s' % (d.type.name, d.id, d.local_uri))
         if not dry_run:
-            index.datasets.restore(to_process)
+            index.datasets.restore(d.id for d in to_process)
