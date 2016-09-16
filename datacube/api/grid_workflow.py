@@ -30,8 +30,8 @@ class Tile(object):
     """
     The Tile object holds a lightweight representation of a datacube result.
 
-    It is produced by GridWorkflow.`list_cells` or `GridWorkflow.list_tiles`.
-    The Tile object can be passed to `GridWorkflow.load` to be loaded into memory as an `xarray.Dataset`.
+    It is produced by :meth:`.GridWorkflow.list_cells` or :meth:`.GridWorkflow.list_tiles`.
+    The Tile object can be passed to :meth:`GridWorkflow.load` to be loaded into memory as an :class:`xarray.Dataset`.
     """
     def __init__(self, sources, geobox):
         """Create a Tile representing a dataset that can be loaded.
