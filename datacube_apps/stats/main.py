@@ -39,19 +39,61 @@ STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
                                  'contiguous',
                                  'attrs'}
 
-StatAlgorithm = namedtuple('StatAlgorithm', ['dtype', 'nodata', 'units', 'masked', 'compute'])
 
-
-class Stat(object):
-    def __init__(self, name, product, algorithm, definition, data_measurements, index_measurements,
-                 observed_measurements):
+class IndexBasedStat(object):
+    def __init__(self, name, input_measurements, definition):
         self.name = name
-        self.product = product
-        self.algorithm = algorithm
+        self.input_measurements = input_measurements
         self.definition = definition
-        self.data_measurements = data_measurements
-        self.index_measurements = index_measurements
-        self.observed_measurements = observed_measurements
+        self.dtype = definition['dtype']
+        self.nodata = definition['nodata']
+        self.units = '1'
+        self.masked = True
+        self.compute = STAT_FUNCS[definition['name']]
+        self.product = None
+        self.data_measurements = None
+        self.index_measurements = None
+        self.date_measurements = None
+
+    def create_product_definition(self, index, storage):
+        self.data_measurements = [
+            {
+                'name': measurement['name'],
+                'dtype': self.dtype,
+                'nodata': self.nodata,
+                'units': self.units
+            }
+            for measurement in self.input_measurements]
+        self.index_measurements = [
+            {
+                'name': measurement['name'] + '_platform',
+                'dtype': 'int8',
+                'nodata': -1,
+                'units': 'index of source'
+            }
+            for measurement in self.input_measurements
+            ]
+        self.date_measurements = [
+            {
+                'name': measurement['name'] + '_observed',
+                'dtype': 'float64',
+                'nodata': 0,
+                'units': 'seconds since 1970-01-01 00:00:00'
+            }
+            for measurement in self.input_measurements
+            ]
+        product_definition = {
+            'name': self.name,
+            'description': self.name,
+            'metadata_type': 'eo',
+            'metadata': {
+                'format': 'NetCDF',
+                'product_type': self.name,
+            },
+            'storage': storage,
+            'measurements': self.data_measurements + self.index_measurements + self.date_measurements
+        }
+        self.product = index.products.from_doc(product_definition)
 
 
 class StatsConfig(object):
@@ -61,7 +103,7 @@ class StatsConfig(object):
         self.storage = config['storage']
 
         self.sources = config['sources']
-        self.stats = config['stats']
+        self.output_products = config['output_products']
 
         self.start_time = to_datetime(config['start_date'])
         self.end_time = to_datetime(config['end_date'])
@@ -82,7 +124,7 @@ class StatsConfig(object):
         chunking = [chunking[dim] for dim in self.storage['dimension_order']]
 
         variable_params = {}
-        for mapping in self.stats:
+        for mapping in self.output_products:
             varname = mapping['name']
             variable_params[varname] = {k: v for k, v in mapping.items() if k in STANDARD_VARIABLE_PARAM_NAMES}
             variable_params[varname]['chunksizes'] = chunking
@@ -99,14 +141,6 @@ class Lambda(object):
         return getattr(x, self.function)(dim='time', **self.kwargs)
 
 
-class Ident(object):
-    def __init__(self, x):
-        self.x = x
-
-    def __call__(self, x):
-        return self.x
-
-
 STAT_FUNCS = {
     'mean': Lambda('mean'),
     'median': Lambda('median'),
@@ -115,16 +149,6 @@ STAT_FUNCS = {
     'percentile_50': Lambda('reduce', func=nan_percentile, q=50),
     'percentile_90': Lambda('reduce', func=nan_percentile, q=90),
 }
-
-
-def make_stat_metadata(definition):
-    return StatAlgorithm(
-        dtype=Ident(definition['dtype']),
-        nodata=definition['nodata'],
-        units='1',
-        masked=True,
-        compute=STAT_FUNCS[definition['name']]
-    )
 
 
 def nco_from_sources(sources, geobox, measurements, variable_params, filename):
@@ -203,7 +227,7 @@ def find_source_datasets(task, stat, geobox):
         return dataset
 
     def merge_sources(prod):
-        if stat.algorithm.masked:
+        if stat.masked:
             return reduce_(lambda a, b: a + b, (sources.sum() for sources in
                                                 xarray.align(prod['data'].sources,
                                                              *[mask_tile.sources for mask_tile in prod['masks']])))
@@ -246,7 +270,7 @@ def do_stats(task, config):
 
         for stat_name, stat in task['products'].items():
             _LOG.info("Computing %s in tile %s", stat_name, tile_index)
-            data_stats = stat.algorithm.compute(data)  # TODO: if stat.algorithm.masked
+            data_stats = stat.compute(data)  # TODO: if stat.algorithm.masked
             # For each of the data variables, shove this chunk into the output results
             for var_name, var in data_stats.data_vars.items():
                 results[stat_name][var_name][(0,) + tile_index[1:]] = var.values  # HACK: make netcdf slicing nicer?...
@@ -260,7 +284,7 @@ def do_stats(task, config):
 def make_tasks(index, products, config):
     for time_period in date_sequence(start=config.start_time, end=config.end_time,
                                      stats_duration=config.stats_duration, step_size=config.step_size):
-        _LOG.info('Making stats tasks for %s to %s', time_period[0], time_period[1])
+        _LOG.info('Making output_products tasks for %s to %s', time_period[0], time_period[1])
         workflow = GridWorkflow(index, grid_spec=config.grid_spec)
 
         # Tasks are grouped by tile_index, and may contain sources from multiple places
@@ -271,7 +295,7 @@ def make_tasks(index, products, config):
             masks = [workflow.list_cells(product=mask['product'], time=time_period, cell_index=(15, -40))
                      for mask in source_spec['masks']]
 
-            for tile_index, value in data.items():
+            for tile_index, sources in data.items():
                 task = tasks.setdefault(tile_index, {
                     'tile_index': tile_index,
                     'products': products,
@@ -280,7 +304,7 @@ def make_tasks(index, products, config):
                     'sources': [],
                 })
                 task['sources'].append({
-                    'data': value,
+                    'data': sources,
                     'masks': [mask.get(tile_index) for mask in masks],
                     'spec': source_spec,
                 })
@@ -295,61 +319,20 @@ def make_products(index, config):
 
     measurements = calc_output_measurements(index, config.sources)
 
-    for stat in config.stats:
-        algorithm = make_stat_metadata(stat)
-
-        data_measurements = [
-            {
-                'name': measurement['name'],
-                'dtype': algorithm.dtype(measurement['dtype']),
-                'nodata': algorithm.nodata,
-                'units': algorithm.units
-            }
-            for measurement in measurements]
-        data_source_index_measurements = [
-            {
-                'name': measurement['name'] + '_platform',
-                'dtype': 'int8',
-                'nodata': -1,
-                'units': 'index of source'
-            }
-            for measurement in measurements
-            ]
-        data_observed_date_measurements = [
-            {
-                'name': measurement['name'] + '_observed',
-                'dtype': algorithm.dtype(datetime),
-                'nodata': 0,
-                'units': 'seconds since 1970-01-01 00:00:00'
-            }
-            for measurement in measurements
-            ]
+    for stat in config.output_products:
         name = stat['name']
-        definition = {
-            'name': name,
-            'description': name,
-            'metadata_type': 'eo',
-            'metadata': {
-                'format': 'NetCDF',
-                'product_type': name,
-            },
-            'storage': config.storage,
-            'measurements': data_measurements + data_source_index_measurements + data_observed_date_measurements
+        index_based_stat = IndexBasedStat(name, measurements, definition=stat)
 
-        }
-        created_products[name] = Stat(name=name,
-                                      product=index.products.from_doc(definition),
-                                      algorithm=algorithm,
-                                      definition=stat,
-                                      data_measurements=data_measurements,
-                                      observed_measurements=data_observed_date_measurements,
-                                      index_measurements=data_source_index_measurements)
+        index_based_stat.create_product_definition(index=index, storage=config.storage)
+
+        created_products[stat['name']] = index_based_stat
+
     return created_products
 
 
 def calc_output_measurements(index, sources):
     """
-    Look up desired measurements in of sources from the database index
+    Look up desired measurements from sources in the database index
 
     :return: list of measurement definitions
     """
@@ -367,14 +350,14 @@ def calc_output_measurements(index, sources):
     return measurements
 
 
-@click.command(name='stats')
+@click.command(name='output_products')
 @click.option('--app-config', '-c',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
               help='configuration file location', callback=to_pathlib)
 @click.option('--year', type=click.IntRange(1960, 2060))
 @ui.global_cli_options
 @ui.executor_cli_options
-@ui.pass_index(app_name='agdc-stats')
+@ui.pass_index(app_name='agdc-output_products')
 def main(index, app_config, year, executor):
     _, config = next(read_documents(app_config))
 

@@ -65,7 +65,7 @@ storage:
 
 ## Define statistics to perform and how to store the data
 
-stats:
+output_products:
  - name: mean
    zlib: True
    dtype: int16
