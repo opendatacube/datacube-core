@@ -8,7 +8,7 @@ from __future__ import absolute_import, print_function
 from collections import namedtuple, OrderedDict
 from datetime import datetime
 from functools import reduce as reduce_
-from itertools import product
+import itertools
 import logging
 from pathlib import Path
 
@@ -151,7 +151,7 @@ def _slicify(step, size):
 
 
 def block_iter(steps, shape):
-    return product(*(_slicify(step, size) for step, size in zip(steps, shape)))
+    return itertools.product(*(_slicify(step, size) for step, size in zip(steps, shape)))
 
 
 def tile_iter(tile, chunk):
@@ -343,8 +343,7 @@ def make_products(index, config):
                                       definition=stat,
                                       data_measurements=data_measurements,
                                       observed_measurements=data_observed_date_measurements,
-                                      index_measurements=data_source_index_measurements
-                                      )
+                                      index_measurements=data_source_index_measurements)
     return created_products
 
 
