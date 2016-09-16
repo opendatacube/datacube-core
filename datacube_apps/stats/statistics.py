@@ -5,6 +5,9 @@ from __future__ import absolute_import
 
 import collections
 import numpy
+from functools import reduce as reduce_
+from operator import mul as mul_op
+
 
 try:
     from bottleneck import anynan, nansum
@@ -82,27 +85,24 @@ def _array_hdmedian(inarray, method, axis=1, **kwargs):
     return output
 
 
+def prod(a):
+    """Product of a sequence"""
+    return reduce_(mul_op, a, 1)
+
+
+def _blah(shape, step=1, dtype=None):
+    return numpy.arange(0, prod(shape)*step, step, dtype=dtype).reshape(shape)
+
+
 def axisindex(a, index, axis=0):
     """
     Index array 'a' using 'index' as depth along 'axis'
     """
-    idx = numpy.zeros(index.shape, dtype=numpy.int32)
-    mul = 1
-    for i in range(index.ndim-1, axis-1, -1):
-        nushape = [1]*index.ndim
-        nushape[i] = index.shape[i]
-        idx += numpy.arange(0, index.shape[i]*mul, mul).reshape(nushape)
-        mul *= index.shape[i]
-
-    idx += index*mul
-    mul *= a.shape[axis]
-
-    for i in range(axis-1, -1, -1):
-        nushape = [1]*index.ndim
-        nushape[i] = index.shape[i]
-        idx += numpy.arange(0, index.shape[i]*mul, mul).reshape(nushape)
-        mul *= index.shape[i]
-
+    shape = index.shape
+    lshape = shape[:axis]+(1,)*(index.ndim - axis)
+    rshape = (1,)*axis+shape[axis:]
+    step = prod(shape[axis:])
+    idx = _blah(lshape, step * a.shape[axis]) + _blah(rshape) + index * step
     return a.take(idx)
 
 
