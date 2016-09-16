@@ -639,7 +639,7 @@ class PostgresDb(object):
                 definition=definition
             )
         )
-        type_id = res.fetchone()[0]
+        type_id = res.first()[0]
 
         # Initialise search fields.
         self._setup_dataset_type_fields(type_id, name, metadata_type_id, definition['metadata'],
@@ -669,7 +669,7 @@ class PostgresDb(object):
                 definition=definition
             )
         )
-        type_id = res.fetchone()[0]
+        type_id = res.first()[0]
         record = self.get_metadata_type(type_id)
 
         self._setup_metadata_type_fields(
