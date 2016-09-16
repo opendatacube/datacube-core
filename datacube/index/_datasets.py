@@ -255,9 +255,16 @@ class DatasetTypeResource(object):
             ('metadata',): changes.allow_subset
         }
 
+        # If they specified an inline metadata type, process it too.
+        new_definition = jsonify_document(type_.definition)
+        metadata_type = new_definition['metadata_type']
+        if not isinstance(metadata_type, compat.string_types):
+            self.metadata_type_resource.update_document(metadata_type, allow_unsafe_updates=allow_unsafe_updates)
+            new_definition['metadata_type'] = metadata_type['name']
+
         doc_changes = changes.validate_dict_changes(
             existing.definition,
-            jsonify_document(type_.definition),
+            new_definition,
             updates_allowed,
             on_failure=handle_unsafe,
             on_change=lambda offset, old, new: _LOG.info('Changing %s %s: %r → %r',

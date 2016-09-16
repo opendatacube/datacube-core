@@ -8,12 +8,11 @@ import itertools
 import os
 import shutil
 
+import datacube.utils
 import pytest
 import rasterio
 import yaml
 from pathlib import Path
-
-import datacube.utils
 
 try:
     from yaml import CSafeLoader as SafeLoader
@@ -191,6 +190,11 @@ def create_empty_geotiff(path):
 @pytest.fixture
 def default_metadata_type_docs():
     return [doc for (path, doc) in datacube.utils.read_documents(_DEFAULT_METADATA_TYPES_PATH)]
+
+
+@pytest.fixture
+def default_metadata_type_doc(default_metadata_type_docs):
+    return [doc for doc in default_metadata_type_docs if doc['name'] == 'eo'][0]
 
 
 @pytest.fixture

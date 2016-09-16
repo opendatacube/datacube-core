@@ -111,7 +111,7 @@ def test_idempotent_add_dataset_type(index, ls5_nbar_gtiff_type, ls5_nbar_gtiff_
         # TODO: Support for adding/changing search fields?
 
 
-def test_update_dataset_type(index, ls5_nbar_gtiff_type, ls5_nbar_gtiff_doc):
+def test_update_dataset_type(index, ls5_nbar_gtiff_type, ls5_nbar_gtiff_doc, default_metadata_type_doc):
     """
     :type ls5_nbar_gtiff_type: datacube.model.DatasetType
     :type index: datacube.index._api.Index
@@ -128,11 +128,15 @@ def test_update_dataset_type(index, ls5_nbar_gtiff_type, ls5_nbar_gtiff_doc):
     assert 'format' in ls5_nbar_gtiff_doc['metadata']
     del ls5_nbar_gtiff_doc['metadata']['format']['name']
     del ls5_nbar_gtiff_doc['metadata']['format']
-
     index.datasets.types.update_document(ls5_nbar_gtiff_doc)
     # Ensure was updated
     updated_type = index.datasets.types.get_by_name(ls5_nbar_gtiff_type.name)
     assert updated_type.definition['metadata'] == ls5_nbar_gtiff_doc['metadata']
+
+    # Specifying metadata type definition (rather than name) should be allowed
+    full_doc = copy.deepcopy(ls5_nbar_gtiff_doc)
+    full_doc['metadata_type'] = default_metadata_type_doc
+    index.datasets.types.update_document(full_doc)
 
     # Remove fixed field, forcing a new index to be created (as datasets can now differ for the field).
     assert not _object_exists(index._db, 'dix_ls5_nbart_p54_gtiff_product_type')
