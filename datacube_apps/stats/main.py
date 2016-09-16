@@ -234,7 +234,7 @@ def do_stats(task, config):
         data = data.isel(time=data.time.argsort())  # sort along time dim
 
         for stat_name, stat in task['products'].items():
-            _LOG.debug("Computing %s in tile %s", stat_name, tile_index)
+            _LOG.info("Computing %s in tile %s", stat_name, tile_index)
             data_stats = stat.algorithm.compute(data)  # TODO: if stat.algorithm.masked
             # For each of the data variables, shove this chunk into the output results
             for var_name, var in data_stats.data_vars.items():
@@ -249,7 +249,7 @@ def do_stats(task, config):
 def make_tasks(index, products, config):
     for time_period in date_sequence(start=config.start_time, end=config.end_time,
                                      stats_duration=config.stats_duration, step_size=config.step_size):
-        _LOG.debug('Making stats tasks for %s to %s', time_period[0], time_period[1])
+        _LOG.info('Making stats tasks for %s to %s', time_period[0], time_period[1])
         workflow = GridWorkflow(index, grid_spec=config.grid_spec)
 
         # Tasks are grouped by tile_index, and may contain sources from multiple places
@@ -279,7 +279,7 @@ def make_tasks(index, products, config):
 
 
 def make_products(index, config):
-    _LOG.debug('Creating output products')
+    _LOG.info('Creating output products')
     created_products = {}
 
     measurements = calc_output_measurements(index, config.sources)
