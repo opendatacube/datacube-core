@@ -51,11 +51,11 @@ def validate_dict_changes(old, new, allowed_changes,
     >>> validate_dict_changes({'a': 1}, {'a': 2}, {})
     Traceback (most recent call last):
     ...
-    ValueError: Change to 'a': value differs
+    ValueError: Change to 'a': value differs (1 → 2)
     >>> validate_dict_changes({'a1': 1, 'a2': {'b1': 1}}, {'a1': 1}, {})
     Traceback (most recent call last):
     ...
-    ValueError: Change to 'a2': value differs
+    ValueError: Change to 'a2': value differs ({'b1': 1} → None)
     >>> # A change in a nested dict
     >>> validate_dict_changes({'a1': 1, 'a2': {'b1': 1}}, {'a1': 1, 'a2': {'b1': 2}}, {('a2', 'b1'): allow_any})
     ((('a2', 'b1'), 1, 2),)
@@ -63,7 +63,7 @@ def validate_dict_changes(old, new, allowed_changes,
     >>> validate_dict_changes({'a1': 1, 'a2': {'b1': 1}}, {'a1': 1}, {('a2', 'b1'): allow_any})
     Traceback (most recent call last):
     ...
-    ValueError: Change to 'a2': value differs
+    ValueError: Change to 'a2': value differs ({'b1': 1} → None)
     >>> # Removal of a value
     >>> validate_dict_changes({'a1': 1, 'a2': {'b1': 1}}, {'a1': 1}, {('a2',): allow_any})
     ((('a2',), {'b1': 1}, None),)
@@ -102,7 +102,7 @@ def validate_dict_changes(old, new, allowed_changes,
             allowance = allowed_changes_index.get(allowance_offset)
 
         if allowance is None:
-            on_failure(offset, 'value differs')
+            on_failure(offset, 'value differs ({!r} → {!r})'.format(old_val, new_val))
         elif hasattr(allowance, '__call__'):
             is_allowed, message = allowance(offset, old_val, new_val)
             if not is_allowed:
