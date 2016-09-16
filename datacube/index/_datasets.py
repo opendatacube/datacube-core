@@ -259,6 +259,8 @@ class DatasetTypeResource(object):
 
         updates_allowed = {
             ('description',): changes.allow_any,
+            ('metadata_type',): changes.allow_any,
+
             # You can safely make the match rules looser but not tighter.
             # Tightening them could exclude datasets already matched to the product.
             # (which would make search results wrong)
@@ -289,12 +291,15 @@ class DatasetTypeResource(object):
                 return
 
             _LOG.info("Updating product %s", type_.name)
-            self._db.update_dataset_type(
-                name=type_.name,
-                metadata=type_.metadata_doc,
-                metadata_type_id=type_.metadata_type.id,
-                definition=type_.definition
-            )
+            with self._db.begin() as trans:
+                trans.update_dataset_type(
+                    name=type_.name,
+                    metadata=type_.metadata_doc,
+                    metadata_type_id=type_.metadata_type.id,
+                    definition=type_.definition,
+                    update_metadata_type=existing.metadata_type_ref != type_.metadata_type.id
+                )
+
             # Clear our local cache. Note that other users may still have
             # cached copies for the duration of their connections.
             self.get_by_name.cache_clear()

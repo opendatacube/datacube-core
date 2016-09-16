@@ -135,6 +135,10 @@ class PostgresDb(object):
                     ))
         return PostgresDb(engine)
 
+    @property
+    def in_transaction(self):
+        return False
+
     @classmethod
     def from_config(cls, config=LocalConfig.find(), application_name=None, validate_connection=True):
         app_name = cls._expand_app_name(application_name)
@@ -629,7 +633,7 @@ class PostgresDb(object):
                             name,
                             metadata,
                             metadata_type_id,
-                            definition, concurrently=False):
+                            definition, update_metadata_type=False, concurrently=False):
         res = self._connection.execute(
             DATASET_TYPE.update().returning(DATASET_TYPE.c.id).where(
                 DATASET_TYPE.c.name == name
@@ -640,6 +644,18 @@ class PostgresDb(object):
             )
         )
         type_id = res.first()[0]
+
+        if update_metadata_type:
+            if not self.in_transaction:
+                raise RuntimeError('Must update metadata types in transaction')
+
+            self._connection.execute(
+                DATASET.update().where(
+                    DATASET.c.dataset_type_ref == type_id
+                ).values(
+                    metadata_type_ref=metadata_type_id,
+                )
+            )
 
         # Initialise search fields.
         self._setup_dataset_type_fields(type_id, name, metadata_type_id, definition['metadata'],
@@ -843,6 +859,10 @@ class _PostgresDbInTransaction(PostgresDb):
         super(_PostgresDbInTransaction, self).__init__(engine)
         self.__connection = engine.connect()
         self.begin()
+
+    @property
+    def in_transaction(self):
+        return True
 
     @property
     def _connection(self):
