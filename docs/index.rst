@@ -56,6 +56,7 @@ facility for use by NCI users.
 
    about/whats_new
    about/glossary
+   about/release_process
    about/license
 
 .. _support:

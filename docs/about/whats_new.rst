@@ -12,9 +12,11 @@ v1.1.9 Pest Hippo (16 September 2016)
 
   - Added links to external datasets in :ref:`indexing`
 
-  - Added archive and restore command line features: `datacube dataset archive` and `datacube dataset restore`
+  - Improved archive and restore command line features: `datacube dataset archive` and `datacube dataset restore`
 
   - Improved application support features
+
+  - Improved system configuration documentation
 
 
 v1.1.8 Last Mammoth (5 September 2016)
