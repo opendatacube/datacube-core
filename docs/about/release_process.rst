@@ -14,5 +14,9 @@ When the
 4. Draft a new release on GitHub
    https://github.com/data-cube/agdc-v2/releases
 
-5. Install the datacube module on `raijin` by following the instructions at
+5. Mark the version as released in Jira_, moving open issues to the next version.
+
+.. _Jira: https://gaautobots.atlassian.net/projects/ACDD?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page&status=unreleased
+
+6. Install the datacube module on `raijin` by following the instructions at
    https://github.com/GeoscienceAustralia/ga-datacube-env#data-cube-module
