@@ -47,6 +47,17 @@ class PgField(Field):
         raise NotImplementedError('alchemy expression')
 
     @property
+    def sql_expression(self):
+        """
+        Get the raw SQL expression for this field as a string.
+        :rtype: str
+        """
+        return str(self.alchemy_expression.compile(
+            dialect=postgres.dialect(),
+            compile_kwargs={"literal_binds": True}
+        ))
+
+    @property
     def postgres_index_type(self):
         return 'btree'
 

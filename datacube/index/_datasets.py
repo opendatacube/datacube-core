@@ -243,11 +243,11 @@ class DatasetTypeResource(object):
         """
         DatasetType.validate(type_.definition)
 
-        existing = self._db.get_dataset_type_by_name(type_.name)
+        existing = self._get_by_name(type_.name)
         if not existing:
             raise ValueError('Unknown product %s, cannot update – did you intend to add it?' % type_.name)
 
-        def handle_unsafe(offset, msg):
+        def declare_unsafe(offset, msg):
             full_message = "unsafe change to {} {!r}: {}".format(type_.name, ".".join(offset), msg)
 
             if dry_run:
@@ -280,10 +280,27 @@ class DatasetTypeResource(object):
             existing.definition,
             new_definition,
             updates_allowed,
-            on_failure=handle_unsafe,
+            on_failure=declare_unsafe,
             on_change=lambda offset, old, new: _LOG.info('Changing %s %s: %r → %r',
                                                          type_.name, '.'.join(offset), old, new)
         )
+
+        # Are they changing to a different metadata type?
+        changing_metadata_type = existing.metadata_type.id != type_.metadata_type.id
+        if changing_metadata_type:
+            # If the two metadata types declare the same field with different postgres expressions
+            # we can't safely change it.
+            # (Replacing the index would cause all existing users to have no effective index)
+            for name, field in existing.metadata_type.dataset_fields.items():
+                new_field = type_.metadata_type.dataset_fields.get(name)
+                if new_field and (new_field.sql_expression != field.sql_expression):
+                    declare_unsafe(
+                        ('metadata_type',),
+                        'Metadata type change results in incompatible index '
+                        'for {!r} ({!r} → {!r})'.format(
+                            name, field.sql_expression, new_field.sql_expression
+                        )
+                    )
 
         if doc_changes:
             if dry_run:
@@ -297,7 +314,7 @@ class DatasetTypeResource(object):
                     metadata=type_.metadata_doc,
                     metadata_type_id=type_.metadata_type.id,
                     definition=type_.definition,
-                    update_metadata_type=existing.metadata_type_ref != type_.metadata_type.id
+                    update_metadata_type=changing_metadata_type
                 )
 
             # Clear our local cache. Note that other users may still have
@@ -347,6 +364,9 @@ class DatasetTypeResource(object):
         :param str name: name of the Product
         :rtype: datacube.model.DatasetType
         """
+        return self._get_by_name(name)
+
+    def _get_by_name(self, name):
         result = self._db.get_dataset_type_by_name(name)
         if not result:
             return None
