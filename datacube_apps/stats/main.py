@@ -40,6 +40,25 @@ STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
                                  'attrs'}
 
 
+class Lambda(object):
+    def __init__(self, function, **kwargs):
+        self.function = function
+        self.kwargs = kwargs
+
+    def __call__(self, x):
+        return getattr(x, self.function)(dim='time', **self.kwargs)
+
+
+STAT_FUNCS = {
+    'mean': Lambda('mean'),
+    'median': Lambda('median'),
+    'medoid': apply_cross_measurement_reduction,
+    'percentile_10': Lambda('reduce', func=nan_percentile, q=10),
+    'percentile_50': Lambda('reduce', func=nan_percentile, q=50),
+    'percentile_90': Lambda('reduce', func=nan_percentile, q=90),
+}
+
+
 class IndexBasedStat(object):
     def __init__(self, name, input_measurements, definition):
         self.name = name
@@ -130,25 +149,6 @@ class StatsConfig(object):
             variable_params[varname]['chunksizes'] = chunking
 
         return variable_params
-
-
-class Lambda(object):
-    def __init__(self, function, **kwargs):
-        self.function = function
-        self.kwargs = kwargs
-
-    def __call__(self, x):
-        return getattr(x, self.function)(dim='time', **self.kwargs)
-
-
-STAT_FUNCS = {
-    'mean': Lambda('mean'),
-    'median': Lambda('median'),
-    'medoid': apply_cross_measurement_reduction,
-    'percentile_10': Lambda('reduce', func=nan_percentile, q=10),
-    'percentile_50': Lambda('reduce', func=nan_percentile, q=50),
-    'percentile_90': Lambda('reduce', func=nan_percentile, q=90),
-}
 
 
 def nco_from_sources(sources, geobox, measurements, variable_params, filename):
