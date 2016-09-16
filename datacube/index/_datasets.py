@@ -57,12 +57,13 @@ class MetadataTypeResource(object):
             )
         return self.get_by_name(name)
 
-    def update_document(self, definition, allow_unsafe_updates=False):
+    def update_document(self, definition, dry_run=False, allow_unsafe_updates=False):
         """
         Update a metadata type from the document. Unsafe changes will throw a ValueError by default.
 
         Safe updates currently allow new search fields to be added, description to be changed.
 
+        :param bool dry_run: Validate and prepare but do not perform changes.
         :param dict definition: Updated definition
         :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :rtype: datacube.model.MetadataType
@@ -76,7 +77,9 @@ class MetadataTypeResource(object):
 
         def handle_unsafe(offset, msg):
             full_message = "unsafe change to {} {!r}: {}".format(name, ".".join(offset), msg)
-            if not allow_unsafe_updates:
+            if dry_run:
+                _LOG.warning("%s", full_message.capitalize())
+            elif not allow_unsafe_updates:
                 raise ValueError(full_message.capitalize())
             else:
                 _LOG.warning("Ignoring %s", full_message)
@@ -97,8 +100,11 @@ class MetadataTypeResource(object):
             on_change=lambda offset, old, new: _LOG.info('Changing metadata type %s %s: %r → %r',
                                                          name, '.'.join(offset), old, new)
         )
-
         if doc_changes:
+            if dry_run:
+                _LOG.info("Dry run, skipping update.")
+                return
+
             _LOG.info("Updating metadata type %s", name)
             self._db.update_metadata_type(
                 name=name,
@@ -223,13 +229,14 @@ class DatasetTypeResource(object):
             )
         return self.get_by_name(type_.name)
 
-    def update(self, type_, allow_unsafe_updates=False):
+    def update(self, type_, dry_run=False, allow_unsafe_updates=False):
         """
         Update a product. Unsafe changes will throw a ValueError by default.
 
         (An unsafe change is anything that may potentially make the product
         incompatible with existing datasets of that type)
 
+        :param bool dry_run: Validate and prepare but do not perform changes.
         :param datacube.model.DatasetType type_: Product to update
         :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :rtype: datacube.model.DatasetType
@@ -242,7 +249,10 @@ class DatasetTypeResource(object):
 
         def handle_unsafe(offset, msg):
             full_message = "unsafe change to {} {!r}: {}".format(type_.name, ".".join(offset), msg)
-            if not allow_unsafe_updates:
+
+            if dry_run:
+                _LOG.warning("%s", full_message.capitalize())
+            elif not allow_unsafe_updates:
                 raise ValueError(full_message.capitalize())
             else:
                 _LOG.warning("Ignoring %s", full_message)
@@ -259,7 +269,9 @@ class DatasetTypeResource(object):
         new_definition = jsonify_document(type_.definition)
         metadata_type = new_definition['metadata_type']
         if not isinstance(metadata_type, compat.string_types):
-            self.metadata_type_resource.update_document(metadata_type, allow_unsafe_updates=allow_unsafe_updates)
+            self.metadata_type_resource.update_document(metadata_type,
+                                                        dry_run=dry_run,
+                                                        allow_unsafe_updates=allow_unsafe_updates)
             new_definition['metadata_type'] = metadata_type['name']
 
         doc_changes = changes.validate_dict_changes(
@@ -272,6 +284,10 @@ class DatasetTypeResource(object):
         )
 
         if doc_changes:
+            if dry_run:
+                _LOG.info("Dry run, skipping update.")
+                return
+
             _LOG.info("Updating product %s", type_.name)
             self._db.update_dataset_type(
                 name=type_.name,
@@ -286,15 +302,17 @@ class DatasetTypeResource(object):
         else:
             _LOG.info("No changes detected for product %s", type_.name)
 
-    def update_document(self, definition, allow_unsafe_updates=False):
+    def update_document(self, definition, dry_run=False, allow_unsafe_updates=False):
         """
         Update a Product using its difinition
 
+        :param bool dry_run: Validate and prepare but do not perform changes.
+        :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :param dict definition: product definition document
         :rtype: datacube.model.DatasetType
         """
         type_ = self.from_doc(definition)
-        return self.update(type_, allow_unsafe_updates=allow_unsafe_updates)
+        return self.update(type_, dry_run=dry_run, allow_unsafe_updates=allow_unsafe_updates)
 
     def add_document(self, definition):
         """

@@ -44,11 +44,13 @@ def add_dataset_types(index, files):
     '--allow-unsafe/--forbid-unsafe', is_flag=True, default=False,
     help="Allow unsafe updates (default: false)"
 )
+@click.option('--dry-run', '-d', is_flag=True, default=False,
+              help='Check if everything is ok')
 @click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
 @ui.pass_index()
-def update_dataset_types(index, allow_unsafe, files):
+def update_dataset_types(index, allow_unsafe, dry_run, files):
     """
     Update existing products.
 
@@ -60,8 +62,9 @@ def update_dataset_types(index, allow_unsafe, files):
     for descriptor_path, parsed_doc in read_documents(*(Path(f) for f in files)):
         try:
             type_ = index.products.from_doc(parsed_doc)
-            index.products.update(type_, allow_unsafe_updates=allow_unsafe)
-            echo('Updated "%s"' % type_.name)
+            index.products.update(type_, allow_unsafe_updates=allow_unsafe, dry_run=dry_run)
+            if not dry_run:
+                echo('Updated "%s"' % type_.name)
         except InvalidDocException as e:
             _LOG.exception(e)
             _LOG.error('Invalid product definition: %s', descriptor_path)
