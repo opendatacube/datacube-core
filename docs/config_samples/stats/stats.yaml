@@ -40,7 +40,7 @@ sources:
 
 ## Define whether and how to chunk over time
 start_date: 2015-01-01
-end_date: 2016-01-01
+end_date: 2015-04-01
 stats_duration: 3m
 step_size: 3m
 
@@ -66,30 +66,28 @@ storage:
 ## Define statistics to perform and how to store the data
 
 output_products:
- - name: mean
+ - name: landsat_yearly_mean
+   statistic: mean
    zlib: True
-   dtype: int16
-   nodata: -999
    fletcher32: True
    file_path_template: 'STATS_MEAN/MEAN_3577_{tile_index[0]}_{tile_index[1]}_{start_time:%Y%m%d}.nc'
 
- - name: median
-   zlib: True
-   dtype: int16
-   nodata: -999
-   fletcher32: True
-   file_path_template: 'STATS_MEDIAN/MEDIAN_3577_{tile_index[0]}_{tile_index[1]}_{start_time:%Y%m%d}.nc'
+# - name: median
+#   zlib: True
+#   dtype: int16
+#   nodata: -999
+#   fletcher32: True
+#   file_path_template: 'STATS_MEDIAN/MEDIAN_3577_{tile_index[0]}_{tile_index[1]}_{start_time:%Y%m%d}.nc'
+#
+# - name: medoid
+#   zlib: True
+#   dtype: int16
+#   nodata: -999
+#   fletcher32: True
+#   file_path_template: 'STATS_MEDOID/MEDOID_3577_{tile_index[0]}_{tile_index[1]}_{start_time:%Y%m%d}.nc'
 
- - name: medoid
+ - name: landsat_yearly_percentile_10
+   statistic: percentile_10
    zlib: True
-   dtype: int16
-   nodata: -999
-   fletcher32: True
-   file_path_template: 'STATS_MEDOID/MEDOID_3577_{tile_index[0]}_{tile_index[1]}_{start_time:%Y%m%d}.nc'
-
- - name: percentile_10
-   zlib: True
-   dtype: int16
-   nodata: -999
    fletcher32: True
    file_path_template: 'STATS_PERCENTILE_10/PERCENTILE_10_3577_{tile_index[0]}_{tile_index[1]}_{start_time:%Y%m%d}.nc'

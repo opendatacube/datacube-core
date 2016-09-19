@@ -5,9 +5,8 @@ Create statistical summaries command
 
 from __future__ import absolute_import, print_function
 
-from collections import namedtuple, OrderedDict
-from datetime import datetime
-from functools import reduce as reduce_
+from collections import OrderedDict, namedtuple
+from functools import reduce as reduce_, partial
 import itertools
 import logging
 from pathlib import Path
@@ -29,7 +28,7 @@ from datacube.ui.click import to_pathlib
 from datacube.utils import read_documents, unsqueeze_data_array
 from datacube.utils.dates import date_sequence
 
-from .statistics import apply_cross_measurement_reduction, nan_percentile
+from .statistics import apply_cross_measurement_reduction, nan_percentile, argpercentile, axisindex
 
 _LOG = logging.getLogger(__name__)
 STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
@@ -40,67 +39,122 @@ STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
                                  'attrs'}
 
 
-class Lambda(object):
-    def __init__(self, function, **kwargs):
-        self.function = function
-        self.kwargs = kwargs
-
-    def __call__(self, x):
-        return getattr(x, self.function)(dim='time', **self.kwargs)
+StatMetadata = namedtuple('StatMetadata', ['masked', 'index', 'measurements', 'compute'])
 
 
-STAT_FUNCS = {
-    'mean': Lambda('mean'),
-    'median': Lambda('median'),
-    'medoid': apply_cross_measurement_reduction,
-    'percentile_10': Lambda('reduce', func=nan_percentile, q=10),
-    'percentile_50': Lambda('reduce', func=nan_percentile, q=50),
-    'percentile_90': Lambda('reduce', func=nan_percentile, q=90),
+def _compose_helper(f, g, *args):
+    return f(g(*args))
+
+
+def compose(f, g):
+    return partial(_compose_helper, f, g)
+
+
+def transform_measurements(input_measurements):
+    return [
+        {attr: measurement[attr] for attr in ['name', 'dtype', 'nodata', 'units']}
+        for measurement in input_measurements]
+
+
+def transform_measurements_index(input_measurements):
+    index_measurements = [
+        {
+            'name': measurement['name'] + '_source',
+            'dtype': 'int8',
+            'nodata': -1,
+            'units': '1'
+        }
+        for measurement in input_measurements
+        ]
+    date_measurements = [
+        {
+            'name': measurement['name'] + '_observed',
+            'dtype': 'float64',
+            'nodata': 0,
+            'units': 'seconds since 1970-01-01 00:00:00'
+        }
+        for measurement in input_measurements
+        ]
+
+    return transform_measurements(input_measurements) + date_measurements + index_measurements
+
+
+def expand_index(data, index):
+    def not_foo(var):
+        return axisindex(data.data_vars[var.name].values, var.values)
+    data_values = index.apply(not_foo)
+
+    def not_bar(var):
+        return data.time.values[var.values]
+    time_values = index.apply(not_bar).rename(OrderedDict((name, name+'_observed') for name in index.data_vars))
+
+    return xarray.merge([data_values, time_values])
+
+
+def do_index_stats(stat_func, data):
+    index = stat_func(data)
+    return expand_index(data, index)
+
+
+def make_name_stat(name, masked=True):
+    return StatMetadata(masked=masked,
+                        index=False,
+                        measurements=transform_measurements,
+                        compute=partial(getattr(xarray.Dataset, name), dim='time'))
+
+
+STATS = {
+    'mean': make_name_stat('mean'),
+    'percentile_10': StatMetadata(masked=True,
+                                  index=True,
+                                  # pylint: disable=redundant-keyword-arg
+                                  measurements=transform_measurements_index,
+                                  compute=partial(do_index_stats, partial(getattr(xarray.Dataset, 'reduce'),
+                                                                          dim='time',
+                                                                          func=argpercentile,
+                                                                          q=10.0)))
 }
 
 
-class IndexBasedStat(object):
-    def __init__(self, name, input_measurements, definition):
-        self.name = name
+# STAT_FUNCS = {
+#     'mean': Lambda('mean'),
+#     'median': Lambda('median'),
+#     'medoid': apply_cross_measurement_reduction,
+#     'percentile_10': Lambda('reduce', func=nan_percentile, q=10),
+#     'percentile_50': Lambda('reduce', func=nan_percentile, q=50),
+#     'percentile_90': Lambda('reduce', func=nan_percentile, q=90),
+# }
+
+
+class StatProduct(object):
+    def __init__(self, input_measurements, definition):
         self.input_measurements = input_measurements
         self.definition = definition
-        self.dtype = definition['dtype']
-        self.nodata = definition['nodata']
-        self.units = '1'
-        self.masked = True
-        self.compute = STAT_FUNCS[definition['name']]
         self.product = None
-        self.data_measurements = None
-        self.index_measurements = None
-        self.date_measurements = None
+
+    @property
+    def name(self):
+        return self.definition['name']
+
+    @property
+    def statistic(self):
+        return STATS[self.definition['statistic']]
+
+    @property
+    def masked(self):
+        return self.statistic.masked
+
+    @property
+    def index(self):
+        return self.statistic.index
+
+    @property
+    def compute(self):
+        return self.statistic.compute
 
     def create_product_definition(self, index, storage):
-        self.data_measurements = [
-            {
-                'name': measurement['name'],
-                'dtype': self.dtype,
-                'nodata': self.nodata,
-                'units': self.units
-            }
-            for measurement in self.input_measurements]
-        self.index_measurements = [
-            {
-                'name': measurement['name'] + '_platform',
-                'dtype': 'int8',
-                'nodata': -1,
-                'units': 'index of source'
-            }
-            for measurement in self.input_measurements
-            ]
-        self.date_measurements = [
-            {
-                'name': measurement['name'] + '_observed',
-                'dtype': 'float64',
-                'nodata': 0,
-                'units': 'seconds since 1970-01-01 00:00:00'
-            }
-            for measurement in self.input_measurements
-            ]
+        data_measurements = self.statistic.measurements(self.input_measurements)
+
         product_definition = {
             'name': self.name,
             'description': self.name,
@@ -110,7 +164,7 @@ class IndexBasedStat(object):
                 'product_type': self.name,
             },
             'storage': storage,
-            'measurements': self.data_measurements + self.index_measurements + self.date_measurements
+            'measurements': data_measurements
         }
         self.product = index.products.from_doc(product_definition)
 
@@ -189,17 +243,17 @@ def get_filename(path_template, tile_index, start_time):
 
 
 def create_storage_unit(config, task, stat, filename_template):
-    geobox = task['sources'][0]['data'].geobox
+    geobox = task['sources'][0]['data'].geobox  # HACK: better way to get geobox
     all_measurement_defns = list(stat.product.measurements.values())
-    measurement_names = [m['name'] for m in stat.data_measurements]
 
     datasets, sources = find_source_datasets(task, stat, geobox)
 
-    var_params = config.get_variable_params()[stat.name]
-    measurement_params = {
-        measurement_name: var_params
-        for measurement_name in measurement_names
-        }
+    #measurement_names = [m['name'] for m in stat.data_measurements]
+    #var_params = config.get_variable_params()[stat.name]
+    # measurement_params = {
+    #     measurement_name: var_params
+    #     for measurement_name in measurement_names
+    #     }
 
     output_filename = get_filename(filename_template,
                                    task['tile_index'],
@@ -207,7 +261,7 @@ def create_storage_unit(config, task, stat, filename_template):
     nco = nco_from_sources(sources,
                            geobox,
                            all_measurement_defns,
-                           measurement_params,
+                           {},  # TODO: measurement_params,
                            output_filename)
 
     netcdf_writer.create_variable(nco, 'dataset', datasets, zlib=True)
@@ -270,7 +324,8 @@ def do_stats(task, config):
 
         for stat_name, stat in task['products'].items():
             _LOG.info("Computing %s in tile %s", stat_name, tile_index)
-            data_stats = stat.compute(data)  # TODO: if stat.algorithm.masked
+            assert stat.masked  # TODO: not masked
+            data_stats = stat.compute(data)
             # For each of the data variables, shove this chunk into the output results
             for var_name, var in data_stats.data_vars.items():
                 results[stat_name][var_name][(0,) + tile_index[1:]] = var.values  # HACK: make netcdf slicing nicer?...
@@ -320,9 +375,7 @@ def make_products(index, config):
     measurements = calc_output_measurements(index, config.sources)
 
     for stat in config.output_products:
-        name = stat['name']
-        index_based_stat = IndexBasedStat(name, measurements, definition=stat)
-
+        index_based_stat = StatProduct(measurements, definition=stat)
         index_based_stat.create_product_definition(index=index, storage=config.storage)
 
         created_products[stat['name']] = index_based_stat
