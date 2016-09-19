@@ -9,6 +9,8 @@ Release Process
 #. Update the release notes on the :ref:`whats_new` page.
     Check the git log for changes since the last release.
 
+#. Check that Travis_ and readthedocs_ are passing (ie. have also finished running!) for the latest commit.
+
 #. Tag the branch.
     Use the format of ``datacube-major.minor.bugfix``.
 
@@ -25,6 +27,10 @@ Release Process
 
 #. Notify the community of the release using the Datacube Central mailing list.
     Ask Simon Oliver for the MailChimp details.
+
+.. _Travis: https://travis-ci.org/data-cube/agdc-v2
+
+.. _readthedocs: http://readthedocs.org/projects/agdc-v2/builds/
 
 .. _Datacube: https://github.com/data-cube/agdc-v2/releases
 
