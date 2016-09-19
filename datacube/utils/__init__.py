@@ -361,7 +361,7 @@ class cached_property(object):  # pylint: disable=invalid-name
         return value
 
 
-def transform_object_tree(f, o):
+def transform_object_tree(f, o, key_transform=lambda k: k):
     """
     Apply a function (f) on all the values in the given document tree, returning a new document of
     the results.
@@ -370,19 +370,28 @@ def transform_object_tree(f, o):
 
     Returns a new instance (deep copy) without modifying the original.
 
+    :param f: Function to apply on values.
+    :param o: document/object
+    :param key_transform: Optional function to apply on any dictionary keys.
+
     >>> transform_object_tree(lambda a: a+1, [1, 2, 3])
     [2, 3, 4]
     >>> transform_object_tree(lambda a: a+1, {'a': 1, 'b': 2, 'c': 3}) == {'a': 2, 'b': 3, 'c': 4}
     True
     >>> transform_object_tree(lambda a: a+1, {'a': 1, 'b': (2, 3), 'c': [4, 5]}) == {'a': 2, 'b': (3, 4), 'c': [5, 6]}
     True
+    >>> transform_object_tree(lambda a: a+1, {1: 1, '2': 2, 3.0: 3}, key_transform=float) == {1.0: 2, 2.0: 3, 3.0: 4}
+    True
     """
+    def recur(o_):
+        return transform_object_tree(f, o_, key_transform=key_transform)
+
     if isinstance(o, dict):
-        return {k: transform_object_tree(f, v) for k, v in o.items()}
+        return {key_transform(k): recur(v) for k, v in o.items()}
     if isinstance(o, list):
-        return [transform_object_tree(f, v) for v in o]
+        return [recur(v) for v in o]
     if isinstance(o, tuple):
-        return tuple(transform_object_tree(f, v) for v in o)
+        return tuple(recur(v) for v in o)
     return f(o)
 
 
@@ -394,6 +403,9 @@ def jsonify_document(doc):
 
     >>> sorted(jsonify_document({'a': (1.0, 2.0, 3.0), 'b': float("inf"), 'c': datetime(2016, 3, 11)}).items())
     [('a', (1.0, 2.0, 3.0)), ('b', 'Infinity'), ('c', '2016-03-11T00:00:00')]
+    >>> # Converts keys to strings:
+    >>> sorted(jsonify_document({1: 'a', '2': 'b'}).items())
+    [('1', 'a'), ('2', 'b')]
     """
     def fixup_value(v):
         if isinstance(v, float):
@@ -409,7 +421,7 @@ def jsonify_document(doc):
             return v.name
         return v
 
-    return transform_object_tree(fixup_value, doc)
+    return transform_object_tree(fixup_value, doc, key_transform=str)
 
 
 def check_doc_unchanged(original, new, doc_name):
