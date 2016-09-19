@@ -202,10 +202,14 @@ class DatasetTypeResource(object):
 
         return DatasetType(metadata_type, definition)
 
-    def add(self, type_):
+    def add(self, type_, dry_run=False):
         """
-        Add a Product
+        Add or update a Product.
 
+        Unsafe product updates will throw a ValueError.
+        (you can force these changes when using the update() method directly)
+
+        :param bool dry_run: Validate and prepare but do not make changes.
         :param datacube.model.DatasetType type_: Product to add
         :rtype: datacube.model.DatasetType
         """
@@ -213,20 +217,17 @@ class DatasetTypeResource(object):
 
         existing = self._db.get_dataset_type_by_name(type_.name)
         if existing:
-            # TODO: Support for adding/updating match rules?
-            # They've passed us the same collection again. Make sure it matches what is stored.
-            check_doc_unchanged(
-                existing.definition,
-                jsonify_document(type_.definition),
-                'Dataset type {}'.format(type_.name)
-            )
+            self.update_document(type_.definition, dry_run=dry_run)
         else:
-            self._db.add_dataset_type(
-                name=type_.name,
-                metadata=type_.metadata_doc,
-                metadata_type_id=type_.metadata_type.id,
-                definition=type_.definition
-            )
+            if dry_run:
+                _LOG.info("Dry run, skipping add %s", type_.name)
+            else:
+                self._db.add_dataset_type(
+                    name=type_.name,
+                    metadata=type_.metadata_doc,
+                    metadata_type_id=type_.metadata_type.id,
+                    definition=type_.definition
+                )
         return self.get_by_name(type_.name)
 
     def update(self, type_, dry_run=False, allow_unsafe_updates=False):
@@ -304,7 +305,7 @@ class DatasetTypeResource(object):
 
         if doc_changes:
             if dry_run:
-                _LOG.info("Dry run, skipping update.")
+                _LOG.info("Dry run, skipping update %s", type_.name)
                 return
 
             _LOG.info("Updating product %s", type_.name)
