@@ -361,17 +361,40 @@ class cached_property(object):  # pylint: disable=invalid-name
         return value
 
 
-def transform_object_tree(o, f):
+def transform_object_tree(f, o):
+    """
+    Apply a function (f) on all the values in the given document tree, returning a new document of
+    the results.
+
+    Recurses through container types (dicts, lists, tuples).
+
+    Returns a new instance (deep copy) without modifying the original.
+
+    >>> transform_object_tree(lambda a: a+1, [1, 2, 3])
+    [2, 3, 4]
+    >>> transform_object_tree(lambda a: a+1, {'a': 1, 'b': 2, 'c': 3}) == {'a': 2, 'b': 3, 'c': 4}
+    True
+    >>> transform_object_tree(lambda a: a+1, {'a': 1, 'b': (2, 3), 'c': [4, 5]}) == {'a': 2, 'b': (3, 4), 'c': [5, 6]}
+    True
+    """
     if isinstance(o, dict):
-        return {k: transform_object_tree(v, f) for k, v in o.items()}
+        return {k: transform_object_tree(f, v) for k, v in o.items()}
     if isinstance(o, list):
-        return [transform_object_tree(v, f) for v in o]
+        return [transform_object_tree(f, v) for v in o]
     if isinstance(o, tuple):
-        return tuple(transform_object_tree(v, f) for v in o)
+        return tuple(transform_object_tree(f, v) for v in o)
     return f(o)
 
 
 def jsonify_document(doc):
+    """
+    Make a document ready for serialisation as JSON.
+
+    Returns the new document, leaving the original unmodified.
+
+    >>> sorted(jsonify_document({'a': (1.0, 2.0, 3.0), 'b': float("inf"), 'c': datetime(2016, 3, 11)}).items())
+    [('a', (1.0, 2.0, 3.0)), ('b', 'Infinity'), ('c', '2016-03-11T00:00:00')]
+    """
     def fixup_value(v):
         if isinstance(v, float):
             if v != v:
@@ -386,7 +409,7 @@ def jsonify_document(doc):
             return v.name
         return v
 
-    return transform_object_tree(doc, fixup_value)
+    return transform_object_tree(fixup_value, doc)
 
 
 def check_doc_unchanged(original, new, doc_name):
