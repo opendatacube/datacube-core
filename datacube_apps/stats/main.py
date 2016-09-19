@@ -39,7 +39,7 @@ STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
                                  'attrs'}
 
 
-StatMetadata = namedtuple('StatMetadata', ['masked', 'index', 'measurements', 'compute'])
+StatMetadata = namedtuple('StatMetadata', ['masked', 'measurements', 'compute'])
 
 
 def _compose_helper(f, g, *args):
@@ -98,7 +98,6 @@ def do_index_stats(stat_func, data):
 
 def make_name_stat(name, masked=True):
     return StatMetadata(masked=masked,
-                        index=False,
                         measurements=transform_measurements,
                         compute=partial(getattr(xarray.Dataset, name), dim='time'))
 
@@ -106,7 +105,6 @@ def make_name_stat(name, masked=True):
 STATS = {
     'mean': make_name_stat('mean'),
     'percentile_10': StatMetadata(masked=True,
-                                  index=True,
                                   # pylint: disable=redundant-keyword-arg
                                   measurements=transform_measurements_index,
                                   compute=partial(do_index_stats, partial(getattr(xarray.Dataset, 'reduce'),
@@ -143,10 +141,6 @@ class StatProduct(object):
     @property
     def masked(self):
         return self.statistic.masked
-
-    @property
-    def index(self):
-        return self.statistic.index
 
     @property
     def compute(self):
