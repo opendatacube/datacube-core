@@ -127,7 +127,11 @@ STATS = {
 class StatProduct(object):
     def __init__(self, metadata_type, input_measurements, definition, storage):
         self.definition = definition
-        self.product = self._create_product(metadata_type, input_measurements, storage)
+
+        data_measurements = self.statistic.measurements(input_measurements)
+
+        self.product = self._create_product(metadata_type, data_measurements, storage)
+        self.netcdf_var_params = self._create_netcdf_var_params(storage, data_measurements)
 
     @property
     def name(self):
@@ -149,9 +153,19 @@ class StatProduct(object):
     def compute(self):
         return self.statistic.compute
 
-    def _create_product(self, metadata_type, input_measurements, storage):
-        data_measurements = self.statistic.measurements(input_measurements)
+    def _create_netcdf_var_params(self, storage, data_measurements):
+        chunking = storage['chunking']
+        chunking = [chunking[dim] for dim in storage['dimension_order']]
 
+        variable_params = {}
+        for measurement in data_measurements:
+            name = measurement['name']
+            variable_params[name] = {k: v for k, v in self.definition.items() if k in STANDARD_VARIABLE_PARAM_NAMES}
+            variable_params[name]['chunksizes'] = chunking
+            variable_params[name].update({k: v for k, v in measurement.items() if k in STANDARD_VARIABLE_PARAM_NAMES})
+        return variable_params
+
+    def _create_product(self, metadata_type, data_measurements, storage):
         product_definition = {
             'name': self.name,
             'description': 'Description for ' + self.name,
@@ -189,18 +203,6 @@ class StatsConfig(object):
         return GridSpec(crs=crs,
                         tile_size=[storage['tile_size'][dim] for dim in crs.dimensions],
                         resolution=[storage['resolution'][dim] for dim in crs.dimensions])
-
-    def get_variable_params(self):
-        chunking = self.storage['chunking']
-        chunking = [chunking[dim] for dim in self.storage['dimension_order']]
-
-        variable_params = {}
-        for mapping in self.output_products:
-            varname = mapping['name']
-            variable_params[varname] = {k: v for k, v in mapping.items() if k in STANDARD_VARIABLE_PARAM_NAMES}
-            variable_params[varname]['chunksizes'] = chunking
-
-        return variable_params
 
 
 def nco_from_sources(sources, geobox, measurements, variable_params, filename):
@@ -249,17 +251,10 @@ def create_storage_unit(config, task, stat, filename_template):
                                    task['start_time'])
     datasets, sources = find_source_datasets(task, stat, geobox, uri=output_filename.as_uri())
 
-    #measurement_names = [m['name'] for m in stat.data_measurements]
-    #var_params = config.get_variable_params()[stat.name]
-    # measurement_params = {
-    #     measurement_name: var_params
-    #     for measurement_name in measurement_names
-    #     }
-
     nco = nco_from_sources(sources,
                            geobox,
                            all_measurement_defns,
-                           {},  # TODO: measurement_params,
+                           stat.netcdf_var_params,
                            output_filename)
 
     netcdf_writer.create_variable(nco, 'dataset', datasets, zlib=True)
