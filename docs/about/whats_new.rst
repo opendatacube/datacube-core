@@ -3,7 +3,7 @@
 What's New
 ==========
 
-v1.1.9 Pest Hippo (16 September 2016)
+v1.1.9 Pest Hippo (20 September 2016)
 -------------------------------------
 
   - Added origin, alignment and GeoBox-based methods to :class:`.model.GridSpec`
