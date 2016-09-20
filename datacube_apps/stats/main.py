@@ -244,7 +244,10 @@ def create_storage_unit(config, task, stat, filename_template):
     geobox = task['sources'][0]['data'].geobox  # HACK: better way to get geobox
     all_measurement_defns = list(stat.product.measurements.values())
 
-    datasets, sources = find_source_datasets(task, stat, geobox)
+    output_filename = get_filename(filename_template,
+                                   task['tile_index'],
+                                   task['start_time'])
+    datasets, sources = find_source_datasets(task, stat, geobox, uri=output_filename.as_uri())
 
     #measurement_names = [m['name'] for m in stat.data_measurements]
     #var_params = config.get_variable_params()[stat.name]
@@ -253,9 +256,6 @@ def create_storage_unit(config, task, stat, filename_template):
     #     for measurement_name in measurement_names
     #     }
 
-    output_filename = get_filename(filename_template,
-                                   task['tile_index'],
-                                   task['start_time'])
     nco = nco_from_sources(sources,
                            geobox,
                            all_measurement_defns,
@@ -267,13 +267,13 @@ def create_storage_unit(config, task, stat, filename_template):
     return nco
 
 
-def find_source_datasets(task, stat, geobox):
+def find_source_datasets(task, stat, geobox, uri=None):
     def _make_dataset(labels, sources):
         dataset = make_dataset(product=stat.product,
                                sources=sources,
                                extent=geobox.extent,
                                center_time=labels['time'],
-                               uri=None,  # TODO:
+                               uri=uri,
                                app_info=None,
                                valid_data=None)
         return dataset
