@@ -65,7 +65,7 @@ class Datacube(object):
     """
     def __init__(self, index=None, config=None, app=None):
         """
-        Creates the interface for the query and storage access.
+        Create the interface for the query and storage access.
 
         If no index or config is given, the default configuration is used for database connection.
 
@@ -94,7 +94,7 @@ class Datacube(object):
 
     def list_products(self, show_archived=False, with_pandas=True):
         """
-        Lists products in the datacube
+        List products in the datacube
 
         :param show_archived: include products that have been archived.
         :param with_pandas: return the list as a Pandas DataFrame, otherwise as a list of dict.
@@ -113,7 +113,7 @@ class Datacube(object):
 
     def list_measurements(self, show_archived=False, with_pandas=True):
         """
-        Lists measurements for each product
+        List measurements for each product
 
         :param show_archived: include products that have been archived.
         :param with_pandas: return the list as a Pandas DataFrame, otherwise as a list of dict.
@@ -146,7 +146,7 @@ class Datacube(object):
              stack=False, dask_chunks=None,
              like=None, fuse_func=None, align=None, **query):
         """
-        Loads data as an ``xarray`` object.  Each measurement will be a data variable in the :class:`xarray.Dataset`.
+        Load data as an ``xarray`` object.  Each measurement will be a data variable in the :class:`xarray.Dataset`.
 
         See the `xarray documentation <http://xarray.pydata.org/en/stable/data-structures.html>`_ for usage of the
         :class:`xarray.Dataset` and :class:`xarray.DataArray` objects.
@@ -332,7 +332,7 @@ class Datacube(object):
 
     def product_observations(self, **kwargs):
         """
-        Finds datasets for a product.
+        Find datasets for a product.
 
         .. note:
             This is a lower level function than most people will use. See :meth:`load` for
@@ -359,7 +359,7 @@ class Datacube(object):
     @staticmethod
     def product_sources(datasets, group_func, dimension, units):
         """
-        Groups the datasets along defined non-spatial dimensions.
+        Group datasets along defined non-spatial dimensions.
 
         :param datasets: a list of datasets, typically from :meth:`product_observations`
         :param group_func: a function that returns a label for a dataset
@@ -383,12 +383,14 @@ class Datacube(object):
     @staticmethod
     def create_storage(coords, geobox, measurements, data_func=None):
         """
-        Creates an empty :class:`xarray.Dataset` to hold data from :meth:`product_sources`.
+        Create a :class:`xarray.Dataset` and optionally fill it with data.
+
+        This function is used to hold data from :meth:`product_sources`.
 
         :param dict coords: OrderedDict-like holding `DataArray` objects of the dimensions not specified by `geobox`
         :param GeoBox geobox: A GeoBox defining the output spatial projection and resolution
         :param measurements: list of measurement dicts with keys: {'name', 'dtype', 'nodata', 'units'}
-        :param fill_func: function to fill the data
+        :param data_func: function to fill the data
         :rtype: :py:class:`xarray.Dataset`
 
         .. seealso:: :meth:`product_observations` :meth:`product_sources`
@@ -396,6 +398,7 @@ class Datacube(object):
         def empty_func(measurement):
             coord_shape = tuple(coord.size for coord in coords.values())
             return numpy.full(coord_shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
+
         data_func = data_func or empty_func
 
         result = xarray.Dataset(attrs={'crs': geobox.crs})
@@ -425,7 +428,7 @@ class Datacube(object):
     @staticmethod
     def product_data(sources, geobox, measurements, fuse_func=None, dask_chunks=None):
         """
-        Loads data from :meth:`product_sources` into a Dataset object.
+        Load data from :meth:`product_sources` into a Dataset object.
 
         :param xarray.DataArray sources: DataArray holding a list of :py:class:`datacube.model.Dataset` objects
         :param GeoBox geobox: A GeoBox defining the output spatial projection and resolution
@@ -455,7 +458,7 @@ class Datacube(object):
     @staticmethod
     def measurement_data(sources, geobox, measurement, fuse_func=None, dask_chunks=None):
         """
-        Retrieves a single measurement variable as a :py:class:`xarray.DataArray`.
+        Retrieve a single measurement variable as a :py:class:`xarray.DataArray`.
 
         :param xarray.DataArray sources: DataArray holding a list of :py:class:`datacube.model.Dataset` objects
         :param GeoBox geobox: A GeoBox defining the output spatial projection and resolution
