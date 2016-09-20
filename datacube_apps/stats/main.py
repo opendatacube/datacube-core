@@ -18,7 +18,7 @@ from pandas import to_datetime
 
 from datacube.api import make_mask
 from datacube.api.grid_workflow import GridWorkflow
-from datacube.model import GridSpec, CRS, Coordinate, Variable
+from datacube.model import GridSpec, CRS, Coordinate, Variable, DatasetType
 from datacube.model.utils import make_dataset, datasets_to_doc, xr_apply
 from datacube.storage import netcdf_writer
 from datacube.storage.masking import mask_valid_data as mask_invalid_data
@@ -125,18 +125,21 @@ STATS = {
 
 
 class StatProduct(object):
-    def __init__(self, input_measurements, definition):
-        self.input_measurements = input_measurements
+    def __init__(self, metadata_type, input_measurements, definition, storage):
         self.definition = definition
-        self.product = None
+        self.product = self._create_product(metadata_type, input_measurements, storage)
 
     @property
     def name(self):
         return self.definition['name']
 
     @property
+    def stat_name(self):
+        return self.definition['statistic']
+
+    @property
     def statistic(self):
-        return STATS[self.definition['statistic']]
+        return STATS[self.stat_name]
 
     @property
     def masked(self):
@@ -146,21 +149,22 @@ class StatProduct(object):
     def compute(self):
         return self.statistic.compute
 
-    def create_product_definition(self, index, storage):
-        data_measurements = self.statistic.measurements(self.input_measurements)
+    def _create_product(self, metadata_type, input_measurements, storage):
+        data_measurements = self.statistic.measurements(input_measurements)
 
         product_definition = {
             'name': self.name,
-            'description': self.name,
+            'description': 'Description for ' + self.name,
             'metadata_type': 'eo',
             'metadata': {
                 'format': 'NetCDF',
-                'product_type': self.name,
+                'product_type': self.stat_name,
             },
             'storage': storage,
             'measurements': data_measurements
         }
-        self.product = index.products.from_doc(product_definition)
+        DatasetType.validate(product_definition)
+        return DatasetType(metadata_type, product_definition)
 
 
 class StatsConfig(object):
@@ -369,9 +373,7 @@ def make_products(index, config):
     measurements = calc_output_measurements(index, config.sources)
 
     for stat in config.output_products:
-        index_based_stat = StatProduct(measurements, definition=stat)
-        index_based_stat.create_product_definition(index=index, storage=config.storage)
-
+        index_based_stat = StatProduct(index.metadata_types.get_by_name('eo'), measurements, stat, config.storage)
         created_products[stat['name']] = index_based_stat
 
     return created_products
