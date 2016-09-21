@@ -27,9 +27,9 @@ from datacube.ui import click as ui
 from datacube.ui.click import to_pathlib
 from datacube.utils import read_documents, unsqueeze_data_array
 from datacube.utils.dates import date_sequence
-from datacube_apps.stats.statistics import nanmedoid
+from datacube_apps.stats.statistics import argnanmedoid
 
-from .statistics import combined_var_reduction, argpercentile, axisindex
+from .statistics import argpercentile, axisindex
 
 _LOG = logging.getLogger(__name__)
 STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
@@ -40,7 +40,7 @@ STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
                                  'attrs'}
 
 
-class StatMetadata(object):
+class ValueStat(object):
     """
     Holder class describing the outputs of a statistic and how to calculate it
 
@@ -48,11 +48,96 @@ class StatMetadata(object):
     :param function measurements: how to turn a list of input measurements into a list of output measurements
     :param function compute: how to calculate the statistic
     """
-
-    def __init__(self, masked, measurements, compute):
+    def __init__(self, stat_func, masked=True):
         self.masked = masked
-        self.measurements = measurements
-        self.compute = compute
+        self.stat_func = stat_func
+
+    def compute(self, data):
+        return self.stat_func(data)
+
+    @staticmethod
+    def measurements(input_measurements):
+        return [
+            {attr: measurement[attr] for attr in ['name', 'dtype', 'nodata', 'units']}
+            for measurement in input_measurements]
+
+
+class PerBandIndexStat(ValueStat):
+    def __init__(self, stat_func, masked=True):
+        super(PerBandIndexStat, self).__init__(stat_func, masked)
+
+    def compute(self, data):
+        index = super(PerBandIndexStat, self).compute(data)
+
+        def index_dataset(var):
+            return axisindex(data.data_vars[var.name].values, var.values)
+        data_values = index.apply(index_dataset)
+
+        def index_time(var):
+            return data.time.values[var.values]
+        time_values = index.apply(index_time).rename(OrderedDict((name, name + '_observed')
+                                                                 for name in index.data_vars))
+
+        return xarray.merge([data_values, time_values])
+
+    @staticmethod
+    def measurements(input_measurements):
+        index_measurements = [
+            {
+                'name': measurement['name'] + '_source',
+                'dtype': 'int8',
+                'nodata': -1,
+                'units': '1'
+            }
+            for measurement in input_measurements
+            ]
+        date_measurements = [
+            {
+                'name': measurement['name'] + '_observed',
+                'dtype': 'float64',
+                'nodata': 0,
+                'units': 'seconds since 1970-01-01 00:00:00'
+            }
+            for measurement in input_measurements
+            ]
+
+        return ValueStat.measurements(input_measurements) + date_measurements + index_measurements
+
+
+class PerStatIndexStat(ValueStat):
+    def __init__(self, stat_func, masked=True):
+        super(PerStatIndexStat, self).__init__(stat_func, masked)
+
+    def compute(self, data):
+        index = super(PerStatIndexStat, self).compute(data)
+
+        def index_dataset(var, axis):
+            return axisindex(var, index, axis=axis)
+
+        data_values = data.reduce(index_dataset, dim='time')
+        data_values['observed'] = (('y', 'x'), data.time.values[index])
+
+        return data_values
+
+    @staticmethod
+    def measurements(input_measurements):
+        index_measurements = [
+            {
+                'name': 'source',
+                'dtype': 'int8',
+                'nodata': -1,
+                'units': '1'
+            }
+        ]
+        date_measurements = [
+            {
+                'name': 'observed',
+                'dtype': 'float64',
+                'nodata': 0,
+                'units': 'seconds since 1970-01-01 00:00:00'
+            }
+        ]
+        return ValueStat.measurements(input_measurements) + date_measurements + index_measurements
 
 
 def _compose_helper(f, g, *args):
@@ -63,97 +148,32 @@ def compose(f, g):
     return partial(_compose_helper, f, g)
 
 
-def transform_measurements(input_measurements):
-    """
-    Return measurement definitions for a `value style` statistic
-    :param input_measurements:
-    :return:
-    """
-    return [
-        {attr: measurement[attr] for attr in ['name', 'dtype', 'nodata', 'units']}
-        for measurement in input_measurements]
-
-
-def transform_measurements_index(input_measurements):
-    """
-    Return measurement definitions for an `index style` statistic
-
-    :param input_measurements: list of index measurement definitions
-    :return: list of output measurement definitions
-    """
-    index_measurements = [
-        {
-            'name': measurement['name'] + '_source',
-            'dtype': 'int8',
-            'nodata': -1,
-            'units': '1'
-        }
-        for measurement in input_measurements
-        ]
-    date_measurements = [
-        {
-            'name': measurement['name'] + '_observed',
-            'dtype': 'float64',
-            'nodata': 0,
-            'units': 'seconds since 1970-01-01 00:00:00'
-        }
-        for measurement in input_measurements
-        ]
-
-    return transform_measurements(input_measurements) + date_measurements + index_measurements
-
-
-def expand_index(data, index):
-    def not_foo(var):
-        return axisindex(data.data_vars[var.name].values, var.values)
-
-    data_values = index.apply(not_foo)
-
-    def not_bar(var):
-        return data.time.values[var.values]
-
-    time_values = index.apply(not_bar).rename(OrderedDict((name, name + '_observed') for name in index.data_vars))
-
-    return xarray.merge([data_values, time_values])
-
-
-def do_index_stats(stat_func, data):
-    index = stat_func(data)
-    return expand_index(data, index)
-
-
 def make_name_stat(name, masked=True):
-    return StatMetadata(masked=masked,
-                        measurements=transform_measurements,
-                        compute=partial(getattr(xarray.Dataset, name), dim='time'))
+    return ValueStat(masked=masked,
+                     stat_func=partial(getattr(xarray.Dataset, name), dim='time'))
+
+
+def _medoid_helper(data):
+    flattened = data.to_array(dim='variable')
+    variable, time, y, x = flattened.shape
+    index = numpy.empty((y, x), dtype='int64')
+    # TODO: nditer?
+    for iy in range(y):
+        for ix in range(x):
+            index[iy, ix] = argnanmedoid(flattened.values[:, :, iy, ix])
+    return index
 
 
 STATS = {
     'mean': make_name_stat('mean'),
-    'percentile_10': StatMetadata(masked=True,
-                                  # pylint: disable=redundant-keyword-arg
-                                  measurements=transform_measurements_index,
-                                  compute=partial(do_index_stats, partial(getattr(xarray.Dataset, 'reduce'),
-                                                                          dim='time',
-                                                                          func=argpercentile,
-                                                                          q=10.0))),
-    'medoid': StatMetadata(masked=True,
-                           measurements=transform_measurements_index,
-                           # pylint: disable=redundant-keyword-arg
-                           compute=partial(do_index_stats, partial(combined_var_reduction,
-                                                                   dim='time',
-                                                                   func=nanmedoid)))
+    'percentile_10': PerBandIndexStat(masked=True,
+                                      # pylint: disable=redundant-keyword-arg
+                                      stat_func=partial(getattr(xarray.Dataset, 'reduce'),
+                                                        dim='time',
+                                                        func=argpercentile,
+                                                        q=10.0)),
+    'medoid': PerStatIndexStat(masked=True, stat_func=_medoid_helper)
 }
-
-
-# STAT_FUNCS = {
-#     'mean': Lambda('mean'),
-#     'median': Lambda('median'),
-#     'medoid': apply_cross_measurement_reduction,
-#     'percentile_10': Lambda('reduce', func=nan_percentile, q=10),
-#     'percentile_50': Lambda('reduce', func=nan_percentile, q=50),
-#     'percentile_90': Lambda('reduce', func=nan_percentile, q=90),
-# }
 
 
 class StatProduct(object):
