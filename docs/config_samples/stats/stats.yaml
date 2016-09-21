@@ -11,7 +11,6 @@ sources:
           cloud_fmask: no_cloud
           cloud_shadow_acca: no_cloud_shadow
           cloud_shadow_fmask: no_cloud_shadow
-          land_sea: land
           blue_saturated: False
           green_saturated: False
           red_saturated: False
@@ -29,7 +28,6 @@ sources:
           cloud_fmask: no_cloud
           cloud_shadow_acca: no_cloud_shadow
           cloud_shadow_fmask: no_cloud_shadow
-          land_sea: land
           blue_saturated: False
           green_saturated: False
           red_saturated: False
