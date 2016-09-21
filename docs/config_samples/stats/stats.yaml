@@ -78,6 +78,12 @@ storage:
       time: 1
   dimension_order: [time, y, x]
 
+## Computational
+computation:
+  chunking:
+    x: 1000
+    y: 1000
+
 ## Define statistics to perform and how to store the data
 
 output_products:

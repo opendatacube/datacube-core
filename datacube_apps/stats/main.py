@@ -149,6 +149,13 @@ def compose(f, g):
 
 
 def make_name_stat(name, masked=True):
+    """
+    A value returning statistic, relying on an xarray function of name being available
+
+    :param name: The name of an xArray statistical function
+    :param masked:
+    :return:
+    """
     return ValueStat(masked=masked,
                      stat_func=partial(getattr(xarray.Dataset, name), dim='time'))
 
@@ -172,7 +179,9 @@ STATS = {
                                                         dim='time',
                                                         func=argpercentile,
                                                         q=10.0)),
-    'medoid': PerStatIndexStat(masked=True, stat_func=_medoid_helper)
+    'medoid': PerStatIndexStat(masked=True, stat_func=_medoid_helper),
+    'min': make_name_stat('min'),
+    'max': make_name_stat('max')
 }
 
 
@@ -235,7 +244,7 @@ class StatProduct(object):
 
 class StatsConfig(object):
     def __init__(self, config):
-        self.config = config
+        self._definition = config
 
         self.storage = config['storage']
 
@@ -248,6 +257,7 @@ class StatsConfig(object):
         self.step_size = config['step_size']
         self.grid_spec = self.create_grid_spec()
         self.location = config['location']
+        self.computation = config['computation']
 
     def create_grid_spec(self):
         storage = self.storage
@@ -327,9 +337,8 @@ def find_source_datasets(task, stat, geobox, uri=None):
 
     def merge_sources(prod):
         if stat.masked:
-            return reduce_(lambda a, b: a + b, (sources.sum() for sources in
-                                                xarray.align(prod['data'].sources,
-                                                             *[mask_tile.sources for mask_tile in prod['masks']])))
+            all_sources = xarray.align(prod['data'].sources, *[mask_tile.sources for mask_tile in prod['masks']])
+            return reduce_(lambda a, b: a + b, (sources.sum() for sources in all_sources))
         else:
             return prod['data'].sources.sum()
 
@@ -362,7 +371,7 @@ def do_stats(task, config):
         filename_template = str(Path(config.location, stat.definition['file_path_template']))
         results[stat_name] = create_storage_unit(config, task, stat, filename_template)
 
-    for tile_index in tile_iter(task['sources'][0]['data'], {'x': 1000, 'y': 1000}):
+    for tile_index in tile_iter(task['sources'][0]['data'], config.computation['chunking']):
         datasets = [load_data(tile_index, prod) for prod in task['sources']]
         data = xarray.concat(datasets, dim='time')
         data = data.isel(time=data.time.argsort())  # sort along time dim
