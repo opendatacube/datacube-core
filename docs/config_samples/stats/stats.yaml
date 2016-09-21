@@ -70,7 +70,7 @@ output_products:
    statistic: mean
    zlib: True
    fletcher32: True
-   file_path_template: 'STATS_MEAN/MEAN_3577_{tile_index[0]}_{tile_index[1]}_{start_time:%Y%m%d}.nc'
+   file_path_template: 'SR_N_MEAN/SR_N_MEAN_3577_{tile_index[0]}_{tile_index[1]}_{start_time:%Y%m%d}.nc'
 
 # - name: median
 #   zlib: True
@@ -83,10 +83,10 @@ output_products:
    statistic: medoid
    zlib: True
    fletcher32: True
-   file_path_template: 'STATS_MEDOID/MEDOID_3577_{tile_index[0]}_{tile_index[1]}_{start_time:%Y%m%d}.nc'
+   file_path_template: 'SR_N_MEDOID/SR_N_MEDOID_3577_{tile_index[0]}_{tile_index[1]}_{start_time:%Y%m%d}.nc'
 
  - name: landsat_yearly_percentile_10
    statistic: percentile_10
    zlib: True
    fletcher32: True
-   file_path_template: 'STATS_PERCENTILE_10/PERCENTILE_10_3577_{tile_index[0]}_{tile_index[1]}_{start_time:%Y%m%d}.nc'
+   file_path_template: 'SR_N_PCT_10/SR_N_PCT_10_3577_{tile_index[0]}_{tile_index[1]}_{start_time:%Y%m%d}.nc'
