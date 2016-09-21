@@ -351,12 +351,12 @@ def find_source_datasets(task, stat, geobox, uri=None):
     return datasets, sources
 
 
-def load_data(tile_index, prod):
-    data = GridWorkflow.load(prod['data'][tile_index],
-                             measurements=prod['spec']['measurements'])
+def load_data(tile_index, source_prod):
+    data = GridWorkflow.load(source_prod['data'][tile_index],
+                             measurements=source_prod['spec']['measurements'])
     data = mask_invalid_data(data)
 
-    for spec, mask_tile in zip(prod['spec']['masks'], prod['masks']):
+    for spec, mask_tile in zip(source_prod['spec']['masks'], source_prod['masks']):
         mask = GridWorkflow.load(mask_tile[tile_index],
                                  measurements=[spec['measurement']])[spec['measurement']]
         mask = make_mask(mask, **spec['flags'])
@@ -367,16 +367,16 @@ def load_data(tile_index, prod):
 
 def do_stats(task, config):
     results = {}
-    for stat_name, stat in task['products'].items():
+    for stat_name, stat in task['output_products'].items():
         filename_template = str(Path(config.location, stat.definition['file_path_template']))
         results[stat_name] = create_storage_unit(config, task, stat, filename_template)
 
     for tile_index in tile_iter(task['sources'][0]['data'], config.computation['chunking']):
-        datasets = [load_data(tile_index, prod) for prod in task['sources']]
+        datasets = [load_data(tile_index, source_prod) for source_prod in task['sources']]
         data = xarray.concat(datasets, dim='time')
         data = data.isel(time=data.time.argsort())  # sort along time dim
 
-        for stat_name, stat in task['products'].items():
+        for stat_name, stat in task['output_products'].items():
             _LOG.info("Computing %s in tile %s", stat_name, tile_index)
             assert stat.masked  # TODO: not masked
             data_stats = stat.compute(data)
@@ -391,6 +391,7 @@ def do_stats(task, config):
 
 
 def make_tasks(index, products, config):
+def make_tasks(index, output_products, config):
     for time_period in date_sequence(start=config.start_time, end=config.end_time,
                                      stats_duration=config.stats_duration, step_size=config.step_size):
         _LOG.info('Making output_products tasks for %s to %s', time_period[0], time_period[1])
@@ -407,7 +408,7 @@ def make_tasks(index, products, config):
             for tile_index, sources in data.items():
                 task = tasks.setdefault(tile_index, {
                     'tile_index': tile_index,
-                    'products': products,
+                    'output_products': output_products,
                     'start_time': time_period[0],
                     'end_time': time_period[1],
                     'sources': [],
@@ -422,15 +423,24 @@ def make_tasks(index, products, config):
             yield task
 
 
+class ConfigurationError(RuntimeError):
+    pass
+
+
 def make_products(index, config):
     _LOG.info('Creating output products')
+    
+    output_names = [prod['name'] for prod in config.output_products]
+    if len(output_names) != len(set(output_names)):
+        raise ConfigurationError('Output products must all have different names.')
+
     created_products = {}
 
     measurements = calc_output_measurements(index, config.sources)
 
-    for stat in config.output_products:
-        index_based_stat = StatProduct(index.metadata_types.get_by_name('eo'), measurements, stat, config.storage)
-        created_products[stat['name']] = index_based_stat
+    for prod in config.output_products:
+        index_based_stat = StatProduct(index.metadata_types.get_by_name('eo'), measurements, prod, config.storage)
+        created_products[prod['name']] = index_based_stat
 
     return created_products
 
@@ -468,8 +478,8 @@ def main(index, app_config, year, executor):
 
     config = StatsConfig(config)
 
-    products = make_products(index, config)
-    tasks = make_tasks(index, products, config)
+    output_products = make_products(index, config)
+    tasks = make_tasks(index, output_products, config)
 
     futures = [executor.submit(do_stats, task, config) for task in tasks]
 
