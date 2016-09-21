@@ -139,6 +139,7 @@ STATS = {
                                                                           q=10.0))),
     'medoid': StatMetadata(masked=True,
                            measurements=transform_measurements_index,
+                           # pylint: disable=redundant-keyword-arg
                            compute=partial(do_index_stats, partial(combined_var_reduction,
                                                                    dim='time',
                                                                    func=nanmedoid)))
