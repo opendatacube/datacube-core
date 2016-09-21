@@ -19,7 +19,14 @@ except ImportError:
         return numpy.isnan(x).any(axis=axis)
 
 
-def nanmedoid(x, axis=1, return_index=False):
+def argnanmedoid(x, axis=1):
+    """
+    Return the indices of the medoid
+
+    :param x: input array
+    :param axis: axis to medoid along
+    :return: indices of the medoid
+    """
     if axis == 0:
         x = x.T
 
@@ -31,15 +38,22 @@ def nanmedoid(x, axis=1, return_index=False):
     dist_sum[invalid] = numpy.inf
     i = numpy.argmin(dist_sum)
 
-    return (x[:, i], i) if return_index else x[:, i]
+    return i
 
 
-def apply_cross_measurement_reduction(dataset, method=nanmedoid, dim='time', keep_attrs=True):
+def nanmedoid(x, axis=1):
+    i = argnanmedoid(x, axis)
+
+    return x[:, i]
+
+
+def combined_var_reduction(dataset, method, dim='time', keep_attrs=True):
     """
-    Apply a cross measurement reduction (like medioid) to an xarray dataset
+    Apply a reduction to a dataset by combining data variables into a single ndarray, running `method`, then
+    un-combining to separate data variables.
 
     :param dataset: Input `xarray.Dataset`
-    :param method: function to apply. Defaults to nanmedoid
+    :param method: function to apply to DataArray
     :param bool keep_attrs: Should dataset attributes be retained, defaults to True.
     :param dim: Dimension to apply reduction along
     :return: xarray.Dataset with same data_variables but one less dimension

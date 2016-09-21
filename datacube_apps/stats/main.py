@@ -5,7 +5,7 @@ Create statistical summaries command
 
 from __future__ import absolute_import, print_function
 
-from collections import OrderedDict, namedtuple
+from collections import OrderedDict
 from functools import reduce as reduce_, partial
 import itertools
 import logging
@@ -27,8 +27,9 @@ from datacube.ui import click as ui
 from datacube.ui.click import to_pathlib
 from datacube.utils import read_documents, unsqueeze_data_array
 from datacube.utils.dates import date_sequence
+from datacube_apps.stats.statistics import nanmedoid
 
-from .statistics import apply_cross_measurement_reduction, nan_percentile, argpercentile, axisindex
+from .statistics import combined_var_reduction, argpercentile, axisindex
 
 _LOG = logging.getLogger(__name__)
 STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
@@ -39,7 +40,19 @@ STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
                                  'attrs'}
 
 
-StatMetadata = namedtuple('StatMetadata', ['masked', 'measurements', 'compute'])
+class StatMetadata(object):
+    """
+    Holder class describing the outputs of a statistic and how to calculate it
+
+    :param bool masked: whether to apply masking to the input data
+    :param function measurements: how to turn a list of input measurements into a list of output measurements
+    :param function compute: how to calculate the statistic
+    """
+
+    def __init__(self, masked, measurements, compute):
+        self.masked = masked
+        self.measurements = measurements
+        self.compute = compute
 
 
 def _compose_helper(f, g, *args):
@@ -51,12 +64,23 @@ def compose(f, g):
 
 
 def transform_measurements(input_measurements):
+    """
+    Return measurement definitions for a `value style` statistic
+    :param input_measurements:
+    :return:
+    """
     return [
         {attr: measurement[attr] for attr in ['name', 'dtype', 'nodata', 'units']}
         for measurement in input_measurements]
 
 
 def transform_measurements_index(input_measurements):
+    """
+    Return measurement definitions for an `index style` statistic
+
+    :param input_measurements: list of index measurement definitions
+    :return: list of output measurement definitions
+    """
     index_measurements = [
         {
             'name': measurement['name'] + '_source',
@@ -82,11 +106,13 @@ def transform_measurements_index(input_measurements):
 def expand_index(data, index):
     def not_foo(var):
         return axisindex(data.data_vars[var.name].values, var.values)
+
     data_values = index.apply(not_foo)
 
     def not_bar(var):
         return data.time.values[var.values]
-    time_values = index.apply(not_bar).rename(OrderedDict((name, name+'_observed') for name in index.data_vars))
+
+    time_values = index.apply(not_bar).rename(OrderedDict((name, name + '_observed') for name in index.data_vars))
 
     return xarray.merge([data_values, time_values])
 
@@ -110,7 +136,12 @@ STATS = {
                                   compute=partial(do_index_stats, partial(getattr(xarray.Dataset, 'reduce'),
                                                                           dim='time',
                                                                           func=argpercentile,
-                                                                          q=10.0)))
+                                                                          q=10.0))),
+    'medoid': StatMetadata(masked=True,
+                           measurements=transform_measurements_index,
+                           compute=partial(do_index_stats, partial(combined_var_reduction,
+                                                                   dim='time',
+                                                                   func=nanmedoid)))
 }
 
 
@@ -282,8 +313,8 @@ def find_source_datasets(task, stat, geobox, uri=None):
             return prod['data'].sources.sum()
 
     sources = reduce_(lambda a, b: a + b, (merge_sources(prod) for prod in task['sources']))
-    sources = unsqueeze_data_array(sources, 'time', 0, task['start_time'],
-                                   task['sources'][0]['data'].sources.time.attrs)
+    sources = unsqueeze_data_array(sources, dim='time', pos=0, coord=task['start_time'],
+                                   attrs=task['sources'][0]['data'].sources.time.attrs)
 
     datasets = xr_apply(sources, _make_dataset, dtype='O')  # Store in DataArray to associate Time -> Dataset
     datasets = datasets_to_doc(datasets)
