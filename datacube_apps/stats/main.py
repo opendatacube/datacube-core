@@ -27,9 +27,7 @@ from datacube.ui import click as ui
 from datacube.ui.click import to_pathlib
 from datacube.utils import read_documents, unsqueeze_data_array
 from datacube.utils.dates import date_sequence
-from datacube_apps.stats.statistics import argnanmedoid
-
-from .statistics import argpercentile, axisindex
+from datacube_apps.stats.statistics import argnanmedoid, argpercentile, axisindex
 
 _LOG = logging.getLogger(__name__)
 STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
