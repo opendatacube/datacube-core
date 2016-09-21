@@ -304,7 +304,7 @@ def get_filename(path_template, tile_index, start_time):
                                           start_time=start_time))
 
 
-def create_storage_unit(config, task, stat, filename_template):
+def create_storage_unit(task, stat, filename_template):
     geobox = task['sources'][0]['data'].geobox  # HACK: better way to get geobox
     all_measurement_defns = list(stat.product.measurements.values())
 
@@ -367,30 +367,29 @@ def load_data(tile_index, source_prod):
 
 def do_stats(task, config):
     results = {}
-    for stat_name, stat in task['output_products'].items():
+    for prod_name, stat in task['output_products'].items():
         filename_template = str(Path(config.location, stat.definition['file_path_template']))
-        results[stat_name] = create_storage_unit(config, task, stat, filename_template)
+        results[prod_name] = create_storage_unit(task, stat, filename_template)
 
     for tile_index in tile_iter(task['sources'][0]['data'], config.computation['chunking']):
         datasets = [load_data(tile_index, source_prod) for source_prod in task['sources']]
         data = xarray.concat(datasets, dim='time')
         data = data.isel(time=data.time.argsort())  # sort along time dim
 
-        for stat_name, stat in task['output_products'].items():
-            _LOG.info("Computing %s in tile %s", stat_name, tile_index)
+        for prod_name, stat in task['output_products'].items():
+            _LOG.info("Computing %s in tile %s", prod_name, tile_index)
             assert stat.masked  # TODO: not masked
             data_stats = stat.compute(data)
             # For each of the data variables, shove this chunk into the output results
             for var_name, var in data_stats.data_vars.items():
-                results[stat_name][var_name][(0,) + tile_index[1:]] = var.values  # HACK: make netcdf slicing nicer?...
-                results[stat_name].sync()
+                results[prod_name][var_name][(0,) + tile_index[1:]] = var.values  # HACK: make netcdf slicing nicer?...
+                results[prod_name].sync()
                 _LOG.debug("Updated %s %s", var_name, tile_index[1:])
 
     for stat, nco in results.items():
         nco.close()
 
 
-def make_tasks(index, products, config):
 def make_tasks(index, output_products, config):
     for time_period in date_sequence(start=config.start_time, end=config.end_time,
                                      stats_duration=config.stats_duration, step_size=config.step_size):
@@ -429,20 +428,20 @@ class ConfigurationError(RuntimeError):
 
 def make_products(index, config):
     _LOG.info('Creating output products')
-    
+
     output_names = [prod['name'] for prod in config.output_products]
     if len(output_names) != len(set(output_names)):
         raise ConfigurationError('Output products must all have different names.')
 
-    created_products = {}
+    output_products = {}
 
     measurements = calc_output_measurements(index, config.sources)
 
     for prod in config.output_products:
-        index_based_stat = StatProduct(index.metadata_types.get_by_name('eo'), measurements, prod, config.storage)
-        created_products[prod['name']] = index_based_stat
+        output_products[prod['name']] = StatProduct(index.metadata_types.get_by_name('eo'), measurements,
+                                                    prod, config.storage)
 
-    return created_products
+    return output_products
 
 
 def calc_output_measurements(index, sources):
