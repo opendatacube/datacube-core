@@ -61,6 +61,10 @@ class ValueStat(object):
 
 
 class PerBandIndexStat(ValueStat):
+    """
+    Each output variable contains values that actually exist in the input data
+    """
+
     def __init__(self, stat_func, masked=True):
         super(PerBandIndexStat, self).__init__(stat_func, masked)
 
@@ -69,14 +73,27 @@ class PerBandIndexStat(ValueStat):
 
         def index_dataset(var):
             return axisindex(data.data_vars[var.name].values, var.values)
+
         data_values = index.apply(index_dataset)
 
         def index_time(var):
             return data.time.values[var.values]
+
         time_values = index.apply(index_time).rename(OrderedDict((name, name + '_observed')
                                                                  for name in index.data_vars))
 
-        return xarray.merge([data_values, time_values])
+        def index_dates(var):
+            dates = data.time.values[var.values]
+            shape = dates.shape
+            dates = dates.reshape(-1)
+            dates = pd.to_datetime(dates)
+            dates = dates.year * 10000 + dates.month * 100 + dates.day
+            return dates.reshape(shape)
+
+        text_values = index.apply(index_dates).rename(OrderedDict((name, name + '_date')
+                                                                  for name in index.data_vars))
+
+        return xarray.merge([data_values, time_values, text_values])
 
     @staticmethod
     def measurements(input_measurements):
@@ -98,8 +115,17 @@ class PerBandIndexStat(ValueStat):
             }
             for measurement in input_measurements
             ]
+        text_measurements = [
+            {
+                'name': measurement['name'] + '_date',
+                'dtype': 'int32',
+                'nodata': 0,
+                'units': 'Date as YYYYMMDD'
+            }
+            for measurement in input_measurements
+            ]
 
-        return ValueStat.measurements(input_measurements) + date_measurements + index_measurements
+        return ValueStat.measurements(input_measurements) + date_measurements + index_measurements + text_measurements
 
 
 class PerStatIndexStat(ValueStat):
