@@ -8,6 +8,7 @@ from __future__ import absolute_import, print_function
 from collections import OrderedDict
 from functools import reduce as reduce_, partial
 import itertools
+import importlib
 import logging
 from pathlib import Path
 
@@ -37,17 +38,7 @@ STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
                                  'fletcher32',
                                  'contiguous',
                                  'attrs'}
-
-
-def pq_fuser(dest, src):
-    valid_bit = 8
-    valid_val = (1 << valid_bit)
-
-    no_data_dest_mask = ~(dest & valid_val).astype(bool)
-    numpy.copyto(dest, src, where=no_data_dest_mask)
-
-    both_data_mask = (valid_val & dest & src).astype(bool)
-    numpy.copyto(dest, src & dest, where=both_data_mask)
+DEFAULT_GROUP_BY = 'time'
 
 
 class ValueStat(object):
@@ -397,6 +388,12 @@ def find_source_datasets(task, stat, geobox, uri=None):
     return datasets, sources
 
 
+def import_function(func_ref):
+    module_name, _, func_name = func_ref.rpartition('.')
+    module = importlib.import_module(module_name)
+    return getattr(module, func_name)
+
+
 def load_masked_data(tile_index, source_prod):
     data = GridWorkflow.load(source_prod['data'][tile_index],
                              measurements=source_prod['spec']['measurements'])
@@ -404,8 +401,10 @@ def load_masked_data(tile_index, source_prod):
     data = mask_invalid_data(data)
 
     for spec, mask_tile in zip(source_prod['spec']['masks'], source_prod['masks']):
+        fuse_func = import_function(spec['fuse_func']) if 'fuse_func' in spec else None
         mask = GridWorkflow.load(mask_tile[tile_index],
-                                 measurements=[spec['measurement']], fuse_func=pq_fuser)[spec['measurement']]
+                                 measurements=[spec['measurement']],
+                                 fuse_func=fuse_func)[spec['measurement']]
         mask = make_mask(mask, **spec['flags'])
         data = data.where(mask)
         del mask
@@ -549,11 +548,12 @@ def make_tasks(index, output_products, config):
         tasks = {}
         for source_spec in config.sources:
             data = workflow.list_cells(product=source_spec['product'], time=time_period,
-                                       cell_index=(15, -40), group_by='solar_day')
+                                       cell_index=(15, -40),
+                                       group_by=source_spec.get('group_by', DEFAULT_GROUP_BY))
             masks = [workflow.list_cells(product=mask['product'],
                                          time=time_period,
                                          cell_index=(15, -40),
-                                         group_by='solar_day')
+                                         group_by=source_spec.get('group_by', DEFAULT_GROUP_BY))
                      for mask in source_spec['masks']]
 
             for tile_index, sources in data.items():

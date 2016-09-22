@@ -2,9 +2,12 @@
 sources:
   - product: ls5_nbar_albers
     measurements: [blue, green, red, nir, swir1, swir2]
+    group_by: solar_day
     masks:
       - product: ls5_pq_albers
         measurement: pixelquality
+        group_by: solar_day
+        fuse_func: datacube.helpers.ga_pq_fuser
         flags:
           contiguous: True
           cloud_acca: no_cloud
@@ -19,9 +22,12 @@ sources:
           swir2_saturated: False
   - product: ls7_nbar_albers
     measurements: [blue, green, red, nir, swir1, swir2]
+    group_by: solar_day
     masks:
       - product: ls7_pq_albers
         measurement: pixelquality
+        group_by: solar_day
+        fuse_func: datacube.helpers.ga_pq_fuser
         flags:
           contiguous: True
           cloud_acca: no_cloud
@@ -36,9 +42,12 @@ sources:
           swir2_saturated: False
   - product: ls8_nbar_albers
     measurements: [blue, green, red, nir, swir1, swir2]
+    group_by: solar_day
     masks:
       - product: ls8_pq_albers
         measurement: pixelquality
+        group_by: solar_day
+        fuse_func: datacube.helpers.ga_pq_fuser
         flags:
           contiguous: True
           cloud_acca: no_cloud
