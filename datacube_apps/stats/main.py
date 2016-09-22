@@ -13,8 +13,9 @@ from pathlib import Path
 
 import click
 import numpy
+import rasterio
 import xarray
-from pandas import to_datetime
+import pandas as pd
 
 from datacube.api import make_mask
 from datacube.api.grid_workflow import GridWorkflow
@@ -46,6 +47,7 @@ class ValueStat(object):
     :param function measurements: how to turn a list of input measurements into a list of output measurements
     :param function compute: how to calculate the statistic
     """
+
     def __init__(self, stat_func, masked=True):
         self.masked = masked
         self.stat_func = stat_func
@@ -100,8 +102,8 @@ class PerBandIndexStat(ValueStat):
         index_measurements = [
             {
                 'name': measurement['name'] + '_source',
-                'dtype': 'int8',
-                'nodata': -1,
+                'dtype': 'uint8',
+                'nodata': 255,
                 'units': '1'
             }
             for measurement in input_measurements
@@ -148,8 +150,8 @@ class PerStatIndexStat(ValueStat):
         index_measurements = [
             {
                 'name': 'source',
-                'dtype': 'int8',
-                'nodata': -1,
+                'dtype': 'uint8',
+                'nodata': 255,
                 'units': '1'
             }
         ]
@@ -275,8 +277,8 @@ class StatsConfig(object):
         self.sources = config['sources']
         self.output_products = config['output_products']
 
-        self.start_time = to_datetime(config['start_date'])
-        self.end_time = to_datetime(config['end_date'])
+        self.start_time = pd.to_datetime(config['start_date'])
+        self.end_time = pd.to_datetime(config['end_date'])
         self.stats_duration = config['stats_duration']
         self.step_size = config['step_size']
         self.grid_spec = self.create_grid_spec()
@@ -323,29 +325,8 @@ def tile_iter(tile, chunk):
     return block_iter(steps, tile.shape)
 
 
-def get_filename(path_template, tile_index, start_time):
-    return Path(str(path_template).format(tile_index=tile_index,
-                                          start_time=start_time))
-
-
-def create_storage_unit(task, stat, filename_template):
-    geobox = task['sources'][0]['data'].geobox  # HACK: better way to get geobox
-    all_measurement_defns = list(stat.product.measurements.values())
-
-    output_filename = get_filename(filename_template,
-                                   task['tile_index'],
-                                   task['start_time'])
-    datasets, sources = find_source_datasets(task, stat, geobox, uri=output_filename.as_uri())
-
-    nco = nco_from_sources(sources,
-                           geobox,
-                           all_measurement_defns,
-                           stat.netcdf_var_params,
-                           output_filename)
-
-    netcdf_writer.create_variable(nco, 'dataset', datasets, zlib=True)
-    nco['dataset'][:] = netcdf_writer.netcdfy_data(datasets.values)
-    return nco
+def get_filename(path_template, **kwargs):
+    return Path(str(path_template).format(**kwargs))
 
 
 def find_source_datasets(task, stat, geobox, uri=None):
@@ -375,7 +356,7 @@ def find_source_datasets(task, stat, geobox, uri=None):
     return datasets, sources
 
 
-def load_data(tile_index, source_prod):
+def load_masked_data(tile_index, source_prod):
     data = GridWorkflow.load(source_prod['data'][tile_index],
                              measurements=source_prod['spec']['measurements'])
     data = mask_invalid_data(data)
@@ -389,29 +370,129 @@ def load_data(tile_index, source_prod):
     return data
 
 
+def load_data(tile_index, task):
+    datasets = [load_masked_data(tile_index, source_prod) for source_prod in task['sources']]
+    data = xarray.concat(datasets, dim='time')
+    return data.isel(time=data.time.argsort())  # sort along time dim
+
+
+class OutputDriver(object):
+    def __init__(self, task, config):
+        self.task = task
+        self.config = config
+
+        self.output_files = {}
+
+    def close_files(self):
+        for output_file in self.output_files.values():
+            output_file.close()
+
+    def __enter__(self):
+        self.open_output_files()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close_files()
+
+
+class NetcdfOutputDriver(OutputDriver):
+    def open_output_files(self):
+        for prod_name, stat in self.task['output_products'].items():
+            filename_template = str(Path(self.config.location, stat.definition['file_path_template']))
+            self.output_files[prod_name] = self._create_storage_unit(stat, filename_template)
+
+    def _create_storage_unit(self, stat, filename_template):
+        geobox = self.task['sources'][0]['data'].geobox  # HACK: better way to get geobox
+        all_measurement_defns = list(stat.product.measurements.values())
+
+        output_filename = get_filename(filename_template,
+                                       tile_index=self.task['tile_index'],
+                                       start_time=self.task['start_time'])
+        datasets, sources = find_source_datasets(self.task, stat, geobox, uri=output_filename.as_uri())
+
+        nco = nco_from_sources(sources,
+                               geobox,
+                               all_measurement_defns,
+                               stat.netcdf_var_params,
+                               output_filename)
+
+        netcdf_writer.create_variable(nco, 'dataset', datasets, zlib=True)
+        nco['dataset'][:] = netcdf_writer.netcdfy_data(datasets.values)
+        return nco
+
+    def write_data(self, prod_name, var_name, tile_index, values):
+        self.output_files[prod_name][var_name][(0,) + tile_index[1:]] = values
+        self.output_files[prod_name].sync()
+        _LOG.debug("Updated %s %s", var_name, tile_index[1:])
+
+
+class RioOutputDriver(OutputDriver):
+    def open_output_files(self):
+        for prod_name, stat in self.task['output_products'].items():
+            for measurename, measure_def in stat.product.measurements.items():
+                filename_template = str(Path(self.config.location, stat.definition['file_path_template']))
+                geobox = self.task['sources'][0]['data'].geobox  # HACK: better way to get geobox
+
+                output_filename = get_filename(filename_template,
+                                               var_name=measurename,
+                                               tile_index=self.task['tile_index'],
+                                               start_time=self.task['start_time'])
+                try:
+                    output_filename.parent.mkdir(parents=True)
+                except OSError:
+                    pass
+
+                profile = {
+                    'blockxsize': 256,
+                    'blockysize': 256,
+                    'compress': 'lzw',
+                    'driver': 'GTiff',
+                    'interleave': 'band',
+                    'tiled': True,
+                    'dtype': measure_def['dtype'],
+                    'nodata': measure_def['nodata'],
+                    'width': geobox.width,
+                    'height': geobox.height,
+                    'affine': geobox.affine,
+                    'crs': geobox.crs.crs_str,
+                    'count': 1
+                }
+
+                output_name = prod_name + measurename
+                self.output_files[output_name] = rasterio.open(str(output_filename), mode='w', **profile)
+
+    def write_data(self, prod_name, var_name, tile_index, values):
+        output_name = prod_name + var_name
+        y, x = tile_index[1:]
+        window = ((y.start, y.stop), (x.start, x.stop))
+        _LOG.debug("Updating %s.%s %s", prod_name, var_name, window)
+
+        dtype = self.task['output_products'][prod_name].product.measurements[var_name]['dtype']
+
+        self.output_files[output_name].write(values.astype(dtype), indexes=1, window=window)
+
+
+OUTPUT_DRIVERS = {
+    'NetCDF CF': NetcdfOutputDriver,
+    'rasterio': RioOutputDriver
+}
+
+
 def do_stats(task, config):
-    results = {}
-    for prod_name, stat in task['output_products'].items():
-        filename_template = str(Path(config.location, stat.definition['file_path_template']))
-        results[prod_name] = create_storage_unit(task, stat, filename_template)
+    output_driver = OUTPUT_DRIVERS[config.storage['driver']]
+    with output_driver(task, config) as output_files:
+        example_tile = task['sources'][0]['data']
+        for tile_index in tile_iter(example_tile, config.computation['chunking']):
+            data = load_data(tile_index, task)
 
-    for tile_index in tile_iter(task['sources'][0]['data'], config.computation['chunking']):
-        datasets = [load_data(tile_index, source_prod) for source_prod in task['sources']]
-        data = xarray.concat(datasets, dim='time')
-        data = data.isel(time=data.time.argsort())  # sort along time dim
+            for prod_name, stat in task['output_products'].items():
+                _LOG.info("Computing %s in tile %s", prod_name, tile_index)
+                assert stat.masked  # TODO: not masked
+                stats_data = stat.compute(data)
 
-        for prod_name, stat in task['output_products'].items():
-            _LOG.info("Computing %s in tile %s", prod_name, tile_index)
-            assert stat.masked  # TODO: not masked
-            data_stats = stat.compute(data)
-            # For each of the data variables, shove this chunk into the output results
-            for var_name, var in data_stats.data_vars.items():
-                results[prod_name][var_name][(0,) + tile_index[1:]] = var.values  # HACK: make netcdf slicing nicer?...
-                results[prod_name].sync()
-                _LOG.debug("Updated %s %s", var_name, tile_index[1:])
-
-    for stat, nco in results.items():
-        nco.close()
+                # For each of the data variables, shove this chunk into the output results
+                for var_name, var in stats_data.data_vars.items():
+                    output_files.write_data(prod_name, var_name, tile_index, var.values)
 
 
 def make_tasks(index, output_products, config):
@@ -463,7 +544,7 @@ def make_products(index, config):
 
     for prod in config.output_products:
         output_products[prod['name']] = StatProduct(index.metadata_types.get_by_name('eo'), measurements,
-                                                    prod, config.storage)
+                                                    definition=prod, storage=config.storage)
 
     return output_products
 
