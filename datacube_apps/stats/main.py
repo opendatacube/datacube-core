@@ -421,7 +421,7 @@ class NetcdfOutputDriver(OutputDriver):
         return nco
 
     def write_data(self, prod_name, var_name, tile_index, values):
-        self.output_files[prod_name][var_name][(0,) + tile_index[1:]] = values
+        self.output_files[prod_name][var_name][(0,) + tile_index[1:]] = netcdf_writer.netcdfy_data(values)
         self.output_files[prod_name].sync()
         _LOG.debug("Updated %s %s", var_name, tile_index[1:])
 

@@ -231,14 +231,14 @@ def write_flag_definition(variable, flags_definition):
 
 
 def netcdfy_coord(data):
-    if data.dtype.kind == 'M':
-        return data.astype('<M8[s]').astype('double')
-    return data
+    return netcdfy_data(data)
 
 
 def netcdfy_data(data):
     if data.dtype.kind == 'S' and data.dtype.itemsize > 1:
         return data.view('S1').reshape(data.shape + (-1,))
+    if data.dtype.kind == 'M':
+        return data.astype('<M8[s]').astype('double')
     else:
         return data
 
