@@ -39,6 +39,17 @@ STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
                                  'attrs'}
 
 
+def pq_fuser(dest, src):
+    valid_bit = 8
+    valid_val = (1 << valid_bit)
+
+    no_data_dest_mask = ~(dest & valid_val).astype(bool)
+    numpy.copyto(dest, src, where=no_data_dest_mask)
+
+    both_data_mask = (valid_val & dest & src).astype(bool)
+    numpy.copyto(dest, src & dest, where=both_data_mask)
+
+
 class ValueStat(object):
     """
     Holder class describing the outputs of a statistic and how to calculate it
@@ -395,7 +406,7 @@ def load_masked_data(tile_index, source_prod):
 
     for spec, mask_tile in zip(source_prod['spec']['masks'], source_prod['masks']):
         mask = GridWorkflow.load(mask_tile[tile_index],
-                                 measurements=[spec['measurement']])[spec['measurement']]
+                                 measurements=[spec['measurement']], fuse_func=pq_fuser)[spec['measurement']]
         mask = make_mask(mask, **spec['flags'])
         data = data.where(mask)
         del mask
@@ -538,8 +549,12 @@ def make_tasks(index, output_products, config):
         # Each source may be masked by multiple masks
         tasks = {}
         for source_spec in config.sources:
-            data = workflow.list_cells(product=source_spec['product'], time=time_period, cell_index=(15, -40))
-            masks = [workflow.list_cells(product=mask['product'], time=time_period, cell_index=(15, -40))
+            data = workflow.list_cells(product=source_spec['product'], time=time_period,
+                                       cell_index=(15, -40), group_by='solar_day')
+            masks = [workflow.list_cells(product=mask['product'],
+                                         time=time_period,
+                                         cell_index=(15, -40),
+                                         group_by='solar_day')
                      for mask in source_spec['masks']]
 
             for tile_index, sources in data.items():
