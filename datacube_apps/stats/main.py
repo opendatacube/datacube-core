@@ -41,6 +41,14 @@ STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
 DEFAULT_GROUP_BY = 'time'
 
 
+def datetime64_to_lextime(var):
+    values = getattr(var, 'values', var)
+    years = values.astype('datetime64[Y]').astype('int32') + 1970
+    months = values.astype('datetime64[M]').astype('int32') % 12 + 1
+    days = (values.astype('datetime64[D]') - values.astype('datetime64[M]') + 1).astype('int32')
+    return years * 10000 + months * 100 + days
+
+
 class ValueStat(object):
     """
     Holder class describing the outputs of a statistic and how to calculate it
@@ -111,16 +119,8 @@ class PerBandIndexStat(ValueStat):
         time_values = index.apply(index_time).rename(OrderedDict((name, name + '_observed')
                                                                  for name in index.data_vars))
 
-        def index_dates(var):
-            dates = data.time.values[var.values]
-            shape = dates.shape
-            dates = dates.reshape(-1)
-            dates = pd.to_datetime(dates)
-            dates = dates.year * 10000 + dates.month * 100 + dates.day
-            return dates.reshape(shape)
-
-        text_values = index.apply(index_dates).rename(OrderedDict((name, name + '_date')
-                                                                  for name in index.data_vars))
+        text_values = time_values.apply(datetime64_to_lextime).rename(OrderedDict((name, name + '_date')
+                                                                                  for name in time_values.data_vars))
 
         return xarray.merge([data_values, time_values, text_values])
 
@@ -146,7 +146,7 @@ class PerBandIndexStat(ValueStat):
             ]
         text_measurements = [
             {
-                'name': measurement['name'] + '_date',
+                'name': measurement['name'] + '_observed_date',
                 'dtype': 'int32',
                 'nodata': 0,
                 'units': 'Date as YYYYMMDD'
@@ -172,7 +172,9 @@ class PerStatIndexStat(ValueStat):
             return axisindex(var, index, axis=axis)
 
         data_values = data.reduce(index_dataset, dim='time')
-        data_values['observed'] = (('y', 'x'), data.time.values[index])
+        observed = data.time.values[index]
+        data_values['observed'] = (('y', 'x'), observed)
+        data_values['observed_date'] = (('y', 'x'), datetime64_to_lextime(observed))
 
         return data_values
 
@@ -194,7 +196,15 @@ class PerStatIndexStat(ValueStat):
                 'units': 'seconds since 1970-01-01 00:00:00'
             }
         ]
-        return ValueStat.measurements(input_measurements) + date_measurements + index_measurements
+        text_measurements = [
+            {
+                'name': 'observed_date',
+                'dtype': 'int32',
+                'nodata': 0,
+                'units': 'Date as YYYYMMDD'
+            }
+            ]
+        return ValueStat.measurements(input_measurements) + date_measurements + index_measurements + text_measurements
 
 
 def _compose_helper(f, g, *args):
