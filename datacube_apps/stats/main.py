@@ -62,9 +62,35 @@ class ValueStat(object):
             for measurement in input_measurements]
 
 
+class NDVIStats(object):
+    def __init__(self, masked=True):
+        self.masked = masked
+
+    @staticmethod
+    def compute(data):
+        ndvi = (data.nir - data.red) / (data.nir + data.red)
+        ndvi_min = ndvi.min(dim='time')
+        ndvi_max = ndvi.max(dim='time')
+        ndvi_mean = ndvi.mean(dim='time')
+        return xarray.Dataset({'ndvi_min': ndvi_min, 'ndvi_max': ndvi_max, 'ndvi_mean': ndvi_mean},
+                              attrs=dict(crs=data.crs))
+
+    @staticmethod
+    def measurements(input_measurements):
+        measurement_names = [m['name'] for m in input_measurements]
+        if 'red' not in measurement_names or 'nir' not in measurement_names:
+            raise ConfigurationError('Input measurements for NDVI must include "nir" and "red"')
+
+        return [dict(name=name, dtype='float32', nodata=-1, units='1')
+                for name in ('ndvi_min', 'ndvi_max', 'ndvi_mean')
+                ]
+
+
 class PerBandIndexStat(ValueStat):
     """
     Each output variable contains values that actually exist in the input data
+
+    :param stat_func: A function which takes an xarray.Dataset and returns an xarray.Dataset of indexes
     """
 
     def __init__(self, stat_func, masked=True):
@@ -131,6 +157,10 @@ class PerBandIndexStat(ValueStat):
 
 
 class PerStatIndexStat(ValueStat):
+    """
+    :param stat_func: A function which takes an xarray.Dataset and returns an xarray.Dataset of indexes
+    """
+
     def __init__(self, stat_func, masked=True):
         super(PerStatIndexStat, self).__init__(stat_func, masked)
 
@@ -207,7 +237,8 @@ STATS = {
                                                         q=10.0)),
     'medoid': PerStatIndexStat(masked=True, stat_func=_medoid_helper),
     'min': make_name_stat('min'),
-    'max': make_name_stat('max')
+    'max': make_name_stat('max'),
+    'ndvi_stats': NDVIStats()
 }
 
 
@@ -359,6 +390,7 @@ def find_source_datasets(task, stat, geobox, uri=None):
 def load_masked_data(tile_index, source_prod):
     data = GridWorkflow.load(source_prod['data'][tile_index],
                              measurements=source_prod['spec']['measurements'])
+    crs = data.crs
     data = mask_invalid_data(data)
 
     for spec, mask_tile in zip(source_prod['spec']['masks'], source_prod['masks']):
@@ -367,6 +399,7 @@ def load_masked_data(tile_index, source_prod):
         mask = make_mask(mask, **spec['flags'])
         data = data.where(mask)
         del mask
+    data.attrs['crs'] = crs
     return data
 
 
