@@ -93,8 +93,7 @@ class NDVIStats(object):
             raise ConfigurationError('Input measurements for NDVI must include "nir" and "red"')
 
         return [dict(name=name, dtype='float32', nodata=-1, units='1')
-                for name in ('ndvi_min', 'ndvi_max', 'ndvi_mean')
-                ]
+                for name in ('ndvi_min', 'ndvi_max', 'ndvi_mean')]
 
 
 class PerBandIndexStat(ValueStat):
