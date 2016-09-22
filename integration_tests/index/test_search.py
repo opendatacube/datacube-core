@@ -9,13 +9,12 @@ import datetime
 import io
 import uuid
 
+import datacube.scripts.search_tool
 import pytest
 from click.testing import CliRunner
+from datacube.model import Range
 from dateutil import tz
 from pathlib import Path
-
-import datacube.scripts.search_tool
-from datacube.model import Range
 
 _EXAMPLE_LS7_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('ls7-nbar-example.yaml')
 
@@ -83,7 +82,54 @@ def pseudo_telemetry_dataset(index, db, pseudo_telemetry_type):
     )
     assert was_inserted
     d = index.datasets.get(id_)
+    # The dataset should have been matched to the telemetry type.
+    assert d.type.id == pseudo_telemetry_type.id
 
+    return d
+
+
+@pytest.fixture
+def pseudo_telemetry_dataset2(index, db, pseudo_telemetry_type):
+    # Like the previous dataset, but a day later in time.
+    id_ = str(uuid.uuid4())
+    was_inserted = db.insert_dataset(
+        {
+            'id': id_,
+            'product_type': 'pseudo_telemetry_data',
+            'checksum_path': 'package.sha1',
+            'ga_label': 'LS8_OLITIRS_STD-MD_P00_LC81160740742015089ASA00_'
+                        '116_074_20150330T022553Z20150330T022657',
+
+            'ga_level': 'P00',
+            'size_bytes': 637660782,
+            'platform': {
+                'code': 'LANDSAT_8'
+            },
+            # We're unlikely to have extent info for a raw dataset, we'll use it for search tests.
+            'extent': {
+                'from_dt': datetime.datetime(2014, 7, 27, 23, 48, 0, 343853),
+                'to_dt': datetime.datetime(2014, 7, 27, 23, 52, 0, 343853),
+                'coord': {
+                    'll': {'lat': -31.33333, 'lon': 149.78434},
+                    'lr': {'lat': -31.37116, 'lon': 152.20094},
+                    'ul': {'lat': -29.23394, 'lon': 149.85216},
+                    'ur': {'lat': -29.26873, 'lon': 152.21782}
+                }
+            },
+            'creation_dt': datetime.datetime(2015, 4, 22, 6, 32, 4),
+            'instrument': {'name': 'OLI_TIRS'},
+            'format': {
+                'name': 'PSEUDOMD'
+            },
+            'lineage': {
+                'source_datasets': {}
+            }
+        },
+        id_,
+        pseudo_telemetry_type.id
+    )
+    assert was_inserted
+    d = index.datasets.get(id_)
     # The dataset should have been matched to the telemetry type.
     assert d.type.id == pseudo_telemetry_type.id
 
@@ -510,11 +556,54 @@ def test_search_cli_basic(global_integration_cli_args, default_metadata_type, ps
     assert result.exit_code == 0
 
 
+def test_search_csv_search_via_cli(global_integration_cli_args, pseudo_telemetry_type, pseudo_telemetry_dataset,
+                                   pseudo_telemetry_dataset2):
+    """
+    Search datasets via the cli with csv output
+    :type global_integration_cli_args: tuple[str]
+    :type pseudo_telemetry_dataset: datacube.model.Dataset
+    """
+    # Test dataset is:
+    # platform: LANDSAT_8
+    # from: 2014-7-26  23:48:00
+    # to:   2014-7-26  23:52:00
+    # coords:
+    #     ll: (-31.33333, 149.78434)
+    #     lr: (-31.37116, 152.20094)
+    #     ul: (-29.23394, 149.85216)
+    #     ur: (-29.26873, 152.21782)
+
+    # Dataset 2 is the same but on day 2014-7-27
+
+    rows = _cli_csv_search(['datasets', ' -40 < lat < -10'], global_integration_cli_args)
+    assert len(rows) == 2
+    assert {rows[0]['id'], rows[1]['id']} == {str(pseudo_telemetry_dataset.id), str(pseudo_telemetry_dataset2.id)}
+
+    rows = _cli_csv_search(['datasets', 'product=' + pseudo_telemetry_type.name], global_integration_cli_args)
+    assert len(rows) == 2
+    assert {rows[0]['id'], rows[1]['id']} == {str(pseudo_telemetry_dataset.id), str(pseudo_telemetry_dataset2.id)}
+
+    # Don't return on a mismatch
+    rows = _cli_csv_search(['datasets', '150<lat<160'], global_integration_cli_args)
+    assert len(rows) == 0
+
+    # Match only a single dataset using multiple fields
+    rows = _cli_csv_search(['datasets', 'platform=LANDSAT_8', '2014-07-24<time<2014-07-27'],
+                           global_integration_cli_args)
+    assert len(rows) == 1
+    assert rows[0]['id'] == str(pseudo_telemetry_dataset.id)
+
+    # One matching field, one non-matching
+    rows = _cli_csv_search(['datasets', '2014-07-24<time<2014-07-27', 'platform=LANDSAT_5'],
+                           global_integration_cli_args)
+    assert len(rows) == 0
+
+
 def _cli_csv_search(args, global_integration_cli_args):
     global_opts = list(global_integration_cli_args)
     global_opts.extend(['-f', 'csv'])
     result = _cli_search(args, global_opts)
-    assert result.exit_code == 0
+    assert result.exit_code == 0, result.output
     return list(csv.DictReader(io.StringIO(result.output)))
 
 
