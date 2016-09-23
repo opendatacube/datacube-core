@@ -122,6 +122,12 @@ class PerBandIndexStat(ValueStat):
         text_values = time_values.apply(datetime64_to_lextime).rename(OrderedDict((name, name + '_date')
                                                                                   for name in time_values.data_vars))
 
+        def index_source(var):
+            return data.source.values[var.values]
+
+        time_values = index.apply(index_source).rename(OrderedDict((name, name + '_source')
+                                                                   for name in index.data_vars))
+
         return xarray.merge([data_values, time_values, text_values])
 
     @staticmethod
@@ -129,8 +135,8 @@ class PerBandIndexStat(ValueStat):
         index_measurements = [
             {
                 'name': measurement['name'] + '_source',
-                'dtype': 'uint8',
-                'nodata': 255,
+                'dtype': 'int8',
+                'nodata': -1,
                 'units': '1'
             }
             for measurement in input_measurements
@@ -175,6 +181,7 @@ class PerStatIndexStat(ValueStat):
         observed = data.time.values[index]
         data_values['observed'] = (('y', 'x'), observed)
         data_values['observed_date'] = (('y', 'x'), datetime64_to_lextime(observed))
+        data_values['source'] = (('y', 'x'), data.source.values[index])
 
         return data_values
 
@@ -183,8 +190,8 @@ class PerStatIndexStat(ValueStat):
         index_measurements = [
             {
                 'name': 'source',
-                'dtype': 'uint8',
-                'nodata': 255,
+                'dtype': 'int8',
+                'nodata': -1,
                 'units': '1'
             }
         ]
@@ -416,6 +423,8 @@ def load_masked_data(tile_index, source_prod):
 
 def load_data(tile_index, task):
     datasets = [load_masked_data(tile_index, source_prod) for source_prod in task['sources']]
+    for idx, dataset in enumerate(datasets):
+        dataset.coords['source'] = ('time', numpy.repeat(idx, dataset.time.size))
     data = xarray.concat(datasets, dim='time')
     return data.isel(time=data.time.argsort())  # sort along time dim
 
