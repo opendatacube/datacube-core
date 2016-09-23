@@ -580,16 +580,17 @@ class DatasetResource(object):
     def get_field_names(self, type_name=None):
         """
         :param str type_name:
-        :rtype: __generator[str]
+        :rtype: set[str]
         """
         if type_name is None:
             types = self.types.get_all()
         else:
             types = [self.types.get_by_name(type_name)]
 
+        out = set()
         for type_ in types:
-            for name in type_.metadata_type.dataset_fields:
-                yield name
+            out.update(type_.metadata_type.dataset_fields)
+        return out
 
     def get_locations(self, dataset):
         """

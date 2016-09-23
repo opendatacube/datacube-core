@@ -173,9 +173,9 @@ def test_query_kwargs():
     from mock import MagicMock
 
     mock_index = MagicMock()
-    mock_index.datasets.get_field_names = lambda: [u'product', u'lat', u'sat_path', 'type_id', u'time', u'lon',
+    mock_index.datasets.get_field_names = lambda: {u'product', u'lat', u'sat_path', 'type_id', u'time', u'lon',
                                                    u'orbit', u'instrument', u'sat_row', u'platform', 'metadata_type',
-                                                   u'gsi', 'type', 'id', ]
+                                                   u'gsi', 'type', 'id'}
 
     query = Query(index=mock_index, product='ls5_nbar_albers')
     assert str(query)
