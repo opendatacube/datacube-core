@@ -556,8 +556,8 @@ def test_search_cli_basic(global_integration_cli_args, default_metadata_type, ps
     assert result.exit_code == 0
 
 
-def test_search_csv_search_via_cli(global_integration_cli_args, pseudo_telemetry_type, pseudo_telemetry_dataset,
-                                   pseudo_telemetry_dataset2):
+def test_csv_search_via_cli(global_integration_cli_args, pseudo_telemetry_type, pseudo_telemetry_dataset,
+                            pseudo_telemetry_dataset2):
     """
     Search datasets via the cli with csv output
     :type global_integration_cli_args: tuple[str]
@@ -599,12 +599,34 @@ def test_search_csv_search_via_cli(global_integration_cli_args, pseudo_telemetry
     assert len(rows) == 0
 
 
+# Headers are currently in alphabetical order.
+_EXPECTED_OUTPUT_HEADER = 'dataset_type_id,gsi,id,instrument,lat,lon,metadata_type,metadata_type_id,orbit,' \
+                          'platform,product,product_type,sat_path,sat_row,time'
+
+
+def test_csv_structure(global_integration_cli_args, pseudo_telemetry_type, ls5_nbar_gtiff_type,
+                       pseudo_telemetry_dataset, pseudo_telemetry_dataset2):
+    output = _csv_search_raw(['datasets', ' -40 < lat < -10'], global_integration_cli_args)
+    lines = [line for line in output.split('\n') if line]
+    # A header and two dataset rows
+    assert len(lines) == 3
+
+    assert lines[0] == _EXPECTED_OUTPUT_HEADER
+
+
 def _cli_csv_search(args, global_integration_cli_args):
+    # Do a CSV search from the cli, returning results as a list of dictionaries
+    output = _csv_search_raw(args, global_integration_cli_args)
+    return list(csv.DictReader(io.StringIO(output)))
+
+
+def _csv_search_raw(args, global_integration_cli_args):
+    # Do a CSV search from the cli, returning output as a string
     global_opts = list(global_integration_cli_args)
     global_opts.extend(['-f', 'csv'])
     result = _cli_search(args, global_opts)
     assert result.exit_code == 0, result.output
-    return list(csv.DictReader(io.StringIO(result.output)))
+    return result.output
 
 
 def _cli_search(args, global_integration_cli_args):
