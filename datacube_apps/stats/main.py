@@ -207,14 +207,6 @@ class PerStatIndexStat(ValueStat):
         return ValueStat.measurements(input_measurements) + date_measurements + index_measurements + text_measurements
 
 
-def _compose_helper(f, g, *args):
-    return f(g(*args))
-
-
-def compose(f, g):
-    return partial(_compose_helper, f, g)
-
-
 def make_name_stat(name, masked=True):
     """
     A value returning statistic, relying on an xarray function of name being available
