@@ -153,9 +153,10 @@ class MetadataTypeResource(object):
         """
         :rtype list[datacube.model.MetadataType]
         """
+        search_fields = query_row['definition']['dataset']['search_fields']
         return MetadataType(
             query_row['definition'],
-            dataset_search_fields=self._db.get_dataset_fields(query_row),
+            dataset_search_fields=self._db.get_dataset_fields(search_fields),
             id_=query_row['id']
         )
 
@@ -223,6 +224,7 @@ class DatasetTypeResource(object):
                     name=type_.name,
                     metadata=type_.metadata_doc,
                     metadata_type_id=type_.metadata_type.id,
+                    search_fields=type_.metadata_type.dataset_fields,
                     definition=type_.definition
                 )
         return self.get_by_name(type_.name)
@@ -311,6 +313,7 @@ class DatasetTypeResource(object):
                     name=type_.name,
                     metadata=type_.metadata_doc,
                     metadata_type_id=type_.metadata_type.id,
+                    search_fields=type_.metadata_type.dataset_fields,
                     definition=type_.definition,
                     update_metadata_type=changing_metadata_type
                 )

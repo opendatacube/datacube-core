@@ -377,7 +377,7 @@ class PostgresDb(object):
 
         return self._connection.execute(query).fetchall()
 
-    def get_dataset_fields(self, metadata_type_result):
+    def get_dataset_fields(self, dataset_search_fields):
         # Native fields (hard-coded into the schema)
         fields = {
             'id': NativeField(
@@ -406,7 +406,6 @@ class PostgresDb(object):
                 DATASET.c.metadata_type_ref
             ),
         }
-        dataset_search_fields = metadata_type_result['definition']['dataset']['search_fields']
 
         # noinspection PyTypeChecker
         fields.update(
@@ -605,6 +604,7 @@ class PostgresDb(object):
                          name,
                          metadata,
                          metadata_type_id,
+                         search_fields,
                          definition, concurrently=True):
 
         res = self._connection.execute(
@@ -619,7 +619,7 @@ class PostgresDb(object):
         type_id = res.inserted_primary_key[0]
 
         # Initialise search fields.
-        self._setup_dataset_type_fields(type_id, name, metadata_type_id, definition['metadata'],
+        self._setup_dataset_type_fields(type_id, name, search_fields, definition['metadata'],
                                         concurrently=concurrently)
         return type_id
 
@@ -627,6 +627,7 @@ class PostgresDb(object):
                             name,
                             metadata,
                             metadata_type_id,
+                            search_fields,
                             definition, update_metadata_type=False, concurrently=False):
         res = self._connection.execute(
             DATASET_TYPE.update().returning(DATASET_TYPE.c.id).where(
@@ -652,7 +653,7 @@ class PostgresDb(object):
             )
 
         # Initialise search fields.
-        self._setup_dataset_type_fields(type_id, name, metadata_type_id, definition['metadata'],
+        self._setup_dataset_type_fields(type_id, name, search_fields, definition['metadata'],
                                         concurrently=concurrently)
         return type_id
 
@@ -664,10 +665,10 @@ class PostgresDb(object):
             )
         )
         type_id = res.inserted_primary_key[0]
-        record = self.get_metadata_type(type_id)
 
+        search_fields = self.get_dataset_fields(definition['dataset']['search_fields'])
         self._setup_metadata_type_fields(
-            type_id, name, record, concurrently=concurrently
+            type_id, name, search_fields, concurrently=concurrently
         )
 
     def update_metadata_type(self, name, definition, concurrently=False):
@@ -680,21 +681,26 @@ class PostgresDb(object):
             )
         )
         type_id = res.first()[0]
-        record = self.get_metadata_type(type_id)
 
+        search_fields = self.get_dataset_fields(definition['dataset']['search_fields'])
         self._setup_metadata_type_fields(
-            type_id, name, record, concurrently=concurrently
+            type_id, name, search_fields, concurrently=concurrently
         )
 
         return type_id
 
     def check_dynamic_fields(self, concurrently=False, rebuild_all=False):
         _LOG.info('Checking dynamic views/indexes. (rebuild all = %s)', rebuild_all)
+
+        search_fields = {}
+
         for metadata_type in self.get_all_metadata_types():
+            fields = self.get_dataset_fields(metadata_type['definition']['dataset']['search_fields'])
+            search_fields[metadata_type['id']] = fields
             self._setup_metadata_type_fields(
                 metadata_type['id'],
                 metadata_type['name'],
-                metadata_type,
+                fields,
                 rebuild_all, concurrently
             )
 
@@ -702,29 +708,26 @@ class PostgresDb(object):
             self._setup_dataset_type_fields(
                 dataset_type['id'],
                 dataset_type['name'],
-                dataset_type['metadata_type_ref'],
+                search_fields[dataset_type['metadata_type_ref']],
                 dataset_type['definition']['metadata'],
                 rebuild_all,
                 concurrently
             )
 
-    def _setup_metadata_type_fields(self, id_, name, record, rebuild_all=False, concurrently=True):
-        fields = self.get_dataset_fields(record)
+    def _setup_metadata_type_fields(self, id_, name, fields, rebuild_all=False, concurrently=True):
         dataset_filter = and_(DATASET.c.archived == None, DATASET.c.metadata_type_ref == id_)
         dynamic.check_dynamic_fields(self._connection, concurrently, dataset_filter,
                                      (), fields, name, rebuild_all)
 
-    def _setup_dataset_type_fields(self, id_, name, metadata_type_id, metadata_doc,
+    def _setup_dataset_type_fields(self, id_, name, fields, metadata_doc,
                                    rebuild_all=False, concurrently=True):
-        fields = self.get_dataset_fields(self.get_metadata_type(metadata_type_id))
         dataset_filter = and_(DATASET.c.archived == None, DATASET.c.dataset_type_ref == id_)
-        excluded_field_names = tuple(self._get_active_field_names(metadata_type_id, metadata_doc))
+        excluded_field_names = tuple(self._get_active_field_names(fields, metadata_doc))
 
         dynamic.check_dynamic_fields(self._connection, concurrently, dataset_filter,
                                      excluded_field_names, fields, name, rebuild_all)
 
-    def _get_active_field_names(self, metadata_type_id, metadata_doc):
-        fields = self.get_dataset_fields(self.get_metadata_type(metadata_type_id))
+    def _get_active_field_names(self, fields, metadata_doc):
         for field in fields.values():
             if hasattr(field, 'extract'):
                 try:
