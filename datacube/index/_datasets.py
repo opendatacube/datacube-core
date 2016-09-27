@@ -113,26 +113,41 @@ class MetadataTypeResource(object):
             )
             # Clear our local cache. Note that other users may still have
             # cached copies for the duration of their connections.
-            self.get_by_name.cache_clear()
-            self.get.cache_clear()
+            self.get_by_name_unsafe.cache_clear()
+            self.get_unsafe.cache_clear()
         else:
             _LOG.info("No changes detected for metadata type %s", name)
 
-    @lru_cache()
     def get(self, id_):
         """
         :rtype: datacube.model.MetadataType
         """
-        return self._make(self._db.get_metadata_type(id_))
+        try:
+            return self.get_unsafe(id_)
+        except KeyError:
+            return None
 
-    @lru_cache()
     def get_by_name(self, name):
         """
         :rtype: datacube.model.MetadataType
         """
+        try:
+            return self.get_by_name_unsafe(name)
+        except KeyError:
+            return None
+
+    @lru_cache()
+    def get_unsafe(self, id_):
+        record = self._db.get_metadata_type(id_)
+        if record is None:
+            raise KeyError('%s is not a valid MetadataType id')
+        return self._make(record)
+
+    @lru_cache()
+    def get_by_name_unsafe(self, name):
         record = self._db.get_metadata_type_by_name(name)
         if not record:
-            return None
+            raise KeyError('%s is not a valid MetadataType name' % name)
         return self._make(record)
 
     def check_field_indexes(self, allow_table_lock=False, rebuild_all=False):
@@ -243,7 +258,7 @@ class DatasetTypeResource(object):
         """
         DatasetType.validate(type_.definition)
 
-        existing = self._get_by_name(type_.name)
+        existing = self.get_by_name(type_.name)
         if not existing:
             raise ValueError('Unknown product %s, cannot update – did you intend to add it?' % type_.name)
 
@@ -320,8 +335,8 @@ class DatasetTypeResource(object):
 
             # Clear our local cache. Note that other users may still have
             # cached copies for the duration of their connections.
-            self.get_by_name.cache_clear()
-            self.get.cache_clear()
+            self.get_by_name_unsafe.cache_clear()
+            self.get_unsafe.cache_clear()
         else:
             _LOG.info("No changes detected for product %s", type_.name)
 
@@ -347,7 +362,6 @@ class DatasetTypeResource(object):
         type_ = self.from_doc(definition)
         return self.add(type_)
 
-    @lru_cache()
     def get(self, id_):
         """
         Retrieve Product by id
@@ -355,9 +369,11 @@ class DatasetTypeResource(object):
         :param int id_: id of the Product
         :rtype: datacube.model.DatasetType
         """
-        return self._make(self._db.get_dataset_type(id_))
+        try:
+            return self.get_unsafe(id_)
+        except KeyError:
+            return None
 
-    @lru_cache()
     def get_by_name(self, name):
         """
         Retrieve Product by name
@@ -365,12 +381,23 @@ class DatasetTypeResource(object):
         :param str name: name of the Product
         :rtype: datacube.model.DatasetType
         """
-        return self._get_by_name(name)
+        try:
+            return self.get_by_name_unsafe(name)
+        except KeyError:
+            return None
 
-    def _get_by_name(self, name):
+    @lru_cache()
+    def get_unsafe(self, id_):
+        result = self._db.get_dataset_type(id_)
+        if not result:
+            raise KeyError('"%s" is not a valid Product id' % id_)
+        return self._make(result)
+
+    @lru_cache()
+    def get_by_name_unsafe(self, name):
         result = self._db.get_dataset_type_by_name(name)
         if not result:
-            return None
+            raise KeyError('"%s" is not a valid Product name' % name)
         return self._make(result)
 
     def get_with_fields(self, field_names):
