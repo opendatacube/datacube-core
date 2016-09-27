@@ -153,11 +153,8 @@ class MetadataTypeResource(object):
         """
         :rtype list[datacube.model.MetadataType]
         """
-        definition = query_row['definition']
-        dataset_ = definition['dataset']
         return MetadataType(
-            query_row['name'],
-            dataset_,
+            query_row['definition'],
             dataset_search_fields=self._db.get_dataset_fields(query_row),
             id_=query_row['id']
         )

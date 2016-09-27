@@ -190,21 +190,29 @@ class Measurement(object):
 class MetadataType(object):
     """Metadata Type definition"""
     def __init__(self,
-                 name,
-                 dataset_offsets,
+                 definition,
                  dataset_search_fields,
                  id_=None):
-        #: :type: str
-        self.name = name
-
-        #: :rtype: DatasetOffsets
-        self.dataset_offsets = dataset_offsets
+        #: :type: dict
+        self.definition = definition
 
         #: :rtype: dict[str,datacube.index.fields.Field]
         self.dataset_fields = dataset_search_fields
 
         #: :type: int
         self.id = id_
+
+    @property
+    def name(self):
+        return self.definition['name']
+
+    @property
+    def description(self):
+        return self.definition['description']
+
+    @property
+    def dataset_offsets(self):
+        return self.definition['dataset']
 
     def dataset_reader(self, dataset_doc):
         return DocReader(self.dataset_offsets, self.dataset_fields, dataset_doc)
