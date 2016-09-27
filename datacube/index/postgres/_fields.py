@@ -386,15 +386,16 @@ def parse_fields(doc, table_column):
             # For backwards compatibility
             'float-range': NumericRangeDocField,
         }
-        type_name = descriptor.pop('type', 'string')
-        description = descriptor.pop('description', None)
+        ctorargs = descriptor.copy()
+        type_name = ctorargs.pop('type', 'string')
+        description = ctorargs.pop('description', None)
 
         field_class = type_map.get(type_name)
         if not field_class:
             raise ValueError(('Field %r has unknown type %r.'
                               ' Available types are: %r') % (name, type_name, list(type_map.keys())))
         try:
-            return field_class(name, description, column, **descriptor)
+            return field_class(name, description, column, **ctorargs)
         except TypeError as e:
             raise RuntimeError(
                 'Field {name} has unexpected argument for a {type}'.format(
