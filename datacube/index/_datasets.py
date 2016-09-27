@@ -32,9 +32,9 @@ class MetadataTypeResource(object):
         """
         return self._make(definition)
 
-    def add(self, definition, allow_table_lock=False):
+    def add(self, metadata_type, allow_table_lock=False):
         """
-        :type definition: dict
+        :param datacube.model.MetadataType metadata_type:
         :param allow_table_lock:
             Allow an exclusive lock to be taken on the table while creating the indexes.
             This will halt other user's requests until completed.
@@ -43,26 +43,24 @@ class MetadataTypeResource(object):
         :rtype: datacube.model.MetadataType
         """
         # This column duplication is getting out of hand:
-        MetadataType.validate(definition)
+        MetadataType.validate(metadata_type.definition)
 
-        name = definition['name']
-
-        existing = self._db.get_metadata_type_by_name(name)
+        existing = self._db.get_metadata_type_by_name(metadata_type.name)
         if existing:
             # They've passed us the same one again. Make sure it matches what is stored.
             # TODO: Support for adding/updating search fields?
             check_doc_unchanged(
                 existing.definition,
-                definition,
-                'Metadata Type {}'.format(name)
+                metadata_type.definition,
+                'Metadata Type {}'.format(metadata_type.name)
             )
         else:
             self._db.add_metadata_type(
-                name=name,
-                definition=definition,
+                name=metadata_type.name,
+                definition=metadata_type.definition,
                 concurrently=not allow_table_lock
             )
-        return self.get_by_name(name)
+        return self.get_by_name(metadata_type.name)
 
     def update_document(self, definition, dry_run=False, allow_unsafe_updates=False):
         """
@@ -225,7 +223,8 @@ class DatasetTypeResource(object):
             metadata_type = self.metadata_type_resource.get_by_name(metadata_type)
         else:
             # Otherwise they embedded a document, add it if needed:
-            metadata_type = self.metadata_type_resource.add(metadata_type, allow_table_lock=False)
+            metadata_type = self.metadata_type_resource.add(self.metadata_type_resource.from_doc(metadata_type),
+                                                            allow_table_lock=False)
 
         if not metadata_type:
             raise InvalidDocException('Unknown metadata type: %r' % definition['metadata_type'])

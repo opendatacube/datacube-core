@@ -200,7 +200,7 @@ def default_metadata_type_doc(default_metadata_type_docs):
 @pytest.fixture
 def default_metadata_type(index, default_metadata_type_docs):
     for d in default_metadata_type_docs:
-        index.metadata_types.add(d)
+        index.metadata_types.add(index.metadata_types.from_doc(d))
     return index.metadata_types.get_by_name('eo')
 
 

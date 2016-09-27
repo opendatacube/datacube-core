@@ -73,7 +73,7 @@ class Index(object):
         if is_new and with_default_types:
             _LOG.info('Adding default metadata types.')
             for _, doc in datacube.utils.read_documents(_DEFAULT_METADATA_TYPES_PATH):
-                self.metadata_types.add(doc, allow_table_lock=True)
+                self.metadata_types.add(self.metadata_types.from_doc(doc), allow_table_lock=True)
 
         return is_new
 
