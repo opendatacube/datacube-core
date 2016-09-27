@@ -30,6 +30,7 @@ class MetadataTypeResource(object):
         :param dict definition:
         :rtype: datacube.model.MetadataType
         """
+        MetadataType.validate(definition)
         return self._make(definition)
 
     def add(self, metadata_type, allow_table_lock=False):
