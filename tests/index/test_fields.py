@@ -22,13 +22,12 @@ def test_get_field():
         'instrument': {
             'offset': ['instrument', 'name']
         }
-    }, 1, DATASET.c.metadata)
+    }, DATASET.c.metadata)
 
     _assert_same(
         fields['platform'],
         SimpleDocField(
             'platform', 'Satellite',
-            1,
             DATASET.c.metadata,
             offset=['platform', 'code']
         )
@@ -40,12 +39,11 @@ def test_get_field():
             'max_offset': [['extents', 'geospatial_lat_max']],
             'min_offset': [['extents', 'geospatial_lat_min']],
         },
-    }, 2, DATASET.c.metadata)
+    }, DATASET.c.metadata)
     _assert_same(
         storage_fields['lat'],
         NumericRangeDocField(
             'lat', None,
-            2,
             DATASET.c.metadata,
             max_offset=[['extents', 'geospatial_lat_max']],
             min_offset=[['extents', 'geospatial_lat_min']],

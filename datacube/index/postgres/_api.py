@@ -383,31 +383,26 @@ class PostgresDb(object):
             'id': NativeField(
                 'id',
                 None,
-                None,
                 DATASET.c.id
             ),
             'product': NativeField(
                 'product',
                 'Dataset type name',
-                None,
                 DATASET_TYPE.c.name
             ),
             'dataset_type_id': NativeField(
                 'dataset_type_id',
                 'ID of a dataset type',
-                None,
                 DATASET.c.dataset_type_ref
             ),
             'metadata_type': NativeField(
                 'metadata_type',
                 'Metadata type of dataset',
-                None,
                 METADATA_TYPE.c.name
             ),
             'metadata_type_id': NativeField(
                 'metadata_type_id',
                 'ID of a metadata type',
-                None,
                 DATASET.c.metadata_type_ref
             ),
         }
@@ -417,7 +412,6 @@ class PostgresDb(object):
         fields.update(
             parse_fields(
                 dataset_search_fields,
-                metadata_type_result['id'],
                 DATASET.c.metadata
             )
         )
