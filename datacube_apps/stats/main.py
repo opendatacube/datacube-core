@@ -18,6 +18,7 @@ import rasterio
 import xarray
 import pandas as pd
 
+from datacube import Datacube
 from datacube.api import make_mask
 from datacube.api.grid_workflow import GridWorkflow
 from datacube.model import GridSpec, CRS, Coordinate, Variable, DatasetType
@@ -72,27 +73,31 @@ class ValueStat(object):
             for measurement in input_measurements]
 
 
-class NDVIStats(object):
-    def __init__(self, masked=True):
+class NormalisedDifferenceStats(object):
+    def __init__(self, band1='nir', band2='red', name='ndvi', stats=None, masked=True):
+        self.stats = stats if stats else ['min', 'max', 'mean']
+        self.band1 = band1
+        self.band2 = band2
+        self.name = name
         self.masked = masked
 
-    @staticmethod
-    def compute(data):
-        ndvi = (data.nir - data.red) / (data.nir + data.red)
-        ndvi_min = ndvi.min(dim='time')
-        ndvi_max = ndvi.max(dim='time')
-        ndvi_mean = ndvi.mean(dim='time')
-        return xarray.Dataset({'ndvi_min': ndvi_min, 'ndvi_max': ndvi_max, 'ndvi_mean': ndvi_mean},
+    def compute(self, data):
+        nd = (data[self.band1] - data[self.band2]) / (data[self.band1] + data[self.band2])
+        outputs = {}
+        for stat in self.stats:
+            name = '_'.join([self.name, stat])
+            outputs[name] = getattr(nd, stat)(dim='time')
+        return xarray.Dataset(outputs,
                               attrs=dict(crs=data.crs))
 
-    @staticmethod
-    def measurements(input_measurements):
+    def measurements(self, input_measurements):
         measurement_names = [m['name'] for m in input_measurements]
-        if 'red' not in measurement_names or 'nir' not in measurement_names:
-            raise ConfigurationError('Input measurements for NDVI must include "nir" and "red"')
+        if self.band1 not in measurement_names or self.band2 not in measurement_names:
+            raise ConfigurationError('Input measurements for %s must include "%s" and "%s"',
+                                     self.name, self.band1, self.band2)
 
-        return [dict(name=name, dtype='float32', nodata=-1, units='1')
-                for name in ('ndvi_min', 'ndvi_max', 'ndvi_mean')]
+        return [dict(name='_'.join([self.name, stat]), dtype='float32', nodata=-1, units='1')
+                for stat in self.stats]
 
 
 class PerBandIndexStat(ValueStat):
@@ -248,7 +253,11 @@ STATS = {
     'medoid': PerStatIndexStat(masked=True, stat_func=_medoid_helper),
     'min': make_name_stat('min'),
     'max': make_name_stat('max'),
-    'ndvi_stats': NDVIStats()
+    'ndvi_stats': NormalisedDifferenceStats(name='ndvi', band1='nir', band2='red',
+                                            stats=['min', 'mean', 'max']),
+    'ndwi_stats': NormalisedDifferenceStats(name='ndwi', band1='green', band2='swir1',
+                                            stats=['min', 'mean', 'max']),
+
 }
 
 
@@ -647,7 +656,7 @@ def main(index, app_config, year, executor):
 
     for future in executor.as_completed(futures):
         result = executor.result(future)
-        print(result)
+        print('Completed: %s' % result)
 
 
 if __name__ == '__main__':
