@@ -20,20 +20,18 @@ def product():
 
 
 @product.command('add')
-@click.option('--dry-run', '-d', is_flag=True, default=False,
-              help='Check if everything is ok')
 @click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
 @ui.pass_index()
-def add_dataset_types(index, dry_run, files):
+def add_dataset_types(index, files):
     """
     Add or update products in the index
     """
     for descriptor_path, parsed_doc in read_documents(*(Path(f) for f in files)):
         try:
             type_ = index.products.from_doc(parsed_doc)
-            index.products.add(type_, dry_run=dry_run)
+            index.products.add(type_)
         except InvalidDocException as e:
             _LOG.exception(e)
             _LOG.error('Invalid product definition: %s', descriptor_path)
