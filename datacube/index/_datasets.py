@@ -25,6 +25,13 @@ class MetadataTypeResource(object):
         """
         self._db = db
 
+    def from_doc(self, definition):
+        """
+        :param dict definition:
+        :rtype: datacube.model.MetadataType
+        """
+        return self._make(definition)
+
     def add(self, definition, allow_table_lock=False):
         """
         :type definition: dict
@@ -141,14 +148,14 @@ class MetadataTypeResource(object):
         record = self._db.get_metadata_type(id_)
         if record is None:
             raise KeyError('%s is not a valid MetadataType id')
-        return self._make(record)
+        return self._make_from_query_row(record)
 
     @lru_cache()
     def get_by_name_unsafe(self, name):
         record = self._db.get_metadata_type_by_name(name)
         if not record:
             raise KeyError('%s is not a valid MetadataType name' % name)
-        return self._make(record)
+        return self._make_from_query_row(record)
 
     def check_field_indexes(self, allow_table_lock=False, rebuild_all=False):
         """
@@ -162,17 +169,27 @@ class MetadataTypeResource(object):
         self._db.check_dynamic_fields(concurrently=not allow_table_lock, rebuild_all=rebuild_all)
 
     def _make_many(self, query_rows):
-        return (self._make(c) for c in query_rows)
+        """
+        :rtype: list[datacube.model.MetadataType]
+        """
+        return (self._make_from_query_row(c) for c in query_rows)
 
-    def _make(self, query_row):
+    def _make_from_query_row(self, query_row):
         """
-        :rtype list[datacube.model.MetadataType]
+        :rtype: datacube.model.MetadataType
         """
-        search_fields = query_row['definition']['dataset']['search_fields']
+        return self._make(query_row['definition'], query_row['id'])
+
+    def _make(self, definition, id_=None):
+        """
+        :param dict definition:
+        :param int id_:
+        :rtype: datacube.model.MetadataType
+        """
         return MetadataType(
-            query_row['definition'],
-            dataset_search_fields=self._db.get_dataset_fields(search_fields),
-            id_=query_row['id']
+            definition,
+            dataset_search_fields=self._db.get_dataset_fields(definition['dataset']['search_fields']),
+            id_=id_
         )
 
 
