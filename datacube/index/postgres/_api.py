@@ -139,6 +139,10 @@ class PostgresDb(object):
     def in_transaction(self):
         return False
 
+    @property
+    def url(self):
+        return self._engine.url
+
     @classmethod
     def from_config(cls, config=LocalConfig.find(), application_name=None, validate_connection=True):
         app_name = cls._expand_app_name(application_name)

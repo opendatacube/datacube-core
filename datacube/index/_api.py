@@ -67,6 +67,10 @@ class Index(object):
         self.products = DatasetTypeResource(db, self.metadata_types)
         self.datasets = DatasetResource(db, self.products)
 
+    @property
+    def url(self):
+        return self._db.url
+
     def init_db(self, with_default_types=True, with_permissions=True):
         is_new = self._db.init(with_permissions=with_permissions)
 
