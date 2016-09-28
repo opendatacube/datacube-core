@@ -112,10 +112,10 @@ class MetadataTypeResource(object):
         _LOG.info("Updating metadata type %s", metadata_type.name)
 
         for offset, new_val, old_val in safe_changes:
-            _LOG.info("Safe change from {!r} to {!r}".format(old_val, new_val))
+            _LOG.info("Safe change from %r to %r", old_val, new_val)
 
         for offset, new_val, old_val in unsafe_changes:
-            _LOG.info("Unsafe change from {!r} to {!r}".format(old_val, new_val))
+            _LOG.info("Unsafe change from %r to %r", old_val, new_val)
 
         self._db.update_metadata_type(
             name=metadata_type.name,
