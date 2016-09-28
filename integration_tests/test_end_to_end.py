@@ -247,6 +247,9 @@ def check_open_with_grid_workflow(index):
     dataset_cell = gw.load(tile, measurements=['blue'])
     assert dataset_cell['blue'].shape == tile.shape
 
+    for timestamp, tile_slice in tile.split('time'):
+        assert tile_slice.shape == (1, 4000, 4000)
+
     dataset_cell = gw.load(tile)
     assert all(m in dataset_cell for m in ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
 
