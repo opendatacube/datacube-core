@@ -41,6 +41,8 @@ class Dataset(object):
     """
 
     def __init__(self, type_, metadata_doc, local_uri, sources=None, indexed_by=None, indexed_time=None):
+        assert isinstance(type_, DatasetType)
+
         #: :rtype: DatasetType
         self.type = type_
 
@@ -233,6 +235,8 @@ class DatasetType(object):
                  metadata_type,
                  definition,
                  id_=None):
+        assert isinstance(metadata_type, MetadataType)
+
         #: :type: int
         self.id = id_
 

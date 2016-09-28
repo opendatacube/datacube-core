@@ -267,6 +267,7 @@ class DatasetTypeResource(object):
                 'Metadata Type {}'.format(type_.name)
             )
         else:
+            assert type_.metadata_type.id, "TODO: should we add metadata type here?"
             self._db.add_dataset_type(
                 name=type_.name,
                 metadata=type_.metadata_doc,
