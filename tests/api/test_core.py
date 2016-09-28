@@ -1,3 +1,5 @@
+from datacube.api.query import GroupBy
+
 from datacube import Datacube
 import datetime
 
@@ -13,7 +15,8 @@ def test_grouping_datasets():
         {'time': datetime.datetime(2016, 2, 1), 'value': 'bar'}
     ]
 
-    grouped = Datacube.product_sources(datasets, group_func, dimension, units)
+    group_by = GroupBy(dimension, group_func, units)
+    grouped = Datacube.product_sources(datasets, group_by)
 
     assert str(grouped.time.dtype) == 'datetime64[ns]'
     assert grouped.loc['2016-01-01':'2016-01-15']

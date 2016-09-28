@@ -306,7 +306,7 @@ class Datacube(object):
                                             resolution, grid_spec.crs, align)
 
         group_by = query_group_by(**query)
-        sources = self.product_sources(observations, group_by.group_by_func, group_by.dimension, group_by.units)
+        sources = self.product_sources(observations, group_by)
 
         measurements = self.index.products.get_by_name(product).lookup_measurements(measurements)
         measurements = set_resampling_method(measurements, resampling)
@@ -357,7 +357,7 @@ class Datacube(object):
         return datasets
 
     @staticmethod
-    def product_sources(datasets, group_func, dimension, units):
+    def product_sources(datasets, group_by):
         """
         Group datasets along defined non-spatial dimensions.
 
@@ -369,6 +369,7 @@ class Datacube(object):
 
         .. seealso:: :meth:`product_observations` :meth:`product_data`
         """
+        dimension, group_func, units = group_by
         datasets.sort(key=group_func)
         groups = [Group(key, tuple(group)) for key, group in groupby(datasets, group_func)]
 

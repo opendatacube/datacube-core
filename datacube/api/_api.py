@@ -249,9 +249,7 @@ class API(object):
         for dataset_type, datasets in self.datacube.index.datasets.search_by_product(**query.search_terms):
             if dataset_type.grid_spec:
                 dataset_groups[dataset_type] = self.datacube.product_sources(list(datasets),
-                                                                             group_by.group_by_func,
-                                                                             group_by.dimension,
-                                                                             group_by.units)
+                                                                             group_by)
         return dataset_groups
 
     def get_data(self, data_request, dataset_groups=None, return_all=False):

@@ -186,10 +186,7 @@ class GridWorkflow(object):
         """
         cells = {}
         for cell_index, observation in observations.items():
-            sources = Datacube.product_sources(observation['datasets'],
-                                               group_func=group_by.group_by_func,
-                                               dimension=group_by.dimension,
-                                               units=group_by.units)
+            sources = Datacube.product_sources(observation['datasets'], group_by)
             cells[cell_index] = Tile(sources, observation['geobox'])
         return cells
 
