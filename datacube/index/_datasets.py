@@ -277,33 +277,22 @@ class DatasetTypeResource(object):
             )
         return self.get_by_name(type_.name)
 
-    def update(self, type_, dry_run=False, allow_unsafe_updates=False):
+    def can_update(self, product, allow_unsafe_updates=False):
         """
-        Update a product. Unsafe changes will throw a ValueError by default.
+        Check if product can be updated. Return bool,safe_changes,unsafe_changes
 
         (An unsafe change is anything that may potentially make the product
         incompatible with existing datasets of that type)
 
-        :param bool dry_run: Validate and prepare but do not perform changes.
-        :param datacube.model.DatasetType type_: Product to update
+        :param datacube.model.DatasetType product: Product to update
         :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
-        :rtype: datacube.model.DatasetType
+            :rtype: bool,list[change],list[change]
         """
-        DatasetType.validate(type_.definition)
+        DatasetType.validate(product.definition)
 
-        existing = self.get_by_name(type_.name)
+        existing = self.get_by_name(product.name)
         if not existing:
-            raise ValueError('Unknown product %s, cannot update – did you intend to add it?' % type_.name)
-
-        def declare_unsafe(offset, msg):
-            full_message = "unsafe change to {} {!r}: {}".format(type_.name, ".".join(offset), msg)
-
-            if dry_run:
-                _LOG.warning("%s", full_message.capitalize())
-            elif not allow_unsafe_updates:
-                raise ValueError(full_message.capitalize())
-            else:
-                _LOG.warning("Ignoring %s", full_message)
+            raise ValueError('Unknown product %s, cannot update – did you intend to add it?' % product.name)
 
         updates_allowed = {
             ('description',): changes.allow_any,
@@ -315,74 +304,178 @@ class DatasetTypeResource(object):
             ('metadata',): changes.allow_subset
         }
 
-        # If they specified an inline metadata type, process it too.
-        new_definition = jsonify_document(type_.definition)
-        metadata_type = new_definition['metadata_type']
-        if not isinstance(metadata_type, compat.string_types):
-            self.metadata_type_resource.update_document(metadata_type,
-                                                        allow_unsafe_updates=allow_unsafe_updates)
-            new_definition['metadata_type'] = metadata_type['name']
+        doc_changes = get_doc_changes(existing.definition, product.definition)
+        good_changes, bad_changes = changes.classify_changes(doc_changes, updates_allowed)
 
-        doc_changes = changes.validate_dict_changes(
-            existing.definition,
-            new_definition,
-            updates_allowed,
-            on_failure=declare_unsafe,
-            on_change=lambda offset, old, new: _LOG.info('Changing %s %s: %r → %r',
-                                                         type_.name, '.'.join(offset), old, new)
-        )
+        return allow_unsafe_updates or not bad_changes, good_changes, bad_changes
 
-        # Are they changing to a different metadata type?
-        changing_metadata_type = existing.metadata_type.id != type_.metadata_type.id
+    def update(self, product, allow_unsafe_updates=False):
+        """
+        Update a product. Unsafe changes will throw a ValueError by default.
+
+        (An unsafe change is anything that may potentially make the product
+        incompatible with existing datasets of that type)
+
+        :param bool dry_run: Validate and prepare but do not perform changes.
+        :param datacube.model.DatasetType product: Product to update
+        :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
+        :rtype: datacube.model.DatasetType
+        """
+
+        can_update, safe_changes, unsafe_changes = self.can_update(product, allow_unsafe_updates)
+
+        if not safe_changes and not unsafe_changes:
+            _LOG.info("No changes detected for product %s", product.name)
+            return
+
+        if not can_update:
+            full_message = "Unsafe changes at " + ", ".join(".".join(offset) for offset, _, _ in unsafe_changes)
+            raise ValueError(full_message)
+
+        _LOG.info("Updating product %s", product.name)
+
+        for offset, new_val, old_val in safe_changes:
+            _LOG.info("Safe change from %r to %r", old_val, new_val)
+
+        for offset, new_val, old_val in unsafe_changes:
+            _LOG.info("Unsafe change from %r to %r", old_val, new_val)
+
+        existing = self.get_by_name(product.name)
+        changing_metadata_type = product.metadata_type.name != existing.metadata_type.name
         if changing_metadata_type:
+            assert False, "TODO: Ask Jeremy WTF is going on here"
             # If the two metadata types declare the same field with different postgres expressions
             # we can't safely change it.
             # (Replacing the index would cause all existing users to have no effective index)
-            for name, field in existing.metadata_type.dataset_fields.items():
-                new_field = type_.metadata_type.dataset_fields.get(name)
-                if new_field and (new_field.sql_expression != field.sql_expression):
-                    declare_unsafe(
-                        ('metadata_type',),
-                        'Metadata type change results in incompatible index '
-                        'for {!r} ({!r} → {!r})'.format(
-                            name, field.sql_expression, new_field.sql_expression
-                        )
-                    )
+            # for name, field in existing.metadata_type.dataset_fields.items():
+            #     new_field = type_.metadata_type.dataset_fields.get(name)
+            #     if new_field and (new_field.sql_expression != field.sql_expression):
+            #         declare_unsafe(
+            #             ('metadata_type',),
+            #             'Metadata type change results in incompatible index '
+            #             'for {!r} ({!r} → {!r})'.format(
+            #                 name, field.sql_expression, new_field.sql_expression
+            #             )
+            #         )
+        assert product.metadata_type.id, 'TODO: should we add the metadata type here?'
+        with self._db.begin() as trans:
+            trans.update_dataset_type(
+                name=product.name,
+                metadata=product.metadata_doc,
+                metadata_type_id=product.metadata_type.id,
+                search_fields=product.metadata_type.dataset_fields,
+                definition=product.definition,
+                update_metadata_type=changing_metadata_type
+            )
 
-        if doc_changes:
-            if dry_run:
-                _LOG.info("Dry run, skipping update %s", type_.name)
-                return
+        self.get_by_name_unsafe.cache_clear()
+        self.get_unsafe.cache_clear()
 
-            _LOG.info("Updating product %s", type_.name)
-            with self._db.begin() as trans:
-                trans.update_dataset_type(
-                    name=type_.name,
-                    metadata=type_.metadata_doc,
-                    metadata_type_id=type_.metadata_type.id,
-                    search_fields=type_.metadata_type.dataset_fields,
-                    definition=type_.definition,
-                    update_metadata_type=changing_metadata_type
-                )
+    # def update(self, type_, dry_run=False, allow_unsafe_updates=False):
+    #     """
+    #     Update a product. Unsafe changes will throw a ValueError by default.
+    #
+    #     (An unsafe change is anything that may potentially make the product
+    #     incompatible with existing datasets of that type)
+    #
+    #     :param bool dry_run: Validate and prepare but do not perform changes.
+    #     :param datacube.model.DatasetType type_: Product to update
+    #     :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
+    #     :rtype: datacube.model.DatasetType
+    #     """
+    #     DatasetType.validate(type_.definition)
+    #
+    #     existing = self.get_by_name(type_.name)
+    #     if not existing:
+    #         raise ValueError('Unknown product %s, cannot update – did you intend to add it?' % type_.name)
+    #
+    #     def declare_unsafe(offset, msg):
+    #         full_message = "unsafe change to {} {!r}: {}".format(type_.name, ".".join(offset), msg)
+    #
+    #         if dry_run:
+    #             _LOG.warning("%s", full_message.capitalize())
+    #         elif not allow_unsafe_updates:
+    #             raise ValueError(full_message.capitalize())
+    #         else:
+    #             _LOG.warning("Ignoring %s", full_message)
+    #
+    #     updates_allowed = {
+    #         ('description',): changes.allow_any,
+    #         ('metadata_type',): changes.allow_any,
+    #
+    #         # You can safely make the match rules looser but not tighter.
+    #         # Tightening them could exclude datasets already matched to the product.
+    #         # (which would make search results wrong)
+    #         ('metadata',): changes.allow_subset
+    #     }
+    #
+    #     # If they specified an inline metadata type, process it too.
+    #     new_definition = jsonify_document(type_.definition)
+    #     metadata_type = new_definition['metadata_type']
+    #     if not isinstance(metadata_type, compat.string_types):
+    #         self.metadata_type_resource.update_document(metadata_type,
+    #                                                     allow_unsafe_updates=allow_unsafe_updates)
+    #         new_definition['metadata_type'] = metadata_type['name']
+    #
+    #     doc_changes = changes.validate_dict_changes(
+    #         existing.definition,
+    #         new_definition,
+    #         updates_allowed,
+    #         on_failure=declare_unsafe,
+    #         on_change=lambda offset, old, new: _LOG.info('Changing %s %s: %r → %r',
+    #                                                      type_.name, '.'.join(offset), old, new)
+    #     )
+    #
+    #     # Are they changing to a different metadata type?
+    #     changing_metadata_type = existing.metadata_type.id != type_.metadata_type.id
+    #     if changing_metadata_type:
+    #         # If the two metadata types declare the same field with different postgres expressions
+    #         # we can't safely change it.
+    #         # (Replacing the index would cause all existing users to have no effective index)
+    #         for name, field in existing.metadata_type.dataset_fields.items():
+    #             new_field = type_.metadata_type.dataset_fields.get(name)
+    #             if new_field and (new_field.sql_expression != field.sql_expression):
+    #                 declare_unsafe(
+    #                     ('metadata_type',),
+    #                     'Metadata type change results in incompatible index '
+    #                     'for {!r} ({!r} → {!r})'.format(
+    #                         name, field.sql_expression, new_field.sql_expression
+    #                     )
+    #                 )
+    #
+    #     if doc_changes:
+    #         if dry_run:
+    #             _LOG.info("Dry run, skipping update %s", type_.name)
+    #             return
+    #
+    #         _LOG.info("Updating product %s", type_.name)
+    #         with self._db.begin() as trans:
+    #             trans.update_dataset_type(
+    #                 name=type_.name,
+    #                 metadata=type_.metadata_doc,
+    #                 metadata_type_id=type_.metadata_type.id,
+    #                 search_fields=type_.metadata_type.dataset_fields,
+    #                 definition=type_.definition,
+    #                 update_metadata_type=changing_metadata_type
+    #             )
+    #
+    #         # Clear our local cache. Note that other users may still have
+    #         # cached copies for the duration of their connections.
+    #         self.get_by_name_unsafe.cache_clear()
+    #         self.get_unsafe.cache_clear()
+    #     else:
+    #         _LOG.info("No changes detected for product %s", type_.name)
 
-            # Clear our local cache. Note that other users may still have
-            # cached copies for the duration of their connections.
-            self.get_by_name_unsafe.cache_clear()
-            self.get_unsafe.cache_clear()
-        else:
-            _LOG.info("No changes detected for product %s", type_.name)
-
-    def update_document(self, definition, dry_run=False, allow_unsafe_updates=False):
+    def update_document(self, definition, allow_unsafe_updates=False):
         """
         Update a Product using its difinition
 
-        :param bool dry_run: Validate and prepare but do not perform changes.
         :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :param dict definition: product definition document
         :rtype: datacube.model.DatasetType
         """
         type_ = self.from_doc(definition)
-        return self.update(type_, dry_run=dry_run, allow_unsafe_updates=allow_unsafe_updates)
+        return self.update(type_, allow_unsafe_updates=allow_unsafe_updates)
 
     def add_document(self, definition):
         """

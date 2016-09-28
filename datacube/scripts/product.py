@@ -61,13 +61,25 @@ def update_dataset_types(index, allow_unsafe, dry_run, files):
     for descriptor_path, parsed_doc in read_documents(*(Path(f) for f in files)):
         try:
             type_ = index.products.from_doc(parsed_doc)
-            index.products.update(type_, allow_unsafe_updates=allow_unsafe, dry_run=dry_run)
-            if not dry_run:
-                echo('Updated "%s"' % type_.name)
         except InvalidDocException as e:
             _LOG.exception(e)
             _LOG.error('Invalid product definition: %s', descriptor_path)
             continue
+
+        if not dry_run:
+            index.products.update(type_, allow_unsafe_updates=allow_unsafe)
+            echo('Updated "%s"' % type_.name)
+        else:
+            can_update, safe_changes, unsafe_changes = index.products.can_update(type_,
+                                                                                 allow_unsafe_updates=allow_unsafe)
+            if can_update:
+                echo('Can update "%s": %s unsafe changes, %s safe changes' % (type_.name,
+                                                                              len(unsafe_changes),
+                                                                              len(safe_changes)))
+            else:
+                echo('Cannot update "%s": %s unsafe changes, %s safe changes' % (type_.name,
+                                                                                 len(unsafe_changes),
+                                                                                 len(safe_changes)))
 
 
 @product.command('list')

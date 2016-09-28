@@ -157,11 +157,6 @@ def test_update_dataset_type(index, ls5_nbar_gtiff_type, ls5_nbar_gtiff_doc, def
     updated_type = index.datasets.types.get_by_name(ls5_nbar_gtiff_type.name)
     assert 'ga_label' not in updated_type.definition['metadata']
 
-    # But dry run should work and not update
-    index.datasets.types.update_document(different_telemetry_type, dry_run=True)
-    updated_type = index.datasets.types.get_by_name(ls5_nbar_gtiff_type.name)
-    assert 'ga_label' not in updated_type.definition['metadata']
-
     # But works when unsafe updates are allowed.
     index.datasets.types.update_document(different_telemetry_type, allow_unsafe_updates=True)
     updated_type = index.datasets.types.get_by_name(ls5_nbar_gtiff_type.name)
