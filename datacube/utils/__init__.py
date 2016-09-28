@@ -5,6 +5,7 @@ Utility functions used in storage modules
 from __future__ import absolute_import, division, print_function
 
 import gzip
+import importlib
 import json
 import logging
 import os
@@ -707,3 +708,20 @@ class DocReader(object):
             except (AttributeError, KeyError, ValueError):
                 continue
         return fields
+
+
+def import_function(func_ref):
+    """
+    Import a function available in the python path.
+
+    Expects at least one '.' in the `func_ref`,
+    eg:
+        `module.function_name`
+        `package.module.function_name`
+
+    :param func_ref:
+    :return: function
+    """
+    module_name, _, func_name = func_ref.rpartition('.')
+    module = importlib.import_module(module_name)
+    return getattr(module, func_name)

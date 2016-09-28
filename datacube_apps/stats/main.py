@@ -5,18 +5,18 @@ Create statistical summaries command
 
 from __future__ import absolute_import, print_function
 
+import itertools
+import logging
 from collections import OrderedDict
 from functools import reduce as reduce_, partial
-import itertools
-import importlib
-import logging
 from pathlib import Path
 
 import click
 import numpy
+import pandas as pd
 import rasterio
 import xarray
-import pandas as pd
+from datacube.utils.dates import date_sequence
 
 from datacube import Datacube
 from datacube.api import make_mask
@@ -28,11 +28,11 @@ from datacube.storage.masking import mask_valid_data as mask_invalid_data
 from datacube.storage.storage import create_netcdf_storage_unit
 from datacube.ui import click as ui
 from datacube.ui.click import to_pathlib
-from datacube.utils import read_documents, unsqueeze_data_array
-from datacube.utils.dates import date_sequence
+from datacube.utils import read_documents, unsqueeze_data_array, import_function
 from datacube_apps.stats.statistics import argnanmedoid, argpercentile, axisindex
 
 _LOG = logging.getLogger(__name__)
+
 STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
                                  'complevel',
                                  'shuffle',
@@ -215,7 +215,7 @@ class PerStatIndexStat(ValueStat):
                 'nodata': 0,
                 'units': 'Date as YYYYMMDD'
             }
-            ]
+        ]
         return ValueStat.measurements(input_measurements) + date_measurements + index_measurements + text_measurements
 
 
@@ -404,12 +404,6 @@ def find_source_datasets(task, stat, geobox, uri=None):
     datasets = xr_apply(sources, _make_dataset, dtype='O')  # Store in DataArray to associate Time -> Dataset
     datasets = datasets_to_doc(datasets)
     return datasets, sources
-
-
-def import_function(func_ref):
-    module_name, _, func_name = func_ref.rpartition('.')
-    module = importlib.import_module(module_name)
-    return getattr(module, func_name)
 
 
 def load_masked_data(tile_index, source_prod):
