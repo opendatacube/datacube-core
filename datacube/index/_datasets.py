@@ -72,6 +72,8 @@ class MetadataTypeResource(object):
         :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :rtype: bool,list[change],list[change]
         """
+        MetadataType.validate(metadata_type.definition)
+
         existing = self.get_by_name(metadata_type.name)
         if not existing:
             raise ValueError('Unknown metadata type %s, cannot update – did you intend to add it?' % metadata_type.name)
