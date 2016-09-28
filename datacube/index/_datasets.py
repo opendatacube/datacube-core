@@ -238,8 +238,9 @@ class DatasetTypeResource(object):
             metadata_type = self.metadata_type_resource.get_by_name(metadata_type)
         else:
             # Otherwise they embedded a document, add it if needed:
-            metadata_type = self.metadata_type_resource.add(self.metadata_type_resource.from_doc(metadata_type),
-                                                            allow_table_lock=False)
+            metadata_type = self.metadata_type_resource.from_doc(metadata_type)
+            definition = definition.copy()
+            definition['metadata_type'] = metadata_type.name
 
         if not metadata_type:
             raise InvalidDocException('Unknown metadata type: %r' % definition['metadata_type'])
