@@ -580,7 +580,9 @@ class DatasetResource(object):
             _LOG.info('Indexing %s', dataset.id)
             with self._db.begin() as transaction:
                 try:
-                    was_inserted = transaction.insert_dataset(dataset.metadata_doc, dataset.id, dataset.type.id)
+                    product = self.types.get_by_name(dataset.type.name)
+                    assert product, 'TODO: should we add the product here?'
+                    was_inserted = transaction.insert_dataset(dataset.metadata_doc, dataset.id, product.id)
                     for classifier, source_dataset in dataset.sources.items():
                         transaction.insert_dataset_source(classifier, dataset.id, source_dataset.id)
 

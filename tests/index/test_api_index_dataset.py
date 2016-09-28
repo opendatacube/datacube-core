@@ -191,6 +191,9 @@ class MockTypesResource(object):
     def get(self, *args, **kwargs):
         return self.type
 
+    def get_by_name(self, *args, **kwargs):
+        return self.type
+
 
 def test_index_dataset():
     mock_db = MockDb()
