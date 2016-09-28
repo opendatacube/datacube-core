@@ -21,6 +21,7 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 
 _LOG_FORMAT_STRING = '%(asctime)s %(levelname)s %(message)s'
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
+_LOG = logging.getLogger(__name__)
 
 
 def _print_version(ctx, param, value):
@@ -118,6 +119,8 @@ def _set_config(ctx, param, value):
 
     parsed_config = config.LocalConfig.find(paths=paths)
 
+    _LOG.debug("Loaded datacube config files: %s", parsed_config.files_loaded)
+
     if not ctx.obj:
         ctx.obj = {}
 
@@ -180,6 +183,7 @@ def pass_index(app_name=None, expect_initialised=True):
                 index = index_connect(ctx.obj['config_file'],
                                       application_name=app_name or ctx.command_path,
                                       validate_connection=expect_initialised)
+                _LOG.debug("Connected to datacube index: %s", index)
                 return f(index, *args, **kwargs)
             except (OperationalError, ProgrammingError) as e:
                 handle_exception('Error Connecting to database: %s', e)
