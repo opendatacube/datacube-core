@@ -784,7 +784,7 @@ class GeoBox(object):
         :type geopolygon: GeoPolygon
         :param resolution: (y_resolution, x_resolution)
         :param CRS crs: CRS to use, if different from the geopolygon
-        :param (float,float) align: Alight geobox such that point 'align' lies on the pixel boundary.
+        :param (float,float) align: Align geobox such that point 'align' lies on the pixel boundary.
         :rtype: GeoBox
         """
         # TODO: currently only flipped Y-axis data is supported
