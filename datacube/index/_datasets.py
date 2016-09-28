@@ -46,7 +46,7 @@ class MetadataTypeResource(object):
         # This column duplication is getting out of hand:
         MetadataType.validate(metadata_type.definition)
 
-        existing = self._db.get_metadata_type_by_name(metadata_type.name)
+        existing = self.get_by_name(metadata_type.name)
         if existing:
             # They've passed us the same one again. Make sure it matches what is stored.
             check_doc_unchanged(
@@ -258,7 +258,7 @@ class DatasetTypeResource(object):
         """
         DatasetType.validate(type_.definition)
 
-        existing = self._db.get_dataset_type_by_name(type_.name)
+        existing = self.get_by_name(type_.name)
         if existing:
             check_doc_unchanged(
                 existing.definition,
