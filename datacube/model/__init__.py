@@ -602,10 +602,10 @@ class GridSpec(object):
            0.0, -0.1, -48.05), EPSG:4326))]
 
     :param CRS crs: Coordinate System used to define the grid
-    :param (float,float) tile_size: (Y, X) size of each tile, in CRS units
-    :param (float,float) resolution: (Y, X) size of each data point in the grid, in CRS units. Y will
+    :param [float,float] tile_size: (Y, X) size of each tile, in CRS units
+    :param [float,float] resolution: (Y, X) size of each data point in the grid, in CRS units. Y will
                                    usually be negative.
-    :param (float,float) origin: (Y, X) coordinates of a corner of the (0,0) tile in CRS units. default is (0.0, 0.0)
+    :param [float,float] origin: (Y, X) coordinates of a corner of the (0,0) tile in CRS units. default is (0.0, 0.0)
     """
 
     def __init__(self, crs, tile_size, resolution, origin=None):
