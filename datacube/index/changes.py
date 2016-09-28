@@ -11,19 +11,11 @@ _LOG = logging.getLogger(__name__)
 
 
 def allow_subset(offset, old_value, new_value):
-    valid = contains(old_value, new_value, case_sensitive=True)
-    return (
-        valid,
-        None if valid else 'not a subset ({!r} → {!r})'.format(old_value, new_value)
-    )
+    return contains(old_value, new_value, case_sensitive=True)
 
 
 def allow_superset(offset, old_value, new_value):
-    valid = contains(new_value, old_value, case_sensitive=True)
-    return (
-        valid,
-        None if valid else 'not a superset ({!r} → {!r})'.format(old_value, new_value)
-    )
+    return contains(new_value, old_value, case_sensitive=True)
 
 
 def allow_any(offset, old, new):
@@ -85,12 +77,38 @@ def validate_dict_changes(old, new, allowed_changes,
     if old == new:
         return ()
 
+    changes = get_doc_changes(old, new)
+    good_changes, bad_changes = classify_changes(changes, allowed_changes)
+
     allowed_changes_index = dict(allowed_changes)
 
-    changes = get_doc_changes(old, new)
-    for offset, old_val, new_val in changes:
+    for offset, old_val, new_val in good_changes:
         on_change(offset_context, old_val, new_val)
 
+    for offset, old_val, new_val in bad_changes:
+        on_change(offset_context, old_val, new_val)
+        message = get_failure_message(allowed_changes_index.get(offset), old_val, new_val)
+        on_failure(offset, message)
+
+    return tuple(changes)
+
+
+def get_failure_message(allowance, old_val, new_val):
+    messages = {
+        None: 'value differs ({!r} → {!r})',
+        allow_subset: 'not a subset ({!r} → {!r})',
+        allow_superset: 'not a superset ({!r} → {!r})'
+    }
+    return messages[allowance].format(old_val, new_val)
+
+
+def classify_changes(changes, allowed_changes):
+    allowed_changes_index = dict(allowed_changes)
+
+    good_changes = []
+    bad_changes = []
+
+    for offset, old_val, new_val in changes:
         allowance = allowed_changes_index.get(offset)
         allowance_offset = offset
         # If no allowance on this leaf, find if any parents have allowances.
@@ -102,12 +120,13 @@ def validate_dict_changes(old, new, allowed_changes,
             allowance = allowed_changes_index.get(allowance_offset)
 
         if allowance is None:
-            on_failure(offset, 'value differs ({!r} → {!r})'.format(old_val, new_val))
+            bad_changes.append((offset, old_val, new_val))
         elif hasattr(allowance, '__call__'):
-            is_allowed, message = allowance(offset, old_val, new_val)
-            if not is_allowed:
-                on_failure(offset, message)
+            if allowance(offset, old_val, new_val):
+                good_changes.append((offset, old_val, new_val))
+            else:
+                bad_changes.append((offset, old_val, new_val))
         else:
             raise RuntimeError('Unknown change type: expecting validation function at %r' % offset)
 
-    return tuple(changes)
+    return good_changes, bad_changes
