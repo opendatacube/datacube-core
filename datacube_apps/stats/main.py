@@ -412,14 +412,15 @@ def load_masked_data(tile_index, source_prod):
     crs = data.crs
     data = mask_invalid_data(data)
 
-    for spec, mask_tile in zip(source_prod['spec']['masks'], source_prod['masks']):
-        fuse_func = import_function(spec['fuse_func']) if 'fuse_func' in spec else None
-        mask = GridWorkflow.load(mask_tile[tile_index],
-                                 measurements=[spec['measurement']],
-                                 fuse_func=fuse_func)[spec['measurement']]
-        mask = make_mask(mask, **spec['flags'])
-        data = data.where(mask)
-        del mask
+    if 'masks' in source_prod and 'masks' in source_prod['spec']:
+        for spec, mask_tile in zip(source_prod['spec']['masks'], source_prod['masks']):
+            fuse_func = import_function(spec['fuse_func']) if 'fuse_func' in spec else None
+            mask = GridWorkflow.load(mask_tile[tile_index],
+                                     measurements=[spec['measurement']],
+                                     fuse_func=fuse_func)[spec['measurement']]
+            mask = make_mask(mask, **spec['flags'])
+            data = data.where(mask)
+            del mask
     data.attrs['crs'] = crs
     return data
 
@@ -562,13 +563,16 @@ def make_tasks(index, output_products, config):
         tasks = {}
         for source_spec in config.sources:
             data = workflow.list_cells(product=source_spec['product'], time=time_period,
-                                       cell_index=(15, -40),
+                                       cell_index=(17, -40),
                                        group_by=source_spec.get('group_by', DEFAULT_GROUP_BY))
-            masks = [workflow.list_cells(product=mask['product'],
-                                         time=time_period,
-                                         cell_index=(15, -40),
-                                         group_by=source_spec.get('group_by', DEFAULT_GROUP_BY))
-                     for mask in source_spec['masks']]
+            if 'masks' in source_spec:
+                masks = [workflow.list_cells(product=mask['product'],
+                                             time=time_period,
+                                             cell_index=(17, -40),
+                                             group_by=source_spec.get('group_by', DEFAULT_GROUP_BY))
+                         for mask in source_spec['masks']]
+            else:
+                masks = []
 
             for tile_index, sources in data.items():
                 task = tasks.setdefault(tile_index, {
