@@ -30,18 +30,19 @@ def config_loader(index, app_config_file, make_config, make_tasks, *args, **kwar
     config = make_config(index, config, **kwargs)
 
     tasks = make_tasks(index, config, **kwargs)
-    _LOG.info('%s tasks discovered', len(tasks))
 
     return config, iter(tasks)
 
 
 def task_saver(config, tasks, taskfile):
+    i = 0
     with open(taskfile, 'wb') as stream:
         pickler = pickle.Pickler(stream, pickle.HIGHEST_PROTOCOL)
         pickler.dump(config)
         for task in tasks:
             pickler.dump(task)
-    _LOG.info('Saved config and tasks to %s', taskfile)
+            i += 1
+    _LOG.info('Saved config and %d tasks to %s', i, taskfile)
 
 
 def stream_unpickler(taskfile):
@@ -99,7 +100,7 @@ def task_app(make_config, make_tasks):
                 click.echo('Must specify exactly one of --config, --load-tasks')
                 click.get_current_context().exit(1)
 
-            if app_config:
+            if app_config is not None:
                 config, tasks = config_loader(index, app_config, make_config, make_tasks, *args, **kwargs)
 
             if load_tasks:
