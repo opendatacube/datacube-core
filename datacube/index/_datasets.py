@@ -266,11 +266,12 @@ class DatasetTypeResource(object):
                 'Metadata Type {}'.format(type_.name)
             )
         else:
-            assert type_.metadata_type.id, "TODO: should we add metadata type here?"
+            metadata_type = self.metadata_type_resource.get_by_name(type_.metadata_type.name)
+            assert metadata_type, "TODO: should we add metadata type here?"
             self._db.add_dataset_type(
                 name=type_.name,
                 metadata=type_.metadata_doc,
-                metadata_type_id=type_.metadata_type.id,
+                metadata_type_id=metadata_type.id,
                 search_fields=type_.metadata_type.dataset_fields,
                 definition=type_.definition
             )
@@ -355,12 +356,13 @@ class DatasetTypeResource(object):
             #                 name, field.sql_expression, new_field.sql_expression
             #             )
             #         )
-        assert product.metadata_type.id, 'TODO: should we add the metadata type here?'
+        metadata_type = self.metadata_type_resource.get_by_name(product.metadata_type.name)
+        assert metadata_type, "TODO: should we add metadata type here?"
         with self._db.begin() as trans:
             trans.update_dataset_type(
                 name=product.name,
                 metadata=product.metadata_doc,
-                metadata_type_id=product.metadata_type.id,
+                metadata_type_id=metadata_type.id,
                 search_fields=product.metadata_type.dataset_fields,
                 definition=product.definition,
                 update_metadata_type=changing_metadata_type
