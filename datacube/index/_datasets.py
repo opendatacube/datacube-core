@@ -10,7 +10,7 @@ from cachetools import lru_cache
 from datacube import compat
 from datacube.index import changes
 from datacube.model import Dataset, DatasetType, MetadataType
-from datacube.utils import InvalidDocException, check_doc_unchanged, jsonify_document
+from datacube.utils import InvalidDocException, check_doc_unchanged, jsonify_document, get_doc_changes
 
 from . import fields
 from .exceptions import DuplicateRecordError, UnknownFieldError
@@ -62,32 +62,19 @@ class MetadataTypeResource(object):
             )
         return self.get_by_name(metadata_type.name)
 
-    def update_document(self, definition, dry_run=False, allow_unsafe_updates=False):
+    def can_update(self, metadata_type, allow_unsafe_updates=False):
         """
-        Update a metadata type from the document. Unsafe changes will throw a ValueError by default.
+        Check if metadata type can be updated. Return bool,safe_changes,unsafe_changes
 
         Safe updates currently allow new search fields to be added, description to be changed.
 
-        :param bool dry_run: Validate and prepare but do not perform changes.
-        :param dict definition: Updated definition
+        :param datacube.model.MetadataType metadata_type: updated MetadataType
         :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
-        :rtype: datacube.model.MetadataType
+        :rtype: bool,list[change],list[change]
         """
-        MetadataType.validate(definition)
-
-        name = definition['name']
-        existing = self._db.get_metadata_type_by_name(name)
+        existing = self.get_by_name(metadata_type.name)
         if not existing:
-            raise ValueError('Unknown metadata type %s, cannot update – did you intend to add it?' % name)
-
-        def handle_unsafe(offset, msg):
-            full_message = "unsafe change to {} {!r}: {}".format(name, ".".join(offset), msg)
-            if dry_run:
-                _LOG.warning("%s", full_message.capitalize())
-            elif not allow_unsafe_updates:
-                raise ValueError(full_message.capitalize())
-            else:
-                _LOG.warning("Ignoring %s", full_message)
+            raise ValueError('Unknown metadata type %s, cannot update – did you intend to add it?' % metadata_type.name)
 
         updates_allowed = {
             ('description',): changes.allow_any,
@@ -97,31 +84,59 @@ class MetadataTypeResource(object):
             ('dataset', 'search_fields'): changes.allow_superset
         }
 
-        doc_changes = changes.validate_dict_changes(
-            existing.definition,
-            jsonify_document(definition),
-            updates_allowed,
-            on_failure=handle_unsafe,
-            on_change=lambda offset, old, new: _LOG.info('Changing metadata type %s %s: %r → %r',
-                                                         name, '.'.join(offset), old, new)
-        )
-        if doc_changes:
-            if dry_run:
-                _LOG.info("Dry run, skipping update.")
-                return
+        doc_changes = get_doc_changes(existing.definition, metadata_type.definition)
+        good_changes, bad_changes = changes.classify_changes(doc_changes, updates_allowed)
 
-            _LOG.info("Updating metadata type %s", name)
-            self._db.update_metadata_type(
-                name=name,
-                definition=definition,
-                concurrently=True
-            )
-            # Clear our local cache. Note that other users may still have
-            # cached copies for the duration of their connections.
-            self.get_by_name_unsafe.cache_clear()
-            self.get_unsafe.cache_clear()
-        else:
-            _LOG.info("No changes detected for metadata type %s", name)
+        return allow_unsafe_updates or not bad_changes, good_changes, bad_changes
+
+    def update(self, metadata_type, allow_unsafe_updates=False):
+        """
+        Update a metadata type from the document. Unsafe changes will throw a ValueError by default.
+
+        Safe updates currently allow new search fields to be added, description to be changed.
+
+        :param datacube.model.MetadataType metadata_type: updated MetadtaType
+        :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
+        :rtype: datacube.model.MetadataType
+        """
+        can_update, safe_changes, unsafe_changes = self.can_update(metadata_type, allow_unsafe_updates)
+
+        if not safe_changes and not unsafe_changes:
+            _LOG.info("No changes detected for metadata type %s", metadata_type.name)
+            return
+
+        if not can_update:
+            full_message = "Unsafe changes at " + ", ".join(".".join(offset) for offset, _, _ in unsafe_changes)
+            raise ValueError(full_message)
+
+        _LOG.info("Updating metadata type %s", metadata_type.name)
+
+        for offset, new_val, old_val in safe_changes:
+            _LOG.info("Safe change from {!r} to {!r}".format(old_val, new_val))
+
+        for offset, new_val, old_val in unsafe_changes:
+            _LOG.info("Unsafe change from {!r} to {!r}".format(old_val, new_val))
+
+        self._db.update_metadata_type(
+            name=metadata_type.name,
+            definition=metadata_type.definition,
+            concurrently=True
+        )
+
+        self.get_by_name_unsafe.cache_clear()
+        self.get_unsafe.cache_clear()
+
+    def update_document(self, definition, allow_unsafe_updates=False):
+        """
+        Update a metadata type from the document. Unsafe changes will throw a ValueError by default.
+
+        Safe updates currently allow new search fields to be added, description to be changed.
+
+        :param dict definition: Updated definition
+        :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
+        :rtype: datacube.model.MetadataType
+        """
+        return self.update(self.from_doc(definition), allow_unsafe_updates=allow_unsafe_updates)
 
     def get(self, id_):
         """
@@ -301,7 +316,6 @@ class DatasetTypeResource(object):
         metadata_type = new_definition['metadata_type']
         if not isinstance(metadata_type, compat.string_types):
             self.metadata_type_resource.update_document(metadata_type,
-                                                        dry_run=dry_run,
                                                         allow_unsafe_updates=allow_unsafe_updates)
             new_definition['metadata_type'] = metadata_type['name']
 
