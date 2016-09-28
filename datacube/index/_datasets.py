@@ -267,7 +267,9 @@ class DatasetTypeResource(object):
             )
         else:
             metadata_type = self.metadata_type_resource.get_by_name(type_.metadata_type.name)
-            assert metadata_type, "TODO: should we add metadata type here?"
+            if metadata_type is None:
+                _LOG.warning('Adding metadata_type "%s" as it doesn\'t exist.', type_.metadata_type.name)
+                metadata_type = self.metadata_type_resource.add(type_.metadata_type)
             self._db.add_dataset_type(
                 name=type_.name,
                 metadata=type_.metadata_doc,
