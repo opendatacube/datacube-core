@@ -582,10 +582,12 @@ class DatasetResource(object):
         dataset.type.dataset_reader(dataset.metadata_doc).sources = {}
         try:
             _LOG.info('Indexing %s', dataset.id)
+            product = self.types.get_by_name(dataset.type.name)
+            if product is None:
+                _LOG.warning('Adding product "%s" as it doesn\'t exist.', dataset.type.name)
+                product = self.types.add(dataset.type)
             with self._db.begin() as transaction:
                 try:
-                    product = self.types.get_by_name(dataset.type.name)
-                    assert product, 'TODO: should we add the product here?'
                     was_inserted = transaction.insert_dataset(dataset.metadata_doc, dataset.id, product.id)
                     for classifier, source_dataset in dataset.sources.items():
                         transaction.insert_dataset_source(classifier, dataset.id, source_dataset.id)
