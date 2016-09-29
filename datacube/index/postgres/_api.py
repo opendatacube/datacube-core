@@ -731,7 +731,8 @@ class PostgresDb(object):
         dynamic.check_dynamic_fields(self._connection, concurrently, dataset_filter,
                                      excluded_field_names, fields, name, rebuild_all)
 
-    def _get_active_field_names(self, fields, metadata_doc):
+    @staticmethod
+    def _get_active_field_names(fields, metadata_doc):
         for field in fields.values():
             if hasattr(field, 'extract'):
                 try:
