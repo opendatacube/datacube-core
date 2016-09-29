@@ -607,7 +607,7 @@ _EXPECTED_OUTPUT_HEADER = 'dataset_type_id,gsi,id,instrument,lat,lon,metadata_ty
 def test_csv_structure(global_integration_cli_args, pseudo_telemetry_type, ls5_nbar_gtiff_type,
                        pseudo_telemetry_dataset, pseudo_telemetry_dataset2):
     output = _csv_search_raw(['datasets', ' -40 < lat < -10'], global_integration_cli_args)
-    lines = [line for line in output.split('\n') if line]
+    lines = [line.strip() for line in output.split('\n') if line]
     # A header and two dataset rows
     assert len(lines) == 3
 
