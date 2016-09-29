@@ -556,14 +556,15 @@ class DatasetResource(object):
         """
         return [self._make(result) for result in self._db.get_derived_datasets(id_)]
 
-    def has(self, dataset):
+    def has(self, id_):
         """
         Have we already indexed this dataset?
 
-        :param datacube.model.Dataset dataset: dataset to check
+        :param uuid id_: dataset id
         :rtype: bool
         """
-        return self._db.contains_dataset(dataset.id)
+        with self._db.connect() as connection:
+            return connection.contains_dataset(id_)
 
     def add(self, dataset, skip_sources=False):
         """
