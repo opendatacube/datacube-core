@@ -73,8 +73,16 @@ class ValueStat(object):
             for measurement in input_measurements]
 
 
+
+
 class NormalisedDifferenceStats(object):
-    def __init__(self, band1='nir', band2='red', name='ndvi', stats=None, masked=True):
+    """
+    Simple NDVI/NDWI and friends stats
+
+    Computes (band1 - band2)/(band1 + band2), and then summarises using the list of `stats` into
+    separate output variables.
+    """
+    def __init__(self, band1, band2, name, stats=None, masked=True):
         self.stats = stats if stats else ['min', 'max', 'mean']
         self.band1 = band1
         self.band2 = band2
@@ -331,11 +339,14 @@ class StatsConfig(object):
         self.end_time = pd.to_datetime(config['end_date'])
         self.stats_duration = config['stats_duration']
         self.step_size = config['step_size']
-        self.grid_spec = self.create_grid_spec()
+        self.grid_spec = self.make_grid_spec()
         self.location = config['location']
         self.computation = config['computation']
+        self.input_region = config.get('input_region')
 
-    def create_grid_spec(self):
+    def make_grid_spec(self):
+        if 'tile_size' not in self.storage:
+            return None
         storage = self.storage
         crs = CRS(storage['crs'])
         return GridSpec(crs=crs,
@@ -453,6 +464,9 @@ class OutputDriver(object):
 
 
 class NetcdfOutputDriver(OutputDriver):
+    """
+    Write data to Datacube compatible NetCDF files
+    """
     def open_output_files(self):
         for prod_name, stat in self.task['output_products'].items():
             filename_template = str(Path(self.config.location, stat.definition['file_path_template']))
@@ -463,8 +477,7 @@ class NetcdfOutputDriver(OutputDriver):
         all_measurement_defns = list(stat.product.measurements.values())
 
         output_filename = get_filename(filename_template,
-                                       tile_index=self.task['tile_index'],
-                                       start_time=self.task['start_time'])
+                                       **self.task)
         datasets, sources = find_source_datasets(self.task, stat, geobox, uri=output_filename.as_uri())
 
         nco = nco_from_sources(sources,
@@ -484,24 +497,26 @@ class NetcdfOutputDriver(OutputDriver):
 
 
 class RioOutputDriver(OutputDriver):
+    """
+    Save data to file/s using rasterio. Eg. GeoTiff, ENVI
+    """
     def open_output_files(self):
         for prod_name, stat in self.task['output_products'].items():
             for measurename, measure_def in stat.product.measurements.items():
                 filename_template = str(Path(self.config.location, stat.definition['file_path_template']))
-                geobox = self.task['sources'][0]['data'].geobox  # HACK: better way to get geobox
+                geobox = self.task['sources'][0]['data'].geobox  # HACK: need better way to get geobox
 
                 output_filename = get_filename(filename_template,
                                                var_name=measurename,
-                                               tile_index=self.task['tile_index'],
-                                               start_time=self.task['start_time'])
+                                               **self.task)
                 try:
                     output_filename.parent.mkdir(parents=True)
                 except OSError:
                     pass
 
                 profile = {
-                    'blockxsize': 256,
-                    'blockysize': 256,
+                    'blockxsize': self.config.storage['chunking']['x'],
+                    'blockysize': self.config.storage['chunking']['y'],
                     'compress': 'lzw',
                     'driver': 'GTiff',
                     'interleave': 'band',
