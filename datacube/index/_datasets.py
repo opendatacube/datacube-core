@@ -55,11 +55,12 @@ class MetadataTypeResource(object):
                 'Metadata Type {}'.format(metadata_type.name)
             )
         else:
-            self._db.add_metadata_type(
-                name=metadata_type.name,
-                definition=metadata_type.definition,
-                concurrently=not allow_table_lock
-            )
+            with self._db.connect() as connection:
+                connection.add_metadata_type(
+                    name=metadata_type.name,
+                    definition=metadata_type.definition,
+                    concurrently=not allow_table_lock
+                )
         return self.get_by_name(metadata_type.name)
 
     def can_update(self, metadata_type, allow_unsafe_updates=False):
@@ -119,11 +120,12 @@ class MetadataTypeResource(object):
         for offset, new_val, old_val in unsafe_changes:
             _LOG.info("Unsafe change from %r to %r", old_val, new_val)
 
-        self._db.update_metadata_type(
-            name=metadata_type.name,
-            definition=metadata_type.definition,
-            concurrently=True
-        )
+        with self._db.connect() as connection:
+            connection.update_metadata_type(
+                name=metadata_type.name,
+                definition=metadata_type.definition,
+                concurrently=True
+            )
 
         self.get_by_name_unsafe.cache_clear()
         self.get_unsafe.cache_clear()
@@ -160,14 +162,16 @@ class MetadataTypeResource(object):
 
     @lru_cache()
     def get_unsafe(self, id_):
-        record = self._db.get_metadata_type(id_)
+        with self._db.connect() as connection:
+            record = connection.get_metadata_type(id_)
         if record is None:
             raise KeyError('%s is not a valid MetadataType id')
         return self._make_from_query_row(record)
 
     @lru_cache()
     def get_by_name_unsafe(self, name):
-        record = self._db.get_metadata_type_by_name(name)
+        with self._db.connect() as connection:
+            record = connection.get_metadata_type_by_name(name)
         if not record:
             raise KeyError('%s is not a valid MetadataType name' % name)
         return self._make_from_query_row(record)
@@ -181,7 +185,8 @@ class MetadataTypeResource(object):
 
             If false, creation will be slightly slower and cannot be done in a transaction.
         """
-        self._db.check_dynamic_fields(concurrently=not allow_table_lock, rebuild_all=rebuild_all)
+        with self._db.connect() as connection:
+            connection.check_dynamic_fields(concurrently=not allow_table_lock, rebuild_all=rebuild_all)
 
     def _make_many(self, query_rows):
         """
@@ -270,13 +275,14 @@ class DatasetTypeResource(object):
             if metadata_type is None:
                 _LOG.warning('Adding metadata_type "%s" as it doesn\'t exist.', type_.metadata_type.name)
                 metadata_type = self.metadata_type_resource.add(type_.metadata_type)
-            self._db.add_dataset_type(
-                name=type_.name,
-                metadata=type_.metadata_doc,
-                metadata_type_id=metadata_type.id,
-                search_fields=type_.metadata_type.dataset_fields,
-                definition=type_.definition
-            )
+            with self._db.connect() as connection:
+                connection.add_dataset_type(
+                    name=type_.name,
+                    metadata=type_.metadata_doc,
+                    metadata_type_id=metadata_type.id,
+                    search_fields=metadata_type.dataset_fields,
+                    definition=type_.definition
+                )
         return self.get_by_name(type_.name)
 
     def can_update(self, product, allow_unsafe_updates=False):
@@ -365,7 +371,7 @@ class DatasetTypeResource(object):
                 name=product.name,
                 metadata=product.metadata_doc,
                 metadata_type_id=metadata_type.id,
-                search_fields=product.metadata_type.dataset_fields,
+                search_fields=metadata_type.dataset_fields,
                 definition=product.definition,
                 update_metadata_type=changing_metadata_type
             )
@@ -420,14 +426,16 @@ class DatasetTypeResource(object):
 
     @lru_cache()
     def get_unsafe(self, id_):
-        result = self._db.get_dataset_type(id_)
+        with self._db.connect() as connection:
+            result = connection.get_dataset_type(id_)
         if not result:
             raise KeyError('"%s" is not a valid Product id' % id_)
         return self._make(result)
 
     @lru_cache()
     def get_by_name_unsafe(self, name):
-        result = self._db.get_dataset_type_by_name(name)
+        with self._db.connect() as connection:
+            result = connection.get_dataset_type_by_name(name)
         if not result:
             raise KeyError('"%s" is not a valid Product name' % name)
         return self._make(result)
@@ -493,7 +501,8 @@ class DatasetTypeResource(object):
 
         :rtype: iter[datacube.model.DatasetType]
         """
-        return (self._make(record) for record in self._db.get_all_dataset_types())
+        with self._db.connect() as connection:
+            return (self._make(record) for record in connection.get_all_dataset_types())
 
     def _make_many(self, query_rows):
         return (self._make(c) for c in query_rows)
@@ -531,11 +540,13 @@ class DatasetResource(object):
         :param bool include_sources: get the full provenance graph?
         :rtype: datacube.model.Dataset
         """
-        if not include_sources:
-            return self._make(self._db.get_dataset(id_), full_info=True)
+        with self._db.connect() as connection:
+            if not include_sources:
+                return self._make(connection.get_dataset(id_), full_info=True)
 
-        datasets = {result['id']: (self._make(result, full_info=True), result)
-                    for result in self._db.get_dataset_sources(id_)}
+            datasets = {result['id']: (self._make(result, full_info=True), result)
+                        for result in connection.get_dataset_sources(id_)}
+
         for dataset, result in datasets.values():
             dataset.metadata_doc['lineage']['source_datasets'] = {
                 classifier: datasets[str(source)][0].metadata_doc
@@ -554,7 +565,8 @@ class DatasetResource(object):
         :param uuid id_: dataset id
         :rtype: list[datacube.model.Dataset]
         """
-        return [self._make(result) for result in self._db.get_derived_datasets(id_)]
+        with self._db.connect() as connection:
+            return [self._make(result) for result in connection.get_derived_datasets(id_)]
 
     def has(self, id_):
         """
@@ -613,7 +625,8 @@ class DatasetResource(object):
                 # reinsert attempt? try updating the location
                 if dataset.local_uri:
                     try:
-                        self._db.ensure_dataset_location(dataset.id, dataset.local_uri)
+                        with self._db.connect() as connection:
+                            connection.ensure_dataset_location(dataset.id, dataset.local_uri)
                     except DuplicateRecordError as e:
                         _LOG.warning(str(e))
         finally:
@@ -661,7 +674,8 @@ class DatasetResource(object):
         :param datacube.model.Dataset dataset: dataset
         :rtype: list[str]
         """
-        return self._db.get_locations(dataset.id)
+        with self._db.connect() as connection:
+            return connection.get_locations(dataset.id)
 
     def _make(self, dataset_res, full_info=False):
         """
@@ -692,7 +706,9 @@ class DatasetResource(object):
         :param dict metadata:
         :rtype: list[datacube.model.Dataset]
         """
-        return self._make_many(self._db.search_datasets_by_metadata(metadata))
+        with self._db.connect() as connection:
+            for dataset in self._make_many(connection.search_datasets_by_metadata(metadata)):
+                yield dataset
 
     def search(self, **query):
         """
@@ -783,26 +799,30 @@ class DatasetResource(object):
             yield q, dataset_type
 
     def _do_search_by_product(self, query, return_fields=False, with_source_ids=False):
-        for q, dataset_type in self._get_product_queries(query):
-            dataset_fields = dataset_type.metadata_type.dataset_fields
-            query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
-            select_fields = None
-            if return_fields:
-                select_fields = tuple(dataset_fields.values())
-            yield (dataset_type,
-                   self._db.search_datasets(
-                       query_exprs,
-                       select_fields=select_fields,
-                       with_source_ids=with_source_ids
-                   ))
+        product_queries = self._get_product_queries(query)
+        with self._db.connect() as connection:
+            for q, dataset_type in product_queries:
+                dataset_fields = dataset_type.metadata_type.dataset_fields
+                query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
+                select_fields = None
+                if return_fields:
+                    select_fields = tuple(dataset_fields.values())
+                yield (dataset_type,
+                       connection.search_datasets(
+                           query_exprs,
+                           select_fields=select_fields,
+                           with_source_ids=with_source_ids
+                       ))
 
     def _do_count_by_product(self, query):
-        for q, dataset_type in self._get_product_queries(query):
-            dataset_fields = dataset_type.metadata_type.dataset_fields
-            query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
-            count = self._db.count_datasets(query_exprs)
-            if count > 0:
-                yield dataset_type, count
+        product_queries = self._get_product_queries(query)
+        with self._db.connect() as connection:
+            for q, dataset_type in product_queries:
+                dataset_fields = dataset_type.metadata_type.dataset_fields
+                query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
+                count = connection.count_datasets(query_exprs)
+                if count > 0:
+                    yield dataset_type, count
 
     def _do_time_count(self, period, query, ensure_single=False):
         if 'time' not in query:
@@ -819,18 +839,19 @@ class DatasetResource(object):
                 raise ValueError('No products match search terms: %r' % query)
             if len(product_queries) > 1:
                 raise ValueError('Multiple products match single query search: %r' %
-                                 ([dt.name for q, dt in product_quries],))
+                                 ([dt.name for q, dt in product_queries],))
 
-        for q, dataset_type in product_quries:
-            dataset_fields = dataset_type.metadata_type.dataset_fields
-            query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
-            yield dataset_type, list(self._db.count_datasets_through_time(
-                start,
-                end,
-                period,
-                dataset_fields.get('time'),
-                query_exprs
-            ))
+        with self._db.connect() as connection:
+            for q, dataset_type in product_queries:
+                dataset_fields = dataset_type.metadata_type.dataset_fields
+                query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
+                yield dataset_type, list(connection.count_datasets_through_time(
+                    start,
+                    end,
+                    period,
+                    dataset_fields.get('time'),
+                    query_exprs
+                ))
 
     def search_summaries(self, **query):
         """

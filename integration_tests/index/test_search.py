@@ -44,42 +44,43 @@ def pseudo_telemetry_type(index, default_metadata_type):
 @pytest.fixture
 def pseudo_telemetry_dataset(index, db, pseudo_telemetry_type):
     id_ = str(uuid.uuid4())
-    was_inserted = db.insert_dataset(
-        {
-            'id': id_,
-            'product_type': 'pseudo_telemetry_data',
-            'checksum_path': 'package.sha1',
-            'ga_label': 'LS8_OLITIRS_STD-MD_P00_LC81160740742015089ASA00_'
-                        '116_074_20150330T022553Z20150330T022657',
+    with db.connect() as connection:
+        was_inserted = connection.insert_dataset(
+            {
+                'id': id_,
+                'product_type': 'pseudo_telemetry_data',
+                'checksum_path': 'package.sha1',
+                'ga_label': 'LS8_OLITIRS_STD-MD_P00_LC81160740742015089ASA00_'
+                            '116_074_20150330T022553Z20150330T022657',
 
-            'ga_level': 'P00',
-            'size_bytes': 637660782,
-            'platform': {
-                'code': 'LANDSAT_8'
-            },
-            # We're unlikely to have extent info for a raw dataset, we'll use it for search tests.
-            'extent': {
-                'from_dt': datetime.datetime(2014, 7, 26, 23, 48, 0, 343853),
-                'to_dt': datetime.datetime(2014, 7, 26, 23, 52, 0, 343853),
-                'coord': {
-                    'll': {'lat': -31.33333, 'lon': 149.78434},
-                    'lr': {'lat': -31.37116, 'lon': 152.20094},
-                    'ul': {'lat': -29.23394, 'lon': 149.85216},
-                    'ur': {'lat': -29.26873, 'lon': 152.21782}
+                'ga_level': 'P00',
+                'size_bytes': 637660782,
+                'platform': {
+                    'code': 'LANDSAT_8'
+                },
+                # We're unlikely to have extent info for a raw dataset, we'll use it for search tests.
+                'extent': {
+                    'from_dt': datetime.datetime(2014, 7, 26, 23, 48, 0, 343853),
+                    'to_dt': datetime.datetime(2014, 7, 26, 23, 52, 0, 343853),
+                    'coord': {
+                        'll': {'lat': -31.33333, 'lon': 149.78434},
+                        'lr': {'lat': -31.37116, 'lon': 152.20094},
+                        'ul': {'lat': -29.23394, 'lon': 149.85216},
+                        'ur': {'lat': -29.26873, 'lon': 152.21782}
+                    }
+                },
+                'creation_dt': datetime.datetime(2015, 4, 22, 6, 32, 4),
+                'instrument': {'name': 'OLI_TIRS'},
+                'format': {
+                    'name': 'PSEUDOMD'
+                },
+                'lineage': {
+                    'source_datasets': {}
                 }
             },
-            'creation_dt': datetime.datetime(2015, 4, 22, 6, 32, 4),
-            'instrument': {'name': 'OLI_TIRS'},
-            'format': {
-                'name': 'PSEUDOMD'
-            },
-            'lineage': {
-                'source_datasets': {}
-            }
-        },
-        id_,
-        pseudo_telemetry_type.id
-    )
+            id_,
+            pseudo_telemetry_type.id
+        )
     assert was_inserted
     d = index.datasets.get(id_)
     # The dataset should have been matched to the telemetry type.
@@ -92,42 +93,43 @@ def pseudo_telemetry_dataset(index, db, pseudo_telemetry_type):
 def pseudo_telemetry_dataset2(index, db, pseudo_telemetry_type):
     # Like the previous dataset, but a day later in time.
     id_ = str(uuid.uuid4())
-    was_inserted = db.insert_dataset(
-        {
-            'id': id_,
-            'product_type': 'pseudo_telemetry_data',
-            'checksum_path': 'package.sha1',
-            'ga_label': 'LS8_OLITIRS_STD-MD_P00_LC81160740742015089ASA00_'
-                        '116_074_20150330T022553Z20150330T022657',
+    with db.connect() as connection:
+        was_inserted = connection.insert_dataset(
+            {
+                'id': id_,
+                'product_type': 'pseudo_telemetry_data',
+                'checksum_path': 'package.sha1',
+                'ga_label': 'LS8_OLITIRS_STD-MD_P00_LC81160740742015089ASA00_'
+                            '116_074_20150330T022553Z20150330T022657',
 
-            'ga_level': 'P00',
-            'size_bytes': 637660782,
-            'platform': {
-                'code': 'LANDSAT_8'
-            },
-            # We're unlikely to have extent info for a raw dataset, we'll use it for search tests.
-            'extent': {
-                'from_dt': datetime.datetime(2014, 7, 27, 23, 48, 0, 343853),
-                'to_dt': datetime.datetime(2014, 7, 27, 23, 52, 0, 343853),
-                'coord': {
-                    'll': {'lat': -31.33333, 'lon': 149.78434},
-                    'lr': {'lat': -31.37116, 'lon': 152.20094},
-                    'ul': {'lat': -29.23394, 'lon': 149.85216},
-                    'ur': {'lat': -29.26873, 'lon': 152.21782}
+                'ga_level': 'P00',
+                'size_bytes': 637660782,
+                'platform': {
+                    'code': 'LANDSAT_8'
+                },
+                # We're unlikely to have extent info for a raw dataset, we'll use it for search tests.
+                'extent': {
+                    'from_dt': datetime.datetime(2014, 7, 27, 23, 48, 0, 343853),
+                    'to_dt': datetime.datetime(2014, 7, 27, 23, 52, 0, 343853),
+                    'coord': {
+                        'll': {'lat': -31.33333, 'lon': 149.78434},
+                        'lr': {'lat': -31.37116, 'lon': 152.20094},
+                        'ul': {'lat': -29.23394, 'lon': 149.85216},
+                        'ur': {'lat': -29.26873, 'lon': 152.21782}
+                    }
+                },
+                'creation_dt': datetime.datetime(2015, 4, 22, 6, 32, 4),
+                'instrument': {'name': 'OLI_TIRS'},
+                'format': {
+                    'name': 'PSEUDOMD'
+                },
+                'lineage': {
+                    'source_datasets': {}
                 }
             },
-            'creation_dt': datetime.datetime(2015, 4, 22, 6, 32, 4),
-            'instrument': {'name': 'OLI_TIRS'},
-            'format': {
-                'name': 'PSEUDOMD'
-            },
-            'lineage': {
-                'source_datasets': {}
-            }
-        },
-        id_,
-        pseudo_telemetry_type.id
-    )
+            id_,
+            pseudo_telemetry_type.id
+        )
     assert was_inserted
     d = index.datasets.get(id_)
     # The dataset should have been matched to the telemetry type.

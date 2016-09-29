@@ -88,7 +88,8 @@ def local_config(integration_config_paths):
 def db(local_config):
     db = PostgresDb.from_config(local_config, application_name='test-run', validate_connection=False)
     # Drop and recreate tables so our tests have a clean db.
-    drop_db(db._connection)
+    with db.connect() as connection:
+        drop_db(connection._connection)
     remove_dynamic_indexes()
     ensure_db(db._engine)
     return db

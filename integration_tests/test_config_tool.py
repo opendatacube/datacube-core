@@ -36,7 +36,8 @@ def _run_cli(cli_method, opts, catch_exceptions=False):
 
 
 def _dataset_type_count(db):
-    return len(list(db.get_all_dataset_types()))
+    with db.connect() as connection:
+        return len(list(connection.get_all_dataset_types()))
 
 
 def test_add_example_dataset_types(global_integration_cli_args, db, default_metadata_type):
@@ -186,9 +187,10 @@ def test_db_init_rebuild(global_integration_cli_args, local_config, default_meta
 
 
 def test_db_init(global_integration_cli_args, db, local_config):
-    drop_db(db._connection)
+    with db.connect() as connection:
+        drop_db(connection._connection)
 
-    assert not has_schema(db._engine, db._connection)
+        assert not has_schema(db._engine, connection._connection)
 
     # Run on an empty database.
     opts = list(global_integration_cli_args)
@@ -202,4 +204,5 @@ def test_db_init(global_integration_cli_args, db, local_config):
     assert result.exit_code == 0
     assert 'Created.' in result.output
 
-    assert has_schema(db._engine, db._connection)
+    with db.connect() as connection:
+        assert has_schema(db._engine, connection._connection)

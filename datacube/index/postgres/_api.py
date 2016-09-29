@@ -98,6 +98,10 @@ class PostgresDb(object):
         # Use static methods PostgresDb.create() or PostgresDb.from_config()
         self._engine = engine
 
+    @property
+    def url(self):
+        return self._engine.url
+
     @classmethod
     def create(cls, hostname, database, username=None, password=None, port=None,
                application_name=None, validate=True, pool_timeout=60):
@@ -135,14 +139,6 @@ class PostgresDb(object):
                     ))
         return PostgresDb(engine)
 
-    @property
-    def in_transaction(self):
-        return False
-
-    @property
-    def url(self):
-        return self._engine.url
-
     @classmethod
     def from_config(cls, config=LocalConfig.find(), application_name=None, validate_connection=True):
         app_name = cls._expand_app_name(application_name)
@@ -157,13 +153,6 @@ class PostgresDb(object):
             validate=validate_connection,
             pool_timeout=config.db_connection_timeout
         )
-
-    @property
-    def _connection(self):
-        """
-        Borrow a connection from the pool.
-        """
-        return self._engine.connect()
 
     def close(self):
         """
@@ -219,6 +208,12 @@ class PostgresDb(object):
 
         return is_new
 
+    def connect(self):
+        """
+        Borrow a connection from the pool.
+        """
+        return _PostgresDbConnection(self._engine)
+
     def begin(self):
         """
         Start a transaction.
@@ -233,6 +228,106 @@ class PostgresDb(object):
         :rtype: _PostgresDbInTransaction
         """
         return _PostgresDbInTransaction(self._engine)
+
+    @staticmethod
+    def get_dataset_fields(dataset_search_fields):
+        # Native fields (hard-coded into the schema)
+        fields = {
+            'id': NativeField(
+                'id',
+                None,
+                DATASET.c.id
+            ),
+            'product': NativeField(
+                'product',
+                'Dataset type name',
+                DATASET_TYPE.c.name
+            ),
+            'dataset_type_id': NativeField(
+                'dataset_type_id',
+                'ID of a dataset type',
+                DATASET.c.dataset_type_ref
+            ),
+            'metadata_type': NativeField(
+                'metadata_type',
+                'Metadata type of dataset',
+                METADATA_TYPE.c.name
+            ),
+            'metadata_type_id': NativeField(
+                'metadata_type_id',
+                'ID of a metadata type',
+                DATASET.c.metadata_type_ref
+            ),
+        }
+
+        # noinspection PyTypeChecker
+        fields.update(
+            parse_fields(
+                dataset_search_fields,
+                DATASET.c.metadata
+            )
+        )
+        return fields
+
+    def __repr__(self):
+        return "PostgresDb<engine={!r}>".format(self._engine)
+
+
+class _PostgresDbConnection(object):
+    def __init__(self, engine):
+        self._engine = engine
+        self._connection = None
+
+    def __enter__(self):
+        self._connection = self._engine.connect()
+        return PostgresDbAPI(self._connection)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._connection.close()
+        self._connection = None
+
+
+class _PostgresDbInTransaction(object):
+    """
+    Identical to PostgresDb class, but all operations
+    are run against a single connection in a transaction.
+
+    Call commit() or rollback() to complete the transaction or use a context manager:
+
+        with db.begin() as transaction:
+            transaction.insert_dataset(...)
+
+    (Don't share an instance between threads)
+    """
+
+    def __init__(self, engine):
+        self._engine = engine
+        self._connection = None
+
+    def __enter__(self):
+        self._connection = self._engine.connect()
+        self._connection.execute(text('BEGIN'))
+        return PostgresDbAPI(self._connection)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            self._connection.execute(text('ROLLBACK'))
+        else:
+            self._connection.execute(text('COMMIT'))
+        self._connection.close()
+        self._connection = None
+
+
+class PostgresDbAPI(object):
+    def __init__(self, connection):
+        self._connection = connection
+
+    @property
+    def in_transaction(self):
+        return self._connection.in_transaction()
+
+    def rollback(self):
+        self._connection.execute(text('ROLLBACK'))
 
     def insert_dataset(self, metadata_doc, dataset_id, dataset_type_id):
         """
@@ -381,45 +476,6 @@ class PostgresDb(object):
 
         return self._connection.execute(query).fetchall()
 
-    def get_dataset_fields(self, dataset_search_fields):
-        # Native fields (hard-coded into the schema)
-        fields = {
-            'id': NativeField(
-                'id',
-                None,
-                DATASET.c.id
-            ),
-            'product': NativeField(
-                'product',
-                'Dataset type name',
-                DATASET_TYPE.c.name
-            ),
-            'dataset_type_id': NativeField(
-                'dataset_type_id',
-                'ID of a dataset type',
-                DATASET.c.dataset_type_ref
-            ),
-            'metadata_type': NativeField(
-                'metadata_type',
-                'Metadata type of dataset',
-                METADATA_TYPE.c.name
-            ),
-            'metadata_type_id': NativeField(
-                'metadata_type_id',
-                'ID of a metadata type',
-                DATASET.c.metadata_type_ref
-            ),
-        }
-
-        # noinspection PyTypeChecker
-        fields.update(
-            parse_fields(
-                dataset_search_fields,
-                DATASET.c.metadata
-            )
-        )
-        return fields
-
     def search_datasets_by_metadata(self, metadata):
         """
         Find any datasets that have the given metadata.
@@ -465,13 +521,13 @@ class PostgresDb(object):
                 ).label('dataset_refs'),
             )
 
-        raw_expressions = PostgresDb._alchemify_expressions(expressions)
+        raw_expressions = PostgresDbAPI._alchemify_expressions(expressions)
 
         select_query = (
             select(
                 select_columns
             ).select_from(
-                PostgresDb._from_expression(DATASET, expressions, select_fields)
+                PostgresDbAPI._from_expression(DATASET, expressions, select_fields)
             ).where(
                 and_(DATASET.c.archived == None, *raw_expressions)
             )
@@ -487,9 +543,7 @@ class PostgresDb(object):
         :rtype: dict
         """
         select_query = self.search_datasets_query(expressions, select_fields, with_source_ids)
-        results = self._connection.execute(select_query)
-        for result in results:
-            yield result
+        return self._connection.execute(select_query)
 
     def count_datasets(self, expressions):
         """
@@ -645,7 +699,7 @@ class PostgresDb(object):
         type_id = res.first()[0]
 
         if update_metadata_type:
-            if not self.in_transaction:
+            if not self._connection.in_transaction():
                 raise RuntimeError('Must update metadata types in transaction')
 
             self._connection.execute(
@@ -670,7 +724,7 @@ class PostgresDb(object):
         )
         type_id = res.inserted_primary_key[0]
 
-        search_fields = self.get_dataset_fields(definition['dataset']['search_fields'])
+        search_fields = PostgresDb.get_dataset_fields(definition['dataset']['search_fields'])
         self._setup_metadata_type_fields(
             type_id, name, search_fields, concurrently=concurrently
         )
@@ -686,7 +740,7 @@ class PostgresDb(object):
         )
         type_id = res.first()[0]
 
-        search_fields = self.get_dataset_fields(definition['dataset']['search_fields'])
+        search_fields = PostgresDb.get_dataset_fields(definition['dataset']['search_fields'])
         self._setup_metadata_type_fields(
             type_id, name, search_fields, concurrently=concurrently
         )
@@ -699,7 +753,7 @@ class PostgresDb(object):
         search_fields = {}
 
         for metadata_type in self.get_all_metadata_types():
-            fields = self.get_dataset_fields(metadata_type['definition']['dataset']['search_fields'])
+            fields = PostgresDb.get_dataset_fields(metadata_type['definition']['dataset']['search_fields'])
             search_fields[metadata_type['id']] = fields
             self._setup_metadata_type_fields(
                 metadata_type['id'],
@@ -842,49 +896,3 @@ def _to_json(o):
 def _json_fallback(obj):
     """Fallback json serialiser."""
     raise TypeError("Type not serializable: {}".format(type(obj)))
-
-
-class _PostgresDbInTransaction(PostgresDb):
-    """
-    Identical to PostgresDb class, but all operations
-    are run against a single connection in a transaction.
-
-    Call commit() or rollback() to complete the transaction or use a context manager:
-
-        with db.begin() as transaction:
-            transaction.insert_dataset(...)
-
-    (Don't share an instance between threads)
-    """
-
-    def __init__(self, engine):
-        super(_PostgresDbInTransaction, self).__init__(engine)
-        self.__connection = engine.connect()
-        self.begin()
-
-    @property
-    def in_transaction(self):
-        return True
-
-    @property
-    def _connection(self):
-        # Override parent so that we use the same connection in transaction
-        return self.__connection
-
-    def begin(self):
-        self._connection.execute(text('BEGIN'))
-
-    def commit(self):
-        self._connection.execute(text('COMMIT'))
-
-    def rollback(self):
-        self._connection.execute(text('ROLLBACK'))
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type:
-            self.rollback()
-        else:
-            self.commit()

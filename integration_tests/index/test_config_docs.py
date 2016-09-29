@@ -88,7 +88,8 @@ def test_dataset_composit_indexes_exist(db, ls5_nbar_gtiff_type):
 
 
 def _object_exists(db, index_name):
-    val = db._connection.execute("SELECT to_regclass('agdc.%s')" % index_name).scalar()
+    with db.connect() as connection:
+        val = connection._connection.execute("SELECT to_regclass('agdc.%s')" % index_name).scalar()
     return val == ('agdc.%s' % index_name)
 
 

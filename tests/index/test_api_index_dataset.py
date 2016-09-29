@@ -166,6 +166,10 @@ class MockDb(object):
     def begin(self):
         yield self
 
+    @contextmanager
+    def connect(self):
+        yield self
+
     def get_dataset(self, id):
         return self.dataset.get(id, None)
 

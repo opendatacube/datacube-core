@@ -66,16 +66,16 @@ _EXAMPLE_LS7_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('ls7-nbar-exampl
 
 
 def test_archive_datasets(index, db, local_config, default_metadata_type):
+    dataset_type = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
     with db.begin() as transaction:
-        dataset_type = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
-        was_inserted = db.insert_dataset(
+        was_inserted = transaction.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,
             dataset_type.id
         )
 
     assert was_inserted
-    assert db.contains_dataset(_telemetry_uuid)
+    assert index.datasets.has(_telemetry_uuid)
 
     datsets = index.datasets.search_eager()
     assert len(datsets) == 1
@@ -94,10 +94,9 @@ def test_index_duplicate_dataset(index, db, local_config, default_metadata_type)
     :type index: datacube.index._api.Index
     :type db: datacube.index.postgres._api.PostgresDb
     """
-
-    assert not db.contains_dataset(_telemetry_uuid)
-
     dataset_type = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
+    assert not index.datasets.has(_telemetry_uuid)
+
     with db.begin() as transaction:
         was_inserted = transaction.insert_dataset(
             _telemetry_dataset,
@@ -106,18 +105,17 @@ def test_index_duplicate_dataset(index, db, local_config, default_metadata_type)
         )
 
     assert was_inserted
-    assert db.contains_dataset(_telemetry_uuid)
+    assert index.datasets.has(_telemetry_uuid)
 
-    was_inserted = False
     with pytest.raises(DuplicateRecordError):
-        # Insert again. It should be ignored.
-        was_inserted = db.insert_dataset(
-            _telemetry_dataset,
-            _telemetry_uuid,
-            dataset_type.id
-        )
-    assert not was_inserted
-    assert db.contains_dataset(_telemetry_uuid)
+        # Insert again. It should be ignored.ts.types.add_document(_pseudo_telemetry_dataset_type)
+        with db.connect() as connection:
+            was_inserted = connection.insert_dataset(
+                _telemetry_dataset,
+                _telemetry_uuid,
+                dataset_type.id
+            )
+    assert index.datasets.has(_telemetry_uuid)
 
 
 def test_transactions(index, db, local_config, default_metadata_type):
@@ -125,7 +123,7 @@ def test_transactions(index, db, local_config, default_metadata_type):
     :type index: datacube.index._api.Index
     :type db: datacube.index.postgres._api.PostgresDb
     """
-    assert not db.contains_dataset(_telemetry_uuid)
+    assert not index.datasets.has(_telemetry_uuid)
 
     dataset_type = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
     with db.begin() as transaction:
@@ -137,12 +135,12 @@ def test_transactions(index, db, local_config, default_metadata_type):
         assert was_inserted
         assert transaction.contains_dataset(_telemetry_uuid)
         # Normal DB uses a separate connection: No dataset visible yet.
-        assert not db.contains_dataset(_telemetry_uuid)
+        assert not index.datasets.has(_telemetry_uuid)
 
         transaction.rollback()
 
     # Should have been rolled back.
-    assert not db.contains_dataset(_telemetry_uuid)
+    assert not index.datasets.has(_telemetry_uuid)
 
 
 def test_index_dataset_with_location(index, default_metadata_type):

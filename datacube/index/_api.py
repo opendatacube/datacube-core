@@ -110,23 +110,28 @@ class UserResource(object):
         """
         Grant a role to users
         """
-        self._db.grant_role(role, users)
+        with self._db.connect() as connection:
+            connection.grant_role(role, users)
 
     def create_user(self, user_name, password, role):
         """
         Create a new user.
         """
-        self._db.create_user(user_name, password, role)
+        with self._db.connect() as connection:
+            connection.create_user(user_name, password, role)
 
     def delete_user(self, user_name):
         """
         Delete a user
         """
-        self._db.drop_user(user_name)
+        with self._db.connect() as connection:
+            connection.drop_user(user_name)
 
     def list_users(self):
         """
         :return: list of (role, user, description)
         :rtype: list[(str, str, str)]
         """
-        return self._db.list_users()
+        with self._db.connect() as connection:
+            for user in connection.list_users():
+                yield user
