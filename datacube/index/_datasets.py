@@ -813,11 +813,11 @@ class DatasetResource(object):
         start, end = query['time']
         del query['time']
 
-        product_quries = list(self._get_product_queries(query))
+        product_queries = list(self._get_product_queries(query))
         if ensure_single:
-            if len(product_quries) == 0:
+            if len(product_queries) == 0:
                 raise ValueError('No products match search terms: %r' % query)
-            if len(product_quries) > 1:
+            if len(product_queries) > 1:
                 raise ValueError('Multiple products match single query search: %r' %
                                  ([dt.name for q, dt in product_quries],))
 
