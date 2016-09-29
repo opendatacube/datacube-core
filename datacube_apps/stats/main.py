@@ -20,8 +20,9 @@ from datacube.utils.dates import date_sequence
 
 from datacube import Datacube
 from datacube.api import make_mask
-from datacube.api.grid_workflow import GridWorkflow
-from datacube.model import GridSpec, CRS, Coordinate, Variable, DatasetType
+from datacube.api.grid_workflow import GridWorkflow, Tile
+from datacube.api.query import query_group_by, query_geopolygon
+from datacube.model import GridSpec, CRS, Coordinate, Variable, DatasetType, GeoBox
 from datacube.model.utils import make_dataset, datasets_to_doc, xr_apply
 from datacube.storage import netcdf_writer
 from datacube.storage.masking import mask_valid_data as mask_invalid_data
@@ -443,13 +444,20 @@ def _slicify(step, size):
     return (slice(i, min(i + step, size)) for i in range(0, size, step))
 
 
-def block_iter(steps, shape):
+def _block_iter(steps, shape):
     return itertools.product(*(_slicify(step, size) for step, size in zip(steps, shape)))
 
 
-def tile_iter(tile, chunk):
-    steps = _tuplify(tile.dims, chunk, tile.shape)
-    return block_iter(steps, tile.shape)
+def tile_iter(tile, chunk_size):
+    """
+    Return the sequence of chunks to split a tile into computable regions.
+
+    :param tile: a tile of `.shape` size containing `.dim` dimensions
+    :param chunk_size: dict of dimension sizes
+    :return: Sequence of chunks to iterate across the entire tile
+    """
+    steps = _tuplify(tile.dims, chunk_size, tile.shape)
+    return _block_iter(steps, tile.shape)
 
 
 def get_filename(path_template, **kwargs):
@@ -463,8 +471,8 @@ def find_source_datasets(task, stat, geobox, uri=None):
                                extent=geobox.extent,
                                center_time=labels['time'],
                                uri=uri,
-                               app_info=None,
-                               valid_data=None)
+                               app_info=None,  # TODO: Add stats application information
+                               valid_data=None)  # TODO: Add valid region geopolygon
         return dataset
 
     def merge_sources(prod):
@@ -521,6 +529,12 @@ class OutputDriver(object):
     def close_files(self):
         for output_file in self.output_files.values():
             output_file.close()
+
+    def open_output_files(self):
+        raise NotImplementedError
+
+    def write_data(self):
+        raise NotImplementedError
 
     def __enter__(self):
         self.open_output_files()
@@ -647,10 +661,10 @@ def make_tasks(index, output_products, config):
 
 
 def make_tasks_grid(index, output_products, config):
+    workflow = GridWorkflow(index, grid_spec=config.grid_spec)
     for time_period in date_sequence(start=config.start_time, end=config.end_time,
                                      stats_duration=config.stats_duration, step_size=config.step_size):
         _LOG.info('Making output_products tasks for %s to %s', time_period[0], time_period[1])
-        workflow = GridWorkflow(index, grid_spec=config.grid_spec)
 
         # Tasks are grouped by tile_index, and may contain sources from multiple places
         # Each source may be masked by multiple masks
@@ -659,14 +673,11 @@ def make_tasks_grid(index, output_products, config):
             data = workflow.list_cells(product=source_spec['product'], time=time_period,
                                        cell_index=(17, -40),
                                        group_by=source_spec.get('group_by', DEFAULT_GROUP_BY))
-            if 'masks' in source_spec:
-                masks = [workflow.list_cells(product=mask['product'],
-                                             time=time_period,
-                                             cell_index=(17, -40),
-                                             group_by=source_spec.get('group_by', DEFAULT_GROUP_BY))
-                         for mask in source_spec['masks']]
-            else:
-                masks = []
+            masks = [workflow.list_cells(product=mask['product'],
+                                         time=time_period,
+                                         cell_index=(17, -40),
+                                         group_by=source_spec.get('group_by', DEFAULT_GROUP_BY))
+                     for mask in source_spec.get('masks', [])]
 
             for tile_index, sources in data.items():
                 task = tasks.setdefault(tile_index, {
@@ -686,9 +697,7 @@ def make_tasks_grid(index, output_products, config):
 
 
 def make_tasks_non_grid(index, output_products, config):
-    from datacube.api.query import query_group_by, query_geopolygon
-    from datacube.model import GeoBox
-    from datacube.api.grid_workflow import Tile
+    dc = Datacube(index=index)
 
     def make_tile(product, time, group_by_name):
         datasets = dc.product_observations(product=product, time=time, **config.input_region)
@@ -707,8 +716,6 @@ def make_tasks_non_grid(index, output_products, config):
                                      stats_duration=config.stats_duration, step_size=config.step_size):
         _LOG.info('Making output_products tasks for %s to %s', time_period[0], time_period[1])
 
-        dc = Datacube(index=index)
-
         task = {'output_products': output_products,
                 'time_period': time_period,
                 'sources': []}
@@ -721,7 +728,7 @@ def make_tasks_non_grid(index, output_products, config):
 
             masks = [make_tile(product=mask['product'], time=time_period,
                                group_by_name=group_by_name)
-                     for mask in source_spec['masks']]
+                     for mask in source_spec.get('masks', [])]
 
             if len(data.sources.time) == 0:
                 continue
@@ -747,10 +754,11 @@ def make_products(index, config):
     if duplicate_names:
         raise ConfigurationError('Output products must all have different names. '
                                  'Duplicates found: %s' % duplicate_names)
+    # TODO: Add more sanity checking. Eg. check desired 'statistic' is available
 
     output_products = {}
 
-    measurements = calc_output_measurements(index, config.sources)
+    measurements = source_product_measurement_defns(index, config.sources)
 
     for prod in config.output_products:
         output_products[prod['name']] = StatProduct(index.metadata_types.get_by_name('eo'), measurements,
@@ -759,7 +767,7 @@ def make_products(index, config):
     return output_products
 
 
-def calc_output_measurements(index, sources):
+def source_product_measurement_defns(index, sources):
     """
     Look up desired measurements from sources in the database index
 
