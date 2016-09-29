@@ -568,6 +568,16 @@ def do_stats(task, config):
 
 
 def make_tasks(index, output_products, config):
+    if config.input_region:
+        task_generator = make_tasks_non_grid
+    else:
+        task_generator = make_tasks_grid
+
+    for task in task_generator(index, output_products, config):
+        yield task
+
+
+def make_tasks_grid(index, output_products, config):
     for time_period in date_sequence(start=config.start_time, end=config.end_time,
                                      stats_duration=config.stats_duration, step_size=config.step_size):
         _LOG.info('Making output_products tasks for %s to %s', time_period[0], time_period[1])
@@ -605,6 +615,57 @@ def make_tasks(index, output_products, config):
 
         for task in tasks.values():
             yield task
+
+
+def make_tasks_non_grid(index, output_products, config):
+    from datacube.api.query import query_group_by, query_geopolygon
+    from datacube.model import GeoBox
+    from datacube.api.grid_workflow import Tile
+
+    def make_tile(product, time, group_by_name):
+        datasets = dc.product_observations(product=product, time=time, **config.input_region)
+        group_by = query_group_by(group_by=group_by_name)
+        sources = dc.product_sources(datasets, group_by)
+
+        res = config.storage['resolution']
+
+        geopoly = query_geopolygon(**config.input_region)
+        geopoly = geopoly.to_crs(CRS(config.storage['crs']))
+        geobox = GeoBox.from_geopolygon(geopoly, (res['y'], res['x']))
+
+        return Tile(sources, geobox)
+
+    for time_period in date_sequence(start=config.start_time, end=config.end_time,
+                                     stats_duration=config.stats_duration, step_size=config.step_size):
+        _LOG.info('Making output_products tasks for %s to %s', time_period[0], time_period[1])
+
+        dc = Datacube(index=index)
+
+        task = {'output_products': output_products,
+                'start_time': time_period[0],
+                'end_time': time_period[1],
+                'sources': []}
+        for source_spec in config.sources:
+            group_by_name = source_spec.get('group_by', DEFAULT_GROUP_BY)
+
+            # Build Tile
+            data = make_tile(product=source_spec['product'], time=time_period,
+                             group_by_name=group_by_name)
+
+            masks = [make_tile(product=mask['product'], time=time_period,
+                               group_by_name=group_by_name)
+                     for mask in source_spec['masks']]
+
+            if len(data.sources.time) == 0:
+                continue
+
+            task['sources'].append({
+                'data': data,
+                'masks': masks,
+                'spec': source_spec,
+            })
+
+        yield task
 
 
 class ConfigurationError(RuntimeError):
