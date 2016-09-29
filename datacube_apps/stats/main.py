@@ -492,27 +492,27 @@ def find_source_datasets(task, stat, geobox, uri=None):
     return datasets, sources
 
 
-def load_masked_data(tile_index, source_prod):
-    data = GridWorkflow.load(source_prod['data'][tile_index],
+def load_masked_data(sub_tile_slice, source_prod):
+    data = GridWorkflow.load(source_prod['data'][sub_tile_slice],
                              measurements=source_prod['spec']['measurements'])
     crs = data.crs
     data = mask_invalid_data(data)
 
     if 'masks' in source_prod and 'masks' in source_prod['spec']:
-        for spec, mask_tile in zip(source_prod['spec']['masks'], source_prod['masks']):
-            fuse_func = import_function(spec['fuse_func']) if 'fuse_func' in spec else None
-            mask = GridWorkflow.load(mask_tile[tile_index],
-                                     measurements=[spec['measurement']],
-                                     fuse_func=fuse_func)[spec['measurement']]
-            mask = make_mask(mask, **spec['flags'])
+        for mask_spec, mask_tile in zip(source_prod['spec']['masks'], source_prod['masks']):
+            fuse_func = import_function(mask_spec['fuse_func']) if 'fuse_func' in mask_spec else None
+            mask = GridWorkflow.load(mask_tile[sub_tile_slice],
+                                     measurements=[mask_spec['measurement']],
+                                     fuse_func=fuse_func)[mask_spec['measurement']]
+            mask = make_mask(mask, **mask_spec['flags'])
             data = data.where(mask)
             del mask
     data.attrs['crs'] = crs
     return data
 
 
-def load_data(tile_index, task):
-    datasets = [load_masked_data(tile_index, source_prod) for source_prod in task['sources']]
+def load_data(sub_tile_slice, task):
+    datasets = [load_masked_data(sub_tile_slice, source_prod) for source_prod in task['sources']]
     for idx, dataset in enumerate(datasets):
         dataset.coords['source'] = ('time', numpy.repeat(idx, dataset.time.size))
     data = xarray.concat(datasets, dim='time')
@@ -520,6 +520,7 @@ def load_data(tile_index, task):
 
 
 class OutputDriver(object):
+    # TODO: Add check for valid filename extensions in each driver
     def __init__(self, task, config):
         self.task = task
         self.config = config
@@ -530,10 +531,10 @@ class OutputDriver(object):
         for output_file in self.output_files.values():
             output_file.close()
 
-    def open_output_files(self):
+    def open_output_files(self, **kwargs):
         raise NotImplementedError
 
-    def write_data(self):
+    def write_data(self, **kwargs):
         raise NotImplementedError
 
     def __enter__(self):
@@ -637,17 +638,17 @@ def do_stats(task, config):
     output_driver = OUTPUT_DRIVERS[config.storage['driver']]
     with output_driver(task, config) as output_files:
         example_tile = task['sources'][0]['data']
-        for tile_index in tile_iter(example_tile, config.computation['chunking']):
-            data = load_data(tile_index, task)
+        for sub_tile_slice in tile_iter(example_tile, config.computation['chunking']):
+            data = load_data(sub_tile_slice, task)
 
             for prod_name, stat in task['output_products'].items():
-                _LOG.info("Computing %s in tile %s", prod_name, tile_index)
+                _LOG.info("Computing %s in tile %s", prod_name, sub_tile_slice)
                 assert stat.masked  # TODO: not masked
                 stats_data = stat.compute(data)
 
                 # For each of the data variables, shove this chunk into the output results
                 for var_name, var in stats_data.data_vars.items():
-                    output_files.write_data(prod_name, var_name, tile_index, var.values)
+                    output_files.write_data(prod_name, var_name, sub_tile_slice, var.values)
 
 
 def make_tasks(index, output_products, config):
