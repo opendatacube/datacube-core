@@ -42,7 +42,15 @@ STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
 DEFAULT_GROUP_BY = 'time'
 
 
-def datetime64_to_lextime(var):
+def datetime64_to_inttime(var):
+    """
+    Return an "inttime" representing a datetime64.
+
+    For example, 2016-09-29 as an "inttime" would be 20160929
+
+    :param var: datetime64
+    :return: int representing the given time
+    """
     values = getattr(var, 'values', var)
     years = values.astype('datetime64[Y]').astype('int32') + 1970
     months = values.astype('datetime64[M]').astype('int32') % 12 + 1
@@ -54,9 +62,8 @@ class ValueStat(object):
     """
     Holder class describing the outputs of a statistic and how to calculate it
 
+    :param stat_func: callable to compute statistics
     :param bool masked: whether to apply masking to the input data
-    :param function measurements: how to turn a list of input measurements into a list of output measurements
-    :param function compute: how to calculate the statistic
     """
 
     def __init__(self, stat_func, masked=True):
@@ -64,24 +71,76 @@ class ValueStat(object):
         self.stat_func = stat_func
 
     def compute(self, data):
+        """
+        Compute a statistic on the given Dataset.
+
+        :param xarray.Dataset data:
+        :return: xarray.Dataset
+        """
         return self.stat_func(data)
 
     @staticmethod
     def measurements(input_measurements):
+        """
+        Turn a list of input measurements into a list of output measurements.
+
+        :param input_measurements:
+        :rtype: list(dict)
+        """
         return [
             {attr: measurement[attr] for attr in ['name', 'dtype', 'nodata', 'units']}
             for measurement in input_measurements]
 
 
+class WofsStats(object):
+    def __init__(self):
+        self.masked = True
+
+    @staticmethod
+    def compute(data):
+        wet = (data.water == 128).sum(dim='time')
+        dry = (data.water == 0).sum(dim='time')
+        clear = wet + dry
+        frequency = wet / clear
+        return xarray.Dataset({'count_wet': wet,
+                               'count_clear': clear,
+                               'frequency': frequency}, attrs=dict(crs=data.crs))
+
+    @staticmethod
+    def measurements(input_measurements):
+        measurement_names = set(m['name'] for m in input_measurements)
+        assert 'water' in measurement_names
+        return [
+            {
+                'name': 'count_wet',
+                'dtype': 'int16',
+                'nodata': -1,
+                'units': '1'
+            },
+            {
+                'name': 'count_clear',
+                'dtype': 'int16',
+                'nodata': -1,
+                'units': '1'
+            },
+            {
+                'name': 'frequency',
+                'dtype': 'float32',
+                'nodata': -1,
+                'units': '1'
+            },
+
+        ]
 
 
 class NormalisedDifferenceStats(object):
     """
-    Simple NDVI/NDWI and friends stats
+    Simple NDVI/NDWI and other Normalised Difference stats
 
     Computes (band1 - band2)/(band1 + band2), and then summarises using the list of `stats` into
     separate output variables.
     """
+
     def __init__(self, band1, band2, name, stats=None, masked=True):
         self.stats = stats if stats else ['min', 'max', 'mean']
         self.band1 = band1
@@ -132,7 +191,7 @@ class PerBandIndexStat(ValueStat):
         time_values = index.apply(index_time).rename(OrderedDict((name, name + '_observed')
                                                                  for name in index.data_vars))
 
-        text_values = time_values.apply(datetime64_to_lextime).rename(OrderedDict((name, name + '_date')
+        text_values = time_values.apply(datetime64_to_inttime).rename(OrderedDict((name, name + '_date')
                                                                                   for name in time_values.data_vars))
 
         def index_source(var):
@@ -193,7 +252,7 @@ class PerStatIndexStat(ValueStat):
         data_values = data.reduce(index_dataset, dim='time')
         observed = data.time.values[index]
         data_values['observed'] = (('y', 'x'), observed)
-        data_values['observed_date'] = (('y', 'x'), datetime64_to_lextime(observed))
+        data_values['observed_date'] = (('y', 'x'), datetime64_to_inttime(observed))
         data_values['source'] = (('y', 'x'), data.source.values[index])
 
         return data_values
@@ -229,9 +288,9 @@ class PerStatIndexStat(ValueStat):
 
 def make_name_stat(name, masked=True):
     """
-    A value returning statistic, relying on an xarray function of name being available
+    A value returning statistic, relying on an xarray function of `name` being available
 
-    :param name: The name of an xArray statistical function
+    :param name: The name of an `xarray.Dataset` statistical function
     :param masked:
     :return:
     """
@@ -250,21 +309,28 @@ def _medoid_helper(data):
     return index
 
 
+def _make_percentile_stat(q):
+    return PerBandIndexStat(masked=True,
+                            # pylint: disable=redundant-keyword-arg
+                            stat_func=partial(getattr(xarray.Dataset, 'reduce'),
+                                              dim='time',
+                                              func=argpercentile,
+                                              q=q))
+
+
 STATS = {
-    'mean': make_name_stat('mean'),
-    'percentile_10': PerBandIndexStat(masked=True,
-                                      # pylint: disable=redundant-keyword-arg
-                                      stat_func=partial(getattr(xarray.Dataset, 'reduce'),
-                                                        dim='time',
-                                                        func=argpercentile,
-                                                        q=10.0)),
-    'medoid': PerStatIndexStat(masked=True, stat_func=_medoid_helper),
     'min': make_name_stat('min'),
     'max': make_name_stat('max'),
+    'mean': make_name_stat('mean'),
+    'percentile_10': _make_percentile_stat(10),
+    'percentile_50': _make_percentile_stat(50),
+    'percentile_90': _make_percentile_stat(90),
+    'medoid': PerStatIndexStat(masked=True, stat_func=_medoid_helper),
     'ndvi_stats': NormalisedDifferenceStats(name='ndvi', band1='nir', band2='red',
                                             stats=['min', 'mean', 'max']),
     'ndwi_stats': NormalisedDifferenceStats(name='ndwi', band1='green', band2='swir1',
                                             stats=['min', 'mean', 'max']),
+    'wofs': WofsStats(),
 
 }
 
@@ -408,8 +474,9 @@ def find_source_datasets(task, stat, geobox, uri=None):
         else:
             return prod['data'].sources.sum()
 
+    start_time, _ = task['time_period']
     sources = reduce_(lambda a, b: a + b, (merge_sources(prod) for prod in task['sources']))
-    sources = unsqueeze_data_array(sources, dim='time', pos=0, coord=task['start_time'],
+    sources = unsqueeze_data_array(sources, dim='time', pos=0, coord=start_time,
                                    attrs=task['sources'][0]['data'].sources.time.attrs)
 
     datasets = xr_apply(sources, _make_dataset, dtype='O')  # Store in DataArray to associate Time -> Dataset
@@ -467,6 +534,7 @@ class NetcdfOutputDriver(OutputDriver):
     """
     Write data to Datacube compatible NetCDF files
     """
+
     def open_output_files(self):
         for prod_name, stat in self.task['output_products'].items():
             filename_template = str(Path(self.config.location, stat.definition['file_path_template']))
@@ -500,6 +568,7 @@ class RioOutputDriver(OutputDriver):
     """
     Save data to file/s using rasterio. Eg. GeoTiff, ENVI
     """
+
     def open_output_files(self):
         for prod_name, stat in self.task['output_products'].items():
             for measurename, measure_def in stat.product.measurements.items():
@@ -603,8 +672,7 @@ def make_tasks_grid(index, output_products, config):
                 task = tasks.setdefault(tile_index, {
                     'tile_index': tile_index,
                     'output_products': output_products,
-                    'start_time': time_period[0],
-                    'end_time': time_period[1],
+                    'time_period': time_period,
                     'sources': [],
                 })
                 task['sources'].append({
@@ -642,8 +710,7 @@ def make_tasks_non_grid(index, output_products, config):
         dc = Datacube(index=index)
 
         task = {'output_products': output_products,
-                'start_time': time_period[0],
-                'end_time': time_period[1],
+                'time_period': time_period,
                 'sources': []}
         for source_spec in config.sources:
             group_by_name = source_spec.get('group_by', DEFAULT_GROUP_BY)
@@ -676,8 +743,10 @@ def make_products(index, config):
     _LOG.info('Creating output products')
 
     output_names = [prod['name'] for prod in config.output_products]
-    if len(output_names) != len(set(output_names)):
-        raise ConfigurationError('Output products must all have different names.')
+    duplicate_names = [x for x in output_names if output_names.count(x) > 1]
+    if duplicate_names:
+        raise ConfigurationError('Output products must all have different names. '
+                                 'Duplicates found: %s' % duplicate_names)
 
     output_products = {}
 
