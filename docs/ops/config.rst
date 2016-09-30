@@ -280,8 +280,10 @@ storage
         if the projection is geographic, otherwise use ``x`` and ``y``
 
     origin
-        Coordinates of the bottom-left(?) corner of the (0,0) tile specified in projection units. Use ``latitude`` and
-        ``longitude`` if the projection is geographic, otherwise use ``x`` and ``y``
+        Coordinates of the bottom-left or top-left corner of the (0,0) tile specified in projection units. If
+        coordinates are for top-left corner, ensure that the ``latitude`` or ``y`` dimension of ``tile_size`` is
+        negative so tile indexes count downward. Use ``latitude`` and ``longitude`` if the projection is geographic,
+        otherwise use ``x`` and ``y``
 
     resolution
         Resolution for the data to be stored in specified in projection units.
