@@ -11,7 +11,7 @@ except ImportError:
 from pathlib import Path
 
 from datacube.ui import click as dc_ui
-from ..utils import read_documents
+from datacube.utils import read_documents
 
 
 _LOG = logging.getLogger('task-app')
@@ -22,7 +22,7 @@ def get_full_lineage(index, id_):
     return index.datasets.get(id_, include_sources=True)
 
 
-def config_loader(index, app_config_file, make_config, make_tasks, *args, **kwargs):
+def load_config(index, app_config_file, make_config, make_tasks, *args, **kwargs):
     app_config_path = Path(app_config_file)
     _, config = next(read_documents(app_config_path))
     config['app_config_file'] = app_config_path.name
@@ -34,18 +34,17 @@ def config_loader(index, app_config_file, make_config, make_tasks, *args, **kwar
     return config, iter(tasks)
 
 
-def task_saver(config, tasks, taskfile):
-    i = 0
+def save_tasks(config, tasks, taskfile):
     with open(taskfile, 'wb') as stream:
         pickler = pickle.Pickler(stream, pickle.HIGHEST_PROTOCOL)
         pickler.dump(config)
-        for task in tasks:
+        for i, task in enumerate(tasks, 1):
             pickler.dump(task)
-            i += 1
+
     _LOG.info('Saved config and %d tasks to %s', i, taskfile)
 
 
-def stream_unpickler(taskfile):
+def unpickle(taskfile):
     with open(taskfile, 'rb') as stream:
         unpickler = pickle.Unpickler(stream)
         while True:
@@ -55,8 +54,8 @@ def stream_unpickler(taskfile):
                 break
 
 
-def task_loader(index, taskfile):
-    stream = stream_unpickler(taskfile)
+def load_tasks(taskfile):
+    stream = unpickle(taskfile)
     config = next(stream)
     return config, stream
 
@@ -66,10 +65,10 @@ def task_loader(index, taskfile):
 app_config_option = click.option('--app-config', help='App configuration file',
                                  type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
 #: pylint: disable=invalid-name
-load_tasks_option = click.option('--load-tasks', help='Load tasks from the specified file',
+load_tasks_option = click.option('--load-tasks', 'input_tasks_file', help='Load tasks from the specified file',
                                  type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
 #: pylint: disable=invalid-name
-save_tasks_option = click.option('--save-tasks', help='Save tasks to the specified file',
+save_tasks_option = click.option('--save-tasks', 'output_tasks_file', help='Save tasks to the specified file',
                                  type=click.Path(exists=False))
 
 #: pylint: disable=invalid-name
@@ -95,19 +94,19 @@ def task_app(make_config, make_tasks):
     :return:
     """
     def decorate(app_func):
-        def with_app_args(index, app_config=None, load_tasks=None, save_tasks=None, *args, **kwargs):
-            if (app_config is None) == (load_tasks is None):
+        def with_app_args(index, app_config=None, input_tasks_file=None, output_tasks_file=None, *args, **kwargs):
+            if (app_config is None) == (input_tasks_file is None):
                 click.echo('Must specify exactly one of --config, --load-tasks')
                 click.get_current_context().exit(1)
 
             if app_config is not None:
-                config, tasks = config_loader(index, app_config, make_config, make_tasks, *args, **kwargs)
+                config, tasks = load_config(index, app_config, make_config, make_tasks, *args, **kwargs)
 
-            if load_tasks:
-                config, tasks = task_loader(index, load_tasks)
+            if input_tasks_file:
+                config, tasks = load_tasks(input_tasks_file)
 
-            if save_tasks:
-                task_saver(config, tasks, save_tasks)
+            if output_tasks_file:
+                save_tasks(config, tasks, output_tasks_file)
                 return
 
             return app_func(index, config, tasks, *args, **kwargs)
