@@ -414,11 +414,11 @@ class StatsConfig(object):
     def make_grid_spec(self):
         if 'tile_size' not in self.storage:
             return None
-        storage = self.storage
-        crs = CRS(storage['crs'])
+
+        crs = CRS(self.storage['crs'])
         return GridSpec(crs=crs,
-                        tile_size=[storage['tile_size'][dim] for dim in crs.dimensions],
-                        resolution=[storage['resolution'][dim] for dim in crs.dimensions])
+                        tile_size=[self.storage['tile_size'][dim] for dim in crs.dimensions],
+                        resolution=[self.storage['resolution'][dim] for dim in crs.dimensions])
 
 
 def nco_from_sources(sources, geobox, measurements, variable_params, filename):
