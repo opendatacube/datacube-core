@@ -35,11 +35,13 @@ def load_config(index, app_config_file, make_config, make_tasks, *args, **kwargs
 
 
 def save_tasks(config, tasks, taskfile):
+    i = 0
     with open(taskfile, 'wb') as stream:
         pickler = pickle.Pickler(stream, pickle.HIGHEST_PROTOCOL)
         pickler.dump(config)
-        for i, task in enumerate(tasks, 1):
+        for task in tasks:
             pickler.dump(task)
+            i += 1
 
     _LOG.info('Saved config and %d tasks to %s', i, taskfile)
 
