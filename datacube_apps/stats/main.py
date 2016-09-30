@@ -531,10 +531,10 @@ class OutputDriver(object):
         for output_file in self.output_files.values():
             output_file.close()
 
-    def open_output_files(self, **kwargs):
+    def open_output_files(self):
         raise NotImplementedError
 
-    def write_data(self, **kwargs):
+    def write_data(self, prod_name, var_name, tile_index, values):
         raise NotImplementedError
 
     def __enter__(self):
