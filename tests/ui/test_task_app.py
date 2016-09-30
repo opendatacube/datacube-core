@@ -55,8 +55,8 @@ def test_task_app_with_task_file(tmpdir):
     taskfile = tmpdir.join("tasks.bin")
     assert not taskfile.check()
 
-    my_test_app(index, app_config=str(app_config), save_tasks=str(taskfile), config_arg=True, task_arg=True)
+    my_test_app(index, app_config=str(app_config), output_tasks_file=str(taskfile), config_arg=True, task_arg=True)
 
     assert taskfile.check()
 
-    my_test_app(index, load_tasks=str(taskfile), app_arg=True)
+    my_test_app(index, input_tasks_file=str(taskfile), app_arg=True)
