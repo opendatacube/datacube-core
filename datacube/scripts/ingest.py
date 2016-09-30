@@ -19,6 +19,7 @@ from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.storage.storage import write_dataset_to_netcdf
 from datacube.ui import click as ui
 from datacube.utils import read_documents, intersect_points, union_points
+from datacube.ui.task_app import check_existing_files
 
 from datacube.ui.click import cli
 
@@ -212,30 +213,53 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
     return datasets
 
 
-def process_tasks(index, config, source_type, output_type, tasks, executor):
+def process_tasks(index, config, source_type, output_type, tasks, backlog, executor):
     def check_valid(tile, tile_index):
         if FUSER_KEY in config:
             return True
 
         require_fusing = [source for source in tile.sources.values if len(source) > 1]
         if require_fusing:
-            _LOG.warning('Skipping %s - no "%s" specified in config: %s', index, FUSER_KEY, require_fusing)
+            _LOG.warning('Skipping %s - no "%s" specified in config: %s', tile_index, FUSER_KEY, require_fusing)
 
         return not require_fusing
 
     results = []
     successful = failed = 0
+
+    def submit_task(**kwargs):
+        _LOG.info('Submitting task: %s', task['tile_index'])
+        results.append(executor.submit(ingest_work,
+                                       config=config,
+                                       source_type=source_type,
+                                       output_type=output_type,
+                                       **kwargs))
+
     for task in tasks:
         if check_valid(**task):
-            results.append(executor.submit(ingest_work,
-                                           config=config,
-                                           source_type=source_type,
-                                           output_type=output_type,
-                                           **task))
+            submit_task(**task)
+            backlog -= 1
         else:
             failed += 1
 
-    for result in executor.as_completed(results):
+        if backlog == 0:
+            break
+
+    while results:
+        result, results = executor.next_completed(results, None)
+
+        # submit a new task to replace the one we just finished
+        while True:
+            task = next(tasks, None)
+            if not task:
+                break
+
+            if check_valid(**task):
+                submit_task(**task)
+                break
+            else:
+                failed += 1
+
         try:
             datasets = executor.result(result)
             for dataset in datasets.values:
@@ -254,6 +278,7 @@ def process_tasks(index, config, source_type, output_type, tasks, executor):
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
               help='Ingest configuration file')
 @click.option('--year', type=click.IntRange(1960, 2060))
+@click.option('--backlog', type=click.IntRange(1, 100000), default=640, help='Number of tasks to queue at the start')
 @click.option('--save-tasks', help='Save tasks to the specified file',
               type=click.Path(exists=False))
 @click.option('--load-tasks', help='Load tasks from the specified file',
@@ -261,7 +286,7 @@ def process_tasks(index, config, source_type, output_type, tasks, executor):
 @click.option('--dry-run', '-d', is_flag=True, default=False, help='Check if everything is ok')
 @ui.executor_cli_options
 @ui.pass_index(app_name='agdc-ingest')
-def ingest_cmd(index, config_file, year, save_tasks, load_tasks, dry_run, executor):
+def ingest_cmd(index, config_file, year, backlog, save_tasks, load_tasks, dry_run, executor):
     if config_file:
         config = load_config_from_file(index, config_file)
         source_type, output_type = make_output_type(index, config)
@@ -272,16 +297,16 @@ def ingest_cmd(index, config_file, year, save_tasks, load_tasks, dry_run, execut
         source_type, output_type = make_output_type(index, config)
     else:
         click.echo('Must specify exactly one of --config-file, --load-tasks')
-        click.get_current_context().exit(1)
+        return 1
 
     if dry_run:
-        for task in tasks:
-            click.echo('Would create %s' % get_filename(config, task['tile_index'], task['tile'].sources))
-        return
+        check_existing_files(get_filename(config, task['tile_index'], task['tile'].sources) for task in tasks)
+        return 0
 
     if save_tasks:
         save_tasks_to_file(config, tasks, save_tasks)
-        return
+        return 0
 
-    successful, failed = process_tasks(index, config, source_type, output_type, tasks, executor)
+    successful, failed = process_tasks(index, config, source_type, output_type, tasks, backlog, executor)
     click.echo('%d successful, %d failed' % (successful, failed))
+    return 0
