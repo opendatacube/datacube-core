@@ -5,7 +5,6 @@ Create statistical summaries command
 
 from __future__ import absolute_import, print_function
 
-import itertools
 import logging
 from collections import OrderedDict
 from functools import reduce as reduce_, partial
@@ -16,7 +15,6 @@ import numpy
 import pandas as pd
 import rasterio
 import xarray
-from datacube.utils.dates import date_sequence
 
 from datacube import Datacube
 from datacube.api import make_mask
@@ -29,7 +27,8 @@ from datacube.storage.masking import mask_valid_data as mask_invalid_data
 from datacube.storage.storage import create_netcdf_storage_unit
 from datacube.ui import click as ui
 from datacube.ui.click import to_pathlib
-from datacube.utils import read_documents, unsqueeze_data_array, import_function
+from datacube.utils import read_documents, unsqueeze_data_array, import_function, tile_iter
+from datacube.utils.dates import date_sequence
 from datacube_apps.stats.statistics import argnanmedoid, argpercentile, axisindex
 
 _LOG = logging.getLogger(__name__)
@@ -433,31 +432,6 @@ def nco_from_sources(sources, geobox, measurements, variable_params, filename):
                             for variable in measurements)
 
     return create_netcdf_storage_unit(filename, geobox.crs, coordinates, variables, variable_params)
-
-
-def _tuplify(keys, values, defaults):
-    assert not set(values.keys()) - set(keys), 'bad keys'
-    return tuple(values.get(key, default) for key, default in zip(keys, defaults))
-
-
-def _slicify(step, size):
-    return (slice(i, min(i + step, size)) for i in range(0, size, step))
-
-
-def _block_iter(steps, shape):
-    return itertools.product(*(_slicify(step, size) for step, size in zip(steps, shape)))
-
-
-def tile_iter(tile, chunk_size):
-    """
-    Return the sequence of chunks to split a tile into computable regions.
-
-    :param tile: a tile of `.shape` size containing `.dim` dimensions
-    :param chunk_size: dict of dimension sizes
-    :return: Sequence of chunks to iterate across the entire tile
-    """
-    steps = _tuplify(tile.dims, chunk_size, tile.shape)
-    return _block_iter(steps, tile.shape)
 
 
 def get_filename(path_template, **kwargs):
