@@ -655,7 +655,7 @@ class GridSpec(object):
         :rtype: (float,float)
         """
         def coord(index, resolution, size, origin):
-            return (index + (1 if resolution < 0 else 0)) * size + origin
+            return (index + (1 if resolution < 0 and size > 0 else 0)) * size + origin
 
         return tuple(coord(index, res, size, origin) for index, res, size, origin in
                      zip(tile_index[::-1], self.resolution, self.tile_size, self.origin))
@@ -719,6 +719,8 @@ class GridSpec(object):
 
         >>> list(GridSpec.grid_range(-4.0, -1.0, 3.0))
         [-2, -1]
+        >>> list(GridSpec.grid_range(1.0, 4.0, -3.0))
+        [-2, -1]
         >>> list(GridSpec.grid_range(-3.0, 0.0, 3.0))
         [-1]
         >>> list(GridSpec.grid_range(-2.0, 1.0, 3.0))
@@ -730,6 +732,8 @@ class GridSpec(object):
         >>> list(GridSpec.grid_range(1.0, 4.0, 3.0))
         [0, 1]
         """
+        if step < 0.0:
+            lower, upper, step = -upper, -lower, -step
         assert step > 0.0
         return range(int(math.floor(lower / step)), int(math.ceil(upper / step)))
 
