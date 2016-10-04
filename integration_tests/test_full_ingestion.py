@@ -122,13 +122,18 @@ def check_data_shape(nco):
 def check_cf_compliance(dataset):
     try:
         from compliance_checker.runner import CheckSuite, ComplianceChecker
+        import compliance_checker
     except ImportError:
         warnings.warn('compliance_checker unavailable, skipping NetCDF-CF Compliance Checks')
         return
 
     cs = CheckSuite()
     cs.load_all_available_checkers()
-    score_groups = cs.run(dataset, 'cf')
+    if compliance_checker.__version__ >= '2.3.0':
+        score_groups = cs.run(dataset, (), 'cf')
+    else:
+        warnings.warn('Please upgrade to compliance-checker 2.3.0 or higher.')
+        score_groups = cs.run(dataset, 'cf')
 
     groups = ComplianceChecker.stdout_output(cs, score_groups, verbose=1, limit=COMPLIANCE_CHECKER_NORMAL_LIMIT)
     assert cs.passtree(groups, limit=COMPLIANCE_CHECKER_NORMAL_LIMIT)
