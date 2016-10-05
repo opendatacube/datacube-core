@@ -19,7 +19,7 @@ from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.storage.storage import write_dataset_to_netcdf
 from datacube.ui import click as ui
 from datacube.utils import read_documents, intersect_points, union_points
-from datacube.ui.task_app import check_existing_files
+from datacube.ui.task_app import check_existing_files, load_tasks as load_tasks_, save_tasks as save_tasks_
 
 from datacube.ui.click import cli
 
@@ -121,31 +121,6 @@ def make_output_type(index, config):
     output_type = index.products.add(output_type)
 
     return source_type, output_type
-
-
-def save_tasks_to_file(config, tasks, taskfile):
-    with open(taskfile, 'wb') as stream:
-        pickler = pickle.Pickler(stream, pickle.HIGHEST_PROTOCOL)
-        pickler.dump(config)
-        for task in tasks:
-            pickler.dump(task)
-    _LOG.info('Saved config and tasks to %s', taskfile)
-
-
-def stream_unpickler(taskfile):
-    with open(taskfile, 'rb') as stream:
-        unpickler = pickle.Unpickler(stream)
-        while True:
-            try:
-                yield unpickler.load()
-            except EOFError:
-                break
-
-
-def load_tasks_from_file(taskfile):
-    stream = stream_unpickler(taskfile)
-    config = next(stream)
-    return config, stream
 
 
 @cachetools.cached(cache={}, key=lambda index, id_: id_)
@@ -293,7 +268,7 @@ def ingest_cmd(index, config_file, year, queue_size, save_tasks, load_tasks, dry
 
         tasks = create_task_list(index, output_type, year, source_type)
     elif load_tasks:
-        config, tasks = load_tasks_from_file(load_tasks)
+        config, tasks = load_tasks_(load_tasks)
         source_type, output_type = make_output_type(index, config)
     else:
         click.echo('Must specify exactly one of --config-file, --load-tasks')
@@ -304,7 +279,7 @@ def ingest_cmd(index, config_file, year, queue_size, save_tasks, load_tasks, dry
         return 0
 
     if save_tasks:
-        save_tasks_to_file(config, tasks, save_tasks)
+        save_tasks_(config, tasks, save_tasks)
         return 0
 
     successful, failed = process_tasks(index, config, source_type, output_type, tasks, queue_size, executor)
