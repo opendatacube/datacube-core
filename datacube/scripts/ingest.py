@@ -113,7 +113,7 @@ def get_namemap(config):
 def make_output_type(index, config):
     source_type = index.products.get_by_name(config['source_type'])
     if not source_type:
-        click.echo("Source DatasetType %s does not exist", config['source_type'])
+        click.echo("Source DatasetType %s does not exist" % config['source_type'])
         click.get_current_context().exit(1)
 
     output_type = morph_dataset_type(source_type, config)
@@ -213,7 +213,7 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
     return datasets
 
 
-def process_tasks(index, config, source_type, output_type, tasks, backlog, executor):
+def process_tasks(index, config, source_type, output_type, tasks, queue_size, executor):
     def check_valid(tile, tile_index):
         if FUSER_KEY in config:
             return True
@@ -238,11 +238,11 @@ def process_tasks(index, config, source_type, output_type, tasks, backlog, execu
     for task in tasks:
         if check_valid(**task):
             submit_task(**task)
-            backlog -= 1
+            queue_size -= 1
         else:
             failed += 1
 
-        if backlog == 0:
+        if queue_size == 0:
             break
 
     while results:
@@ -278,7 +278,7 @@ def process_tasks(index, config, source_type, output_type, tasks, backlog, execu
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
               help='Ingest configuration file')
 @click.option('--year', type=click.IntRange(1960, 2060))
-@click.option('--backlog', type=click.IntRange(1, 100000), default=640, help='Number of tasks to queue at the start')
+@click.option('--queue-size', type=click.IntRange(1, 100000), default=640, help='Number of tasks to queue at the start')
 @click.option('--save-tasks', help='Save tasks to the specified file',
               type=click.Path(exists=False))
 @click.option('--load-tasks', help='Load tasks from the specified file',
@@ -286,7 +286,7 @@ def process_tasks(index, config, source_type, output_type, tasks, backlog, execu
 @click.option('--dry-run', '-d', is_flag=True, default=False, help='Check if everything is ok')
 @ui.executor_cli_options
 @ui.pass_index(app_name='agdc-ingest')
-def ingest_cmd(index, config_file, year, backlog, save_tasks, load_tasks, dry_run, executor):
+def ingest_cmd(index, config_file, year, queue_size, save_tasks, load_tasks, dry_run, executor):
     if config_file:
         config = load_config_from_file(index, config_file)
         source_type, output_type = make_output_type(index, config)
@@ -307,6 +307,6 @@ def ingest_cmd(index, config_file, year, backlog, save_tasks, load_tasks, dry_ru
         save_tasks_to_file(config, tasks, save_tasks)
         return 0
 
-    successful, failed = process_tasks(index, config, source_type, output_type, tasks, backlog, executor)
+    successful, failed = process_tasks(index, config, source_type, output_type, tasks, queue_size, executor)
     click.echo('%d successful, %d failed' % (successful, failed))
     return 0
