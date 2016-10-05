@@ -8,6 +8,7 @@ import functools
 import logging
 import os
 import copy
+import sys
 
 import click
 
@@ -88,6 +89,8 @@ def _init_logging(ctx, param, value):
     logging_level = logging.WARN - 10 * value
     logging.root.setLevel(logging_level)
     logging.getLogger('datacube').setLevel(logging_level)
+
+    logging.getLogger('datacube').info('Running datacube command: %s', ' '.join(sys.argv))
 
     if not ctx.obj:
         ctx.obj = {}
