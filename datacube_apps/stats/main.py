@@ -555,7 +555,7 @@ class NetcdfOutputDriver(OutputDriver):
 
 class RioOutputDriver(OutputDriver):
     """
-    Save data to file/s using rasterio. Eg. GeoTiff, ENVI
+    Save data to file/s using rasterio. Eg. GeoTiff
     """
 
     def open_output_files(self):
@@ -566,6 +566,7 @@ class RioOutputDriver(OutputDriver):
 
                 output_filename = get_filename(filename_template,
                                                var_name=measurename,
+                                               config=self.config,
                                                **self.task)
                 try:
                     output_filename.parent.mkdir(parents=True)
@@ -604,7 +605,7 @@ class RioOutputDriver(OutputDriver):
 
 OUTPUT_DRIVERS = {
     'NetCDF CF': NetcdfOutputDriver,
-    'rasterio': RioOutputDriver
+    'Geotiff': RioOutputDriver
 }
 
 
@@ -625,17 +626,44 @@ def do_stats(task, config):
                     output_files.write_data(prod_name, var_name, sub_tile_slice, var.values)
 
 
-def make_tasks(index, output_products, config):
+def make_tasks(index, config, output_products):
+    """
+    Generate a sequence of Stats Task definitions.
+
+    A Task Definition is a dictionary containing:
+
+      * tile_index
+      * time_period
+      * sources: (list of)
+      * output_products
+
+    Sources is a list of dictionaries containing:
+
+      * data
+      * masks (list of)
+      * spec - Source specification, containing details about which bands to load and how to apply masks.
+
+    :param output_products: List of output product definitions
+    :return:
+    """
     if config.input_region:
         task_generator = make_tasks_non_grid
     else:
         task_generator = make_tasks_grid
 
-    for task in task_generator(index, output_products, config):
+    for task in task_generator(index, config):
+        task['output_products'] = output_products
         yield task
 
 
-def make_tasks_grid(index, output_products, config):
+def make_tasks_grid(index, config):
+    """
+    Generate the required tasks through time and across a spatial grid.
+
+    :param index: Datacube Index
+    :param config: StatsConfig
+    :return:
+    """
     workflow = GridWorkflow(index, grid_spec=config.grid_spec)
     for time_period in date_sequence(start=config.start_time, end=config.end_time,
                                      stats_duration=config.stats_duration, step_size=config.step_size):
@@ -646,18 +674,15 @@ def make_tasks_grid(index, output_products, config):
         tasks = {}
         for source_spec in config.sources:
             data = workflow.list_cells(product=source_spec['product'], time=time_period,
-                                       cell_index=(17, -40),
                                        group_by=source_spec.get('group_by', DEFAULT_GROUP_BY))
             masks = [workflow.list_cells(product=mask['product'],
                                          time=time_period,
-                                         cell_index=(17, -40),
                                          group_by=source_spec.get('group_by', DEFAULT_GROUP_BY))
                      for mask in source_spec.get('masks', [])]
 
             for tile_index, sources in data.items():
                 task = tasks.setdefault(tile_index, {
                     'tile_index': tile_index,
-                    'output_products': output_products,
                     'time_period': time_period,
                     'sources': [],
                 })
@@ -671,7 +696,16 @@ def make_tasks_grid(index, output_products, config):
             yield task
 
 
-def make_tasks_non_grid(index, output_products, config):
+def make_tasks_non_grid(index, config):
+    """
+    Make stats tasks for a defined spatial region, that doesn't fit into a standard grid.
+
+    Looks for an `input_region` section in the configuration file, with defined x/y spatial boundaries.
+
+    :param index: database index
+    :param config: StatsConfig
+    :return:
+    """
     dc = Datacube(index=index)
 
     def make_tile(product, time, group_by_name):
@@ -691,8 +725,7 @@ def make_tasks_non_grid(index, output_products, config):
                                      stats_duration=config.stats_duration, step_size=config.step_size):
         _LOG.info('Making output_products tasks for %s to %s', time_period[0], time_period[1])
 
-        task = {'output_products': output_products,
-                'time_period': time_period,
+        task = {'time_period': time_period,
                 'sources': []}
         for source_spec in config.sources:
             group_by_name = source_spec.get('group_by', DEFAULT_GROUP_BY)
@@ -776,7 +809,7 @@ def main(index, app_config, year, executor):
     config = StatsConfig(config)
 
     output_products = make_products(index, config)
-    tasks = make_tasks(index, output_products, config)
+    tasks = make_tasks(index, config, output_products)
 
     futures = [executor.submit(do_stats, task, config) for task in tasks]
 
