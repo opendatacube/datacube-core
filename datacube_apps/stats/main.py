@@ -91,6 +91,18 @@ class ValueStat(object):
             {attr: measurement[attr] for attr in ['name', 'dtype', 'nodata', 'units']}
             for measurement in input_measurements]
 
+    @classmethod
+    def from_stat_name(cls, name, masked=True):
+        """
+        A value returning statistic, relying on an xarray function of `name` being available
+
+        :param name: The name of an `xarray.Dataset` statistical function
+        :param masked:
+        :return:
+        """
+        return cls(masked=masked,
+                   stat_func=partial(getattr(xarray.Dataset, name), dim='time'))
+
 
 class WofsStats(object):
     def __init__(self):
@@ -286,18 +298,6 @@ class PerStatIndexStat(ValueStat):
         return ValueStat.measurements(input_measurements) + date_measurements + index_measurements + text_measurements
 
 
-def make_name_stat(name, masked=True):
-    """
-    A value returning statistic, relying on an xarray function of `name` being available
-
-    :param name: The name of an `xarray.Dataset` statistical function
-    :param masked:
-    :return:
-    """
-    return ValueStat(masked=masked,
-                     stat_func=partial(getattr(xarray.Dataset, name), dim='time'))
-
-
 def _medoid_helper(data):
     flattened = data.to_array(dim='variable')
     variable, time, y, x = flattened.shape
@@ -319,9 +319,9 @@ def _make_percentile_stat(q):
 
 
 STATS = {
-    'min': make_name_stat('min'),
-    'max': make_name_stat('max'),
-    'mean': make_name_stat('mean'),
+    'min': ValueStat.from_stat_name('min'),
+    'max': ValueStat.from_stat_name('max'),
+    'mean': ValueStat.from_stat_name('mean'),
     'percentile_10': _make_percentile_stat(10),
     'percentile_50': _make_percentile_stat(50),
     'percentile_90': _make_percentile_stat(90),
@@ -393,6 +393,21 @@ class StatProduct(object):
 
 
 class StatsConfig(object):
+    """
+    A StatsConfig contains everything required to describe a production of a set of time based statistics products.
+
+    Includes:
+    - storage: Description of output file format
+    - sources: List of input products, variables and masks
+    - output_products: List of filenames and statistical methods used, describing what the outputs of the run will be.
+    - start_time, end_time, stats_duration, step_size: How to group across time.
+    - computation: How to split the job up to fit into memory.
+    - location: top level directory to save files
+    - input_region: optionally restrict the processing spatial area
+
+
+    """
+
     def __init__(self, config):
         self._definition = config
 
@@ -405,12 +420,14 @@ class StatsConfig(object):
         self.end_time = pd.to_datetime(config['end_date'])
         self.stats_duration = config['stats_duration']
         self.step_size = config['step_size']
+
         self.grid_spec = self.make_grid_spec()
         self.location = config['location']
         self.computation = config['computation']
         self.input_region = config.get('input_region')
 
     def make_grid_spec(self):
+        """Make a grid spec based on `self.storage`."""
         if 'tile_size' not in self.storage:
             return None
 
@@ -418,20 +435,6 @@ class StatsConfig(object):
         return GridSpec(crs=crs,
                         tile_size=[self.storage['tile_size'][dim] for dim in crs.dimensions],
                         resolution=[self.storage['resolution'][dim] for dim in crs.dimensions])
-
-
-def nco_from_sources(sources, geobox, measurements, variable_params, filename):
-    coordinates = OrderedDict((name, Coordinate(coord.values, coord.units))
-                              for name, coord in sources.coords.items())
-    coordinates.update(geobox.coordinates)
-
-    variables = OrderedDict((variable['name'], Variable(dtype=numpy.dtype(variable['dtype']),
-                                                        nodata=variable['nodata'],
-                                                        dims=sources.dims + geobox.dimensions,
-                                                        units=variable['units']))
-                            for variable in measurements)
-
-    return create_netcdf_storage_unit(filename, geobox.crs, coordinates, variables, variable_params)
 
 
 def get_filename(path_template, **kwargs):
@@ -485,8 +488,8 @@ def load_masked_data(sub_tile_slice, source_prod):
     return data
 
 
-def load_data(sub_tile_slice, task):
-    datasets = [load_masked_data(sub_tile_slice, source_prod) for source_prod in task['sources']]
+def load_data(sub_tile_slice, sources):
+    datasets = [load_masked_data(sub_tile_slice, source_prod) for source_prod in sources]
     for idx, dataset in enumerate(datasets):
         dataset.coords['source'] = ('time', numpy.repeat(idx, dataset.time.size))
     data = xarray.concat(datasets, dim='time')
@@ -537,15 +540,29 @@ class NetcdfOutputDriver(OutputDriver):
                                        **self.task)
         datasets, sources = find_source_datasets(self.task, stat, geobox, uri=output_filename.as_uri())
 
-        nco = nco_from_sources(sources,
-                               geobox,
-                               all_measurement_defns,
-                               stat.netcdf_var_params,
-                               output_filename)
+        nco = self.nco_from_sources(sources,
+                                    geobox,
+                                    all_measurement_defns,
+                                    stat.netcdf_var_params,
+                                    output_filename)
 
         netcdf_writer.create_variable(nco, 'dataset', datasets, zlib=True)
         nco['dataset'][:] = netcdf_writer.netcdfy_data(datasets.values)
         return nco
+
+    @staticmethod
+    def nco_from_sources(sources, geobox, measurements, variable_params, filename):
+        coordinates = OrderedDict((name, Coordinate(coord.values, coord.units))
+                                  for name, coord in sources.coords.items())
+        coordinates.update(geobox.coordinates)
+
+        variables = OrderedDict((variable['name'], Variable(dtype=numpy.dtype(variable['dtype']),
+                                                            nodata=variable['nodata'],
+                                                            dims=sources.dims + geobox.dimensions,
+                                                            units=variable['units']))
+                                for variable in measurements)
+
+        return create_netcdf_storage_unit(filename, geobox.crs, coordinates, variables, variable_params)
 
     def write_data(self, prod_name, var_name, tile_index, values):
         self.output_files[prod_name][var_name][(0,) + tile_index[1:]] = netcdf_writer.netcdfy_data(values)
@@ -614,7 +631,7 @@ def do_stats(task, config):
     with output_driver(task, config) as output_files:
         example_tile = task['sources'][0]['data']
         for sub_tile_slice in tile_iter(example_tile, config.computation['chunking']):
-            data = load_data(sub_tile_slice, task)
+            data = load_data(sub_tile_slice, task['sources'])
 
             for prod_name, stat in task['output_products'].items():
                 _LOG.info("Computing %s in tile %s", prod_name, sub_tile_slice)
