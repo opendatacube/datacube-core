@@ -8,6 +8,8 @@ v1.1.10 Rabid Rabbit (5 October 2016)
 
   - Ingester can now be configured to have WELD/MODIS style tile indexes (thanks Chris Holden)
 
+  - Added --queue-size option to `datacube ingest` to control number of tasks queued up for execution
+
   - Product name is now used as primary key when adding datasets.
     This allows easy migration of datasets from one database to another
 
@@ -19,7 +21,7 @@ v1.1.10 Rabid Rabbit (5 October 2016)
   - Fixed an issues where database connections weren't recycled fast enough in some cases
 
   - Fixed an issue where :meth:`.DatasetTypeResource.get` and :meth:`.DatasetTypeResource.get_by_name`
-    would cache None if product didn't exist
+    would cache `None` if product didn't exist
 
 
 v1.1.9 Pest Hippo (20 September 2016)
