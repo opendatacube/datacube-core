@@ -222,6 +222,9 @@ class MetadataType(object):
     def __str__(self):
         return "MetadataType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)
 
+    def __repr__(self):
+        return str(self)
+
 
 @schema_validated(SCHEMA_PATH / 'dataset-type-schema.yaml')
 class DatasetType(object):
