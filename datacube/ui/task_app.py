@@ -4,6 +4,7 @@ import logging
 import click
 import cachetools
 import functools
+from itertools import chain
 try:
     import cPickle as pickle
 except ImportError:
@@ -34,30 +35,30 @@ def load_config(index, app_config_file, make_config, make_tasks, *args, **kwargs
     return config, iter(tasks)
 
 
-def save_tasks(config, tasks, taskfile):
-    i = 0
-    with open(taskfile, 'wb') as stream:
-        pickler = pickle.Pickler(stream, pickle.HIGHEST_PROTOCOL)
-        pickler.dump(config)
-        for task in tasks:
-            pickler.dump(task)
-            i += 1
-
-    _LOG.info('Saved config and %d tasks to %s', i, taskfile)
+def pickle_stream(objs, filename):
+    idx = 0
+    with open(filename, 'wb') as stream:
+        for idx, obj in enumerate(objs, start=1):
+            pickle.dump(obj, stream, pickle.HIGHEST_PROTOCOL)
+    return idx
 
 
-def unpickle(taskfile):
-    with open(taskfile, 'rb') as stream:
-        unpickler = pickle.Unpickler(stream)
+def unpickle_stream(filename):
+    with open(filename, 'rb') as stream:
         while True:
             try:
-                yield unpickler.load()
+                yield pickle.load(stream)
             except EOFError:
                 break
 
 
+def save_tasks(config, tasks, taskfile):
+    i = pickle_stream(chain([config], tasks), taskfile)
+    _LOG.info('Saved config and %d tasks to %s', i, taskfile)
+
+
 def load_tasks(taskfile):
-    stream = unpickle(taskfile)
+    stream = unpickle_stream(taskfile)
     config = next(stream)
     return config, stream
 
