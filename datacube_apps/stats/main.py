@@ -459,10 +459,10 @@ def find_source_datasets(task, stat, geobox, uri=None):
         else:
             return prod['data'].sources.sum()
 
-    start_time, _ = task['time_period']
-    sources = reduce_(lambda a, b: a + b, (merge_sources(prod) for prod in task['sources']))
+    start_time, _ = task.time_period
+    sources = reduce_(lambda a, b: a + b, (merge_sources(prod) for prod in task.sources))
     sources = unsqueeze_data_array(sources, dim='time', pos=0, coord=start_time,
-                                   attrs=task['sources'][0]['data'].sources.time.attrs)
+                                   attrs=task.time_attributes)
 
     datasets = xr_apply(sources, _make_dataset, dtype='O')  # Store in DataArray to associate Time -> Dataset
     datasets = datasets_to_doc(datasets)
@@ -528,16 +528,15 @@ class NetcdfOutputDriver(OutputDriver):
     """
 
     def open_output_files(self):
-        for prod_name, stat in self.task['output_products'].items():
+        for prod_name, stat in self.task.output_products.items():
             filename_template = str(Path(self.config.location, stat.definition['file_path_template']))
             self.output_files[prod_name] = self._create_storage_unit(stat, filename_template)
 
     def _create_storage_unit(self, stat, filename_template):
-        geobox = self.task['sources'][0]['data'].geobox  # HACK: better way to get geobox
+        geobox = self.task.geobox
         all_measurement_defns = list(stat.product.measurements.values())
 
-        output_filename = get_filename(filename_template,
-                                       **self.task)
+        output_filename = get_filename(filename_template, **self.task)
         datasets, sources = find_source_datasets(self.task, stat, geobox, uri=output_filename.as_uri())
 
         nco = self.nco_from_sources(sources,
@@ -576,10 +575,10 @@ class RioOutputDriver(OutputDriver):
     """
 
     def open_output_files(self):
-        for prod_name, stat in self.task['output_products'].items():
+        for prod_name, stat in self.task.output_products.items():
             for measurename, measure_def in stat.product.measurements.items():
                 filename_template = str(Path(self.config.location, stat.definition['file_path_template']))
-                geobox = self.task['sources'][0]['data'].geobox  # HACK: need better way to get geobox
+                geobox = self.task.geobox
 
                 output_filename = get_filename(filename_template,
                                                var_name=measurename,
@@ -615,7 +614,7 @@ class RioOutputDriver(OutputDriver):
         window = ((y.start, y.stop), (x.start, x.stop))
         _LOG.debug("Updating %s.%s %s", prod_name, var_name, window)
 
-        dtype = self.task['output_products'][prod_name].product.measurements[var_name]['dtype']
+        dtype = self.task.output_products[prod_name].product.measurements[var_name]['dtype']  # FIXME
 
         self.output_files[output_name].write(values.astype(dtype), indexes=1, window=window)
 
@@ -629,11 +628,11 @@ OUTPUT_DRIVERS = {
 def do_stats(task, config):
     output_driver = OUTPUT_DRIVERS[config.storage['driver']]
     with output_driver(task, config) as output_files:
-        example_tile = task['sources'][0]['data']
+        example_tile = task.sources[0]['data']
         for sub_tile_slice in tile_iter(example_tile, config.computation['chunking']):
-            data = load_data(sub_tile_slice, task['sources'])
+            data = load_data(sub_tile_slice, task.sources)
 
-            for prod_name, stat in task['output_products'].items():
+            for prod_name, stat in task.output_products.items():
                 _LOG.info("Computing %s in tile %s", prod_name, sub_tile_slice)
                 assert stat.masked  # TODO: not masked
                 stats_data = stat.compute(data)
@@ -643,11 +642,33 @@ def do_stats(task, config):
                     output_files.write_data(prod_name, var_name, sub_tile_slice, var.values)
 
 
+class StatsTask(object):
+    def __init__(self, time_period, tile_index=None, sources=None, output_products=None):
+        self.tile_index = tile_index
+        self.time_period = time_period
+        self.sources = sources or []
+        self.output_products = output_products or []
+
+    @property
+    def geobox(self):
+        return self.sources[0]['data'].geobox  # TODO: Find a better way
+
+    @property
+    def time_attributes(self):
+        return self.sources[0]['data'].sources.time.attrs
+
+    def keys(self):
+        return self.__dict__.keys()
+
+    def __getitem__(self, item):
+        return getattr(self, item)
+
+
 def make_tasks(index, config, output_products):
     """
-    Generate a sequence of Stats Task definitions.
+    Generate a sequence of `StatsTask` definitions.
 
-    A Task Definition is a dictionary containing:
+    A Task Definition contains:
 
       * tile_index
       * time_period
@@ -669,7 +690,7 @@ def make_tasks(index, config, output_products):
         task_generator = make_tasks_grid
 
     for task in task_generator(index, config):
-        task['output_products'] = output_products
+        task.output_products = output_products
         yield task
 
 
@@ -684,7 +705,7 @@ def make_tasks_grid(index, config):
     workflow = GridWorkflow(index, grid_spec=config.grid_spec)
     for time_period in date_sequence(start=config.start_time, end=config.end_time,
                                      stats_duration=config.stats_duration, step_size=config.step_size):
-        _LOG.info('Making output_products tasks for %s to %s', time_period[0], time_period[1])
+        _LOG.info('Making output_products tasks for time period: %s', time_period)
 
         # Tasks are grouped by tile_index, and may contain sources from multiple places
         # Each source may be masked by multiple masks
@@ -698,12 +719,8 @@ def make_tasks_grid(index, config):
                      for mask in source_spec.get('masks', [])]
 
             for tile_index, sources in data.items():
-                task = tasks.setdefault(tile_index, {
-                    'tile_index': tile_index,
-                    'time_period': time_period,
-                    'sources': [],
-                })
-                task['sources'].append({
+                task = tasks.setdefault(tile_index, StatsTask(tile_index, time_period))
+                task.sources.append({
                     'data': sources,
                     'masks': [mask.get(tile_index) for mask in masks],
                     'spec': source_spec,
@@ -740,10 +757,10 @@ def make_tasks_non_grid(index, config):
 
     for time_period in date_sequence(start=config.start_time, end=config.end_time,
                                      stats_duration=config.stats_duration, step_size=config.step_size):
-        _LOG.info('Making output_products tasks for %s to %s', time_period[0], time_period[1])
+        _LOG.info('Making output_products tasks for time period: %s', time_period)
 
-        task = {'time_period': time_period,
-                'sources': []}
+        task = StatsTask(time_period)
+
         for source_spec in config.sources:
             group_by_name = source_spec.get('group_by', DEFAULT_GROUP_BY)
 
@@ -758,7 +775,7 @@ def make_tasks_non_grid(index, config):
             if len(data.sources.time) == 0:
                 continue
 
-            task['sources'].append({
+            task.sources.append({
                 'data': data,
                 'masks': masks,
                 'spec': source_spec,
