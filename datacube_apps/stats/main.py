@@ -42,6 +42,10 @@ STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
 DEFAULT_GROUP_BY = 'time'
 
 
+class StatsConfigurationError(RuntimeError):
+    pass
+
+
 def datetime64_to_inttime(var):
     """
     Return an "inttime" representing a datetime64.
@@ -172,8 +176,8 @@ class NormalisedDifferenceStats(object):
     def measurements(self, input_measurements):
         measurement_names = [m['name'] for m in input_measurements]
         if self.band1 not in measurement_names or self.band2 not in measurement_names:
-            raise ConfigurationError('Input measurements for %s must include "%s" and "%s"',
-                                     self.name, self.band1, self.band2)
+            raise StatsConfigurationError('Input measurements for %s must include "%s" and "%s"',
+                                          self.name, self.band1, self.band2)
 
         return [dict(name='_'.join([self.name, stat]), dtype='float32', nodata=-1, units='1')
                 for stat in self.stats]
@@ -425,6 +429,11 @@ class StatsConfig(object):
         self.computation = config['computation']
         self.input_region = config.get('input_region')
 
+    @classmethod
+    def from_file(cls, filename):
+        _, config = next(read_documents(filename))
+        return config
+
     def make_grid_spec(self):
         """Make a grid spec based on `self.storage`."""
         if 'tile_size' not in self.storage:
@@ -434,6 +443,27 @@ class StatsConfig(object):
         return GridSpec(crs=crs,
                         tile_size=[self.storage['tile_size'][dim] for dim in crs.dimensions],
                         resolution=[self.storage['resolution'][dim] for dim in crs.dimensions])
+
+    def validate(self):
+        # Check output product names are unique
+        output_names = [prod['name'] for prod in self.output_products]
+        duplicate_names = [x for x in output_names if output_names.count(x) > 1]
+        if duplicate_names:
+            raise StatsConfigurationError('Output products must all have different names. '
+                                     'Duplicates found: %s' % duplicate_names)
+
+        # Check statistics are available
+        requested_statistics = set(prod['statistic'] for prod in self.output_products)
+        available_statistics = set(STATS.keys())
+        if not requested_statistics <= available_statistics:
+            raise StatsConfigurationError('Requested Statistic %s is not a valid statistic. Available statistics are: %s'
+                                          % (requested_statistics - available_statistics, available_statistics))
+
+        # Check consistent measurements
+        first_source = self.sources[0]
+        if not all(first_source['measurements'] == source['measurements'] for source in self.sources):
+            raise StatsConfigurationError("Configuration Error: listed measurements of source products "
+                                     "are not all the same.")
 
 
 def get_filename(path_template, **kwargs):
@@ -652,7 +682,7 @@ class StatsTask(object):
 
     @property
     def geobox(self):
-        return self.sources[0]['data'].geobox  # TODO: Find a better way
+        return self.sources[0]['data'].geobox
 
     @property
     def time_attributes(self):
@@ -786,19 +816,8 @@ def make_tasks_non_grid(index, config):
             yield task
 
 
-class ConfigurationError(RuntimeError):
-    pass
-
-
 def make_products(index, config):
     _LOG.info('Creating output products')
-
-    output_names = [prod['name'] for prod in config.output_products]
-    duplicate_names = [x for x in output_names if output_names.count(x) > 1]
-    if duplicate_names:
-        raise ConfigurationError('Output products must all have different names. '
-                                 'Duplicates found: %s' % duplicate_names)
-    # TODO: Add more sanity checking. Eg. check desired 'statistic' is available
 
     output_products = {}
 
@@ -817,11 +836,6 @@ def source_product_measurement_defns(index, sources):
 
     :return: list of measurement definitions
     """
-    # Check consistent measurements
-    first_source = sources[0]
-    if not all(first_source['measurements'] == source['measurements'] for source in sources):
-        raise RuntimeError("Configuration Error: listed measurements of source products are not all the same.")
-
     source_defn = sources[0]
 
     source_product = index.products.get_by_name(source_defn['product'])
@@ -871,9 +885,9 @@ def map_orderless(executor, core, tasks, queue=50):
 @ui.executor_cli_options
 @ui.pass_index(app_name='agdc-output_products')
 def main(index, app_config, year, executor):
-    _, config = next(read_documents(app_config))
+    config = StatsConfig.from_file(app_config)
 
-    config = StatsConfig(config)
+    config.validate()
 
     output_products = make_products(index, config)
     tasks = make_tasks(index, config, output_products)
