@@ -330,6 +330,7 @@ STATS = {
                                             stats=['min', 'mean', 'max']),
     'ndwi_stats': NormalisedDifferenceStats(name='ndwi', band1='green', band2='swir1',
                                             stats=['min', 'mean', 'max']),
+    'ndvi_daily': NormalisedDifferenceStats(name='ndvi', band1='nir', band2='red', stats=['squeeze']),
     'wofs': WofsStats(),
 
 }
@@ -781,7 +782,8 @@ def make_tasks_non_grid(index, config):
                 'spec': source_spec,
             })
 
-        yield task
+        if task.sources:
+            yield task
 
 
 class ConfigurationError(RuntimeError):

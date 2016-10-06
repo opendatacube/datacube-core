@@ -5,12 +5,11 @@ Date sequence generation functions to be used by statistics apps
 """
 from __future__ import absolute_import
 
-from dateutil.rrule import YEARLY, MONTHLY, rrule
+from dateutil.rrule import YEARLY, MONTHLY, DAILY, rrule
 from dateutil.relativedelta import relativedelta
-from dateutil.parser import parse
 
-FREQS = {'y': YEARLY, 'm': MONTHLY}
-DURATIONS = {'y': 'years', 'm': 'months'}
+FREQS = {'y': YEARLY, 'm': MONTHLY, 'd': DAILY}
+DURATIONS = {'y': 'years', 'm': 'months', 'd': 'days'}
 
 
 def date_sequence(start, end, stats_duration, step_size):
