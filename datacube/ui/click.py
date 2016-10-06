@@ -20,7 +20,7 @@ from pathlib import Path
 from datacube.ui.expression import parse_expressions
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
-_LOG_FORMAT_STRING = '%(asctime)s %(levelname)s %(message)s'
+_LOG_FORMAT_STRING = '%(asctime)s %(name)s %(levelname)s %(message)s'
 CLICK_SETTINGS = dict(help_option_names=['-h', '--help'])
 _LOG = logging.getLogger(__name__)
 
@@ -91,6 +91,7 @@ def _init_logging(ctx, param, value):
     logging.getLogger('datacube').setLevel(logging_level)
 
     logging.getLogger('datacube').info('Running datacube command: %s', ' '.join(sys.argv))
+    logging.getLogger('rasterio').setLevel(logging.INFO)
 
     if not ctx.obj:
         ctx.obj = {}
