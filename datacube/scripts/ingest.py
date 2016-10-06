@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import logging
 import click
 import cachetools
+
 try:
     import cPickle as pickle
 except ImportError:
@@ -14,11 +15,11 @@ from datetime import datetime
 
 import datacube
 from datacube.api.core import Datacube
-from datacube.model import DatasetType, GeoPolygon, Range
+from datacube.model import DatasetType, Range
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.storage.storage import write_dataset_to_netcdf
 from datacube.ui import click as ui
-from datacube.utils import read_documents, intersect_points, union_points
+from datacube.utils import read_documents, find_valid_data_region
 from datacube.ui.task_app import check_existing_files, load_tasks as load_tasks_, save_tasks as save_tasks_
 
 from datacube.ui.click import cli
@@ -170,16 +171,14 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
     file_path = get_filename(config, tile_index, tile.sources)
 
     def _make_dataset(labels, sources):
-        sources_union = union_points(*[source.extent.to_crs(tile.geobox.crs).points for source in sources])
-        valid_data = intersect_points(tile.geobox.extent.points, sources_union)
-        dataset = make_dataset(product=output_type,
-                               sources=sources,
-                               extent=tile.geobox.extent,
-                               center_time=labels['time'],
-                               uri=file_path.absolute().as_uri(),
-                               app_info=get_app_metadata(config, config['filename']),
-                               valid_data=GeoPolygon(valid_data, tile.geobox.crs))
-        return dataset
+        return make_dataset(product=output_type,
+                            sources=sources,
+                            extent=tile.geobox.extent,
+                            center_time=labels['time'],
+                            uri=file_path.absolute().as_uri(),
+                            app_info=get_app_metadata(config, config['filename']),
+                            valid_data=find_valid_data_region(sources, tile.geobox))
+
     datasets = xr_apply(tile.sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
     nudata['dataset'] = datasets_to_doc(datasets)
 
