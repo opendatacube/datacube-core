@@ -409,6 +409,7 @@ def jsonify_document(doc):
     >>> sorted(jsonify_document({1: 'a', '2': 'b'}).items())
     [('1', 'a'), ('2', 'b')]
     """
+
     def fixup_value(v):
         if isinstance(v, float):
             if v != v:
@@ -752,9 +753,3 @@ def tile_iter(tile, chunk_size):
     steps = _tuplify(tile.dims, chunk_size, tile.shape)
     return _block_iter(steps, tile.shape)
 
-
-def find_valid_data_region(sources, geobox):
-    sources_union = union_points(*[source.extent.to_crs(geobox.crs).points for source in sources])
-    valid_data = intersect_points(geobox.extent.points, sources_union)
-
-    return GeoPolygon(valid_data, geobox.crs)

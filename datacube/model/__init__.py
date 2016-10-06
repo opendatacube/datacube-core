@@ -16,7 +16,8 @@ from osgeo import osr
 from rasterio.coords import BoundingBox
 
 from datacube import compat
-from datacube.utils import parse_time, cached_property, uri_to_local_path, check_intersect, schema_validated, DocReader
+from datacube.utils import parse_time, cached_property, uri_to_local_path, check_intersect
+from datacube.utils import schema_validated, DocReader, union_points, intersect_points
 
 _LOG = logging.getLogger(__name__)
 
@@ -146,6 +147,7 @@ class Dataset(object):
         """
         :rtype: GeoPolygon
         """
+
         def xytuple(obj):
             return obj['x'], obj['y']
 
@@ -387,6 +389,13 @@ class GeoPolygon(object):
                            bottom=min(y for x, y in self.points),
                            right=max(x for x, y in self.points),
                            top=max(y for x, y in self.points))
+
+    @classmethod
+    def from_sources_extents(cls, sources, geobox):
+        sources_union = union_points(*[source.extent.to_crs(geobox.crs).points for source in sources])
+        valid_data = intersect_points(geobox.extent.points, sources_union)
+
+        return cls(valid_data, geobox.crs)
 
     def to_crs(self, crs):
         """
@@ -690,8 +699,8 @@ class GridSpec(object):
         """
         tile_size_y, tile_size_x = self.tile_size
         tile_origin_y, tile_origin_x = self.origin
-        for y in GridSpec.grid_range(bounds.bottom-tile_origin_y, bounds.top-tile_origin_y, tile_size_y):
-            for x in GridSpec.grid_range(bounds.left-tile_origin_x, bounds.right-tile_origin_x, tile_size_x):
+        for y in GridSpec.grid_range(bounds.bottom - tile_origin_y, bounds.top - tile_origin_y, tile_size_y):
+            for x in GridSpec.grid_range(bounds.left - tile_origin_x, bounds.right - tile_origin_x, tile_size_x):
                 tile_index = (x, y)
                 yield tile_index, self.tile_geobox(tile_index)
 
@@ -809,7 +818,7 @@ class GeoBox(object):
             geopolygon = geopolygon.to_crs(crs)
 
         def align_pix(val, res, off):
-            return math.floor((val-off)/res) * res + off
+            return math.floor((val - off) / res) * res + off
 
         bounding_box = geopolygon.boundingbox
         left = align_pix(bounding_box.left, resolution[1], align[1])
@@ -817,8 +826,8 @@ class GeoBox(object):
         affine = (Affine.translation(left, top) * Affine.scale(resolution[1], resolution[0]))
         return GeoBox(crs=crs,
                       affine=affine,
-                      width=max(1, int(math.ceil((bounding_box.right-left-0.1*resolution[1])/resolution[1]))),
-                      height=max(1, int(math.ceil((bounding_box.bottom-top-0.1*resolution[0])/resolution[0]))))
+                      width=max(1, int(math.ceil((bounding_box.right - left - 0.1 * resolution[1]) / resolution[1]))),
+                      height=max(1, int(math.ceil((bounding_box.bottom - top - 0.1 * resolution[0]) / resolution[0]))))
 
     def __getitem__(self, item):
         indexes = [slice(index.start or 0, index.stop or size, index.step or 1)

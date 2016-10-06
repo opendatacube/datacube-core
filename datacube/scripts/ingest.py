@@ -15,11 +15,11 @@ from datetime import datetime
 
 import datacube
 from datacube.api.core import Datacube
-from datacube.model import DatasetType, Range
+from datacube.model import DatasetType, Range, GeoPolygon
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.storage.storage import write_dataset_to_netcdf
 from datacube.ui import click as ui
-from datacube.utils import read_documents, find_valid_data_region
+from datacube.utils import read_documents
 from datacube.ui.task_app import check_existing_files, load_tasks as load_tasks_, save_tasks as save_tasks_
 
 from datacube.ui.click import cli
@@ -177,7 +177,7 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
                             center_time=labels['time'],
                             uri=file_path.absolute().as_uri(),
                             app_info=get_app_metadata(config, config['filename']),
-                            valid_data=find_valid_data_region(sources, tile.geobox))
+                            valid_data=GeoPolygon.from_sources_extents(sources, tile.geobox))
 
     datasets = xr_apply(tile.sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
     nudata['dataset'] = datasets_to_doc(datasets)

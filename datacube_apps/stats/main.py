@@ -5,6 +5,7 @@ Create statistical summaries command
 
 from __future__ import absolute_import, print_function
 
+import itertools
 import logging
 from collections import OrderedDict
 from functools import reduce as reduce_, partial
@@ -15,12 +16,11 @@ import numpy
 import pandas as pd
 import rasterio
 import xarray
-
 from datacube import Datacube
 from datacube.api import make_mask
 from datacube.api.grid_workflow import GridWorkflow, Tile
 from datacube.api.query import query_group_by, query_geopolygon
-from datacube.model import GridSpec, CRS, Coordinate, Variable, DatasetType, GeoBox
+from datacube.model import GridSpec, CRS, Coordinate, Variable, DatasetType, GeoBox, GeoPolygon
 from datacube.model.utils import make_dataset, datasets_to_doc, xr_apply
 from datacube.storage import netcdf_writer
 from datacube.storage.masking import mask_valid_data as mask_invalid_data
@@ -405,6 +405,7 @@ class StatsConfig(object):
     - location: top level directory to save files
     - input_region: optionally restrict the processing spatial area
     """
+
     def __init__(self, config):
         self._definition = config
 
@@ -440,14 +441,13 @@ def get_filename(path_template, **kwargs):
 
 def find_source_datasets(task, stat, geobox, uri=None):
     def _make_dataset(labels, sources):
-        dataset = make_dataset(product=stat.product,
-                               sources=sources,
-                               extent=geobox.extent,
-                               center_time=labels['time'],
-                               uri=uri,
-                               app_info=None,  # TODO: Add stats application information
-                               valid_data=None)  # TODO: Add valid region geopolygon
-        return dataset
+        return make_dataset(product=stat.product,
+                            sources=sources,
+                            extent=geobox.extent,
+                            center_time=labels['time'],
+                            uri=uri,
+                            app_info=get_app_metadata(),
+                            valid_data=GeoPolygon.from_sources_extents(sources, geobox))
 
     def merge_sources(prod):
         if stat.masked:
@@ -842,6 +842,24 @@ def get_app_metadata(config, config_file):
     }
 
 
+def map_orderless(executor, core, tasks, queue=50):
+    tasks = (i for i in tasks)  # ensure input is a generator
+
+    # pre-fill queue
+    results = [executor.submit(core, *t) for t in itertools.islice(tasks, queue)]
+
+    while results:
+        future = next(executor.as_completed(results))  # block
+
+        results.remove(future)  # pop completed
+
+        task = next(tasks, None)
+        if task is not None:
+            results.append(executor.submit(core, *task))  # queue another
+
+        yield executor.result(future)
+
+
 @click.command(name='output_products')
 @click.option('--app-config', '-c',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
@@ -857,12 +875,12 @@ def main(index, app_config, year, executor):
 
     output_products = make_products(index, config)
     tasks = make_tasks(index, config, output_products)
+    configs = itertools.repeat(config)
 
-    futures = [executor.submit(do_stats, task, config) for task in tasks]
-
-    for future in executor.as_completed(futures):
-        result = executor.result(future)
-        print('Completed: %s' % result)
+    completed_tasks = map_orderless(executor, do_stats, zip(tasks, configs), queue=50)
+    for ds in completed_tasks:
+        print('Completed: %s' % ds)
+        # index.datasets.add(ds, skip_sources=True)  # index completed work
         # TODO: Record new datasets in database
 
 
