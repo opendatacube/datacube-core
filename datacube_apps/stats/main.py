@@ -404,10 +404,7 @@ class StatsConfig(object):
     - computation: How to split the job up to fit into memory.
     - location: top level directory to save files
     - input_region: optionally restrict the processing spatial area
-
-
     """
-
     def __init__(self, config):
         self._definition = config
 
@@ -514,6 +511,9 @@ class OutputDriver(object):
     def write_data(self, prod_name, var_name, tile_index, values):
         raise NotImplementedError
 
+    def _get_dtype(self, prod_name, var_name):
+        return self.task.output_products[prod_name].product.measurements[var_name]['dtype']
+
     def __enter__(self):
         self.open_output_files()
         return self
@@ -614,7 +614,7 @@ class RioOutputDriver(OutputDriver):
         window = ((y.start, y.stop), (x.start, x.stop))
         _LOG.debug("Updating %s.%s %s", prod_name, var_name, window)
 
-        dtype = self.task.output_products[prod_name].product.measurements[var_name]['dtype']  # FIXME
+        dtype = self._get_dtype(prod_name, var_name)
 
         self.output_files[output_name].write(values.astype(dtype), indexes=1, window=window)
 
@@ -829,6 +829,19 @@ def source_product_measurement_defns(index, sources):
     return measurements
 
 
+def get_app_metadata(config, config_file):
+    return {
+        'lineage': {
+            'algorithm': {
+                'name': 'datacube-stats',
+                'version': config.get('version', 'unknown'),
+                'repo_url': 'https://github.com/GeoscienceAustralia/agdc_statistics.git',
+                'parameters': {'configuration_file': config_file}
+            },
+        }
+    }
+
+
 @click.command(name='output_products')
 @click.option('--app-config', '-c',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
@@ -850,6 +863,7 @@ def main(index, app_config, year, executor):
     for future in executor.as_completed(futures):
         result = executor.result(future)
         print('Completed: %s' % result)
+        # TODO: Record new datasets in database
 
 
 if __name__ == '__main__':
