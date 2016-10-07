@@ -450,20 +450,21 @@ class StatsConfig(object):
         duplicate_names = [x for x in output_names if output_names.count(x) > 1]
         if duplicate_names:
             raise StatsConfigurationError('Output products must all have different names. '
-                                     'Duplicates found: %s' % duplicate_names)
+                                          'Duplicates found: %s' % duplicate_names)
 
         # Check statistics are available
         requested_statistics = set(prod['statistic'] for prod in self.output_products)
         available_statistics = set(STATS.keys())
         if not requested_statistics <= available_statistics:
-            raise StatsConfigurationError('Requested Statistic %s is not a valid statistic. Available statistics are: %s'
-                                          % (requested_statistics - available_statistics, available_statistics))
+            raise StatsConfigurationError(
+                'Requested Statistic %s is not a valid statistic. Available statistics are: %s'
+                % (requested_statistics - available_statistics, available_statistics))
 
         # Check consistent measurements
         first_source = self.sources[0]
         if not all(first_source['measurements'] == source['measurements'] for source in self.sources):
             raise StatsConfigurationError("Configuration Error: listed measurements of source products "
-                                     "are not all the same.")
+                                          "are not all the same.")
 
 
 def get_filename(path_template, **kwargs):
@@ -570,18 +571,18 @@ class NetcdfOutputDriver(OutputDriver):
         output_filename = get_filename(filename_template, **self.task)
         datasets, sources = find_source_datasets(self.task, stat, geobox, uri=output_filename.as_uri())
 
-        nco = self.nco_from_sources(sources,
-                                    geobox,
-                                    all_measurement_defns,
-                                    stat.netcdf_var_params,
-                                    output_filename)
+        nco = self._nco_from_sources(sources,
+                                     geobox,
+                                     all_measurement_defns,
+                                     stat.netcdf_var_params,
+                                     output_filename)
 
         netcdf_writer.create_variable(nco, 'dataset', datasets, zlib=True)
         nco['dataset'][:] = netcdf_writer.netcdfy_data(datasets.values)
         return nco
 
     @staticmethod
-    def nco_from_sources(sources, geobox, measurements, variable_params, filename):
+    def _nco_from_sources(sources, geobox, measurements, variable_params, filename):
         coordinates = OrderedDict((name, Coordinate(coord.values, coord.units))
                                   for name, coord in sources.coords.items())
         coordinates.update(geobox.coordinates)
@@ -836,10 +837,11 @@ def source_product_measurement_defns(index, sources):
 
     :return: list of measurement definitions
     """
-    source_defn = sources[0]
+    source_defn = sources[0]  # Sources should have been checked to all have the same measureemnts
 
-    source_product = index.products.get_by_name(source_defn['product'])
-    measurements = [measurement for name, measurement in source_product.measurements.items()
+    source_measurements = index.products.get_by_name(source_defn['product']).measurements
+
+    measurements = [measurement for name, measurement in source_measurements.items()
                     if name in source_defn['measurements']]
 
     return measurements
