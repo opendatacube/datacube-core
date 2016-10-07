@@ -344,10 +344,11 @@ class StatProduct(object):
     def __init__(self, metadata_type, input_measurements, definition, storage):
         self.definition = definition
 
-        data_measurements = self.statistic.measurements(input_measurements)
+        self.data_measurements = self.statistic.measurements(input_measurements)
 
-        self.product = self._create_product(metadata_type, data_measurements, storage)
-        self.netcdf_var_params = self._create_netcdf_var_params(storage, data_measurements)
+        self.storage = storage
+
+        self.product = self._create_product(metadata_type, self.data_measurements, storage)
 
     @property
     def name(self):
@@ -368,18 +369,6 @@ class StatProduct(object):
     @property
     def compute(self):
         return self.statistic.compute
-
-    def _create_netcdf_var_params(self, storage, data_measurements):
-        chunking = storage['chunking']
-        chunking = [chunking[dim] for dim in storage['dimension_order']]
-
-        variable_params = {}
-        for measurement in data_measurements:
-            name = measurement['name']
-            variable_params[name] = {k: v for k, v in self.definition.items() if k in STANDARD_VARIABLE_PARAM_NAMES}
-            variable_params[name]['chunksizes'] = chunking
-            variable_params[name].update({k: v for k, v in measurement.items() if k in STANDARD_VARIABLE_PARAM_NAMES})
-        return variable_params
 
     def _create_product(self, metadata_type, data_measurements, storage):
         product_definition = {
@@ -455,7 +444,7 @@ class StatsConfig(object):
         # Check statistics are available
         requested_statistics = set(prod['statistic'] for prod in self.output_products)
         available_statistics = set(STATS.keys())
-        if not requested_statistics <= available_statistics:
+        if requested_statistics > available_statistics:
             raise StatsConfigurationError(
                 'Requested Statistic %s is not a valid statistic. Available statistics are: %s'
                 % (requested_statistics - available_statistics, available_statistics))
@@ -540,11 +529,11 @@ class OutputDriver(object):
     def open_output_files(self):
         raise NotImplementedError
 
-    def write_data(self, prod_name, var_name, tile_index, values):
+    def write_data(self, prod_name, measurement_name, tile_index, values):
         raise NotImplementedError
 
-    def _get_dtype(self, prod_name, var_name):
-        return self.task.output_products[prod_name].product.measurements[var_name]['dtype']
+    def _get_dtype(self, out_prod_name, measurement_name):
+        return self.task.output_products[out_prod_name].product.measurements[measurement_name]['dtype']
 
     def __enter__(self):
         self.open_output_files()
@@ -562,24 +551,38 @@ class NetcdfOutputDriver(OutputDriver):
     def open_output_files(self):
         for prod_name, stat in self.task.output_products.items():
             filename_template = str(Path(self.config.location, stat.definition['file_path_template']))
-            self.output_files[prod_name] = self._create_storage_unit(stat, filename_template)
+            output_filename = get_filename(filename_template, **self.task)
+            self.output_files[prod_name] = self._create_storage_unit(stat, output_filename)
 
-    def _create_storage_unit(self, stat, filename_template):
+    def _create_storage_unit(self, stat, output_filename):
         geobox = self.task.geobox
         all_measurement_defns = list(stat.product.measurements.values())
 
-        output_filename = get_filename(filename_template, **self.task)
         datasets, sources = find_source_datasets(self.task, stat, geobox, uri=output_filename.as_uri())
 
+        variable_params = self._create_netcdf_var_params(stat)
         nco = self._nco_from_sources(sources,
                                      geobox,
                                      all_measurement_defns,
-                                     stat.netcdf_var_params,
+                                     variable_params,
                                      output_filename)
 
         netcdf_writer.create_variable(nco, 'dataset', datasets, zlib=True)
         nco['dataset'][:] = netcdf_writer.netcdfy_data(datasets.values)
         return nco
+
+    @staticmethod
+    def _create_netcdf_var_params(stat):
+        chunking = stat.storage['chunking']
+        chunking = [chunking[dim] for dim in stat.storage['dimension_order']]
+
+        variable_params = {}
+        for measurement in stat.data_measurements:
+            name = measurement['name']
+            variable_params[name] = {k: v for k, v in stat.definition.items() if k in STANDARD_VARIABLE_PARAM_NAMES}
+            variable_params[name]['chunksizes'] = chunking
+            variable_params[name].update({k: v for k, v in measurement.items() if k in STANDARD_VARIABLE_PARAM_NAMES})
+        return variable_params
 
     @staticmethod
     def _nco_from_sources(sources, geobox, measurements, variable_params, filename):
@@ -595,10 +598,10 @@ class NetcdfOutputDriver(OutputDriver):
 
         return create_netcdf_storage_unit(filename, geobox.crs, coordinates, variables, variable_params)
 
-    def write_data(self, prod_name, var_name, tile_index, values):
-        self.output_files[prod_name][var_name][(0,) + tile_index[1:]] = netcdf_writer.netcdfy_data(values)
+    def write_data(self, prod_name, measurement_name, tile_index, values):
+        self.output_files[prod_name][measurement_name][(0,) + tile_index[1:]] = netcdf_writer.netcdfy_data(values)
         self.output_files[prod_name].sync()
-        _LOG.debug("Updated %s %s", var_name, tile_index[1:])
+        _LOG.debug("Updated %s %s", measurement_name, tile_index[1:])
 
 
 class RioOutputDriver(OutputDriver):
@@ -609,8 +612,8 @@ class RioOutputDriver(OutputDriver):
     def open_output_files(self):
         for prod_name, stat in self.task.output_products.items():
             for measurename, measure_def in stat.product.measurements.items():
-                filename_template = str(Path(self.config.location, stat.definition['file_path_template']))
                 geobox = self.task.geobox
+                filename_template = str(Path(self.config.location, stat.definition['file_path_template']))
 
                 output_filename = get_filename(filename_template,
                                                var_name=measurename,
@@ -640,13 +643,13 @@ class RioOutputDriver(OutputDriver):
                 output_name = prod_name + measurename
                 self.output_files[output_name] = rasterio.open(str(output_filename), mode='w', **profile)
 
-    def write_data(self, prod_name, var_name, tile_index, values):
-        output_name = prod_name + var_name
+    def write_data(self, prod_name, measurement_name, tile_index, values):
+        output_name = prod_name + measurement_name
         y, x = tile_index[1:]
         window = ((y.start, y.stop), (x.start, x.stop))
-        _LOG.debug("Updating %s.%s %s", prod_name, var_name, window)
+        _LOG.debug("Updating %s.%s %s", prod_name, measurement_name, window)
 
-        dtype = self._get_dtype(prod_name, var_name)
+        dtype = self._get_dtype(prod_name, measurement_name)
 
         self.output_files[output_name].write(values.astype(dtype), indexes=1, window=window)
 
@@ -817,21 +820,24 @@ def make_tasks_non_grid(index, config):
             yield task
 
 
-def make_products(index, config):
+def make_output_products(index, config):
     _LOG.info('Creating output products')
 
     output_products = {}
 
-    measurements = source_product_measurement_defns(index, config.sources)
+    measurements = source_measurement_defs(index, config.sources)
 
+    metadata_type = index.metadata_types.get_by_name('eo')
     for prod in config.output_products:
-        output_products[prod['name']] = StatProduct(index.metadata_types.get_by_name('eo'), measurements,
-                                                    definition=prod, storage=config.storage)
+        output_products[prod['name']] = StatProduct(metadata_type=metadata_type,
+                                                    input_measurements=measurements,
+                                                    definition=prod,
+                                                    storage=config.storage)
 
     return output_products
 
 
-def source_product_measurement_defns(index, sources):
+def source_measurement_defs(index, sources):
     """
     Look up desired measurements from sources in the database index
 
@@ -882,16 +888,17 @@ def map_orderless(executor, core, tasks, queue=50):
 @click.option('--app-config', '-c',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
               help='configuration file location', callback=to_pathlib)
-@click.option('--year', type=click.IntRange(1960, 2060))
 @ui.global_cli_options
 @ui.executor_cli_options
 @ui.pass_index(app_name='agdc-output_products')
-def main(index, app_config, year, executor):
+def main(index, app_config, executor):
     config = StatsConfig.from_file(app_config)
 
     config.validate()
 
-    output_products = make_products(index, config)
+    output_products = make_output_products(index, config)
+    # TODO: Store output products in database
+
     tasks = make_tasks(index, config, output_products)
     configs = itertools.repeat(config)
 
