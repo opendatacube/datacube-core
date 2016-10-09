@@ -166,10 +166,12 @@ def check_intersect(a, b):
     return a.Intersects(b) and not a.Touches(b)
 
 
-def intersect_points(a, b):
-    a = _points_to_ogr(a)
-    b = _points_to_ogr(b)
-    return _ogr_to_points(a.Intersection(b))
+def intersect_points(a, *other):
+    _a = _points_to_ogr(a)
+    for b in other:
+        _b = _points_to_ogr(b)
+        _a = _a.Intersection(_b)
+    return _ogr_to_points(_a)
 
 
 def union_points(a, *other):
