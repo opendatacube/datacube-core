@@ -171,7 +171,7 @@ def xr_apply(data_array, func, dtype):
 
 def make_dataset(product, sources, extent, center_time, valid_data=None, uri=None, app_info=None):
     """
-    Create Dataset for the data
+    Create :class:`datacube.model.Dataset` for the data
 
     :param DatasetType product: Product the dataset is part of
     :param list[:class:`Dataset`] sources: datasets used to produce the dataset
@@ -199,8 +199,11 @@ def make_dataset(product, sources, extent, center_time, valid_data=None, uri=Non
 
 
 def merge(a, b, path=None):
-    """merges b into a
-    http://stackoverflow.com/a/7205107/5262498
+    """
+    Merge dictionary `b` into dictionary `a`
+
+    See: http://stackoverflow.com/a/7205107/5262498
+
     :type a: dict
     :type b: dict
     :rtype: dict

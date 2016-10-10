@@ -821,6 +821,11 @@ def make_tasks_non_grid(index, config):
 
 
 def make_output_products(index, config):
+    """
+    Return a dict mapping Output Product Name to StatProduct
+
+    StatProduct describes the structure and how to compute the output product.
+    """
     _LOG.info('Creating output products')
 
     output_products = {}
