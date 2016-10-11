@@ -23,8 +23,9 @@ STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
 
 class OutputDriver(object):
     # TODO: Add check for valid filename extensions in each driver
-    def __init__(self, config, task, app_info=None):
+    def __init__(self, config, task, output_path, app_info=None):
         self.task = task
+        self.output_path = output_path
         self.config = config
 
         self.output_files = {}
@@ -59,7 +60,7 @@ class NetcdfOutputDriver(OutputDriver):
 
     def open_output_files(self):
         for prod_name, stat in self.task.output_products.items():
-            filename_template = str(Path(self.config.location, stat.definition['file_path_template']))
+            filename_template = str(Path(self.output_path, stat.definition['file_path_template']))
             output_filename = _format_filename(filename_template, **self.task)
             self.output_files[prod_name] = self._create_storage_unit(stat, output_filename)
 
@@ -123,7 +124,7 @@ class RioOutputDriver(OutputDriver):
         for prod_name, stat in self.task.output_products.items():
             for measurename, measure_def in stat.product.measurements.items():
                 geobox = self.task.geobox
-                filename_template = str(Path(self.config.location, stat.definition['file_path_template']))
+                filename_template = str(Path(self.output_path, stat.definition['file_path_template']))
 
                 output_filename = _format_filename(filename_template,
                                                    var_name=measurename,

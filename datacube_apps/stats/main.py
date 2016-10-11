@@ -30,7 +30,6 @@ from datacube_apps.stats.statistics import ValueStat, WofsStats, NormalisedDiffe
 _LOG = logging.getLogger(__name__)
 DEFAULT_GROUP_BY = 'time'
 
-
 STATS = {
     'min': ValueStat.from_stat_name('min'),
     'max': ValueStat.from_stat_name('max'),
@@ -97,50 +96,54 @@ class StatsApp(object):
     """
     A StatsApp can produce a set of time based statistical products.
 
-    Configuration includes:
-    - storage: Description of output file format
-    - sources: List of input products, variables and masks
-    - output_products: List of filenames and statistical methods used, describing what the outputs of the run will be.
-    - start_time, end_time, stats_duration, step_size: How to group across time.
-    - computation: How to split the job up to fit into memory.
-    - location: top level directory to save files
-    - input_region: optionally restrict the processing spatial area
     """
 
-    def __init__(self, config):
-        self._definition = config
+    def __init__(self, config, config_filename):
+        #: Name of the configuration file used
+        self.config_file = config_filename
 
+        #: Description of output file format
         self.storage = config['storage']
 
+        #: Definition of source products, including their name, which variables to pull from them, and
+        #: a specification of any masking that should be applied.
         self.sources = config['sources']
+
+        #: List of filenames and statistical methods used, describing what the outputs of the run will be.
         self.output_products = config['output_products']
 
-        self.start_time = pd.to_datetime(config['start_date'])
-        self.end_time = pd.to_datetime(config['end_date'])
-        self.stats_duration = config['stats_duration']
-        self.step_size = config['step_size']
-
-        self.grid_spec = self._make_grid_spec(self.storage)
+        #: Base directory to write output files to.
+        #: Files may be created in a sub-directory, depending on the configuration of the
+        #: :attr:`output_driver`.
         self.location = config['location']
+
+        #: How to slice a task up spatially to to fit into memory.
         self.computation = config.get('computation', {'chunking': {'x': 1000, 'y': 1000}})
-        self.input_region = config.get('input_region')
 
-        if self.input_region:
-            self.task_generator = generate_non_gridded_tasks
+        #: A function to generate a sequence of date ranges.
+        self.generate_date_sequence = partial(date_sequence, start=pd.to_datetime(config['start_date']),
+                                              end=pd.to_datetime(config['end_date']),
+                                              stats_duration=config['stats_duration'], step_size=config['step_size'])
+
+        #: Generates tasks to compute statistics. These tasks should be :class:`StatsTask` objects
+        #: and will define spatial and temporal boundaries, as well as statistical operations to be run.
+        self.task_generator = None
+        if 'input_region' in config:
+            self.task_generator = partial(generate_non_gridded_tasks, input_region=config['input_region'],
+                                          storage=self.storage)
         else:
-            self.task_generator = generate_gridded_tasks
+            grid_spec = self._make_grid_spec(config['storage'])
+            self.task_generator = partial(generate_gridded_tasks, sources=self.sources, grid_spec=grid_spec)
 
+        #: A class which knows how to create and write out data to a permanent storage format.
+        #: Implements :class:`.output_drivers.OutputDriver`.
         self.output_driver = OUTPUT_DRIVERS[self.storage['driver']]
-
-        self.generate_date_sequence = partial(date_sequence, start=self.start_time, end=self.end_time,
-                                              stats_duration=self.stats_duration, step_size=self.step_size)
 
     @classmethod
     def from_file(cls, filename):
         _, config = next(read_documents(filename))
-        stats_app = cls(config)
+        stats_app = cls(config, filename)
         stats_app.validate_config()
-        stats_app.config_file = filename
         return stats_app
 
     @staticmethod
@@ -205,13 +208,14 @@ class StatsApp(object):
         :param output_products: List of output product definitions
         :return:
         """
-        for task in self.task_generator(self, index):
+        for task in self.task_generator(self, index, generate_date_sequence=self.generate_date_sequence,
+                                        sources_spec=self.sources):
             task.output_products = output_products
             yield task
 
     def execute_stats_task(self, task):
         app_info = get_app_metadata(self.config_file)
-        with self.output_driver(config=self, task=task, app_info=app_info) as output_files:
+        with self.output_driver(config=self, task=task, output_path=self.location, app_info=app_info) as output_files:
             example_tile = task.sources[0]['data']
             for sub_tile_slice in tile_iter(example_tile, self.computation['chunking']):
                 data = load_data(sub_tile_slice, task.sources)
@@ -302,22 +306,21 @@ class StatsTask(object):
         return getattr(self, item)
 
 
-def generate_gridded_tasks(config, index):
+def generate_gridded_tasks(index, sources, generate_date_sequence, grid_spec):
     """
     Generate the required tasks through time and across a spatial grid.
 
-    :param config: StatsApp
     :param index: Datacube Index
     :return:
     """
-    workflow = GridWorkflow(index, grid_spec=config.grid_spec)
-    for time_period in config.generate_date_sequence():
+    workflow = GridWorkflow(index, grid_spec=grid_spec)
+    for time_period in generate_date_sequence():
         _LOG.info('Making output_products tasks for time period: %s', time_period)
 
         # Tasks are grouped by tile_index, and may contain sources from multiple places
         # Each source may be masked by multiple masks
         tasks = {}
-        for source_spec in config.sources:
+        for source_spec in sources:
             data = workflow.list_cells(product=source_spec['product'], time=time_period,
                                        group_by=source_spec.get('group_by', DEFAULT_GROUP_BY),
                                        cell_index=(14, -40))
@@ -339,45 +342,44 @@ def generate_gridded_tasks(config, index):
             yield task
 
 
-def generate_non_gridded_tasks(config, index):
+def generate_non_gridded_tasks(storage, generate_date_sequence, index, input_region, sources_spec):
     """
     Make stats tasks for a defined spatial region, that doesn't fit into a standard grid.
 
-    Looks for an `input_region` section in the configuration file, with defined x/y spatial boundaries.
-
     :param index: database index
-    :param config: StatsApp
+    :param input_region: dictionary of query parameters defining the target input region. Usually
+                         x/y spatial boundaries.
     :return:
     """
     dc = Datacube(index=index)
 
-    def make_tile(product, time, group_by_name):
-        datasets = dc.product_observations(product=product, time=time, **config.input_region)
-        group_by = query_group_by(group_by=group_by_name)
+    def make_tile(product, time, group_by):
+        datasets = dc.product_observations(product=product, time=time, **input_region)
+        group_by = query_group_by(group_by=group_by)
         sources = dc.product_sources(datasets, group_by)
 
-        res = config.storage['resolution']
+        res = storage['resolution']
 
-        geopoly = query_geopolygon(**config.input_region)
-        geopoly = geopoly.to_crs(CRS(config.storage['crs']))
+        geopoly = query_geopolygon(**input_region)
+        geopoly = geopoly.to_crs(CRS(storage['crs']))
         geobox = GeoBox.from_geopolygon(geopoly, (res['y'], res['x']))
 
         return Tile(sources, geobox)
 
-    for time_period in config.generate_date_sequence():
+    for time_period in generate_date_sequence():
         _LOG.info('Making output_products tasks for time period: %s', time_period)
 
         task = StatsTask(time_period)
 
-        for source_spec in config.sources:
+        for source_spec in sources_spec:
             group_by_name = source_spec.get('group_by', DEFAULT_GROUP_BY)
 
             # Build Tile
             data = make_tile(product=source_spec['product'], time=time_period,
-                             group_by_name=group_by_name)
+                             group_by=group_by_name)
 
             masks = [make_tile(product=mask['product'], time=time_period,
-                               group_by_name=group_by_name)
+                               group_by=group_by_name)
                      for mask in source_spec.get('masks', [])]
 
             if len(data.sources.time) == 0:
