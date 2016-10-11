@@ -11,6 +11,7 @@ from pathlib import Path
 from datacube.model import CRS
 from datacube.storage import netcdf_writer
 from datacube.config import OPTIONS
+from datacube.utils import clamp, datetime_to_seconds_since_1970
 
 try:
     from yaml import CSafeDumper as SafeDumper
@@ -27,7 +28,6 @@ try:
 except ImportError:
     from rasterio.warp import RESAMPLING as Resampling
 
-from datacube.utils import clamp, datetime_to_seconds_since_1970
 
 _LOG = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ def _calc_offsets(off, src_size, dst_size):
     """
     read_off = clamp(off, 0, src_size)
     write_off = clamp(-off, 0, dst_size)
-    size = min(src_size-read_off, dst_size-write_off)
+    size = min(src_size - read_off, dst_size - write_off)
     return read_off, write_off, size
 
 
@@ -220,7 +220,7 @@ class DatasetSource(object):
 
         idx = 0
         dist = float('+inf')
-        for i in range(1, src.count+1):
+        for i in range(1, src.count + 1):
             v = float(src.tags(i)[GDAL_NETCDF_TIME])
             if abs(sec_since_1970 - v) < dist:
                 idx = i
@@ -239,7 +239,7 @@ class DatasetSource(object):
         width = bounds['lr']['x'] - bounds['ul']['x']
         height = bounds['lr']['y'] - bounds['ul']['y']
         return (Affine.translation(bounds['ul']['x'], bounds['ul']['y']) *
-                Affine.scale(width/src.shape[1], height/src.shape[0]))
+                Affine.scale(width / src.shape[1], height / src.shape[0]))
 
 
 def create_netcdf_storage_unit(filename,
@@ -308,4 +308,3 @@ def write_dataset_to_netcdf(dataset, filename, global_attributes=None, variable_
         nco[name][:] = netcdf_writer.netcdfy_data(variable.values)
 
     nco.close()
-

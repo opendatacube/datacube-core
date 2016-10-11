@@ -760,4 +760,3 @@ def tile_iter(tile, chunk_size):
     """
     steps = _tuplify(tile.dims, chunk_size, tile.shape)
     return _block_iter(steps, tile.shape)
-

@@ -13,13 +13,13 @@ import functools
 import numpy as np
 import logging
 from datacube import Datacube
-
-from dateutil.relativedelta import relativedelta
 from datacube.api.geo_xarray import append_solar_day
 from datacube.storage.masking import make_mask
 from datacube.storage.storage import write_dataset_to_netcdf
-from dateutil.rrule import rrule, YEARLY, MONTHLY
 from datacube.ui import click as ui
+
+from dateutil.relativedelta import relativedelta
+from dateutil.rrule import rrule, YEARLY, MONTHLY
 from enum import Enum
 import xarray as xr
 
@@ -205,6 +205,7 @@ def compute_measurement(measurement, data, prodname=None):
     if measurement == "TCI":
         return calculate_tci(prodname, blue=blue, green=green, red=red, nir=nir, sw1=sw1, sw2=sw2)
 
+
 COMPUTED_MEASUREMENT_REQS = {
     'NDFI': {'sw1', 'nir'},
     'NDVI': {'nir', 'red'},
@@ -217,6 +218,7 @@ COMPUTED_MEASUREMENT_REQS = {
 def get_band_data(data, measurement):
     data[measurement] = data[measurement].where(data[measurement] != data[measurement].nodata)
     return data
+
 
 VALID_MASKS = {"PQ_MASK_CONTIGUITY", "PQ_MASK_CLOUD_FMASK", "PQ_MASK_CLOUD_ACCA", "PQ_MASK_CLOUD_SHADOW_ACCA",
                "PQ_MASK_SATURATION", "PQ_MASK_SATURATION_OPTICAL", "PQ_MASK_SATURATION_THERMAL"}
