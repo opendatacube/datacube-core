@@ -621,7 +621,7 @@ def _cross_platform_path(path):
 
 def schema_validated(schema):
     """
-    Decorates a class to enable validating it's definition against a JSON Schema file.
+    Decorate a class to enable validating its definition against a JSON Schema file.
 
     Adds a self.validate() method which takes a dict used to populate the instantiated class.
 
