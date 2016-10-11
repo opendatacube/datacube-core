@@ -11,7 +11,6 @@ from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.storage import netcdf_writer
 from datacube.storage.storage import create_netcdf_storage_unit
 from datacube.utils import unsqueeze_data_array
-from datacube_apps.stats.main import get_app_metadata
 
 _LOG = logging.getLogger(__name__)
 STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
@@ -24,11 +23,12 @@ STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
 
 class OutputDriver(object):
     # TODO: Add check for valid filename extensions in each driver
-    def __init__(self, task, config):
+    def __init__(self, config, task, app_info=None):
         self.task = task
         self.config = config
 
         self.output_files = {}
+        self.app_info = app_info
 
     def close_files(self):
         for output_file in self.output_files.values():
@@ -67,7 +67,7 @@ class NetcdfOutputDriver(OutputDriver):
         geobox = self.task.geobox
         all_measurement_defns = list(stat.product.measurements.values())
 
-        datasets, sources = _find_source_datasets(self.task, stat, geobox, uri=output_filename.as_uri())
+        datasets, sources = _find_source_datasets(self.task, stat, geobox, self.app_info, uri=output_filename.as_uri())
 
         variable_params = self._create_netcdf_var_params(stat)
         nco = self._nco_from_sources(sources,
@@ -168,14 +168,14 @@ def _format_filename(path_template, **kwargs):
     return Path(str(path_template).format(**kwargs))
 
 
-def _find_source_datasets(task, stat, geobox, uri=None):
+def _find_source_datasets(task, stat, geobox, app_info, uri=None):
     def _make_dataset(labels, sources):
         return make_dataset(product=stat.product,
                             sources=sources,
                             extent=geobox.extent,
                             center_time=labels['time'],
                             uri=uri,
-                            app_info=get_app_metadata(),
+                            app_info=app_info,
                             valid_data=GeoPolygon.from_sources_extents(sources, geobox))
 
     def merge_sources(prod):

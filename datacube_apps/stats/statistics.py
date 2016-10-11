@@ -11,7 +11,11 @@ from functools import reduce as reduce_, partial
 from operator import mul as mul_op
 
 import xarray
-from datacube_apps.stats.main import StatsConfigurationError
+
+
+class StatsConfigurationError(RuntimeError):
+    pass
+
 
 try:
     from bottleneck import anynan, nansum
@@ -109,7 +113,7 @@ def prod(a):
 
 
 def _blah(shape, step=1, dtype=None):
-    return numpy.arange(0, prod(shape)*step, step, dtype=dtype).reshape(shape)
+    return numpy.arange(0, prod(shape) * step, step, dtype=dtype).reshape(shape)
 
 
 def axisindex(a, index, axis=0):
@@ -117,8 +121,8 @@ def axisindex(a, index, axis=0):
     Index array 'a' using 'index' as depth along 'axis'
     """
     shape = index.shape
-    lshape = shape[:axis]+(1,)*(index.ndim - axis)
-    rshape = (1,)*axis+shape[axis:]
+    lshape = shape[:axis] + (1,) * (index.ndim - axis)
+    rshape = (1,) * axis + shape[axis:]
     step = prod(shape[axis:])
     idx = _blah(lshape, step * a.shape[axis]) + _blah(rshape) + index * step
     return a.take(idx)

@@ -25,14 +25,10 @@ from datacube.utils import read_documents, import_function, tile_iter
 from datacube.utils.dates import date_sequence
 from datacube_apps.stats.output_drivers import NetcdfOutputDriver, RioOutputDriver
 from datacube_apps.stats.statistics import ValueStat, WofsStats, NormalisedDifferenceStats, PerStatIndexStat, \
-    compute_medoid, percentile_stat
+    compute_medoid, percentile_stat, StatsConfigurationError
 
 _LOG = logging.getLogger(__name__)
 DEFAULT_GROUP_BY = 'time'
-
-
-class StatsConfigurationError(RuntimeError):
-    pass
 
 
 STATS = {
@@ -57,13 +53,13 @@ class StatProduct(object):
     def __init__(self, metadata_type, input_measurements, definition, storage):
         self.definition = definition
 
+        self.statistic = STATS[self.stat_name]
+
         self.data_measurements = self.statistic.measurements(input_measurements)
 
         self.storage = storage
 
         self.product = self._create_product(metadata_type, self.data_measurements, storage)
-
-        self.statistic = STATS[self.stat_name]
 
     @property
     def name(self):
@@ -126,7 +122,7 @@ class StatsApp(object):
 
         self.grid_spec = self._make_grid_spec(self.storage)
         self.location = config['location']
-        self.computation = config['computation']
+        self.computation = config.get('computation', {'chunking': {'x': 1000, 'y': 1000}})
         self.input_region = config.get('input_region')
 
         if self.input_region:
@@ -144,6 +140,7 @@ class StatsApp(object):
         _, config = next(read_documents(filename))
         stats_app = cls(config)
         stats_app.validate_config()
+        stats_app.config_file = filename
         return stats_app
 
     @staticmethod
@@ -208,12 +205,13 @@ class StatsApp(object):
         :param output_products: List of output product definitions
         :return:
         """
-        for task in self.task_generator(index):
+        for task in self.task_generator(self, index):
             task.output_products = output_products
             yield task
 
     def do_stats(self, task):
-        with self.output_driver(task, self) as output_files:
+        app_info = get_app_metadata(self.config_file)
+        with self.output_driver(config=self, task=task, app_info=app_info) as output_files:
             example_tile = task.sources[0]['data']
             for sub_tile_slice in tile_iter(example_tile, self.computation['chunking']):
                 data = load_data(sub_tile_slice, task.sources)
@@ -322,15 +320,15 @@ def generate_gridded_tasks(config, index):
         for source_spec in config.sources:
             data = workflow.list_cells(product=source_spec['product'], time=time_period,
                                        group_by=source_spec.get('group_by', DEFAULT_GROUP_BY),
-                                       cell_index=(-14, 40))
+                                       cell_index=(14, -40))
             masks = [workflow.list_cells(product=mask['product'],
                                          time=time_period,
                                          group_by=source_spec.get('group_by', DEFAULT_GROUP_BY),
-                                         cell_index=(-14, 40))
+                                         cell_index=(14, -40))
                      for mask in source_spec.get('masks', [])]
 
             for tile_index, sources in data.items():
-                task = tasks.setdefault(tile_index, StatsTask(tile_index, time_period))
+                task = tasks.setdefault(tile_index, StatsTask(time_period=time_period, tile_index=tile_index))
                 task.sources.append({
                     'data': sources,
                     'masks': [mask.get(tile_index) for mask in masks],
@@ -411,14 +409,14 @@ def source_measurement_defs(index, sources):
     return measurements
 
 
-def get_app_metadata(config, config_file):
+def get_app_metadata(config_file):
     return {
         'lineage': {
             'algorithm': {
                 'name': 'datacube-stats',
-                'version': config.get('version', 'unknown'),
+                'version': 'unknown',  # TODO get version from somewhere
                 'repo_url': 'https://github.com/GeoscienceAustralia/agdc_statistics.git',
-                'parameters': {'configuration_file': config_file}
+                'parameters': {'configuration_file': str(config_file)}
             },
         }
     }
@@ -428,7 +426,7 @@ def map_orderless(executor, core, tasks, queue=50):
     tasks = (i for i in tasks)  # ensure input is a generator
 
     # pre-fill queue
-    results = [executor.submit(core, *t) for t in itertools.islice(tasks, queue)]
+    results = [executor.submit(core, t) for t in itertools.islice(tasks, queue)]
 
     while results:
         future = next(executor.as_completed(results))  # block
