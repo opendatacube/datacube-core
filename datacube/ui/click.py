@@ -91,7 +91,7 @@ def _init_logging(ctx, param, value):
     logging.getLogger('datacube').setLevel(logging_level)
 
     logging.getLogger('datacube').info('Running datacube command: %s', ' '.join(sys.argv))
-    if logging_level >= logging.INFO:
+    if logging_level <= logging.INFO:
         logging.getLogger('rasterio').setLevel(logging.INFO)
 
     if not ctx.obj:
