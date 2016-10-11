@@ -1,0 +1,146 @@
+name: mosaic
+description: |
+    Mosaic datasets.
+
+    Datasets with spatial but not temporal extent.
+
+    Similar in structure to datasets products by eodatasets.
+
+    https://github.com/GeoscienceAustralia/eo-datasets
+
+dataset:
+    # Where to find certain fields in dataset objects:
+
+    # UUID: Unique for this exact dataset. Reprocessed datasets have new UUIDs.
+    id: ['id']
+
+    # datetime the dataset was processed/created.
+    # This is used to know which is the latest dataset (when multiple versions exist).
+    creation_dt: ['creation_dt']
+
+    # The dataset "label" is the logical identifier for a dataset.
+    #
+    # -> Multiple datasets may arrive with the same label, but only the 'latest' will be returned by default
+    #    in searches.
+    #
+    # Use case: reprocessing a dataset.
+    # -> When reprocessing a dataset, the new dataset should be produced with the same label as the old one.
+    # -> Because you probably don't want both datasets returned from typical searches. (they are the same data)
+    # -> When ingested, this reprocessed dataset will be the only one visible to typical searchers.
+    # -> But the old dataset will still exist in the database for provenance & historical record.
+    #       -> Existing higher-level/derived datasets will still link to the old dataset they were processed
+    #          from, even if it's not the latest.
+    #
+    # An example label used by GA (called "dataset_ids" on historical systems):
+    #      -> Eg. "LS7_ETM_SYS_P31_GALPGS01-002_114_73_20050107"
+    #
+    # But the collection owner can use any string to label their datasets.
+    label: ['ga_label']
+
+    # Where to find a dict of measurements/bands in the dataset.
+    #  -> Dict key is measurement/band id,
+    #  -> Dict value is object with fields depending on the storage driver.
+    #     (such as path to band file, offset within file etc.)
+    measurements: ['image', 'bands']
+
+    # Where to find a grid spatial information, like CRS and image bounds
+    grid_spatial: ['grid_spatial', 'projection']
+
+    # Where to find data format (GeoTiff, NetCDF, etc)
+    format: ['format', 'name']
+
+    # Where to find a dict of embedded source datasets
+    #  -> The dict is of form: classifier->source_dataset_doc
+    #  -> 'classifier' is how to classify/identify the relationship (usually the type of source it was eg. 'nbar').
+    #      An arbitrary string, but you should be consistent between datasets (to query relationships).
+    sources: ['lineage', 'source_datasets']
+
+    # Fields that we want indexed and searchable in the documents.
+    # (the keys/names are arbitrary, but are specified by users when searching)
+    search_fields:
+        # When no 'type' is specified, it defaults to String.
+        platform:
+            description: Platform code
+
+            offset: [platform, code]
+
+        instrument:
+            description: Instrument name
+
+            offset: [instrument, name]
+
+        product_type:
+            description: Product code
+
+            offset: [product_type]
+
+        lat:
+            description: Latitude range
+
+            type: double-range
+            max_offset:
+            - [extent, coord, ur, lat]
+            - [extent, coord, lr, lat]
+            - [extent, coord, ul, lat]
+            - [extent, coord, ll, lat]
+            min_offset:
+            - [extent, coord, ur, lat]
+            - [extent, coord, lr, lat]
+            - [extent, coord, ul, lat]
+            - [extent, coord, ll, lat]
+
+        lon:
+            description: Longitude range
+
+            type: double-range
+            max_offset:
+            - [extent, coord, ul, lon]
+            - [extent, coord, ur, lon]
+            - [extent, coord, ll, lon]
+            - [extent, coord, lr, lon]
+            min_offset:
+            - [extent, coord, ul, lon]
+            - [extent, coord, ur, lon]
+            - [extent, coord, ll, lon]
+            - [extent, coord, lr, lon]
+
+        time:
+            description: Acquisition time
+
+            type: datetime-range
+            min_offset:
+            - [extent, from_dt]
+            - [extent, center_dt]
+            max_offset:
+            - [extent, to_dt]
+            - [extent, center_dt]
+
+        gsi:
+            description: Ground Station Identifier (eg. ASA)
+            offset: [acquisition, groundstation, code]
+        orbit:
+            description: Orbit number
+            offset: [acquisition, platform_orbit]
+            type: integer
+
+        sat_path:
+            description: Landsat path
+
+            type: integer-range
+            min_offset:
+            - [image, satellite_ref_point_start, x]
+            max_offset:
+            - [image, satellite_ref_point_end, x]
+            # If an end is not specified, use the start.
+            - [image, satellite_ref_point_start, x]
+
+        sat_row:
+            description: Landsat row
+
+            type: integer-range
+            min_offset:
+            - [image, satellite_ref_point_start, y]
+            max_offset:
+            - [image, satellite_ref_point_end, y]
+            # If an end is not specified, use the start.
+            - [image, satellite_ref_point_start, y]
