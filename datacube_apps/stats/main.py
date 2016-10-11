@@ -180,7 +180,7 @@ class StatsApp(object):
     def run(self, index, executor, output_products, queue_length=50):
         tasks = self.generate_tasks(index, output_products)
 
-        completed_tasks = map_orderless(executor, self.do_stats, tasks, queue=queue_length)
+        completed_tasks = map_orderless(executor, self.execute_stats_task, tasks, queue=queue_length)
 
         for task in completed_tasks:
             yield task
@@ -209,7 +209,7 @@ class StatsApp(object):
             task.output_products = output_products
             yield task
 
-    def do_stats(self, task):
+    def execute_stats_task(self, task):
         app_info = get_app_metadata(self.config_file)
         with self.output_driver(config=self, task=task, app_info=app_info) as output_files:
             example_tile = task.sources[0]['data']
@@ -441,14 +441,14 @@ def map_orderless(executor, core, tasks, queue=50):
 
 
 @click.command(name='output_products')
-@click.option('--app-config', '-c',
+@click.option('--app-config', '-c', 'stats_config_file',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
               help='configuration file location', callback=to_pathlib)
 @ui.global_cli_options
 @ui.executor_cli_options
 @ui.pass_index(app_name='agdc-output_products')
-def main(index, app_config, executor):
-    app = StatsApp.from_file(app_config)
+def main(index, stats_config_file, executor):
+    app = StatsApp.from_file(stats_config_file)
 
     output_products = app.make_output_products(index)
     # TODO: Store output products in database
