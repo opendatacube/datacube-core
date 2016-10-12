@@ -12,19 +12,17 @@ from operator import mul as mul_op
 
 import xarray
 
-
-class StatsConfigurationError(RuntimeError):
-    pass
-
-
 try:
     from bottleneck import anynan, nansum
 except ImportError:
     nansum = numpy.nansum
 
-
     def anynan(x, axis=None):
         return numpy.isnan(x).any(axis=axis)
+
+
+class StatsConfigurationError(RuntimeError):
+    pass
 
 
 def argnanmedoid(x, axis=1):
