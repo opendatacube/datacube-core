@@ -98,6 +98,13 @@ class PostgresDb(object):
         # Use static methods PostgresDb.create() or PostgresDb.from_config()
         self._engine = engine
 
+    def __getstate__(self):
+        _LOG.warning("Serializing PostgresDb engine %s", self.url)
+        return {'url': self.url}
+
+    def __setstate__(self, state):
+        self.__init__(self._create_engine(state['url']))
+
     @property
     def url(self):
         return self._engine.url
