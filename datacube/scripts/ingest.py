@@ -1,9 +1,10 @@
 from __future__ import absolute_import
 
+import time
 import logging
 import click
 import cachetools
-
+import itertools
 try:
     import cPickle as pickle
 except ImportError:
@@ -137,13 +138,23 @@ def load_config_from_file(index, config):
     return config
 
 
-def create_task_list(index, output_type, year, source_type):
+def create_task_list(index, output_type, year, source_type, config):
     query = {}
     if year:
         query['time'] = Range(datetime(year=year, month=1, day=1), datetime(year=year + 1, month=1, day=1))
 
     tasks = find_diff(source_type, output_type, index, **query)
     _LOG.info('%s tasks discovered', len(tasks))
+
+    def check_valid(tile, tile_index):
+        if FUSER_KEY in config:
+            return True
+
+        require_fusing = [source for source in tile.sources.values if len(source) > 1]
+        if require_fusing:
+            _LOG.warning('Skipping %s - no "%s" specified in config: %s', tile_index, FUSER_KEY, require_fusing)
+
+        return not require_fusing
 
     def update_sources(sources):
         return tuple(get_full_lineage(index, dataset.id) for dataset in sources)
@@ -154,7 +165,7 @@ def create_task_list(index, output_type, year, source_type):
             tile.sources.values[i] = update_sources(tile.sources.values[i])
         return task
 
-    tasks = (update_task(task) for task in tasks)
+    tasks = (update_task(task) for task in tasks if check_valid(**task))
     return tasks
 
 
@@ -188,63 +199,43 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
 
 
 def process_tasks(index, config, source_type, output_type, tasks, queue_size, executor):
-    def check_valid(tile, tile_index):
-        if FUSER_KEY in config:
-            return True
-
-        require_fusing = [source for source in tile.sources.values if len(source) > 1]
-        if require_fusing:
-            _LOG.warning('Skipping %s - no "%s" specified in config: %s', tile_index, FUSER_KEY, require_fusing)
-
-        return not require_fusing
-
-    results = []
-    successful = failed = 0
-
-    def submit_task(**kwargs):
+    def submit_task(task):
         _LOG.info('Submitting task: %s', task['tile_index'])
-        results.append(executor.submit(ingest_work,
-                                       config=config,
-                                       source_type=source_type,
-                                       output_type=output_type,
-                                       **kwargs))
+        return executor.submit(ingest_work,
+                               config=config,
+                               source_type=source_type,
+                               output_type=output_type,
+                               **task)
 
-    for task in tasks:
-        if check_valid(**task):
-            submit_task(**task)
-            queue_size -= 1
-        else:
-            failed += 1
+    pending = []
+    n_successful = n_failed = 0
 
-        if queue_size == 0:
+    tasks = iter(tasks)
+    while True:
+        pending += [submit_task(task) for task in itertools.islice(tasks, queue_size-len(pending))]
+        if not pending:
             break
 
-    while results:
-        result, results = executor.next_completed(results, None)
+        completed, failed, pending = executor.get_ready(pending)
+        _LOG.info('completed %s, failed %s, pending %s', len(completed), len(failed), len(pending))
 
-        # submit a new task to replace the one we just finished
-        while True:
-            task = next(tasks, None)
-            if not task:
-                break
+        for future in failed:
+            try:
+                executor.result(future)
+            except Exception:  # pylint: disable=broad-except
+                _LOG.exception('Task failed')
+                n_failed += 1
 
-            if check_valid(**task):
-                submit_task(**task)
-                break
-            else:
-                failed += 1
-
-        try:
-            datasets = executor.result(result)
-            for dataset in datasets.values:
-                index.datasets.add(dataset, skip_sources=True)
-            successful += 1
-        except Exception:  # pylint: disable=broad-except
-            _LOG.exception('Task failed')
-            failed += 1
+        if not completed:
+            time.sleep(1)
             continue
 
-    return successful, failed
+        for datasets in executor.results(completed):
+            for dataset in datasets.values:
+                index.datasets.add(dataset, skip_sources=True)
+                n_successful += 1
+
+    return n_successful, n_failed
 
 
 @cli.command('ingest', help="Ingest datasets")
@@ -265,7 +256,7 @@ def ingest_cmd(index, config_file, year, queue_size, save_tasks, load_tasks, dry
         config = load_config_from_file(index, config_file)
         source_type, output_type = make_output_type(index, config)
 
-        tasks = create_task_list(index, output_type, year, source_type)
+        tasks = create_task_list(index, output_type, year, source_type, config)
     elif load_tasks:
         config, tasks = load_tasks_(load_tasks)
         source_type, output_type = make_output_type(index, config)
