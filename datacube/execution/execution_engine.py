@@ -167,9 +167,9 @@ class ExecutionEngine(object):
         for task_name in value['array_input']:
             arrays[task_name] = next(iter(self.cache[task_name]['array_result'].values()))
 
-        for key, value in arrays.items():
-            if value.dtype == type(no_data_value):
-                arrays[key] = value.where(value != no_data_value)
+        for i in arrays:
+            if arrays[i].dtype == type(no_data_value):
+                arrays[i] = arrays[i].where(arrays[i] != no_data_value)
 
         array_result = {}
         array_result['array_result'] = {}
