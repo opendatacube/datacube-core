@@ -198,6 +198,15 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
     return datasets
 
 
+def _index_datasets(index, results, skip_sources):
+    n = 0
+    for datasets in results:
+        for dataset in datasets.values:
+            index.datasets.add(dataset, skip_sources=skip_sources)
+            n += 1
+    return n
+
+
 def process_tasks(index, config, source_type, output_type, tasks, queue_size, executor):
     def submit_task(task):
         _LOG.info('Submitting task: %s', task['tile_index'])
@@ -230,10 +239,7 @@ def process_tasks(index, config, source_type, output_type, tasks, queue_size, ex
             time.sleep(1)
             continue
 
-        for datasets in executor.results(completed):
-            for dataset in datasets.values:
-                index.datasets.add(dataset, skip_sources=True)
-                n_successful += 1
+        n_successful += _index_datasets(index, executor.results(completed), skip_sources=True)
 
     return n_successful, n_failed
 
