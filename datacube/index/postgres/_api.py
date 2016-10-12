@@ -102,15 +102,10 @@ class PostgresDb(object):
     def url(self):
         return self._engine.url
 
-    @classmethod
-    def create(cls, hostname, database, username=None, password=None, port=None,
-               application_name=None, validate=True, pool_timeout=60):
-        engine = create_engine(
-            EngineUrl(
-                'postgresql',
-                host=hostname, database=database, port=port,
-                username=username, password=password,
-            ),
+    @staticmethod
+    def _create_engine(url, application_name=None, pool_timeout=60):
+        return create_engine(
+            url,
             echo=False,
             echo_pool=False,
 
@@ -125,6 +120,18 @@ class PostgresDb(object):
             pool_recycle=pool_timeout,
             connect_args={'application_name': application_name}
         )
+
+    @classmethod
+    def create(cls, hostname, database, username=None, password=None, port=None,
+               application_name=None, validate=True, pool_timeout=60):
+        engine = cls._create_engine(
+            EngineUrl(
+                'postgresql',
+                host=hostname, database=database, port=port,
+                username=username, password=password,
+            ),
+            application_name=application_name,
+            pool_timeout=pool_timeout)
         if validate:
             if not tables.database_exists(engine):
                 raise IndexSetupError('\n\nNo DB schema exists. Have you run init?\n\t{init_command}'.format(
