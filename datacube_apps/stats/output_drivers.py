@@ -23,10 +23,10 @@ STANDARD_VARIABLE_PARAM_NAMES = {'zlib',
 
 class OutputDriver(object):
     # TODO: Add check for valid filename extensions in each driver
-    def __init__(self, config, task, output_path, app_info=None):
+    def __init__(self, storage, task, output_path, app_info=None):
         self.task = task
         self.output_path = output_path
-        self.config = config
+        self.storage = storage
 
         self.output_files = {}
         self.app_info = app_info
@@ -81,10 +81,9 @@ class NetcdfOutputDriver(OutputDriver):
         nco['dataset'][:] = netcdf_writer.netcdfy_data(datasets.values)
         return nco
 
-    @staticmethod
-    def _create_netcdf_var_params(stat):
-        chunking = stat.storage['chunking']
-        chunking = [chunking[dim] for dim in stat.storage['dimension_order']]
+    def _create_netcdf_var_params(self, stat):
+        chunking = self.storage['chunking']
+        chunking = [chunking[dim] for dim in self.storage['dimension_order']]
 
         variable_params = {}
         for measurement in stat.data_measurements:
@@ -128,7 +127,6 @@ class RioOutputDriver(OutputDriver):
 
                 output_filename = _format_filename(filename_template,
                                                    var_name=measurename,
-                                                   config=self.config,
                                                    **self.task)
                 try:
                     output_filename.parent.mkdir(parents=True)
@@ -136,8 +134,8 @@ class RioOutputDriver(OutputDriver):
                     pass
 
                 profile = {
-                    'blockxsize': self.config.storage['chunking']['x'],
-                    'blockysize': self.config.storage['chunking']['y'],
+                    'blockxsize': self.storage['chunking']['x'],
+                    'blockysize': self.storage['chunking']['y'],
                     'compress': 'lzw',
                     'driver': 'GTiff',
                     'interleave': 'band',

@@ -44,7 +44,6 @@ STATS = {
                                             stats=['min', 'mean', 'max']),
     'ndvi_daily': NormalisedDifferenceStats(name='ndvi', band1='nir', band2='red', stats=['squeeze']),
     'wofs': WofsStats(),
-
 }
 
 
@@ -52,21 +51,19 @@ class StatProduct(object):
     def __init__(self, metadata_type, input_measurements, definition, storage):
         self.definition = definition
 
+        #: The product name.
+        self.name = definition['name']
+
+        #: The name of the statistic. Eg, mean, max, medoid, percentile_10
+        self.stat_name = self.definition['statistic']
+
+        #: The implementation of a statistic. See :class:`ValueStat`.
+        #: Will provide `compute` and `measurements` functions.
         self.statistic = STATS[self.stat_name]
 
         self.data_measurements = self.statistic.measurements(input_measurements)
 
-        self.storage = storage
-
         self.product = self._create_product(metadata_type, self.data_measurements, storage)
-
-    @property
-    def name(self):
-        return self.definition['name']
-
-    @property
-    def stat_name(self):
-        return self.definition['statistic']
 
     @property
     def masked(self):
@@ -129,11 +126,12 @@ class StatsApp(object):
         #: and will define spatial and temporal boundaries, as well as statistical operations to be run.
         self.task_generator = None
         if 'input_region' in config:
+            # Generate statistics for an Ungridded region
             self.task_generator = partial(generate_non_gridded_tasks, input_region=config['input_region'],
                                           storage=self.storage)
         else:
             grid_spec = self._make_grid_spec(config['storage'])
-            self.task_generator = partial(generate_gridded_tasks, sources=self.sources, grid_spec=grid_spec)
+            self.task_generator = partial(generate_gridded_tasks, grid_spec=grid_spec)
 
         #: A class which knows how to create and write out data to a permanent storage format.
         #: Implements :class:`.output_drivers.OutputDriver`.
@@ -208,14 +206,15 @@ class StatsApp(object):
         :param output_products: List of output product definitions
         :return:
         """
-        for task in self.task_generator(self, index, generate_date_sequence=self.generate_date_sequence,
+        for task in self.task_generator(index=index, generate_date_sequence=self.generate_date_sequence,
                                         sources_spec=self.sources):
             task.output_products = output_products
             yield task
 
     def execute_stats_task(self, task):
         app_info = get_app_metadata(self.config_file)
-        with self.output_driver(config=self, task=task, output_path=self.location, app_info=app_info) as output_files:
+        with self.output_driver(task=task, output_path=self.location, app_info=app_info,
+                                storage=self.storage) as output_files:
             example_tile = task.sources[0]['data']
             for sub_tile_slice in tile_iter(example_tile, self.computation['chunking']):
                 data = load_data(sub_tile_slice, task.sources)
@@ -306,7 +305,7 @@ class StatsTask(object):
         return getattr(self, item)
 
 
-def generate_gridded_tasks(index, sources, generate_date_sequence, grid_spec):
+def generate_gridded_tasks(index, sources_spec, generate_date_sequence, grid_spec, cell_index=(14, -40)):
     """
     Generate the required tasks through time and across a spatial grid.
 
@@ -320,14 +319,14 @@ def generate_gridded_tasks(index, sources, generate_date_sequence, grid_spec):
         # Tasks are grouped by tile_index, and may contain sources from multiple places
         # Each source may be masked by multiple masks
         tasks = {}
-        for source_spec in sources:
+        for source_spec in sources_spec:
             data = workflow.list_cells(product=source_spec['product'], time=time_period,
                                        group_by=source_spec.get('group_by', DEFAULT_GROUP_BY),
-                                       cell_index=(14, -40))
+                                       cell_index=cell_index)
             masks = [workflow.list_cells(product=mask['product'],
                                          time=time_period,
                                          group_by=source_spec.get('group_by', DEFAULT_GROUP_BY),
-                                         cell_index=(14, -40))
+                                         cell_index=cell_index)
                      for mask in source_spec.get('masks', [])]
 
             for tile_index, sources in data.items():
@@ -342,7 +341,7 @@ def generate_gridded_tasks(index, sources, generate_date_sequence, grid_spec):
             yield task
 
 
-def generate_non_gridded_tasks(storage, generate_date_sequence, index, input_region, sources_spec):
+def generate_non_gridded_tasks(index, storage, generate_date_sequence, input_region, sources_spec):
     """
     Make stats tasks for a defined spatial region, that doesn't fit into a standard grid.
 
