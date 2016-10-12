@@ -250,7 +250,7 @@ class StatsApp(object):
         return output_products
 
 
-def load_masked_data(sub_tile_slice, source_prod):
+def _load_masked_data(sub_tile_slice, source_prod):
     data = GridWorkflow.load(source_prod['data'][sub_tile_slice],
                              measurements=source_prod['spec']['measurements'])
     crs = data.crs
@@ -265,12 +265,19 @@ def load_masked_data(sub_tile_slice, source_prod):
             mask = make_mask(mask, **mask_spec['flags'])
             data = data.where(mask)
             del mask
-    data.attrs['crs'] = crs
+    data.attrs['crs'] = crs  # Reattach crs, it gets lost when masking
     return data
 
 
 def load_data(sub_tile_slice, sources):
-    datasets = [load_masked_data(sub_tile_slice, source_prod) for source_prod in sources]
+    """
+    Load a masked chunk of data from the datacube, based on a specification and list of datasets in `sources`.
+
+    :param sub_tile_slice:
+    :param sources: a dictionary containing `data`, `spec` and `masks`
+    :return: :class:`xarray.Dataset` containing loaded data. Will be indexed and sorted by time.
+    """
+    datasets = [_load_masked_data(sub_tile_slice, source_prod) for source_prod in sources]
     for idx, dataset in enumerate(datasets):
         dataset.coords['source'] = ('time', numpy.repeat(idx, dataset.time.size))
     data = xarray.concat(datasets, dim='time')
