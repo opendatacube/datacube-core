@@ -14,6 +14,9 @@
 
 from __future__ import absolute_import, division
 
+import sys
+import six
+
 
 class SerialExecutor(object):
     @staticmethod
@@ -23,6 +26,15 @@ class SerialExecutor(object):
     @staticmethod
     def map(func, iterable):
         return [SerialExecutor.submit(func, data) for data in iterable]
+
+    @staticmethod
+    def get_ready(futures):
+        try:
+            result = SerialExecutor.result(futures[0])
+            return [(lambda x: x, [result], {})], [], futures[1:]
+        except Exception:  # pylint: disable=broad-except
+            exc_info = sys.exc_info()
+            return [], [(six.reraise, exc_info, {})], futures[1:]
 
     @staticmethod
     def as_completed(futures):
@@ -39,12 +51,16 @@ class SerialExecutor(object):
         return result, results
 
     @staticmethod
-    def result(value):
-        func, args, kwargs = value
+    def results(futures):
+        return [SerialExecutor.result(future) for future in futures]
+
+    @staticmethod
+    def result(future):
+        func, args, kwargs = future
         return func(*args, **kwargs)
 
     @staticmethod
-    def release(value):
+    def release(future):
         pass
 
 
@@ -69,6 +85,13 @@ def _get_distributed_executor(scheduler, workers):
             return self._executor.map(func, iterable)
 
         @staticmethod
+        def get_ready(futures):
+            groups = {}
+            for f in futures:
+                groups.setdefault(f.status, []).append(f)
+            return groups.get('finished', []), groups.get('error', []), groups.get('pending', [])
+
+        @staticmethod
         def as_completed(futures):
             return distributed.as_completed(futures)
 
@@ -81,13 +104,16 @@ def _get_distributed_executor(scheduler, workers):
             results.remove(result)
             return result, results
 
-        @staticmethod
-        def result(value):
-            return value.result()
+        def results(self, futures):
+            return self._executor.gather(futures)
 
         @staticmethod
-        def release(value):
-            value.release()
+        def result(future):
+            return future.result()
+
+        @staticmethod
+        def release(future):
+            future.release()
 
     try:
         executor = DistributedExecutor(distributed.Executor(scheduler))
@@ -113,6 +139,21 @@ def _get_concurrent_executor(workers):
             return [self.submit(func, data) for data in iterable]
 
         @staticmethod
+        def get_ready(futures):
+            completed = []
+            failed = []
+            pending = []
+            for f in futures:
+                if f.done():
+                    if f.exception():
+                        failed.append(f)
+                    else:
+                        completed.append(f)
+                else:
+                    pending.append(f)
+            return completed, failed, pending
+
+        @staticmethod
         def as_completed(futures):
             return as_completed(futures)
 
@@ -125,12 +166,15 @@ def _get_concurrent_executor(workers):
             results.remove(result)
             return result, results
 
-        @staticmethod
-        def result(value):
-            return value.result()
+        def results(self, futures):
+            return [future.result() for future in futures]
 
         @staticmethod
-        def release(value):
+        def result(future):
+            return future.result()
+
+        @staticmethod
+        def release(future):
             pass
 
     return MultiprocessingExecutor(ProcessPoolExecutor(workers if workers > 0 else None))
