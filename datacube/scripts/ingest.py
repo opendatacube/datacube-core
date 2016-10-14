@@ -170,6 +170,7 @@ def create_task_list(index, output_type, year, source_type, config):
 
 
 def ingest_work(config, source_type, output_type, tile, tile_index):
+    _LOG.info('Starting task %s', tile_index)
     namemap = get_namemap(config)
     measurements = get_measurements(source_type, config)
     variable_params = get_variable_params(config)
@@ -194,6 +195,7 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
     nudata['dataset'] = datasets_to_doc(datasets)
 
     write_dataset_to_netcdf(nudata, file_path, global_attributes, variable_params)
+    _LOG.info('Finished task %s', tile_index)
 
     return datasets
 

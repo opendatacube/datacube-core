@@ -249,6 +249,8 @@ def create_netcdf_storage_unit(filename,
     except OSError:
         pass
 
+    _LOG.info('Creating storage unit: %s', filename)
+
     nco = netcdf_writer.create_netcdf(str(filename), **(netcdfparams or {}))
 
     for name, coord in coordinates.items():
