@@ -251,7 +251,7 @@ def process_tasks(index, config, source_type, output_type, tasks, queue_size, ex
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
               help='Ingest configuration file')
 @click.option('--year', type=click.IntRange(1960, 2060))
-@click.option('--queue-size', type=click.IntRange(1, 100000), default=640, help='Number of tasks to queue at the start')
+@click.option('--queue-size', type=click.IntRange(1, 100000), default=3200, help='Task queue size')
 @click.option('--save-tasks', help='Save tasks to the specified file',
               type=click.Path(exists=False))
 @click.option('--load-tasks', help='Load tasks from the specified file',
