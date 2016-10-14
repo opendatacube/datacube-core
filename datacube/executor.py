@@ -79,7 +79,7 @@ def _get_distributed_executor(scheduler, workers):
             self._executor = executor
 
         def submit(self, func, *args, **kwargs):
-            return self._executor.submit(func, *args, **kwargs)
+            return self._executor.submit(func, *args, pure=False, **kwargs)
 
         def map(self, func, iterable):
             return self._executor.map(func, iterable)
