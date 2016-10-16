@@ -34,7 +34,9 @@ SCHEMA_PATH = Path(__file__).parent / 'schema'
 
 class Dataset(object):
     """
-    A Dataset stored on disk
+    A Dataset. A container of metadata, and refers typically to a multiband raster on disk.
+
+    Most important parts are the metadata_doc and uri.
 
     :type type_: DatasetType
     :param dict metadata_doc: the document (typically a parsed json/yaml)

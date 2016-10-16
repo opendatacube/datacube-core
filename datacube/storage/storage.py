@@ -122,6 +122,9 @@ def reproject(source, dest, dst_transform, dst_nodata, dst_projection, resamplin
 
 
 def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata, resampling='nearest', fuse_func=None):
+    """
+    Reproject and fuse `sources` into a 2D numpy array `destination`.
+    """
     assert len(destination.shape) == 2
 
     resampling = _rasterio_resampling_method(resampling)
@@ -148,6 +151,7 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
 
 
 class DatasetSource(object):
+    """model.Dataset is about metadata, this takes a dataset and knows how to get the actual data bytes."""
     def __init__(self, dataset, measurement_id):
         """
 
