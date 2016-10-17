@@ -15,7 +15,10 @@ import numpy as np
 
 import rasterio
 import rasterio.warp
-from rasterio.warp import RESAMPLING as Resampling
+try:
+    from rasterio.warp import Resampling
+except ImportError:
+    from rasterio.warp import RESAMPLING as Resampling
 from rasterio import Affine
 
 import xarray as xr
@@ -96,16 +99,15 @@ def reproject(src_data_array, src_crs, dst_crs, resolution=None, resampling=Resa
 
     dst_data = np.zeros((dst_height, dst_width), dtype=src_data_array.dtype)
     nodata = _get_nodata_value(src_data_array) or -999
-    with rasterio.drivers():
-        rasterio.warp.reproject(source=src_data,
-                                destination=dst_data,
-                                src_transform=src_affine,
-                                src_crs=src_crs,
-                                src_nodata=nodata,
-                                dst_transform=dst_affine,
-                                dst_crs=dst_crs,
-                                dst_nodata=nodata,
-                                resampling=resampling)
+    rasterio.warp.reproject(source=src_data,
+                            destination=dst_data,
+                            src_transform=src_affine,
+                            src_crs=src_crs,
+                            src_nodata=nodata,
+                            dst_transform=dst_affine,
+                            dst_crs=dst_crs,
+                            dst_nodata=nodata,
+                            resampling=resampling)
     if set_nan:
         dst_data = dst_data.astype(np.float)
         dst_data[dst_data == nodata] = np.nan
@@ -164,11 +166,10 @@ def _make_coords(src_data_array, dst_affine, dst_width, dst_height):
 def _make_dst_affine(src_data_array, src_crs, dst_crs, dst_resolution=None):
     src_bounds = _get_bounds(src_data_array)
     src_width, src_height = _get_shape(src_data_array)
-    with rasterio.drivers():
-        dst_affine, dst_width, dst_height = rasterio.warp.calculate_default_transform(src_crs, dst_crs,
-                                                                                      src_width, src_height,
-                                                                                      *src_bounds,
-                                                                                      resolution=dst_resolution)
+    dst_affine, dst_width, dst_height = rasterio.warp.calculate_default_transform(src_crs, dst_crs,
+                                                                                  src_width, src_height,
+                                                                                  *src_bounds,
+                                                                                  resolution=dst_resolution)
     return dst_affine, dst_width, dst_height
 
 

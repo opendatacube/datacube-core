@@ -21,19 +21,23 @@ import numpy
 from affine import Affine
 import rasterio.warp
 import rasterio.crs
-from rasterio.warp import RESAMPLING
+
+try:
+    from rasterio.warp import Resampling
+except ImportError:
+    from rasterio.warp import RESAMPLING as Resampling
 
 from datacube.utils import clamp, datetime_to_seconds_since_1970
 
 _LOG = logging.getLogger(__name__)
 
 RESAMPLING_METHODS = {
-    'nearest': RESAMPLING.nearest,
-    'cubic': RESAMPLING.cubic,
-    'bilinear': RESAMPLING.bilinear,
-    'cubic_spline': RESAMPLING.cubic_spline,
-    'lanczos': RESAMPLING.lanczos,
-    'average': RESAMPLING.average,
+    'nearest': Resampling.nearest,
+    'cubic': Resampling.cubic,
+    'bilinear': Resampling.bilinear,
+    'cubic_spline': Resampling.cubic_spline,
+    'lanczos': Resampling.lanczos,
+    'average': Resampling.average,
 }
 
 assert str(rasterio.__version__) >= '0.34.0', "rasterio version 0.34.0 or higher is required"
@@ -87,7 +91,7 @@ def reproject(source, dest, dst_transform, dst_nodata, dst_projection, resamplin
     with source.open() as src:
         array_transform = ~source.transform * dst_transform
         if (source.crs == dst_projection and _no_scale(array_transform) and
-                (resampling == RESAMPLING.nearest or _no_fractional_translate(array_transform))):
+                (resampling == Resampling.nearest or _no_fractional_translate(array_transform))):
             dydx = (int(round(array_transform.f)), int(round(array_transform.c)))
             read, write, shape = zip(*map(_calc_offsets, dydx, src.shape, dest.shape))
 
