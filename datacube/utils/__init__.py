@@ -158,6 +158,12 @@ def _ogr_to_points(geom):
     return geom.GetGeometryRef(0).GetPoints()[:-1]
 
 
+def densify_points(points, resolution):
+    geom = _points_to_ogr(points)
+    geom.Segmentize(resolution)
+    return _ogr_to_points(geom)
+
+
 def check_intersect(a, b):
     assert a.crs == b.crs
 

@@ -17,7 +17,7 @@ from rasterio.coords import BoundingBox
 
 from datacube import compat
 from datacube.utils import parse_time, cached_property, uri_to_local_path, check_intersect
-from datacube.utils import schema_validated, DocReader, union_points, intersect_points
+from datacube.utils import schema_validated, DocReader, union_points, intersect_points, densify_points
 
 _LOG = logging.getLogger(__name__)
 
@@ -397,19 +397,23 @@ class GeoPolygon(object):
 
         return cls(valid_data, geobox.crs)
 
-    def to_crs(self, crs):
+    def to_crs(self, crs, resolution=None):
         """
         Duplicates polygon while transforming to a new CRS
 
         :param CRS crs: Target CRS
+        :param resolution: resolution of points in source crs units to maintain in output polygon
         :return: new GeoPolygon with CRS specified by crs
         :rtype: GeoPolygon
         """
         if self.crs == crs:
             return self
 
+        if resolution is None:
+            resolution = 1 if self.crs.geographic else 100000
+
         transform = osr.CoordinateTransformation(self.crs._crs, crs._crs)  # pylint: disable=protected-access
-        return GeoPolygon([p[:2] for p in transform.TransformPoints(self.points)], crs)
+        return GeoPolygon([p[:2] for p in transform.TransformPoints(densify_points(self.points, resolution))], crs)
 
     def __str__(self):
         return "GeoPolygon(points=%s, crs=%s)" % (self.points, self.crs)
