@@ -42,6 +42,7 @@ class Tile(object):
     This can be used to load small portions of data into memory, instead of having to access
     the entire `Tile` at once.
     """
+
     def __init__(self, sources, geobox):
         """Create a Tile representing a dataset that can be loaded.
 
@@ -86,9 +87,9 @@ class Tile(object):
         :return: tuple(key, Tile)
         """
         axis = self.dims.index(dim)
-        indexer = [slice(None)]*len(self.dims)
+        indexer = [slice(None)] * len(self.dims)
         for i in range(self.sources[dim].size):
-            indexer[axis] = slice(i, i+1)
+            indexer[axis] = slice(i, i + 1)
             yield self.sources[dim].values[i], self[tuple(indexer)]
 
     def __str__(self):
@@ -108,6 +109,7 @@ class GridWorkflow(object):
     The :class:`.Tile` object can then be used to load the data without needing the index,
     and can be serialized for use with the `distributed` package.
     """
+
     def __init__(self, index, grid_spec=None, product=None):
         """
         Create a grid workflow tool.
@@ -162,9 +164,13 @@ class GridWorkflow(object):
                     return_dataset(cell_index, geobox, dataset)
 
         elif query.geopolygon:
-            query_tiles = set(tile_index for tile_index, tile_geobox in self.grid_spec.tiles2(query.geopolygon))
+            # Get a rough region of tiles
+            query_tiles = set(
+                tile_index for tile_index, tile_geobox in self.grid_spec.tiles_inside_geopolygon(query.geopolygon))
 
             for dataset in observations:
+                # Go through our datasets and see which tiles each dataset produces, and whether they intersect
+                # our query geopolygon.
                 dataset_extent = dataset.extent.to_crs(self.grid_spec.crs)
                 for tile_index, tile_geobox in self.grid_spec.tiles(dataset_extent.boundingbox):
                     if tile_index in query_tiles and check_intersect(tile_geobox.extent, dataset_extent):
@@ -172,7 +178,7 @@ class GridWorkflow(object):
 
         else:
             for dataset in observations:
-                for tile_index, tile_geobox in self.grid_spec.tiles2(dataset.extent):
+                for tile_index, tile_geobox in self.grid_spec.tiles_inside_geopolygon(dataset.extent):
                     return_dataset(tile_index, tile_geobox, dataset)
 
         return cells

@@ -9,6 +9,7 @@ import math
 from collections import namedtuple, OrderedDict
 from pathlib import Path
 
+import collections
 import numpy
 import cachetools
 from affine import Affine
@@ -49,20 +50,25 @@ class Dataset(object):
         #: :rtype: DatasetType
         self.type = type_
 
+        #: The document describing the dataset as a dictionary. It is often serialised as YAML on disk
+        #: or inside a NetCDF file, and as JSON-B inside the database index.
         #: :type: dict
         self.metadata_doc = metadata_doc
 
+        #: The local file or path that can be opened to access the raw data.
         #: :type: str
         self.local_uri = local_uri
 
+        #: The datasets that this dataset is derived from.
         #: :type: dict[str, Dataset]
         self.sources = sources or {}
 
         assert set(self.metadata.sources.keys()) == set(self.sources.keys())
 
-        # User who indexed this dataset
+        #: The User who indexed this dataset
         #: :type: str
         self.indexed_by = indexed_by
+
         self.indexed_time = indexed_time
 
     @property
@@ -381,6 +387,17 @@ class GeoPolygon(object):
             (boundingbox.left, boundingbox.bottom),
         ]
         return cls(points, crs)
+
+    @classmethod
+    def from_geojson(cls, geojson_geometry, crs=None):
+        try:
+            assert isinstance(geojson_geometry['coordinates'], collections.Sequence)
+            assert geojson_geometry['type'] == 'Polygon'
+        except (KeyError, AssertionError):
+            raise ValueError('Input geometry is not an acceptable geojson geometry. It should be of type Polygon,'
+                             'and contain a single list of coordinates.')
+
+        return cls(geojson_geometry['coordinates'][0], crs)
 
     @property
     def boundingbox(self):
@@ -710,7 +727,7 @@ class GridSpec(object):
                 tile_index = (x, y)
                 yield tile_index, self.tile_geobox(tile_index)
 
-    def tiles2(self, geopolygon):
+    def tiles_inside_geopolygon(self, geopolygon):
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and inside the specified `polygon`.
