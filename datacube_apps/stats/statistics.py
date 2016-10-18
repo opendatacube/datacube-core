@@ -344,6 +344,37 @@ class IndexStat(ValueStat):
         return ValueStat.measurements(input_measurements)
 
 
+class StreamedStat(object):
+    def __init__(self, list_of_stats_classes):
+        self.ops = list_of_stats_classes
+
+    def compute(self, data):
+        for statclass in self.ops:
+            data = statclass.compute(data)
+        return data
+
+    def measurements(self, input_measurements):
+        measurements = input_measurements
+        for statclass in self.ops:
+            measurements = statclass.measurements(measurements)
+        return measurements
+
+
+class OneToManyStat(object):
+    def __init__(self, ops):
+        self.ops = ops
+
+    def compute(self, data):
+        output_datasets = [op(data) for op in self.ops]
+        return xarray.merge(output_datasets)
+
+    def measurements(self, measurements):
+        output_measurements = []
+        for op in self.ops:
+            output_measurements.extend(op(measurements))
+        return output_measurements
+
+
 class PerBandIndexStat(ValueStat):
     """
     Each output variable contains values that actually exist in the input data.

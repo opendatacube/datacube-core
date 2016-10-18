@@ -124,11 +124,12 @@ class RioOutputDriver(OutputDriver):
 
     """
     valid_extensions = ['tif', 'tiff']
-    default_profile = {'compress': 'lzw',
-                       'driver': 'GTiff',
-                       'interleave': 'band',
-                       'tiled': True
-                       }
+    default_profile = {
+        'compress': 'lzw',
+        'driver': 'GTiff',
+        'interleave': 'band',
+        'tiled': True
+    }
 
     def open_output_files(self):
         for prod_name, stat in self.output_products.items():
