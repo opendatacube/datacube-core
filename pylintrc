@@ -13,7 +13,8 @@ disable=no-self-use,
     fixme,
     no-value-for-parameter,
     file-ignored,
-    wrong-import-order
+    wrong-import-order,
+    ungrouped-imports
 
 enable=python3
 

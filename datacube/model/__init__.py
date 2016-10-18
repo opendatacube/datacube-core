@@ -6,10 +6,10 @@ from __future__ import absolute_import, division
 
 import logging
 import math
+import collections
 from collections import namedtuple, OrderedDict
 from pathlib import Path
 
-import collections
 import numpy
 import cachetools
 from affine import Affine
@@ -201,6 +201,7 @@ class Measurement(object):
 @schema_validated(SCHEMA_PATH / 'metadata-type-schema.yaml')
 class MetadataType(object):
     """Metadata Type definition"""
+
     def __init__(self,
                  definition,
                  dataset_search_fields,
@@ -244,6 +245,7 @@ class DatasetType(object):
     :param MetadataType metadata_type:
     :param dict definition:
     """
+
     def __init__(self,
                  metadata_type,
                  definition,
@@ -689,6 +691,7 @@ class GridSpec(object):
         :param (int,int) tile_index: in X,Y order
         :rtype: (float,float)
         """
+
         def coord(index, resolution, size, origin):
             return (index + (1 if resolution < 0 and size > 0 else 0)) * size + origin
 
