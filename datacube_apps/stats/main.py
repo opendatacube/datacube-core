@@ -17,7 +17,7 @@ from datacube import Datacube
 from datacube.api import make_mask
 from datacube.api.grid_workflow import GridWorkflow, Tile
 from datacube.api.query import query_group_by, query_geopolygon
-from datacube.model import GridSpec, CRS, DatasetType, GeoBox
+from datacube.model import GridSpec, CRS, DatasetType, GeoBox, GeoPolygon
 from datacube.storage.masking import mask_valid_data as mask_invalid_data
 from datacube.ui import click as ui
 from datacube.ui.click import to_pathlib
@@ -25,7 +25,7 @@ from datacube.utils import read_documents, import_function, tile_iter
 from datacube.utils.dates import date_sequence
 from datacube_apps.stats.output_drivers import NetcdfOutputDriver, RioOutputDriver
 from datacube_apps.stats.statistics import ValueStat, WofsStats, NormalisedDifferenceStats, PerStatIndexStat, \
-    compute_medoid, percentile_stat, StatsConfigurationError
+    compute_medoid, percentile_stat, StatsConfigurationError, percentile_stat_no_prov
 
 _LOG = logging.getLogger(__name__)
 DEFAULT_GROUP_BY = 'time'
@@ -35,8 +35,15 @@ STATS = {
     'max': ValueStat.from_stat_name('max'),
     'mean': ValueStat.from_stat_name('mean'),
     'percentile_10': percentile_stat(10),
+    'percentile_25': percentile_stat(25),
     'percentile_50': percentile_stat(50),
+    'percentile_75': percentile_stat(75),
     'percentile_90': percentile_stat(90),
+    'percentile_10_no_prov': percentile_stat_no_prov(10),
+    'percentile_25_no_prov': percentile_stat_no_prov(25),
+    'percentile_50_no_prov': percentile_stat_no_prov(50),
+    'percentile_75_no_prov': percentile_stat_no_prov(75),
+    'percentile_90_no_prov': percentile_stat_no_prov(90),
     'medoid': PerStatIndexStat(masked=True, stat_func=compute_medoid),
     'ndvi_stats': NormalisedDifferenceStats(name='ndvi', band1='nir', band2='red',
                                             stats=['min', 'mean', 'max']),
@@ -95,68 +102,41 @@ class StatsApp(object):
 
     """
 
-    def __init__(self, config, config_filename):
+    def __init__(self):
         #: Name of the configuration file used
-        self.config_file = config_filename
+        self.config_file = None
 
         #: Description of output file format
-        self.storage = config['storage']
+        self.storage = None
 
         #: Definition of source products, including their name, which variables to pull from them, and
         #: a specification of any masking that should be applied.
-        self.sources = config['sources']
+        self.sources = None
 
         #: List of filenames and statistical methods used, describing what the outputs of the run will be.
-        self.output_products = config['output_products']
+        self.output_products = None
 
         #: Base directory to write output files to.
         #: Files may be created in a sub-directory, depending on the configuration of the
         #: :attr:`output_driver`.
-        self.location = config['location']
+        self.location = None
 
         #: How to slice a task up spatially to to fit into memory.
-        self.computation = config.get('computation', {'chunking': {'x': 1000, 'y': 1000}})
+        self.computation = None
 
         #: A function to generate a sequence of date ranges.
-        self.generate_date_sequence = partial(date_sequence, start=pd.to_datetime(config['start_date']),
-                                              end=pd.to_datetime(config['end_date']),
-                                              stats_duration=config['stats_duration'], step_size=config['step_size'])
+        self.generate_date_sequence = None
 
         #: Generates tasks to compute statistics. These tasks should be :class:`StatsTask` objects
         #: and will define spatial and temporal boundaries, as well as statistical operations to be run.
         self.task_generator = None
-        if 'input_region' in config:
-            # Generate statistics for an Ungridded region
-            self.task_generator = partial(generate_non_gridded_tasks, input_region=config['input_region'],
-                                          storage=self.storage)
-        else:
-            grid_spec = self._make_grid_spec(config['storage'])
-            self.task_generator = partial(generate_gridded_tasks, grid_spec=grid_spec)
 
         #: A class which knows how to create and write out data to a permanent storage format.
         #: Implements :class:`.output_drivers.OutputDriver`.
-        self.output_driver = OUTPUT_DRIVERS[self.storage['driver']]
-
-    @classmethod
-    def from_file(cls, filename):
-        _, config = next(read_documents(filename))
-        stats_app = cls(config, filename)
-        stats_app.validate_config()
-        return stats_app
-
-    @staticmethod
-    def _make_grid_spec(storage):
-        """Make a grid spec based on a storage spec."""
-        if 'tile_size' not in storage:
-            return None
-
-        crs = CRS(storage['crs'])
-        return GridSpec(crs=crs,
-                        tile_size=[storage['tile_size'][dim] for dim in crs.dimensions],
-                        resolution=[storage['resolution'][dim] for dim in crs.dimensions])
+        self.output_driver = None
 
     def validate_config(self):
-        """Raise an error if configuration errors are found."""
+        """Check StatsApp is correctly configured and raise an error if errors are found."""
         # Check output product names are unique
         output_names = [prod['name'] for prod in self.output_products]
         duplicate_names = [x for x in output_names if output_names.count(x) > 1]
@@ -167,9 +147,9 @@ class StatsApp(object):
         # Check statistics are available
         requested_statistics = set(prod['statistic'] for prod in self.output_products)
         available_statistics = set(STATS.keys())
-        if requested_statistics > available_statistics:
+        if not requested_statistics.issubset(available_statistics):
             raise StatsConfigurationError(
-                'Requested Statistic %s is not a valid statistic. Available statistics are: %s'
+                'Requested Statistic(s) %s are not valid statistics. Available statistics are: %s'
                 % (requested_statistics - available_statistics, available_statistics))
 
         # Check consistent measurements
@@ -177,6 +157,10 @@ class StatsApp(object):
         if not all(first_source['measurements'] == source['measurements'] for source in self.sources):
             raise StatsConfigurationError("Configuration Error: listed measurements of source products "
                                           "are not all the same.")
+
+        assert callable(self.generate_date_sequence)
+        assert callable(self.task_generator)
+        assert callable(self.output_driver)
 
     def run(self, index, executor, output_products, queue_length=50):
         tasks = self.generate_tasks(index, output_products)
@@ -250,6 +234,16 @@ class StatsApp(object):
         return output_products
 
 
+def _make_grid_spec(storage):
+    """Make a grid spec based on a storage spec."""
+    assert 'tile_size' in storage
+
+    crs = CRS(storage['crs'])
+    return GridSpec(crs=crs,
+                    tile_size=[storage['tile_size'][dim] for dim in crs.dimensions],
+                    resolution=[storage['resolution'][dim] for dim in crs.dimensions])
+
+
 def _load_masked_data(sub_tile_slice, source_prod):
     data = GridWorkflow.load(source_prod['data'][sub_tile_slice],
                              measurements=source_prod['spec']['measurements'])
@@ -273,7 +267,7 @@ def load_data(sub_tile_slice, sources):
     """
     Load a masked chunk of data from the datacube, based on a specification and list of datasets in `sources`.
 
-    :param sub_tile_slice:
+    :param sub_tile_slice: A portion of a tile, tuple coordinates
     :param sources: a dictionary containing `data`, `spec` and `masks`
     :return: :class:`xarray.Dataset` containing loaded data. Will be indexed and sorted by time.
     """
@@ -312,7 +306,7 @@ class StatsTask(object):
         return getattr(self, item)
 
 
-def generate_gridded_tasks(index, sources_spec, generate_date_sequence, grid_spec, cell_index=(14, -40)):
+def generate_gridded_tasks(index, sources_spec, generate_date_sequence, grid_spec, geopolygon=None):
     """
     Generate the required tasks through time and across a spatial grid.
 
@@ -329,11 +323,11 @@ def generate_gridded_tasks(index, sources_spec, generate_date_sequence, grid_spe
         for source_spec in sources_spec:
             data = workflow.list_cells(product=source_spec['product'], time=time_period,
                                        group_by=source_spec.get('group_by', DEFAULT_GROUP_BY),
-                                       cell_index=cell_index)
+                                       geopolygon=geopolygon)
             masks = [workflow.list_cells(product=mask['product'],
                                          time=time_period,
                                          group_by=source_spec.get('group_by', DEFAULT_GROUP_BY),
-                                         cell_index=cell_index)
+                                         geopolygon=geopolygon)
                      for mask in source_spec.get('masks', [])]
 
             for tile_index, sources in data.items():
@@ -448,6 +442,41 @@ def map_orderless(executor, core, tasks, queue=50):
         yield executor.result(future)
 
 
+def create_stats_app(filename):
+    _, config = next(read_documents(filename))
+    stats_app = StatsApp()
+    stats_app.config_file = filename
+    stats_app.storage = config['storage']
+    stats_app.sources = config['sources']
+    stats_app.output_products = config['output_products']
+    stats_app.location = config['location']
+    stats_app.computation = config.get('computation', {'chunking': {'x': 1000, 'y': 1000}})
+
+    stats_app.generate_date_sequence = partial(date_sequence, start=pd.to_datetime(config['start_date']),
+                                               end=pd.to_datetime(config['end_date']),
+                                               stats_duration=config['stats_duration'],
+                                               step_size=config['step_size'])
+    if 'input_region' in config:
+        if config['input_region'].get('output_type') == 'tiled':
+            # A large, multi-tile input region, specified as geojson. Output will be individual tiles.
+            grid_spec = _make_grid_spec(config['storage'])
+            geopolygon = GeoPolygon.from_geojson(config['input_region']['geometry'], CRS('EPSG:4326'))
+            stats_app.task_generator = partial(generate_gridded_tasks, grid_spec=grid_spec, geopolygon=geopolygon)
+        else:
+            # Generate statistics for an Ungridded region. Output as a single file.
+            stats_app.task_generator = partial(generate_non_gridded_tasks, input_region=config['input_region'],
+                                               storage=stats_app.storage)
+    else:
+        # Default output, full available spatial region.
+        grid_spec = _make_grid_spec(config['storage'])
+        stats_app.task_generator = partial(generate_gridded_tasks, grid_spec=grid_spec)
+
+    stats_app.output_driver = OUTPUT_DRIVERS[config['storage']['driver']]
+    stats_app.validate_config()
+
+    return stats_app
+
+
 @click.command(name='output_products')
 @click.option('--app-config', '-c', 'stats_config_file',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
@@ -456,7 +485,7 @@ def map_orderless(executor, core, tasks, queue=50):
 @ui.executor_cli_options
 @ui.pass_index(app_name='agdc-output_products')
 def main(index, stats_config_file, executor):
-    app = StatsApp.from_file(stats_config_file)
+    app = create_stats_app(stats_config_file)
 
     output_products = app.make_output_products(index)
     # TODO: Store output products in database

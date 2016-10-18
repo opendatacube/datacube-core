@@ -28,6 +28,9 @@ class OutputDriver(object):
         self.output_path = output_path
         self.storage = storage
 
+        self.geobox = task.geobox
+        self.output_products = task.output_products
+
         self.output_files = {}
         self.app_info = app_info
 
@@ -42,7 +45,7 @@ class OutputDriver(object):
         raise NotImplementedError
 
     def _get_dtype(self, out_prod_name, measurement_name):
-        return self.task.output_products[out_prod_name].product.measurements[measurement_name]['dtype']
+        return self.output_products[out_prod_name].product.measurements[measurement_name]['dtype']
 
     def __enter__(self):
         self.open_output_files()
@@ -59,13 +62,13 @@ class NetcdfOutputDriver(OutputDriver):
     valid_extensions = ['nc']
 
     def open_output_files(self):
-        for prod_name, stat in self.task.output_products.items():
+        for prod_name, stat in self.output_products.items():
             filename_template = str(Path(self.output_path, stat.definition['file_path_template']))
             output_filename = _format_filename(filename_template, **self.task)
             self.output_files[prod_name] = self._create_storage_unit(stat, output_filename)
 
     def _create_storage_unit(self, stat, output_filename):
-        geobox = self.task.geobox
+        geobox = self.geobox
         all_measurement_defns = list(stat.product.measurements.values())
 
         datasets, sources = _find_source_datasets(self.task, stat, geobox, self.app_info, uri=output_filename.as_uri())
@@ -116,13 +119,20 @@ class NetcdfOutputDriver(OutputDriver):
 class RioOutputDriver(OutputDriver):
     """
     Save data to file/s using rasterio. Eg. GeoTiff
+
+    Writes to a different file per statistic/measurement.
+
     """
     valid_extensions = ['tif', 'tiff']
+    default_profile = {'compress': 'lzw',
+                       'driver': 'GTiff',
+                       'interleave': 'band',
+                       'tiled': True
+                       }
 
     def open_output_files(self):
-        for prod_name, stat in self.task.output_products.items():
+        for prod_name, stat in self.output_products.items():
             for measurename, measure_def in stat.product.measurements.items():
-                geobox = self.task.geobox
                 filename_template = str(Path(self.output_path, stat.definition['file_path_template']))
 
                 output_filename = _format_filename(filename_template,
@@ -133,21 +143,20 @@ class RioOutputDriver(OutputDriver):
                 except OSError:
                     pass
 
-                profile = {
+                profile = self.default_profile.copy()
+
+                profile.update({
                     'blockxsize': self.storage['chunking']['x'],
                     'blockysize': self.storage['chunking']['y'],
-                    'compress': 'lzw',
-                    'driver': 'GTiff',
-                    'interleave': 'band',
-                    'tiled': True,
+
                     'dtype': measure_def['dtype'],
                     'nodata': measure_def['nodata'],
-                    'width': geobox.width,
-                    'height': geobox.height,
-                    'affine': geobox.affine,
-                    'crs': geobox.crs.crs_str,
+                    'width': self.geobox.width,
+                    'height': self.geobox.height,
+                    'affine': self.geobox.affine,
+                    'crs': self.geobox.crs.crs_str,
                     'count': 1
-                }
+                })
 
                 output_name = prod_name + measurename
                 self.output_files[output_name] = rasterio.open(str(output_filename), mode='w', **profile)

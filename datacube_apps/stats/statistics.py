@@ -1,5 +1,5 @@
 """
-Useful tools for performing data analysis
+Functions for performing statistical data analysis.
 """
 from __future__ import absolute_import
 
@@ -239,7 +239,7 @@ class ValueStat(object):
             for measurement in input_measurements]
 
     @classmethod
-    def from_stat_name(cls, name, masked=True):
+    def from_stat_name(cls, name, masked=True, **kwargs):
         """
         A value returning statistic, relying on an xarray function of `name` being available
 
@@ -248,7 +248,7 @@ class ValueStat(object):
         :return:
         """
         return cls(masked=masked,
-                   stat_func=partial(getattr(xarray.Dataset, name), dim='time'))
+                   stat_func=partial(getattr(xarray.Dataset, name), dim='time', **kwargs))
 
 
 class WofsStats(object):
@@ -326,9 +326,30 @@ class NormalisedDifferenceStats(object):
                 for stat in self.stats]
 
 
+class IndexStat(ValueStat):
+    def __init__(self, stat_func, masked=True):
+        super(IndexStat, self).__init__(stat_func, masked)
+
+    def compute(self, data):
+        index = super(IndexStat, self).compute(data)
+
+        def index_dataset(var):
+            return axisindex(data.data_vars[var.name].values, var.values)
+
+        data_values = index.apply(index_dataset)
+        return data_values
+
+    @staticmethod
+    def measurements(input_measurements):
+        return ValueStat.measurements(input_measurements)
+
+
 class PerBandIndexStat(ValueStat):
     """
-    Each output variable contains values that actually exist in the input data
+    Each output variable contains values that actually exist in the input data.
+
+    It uses a function that returns the indexes of these values, then pulls them out of the source data,
+    along with provenance information.
 
     :param stat_func: A function which takes an xarray.Dataset and returns an xarray.Dataset of indexes
     """
@@ -463,6 +484,15 @@ def percentile_stat(q):
                                               dim='time',
                                               func=argpercentile,
                                               q=q))
+
+
+def percentile_stat_no_prov(q):
+    return IndexStat(masked=True,
+                     # pylint: disable=redundant-keyword-arg
+                     stat_func=partial(getattr(xarray.Dataset, 'reduce'),
+                                       dim='time',
+                                       func=argpercentile,
+                                       q=q))
 
 
 def _datetime64_to_inttime(var):
