@@ -4,13 +4,13 @@ Module
 """
 from __future__ import absolute_import, print_function
 
-import logging
-
-from click.testing import CliRunner
-from pathlib import Path
+import random
 
 import datacube.scripts.cli_app
+import logging
+from click.testing import CliRunner
 from datacube.index.postgres.tables._core import drop_db, has_schema, SCHEMA_NAME
+from pathlib import Path
 
 _LOG = logging.getLogger(__name__)
 
@@ -25,13 +25,17 @@ INVALID_MAPPING_DOCS = Path(__file__).parent.parent. \
     joinpath('docs').glob('*')
 
 
-def _run_cli(cli_method, opts, catch_exceptions=False):
+def _run_cli(global_integration_cli_args, cli_method, opts, catch_exceptions=False, expect_success=True):
+    exe_opts = list(global_integration_cli_args)
+    exe_opts.extend(opts)
     runner = CliRunner()
     result = runner.invoke(
         cli_method,
-        opts,
+        exe_opts,
         catch_exceptions=catch_exceptions
     )
+    if expect_success:
+        assert result.exit_code == 0, "Error for %r. output: %r" % (opts, result.output)
     return result
 
 
@@ -54,16 +58,13 @@ def test_add_example_dataset_types(global_integration_cli_args, db, default_meta
     print('{} mappings'.format(existing_mappings))
     for mapping_path in EXAMPLE_DATASET_TYPE_DOCS:
         print('Adding mapping {}'.format(mapping_path))
-        opts = list(global_integration_cli_args)
-        opts.extend(
+        result = _run_cli(
+            global_integration_cli_args,
+            datacube.scripts.cli_app.cli,
             [
                 '-v', 'product', 'add',
                 str(mapping_path)
             ]
-        )
-        result = _run_cli(
-            datacube.scripts.cli_app.cli,
-            opts
         )
         assert result.exit_code == 0, "Error for %r. output: %r" % (str(mapping_path), result.output)
         mappings_count = _dataset_type_count(db)
@@ -79,19 +80,16 @@ def test_error_returned_on_invalid(global_integration_cli_args, db):
     assert _dataset_type_count(db) == 0
 
     for mapping_path in INVALID_MAPPING_DOCS:
-        opts = list(global_integration_cli_args)
-        opts.extend(
+        result = _run_cli(
+            global_integration_cli_args,
+            datacube.scripts.cli_app.cli,
             [
                 '-v', 'product', 'add',
                 str(mapping_path)
-            ]
-        )
-
-        result = _run_cli(
-            datacube.scripts.cli_app.cli,
-            opts,
+            ],
             # TODO: Make this false when the cli is updated to print errors (rather than uncaught exceptions).
-            catch_exceptions=True
+            catch_exceptions=True,
+            expect_success=False
         )
         assert result.exit_code != 0, "Success return code for invalid document."
         assert _dataset_type_count(db) == 0, "Invalid document was added to DB"
@@ -105,15 +103,12 @@ def test_config_check(global_integration_cli_args, local_config):
 
     # This is not a very thorough check, we just check to see that
     # it prints something vaguely related and does not error-out.
-    opts = list(global_integration_cli_args)
-    opts.extend(
+    result = _run_cli(
+        global_integration_cli_args,
+        datacube.scripts.cli_app.cli,
         [
             '-v', 'system', 'check'
         ]
-    )
-    result = _run_cli(
-        datacube.scripts.cli_app.cli,
-        opts
     )
     assert result.exit_code == 0
     host_line = 'Host: {}'.format(local_config.db_hostname)
@@ -130,30 +125,24 @@ def test_list_users_does_not_fail(global_integration_cli_args, local_config):
     # We don't want to make assumptions about available users during test runs.
     # (They are host-global, not specific to the database)
     # So we're just checking that it doesn't fail (and the SQL etc is well formed)
-    opts = list(global_integration_cli_args)
-    opts.extend(
+    result = _run_cli(
+        global_integration_cli_args,
+        datacube.scripts.cli_app.cli,
         [
             '-v', 'user', 'list'
         ]
-    )
-    result = _run_cli(
-        datacube.scripts.cli_app.cli,
-        opts
     )
     assert result.exit_code == 0
 
 
 def test_db_init_noop(global_integration_cli_args, local_config, default_metadata_type):
     # Run on an existing database.
-    opts = list(global_integration_cli_args)
-    opts.extend(
+    result = _run_cli(
+        global_integration_cli_args,
+        datacube.scripts.cli_app.cli,
         [
             '-vv', 'system', 'init'
         ]
-    )
-    result = _run_cli(
-        datacube.scripts.cli_app.cli,
-        opts
     )
     assert result.exit_code == 0
     assert 'Updated.' in result.output
@@ -163,15 +152,12 @@ def test_db_init_noop(global_integration_cli_args, local_config, default_metadat
 
 def test_db_init_rebuild(global_integration_cli_args, local_config, default_metadata_type):
     # Run on an existing database.
-    opts = list(global_integration_cli_args)
-    opts.extend(
+    result = _run_cli(
+        global_integration_cli_args,
+        datacube.scripts.cli_app.cli,
         [
             '-vv', 'system', 'init', '--rebuild'
         ]
-    )
-    result = _run_cli(
-        datacube.scripts.cli_app.cli,
-        opts
     )
     assert result.exit_code == 0
     assert 'Updated.' in result.output
@@ -193,16 +179,82 @@ def test_db_init(global_integration_cli_args, db, local_config):
         assert not has_schema(db._engine, connection._connection)
 
     # Run on an empty database.
-    opts = list(global_integration_cli_args)
-    opts.extend(
-        [
-            '-v', 'system', 'init'
-        ]
-    )
     cli_method = datacube.scripts.cli_app.cli
-    result = _run_cli(cli_method, opts)
+    result = _run_cli(global_integration_cli_args, cli_method, [
+        '-v', 'system', 'init'
+    ])
     assert result.exit_code == 0
     assert 'Created.' in result.output
 
     with db.connect() as connection:
         assert has_schema(db._engine, connection._connection)
+
+
+def test_user_creation(global_integration_cli_args, db, default_metadata_type):
+    """
+    Add a user, grant them, delete them.
+
+    :type global_integration_cli_args: tuple[str]
+    :type db: datacube.index.postgres._api.PostgresDb
+    """
+    existing_mappings = _dataset_type_count(db)
+
+    print('{} mappings'.format(existing_mappings))
+
+    test_number = random.randint(111111, 999999)
+    user_name = 'test_user_{}'.format(test_number)
+
+    # No user exists.
+    assert_no_user(global_integration_cli_args, user_name)
+
+    # Create them
+    _run_cli(
+        global_integration_cli_args,
+        datacube.scripts.cli_app.cli,
+        [
+            '-v', 'user', 'create', 'ingest', user_name
+        ]
+    )
+    assert_user_with_role(global_integration_cli_args, 'ingest', user_name)
+
+    # Grant them 'manage' permission
+    _run_cli(
+        global_integration_cli_args,
+        datacube.scripts.cli_app.cli,
+        [
+            '-v', 'user', 'grant', 'manage', user_name
+        ]
+    )
+    assert_user_with_role(global_integration_cli_args, 'manage', user_name)
+
+    # Delete them
+    _run_cli(
+        global_integration_cli_args,
+        datacube.scripts.cli_app.cli,
+        [
+            '-v', 'user', 'delete', user_name
+        ]
+    )
+    assert_no_user(global_integration_cli_args, user_name)
+
+
+def assert_user_with_role(global_integration_cli_args, role, user_name):
+    result = _run_cli(
+        global_integration_cli_args,
+        datacube.scripts.cli_app.cli,
+        [
+            '-v', 'user', 'list'
+        ]
+    )
+    assert '{}\t{}'.format(role, user_name) in result.output
+
+
+def assert_no_user(global_integration_cli_args, username):
+    result = _run_cli(
+        global_integration_cli_args,
+        datacube.scripts.cli_app.cli,
+        [
+            '-v', 'user', 'list'
+        ]
+    )
+    assert username not in result.output
