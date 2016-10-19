@@ -831,7 +831,7 @@ class PostgresDbAPI(object):
             ]
 
     def __repr__(self):
-        return "PostgresDb<engine={!r}>".format(self._engine)
+        return "PostgresDb<connection={!r}>".format(self._connection)
 
     def list_users(self):
         result = self._connection.execute("""
@@ -850,10 +850,10 @@ class PostgresDbAPI(object):
 
     def create_user(self, username, password, role):
         pg_role = _to_pg_role(role)
-        tables.create_user(self._engine, username, password, pg_role)
+        tables.create_user(self._connection, username, password, pg_role)
 
     def drop_user(self, username):
-        tables.drop_user(self._engine, username)
+        tables.drop_user(self._connection, username)
 
     def grant_role(self, role, users):
         """
@@ -862,10 +862,10 @@ class PostgresDbAPI(object):
         pg_role = _to_pg_role(role)
 
         for user in users:
-            if not tables.has_role(self._engine, user):
+            if not tables.has_role(self._connection, user):
                 raise ValueError('Unknown user %r' % user)
 
-        tables.grant_role(self._engine, pg_role, users)
+        tables.grant_role(self._connection, pg_role, users)
 
 
 def _to_pg_role(role):
