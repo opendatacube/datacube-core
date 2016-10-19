@@ -3,6 +3,15 @@
 What's New
 ==========
 
+v1.1.11 Unnamed Unknown (19 October 2016)
+-----------------------------------------
+
+  - Improved ingester task throughput when using distributed executor
+
+  - Fixed an issue where loading tasks from disk would use too much memory
+
+  - :meth:`.model.GeoPolygon.to_crs` now adds additional points (~every 100km) to improve reprojection accuracy
+
 v1.1.10 Rabid Rabbit (5 October 2016)
 -------------------------------------
 
