@@ -111,13 +111,7 @@ def prepare_dataset(path):
     return documents
 
 
-@click.command(help="Prepare MODIS datasets for ingestion into the Data Cube.")
-@click.argument('datasets',
-                type=click.Path(exists=True, readable=True, writable=True),
-                nargs=-1)
-def main(datasets):
-    logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
-
+def make_datasets(datasets):
     for dataset in datasets:
         path = Path(dataset)
 
@@ -128,21 +122,39 @@ def main(datasets):
         else:
             paths = [path]
 
-        documents = []
         for path in paths:
             logging.info("Processing %s...", path)
             try:
-                documents += prepare_dataset(path)
+                yield path.parent, prepare_dataset(path)
             except Exception as e:
                 logging.info("Failed: %s", e)
 
-        if documents:
-            yaml_path = str(path.parent.joinpath('agdc-metadata.yaml'))
-            logging.info("Writing %s dataset(s) into %s", len(documents), yaml_path)
+
+def absolutify_paths(doc, path):
+    for band in doc['image']['bands'].values():
+        band['path'] = str(path/band['path'])
+    return doc
+
+
+@click.command(help="Prepare MODIS datasets for ingestion into the Data Cube.")
+@click.option('--output', help="Write datasets into this file",
+              type=click.Path(exists=False, writable=True, dir_okay=False))
+@click.argument('datasets',
+                type=click.Path(exists=True, readable=True, writable=False),
+                nargs=-1)
+def main(output, datasets):
+    logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
+
+    if output:
+        docs = (absolutify_paths(doc, path) for path, docs in make_datasets(datasets) for doc in docs)
+        with open(output, 'w') as stream:
+            yaml.dump_all(docs, stream)
+    else:
+        for path, docs in make_datasets(datasets):
+            yaml_path = str(path.joinpath('agdc-metadata.yaml'))
+            logging.info("Writing %s dataset(s) into %s", len(docs), yaml_path)
             with open(yaml_path, 'w') as stream:
-                yaml.dump_all(documents, stream)
-        else:
-            logging.info("No datasets discovered. Bye!")
+                yaml.dump_all(docs, stream)
 
 
 if __name__ == "__main__":
