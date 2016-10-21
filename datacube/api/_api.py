@@ -68,8 +68,8 @@ class API(object):
         if not geopolygon:
             geopolygon = get_bounds(datasets, dataset_type.grid_spec.crs)
 
-        datasets.sort(key=group_by.group_by_func)
-        groups = [Group(key, list(group)) for key, group in groupby(datasets, group_by.group_by_func)]
+        datasets.sort(key=group_by.grouping_key)
+        groups = [Group(key, list(group)) for key, group in groupby(datasets, group_by.grouping_key)]
 
         dataset_descriptor['result_min'] = tuple()
         dataset_descriptor['result_max'] = tuple()

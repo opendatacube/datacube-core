@@ -86,7 +86,7 @@ def test_convert_descriptor_query_to_search_query_with_groupby():
     }
     query = DescriptorQuery(descriptor_query)
     assert query.group_by
-    assert callable(query.group_by.group_by_func)
+    assert callable(query.group_by.grouping_key)
     assert query.group_by.dimension == 'time'
     assert query.group_by.units == 'seconds since 1970-01-01 00:00:00'
 
