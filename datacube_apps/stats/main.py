@@ -50,6 +50,7 @@ STATS = {
     'ndwi_stats': NormalisedDifferenceStats(name='ndwi', band1='green', band2='swir1',
                                             stats=['min', 'mean', 'max']),
     'ndvi_daily': NormalisedDifferenceStats(name='ndvi', band1='nir', band2='red', stats=['squeeze']),
+    'ndwi_daily': NormalisedDifferenceStats(name='ndvi', band1='nir', band2='red', stats=['squeeze']),
     'wofs': WofsStats(),
 }
 
@@ -443,15 +444,15 @@ def map_orderless(executor, core, tasks, queue=50):
         yield executor.result(future)
 
 
-def find_periods_with_data(index, sources, period_duration='1 day', start_date='1985-01-01', end_date='2000-01-01'):
+def find_periods_with_data(index, product_names, period_duration='1 day',
+                           start_date='1985-01-01', end_date='2000-01-01'):
     query = dict(y=(-3760000, -3820000), x=(1375400.0, 1480600.0), crs='EPSG:3577', time=(start_date, end_date))
-    product_names = [source['product'] for source in sources]
 
     valid_dates = set()
     for product in product_names:
         counts = index.datasets.count_product_through_time(period_duration, product=product,
                                                            **Query(**query).search_terms)
-        valid_dates.add(time_range for time_range, count in counts if count > 0)
+        valid_dates.update(time_range for time_range, count in counts if count > 0)
 
     for time_range in sorted(valid_dates):
         yield time_range.begin, time_range.end
@@ -468,10 +469,20 @@ def create_stats_app(filename, index=None):
     stats_app.computation = config.get('computation', {'chunking': {'x': 1000, 'y': 1000}})
 
     date_ranges = config['date_ranges']
-    stats_app.date_ranges = date_sequence(start=pd.to_datetime(date_ranges['start_date']),
-                                          end=pd.to_datetime(date_ranges['end_date']),
-                                          stats_duration=date_ranges['stats_duration'],
-                                          step_size=date_ranges['step_size'])
+    if date_ranges['type'] == 'simple':  # TODO, Can't pickle generator objects
+        stats_app.date_ranges = list(date_sequence(start=pd.to_datetime(date_ranges['start_date']),
+                                                   end=pd.to_datetime(date_ranges['end_date']),
+                                                   stats_duration=date_ranges['stats_duration'],
+                                                   step_size=date_ranges['step_size']))
+    elif date_ranges['type'] == 'find_daily_data':
+        product_names = [source['product'] for source in config['sources']]
+        stats_app.date_ranges = list(find_periods_with_data(index, product_names=product_names,
+                                                            start_date=date_ranges['start_date'],
+                                                            end_date=date_ranges['end_date']))
+    else:
+        raise StatsConfigurationError('Unknown date_ranges specification. Should be type=simple or '
+                                      'type=find_daily_data')
+
     if 'input_region' in config:
         if config['input_region'].get('output_type') == 'tiled':
             # A large, multi-tile input region, specified as geojson. Output will be individual tiles.
@@ -502,7 +513,7 @@ def create_stats_app(filename, index=None):
 @ui.executor_cli_options
 @ui.pass_index(app_name='agdc-output_products')
 def main(index, stats_config_file, executor):
-    app = create_stats_app(stats_config_file)
+    app = create_stats_app(stats_config_file, index)
 
     output_products = app.make_output_products(index)
     # TODO: Store output products in database
