@@ -160,7 +160,11 @@ class RioOutputDriver(OutputDriver):
                 })
 
                 output_name = prod_name + measurename
-                self.output_files[output_name] = rasterio.open(str(output_filename), mode='w', **profile)
+                src = rasterio.open(str(output_filename), mode='w', **profile)
+                # src.update_tags(created=self.app_info) # TODO record creation metadata
+                src.update_tags(1, platform=self.task.sources[0]['data'].product.name,
+                                date='{:%Y-%m-%d}'.format(self.task.time_period[0]))
+                self.output_files[output_name] = src
 
     def write_data(self, prod_name, measurement_name, tile_index, values):
         output_name = prod_name + measurement_name
