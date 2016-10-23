@@ -1,0 +1,48 @@
+name: gamma_ray
+description: The 2015 radiometric or gamma-ray grid of Australia
+metadata_type: eo
+
+metadata:
+        platform:
+            code: aircraft
+        instrument:
+            name: gamma_ray spectrometer
+        product_type: gamma_ray
+        format:
+            name: NETCDF
+
+storage:
+    crs: GEOGCS["GEOCENTRIC DATUM of AUSTRALIA",DATUM["GDA94",SPHEROID["GRS80",6378137,298.257222101]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]]
+    resolution:
+        longitude: 0.001
+        latitude: -0.001
+
+measurements:
+    - name: rad_air_dose_rate
+      dtype: float32
+      units: 'nG/h'
+      nodata: -99999
+    - name: rad_k_equiv_conc
+      dtype: float32
+      units: '%K'
+      nodata: -99999
+    - name: rad_ratio_tk
+      dtype: float32
+      units: 'ppm / %'
+      nodata: -99999
+    - name: rad_ratio_u2t
+      dtype: float32
+      units: 'ppm^2 / ppm'
+      nodata: -99999
+    - name: rad_ratio_uk
+      dtype: float32
+      units: 'ppm / %'
+      nodata: -99999
+    - name: rad_ratio_ut
+      dtype: float32
+      units: 'ppm / ppm'
+      nodata: -99999
+    - name: rad_u_equiv_conc
+      dtype: float32
+      units: 'ppm'
+      nodata: -99999
