@@ -57,6 +57,13 @@ else:
     def _rasterio_crs_wkt(src):
         return str(src.crs_wkt)
 
+if str(rasterio.__version__) >= '1.0':
+    def _rasterio_transform(src):
+        return src.transform
+else:
+    def _rasterio_transform(src):
+        return src.affine
+
 
 def _calc_offsets(off, src_size, dst_size):
     """
@@ -232,8 +239,9 @@ class DatasetSource(object):
         return idx
 
     def whats_my_transform(self, src):
-        if not src.transform.is_identity:
-            return src.transform
+        transform = _rasterio_transform(src)
+        if not transform.is_identity:
+            return transform
 
         # source probably doesn't have transform
         _LOG.warning('No GeoTransform in %s, band %s. Falling back to dataset GeoTransform. Gonna be slow...')
