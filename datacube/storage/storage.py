@@ -232,8 +232,8 @@ class DatasetSource(object):
         return idx
 
     def whats_my_transform(self, src):
-        if not src.affine.is_identity:
-            return src.affine
+        if not src.transform.is_identity:
+            return src.transform
 
         # source probably doesn't have transform
         _LOG.warning('No GeoTransform in %s, band %s. Falling back to dataset GeoTransform. Gonna be slow...')
