@@ -114,10 +114,10 @@ class MetadataTypeResource(object):
 
         _LOG.info("Updating metadata type %s", metadata_type.name)
 
-        for offset, new_val, old_val in safe_changes:
+        for offset, old_val, new_val in safe_changes:
             _LOG.info("Safe change from %r to %r", old_val, new_val)
 
-        for offset, new_val, old_val in unsafe_changes:
+        for offset, old_val, new_val in unsafe_changes:
             _LOG.info("Unsafe change from %r to %r", old_val, new_val)
 
         with self._db.connect() as connection:
@@ -341,10 +341,10 @@ class DatasetTypeResource(object):
 
         _LOG.info("Updating product %s", product.name)
 
-        for offset, new_val, old_val in safe_changes:
+        for offset, old_val, new_val in safe_changes:
             _LOG.info("Safe change from %r to %r", old_val, new_val)
 
-        for offset, new_val, old_val in unsafe_changes:
+        for offset, old_val, new_val in unsafe_changes:
             _LOG.info("Unsafe change from %r to %r", old_val, new_val)
 
         existing = self.get_by_name(product.name)
