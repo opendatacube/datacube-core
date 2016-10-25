@@ -98,7 +98,7 @@ class MetadataTypeResource(object):
 
         Safe updates currently allow new search fields to be added, description to be changed.
 
-        :param datacube.model.MetadataType metadata_type: updated MetadtaType
+        :param datacube.model.MetadataType metadata_type: updated MetadataType
         :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :rtype: datacube.model.MetadataType
         """
