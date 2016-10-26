@@ -160,6 +160,9 @@ class RioOutputDriver(OutputDriver):
                 })
 
                 output_name = prod_name + measurename
+
+                _LOG.debug("Opening %s for writing.", output_filename)
+
                 src = rasterio.open(str(output_filename), mode='w', **profile)
                 # src.update_tags(created=self.app_info) # TODO record creation metadata
                 src.update_tags(1, platform=self.task.sources[0]['data'].product.name,
