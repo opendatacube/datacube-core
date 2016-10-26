@@ -67,11 +67,21 @@ def update_dataset_types(index, allow_unsafe, dry_run, files):
             continue
 
         if not dry_run:
-            index.products.update(type_, allow_unsafe_updates=allow_unsafe)
-            echo('Updated "%s"' % type_.name)
+            try:
+                index.products.update(type_, allow_unsafe_updates=allow_unsafe)
+                echo('Updated "%s"' % type_.name)
+            except ValueError as e:
+                echo('Failed to update "%s": %s' % (type_.name, e))
         else:
             can_update, safe_changes, unsafe_changes = index.products.can_update(type_,
                                                                                  allow_unsafe_updates=allow_unsafe)
+
+            for offset, old_val, new_val in safe_changes:
+                echo('Safe change in "%s" from %r to %r' % (type_.name, old_val, new_val))
+
+            for offset, old_val, new_val in unsafe_changes:
+                echo('Unsafe change in "%s" from %r to %r' % (type_.name, old_val, new_val))
+
             if can_update:
                 echo('Can update "%s": %s unsafe changes, %s safe changes' % (type_.name,
                                                                               len(unsafe_changes),
