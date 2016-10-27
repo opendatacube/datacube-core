@@ -18,6 +18,13 @@ properties:
                 "$ref": "#/definitions/offset"
             sources:
                 "$ref": "#/definitions/offset"
+            # Optional
+            measurements:
+                "$ref": "#/definitions/offset"
+            format:
+                "$ref": "#/definitions/offset"
+            grid_spatial:
+                "$ref": "#/definitions/offset"
             search_fields:
                 type: object
         required:
@@ -25,6 +32,7 @@ properties:
             - creation_dt
             - label
             - sources
+        additionalProperties: false
 required:
     - name
     - description
