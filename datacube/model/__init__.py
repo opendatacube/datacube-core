@@ -615,7 +615,8 @@ class CRS(object):
         if isinstance(other, compat.string_types):
             other = CRS(other)
         assert isinstance(other, self.__class__)
-        return self._crs.IsSame(other._crs) == 1  # pylint: disable=protected-access
+        canonical = lambda crs: set(crs.ExportToProj4().split() + ['+wktext'])
+        return canonical(self._crs) == canonical(other._crs)  # pylint: disable=protected-access
 
     def __ne__(self, other):
         if isinstance(other, compat.string_types):

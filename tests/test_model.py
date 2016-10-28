@@ -49,3 +49,30 @@ def test_gridspec_upperleft():
     cells = {index: geobox for index, geobox in list(gs.tiles(bbox))}
     assert set(cells.keys()) == {(30, 15)}  # WELD grid spec has 21 vertical cells -- 21 - 6 = 15
     assert cells[(30, 15)].extent.boundingbox == tile_bbox
+
+
+def test_crs_equality():
+    a = CRS("""PROJCS["unnamed",GEOGCS["Unknown datum based upon the custom spheroid",
+               DATUM["Not specified (based on custom spheroid)",SPHEROID["Custom spheroid",6371007.181,0]],
+               PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],PROJECTION["Sinusoidal"],
+               PARAMETER["longitude_of_center",0],PARAMETER["false_easting",0],
+               PARAMETER["false_northing",0],UNIT["Meter",1]]""")
+    b = CRS("""PROJCS["unnamed",GEOGCS["unnamed ellipse",DATUM["unknown",SPHEROID["unnamed",6371007.181,0]],
+               PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],PROJECTION["Sinusoidal"],
+               PARAMETER["longitude_of_center",0],PARAMETER["false_easting",0],
+               PARAMETER["false_northing",0],UNIT["Meter",1]]""")
+    c = CRS('+a=6371007.181 +b=6371007.181 +units=m +y_0=0 +proj=sinu +lon_0=0 +no_defs +x_0=0')
+    assert a == b
+    assert a == c
+    assert b == c
+
+    assert a != CRS('EPSG:4326')
+
+    a = CRS("""GEOGCS["GEOCENTRIC DATUM of AUSTRALIA",DATUM["GDA94",SPHEROID["GRS80",6378137,298.257222101]],
+               PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]]""")
+    b = CRS("""GEOGCS["GRS 1980(IUGG, 1980)",DATUM["unknown",SPHEROID["GRS80",6378137,298.257222101]],
+               PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]]""")
+    c = CRS('+proj=longlat +no_defs +ellps=GRS80')
+    assert a == b
+    assert a == c
+    assert b == c
