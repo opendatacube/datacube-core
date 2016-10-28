@@ -85,7 +85,7 @@ class MetadataTypeResource(object):
             ('dataset',): changes.allow_superset
         }
 
-        doc_changes = get_doc_changes(existing.definition, metadata_type.definition)
+        doc_changes = get_doc_changes(existing.definition, jsonify_document(metadata_type.definition))
         good_changes, bad_changes = changes.classify_changes(doc_changes, updates_allowed)
 
         return allow_unsafe_updates or not bad_changes, good_changes, bad_changes
@@ -310,7 +310,7 @@ class DatasetTypeResource(object):
             ('metadata',): changes.allow_subset
         }
 
-        doc_changes = get_doc_changes(existing.definition, product.definition)
+        doc_changes = get_doc_changes(existing.definition, jsonify_document(product.definition))
         good_changes, bad_changes = changes.classify_changes(doc_changes, updates_allowed)
 
         return allow_unsafe_updates or not bad_changes, good_changes, bad_changes
