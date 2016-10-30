@@ -32,6 +32,7 @@ def add_dataset_types(index, files):
         try:
             type_ = index.products.from_doc(parsed_doc)
             index.products.add(type_)
+            echo('Added "%s"' % type_.name)
         except InvalidDocException as e:
             _LOG.exception(e)
             _LOG.error('Invalid product definition: %s', descriptor_path)
