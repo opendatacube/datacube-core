@@ -7,7 +7,6 @@ from __future__ import absolute_import, division, print_function
 import gzip
 import importlib
 import itertools
-from future.moves.itertools import zip_longest
 import json
 import logging
 import os
@@ -515,7 +514,7 @@ def get_doc_changes(original, new, base_prefix=()):
         for key in all_keys:
             changed_fields.extend(get_doc_changes(original.get(key), new.get(key), base_prefix + (key,)))
     elif isinstance(original, list) and isinstance(new, list):
-        for idx, (orig_item, new_item) in enumerate(zip_longest(original, new)):
+        for idx, (orig_item, new_item) in enumerate(compat.zip_longest(original, new)):
             changed_fields.extend(get_doc_changes(orig_item, new_item, base_prefix + (idx, )))
     else:
         changed_fields.append((base_prefix, original, new))
