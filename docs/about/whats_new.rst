@@ -3,6 +3,15 @@
 What's New
 ==========
 
+v1.1.12 Unnamed Unknown (1 November 2016)
+-----------------------------------------
+
+  - Fixed the affine deprecation warning
+
+  - Added `datacube metadata_type` cli tool which supports `add` and `update`
+
+  - Improved `datacube product` cli tool logging
+
 v1.1.11 Unnamed Unknown (19 October 2016)
 -----------------------------------------
 
