@@ -31,6 +31,7 @@ if not PY2:
         return config
 
     from urllib.parse import urlparse as parse_url
+    from itertools import zip_longest
 else:
     text_type = unicode
     string_types = (str, unicode)
@@ -52,6 +53,7 @@ else:
         return config
 
     from urlparse import urlparse as parse_url
+    from itertools import izip_longest as zip_longest
 
 
 def with_metaclass(meta, *bases):
