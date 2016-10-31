@@ -472,12 +472,24 @@ def get_doc_changes(original, new, base_prefix=()):
     :rtype: list[(tuple, object, object)]
 
 
+    >>> get_doc_changes(1, 1)
+    []
     >>> get_doc_changes({}, {})
     []
     >>> get_doc_changes({'a': 1}, {'a': 1})
     []
     >>> get_doc_changes({'a': {'b': 1}}, {'a': {'b': 1}})
     []
+    >>> get_doc_changes([1, 2, 3], [1, 2, 3])
+    []
+    >>> get_doc_changes([1, 2, [3, 4, 5]], [1, 2, [3, 4, 5]])
+    []
+    >>> get_doc_changes(1, 2)
+    [((), 1, 2)]
+    >>> get_doc_changes([1, 2, 3], [2, 1, 3])
+    [((0,), 1, 2), ((1,), 2, 1)]
+    >>> get_doc_changes([1, 2, [3, 4, 5]], [1, 2, [3, 6, 7]])
+    [((2, 1), 4, 6), ((2, 2), 5, 7)]
     >>> get_doc_changes({'a': 1}, {'a': 2})
     [(('a',), 1, 2)]
     >>> get_doc_changes({'a': 1}, {'a': 2})
@@ -497,27 +509,15 @@ def get_doc_changes(original, new, base_prefix=()):
     if original == new:
         return changed_fields
 
-    if not isinstance(new, dict):
+    if isinstance(original, dict) and isinstance(new, dict):
+        all_keys = set(original.keys()).union(new.keys())
+        for key in all_keys:
+            changed_fields.extend(get_doc_changes(original.get(key), new.get(key), base_prefix + (key,)))
+    elif isinstance(original, list) and isinstance(new, list):
+        for idx, (orig_item, new_item) in enumerate(itertools.zip_longest(original, new)):
+            changed_fields.extend(get_doc_changes(orig_item, new_item, base_prefix + (idx, )))
+    else:
         changed_fields.append((base_prefix, original, new))
-        return changed_fields
-
-    all_keys = set(original.keys()).union(new.keys())
-
-    for key in all_keys:
-        key_prefix = base_prefix + (key,)
-
-        original_val = original.get(key)
-        new_val = new.get(key)
-
-        if original_val == new_val:
-            continue
-
-        if isinstance(original_val, dict):
-            changed_fields.extend(get_doc_changes(original_val, new_val, key_prefix))
-        else:
-            changed_fields.append(
-                (key_prefix, original_val, new_val)
-            )
 
     return sorted(changed_fields, key=lambda a: a[0])
 
