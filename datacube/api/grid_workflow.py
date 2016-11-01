@@ -223,8 +223,8 @@ class GridWorkflow(object):
         """
         tiles = {}
         for cell_index, observation in observations.items():
-            observation['datasets'].sort(key=group_by.sorting_key, reverse=group_by.reversed)
-            groups = [(key, tuple(group)) for key, group in groupby(observation['datasets'], group_by.grouping_key)]
+            observation['datasets'].sort(key=group_by.group_by_func)
+            groups = [(key, tuple(group)) for key, group in groupby(observation['datasets'], group_by.group_by_func)]
 
             for key, datasets in groups:
                 data = numpy.empty(1, dtype=object)
