@@ -10,6 +10,7 @@ import io
 import uuid
 
 import datacube.scripts.search_tool
+import datacube.scripts.cli_app
 import pytest
 from click.testing import CliRunner
 from datacube.model import Range
@@ -497,6 +498,39 @@ def test_count_time_groups(index, pseudo_telemetry_type, pseudo_telemetry_datase
             1
         )
     ]
+
+
+@pytest.mark.usefixtures('default_metadata_type',
+                         'indexed_ls5_scene_dataset_type')
+def test_source_filter(global_integration_cli_args, index, example_ls5_dataset, ls5_nbar_ingest_config):
+    opts = list(global_integration_cli_args)
+    opts.extend(
+        [
+            '-v',
+            'dataset',
+            'add',
+            '--auto-match',
+            str(example_ls5_dataset)
+        ]
+    )
+    result = CliRunner().invoke(
+        datacube.scripts.cli_app.cli,
+        opts,
+        catch_exceptions=False
+    )
+
+    all_nbar = index.datasets.search_eager(product='ls5_nbar_scene')
+    assert len(all_nbar) == 1
+
+    dss = index.datasets.search_eager(product='ls5_nbar_scene', source_filter={'product': 'ls5_level1_scene',
+                                                                               'gsi': 'ASA'})
+    assert dss == all_nbar
+    dss = index.datasets.search_eager(product='ls5_nbar_scene', source_filter={'product': 'ls5_level1_scene',
+                                                                               'gsi': 'GREG'})
+    assert dss == []
+
+    with pytest.raises(RuntimeError):
+        dss = index.datasets.search_eager(product='ls5_nbar_scene', source_filter={'gsi': 'ASA'})
 
 
 def test_count_time_groups_cli(global_integration_cli_args, pseudo_telemetry_type, pseudo_telemetry_dataset):

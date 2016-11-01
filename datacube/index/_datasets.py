@@ -715,7 +715,8 @@ class DatasetResource(object):
         :param dict[str,str|float|datacube.model.Range] query:
         :rtype: __generator[datacube.model.Dataset]
         """
-        for dataset_type, datasets in self._do_search_by_product(query):
+        source_filter = query.pop('source_filter', None)
+        for dataset_type, datasets in self._do_search_by_product(query, source_filter=source_filter):
             for dataset in self._make_many(datasets):
                 yield dataset
 
@@ -796,8 +797,18 @@ class DatasetResource(object):
             q['dataset_type_id'] = dataset_type.id
             yield q, dataset_type
 
-    def _do_search_by_product(self, query, return_fields=False, with_source_ids=False):
-        product_queries = self._get_product_queries(query)
+    def _do_search_by_product(self, query, return_fields=False, with_source_ids=False, source_filter=None):
+        if source_filter:
+            product_queries = list(self._get_product_queries(source_filter))
+            if len(product_queries) != 1:
+                raise RuntimeError("Multi-product source filters are not supported. Try adding 'product' field")
+            [[source_queries, source_product]] = product_queries
+            dataset_fields = source_product.metadata_type.dataset_fields
+            source_exprs = tuple(fields.to_expressions(dataset_fields.get, **source_queries))
+        else:
+            source_exprs = None
+
+        product_queries = list(self._get_product_queries(query))
         with self._db.connect() as connection:
             for q, dataset_type in product_queries:
                 dataset_fields = dataset_type.metadata_type.dataset_fields
@@ -808,6 +819,7 @@ class DatasetResource(object):
                 yield (dataset_type,
                        connection.search_datasets(
                            query_exprs,
+                           source_exprs,
                            select_fields=select_fields,
                            with_source_ids=with_source_ids
                        ))

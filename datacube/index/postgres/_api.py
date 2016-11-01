@@ -23,7 +23,7 @@ from datacube.index.fields import OrExpression
 from datacube.model import Range
 from datacube.utils import jsonify_document
 from sqlalchemy import cast
-from sqlalchemy import create_engine, select, text, bindparam, and_, or_, func
+from sqlalchemy import create_engine, select, text, bindparam, and_, or_, func, literal, distinct
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.url import URL as EngineUrl
@@ -512,7 +512,7 @@ class PostgresDbAPI(object):
         return [raw_expr(expression) for expression in expressions]
 
     @staticmethod
-    def search_datasets_query(expressions, select_fields=None, with_source_ids=False):
+    def search_datasets_query(expressions, source_exprs, select_fields=None, with_source_ids=False):
         if select_fields:
             select_columns = tuple(
                 f.alchemy_expression.label(f.name)
@@ -536,27 +536,65 @@ class PostgresDbAPI(object):
             )
 
         raw_expressions = PostgresDbAPI._alchemify_expressions(expressions)
+        from_expression = PostgresDbAPI._from_expression(DATASET, expressions, select_fields)
+        where_expr = and_(DATASET.c.archived == None, *raw_expressions)
 
-        select_query = (
+        if not source_exprs:
+            return (
+                select(
+                    select_columns
+                ).select_from(
+                    from_expression
+                ).where(
+                    where_expr
+                )
+            )
+
+        base_query = (
             select(
-                select_columns
+                select_columns + (DATASET_SOURCE.c.source_dataset_ref,
+                                  literal(1).label('distance'),
+                                  DATASET_SOURCE.c.classifier.label('path'))
             ).select_from(
-                PostgresDbAPI._from_expression(DATASET, expressions, select_fields)
+                from_expression.join(DATASET_SOURCE, DATASET.c.id == DATASET_SOURCE.c.dataset_ref)
             ).where(
-                and_(DATASET.c.archived == None, *raw_expressions)
+                where_expr
+            )
+        ).cte(name="base_query", recursive=True)
+
+        recursive_query = base_query.union_all(
+            select(
+                [col for col in base_query.columns if col.name not in ['source_dataset_ref', 'distance', 'path']] +
+                [DATASET_SOURCE.c.source_dataset_ref,
+                 (base_query.c.distance + 1).label('distance'),
+                 (base_query.c.path + '.' + DATASET_SOURCE.c.classifier).label('path')]
+            ).select_from(
+                base_query.join(
+                    DATASET_SOURCE, base_query.c.source_dataset_ref == DATASET_SOURCE.c.dataset_ref
+                )
             )
         )
 
-        return select_query
+        return (
+            select(
+                [distinct(recursive_query.c.id)] +
+                [col for col in recursive_query.columns
+                 if col.name not in ['id', 'source_dataset_ref', 'distance', 'path']]
+            ).select_from(
+                recursive_query.join(DATASET, DATASET.c.id == recursive_query.c.source_dataset_ref)
+            ).where(
+                and_(DATASET.c.archived == None, *PostgresDbAPI._alchemify_expressions(source_exprs))
+            )
+        )
 
-    def search_datasets(self, expressions, select_fields=None, with_source_ids=False):
+    def search_datasets(self, expressions, source_exprs=None, select_fields=None, with_source_ids=False):
         """
         :type with_source_ids: bool
         :type select_fields: tuple[datacube.index.postgres._fields.PgField]
         :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
         :rtype: dict
         """
-        select_query = self.search_datasets_query(expressions, select_fields, with_source_ids)
+        select_query = self.search_datasets_query(expressions, source_exprs, select_fields, with_source_ids)
         return self._connection.execute(select_query)
 
     def count_datasets(self, expressions):
