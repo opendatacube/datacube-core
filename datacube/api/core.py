@@ -369,9 +369,10 @@ class Datacube(object):
 
         .. seealso:: :meth:`product_observations` :meth:`product_data`
         """
-        dimension, group_func, units = group_by
-        datasets.sort(key=group_func)
-        groups = [Group(key, tuple(group)) for key, group in groupby(datasets, group_func)]
+        dimension, grouping_key, units, sorting_key, reverse_sort = group_by
+        datasets = sorted(datasets, key=sorting_key)
+        groups = [Group(key, tuple(sorted(group, key=sorting_key, reverse=reverse_sort)))
+                  for key, group in groupby(datasets, grouping_key)]
 
         data = numpy.empty(len(groups), dtype=object)
         for index, group in enumerate(groups):
