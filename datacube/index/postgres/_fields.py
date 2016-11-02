@@ -13,8 +13,7 @@ from datacube.model import Range
 from datacube.utils import get_doc_offset
 from dateutil import tz
 from psycopg2.extras import NumericRange, DateTimeTZRange
-from sqlalchemy import cast
-from sqlalchemy import func
+from sqlalchemy import cast, func, and_
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import INT4RANGE
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
@@ -145,6 +144,9 @@ class IntDocField(SimpleDocField):
     def alchemy_casted_type(self):
         return postgres.INTEGER
 
+    def between(self, low, high):
+        return ValueBetweenExpression(self, low, high)
+
     def from_string(self, s):
         return int(s)
 
@@ -153,6 +155,9 @@ class DoubleDocField(SimpleDocField):
     @property
     def alchemy_casted_type(self):
         return postgres.DOUBLE_PRECISION
+
+    def between(self, low, high):
+        return ValueBetweenExpression(self, low, high)
 
     def from_string(self, s):
         return float(s)
@@ -308,6 +313,23 @@ class PgExpression(Expression):
         :return:
         """
         raise NotImplementedError('alchemy expression')
+
+
+class ValueBetweenExpression(PgExpression):
+    def __init__(self, field, low_value, high_value):
+        super(ValueBetweenExpression, self).__init__(field)
+        self.low_value = low_value
+        self.high_value = high_value
+
+    @property
+    def alchemy_expression(self):
+        if self.low_value is not None and self.high_value is not None:
+            return and_(self.field.alchemy_expression >= self.low_value,
+                        self.field.alchemy_expression < self.high_value)
+        if self.low_value is not None:
+            return self.field.alchemy_expression >= self.low_value
+        if self.high_value is not None:
+            return self.field.alchemy_expression < self.high_value
 
 
 class RangeBetweenExpression(PgExpression):
