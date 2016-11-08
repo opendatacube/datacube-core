@@ -7,7 +7,7 @@ query = {
     'lon': (149.0, 149.2),
 }
 
-dc = datacube.Datacube()
+dc = datacube.Datacube(app='plot-rgb-recipe')
 data = dc.load(product='ls5_nbar_albers', measurements=['red', 'green', 'blue'], **query)
 data = mask_invalid_data(data)
 

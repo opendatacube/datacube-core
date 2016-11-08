@@ -48,7 +48,7 @@ def main():
         'crs': line_crs
     }
 
-    dc = datacube.Datacube()
+    dc = datacube.Datacube(app='line-trans-recipe')
     data = dc.load(product='ls5_nbar_albers', measurements=['red'], **query)
 
     line_albers = warp_geometry(line, query['crs'], data.crs.wkt)

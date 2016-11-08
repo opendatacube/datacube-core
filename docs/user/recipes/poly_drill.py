@@ -37,7 +37,7 @@ def main():
         'crs': geom_crs
     }
 
-    dc = datacube.Datacube(config='/home/547/gxr547/config/prodcube.conf')
+    dc = datacube.Datacube(app='poly-drill-recipe')
     data = dc.load(product='ls5_nbar_albers', measurements=['red'], **query)
 
     mask = geometry_mask(warp_geometry(geom, query['crs'], data.crs.wkt), data.geobox, invert=True)
