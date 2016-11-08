@@ -53,6 +53,19 @@ Uses
 .. literalinclude:: recipes/multi_prod_series.py
     :language: python
 
+Polygon Drill
+-------------
+
+Uses
+:class:`datacube.Datacube`
+:class:`xarray.DataArray`
+:class:`datacube.model.CRS`
+:meth:`datacube.Datacube.load`
+:meth:`xarray.Dataset.where`
+
+.. literalinclude:: recipes/poly_drill.py
+    :language: python
+
 Line Transect
 -------------
 
