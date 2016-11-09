@@ -142,6 +142,10 @@ def create_task_list(index, output_type, year, source_type, config):
     query = {}
     if year:
         query['time'] = Range(datetime(year=year, month=1, day=1), datetime(year=year + 1, month=1, day=1))
+    if 'ingestion_bounds' in config:
+        bounds = config['ingestion_bounds']
+        query['x'] = Range(bounds['left'], bounds['right'])
+        query['y'] = Range(bounds['bottom'], bounds['top'])
 
     tasks = find_diff(source_type, output_type, index, **query)
     _LOG.info('%s tasks discovered', len(tasks))
