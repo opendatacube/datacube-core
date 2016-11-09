@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import logging
 import sys
 
+import csv
 import click
 import yaml
 from pathlib import Path
@@ -169,6 +170,25 @@ def info_cmd(index, show_sources, show_derived, ids):
             continue
 
         yaml.safe_dump(build_dataset_info(index, dataset, show_derived), stream=sys.stdout)
+
+
+def _write_csv(info):
+    writer = csv.DictWriter(sys.stdout, ['id', 'product', 'location'], extrasaction='ignore')
+    writer.writeheader()
+    writer.writerows(info)
+
+
+@dataset_cmd.command('search', help="Search datasets")
+@click.option('-f', help='Output format', type=click.Choice(['yaml', 'csv']), default='csv', show_default=True)
+@ui.parsed_search_expressions
+@ui.pass_index()
+def search_cmd(index, f, expressions):
+    datasets = index.datasets.search(**expressions)
+    info = (build_dataset_info(index, dataset) for dataset in datasets)
+    {
+        'csv': _write_csv,
+        'yaml': yaml.dump_all
+    }[f](info)
 
 
 def get_derived_set(index, id_):
