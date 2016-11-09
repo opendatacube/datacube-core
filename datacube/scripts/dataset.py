@@ -78,7 +78,7 @@ def load_rules_from_types(index, type_names=None):
             if not type_:
                 _LOG.error('DatasetType %s does not exists', name)
                 return
-            types += type_
+            types.append(type_)
     else:
         types += index.products.get_all()
 
