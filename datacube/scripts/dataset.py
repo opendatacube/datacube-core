@@ -156,7 +156,7 @@ def build_dataset_info(index, dataset, show_derived=False):
     }
 
 
-@dataset_cmd.command('info', help="Archive datasets")
+@dataset_cmd.command('info', help="Display dataset id, product, location and provenance")
 @click.option('--show-sources', help='Also show sources', is_flag=True, default=False)
 @click.option('--show-derived', help='Also show sources', is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
