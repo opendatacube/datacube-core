@@ -90,9 +90,12 @@ class API(object):
             else:
                 # not supported yet...
                 continue
-            dataset_descriptor['result_min'] += (min(coords),)
-            dataset_descriptor['result_max'] += (max(coords),)
-            dataset_descriptor['result_shape'] += (len(coords),)
+            # this is here due to the fact that not every dataset we have ingested will have
+            # data for every area... This was broken on commit 5b83ea6ec2f7fab5ecd2fe40fba02db8786ec711, Aug 4.
+            if len(coords) > 0:
+                dataset_descriptor['result_min'] += (min(coords),)
+                dataset_descriptor['result_max'] += (max(coords),)
+                dataset_descriptor['result_shape'] += (len(coords),)
 
         if dataset_type.measurements:
             dataset_descriptor['variables'] = self._get_descriptor_for_measurements(dataset_type)
