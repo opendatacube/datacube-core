@@ -12,6 +12,7 @@ from datacube.model import CRS
 from datacube.storage import netcdf_writer
 from datacube.config import OPTIONS
 from datacube.utils import clamp, datetime_to_seconds_since_1970
+from future.moves.urllib.parse import urlparse, urljoin
 
 try:
     from yaml import CSafeDumper as SafeDumper
@@ -175,28 +176,14 @@ class DatasetSource(object):
         self.nodata = None
         self.format = dataset.format
         self.time = dataset.center_time
-        self.local_path = dataset.local_path
+        self.local_uri = dataset.local_uri
 
     @contextmanager
     def open(self):
-        if self._descriptor['path']:
-            if Path(self._descriptor['path']).is_absolute():
-                filename = self._descriptor['path']
-            else:
-                filename = str(self.local_path.parent.joinpath(self._descriptor['path']))
-        else:
-            filename = str(self.local_path)
-
-        for nasty_format in ('netcdf', 'hdf'):
-            if nasty_format in self.format.lower():
-                filename = 'file://%s:%s:%s' % (self.format, filename, self._descriptor['layer'])
-                bandnumber = None
-                break
-        else:
-            bandnumber = self._descriptor.get('layer', 1)
+        filename, bandnumber = self.wheres_my_data()
 
         try:
-            _LOG.debug("openening %s, band %s", filename, bandnumber)
+            _LOG.debug("opening %s, band %s", filename, bandnumber)
             with rasterio.open(filename) as src:
                 if bandnumber is None:
                     if 'netcdf' in self.format.lower():
@@ -221,6 +208,28 @@ class DatasetSource(object):
         except Exception as e:
             _LOG.error("Error opening source dataset: %s", filename)
             raise e
+
+    def wheres_my_data(self):
+        if self._descriptor['path']:
+            url = urlparse(self._descriptor['path'])
+            if not url.scheme or url.scheme == 'file':
+                if not Path(url.path).is_absolute():
+                    url = urlparse(urljoin(self.local_uri, self._descriptor['path']))
+        else:
+            url = urlparse(self.local_uri)
+
+        for nasty_format in ('netcdf', 'hdf'):
+            if nasty_format in self.format.lower():
+                if url.scheme and url.scheme != 'file':
+                    raise RuntimeError("Can't access %s over %s" % (self.format, url.scheme))
+                filename = 'file://%s:%s:%s' % (self.format, url.path, self._descriptor['layer'])
+                bandnumber = None
+                break
+        else:
+            filename = url.geturl()
+            bandnumber = self._descriptor.get('layer', 1)
+
+        return filename, bandnumber
 
     def wheres_my_band(self, src, time):
         if GDAL_NETCDF_TIME not in src.tags(1):
