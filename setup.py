@@ -76,7 +76,6 @@ setup(
         'dask[array]',
         'setuptools',
         'xarray',
-        'future',
     ],
     extras_require=extras_require,
     tests_require=[
