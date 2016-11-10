@@ -43,9 +43,9 @@ Along with 2 versions of Python:
  * **py2** - Python 2.7
  * **py3** - Python 3.5
 
-To load the production module with Python 2, run::
+To load the production module with Python 3, run::
 
-    [usr111@raijin ~]$ module load agdc-py2-prod
+    [usr111@raijin ~]$ module load agdc-py3-prod
 
 The first time you load the module, it will register your account with the database, granting you read-only access.
 It will store your password in the file `~/.pgpass`.
