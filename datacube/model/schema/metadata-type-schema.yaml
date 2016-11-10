@@ -37,6 +37,8 @@ properties:
                                 "$ref": "#/definitions/offset"
                             type:
                                 type: string
+                            indexed:
+                                type: boolean
                             min_offset:
                                 type: array
                                 items:

@@ -7,6 +7,7 @@ from __future__ import absolute_import
 
 from functools import partial
 
+from datacube import compat
 from datacube.index.fields import Expression, Field
 from datacube.index.postgres.tables import FLOAT8RANGE
 from datacube.model import Range
@@ -26,11 +27,12 @@ class PgField(Field):
     a JSONB column.
     """
 
-    def __init__(self, name, description, alchemy_column):
+    def __init__(self, name, description, alchemy_column, indexed):
         super(PgField, self).__init__(name, description)
 
         # The underlying SQLAlchemy column. (eg. DATASET.c.metadata)
         self.alchemy_column = alchemy_column
+        self.indexed = indexed
 
     @property
     def required_alchemy_table(self):
@@ -78,7 +80,7 @@ class NativeField(PgField):
     """
 
     def __init__(self, name, description, alchemy_column, alchemy_expression=None):
-        super(NativeField, self).__init__(name, description, alchemy_column)
+        super(NativeField, self).__init__(name, description, alchemy_column, False)
         self._expression = alchemy_expression
 
     @property
@@ -96,8 +98,8 @@ class SimpleDocField(PgField):
     A field with a single value (eg. String, int)
     """
 
-    def __init__(self, name, description, alchemy_column, offset=None):
-        super(SimpleDocField, self).__init__(name, description, alchemy_column)
+    def __init__(self, name, description, alchemy_column, indexed, offset=None):
+        super(SimpleDocField, self).__init__(name, description, alchemy_column, indexed)
         self.offset = offset
 
     @property
@@ -169,8 +171,8 @@ class RangeDocField(PgField):
     values in the document.
     """
 
-    def __init__(self, name, description, alchemy_column, min_offset=None, max_offset=None):
-        super(RangeDocField, self).__init__(name, description, alchemy_column)
+    def __init__(self, name, description, alchemy_column, indexed, min_offset=None, max_offset=None):
+        super(RangeDocField, self).__init__(name, description, alchemy_column, indexed)
         self.min_offset = min_offset
         self.max_offset = max_offset
 
@@ -364,7 +366,7 @@ def parse_fields(doc, table_column):
     Parse a field spec document into objects.
 
     Example document:
-    :param metadata_type_id:
+
     ::
 
         {
@@ -411,13 +413,15 @@ def parse_fields(doc, table_column):
         ctorargs = descriptor.copy()
         type_name = ctorargs.pop('type', 'string')
         description = ctorargs.pop('description', None)
+        indexed_val = ctorargs.pop('indexed', "true")
+        indexed = indexed_val.lower() == 'true' if isinstance(indexed_val, compat.string_types) else indexed_val
 
         field_class = type_map.get(type_name)
         if not field_class:
             raise ValueError(('Field %r has unknown type %r.'
                               ' Available types are: %r') % (name, type_name, list(type_map.keys())))
         try:
-            return field_class(name, description, column, **ctorargs)
+            return field_class(name, description, column, indexed, **ctorargs)
         except TypeError as e:
             raise RuntimeError(
                 'Field {name} has unexpected argument for a {type}'.format(

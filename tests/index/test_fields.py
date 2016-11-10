@@ -29,6 +29,7 @@ def test_get_field():
         SimpleDocField(
             'platform', 'Satellite',
             DATASET.c.metadata,
+            True,
             offset=['platform', 'code']
         )
     )
@@ -45,6 +46,7 @@ def test_get_field():
         NumericRangeDocField(
             'lat', None,
             DATASET.c.metadata,
+            True,
             max_offset=[['extents', 'geospatial_lat_max']],
             min_offset=[['extents', 'geospatial_lat_min']],
         )
