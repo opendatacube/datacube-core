@@ -27,6 +27,25 @@ properties:
                 "$ref": "#/definitions/offset"
             search_fields:
                 type: object
+                patternProperties:
+                    "[a-zA-Z0-9_]+":
+                        type: object
+                        properties:
+                            description:
+                                type: string
+                            offset:
+                                "$ref": "#/definitions/offset"
+                            type:
+                                type: string
+                            min_offset:
+                                type: array
+                                items:
+                                    "$ref": "#/definitions/offset"
+                            max_offset:
+                                type: array
+                                items:
+                                    "$ref": "#/definitions/offset"
+                        additionalProperties: false
         required:
             - id
             - creation_dt
