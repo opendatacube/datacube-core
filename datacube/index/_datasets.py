@@ -51,7 +51,7 @@ class MetadataTypeResource(object):
             # They've passed us the same one again. Make sure it matches what is stored.
             check_doc_unchanged(
                 existing.definition,
-                metadata_type.definition,
+                jsonify_document(metadata_type.definition),
                 'Metadata Type {}'.format(metadata_type.name)
             )
         else:
@@ -265,7 +265,7 @@ class DatasetTypeResource(object):
         if existing:
             check_doc_unchanged(
                 existing.definition,
-                type_.definition,
+                jsonify_document(type_.definition),
                 'Metadata Type {}'.format(type_.name)
             )
         else:
