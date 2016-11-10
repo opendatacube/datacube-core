@@ -12,7 +12,7 @@ from datacube.model import CRS
 from datacube.storage import netcdf_writer
 from datacube.config import OPTIONS
 from datacube.utils import clamp, datetime_to_seconds_since_1970
-from future.moves.urllib.parse import urlparse, urljoin
+from datacube.compat import urlparse, urljoin
 
 try:
     from yaml import CSafeDumper as SafeDumper

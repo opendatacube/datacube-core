@@ -603,7 +603,7 @@ def uri_to_local_path(local_uri):
     if not local_uri:
         return None
 
-    components = compat.parse_url(local_uri)
+    components = compat.urlparse(local_uri)
     if components.scheme != 'file':
         raise ValueError('Only file URIs currently supported. Tried %r.' % components.scheme)
 
