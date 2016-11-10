@@ -74,6 +74,9 @@ def test_dataset_indexes_views_exist(db, ls5_nbar_gtiff_type):
     # Ensure view was created (following naming conventions)
     assert _object_exists(db, 'dv_ls5_nbart_p54_gtiff_dataset')
 
+    # Ensure view was created (following naming conventions)
+    assert not _object_exists(db, 'dix_ls5_nbart_p54_gtiff_gsi'), "indexed=false field gsi shouldn't have an index"
+
 
 def test_dataset_composit_indexes_exist(db, ls5_nbar_gtiff_type):
     # This type has fields named lat/lon/time, so composite indexes should now exist for them:

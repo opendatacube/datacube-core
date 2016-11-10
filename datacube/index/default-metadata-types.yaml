@@ -117,6 +117,8 @@ dataset:
         gsi:
             description: Ground Station Identifier (eg. ASA)
             offset: [acquisition, groundstation, code]
+            indexed: false
+
         orbit:
             description: Orbit number
             offset: [acquisition, platform_orbit]
@@ -221,6 +223,7 @@ dataset:
         gsi:
             description: Ground Station Identifier (eg. ASA)
             offset: [acquisition, groundstation, code]
+            indexed: false
 
         orbit:
             description: Orbit number
