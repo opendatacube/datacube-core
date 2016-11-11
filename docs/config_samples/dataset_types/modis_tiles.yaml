@@ -1,5 +1,5 @@
 name: modis_mcd43a1_tile
-description: MODIS 500 metre MCD43A1
+description: MODIS 500 metre MCD43A1 Collection 006
 metadata_type: eo
 
 metadata:
@@ -13,63 +13,204 @@ metadata:
 
 storage:
     crs: >
-         PROJCS["unnamed",
-         GEOGCS["Unknown datum based upon the custom spheroid",
-         DATUM["Not specified (based on custom spheroid)",
-         SPHEROID["Custom spheroid",6371007.181,0]],
-         PRIMEM["Greenwich",0],
-         UNIT["degree",0.0174532925199433]],
-         PROJECTION["Sinusoidal"],
-         PARAMETER["longitude_of_center",0],
-         PARAMETER["false_easting",0], PARAMETER["false_northing",0], UNIT["Meter",1]]
+         PROJCS["unnamed",GEOGCS["Unknown datum based upon the custom spheroid",DATUM["Not specified (based on custom spheroid)",SPHEROID["Custom spheroid",6371007.181,0]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],PROJECTION["Sinusoidal"],PARAMETER["longitude_of_center",0],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["Meter",1]]
 
 measurements:
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band1'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band1:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 1 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band2'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band2:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 2 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band3'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band3:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 3 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band4'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band4:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 4 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band5'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band5:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 5 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band6'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band6:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 6 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band7'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band7:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 7 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_nir'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band nir:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality NIR broadband 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_shortwave'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_shortwave:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for shortwave broadband 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_vis'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_vis:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for VIS broadband 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
     - name: 'BRDF_Albedo_Parameters_Band1'
       dtype: int16
       units: '1'
       nodata: 32767
     - name: 'BRDF_Albedo_Parameters_Band2'
-      dtype: int16
+      dtype: uint16
       units: '1'
       nodata: 32767
     - name: 'BRDF_Albedo_Parameters_Band3'
-      dtype: int16
+      dtype: uint16
       units: '1'
       nodata: 32767
     - name: 'BRDF_Albedo_Parameters_Band4'
-      dtype: int16
+      dtype: uint16
       units: '1'
       nodata: 32767
     - name: 'BRDF_Albedo_Parameters_Band5'
-      dtype: int16
+      dtype: uint16
       units: '1'
       nodata: 32767
     - name: 'BRDF_Albedo_Parameters_Band6'
-      dtype: int16
+      dtype: uint16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_Band7'
+      dtype: uint16
       units: '1'
       nodata: 32767
     - name: 'BRDF_Albedo_Parameters_nir'
-      dtype: int16
+      dtype: uint16
       units: '1'
       nodata: 32767
     - name: 'BRDF_Albedo_Parameters_shortwave'
-      dtype: int16
+      dtype: uint16
       units: '1'
       nodata: 32767
     - name: 'BRDF_Albedo_Parameters_vis'
-      dtype: int16
-      units: '1'
-      nodata: 32767
-    - name: 'BRDF_Shape_Indicators'
-      dtype: int16
+      dtype: uint16
       units: '1'
       nodata: 32767
 ---
 
 name: modis_mcd43a2_tile
-description: MODIS 500 metre MCD43A2
+description: MODIS 500 metre MCD43A2 Collection 006
 metadata_type: eo
-#https://ladsweb.nascom.nasa.gov/filespec/collection5/MCD43A2.fs
 metadata:
     platform:
         code: AQUA_TERRA
@@ -81,33 +222,861 @@ metadata:
 
 storage:
     crs: >
-         PROJCS["unnamed",
-         GEOGCS["Unknown datum based upon the custom spheroid",
-         DATUM["Not specified (based on custom spheroid)",
-         SPHEROID["Custom spheroid",6371007.181,0]],
-         PRIMEM["Greenwich",0],
-         UNIT["degree",0.0174532925199433]],
-         PROJECTION["Sinusoidal"],
-         PARAMETER["longitude_of_center",0],
-         PARAMETER["false_easting",0], PARAMETER["false_northing",0], UNIT["Meter",1]]
+         PROJCS["unnamed",GEOGCS["Unknown datum based upon the custom spheroid",DATUM["Not specified (based on custom spheroid)",SPHEROID["Custom spheroid",6371007.181,0]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],PROJECTION["Sinusoidal"],PARAMETER["longitude_of_center",0],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["Meter",1]]
 
 measurements:
-    - name: 'BRDF_Albedo_Ancillary'
-      dtype: int16
+    - name: 'BRDF_Albedo_Band_Quality_Band1'
+      dtype: uint8
       units: '1'
-      nodata: 32767
-      units: '1'
+      nodata: 4
       flags_definition: 
-        platform:
-          bits: [0,1,2,3]
-          description: Platform name
+        band_1_brdf_inversion_Information:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Inversion Information 
+                     0 = best quality, full inversion (WoDs, RMSE majority good) 
+                     1 = good quality, full inversion (also including the cases that no clear sky observations over the day of interest or the Solar Zenith Angle is too large even WoDs, RMSE majority good)                           
+                     2 = Magnitude inversion (numobs >=7)                        
+                     3 = Magnitude inversion (numobs >=2&<7)                     
+                     4 = Fill value      
           values:
-            0: terra
-            1: aqua_terra
-            2: aqua
-        land_water:
-          bits: [4,5,6,7]
-          description: Land/Water
+            0: best
+            1: good
+            2: medium
+            3: low
+            4: fill
+    - name: 'BRDF_Albedo_Band_Quality_Band2'
+      dtype: uint8
+      units: '1'
+      nodata: 4
+      flags_definition: 
+        band_1_brdf_inversion_Information:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Inversion Information 
+                     0 = best quality, full inversion (WoDs, RMSE majority good) 
+                     1 = good quality, full inversion (also including the cases that no clear sky observations over the day of interest or the Solar Zenith Angle is too large even WoDs, RMSE majority good)                           
+                     2 = Magnitude inversion (numobs >=7)                        
+                     3 = Magnitude inversion (numobs >=2&<7)                     
+                     4 = Fill value      
+          values:
+            0: best
+            1: good
+            2: medium
+            3: low
+            4: fill
+    - name: 'BRDF_Albedo_Band_Quality_Band3'
+      dtype: uint8
+      units: '1'
+      nodata: 4
+      flags_definition: 
+        band_1_brdf_inversion_Information:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Inversion Information 
+                     0 = best quality, full inversion (WoDs, RMSE majority good) 
+                     1 = good quality, full inversion (also including the cases that no clear sky observations over the day of interest or the Solar Zenith Angle is too large even WoDs, RMSE majority good)                           
+                     2 = Magnitude inversion (numobs >=7)                        
+                     3 = Magnitude inversion (numobs >=2&<7)                     
+                     4 = Fill value      
+          values:
+            0: best
+            1: good
+            2: medium
+            3: low
+            4: fill
+    - name: 'BRDF_Albedo_Band_Quality_Band4'
+      dtype: uint8
+      units: '1'
+      nodata: 4
+      flags_definition: 
+        band_1_brdf_inversion_Information:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Inversion Information 
+                     0 = best quality, full inversion (WoDs, RMSE majority good) 
+                     1 = good quality, full inversion (also including the cases that no clear sky observations over the day of interest or the Solar Zenith Angle is too large even WoDs, RMSE majority good)                           
+                     2 = Magnitude inversion (numobs >=7)                        
+                     3 = Magnitude inversion (numobs >=2&<7)                     
+                     4 = Fill value      
+          values:
+            0: best
+            1: good
+            2: medium
+            3: low
+            4: fill
+    - name: 'BRDF_Albedo_Band_Quality_Band5'
+      dtype: uint8
+      units: '1'
+      nodata: 4
+      flags_definition: 
+        band_1_brdf_inversion_Information:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Inversion Information 
+                     0 = best quality, full inversion (WoDs, RMSE majority good) 
+                     1 = good quality, full inversion (also including the cases that no clear sky observations over the day of interest or the Solar Zenith Angle is too large even WoDs, RMSE majority good)                           
+                     2 = Magnitude inversion (numobs >=7)                        
+                     3 = Magnitude inversion (numobs >=2&<7)                     
+                     4 = Fill value      
+          values:
+            0: best
+            1: good
+            2: medium
+            3: low
+            4: fill
+    - name: 'BRDF_Albedo_Band_Quality_Band6'
+      dtype: uint8
+      units: '1'
+      nodata: 4
+      flags_definition: 
+        band_1_brdf_inversion_Information:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Inversion Information 
+                     0 = best quality, full inversion (WoDs, RMSE majority good) 
+                     1 = good quality, full inversion (also including the cases that no clear sky observations over the day of interest or the Solar Zenith Angle is too large even WoDs, RMSE majority good)                           
+                     2 = Magnitude inversion (numobs >=7)                        
+                     3 = Magnitude inversion (numobs >=2&<7)                     
+                     4 = Fill value      
+          values:
+            0: best
+            1: good
+            2: medium
+            3: low
+            4: fill
+    - name: 'BRDF_Albedo_Band_Quality_Band7'
+      dtype: uint8
+      units: '1'
+      nodata: 4
+      flags_definition: 
+        band_1_brdf_inversion_Information:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Inversion Information 
+                     0 = best quality, full inversion (WoDs, RMSE majority good) 
+                     1 = good quality, full inversion (also including the cases that no clear sky observations over the day of interest or the Solar Zenith Angle is too large even WoDs, RMSE majority good)                           
+                     2 = Magnitude inversion (numobs >=7)                        
+                     3 = Magnitude inversion (numobs >=2&<7)                     
+                     4 = Fill value      
+          values:
+            0: best
+            1: good
+            2: medium
+            3: low
+            4: fill
+    - name: 'BRDF_Albedo_ValidObs_Band1'
+      dtype: uint16
+      units: '1'
+      nodata: 0
+      flags_definition: 
+        day_1_reflectance_quality:
+          bits: [0]
+          description: day 1 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_2_reflectance_quality:
+          bits: [1]
+          description: day 2 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_3_reflectance_quality:
+          bits: [2]
+          description: day 3 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_4_reflectance_quality:
+          bits: [3]
+          description: day 4 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_5_reflectance_quality:
+          bits: [4]
+          description: day 5 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_6_reflectance_quality:
+          bits: [5]
+          description: day 6 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_7_reflectance_quality:
+          bits: [6]
+          description: day 7 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_8_reflectance_quality:
+          bits: [7]
+          description: day 8 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_9_reflectance_quality:
+          bits: [8]
+          description: day 9 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_10_reflectance_quality:
+          bits: [9]
+          description: day 10 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_11_reflectance_quality:
+          bits: [10]
+          description: day 11 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_12_reflectance_quality:
+          bits: [11]
+          description: day 12 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_13_reflectance_quality:
+          bits: [12]
+          description: day 13 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_14_reflectance_quality:
+          bits: [13]
+          description: day 14 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_15_reflectance_quality:
+          bits: [14]
+          description: day 15 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_16_reflectance_quality:
+          bits: [15]
+          description: day 16 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+    - name: 'BRDF_Albedo_ValidObs_Band2'
+      dtype: uint16
+      units: '1'
+      nodata: 0
+      flags_definition: 
+        day_1_reflectance_quality:
+          bits: [0]
+          description: day 1 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_2_reflectance_quality:
+          bits: [1]
+          description: day 2 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_3_reflectance_quality:
+          bits: [2]
+          description: day 3 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_4_reflectance_quality:
+          bits: [3]
+          description: day 4 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_5_reflectance_quality:
+          bits: [4]
+          description: day 5 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_6_reflectance_quality:
+          bits: [5]
+          description: day 6 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_7_reflectance_quality:
+          bits: [6]
+          description: day 7 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_8_reflectance_quality:
+          bits: [7]
+          description: day 8 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_9_reflectance_quality:
+          bits: [8]
+          description: day 9 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_10_reflectance_quality:
+          bits: [9]
+          description: day 10 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_11_reflectance_quality:
+          bits: [10]
+          description: day 11 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_12_reflectance_quality:
+          bits: [11]
+          description: day 12 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_13_reflectance_quality:
+          bits: [12]
+          description: day 13 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_14_reflectance_quality:
+          bits: [13]
+          description: day 14 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_15_reflectance_quality:
+          bits: [14]
+          description: day 15 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_16_reflectance_quality:
+          bits: [15]
+          description: day 16 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+    - name: 'BRDF_Albedo_ValidObs_Band3'
+      dtype: uint16
+      units: '1'
+      nodata: 0
+      flags_definition: 
+        day_1_reflectance_quality:
+          bits: [0]
+          description: day 1 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_2_reflectance_quality:
+          bits: [1]
+          description: day 2 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_3_reflectance_quality:
+          bits: [2]
+          description: day 3 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_4_reflectance_quality:
+          bits: [3]
+          description: day 4 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_5_reflectance_quality:
+          bits: [4]
+          description: day 5 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_6_reflectance_quality:
+          bits: [5]
+          description: day 6 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_7_reflectance_quality:
+          bits: [6]
+          description: day 7 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_8_reflectance_quality:
+          bits: [7]
+          description: day 8 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_9_reflectance_quality:
+          bits: [8]
+          description: day 9 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_10_reflectance_quality:
+          bits: [9]
+          description: day 10 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_11_reflectance_quality:
+          bits: [10]
+          description: day 11 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_12_reflectance_quality:
+          bits: [11]
+          description: day 12 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_13_reflectance_quality:
+          bits: [12]
+          description: day 13 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_14_reflectance_quality:
+          bits: [13]
+          description: day 14 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_15_reflectance_quality:
+          bits: [14]
+          description: day 15 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_16_reflectance_quality:
+          bits: [15]
+          description: day 16 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+    - name: 'BRDF_Albedo_ValidObs_Band4'
+      dtype: uint16
+      units: '1'
+      nodata: 0
+      flags_definition: 
+        day_1_reflectance_quality:
+          bits: [0]
+          description: day 1 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_2_reflectance_quality:
+          bits: [1]
+          description: day 2 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_3_reflectance_quality:
+          bits: [2]
+          description: day 3 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_4_reflectance_quality:
+          bits: [3]
+          description: day 4 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_5_reflectance_quality:
+          bits: [4]
+          description: day 5 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_6_reflectance_quality:
+          bits: [5]
+          description: day 6 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_7_reflectance_quality:
+          bits: [6]
+          description: day 7 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_8_reflectance_quality:
+          bits: [7]
+          description: day 8 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_9_reflectance_quality:
+          bits: [8]
+          description: day 9 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_10_reflectance_quality:
+          bits: [9]
+          description: day 10 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_11_reflectance_quality:
+          bits: [10]
+          description: day 11 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_12_reflectance_quality:
+          bits: [11]
+          description: day 12 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_13_reflectance_quality:
+          bits: [12]
+          description: day 13 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_14_reflectance_quality:
+          bits: [13]
+          description: day 14 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_15_reflectance_quality:
+          bits: [14]
+          description: day 15 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_16_reflectance_quality:
+          bits: [15]
+          description: day 16 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+    - name: 'BRDF_Albedo_ValidObs_Band5'
+      dtype: uint16
+      units: '1'
+      nodata: 0
+      flags_definition: 
+        day_1_reflectance_quality:
+          bits: [0]
+          description: day 1 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_2_reflectance_quality:
+          bits: [1]
+          description: day 2 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_3_reflectance_quality:
+          bits: [2]
+          description: day 3 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_4_reflectance_quality:
+          bits: [3]
+          description: day 4 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_5_reflectance_quality:
+          bits: [4]
+          description: day 5 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_6_reflectance_quality:
+          bits: [5]
+          description: day 6 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_7_reflectance_quality:
+          bits: [6]
+          description: day 7 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_8_reflectance_quality:
+          bits: [7]
+          description: day 8 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_9_reflectance_quality:
+          bits: [8]
+          description: day 9 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_10_reflectance_quality:
+          bits: [9]
+          description: day 10 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_11_reflectance_quality:
+          bits: [10]
+          description: day 11 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_12_reflectance_quality:
+          bits: [11]
+          description: day 12 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_13_reflectance_quality:
+          bits: [12]
+          description: day 13 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_14_reflectance_quality:
+          bits: [13]
+          description: day 14 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_15_reflectance_quality:
+          bits: [14]
+          description: day 15 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_16_reflectance_quality:
+          bits: [15]
+          description: day 16 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+    - name: 'BRDF_Albedo_ValidObs_Band6'
+      dtype: uint16
+      units: '1'
+      nodata: 0
+      flags_definition: 
+        day_1_reflectance_quality:
+          bits: [0]
+          description: day 1 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_2_reflectance_quality:
+          bits: [1]
+          description: day 2 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_3_reflectance_quality:
+          bits: [2]
+          description: day 3 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_4_reflectance_quality:
+          bits: [3]
+          description: day 4 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_5_reflectance_quality:
+          bits: [4]
+          description: day 5 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_6_reflectance_quality:
+          bits: [5]
+          description: day 6 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_7_reflectance_quality:
+          bits: [6]
+          description: day 7 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_8_reflectance_quality:
+          bits: [7]
+          description: day 8 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_9_reflectance_quality:
+          bits: [8]
+          description: day 9 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_10_reflectance_quality:
+          bits: [9]
+          description: day 10 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_11_reflectance_quality:
+          bits: [10]
+          description: day 11 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_12_reflectance_quality:
+          bits: [11]
+          description: day 12 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_13_reflectance_quality:
+          bits: [12]
+          description: day 13 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_14_reflectance_quality:
+          bits: [13]
+          description: day 14 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_15_reflectance_quality:
+          bits: [14]
+          description: day 15 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_16_reflectance_quality:
+          bits: [15]
+          description: day 16 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+    - name: 'BRDF_Albedo_ValidObs_Band7'
+      dtype: uint16
+      units: '1'
+      nodata: 0
+      flags_definition: 
+        day_1_reflectance_quality:
+          bits: [0]
+          description: day 1 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_2_reflectance_quality:
+          bits: [1]
+          description: day 2 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_3_reflectance_quality:
+          bits: [2]
+          description: day 3 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_4_reflectance_quality:
+          bits: [3]
+          description: day 4 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_5_reflectance_quality:
+          bits: [4]
+          description: day 5 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_6_reflectance_quality:
+          bits: [5]
+          description: day 6 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_7_reflectance_quality:
+          bits: [6]
+          description: day 7 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_8_reflectance_quality:
+          bits: [7]
+          description: day 8 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_9_reflectance_quality:
+          bits: [8]
+          description: day 9 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_10_reflectance_quality:
+          bits: [9]
+          description: day 10 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_11_reflectance_quality:
+          bits: [10]
+          description: day 11 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_12_reflectance_quality:
+          bits: [11]
+          description: day 12 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_13_reflectance_quality:
+          bits: [12]
+          description: day 13 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_14_reflectance_quality:
+          bits: [13]
+          description: day 14 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_15_reflectance_quality:
+          bits: [14]
+          description: day 15 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+        day_16_reflectance_quality:
+          bits: [15]
+          description: day 16 reflectance quality
+          values:
+            0: observation not used
+            1: valid clear observation
+    - name: 'BRDF_Albedo_LocalSolarNoon'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+    - name: 'BRDF_Albedo_LandWaterType'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_landwatertype:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  Land Water Type 
           values:
             0: Shallow ocean                         
             1: Land (Nothing else but land)          
@@ -117,123 +1086,18 @@ measurements:
             5: Deep inland water                     
             6: Moderate or continental ocean         
             7: Deep ocean
-        #szn_local_solar_noon:
-          #bits: [8,9,10,11,12,13,14]
-          #description: Szn of Local Solar Noon
-          #values:
-        #qa_fill:
-          #bits: [15]
-          #description: QAfill
-          #values:
-    - name: 'BRDF_Albedo_Band_Quality'
-      dtype: uint32
-      units: '1'
-      nodata: 32767
-      flags_definition: 
-        band_1_brdf_inversion_Information:
-          bits: [0,1,2,3]
-          description:  Band1 Quality 
-                     0 = best quality, full inversion(WoDs,RMSE majority good) 
-                     1 = good quality, full inversion 2 = magnitude inversion (numobs >=7 ) 
-                     3 = magnitude inversion (numobs>=3&<7) 
-                     4 = fill value
-          values:
-            0: best
-            1: good
-            2: medium
-            3: low
-        band_2_brdf_inversion_Information:
-          bits: [4,5,6,7]
-          description:  Band2 Quality
-                     0 = best quality, full inversion(WoDs,RMSE majority good) 
-                     1 = good quality, full inversion 2 = magnitude inversion (numobs >=7 ) 
-                     3 = magnitude inversion (numobs>=3&<7) 
-                     4 = fill value
-          values:
-            0: best
-            1: good
-            2: medium
-            3: low
-        band_3_brdf_inversion_Information:
-          bits: [8,9,10,11]
-          description:  Band3Quality 
-                     0 = best quality, full inversion(WoDs,RMSE majority good) 
-                     1 = good quality, full inversion 2 = magnitude inversion (numobs >=7 ) 
-                     3 = magnitude inversion (numobs>=3&<7) 
-                     4 = fill value
-          values:
-            0: best
-            1: good
-            2: medium
-            3: low
-        band_4_brdf_inversion_Information:
-          bits: [12,13,14,15]
-          description:  Band4Quality
-                     0 = best quality, full inversion(WoDs,RMSE majority good) 
-                     1 = good quality, full inversion 2 = magnitude inversion (numobs >=7 ) 
-                     3 = magnitude inversion (numobs>=3&<7) 
-                     4 = fill value
-          values:
-            0: best
-            1: good
-            2: medium
-            3: low
-        band_5_brdf_inversion_Information:
-          bits: [16,17,18,19]
-          description:  Band4Quality
-                     0 = best quality, full inversion(WoDs,RMSE majority good) 
-                     1 = good quality, full inversion 2 = magnitude inversion (numobs >=7 ) 
-                     3 = magnitude inversion (numobs>=3&<7) 
-                     4 = fill value
-          values:
-            0: best
-            1: good
-            2: medium
-            3: low
-        band_6_brdf_inversion_Information:
-          bits: [20,21,22,23]
-          description:  Band6Quality
-                     0 = best quality, full inversion(WoDs,RMSE majority good) 
-                     1 = good quality, full inversion 2 = magnitude inversion (numobs >=7 ) 
-                     3 = magnitude inversion (numobs>=3&<7) 
-                     4 = fill value
-          values:
-            0: best
-            1: good
-            2: medium
-            3: low
-        band_7_brdf_inversion_Information:
-          bits: [24,25,26,27]
-          description:  Band7Quality
-                     0 = best quality, full inversion(WoDs,RMSE majority good) 
-                     1 = good quality, full inversion 2 = magnitude inversion (numobs >=7 ) 
-                     3 = magnitude inversion (numobs>=3&<7) 
-                     4 = fill value
-          values:
-            0: best
-            1: good
-            2: medium
-            3: low
-        #tbd:
-          #bits: [28,29,30]
-          #description:  TBD
-          #values:
-        #qafill:
-          #bits: [31]
-          #description:  QAFill
-          #values:
-    - name: 'BRDF_Albedo_Quality'
+    - name: 'BRDF_Albedo_Platform'
       dtype: uint8
       nodata: 255
       units: '1'
       flags_definition: 
-        brdf_albedo_quality:
+        platform:
           bits: [0,1,2,3,4,5,6,7]
-          description: BRDF and albedo quality information
+          description: BRDF Albedo Platform information
           values:
-            0: good
-            1: other
-            255: fill
+            0: terra
+            1: aqua_terra
+            2: aqua
     - name: 'Snow_BRDF_Albedo'
       dtype: uint8
       nodata: 255
@@ -249,7 +1113,7 @@ measurements:
 ---
 
 name: modis_mcd43a3_tile
-description: MODIS 500 metre MCD43A3
+description: MODIS 500 metre MCD43A3 Collection 006
 metadata_type: eo
 
 metadata:
@@ -263,15 +1127,7 @@ metadata:
 
 storage:
     crs: >
-         PROJCS["unnamed",
-         GEOGCS["Unknown datum based upon the custom spheroid",
-         DATUM["Not specified (based on custom spheroid)",
-         SPHEROID["Custom spheroid",6371007.181,0]],
-         PRIMEM["Greenwich",0],
-         UNIT["degree",0.0174532925199433]],
-         PROJECTION["Sinusoidal"],
-         PARAMETER["longitude_of_center",0],
-         PARAMETER["false_easting",0], PARAMETER["false_northing",0], UNIT["Meter",1]]
+         PROJCS["unnamed",GEOGCS["Unknown datum based upon the custom spheroid",DATUM["Not specified (based on custom spheroid)",SPHEROID["Custom spheroid",6371007.181,0]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],PROJECTION["Sinusoidal"],PARAMETER["longitude_of_center",0],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["Meter",1]]
 
 measurements:
     - name: 'Albedo_BSA_Band1'
@@ -354,10 +1210,160 @@ measurements:
       dtype: int16
       units: '1'
       nodata: 32767
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band1'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band1:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 1 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band2'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band2:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 2 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band3'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band3:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 3 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band4'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band4:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 4 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band5'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band5:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 5 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band6'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band6:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 6 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band7'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band7:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 7 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_nir'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band nir:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality NIR broadband 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_shortwave'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_shortwave:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for shortwave broadband 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_vis'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_vis:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for VIS broadband 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
 ---
 
 name: modis_mcd43a4_tile
-description: MODIS 500 metre MCD43A4
+description: MODIS 500 metre MCD43A4 Collection 006
 metadata_type: eo
 
 metadata:
@@ -371,17 +1377,114 @@ metadata:
 
 storage:
     crs: >
-         PROJCS["unnamed",
-         GEOGCS["Unknown datum based upon the custom spheroid",
-         DATUM["Not specified (based on custom spheroid)",
-         SPHEROID["Custom spheroid",6371007.181,0]],
-         PRIMEM["Greenwich",0],
-         UNIT["degree",0.0174532925199433]],
-         PROJECTION["Sinusoidal"],
-         PARAMETER["longitude_of_center",0],
-         PARAMETER["false_easting",0], PARAMETER["false_northing",0], UNIT["Meter",1]]
+         PROJCS["unnamed",GEOGCS["Unknown datum based upon the custom spheroid",DATUM["Not specified (based on custom spheroid)",SPHEROID["Custom spheroid",6371007.181,0]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],PROJECTION["Sinusoidal"],PARAMETER["longitude_of_center",0],PARAMETER["false_easting",0],PARAMETER["false_northing",0],UNIT["Meter",1]]
 
 measurements:
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band1'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band1:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 1 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band2'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band2:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 2 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band3'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band3:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 3 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band4'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band4:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 4 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band5'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band5:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 5 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band6'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band6:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 6 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
+    - name: 'BRDF_Albedo_Band_Mandatory_Quality_Band7'
+      dtype: uint8
+      units: '1'
+      nodata: 255
+      flags_definition: 
+        brdf_albedo_band_mandatory_quality_band7:
+          bits: [0,1,2,3,4,5,6,7]
+          description:  BRDF Albedo Mandatory Quality for band 7 
+                     0 = processed, good quality (full BRDF)
+                     1 = processed, see other QA (magnitude BRDF inversions)
+                     255 = Fill value
+          values:
+            0: best
+            1: good
+            255: fill
     - name: 'Nadir_Reflectance_Band1'
       dtype: int16
       units: '1'
