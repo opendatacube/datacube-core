@@ -138,7 +138,7 @@ def prepare_dataset(path):
     images = ['B02', 'B03', 'B04', 'B08'] + ['B05', 'B06', 'B07', 'B11', 'B12', 'B8A'] + ['B01', 'B09', 'B10']
 
     return {
-        'id': str(uuid.uuid4()),
+        'id': str(uuid.uuid5(uuid.NAMESPACE_URL, path)),
         'processing_level': level.replace('Level-', 'L'),
         'product_type': product_type,
         #'creation_dt': ct_time,
