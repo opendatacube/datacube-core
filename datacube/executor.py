@@ -64,7 +64,10 @@ class SerialExecutor(object):
         pass
 
 
-def _get_distributed_executor(scheduler, workers):
+def _get_distributed_executor(scheduler):
+    """
+    :param scheduler: Address of a scheduler
+    """
     try:
         import distributed
     except ImportError:
@@ -116,7 +119,7 @@ def _get_distributed_executor(scheduler, workers):
             future.release()
 
     try:
-        executor = DistributedExecutor(distributed.Executor(scheduler))
+        executor = DistributedExecutor(distributed.Client(scheduler))
         return executor
     except IOError:
         return None
@@ -166,7 +169,8 @@ def _get_concurrent_executor(workers):
             results.remove(result)
             return result, results
 
-        def results(self, futures):
+        @staticmethod
+        def results(futures):
             return [future.result() for future in futures]
 
         @staticmethod
@@ -181,11 +185,17 @@ def _get_concurrent_executor(workers):
 
 
 def get_executor(scheduler, workers):
+    """
+    Return a task executor based on input parameters. Falling back as required.
+
+    :param scheduler: IP address and port of a distributed.Scheduler, or a Scheduler instance
+    :param workers: Number of processes to start for process based parallel execution
+    """
     if not workers:
         return SerialExecutor()
 
     if scheduler:
-        distributed_exec = _get_distributed_executor(scheduler, workers)
+        distributed_exec = _get_distributed_executor(scheduler)
         if distributed_exec:
             return distributed_exec
 
