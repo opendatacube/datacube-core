@@ -142,6 +142,7 @@ def prepare_dataset(path):
         'processing_level': level.replace('Level-', 'L'),
         'product_type': product_type,
         #'creation_dt': ct_time,
+        'label': tileInfo['datastrip']['id'],
         'platform': {'code': 'SENTINEL_2A'},
         'instrument': {'name': 'MSI'},
         # 'acquisition': {'groundstation': {'code': station}},
@@ -161,6 +162,8 @@ def prepare_dataset(path):
                         'type': tileInfo['tileDataGeometry']['type']}
             }
         },
+        'dataCoverage': tileInfo['dataCoveragePercentage']/100.0,
+        'cloudCoverage': tileInfo['cloudyPixelPercentage']/100.0,
         'image': {
             'bands': {
                 image[-2:]: {
