@@ -21,8 +21,12 @@ import shapely.affinity
 import shapely.geometry
 import shapely.ops
 
-from urllib.request import urlopen
-from urllib.parse import urlparse, urljoin
+try:
+  from urllib.request import urlopen
+  from urllib.parse import urlparse, urljoin
+except ImportError:
+  from urlparse import urlparse, urljoin
+  from urllib2 import urlopen
 
 ###IMAGE BOUNDARY CODE
 
