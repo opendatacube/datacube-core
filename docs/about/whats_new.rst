@@ -3,6 +3,21 @@
 What's New
 ==========
 
+v1.1.13 Black Goat (15 November 2016)
+-------------------------------------
+
+  - Added support for accessing data through `http` and `s3` protocols
+
+  - Added `dataset search` command for filtering datasets (lists `id`, `product`, `location`)
+
+  - `ingestion_bounds` can again be specified in the ingester config
+
+  - Can now do range searches on non-range fields (e.g. `dc.load(orbit=(20, 30)`)
+
+  - Merged several bug-fixes from CEOS-SEO branch
+
+  - Added Polygon Drill recipe to :ref:`recipes`
+
 v1.1.12 Unnamed Unknown (1 November 2016)
 -----------------------------------------
 

@@ -1,7 +1,6 @@
 .. _user_guide:
 
 
-
 Jupyter Notebooks
 =================
 For interactively exploring data in a Data Cube, we recommend using `Jupyter
@@ -18,6 +17,7 @@ exploration and exporting, without writing any code.
 * `movie_generator`
 
 
+.. _recipes:
 
 Code Recipes
 ============
