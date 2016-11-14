@@ -30,6 +30,13 @@ Release Process
 #. Notify the community of the release using the Datacube Central mailing list
     Ask Simon Oliver for the MailChimp details.
 
+#. Upload the build to PyPi.
+    .. code-block:: bash
+
+        python setup.py sdist bdist_wheel
+        twine upload dist/*
+
+
 .. _Travis: https://travis-ci.org/data-cube/agdc-v2
 
 .. _readthedocs: http://readthedocs.org/projects/agdc-v2/builds/
