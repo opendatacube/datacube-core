@@ -141,8 +141,8 @@ class GridWorkflow(object):
             :class:`datacube.api.query.Query`
         """
         if cell_index:
-            assert isinstance(cell_index, tuple)
             assert len(cell_index) == 2
+            cell_index = tuple(cell_index)
             geobox = self.grid_spec.tile_geobox(cell_index)
             geopolygon = geobox.extent
         query = Query(index=self.index, geopolygon=geopolygon, **indexers)
