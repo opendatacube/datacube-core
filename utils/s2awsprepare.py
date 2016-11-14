@@ -116,8 +116,7 @@ def get_coords(geo_ref_points, spatial_ref):
 
 
 def get_json(path):
-    with urlopen(path) as f:
-        return json.loads(f.read().decode('utf-8'))
+    return json.loads(urlopen(path).read().decode('utf-8'))
 
 
 def prepare_dataset(path):
