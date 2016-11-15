@@ -11,7 +11,7 @@ from pathlib import Path
 from datacube.model import CRS
 from datacube.storage import netcdf_writer
 from datacube.config import OPTIONS
-from datacube.utils import clamp, datetime_to_seconds_since_1970
+from datacube.utils import clamp, datetime_to_seconds_since_1970, uri_to_local_path
 from datacube.compat import urlparse, urljoin
 
 try:
@@ -211,25 +211,27 @@ class DatasetSource(object):
 
     def wheres_my_data(self):
         if self._descriptor['path']:
-            url = urlparse(self._descriptor['path'])
-            if not url.scheme or url.scheme == 'file':
-                if not Path(url.path).is_absolute():
-                    url = urlparse(urljoin(self.local_uri, self._descriptor['path']))
+            url_str = self._descriptor['path']
+            url = urlparse(url_str)
+            if not url.scheme and not Path(url.path).is_absolute():
+                url_str = urljoin(self.local_uri, self._descriptor['path'])
         else:
-            url = urlparse(self.local_uri)
+            url_str = self.local_uri
+        url = urlparse(url_str)
 
+        # if format is NETCDF of HDF need to pass NETCDF:path:band as filename to rasterio/GDAL
         for nasty_format in ('netcdf', 'hdf'):
             if nasty_format in self.format.lower():
                 if url.scheme and url.scheme != 'file':
                     raise RuntimeError("Can't access %s over %s" % (self.format, url.scheme))
-                filename = 'file://%s:%s:%s' % (self.format, url.path, self._descriptor['layer'])
-                bandnumber = None
-                break
-        else:
-            filename = url.geturl()
-            bandnumber = self._descriptor.get('layer', 1)
+                filename = '%s:%s:%s' % (self.format, uri_to_local_path(url_str), self._descriptor['layer'])
+                return filename, None
 
-        return filename, bandnumber
+        if url.scheme and url.scheme != 'file':
+            return url_str, self._descriptor.get('layer', 1)
+
+        # if local path strip scheme and other gunk
+        return str(uri_to_local_path(url_str)), self._descriptor.get('layer', 1)
 
     def wheres_my_band(self, src, time):
         if GDAL_NETCDF_TIME not in src.tags(1):
