@@ -94,7 +94,7 @@ def check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_name
         _check_field_index(
             conn, [field],
             name, dataset_filter,
-            should_exist=(field.name not in excluded_field_names),
+            should_exist=field.indexed and (field.name not in excluded_field_names),
             concurrently=concurrently,
             replace_existing=rebuild_all,
         )
