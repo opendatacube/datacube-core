@@ -128,6 +128,9 @@ def check_cf_compliance(dataset):
     cs = CheckSuite()
     cs.load_all_available_checkers()
     if compliance_checker.__version__ >= '2.3.0':
+        # This skips a failing compliance check. Our files don't contain all the lats/lons
+        # as an auxiliary cordinate var as it's unnecessary for any software we've tried.
+        # It may be added at some point in the future, and this check should be re-enabled.
         score_groups = cs.run(dataset, ['check_dimension_order'], 'cf')
     else:
         warnings.warn('Please upgrade to compliance-checker 2.3.0 or higher.')
