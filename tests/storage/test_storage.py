@@ -17,7 +17,6 @@ from __future__ import absolute_import, division, print_function
 
 import numpy
 import netCDF4
-from pathlib import Path
 from affine import Affine
 import xarray
 

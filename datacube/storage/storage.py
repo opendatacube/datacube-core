@@ -268,6 +268,13 @@ class DatasetSource(object):
 def create_netcdf_storage_unit(filename,
                                crs, coordinates, variables, variable_params, global_attributes=None,
                                netcdfparams=None):
+    """
+    Create a NetCDF file on disk.
+
+    :param pathlib.Path filename: filename to write to
+    :param datacube.model.CRS crs: Datacube CRS object defining the spatial projection
+    :return: open netCDF4.Dataset object
+    """
     if filename.exists():
         raise RuntimeError('Storage Unit already exists: %s' % filename)
 

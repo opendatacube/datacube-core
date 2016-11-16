@@ -513,6 +513,10 @@ class CRS(object):
     """
 
     def __init__(self, crs_str):
+        """
+
+        :param crs_str: string representation of a CRS, often an EPSG code like 'EPSG:4326'
+        """
         if isinstance(crs_str, CRS):
             crs_str = crs_str.crs_str
         self.crs_str = crs_str

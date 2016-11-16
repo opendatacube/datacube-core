@@ -4,7 +4,6 @@ from textwrap import dedent
 
 import netCDF4
 import numpy
-from osgeo import osr
 
 from datacube.model import Variable, CRS
 from datacube.storage.netcdf_writer import create_netcdf, create_coordinate, create_variable, netcdfy_data, \
