@@ -130,7 +130,7 @@ def check_cf_compliance(dataset):
     cs = CheckSuite()
     cs.load_all_available_checkers()
     if compliance_checker.__version__ >= '2.3.0':
-        score_groups = cs.run(dataset, (), 'cf')
+        score_groups = cs.run(dataset, ['check_dimension_order'], 'cf')
     else:
         warnings.warn('Please upgrade to compliance-checker 2.3.0 or higher.')
         score_groups = cs.run(dataset, 'cf')
