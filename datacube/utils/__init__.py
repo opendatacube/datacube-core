@@ -604,7 +604,7 @@ def uri_to_local_path(local_uri):
         return None
 
     components = compat.urlparse(local_uri)
-    if components.scheme != 'file':
+    if components.scheme and components.scheme != 'file':
         raise ValueError('Only file URIs currently supported. Tried %r.' % components.scheme)
 
     path = _cross_platform_path(components.path)
