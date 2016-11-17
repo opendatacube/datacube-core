@@ -11,7 +11,7 @@ from pathlib import Path
 from datacube.model import CRS
 from datacube.storage import netcdf_writer
 from datacube.config import OPTIONS
-from datacube.utils import clamp, datetime_to_seconds_since_1970, uri_to_local_path
+from datacube.utils import clamp, datetime_to_seconds_since_1970, is_url, uri_to_local_path
 from datacube.compat import urlparse, urljoin
 
 try:
@@ -211,18 +211,21 @@ class DatasetSource(object):
 
     def wheres_my_data(self):
         if self._descriptor['path']:
-            url_str = self._descriptor['path']
-            url = urlparse(url_str)
-            if not url.scheme and not Path(url.path).is_absolute():
+            if is_url(self._descriptor['path']):
+                url_str = self._descriptor['path']
+            elif Path(self._descriptor['path']).is_absolute():
+                url_str = Path(self._descriptor['path']).as_uri()
+            else:
                 url_str = urljoin(self.local_uri, self._descriptor['path'])
         else:
             url_str = self.local_uri
         url = urlparse(url_str)
+        assert url.scheme, "Expecting URL with scheme here"
 
         # if format is NETCDF of HDF need to pass NETCDF:path:band as filename to rasterio/GDAL
         for nasty_format in ('netcdf', 'hdf'):
             if nasty_format in self.format.lower():
-                if url.scheme and url.scheme != 'file':
+                if url.scheme != 'file':
                     raise RuntimeError("Can't access %s over %s" % (self.format, url.scheme))
                 filename = '%s:%s:%s' % (self.format, uri_to_local_path(url_str), self._descriptor['layer'])
                 return filename, None

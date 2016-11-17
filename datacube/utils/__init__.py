@@ -9,7 +9,7 @@ import importlib
 import itertools
 import json
 import logging
-import os
+import re
 import pathlib
 from datetime import datetime, date
 
@@ -32,6 +32,8 @@ except ImportError:
 from datacube import compat
 
 _LOG = logging.getLogger(__name__)
+
+URL_RE = re.compile(r'\A\s*\w+://')
 
 
 def namedtuples2dicts(namedtuples):
@@ -584,6 +586,22 @@ def contains(v1, v2, case_sensitive=False):
     return v1 == v2
 
 
+def is_url(url_str):
+    """
+    Check if url_str tastes like url (starts with blah://)
+
+    >>> is_url('file:///etc/blah')
+    True
+    >>> is_url('http://greg.com/greg.txt')
+    True
+    >>> is_url('/etc/blah')
+    False
+    >>> is_url('C:/etc/blah')
+    False
+    """
+    return URL_RE.match(url_str) is not None
+
+
 def uri_to_local_path(local_uri):
     """
     Transform a URI to a platform dependent Path.
@@ -604,7 +622,7 @@ def uri_to_local_path(local_uri):
         return None
 
     components = compat.urlparse(local_uri)
-    if components.scheme and components.scheme != 'file':
+    if components.scheme != 'file':
         raise ValueError('Only file URIs currently supported. Tried %r.' % components.scheme)
 
     path = compat.url2pathname(components.path)
