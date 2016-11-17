@@ -607,16 +607,9 @@ def uri_to_local_path(local_uri):
     if components.scheme and components.scheme != 'file':
         raise ValueError('Only file URIs currently supported. Tried %r.' % components.scheme)
 
-    path = _cross_platform_path(components.path)
+    path = compat.url2pathname(components.path)
 
     return pathlib.Path(path)
-
-
-def _cross_platform_path(path):
-    if os.name == 'nt':
-        return path[1:]
-    else:
-        return path
 
 
 def schema_validated(schema):

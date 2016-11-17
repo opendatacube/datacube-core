@@ -32,6 +32,7 @@ if not PY2:
 
 
     from urllib.parse import urlparse, urljoin
+    from urllib.request import url2pathname
     from itertools import zip_longest
 else:
     text_type = unicode
@@ -53,7 +54,7 @@ else:
             config.readfp(StringIO(default_text))
         return config
 
-    from urlparse import urlparse, urljoin
+    from urlparse import urlparse, urljoin, url2pathname
     from itertools import izip_longest as zip_longest
 
 
