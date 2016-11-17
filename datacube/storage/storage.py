@@ -97,8 +97,8 @@ def _no_fractional_translate(affine, eps=0.01):
 
 def reproject(source, dest, dst_transform, dst_nodata, dst_projection, resampling):
     with source.open() as src:
-        array_transform = ~source.transform * dst_transform
-        if (source.crs == dst_projection and _no_scale(array_transform) and
+        array_transform = ~src.transform * dst_transform
+        if (src.crs == dst_projection and _no_scale(array_transform) and
                 (resampling == Resampling.nearest or _no_fractional_translate(array_transform))):
             dydx = (int(round(array_transform.f)), int(round(array_transform.c)))
             read, write, shape = zip(*map(_calc_offsets, dydx, src.shape, dest.shape))
@@ -106,27 +106,20 @@ def reproject(source, dest, dst_transform, dst_nodata, dst_projection, resamplin
             dest.fill(dst_nodata)
             if all(shape):
                 window = ((read[0], read[0] + shape[0]), (read[1], read[1] + shape[1]))
-                tmp = src.ds.read(indexes=src.bidx, window=window)
+                tmp = src.read(window=window)
                 numpy.copyto(dest[write[0]:write[0] + shape[0], write[1]:write[1] + shape[1]],
-                             tmp, where=(tmp != source.nodata))
+                             tmp, where=(tmp != src.nodata))
         else:
-            if source.override:
-                src = src.ds.read(indexes=src.bidx)
-
             if dest.dtype == numpy.dtype('int8'):
                 dest = dest.view(dtype='uint8')
                 dst_nodata = dst_nodata.astype('uint8')
 
-            rasterio.warp.reproject(src,
-                                    dest,
-                                    src_transform=source.transform,
-                                    src_crs=str(source.crs),
-                                    src_nodata=source.nodata,
-                                    dst_transform=dst_transform,
-                                    dst_crs=str(dst_projection),
-                                    dst_nodata=dst_nodata,
-                                    resampling=resampling,
-                                    NUM_THREADS=OPTIONS['reproject_threads'])
+            src.reproject(dest,
+                          dst_transform=dst_transform,
+                          dst_crs=str(dst_projection),
+                          dst_nodata=dst_nodata,
+                          resampling=resampling,
+                          NUM_THREADS=OPTIONS['reproject_threads'])
 
 
 def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata, resampling='nearest', fuse_func=None):
@@ -158,6 +151,76 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
     return destination
 
 
+class BandDataSource(object):
+    def __init__(self, source, nodata=None):
+        self.source = source
+        if nodata is None:
+            assert self.source.ds.nodatavals[0] is not None
+            nodata = self.dtype.type(self.source.ds.nodatavals[0])
+        self.nodata = nodata
+
+    @property
+    def crs(self):
+        return CRS(_rasterio_crs_wkt(self.source.ds))
+
+    @property
+    def transform(self):
+        return _rasterio_transform(self.source.ds)
+
+    @property
+    def dtype(self):
+        return numpy.dtype(self.source.dtype)
+
+    @property
+    def shape(self):
+        return self.source.shape
+
+    def read(self, window=None):
+        return self.source.ds.read(indexes=self.source.bidx, window=window)
+
+    def reproject(self, dest, dst_transform, dst_crs, dst_nodata, resampling, **kwargs):
+        return rasterio.warp.reproject(self.source,
+                                       dest,
+                                       src_nodata=self.nodata,
+                                       dst_transform=dst_transform,
+                                       dst_crs=str(dst_crs),
+                                       dst_nodata=dst_nodata,
+                                       resampling=resampling,
+                                       **kwargs)
+
+
+class OverrideBandDataSource(object):
+    def __init__(self, source, nodata=None, crs=None, transform=None):
+        self.source = source
+        self.nodata = nodata
+        self.crs = crs
+        self.transform = transform
+
+    @property
+    def dtype(self):
+        return numpy.dtype(self.source.dtype)
+
+    @property
+    def shape(self):
+        return self.source.shape
+
+    def read(self, window=None):
+        return self.source.ds.read(indexes=self.source.bidx, window=window)
+
+    def reproject(self, dest, dst_transform, dst_crs, dst_nodata, resampling, **kwargs):
+        source = self.read(self.source)  # TODO: read only the part the we care about
+        return rasterio.warp.reproject(source,
+                                       dest,
+                                       src_transform=self.transform,
+                                       src_crs=str(self.crs),
+                                       src_nodata=self.nodata,
+                                       dst_transform=dst_transform,
+                                       dst_crs=str(dst_crs),
+                                       dst_nodata=dst_nodata,
+                                       resampling=resampling,
+                                       **kwargs)
+
+
 class DatasetSource(object):
     """model.Dataset is about metadata, this takes a dataset and knows how to get the actual data bytes."""
     def __init__(self, dataset, measurement_id):
@@ -169,11 +232,7 @@ class DatasetSource(object):
         self._dataset = dataset
         self._bandinfo = dataset.type.measurements[measurement_id]
         self._descriptor = dataset.measurements[measurement_id]
-        self.override = False
-        self.transform = None
-        self.crs = dataset.crs
-        self.dtype = None
-        self.nodata = None
+        self.dataset_crs = dataset.crs
         self.format = dataset.format
         self.time = dataset.center_time
         self.local_uri = dataset.local_uri
@@ -181,29 +240,38 @@ class DatasetSource(object):
     @contextmanager
     def open(self):
         filename, bandnumber = self.wheres_my_data()
-
         try:
             _LOG.debug("opening %s, band %s", filename, bandnumber)
             with rasterio.open(filename) as src:
+                override = False
+
                 if bandnumber is None:
                     if 'netcdf' in self.format.lower():
                         bandnumber = self.wheres_my_band(src, self.time)
                     else:
                         bandnumber = 1
 
-                self.transform = self.whats_my_transform(src)
+                transform = _rasterio_transform(src)
+                if transform.is_identity:
+                    _LOG.warning('No GeoTransform in %s, band %s. Falling back to dataset GeoTransform.')
+                    override = True
+                    transform = self.whats_my_transform(src)
 
                 try:
-                    self.crs = CRS(_rasterio_crs_wkt(src))
+                    crs = CRS(_rasterio_crs_wkt(src))
                 except ValueError:
-                    _LOG.warning('No CRS in %s, band %s. Falling back to dataset CRS. Gonna be slow...')
-                    self.override = True  # HACK: mmmm... side effects! See reproject above
+                    _LOG.warning('No CRS in %s, band %s. Falling back to dataset CRS.')
+                    override = True  # HACK: mmmm... side effects! See reproject above
+                    crs = self.dataset_crs
 
-                self.dtype = numpy.dtype(src.dtypes[0])
-                self.nodata = self.dtype.type(src.nodatavals[0] if src.nodatavals[0] is not None else
-                                              self._bandinfo.get('nodata'))
+                band = rasterio.band(src, bandnumber)
+                nodata = numpy.dtype(band.dtype).type(src.nodatavals[0] if src.nodatavals[0] is not None else
+                                                      self._bandinfo.get('nodata'))
 
-                yield rasterio.band(src, bandnumber)
+                if override:
+                    yield OverrideBandDataSource(band, nodata=nodata, crs=crs, transform=transform)
+                else:
+                    yield BandDataSource(band, nodata=nodata)
 
         except Exception as e:
             _LOG.error("Error opening source dataset: %s", filename)
@@ -253,14 +321,6 @@ class DatasetSource(object):
         return idx
 
     def whats_my_transform(self, src):
-        transform = _rasterio_transform(src)
-        if not transform.is_identity:
-            return transform
-
-        # source probably doesn't have transform
-        _LOG.warning('No GeoTransform in %s, band %s. Falling back to dataset GeoTransform. Gonna be slow...')
-        self.override = True  # HACK: mmmm... side effects! See reproject above
-
         bounds = self._dataset.metadata.grid_spatial['geo_ref_points']
         width = bounds['lr']['x'] - bounds['ul']['x']
         height = bounds['lr']['y'] - bounds['ul']['y']
