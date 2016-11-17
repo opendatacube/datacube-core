@@ -54,7 +54,8 @@ else:
             config.readfp(StringIO(default_text))
         return config
 
-    from urlparse import urlparse, urljoin, url2pathname
+    from urlparse import urlparse, urljoin
+    from urllib import url2pathname
     from itertools import izip_longest as zip_longest
 
 
