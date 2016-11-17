@@ -4,7 +4,7 @@
 set -eu
 set -x
 
-pep8 tests integration_tests examples --max-line-length 120
+pep8 tests integration_tests examples utils --max-line-length 120
 
 pylint -j 2 --reports no datacube datacube_apps
 

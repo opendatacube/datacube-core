@@ -12,16 +12,19 @@ import yaml
 import click
 import netCDF4
 import os
+
+
 def prepare_layers(images):
-    layerdict={}
+    layerdict = {}
     for i in images:
         image = netCDF4.Dataset(i)
         layerpath = str(image.filepath())
         for targetlayer in image.variables.values():
             if targetlayer.name not in ['crs', 'lat', 'lon']:
                 layername = str(targetlayer.name)
-                layerdict[layername]= {'path': layerpath,'layer': layername,}
+                layerdict[layername] = {'path': layerpath, 'layer': layername, }
     return layerdict
+
 
 def prepare_dataset(image, datasets):
 
@@ -45,7 +48,7 @@ def prepare_dataset(image, datasets):
                 'll': {'lon': left, 'lat': bottom},
                 'lr': {'lon': right, 'lat': bottom},
             },
-            'from_dt': parse(image.date_created).isoformat(), 
+            'from_dt': parse(image.date_created).isoformat(),
             'to_dt': parse(image.date_created).isoformat(),
             'center_dt': parse(image.date_created).isoformat(),
         },
@@ -69,11 +72,10 @@ def prepare_dataset(image, datasets):
 
 
 @click.command(help="Prepare single layer netcdf with common grid spec for ingestion to Data Cube.")
-@click.argument('datasets', type=click.Path(exists=True, readable=True),nargs=-1)
+@click.argument('datasets', type=click.Path(exists=True, readable=True), nargs=-1)
 @click.option('--output', help="Write datasets into this file", type=click.Path(exists=False, writable=True))
 def main(datasets, output):
     with open(output, 'w') as stream:
-        yaml.dump((prepare_dataset(datasets[0], datasets)),stream)
+        yaml.dump((prepare_dataset(datasets[0], datasets)), stream)
 if __name__ == "__main__":
     main()
-

@@ -31,7 +31,8 @@ _STATIONS = {'023': 'TKSC', '022': 'SGS', '010': 'GNC', '011': 'HOA',
              '007': 'DKI', '006': 'CUB', '005': 'CHM', '004': 'BKT', '009': 'GLC',
              '008': 'EDC', '029': 'JSA', '028': 'COA', '021': 'PFS', '020': 'PAC'}
 
-###IMAGE BOUNDARY CODE
+# IMAGE BOUNDARY CODE
+
 
 def safe_valid_region(images, mask_value=None):
     try:
@@ -44,7 +45,7 @@ def valid_region(images, mask_value=None):
     mask = None
 
     for fname in images:
-        ## ensure formats match
+        # ensure formats match
         with rasterio.open(str(fname), 'r') as ds:
             transform = ds.affine
             img = ds.read(1)
@@ -76,7 +77,7 @@ def valid_region(images, mask_value=None):
     # transform from pixel space into CRS space
     geom = shapely.affinity.affine_transform(geom, (transform.a, transform.b, transform.d,
                                                     transform.e, transform.xoff, transform.yoff))
-    
+
     output = shapely.geometry.mapping(geom)
     output['coordinates'] = _to_lists(output['coordinates'])
     return output
@@ -92,7 +93,7 @@ def _to_lists(x):
     return x
 
 
-###END IMAGE BOUNDARY CODE
+# END IMAGE BOUNDARY CODE
 
 def band_name(path):
     name = path.stem
@@ -100,11 +101,11 @@ def band_name(path):
 
     if position == -1:
         raise ValueError('Unexpected tif image in eods: %r' % path)
-    if re.match(r"[Bb]\d+", name[position+1:]):
-        layername = name[position+2:]
+    if re.match(r"[Bb]\d+", name[position + 1:]):
+        layername = name[position + 2:]
 
     else:
-        layername = name[position+1:]
+        layername = name[position + 1:]
     return layername
 
 
@@ -143,21 +144,21 @@ def crazy_parse(timestr):
     except ValueError:
         if not timestr[-2:] == "60":
             raise
-        return parser.parse(timestr[:-2]+'00') + timedelta(minutes=1)
+        return parser.parse(timestr[:-2] + '00') + timedelta(minutes=1)
+
 
 def prep_dataset(fields, path):
     images_list = []
     for file in os.listdir(str(path)):
         if file.endswith(".xml") and (not file.endswith('aux.xml')):
             metafile = file
-        if file.endswith(".tif") and ("band" in file) :
+        if file.endswith(".tif") and ("band" in file):
 
-            images_list.append(os.path.join(str(path),file))
+            images_list.append(os.path.join(str(path), file))
     with open(os.path.join(str(path), metafile)) as f:
         xmlstring = f.read()
     xmlstring = re.sub(r'\sxmlns="[^"]+"', '', xmlstring, count=1)
     doc = ElementTree.fromstring(xmlstring)
-
 
     satellite = doc.find('.//satellite').text
     instrument = doc.find('.//instrument').text
@@ -170,20 +171,18 @@ def prep_dataset(fields, path):
     groundstation = lpgs_metadata_file[16:19]
     fields.update({'instrument': instrument, 'satellite': satellite})
 
-
-
     start_time = aos
     end_time = los
     images = {band_name(im_path): {
-        'path': str(im_path.relative_to(path))   
+        'path': str(im_path.relative_to(path))
     } for im_path in path.glob('*.tif')}
-    projdict = get_projection(path/next(iter(images.values()))['path'])
+    projdict = get_projection(path / next(iter(images.values()))['path'])
     projdict['valid_data'] = safe_valid_region(images_list)
     doc = {
         'id': str(uuid.uuid4()),
         'processing_level': fields["level"],
         'product_type': fields["type"],
-        'creation_dt':  fields["creation_dt"],
+        'creation_dt': fields["creation_dt"],
         'platform': {'code': fields["satellite"]},
         'instrument': {'name': fields["instrument"]},
         'acquisition': {
@@ -200,14 +199,14 @@ def prep_dataset(fields, path):
         },
         'format': {'name': 'GeoTiff'},
         'grid_spatial': {
-            'projection': projdict   
+            'projection': projdict
         },
         'image': {
             'satellite_ref_point_start': {'x': int(fields["path"]), 'y': int(fields["row"])},
             'satellite_ref_point_end': {'x': int(fields["path"]), 'y': int(fields["row"])},
             'bands': images
         },
-       
+
         'lineage': {'source_datasets': {}}
     }
     populate_coord(doc)
@@ -232,11 +231,11 @@ def prepare_datasets(nbar_path):
         ), nbar_path.stem).groupdict()
 
     timedelta(days=int(fields["julianday"]))
-    fields.update({'level': 'sr_refl',
-                   'type': 'LEDAPS',
-                   'creation_dt': ((crazy_parse(fields["productyear"]+'0101T00:00:00'))+timedelta(days=int(fields["julianday"])))})
+    fields.update({'level': 'sr_refl', 'type': 'LEDAPS', 'creation_dt': (
+        (crazy_parse(fields["productyear"] + '0101T00:00:00')) + timedelta(days=int(fields["julianday"])))})
     nbar = prep_dataset(fields, nbar_path)
     return (nbar, nbar_path)
+
 
 @click.command(help="Prepare USGS LS dataset for ingestion into the Data Cube.")
 @click.argument('datasets',

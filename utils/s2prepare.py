@@ -20,7 +20,9 @@ import shapely.affinity
 import shapely.geometry
 import shapely.ops
 
-###IMAGE BOUNDARY CODE
+
+# IMAGE BOUNDARY CODE
+
 
 def safe_valid_region(images, mask_value=None):
     try:
@@ -32,7 +34,7 @@ def safe_valid_region(images, mask_value=None):
 def valid_region(images, mask_value=None):
     mask = None
     for fname in images:
-        ## ensure formats match
+        # ensure formats match
         with rasterio.open(str(fname), 'r') as ds:
             transform = ds.affine
             img = ds.read(1)
@@ -40,7 +42,7 @@ def valid_region(images, mask_value=None):
             if mask_value is not None:
                 new_mask = img & mask_value == mask_value
             else:
-                #new_mask = img != ds.nodata
+                # new_mask = img != ds.nodata
                 new_mask = img != 0
             if mask is None:
                 mask = new_mask
@@ -67,10 +69,10 @@ def valid_region(images, mask_value=None):
                                                     transform.e, transform.xoff, transform.yoff))
 
     output = shapely.geometry.mapping(geom)
-    
+
     return geom
-    #output['coordinates'] = _to_lists(output['coordinates'])
-    #return output
+    # output['coordinates'] = _to_lists(output['coordinates'])
+    # return output
 
 
 def _to_lists(x):
@@ -81,6 +83,7 @@ def _to_lists(x):
         return [_to_lists(el) for el in x]
 
     return x
+
 
 def get_geo_ref_points(root):
     nrows = int(root.findall('./*/Tile_Geocoding/Size[@resolution="10"]/NROWS')[0].text)
@@ -106,45 +109,45 @@ def get_coords(geo_ref_points, spatial_ref):
     def transform(p):
         lon, lat, z = t.TransformPoint(p['x'], p['y'])
         return {'lon': lon, 'lat': lat}
+
     return {key: transform(p) for key, p in geo_ref_points.items()}
 
 
 def prepare_dataset(path):
-    
     root = ElementTree.parse(str(path)).getroot()
 
     level = root.findall('./*/Product_Info/PROCESSING_LEVEL')[0].text
     product_type = root.findall('./*/Product_Info/PRODUCT_TYPE')[0].text
     ct_time = root.findall('./*/Product_Info/GENERATION_TIME')[0].text
 
-    granules = {granule.get('granuleIdentifier'): [imid.text for imid in granule.findall('IMAGE_ID')] for granule in
-                root.findall('./*/Product_Info/Product_Organisation/Granule_List/Granules')}
+    granules = {granule.get('granuleIdentifier'): [imid.text for imid in granule.findall('IMAGE_ID')]
+                for granule in root.findall('./*/Product_Info/Product_Organisation/Granule_List/Granules')}
 
     documents = []
     for granule_id, images in granules.items():
         images_ten_list = []
         images_twenty_list = []
-        images_sixty_list = []   
-        gran_path = str(path.parent.joinpath('GRANULE', granule_id, granule_id[:-7].replace('MSI', 'MTD')+'.xml'))
+        images_sixty_list = []
+        gran_path = str(path.parent.joinpath('GRANULE', granule_id, granule_id[:-7].replace('MSI', 'MTD') + '.xml'))
         root = ElementTree.parse(gran_path).getroot()
         sensing_time = root.findall('./*/SENSING_TIME')[0].text
-        
-        img_data_path = str(path.parent.joinpath('GRANULE', granule_id,'IMG_DATA'))
+
+        img_data_path = str(path.parent.joinpath('GRANULE', granule_id, 'IMG_DATA'))
         for image in images:
-            ten_list = ['B02','B03','B04','B08']
-            twenty_list=['B05','B06','B07','B11','B12','B8A']
-            sixty_list=['B01','B09','B10']
+            ten_list = ['B02', 'B03', 'B04', 'B08']
+            twenty_list = ['B05', 'B06', 'B07', 'B11', 'B12', 'B8A']
+            sixty_list = ['B01', 'B09', 'B10']
 
             for item in ten_list:
                 if item in image:
-                    images_ten_list.append(os.path.join(img_data_path,image+".jp2"))
+                    images_ten_list.append(os.path.join(img_data_path, image + ".jp2"))
             for item in twenty_list:
                 if item in image:
-                    images_twenty_list.append(os.path.join(img_data_path,image+".jp2"))
+                    images_twenty_list.append(os.path.join(img_data_path, image + ".jp2"))
             for item in sixty_list:
                 if item in image:
-                    images_sixty_list.append(os.path.join(img_data_path,image+".jp2"))
-        
+                    images_sixty_list.append(os.path.join(img_data_path, image + ".jp2"))
+
         station = root.findall('./*/Archiving_Info/ARCHIVING_CENTRE')[0].text
 
         cs_code = root.findall('./*/Tile_Geocoding/HORIZONTAL_CS_CODE')[0].text
@@ -173,10 +176,15 @@ def prepare_dataset(path):
                     'geo_ref_points': geo_ref_points,
                     'spatial_reference': spatial_ref.ExportToWkt(),
                     'valid_data': {
-                            'coordinates': _to_lists(shapely.geometry.mapping(shapely.ops.unary_union([safe_valid_region(images_sixty_list),\
-                                                safe_valid_region(images_ten_list),\
-                                                safe_valid_region(images_twenty_list)]))['coordinates']),
-                            'type': "Polygon"}
+                        'coordinates': _to_lists(
+                            shapely.geometry.mapping(
+                                shapely.ops.unary_union([
+                                    safe_valid_region(images_sixty_list),
+                                    safe_valid_region(images_ten_list),
+                                    safe_valid_region(images_twenty_list)
+                                ])
+                            )['coordinates']),
+                        'type': "Polygon"}
                 }
             },
             'image': {
@@ -185,12 +193,13 @@ def prepare_dataset(path):
                         'path': str(Path('GRANULE', granule_id, 'IMG_DATA', image + '.jp2')),
                         'layer': 1,
                     } for image in images
-                }
+                    }
             },
-                        
+
             'lineage': {'source_datasets': {}},
         })
     return documents
+
 
 @click.command(help="Prepare Sentinel 2 dataset for ingestion into the Data Cube.")
 @click.argument('datasets',
@@ -203,7 +212,7 @@ def main(datasets):
         path = Path(dataset)
 
         if path.is_dir():
-            path = Path(path.joinpath(path.stem.replace('PRD_MSIL1C', 'MTD_SAFL1C')+'.xml'))
+            path = Path(path.joinpath(path.stem.replace('PRD_MSIL1C', 'MTD_SAFL1C') + '.xml'))
         if path.suffix != '.xml':
             raise RuntimeError('want xml')
 

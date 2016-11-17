@@ -23,7 +23,7 @@ def get_projection(img):
             'ur': {'x': right, 'y': top},
             'll': {'x': left, 'y': bottom},
             'lr': {'x': right, 'y': bottom},
-            }
+        }
     }
 
 
@@ -52,17 +52,17 @@ def prepare_dataset(path):
         im = rasterio.open(dspath_str)
         doc = {
             'id': str(uuid.uuid4()),
-            #'processing_level': level.replace('Level-', 'L'),
+            # 'processing_level': level.replace('Level-', 'L'),
             'product_type': product_type,
             'creation_dt': creation_dt,
             'platform': {'code': 'ENDEAVOUR'},
             'instrument': {'name': 'SRTM'},
-            #'acquisition': {'groundstation': {'code': station}},
+            # 'acquisition': {'groundstation': {'code': station}},
             'extent': {
                 'from_dt': creation_dt,
                 'to_dt': creation_dt,
                 'center_dt': creation_dt,
-                #'coord': get_coords(geo_ref_points, spatial_ref),
+                # 'coord': get_coords(geo_ref_points, spatial_ref),
             },
             'format': {'name': str(im.driver)},
             'grid_spatial': {
@@ -70,10 +70,10 @@ def prepare_dataset(path):
             },
             'image': {
                 'bands': {
-                        band_name: {
-                            'path': dspath_str
-                        }
+                    band_name: {
+                        'path': dspath_str
                     }
+                }
             },
             # TODO: provenance chain is DSM -> DEM -> DEM-S -> DEM-H
             'lineage': {'source_datasets': {}},
@@ -81,6 +81,7 @@ def prepare_dataset(path):
         populate_coord(doc)
         documents.append(doc)
     return documents
+
 
 @click.command(help="Prepare DEM-S datasets for ingestion into the Data Cube.")
 @click.argument('datasets',

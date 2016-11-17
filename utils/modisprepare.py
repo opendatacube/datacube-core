@@ -132,7 +132,7 @@ def make_datasets(datasets):
 
 def absolutify_paths(doc, path):
     for band in doc['image']['bands'].values():
-        band['path'] = str(path/band['path'])
+        band['path'] = str(path / band['path'])
     return doc
 
 

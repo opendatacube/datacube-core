@@ -28,7 +28,7 @@ def main(datasets):
         path = Path(dataset)
 
         if path.is_dir():
-            path = path/'ga-metadata.yaml'
+            path = path / 'ga-metadata.yaml'
         elif path.suffix != '.yaml':
             raise RuntimeError('want yaml')
 

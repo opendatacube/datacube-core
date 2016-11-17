@@ -36,12 +36,12 @@ def band_name(path):
     position = name.rfind('_')
     if position == -1:
         raise ValueError('Unexpected tif image in eods: %r' % path)
-    if re.match(r"[Bb]\d+", name[position+1:]):
-        band_number = name[position+2:position+3]
-    elif name[position+1:].startswith('1111111111111100'):
+    if re.match(r"[Bb]\d+", name[position + 1:]):
+        band_number = name[position + 2:position + 3]
+    elif name[position + 1:].startswith('1111111111111100'):
         band_number = 'pqa'
     else:
-        band_number = name[position+1:]
+        band_number = name[position + 1:]
     return band_number
 
 
@@ -55,7 +55,7 @@ def get_projection(path):
                 'ur': {'x': right, 'y': top},
                 'll': {'x': left, 'y': bottom},
                 'lr': {'x': right, 'y': bottom},
-                }
+            }
         }
 
 
@@ -80,7 +80,7 @@ def crazy_parse(timestr):
     except ValueError:
         if not timestr[-2:] == "60":
             raise
-        return parser.parse(timestr[:-2]+'00') + timedelta(minutes=1)
+        return parser.parse(timestr[:-2] + '00') + timedelta(minutes=1)
 
 
 def prep_dataset(fields, path):
@@ -98,7 +98,7 @@ def prep_dataset(fields, path):
         'id': str(uuid.uuid4()),
         'processing_level': fields["level"],
         'product_type': _PRODUCTS[fields["type"]],
-        'creation_dt':  str(aos),
+        'creation_dt': str(aos),
         'platform': {'code': "LANDSAT_" + fields["vehicle"][2]},
         'instrument': {'name': fields["instrument"]},
         'acquisition': {
@@ -115,7 +115,7 @@ def prep_dataset(fields, path):
         },
         'format': {'name': 'GeoTiff'},
         'grid_spatial': {
-            'projection': get_projection(path/next(iter(images.values()))['path'])
+            'projection': get_projection(path / next(iter(images.values()))['path'])
         },
         'image': {
             'satellite_ref_point_start': {'x': int(fields["path"]), 'y': int(fields["row"])},

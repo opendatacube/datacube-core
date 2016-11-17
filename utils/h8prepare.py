@@ -23,8 +23,8 @@ def get_projection(image):
 
     left = transform[0].item()
     bottom = transform[3].item()
-    right = left + transform[1].item()*image['x'].size
-    top = bottom + transform[5].item()*image['y'].size
+    right = left + transform[1].item() * image['x'].size
+    top = bottom + transform[5].item() * image['y'].size
     if left > right:
         left, right = right, left
     if bottom > top:
@@ -36,8 +36,8 @@ def get_projection(image):
             'ur': {'x': right, 'y': top},
             'll': {'x': left, 'y': bottom},
             'lr': {'x': right, 'y': bottom},
-            }
         }
+    }
 
 
 def get_extent(image):
@@ -94,7 +94,7 @@ def get_ang_dataset(path):
         }
     if not images:
         return None
-    return get_skeleton(str(path/images['SOLAR_2000']['path']), 'GEOM_SOLAR', images)
+    return get_skeleton(str(path / images['SOLAR_2000']['path']), 'GEOM_SOLAR', images)
 
 
 def get_obs_dataset(path):
@@ -108,7 +108,7 @@ def get_obs_dataset(path):
         }
     if not images:
         return None
-    return get_skeleton(str(path/images['01_2000']['path']), 'OBS', images)
+    return get_skeleton(str(path / images['01_2000']['path']), 'OBS', images)
 
 
 def get_brf_dataset(path):
@@ -122,7 +122,7 @@ def get_brf_dataset(path):
         }
     if not images:
         return None
-    return get_skeleton(str(path/images['01_2000']['path']), 'BRF', images)
+    return get_skeleton(str(path / images['01_2000']['path']), 'BRF', images)
 
 
 def prepare_dataset(path):
@@ -149,7 +149,7 @@ def make_datasets(datasets):
 
 def absolutify_paths(doc, path):
     for band in doc['image']['bands'].values():
-        band['path'] = str(path/band['path'])
+        band['path'] = str(path / band['path'])
     return doc
 
 

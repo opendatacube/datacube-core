@@ -12,11 +12,11 @@ import click
 from osgeo import osr
 
 try:
-  from urllib.request import urlopen
-  from urllib.parse import urlparse, urljoin
+    from urllib.request import urlopen
+    from urllib.parse import urlparse, urljoin
 except ImportError:
-  from urlparse import urlparse, urljoin
-  from urllib2 import urlopen
+    from urlparse import urlparse, urljoin
+    from urllib2 import urlopen
 
 
 def get_geo_ref_points(tileInfo):
@@ -69,7 +69,7 @@ def prepare_dataset(path):
         'id': str(uuid.uuid5(uuid.NAMESPACE_URL, path)),
         'processing_level': level.replace('Level-', 'L'),
         'product_type': product_type,
-        #'creation_dt': ct_time,
+        # 'creation_dt': ct_time,
         'label': tileInfo['datastrip']['id'],
         'platform': {'code': 'SENTINEL_2A'},
         'instrument': {'name': 'MSI'},
@@ -86,12 +86,12 @@ def prepare_dataset(path):
                 'geo_ref_points': geo_ref_points,
                 'spatial_reference': 'EPSG:%s' % cs_code,
                 'valid_data': {
-                        'coordinates': tileInfo['tileDataGeometry']['coordinates'],
-                        'type': tileInfo['tileDataGeometry']['type']}
+                    'coordinates': tileInfo['tileDataGeometry']['coordinates'],
+                    'type': tileInfo['tileDataGeometry']['type']}
             }
         },
-        'dataCoverage': tileInfo['dataCoveragePercentage']/100.0,
-        'cloudCoverage': tileInfo['cloudyPixelPercentage']/100.0,
+        'dataCoverage': tileInfo['dataCoveragePercentage'] / 100.0,
+        'cloudCoverage': tileInfo['cloudyPixelPercentage'] / 100.0,
         'image': {
             'bands': {
                 image[-2:]: {
