@@ -73,19 +73,23 @@ def check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_name
         ('sat_path', 'sat_row', 'time')
     )
 
-    for field_composite in composite_indexes:
+    all_exclusions = tuple(excluded_field_names)
+    for composite_names in composite_indexes:
         # If all of the fields are available in this product, we'll create a composite index
         # for them instead of individual indexes.
-        if contains_all(fields, *field_composite):
-            excluded_field_names += field_composite
+        if contains_all(fields, *composite_names):
+            all_are_excluded = set(excluded_field_names) >= set(composite_names)
             _check_field_index(
                 conn,
-                [fields.get(f) for f in field_composite],
+                [fields.get(f) for f in composite_names],
                 name, dataset_filter,
                 concurrently=concurrently,
                 replace_existing=rebuild_all,
+                # If all fields were excluded individually it should be removed.
+                should_exist=not all_are_excluded,
                 index_type='gist'
             )
+            all_exclusions += composite_names
 
     # Create indexes for the individual fields.
     for field in fields.values():
@@ -94,7 +98,7 @@ def check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_name
         _check_field_index(
             conn, [field],
             name, dataset_filter,
-            should_exist=field.indexed and (field.name not in excluded_field_names),
+            should_exist=field.indexed and (field.name not in all_exclusions),
             concurrently=concurrently,
             replace_existing=rebuild_all,
         )

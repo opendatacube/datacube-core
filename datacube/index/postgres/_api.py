@@ -825,9 +825,13 @@ class PostgresDbAPI(object):
             )
 
     def _setup_metadata_type_fields(self, id_, name, fields, rebuild_all=False, concurrently=True):
+        # Metadata fields are no longer used (all queries are per-dataset-type): exclude all.
+        # This will have the effect of removing any old indexes that still exist.
+        exclude_fields = tuple(fields)
+
         dataset_filter = and_(DATASET.c.archived == None, DATASET.c.metadata_type_ref == id_)
         dynamic.check_dynamic_fields(self._connection, concurrently, dataset_filter,
-                                     (), fields, name, rebuild_all)
+                                     exclude_fields, fields, name, rebuild_all)
 
     def _setup_dataset_type_fields(self, id_, name, fields, metadata_doc,
                                    rebuild_all=False, concurrently=True):
