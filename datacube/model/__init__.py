@@ -126,10 +126,8 @@ class Dataset(object):
         :rtype: rasterio.coords.BoundingBox
         """
         bounds = self.metadata.grid_spatial['geo_ref_points']
-        ps = [bounds[key] for key in ('ll', 'ul', 'ur', 'lr')]
-        xs = [p['x'] for p in ps]
-        ys = [p['y'] for p in ps]
-        return BoundingBox(left=min(xs), right=max(xs), top=max(ys), bottom=min(ys))
+        return BoundingBox(left=bounds['ul']['x'], right=bounds['lr']['x'],
+                           top=bounds['ul']['y'], bottom=bounds['lr']['y'])
 
     @property
     def crs(self):
