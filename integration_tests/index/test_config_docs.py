@@ -50,8 +50,8 @@ def test_metadata_indexes_views_exist(db, default_metadata_type):
     :type db: datacube.index.postgres._api.PostgresDb
     :type default_metadata_type: datacube.model.MetadataType
     """
-    # Ensure indexes were created for the eo metadata type (following the naming conventions):
-    assert _object_exists(db, 'dix_eo_platform')
+    # Metadata indexes should no longer exist.
+    assert not _object_exists(db, 'dix_eo_platform')
 
     # Ensure view was created (following naming conventions)
     assert _object_exists(db, 'dv_eo_dataset')

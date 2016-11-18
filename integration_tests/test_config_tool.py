@@ -135,7 +135,7 @@ def test_list_users_does_not_fail(global_integration_cli_args, local_config):
     assert result.exit_code == 0
 
 
-def test_db_init_noop(global_integration_cli_args, local_config, default_metadata_type):
+def test_db_init_noop(global_integration_cli_args, local_config, ls5_nbar_gtiff_type):
     # Run on an existing database.
     result = _run_cli(
         global_integration_cli_args,
@@ -147,10 +147,10 @@ def test_db_init_noop(global_integration_cli_args, local_config, default_metadat
     assert result.exit_code == 0
     assert 'Updated.' in result.output
     # It should not rebuild indexes by default
-    assert 'Dropping index: dix_{}'.format(default_metadata_type.name) not in result.output
+    assert 'Dropping index: dix_{}'.format(ls5_nbar_gtiff_type.name) not in result.output
 
 
-def test_db_init_rebuild(global_integration_cli_args, local_config, default_metadata_type):
+def test_db_init_rebuild(global_integration_cli_args, local_config, ls5_nbar_gtiff_type):
     # Run on an existing database.
     result = _run_cli(
         global_integration_cli_args,
@@ -162,13 +162,13 @@ def test_db_init_rebuild(global_integration_cli_args, local_config, default_meta
     assert result.exit_code == 0
     assert 'Updated.' in result.output
     # It should have recreated views and indexes.
-    assert 'Dropping index: dix_{}'.format(default_metadata_type.name) in result.output
-    assert 'Creating index: dix_{}'.format(default_metadata_type.name) in result.output
+    assert 'Dropping index: dix_{}'.format(ls5_nbar_gtiff_type.name) in result.output
+    assert 'Creating index: dix_{}'.format(ls5_nbar_gtiff_type.name) in result.output
     assert 'Dropping view: {schema}.dv_{name}_dataset'.format(
-        schema=SCHEMA_NAME, name=default_metadata_type.name
+        schema=SCHEMA_NAME, name=ls5_nbar_gtiff_type.name
     ) in result.output
     assert 'Creating view: {schema}.dv_{name}_dataset'.format(
-        schema=SCHEMA_NAME, name=default_metadata_type.name
+        schema=SCHEMA_NAME, name=ls5_nbar_gtiff_type.name
     ) in result.output
 
 
