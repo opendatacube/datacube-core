@@ -808,28 +808,23 @@ class OverlappedGridSpec(GridSpec):
     on the source data in a surrounding neighbourhood. For example, if the 
     algorithm involves a spatial smoothing (or spatial dilation) operation.
     
+    Likely to be assimilated into the base class in the future.
+    
     Unchanged:
         - (grid) origin
         - (pixel) resolution
         - tile size (grid spacing in CRS units)
+        - alignment
     Modified:
         - tile resolution (array shape)
         - tile coords (tile origin in CRS units)
-    Consequence:
-        - alignment basically unaffected
         - tile geobox is dilated
         - tiles inside geopolygon accounts for buffering
     """
     def __init__(self, crs, tile_size, resolution, origin=None, padding=0):
-        """:param int padding: number of pixels to dilate each tile-edge"""
-        
-        self.padding = padding
-        
+        """:param int padding: number of pixels to dilate each tile-edge"""        
+        self.padding = padding       
         super(OverlappedGridSpec, self).__init__(crs, tile_size, resolution, origin)
-
-        self.tile_resolution = tuple(x + 2*padding for x in self.tile_resolution) # array shape, for geobox
-        
-        self.__str__ = lambda x: "GridSpec with padding"
         
     @classmethod
     def from_gridspec(cls, gridspec, padding=0):
@@ -837,7 +832,12 @@ class OverlappedGridSpec(GridSpec):
         g = gridspec
         return cls(g.crs, g.tile_size, g.resolution, g.origin, padding)
         
-
+    @property
+    def tile_resolution(self):
+        """Array shape, including padding."""
+        core_shape = super(OverlappedGridSpec, self).tile_resolution
+        return  tuple(x + 2 * self.padding for x in core_shape)
+        
     def tile_coords(self, tile_index): # used to make the geoboxes
         unpadded = super(OverlappedGridSpec,self).tile_coords(tile_index)
         return tuple(x0 - self.padding*dx for x0,dx in zip(unpadded, self.resolution))
@@ -851,6 +851,9 @@ class OverlappedGridSpec(GridSpec):
                                bounds.top + pad_y)
                                
         return super(OverlappedGridSpec,self).tiles(buffered)
+    
+    def __str__(self):
+        return  "GridSpec with padding"
         
 #        buffers = (self.padding * abs(dx) for dx in self.resolution) # padding width around each border
 #
