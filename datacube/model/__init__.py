@@ -717,7 +717,7 @@ class GridSpec(object):
         h, w = self.tile_resolution
         return GeoBox(crs=self.crs, affine=Affine(res_x, 0.0, x, 0.0, res_y, y), width=w, height=h)
 
-    def tiles(self, bounds):
+    def tiles(self, bounds, padding=None):
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and inside the specified `bounds`.
@@ -730,14 +730,24 @@ class GridSpec(object):
         :param BoundingBox bounds: Boundary coordinates of the required grid
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
+        if padding:
+            pad_y, pad_x = (padding * abs(dx) for dx in self.resolution)
+            bounds = BoundingBox(bounds.left - pad_x,
+                                 bounds.bottom - pad_y,
+                                 bounds.right + pad_x,
+                                 bounds.top + pad_y)
+        else:
+            padding = 0
+
         tile_size_y, tile_size_x = self.tile_size
         tile_origin_y, tile_origin_x = self.origin
         for y in GridSpec.grid_range(bounds.bottom - tile_origin_y, bounds.top - tile_origin_y, tile_size_y):
             for x in GridSpec.grid_range(bounds.left - tile_origin_x, bounds.right - tile_origin_x, tile_size_x):
                 tile_index = (x, y)
-                yield tile_index, self.tile_geobox(tile_index)
+                geobox = self.tile_geobox(tile_index)
+                yield tile_index, geobox[-padding:geobox.shape[0]+padding, -padding:geobox.shape[1]+padding]
 
-    def tiles_inside_geopolygon(self, geopolygon):
+    def tiles_inside_geopolygon(self, geopolygon, padding=None):
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and inside the specified `polygon`.
@@ -751,7 +761,7 @@ class GridSpec(object):
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
         geopolygon = geopolygon.to_crs(self.crs)
-        for tile_index, tile_geobox in self.tiles(geopolygon.boundingbox):
+        for tile_index, tile_geobox in self.tiles(geopolygon.boundingbox, padding=padding):
             if check_intersect(tile_geobox.extent, geopolygon):
                 yield tile_index, tile_geobox
 

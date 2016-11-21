@@ -126,7 +126,7 @@ class GridWorkflow(object):
             grid_spec = product and product.grid_spec
         self.grid_spec = grid_spec
 
-    def cell_observations(self, cell_index=None, geopolygon=None, **indexers):
+    def cell_observations(self, cell_index=None, geopolygon=None, padding=None, **indexers):
         """
         List datasets, grouped by cell.
 
@@ -141,15 +141,17 @@ class GridWorkflow(object):
             :class:`datacube.api.query.Query`
         """
         if cell_index:
+            padding = padding or 0
             assert len(cell_index) == 2
             cell_index = tuple(cell_index)
             geobox = self.grid_spec.tile_geobox(cell_index)
-            geopolygon = geobox.extent
+            geopolygon = geobox[-padding:geobox.shape[0]+padding, -padding:geobox.shape[1]+padding].extent
         query = Query(index=self.index, geopolygon=geopolygon, **indexers)
 
         if not query.product:
             raise RuntimeError('must specify a product')
 
+        assert not (padding and query.geopolygon), "Pad search query here too"
         observations = self.index.datasets.search_eager(**query.search_terms)
         cells = {}
 
@@ -159,6 +161,7 @@ class GridWorkflow(object):
                               'geobox': tile_geobox})['datasets'].append(dataset)
 
         if cell_index:
+            assert not padding
             for dataset in observations:
                 if check_intersect(geobox.extent, dataset.extent.to_crs(self.grid_spec.crs)):
                     return_dataset(cell_index, geobox, dataset)
@@ -172,13 +175,13 @@ class GridWorkflow(object):
                 # Go through our datasets and see which tiles each dataset produces, and whether they intersect
                 # our query geopolygon.
                 dataset_extent = dataset.extent.to_crs(self.grid_spec.crs)
-                for tile_index, tile_geobox in self.grid_spec.tiles(dataset_extent.boundingbox):
+                for tile_index, tile_geobox in self.grid_spec.tiles(dataset_extent.boundingbox, padding=padding):
                     if tile_index in query_tiles and check_intersect(tile_geobox.extent, dataset_extent):
                         return_dataset(tile_index, tile_geobox, dataset)
 
         else:
             for dataset in observations:
-                for tile_index, tile_geobox in self.grid_spec.tiles_inside_geopolygon(dataset.extent):
+                for tile_index, tile_geobox in self.grid_spec.tiles_inside_geopolygon(dataset.extent, padding=padding):
                     return_dataset(tile_index, tile_geobox, dataset)
 
         return cells
