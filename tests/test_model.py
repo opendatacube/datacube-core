@@ -79,7 +79,6 @@ def test_gridworkflow():
     fakedataset = MagicMock()
     fakedataset.extent = GeoPolygon.from_boundingbox(gridcell, crs=fakecrs)
     fakedataset.center_time = t = datetime.datetime(2001,2,15)
-    #fakedataset.local_path = ...    
 
     fakeindex = MagicMock()
     fakeindex.datasets.get_field_names.return_value = ['time'] # permit query on time
@@ -103,7 +102,7 @@ def test_gridworkflow():
     gw2 = GridWorkflow(fakeindex, gridspec, padding=2)
     assert len(gw2.list_tiles(**query)) == 9
     
-    # ------ add another dataset (test grouping) -----
+    # ------ add another dataset (to test grouping) -----
 
     # consider cell (2,-2)
     gridcell2 = BoundingBox(left=2*grid, bottom=-grid, right=3*grid, top=-2*grid)    
@@ -112,10 +111,13 @@ def test_gridworkflow():
     fakedataset2.center_time = t
     fakeindex.datasets.search_eager.return_value.append(fakedataset2)
     
-    # test unpadded
+    # unpadded
     assert len(gw.list_tiles(**query)) == 2
     ti = numpy.datetime64(t,'ns')
     assert set(gw.list_tiles(**query).keys()) == {(1,-2,ti),(2,-2,ti)}
+    
+    # padded
+    assert len(gw2.list_tiles(**query)) == 12 # not 18=2*9 because of grouping
     
     # -------- inspect particular returned tile objects --------    
     
@@ -155,10 +157,12 @@ def test_gridworkflow():
         
         data = GridWorkflow.load(tile)
         data2 = GridWorkflow.load(padded_tile)
+        # Note, could also test Datacube.load for consistency (but may require more patching)
     
     assert data is data2 is loader.return_value
     assert loader.call_count == 2
     
+    # Note, use of positional arguments here is not robust, could spec mock etc.
     for (args, kwargs), loadable in zip(loader.call_args_list, [tile, padded_tile]):
         assert args[0] is loadable.sources
         assert args[1] is loadable.geobox
