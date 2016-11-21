@@ -21,34 +21,28 @@ def test_geobox():
         assert abs(resolution[1]) > abs(geobox.extent.boundingbox.top - polygon.boundingbox.top)
         assert abs(resolution[1]) > abs(geobox.extent.boundingbox.bottom - polygon.boundingbox.bottom)
 
-import pytest
-from datacube.model import OverlappedGridSpec
-with_either_gridspec = pytest.mark.parametrize('gridspec_class', [GridSpec, OverlappedGridSpec])
-
-@with_either_gridspec
-def test_grispec(gridspec_class):
-    gs = gridspec_class(crs=CRS('EPSG:4326'), tile_size=(1, 1), resolution=(-0.1, 0.1), origin=(10, 10))
+def test_grispec():
+    gs = GridSpec(crs=CRS('EPSG:4326'), tile_size=(1, 1), resolution=(-0.1, 0.1), origin=(10, 10))
     poly = GeoPolygon([(10, 12.2), (10.8, 13), (13, 10.8), (12.2, 10)], CRS('EPSG:4326'))
     cells = {index: geobox for index, geobox in list(gs.tiles_inside_geopolygon(poly))}
     assert set(cells.keys()) == {(0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1)}
     assert numpy.isclose(cells[(2, 0)].coordinates['longitude'].values, numpy.linspace(12.05, 12.95, num=10)).all()
     assert numpy.isclose(cells[(2, 0)].coordinates['latitude'].values, numpy.linspace(10.95, 10.05, num=10)).all()
 
-@with_either_gridspec
-def test_gridspec_upperleft(gridspec_class):
+def test_gridspec_upperleft():
     """ Test to ensure grid indexes can be counted correctly from bottom left or top left
     """
     tile_bbox = BoundingBox(left=1934400.0, top=2414800.0, right=2084400.000, bottom=2264800.000)
     bbox = BoundingBox(left=1934615, top=2379460, right=1937615, bottom=2376460)
     # Upper left - validated against WELD product tile calculator
     # http://globalmonitoring.sdstate.edu/projects/weld/tilecalc.php
-    gs = gridspec_class(crs=CRS('EPSG:5070'), tile_size=(-150000, 150000), resolution=(-30, 30),
+    gs = GridSpec(crs=CRS('EPSG:5070'), tile_size=(-150000, 150000), resolution=(-30, 30),
                   origin=(3314800.0, -2565600.0))
     cells = {index: geobox for index, geobox in list(gs.tiles(bbox))}
     assert set(cells.keys()) == {(30, 6)}
     assert cells[(30, 6)].extent.boundingbox == tile_bbox
 
-    gs = gridspec_class(crs=CRS('EPSG:5070'), tile_size=(150000, 150000), resolution=(-30, 30),
+    gs = GridSpec(crs=CRS('EPSG:5070'), tile_size=(150000, 150000), resolution=(-30, 30),
                   origin=(14800.0, -2565600.0))
     cells = {index: geobox for index, geobox in list(gs.tiles(bbox))}
     assert set(cells.keys()) == {(30, 15)}  # WELD grid spec has 21 vertical cells -- 21 - 6 = 15
@@ -56,10 +50,19 @@ def test_gridspec_upperleft(gridspec_class):
 
 
 def test_overlapped_padding():
-    """ Test padding works """
-    #pass
+    """ Test padding doesn't break compatibility """
+    # This test will become unnecessary if feature is merged into base class.
+    global GridSpec
+    original = GridSpec
+    try:
+        from datacube.model import OverlappedGridSpec as GridSpec        
+        test_grispec()
+        test_gridspec_upperleft()
+    finally:
+        GridSpec = original
     
 def test_gridworkflow():
+    """ Test GridWorkflow with padding option. """
     from mock import MagicMock
     import datetime
     
@@ -87,8 +90,7 @@ def test_gridworkflow():
     # ------ test without padding ----
    
     from datacube.api.grid_workflow import GridWorkflow
-    gw = GridWorkflow(fakeindex, gridspec)
-    
+    gw = GridWorkflow(fakeindex, gridspec)    
     query = dict(product='fake_product_name', time=('2001-1-1 00:00:00', '2001-3-31 23:59:59'))
     
     # test backend : that it finds the expected cell/dataset
@@ -143,7 +145,6 @@ def test_gridworkflow():
     assert tile.geobox.affine * (10,10) == padded_tile.geobox.affine * (10+2,10+2)
 
     # ------- check loading --------
-
     # GridWorkflow accesses the product_data API
     # to ultimately convert geobox,sources,measurements to xarray,
     # so only thing to check here is the call interface.
@@ -167,8 +168,6 @@ def test_gridworkflow():
         assert args[0] is loadable.sources
         assert args[1] is loadable.geobox
         assert args[2][0] is measurement
-        
-    
 
 def test_crs_equality():
     a = CRS("""PROJCS["unnamed",GEOGCS["Unknown datum based upon the custom spheroid",
