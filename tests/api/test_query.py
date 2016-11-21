@@ -127,8 +127,8 @@ def test_convert_descriptor_query_to_search_query_with_single_value():
             }
         }
     }
-    expected_lat = -35.5160921229
-    expected_lon = 148.145408153
+    expected_lat = -35.516092122868
+    expected_lon = 148.145408152877
     query = DescriptorQuery(descriptor_query)
     search_query = query.search_terms
     assert min(*search_query['lat']) <= expected_lat <= max(*search_query['lat'])

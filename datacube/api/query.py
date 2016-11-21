@@ -216,7 +216,7 @@ def _range_to_geopolygon(**kwargs):
 def _value_to_range(value):
     if isinstance(value, string_types + integer_types + (float,)):
         value = float(value)
-        return value, value
+        return value - FLOAT_TOLERANCE, value + FLOAT_TOLERANCE
     else:
         return float(value[0]), float(value[-1])
 
