@@ -683,9 +683,9 @@ class GridSpec(object):
     @property
     def tile_resolution(self):
         """
-        Tile size in pixels.
+        Tile size in pixels, i.e. the array shape.
 
-        Units will be in CRS dimension order (Usually y,x or lat,lon)
+        Axes will be returned in CRS dimension order (Usually y,x or lat,lon)
 
         :type: (float, float)
         """
@@ -694,6 +694,8 @@ class GridSpec(object):
     def tile_coords(self, tile_index):
         """
         Tile coordinates in (Y,X) order
+        
+        This is the CRS coordinates of the "origin" point for the tile.
 
         :param (int,int) tile_index: in X,Y order
         :rtype: (float,float)
@@ -761,6 +763,15 @@ class GridSpec(object):
         Returns the indices along a 1D scale.
 
         Used for producing 2D grid indices.
+        
+        :param step: size of each tile (1D),
+                     sign indicates direction of increasing tile index
+        :param lower: start of query interval
+        :param upper: end of query interval
+        :return: sequence of tile indices (1D)
+        
+        All input parameters must be in the same units, with origin at
+        the boundary between tiles -1 and 0.
 
         >>> list(GridSpec.grid_range(-4.0, -1.0, 3.0))
         [-2, -1]
@@ -789,6 +800,84 @@ class GridSpec(object):
     def __repr__(self):
         return self.__str__()
 
+class OverlappedGridSpec(GridSpec):
+    """GridSpec with padding around each cell/tile
+    
+    This is intended for grid workflows where the core algorithm that defines
+    the new product is not *strictly* local, but instead additionally depends 
+    on the source data in a surrounding neighbourhood. For example, if the 
+    algorithm involves a spatial smoothing (or spatial dilation) operation.
+    
+    Likely to be assimilated into the base class in the future.
+    
+    Unchanged:
+        - (grid) origin
+        - (pixel) resolution
+        - tile size (grid spacing in CRS units)
+        - alignment
+    Modified:
+        - tile resolution (array shape)
+        - tile coords (tile origin in CRS units)
+        - tile geobox is dilated
+        - tiles inside geopolygon accounts for buffering
+    """
+    def __init__(self, crs, tile_size, resolution, origin=None, padding=0):
+        """:param int padding: number of pixels to dilate each tile-edge"""        
+        self.padding = padding       
+        super(OverlappedGridSpec, self).__init__(crs, tile_size, resolution, origin)
+        
+    @classmethod
+    def from_gridspec(cls, gridspec, padding=0):
+        # convenience method
+        g = gridspec
+        return cls(g.crs, g.tile_size, g.resolution, g.origin, padding)
+        
+    @property
+    def tile_resolution(self):
+        """Array shape, including padding."""
+        core_shape = super(OverlappedGridSpec, self).tile_resolution
+        return  tuple(x + 2 * self.padding for x in core_shape)
+        
+    def tile_coords(self, tile_index): # used to make the geoboxes
+        unpadded = super(OverlappedGridSpec,self).tile_coords(tile_index)
+        return tuple(x0 - self.padding*dx for x0,dx in zip(unpadded, self.resolution))
+    
+    def tiles(self, bounds):
+        pad_y,pad_x = (self.padding * abs(dx) for dx in self.resolution)
+        
+        buffered = BoundingBox(bounds.left - pad_x,
+                               bounds.bottom - pad_y,
+                               bounds.right + pad_x,
+                               bounds.top + pad_y)
+                               
+        return super(OverlappedGridSpec,self).tiles(buffered)
+    
+    def __str__(self):
+        return  "GridSpec with padding"
+        
+#        buffers = (self.padding * abs(dx) for dx in self.resolution) # padding width around each border
+#
+#        limits = (bounds.bottom, bounds.left), (bounds.top, bounds.right)
+#
+#        # next, adjust limits for tiling alignment
+#        # and pad ranges to catch overlaps.                           
+#        starts, stops = zip((start - origin - buf, 
+#                             stop - origin + buf)
+#                            for start,stop,origin,buf
+#                            in zip(*limits, self.origin, buffers))               
+#
+#        indices = super(OverlappedGridSpec,self).grid_range # start,stop,tile_width -> 1D tile index sequence
+#        
+#        widths = self.tile_size # unpadded y,x tile width
+#        
+#        Y,X = (list(indices(*s)) for s in zip(starts,stops,widths))
+#        
+#        tuples = ((x,y) for x in X for y in Y)
+#        
+#        for i in tuples:
+#            yield i, self.tile_geobox(i)
+        
+        
 
 class GeoBox(object):
     """

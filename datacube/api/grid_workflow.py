@@ -110,7 +110,7 @@ class GridWorkflow(object):
     and can be serialized for use with the `distributed` package.
     """
 
-    def __init__(self, index, grid_spec=None, product=None):
+    def __init__(self, index, grid_spec=None, product=None, padding=None):
         """
         Create a grid workflow tool.
 
@@ -119,12 +119,18 @@ class GridWorkflow(object):
         :param Index index: The database index to use.
         :param GridSpec grid_spec: The grid projection and resolution
         :param str product: The name of an existing product, if no grid_spec is supplied.
+        :param int padding: The extra margin (in pixels) to include with each tile.
+                            If using padding, any spatial queries must be manually padded.
         """
         self.index = index
         if grid_spec is None:
             product = self.index.products.get_by_name(product)
             grid_spec = product and product.grid_spec
         self.grid_spec = grid_spec
+        
+        if padding:
+            from datacube.model import OverlappedGridSpec as padded
+            self.grid_spec = padded.from_gridspec(self.grid_spec, padding)
 
     def cell_observations(self, cell_index=None, geopolygon=None, **indexers):
         """
