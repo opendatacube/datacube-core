@@ -12,6 +12,7 @@ from datacube.index.fields import Expression, Field
 from datacube.index.postgres.tables import FLOAT8RANGE
 from datacube.model import Range
 from datacube.utils import get_doc_offset
+from datetime import datetime
 from dateutil import tz
 from psycopg2.extras import NumericRange, DateTimeTZRange
 from sqlalchemy import cast, func, and_
@@ -209,7 +210,7 @@ class RangeDocField(PgField):
         """
         :rtype: Expression
         """
-        raise NotImplementedError('range equals expression')
+        return RangeContainsExpression(self, self.alchemy_parse_value(value))
 
     def extract(self, document):
         def safe_get_doc_offset(offset, document):
@@ -278,6 +279,8 @@ class DoubleRangeDocField(RangeDocField):
 
 class DateRangeDocField(RangeDocField):
     def alchemy_parse_value(self, value):
+        if isinstance(value, datetime):
+            return self._default_utc(value)
         return func.agdc.common_timestamp(value)
 
     @property
@@ -346,6 +349,16 @@ class RangeBetweenExpression(PgExpression):
         return self.field.alchemy_expression.overlaps(
             self._range_class(self.low_value, self.high_value)
         )
+
+
+class RangeContainsExpression(PgExpression):
+    def __init__(self, field, value):
+        super(RangeContainsExpression, self).__init__(field)
+        self.value = value
+
+    @property
+    def alchemy_expression(self):
+        return self.field.alchemy_expression.contains(self.value)
 
 
 class EqualsExpression(PgExpression):

@@ -230,6 +230,40 @@ def test_search_dataset_ranges(index, pseudo_telemetry_dataset):
     assert len(datasets) == 1
     assert datasets[0].id == pseudo_telemetry_dataset.id
 
+    # Single point search
+    datasets = index.datasets.search_eager(
+        lat=-30.0,
+        time=Range(
+            datetime.datetime(2014, 7, 26, 23, 0, 0),
+            datetime.datetime(2014, 7, 26, 23, 59, 0)
+        )
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == pseudo_telemetry_dataset.id
+
+    datasets = index.datasets.search_eager(
+        lat=30.0,
+        time=Range(
+            datetime.datetime(2014, 7, 26, 23, 0, 0),
+            datetime.datetime(2014, 7, 26, 23, 59, 0)
+        )
+    )
+    assert len(datasets) == 0
+
+    # Single timestamp search
+    datasets = index.datasets.search_eager(
+        lat=Range(-30.5, -29.5),
+        time=datetime.datetime(2014, 7, 26, 23, 50, 0)
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == pseudo_telemetry_dataset.id
+
+    datasets = index.datasets.search_eager(
+        lat=Range(-30.5, -29.5),
+        time=datetime.datetime(2014, 7, 26, 23, 30, 0)
+    )
+    assert len(datasets) == 0
+
 
 def test_search_globally(index, pseudo_telemetry_dataset):
     """
