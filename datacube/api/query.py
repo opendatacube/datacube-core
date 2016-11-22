@@ -203,12 +203,23 @@ def _range_to_geopolygon(**kwargs):
             input_crs = CRS(value)
     input_crs = input_crs or CRS('EPSG:4326')
     if any(v is not None for v in input_coords.values()):
-        points = [
-            (input_coords['left'], input_coords['top']),
-            (input_coords['right'], input_coords['top']),
-            (input_coords['right'], input_coords['bottom']),
-            (input_coords['left'], input_coords['bottom']),
-        ]
+        if input_coords['left'] == input_coords['right']:
+            if input_coords['top'] == input_coords['bottom']:
+                points = [(input_coords['left'], input_coords['top'])]
+            else:
+                points = [(input_coords['left'], input_coords['bottom']),
+                          (input_coords['left'], input_coords['top'])]
+        else:
+            if input_coords['top'] == input_coords['bottom']:
+                points = [(input_coords['left'], input_coords['top']),
+                          (input_coords['right'], input_coords['top'])]
+            else:
+                points = [
+                    (input_coords['left'], input_coords['top']),
+                    (input_coords['right'], input_coords['top']),
+                    (input_coords['right'], input_coords['bottom']),
+                    (input_coords['left'], input_coords['bottom']),
+                ]
         return GeoPolygon(points, input_crs)
     return None
 
@@ -216,7 +227,7 @@ def _range_to_geopolygon(**kwargs):
 def _value_to_range(value):
     if isinstance(value, string_types + integer_types + (float,)):
         value = float(value)
-        return value - FLOAT_TOLERANCE, value + FLOAT_TOLERANCE
+        return value, value
     else:
         return float(value[0]), float(value[-1])
 

@@ -146,6 +146,12 @@ except ImportError:
 
 
 def _points_to_ogr(points):
+    if len(points) == 1:
+        point = ogr.Geometry(ogr.wkbPoint)
+        point.AddPoint_2D(*points[0])
+        return point
+    if len(points) == 2:
+        raise RuntimeError('not implemented')  # should be line?
     ring = ogr.Geometry(ogr.wkbLinearRing)
     for point in points:
         ring.AddPoint_2D(*point)
@@ -156,8 +162,11 @@ def _points_to_ogr(points):
 
 
 def _ogr_to_points(geom):
-    assert geom.GetGeometryType() == ogr.wkbPolygon
-    return geom.GetGeometryRef(0).GetPoints()[:-1]
+    if geom.GetGeometryType() == ogr.wkbPolygon:
+        return geom.GetGeometryRef(0).GetPoints()[:-1]
+    if geom.GetGeometryType() == ogr.wkbPoint:
+        return geom.GetPoints()
+    raise RuntimeError('unsupported geometry type')
 
 
 def densify_points(points, resolution):
