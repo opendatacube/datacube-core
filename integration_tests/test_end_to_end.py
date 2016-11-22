@@ -159,6 +159,9 @@ def check_open_with_dc(index):
     data_array = dc.load(product='ls5_nbar_albers', measurements=['blue'], stack='variable')
     assert data_array.shape
 
+    data_array = dc.load(product='ls5_nbar_albers', measurements=['blue'], time='1992-03-23T23:14:25.500000')
+    assert data_array['blue'].shape
+
     data_array = dc.load(product='ls5_nbar_albers', latitude=(-35, -36), longitude=(149, 150), stack='variable')
     assert data_array.ndim == 4
     assert 'variable' in data_array.dims

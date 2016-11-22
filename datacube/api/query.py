@@ -78,7 +78,7 @@ class Query(object):
                     self.search['time'] = _time_to_search_dims(
                         (pandas_to_datetime(time_coord.values[0]).to_pydatetime(),
                          pandas_to_datetime(time_coord.values[-1]).to_pydatetime()
-                         + datetime.timedelta(milliseconds=1))
+                         + datetime.timedelta(milliseconds=1))  # TODO: inclusive time searches
                     )
 
     @property
@@ -277,11 +277,10 @@ def _time_to_search_dims(time_range):
     if hasattr(time_range, '__iter__') and len(time_range) == 2:
         time_range = Range(_to_datetime(time_range[0]), _to_datetime(time_range[1]))
         if time_range[0] == time_range[1]:
-            return Range(time_range[0], time_range[0] + datetime.timedelta(milliseconds=1))
+            return time_range[0]
         return time_range
     else:
-        single_query_time = _to_datetime(time_range)
-        return Range(single_query_time, single_query_time + datetime.timedelta(milliseconds=1))
+        return _to_datetime(time_range)
 
 
 def _convert_to_solar_time(utc, longitude):
