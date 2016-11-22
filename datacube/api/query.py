@@ -90,11 +90,11 @@ class Query(object):
             if geo_bb.bottom != geo_bb.top:
                 kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
             else:
-                kwargs['lat'] = Range(geo_bb.bottom - FLOAT_TOLERANCE, geo_bb.top + FLOAT_TOLERANCE)
+                kwargs['lat'] = geo_bb.bottom
             if geo_bb.left != geo_bb.right:
                 kwargs['lon'] = Range(geo_bb.left, geo_bb.right)
             else:
-                kwargs['lon'] = Range(geo_bb.left - FLOAT_TOLERANCE, geo_bb.right + FLOAT_TOLERANCE)
+                kwargs['lon'] = geo_bb.left
         if self.product:
             kwargs['product'] = self.product
         return kwargs
