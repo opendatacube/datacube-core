@@ -33,6 +33,19 @@ VALID_VARIABLE_ATTRS = {'standard_name', 'long_name', 'units', 'flags_definition
 SCHEMA_PATH = Path(__file__).parent / 'schema'
 
 
+def _round_to_res(value, res, acc=0.1):
+    """
+    >>> _round_to_res(0.2, 1.0)
+    1
+    >>> _round_to_res(0.0, 1.0)
+    0
+    >>> _round_to_res(0.05, 1.0)
+    0
+    """
+    res = abs(res)
+    return int(math.ceil((value - 0.1 * res) / res))
+
+
 class Dataset(object):
     """
     A Dataset. A container of metadata, and refers typically to a multiband raster on disk.
@@ -873,9 +886,10 @@ class GeoBox(object):
 
     def buffered(self, ybuff, xbuff):
         """
-        Produce a tile buffered by ybuff, xbuff pixels
+        Produce a tile buffered by ybuff, xbuff (in CRS units)
         """
-        return self[-ybuff:self.height+ybuff, -xbuff:self.width+xbuff]
+        w, h = (_round_to_res(buf, res) for buf, res in zip((ybuff, xbuff), self.resolution))
+        return self[-h:self.height+h, -w:self.width+w]
 
     def __getitem__(self, item):
         indexes = [slice(index.start or 0, index.stop or size, index.step or 1)
