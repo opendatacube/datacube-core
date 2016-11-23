@@ -5,6 +5,7 @@ import sys
 
 import csv
 import click
+import datetime
 import yaml
 from pathlib import Path
 
@@ -191,7 +192,11 @@ def search_cmd(index, f, expressions):
     }[f](info)
 
 
-def get_derived_set(index, id_):
+def _get_derived_set(index, id_):
+    """
+    Get a single flat set of all derived datasets.
+    (children, grandchildren, great-grandchildren...)
+    """
     derived_set = {index.datasets.get(id_)}
     to_process = {id_}
     while to_process:
@@ -209,7 +214,7 @@ def get_derived_set(index, id_):
 @ui.pass_index()
 def archive_cmd(index, archive_derived, dry_run, ids):
     for id_ in ids:
-        to_process = get_derived_set(index, id_) if archive_derived else [index.datasets.get(id_)]
+        to_process = _get_derived_set(index, id_) if archive_derived else [index.datasets.get(id_)]
         for d in to_process:
             click.echo('archiving %s %s %s' % (d.type.name, d.id, d.local_uri))
         if not dry_run:
@@ -220,12 +225,47 @@ def archive_cmd(index, archive_derived, dry_run, ids):
 @click.option('--restore-derived', '-d', help='Also recursively restore derived datasets', is_flag=True, default=False)
 @click.option('--dry-run', help="Don't restore. Display datasets that would get restored",
               is_flag=True, default=False)
+@click.option('--derived-tolerance-seconds',
+              help="Only restore derived datasets that were archived "
+                   "this recently to the original dataset",
+              default=10*60)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def restore_cmd(index, restore_derived, dry_run, ids):
+def restore_cmd(index, restore_derived, derived_tolerance_seconds, dry_run, ids):
+    tolerance = datetime.timedelta(seconds=derived_tolerance_seconds)
+
     for id_ in ids:
-        to_process = get_derived_set(index, id_) if restore_derived else [index.datasets.get(id_)]
-        for d in to_process:
-            click.echo('restoring %s %s %s' % (d.type.name, d.id, d.local_uri))
-        if not dry_run:
-            index.datasets.restore(d.id for d in to_process)
+        _restore_one(dry_run, id_, index, restore_derived, tolerance)
+
+
+def _restore_one(dry_run, id_, index, restore_derived, tolerance):
+    """
+    :type index: datacube.index._api.Index
+    :type restore_derived: bool
+    :type tolerance: datetime.timedelta
+    :type dry_run:  bool
+    :type id_: str
+    """
+    target_dataset = index.datasets.get(id_)
+    to_process = _get_derived_set(index, id_) if restore_derived else {target_dataset}
+    _LOG.debug("%s selected", len(to_process))
+
+    # Only the already-archived ones.
+    to_process = {d for d in to_process if d.archived_time is not None}
+    _LOG.debug("%s selected are archived", len(to_process))
+
+    def within_tolerance(dataset):
+        if not dataset.archived_time:
+            return False
+        t = target_dataset.archived_time
+        return (t - tolerance) <= dataset.archived_time <= (t + tolerance)
+
+    # Only those archived around the same time as the target.
+    if restore_derived and target_dataset.archived_time:
+        to_process = set(filter(within_tolerance, to_process))
+        _LOG.debug("%s selected were archived within the tolerance", len(to_process))
+
+    for d in to_process:
+        click.echo('restoring %s %s %s' % (d.type.name, d.id, d.local_uri))
+    if not dry_run:
+        index.datasets.restore(d.id for d in to_process)

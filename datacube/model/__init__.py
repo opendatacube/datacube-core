@@ -35,7 +35,7 @@ SCHEMA_PATH = Path(__file__).parent / 'schema'
 
 class Dataset(object):
     """
-    A Dataset. A container of metadata, and refers typically to a multiband raster on disk.
+    A Dataset. A container of metadata, and refers typically to a multi-band raster on disk.
 
     Most important parts are the metadata_doc and uri.
 
@@ -44,7 +44,8 @@ class Dataset(object):
     :param str local_uri: A URI to access this dataset locally.
     """
 
-    def __init__(self, type_, metadata_doc, local_uri, sources=None, indexed_by=None, indexed_time=None):
+    def __init__(self, type_, metadata_doc, local_uri, sources=None,
+                 indexed_by=None, indexed_time=None, archived_time=None):
         assert isinstance(type_, DatasetType)
 
         #: :rtype: DatasetType
@@ -69,7 +70,12 @@ class Dataset(object):
         #: :type: str
         self.indexed_by = indexed_by
 
+        #: :type: datetime.datetime
         self.indexed_time = indexed_time
+
+        # When the dataset was archived. Null it not archived.
+        #: :type: datetime.datetime
+        self.archived_time = archived_time
 
     @property
     def metadata_type(self):

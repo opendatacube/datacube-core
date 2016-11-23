@@ -558,13 +558,14 @@ class DatasetResource(object):
 
     def get_derived(self, id_):
         """
-        Get drived datasets
+        Get all derived datasets
 
         :param uuid id_: dataset id
         :rtype: list[datacube.model.Dataset]
         """
         with self._db.connect() as connection:
-            return [self._make(result) for result in connection.get_derived_datasets(id_)]
+            return [self._make(result, full_info=True)
+                    for result in connection.get_derived_datasets(id_)]
 
     def has(self, id_):
         """
@@ -686,7 +687,8 @@ class DatasetResource(object):
             dataset_res.metadata,
             dataset_res.local_uri,
             indexed_by=dataset_res.added_by if full_info else None,
-            indexed_time=dataset_res.added if full_info else None
+            indexed_time=dataset_res.added if full_info else None,
+            archived_time=dataset_res.archived
         )
 
     def _make_many(self, query_result):
