@@ -154,7 +154,8 @@ def _build_dataset(doc):
 
 _EXAMPLE_NBAR_DATASET = _build_dataset(_EXAMPLE_NBAR)
 
-DatasetRecord = namedtuple('DatasetRecord', ['id', 'metadata', 'dataset_type_ref', 'local_uri', 'added', 'added_by'])
+DatasetRecord = namedtuple('DatasetRecord', ['id', 'metadata', 'dataset_type_ref', 'local_uri',
+                                             'added', 'added_by', 'archived'])
 
 
 class MockDb(object):
@@ -181,7 +182,8 @@ class MockDb(object):
         if dataset_id in self.dataset:
             raise DuplicateRecordError('already ingested')
 
-        self.dataset[dataset_id] = DatasetRecord(dataset_id, deepcopy(metadata_doc), dataset_type_id, None, None, None)
+        self.dataset[dataset_id] = DatasetRecord(dataset_id, deepcopy(metadata_doc), dataset_type_id,
+                                                 None, None, None, None)
         return True
 
     def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
