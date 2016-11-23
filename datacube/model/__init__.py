@@ -731,20 +731,20 @@ class GridSpec(object):
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
         if padding:
-            pad_y, pad_x = (padding * abs(dx) for dx in self.resolution)
+            pad_y, pad_x = (pad * abs(dx) for pad, dx in zip(padding, self.resolution))
             bounds = BoundingBox(bounds.left - pad_x,
                                  bounds.bottom - pad_y,
                                  bounds.right + pad_x,
                                  bounds.top + pad_y)
         else:
-            padding = 0
+            padding = (0, 0)
 
         tile_size_y, tile_size_x = self.tile_size
         tile_origin_y, tile_origin_x = self.origin
         for y in GridSpec.grid_range(bounds.bottom - tile_origin_y, bounds.top - tile_origin_y, tile_size_y):
             for x in GridSpec.grid_range(bounds.left - tile_origin_x, bounds.right - tile_origin_x, tile_size_x):
                 tile_index = (x, y)
-                yield tile_index, self.tile_geobox(tile_index).buffered(padding, padding)
+                yield tile_index, self.tile_geobox(tile_index).buffered(*padding)
 
     def tiles_inside_geopolygon(self, geopolygon, padding=None):
         """

@@ -148,10 +148,10 @@ class GridWorkflow(object):
                               'geobox': tile_geobox})['datasets'].append(dataset)
 
         if cell_index:
-            padding = padding or 0
+            padding = padding or (0, 0)
             assert len(cell_index) == 2
             cell_index = tuple(cell_index)
-            geobox = self.grid_spec.tile_geobox(cell_index).buffered(padding, padding)
+            geobox = self.grid_spec.tile_geobox(cell_index).buffered(*padding)
 
             query = Query(index=self.index, geopolygon=geobox.extent, **indexers)
             if not query.product:

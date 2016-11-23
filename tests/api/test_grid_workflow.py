@@ -43,7 +43,7 @@ def test_gridworkflow():
 
     # ------ introduce padding --------
 
-    assert len(gw.list_tiles(padding=2, **query)) == 9
+    assert len(gw.list_tiles(padding=(2, 2), **query)) == 9
 
     # ------ add another dataset (to test grouping) -----
 
@@ -60,7 +60,7 @@ def test_gridworkflow():
     assert set(gw.list_tiles(**query).keys()) == {(1, -2, ti), (2, -2, ti)}
 
     # padded
-    assert len(gw.list_tiles(padding=2, **query)) == 12  # not 18=2*9 because of grouping
+    assert len(gw.list_tiles(padding=(2, 2), **query)) == 12  # not 18=2*9 because of grouping
 
     # -------- inspect particular returned tile objects --------
 
@@ -70,7 +70,7 @@ def test_gridworkflow():
     assert grid/pixel == 10
     assert tile.shape == (1, 10, 10)
 
-    padded_tile = gw.list_tiles(padding=2, **query)[1, -2, ti]  # padded example
+    padded_tile = gw.list_tiles(padding=(2, 2), **query)[1, -2, ti]  # padded example
     # assert grid/pixel + 2*gw2.grid_spec.padding == 14  # GREG: understand this
     assert padded_tile.shape == (1, 14, 14)
 
@@ -117,7 +117,7 @@ def test_gridworkflow():
     assert tile[1, -2, ti].shape == (1, 10, 10)
     assert len(tile[1, -2, ti].sources.values[0]) == 1
 
-    padded_tile = gw.list_tiles(cell_index=(1, -2), padding=2, **query)
+    padded_tile = gw.list_tiles(cell_index=(1, -2), padding=(2, 2), **query)
     assert len(padded_tile) == 1
     assert padded_tile[1, -2, ti].shape == (1, 14, 14)
     assert len(padded_tile[1, -2, ti].sources.values[0]) == 2
