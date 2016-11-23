@@ -33,6 +33,24 @@ VALID_VARIABLE_ATTRS = {'standard_name', 'long_name', 'units', 'flags_definition
 SCHEMA_PATH = Path(__file__).parent / 'schema'
 
 
+def _round_to_res(value, res, acc=0.1):
+    """
+    >>> _round_to_res(0.2, 1.0)
+    1
+    >>> _round_to_res(0.0, 1.0)
+    0
+    >>> _round_to_res(0.05, 1.0)
+    0
+    """
+    res = abs(res)
+    return int(math.ceil((value - 0.1 * res) / res))
+
+
+def _buffered_boundingbox(bb, ybuff, xbuff):
+    return BoundingBox(left=bb.left - xbuff, right=bb.right + xbuff, top=bb.top + ybuff, bottom=bb.bottom - ybuff)
+BoundingBox.buffered = _buffered_boundingbox
+
+
 class Dataset(object):
     """
     A Dataset. A container of metadata, and refers typically to a multi-band raster on disk.
@@ -689,9 +707,7 @@ class GridSpec(object):
     @property
     def tile_resolution(self):
         """
-        Tile size in pixels.
-
-        Units will be in CRS dimension order (Usually y,x or lat,lon)
+        Tile size in pixels in CRS dimension order (Usually y,x or lat,lon)
 
         :type: (float, float)
         """
@@ -721,7 +737,8 @@ class GridSpec(object):
         res_y, res_x = self.resolution
         y, x = self.tile_coords(tile_index)
         h, w = self.tile_resolution
-        return GeoBox(crs=self.crs, affine=Affine(res_x, 0.0, x, 0.0, res_y, y), width=w, height=h)
+        geobox = GeoBox(crs=self.crs, affine=Affine(res_x, 0.0, x, 0.0, res_y, y), width=w, height=h)
+        return geobox
 
     def tiles(self, bounds):
         """
@@ -743,7 +760,7 @@ class GridSpec(object):
                 tile_index = (x, y)
                 yield tile_index, self.tile_geobox(tile_index)
 
-    def tiles_inside_geopolygon(self, geopolygon):
+    def tiles_inside_geopolygon(self, geopolygon, tile_buffer=None):
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and inside the specified `polygon`.
@@ -757,7 +774,9 @@ class GridSpec(object):
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
         geopolygon = geopolygon.to_crs(self.crs)
-        for tile_index, tile_geobox in self.tiles(geopolygon.boundingbox):
+        for tile_index, tile_geobox in self.tiles(geopolygon.boundingbox.buffered(*(tile_buffer or (0, 0)))):
+            if tile_buffer:
+                tile_geobox = tile_geobox.buffered(*tile_buffer)
             if check_intersect(tile_geobox.extent, geopolygon):
                 yield tile_index, tile_geobox
 
@@ -867,6 +886,13 @@ class GeoBox(object):
                       affine=affine,
                       width=max(1, int(math.ceil((bounding_box.right - left - 0.1 * resolution[1]) / resolution[1]))),
                       height=max(1, int(math.ceil((bounding_box.bottom - top - 0.1 * resolution[0]) / resolution[0]))))
+
+    def buffered(self, ybuff, xbuff):
+        """
+        Produce a tile buffered by ybuff, xbuff (in CRS units)
+        """
+        w, h = (_round_to_res(buf, res) for buf, res in zip((ybuff, xbuff), self.resolution))
+        return self[-h:self.height+h, -w:self.width+w]
 
     def __getitem__(self, item):
         indexes = [slice(index.start or 0, index.stop or size, index.step or 1)

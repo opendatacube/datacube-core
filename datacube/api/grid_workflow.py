@@ -126,10 +126,12 @@ class GridWorkflow(object):
             grid_spec = product and product.grid_spec
         self.grid_spec = grid_spec
 
-    def cell_observations(self, cell_index=None, geopolygon=None, **indexers):
+    def cell_observations(self, cell_index=None, geopolygon=None, tile_buffer=None, **indexers):
         """
         List datasets, grouped by cell.
 
+        :param datacube.model.GeoPolygon geopolygon:
+        :param (float,float) tile_buffer: buffer tiles by (y, x) (in CRS units)
         :param (int,int) cell_index: The cell index. E.g. (14, -40)
         :param indexers: Query to match the datasets, see :py:class:`datacube.api.query.Query`
         :return: Datsets grouped by cell index
@@ -140,17 +142,6 @@ class GridWorkflow(object):
 
             :class:`datacube.api.query.Query`
         """
-        if cell_index:
-            assert len(cell_index) == 2
-            cell_index = tuple(cell_index)
-            geobox = self.grid_spec.tile_geobox(cell_index)
-            geopolygon = geobox.extent
-        query = Query(index=self.index, geopolygon=geopolygon, **indexers)
-
-        if not query.product:
-            raise RuntimeError('must specify a product')
-
-        observations = self.index.datasets.search_eager(**query.search_terms)
         cells = {}
 
         def return_dataset(tile_index, tile_geobox, dataset):
@@ -159,26 +150,47 @@ class GridWorkflow(object):
                               'geobox': tile_geobox})['datasets'].append(dataset)
 
         if cell_index:
+            assert len(cell_index) == 2
+            cell_index = tuple(cell_index)
+            geobox = self.grid_spec.tile_geobox(cell_index)
+            geobox = geobox.buffered(*tile_buffer) if tile_buffer else geobox
+
+            query = Query(index=self.index, geopolygon=geobox.extent, **indexers)
+            if not query.product:
+                raise RuntimeError('must specify a product')
+
+            observations = self.index.datasets.search_eager(**query.search_terms)
             for dataset in observations:
                 if check_intersect(geobox.extent, dataset.extent.to_crs(self.grid_spec.crs)):
                     return_dataset(cell_index, geobox, dataset)
+            return cells
 
-        elif query.geopolygon:
+        query = Query(index=self.index, geopolygon=geopolygon, **indexers)
+        if not query.product:
+            raise RuntimeError('must specify a product')
+        assert not (tile_buffer and query.geopolygon), "TODO: Need to pad search query here"
+
+        observations = self.index.datasets.search_eager(**query.search_terms)
+
+        if query.geopolygon:
+            tile_buffer = tile_buffer or (0, 0)
             # Get a rough region of tiles
             query_tiles = set(
-                tile_index for tile_index, tile_geobox in self.grid_spec.tiles_inside_geopolygon(query.geopolygon))
+                tile_index for tile_index, tile_geobox in
+                self.grid_spec.tiles_inside_geopolygon(query.geopolygon))
 
             for dataset in observations:
                 # Go through our datasets and see which tiles each dataset produces, and whether they intersect
                 # our query geopolygon.
                 dataset_extent = dataset.extent.to_crs(self.grid_spec.crs)
-                for tile_index, tile_geobox in self.grid_spec.tiles(dataset_extent.boundingbox):
+                for tile_index, tile_geobox in self.grid_spec.tiles(dataset_extent.boundingbox.buffered(*tile_buffer)):
                     if tile_index in query_tiles and check_intersect(tile_geobox.extent, dataset_extent):
                         return_dataset(tile_index, tile_geobox, dataset)
 
         else:
             for dataset in observations:
-                for tile_index, tile_geobox in self.grid_spec.tiles_inside_geopolygon(dataset.extent):
+                for tile_index, tile_geobox in self.grid_spec.tiles_inside_geopolygon(dataset.extent,
+                                                                                      tile_buffer=tile_buffer):
                     return_dataset(tile_index, tile_geobox, dataset)
 
         return cells
