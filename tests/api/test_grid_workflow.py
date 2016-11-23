@@ -11,7 +11,7 @@ def test_gridworkflow():
     # ----- fake a datacube -----
     # e.g. let there be a dataset that coincides with a grid cell
 
-    fakecrs = MagicMock()
+    fakecrs = CRS('EPSG:4326')
 
     grid = 100  # spatial frequency in crs units
     pixel = 10  # square pixel linear dimension in crs units
@@ -110,3 +110,14 @@ def test_gridworkflow():
         assert args[0] is loadable.sources
         assert args[1] is loadable.geobox
         assert list(args[2])[0] is measurement
+
+    # ------- check single cell index extract -------
+    tile = gw.list_tiles(cell_index=(1, -2), **query)
+    assert len(tile) == 1
+    assert tile[1, -2, ti].shape == (1, 10, 10)
+    assert len(tile[1, -2, ti].sources.values[0]) == 1
+
+    padded_tile = gw.list_tiles(cell_index=(1, -2), padding=2, **query)
+    assert len(padded_tile) == 1
+    assert padded_tile[1, -2, ti].shape == (1, 14, 14)
+    assert len(padded_tile[1, -2, ti].sources.values[0]) == 2

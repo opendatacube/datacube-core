@@ -140,19 +140,6 @@ class GridWorkflow(object):
 
             :class:`datacube.api.query.Query`
         """
-        if cell_index:
-            padding = padding or 0
-            assert len(cell_index) == 2
-            cell_index = tuple(cell_index)
-            geobox = self.grid_spec.tile_geobox(cell_index)
-            geopolygon = geobox[-padding:geobox.shape[0]+padding, -padding:geobox.shape[1]+padding].extent
-        query = Query(index=self.index, geopolygon=geopolygon, **indexers)
-
-        if not query.product:
-            raise RuntimeError('must specify a product')
-
-        assert not (padding and query.geopolygon), "Pad search query here too"
-        observations = self.index.datasets.search_eager(**query.search_terms)
         cells = {}
 
         def return_dataset(tile_index, tile_geobox, dataset):
@@ -161,15 +148,34 @@ class GridWorkflow(object):
                               'geobox': tile_geobox})['datasets'].append(dataset)
 
         if cell_index:
-            assert not padding
+            padding = padding or 0
+            assert len(cell_index) == 2
+            cell_index = tuple(cell_index)
+            geobox = self.grid_spec.tile_geobox(cell_index)
+            geobox = geobox[-padding:geobox.shape[0]+padding, -padding:geobox.shape[1]+padding]
+
+            query = Query(index=self.index, geopolygon=geobox.extent, **indexers)
+            if not query.product:
+                raise RuntimeError('must specify a product')
+
+            observations = self.index.datasets.search_eager(**query.search_terms)
             for dataset in observations:
                 if check_intersect(geobox.extent, dataset.extent.to_crs(self.grid_spec.crs)):
                     return_dataset(cell_index, geobox, dataset)
+            return cells
 
-        elif query.geopolygon:
+        query = Query(index=self.index, geopolygon=geopolygon, **indexers)
+        if not query.product:
+            raise RuntimeError('must specify a product')
+        assert not (padding and query.geopolygon), "TODO: Need to pad search query here"
+
+        observations = self.index.datasets.search_eager(**query.search_terms)
+
+        if query.geopolygon:
             # Get a rough region of tiles
             query_tiles = set(
-                tile_index for tile_index, tile_geobox in self.grid_spec.tiles_inside_geopolygon(query.geopolygon))
+                tile_index for tile_index, tile_geobox in
+                self.grid_spec.tiles_inside_geopolygon(query.geopolygon, padding=padding))
 
             for dataset in observations:
                 # Go through our datasets and see which tiles each dataset produces, and whether they intersect
