@@ -46,6 +46,11 @@ def _round_to_res(value, res, acc=0.1):
     return int(math.ceil((value - 0.1 * res) / res))
 
 
+def _buffered_boundingbox(bb, ybuff, xbuff):
+    return BoundingBox(left=bb.left - xbuff, right=bb.right + xbuff, top=bb.top + ybuff, bottom=bb.bottom - ybuff)
+BoundingBox.buffered = _buffered_boundingbox
+
+
 class Dataset(object):
     """
     A Dataset. A container of metadata, and refers typically to a multiband raster on disk.
