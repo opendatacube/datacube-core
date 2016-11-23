@@ -701,9 +701,7 @@ class GridSpec(object):
     @property
     def tile_resolution(self):
         """
-        Tile size in pixels.
-
-        Units will be in CRS dimension order (Usually y,x or lat,lon)
+        Tile size in pixels in CRS dimension order (Usually y,x or lat,lon)
 
         :type: (float, float)
         """
@@ -733,9 +731,10 @@ class GridSpec(object):
         res_y, res_x = self.resolution
         y, x = self.tile_coords(tile_index)
         h, w = self.tile_resolution
-        return GeoBox(crs=self.crs, affine=Affine(res_x, 0.0, x, 0.0, res_y, y), width=w, height=h)
+        geobox = GeoBox(crs=self.crs, affine=Affine(res_x, 0.0, x, 0.0, res_y, y), width=w, height=h)
+        return geobox
 
-    def tiles(self, bounds, padding=None):
+    def tiles(self, bounds):
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and inside the specified `bounds`.
@@ -748,23 +747,14 @@ class GridSpec(object):
         :param BoundingBox bounds: Boundary coordinates of the required grid
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
-        if padding:
-            pad_y, pad_x = (pad * abs(dx) for pad, dx in zip(padding, self.resolution))
-            bounds = BoundingBox(bounds.left - pad_x,
-                                 bounds.bottom - pad_y,
-                                 bounds.right + pad_x,
-                                 bounds.top + pad_y)
-        else:
-            padding = (0, 0)
-
         tile_size_y, tile_size_x = self.tile_size
         tile_origin_y, tile_origin_x = self.origin
         for y in GridSpec.grid_range(bounds.bottom - tile_origin_y, bounds.top - tile_origin_y, tile_size_y):
             for x in GridSpec.grid_range(bounds.left - tile_origin_x, bounds.right - tile_origin_x, tile_size_x):
                 tile_index = (x, y)
-                yield tile_index, self.tile_geobox(tile_index).buffered(*padding)
+                yield tile_index, self.tile_geobox(tile_index)
 
-    def tiles_inside_geopolygon(self, geopolygon, padding=None):
+    def tiles_inside_geopolygon(self, geopolygon, buffer=None):
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and inside the specified `polygon`.
@@ -778,7 +768,9 @@ class GridSpec(object):
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
         geopolygon = geopolygon.to_crs(self.crs)
-        for tile_index, tile_geobox in self.tiles(geopolygon.boundingbox, padding=padding):
+        for tile_index, tile_geobox in self.tiles(geopolygon.boundingbox.buffered(*(buffer or (0, 0)))):
+            if buffer:
+                tile_geobox = tile_geobox.buffered(*buffer)
             if check_intersect(tile_geobox.extent, geopolygon):
                 yield tile_index, tile_geobox
 
