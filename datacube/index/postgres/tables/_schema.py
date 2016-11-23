@@ -60,7 +60,7 @@ DATASET = Table(
     Column('id', postgres.UUID, primary_key=True),
 
     Column('metadata_type_ref', None, ForeignKey(METADATA_TYPE.c.id), nullable=False),
-    Column('dataset_type_ref', None, ForeignKey(DATASET_TYPE.c.id), nullable=False),
+    Column('dataset_type_ref', None, ForeignKey(DATASET_TYPE.c.id), index=True, nullable=False),
 
     Column('metadata', postgres.JSONB, index=False, nullable=False),
 
