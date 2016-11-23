@@ -131,7 +131,7 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
     resampling = _rasterio_resampling_method(resampling)
 
     def copyto_fuser(dest, src):
-        numpy.copyto(dest, src, where=(src != dst_nodata))
+        numpy.copyto(dest, src, where=(dest != dst_nodata))
 
     fuse_func = fuse_func or copyto_fuser
 
