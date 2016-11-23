@@ -24,6 +24,7 @@ from datacube.model import Range
 from datacube.utils import jsonify_document
 from sqlalchemy import cast
 from sqlalchemy import create_engine, select, text, bindparam, and_, or_, func, literal, distinct
+from sqlalchemy import delete
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.url import URL as EngineUrl
@@ -871,6 +872,24 @@ class PostgresDbAPI(object):
                 )
             ).fetchall()
             ]
+
+    def remove_location(self, dataset_id, uri):
+        """
+        Remove the given location for a dataset
+
+        :returns bool: Was the location deleted?
+        """
+        scheme, body = uri.split(':')
+        res = self._connection.execute(
+            delete(DATASET_LOCATION).where(
+                and_(
+                    DATASET_LOCATION.c.dataset_ref == dataset_id,
+                    DATASET_LOCATION.c.uri_scheme == scheme,
+                    DATASET_LOCATION.c.uri_body == body,
+                )
+            )
+        )
+        return res.rowcount > 0
 
     def __repr__(self):
         return "PostgresDb<connection={!r}>".format(self._connection)
