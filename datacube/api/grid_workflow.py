@@ -151,8 +151,7 @@ class GridWorkflow(object):
             padding = padding or 0
             assert len(cell_index) == 2
             cell_index = tuple(cell_index)
-            geobox = self.grid_spec.tile_geobox(cell_index)
-            geobox = geobox[-padding:geobox.shape[0]+padding, -padding:geobox.shape[1]+padding]
+            geobox = self.grid_spec.tile_geobox(cell_index).buffered(padding, padding)
 
             query = Query(index=self.index, geopolygon=geobox.extent, **indexers)
             if not query.product:

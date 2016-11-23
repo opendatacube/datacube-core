@@ -744,8 +744,7 @@ class GridSpec(object):
         for y in GridSpec.grid_range(bounds.bottom - tile_origin_y, bounds.top - tile_origin_y, tile_size_y):
             for x in GridSpec.grid_range(bounds.left - tile_origin_x, bounds.right - tile_origin_x, tile_size_x):
                 tile_index = (x, y)
-                geobox = self.tile_geobox(tile_index)
-                yield tile_index, geobox[-padding:geobox.shape[0]+padding, -padding:geobox.shape[1]+padding]
+                yield tile_index, self.tile_geobox(tile_index).buffered(padding, padding)
 
     def tiles_inside_geopolygon(self, geopolygon, padding=None):
         """
@@ -871,6 +870,12 @@ class GeoBox(object):
                       affine=affine,
                       width=max(1, int(math.ceil((bounding_box.right - left - 0.1 * resolution[1]) / resolution[1]))),
                       height=max(1, int(math.ceil((bounding_box.bottom - top - 0.1 * resolution[0]) / resolution[0]))))
+
+    def buffered(self, ybuff, xbuff):
+        """
+        Produce a tile buffered by ybuff, xbuff pixels
+        """
+        return self[-ybuff:self.height+ybuff, -xbuff:self.width+xbuff]
 
     def __getitem__(self, item):
         indexes = [slice(index.start or 0, index.stop or size, index.step or 1)
