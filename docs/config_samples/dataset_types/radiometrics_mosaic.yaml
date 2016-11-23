@@ -18,13 +18,37 @@ storage:
         latitude: -0.001
 
 measurements:
-    - name: rad_air_dose_rate
+    - name: rad_air_dose_rate_unfiltered
       dtype: float32
       units: 'nG/h'
       nodata: -99999
-    - name: rad_k_equiv_conc
+    - name: rad_k_equiv_conc_unfiltered
       dtype: float32
       units: '%K'
+      nodata: -99999
+    - name: rad_u_equiv_conc_unfiltered
+      dtype: float32
+      units: 'ppm'
+      nodata: -99999
+    - name: rad_th_equiv_conc_unfiltered
+      dtype: float32
+      units: 'ppm'
+      nodata: -99999
+    - name: rad_air_dose_rate_filtered
+      dtype: float32
+      units: 'nG/h'
+      nodata: -99999
+    - name: rad_k_equiv_conc_filtered
+      dtype: float32
+      units: '%K'
+      nodata: -99999
+    - name: rad_u_equiv_conc_filtered
+      dtype: float32
+      units: 'ppm'
+      nodata: -99999
+    - name: rad_th_equiv_conc_filtered
+      dtype: float32
+      units: 'ppm'
       nodata: -99999
     - name: rad_ratio_tk
       dtype: float32
@@ -41,8 +65,4 @@ measurements:
     - name: rad_ratio_ut
       dtype: float32
       units: 'ppm / ppm'
-      nodata: -99999
-    - name: rad_u_equiv_conc
-      dtype: float32
-      units: 'ppm'
       nodata: -99999
