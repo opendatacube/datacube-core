@@ -362,15 +362,17 @@ class Datacube(object):
         Group datasets along defined non-spatial dimensions.
 
         :param datasets: a list of datasets, typically from :meth:`product_observations`
-        :param group_func: a function that returns a label for a dataset
-        :param dimension: name of the new dimension
-        :param units: unit for the new dimension
+        :param .query.GroupBy group_by: Contains:
+            - a function that returns a label for a dataset
+            - name of the new dimension
+            - unit for the new dimension
+            - function to sort by before grouping
         :return: :class:`xarray.Array`
 
         .. seealso:: :meth:`product_observations` :meth:`product_data`
         """
-        dimension, group_func, units = group_by
-        datasets.sort(key=group_func)
+        dimension, group_func, units, sort_key = group_by
+        datasets.sort(key=sort_key)
         groups = [Group(key, tuple(group)) for key, group in groupby(datasets, group_func)]
 
         data = numpy.empty(len(groups), dtype=object)

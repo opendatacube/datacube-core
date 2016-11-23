@@ -15,8 +15,37 @@ def test_grouping_datasets():
         {'time': datetime.datetime(2016, 2, 1), 'value': 'bar'}
     ]
 
-    group_by = GroupBy(dimension, group_func, units)
+    group_by = GroupBy(dimension, group_func, units, sort_key=group_func)
     grouped = Datacube.product_sources(datasets, group_by)
 
     assert str(grouped.time.dtype) == 'datetime64[ns]'
     assert grouped.loc['2016-01-01':'2016-01-15']
+
+
+def test_grouped_datasets_should_be_in_consistent_order():
+    datasets = [
+        {'time': datetime.datetime(2016, 1, 1, 0, 1), 'value': 'foo'},
+        {'time': datetime.datetime(2016, 1, 1, 0, 2), 'value': 'flim'},
+        {'time': datetime.datetime(2016, 2, 1, 0, 1), 'value': 'bar'}
+    ]
+
+    grouped = _group_datasets_by_date(datasets)
+
+    # Swap the two elements which get grouped together
+    datasets[0], datasets[1] = datasets[1], datasets[0]
+    grouped_2 = _group_datasets_by_date(datasets)
+
+    assert all(grouped.values == grouped_2.values)
+
+
+def _group_datasets_by_date(datasets):
+    def group_func(d):
+        return d['time'].date()
+
+    def sort_key(d):
+        return d['time']
+    dimension = 'time'
+    units = None
+
+    group_by = GroupBy(dimension, group_func, units, sort_key)
+    return Datacube.product_sources(datasets, group_by)

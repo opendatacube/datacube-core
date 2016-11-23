@@ -33,7 +33,7 @@ from ..utils import datetime_to_seconds_since_1970
 _LOG = logging.getLogger(__name__)
 
 
-GroupBy = collections.namedtuple('GroupBy', ['dimension', 'group_by_func', 'units'])
+GroupBy = collections.namedtuple('GroupBy', ['dimension', 'group_by_func', 'units', 'sort_key'])
 
 FLOAT_TOLERANCE = 0.0000001  # TODO: For DB query, use some sort of 'contains' query, rather than range overlap.
 SPATIAL_KEYS = ('latitude', 'lat', 'y', 'longitude', 'lon', 'long', 'x')
@@ -172,11 +172,13 @@ def query_geopolygon(geopolygon=None, **kwargs):
 def query_group_by(group_by='time', **kwargs):
     time_grouper = GroupBy(dimension='time',
                            group_by_func=lambda ds: ds.center_time,
-                           units='seconds since 1970-01-01 00:00:00')
+                           units='seconds since 1970-01-01 00:00:00',
+                           sort_key=lambda ds: ds.center_time)
 
     solar_day_grouper = GroupBy(dimension='time',
                                 group_by_func=solar_day,
-                                units='seconds since 1970-01-01 00:00:00')
+                                units='seconds since 1970-01-01 00:00:00',
+                                sort_key=lambda ds: ds.center_time)
 
     group_by_map = {
         None: time_grouper,
