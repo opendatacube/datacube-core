@@ -49,7 +49,7 @@ def geobox_info(extent, valid_data=None):
                      (data_bounds.right, data_bounds.top),
                      (data_bounds.right, data_bounds.bottom),
                      (data_bounds.left, data_bounds.bottom)],
-                    extent.crs).to_crs(CRS('EPSG:4326'))
+                    crs=extent.crs).to_crs(CRS('EPSG:4326'))
     doc = {
         'extent': {
             'coord': {

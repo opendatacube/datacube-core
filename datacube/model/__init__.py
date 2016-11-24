@@ -850,7 +850,7 @@ class GeoBox(object):
         points = [(0, 0), (0, height), (width, height), (width, 0)]
         self.affine.itransform(points)
         #: :rtype: GeoPolygon
-        self.extent = GeoPolygon(points, crs)
+        self.extent = GeoPolygon(points, crs=crs)
 
     @classmethod
     def from_geopolygon(cls, geopolygon, resolution, crs=None, align=None):

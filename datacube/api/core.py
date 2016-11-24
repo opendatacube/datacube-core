@@ -520,7 +520,7 @@ def get_bounds(datasets, crs):
     right = max([d.extent.to_crs(crs).boundingbox.right for d in datasets])
     top = max([d.extent.to_crs(crs).boundingbox.top for d in datasets])
     bottom = min([d.extent.to_crs(crs).boundingbox.bottom for d in datasets])
-    return GeoPolygon.from_boundingbox(BoundingBox(left, bottom, right, top), crs)
+    return GeoPolygon.from_boundingbox(BoundingBox(left, bottom, right, top), crs=crs)
 
 
 def set_resampling_method(measurements, resampling=None):

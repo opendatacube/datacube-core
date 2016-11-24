@@ -218,7 +218,7 @@ def create_grid_mapping_variable(nco, crs):
     left, right = nco[dims[1]][0]-0.5*xres, nco[dims[1]][-1]+0.5*xres
     bottom, top = nco[dims[0]][0]-0.5*yres, nco[dims[0]][-1]+0.5*yres
     points = [[left, bottom], [left, top], [right, top], [right, bottom]]
-    _write_geographical_extents_attributes(nco, GeoPolygon(points, crs))
+    _write_geographical_extents_attributes(nco, GeoPolygon(points, crs=crs))
 
     return crs_var
 

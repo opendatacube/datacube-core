@@ -220,7 +220,7 @@ def _range_to_geopolygon(**kwargs):
                     (input_coords['right'], input_coords['bottom']),
                     (input_coords['left'], input_coords['bottom']),
                 ]
-        return GeoPolygon(points, input_crs)
+        return GeoPolygon(points, crs=input_crs)
     return None
 
 

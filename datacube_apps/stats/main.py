@@ -488,7 +488,7 @@ def create_stats_app(filename, index=None):
             # A large, multi-tile input region, specified as geojson. Output will be individual tiles.
             _LOG.info('Found geojson `input region`, outputing tiles.')
             grid_spec = _make_grid_spec(config['storage'])
-            geopolygon = GeoPolygon.from_geojson(config['input_region']['geometry'], CRS('EPSG:4326'))
+            geopolygon = GeoPolygon.from_geojson(config['input_region']['geometry'], crs=CRS('EPSG:4326'))
             stats_app.task_generator = partial(generate_gridded_tasks, grid_spec=grid_spec, geopolygon=geopolygon)
         else:
             _LOG.info('Generating statistics for an ungridded `input region`. Output as a single file.')
