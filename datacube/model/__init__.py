@@ -46,7 +46,7 @@ def _round_to_res(value, res, acc=0.1):
     return int(math.ceil((value - 0.1 * res) / res))
 
 
-class BoundingBox(_BoundingBox):
+class BoundingBox(_BoundingBox):  # pylint: disable=duplicate-bases
     def buffered(self, ybuff, xbuff):
         """
         Return a new BoundingBox, buffered in the x and y dimensions.
