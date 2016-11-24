@@ -352,7 +352,7 @@ def check_intersect(a, b):
 
 
 def union_cascaded(geoms):
-    geom = ogr.Geometry(ogr.wkbGeometryCollection)
+    geom = ogr.Geometry(ogr.wkbMultiPolygon)
     crs = None
     for g in geoms:
         if crs:
@@ -362,8 +362,10 @@ def union_cascaded(geoms):
 
         geom.AddGeometry(g._geom)  # pylint: disable=protected-access
     geom.UnionCascaded()
-    assert geom.GetGeometryCount() == 1
     result = Geometry.__new__(Geometry)
-    result._geom = geom.GetGeometryRef(0).Clone()  # pylint: disable=protected-access
+    if geom.GetGeometryCount() == 1:
+        result._geom = geom.GetGeometryRef(0).Clone()  # pylint: disable=protected-access
+    else:
+        result._geom = geom  # pylint: disable=protected-access
     result.crs = crs
     return result
