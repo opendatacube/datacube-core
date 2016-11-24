@@ -15,7 +15,7 @@ from affine import Affine
 from . import geometry
 from .geometry import CRS, BoundingBox, Geometry
 
-from datacube.utils import parse_time, cached_property, uri_to_local_path, check_intersect
+from datacube.utils import parse_time, cached_property, uri_to_local_path, intersects
 from datacube.utils import schema_validated, DocReader
 
 _LOG = logging.getLogger(__name__)
@@ -541,12 +541,15 @@ class GridSpec(object):
         :param tile_buffer:
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
+        result = []
         geopolygon = geopolygon.to_crs(self.crs)
         for tile_index, tile_geobox in self.tiles(geopolygon.boundingbox.buffered(*tile_buffer)):
             if tile_buffer:
                 tile_geobox = tile_geobox.buffered(*tile_buffer)
+
             if intersects(tile_geobox.extent, geopolygon):
-                yield tile_index, tile_geobox
+                result.append((tile_index, tile_geobox))
+        return result
 
     @staticmethod
     def grid_range(lower, upper, step):
