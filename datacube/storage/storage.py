@@ -96,6 +96,9 @@ def _no_fractional_translate(affine, eps=0.01):
 
 
 def reproject(source, dest, dst_transform, dst_nodata, dst_projection, resampling):
+    """
+    Read from `source` into `dest`, reprojecting if necessary.
+    """
     with source.open() as src:
         array_transform = ~src.transform * dst_transform
         if (src.crs == dst_projection and _no_scale(array_transform) and
@@ -122,7 +125,8 @@ def reproject(source, dest, dst_transform, dst_nodata, dst_projection, resamplin
                           NUM_THREADS=OPTIONS['reproject_threads'])
 
 
-def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata, resampling='nearest', fuse_func=None):
+def reproject_and_fuse(sources, destination, dst_transform, dst_projection, dst_nodata,
+                       resampling='nearest', fuse_func=None):
     """
     Reproject and fuse `sources` into a 2D numpy array `destination`.
     """
@@ -139,20 +143,21 @@ def fuse_sources(sources, destination, dst_transform, dst_projection, dst_nodata
 
     fuse_func = fuse_func or copyto_fuser
 
-    if len(sources) == 1:
+    if len(sources) == 0:
+        destination.fill(dst_nodata)
+        return destination
+    elif len(sources) == 1:
         reproject(sources[0], destination, dst_transform, dst_nodata, dst_projection, resampling)
         return destination
+    else:
+        destination.fill(dst_nodata)
 
-    destination.fill(dst_nodata)
-    if len(sources) == 0:
+        buffer_ = numpy.empty(destination.shape, dtype=destination.dtype)
+        for source in sources:
+            reproject(source, buffer_, dst_transform, dst_nodata, dst_projection, resampling)
+            fuse_func(destination, buffer_)
+
         return destination
-
-    buffer_ = numpy.empty(destination.shape, dtype=destination.dtype)
-    for source in sources:
-        reproject(source, buffer_, dst_transform, dst_nodata, dst_projection, resampling)
-        fuse_func(destination, buffer_)
-
-    return destination
 
 
 class BandDataSource(object):
@@ -394,8 +399,9 @@ def create_netcdf_storage_unit(filename,
 
     :param pathlib.Path filename: filename to write to
     :param datacube.model.CRS crs: Datacube CRS object defining the spatial projection
-    :return: open netCDF4.Dataset object
+    :return: open netCDF4.Dataset object, ready for writing to
     """
+    filename = Path(filename)
     if filename.exists():
         raise RuntimeError('Storage Unit already exists: %s' % filename)
 

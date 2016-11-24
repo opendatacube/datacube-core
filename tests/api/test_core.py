@@ -35,6 +35,7 @@ def test_grouped_datasets_should_be_in_consistent_order():
     datasets[0], datasets[1] = datasets[1], datasets[0]
     grouped_2 = _group_datasets_by_date(datasets)
 
+    assert len(grouped) == len(grouped_2) == 2
     assert all(grouped.values == grouped_2.values)
 
 

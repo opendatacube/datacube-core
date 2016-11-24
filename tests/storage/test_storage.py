@@ -1,28 +1,13 @@
-#    Copyright 2015 Geoscience Australia
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#        http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-
-
 from __future__ import absolute_import, division, print_function
 
 import numpy
 import netCDF4
-from affine import Affine
+from affine import Affine, identity
 import xarray
+import mock
 
 from datacube.model import GeoBox, CRS
-from datacube.storage.storage import write_dataset_to_netcdf
-
+from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse
 
 GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
            'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
@@ -30,7 +15,7 @@ GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.25722
 
 
 def test_write_dataset_to_netcdf(tmpnetcdf_filename):
-    affine = Affine.scale(0.1, 0.1)*Affine.translation(20, 30)
+    affine = Affine.scale(0.1, 0.1) * Affine.translation(20, 30)
     geobox = GeoBox(100, 100, affine, CRS(GEO_PROJ))
     dataset = xarray.Dataset(attrs={'extent': geobox.extent, 'crs': geobox.crs})
     for name, coord in geobox.coordinates.items():
@@ -54,3 +39,63 @@ def test_write_dataset_to_netcdf(tmpnetcdf_filename):
 
         assert 'abc' in var.ncattrs()
         assert var.getncattr('abc') == 'xyz'
+
+
+def test_first_source_is_priority_in_reproject_and_fuse():
+    crs = mock.MagicMock()
+    shape = (2, 2)
+    no_data = -1
+
+    source1 = _mock_datasetsource([[1, 1], [1, 1]], crs=crs, shape=shape)
+    source2 = _mock_datasetsource([[2, 2], [2, 2]], crs=crs, shape=shape)
+    sources = [source1, source2]
+
+    output_data = numpy.full(shape, fill_value=no_data, dtype='int16')
+    reproject_and_fuse(sources, output_data, dst_transform=identity, dst_projection=crs, dst_nodata=no_data)
+
+    assert (output_data == 1).all()
+
+
+def test_second_source_used_when_first_is_empty():
+    crs = mock.MagicMock()
+    shape = (2, 2)
+    no_data = -1
+
+    source1 = _mock_datasetsource([[-1, -1], [-1, -1]], crs=crs, shape=shape)
+    source2 = _mock_datasetsource([[2, 2], [2, 2]], crs=crs, shape=shape)
+    sources = [source1, source2]
+
+    output_data = numpy.full(shape, fill_value=no_data, dtype='int16')
+    reproject_and_fuse(sources, output_data, dst_transform=identity, dst_projection=crs, dst_nodata=no_data)
+
+    assert (output_data == 2).all()
+
+
+def test_mixed_result_when_first_source_partially_empty():
+    crs = mock.MagicMock()
+    shape = (2, 2)
+    no_data = -1
+
+    source1 = _mock_datasetsource([[1, 1], [no_data, no_data]], crs=crs, shape=shape)
+    source2 = _mock_datasetsource([[2, 2], [2, 2]], crs=crs, shape=shape)
+    sources = [source1, source2]
+
+    output_data = numpy.full(shape, fill_value=no_data, dtype='int16')
+    reproject_and_fuse(sources, output_data, dst_transform=identity, dst_projection=crs, dst_nodata=no_data)
+
+    assert (output_data == [[1, 1], [2, 2]]).all()
+
+
+def _mock_datasetsource(value, crs, shape):
+    dataset_source = mock.MagicMock()
+    rio_reader = dataset_source.open.return_value.__enter__.return_value
+    rio_reader.crs = crs
+    rio_reader.transform = identity
+    rio_reader.shape = shape
+    rio_reader.read.return_value = numpy.array(value)
+
+    # Use the following if a reproject were to be required
+    # def fill_array(dest, *args, **kwargs):
+    #     dest[:] = value
+    # rio_reader.reproject.side_effect = fill_array
+    return dataset_source

@@ -17,7 +17,7 @@ from ..config import LocalConfig
 from ..compat import string_types
 from ..index import index_connect
 from ..model import GeoPolygon, GeoBox
-from ..storage.storage import DatasetSource, fuse_sources
+from ..storage.storage import DatasetSource, reproject_and_fuse
 from ..utils import check_intersect, data_resolution_and_offset
 from .query import Query, query_group_by, query_geopolygon
 
@@ -362,12 +362,12 @@ class Datacube(object):
         Group datasets along defined non-spatial dimensions.
 
         :param datasets: a list of datasets, typically from :meth:`product_observations`
-        :param .query.GroupBy group_by: Contains:
+        :param GroupBy group_by: Contains:
             - a function that returns a label for a dataset
             - name of the new dimension
             - unit for the new dimension
             - function to sort by before grouping
-        :return: :class:`xarray.Array`
+        :rtype: xarray.DataArray
 
         .. seealso:: :meth:`product_observations` :meth:`product_data`
         """
@@ -508,13 +508,13 @@ def fuse_lazy(datasets, geobox, measurement, fuse_func=None, prepend_dims=0):
 
 
 def _fuse_measurement(dest, datasets, geobox, measurement, fuse_func=None):
-    fuse_sources([DatasetSource(dataset, measurement['name']) for dataset in datasets],
-                 dest,
-                 geobox.affine,
-                 geobox.crs,
-                 dest.dtype.type(measurement['nodata']),
-                 resampling=measurement.get('resampling_method', 'nearest'),
-                 fuse_func=fuse_func)
+    reproject_and_fuse([DatasetSource(dataset, measurement['name']) for dataset in datasets],
+                       dest,
+                       geobox.affine,
+                       geobox.crs,
+                       dest.dtype.type(measurement['nodata']),
+                       resampling=measurement.get('resampling_method', 'nearest'),
+                       fuse_func=fuse_func)
 
 
 def get_bounds(datasets, crs):
