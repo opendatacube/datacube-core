@@ -14,7 +14,7 @@ import numpy
 import cachetools
 from affine import Affine
 from osgeo import osr
-from rasterio.coords import BoundingBox
+from rasterio.coords import BoundingBox as _BoundingBox
 
 from datacube import compat
 from datacube.utils import parse_time, cached_property, uri_to_local_path, check_intersect
@@ -46,9 +46,17 @@ def _round_to_res(value, res, acc=0.1):
     return int(math.ceil((value - 0.1 * res) / res))
 
 
-def _buffered_boundingbox(bb, ybuff, xbuff):
-    return BoundingBox(left=bb.left - xbuff, right=bb.right + xbuff, top=bb.top + ybuff, bottom=bb.bottom - ybuff)
-BoundingBox.buffered = _buffered_boundingbox
+class BoundingBox(_BoundingBox):
+    def buffered(self, ybuff, xbuff):
+        """
+        Return a new BoundingBox, buffered in the x and y dimensions.
+
+        :param ybuff: Y dimension buffering amount
+        :param xbuff: X dimension buffering amount
+        :return: new BoundingBox
+        """
+        return BoundingBox(left=self.left - xbuff, right=self.right + xbuff,
+                           top=self.top + ybuff, bottom=self.bottom - ybuff)
 
 
 class Dataset(object):
@@ -722,7 +730,7 @@ class GridSpec(object):
         """
 
         def coord(index, resolution, size, origin):
-            return (index + (1 if resolution < 0 and size > 0 else 0)) * size + origin
+            return (index + (1 if resolution < 0 < size else 0)) * size + origin
 
         return tuple(coord(index, res, size, origin) for index, res, size, origin in
                      zip(tile_index[::-1], self.resolution, self.tile_size, self.origin))
@@ -760,7 +768,7 @@ class GridSpec(object):
                 tile_index = (x, y)
                 yield tile_index, self.tile_geobox(tile_index)
 
-    def tiles_inside_geopolygon(self, geopolygon, tile_buffer=None):
+    def tiles_inside_geopolygon(self, geopolygon, tile_buffer=(0, 0)):
         """
         Returns an iterator of tile_index, :py:class:`GeoBox` tuples across
         the grid and inside the specified `polygon`.
@@ -771,10 +779,11 @@ class GridSpec(object):
            dimension order.
 
         :param GeoPolygon geopolygon: Polygon to tile
+        :param tile_buffer:
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
         geopolygon = geopolygon.to_crs(self.crs)
-        for tile_index, tile_geobox in self.tiles(geopolygon.boundingbox.buffered(*(tile_buffer or (0, 0)))):
+        for tile_index, tile_geobox in self.tiles(geopolygon.boundingbox.buffered(*tile_buffer)):
             if tile_buffer:
                 tile_geobox = tile_geobox.buffered(*tile_buffer)
             if check_intersect(tile_geobox.extent, geopolygon):

@@ -126,7 +126,7 @@ class GridWorkflow(object):
             grid_spec = product and product.grid_spec
         self.grid_spec = grid_spec
 
-    def cell_observations(self, cell_index=None, geopolygon=None, tile_buffer=None, **indexers):
+    def cell_observations(self, cell_index=None, geopolygon=None, tile_buffer=(0, 0), **indexers):
         """
         List datasets, grouped by cell.
 
@@ -173,7 +173,6 @@ class GridWorkflow(object):
         observations = self.index.datasets.search_eager(**query.search_terms)
 
         if query.geopolygon:
-            tile_buffer = tile_buffer or (0, 0)
             # Get a rough region of tiles
             query_tiles = set(
                 tile_index for tile_index, tile_geobox in
