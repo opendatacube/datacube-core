@@ -12,7 +12,7 @@ import pytest
 import yaml
 from click.testing import CliRunner
 from affine import Affine
-from datacube.api.query import GroupBy
+from datacube.api.query import GroupBy, query_group_by
 
 import datacube.scripts.cli_app
 from datacube.model import GeoBox, CRS
@@ -173,7 +173,7 @@ def check_open_with_api(index):
 
     geobox = GeoBox(200, 200, Affine(25, 0.0, 1500000, 0.0, -25, -3900000), CRS('EPSG:3577'))
     observations = datacube.product_observations(product='ls5_nbar_albers', geopolygon=geobox.extent)
-    group_by = GroupBy('time', lambda ds: ds.center_time, 'seconds since 1970-01-01 00:00:00')
+    group_by = query_group_by('time')
     sources = datacube.product_sources(observations, group_by)
     data = datacube.product_data(sources, geobox, input_type.measurements.values())
     assert data.blue.shape == (1, 200, 200)
