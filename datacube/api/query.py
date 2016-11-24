@@ -27,7 +27,7 @@ from pandas import to_datetime as pandas_to_datetime
 import numpy as np
 
 from ..compat import string_types, integer_types
-from ..model import GeoPolygon, Range, CRS
+from ..model import geometry, GeoPolygon, Range, CRS
 from ..utils import datetime_to_seconds_since_1970
 
 _LOG = logging.getLogger(__name__)
@@ -215,14 +215,16 @@ def _range_to_geopolygon(**kwargs):
     if any(v is not None for v in input_coords.values()):
         if input_coords['left'] == input_coords['right']:
             if input_coords['top'] == input_coords['bottom']:
-                points = [(input_coords['left'], input_coords['top'])]
+                return geometry.point(input_coords['left'], input_coords['top'], crs=input_crs)
             else:
                 points = [(input_coords['left'], input_coords['bottom']),
                           (input_coords['left'], input_coords['top'])]
+                return geometry.line(points, crs=input_crs)
         else:
             if input_coords['top'] == input_coords['bottom']:
                 points = [(input_coords['left'], input_coords['top']),
                           (input_coords['right'], input_coords['top'])]
+                return geometry.line(points, crs=input_crs)
             else:
                 points = [
                     (input_coords['left'], input_coords['top']),
@@ -230,7 +232,7 @@ def _range_to_geopolygon(**kwargs):
                     (input_coords['right'], input_coords['bottom']),
                     (input_coords['left'], input_coords['bottom']),
                 ]
-        return GeoPolygon(points, crs=input_crs)
+                return GeoPolygon(points, crs=input_crs)
     return None
 
 

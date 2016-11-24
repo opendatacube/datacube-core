@@ -179,16 +179,16 @@ def _create_projected_grid_mapping_variable(nco, crs):
 
 
 def _write_geographical_extents_attributes(nco, extent):
-    geo_extents = extent.to_crs(CRS("EPSG:4326")).points
-    geo_extents.append(geo_extents[0])
-    nco.geospatial_bounds = "POLYGON((" + ", ".join("{0} {1}".format(*p) for p in geo_extents) + "))"
+    geo_extents = extent.to_crs(CRS("EPSG:4326"))
+    nco.geospatial_bounds = geo_extents.wkt
     nco.geospatial_bounds_crs = "EPSG:4326"
 
-    nco.geospatial_lat_min = min(lat for lon, lat in geo_extents)
-    nco.geospatial_lat_max = max(lat for lon, lat in geo_extents)
+    geo_bounds = geo_extents.boundingbox
+    nco.geospatial_lat_min = geo_bounds.bottom
+    nco.geospatial_lat_max = geo_bounds.top
     nco.geospatial_lat_units = "degrees_north"
-    nco.geospatial_lon_min = min(lon for lon, lat in geo_extents)
-    nco.geospatial_lon_max = max(lon for lon, lat in geo_extents)
+    nco.geospatial_lon_min = geo_bounds.left
+    nco.geospatial_lon_max = geo_bounds.right
     nco.geospatial_lon_units = "degrees_east"
 
     # TODO: broken anyway...

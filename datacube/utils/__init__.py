@@ -146,62 +146,8 @@ except ImportError:
         return _parse_time_generic(time)
 
 
-def _points_to_ogr(points):
-    if len(points) == 1:
-        point = ogr.Geometry(ogr.wkbPoint)
-        point.AddPoint_2D(*points[0])
-        return point
-    if len(points) == 2:
-        raise RuntimeError('not implemented')  # should be line?
-    ring = ogr.Geometry(ogr.wkbLinearRing)
-    for point in points:
-        ring.AddPoint_2D(*point)
-    ring.AddPoint_2D(*points[0])
-    poly = ogr.Geometry(ogr.wkbPolygon)
-    poly.AddGeometry(ring)
-    return poly
-
-
-def _ogr_to_points(geom):
-    if geom.GetGeometryType() == ogr.wkbPolygon:
-        return geom.GetGeometryRef(0).GetPoints()[:-1]
-    if geom.GetGeometryType() == ogr.wkbPoint:
-        return geom.GetPoints()
-    raise RuntimeError('unsupported geometry type')
-
-###
-# Helper functions for performing geometry operations using OGR
-###
-
-
-def densify_points(points, resolution):
-    geom = _points_to_ogr(points)
-    geom.Segmentize(resolution)
-    return _ogr_to_points(geom)
-
-
 def intersects(a, b):
-    assert a.crs == b.crs
-
-    a = _points_to_ogr(a.points)
-    b = _points_to_ogr(b.points)
-    return a.Intersects(b) and not a.Touches(b)
-
-
-def intersect_points(a, *other):
-    _a = _points_to_ogr(a)
-    for b in other:
-        _b = _points_to_ogr(b)
-        _a = _a.Intersection(_b)
-    return _ogr_to_points(_a)
-
-
-def union_points(a, *other):
-    _a = _points_to_ogr(a)
-    for b in other:
-        _b = _points_to_ogr(b)
-        _a = _a.Union(_b)
-    return _ogr_to_points(_a)
+    return a.intersects(b) and not a.touches(b)
 
 
 def data_resolution_and_offset(data):

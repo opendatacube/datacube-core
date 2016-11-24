@@ -6,19 +6,17 @@ from __future__ import absolute_import, division
 
 import logging
 import math
-import collections
 from collections import namedtuple, OrderedDict
 from pathlib import Path
 
 import numpy
-import cachetools
 from affine import Affine
-from osgeo import osr
-from rasterio.coords import BoundingBox as _BoundingBox
 
-from datacube import compat
-from datacube.utils import parse_time, cached_property, uri_to_local_path, intersects
-from datacube.utils import schema_validated, DocReader, union_points, intersect_points, densify_points
+from . import geometry
+from .geometry import CRS, BoundingBox, Geometry
+
+from datacube.utils import parse_time, cached_property, uri_to_local_path, check_intersect
+from datacube.utils import schema_validated, DocReader
 
 _LOG = logging.getLogger(__name__)
 
@@ -44,19 +42,6 @@ def _round_to_res(value, res, acc=0.1):
     """
     res = abs(res)
     return int(math.ceil((value - 0.1 * res) / res))
-
-
-class BoundingBox(_BoundingBox):  # pylint: disable=duplicate-bases
-    def buffered(self, ybuff, xbuff):
-        """
-        Return a new BoundingBox, buffered in the x and y dimensions.
-
-        :param ybuff: Y dimension buffering amount
-        :param xbuff: X dimension buffering amount
-        :return: new BoundingBox
-        """
-        return BoundingBox(left=self.left - xbuff, right=self.right + xbuff,
-                           top=self.top + ybuff, bottom=self.bottom - ybuff)
 
 
 class Dataset(object):
@@ -402,81 +387,29 @@ class DatasetType(object):
         return hash(self.name)
 
 
-class GeoPolygon(object):
-    """
-    Polygon with a :py:class:`CRS`
-
-    :param points: list of (x,y) points
-    :param CRS crs: coordinate system for the polygon
-    """
-
-    def __init__(self, points, crs=None):
-        if not isinstance(points, collections.Sequence):
+def GeoPolygon(coordinates, crs):  # pylint: disable=invalid-name
+        if not isinstance(coordinates, collections.Sequence):
             raise ValueError("points ({}) must be a sequence of (x, y) coordinates".format(points))
-        self.points = points
-        self.crs = crs
+    return geometry.polygon(coordinates + [coordinates[0]], crs=crs)
 
-    @classmethod
-    def from_boundingbox(cls, boundingbox, crs=None):
-        points = [
-            (boundingbox.left, boundingbox.top),
-            (boundingbox.right, boundingbox.top),
-            (boundingbox.right, boundingbox.bottom),
-            (boundingbox.left, boundingbox.bottom),
-        ]
-        return cls(points, crs)
 
-    @classmethod
-    def from_geojson(cls, geojson_geometry, crs=None):
-        try:
-            assert isinstance(geojson_geometry['coordinates'], collections.Sequence)
-            assert geojson_geometry['type'] == 'Polygon'
-        except (KeyError, AssertionError):
-            raise ValueError('Input geometry is not an acceptable geojson geometry. It should be of type Polygon,'
-                             'and contain a single list of coordinates.')
+def _polygon_from_boundingbox(boundingbox, crs=None):
+    points = [
+        (boundingbox.left, boundingbox.top),
+        (boundingbox.right, boundingbox.top),
+        (boundingbox.right, boundingbox.bottom),
+        (boundingbox.left, boundingbox.bottom),
+        (boundingbox.left, boundingbox.top),
+    ]
+    return geometry.polygon(points, crs=crs)
+GeoPolygon.from_boundingbox = _polygon_from_boundingbox
 
-        return cls(geojson_geometry['coordinates'][0], crs)
 
-    @property
-    def boundingbox(self):
-        """
-        :rtype: rasterio.coords.BoundingBox
-        """
-        return BoundingBox(left=min(x for x, y in self.points),
-                           bottom=min(y for x, y in self.points),
-                           right=max(x for x, y in self.points),
-                           top=max(y for x, y in self.points))
-
-    @classmethod
-    def from_sources_extents(cls, sources, geobox):
-        sources_union = union_points(*[source.extent.to_crs(geobox.crs).points for source in sources])
-        valid_data = intersect_points(geobox.extent.points, sources_union)
-
-        return cls(valid_data, geobox.crs)
-
-    def to_crs(self, crs, resolution=None):
-        """
-        Duplicates polygon while transforming to a new CRS
-
-        :param CRS crs: Target CRS
-        :param resolution: resolution of points in source crs units to maintain in output polygon
-        :return: new GeoPolygon with CRS specified by crs
-        :rtype: GeoPolygon
-        """
-        if self.crs == crs:
-            return self
-
-        if resolution is None:
-            resolution = 1 if self.crs.geographic else 100000
-
-        transform = osr.CoordinateTransformation(self.crs._crs, crs._crs)  # pylint: disable=protected-access
-        return GeoPolygon([p[:2] for p in transform.TransformPoints(densify_points(self.points, resolution))], crs)
-
-    def __str__(self):
-        return "GeoPolygon(points=%s, crs=%s)" % (self.points, self.crs)
-
-    def __repr__(self):
-        return self.__str__()
+def _polygon_from_sources_extents(sources, geobox):
+    sources_union = geometry.union_cascaded(source.extent.to_crs(geobox.crs) for source in sources)
+    valid_data = geobox.extent.intersection(sources_union)
+    return valid_data
+GeoPolygon.from_sources_extents = _polygon_from_sources_extents
 
 
 class FlagsDefinition(object):
@@ -487,182 +420,6 @@ class FlagsDefinition(object):
 class SpectralDefinition(object):
     def __init__(self, spec_def_dict):
         self.spec_def_dict = spec_def_dict
-
-
-class CRSProjProxy(object):
-    def __init__(self, crs):
-        self._crs = crs
-
-    def __getattr__(self, item):
-        return self._crs.GetProjParm(item)
-
-
-@cachetools.cached({})
-def _make_crs(crs_str):
-    crs = osr.SpatialReference()
-    crs.SetFromUserInput(crs_str)
-    if not crs.ExportToProj4() or crs.IsGeographic() == crs.IsProjected():
-        raise ValueError('Not a valid CRS: %s' % crs_str)
-    return crs
-
-
-class CRS(object):
-    """
-    Wrapper around `osr.SpatialReference` providing a more pythonic interface
-
-    >>> crs = CRS('EPSG:3577')
-    >>> crs.geographic
-    False
-    >>> crs.projected
-    True
-    >>> crs.dimensions
-    ('y', 'x')
-    >>> crs = CRS('EPSG:4326')
-    >>> crs.geographic
-    True
-    >>> crs.projected
-    False
-    >>> crs.epsg
-    4326
-    >>> crs.dimensions
-    ('latitude', 'longitude')
-    >>> crs = CRS('EPSG:3577')
-    >>> crs.epsg
-    3577
-    >>> crs.dimensions
-    ('y', 'x')
-    >>> CRS('EPSG:3577') == CRS('EPSG:3577')
-    True
-    >>> CRS('EPSG:3577') == CRS('EPSG:4326')
-    False
-    >>> CRS('blah')
-    Traceback (most recent call last):
-        ...
-    ValueError: Not a valid CRS: blah
-    >>> CRS('''PROJCS["unnamed",
-    ... GEOGCS["WGS 84", DATUM["WGS_1984", SPHEROID["WGS 84",6378137,298.257223563, AUTHORITY["EPSG","7030"]],
-    ... AUTHORITY["EPSG","6326"]], PRIMEM["Greenwich",0, AUTHORITY["EPSG","8901"]],
-    ... UNIT["degree",0.0174532925199433, AUTHORITY["EPSG","9122"]], AUTHORITY["EPSG","4326"]]]''')
-    Traceback (most recent call last):
-        ...
-    ValueError: Not a valid CRS: ...
-    """
-
-    def __init__(self, crs_str):
-        """
-
-        :param crs_str: string representation of a CRS, often an EPSG code like 'EPSG:4326'
-        """
-        if isinstance(crs_str, CRS):
-            crs_str = crs_str.crs_str
-        self.crs_str = crs_str
-        self._crs = _make_crs(crs_str)
-
-    def __getitem__(self, item):
-        return self._crs.GetAttrValue(item)
-
-    def __getstate__(self):
-        return {'crs_str': self.crs_str}
-
-    def __setstate__(self, state):
-        self.__init__(state['crs_str'])
-
-    @property
-    def wkt(self):
-        """
-        WKT representation of the CRS
-
-        :type: str
-        """
-        return self._crs.ExportToWkt()
-
-    @property
-    def epsg(self):
-        """
-        EPSG Code of the CRS
-
-        :type: int
-        """
-        if self.projected:
-            return int(self._crs.GetAuthorityCode('PROJCS'))
-
-        if self.geographic:
-            return int(self._crs.GetAuthorityCode('GEOGCS'))
-
-    @property
-    def proj(self):
-        return CRSProjProxy(self._crs)
-
-    @property
-    def semi_major_axis(self):
-        return self._crs.GetSemiMajor()
-
-    @property
-    def semi_minor_axis(self):
-        return self._crs.GetSemiMinor()
-
-    @property
-    def inverse_flattening(self):
-        return self._crs.GetInvFlattening()
-
-    @property
-    def geographic(self):
-        """
-        :type: bool
-        """
-        return self._crs.IsGeographic() == 1
-
-    @property
-    def projected(self):
-        """
-        :type: bool
-        """
-        return self._crs.IsProjected() == 1
-
-    @property
-    def dimensions(self):
-        """
-        List of dimension names of the CRS
-
-        :type: (str,str)
-        """
-        if self.geographic:
-            return 'latitude', 'longitude'
-
-        if self.projected:
-            return 'y', 'x'
-
-    @property
-    def units(self):
-        """
-        List of dimension units of the CRS
-
-        :type: (str,str)
-        """
-        if self.geographic:
-            return 'degrees_north', 'degrees_east'
-
-        if self.projected:
-            return self['UNIT'], self['UNIT']
-
-    def __str__(self):
-        return self.crs_str
-
-    def __repr__(self):
-        return "CRS('%s')" % self.crs_str
-
-    def __eq__(self, other):
-        if isinstance(other, compat.string_types):
-            other = CRS(other)
-        assert isinstance(other, self.__class__)
-        canonical = lambda crs: set(crs.ExportToProj4().split() + ['+wktext'])
-        return canonical(self._crs) == canonical(other._crs)  # pylint: disable=protected-access
-
-    def __ne__(self, other):
-        if isinstance(other, compat.string_types):
-            other = CRS(other)
-        assert isinstance(other, self.__class__)
-        return self._crs.IsSame(other._crs) != 1  # pylint: disable=protected-access
 
 
 class GridSpec(object):
@@ -839,8 +596,6 @@ class GeoBox(object):
     >>> t.coordinates['longitude'].values
     array([ 151.000125,  151.000375,  151.000625, ...,  151.999375,
             151.999625,  151.999875])
-    >>> t.geographic_extent.points
-    [(151.0, -29.0), (151.0, -30.0), (152.0, -30.0), (152.0, -29.0)]
     >>> t.resolution
     (-0.00025, 0.00025)
 

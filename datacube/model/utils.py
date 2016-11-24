@@ -12,7 +12,7 @@ import xarray
 from pandas import to_datetime
 
 import datacube
-from ..model import GeoPolygon, CRS, Dataset
+from ..model import geometry, GeoPolygon, CRS, Dataset
 
 import yaml
 try:
@@ -45,18 +45,17 @@ def machine_info():
 def geobox_info(extent, valid_data=None):
     image_bounds = extent.boundingbox
     data_bounds = valid_data.boundingbox if valid_data else image_bounds
-    gp = GeoPolygon([(data_bounds.left, data_bounds.top),
-                     (data_bounds.right, data_bounds.top),
-                     (data_bounds.right, data_bounds.bottom),
-                     (data_bounds.left, data_bounds.bottom)],
-                    crs=extent.crs).to_crs(CRS('EPSG:4326'))
+    ul = geometry.point(data_bounds.left, data_bounds.top, crs=extent.crs).to_crs(CRS('EPSG:4326'))
+    ur = geometry.point(data_bounds.right, data_bounds.top, crs=extent.crs).to_crs(CRS('EPSG:4326'))
+    lr = geometry.point(data_bounds.right, data_bounds.bottom, crs=extent.crs).to_crs(CRS('EPSG:4326'))
+    ll = geometry.point(data_bounds.left, data_bounds.bottom, crs=extent.crs).to_crs(CRS('EPSG:4326'))
     doc = {
         'extent': {
             'coord': {
-                'ul': {'lon': gp.points[0][0], 'lat': gp.points[0][1]},
-                'ur': {'lon': gp.points[1][0], 'lat': gp.points[1][1]},
-                'lr': {'lon': gp.points[2][0], 'lat': gp.points[2][1]},
-                'll': {'lon': gp.points[3][0], 'lat': gp.points[3][1]},
+                'ul': {'lon': ul.points[0][0], 'lat': ul.points[0][1]},
+                'ur': {'lon': ur.points[0][0], 'lat': ur.points[0][1]},
+                'lr': {'lon': lr.points[0][0], 'lat': lr.points[0][1]},
+                'll': {'lon': ll.points[0][0], 'lat': ll.points[0][1]},
             }
         },
         'grid_spatial': {
@@ -72,10 +71,7 @@ def geobox_info(extent, valid_data=None):
         }
     }
     if valid_data:
-        doc['grid_spatial']['projection']['valid_data'] = {
-            'type': 'Polygon',
-            'coordinates': [valid_data.points + [copy.copy(valid_data.points[0])]]  # HACK: to disable yaml aliases
-        }
+        doc['grid_spatial']['projection']['valid_data'] = valid_data.__geo_interface__
     return doc
 
 
