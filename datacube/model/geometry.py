@@ -286,7 +286,7 @@ class Geometry(object):
 
     @property
     def wkt(self):
-        return self._geom.ExportToIsoWkt()
+        return getattr(self._geom, 'ExportToIsoWkt', self._geom.ExportToWkt)()
 
     @property
     def __geo_interface__(self):
