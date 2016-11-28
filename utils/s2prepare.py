@@ -179,9 +179,9 @@ def prepare_dataset(path):
                         'coordinates': _to_lists(
                             shapely.geometry.mapping(
                                 shapely.ops.unary_union([
-                                    safe_valid_region(images_sixty_list)#,
-                                    #safe_valid_region(images_ten_list),
-                                    #safe_valid_region(images_twenty_list)
+                                    safe_valid_region(images_sixty_list)  # ,
+                                    # safe_valid_region(images_ten_list),
+                                    # safe_valid_region(images_twenty_list)
 
                                 ])
                             )['coordinates']),
