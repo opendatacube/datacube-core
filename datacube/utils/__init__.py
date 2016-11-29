@@ -12,7 +12,6 @@ import logging
 import re
 import pathlib
 from datetime import datetime, date
-from typing import Union
 
 from dateutil.tz import tzutc
 from math import ceil
