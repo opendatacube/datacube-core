@@ -349,6 +349,7 @@ class DatasetTypeResource(object):
         changing_metadata_type = product.metadata_type.name != existing.metadata_type.name
         if changing_metadata_type:
             assert False, "TODO: Ask Jeremy WTF is going on here"
+            # TODO: Ask Jeremy WTF is going on here
             # If the two metadata types declare the same field with different postgres expressions
             # we can't safely change it.
             # (Replacing the index would cause all existing users to have no effective index)
@@ -363,6 +364,7 @@ class DatasetTypeResource(object):
             #             )
             #         )
         metadata_type = self.metadata_type_resource.get_by_name(product.metadata_type.name)
+        # TODO: should we add metadata type here?
         assert metadata_type, "TODO: should we add metadata type here?"
         with self._db.begin() as trans:
             trans.update_dataset_type(

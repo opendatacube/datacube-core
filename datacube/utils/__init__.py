@@ -12,6 +12,7 @@ import logging
 import re
 import pathlib
 from datetime import datetime, date
+from typing import Union
 
 from dateutil.tz import tzutc
 from math import ceil
@@ -97,6 +98,7 @@ def clamp(x, l, u):
     >>> clamp(12, 1, 10)
     10
     """
+    assert l <= u
     return l if x < l else u if x > u else x
 
 
@@ -168,6 +170,10 @@ def _ogr_to_points(geom):
         return geom.GetPoints()
     raise RuntimeError('unsupported geometry type')
 
+###
+# Helper functions for performing geometry operations using OGR
+###
+
 
 def densify_points(points, resolution):
     geom = _points_to_ogr(points)
@@ -211,6 +217,10 @@ def data_resolution_and_offset(data):
     return numpy.asscalar(res), numpy.asscalar(off)
 
 
+###
+# Functions for working with YAML documents and configurations
+###
+
 _DOCUMENT_EXTENSIONS = ('.yaml', '.yml', '.json')
 _COMPRESSION_EXTENSIONS = ('', '.gz')
 _ALL_SUPPORTED_EXTENSIONS = tuple(doc_type + compression_type
@@ -221,7 +231,8 @@ _ALL_SUPPORTED_EXTENSIONS = tuple(doc_type + compression_type
 def is_supported_document_type(path):
     """
     Does a document path look like a supported type?
-    :type path: pathlib.Path
+
+    :type path: Union[pathlib.Path, str]
     :rtype: bool
     >>> from pathlib import Path
     >>> is_supported_document_type(Path('/tmp/something.yaml'))
@@ -307,8 +318,8 @@ def validate_document(document, schema, schema_folder=None):
             path = pathlib.Path(schema_folder).joinpath(path)
             if not path.exists():
                 raise ValueError("Reference not found: %s" % path)
-            schema = next(iter(read_documents(path)))[1]
-            return schema
+            referenced_schema = next(iter(read_documents(path)))[1]
+            return referenced_schema
 
         jsonschema.Draft4Validator.check_schema(schema)
         ref_resolver = jsonschema.RefResolver.from_schema(
@@ -321,6 +332,7 @@ def validate_document(document, schema, schema_folder=None):
         raise InvalidDocException(e.message)
 
 
+# TODO: Replace with Pandas
 def generate_table(rows):
     """
     Yield strings to print a table using the data in `rows`.
@@ -479,7 +491,7 @@ def get_doc_changes(original, new, base_prefix=()):
     """
     Return a list of changed fields between two dict structures.
 
-    :type original: dict
+    :type original: Union[dict, list, int]
     :rtype: list[(tuple, object, object)]
 
 

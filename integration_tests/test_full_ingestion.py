@@ -1,10 +1,8 @@
 from __future__ import absolute_import
 
 import warnings
-from datetime import datetime
 from pathlib import Path
 
-import six
 import netCDF4
 import numpy as np
 import pytest
@@ -12,7 +10,7 @@ import pytest
 import yaml
 from click.testing import CliRunner
 from affine import Affine
-from datacube.api.query import GroupBy, query_group_by
+from datacube.api.query import query_group_by
 
 import datacube.scripts.cli_app
 from datacube.model import GeoBox, CRS
@@ -165,15 +163,15 @@ def check_open_with_xarray(file_path):
 
 
 def check_open_with_api(index):
-    from datacube.api.core import Datacube
-    datacube = Datacube(index=index)
+    from datacube import Datacube
+    dc = Datacube(index=index)
 
     input_type_name = 'ls5_nbar_albers'
-    input_type = datacube.index.datasets.types.get_by_name(input_type_name)
+    input_type = dc.index.datasets.types.get_by_name(input_type_name)
 
     geobox = GeoBox(200, 200, Affine(25, 0.0, 1500000, 0.0, -25, -3900000), CRS('EPSG:3577'))
-    observations = datacube.product_observations(product='ls5_nbar_albers', geopolygon=geobox.extent)
+    observations = dc.product_observations(product='ls5_nbar_albers', geopolygon=geobox.extent)
     group_by = query_group_by('time')
-    sources = datacube.product_sources(observations, group_by)
-    data = datacube.product_data(sources, geobox, input_type.measurements.values())
+    sources = dc.product_sources(observations, group_by)
+    data = dc.product_data(sources, geobox, input_type.measurements.values())
     assert data.blue.shape == (1, 200, 200)

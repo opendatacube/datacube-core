@@ -22,7 +22,7 @@ def test_geobox():
         assert abs(resolution[1]) > abs(geobox.extent.boundingbox.bottom - polygon.boundingbox.bottom)
 
 
-def test_grispec():
+def test_gridspec():
     gs = GridSpec(crs=CRS('EPSG:4326'), tile_size=(1, 1), resolution=(-0.1, 0.1), origin=(10, 10))
     poly = GeoPolygon([(10, 12.2), (10.8, 13), (13, 10.8), (12.2, 10)], crs=CRS('EPSG:4326'))
     cells = {index: geobox for index, geobox in list(gs.tiles_inside_geopolygon(poly))}
