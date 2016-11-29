@@ -58,10 +58,12 @@ class Query(object):
         """
         self.product = product
         self.geopolygon = query_geopolygon(geopolygon=geopolygon, **kwargs)
+        self.source_filter = Query(**kwargs['source_filter']) if 'source_filter' in kwargs else None
 
         remaining_keys = set(kwargs.keys()) - set(SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
         if index:
             unknown_keys = remaining_keys - set(index.datasets.get_field_names())
+            # TODO: What about keys source filters, and what if the keys don't match up with this product...
             if unknown_keys:
                 raise LookupError('Unknown arguments: ', unknown_keys)
 
@@ -98,6 +100,8 @@ class Query(object):
                 kwargs['lon'] = geo_bb.left
         if self.product:
             kwargs['product'] = self.product
+        if self.source_filter:
+            kwargs['source_filter'] = self.source_filter.search_terms
         return kwargs
 
     def __repr__(self):

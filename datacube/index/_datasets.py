@@ -804,7 +804,7 @@ class DatasetResource(object):
             product_queries = list(self._get_product_queries(source_filter))
             if len(product_queries) != 1:
                 raise RuntimeError("Multi-product source filters are not supported. Try adding 'product' field")
-            [[source_queries, source_product]] = product_queries
+            source_queries, source_product = product_queries[0]
             dataset_fields = source_product.metadata_type.dataset_fields
             source_exprs = tuple(fields.to_expressions(dataset_fields.get, **source_queries))
         else:
