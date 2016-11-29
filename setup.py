@@ -9,7 +9,7 @@ extras_require = {
     'distributed': ['distributed', 'dask[distributed]'],
     'analytics': ['scipy', 'pyparsing', 'numexpr'],
     'doc': ['Sphinx'],
-    'test': ['pytest', 'pytest-cov', 'mock', 'pep8', 'pylint'],
+    'test': ['pytest', 'pytest-cov', 'mock', 'pep8', 'pylint', 'hypothesis'],
 }
 # An 'all' option, following ipython naming conventions.
 extras_require['all'] = sorted(set(sum(extras_require.values(), [])))

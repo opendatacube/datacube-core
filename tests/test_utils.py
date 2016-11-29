@@ -8,8 +8,10 @@ import os
 import pytest
 from dateutil.parser import parse
 from pandas import to_datetime
+from hypothesis import given
+from hypothesis.strategies import integers
 
-from datacube.utils import uri_to_local_path
+from datacube.utils import uri_to_local_path, clamp
 from datacube.utils.dates import date_sequence
 
 
@@ -70,3 +72,15 @@ def test_uri_to_local_path():
 
     with pytest.raises(ValueError):
         uri_to_local_path('ftp://example.com/tmp/something.txt')
+
+
+@given(integers(), integers(), integers())
+def test_clamp(x, lower_bound, upper_bound):
+    if lower_bound > upper_bound:
+        lower_bound, upper_bound = upper_bound, lower_bound
+    new_x = clamp(x, lower_bound, upper_bound)
+
+    # If x was already between the bounds, it shouldn't have changed
+    if lower_bound <= x <= upper_bound:
+        assert new_x == x
+    assert lower_bound <= new_x <= upper_bound
