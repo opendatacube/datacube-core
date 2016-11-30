@@ -58,7 +58,10 @@ class Query(object):
         """
         self.product = product
         self.geopolygon = query_geopolygon(geopolygon=geopolygon, **kwargs)
-        self.source_filter = Query(**kwargs['source_filter']) if 'source_filter' in kwargs else None
+        if 'source_filter' in kwargs and kwargs['source_filter'] is not None:
+            self.source_filter = Query(**kwargs['source_filter'])
+        else:
+            self.source_filter = None
 
         remaining_keys = set(kwargs.keys()) - set(SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
         if index:
