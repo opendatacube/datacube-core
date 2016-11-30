@@ -3,13 +3,15 @@
 import versioneer
 from setuptools import setup, find_packages
 
+tests_require = ['pytest', 'pytest-cov', 'mock', 'pep8', 'pylint', 'hypothesis']
+
 extras_require = {
     'performance': ['ciso8601', 'bottleneck'],
     'interactive': ['matplotlib', 'fiona'],
     'distributed': ['distributed', 'dask[distributed]'],
     'analytics': ['scipy', 'pyparsing', 'numexpr'],
     'doc': ['Sphinx'],
-    'test': ['pytest', 'pytest-cov', 'mock', 'pep8', 'pylint', 'hypothesis'],
+    'test': tests_require,
 }
 # An 'all' option, following ipython naming conventions.
 extras_require['all'] = sorted(set(sum(extras_require.values(), [])))
@@ -78,11 +80,7 @@ setup(
         'xarray',
     ],
     extras_require=extras_require,
-    tests_require=[
-        'pytest',
-        'pytest-cov',
-        'mock'
-    ],
+    tests_require=tests_require,
 
     entry_points={
         'console_scripts': [
