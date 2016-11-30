@@ -3,6 +3,22 @@
 What's New
 ==========
 
+v1.1.14 Minion Party (30 November 2016)
+---------------------------------------
+
+  - Added support for buffering/padding of GridWorkflow tile searches
+
+  - Improved the Query class to make filtering by a source or parent dataset easier.
+    For example, this can be used to filter Datasets by Geometric Quality Assessment (GQA).
+    Use `source_filter` when requesting data.
+
+  - Additional data preparation and configuration scripts
+
+  - Various fixes for single point values for lat, lon & time searches
+
+  - Grouping by solar day now overlays scenes in a consistent, northern scene takes precedence manner.
+    Previously it was non-deterministic which scene/tile would be put on top.
+
 v1.1.13 Black Goat (15 November 2016)
 -------------------------------------
 
