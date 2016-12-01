@@ -411,6 +411,8 @@ class GeoPolygon(object):
     """
 
     def __init__(self, points, crs=None):
+        if not isinstance(points, collections.Sequence):
+            raise ValueError("points ({}) must be a sequence of (x, y) coordinates".format(points))
         self.points = points
         self.crs = crs
 

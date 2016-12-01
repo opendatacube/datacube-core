@@ -168,7 +168,7 @@ class GridWorkflow(object):
         query = Query(index=self.index, geopolygon=geopolygon, **indexers)
         if not query.product:
             raise RuntimeError('must specify a product')
-        assert not (tile_buffer and query.geopolygon), "TODO: Need to pad search query here"
+        assert not (tile_buffer != (0, 0) and query.geopolygon), "TODO: Need to pad search query here"
 
         observations = self.index.datasets.search_eager(**query.search_terms)
 
