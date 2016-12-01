@@ -21,6 +21,7 @@ except ImportError:
 import numpy
 
 from affine import Affine
+from datacube.compat import integer_types
 import rasterio.warp
 import rasterio.crs
 
@@ -362,7 +363,8 @@ class DatasetSource(BaseRasterDataSource):
 
     def get_bandnumber(self, src):
         if 'netcdf' not in self._dataset.format.lower():
-            return self._measurement.get('layer', 1)
+            layer_id = self._measurement.get('layer', 1)
+            return layer_id if isinstance(layer_id, integer_types) else 1
 
         tag_name = GDAL_NETCDF_DIM + 'time'
         if tag_name not in src.tags(1):  # TODO: support time-less datasets properly
