@@ -3,6 +3,11 @@
 What's New
 ==========
 
+v1.1.15 Minion Party Hangover (1 December 2016)
+-----------------------------------------------
+
+  - Fixed a data loading issue when reading HDF4_EOS datasets.
+
 v1.1.14 Minion Party (30 November 2016)
 ---------------------------------------
 
