@@ -79,3 +79,15 @@ def update_metadata_types(index, allow_unsafe, dry_run, files):
                 echo('Cannot update "%s": %s unsafe changes, %s safe changes' % (type_.name,
                                                                                  len(unsafe_changes),
                                                                                  len(safe_changes)))
+
+
+@metadata_type.command('show')
+@click.argument('metadata_type_name', nargs=1)
+@ui.pass_index()
+def show_metadata_type(index, metadata_type_name):
+    """
+    Show information about a metadata type.
+    """
+    metadata_type_obj = index.metadata_types.get_by_name(metadata_type_name)
+    print(metadata_type_obj.description)
+    print('Search fields: %s' % ', '.join(sorted(metadata_type_obj.dataset_fields.keys())))

@@ -5,6 +5,7 @@ import logging
 import click
 from click import echo
 from pathlib import Path
+from pprint import pprint
 
 from datacube import Datacube
 from datacube.ui import click as ui
@@ -109,3 +110,14 @@ def list_products(index):
     echo(products.to_string(columns=('name', 'description', 'product_type', 'instrument',
                                      'format', 'platform'),
                             justify='left'))
+
+
+@product.command('show')
+@click.argument('product_name', nargs=1)
+@ui.pass_index()
+def show_product(index, product_name):
+    """
+    Show details about a product in the index
+    """
+    product_def = index.products.get_by_name(product_name)
+    pprint(product_def.definition)
