@@ -271,9 +271,11 @@ class Datacube(object):
         :param fuse_func: Function used to fuse/combine/reduce data with the ``group_by`` parameter. By default,
             data is simply copied over the top of each other, in a relatively undefined manner. This function can
             perform a specific combining step, eg. for combining GA PQ data.
-            
-        :param datasets: Default None. If this is a non-empty list of :class:`datacube.model.Dataset` objects, these will
-            be loaded instead of querying the database (datacube index) for :class:`datacube.model.Dataset` objects.
+
+        :param datasets: Default None. If this is a non-empty list of
+            :class:`datacube.model.Dataset` objects, these will be loaded
+            instead of querying the database (datacube index) for
+            :class:`datacube.model.Dataset` objects.
 
         :return: Requested data as a :class:`xarray.Dataset`.
             As a :class:`xarray.DataArray` if the ``stack`` variable is supplied.
