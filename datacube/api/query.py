@@ -48,7 +48,7 @@ class Query(object):
 
         :param datacube.index._api.Index index: An optional `index` object, if checking of field names is desired.
         :param str product: name of product
-        :param datacube.model.GeoPolygon geopolygon: spatial bounds of the search
+        :param Union[datacube.model.GeoPolygon|None] geopolygon: spatial bounds of the search
         :param xarray.Dataset like: spatio-temporal bounds of `like` are used for the search
         :param kwargs:
          * `measurements` - list of measurements to retrieve
