@@ -16,7 +16,7 @@ def test_grouping_datasets():
     ]
 
     group_by = GroupBy(dimension, group_func, units, sort_key=group_func)
-    grouped = Datacube.product_sources(datasets, group_by)
+    grouped = Datacube.group_datasets(datasets, group_by)
 
     assert str(grouped.time.dtype) == 'datetime64[ns]'
     assert grouped.loc['2016-01-01':'2016-01-15']
@@ -49,4 +49,4 @@ def _group_datasets_by_date(datasets):
     units = None
 
     group_by = GroupBy(dimension, group_func, units, sort_key)
-    return Datacube.product_sources(datasets, group_by)
+    return Datacube.group_datasets(datasets, group_by)

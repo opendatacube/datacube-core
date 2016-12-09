@@ -180,7 +180,7 @@ def densify_points(points, resolution):
     return _ogr_to_points(geom)
 
 
-def check_intersect(a, b):
+def intersects(a, b):
     assert a.crs == b.crs
 
     a = _points_to_ogr(a.points)

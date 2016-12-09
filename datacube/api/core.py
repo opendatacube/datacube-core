@@ -18,7 +18,7 @@ from ..compat import string_types
 from ..index import index_connect
 from ..model import GeoPolygon, GeoBox
 from ..storage.storage import DatasetSource, reproject_and_fuse
-from ..utils import check_intersect, data_resolution_and_offset
+from ..utils import intersects, data_resolution_and_offset
 from .query import Query, query_group_by, query_geopolygon
 
 _LOG = logging.getLogger(__name__)
@@ -71,7 +71,7 @@ class Datacube(object):
 
         :param Index index: The database index to use.
 
-            Can be created by :py:class:`datacube.index.index_connect`.
+            Can be created by :class:`datacube.index.index_connect`.
 
         :param LocalConfig config: A config object or a path to a config file that defines the connection.
 
@@ -141,10 +141,8 @@ class Datacube(object):
         return measurements
 
     #: pylint: disable=too-many-arguments, too-many-locals
-    def load(self, product=None, measurements=None,
-             output_crs=None, resolution=None, resampling=None,
-             stack=False, dask_chunks=None,
-             like=None, fuse_func=None, align=None, datasets=None, **query):
+    def load(self, product=None, measurements=None, output_crs=None, resolution=None, resampling=None, stack=False,
+             dask_chunks=None, like=None, fuse_func=None, align=None, datasets=None, **query):
         """
         Load data as an ``xarray`` object.  Each measurement will be a data variable in the :class:`xarray.Dataset`.
 
@@ -225,25 +223,35 @@ class Datacube(object):
                         output_crs='EPSG:3577`, resolution=(-25, 25), resampling='cubic')
 
         :param str product: the product to be included.
-        :param measurements: measurements name or list of names to be included, as listed in :meth:`list_measurements`.
+
+        :param measurements:
+            measurements name or list of names to be included, as listed in :meth:`list_measurements`.
                 If a list is specified, the measurements will be returned in the order requested.
                 By default all available measurements are included.
-        :type measurements: list(str), optional
-        :param query: Search parameters for products and dimension ranges as described above.
 
-        :param str output_crs: The CRS of the returned data.  If no CRS is supplied, the CRS of the stored data is used.
-        :param (float,float) resolution: A tuple of the spatial resolution of the returned data.
+        :type measurements: list(str), optional
+
+        :param query:
+            Search parameters for products and dimension ranges as described above.
+
+        :param str output_crs:
+            The CRS of the returned data.  If no CRS is supplied, the CRS of the stored data is used.
+
+        :param (float,float) resolution:
+            A tuple of the spatial resolution of the returned data.
             This includes the direction (as indicated by a positive or negative number).
 
             Typically when using most CRSs, the first number would be negative.
 
-        :param str resampling: The resampling method to use if re-projection is required.
+        :param str resampling:
+            The resampling method to use if re-projection is required.
 
             Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average'``
 
             Defaults to ``'nearest'``.
 
-        :param (float,float) align: Load data such that point 'align' lies on the pixel boundary.
+        :param (float,float) align:
+            Load data such that point 'align' lies on the pixel boundary.
             Units are in the co-ordinate space of the output CRS.
 
             Default is (0,0)
@@ -252,36 +260,40 @@ class Datacube(object):
             If provided, the data is returned as a :class:`xarray.DataArray` rather than a :class:`xarray.Dataset`.
 
             If only one measurement is returned, the dimension name is not used and the dimension is dropped.
+
         :type stack: str or bool
 
-        :param dict dask_chunks: If the data should be loaded as needed using :py:class:`dask.array.Array`,
-            specify the chunk size in each output direction.
+        :param dict dask_chunks:
+            If the data should be lazily loaded using :class:`dask.array.Array`,
+            specify the chunking size in each output dimension.
 
             See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
             for more information.
 
-        :param xarray.Dataset like: Uses the output of a previous ``load()`` to form the basis of a request for
-            another product.
+        :param xarray.Dataset like:
+            Uses the output of a previous ``load()`` to form the basis of a request for another product.
             E.g.::
 
                 pq = dc.load(product='ls5_pq_albers', like=nbar_dataset)
 
-        :param str group_by: When specified, perform basic combining/reducing of the data.
+        :param str group_by:
+            When specified, perform basic combining/reducing of the data.
 
-        :param fuse_func: Function used to fuse/combine/reduce data with the ``group_by`` parameter. By default,
+        :param fuse_func:
+            Function used to fuse/combine/reduce data with the ``group_by`` parameter. By default,
             data is simply copied over the top of each other, in a relatively undefined manner. This function can
             perform a specific combining step, eg. for combining GA PQ data.
 
-        :param datasets: Default None. If this is a non-empty list of
-            :class:`datacube.model.Dataset` objects, these will be loaded
-            instead of querying the database (datacube index) for
-            :class:`datacube.model.Dataset` objects.
+        :param datasets:
+            Optional. If this is a non-empty list of :class:`datacube.model.Dataset` objects, these will be loaded
+            instead of performing a database lookup.
 
-        :return: Requested data as a :class:`xarray.Dataset`.
+        :return: Requested data in a :class:`xarray.Dataset`.
             As a :class:`xarray.DataArray` if the ``stack`` variable is supplied.
+
         :rtype: :class:`xarray.Dataset` or :class:`xarray.DataArray`
         """
-        observations = datasets or self.product_observations(product=product, like=like, **query)
+        observations = datasets or self.find_datasets(product=product, like=like, **query)
         if not observations:
             return None if stack else xarray.Dataset()
 
@@ -311,14 +323,14 @@ class Datacube(object):
                                             resolution, grid_spec.crs, align)
 
         group_by = query_group_by(**query)
-        sources = self.product_sources(observations, group_by)
+        sources = self.group_datasets(observations, group_by)
 
         measurements = self.index.products.get_by_name(product).lookup_measurements(measurements)
         measurements = set_resampling_method(measurements, resampling)
 
         if not stack:
-            return self.product_data(sources, geobox, measurements.values(),
-                                     fuse_func=fuse_func, dask_chunks=dask_chunks)
+            return self.load_data(sources, geobox, measurements.values(),
+                                  fuse_func=fuse_func, dask_chunks=dask_chunks)
         else:
             if not isinstance(stack, string_types):
                 stack = 'measurement'
@@ -335,7 +347,7 @@ class Datacube(object):
 
         return _stack_vars(data_dict, var_dim_name)
 
-    def product_observations(self, **kwargs):
+    def find_datasets(self, **kwargs):
         """
         Find datasets for a product.
 
@@ -343,11 +355,11 @@ class Datacube(object):
             This is a lower level function than most people will use. See :meth:`load` for
             a simpler to use function.
 
-        :param kwargs: see :py:class:`datacube.api.query.Query`
+        :param kwargs: see :class:`datacube.api.query.Query`
         :return: list of datasets
         :rtype: list[:class:`datacube.model.Dataset`]
 
-        .. seealso:: :meth:`product_sources` :meth:`product_data`
+        .. seealso:: :meth:`group_datasets` :meth:`load_data`
         """
         query = Query(self.index, **kwargs)
         if not query.product:
@@ -356,17 +368,17 @@ class Datacube(object):
         datasets = self.index.datasets.search_eager(**query.search_terms)
         if query.geopolygon:
             datasets = [dataset for dataset in datasets
-                        if check_intersect(query.geopolygon.to_crs(dataset.crs), dataset.extent)]
+                        if intersects(query.geopolygon.to_crs(dataset.crs), dataset.extent)]
             # Check against the bounding box of the original scene, can throw away some portions
 
         return datasets
 
     @staticmethod
-    def product_sources(datasets, group_by):
+    def group_datasets(datasets, group_by):
         """
-        Group datasets along defined non-spatial dimensions.
+        Group datasets along defined non-spatial dimensions (ie. time).
 
-        :param datasets: a list of datasets, typically from :meth:`product_observations`
+        :param datasets: a list of datasets, typically from :meth:`find_datasets`
         :param GroupBy group_by: Contains:
             - a function that returns a label for a dataset
             - name of the new dimension
@@ -374,7 +386,7 @@ class Datacube(object):
             - function to sort by before grouping
         :rtype: xarray.DataArray
 
-        .. seealso:: :meth:`product_observations` :meth:`product_data`
+        .. seealso:: :meth:`find_datasets`, :meth:`load_data`, :meth:`query_group_by`
         """
         dimension, group_func, units, sort_key = group_by
         datasets.sort(key=sort_key)
@@ -391,21 +403,30 @@ class Datacube(object):
     @staticmethod
     def create_storage(coords, geobox, measurements, data_func=None):
         """
-        Create a :class:`xarray.Dataset` and optionally fill it with data.
+        Create a :class:`xarray.Dataset` and (optionally) fill it with data.
 
-        This function is used to hold data from :meth:`product_sources`.
+        This function makes the in memory storage structure to hold datacube data, loading data from datasets that have
+         been grouped appropriately by :meth:`group_datasets`.
 
-        :param dict coords: OrderedDict-like holding `DataArray` objects of the dimensions not specified by `geobox`
-        :param GeoBox geobox: A GeoBox defining the output spatial projection and resolution
-        :param measurements: list of measurement dicts with keys: {'name', 'dtype', 'nodata', 'units'}
-        :param data_func: function to fill the data
-        :rtype: :py:class:`xarray.Dataset`
+        :param dict coords:
+            OrderedDict holding `DataArray` objects defining the dimensions not specified by `geobox`
 
-        .. seealso:: :meth:`product_observations` :meth:`product_sources`
+        :param GeoBox geobox:
+            A GeoBox defining the output spatial projection and resolution
+
+        :param measurements:
+            list of measurement dicts with keys: {'name', 'dtype', 'nodata', 'units'}
+
+        :param data_func:
+            function to fill the data
+
+        :rtype: :class:`xarray.Dataset`
+
+        .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
-        def empty_func(measurement):
-            coord_shape = tuple(coord.size for coord in coords.values())
-            return numpy.full(coord_shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
+        def empty_func(measurement_):
+            coord_shape = tuple(coord_.size for coord_ in coords.values())
+            return numpy.full(coord_shape + geobox.shape, measurement_['nodata'], dtype=measurement_['dtype'])
 
         data_func = data_func or empty_func
 
@@ -434,22 +455,32 @@ class Datacube(object):
         return result
 
     @staticmethod
-    def product_data(sources, geobox, measurements, fuse_func=None, dask_chunks=None):
+    def load_data(sources, geobox, measurements, fuse_func=None, dask_chunks=None):
         """
-        Load data from :meth:`product_sources` into a Dataset object.
+        Load data from :meth:`group_datasets` into an :class:`xarray.Dataset`.
 
-        :param xarray.DataArray sources: DataArray holding a list of :py:class:`datacube.model.Dataset` objects
-        :param GeoBox geobox: A GeoBox defining the output spatial projection and resolution
-        :param measurements: list of measurement dicts with keys: {'name', 'dtype', 'nodata', 'units'}
-        :param fuse_func: function to merge successive arrays as an output
-        :param dict dask_chunks: If the data should be loaded as needed using :py:class:`dask.array.Array`,
-            specify the chunk size in each output direction.
+        :param xarray.DataArray sources:
+            DataArray holding a list of :class:`datacube.model.Dataset`s, grouped along the time dimension
+
+        :param GeoBox geobox:
+            A GeoBox defining the output spatial projection and resolution
+
+        :param measurements:
+            list of measurement dicts with keys: {'name', 'dtype', 'nodata', 'units'}
+
+        :param fuse_func:
+            function to merge successive arrays as an output
+
+        :param dict dask_chunks:
+            If provided, the data will be loaded on demand using using :class:`dask.array.Array`.
+            Should be a dictionary specifying the chunking size for each output dimension.
 
             See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
             for more information.
+
         :rtype: xarray.Dataset
 
-        .. seealso:: :meth:`product_observations` :meth:`product_sources`
+        .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
         if dask_chunks is None:
             def data_func(measurement):
@@ -466,22 +497,22 @@ class Datacube(object):
     @staticmethod
     def measurement_data(sources, geobox, measurement, fuse_func=None, dask_chunks=None):
         """
-        Retrieve a single measurement variable as a :py:class:`xarray.DataArray`.
+        Retrieve a single measurement variable as a :class:`xarray.DataArray`.
 
-        :param xarray.DataArray sources: DataArray holding a list of :py:class:`datacube.model.Dataset` objects
+        :param xarray.DataArray sources: DataArray holding a list of :class:`datacube.model.Dataset` objects
         :param GeoBox geobox: A GeoBox defining the output spatial projection and resolution
         :param measurement: measurement definition with keys: {'name', 'dtype', 'nodata', 'units'}
         :param fuse_func: function to merge successive arrays as an output
-        :param dict dask_chunks: If the data should be loaded as needed using :py:class:`dask.array.Array`,
+        :param dict dask_chunks: If the data should be loaded as needed using :class:`dask.array.Array`,
             specify the chunk size in each output direction.
 
             See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
             for more information.
-        :rtype: :py:class:`xarray.DataArray`
+        :rtype: :class:`xarray.DataArray`
 
-        .. seealso:: :meth:`product_data`
+        .. seealso:: :meth:`load_data`
         """
-        dataset = Datacube.product_data(sources, geobox, [measurement], fuse_func=fuse_func, dask_chunks=dask_chunks)
+        dataset = Datacube.load_data(sources, geobox, [measurement], fuse_func=fuse_func, dask_chunks=dask_chunks)
         dataarray = dataset[measurement['name']]
         dataarray.attrs['crs'] = dataset.crs
         return dataarray

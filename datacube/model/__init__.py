@@ -17,7 +17,7 @@ from osgeo import osr
 from rasterio.coords import BoundingBox as _BoundingBox
 
 from datacube import compat
-from datacube.utils import parse_time, cached_property, uri_to_local_path, check_intersect
+from datacube.utils import parse_time, cached_property, uri_to_local_path, intersects
 from datacube.utils import schema_validated, DocReader, union_points, intersect_points, densify_points
 
 _LOG = logging.getLogger(__name__)
@@ -788,7 +788,7 @@ class GridSpec(object):
         for tile_index, tile_geobox in self.tiles(geopolygon.boundingbox.buffered(*tile_buffer)):
             if tile_buffer:
                 tile_geobox = tile_geobox.buffered(*tile_buffer)
-            if check_intersect(tile_geobox.extent, geopolygon):
+            if intersects(tile_geobox.extent, geopolygon):
                 yield tile_index, tile_geobox
 
     @staticmethod

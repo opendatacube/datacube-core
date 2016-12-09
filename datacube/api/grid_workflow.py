@@ -6,7 +6,7 @@ import xarray
 from itertools import groupby
 from collections import OrderedDict
 
-from ..utils import check_intersect
+from ..utils import intersects
 from .query import Query, query_group_by
 from .core import Datacube, set_resampling_method
 
@@ -131,23 +131,27 @@ class GridWorkflow(object):
         List datasets, grouped by cell.
 
         :param datacube.model.GeoPolygon geopolygon:
-        :param (float,float) tile_buffer: buffer tiles by (y, x) (in CRS units)
-        :param (int,int) cell_index: The cell index. E.g. (14, -40)
-        :param indexers: Query to match the datasets, see :py:class:`datacube.api.query.Query`
+            Only return observations with data inside polygon.
+        :param (float,float) tile_buffer:
+            buffer tiles by (y, x) in CRS units
+        :param (int,int) cell_index:
+            The cell index. E.g. (14, -40)
+        :param indexers:
+            Query to match the datasets, see :py:class:`datacube.api.query.Query`
         :return: Datsets grouped by cell index
         :rtype: dict[(int,int), list[:py:class:`datacube.model.Dataset`]]
 
         .. seealso::
-            :meth:`datacube.Datacube.product_observations`
+            :meth:`datacube.Datacube.find_datasets`
 
             :class:`datacube.api.query.Query`
         """
+        if tile_buffer != (0, 0) and geopolygon is not None:
+            raise ValueError('Cannot process tile_buffering and geopolygon together.')
         cells = {}
 
-        def return_dataset(tile_index, tile_geobox, dataset):
-            cells.setdefault(tile_index,
-                             {'datasets': [],
-                              'geobox': tile_geobox})['datasets'].append(dataset)
+        def add_dataset_to_cells(tile_index, tile_geobox, dataset_):
+            cells.setdefault(tile_index, {'datasets': [], 'geobox': tile_geobox})['datasets'].append(dataset_)
 
         if cell_index:
             assert len(cell_index) == 2
@@ -155,49 +159,48 @@ class GridWorkflow(object):
             geobox = self.grid_spec.tile_geobox(cell_index)
             geobox = geobox.buffered(*tile_buffer) if tile_buffer else geobox
 
-            query = Query(index=self.index, geopolygon=geobox.extent, **indexers)
-            if not query.product:
-                raise RuntimeError('must specify a product')
+            datasets, query = self._find_datasets(geobox.extent, indexers)
+            for dataset in datasets:
+                if intersects(geobox.extent, dataset.extent.to_crs(self.grid_spec.crs)):
+                    add_dataset_to_cells(cell_index, geobox, dataset)
+            return cells
+        else:
+            datasets, query = self._find_datasets(geopolygon, indexers)
 
-            observations = self.index.datasets.search_eager(**query.search_terms)
-            for dataset in observations:
-                if check_intersect(geobox.extent, dataset.extent.to_crs(self.grid_spec.crs)):
-                    return_dataset(cell_index, geobox, dataset)
+            if query.geopolygon:
+                # Get a rough region of tiles
+                query_tiles = set(
+                    tile_index for tile_index, tile_geobox in
+                    self.grid_spec.tiles_inside_geopolygon(query.geopolygon))
+
+                for dataset in datasets:
+                    # Go through our datasets and see which tiles each dataset produces, and whether they intersect
+                    # our query geopolygon.
+                    dataset_extent = dataset.extent.to_crs(self.grid_spec.crs)
+                    for tile_index, tile_geobox in self.grid_spec.tiles(
+                            dataset_extent.boundingbox.buffered(*tile_buffer)):
+                        if tile_index in query_tiles and intersects(tile_geobox.extent, dataset_extent):
+                            add_dataset_to_cells(tile_index, tile_geobox, dataset)
+
+            else:
+                for dataset in datasets:
+                    for tile_index, tile_geobox in self.grid_spec.tiles_inside_geopolygon(dataset.extent,
+                                                                                          tile_buffer=tile_buffer):
+                        add_dataset_to_cells(tile_index, tile_geobox, dataset)
+
             return cells
 
+    def _find_datasets(self, geopolygon, indexers):
         query = Query(index=self.index, geopolygon=geopolygon, **indexers)
         if not query.product:
             raise RuntimeError('must specify a product')
-        assert not (tile_buffer != (0, 0) and query.geopolygon), "TODO: Need to pad search query here"
-
-        observations = self.index.datasets.search_eager(**query.search_terms)
-
-        if query.geopolygon:
-            # Get a rough region of tiles
-            query_tiles = set(
-                tile_index for tile_index, tile_geobox in
-                self.grid_spec.tiles_inside_geopolygon(query.geopolygon))
-
-            for dataset in observations:
-                # Go through our datasets and see which tiles each dataset produces, and whether they intersect
-                # our query geopolygon.
-                dataset_extent = dataset.extent.to_crs(self.grid_spec.crs)
-                for tile_index, tile_geobox in self.grid_spec.tiles(dataset_extent.boundingbox.buffered(*tile_buffer)):
-                    if tile_index in query_tiles and check_intersect(tile_geobox.extent, dataset_extent):
-                        return_dataset(tile_index, tile_geobox, dataset)
-
-        else:
-            for dataset in observations:
-                for tile_index, tile_geobox in self.grid_spec.tiles_inside_geopolygon(dataset.extent,
-                                                                                      tile_buffer=tile_buffer):
-                    return_dataset(tile_index, tile_geobox, dataset)
-
-        return cells
+        datasets = self.index.datasets.search_eager(**query.search_terms)
+        return datasets, query
 
     @staticmethod
-    def cell_sources(observations, group_by):
+    def group_into_cells(observations, group_by):
         """
-        Group observations into source tiles
+        Group observations into a stack of source tiles.
 
         :param observations: datasets grouped by cell index, like from :py:meth:`cell_observations`
         :param group_by: grouping method, as returned by :py:meth:`datacube.api.query.query_group_by`
@@ -208,11 +211,11 @@ class GridWorkflow(object):
         .. seealso::
             :meth:`load`
 
-            :meth:`datacube.Datacube.product_sources`
+            :meth:`datacube.Datacube.group_datasets`
         """
         cells = {}
         for cell_index, observation in observations.items():
-            sources = Datacube.product_sources(observation['datasets'], group_by)
+            sources = Datacube.group_datasets(observation['datasets'], group_by)
             cells[cell_index] = Tile(sources, observation['geobox'])
         return cells
 
@@ -230,7 +233,7 @@ class GridWorkflow(object):
         .. seealso::
             :meth:`load`
 
-            :meth:`datacube.Datacube.product_sources`
+            :meth:`datacube.Datacube.group_datasets`
         """
         tiles = {}
         for cell_index, observation in observations.items():
@@ -272,7 +275,7 @@ class GridWorkflow(object):
         :rtype: dict[(int, int), :class:`.Tile`]
         """
         observations = self.cell_observations(cell_index, **query)
-        return self.cell_sources(observations, query_group_by(**query))
+        return self.group_into_cells(observations, query_group_by(**query))
 
     def list_tiles(self, cell_index=None, **query):
         """
@@ -337,8 +340,8 @@ class GridWorkflow(object):
         measurements = tile.product.lookup_measurements(measurements)
         measurements = set_resampling_method(measurements, resampling)
 
-        dataset = Datacube.product_data(tile.sources, tile.geobox, measurements.values(), dask_chunks=dask_chunks,
-                                        fuse_func=fuse_func)
+        dataset = Datacube.load_data(tile.sources, tile.geobox, measurements.values(), dask_chunks=dask_chunks,
+                                     fuse_func=fuse_func)
 
         return dataset
 

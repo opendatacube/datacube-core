@@ -35,9 +35,9 @@ Low-Level Internal Functions
 .. autosummary::
    :toctree: generate/
 
-   Datacube.product_observations
-   Datacube.product_sources
-   Datacube.product_data
+   Datacube.find_datasets
+   Datacube.group_datasets
+   Datacube.load_data
 
    Datacube.measurement_data
 
@@ -73,7 +73,7 @@ Low-Level Internal Functions
    :toctree: generate/
 
    GridWorkflow.cell_observations
-   GridWorkflow.cell_sources
+   GridWorkflow.group_into_cells
    GridWorkflow.tile_sources
 
 

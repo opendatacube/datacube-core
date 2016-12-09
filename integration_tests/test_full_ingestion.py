@@ -173,8 +173,8 @@ def check_open_with_api(index):
     input_type = dc.index.datasets.types.get_by_name(input_type_name)
 
     geobox = GeoBox(200, 200, Affine(25, 0.0, 1500000, 0.0, -25, -3900000), CRS('EPSG:3577'))
-    observations = dc.product_observations(product='ls5_nbar_albers', geopolygon=geobox.extent)
+    observations = dc.find_datasets(product='ls5_nbar_albers', geopolygon=geobox.extent)
     group_by = query_group_by('time')
-    sources = dc.product_sources(observations, group_by)
-    data = dc.product_data(sources, geobox, input_type.measurements.values())
+    sources = dc.group_datasets(observations, group_by)
+    data = dc.load_data(sources, geobox, input_type.measurements.values())
     assert data.blue.shape == (1, 200, 200)

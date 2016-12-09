@@ -90,7 +90,7 @@ def test_gridworkflow():
     assert tile.geobox.affine * (10, 10) == padded_tile.geobox.affine * (10+2, 10+2)
 
     # ------- check loading --------
-    # GridWorkflow accesses the product_data API
+    # GridWorkflow accesses the load_data API
     # to ultimately convert geobox,sources,measurements to xarray,
     # so only thing to check here is the call interface.
 
@@ -99,7 +99,7 @@ def test_gridworkflow():
     fakedataset2.type = fakedataset.type
 
     from mock import patch
-    with patch('datacube.api.core.Datacube.product_data') as loader:
+    with patch('datacube.api.core.Datacube.load_data') as loader:
 
         data = GridWorkflow.load(tile)
         data2 = GridWorkflow.load(padded_tile)

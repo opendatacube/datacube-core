@@ -182,7 +182,7 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
 
     with datacube.set_options(reproject_threads=1):
         fuse_func = {'copy': None}[config.get(FUSER_KEY, 'copy')]
-        data = Datacube.product_data(tile.sources, tile.geobox, measurements, fuse_func=fuse_func)
+        data = Datacube.load_data(tile.sources, tile.geobox, measurements, fuse_func=fuse_func)
     nudata = data.rename(namemap)
     file_path = get_filename(config, tile_index, tile.sources)
 
