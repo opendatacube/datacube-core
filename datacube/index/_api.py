@@ -9,7 +9,7 @@ from pathlib import Path
 
 import datacube.utils
 from datacube.config import LocalConfig
-from ._datasets import DatasetResource, DatasetTypeResource, MetadataTypeResource
+from ._datasets import DatasetResource, ProductResource, MetadataTypeResource
 from .postgres import PostgresDb
 
 _LOG = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ class Index(object):
 
         self.users = UserResource(db)
         self.metadata_types = MetadataTypeResource(db)
-        self.products = DatasetTypeResource(db, self.metadata_types)
+        self.products = ProductResource(db, self.metadata_types)
         self.datasets = DatasetResource(db, self.products)
 
     @property
