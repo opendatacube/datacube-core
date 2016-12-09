@@ -5,6 +5,7 @@ import numpy
 import xarray
 from itertools import groupby
 from collections import OrderedDict
+import warnings
 
 from ..utils import intersects
 from .query import Query, query_group_by
@@ -196,6 +197,12 @@ class GridWorkflow(object):
             raise RuntimeError('must specify a product')
         datasets = self.index.datasets.search_eager(**query.search_terms)
         return datasets, query
+
+    @staticmethod
+    def cell_sources(observations, group_by):
+        warnings.warn("cell_sources() has been renamed to group_into_cells() and will eventually be removed",
+                      DeprecationWarning)
+        return GridWorkflow.group_into_cells(observations, group_by)
 
     @staticmethod
     def group_into_cells(observations, group_by):
