@@ -6,7 +6,7 @@ from __future__ import absolute_import, division
 
 import logging
 import math
-from collections import namedtuple, OrderedDict
+from collections import namedtuple, OrderedDict, Sequence
 from pathlib import Path
 
 import numpy
@@ -388,8 +388,8 @@ class DatasetType(object):
 
 
 def GeoPolygon(coordinates, crs):  # pylint: disable=invalid-name
-        if not isinstance(coordinates, collections.Sequence):
-            raise ValueError("points ({}) must be a sequence of (x, y) coordinates".format(points))
+    if not isinstance(coordinates, Sequence):
+        raise ValueError("points ({}) must be a sequence of (x, y) coordinates".format(coordinates))
     return geometry.polygon(coordinates + [coordinates[0]], crs=crs)
 
 

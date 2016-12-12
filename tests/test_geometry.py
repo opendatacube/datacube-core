@@ -13,4 +13,3 @@ def test_pickleable():
     poly = geometry.polygon([(10, 20), (20, 20), (20, 10), (10, 20)], crs=geometry.CRS('EPSG:4326'))
     pickled = pickle.dumps(poly, pickle.HIGHEST_PROTOCOL)
     unpickled = pickle.loads(pickled)
-
