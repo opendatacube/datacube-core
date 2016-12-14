@@ -186,6 +186,15 @@ class MetadataTypeResource(object):
         with self._db.connect() as connection:
             connection.check_dynamic_fields(concurrently=not allow_table_lock, rebuild_all=rebuild_all)
 
+    def get_all(self):
+        """
+        Retrieve all Metadata Types
+
+        :rtype: iter[datacube.model.MetadataType]
+        """
+        with self._db.connect() as connection:
+            return self._make_many(connection.get_all_metadata_types())
+
     def _make_many(self, query_rows):
         """
         :rtype: list[datacube.model.MetadataType]

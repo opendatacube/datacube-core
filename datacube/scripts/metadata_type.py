@@ -2,6 +2,7 @@ from __future__ import absolute_import, print_function
 
 import logging
 from pathlib import Path
+from pprint import pprint
 
 import click
 from click import echo
@@ -82,12 +83,31 @@ def update_metadata_types(index, allow_unsafe, dry_run, files):
 
 
 @metadata_type.command('show')
+@click.option('-v', '--verbose', is_flag=True)
 @click.argument('metadata_type_name', nargs=1)
 @ui.pass_index()
-def show_metadata_type(index, metadata_type_name):
+def show_metadata_type(index, metadata_type_name, verbose):
     """
     Show information about a metadata type.
     """
     metadata_type_obj = index.metadata_types.get_by_name(metadata_type_name)
     print(metadata_type_obj.description)
     print('Search fields: %s' % ', '.join(sorted(metadata_type_obj.dataset_fields.keys())))
+    if verbose:
+        pprint(metadata_type_obj.definition, width=100, compact=True)
+
+
+@metadata_type.command('list')
+@ui.pass_index()
+def list_metadata_types(index):
+    """
+    List metadata types that are defined in the index
+    """
+    metadata_types = list(index.metadata_types.get_all())
+
+    if not metadata_types:
+        echo('No metadata types found :(')
+        return
+
+    for m in metadata_types:
+        echo(m)
