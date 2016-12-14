@@ -94,7 +94,7 @@ def show_metadata_type(index, metadata_type_name, verbose):
     print(metadata_type_obj.description)
     print('Search fields: %s' % ', '.join(sorted(metadata_type_obj.dataset_fields.keys())))
     if verbose:
-        pprint(metadata_type_obj.definition, width=100, compact=True)
+        pprint(metadata_type_obj.definition, width=100)
 
 
 @metadata_type.command('list')
