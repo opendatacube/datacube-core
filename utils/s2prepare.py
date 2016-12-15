@@ -36,7 +36,7 @@ def valid_region(images, mask_value=None):
     for fname in images:
         # ensure formats match
         with rasterio.open(str(fname), 'r') as ds:
-            transform = ds.affine
+            transform = ds.transform
             img = ds.read(1)
 
             if mask_value is not None:
