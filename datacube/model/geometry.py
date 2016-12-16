@@ -197,6 +197,11 @@ class CRS(object):
         return self._crs.IsSame(other._crs) != 1  # pylint: disable=protected-access
 
 
+###################################################
+# Helper methods to build ogr.Geometry from geojson
+###################################################
+
+
 def _make_point(pt):
     geom = ogr.Geometry(ogr.wkbPoint)
     geom.AddPoint_2D(*pt)
@@ -239,7 +244,15 @@ def _make_multipolygon(coordinates):
     return geom
 
 
+###################################################
+# Helper methods to build ogr.Geometry from geojson
+###################################################
+
+
 def _get_coordinates(geom):
+    """
+    recursively extract coordinates from geometry
+    """
     if geom.GetGeometryType() == ogr.wkbPoint:
         return geom.GetPoint_2D(0)
     if geom.GetGeometryType() in [ogr.wkbMultiPoint, ogr.wkbLineString, ogr.wkbLinearRing]:
@@ -253,6 +266,11 @@ def _make_geom_from_ogr(geom, crs):
     result._geom = geom  # pylint: disable=protected-access
     result.crs = crs
     return result
+
+
+#############################################
+# Helper methods to wrap ogr.Geometry methods
+#############################################
 
 
 def _wrap_binary_bool(method):
@@ -271,6 +289,9 @@ def _wrap_binary_geom(method):
 
 class Geometry(object):
     geom_makers = {
+    """
+    Geometry with CRS
+    """
         'Point': _make_point,
         'MultiPoint': _make_multipoint,
         'LineString': _make_line,
@@ -347,6 +368,11 @@ class Geometry(object):
         return repr(self._geom)
 
 
+###########################################
+# Helper constructor functions a la shapely
+###########################################
+
+
 def point(x, y, crs=None):
     return Geometry({'type': 'Point', 'coordinates': (x, y)}, crs=crs)
 
@@ -364,6 +390,9 @@ def check_intersect(a, b):
 
 
 def union_cascaded(geoms):
+    """
+    compute union of multiple (multi)polygons efficiently
+    """
     geom = ogr.Geometry(ogr.wkbMultiPolygon)
     crs = None
     for g in geoms:
