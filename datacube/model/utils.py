@@ -5,14 +5,13 @@ import os
 import platform
 import sys
 import uuid
-import copy
 
 import numpy
 import xarray
 from pandas import to_datetime
 
 import datacube
-from ..model import geometry, GeoPolygon, CRS, Dataset
+from ..model import geometry, CRS, Dataset
 
 import yaml
 try:
