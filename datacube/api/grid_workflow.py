@@ -131,7 +131,7 @@ class GridWorkflow(object):
         """
         List datasets, grouped by cell.
 
-        :param datacube.model.GeoPolygon geopolygon:
+        :param datacube.utils.Geometry geopolygon:
             Only return observations with data inside polygon.
         :param (float,float) tile_buffer:
             buffer tiles by (y, x) in CRS units

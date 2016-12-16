@@ -17,9 +17,9 @@ from datacube.model import CRS
 from ..config import LocalConfig
 from ..compat import string_types
 from ..index import index_connect
-from ..model import GeoPolygon, GeoBox
+from ..model import GeoBox
 from ..storage.storage import DatasetSource, reproject_and_fuse
-from ..utils import intersects, data_resolution_and_offset
+from ..utils import geometry, intersects, data_resolution_and_offset
 from .query import Query, query_group_by, query_geopolygon
 
 _LOG = logging.getLogger(__name__)
@@ -576,7 +576,7 @@ def get_bounds(datasets, crs):
     right = max([d.extent.to_crs(crs).boundingbox.right for d in datasets])
     top = max([d.extent.to_crs(crs).boundingbox.top for d in datasets])
     bottom = min([d.extent.to_crs(crs).boundingbox.bottom for d in datasets])
-    return GeoPolygon.from_boundingbox(BoundingBox(left, bottom, right, top), crs=crs)
+    return geometry.box(BoundingBox(left, bottom, right, top), crs=crs)
 
 
 def set_resampling_method(measurements, resampling=None):

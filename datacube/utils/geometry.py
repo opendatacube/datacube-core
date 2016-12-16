@@ -376,16 +376,27 @@ class Geometry(object):
 ###########################################
 
 
-def point(x, y, crs=None):
+def point(x, y, crs):
     return Geometry({'type': 'Point', 'coordinates': (x, y)}, crs=crs)
 
 
-def line(coords, crs=None):
+def line(coords, crs):
     return Geometry({'type': 'LineString', 'coordinates': coords}, crs=crs)
 
 
-def polygon(outer, crs=None, *inners):
+def polygon(outer, crs, *inners):
     return Geometry({'type': 'Polygon', 'coordinates': (outer, )+inners}, crs=crs)
+
+
+def box(boundingbox, crs):
+    points = [
+        (boundingbox.left, boundingbox.top),
+        (boundingbox.right, boundingbox.top),
+        (boundingbox.right, boundingbox.bottom),
+        (boundingbox.left, boundingbox.bottom),
+        (boundingbox.left, boundingbox.top),
+    ]
+    return polygon(points, crs=crs)
 
 
 def union_cascaded(geoms):

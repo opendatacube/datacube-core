@@ -170,8 +170,8 @@ def make_dataset(product, sources, extent, center_time, valid_data=None, uri=Non
 
     :param DatasetType product: Product the dataset is part of
     :param list[:class:`Dataset`] sources: datasets used to produce the dataset
-    :param GeoPolygon extent: extent of the dataset
-    :param GeoPolygon valid_data: extent of the valid data
+    :param Geometry extent: extent of the dataset
+    :param Geometry valid_data: extent of the valid data
     :param center_time: time of the central point of the dataset
     :param str uri: The uri of the dataset
     :param dict app_info: Additional metadata to be stored about the generation of the product

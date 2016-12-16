@@ -8,12 +8,11 @@ import logging
 import numbers
 from datetime import datetime
 
-import netCDF4
 import numpy
 
 from datacube.storage.masking import describe_flags_def
-from datacube.model import GeoPolygon, CRS
-from datacube.utils import data_resolution_and_offset
+from datacube.model import CRS, BoundingBox
+from datacube.utils import geometry, data_resolution_and_offset
 
 # pylint: disable=ungrouped-imports,wrong-import-order
 try:
@@ -217,8 +216,7 @@ def create_grid_mapping_variable(nco, crs):
 
     left, right = nco[dims[1]][0]-0.5*xres, nco[dims[1]][-1]+0.5*xres
     bottom, top = nco[dims[0]][0]-0.5*yres, nco[dims[0]][-1]+0.5*yres
-    points = [[left, bottom], [left, top], [right, top], [right, bottom]]
-    _write_geographical_extents_attributes(nco, GeoPolygon(points, crs=crs))
+    _write_geographical_extents_attributes(nco, geometry.box(BoundingBox(left, bottom, right, top), crs=crs))
 
     return crs_var
 

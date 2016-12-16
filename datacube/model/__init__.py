@@ -171,7 +171,7 @@ class Dataset(object):
     @cached_property
     def extent(self):
         """
-        :rtype: GeoPolygon
+        :rtype: geometry.Geometry
         """
 
         def xytuple(obj):
@@ -180,11 +180,11 @@ class Dataset(object):
         projection = self.metadata.grid_spatial
 
         if 'valid_data' in projection:
-            assert projection['valid_data']['type'].lower() == 'polygon'
-            return GeoPolygon(projection['valid_data']['coordinates'][0][:-1], crs=self.crs)
+            return geometry.Geometry(projection['valid_data'], crs=self.crs)
         else:
             geo_ref_points = projection['geo_ref_points']
-            return GeoPolygon([xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr')], crs=self.crs)
+            return geometry.polygon([xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr', 'll')],
+                                    crs=self.crs)
 
     def __eq__(self, other):
         return self.id == other.id
@@ -537,7 +537,7 @@ class GridSpec(object):
            Grid cells are referenced by coordinates `(x, y)`, which is the opposite to the usual CRS
            dimension order.
 
-        :param GeoPolygon geopolygon: Polygon to tile
+        :param geometry.Geometry geopolygon: Polygon to tile
         :param tile_buffer:
         :return: iterator of grid cells with :py:class:`GeoBox` tiles
         """
@@ -616,15 +616,15 @@ class GeoBox(object):
         #: :rtype: affine.Affine
         self.affine = affine
 
-        points = [(0, 0), (0, height), (width, height), (width, 0)]
+        points = [(0, 0), (0, height), (width, height), (width, 0), (0, 0)]
         self.affine.itransform(points)
-        #: :rtype: GeoPolygon
-        self.extent = GeoPolygon(points, crs=crs)
+        #: :rtype: geometry.Geometry
+        self.extent = geometry.polygon(points, crs=crs)
 
     @classmethod
     def from_geopolygon(cls, geopolygon, resolution, crs=None, align=None):
         """
-        :type geopolygon: GeoPolygon
+        :type geopolygon: geometry.Geometry
         :param resolution: (y_resolution, x_resolution)
         :param CRS crs: CRS to use, if different from the geopolygon
         :param (float,float) align: Align geobox such that point 'align' lies on the pixel boundary.
@@ -733,7 +733,7 @@ class GeoBox(object):
     @property
     def geographic_extent(self):
         """
-        :rtype: GeoPolygon
+        :rtype: geometry.Geometry
         """
         if self.crs.geographic:
             return self.extent
