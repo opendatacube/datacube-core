@@ -13,11 +13,9 @@ from pathlib import Path
 import numpy
 from affine import Affine
 
-from . import geometry
-from .geometry import CRS, BoundingBox, Geometry
-
-from datacube.utils import parse_time, cached_property, uri_to_local_path, intersects
-from datacube.utils import schema_validated, DocReader
+from datacube.utils import parse_time, cached_property, uri_to_local_path, intersects, schema_validated, DocReader
+from datacube.utils import geometry
+from datacube.utils.geometry import CRS, BoundingBox
 
 _LOG = logging.getLogger(__name__)
 

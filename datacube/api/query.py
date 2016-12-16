@@ -27,8 +27,8 @@ from pandas import to_datetime as pandas_to_datetime
 import numpy as np
 
 from ..compat import string_types, integer_types
-from ..model import geometry, Range, CRS
-from ..utils import datetime_to_seconds_since_1970
+from ..model import Range, CRS
+from ..utils import geometry, datetime_to_seconds_since_1970
 
 _LOG = logging.getLogger(__name__)
 

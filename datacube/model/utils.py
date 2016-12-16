@@ -11,8 +11,8 @@ import xarray
 from pandas import to_datetime
 
 import datacube
-from ..model import geometry, CRS, Dataset
-
+from datacube.utils import geometry
+from datacube.model import CRS, Dataset
 import yaml
 try:
     from yaml import CSafeDumper as SafeDumper

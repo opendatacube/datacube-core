@@ -6,7 +6,7 @@ try:
 except ImportError:
     import pickle
 
-from datacube.model import geometry
+from datacube.utils import geometry
 
 
 def test_pickleable():
