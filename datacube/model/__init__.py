@@ -6,6 +6,7 @@ from __future__ import absolute_import, division
 
 import logging
 import math
+import warnings
 from collections import namedtuple, OrderedDict, Sequence
 from pathlib import Path
 
@@ -388,6 +389,7 @@ class DatasetType(object):
 
 
 def GeoPolygon(coordinates, crs):  # pylint: disable=invalid-name
+    warnings.warn("GeoPolygon is depricated. Use geometry.polygon", DeprecationWarning)
     if not isinstance(coordinates, Sequence):
         raise ValueError("points ({}) must be a sequence of (x, y) coordinates".format(coordinates))
     return geometry.polygon(coordinates + [coordinates[0]], crs=crs)
