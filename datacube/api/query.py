@@ -27,7 +27,7 @@ from pandas import to_datetime as pandas_to_datetime
 import numpy as np
 
 from ..compat import string_types, integer_types
-from ..model import geometry, GeoPolygon, Range, CRS
+from ..model import geometry, Range, CRS
 from ..utils import datetime_to_seconds_since_1970
 
 _LOG = logging.getLogger(__name__)
@@ -231,8 +231,9 @@ def _range_to_geopolygon(**kwargs):
                     (input_coords['right'], input_coords['top']),
                     (input_coords['right'], input_coords['bottom']),
                     (input_coords['left'], input_coords['bottom']),
+                    (input_coords['left'], input_coords['top'])
                 ]
-                return GeoPolygon(points, crs=input_crs)
+                return geometry.polygon(points, crs=input_crs)
     return None
 
 
