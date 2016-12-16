@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division
 
+import functools
 import cachetools
 
 from osgeo import ogr, osr
@@ -274,6 +275,7 @@ def _make_geom_from_ogr(geom, crs):
 
 
 def _wrap_binary_bool(method):
+    @functools.wraps(method)
     def wrapped(self, other):
         assert self.crs == other.crs
         return bool(method(self._geom, other._geom))  # pylint: disable=protected-access
@@ -281,6 +283,7 @@ def _wrap_binary_bool(method):
 
 
 def _wrap_binary_geom(method):
+    @functools.wraps(method)
     def wrapped(self, other):
         assert self.crs == other.crs
         return _make_geom_from_ogr(method(self._geom, other._geom), self.crs)  # pylint: disable=protected-access
