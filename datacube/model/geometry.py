@@ -291,10 +291,10 @@ def _wrap_binary_geom(method):
 
 
 class Geometry(object):
-    geom_makers = {
     """
     Geometry with CRS
     """
+    _geom_makers = {
         'Point': _make_point,
         'MultiPoint': _make_multipoint,
         'LineString': _make_line,
@@ -303,7 +303,7 @@ class Geometry(object):
         'MultiPolygon': _make_multipolygon,
     }
 
-    geom_types = {
+    _geom_types = {
         ogr.wkbPoint: 'Point',
         ogr.wkbMultiPoint: 'MultiPoint',
         ogr.wkbLineString: 'LineString',
@@ -319,11 +319,11 @@ class Geometry(object):
 
     def __init__(self, geo, crs=None):
         self.crs = crs
-        self._geom = Geometry.geom_makers[geo['type']](geo['coordinates'])
+        self._geom = Geometry._geom_makers[geo['type']](geo['coordinates'])
 
     @property
     def type(self):
-        return Geometry.geom_types[self._geom.GetGeometryType()]
+        return Geometry._geom_types[self._geom.GetGeometryType()]
 
     @property
     def points(self):
@@ -365,10 +365,10 @@ class Geometry(object):
         return _make_geom_from_ogr(clone, crs)  # pylint: disable=protected-access
 
     def __str__(self):
-        return str(self._geom)
+        return 'Geometry(%s, %r)' % (self.__geo_interface__, self.crs)
 
     def __repr__(self):
-        return repr(self._geom)
+        return 'Geometry(%s, %s)' % (self._geom, self.crs)
 
 
 ###########################################
@@ -386,10 +386,6 @@ def line(coords, crs=None):
 
 def polygon(outer, crs=None, *inners):
     return Geometry({'type': 'Polygon', 'coordinates': (outer, )+inners}, crs=crs)
-
-
-def check_intersect(a, b):
-    return a.intersects(b) and not a.touches(b)
 
 
 def union_cascaded(geoms):
