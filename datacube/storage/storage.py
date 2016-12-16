@@ -257,14 +257,12 @@ class BaseRasterDataSource(object):
 
                 transform = _rasterio_transform(src)
                 if transform.is_identity:
-                    _LOG.warning('No GeoTransform in %s, band %s. Falling back to dataset GeoTransform.')
                     override = True
                     transform = self.get_transform(src.shape)
 
                 try:
                     crs = CRS(_rasterio_crs_wkt(src))
                 except ValueError:
-                    _LOG.warning('No CRS in %s, band %s. Falling back to dataset CRS.')
                     override = True
                     crs = self.get_crs()
 
