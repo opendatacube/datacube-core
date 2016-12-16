@@ -248,6 +248,27 @@ def _get_coordinates(geom):
         return [_get_coordinates(geom.GetGeometryRef(i)) for i in range(geom.GetGeometryCount())]
 
 
+def _make_geom_from_ogr(geom, crs):
+    result = Geometry.__new__(Geometry)
+    result._geom = geom  # pylint: disable=protected-access
+    result.crs = crs
+    return result
+
+
+def _wrap_binary_bool(method):
+    def wrapped(self, other):
+        assert self.crs == other.crs
+        return bool(method(self._geom, other._geom))  # pylint: disable=protected-access
+    return wrapped
+
+
+def _wrap_binary_geom(method):
+    def wrapped(self, other):
+        assert self.crs == other.crs
+        return _make_geom_from_ogr(method(self._geom, other._geom), self.crs)  # pylint: disable=protected-access
+    return wrapped
+
+
 class Geometry(object):
     geom_makers = {
         'Point': _make_point,
@@ -267,9 +288,14 @@ class Geometry(object):
         ogr.wkbMultiPolygon: 'MultiPolygon',
     }
 
-    def __init__(self, type_, coordinates, crs=None):
+    intersects = _wrap_binary_bool(ogr.Geometry.Intersects)
+    touches = _wrap_binary_bool(ogr.Geometry.Touches)
+
+    intersection = _wrap_binary_geom(ogr.Geometry.Intersection)
+
+    def __init__(self, geo, crs=None):
         self.crs = crs
-        self._geom = Geometry.geom_makers[type_](coordinates)
+        self._geom = Geometry.geom_makers[geo['type']](geo['coordinates'])
 
     @property
     def type(self):
@@ -295,21 +321,10 @@ class Geometry(object):
             'coordinates': _get_coordinates(self._geom)
         }
 
-    def intersects(self, other):
-        assert self.crs == other.crs
-        return self._geom.Intersects(other._geom)  # pylint: disable=protected-access
-
-    def intersection(self, other):
-        assert self.crs == other.crs
-        geom = self._geom.Intersection(other._geom)  # pylint: disable=protected-access
-        result = Geometry.__new__(Geometry)
-        result._geom = geom  # pylint: disable=protected-access
-        result.crs = self.crs
-        return result
-
-    def touches(self, other):
-        assert self.crs == other.crs
-        return self._geom.Touches(other._geom)  # pylint: disable=protected-access
+    def segmented(self, resolution):
+        clone = self._geom.Clone()
+        clone.Segmentize(resolution)
+        return _make_geom_from_ogr(clone, self.crs)
 
     def to_crs(self, crs, resolution=None):
         if self.crs == crs:
@@ -323,10 +338,7 @@ class Geometry(object):
         clone.Segmentize(resolution)
         clone.Transform(transform)
 
-        transformed = Geometry.__new__(Geometry)
-        transformed.crs = crs
-        transformed._geom = clone  # pylint: disable=protected-access
-        return transformed
+        return _make_geom_from_ogr(clone, crs)  # pylint: disable=protected-access
 
     def __str__(self):
         return str(self._geom)
@@ -336,15 +348,15 @@ class Geometry(object):
 
 
 def point(x, y, crs=None):
-    return Geometry('Point', (x, y), crs=crs)
+    return Geometry({'type': 'Point', 'coordinates': (x, y)}, crs=crs)
 
 
 def line(coords, crs=None):
-    return Geometry('LineString', coords, crs=crs)
+    return Geometry({'type': 'LineString', 'coordinates': coords}, crs=crs)
 
 
 def polygon(outer, crs=None, *inners):
-    return Geometry('Polygon', (outer, )+inners, crs=crs)
+    return Geometry({'type': 'Polygon', 'coordinates': (outer, )+inners}, crs=crs)
 
 
 def check_intersect(a, b):
@@ -362,10 +374,4 @@ def union_cascaded(geoms):
 
         geom.AddGeometry(g._geom)  # pylint: disable=protected-access
     geom.UnionCascaded()
-    result = Geometry.__new__(Geometry)
-    if geom.GetGeometryCount() == 1:
-        result._geom = geom.GetGeometryRef(0).Clone()  # pylint: disable=protected-access
-    else:
-        result._geom = geom  # pylint: disable=protected-access
-    result.crs = crs
-    return result
+    return _make_geom_from_ogr(geom.GetGeometryRef(0).Clone() if geom.GetGeometryCount() else geom, crs)
