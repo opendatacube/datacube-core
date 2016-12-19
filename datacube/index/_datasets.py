@@ -82,7 +82,8 @@ class MetadataTypeResource(object):
         updates_allowed = {
             ('description',): changes.allow_any,
             # You can add new fields safely but not modify existing ones.
-            ('dataset',): changes.allow_superset
+            ('dataset',): changes.allow_extension,
+            ('dataset', 'search_fields'): changes.allow_extension
         }
 
         doc_changes = get_doc_changes(existing.definition, jsonify_document(metadata_type.definition))
@@ -316,7 +317,7 @@ class ProductResource(object):
             # You can safely make the match rules looser but not tighter.
             # Tightening them could exclude datasets already matched to the product.
             # (which would make search results wrong)
-            ('metadata',): changes.allow_subset
+            ('metadata',): changes.allow_truncation
         }
 
         doc_changes = get_doc_changes(existing.definition, jsonify_document(product.definition))

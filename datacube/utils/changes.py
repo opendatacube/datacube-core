@@ -66,6 +66,14 @@ def contains(v1, v2, case_sensitive=False):
     return v1 == v2
 
 
+class MissingSentinel(object):
+    def __str__(self):
+        return "missing"
+    def __repr__(self):
+        return "missing"
+MISSING = MissingSentinel()
+
+
 def get_doc_changes(original, new, base_prefix=()):
     """
     Return a list of changed fields between two dict structures.
@@ -97,13 +105,13 @@ def get_doc_changes(original, new, base_prefix=()):
     >>> get_doc_changes({'a': 1}, {'a': 2})
     [(('a',), 1, 2)]
     >>> get_doc_changes({'a': 1}, {'b': 1})
-    [(('a',), 1, None), (('b',), None, 1)]
+    [(('a',), 1, missing), (('b',), missing, 1)]
     >>> get_doc_changes({'a': {'b': 1}}, {'a': {'b': 2}})
     [(('a', 'b'), 1, 2)]
     >>> get_doc_changes({}, {'b': 1})
-    [(('b',), None, 1)]
+    [(('b',), missing, 1)]
     >>> get_doc_changes({'a': {'c': 1}}, {'a': {'b': 1}})
-    [(('a', 'b'), None, 1), (('a', 'c'), 1, None)]
+    [(('a', 'b'), missing, 1), (('a', 'c'), 1, missing)]
     >>> get_doc_changes({}, None, base_prefix=('a',))
     [(('a',), {}, None)]
     """
@@ -114,7 +122,9 @@ def get_doc_changes(original, new, base_prefix=()):
     if isinstance(original, dict) and isinstance(new, dict):
         all_keys = set(original.keys()).union(new.keys())
         for key in all_keys:
-            changed_fields.extend(get_doc_changes(original.get(key), new.get(key), base_prefix + (key,)))
+            changed_fields.extend(get_doc_changes(original.get(key, MISSING),
+                                                  new.get(key, MISSING),
+                                                  base_prefix + (key,)))
     elif isinstance(original, list) and isinstance(new, list):
         for idx, (orig_item, new_item) in enumerate(compat.zip_longest(original, new)):
             changed_fields.extend(get_doc_changes(orig_item, new_item, base_prefix + (idx, )))
@@ -132,6 +142,8 @@ def check_doc_unchanged(original, new, doc_name):
     :param new:
     :param doc_name:
     :return:
+
+
     >>> check_doc_unchanged({'a': 1}, {'a': 1}, 'Letters')
     >>> check_doc_unchanged({'a': 1}, {'a': 2}, 'Letters')
     Traceback (most recent call last):
@@ -153,15 +165,23 @@ def check_doc_unchanged(original, new, doc_name):
         )
 
 
-def allow_subset(offset, old_value, new_value):
-    return contains(old_value, new_value, case_sensitive=True)
+def allow_truncation(key, offset, old_value, new_value):
+    return offset and key == offset[:-1] and new_value == MISSING
 
 
-def allow_superset(offset, old_value, new_value):
-    return contains(new_value, old_value, case_sensitive=True)
+def allow_extension(key, offset, old_value, new_value):
+    return offset and key == offset[:-1] and old_value == MISSING
 
 
-def allow_any(offset, old, new):
+def allow_addition(key, offset, old_value, new_value):
+    return key == offset and old_value == MISSING
+
+
+def allow_removal(key, offset, old_value, new_value):
+    return key == offset and new_value == MISSING
+
+
+def allow_any(key, offset, old, new):
     return True, None
 
 
@@ -170,6 +190,58 @@ def default_failure(offset, msg):
 
 
 def classify_changes(changes, allowed_changes):
+    """
+    Classify list of changes into good(allowed) and bad(not allowed) based on allowed changes.
+
+    :param list[(tuple,object,object)] changes: result of get_doc_changes
+    :param allowed_changes: mapping from key to change policy (subset, superset, any)
+    :return: good_changes, bad_chages
+
+
+    >>> classify_changes([], {})
+    ([], [])
+    >>> classify_changes([(('a',), 1, 2)], {})
+    ([], [(('a',), 1, 2)])
+    >>> classify_changes([(('a',), 1, 2)], {('a',): allow_any})
+    ([(('a',), 1, 2)], [])
+
+    >>> changes = [(('a2',), {'b1': 1}, MISSING)]  # {'a1': 1, 'a2': {'b1': 1}} → {'a1': 1}
+    >>> good_change = (changes, [])
+    >>> bad_change = ([], changes)
+    >>> classify_changes(changes, {}) == bad_change
+    True
+    >>> classify_changes(changes, {tuple(): allow_any}) == good_change
+    True
+    >>> classify_changes(changes, {tuple(): allow_removal}) == bad_change
+    True
+    >>> classify_changes(changes, {tuple(): allow_addition}) == bad_change
+    True
+    >>> classify_changes(changes, {tuple(): allow_truncation}) == good_change
+    True
+    >>> classify_changes(changes, {tuple(): allow_extension}) == bad_change
+    True
+    >>> classify_changes(changes, {('a1', ): allow_any}) == bad_change
+    True
+    >>> classify_changes(changes, {('a1', ): allow_removal}) == bad_change
+    True
+    >>> classify_changes(changes, {('a1', ): allow_addition}) == bad_change
+    True
+    >>> classify_changes(changes, {('a1', ): allow_truncation}) == bad_change
+    True
+    >>> classify_changes(changes, {('a1', ): allow_extension}) == bad_change
+    True
+    >>> classify_changes(changes, {('a2', ): allow_any}) == good_change
+    True
+    >>> classify_changes(changes, {('a2', ): allow_removal}) == good_change
+    True
+    >>> classify_changes(changes, {('a2', ): allow_addition}) == bad_change
+    True
+    >>> classify_changes(changes, {('a2', ): allow_truncation}) == bad_change
+    True
+    >>> classify_changes(changes, {('a2', ): allow_extension}) == bad_change
+    True
+
+    """
     allowed_changes_index = dict(allowed_changes)
 
     good_changes = []
@@ -189,7 +261,7 @@ def classify_changes(changes, allowed_changes):
         if allowance is None:
             bad_changes.append((offset, old_val, new_val))
         elif hasattr(allowance, '__call__'):
-            if allowance(offset, old_val, new_val):
+            if allowance(allowance_offset, offset, old_val, new_val):
                 good_changes.append((offset, old_val, new_val))
             else:
                 bad_changes.append((offset, old_val, new_val))
@@ -202,8 +274,10 @@ def classify_changes(changes, allowed_changes):
 def get_failure_message(allowance, old_val, new_val):
     messages = {
         None: 'value differs ({!r} → {!r})',
-        allow_subset: 'not a subset ({!r} → {!r})',
-        allow_superset: 'not a superset ({!r} → {!r})'
+        allow_addition: 'value differs ({!r} → {!r})',
+        allow_removal: 'value differs ({!r} → {!r})',
+        allow_truncation: 'not a subset ({!r} → {!r})',
+        allow_extension: 'not a superset ({!r} → {!r})'
     }
     return messages[allowance].format(old_val, new_val)
 
@@ -229,7 +303,7 @@ def validate_dict_changes(old, new, allowed_changes,
     >>> validate_dict_changes({'a1': 1, 'a2': {'b1': 1}}, {'a1': 1}, {})
     Traceback (most recent call last):
     ...
-    ValueError: Change to 'a2': value differs ({'b1': 1} → None)
+    ValueError: Change to 'a2': value differs ({'b1': 1} → missing)
     >>> # A change in a nested dict
     >>> validate_dict_changes({'a1': 1, 'a2': {'b1': 1}}, {'a1': 1, 'a2': {'b1': 2}}, {('a2', 'b1'): allow_any})
     ((('a2', 'b1'), 1, 2),)
@@ -237,10 +311,10 @@ def validate_dict_changes(old, new, allowed_changes,
     >>> validate_dict_changes({'a1': 1, 'a2': {'b1': 1}}, {'a1': 1}, {('a2', 'b1'): allow_any})
     Traceback (most recent call last):
     ...
-    ValueError: Change to 'a2': value differs ({'b1': 1} → None)
+    ValueError: Change to 'a2': value differs ({'b1': 1} → missing)
     >>> # Removal of a value
     >>> validate_dict_changes({'a1': 1, 'a2': {'b1': 1}}, {'a1': 1}, {('a2',): allow_any})
-    ((('a2',), {'b1': 1}, None),)
+    ((('a2',), {'b1': 1}, missing),)
     >>> # There's no allowance for the specific leaf change, but a parent allows all changes.
     >>> validate_dict_changes({'a1': 1, 'a2': {'b1': 1}}, {'a1': 1, 'a2': {'b1': 2}}, {('a2',): allow_any})
     ((('a2', 'b1'), 1, 2),)
@@ -273,4 +347,3 @@ def validate_dict_changes(old, new, allowed_changes,
         on_failure(offset, message)
 
     return tuple(changes)
-
