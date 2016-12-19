@@ -5,6 +5,7 @@ import sys
 
 import csv
 import click
+from click import echo
 import datetime
 import yaml
 from pathlib import Path
@@ -144,6 +145,71 @@ def index_cmd(index, match_rules, dtype, auto_match, dry_run, datasets):
         _LOG.info('Matched %s', dataset)
         if not dry_run:
             index.datasets.add(dataset)
+
+
+def parse_update_rules(allow_any):
+    updates = {}
+    for key_str in allow_any:
+        updates[tuple(key_str.split('.'))] = changes.allow_any
+    return updates
+
+
+@dataset_cmd.command('update', help="Update datasets in the Data Cube")
+@click.option('--allow-any', help="Allow any changes to the specified key (a.b.c)", multiple=True)
+@click.option('--match-rules', '-r', help='Rules to be used to associate datasets with products',
+              type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
+@click.option('--dtype', '-t', help='Product to be associated with the datasets', multiple=True)
+@click.option('--auto-match', '-a', help="Automatically associate datasets with products by matching metadata",
+              is_flag=True, default=False)
+@click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
+@click.argument('datasets',
+                type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
+@ui.pass_index()
+def update_cmd(index, allow_any, match_rules, dtype, auto_match, dry_run, datasets):
+    rules = parse_match_rules_options(index, match_rules, dtype, auto_match)
+    if rules is None:
+        return
+
+    updates = parse_update_rules(allow_any)
+
+    success, fail = 0, 0
+    for dataset in load_datasets(datasets, rules):
+        _LOG.info('Matched %s', dataset)
+
+        if not dry_run:
+            try:
+                index.datasets.update(dataset, updates_allowed=updates)
+                success += 1
+                echo('Updated "%s"' % dataset.id)
+            except ValueError as e:
+                fail += 1
+                echo('Failed to update "%s": %s' % (dataset.id, e))
+        else:
+            if update_dry_run(index, updates, dataset):
+                success += 1
+            else:
+                fail += 1
+    echo('%d successful, %d failed' % (success, fail))
+
+
+def update_dry_run(index, updates, dataset):
+    can_update, safe_changes, unsafe_changes = index.datasets.can_update(dataset, updates_allowed=updates)
+
+    for offset, old_val, new_val in safe_changes:
+        echo('Safe change in %s:%s from %r to %r' % (dataset.id, '.'.join(offset), old_val, new_val))
+
+    for offset, old_val, new_val in unsafe_changes:
+        echo('Unsafe change in %s:%s from %r to %r' % (dataset.id, '.'.join(offset), old_val, new_val))
+
+    if can_update:
+        echo('Can update %s: %s unsafe changes, %s safe changes' % (dataset.id,
+                                                                    len(unsafe_changes),
+                                                                    len(safe_changes)))
+    else:
+        echo('Cannot update %s: %s unsafe changes, %s safe changes' % (dataset.id,
+                                                                       len(unsafe_changes),
+                                                                       len(safe_changes)))
+    return can_update
 
 
 def build_dataset_info(index, dataset, show_derived=False):
