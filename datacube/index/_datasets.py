@@ -645,6 +645,76 @@ class DatasetResource(object):
 
         return dataset
 
+    def can_update(self, dataset, updates_allowed=None):
+        """
+        Check if dataset can be updated. Return bool,safe_changes,unsafe_changes
+
+        :param datacube.model.Dataset dataset: Dataset to update
+        :param dict updates_allowed: Allowed updates
+            :rtype: bool,list[change],list[change]
+        """
+        existing = self.get(dataset.id, include_sources=True)
+        if not existing:
+            raise ValueError('Unknown dataset %s, cannot update – did you intend to add it?' % dataset.id)
+
+        if dataset.type.name != existing.type.name:
+            raise ValueError('Changing product is not supported. From %s to %s in %s' % (existing.type.name,
+                                                                                         dataset.type.name,
+                                                                                         dataset.id))
+
+        # TODO: figure out (un)safe changes from metadata type?
+        allowed = {
+            # can always add more metadata
+            tuple(): changes.allow_extension,
+        }
+        allowed.update(updates_allowed)
+
+        doc_changes = get_doc_changes(existing.metadata_doc, jsonify_document(dataset.metadata_doc))
+        good_changes, bad_changes = changes.classify_changes(doc_changes, allowed)
+
+        return not bad_changes, good_changes, bad_changes
+
+    def update(self, dataset, updates_allowed=None):
+        """
+        Update dataset metadata and location
+        :param datacube.model.Dataset dataset: Dataset to update
+        :param updates_allowed: Allowed updates
+        :return:
+        """
+        can_update, safe_changes, unsafe_changes = self.can_update(dataset, updates_allowed)
+
+        if not safe_changes and not unsafe_changes:
+            _LOG.info("No changes detected for dataset %s", dataset.id)
+            return
+
+        if not can_update:
+            full_message = "Unsafe changes at " + ", ".join(".".join(offset) for offset, _, _ in unsafe_changes)
+            raise ValueError(full_message)
+
+        _LOG.info("Updating dataset %s", dataset.id)
+
+        for offset, old_val, new_val in safe_changes:
+            _LOG.info("Safe change from %r to %r", old_val, new_val)
+
+        for offset, old_val, new_val in unsafe_changes:
+            _LOG.info("Unsafe change from %r to %r", old_val, new_val)
+
+        sources_tmp = dataset.type.dataset_reader(dataset.metadata_doc).sources
+        dataset.type.dataset_reader(dataset.metadata_doc).sources = {}
+        try:
+            existing = self.get(dataset.id)
+            product = self.types.get_by_name(dataset.type.name)
+            with self._db.begin() as transaction:
+                if not transaction.update_dataset(dataset.metadata_doc, dataset.id, product.id):
+                    raise ValueError("Failed to update dataset %s..." % dataset.id)
+
+                if dataset.local_uri != existing.local_uri:
+                    transaction.ensure_dataset_location(dataset.id, dataset.local_uri)
+        finally:
+            dataset.type.dataset_reader(dataset.metadata_doc).sources = sources_tmp
+
+        return dataset
+
     def archive(self, ids):
         """
         Mark datasets as archived
