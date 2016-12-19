@@ -88,35 +88,12 @@ def load_rules_from_types(index, type_names=None):
     return rules
 
 
-@dataset_cmd.command('add', help="Add datasets to the Data Cube")
-@click.option('--match-rules', '-r', help='Rules to be used to associate datasets with products',
-              type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
-@click.option('--dtype', '-t', help='Product to be associated with the datasets',
-              multiple=True)
-@click.option('--auto-match', '-a', help="Automatically associate datasets with products by matching metadata",
-              is_flag=True, default=False)
-@click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
-@click.argument('datasets',
-                type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
-@ui.pass_index()
-def index_cmd(index, match_rules, dtype, auto_match, dry_run, datasets):
-    if not (match_rules or dtype or auto_match):
-        _LOG.error('Must specify one of [--match-rules, --type, --auto-match]')
-        return
-
-    if match_rules:
-        rules = load_rules_from_file(match_rules, index)
-    else:
-        assert dtype or auto_match
-        rules = load_rules_from_types(index, dtype)
-
-    if rules is None:
-        return
-
+def load_datasets(datasets, rules):
     for dataset_path in datasets:
         metadata_path = get_metadata_path(Path(dataset_path))
         if not metadata_path or not metadata_path.exists():
-            raise ValueError('No supported metadata docs found for dataset {}'.format(dataset_path))
+            _LOG.error('No supported metadata docs found for dataset %s', dataset_path)
+            continue
 
         for metadata_path, metadata_doc in read_documents(metadata_path):
             uri = metadata_path.absolute().as_uri()
@@ -133,9 +110,40 @@ def index_cmd(index, match_rules, dtype, auto_match, dry_run, datasets):
                 _LOG.error("Dataset %s inconsistency: %s", dataset.id, reason)
                 continue
 
-            _LOG.info('Matched %s', dataset)
-            if not dry_run:
-                index.datasets.add(dataset)
+            yield dataset
+
+
+def parse_match_rules_options(index, match_rules, dtype, auto_match):
+    if not (match_rules or dtype or auto_match):
+        auto_match = True
+
+    if match_rules:
+        return load_rules_from_file(match_rules, index)
+    else:
+        assert dtype or auto_match
+        return load_rules_from_types(index, dtype)
+
+
+@dataset_cmd.command('add', help="Add datasets to the Data Cube")
+@click.option('--match-rules', '-r', help='Rules to be used to associate datasets with products',
+              type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
+@click.option('--dtype', '-t', help='Product to be associated with the datasets',
+              multiple=True)
+@click.option('--auto-match', '-a', help="Automatically associate datasets with products by matching metadata",
+              is_flag=True, default=False)
+@click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
+@click.argument('datasets',
+                type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
+@ui.pass_index()
+def index_cmd(index, match_rules, dtype, auto_match, dry_run, datasets):
+    rules = parse_match_rules_options(index, match_rules, dtype, auto_match)
+    if rules is None:
+        return
+
+    for dataset in load_datasets(datasets, rules):
+        _LOG.info('Matched %s', dataset)
+        if not dry_run:
+            index.datasets.add(dataset)
 
 
 def build_dataset_info(index, dataset, show_derived=False):
