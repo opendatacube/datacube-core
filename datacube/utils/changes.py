@@ -9,16 +9,36 @@ from datacube import compat
 
 def contains(v1, v2, case_sensitive=False):
     """
-    Check that v1 contains v2.
+    Check that v1 is a superset of v2.
 
     For dicts contains(v1[k], v2[k]) for all k in v2
     For other types v1 == v2
-    Everything contains None
+    v2 None is interpreted as {}
 
     >>> contains("bob", "BOB")
     True
     >>> contains("bob", "BOB", case_sensitive=True)
     False
+    >>> contains(1, 1)
+    True
+    >>> contains(1, {})
+    False
+    >>> # same as above, but with None interpreted as {}
+    >>> contains(1, None)
+    False
+    >>> contains({}, 1)
+    False
+    >>> contains(None, 1)
+    False
+    >>> contains({}, {})
+    True
+    >>> contains({}, None)
+    True
+    >>> # this one is arguable...
+    >>> contains(None, {})
+    False
+    >>> contains(None, None)
+    True
     >>> contains({'a':1, 'b': 2}, {'a':1})
     True
     >>> contains({'a':{'b': 'BOB'}}, {'a':{'b': 'bob'}})
@@ -29,19 +49,19 @@ def contains(v1, v2, case_sensitive=False):
     False
     >>> contains({'a':1}, {'a':1, 'b': 2})
     False
+    >>> contains({'a': {'b': 1}}, {'a': {}})
+    True
     >>> contains({'a': {'b': 1}}, {'a': None})
     True
     """
-    if v2 is None:
-        return True
-
     if not case_sensitive:
         if isinstance(v1, compat.string_types):
             return isinstance(v2, compat.string_types) and v1.lower() == v2.lower()
 
     if isinstance(v1, dict):
-        return isinstance(v2, dict) and all(contains(v1.get(k, object()), v, case_sensitive=case_sensitive)
-                                            for k, v in v2.items())
+        return v2 is None or (isinstance(v2, dict) and
+                              all(contains(v1.get(k, object()), v, case_sensitive=case_sensitive)
+                                  for k, v in v2.items()))
 
     return v1 == v2
 
