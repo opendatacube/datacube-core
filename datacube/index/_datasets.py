@@ -8,9 +8,9 @@ import logging
 
 from cachetools.func import lru_cache
 from datacube import compat
-from datacube.index import changes
 from datacube.model import Dataset, DatasetType, MetadataType
-from datacube.utils import InvalidDocException, check_doc_unchanged, jsonify_document, get_doc_changes
+from datacube.utils import InvalidDocException, jsonify_document, changes
+from datacube.utils.changes import get_doc_changes, check_doc_unchanged
 
 from . import fields
 from .exceptions import DuplicateRecordError, UnknownFieldError

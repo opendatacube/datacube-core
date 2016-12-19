@@ -403,93 +403,6 @@ def jsonify_document(doc):
     return transform_object_tree(fixup_value, doc, key_transform=str)
 
 
-def check_doc_unchanged(original, new, doc_name):
-    """
-    Complain if any fields have been modified on a document.
-
-    :param original:
-    :param new:
-    :param doc_name:
-    :return:
-    >>> check_doc_unchanged({'a': 1}, {'a': 1}, 'Letters')
-    >>> check_doc_unchanged({'a': 1}, {'a': 2}, 'Letters')
-    Traceback (most recent call last):
-    ...
-    ValueError: Letters differs from stored (a: 1!=2)
-    >>> check_doc_unchanged({'a': {'b': 1}}, {'a': {'b': 2}}, 'Letters')
-    Traceback (most recent call last):
-    ...
-    ValueError: Letters differs from stored (a.b: 1!=2)
-    """
-    changes = get_doc_changes(original, new)
-
-    if changes:
-        raise ValueError(
-            '{} differs from stored ({})'.format(
-                doc_name,
-                ', '.join(['{}: {!r}!={!r}'.format('.'.join(offset), v1, v2) for offset, v1, v2 in changes])
-            )
-        )
-
-
-def get_doc_changes(original, new, base_prefix=()):
-    """
-    Return a list of changed fields between two dict structures.
-
-    :type original: Union[dict, list, int]
-    :rtype: list[(tuple, object, object)]
-
-
-    >>> get_doc_changes(1, 1)
-    []
-    >>> get_doc_changes({}, {})
-    []
-    >>> get_doc_changes({'a': 1}, {'a': 1})
-    []
-    >>> get_doc_changes({'a': {'b': 1}}, {'a': {'b': 1}})
-    []
-    >>> get_doc_changes([1, 2, 3], [1, 2, 3])
-    []
-    >>> get_doc_changes([1, 2, [3, 4, 5]], [1, 2, [3, 4, 5]])
-    []
-    >>> get_doc_changes(1, 2)
-    [((), 1, 2)]
-    >>> get_doc_changes([1, 2, 3], [2, 1, 3])
-    [((0,), 1, 2), ((1,), 2, 1)]
-    >>> get_doc_changes([1, 2, [3, 4, 5]], [1, 2, [3, 6, 7]])
-    [((2, 1), 4, 6), ((2, 2), 5, 7)]
-    >>> get_doc_changes({'a': 1}, {'a': 2})
-    [(('a',), 1, 2)]
-    >>> get_doc_changes({'a': 1}, {'a': 2})
-    [(('a',), 1, 2)]
-    >>> get_doc_changes({'a': 1}, {'b': 1})
-    [(('a',), 1, None), (('b',), None, 1)]
-    >>> get_doc_changes({'a': {'b': 1}}, {'a': {'b': 2}})
-    [(('a', 'b'), 1, 2)]
-    >>> get_doc_changes({}, {'b': 1})
-    [(('b',), None, 1)]
-    >>> get_doc_changes({'a': {'c': 1}}, {'a': {'b': 1}})
-    [(('a', 'b'), None, 1), (('a', 'c'), 1, None)]
-    >>> get_doc_changes({}, None, base_prefix=('a',))
-    [(('a',), {}, None)]
-    """
-    changed_fields = []
-    if original == new:
-        return changed_fields
-
-    if isinstance(original, dict) and isinstance(new, dict):
-        all_keys = set(original.keys()).union(new.keys())
-        for key in all_keys:
-            changed_fields.extend(get_doc_changes(original.get(key), new.get(key), base_prefix + (key,)))
-    elif isinstance(original, list) and isinstance(new, list):
-        for idx, (orig_item, new_item) in enumerate(compat.zip_longest(original, new)):
-            changed_fields.extend(get_doc_changes(orig_item, new_item, base_prefix + (idx, )))
-    else:
-        changed_fields.append((base_prefix, original, new))
-
-    return sorted(changed_fields, key=lambda a: a[0])
-
-
 def iter_slices(shape, chunk_size):
     """
     Generate slices for a given shape.
@@ -511,45 +424,6 @@ def iter_slices(shape, chunk_size):
     for grid_index in numpy.ndindex(*num_grid_chunks):
         yield tuple(
             slice(min(d * c, stop), min((d + 1) * c, stop)) for d, c, stop in zip(grid_index, chunk_size, shape))
-
-
-def contains(v1, v2, case_sensitive=False):
-    """
-    Check that v1 contains v2.
-
-    For dicts contains(v1[k], v2[k]) for all k in v2
-    For other types v1 == v2
-    Everything contains None
-
-    >>> contains("bob", "BOB")
-    True
-    >>> contains("bob", "BOB", case_sensitive=True)
-    False
-    >>> contains({'a':1, 'b': 2}, {'a':1})
-    True
-    >>> contains({'a':{'b': 'BOB'}}, {'a':{'b': 'bob'}})
-    True
-    >>> contains({'a':{'b': 'BOB'}}, {'a':{'b': 'bob'}}, case_sensitive=True)
-    False
-    >>> contains("bob", "alice")
-    False
-    >>> contains({'a':1}, {'a':1, 'b': 2})
-    False
-    >>> contains({'a': {'b': 1}}, {'a': None})
-    True
-    """
-    if v2 is None:
-        return True
-
-    if not case_sensitive:
-        if isinstance(v1, compat.string_types):
-            return isinstance(v2, compat.string_types) and v1.lower() == v2.lower()
-
-    if isinstance(v1, dict):
-        return isinstance(v2, dict) and all(contains(v1.get(k, object()), v, case_sensitive=case_sensitive)
-                                            for k, v in v2.items())
-
-    return v1 == v2
 
 
 def is_url(url_str):

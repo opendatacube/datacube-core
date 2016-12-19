@@ -13,7 +13,7 @@ from datacube.model import Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.ui.common import get_metadata_path
-from datacube.utils import read_documents, contains
+from datacube.utils import read_documents, changes
 
 _LOG = logging.getLogger('datacube-dataset')
 
@@ -24,7 +24,7 @@ def dataset_cmd():
 
 
 def match_doc(rules, doc):
-    matched = [rule for rule in rules if contains(doc, rule['metadata'])]
+    matched = [rule for rule in rules if changes.contains(doc, rule['metadata'])]
     if not matched:
         raise RuntimeError('No matches found for %s' % doc.get('id', 'unidentified'))
     if len(matched) > 1:
@@ -64,7 +64,7 @@ def load_rules_from_file(filename, index):
         if not type_:
             _LOG.error('DatasetType %s does not exists', rule['type'])
             return
-        if not contains(type_.metadata_doc, rule['metadata']):
+        if not changes.contains(type_.metadata_doc, rule['metadata']):
             _LOG.error('DatasetType %s can\'t be matched by its own rule', rule['type'])
             return
         rule['type'] = type_
