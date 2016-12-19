@@ -378,6 +378,25 @@ class PostgresDbAPI(object):
                 raise DuplicateRecordError('Duplicate dataset, not inserting: %s' % dataset_id)
             raise
 
+    def update_dataset(self, metadata_doc, dataset_id, dataset_type_id):
+        """
+        Update dataset
+        :type metadata_doc: dict
+        :type dataset_id: str or uuid.UUID
+        :type dataset_type_id: int
+        """
+        res = self._connection.execute(
+            DATASET.update().returning(DATASET.c.id).where(
+                and_(
+                    DATASET.c.id == dataset_id,
+                    DATASET.c.dataset_type_ref == dataset_type_id
+                )
+            ).values(
+                metadata=metadata_doc
+            )
+        )
+        return res.rowcount > 0
+
     def ensure_dataset_location(self, dataset_id, uri):
         """
         Add a location to a dataset if it is not already recorded.
