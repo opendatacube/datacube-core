@@ -387,7 +387,7 @@ class DatasetType(object):
 
 
 def GeoPolygon(coordinates, crs):  # pylint: disable=invalid-name
-    warnings.warn("GeoPolygon is depricated. Use geometry.polygon", DeprecationWarning)
+    warnings.warn("GeoPolygon is depricated. Use datacube.utils.geometry.polygon", DeprecationWarning)
     if not isinstance(coordinates, Sequence):
         raise ValueError("points ({}) must be a sequence of (x, y) coordinates".format(coordinates))
     return geometry.polygon(coordinates + [coordinates[0]], crs=crs)
