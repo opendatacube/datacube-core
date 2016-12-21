@@ -86,6 +86,7 @@ setup(
         'console_scripts': [
             'datacube-search = datacube.scripts.search_tool:cli',
             'datacube = datacube.scripts.cli_app:cli',
+            'datacube-stacker = datacube_apps.stacker:main',
             'pixeldrill = datacube_apps.pixeldrill:main [interactive]',
             'movie_generator = datacube_apps.movie_generator:main'
         ]

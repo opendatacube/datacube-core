@@ -8,22 +8,17 @@ import logging
 import re
 import os
 from future.utils import iteritems
-from collections import OrderedDict
-from datetime import datetime
 from functools import partial
 
 import click
 import dask.array as da
 import dask
-import numpy
 import pandas as pd
-from pandas import to_datetime
 from pandas.tseries.offsets import YearBegin, YearEnd
 from pathlib import Path
 
 import datacube
 from datacube.api import Tile
-from datacube.model import Coordinate, Variable, GeoPolygon
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.storage import netcdf_writer
 from datacube.storage.storage import create_netcdf_storage_unit
@@ -42,42 +37,50 @@ APP_NAME = 'datacube-stacker'
 
 def get_filename(config, cell_index, year):
     file_path_template = str(Path(config['location'], config['file_path_template']))
-    return file_path_template.format(tile_index=cell_index, year=year)
+    return file_path_template.format(tile_index=cell_index, start_time=year)
+
+
+def _stacked_log_entry(stacked, unstacked):
+    if unstacked:
+        if stacked:
+            msg = ('is already stacked ({stacked}, '
+                   'but has new data that needs to be stacked ({unstacked})')
+        else:
+            msg = 'needs to be stacked'
+    else:
+        if stacked:
+            msg = 'is already stacked'
+        else:
+            msg = 'is empty'
+    return msg
 
 
 def make_stacker_tasks(index, config, **kwargs):
-    filename_timestamp_pattern = r'\/(?:\w+)_-?\d+_-?\d+_(\d+).nc$'  # TODO: Get from config
+    filename_timestamp_pattern = r'\/(?:\w+)_-?\d+_-?\d+_(\d+).nc$'  # TODO: Get from config?
 
     product = config['product']
 
-    keywords = ['time', 'cell_index']
-    query = {kw: arg for kw, arg in kwargs.items() if kw in keywords and arg is not None}
+    query = {kw: arg for kw, arg in kwargs.items() if kw in ['time', 'cell_index'] and arg is not None}
 
     gw = datacube.api.GridWorkflow(index=index, product=product.name)
     cells = gw.list_cells(product=product.name, **query)
     for (cell_index, tile) in iteritems(cells):
         for (year, year_tile) in _split_by_year(tile):
             stacked, unstacked = _get_stacked_datasets(year_tile, year, filename_timestamp_pattern)
-
-            if unstacked:
-                if stacked:
-                    msg = ('is already stacked ({stacked}, '
-                           'but has new data that needs to be stacked ({unstacked})')
-                else:
-                    msg = 'needs to be stacked'
-            else:
-                if stacked:
-                    msg = 'is already stacked'
-                else:
-                    msg = 'is empty'
-
-            msg = msg.format(stacked=len(stacked), unstacked=len(unstacked))
+            msg = _stacked_log_entry(stacked, unstacked).format(stacked=len(stacked), unstacked=len(unstacked))
             _LOG.debug('%s, %s: (with %s) %s', cell_index, year, len(year_tile.sources), msg)
 
             if unstacked:
                 year_tile = gw.update_tile_lineage(year_tile)
                 output_filename = get_filename(config, cell_index, year)
-                yield dict(year=year, tile=year_tile, cell_index=cell_index, output_filename=output_filename)
+                yield dict(year=year,
+                           tile=year_tile,
+                           cell_index=cell_index,
+                           output_filename=output_filename,
+                           global_attributes=config['global_attributes'],
+                           variable_params=config['variable_params'],
+                           app_config_file=config['app_config_file']
+                          )
 
 
 def make_stacker_config(index, config, export_path=None, **query):
@@ -170,43 +173,31 @@ def get_app_metadata(config):
     return doc
 
 
-def get_nc_params(product):
-    params = {}
-    for measurement in product.measurements.keys():
-        params[measurement] = {
-            'chunksizes': {'x': 200, 'y': 200, 'time': 5,},
-            'dimension_order': ['time', 'x', 'y'],
-            'zlib': True
-        }
-    return params
+def _single_dataset(labels, dataset_list):
+    return dataset_list[0]
 
 
-def do_stack_task(config, task):
-    global_attributes = config['global_attributes']
-    variable_params = config['variable_params']
+def do_stack_task(task):
+    datasets_to_add, datasets_to_update, datasets_to_archive = []
+
+    global_attributes = task['global_attributes']
+    variable_params = task['variable_params']
 
     output_filename = Path(task['output_filename'])
     tile = task['tile']
-    # year = task['year']
-    # cell_index = task['cell_index']
 
+    if task.get('make_new_datasets', False):
+        datasets_to_add = make_datasets(tile, output_filename, task)
+        datasets_to_archive = xr_apply(tile.sources, _single_dataset, dtype='O')
 
-    make_new_datasets = False
-    if make_new_datasets:
-        new_datasets = make_datasets(tile, output_filename, config)
+        output_datasets = datasets_to_add
     else:
-        def single_dataset(labels, dataset_list):
-            return dataset_list[0]
-        new_datasets = xr_apply(tile.sources, single_dataset, dtype='O')
+        datasets_to_update = xr_apply(tile.sources, _single_dataset, dtype='O')
 
-    data = datacube.api.GridWorkflow.load(tile, dask_chunks=dict(time=1))  # TODO: chunk along NetCDF chunk?
-    data['dataset'] = datasets_to_doc(new_datasets)
+        output_datasets = datasets_to_update
 
-    # variables = OrderedDict((variable['name'], Variable(dtype=numpy.dtype(variable['dtype']),
-    #                                                     nodata=variable['nodata'],
-    #                                                     dims=tile.dims,
-    #                                                     units=variable['units']))
-    #                         for variable in tile.product.measurements.values())
+    data = datacube.api.GridWorkflow.load(tile, dask_chunks=dict(time=1))  # TODO: chunk along output NetCDF chunk?
+    data['dataset'] = datasets_to_doc(output_datasets)
 
     nco = create_netcdf_storage_unit(output_filename,
                                      data.crs,
@@ -218,31 +209,35 @@ def do_stack_task(config, task):
     for name, variable in data.data_vars.items():
         try:
             da.store(variable.data, nco[name], lock=True)
-        except ValueError as e:
+        except ValueError:
             nco[name][:] = netcdf_writer.netcdfy_data(variable.values)
         nco.sync()
 
     nco.close()
-    return new_datasets
+    return datasets_to_add, datasets_to_update, datasets_to_archive
 
 
 def process_result(index, result):
-    datasets_to_add, datasets_to_archive = result
+    datasets_to_add, datasets_to_update, datasets_to_archive = result
 
     for dataset in datasets_to_add:
         index.datasets.add(dataset, skip_sources=True)
         _LOG.info('Dataset added')
+
+    for dataset in datasets_to_update:
+        index.datasets.update(dataset)
+        _LOG.info('Dataset updated')
 
     files_to_archive = set()
     for dataset in datasets_to_archive:
         files_to_archive.add(dataset.local_path)
         index.datasets.archive(dataset.id)
 
-    for file_path in files_to_archive:
-        try:
-            file_path.unlink()
-        except OSError as e:
-            _LOG.warning('Could not delete file', e)
+    # for file_path in files_to_archive:
+    #     try:
+    #         file_path.unlink()
+    #     except OSError as e:
+    #         _LOG.warning('Could not delete file: %s', e)
 
 
 def do_nothing(*args, **kwargs):
@@ -261,10 +256,10 @@ def validate_cell_index(ctx, param, value):
 @click.command(name=APP_NAME)
 @datacube.ui.click.pass_index(app_name=APP_NAME)
 @datacube.ui.click.global_cli_options
-@click.option('--cell-index', 'cell_index', help='Limit the process to a particular year',
+@click.option('--cell-index', 'cell_index', help='Limit the process to a particular cell (e.g. 14,-11)',
               callback=validate_cell_index, default=None)
 @click.option('--export-path', 'export_path',
-              help='Write the stacked files to an external location without updating the system',
+              help='Write the stacked files to an external location without updating the index',
               default=None,
               type=click.Path(exists=True, writable=True, file_okay=False))
 @task_app.queue_size_option
@@ -274,8 +269,7 @@ def main(index, config, tasks, executor, queue_size, cell_index, **kwargs):
     click.echo('Starting stacking utility...')
 
     task_func = partial(do_stack_task, config)
-    # process_func = partial(process_result, index) if config['index_datasets'] else do_nothing
-    process_func = do_nothing
+    process_func = partial(process_result, index) if config['index_datasets'] else do_nothing
     task_app.run_tasks(tasks, executor, task_func, process_func, queue_size)
 
 
