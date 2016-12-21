@@ -167,6 +167,14 @@ def test_index_dataset_with_location(index, default_metadata_type):
     stored = index.datasets.get(dataset.id)
     locations = index.datasets.get_locations(dataset)
     assert len(locations) == 1
+    # Remove the location
+    index.datasets.remove_location(dataset, first_file.as_uri())
+    locations = index.datasets.get_locations(dataset)
+    assert len(locations) == 0
+    # Re-add the location
+    index.datasets.add_location(dataset, first_file.as_uri())
+    locations = index.datasets.get_locations(dataset)
+    assert len(locations) == 1
 
     # Ingesting with a new path should add the second one too.
     dataset.local_uri = second_file.as_uri()

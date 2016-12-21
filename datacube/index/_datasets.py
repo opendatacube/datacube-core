@@ -17,6 +17,9 @@ from .exceptions import DuplicateRecordError, UnknownFieldError
 
 _LOG = logging.getLogger(__name__)
 
+# It's a public api, so we can't reorganise old methods.
+# pylint: disable=too-many-public-methods
+
 
 class MetadataTypeResource(object):
     def __init__(self, db):
@@ -757,6 +760,26 @@ class DatasetResource(object):
         """
         with self._db.connect() as connection:
             return connection.get_locations(dataset.id)
+
+    def add_location(self, dataset, uri):
+        """
+        Add a location to the dataset.
+        :param datacube.model.Dataset dataset: dataset
+        :param str uri: fully qualified uri
+        """
+        with self._db.connect() as connection:
+            return connection.ensure_dataset_location(dataset.id, uri)
+
+    def remove_location(self, dataset, uri):
+        """
+        Remove a location from the dataset if it exists.
+        :param datacube.model.Dataset dataset: dataset
+        :param str uri: fully qualified uri
+        :returns: True if a matching one was found
+        """
+        with self._db.connect() as connection:
+            was_removed = connection.remove_location(dataset.id, uri)
+            return was_removed
 
     def _make(self, dataset_res, full_info=False):
         """
