@@ -327,14 +327,14 @@ class Datacube(object):
         measurements = self.index.products.get_by_name(product).lookup_measurements(measurements)
         measurements = set_resampling_method(measurements, resampling)
 
+        result = self.load_data(grouped, geobox, measurements.values(),
+                                fuse_func=fuse_func, dask_chunks=dask_chunks)
         if not stack:
-            return self.load_data(grouped, geobox, measurements.values(),
-                                  fuse_func=fuse_func, dask_chunks=dask_chunks)
+            return result
         else:
             if not isinstance(stack, string_types):
                 stack = 'measurement'
-            return self._get_data_array(grouped, geobox, measurements.values(),
-                                        var_dim_name=stack, fuse_func=fuse_func, dask_chunks=dask_chunks)
+            return result.to_array(dim=stack)
 
     def _get_data_array(self, sources, geobox, measurements, var_dim_name='measurement',
                         fuse_func=None, dask_chunks=None):
