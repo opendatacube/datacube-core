@@ -303,39 +303,37 @@ class Datacube(object):
             assert resolution is None, "'like' and 'resolution' are not supported together"
             assert align is None, "'like' and 'align' are not supported together"
             geobox = like.geobox
-        elif output_crs:
-            if not resolution:
-                raise RuntimeError("Must specify 'resolution' when specifying 'output_crs'")
-            crs = CRS(output_crs)
+        else:
+            if output_crs:
+                if not resolution:
+                    raise RuntimeError("Must specify 'resolution' when specifying 'output_crs'")
+                crs = CRS(output_crs)
+            else:
+                grid_spec = self.index.products.get_by_name(product).grid_spec
+                if not grid_spec or not grid_spec.crs:
+                    raise RuntimeError("Product has no default CRS. Must specify 'output_crs' and 'resolution'")
+                crs = grid_spec.crs
+                if not resolution:
+                    if not grid_spec.resolution:
+                        raise RuntimeError("Product has no default resolution. Must specify 'resolution'")
+                    resolution = grid_spec.resolution
+                    align = align or grid_spec.alignment
             geobox = GeoBox.from_geopolygon(query_geopolygon(**query) or get_bounds(observations, crs),
                                             resolution, crs, align)
-        else:
-            grid_spec = self.index.products.get_by_name(product).grid_spec
-            if not (grid_spec and grid_spec.crs):
-                raise RuntimeError("Product has no CRS. Must specify 'output_crs' and 'resolution'")
-
-            if not resolution:
-                if not (grid_spec and grid_spec.resolution):
-                    raise RuntimeError("Product has no resolution. Must specify 'resolution'")
-                resolution = grid_spec.resolution
-                align = align or grid_spec.alignment
-
-            geobox = GeoBox.from_geopolygon(query_geopolygon(**query) or get_bounds(observations, grid_spec.crs),
-                                            resolution, grid_spec.crs, align)
 
         group_by = query_group_by(**query)
-        sources = self.group_datasets(observations, group_by)
+        grouped = self.group_datasets(observations, group_by)
 
         measurements = self.index.products.get_by_name(product).lookup_measurements(measurements)
         measurements = set_resampling_method(measurements, resampling)
 
         if not stack:
-            return self.load_data(sources, geobox, measurements.values(),
+            return self.load_data(grouped, geobox, measurements.values(),
                                   fuse_func=fuse_func, dask_chunks=dask_chunks)
         else:
             if not isinstance(stack, string_types):
                 stack = 'measurement'
-            return self._get_data_array(sources, geobox, measurements.values(),
+            return self._get_data_array(grouped, geobox, measurements.values(),
                                         var_dim_name=stack, fuse_func=fuse_func, dask_chunks=dask_chunks)
 
     def _get_data_array(self, sources, geobox, measurements, var_dim_name='measurement',
