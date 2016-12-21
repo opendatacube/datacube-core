@@ -73,6 +73,7 @@ def valid_region(images, mask_value=None):
 
     return geom
 
+
 def _to_lists(x):
     """
     Returns lists of lists when given tuples of tuples
@@ -129,17 +130,17 @@ def prepare_dataset(path):
         images_sixty_list = []
         peps_path = os.path.split(images[0])
         peps_path = os.path.split(peps_path[0])
-        gran_path = glob.glob(str(path.parent.joinpath(peps_path[0],'MTD_*.xml' )))[0]
+        gran_path = glob.glob(str(path.parent.joinpath(peps_path[0], 'MTD_*.xml')))[0]
         print(gran_path)
 
         root = ElementTree.parse(gran_path).getroot()
         sensing_time = root.findall('./*/SENSING_TIME')[0].text
-        img_data_path = os.path.join(os.path.split(gran_path)[0],'IMG_DATA')
+        img_data_path = os.path.join(os.path.split(gran_path)[0], 'IMG_DATA')
         print(img_data_path)
         print(images)
         for image in images:
 
-            print(img_data_path, 'IMAGE', image.rsplit( '/', 1)[1])
+            print(img_data_path, 'IMAGE', image.rsplit('/', 1)[1])
             ten_list = ['B02', 'B03', 'B04', 'B08']
             twenty_list = ['B05', 'B06', 'B07', 'B11', 'B12', 'B8A']
             sixty_list = ['B01', 'B09', 'B10']
@@ -150,7 +151,6 @@ def prepare_dataset(path):
             for item in twenty_list:
                 if item in image:
                     images_twenty_list.append(os.path.join(img_data_path, (image.rsplit('/', 1)[1] + ".jp2")))
-
 
             for item in sixty_list:
                 if item in image:
@@ -200,7 +200,7 @@ def prepare_dataset(path):
             'image': {
                 'bands': {
                     image[-2:]: {
-                        #'path': str(Path('GRANULE', granule_id, 'IMG_DATA', image + '.jp2')),
+                        # 'path': str(Path('GRANULE', granule_id, 'IMG_DATA', image + '.jp2')),
                         'path': str(os.path.join(img_data_path, (image.rsplit('/', 1)[1] + ".jp2"))),
                         'layer': 1,
                     } for image in images
