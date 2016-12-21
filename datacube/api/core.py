@@ -336,16 +336,6 @@ class Datacube(object):
                 stack = 'measurement'
             return result.to_array(dim=stack)
 
-    def _get_data_array(self, sources, geobox, measurements, var_dim_name='measurement',
-                        fuse_func=None, dask_chunks=None):
-        data_dict = OrderedDict()
-        for measurement in measurements:
-            name = measurement['name']
-            data_dict[name] = self.measurement_data(sources, geobox, measurement,
-                                                    fuse_func=fuse_func, dask_chunks=dask_chunks)
-
-        return _stack_vars(data_dict, var_dim_name)
-
     def product_observations(self, **kwargs):
         warnings.warn("product_observations() has been renamed to find_datasets() and will eventually be removed",
                       DeprecationWarning)
@@ -660,23 +650,3 @@ def _make_dask_array(sources, geobox, measurement, fuse_func=None, dask_chunks=N
     if irr_chunks != sliced_irr_chunks:
         data = data.rechunk(chunks=(irr_chunks + grid_chunks))
     return data
-
-
-def _stack_vars(data_dict, var_dim_name, stack_name=None):
-    if not data_dict:
-        return xarray.DataArray(None)
-    if len(data_dict) == 1:
-        key, value = data_dict.popitem()
-        value.coords[var_dim_name] = key
-        if stack_name:
-            value.name = stack_name
-        return value
-    labels = list(data_dict.keys())
-
-    stack = xarray.concat(
-        [data_dict[var_name] for var_name in labels],
-        dim=xarray.DataArray(labels, name=var_dim_name, dims=var_dim_name),
-        coords='minimal')
-    if stack_name:
-        stack.name = stack_name
-    return stack
