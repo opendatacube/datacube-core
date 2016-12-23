@@ -5,6 +5,8 @@ Common methods for index integration tests.
 from __future__ import absolute_import
 
 import itertools
+
+import logging
 import os
 import shutil
 
@@ -23,7 +25,7 @@ from datacube.api import API
 from datacube.config import LocalConfig
 from datacube.index._api import Index, _DEFAULT_METADATA_TYPES_PATH
 from datacube.index.postgres import PostgresDb
-from datacube.index.postgres.tables._core import ensure_db, drop_db, METADATA
+from datacube.index.postgres.tables import _core
 
 _SINGLE_RUN_CONFIG_TEMPLATE = """
 [locations]
@@ -87,11 +89,20 @@ def local_config(integration_config_paths):
 @pytest.fixture
 def db(local_config):
     db = PostgresDb.from_config(local_config, application_name='test-run', validate_connection=False)
+
     # Drop and recreate tables so our tests have a clean db.
     with db.connect() as connection:
-        drop_db(connection._connection)
+        _core.drop_db(connection._connection)
     remove_dynamic_indexes()
-    ensure_db(db._engine)
+
+    # Disable informational messages since we're doing this on every test run.
+    previous_level = _core._LOG.getEffectiveLevel()
+    try:
+        _core._LOG.setLevel(logging.WARN)
+        _core.ensure_db(db._engine)
+    finally:
+        _core._LOG.setLevel(previous_level)
+
     return db
 
 
@@ -100,7 +111,7 @@ def remove_dynamic_indexes():
     Clear any dynamically created indexes from the schema.
     """
     # Our normal indexes start with "ix_", dynamic indexes with "dix_"
-    for table in METADATA.tables.values():
+    for table in _core.METADATA.tables.values():
         table.indexes.intersection_update([i for i in table.indexes if not i.name.startswith('dix_')])
 
 
