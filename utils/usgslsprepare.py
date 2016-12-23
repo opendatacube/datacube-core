@@ -31,6 +31,8 @@ _STATIONS = {'023': 'TKSC', '022': 'SGS', '010': 'GNC', '011': 'HOA',
              '007': 'DKI', '006': 'CUB', '005': 'CHM', '004': 'BKT', '009': 'GLC',
              '008': 'EDC', '029': 'JSA', '028': 'COA', '021': 'PFS', '020': 'PAC'}
 
+BANDS = ['coastal_aerosol', 'blue', 'green', 'red', 'nir', 'swir1', 'swir2']
+
 # IMAGE BOUNDARY CODE
 
 
@@ -95,8 +97,6 @@ def _to_lists(x):
 
 # END IMAGE BOUNDARY CODE
 
-BANDS = ['coastal_aerosol', 'blue', 'green', 'red', 'nir', 'swir1', 'swir2']
-
 def band_name(sat, path):
     name = path.stem
     position = name.find('_')
@@ -106,11 +106,11 @@ def band_name(sat, path):
     if re.match(r"sr_band\d+", name[position + 1:]):
         band = int(name[position + 8:])
         if sat == 'LANDSAT_8' or band > 6:
-          band -= 1
+            band -= 1
         layername = BANDS[band]
     else:
         layername = name[position + 1:]
-    
+
     return layername
 
 
