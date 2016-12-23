@@ -215,7 +215,7 @@ measurements:
           values: {0: sea, 1: land}
         cloud_acca:
           bits: 10
-          description: Cloud Shadow (ACCA)
+          description: Cloud (ACCA)
           values: {0: cloud, 1: no_cloud}
         cloud_fmask:
           bits: 11

@@ -5,21 +5,19 @@ metadata_type: telemetry
 metadata:
     platform:
         code: LANDSAT_8
-    instrument:
-        name: OLI
     product_type: satellite_telemetry_data
 
 ---
 
 name: ls8_level1_scene
-description: Landsat 8 Level 1 At-sensor Radiance 25 metre
 metadata_type: eo
+description: Landsat 8 Level 1 OLI-TIRS At-sensor Radiance 25 metre
 
 metadata:
     platform:
         code: LANDSAT_8
     instrument:
-        name: OLI
+        name: OLI_TIRS
     product_type: level1
     format:
         name: GeoTiff
@@ -34,7 +32,7 @@ metadata:
     platform:
         code: LANDSAT_8
     instrument:
-        name: OLI
+        name: OLI_TIRS
     product_type: nbar
     format:
         name: GeoTiff
@@ -106,7 +104,7 @@ metadata:
     platform:
         code: LANDSAT_8
     instrument:
-        name: OLI
+        name: OLI_TIRS
     product_type: nbart
     format:
         name: GeoTiff
@@ -179,7 +177,7 @@ metadata:
     platform:
         code: LANDSAT_8
     instrument:
-        name: ETM
+        name: OLI_TIRS
     product_type: pqa
     format:
         name: GeoTiff
@@ -211,9 +209,13 @@ measurements:
           bits: 4
           description: SWIR1 band is saturated
           values: {0: true, 1: false}
-        tir_saturated:
+        tir1_saturated:
           bits: 5
-          description: Thermal Infrared band is saturated
+          description: Thermal Infrared 1 band is saturated
+          values: {0: true, 1: false}
+        tir2_saturated:
+          bits: 6
+          description: Thermal Infrared 2 band is saturated
           values: {0: true, 1: false}
         swir2_saturated:
           bits: 7
@@ -229,7 +231,7 @@ measurements:
           values: {0: sea, 1: land}
         cloud_acca:
           bits: 10
-          description: Cloud Shadow (ACCA)
+          description: Cloud (ACCA)
           values: {0: cloud, 1: no_cloud}
         cloud_fmask:
           bits: 11
