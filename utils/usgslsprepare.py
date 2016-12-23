@@ -47,7 +47,7 @@ def valid_region(images, mask_value=None):
     for fname in images:
         # ensure formats match
         with rasterio.open(str(fname), 'r') as ds:
-            transform = ds.affine
+            transform = ds.transform
             img = ds.read(1)
 
             if mask_value is not None:
@@ -95,17 +95,22 @@ def _to_lists(x):
 
 # END IMAGE BOUNDARY CODE
 
-def band_name(path):
+BANDS = ['coastal_aerosol', 'blue', 'green', 'red', 'nir', 'swir1', 'swir2']
+
+def band_name(sat, path):
     name = path.stem
     position = name.find('_')
 
     if position == -1:
         raise ValueError('Unexpected tif image in eods: %r' % path)
-    if re.match(r"[Bb]\d+", name[position + 1:]):
-        layername = name[position + 2:]
-
+    if re.match(r"sr_band\d+", name[position + 1:]):
+        band = int(name[position + 8:])
+        if sat == 'LANDSAT_8' or band > 6:
+          band -= 1
+        layername = BANDS[band]
     else:
         layername = name[position + 1:]
+    
     return layername
 
 
@@ -173,7 +178,7 @@ def prep_dataset(fields, path):
 
     start_time = aos
     end_time = los
-    images = {band_name(im_path): {
+    images = {band_name(satellite, im_path): {
         'path': str(im_path.relative_to(path))
     } for im_path in path.glob('*.tif')}
     projdict = get_projection(path / next(iter(images.values()))['path'])
