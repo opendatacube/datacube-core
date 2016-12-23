@@ -689,9 +689,13 @@ class DatasetResource(object):
         :param updates_allowed: Allowed updates
         :return:
         """
+        existing = self.get(dataset.id)
         can_update, safe_changes, unsafe_changes = self.can_update(dataset, updates_allowed)
 
         if not safe_changes and not unsafe_changes:
+            if dataset.local_uri != existing.local_uri:
+                with self._db().begin() as transaction:
+                    transaction.ensure_dataset_location(dataset.id, dataset.local_uri)
             _LOG.info("No changes detected for dataset %s", dataset.id)
             return
 
@@ -710,7 +714,6 @@ class DatasetResource(object):
         sources_tmp = dataset.type.dataset_reader(dataset.metadata_doc).sources
         dataset.type.dataset_reader(dataset.metadata_doc).sources = {}
         try:
-            existing = self.get(dataset.id)
             product = self.types.get_by_name(dataset.type.name)
             with self._db.begin() as transaction:
                 if not transaction.update_dataset(dataset.metadata_doc, dataset.id, product.id):
