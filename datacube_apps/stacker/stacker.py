@@ -89,7 +89,7 @@ def make_stacker_config(index, config, export_path=None, **query):
         config['index_datasets'] = True
 
     if not os.access(config['location'], os.W_OK):
-        _LOG.warn('Current user appears not have write access output location: %s', config['location'])
+        _LOG.warning('Current user appears not have write access output location: %s', config['location'])
 
     chunking = config['storage']['chunking']
     chunking = [chunking[dim] for dim in config['storage']['dimension_order']]

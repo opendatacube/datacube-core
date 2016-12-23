@@ -105,7 +105,7 @@ def validate_year(ctx, param, value):
     try:
         if value is None:
             return None
-        years = map(int, value.split('-', 2))
+        years = [int(y) for y in value.split('-', 2)]
         return datetime(year=years[0], month=1, day=1), datetime(year=years[-1] + 1, month=1, day=1)
     except ValueError:
         raise click.BadParameter('year must be specified as a single year (eg 1996) '
