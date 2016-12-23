@@ -9,6 +9,7 @@ from __future__ import absolute_import
 import datetime
 
 import pytest
+import sys
 from pathlib import Path
 
 from datacube.index.exceptions import DuplicateRecordError
@@ -143,10 +144,31 @@ def test_transactions(index, db, local_config, default_metadata_type):
     assert not index.datasets.has(_telemetry_uuid)
 
 
+def test_get_missing_things(index):
+    """
+    The get(id) methods should return None if the object doesn't exist.
+
+    :type index: datacube.index._api.Index
+    """
+    uuid_ = '18474b58-c8a6-11e6-a4b3-185e0f80a5c0'
+    missing_thing = index.datasets.get(uuid_, include_sources=False)
+    assert missing_thing is None, "get() should return none when it doesn't exist"
+
+    missing_thing = index.datasets.get(uuid_, include_sources=True)
+    assert missing_thing is None, "get() should return none when it doesn't exist"
+
+    id_ = sys.maxint
+    missing_thing = index.metadata_types.get(id_)
+    assert missing_thing is None, "get() should return none when it doesn't exist"
+
+    missing_thing = index.products.get(id_)
+    assert missing_thing is None, "get() should return none when it doesn't exist"
+
+
 def test_index_dataset_with_location(index, default_metadata_type):
     """
     :type index: datacube.index._api.Index
-    :type default_collection: datacube.model.DatasetType
+    :type default_metadata_type: datacube.model.MetadataType
     """
     first_file = Path('/tmp/first/something.yaml').absolute()
     second_file = Path('/tmp/second/something.yaml').absolute()

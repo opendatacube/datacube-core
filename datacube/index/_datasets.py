@@ -555,10 +555,15 @@ class DatasetResource(object):
         """
         with self._db.connect() as connection:
             if not include_sources:
-                return self._make(connection.get_dataset(id_), full_info=True)
+                dataset = connection.get_dataset(id_)
+                return self._make(dataset, full_info=True) if dataset else None
 
             datasets = {result['id']: (self._make(result, full_info=True), result)
                         for result in connection.get_dataset_sources(id_)}
+
+        if not datasets:
+            # No dataset found
+            return None
 
         for dataset, result in datasets.values():
             dataset.metadata_doc['lineage']['source_datasets'] = {
