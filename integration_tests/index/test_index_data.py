@@ -157,7 +157,7 @@ def test_get_missing_things(index):
     missing_thing = index.datasets.get(uuid_, include_sources=True)
     assert missing_thing is None, "get() should return none when it doesn't exist"
 
-    id_ = sys.maxint
+    id_ = sys.maxsize
     missing_thing = index.metadata_types.get(id_)
     assert missing_thing is None, "get() should return none when it doesn't exist"
 
