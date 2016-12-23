@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+from datetime import datetime
 import logging
 import click
 import cachetools
@@ -89,6 +90,26 @@ task_app_options = dc_ui.compose(
     dc_ui.log_queries_option,
     dc_ui.executor_cli_options,
 )
+
+
+def validate_cell_index(ctx, param, value):
+    try:
+        if value is None:
+            return None
+        return tuple(int(i) for i in value.split(',', 2))
+    except ValueError:
+        raise click.BadParameter('cell_index must be specified in the form "14,-11"')
+
+
+def validate_year(ctx, param, value):
+    try:
+        if value is None:
+            return None
+        years = map(int, value.split('-', 2))
+        return datetime(year=years[0], month=1, day=1), datetime(year=years[-1] + 1, month=1, day=1)
+    except ValueError:
+        raise click.BadParameter('year must be specified as a single year (eg 1996) '
+                                 'or as an inclusive range (eg 1996-2001)')
 
 
 def task_app(make_config, make_tasks):

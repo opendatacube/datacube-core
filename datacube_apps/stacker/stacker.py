@@ -26,9 +26,6 @@ from datacube.ui import task_app
 from datacube.ui.click import to_pathlib
 
 
-dask.set_options(get=dask.async.get_sync)
-
-
 _LOG = logging.getLogger(__name__)
 
 
@@ -178,7 +175,9 @@ def _single_dataset(labels, dataset_list):
 
 
 def do_stack_task(task):
-    datasets_to_add, datasets_to_update, datasets_to_archive = []
+    datasets_to_add = None
+    datasets_to_update = None
+    datasets_to_archive = None
 
     global_attributes = task['global_attributes']
     variable_params = task['variable_params']
@@ -208,7 +207,8 @@ def do_stack_task(task):
 
     for name, variable in data.data_vars.items():
         try:
-            da.store(variable.data, nco[name], lock=True)
+            with dask.set_options(get=dask.async.get_sync):
+                da.store(variable.data, nco[name], lock=True)
         except ValueError:
             nco[name][:] = netcdf_writer.netcdfy_data(variable.values)
         nco.sync()
@@ -244,20 +244,12 @@ def do_nothing(*args, **kwargs):
     pass
 
 
-def validate_cell_index(ctx, param, value):
-    try:
-        if value is None:
-            return None
-        return tuple(int(i) for i in value.split(',', 2))
-    except ValueError:
-        raise click.BadParameter('cell_index must be specified in the form "14,-11"')
-
-
 @click.command(name=APP_NAME)
 @datacube.ui.click.pass_index(app_name=APP_NAME)
 @datacube.ui.click.global_cli_options
 @click.option('--cell-index', 'cell_index', help='Limit the process to a particular cell (e.g. 14,-11)',
-              callback=validate_cell_index, default=None)
+              callback=task_app.validate_cell_index, default=None)
+@click.option('--year', 'time', callback=task_app.validate_year, help='Limit the process to a particular year')
 @click.option('--export-path', 'export_path',
               help='Write the stacked files to an external location without updating the index',
               default=None,
@@ -265,7 +257,7 @@ def validate_cell_index(ctx, param, value):
 @task_app.queue_size_option
 @task_app.task_app_options
 @task_app.task_app(make_config=make_stacker_config, make_tasks=make_stacker_tasks)
-def main(index, config, tasks, executor, queue_size, cell_index, **kwargs):
+def main(index, config, tasks, executor, queue_size, **kwargs):
     click.echo('Starting stacking utility...')
 
     task_func = partial(do_stack_task, config)
