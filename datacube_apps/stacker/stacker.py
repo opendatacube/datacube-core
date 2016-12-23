@@ -7,7 +7,6 @@ from __future__ import absolute_import, print_function
 import logging
 import re
 import os
-from future.utils import iteritems
 from functools import partial
 
 import click
@@ -61,7 +60,7 @@ def make_stacker_tasks(index, config, **kwargs):
 
     gw = datacube.api.GridWorkflow(index=index, product=product.name)
     cells = gw.list_cells(product=product.name, **query)
-    for (cell_index, tile) in iteritems(cells):
+    for (cell_index, tile) in cells.items():
         for (year, year_tile) in _split_by_year(tile):
             stacked, unstacked = _get_stacked_datasets(year_tile, year, filename_timestamp_pattern)
             msg = _stacked_log_entry(stacked, unstacked).format(stacked=len(stacked), unstacked=len(unstacked))
