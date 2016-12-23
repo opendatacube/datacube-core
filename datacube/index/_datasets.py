@@ -692,16 +692,11 @@ class DatasetResource(object):
         existing = self.get(dataset.id)
         can_update, safe_changes, unsafe_changes = self.can_update(dataset, updates_allowed)
 
-        existing = self.get(dataset.id)
-
         if not safe_changes and not unsafe_changes:
             if dataset.local_uri != existing.local_uri:
                 with self._db().begin() as transaction:
                     transaction.ensure_dataset_location(dataset.id, dataset.local_uri)
             _LOG.info("No changes detected for dataset %s", dataset.id)
-            if dataset.local_uri != existing.local_uri:
-                with self._db.begin() as transaction:
-                    transaction.ensure_dataset_location(dataset.id, dataset.local_uri)
             return
 
         if not can_update:
