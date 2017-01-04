@@ -675,7 +675,7 @@ class DatasetResource(object):
             # can always add more metadata
             tuple(): changes.allow_extension,
         }
-        allowed.update(updates_allowed)
+        allowed.update(updates_allowed or {})
 
         doc_changes = get_doc_changes(existing.metadata_doc, jsonify_document(dataset.metadata_doc))
         good_changes, bad_changes = changes.classify_changes(doc_changes, allowed)
@@ -694,7 +694,7 @@ class DatasetResource(object):
 
         if not safe_changes and not unsafe_changes:
             if dataset.local_uri != existing.local_uri:
-                with self._db().begin() as transaction:
+                with self._db.begin() as transaction:
                     transaction.ensure_dataset_location(dataset.id, dataset.local_uri)
             _LOG.info("No changes detected for dataset %s", dataset.id)
             return
