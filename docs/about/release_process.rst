@@ -1,6 +1,6 @@
 .. _release_process:
 
-Release Process
+Build a version
 ===============
 
 #. Pick a release name for the next version
@@ -15,9 +15,6 @@ Release Process
 #. Tag the branch
     Use the format of ``datacube-major.minor.bugfix``.
 
-#. Merge changes leading up to the release into the `stable` branch
-    This will also update the `stable` docs
-
 #. Draft a new release on the Datacube_ GitHub repository
     Include the items added to the release notes in step 2.
 
@@ -25,16 +22,28 @@ Release Process
     Move any open issues to the next version.
 
 #. Install the datacube module on `raijin`
-    Follow the instructions on installing the **Data Cube** module on the `Datacube Environment`_ repository.
+    Follow the instructions on installing the **Data Cube** module on the `Datacube Environment`_ repository,
+    but do not yet make it the default module version.
 
-#. Notify the community of the release using the Datacube Central mailing list
-    Ask Simon Oliver for the MailChimp details.
+Marking it stable
+=================
+
+Once/if a built version has been tested on Raijin, found to be stable, and the team agrees, we make it the new default
+stable version.
+
+#. Merge changes leading up to the release into the `stable` branch
+    This will also update the `stable` docs
 
 #. Upload the build to PyPi.
     .. code-block:: bash
-
         python setup.py sdist bdist_wheel
         twine upload dist/*
+
+#. Update the default version on `raijin`
+    Follow the instructions under **Update default version** in the `Datacube Environment`_ repository
+
+#. Notify the community of the release using the Datacube Central mailing list
+    Ask Simon Oliver for the MailChimp details.
 
 
 .. _Travis: https://travis-ci.org/data-cube/agdc-v2
