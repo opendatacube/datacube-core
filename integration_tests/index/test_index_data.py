@@ -67,7 +67,7 @@ _EXAMPLE_LS7_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('ls7-nbar-exampl
 
 
 def test_archive_datasets(index, db, local_config, default_metadata_type):
-    dataset_type = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
+    dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
     with db.begin() as transaction:
         was_inserted = transaction.insert_dataset(
             _telemetry_dataset,
@@ -95,7 +95,7 @@ def test_index_duplicate_dataset(index, db, local_config, default_metadata_type)
     :type index: datacube.index._api.Index
     :type db: datacube.index.postgres._api.PostgresDb
     """
-    dataset_type = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
+    dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
     assert not index.datasets.has(_telemetry_uuid)
 
     with db.begin() as transaction:
@@ -126,7 +126,7 @@ def test_transactions(index, db, local_config, default_metadata_type):
     """
     assert not index.datasets.has(_telemetry_uuid)
 
-    dataset_type = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
+    dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
     with db.begin() as transaction:
         was_inserted = transaction.insert_dataset(
             _telemetry_dataset,
@@ -173,7 +173,7 @@ def test_index_dataset_with_location(index, default_metadata_type):
     first_file = Path('/tmp/first/something.yaml').absolute()
     second_file = Path('/tmp/second/something.yaml').absolute()
 
-    type_ = index.datasets.types.add_document(_pseudo_telemetry_dataset_type)
+    type_ = index.products.add_document(_pseudo_telemetry_dataset_type)
     dataset = Dataset(type_, _telemetry_dataset, first_file.as_uri())
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)

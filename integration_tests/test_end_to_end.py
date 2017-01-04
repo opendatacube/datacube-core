@@ -232,7 +232,7 @@ def check_open_with_dc(index):
 
 def check_open_with_grid_workflow(index):
     type_name = 'ls5_nbar_albers'
-    dt = index.datasets.types.get_by_name(type_name)
+    dt = index.products.get_by_name(type_name)
 
     from datacube.api.grid_workflow import GridWorkflow
     gw = GridWorkflow(index, dt.grid_spec)

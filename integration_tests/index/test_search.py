@@ -22,7 +22,7 @@ _EXAMPLE_LS7_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('ls7-nbar-exampl
 
 @pytest.fixture
 def pseudo_telemetry_type(index, default_metadata_type):
-    index.datasets.types.add_document({
+    index.products.add_document({
         'name': 'ls8_telemetry',
         'description': 'telemetry test',
         'metadata': {
@@ -39,7 +39,7 @@ def pseudo_telemetry_type(index, default_metadata_type):
         },
         'metadata_type': default_metadata_type.name  # 'eo'
     })
-    return index.datasets.types.get_by_name('ls8_telemetry')
+    return index.products.get_by_name('ls8_telemetry')
 
 
 @pytest.fixture

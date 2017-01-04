@@ -170,7 +170,7 @@ def check_open_with_api(index):
     dc = Datacube(index=index)
 
     input_type_name = 'ls5_nbar_albers'
-    input_type = dc.index.datasets.types.get_by_name(input_type_name)
+    input_type = dc.index.products.get_by_name(input_type_name)
 
     geobox = GeoBox(200, 200, Affine(25, 0.0, 1500000, 0.0, -25, -3900000), CRS('EPSG:3577'))
     observations = dc.find_datasets(product='ls5_nbar_albers', geopolygon=geobox.extent)
