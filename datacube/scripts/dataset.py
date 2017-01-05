@@ -180,10 +180,10 @@ def update_cmd(index, allow_any, match_rules, dtype, auto_match, dry_run, datase
             try:
                 index.datasets.update(dataset, updates_allowed=updates)
                 success += 1
-                echo('Updated "%s"' % dataset.id)
+                echo('Updated %s' % dataset.id)
             except ValueError as e:
                 fail += 1
-                echo('Failed to update "%s": %s' % (dataset.id, e))
+                echo('Failed to update %s: %s' % (dataset.id, e))
         else:
             if update_dry_run(index, updates, dataset):
                 success += 1
@@ -193,7 +193,11 @@ def update_cmd(index, allow_any, match_rules, dtype, auto_match, dry_run, datase
 
 
 def update_dry_run(index, updates, dataset):
-    can_update, safe_changes, unsafe_changes = index.datasets.can_update(dataset, updates_allowed=updates)
+    try:
+        can_update, safe_changes, unsafe_changes = index.datasets.can_update(dataset, updates_allowed=updates)
+    except ValueError as e:
+        echo('Cannot update %s: %s' % (dataset.id, e))
+        return False
 
     for offset, old_val, new_val in safe_changes:
         echo('Safe change in %s:%s from %r to %r' % (dataset.id, '.'.join(offset), old_val, new_val))
