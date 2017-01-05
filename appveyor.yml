@@ -17,9 +17,9 @@ environment:
     # For Python versions available on Appveyor, see
     # http://www.appveyor.com/docs/installed-software#python
 
-    - MINICONDA: C:\\Miniconda27-x64
+    - MINICONDA: C:\\Miniconda
       PYTHON_VERSION: 2.7
-      PYTHON_ARCH: 64
+      PYTHON_ARCH: 32
     - MINICONDA: C:\\Miniconda35-x64
       PYTHON_VERSION: 3.5
       PYTHON_ARCH: 64
@@ -53,12 +53,12 @@ install:
 
 
 
-  - conda config --append channels conda-forge
-  - conda config --set channel_priority false --system
+  - conda config --prepend channels conda-forge
+#  - conda config --set channel_priority false --system
   - conda config --set show_channel_urls true --system
   - conda update --all -y
 #  - conda env create --file .appveyor\environment.yaml
-  - conda env create --file .appveyor\environment.yaml
+  - conda env create --file .appveyor\environment.yaml python=%PYTHON_VERSION%
   - activate agdc
 
 #  - "%CMD_IN_ENV% pip wheel --cache-dir=C:\\tmp\\pip numpy"
@@ -81,7 +81,7 @@ test_script:
   - conda --version
   - pep8 tests integration_tests --max-line-length 120
 
-  - pylint -j 4 --reports no datacube datacube_apps
+  - pylint -j 4 --rcfile=pylintrc --reports no datacube datacube_apps
 
   # Run tests, save coverage and test results
   - py.test --junit-xml=junit-results.xml --cov datacube --durations=5 datacube datacube_apps tests integration_tests
