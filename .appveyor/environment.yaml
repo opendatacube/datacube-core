@@ -1,0 +1,51 @@
+name: agdc
+dependencies:
+- bottleneck
+- cachetools
+- click
+- cython
+- dask
+- distributed
+- ephem
+- fiona
+- future
+- gdal >=1.9
+- geopandas
+- glueviz
+- hypothesis
+- ipdb
+- jplephem
+- jsonschema
+- matplotlib
+- mkl-service
+- mock
+- netcdf4
+- numexpr
+- numpy
+- pandas
+- pathlib
+- pathlib2
+- pep8
+- pip
+- plotly
+- psutil
+- psycopg2
+- pylint
+- pytables
+- pytest
+- pytest-cov
+- python-dateutil
+- pyyaml
+- rasterio >=0.34
+- rtree
+- scikit-image
+- scikit-learn
+- scipy
+- shapely
+- singledispatch
+- sqlalchemy
+- xarray
+- pip:
+  - ciso8601
+  - pypeg2
+
