@@ -473,7 +473,7 @@ class Datacube(object):
         return Datacube.load_data(*args, **kwargs)
 
     @staticmethod
-    def load_data(sources, geobox, measurements, fuse_func=None, dask_chunks=None):
+    def load_data(sources, geobox, measurements, fuse_func=None, dask_chunks=None, ignore_errors=False):
         """
         Load data from :meth:`group_datasets` into an :class:`xarray.Dataset`.
 
@@ -504,7 +504,8 @@ class Datacube(object):
             def data_func(measurement):
                 data = numpy.full(sources.shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
                 for index, datasets in numpy.ndenumerate(sources.values):
-                    _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func)
+                    _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
+                                      ignore_errors=ignore_errors)
                 return data
         else:
             def data_func(measurement):
@@ -561,14 +562,15 @@ def fuse_lazy(datasets, geobox, measurement, fuse_func=None, prepend_dims=0):
     return data.reshape(prepend_shape + geobox.shape)
 
 
-def _fuse_measurement(dest, datasets, geobox, measurement, fuse_func=None):
+def _fuse_measurement(dest, datasets, geobox, measurement, ignore_errors=False, fuse_func=None):
     reproject_and_fuse([DatasetSource(dataset, measurement['name']) for dataset in datasets],
                        dest,
                        geobox.affine,
                        geobox.crs,
                        dest.dtype.type(measurement['nodata']),
                        resampling=measurement.get('resampling_method', 'nearest'),
-                       fuse_func=fuse_func)
+                       fuse_func=fuse_func,
+                       ignore_errors=ignore_errors)
 
 
 def get_bounds(datasets, crs):

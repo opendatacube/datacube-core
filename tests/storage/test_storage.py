@@ -5,6 +5,7 @@ import netCDF4
 from affine import Affine, identity
 import xarray
 import mock
+import pytest
 
 from datacube.model import GeoBox, CRS
 from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse
@@ -86,7 +87,8 @@ def test_mixed_result_when_first_source_partially_empty():
     assert (output_data == [[1, 1], [2, 2]]).all()
 
 
-def _mock_datasetsource(value, crs, shape):
+def _mock_datasetsource(value, crs=None, shape=(2, 2)):
+    crs = crs or mock.MagicMock()
     dataset_source = mock.MagicMock()
     rio_reader = dataset_source.open.return_value.__enter__.return_value
     rio_reader.crs = crs
@@ -99,3 +101,45 @@ def _mock_datasetsource(value, crs, shape):
     #     dest[:] = value
     # rio_reader.reproject.side_effect = fill_array
     return dataset_source
+
+
+def test_read_from_broken_source():
+    crs = mock.MagicMock()
+    shape = (2, 2)
+    no_data = -1
+
+    source1 = _mock_datasetsource([[1, 1], [no_data, no_data]], crs=crs, shape=shape)
+    source2 = _mock_datasetsource([[2, 2], [2, 2]], crs=crs, shape=shape)
+    sources = [source1, source2]
+
+    rio_reader = source1.open.return_value.__enter__.return_value
+    rio_reader.read.side_effect = OSError('Read or write failed')
+
+    output_data = numpy.full(shape, fill_value=no_data, dtype='int16')
+
+    # Check exception is raised
+    with pytest.raises(OSError):
+        reproject_and_fuse(sources, output_data, dst_transform=identity,
+                           dst_projection=crs, dst_nodata=no_data)
+
+    # Check can ignore errors
+    reproject_and_fuse(sources, output_data, dst_transform=identity,
+                       dst_projection=crs, dst_nodata=no_data, ignore_errors=True)
+
+    assert (output_data == [[2, 2], [2, 2]]).all()
+
+
+def _create_broken_netcdf(tmpdir):
+    import os
+    output_path = str(tmpdir / 'broken_netcdf_file.nc')
+    with netCDF4.Dataset('broken_netcdf_file.nc', 'w') as nco:
+        nco.createDimension('x', 50)
+        nco.createDimension('y', 50)
+        nco.createVariable('blank', 'int16', ('y', 'x'))
+
+    with open(output_path, 'rb+') as filehandle:
+        filehandle.seek(-3, os.SEEK_END)
+        filehandle.truncate()
+
+    with netCDF4.Dataset(output_path) as nco:
+        blank = nco.data_vars['blank']

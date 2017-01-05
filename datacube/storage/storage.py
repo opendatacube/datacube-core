@@ -96,16 +96,19 @@ def _no_fractional_translate(affine, eps=0.01):
     return abs(affine.c % 1.0) < eps and abs(affine.f % 1.0) < eps
 
 
-def reproject(source, dest, dst_transform, dst_nodata, dst_projection, resampling):
+def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, resampling):
     """
     Read from `source` into `dest`, reprojecting if necessary.
+
+    :param BaseRasterDataSource source: Data source
+    :param numpy.ndarray dest: Data destination
     """
     with source.open() as src:
         array_transform = ~src.transform * dst_transform
         if (src.crs == dst_projection and _no_scale(array_transform) and
                 (resampling == Resampling.nearest or _no_fractional_translate(array_transform))):
-            dydx = (int(round(array_transform.f)), int(round(array_transform.c)))
-            read, write, shape = zip(*map(_calc_offsets, dydx, src.shape, dest.shape))
+            dy_dx = int(round(array_transform.f)), int(round(array_transform.c))
+            read, write, shape = zip(*map(_calc_offsets, dy_dx, src.shape, dest.shape))
 
             dest.fill(dst_nodata)
             if all(shape):
@@ -126,10 +129,28 @@ def reproject(source, dest, dst_transform, dst_nodata, dst_projection, resamplin
                           NUM_THREADS=OPTIONS['reproject_threads'])
 
 
+@contextmanager
+def ignore_if(ignore_errors):
+    """Ignore Exceptions raised within this block if ignore_errors is True"""
+    if ignore_errors:
+        try:
+            yield
+        except OSError as e:
+            _LOG.warning('Ignoring Exception: %s', e)
+    else:
+        yield
+
+
 def reproject_and_fuse(sources, destination, dst_transform, dst_projection, dst_nodata,
-                       resampling='nearest', fuse_func=None):
+                       resampling='nearest', fuse_func=None, ignore_errors=False):
     """
     Reproject and fuse `sources` into a 2D numpy array `destination`.
+
+    :param List[BaseRasterDataSource] sources: Data sources to open and read from
+    :param numpy.ndarray destination: ndarray of appropriate size to read data into
+    :type resampling: str
+    :type fuse_func: callable or None
+    :param bool ignore_errors: Carry on in the face of adversity and failing reads.
     """
     assert len(destination.shape) == 2
 
@@ -144,19 +165,20 @@ def reproject_and_fuse(sources, destination, dst_transform, dst_projection, dst_
 
     fuse_func = fuse_func or copyto_fuser
 
+    destination.fill(dst_nodata)
     if len(sources) == 0:
-        destination.fill(dst_nodata)
         return destination
     elif len(sources) == 1:
-        reproject(sources[0], destination, dst_transform, dst_nodata, dst_projection, resampling)
+        with ignore_if(ignore_errors):
+            read_from_source(sources[0], destination, dst_transform, dst_nodata, dst_projection, resampling)
         return destination
     else:
-        destination.fill(dst_nodata)
-
+        # Muitiple sources, we need to fuse them together into a single array
         buffer_ = numpy.empty(destination.shape, dtype=destination.dtype)
         for source in sources:
-            reproject(source, buffer_, dst_transform, dst_nodata, dst_projection, resampling)
-            fuse_func(destination, buffer_)
+            with ignore_if(ignore_errors):
+                read_from_source(source, buffer_, dst_transform, dst_nodata, dst_projection, resampling)
+                fuse_func(destination, buffer_)
 
         return destination
 
@@ -233,7 +255,7 @@ class OverrideBandDataSource(object):
 
 class BaseRasterDataSource(object):
     """
-    Interface used by fuse_sources and reproject
+    Interface used by fuse_sources and read_from_source
     """
     def __init__(self, filename, nodata):
         self.filename = filename
@@ -250,6 +272,7 @@ class BaseRasterDataSource(object):
 
     @contextmanager
     def open(self):
+        """Context manager which returns a `BandDataSource`"""
         try:
             _LOG.debug("opening %s", self.filename)
             with rasterio.open(self.filename) as src:
@@ -281,9 +304,9 @@ class BaseRasterDataSource(object):
             raise e
 
 
-class BasicRasterDataSource(BaseRasterDataSource):
+class RasterFileDataSource(BaseRasterDataSource):
     def __init__(self, filename, bandnumber, nodata=None, crs=None, transform=None):
-        super(BasicRasterDataSource, self).__init__(filename, nodata)
+        super(RasterFileDataSource, self).__init__(filename, nodata)
         self.bandnumber = bandnumber
         self.crs = crs
         self.transform = transform
@@ -351,6 +374,7 @@ def _url2rasterio(url_str, fmt, layer):
 
 
 class DatasetSource(BaseRasterDataSource):
+    """Data source for reading from a Datacube Dataset"""
     def __init__(self, dataset, measurement_id):
         self._dataset = dataset
         self._measurement = dataset.measurements[measurement_id]
@@ -399,6 +423,12 @@ def create_netcdf_storage_unit(filename,
 
     :param pathlib.Path filename: filename to write to
     :param datacube.model.CRS crs: Datacube CRS object defining the spatial projection
+    :param dict coordinates: Dict of named `datacube.model.Coordinate`s to create
+    :param dict variables: Dict of named `datacube.model.Variable`s to create
+    :param dict variable_params:
+        Dict of dicts, with keys matching variable names, of extra parameters for variables
+    :param dict global_attributes: named global attributes to add to output file
+    :param dict netcdfparams: Extra parameters to use when creating netcdf file
     :return: open netCDF4.Dataset object, ready for writing to
     """
     filename = Path(filename)
