@@ -898,7 +898,7 @@ class PostgresDbAPI(object):
 
         :returns bool: Was the location deleted?
         """
-        scheme, body = uri.split(':')
+        scheme, body = _split_uri(uri)
         res = self._connection.execute(
             delete(DATASET_LOCATION).where(
                 and_(
