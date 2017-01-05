@@ -304,7 +304,7 @@ class GridWorkflow(object):
         return self.tile_sources(observations, query_group_by(**query))
 
     @staticmethod
-    def load(tile, measurements=None, dask_chunks=None, fuse_func=None, resampling=None, ignore_errors=False):
+    def load(tile, measurements=None, dask_chunks=None, fuse_func=None, resampling=None, skip_broken_datasets=False):
         """
         Load data for a cell/tile.
 
@@ -348,7 +348,7 @@ class GridWorkflow(object):
         measurements = set_resampling_method(measurements, resampling)
 
         dataset = Datacube.load_data(tile.sources, tile.geobox, measurements.values(), dask_chunks=dask_chunks,
-                                     fuse_func=fuse_func, ignore_errors=ignore_errors)
+                                     fuse_func=fuse_func, skip_broken_datasets=skip_broken_datasets)
 
         return dataset
 

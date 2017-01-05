@@ -124,7 +124,7 @@ def test_read_from_broken_source():
 
     # Check can ignore errors
     reproject_and_fuse(sources, output_data, dst_transform=identity,
-                       dst_projection=crs, dst_nodata=no_data, ignore_errors=True)
+                       dst_projection=crs, dst_nodata=no_data, skip_broken_datasets=True)
 
     assert (output_data == [[2, 2], [2, 2]]).all()
 

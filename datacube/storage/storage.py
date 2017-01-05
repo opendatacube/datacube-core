@@ -142,7 +142,7 @@ def ignore_if(ignore_errors):
 
 
 def reproject_and_fuse(sources, destination, dst_transform, dst_projection, dst_nodata,
-                       resampling='nearest', fuse_func=None, ignore_errors=False):
+                       resampling='nearest', fuse_func=None, skip_broken_datasets=False):
     """
     Reproject and fuse `sources` into a 2D numpy array `destination`.
 
@@ -150,7 +150,7 @@ def reproject_and_fuse(sources, destination, dst_transform, dst_projection, dst_
     :param numpy.ndarray destination: ndarray of appropriate size to read data into
     :type resampling: str
     :type fuse_func: callable or None
-    :param bool ignore_errors: Carry on in the face of adversity and failing reads.
+    :param bool skip_broken_datasets: Carry on in the face of adversity and failing reads.
     """
     assert len(destination.shape) == 2
 
@@ -169,14 +169,14 @@ def reproject_and_fuse(sources, destination, dst_transform, dst_projection, dst_
     if len(sources) == 0:
         return destination
     elif len(sources) == 1:
-        with ignore_if(ignore_errors):
+        with ignore_if(skip_broken_datasets):
             read_from_source(sources[0], destination, dst_transform, dst_nodata, dst_projection, resampling)
         return destination
     else:
         # Muitiple sources, we need to fuse them together into a single array
         buffer_ = numpy.empty(destination.shape, dtype=destination.dtype)
         for source in sources:
-            with ignore_if(ignore_errors):
+            with ignore_if(skip_broken_datasets):
                 read_from_source(source, buffer_, dst_transform, dst_nodata, dst_projection, resampling)
                 fuse_func(destination, buffer_)
 
