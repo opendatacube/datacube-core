@@ -1,7 +1,6 @@
 name: agdc
 dependencies:
-- python >=3.5
-- pathlib
+- python=2.7
 - pyyaml
 - sqlalchemy
 - python-dateutil
@@ -25,3 +24,6 @@ dependencies:
 - pip:
   - pypeg2
   - pytest-cov # testing
+  - pathlib
+  - pytest-logging
+  - pytest-faulthandler

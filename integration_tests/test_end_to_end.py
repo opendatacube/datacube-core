@@ -158,6 +158,7 @@ def check_open_with_dc(index):
 
     data_array = dc.load(product='ls5_nbar_albers', measurements=['blue'], stack='variable')
     assert data_array.shape
+    assert (data_array.variable != -999).any()
 
     data_array = dc.load(product='ls5_nbar_albers', measurements=['blue'], time='1992-03-23T23:14:25.500000')
     assert data_array['blue'].shape[0] == 1
@@ -212,6 +213,7 @@ def check_open_with_dc(index):
     resamp = ['nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average']
     results = {}
 
+    # WTF
     def calc_max_change(da):
         midline = int(da.shape[0] * 0.5)
         a = int(abs(da[midline, :-1].data - da[midline, 1:].data).max())

@@ -18,11 +18,11 @@ environment:
     # http://www.appveyor.com/docs/installed-software#python
 
     - MINICONDA: C:\\Miniconda
-      PYTHON_VERSION: 2.7
-      PYTHON_ARCH: 32
+      PYTHON_VERSION: 27
+#      PYTHON_ARCH: 32
     - MINICONDA: C:\\Miniconda35-x64
-      PYTHON_VERSION: 3.5
-      PYTHON_ARCH: 64
+      PYTHON_VERSION: 35
+#      PYTHON_ARCH: 64
 
 services:
   - postgresql
@@ -44,31 +44,35 @@ install:
   - ps: ls
 
   - conda config --prepend channels conda-forge
-  - conda config --set show_channel_urls true --system
+  - conda config --show-sources
+  - conda config --show
   - conda update --all -y
-  - conda env create --file .appveyor\environment.yaml python=%PYTHON_VERSION%
+  - conda env create -n agdc --file .appveyor\environment_py%PYTHON_VERSION%.yaml
   - activate agdc
 
 
 before_test:
   - createdb agdcintegration
-
-test_script:
-  - cd
-  - dir
-  - systeminfo
+  # Print a bunch of useful information
   - pip --version
   - python --version
   - pylint --version
   - pep8 --version
   - py.test --version
   - conda --version
+  - cd
+  - dir
+  - psql -c "SELECT current_setting('TIMEZONE');"
+  - systeminfo
+  - conda env export
+
+test_script:
   - pep8 tests integration_tests --max-line-length 120
 
   - pylint -j 4 --reports no datacube datacube_apps
 
   # Run tests, save coverage and test results
-  - py.test --junit-xml=junit-results.xml --cov datacube --durations=5 datacube datacube_apps tests integration_tests
+  - py.test -s -vvvv --junit-xml=junit-results.xml --cov datacube --durations=5 datacube datacube_apps tests integration_tests
 
   # upload results to AppVeyor
   - ps: $wc = New-Object 'System.Net.WebClient'
