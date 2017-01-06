@@ -1,51 +1,27 @@
 name: agdc
 dependencies:
-- bottleneck
-- cachetools
-- click
-- cython
-- dask
-- distributed
-- ephem
-- fiona
-- future
-- gdal >=1.9
-- geopandas
-- glueviz
-- hypothesis
-- ipdb
-- jplephem
-- jsonschema
-- matplotlib
-- mkl-service
-- mock
-- netcdf4
-- numexpr
-- numpy
-- pandas
+- python >=3.5
 - pathlib
-- pathlib2
-- pep8
-- pip
-- plotly
-- psutil
-- psycopg2
-- pylint
-- pytables
-- pytest
-- pytest-cov
-- python-dateutil
 - pyyaml
-- rasterio >=0.34
-- rtree
-- scikit-image
-- scikit-learn
-- scipy
-- shapely
-- singledispatch
 - sqlalchemy
+- python-dateutil
+- jsonschema
+- cachetools
+- numpy
+- numexpr
+- rasterio >=0.34
+- singledispatch
+- netcdf4
+- psycopg2
+- gdal >=1.9
+- dask
 - xarray
+- pylint # testing
+- pep8 # testing
+- fiona # movie generator app
+- mock # testing
+- hypothesis # testing
+- matplotlib # pixel drill app
 - pip:
-  - ciso8601
   - pypeg2
-
+  - pytest-cov # testing

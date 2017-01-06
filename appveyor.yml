@@ -24,17 +24,13 @@ environment:
       PYTHON_VERSION: 3.5
       PYTHON_ARCH: 64
 
-#cache: C:\tmp\pip
-
 services:
   - postgresql
 
-
 init:
   - ECHO %PYTHON% %PGUSER% %PGPASSWORD%
-#  - SET PATH=%PYTHON%;%PYTHON%\Scripts;%POSTGRES%;%PATH%
-  - set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%POSTGRES%;%PATH%
-#  - ps: mkdir c:\tmp\pip -force
+
+  - set PATH=%MINICONDA%;%MINICONDA%\Scripts;%POSTGRES%;%PATH%
 
 install:
   - SET
@@ -47,25 +43,12 @@ install:
   - ECHO "Local Path"
   - ps: ls
 
-  # Upgrade to the latest version of pip to avoid it displaying warnings
-  # about it being out of date.
-#  - pip install --disable-pip-version-check --user --upgrade pip
-
-
-
   - conda config --prepend channels conda-forge
-#  - conda config --set channel_priority false --system
   - conda config --set show_channel_urls true --system
   - conda update --all -y
-#  - conda env create --file .appveyor\environment.yaml
   - conda env create --file .appveyor\environment.yaml python=%PYTHON_VERSION%
   - activate agdc
 
-#  - "%CMD_IN_ENV% pip wheel --cache-dir=C:\\tmp\\pip numpy"
-#  - "%CMD_IN_ENV% pip install --cache-dir=C:\\tmp\\pip -r .appveyor/requirements.txt"
-#  - "%CMD_IN_ENV% pip install --cache-dir=C:\\tmp\\pip --upgrade click pytest pytest-cov mock pep8 pylint==1.5
-#  coveralls"
-#  - "%CMD_IN_ENV% pip install --cache-dir=C:\\tmp\\pip -e ."
 
 before_test:
   - createdb agdcintegration
@@ -73,6 +56,7 @@ before_test:
 test_script:
   - cd
   - dir
+  - systeminfo
   - pip --version
   - python --version
   - pylint --version
@@ -81,7 +65,7 @@ test_script:
   - conda --version
   - pep8 tests integration_tests --max-line-length 120
 
-  - pylint -j 4 --rcfile=pylintrc --reports no datacube datacube_apps
+  - pylint -j 4 --reports no datacube datacube_apps
 
   # Run tests, save coverage and test results
   - py.test --junit-xml=junit-results.xml --cov datacube --durations=5 datacube datacube_apps tests integration_tests
