@@ -3,6 +3,19 @@
 What's New
 ==========
 
+v1.1.16 Happy Festivus (6 January 2017)
+---------------------------------------
+
+  - Added `update` command to `datacube dataset` cli
+
+  - Added `show` command to `datacube product` cli
+
+  - Added `list` and `show` commands to `datacube metadata_type` cli
+
+  - Added 'storage unit' stacker application
+
+  - Replaced `model.GeoPolygon` with `utils.geometry` library
+
 v1.1.15 Minion Party Hangover (1 December 2016)
 -----------------------------------------------
 
