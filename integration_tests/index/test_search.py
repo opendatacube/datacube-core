@@ -61,8 +61,8 @@ def pseudo_telemetry_dataset(index, db, pseudo_telemetry_type):
                 },
                 # We're unlikely to have extent info for a raw dataset, we'll use it for search tests.
                 'extent': {
-                    'from_dt': datetime.datetime(2014, 7, 26, 23, 48, 0, 343853),
-                    'to_dt': datetime.datetime(2014, 7, 26, 23, 52, 0, 343853),
+                    'from_dt': datetime.datetime(2014, 7, 26, 23, 48, 0, 343853, tzinfo=tz.tzutc()),
+                    'to_dt': datetime.datetime(2014, 7, 26, 23, 52, 0, 343853, tzinfo=tz.tzutc()),
                     'coord': {
                         'll': {'lat': -31.33333, 'lon': 149.78434},
                         'lr': {'lat': -31.37116, 'lon': 152.20094},
@@ -70,7 +70,7 @@ def pseudo_telemetry_dataset(index, db, pseudo_telemetry_type):
                         'ur': {'lat': -29.26873, 'lon': 152.21782}
                     }
                 },
-                'creation_dt': datetime.datetime(2015, 4, 22, 6, 32, 4),
+                'creation_dt': datetime.datetime(2015, 4, 22, 6, 32, 4, tzinfo=tz.tzutc()),
                 'instrument': {'name': 'OLI_TIRS'},
                 'format': {
                     'name': 'PSEUDOMD'
@@ -110,8 +110,8 @@ def pseudo_telemetry_dataset2(index, db, pseudo_telemetry_type):
                 },
                 # We're unlikely to have extent info for a raw dataset, we'll use it for search tests.
                 'extent': {
-                    'from_dt': datetime.datetime(2014, 7, 27, 23, 48, 0, 343853),
-                    'to_dt': datetime.datetime(2014, 7, 27, 23, 52, 0, 343853),
+                    'from_dt': datetime.datetime(2014, 7, 27, 23, 48, 0, 343853, tzinfo=tz.tzutc()),
+                    'to_dt': datetime.datetime(2014, 7, 27, 23, 52, 0, 343853, tzinfo=tz.tzutc()),
                     'coord': {
                         'll': {'lat': -31.33333, 'lon': 149.78434},
                         'lr': {'lat': -31.37116, 'lon': 152.20094},
@@ -119,7 +119,7 @@ def pseudo_telemetry_dataset2(index, db, pseudo_telemetry_type):
                         'ur': {'lat': -29.26873, 'lon': 152.21782}
                     }
                 },
-                'creation_dt': datetime.datetime(2015, 4, 22, 6, 32, 4),
+                'creation_dt': datetime.datetime(2015, 4, 22, 6, 32, 4, tzinfo=tz.tzutc()),
                 'instrument': {'name': 'OLI_TIRS'},
                 'format': {
                     'name': 'PSEUDOMD'
