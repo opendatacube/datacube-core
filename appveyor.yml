@@ -17,8 +17,8 @@ environment:
     # For Python versions available on Appveyor, see
     # http://www.appveyor.com/docs/installed-software#python
 
-    - MINICONDA: C:\\Miniconda-x64
-      PYTHON_VERSION: 27
+#    - MINICONDA: C:\\Miniconda-x64
+#      PYTHON_VERSION: 27
 #      PYTHON_ARCH: 32
     - MINICONDA: C:\\Miniconda35-x64
       PYTHON_VERSION: 35
