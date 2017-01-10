@@ -46,7 +46,7 @@ measurements:
       dtype: int16
       nodata: -9999
       resampling_method: nearest
-      src_varname: 'sr_band1'
+      src_varname: 'coastal_aerosol'
       zlib: True
       attrs:
           long_name: "Surface Reflectance 0.43-0.45 microns (Coastal Aerosol)"
@@ -55,7 +55,7 @@ measurements:
       dtype: int16
       nodata: -9999
       resampling_method: nearest
-      src_varname: 'sr_band2'
+      src_varname: 'blue'
       zlib: True
       attrs:
           long_name: "Surface Reflectance 0.45-0.51 microns (Blue)"
@@ -64,7 +64,7 @@ measurements:
       dtype: int16
       nodata: -9999
       resampling_method: nearest
-      src_varname: 'sr_band3'
+      src_varname: 'green'
       zlib: True
       attrs:
           long_name: "Surface Reflectance 0.53-0.59 microns (Green)"
@@ -73,7 +73,7 @@ measurements:
       dtype: int16
       nodata: -9999
       resampling_method: nearest
-      src_varname: 'sr_band4'
+      src_varname: 'red'
       zlib: True
       attrs:
           long_name: "Surface Reflectance 0.64-0.67 microns (Red)"
@@ -82,7 +82,7 @@ measurements:
       dtype: int16
       nodata: -9999
       resampling_method: nearest
-      src_varname: 'sr_band5'
+      src_varname: 'nir'
       zlib: True
       attrs:
           long_name: "Surface Reflectance 0.85-0.88 microns (Near Infrared)"
@@ -91,7 +91,7 @@ measurements:
       dtype: int16
       nodata: -9999
       resampling_method: nearest
-      src_varname: 'sr_band6'
+      src_varname: 'swir1'
       zlib: True
       attrs:
           long_name: "Surface Reflectance 1.57-1.65 microns (Short-wave Infrared)"
@@ -100,7 +100,7 @@ measurements:
       dtype: int16
       nodata: -9999
       resampling_method: nearest
-      src_varname: 'sr_band7'
+      src_varname: 'swir2'
       zlib: True
       attrs:
           long_name: "Surface Reflectance 2.11-2.29 microns (Short-wave Infrared)"
