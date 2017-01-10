@@ -7,6 +7,8 @@ from __future__ import absolute_import
 import itertools
 
 import logging
+from contextlib import contextmanager
+
 import os
 import shutil
 
@@ -15,6 +17,8 @@ import pytest
 import rasterio
 import yaml
 from pathlib import Path
+
+from datacube.index.postgres import _dynamic
 
 try:
     from yaml import CSafeLoader as SafeLoader
@@ -96,14 +100,19 @@ def db(local_config):
     remove_dynamic_indexes()
 
     # Disable informational messages since we're doing this on every test run.
-    previous_level = _core._LOG.getEffectiveLevel()
-    try:
-        _core._LOG.setLevel(logging.WARN)
+    with _increase_logging(_core._LOG) as _:
         _core.ensure_db(db._engine)
-    finally:
-        _core._LOG.setLevel(previous_level)
 
-    return db
+    # We don't need informational create/drop messages for every config change.
+    _dynamic._LOG.setLevel(logging.WARN)
+
+
+@contextmanager
+def _increase_logging(log, level=logging.WARN):
+    previous_level = log.getEffectiveLevel()
+    log.setLevel(level)
+    yield
+    log.setLevel(previous_level)
 
 
 def remove_dynamic_indexes():

@@ -9,6 +9,8 @@ import random
 import datacube.scripts.cli_app
 import logging
 from click.testing import CliRunner
+
+from datacube.index.postgres import _dynamic
 from datacube.index.postgres.tables._core import drop_db, has_schema, SCHEMA_NAME
 from pathlib import Path
 
@@ -151,6 +153,10 @@ def test_db_init_noop(global_integration_cli_args, local_config, ls5_nbar_gtiff_
 
 
 def test_db_init_rebuild(global_integration_cli_args, local_config, ls5_nbar_gtiff_type):
+
+    # We set the field creation logging to debug, as we assert its logging output below.
+    _dynamic._LOG.setLevel(logging.DEBUG)
+
     # Run on an existing database.
     result = _run_cli(
         global_integration_cli_args,
