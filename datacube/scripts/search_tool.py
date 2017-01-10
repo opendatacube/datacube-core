@@ -109,7 +109,8 @@ def product_counts(index, period, expressions):
     for product, series in index.datasets.count_by_product_through_time(period, **expressions):
         click.echo(product.name)
         for timerange, count in series:
-            click.echo('    {}: {}'.format(timerange[0].strftime("%Y-%m-%d"), count))
+            formatted_dt = _assume_utc(timerange[0]).strftime("%Y-%m-%d")
+            click.echo('    {}: {}'.format(formatted_dt, count))
 
 
 @singledispatch
@@ -127,11 +128,14 @@ def printable_dt(val):
     """
     :type val: datetime.datetime
     """
-    # Default to UTC.
+    return _assume_utc(val).isoformat()
+
+
+def _assume_utc(val):
     if val.tzinfo is None:
-        return val.replace(tzinfo=tz.tzutc()).isoformat()
+        return val.replace(tzinfo=tz.tzutc())
     else:
-        return val.astimezone(tz.tzutc()).isoformat()
+        return val.astimezone(tz.tzutc())
 
 
 @printable.register(Range)
