@@ -16,14 +16,13 @@ def test_gridworkflow():
 
     grid = 100  # spatial frequency in crs units
     pixel = 10  # square pixel linear dimension in crs units
-    gridcell = BoundingBox(left=grid, bottom=-grid, right=2*grid, top=-2*grid)
     # if cell(0,0) has lower left corner at grid origin,
     # and cell indices increase toward upper right,
     # then this will be cell(1,-2).
     gridspec = GridSpec(crs=fakecrs, tile_size=(grid, grid), resolution=(-pixel, pixel))  # e.g. product gridspec
 
     fakedataset = MagicMock()
-    fakedataset.extent = geometry.box(gridcell, crs=fakecrs)
+    fakedataset.extent = geometry.box(left=grid, bottom=-grid, right=2*grid, top=-2*grid, crs=fakecrs)
     fakedataset.center_time = t = datetime.datetime(2001, 2, 15)
 
     fakeindex = MagicMock()
@@ -49,9 +48,8 @@ def test_gridworkflow():
     # ------ add another dataset (to test grouping) -----
 
     # consider cell (2,-2)
-    gridcell2 = BoundingBox(left=2*grid, bottom=-grid, right=3*grid, top=-2*grid)
     fakedataset2 = MagicMock()
-    fakedataset2.extent = geometry.box(gridcell2, crs=fakecrs)
+    fakedataset2.extent = geometry.box(left=2*grid, bottom=-grid, right=3*grid, top=-2*grid, crs=fakecrs)
     fakedataset2.center_time = t
 
     def search_eager(lat=None, lon=None, **kwargs):

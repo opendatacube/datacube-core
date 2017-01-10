@@ -388,14 +388,8 @@ def polygon(outer, crs, *inners):
     return Geometry({'type': 'Polygon', 'coordinates': (outer, )+inners}, crs=crs)
 
 
-def box(boundingbox, crs):
-    points = [
-        (boundingbox.left, boundingbox.top),
-        (boundingbox.right, boundingbox.top),
-        (boundingbox.right, boundingbox.bottom),
-        (boundingbox.left, boundingbox.bottom),
-        (boundingbox.left, boundingbox.top),
-    ]
+def box(left, bottom, right, top, crs):
+    points = [(left, top), (right, top), (right, bottom), (left, bottom), (left, top)]
     return polygon(points, crs=crs)
 
 
