@@ -90,8 +90,10 @@ def local_config(integration_config_paths):
     return LocalConfig.find(integration_config_paths)
 
 
-@pytest.fixture
-def db(local_config):
+@pytest.fixture(params=["US/Pacific", "UTC", ])
+def db(local_config, request):
+    timezone = request.param
+
     db = PostgresDb.from_config(local_config, application_name='test-run', validate_connection=False)
 
     # Drop and recreate tables so our tests have a clean db.
@@ -102,6 +104,10 @@ def db(local_config):
     # Disable informational messages since we're doing this on every test run.
     with _increase_logging(_core._LOG) as _:
         _core.ensure_db(db._engine)
+
+    c = db._engine.connect()
+    c.execute('alter database %s set timezone = %r' % (local_config.db_database, str(timezone)))
+    c.close()
 
     # We don't need informational create/drop messages for every config change.
     _dynamic._LOG.setLevel(logging.WARN)
