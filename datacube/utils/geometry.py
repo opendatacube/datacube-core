@@ -413,4 +413,4 @@ def union_cascaded(geoms):
 
         geom.AddGeometry(g._geom)  # pylint: disable=protected-access
     geom.UnionCascaded()
-    return _make_geom_from_ogr(geom.GetGeometryRef(0).Clone() if geom.GetGeometryCount() else geom, crs)
+    return _make_geom_from_ogr(geom.GetGeometryRef(0).Clone() if geom.GetGeometryCount() == 1 else geom, crs)
