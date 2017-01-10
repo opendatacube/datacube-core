@@ -112,6 +112,9 @@ def db(local_config, request):
     # We don't need informational create/drop messages for every config change.
     _dynamic._LOG.setLevel(logging.WARN)
 
+    yield db
+    db.close()
+
 
 @contextmanager
 def _increase_logging(log, level=logging.WARN):
