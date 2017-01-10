@@ -330,6 +330,10 @@ class Geometry(object):
         return self._geom.GetPoints()
 
     @property
+    def area(self):
+        return self._geom.GetArea()
+
+    @property
     def boundingbox(self):
         minx, maxx, miny, maxy = self._geom.GetEnvelope()
         return BoundingBox(left=minx, right=maxx, bottom=miny, top=maxy)
