@@ -17,7 +17,7 @@ environment:
     # For Python versions available on Appveyor, see
     # http://www.appveyor.com/docs/installed-software#python
 
-    - MINICONDA: C:\\Miniconda
+    - MINICONDA: C:\\Miniconda-x64
       PYTHON_VERSION: 27
 #      PYTHON_ARCH: 32
     - MINICONDA: C:\\Miniconda35-x64
@@ -72,7 +72,7 @@ test_script:
   - pylint -j 4 --reports no datacube datacube_apps
 
   # Run tests, save coverage and test results
-  - py.test -s -vvvv --junit-xml=junit-results.xml --cov datacube --durations=5 datacube datacube_apps tests integration_tests
+  - py.test --junit-xml=junit-results.xml --cov datacube --durations=5 datacube datacube_apps tests integration_tests
 
   # upload results to AppVeyor
   - ps: $wc = New-Object 'System.Net.WebClient'
