@@ -232,6 +232,7 @@ def read_documents(*paths):
     :rtype: tuple[(pathlib.Path, dict)]
     """
     for path in paths:
+        path = pathlib.Path(path)
         suffix = path.suffix.lower()
 
         # If compressed, open as gzip stream.
