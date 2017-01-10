@@ -35,6 +35,7 @@ stable version.
     This will also update the `stable` docs
 
 #. Upload the build to PyPi.
+
     .. code-block:: bash
         python setup.py sdist bdist_wheel
         twine upload dist/*
