@@ -257,11 +257,14 @@ def _write_csv(info):
     writer.writerows(info)
 
 
-@dataset_cmd.command('search', help="Search datasets")
+@dataset_cmd.command('search')
 @click.option('-f', help='Output format', type=click.Choice(['yaml', 'csv']), default='csv', show_default=True)
 @ui.parsed_search_expressions
 @ui.pass_index()
 def search_cmd(index, f, expressions):
+    """
+    Search available Datasets
+    """
     datasets = index.datasets.search(**expressions)
     info = (build_dataset_info(index, dataset) for dataset in datasets)
     {
