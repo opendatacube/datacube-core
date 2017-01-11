@@ -408,6 +408,9 @@ class Geometry(object):
 
         return _make_geom_from_ogr(clone, crs)  # pylint: disable=protected-access
 
+    def __nonzero__(self):
+        return self.is_valid
+
     def __eq__(self, other):
         return self.crs == other.crs and self._geom.Equal(other._geom)  # pylint: disable=protected-access
 
