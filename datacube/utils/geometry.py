@@ -349,8 +349,16 @@ class Geometry(object):
         return _make_geom_from_ogr(self._geom.Centroid(), self.crs)
 
     @property
-    def points(self):
+    def coords(self):
         return self._geom.GetPoints()
+
+    @property
+    def points(self):
+        return self.coords
+
+    @property
+    def length(self):
+        return self._geom.Length()
 
     @property
     def area(self):
