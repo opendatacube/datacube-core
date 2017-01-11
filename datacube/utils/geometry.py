@@ -451,6 +451,11 @@ def box(left, bottom, right, top, crs):
     return polygon(points, crs=crs)
 
 
+###########################################
+# Multi-geometry operations
+###########################################
+
+
 def unary_union(geoms):
     """
     compute union of multiple (multi)polygons efficiently
