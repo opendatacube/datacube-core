@@ -24,19 +24,21 @@ def dataset_cmd():
     pass
 
 
-def match_doc(rules, doc):
+def find_matching_product(rules, doc):
+    """:rtype: datacube.model.DatasetType"""
     matched = [rule for rule in rules if changes.contains(doc, rule['metadata'])]
     if not matched:
-        raise RuntimeError('No matches found for %s' % doc.get('id', 'unidentified'))
+        raise RuntimeError('No matching Product found for %s' % doc.get('id', 'unidentified'))
     if len(matched) > 1:
-        raise RuntimeError('Too many matches found for' % doc.get('id', 'unidentified'))
-    return matched[0]
+        raise RuntimeError('Too many matching Products found for %s. Matched %s.' % (
+            doc.get('id', 'unidentified'), matched))
+    return matched[0]['type']
 
 
 def check_dataset_consistent(dataset):
     """
     :type dataset: datacube.model.Dataset
-    :return: (Is consistent, error message)
+    :return: (Is consistent, [error message|None])
     :rtype: (bool, str or None)
     """
     # It the type expects measurements, ensure our dataset contains them all.
@@ -46,14 +48,14 @@ def check_dataset_consistent(dataset):
     return True, None
 
 
-def match_dataset(dataset_doc, uri, rules):
+def create_dataset(dataset_doc, uri, rules):
     """
     :rtype datacube.model.Dataset:
     """
-    rule = match_doc(rules, dataset_doc)
-    sources = {cls: match_dataset(source_doc, None, rules)
-               for cls, source_doc in rule['type'].dataset_reader(dataset_doc).sources.items()}
-    return Dataset(rule['type'], dataset_doc, uri, sources=sources)
+    dataset_type = find_matching_product(rules, dataset_doc)
+    sources = {cls: create_dataset(source_doc, None, rules)
+               for cls, source_doc in dataset_type.dataset_reader(dataset_doc).sources.items()}
+    return Dataset(dataset_type, dataset_doc, uri, sources=sources)
 
 
 def load_rules_from_file(filename, index):
@@ -100,7 +102,7 @@ def load_datasets(datasets, rules):
             uri = metadata_path.absolute().as_uri()
 
             try:
-                dataset = match_dataset(metadata_doc, uri, rules)
+                dataset = create_dataset(metadata_doc, uri, rules)
             except RuntimeError as e:
                 _LOG.exception("Error creating dataset")
                 _LOG.error('Unable to create Dataset for %s: %s', uri, e)
@@ -141,10 +143,11 @@ def index_cmd(index, match_rules, dtype, auto_match, dry_run, datasets):
     if rules is None:
         return
 
-    for dataset in load_datasets(datasets, rules):
-        _LOG.info('Matched %s', dataset)
-        if not dry_run:
-            index.datasets.add(dataset)
+    with click.progressbar(load_datasets(datasets, rules), label='Indexing datasets') as loadable_datasets:
+        for dataset in loadable_datasets:
+            _LOG.info('Matched %s', dataset)
+            if not dry_run:
+                index.datasets.add(dataset)
 
 
 def parse_update_rules(allow_any):
