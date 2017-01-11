@@ -312,18 +312,41 @@ class Geometry(object):
         ogr.wkbMultiPolygon: 'MultiPolygon',
     }
 
+    contains = _wrap_binary_bool(ogr.Geometry.Contains)
+    crosses = _wrap_binary_bool(ogr.Geometry.Crosses)
+    disjoint = _wrap_binary_bool(ogr.Geometry.Disjoint)
     intersects = _wrap_binary_bool(ogr.Geometry.Intersects)
     touches = _wrap_binary_bool(ogr.Geometry.Touches)
+    within = _wrap_binary_bool(ogr.Geometry.Within)
 
+    difference = _wrap_binary_geom(ogr.Geometry.Difference)
     intersection = _wrap_binary_geom(ogr.Geometry.Intersection)
+    symmetric_difference = _wrap_binary_geom(ogr.Geometry.SymDifference)
+    union = _wrap_binary_geom(ogr.Geometry.Union)
 
     def __init__(self, geo, crs=None):
-        self.crs = crs
-        self._geom = Geometry._geom_makers[geo['type']](geo['coordinates'])
+        self.crs = crs  # type: CRS
+        self._geom = Geometry._geom_makers[geo['type']](geo['coordinates'])  # type: ogr.Geometry
 
     @property
     def type(self):
         return Geometry._geom_types[self._geom.GetGeometryType()]
+
+    @property
+    def is_empty(self):
+        return self._geom.IsEmpty()
+
+    @property
+    def is_valid(self):
+        return self._geom.IsValid()
+
+    @property
+    def boundary(self):
+        return _make_geom_from_ogr(self._geom.Boundary(), self.crs)
+
+    @property
+    def centroid(self):
+        return _make_geom_from_ogr(self._geom.Centroid(), self.crs)
 
     @property
     def points(self):
@@ -332,6 +355,14 @@ class Geometry(object):
     @property
     def area(self):
         return self._geom.GetArea()
+
+    @property
+    def convex_hull(self):
+        return _make_geom_from_ogr(self._geom.ConvexHull(), self.crs)
+
+    @property
+    def envelope(self):
+        return _make_geom_from_ogr(self._geom.GetEnvelope(), self.crs)
 
     @property
     def boundingbox(self):
@@ -353,6 +384,15 @@ class Geometry(object):
         clone = self._geom.Clone()
         clone.Segmentize(resolution)
         return _make_geom_from_ogr(clone, self.crs)
+
+    def interpolate(self, distance):
+        return self._geom.Value(distance)
+
+    def buffer(self, distance, quadsecs=30):
+        return _make_geom_from_ogr(self._geom.Buffer(distance, quadsecs), self.crs)
+
+    def simplify(self, tolerance):
+        return _make_geom_from_ogr(self._geom.Simplify(tolerance), self.crs)
 
     def to_crs(self, crs, resolution=None):
         if self.crs == crs:
