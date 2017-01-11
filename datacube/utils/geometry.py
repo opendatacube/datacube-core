@@ -404,6 +404,7 @@ def unary_union(geoms):
     """
     compute union of multiple (multi)polygons efficiently
     """
+    # pylint: disable=protected-access
     geom = ogr.Geometry(ogr.wkbMultiPolygon)
     crs = None
     for g in geoms:
@@ -411,7 +412,12 @@ def unary_union(geoms):
             assert crs == g.crs
         else:
             crs = g.crs
-
-        geom.AddGeometry(g._geom)  # pylint: disable=protected-access
-    geom.UnionCascaded()
-    return _make_geom_from_ogr(geom.GetGeometryRef(0).Clone() if geom.GetGeometryCount() == 1 else geom, crs)
+        if g._geom.GetGeometryType() == ogr.wkbPolygon:
+            geom.AddGeometry(g._geom)
+        elif g._geom.GetGeometryType() == ogr.wkbMultiPolygon:
+            for poly in g._geom:
+                geom.AddGeometry(poly)
+        else:
+            raise ValueError('"%s" is not supported' % g.type)
+    union = geom.UnionCascaded()
+    return _make_geom_from_ogr(union, crs)
