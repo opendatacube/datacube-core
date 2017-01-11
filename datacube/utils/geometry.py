@@ -386,7 +386,7 @@ class Geometry(object):
         return _make_geom_from_ogr(clone, self.crs)
 
     def interpolate(self, distance):
-        return self._geom.Value(distance)
+        return _make_geom_from_ogr(self._geom.Value(distance), self.crs)
 
     def buffer(self, distance, quadsecs=30):
         return _make_geom_from_ogr(self._geom.Buffer(distance, quadsecs), self.crs)
