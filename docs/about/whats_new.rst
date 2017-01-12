@@ -3,6 +3,17 @@
 What's New
 ==========
 
+v1.1.17 Happy Festivus Continues (12 January 2017)
+--------------------------------------------------
+
+ - Fixed several issues with the geometry utils
+
+ - Added more operations to the geometry utils
+
+ - Updated :ref:`recipes` to use geometry utils
+
+ - Enabled Windows CI (python 3 only)
+
 v1.1.16 Happy Festivus (6 January 2017)
 ---------------------------------------
 
