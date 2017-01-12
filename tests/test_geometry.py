@@ -88,7 +88,7 @@ def test_ops():
     inter2 = box1.intersection(box4)
     assert not bool(inter2)
     assert inter2.is_empty
-    # assert not inter2.is_valid  TODO: what's giong on here?
+    # assert not inter2.is_valid  TODO: what's going on here?
 
     diff1 = box1.difference(box2)
     assert diff1.area == 200.0
@@ -97,11 +97,14 @@ def test_ops():
     assert symdiff1.area == 400.0
 
 
-def test_union_cascaded():
+def test_unary_union():
     box1 = geometry.box(10, 10, 30, 30, crs=geometry.CRS('EPSG:4326'))
     box2 = geometry.box(20, 10, 40, 30, crs=geometry.CRS('EPSG:4326'))
     box3 = geometry.box(30, 10, 50, 30, crs=geometry.CRS('EPSG:4326'))
     box4 = geometry.box(40, 10, 60, 30, crs=geometry.CRS('EPSG:4326'))
+
+    union0 = geometry.unary_union([box1])
+    assert union0 == box1
 
     union1 = geometry.unary_union([box1, box4])
     assert union1.type == 'MultiPolygon'
@@ -118,3 +121,37 @@ def test_union_cascaded():
     union4 = geometry.unary_union([union1, box2, box3])
     assert union4.type == 'Polygon'
     assert union4.area == 2.5*box1.area
+
+
+def test_unary_intersection():
+    box1 = geometry.box(10, 10, 30, 30, crs=geometry.CRS('EPSG:4326'))
+    box2 = geometry.box(15, 10, 35, 30, crs=geometry.CRS('EPSG:4326'))
+    box3 = geometry.box(20, 10, 40, 30, crs=geometry.CRS('EPSG:4326'))
+    box4 = geometry.box(25, 10, 45, 30, crs=geometry.CRS('EPSG:4326'))
+    box5 = geometry.box(30, 10, 50, 30, crs=geometry.CRS('EPSG:4326'))
+    box6 = geometry.box(35, 10, 55, 30, crs=geometry.CRS('EPSG:4326'))
+
+    inter1 = geometry.unary_intersection([box1])
+    assert bool(inter1)
+    assert inter1 == box1
+
+    inter2 = geometry.unary_intersection([box1, box2])
+    assert bool(inter2)
+    assert inter2.area == 300.0
+
+    inter3 = geometry.unary_intersection([box1, box2, box3])
+    assert bool(inter3)
+    assert inter3.area == 200.0
+
+    inter4 = geometry.unary_intersection([box1, box2, box3, box4])
+    assert bool(inter4)
+    assert inter4.area == 100.0
+
+    inter5 = geometry.unary_intersection([box1, box2, box3, box4, box5])
+    assert bool(inter5)
+    assert inter5.type == 'LineString'
+    assert inter5.length == 20.0
+
+    inter6 = geometry.unary_intersection([box1, box2, box3, box4, box5, box6])
+    assert not bool(inter6)
+    assert inter6.is_empty

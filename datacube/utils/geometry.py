@@ -487,3 +487,10 @@ def unary_union(geoms):
             raise ValueError('"%s" is not supported' % g.type)
     union = geom.UnionCascaded()
     return _make_geom_from_ogr(union, crs)
+
+
+def unary_intersection(geoms):
+    """
+    compute intersection of multiple (multi)polygons
+    """
+    return functools.reduce(Geometry.intersection, geoms)
