@@ -423,6 +423,9 @@ class Geometry(object):
         for i in range(self._geom.GetGeometryCount()):
             yield _make_geom_from_ogr(self._geom.GetGeometryRef(i), self.crs)
 
+    def __nonzero__(self):
+        return not self.is_empty
+
     def __bool__(self):
         return not self.is_empty
 
