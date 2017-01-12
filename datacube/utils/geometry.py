@@ -293,6 +293,9 @@ def _wrap_binary_geom(method):
 class Geometry(object):
     """
     Geometry with CRS
+
+    :type _geom: ogr.Geometry
+    :type crs: CRS
     """
     _geom_makers = {
         'Point': _make_point,
@@ -325,8 +328,8 @@ class Geometry(object):
     union = _wrap_binary_geom(ogr.Geometry.Union)
 
     def __init__(self, geo, crs=None):
-        self.crs = crs  # type: CRS
-        self._geom = Geometry._geom_makers[geo['type']](geo['coordinates'])  # type: ogr.Geometry
+        self.crs = crs
+        self._geom = Geometry._geom_makers[geo['type']](geo['coordinates'])
 
     @property
     def type(self):
@@ -370,12 +373,12 @@ class Geometry(object):
 
     @property
     def envelope(self):
-        return _make_geom_from_ogr(self._geom.GetEnvelope(), self.crs)
+        minx, maxx, miny, maxy = self._geom.GetEnvelope()
+        return BoundingBox(left=minx, right=maxx, bottom=miny, top=maxy)
 
     @property
     def boundingbox(self):
-        minx, maxx, miny, maxy = self._geom.GetEnvelope()
-        return BoundingBox(left=minx, right=maxx, bottom=miny, top=maxy)
+        return self.envelope
 
     @property
     def wkt(self):
@@ -416,8 +419,12 @@ class Geometry(object):
 
         return _make_geom_from_ogr(clone, crs)  # pylint: disable=protected-access
 
-    def __nonzero__(self):
-        return self.is_valid
+    def __iter__(self):
+        for i in range(self._geom.GetGeometryCount()):
+            yield _make_geom_from_ogr(self._geom.GetGeometryRef(i), self.crs)
+
+    def __bool__(self):
+        return not self.is_empty
 
     def __eq__(self, other):
         return self.crs == other.crs and self._geom.Equal(other._geom)  # pylint: disable=protected-access
@@ -447,7 +454,7 @@ def polygon(outer, crs, *inners):
 
 
 def box(left, bottom, right, top, crs):
-    points = [(left, top), (right, top), (right, bottom), (left, bottom), (left, top)]
+    points = [(left, bottom), (left, top), (right, top), (right, bottom), (left, bottom)]
     return polygon(points, crs=crs)
 
 
