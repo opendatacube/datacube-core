@@ -141,11 +141,13 @@ def parse_match_rules_options(index, match_rules, dtype, auto_match):
               multiple=True)
 @click.option('--auto-match', '-a', help="Automatically associate datasets with products by matching metadata",
               is_flag=True, default=False)
+@click.option('--check-sources', help="Verify embedded source dataset metadata is identical to the stored metadata",
+              is_flag=True, default=True)
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
 @click.argument('datasets',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
 @ui.pass_index()
-def index_cmd(index, match_rules, dtype, auto_match, dry_run, datasets):
+def index_cmd(index, match_rules, dtype, auto_match, check_sources, dry_run, datasets):
     rules = parse_match_rules_options(index, match_rules, dtype, auto_match)
     if rules is None:
         return
@@ -155,7 +157,7 @@ def index_cmd(index, match_rules, dtype, auto_match, dry_run, datasets):
             _LOG.info('Matched %s', dataset)
             if not dry_run:
                 try:
-                    index.datasets.add(dataset)
+                    index.datasets.add(dataset, skip_sources=not check_sources)
                 except ValueError as e:
                     _LOG.error('Failed to add dataset: %s', e)
 

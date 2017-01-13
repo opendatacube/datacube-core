@@ -18,7 +18,7 @@ from .exceptions import DuplicateRecordError, UnknownFieldError
 _LOG = logging.getLogger(__name__)
 
 # It's a public api, so we can't reorganise old methods.
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods, too-many-lines, too-many-branches
 
 
 class MetadataTypeResource(object):
@@ -602,10 +602,14 @@ class DatasetResource(object):
         Ensure a dataset is in the index. Add it if not present.
 
         :param datacube.model.Dataset dataset: dataset to add
-        :param bool skip_sources: don't attempt to index source (use when sources are already indexed)
+        :param bool skip_sources: don't attempt to index source datasets (use when sources are already indexed)
         :rtype: datacube.model.Dataset
         """
-        if not skip_sources:
+        if skip_sources:
+            for source in dataset.sources.values():
+                if not self.has(source.id):
+                    self.add(source)
+        else:
             for source in dataset.sources.values():
                 self.add(source)
 
