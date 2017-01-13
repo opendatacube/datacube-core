@@ -6,7 +6,7 @@ from __future__ import absolute_import
 
 import pytest
 
-from datacube.ui.common import get_metadata_path, _find_any_metadata_suffix
+from datacube.ui.common import get_metadata_path, find_any_metadata_suffix
 from . import util
 
 
@@ -56,15 +56,15 @@ def test_find_any_metatadata_suffix():
         'no_metadata.tif': '',
     })
 
-    path = _find_any_metadata_suffix(files.joinpath('dataset_metadata'))
+    path = find_any_metadata_suffix(files.joinpath('dataset_metadata'))
     assert path.absolute() == files.joinpath('dataset_metadata.YAML').absolute()
 
-    path = _find_any_metadata_suffix(files.joinpath('directory_dataset', 'agdc-metadata'))
+    path = find_any_metadata_suffix(files.joinpath('directory_dataset', 'agdc-metadata'))
     assert path.absolute() == files.joinpath('directory_dataset', 'agdc-metadata.json.gz').absolute()
 
-    path = _find_any_metadata_suffix(files.joinpath('file_dataset.tif.agdc-md'))
+    path = find_any_metadata_suffix(files.joinpath('file_dataset.tif.agdc-md'))
     assert path.absolute() == files.joinpath('file_dataset.tif.agdc-md.yaml').absolute()
 
     # Returns none if none exist
-    path = _find_any_metadata_suffix(files.joinpath('no_metadata'))
+    path = find_any_metadata_suffix(files.joinpath('no_metadata'))
     assert path is None
