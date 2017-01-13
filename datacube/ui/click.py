@@ -289,8 +289,8 @@ def parsed_search_expressions(f):
     the shell will try to interpret them.
 
     \b
-    eg. '1996-01-01<time<1996-12-31'
-        '130<lon<140' '-30>lat>-40'
+    eg. '1996-01-01 < time < 1996-12-31'
+        '130<lon<140' '-30 > lat > -40'
         product=ls5_nbar_albers
     """
 
