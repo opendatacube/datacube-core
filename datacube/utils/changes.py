@@ -134,6 +134,10 @@ def get_doc_changes(original, new, base_prefix=()):
     return sorted(changed_fields, key=lambda a: a[0])
 
 
+class DocumentMismatchError(Exception):
+    pass
+
+
 def check_doc_unchanged(original, new, doc_name):
     """
     Complain if any fields have been modified on a document.

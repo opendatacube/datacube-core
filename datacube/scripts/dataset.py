@@ -14,9 +14,13 @@ from datacube.model import Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.ui.common import get_metadata_path
-from datacube.utils import read_documents, changes
+from datacube.utils import read_documents, changes, InvalidDocException
 
 _LOG = logging.getLogger('datacube-dataset')
+
+
+class BadMatch(Exception):
+    pass
 
 
 @cli.group(name='dataset', help='Dataset management commands')
@@ -28,9 +32,9 @@ def find_matching_product(rules, doc):
     """:rtype: datacube.model.DatasetType"""
     matched = [rule for rule in rules if changes.contains(doc, rule['metadata'])]
     if not matched:
-        raise RuntimeError('No matching Product found for %s' % doc.get('id', 'unidentified'))
+        raise BadMatch('No matching Product found for %s' % doc.get('id', 'unidentified'))
     if len(matched) > 1:
-        raise RuntimeError('Too many matching Products found for %s. Matched %s.' % (
+        raise BadMatch('Too many matching Products found for %s. Matched %s.' % (
             doc.get('id', 'unidentified'), matched))
     return matched[0]['type']
 
@@ -98,22 +102,25 @@ def load_datasets(datasets, rules):
             _LOG.error('No supported metadata docs found for dataset %s', dataset_path)
             continue
 
-        for metadata_path, metadata_doc in read_documents(metadata_path):
-            uri = metadata_path.absolute().as_uri()
+        try:
+            for metadata_path, metadata_doc in read_documents(metadata_path):
+                uri = metadata_path.absolute().as_uri()
 
-            try:
-                dataset = create_dataset(metadata_doc, uri, rules)
-            except RuntimeError as e:
-                _LOG.exception("Error creating dataset")
-                _LOG.error('Unable to create Dataset for %s: %s', uri, e)
-                continue
+                try:
+                    dataset = create_dataset(metadata_doc, uri, rules)
+                except BadMatch as e:
+                    _LOG.error('Unable to create Dataset for %s: %s', uri, e)
+                    continue
 
-            is_consistent, reason = check_dataset_consistent(dataset)
-            if not is_consistent:
-                _LOG.error("Dataset %s inconsistency: %s", dataset.id, reason)
-                continue
+                is_consistent, reason = check_dataset_consistent(dataset)
+                if not is_consistent:
+                    _LOG.error("Dataset %s inconsistency: %s", dataset.id, reason)
+                    continue
 
-            yield dataset
+                yield dataset
+        except InvalidDocException:
+            _LOG.error("Failed reading documents from %s", metadata_path)
+            continue
 
 
 def parse_match_rules_options(index, match_rules, dtype, auto_match):
@@ -147,7 +154,10 @@ def index_cmd(index, match_rules, dtype, auto_match, dry_run, datasets):
         for dataset in loadable_datasets:
             _LOG.info('Matched %s', dataset)
             if not dry_run:
-                index.datasets.add(dataset)
+                try:
+                    index.datasets.add(dataset)
+                except ValueError as e:
+                    _LOG.error('Failed to add dataset: %s', e)
 
 
 def parse_update_rules(allow_any):
