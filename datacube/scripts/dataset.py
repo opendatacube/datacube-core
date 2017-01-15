@@ -141,7 +141,8 @@ def parse_match_rules_options(index, match_rules, dtype, auto_match):
               multiple=True)
 @click.option('--auto-match', '-a', help="Automatically associate datasets with products by matching metadata",
               is_flag=True, default=False)
-@click.option('--check-sources', help="Verify embedded source dataset metadata is identical to the stored metadata",
+@click.option('--check-sources/--no-check-sources',
+              help="Verify embedded source dataset metadata is identical to the stored metadata",
               is_flag=True, default=True)
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
 @click.argument('datasets',

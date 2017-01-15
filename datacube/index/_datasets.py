@@ -608,10 +608,10 @@ class DatasetResource(object):
         if skip_sources:
             for source in dataset.sources.values():
                 if not self.has(source.id):
-                    self.add(source)
+                    self.add(source, skip_sources=skip_sources)
         else:
             for source in dataset.sources.values():
-                self.add(source)
+                self.add(source, skip_sources=skip_sources)
 
         was_inserted = False
         sources_tmp = dataset.type.dataset_reader(dataset.metadata_doc).sources
