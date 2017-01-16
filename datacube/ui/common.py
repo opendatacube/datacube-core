@@ -40,7 +40,7 @@ def find_any_metadata_suffix(path):
     Find any supported metadata files that exist with the given file path stem.
     (supported suffixes are tried on the name)
 
-    Eg. searcing for '/tmp/ga-metadata' will find if any files such as '/tmp/ga-metadata.yaml' or
+    Eg. searching for '/tmp/ga-metadata' will find if any files such as '/tmp/ga-metadata.yaml' or
     '/tmp/ga-metadata.json', or '/tmp/ga-metadata.yaml.gz' etc that exist: any suffix supported by read_documents()
 
     :type path: pathlib.Path
