@@ -385,6 +385,10 @@ class Geometry(object):
         return getattr(self._geom, 'ExportToIsoWkt', self._geom.ExportToWkt)()
 
     @property
+    def json(self):
+        return self.__geo_interface__
+
+    @property
     def __geo_interface__(self):
         return {
             'type': self.type,
