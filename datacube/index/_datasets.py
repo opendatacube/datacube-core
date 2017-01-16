@@ -18,7 +18,7 @@ from .exceptions import DuplicateRecordError, UnknownFieldError
 _LOG = logging.getLogger(__name__)
 
 # It's a public api, so we can't reorganise old methods.
-# pylint: disable=too-many-public-methods, too-many-lines, too-many-branches
+# pylint: disable=too-many-public-methods, too-many-lines
 
 
 class MetadataTypeResource(object):
@@ -597,6 +597,8 @@ class DatasetResource(object):
         with self._db.connect() as connection:
             return connection.contains_dataset(id_)
 
+
+
     def add(self, dataset, skip_sources=False):
         """
         Ensure a dataset is in the index. Add it if not present.
@@ -613,30 +615,12 @@ class DatasetResource(object):
             for source in dataset.sources.values():
                 self.add(source, skip_sources=skip_sources)
 
-        was_inserted = False
         sources_tmp = dataset.type.dataset_reader(dataset.metadata_doc).sources
         dataset.type.dataset_reader(dataset.metadata_doc).sources = {}
         try:
             _LOG.info('Indexing %s', dataset.id)
-            product = self.types.get_by_name(dataset.type.name)
-            if product is None:
-                _LOG.warning('Adding product "%s" as it doesn\'t exist.', dataset.type.name)
-                product = self.types.add(dataset.type)
-            with self._db.begin() as transaction:
-                try:
-                    was_inserted = transaction.insert_dataset(dataset.metadata_doc, dataset.id, product.id)
-                    for classifier, source_dataset in dataset.sources.items():
-                        transaction.insert_dataset_source(classifier, dataset.id, source_dataset.id)
 
-                    # try to update location in the same transaction as insertion.
-                    # if insertion fails we'll try updating location later
-                    # if insertion succeeds the location bit can't possibly fail
-                    if dataset.local_uri:
-                        transaction.ensure_dataset_location(dataset.id, dataset.local_uri)
-                except DuplicateRecordError as e:
-                    _LOG.warning(str(e))
-
-            if not was_inserted:
+            if not self._try_add(dataset):
                 existing = self.get(dataset.id)
                 if existing:
                     check_doc_unchanged(
@@ -898,6 +882,28 @@ class DatasetResource(object):
         :rtype: list[(str, list[(datetime.datetime, datetime.datetime), int)]]
         """
         return next(self._do_time_count(period, query, ensure_single=True))[1]
+
+    def _try_add(self, dataset):
+        was_inserted = False
+
+        product = self.types.get_by_name(dataset.type.name)
+        if product is None:
+            _LOG.warning('Adding product "%s" as it doesn\'t exist.', dataset.type.name)
+            product = self.types.add(dataset.type)
+        with self._db.begin() as transaction:
+            try:
+                was_inserted = transaction.insert_dataset(dataset.metadata_doc, dataset.id, product.id)
+                for classifier, source_dataset in dataset.sources.items():
+                    transaction.insert_dataset_source(classifier, dataset.id, source_dataset.id)
+
+                # try to update location in the same transaction as insertion.
+                # if insertion fails we'll try updating location later
+                # if insertion succeeds the location bit can't possibly fail
+                if dataset.local_uri:
+                    transaction.ensure_dataset_location(dataset.id, dataset.local_uri)
+            except DuplicateRecordError as e:
+                _LOG.warning(str(e))
+        return was_inserted
 
     def _get_dataset_types(self, q):
         types = set()
