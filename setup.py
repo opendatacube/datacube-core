@@ -10,7 +10,7 @@ extras_require = {
     'interactive': ['matplotlib', 'fiona'],
     'distributed': ['distributed', 'dask[distributed]'],
     'analytics': ['scipy', 'pyparsing', 'numexpr'],
-    'doc': ['Sphinx'],
+    'doc': ['Sphinx', 'setuptools'],
     'test': tests_require,
 }
 # An 'all' option, following ipython naming conventions.
@@ -76,7 +76,6 @@ setup(
         'psycopg2',
         'gdal>=1.9',
         'dask[array]',
-        'setuptools',
         'xarray',
     ],
     extras_require=extras_require,
