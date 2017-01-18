@@ -5,7 +5,10 @@ try:
 except ImportError:
     from urllib.parse import parse_qs
 
-from rasterio.io import MemoryFile  # pylint: disable=import-error
+try:
+    from rasterio.io import MemoryFile  # pylint: disable=import-error
+except ImportError:
+    MemoryFile = None
 from affine import Affine
 
 import datacube
