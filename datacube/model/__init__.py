@@ -743,7 +743,7 @@ class GeoBox(object):
     dims = dimensions
 
     def __str__(self):
-        return "GeoBox({})".format(self.geographic_extent.points)
+        return "GeoBox({})".format(self.geographic_extent)
 
     def __repr__(self):
         return "GeoBox({width}, {height}, {affine!r}, {crs})".format(
