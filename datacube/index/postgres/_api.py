@@ -275,6 +275,15 @@ class PostgresDb(object):
                 'ID of a metadata type',
                 DATASET.c.metadata_type_ref
             ),
+            'uri': NativeField(
+                'uri',
+                "URI of dataset",
+                DATASET_LOCATION.c.uri_body,
+                alchemy_expression=DATASET_URI_FIELD,
+                # Note that this field is a single uri: selecting it will result in one-result per uri.
+                # (ie. duplicate datasets if multiple uris, no dataset if no uris)
+                affects_row_selection=True
+            ),
         }
 
         # noinspection PyTypeChecker

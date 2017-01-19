@@ -922,7 +922,8 @@ class DatasetResource(object):
             q['dataset_type_id'] = product.id
             yield q, product
 
-    def _do_search_by_product(self, query, return_fields=False, with_source_ids=False, source_filter=None):
+    def _do_search_by_product(self, query, return_fields=False, select_field_names=None,
+                              with_source_ids=False, source_filter=None):
         if source_filter:
             product_queries = list(self._get_product_queries(source_filter))
             if len(product_queries) != 1:
@@ -940,7 +941,13 @@ class DatasetResource(object):
                 query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
                 select_fields = None
                 if return_fields:
-                    select_fields = tuple(dataset_fields.values())
+                    # if no fields specified, select all
+                    if select_field_names is None:
+                        select_fields = tuple(field for name, field in dataset_fields.items()
+                                              if not field.affects_row_selection)
+                    else:
+                        select_fields = tuple(dataset_fields[field_name]
+                                              for field_name in select_field_names)
                 yield (product,
                        connection.search_datasets(
                            query_exprs,

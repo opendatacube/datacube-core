@@ -80,13 +80,17 @@ class NativeField(PgField):
     Fields hard-coded into the schema. (not user configurable)
     """
 
-    def __init__(self, name, description, alchemy_column, alchemy_expression=None):
+    def __init__(self, name, description, alchemy_column, alchemy_expression=None,
+                 # Should this be selected by default when selecting all fields?
+                 affects_row_selection=False):
         super(NativeField, self).__init__(name, description, alchemy_column, False)
         self._expression = alchemy_expression
+        self.affects_row_selection = affects_row_selection
 
     @property
     def alchemy_expression(self):
-        return (self._expression or self.alchemy_column).label(self.name)
+        expression = self._expression if self._expression is not None else self.alchemy_column
+        return expression.label(self.name)
 
     @property
     def postgres_index_type(self):

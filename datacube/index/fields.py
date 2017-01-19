@@ -17,6 +17,10 @@ class Field(object):
         self.name = name
         self.description = description
 
+        # Does selecting this affect the output rows?
+        # (eg. Does this join other tables that aren't 1:1 with datasets.)
+        self.affects_row_selection = False
+
     def __eq__(self, value):
         """
         Is this field equal to a value?
