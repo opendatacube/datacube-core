@@ -5,6 +5,9 @@ try:
 except ImportError:
     from urllib.parse import parse_qs
 
+# travis can only get earlier version of rasterio which doesn't have MemoryFile, so
+# - tell pylint to ingnore inport error
+# - catch ImportError so pytest doctest don't fall over
 try:
     from rasterio.io import MemoryFile  # pylint: disable=import-error
 except ImportError:
