@@ -130,4 +130,65 @@ def get_map(dc, args, start_response):
 
 
 def get_capabilities(args, start_response):
-    pass
+    template = """<?xml version='1.0' encoding="UTF-8" standalone="no" ?>
+<!DOCTYPE WMT_MS_Capabilities SYSTEM "http://schemas.opengis.net/wms/1.1.1/WMS_MS_Capabilities.dtd"
+ [
+ <!ELEMENT VendorSpecificCapabilities EMPTY>
+ ]>
+<WMT_MS_Capabilities version="1.1.1"
+        xmlns="http://www.opengis.net/wms"
+        xmlns:py="http://genshi.edgewall.org/"
+        xmlns:xlink="http://www.w3.org/1999/xlink">
+<Service>
+  <Name>Datacube WMS</Name>
+  <Title>WMS server for Datacube</Title>
+  <OnlineResource xlink:href="{location}"></OnlineResource>
+</Service>
+<Capability>
+  <Request>
+    <GetCapabilities>
+      <Format>application/vnd.ogc.wms_xml</Format>
+      <DCPType>
+        <HTTP>
+          <Get><OnlineResource xlink:href="{location}"></OnlineResource></Get>
+        </HTTP>
+      </DCPType>
+    </GetCapabilities>
+    <GetMap>
+      <Format>image/png</Format>
+      <DCPType>
+        <HTTP>
+          <Get><OnlineResource xlink:href="{location}"></OnlineResource></Get>
+        </HTTP>
+      </DCPType>
+    </GetMap>
+  </Request>
+  <Exception>
+    <Format>application/vnd.ogc.se_blank</Format>
+  </Exception>
+  <VendorSpecificCapabilities></VendorSpecificCapabilities>
+  <UserDefinedSymbolization SupportSLD="1" UserLayer="0" UserStyle="1" RemoteWFS="0"/>
+  <Layer>
+    <Title>WMS server for Datacube</Title>
+    <SRS>EPSG:4326</SRS>
+    <SRS>EPSG:3577</SRS>
+    <SRS>EPSG:3857</SRS>
+    <LatLonBoundingBox minx="100" miny="-50" maxx="160" maxy="0"></LatLonBoundingBox>
+    <BoundingBox CRS="EPSG:4326" minx="100" miny="-50" maxx="160" maxy="0"/>
+    <Layer>
+      <Name>ls8_nbar_albers</Name>
+      <Title>LS 8 NBAR</Title>
+      <Abstract>LS 8 NBAR</Abstract>
+      <LatLonBoundingBox minx="100" miny="-50" maxx="160" maxy="0"></LatLonBoundingBox>
+      <BoundingBox CRS="EPSG:4326" minx="100" miny="-50" maxx="160" maxy="0"/>
+    </Layer>
+  </Layer>
+</Capability>
+</WMT_MS_Capabilities>
+"""
+    data = template.format(location="http://localhost:8000/?").encode('utf-8')
+    start_response("200 OK", [
+        ("Content-Type", "application/xml"),
+        ("Content-Length", str(len(data)))
+    ])
+    return iter([data])
