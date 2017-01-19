@@ -9,6 +9,10 @@ import datetime
 import io
 import uuid
 
+from decimal import Decimal
+
+from psycopg2._range import NumericRange
+
 import datacube.scripts.search_tool
 import datacube.scripts.cli_app
 import pytest
@@ -69,6 +73,10 @@ def pseudo_telemetry_dataset(index, db, pseudo_telemetry_type):
                         'ul': {'lat': -29.23394, 'lon': 149.85216},
                         'ur': {'lat': -29.26873, 'lon': 152.21782}
                     }
+                },
+                'image': {
+                    'satellite_ref_point_start': {'x': 116, 'y': 74},
+                    'satellite_ref_point_end': {'x': 116, 'y': 84},
                 },
                 'creation_dt': datetime.datetime(2015, 4, 22, 6, 32, 4),
                 'instrument': {'name': 'OLI_TIRS'},
@@ -289,6 +297,61 @@ def test_search_by_product(index, pseudo_telemetry_type, pseudo_telemetry_datase
     product, datasets = products[0]
     assert product.id == pseudo_telemetry_type.id
     assert next(datasets).id == pseudo_telemetry_dataset.id
+
+
+def test_search_returning(index, pseudo_telemetry_type, pseudo_telemetry_dataset, ls5_nbar_gtiff_type):
+    """
+    :type index: datacube.index._api.Index
+    """
+    dataset = pseudo_telemetry_dataset
+
+    # Expect one product with our one dataset.
+    results = list(index.datasets.search_returning(
+        ('id', 'sat_path', 'sat_row'),
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS',
+    ))
+    assert len(results) == 1
+    id, path_range, sat_range = results[0]
+    assert id == dataset.id
+    # TODO: output nicer types?
+    assert path_range == NumericRange(Decimal('116'), Decimal('116'), '[]')
+    assert sat_range == NumericRange(Decimal('74'), Decimal('84'), '[]')
+
+    # If returning a field like uri, there will be one result per location.
+
+    # No locations
+    results = list(index.datasets.search_returning(
+        ('id', 'uri'),
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS',
+    ))
+    assert len(results) == 0
+
+    # Add a location to the dataset and we should get one result
+    test_uri = 'file:///tmp/test1'
+    index.datasets.add_location(dataset, test_uri)
+    results = list(index.datasets.search_returning(
+        ('id', 'uri'),
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS',
+    ))
+    assert len(results) == 1
+    assert results == [(dataset.id, test_uri)]
+
+    # Add a second location and we should get two results
+    test_uri2 = 'file:///tmp/test2'
+    index.datasets.add_location(dataset, test_uri2)
+    results = set(index.datasets.search_returning(
+        ('id', 'uri'),
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS',
+    ))
+    assert len(results) == 2
+    assert results == {
+        (dataset.id, test_uri),
+        (dataset.id, test_uri2)
+    }
 
 
 def test_searches_only_type(index, pseudo_telemetry_type, pseudo_telemetry_dataset, ls5_nbar_gtiff_type):
@@ -671,7 +734,7 @@ def test_csv_search_via_cli(global_integration_cli_args, pseudo_telemetry_type, 
 
 # Headers are currently in alphabetical order.
 _EXPECTED_OUTPUT_HEADER = 'dataset_type_id,gsi,id,instrument,lat,lon,metadata_type,metadata_type_id,orbit,' \
-                          'platform,product,product_type,sat_path,sat_row,time'
+                          'platform,product,product_type,sat_path,sat_row,time,uri'
 
 
 def test_csv_structure(global_integration_cli_args, pseudo_telemetry_type, ls5_nbar_gtiff_type,

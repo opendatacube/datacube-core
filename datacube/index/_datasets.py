@@ -5,6 +5,7 @@ API for dataset indexing, access and search.
 from __future__ import absolute_import
 
 import logging
+from collections import namedtuple
 
 from cachetools.func import lru_cache
 from datacube import compat
@@ -16,6 +17,7 @@ from . import fields
 from .exceptions import DuplicateRecordError, UnknownFieldError
 
 _LOG = logging.getLogger(__name__)
+
 
 # It's a public api, so we can't reorganise old methods.
 # pylint: disable=too-many-public-methods, too-many-lines
@@ -597,8 +599,6 @@ class DatasetResource(object):
         with self._db.connect() as connection:
             return connection.contains_dataset(id_)
 
-
-
     def add(self, dataset, skip_sources=False):
         """
         Ensure a dataset is in the index. Add it if not present.
@@ -834,7 +834,25 @@ class DatasetResource(object):
             yield product, self._make_many(datasets)
 
     def search_returning(self, field_names, **query):
-        pass
+        """
+        Perform a search, returning only the specified fields.
+
+        This method can be faster than normal search() if you don't need all fields of each dataset.
+
+        It also allows for returning rows other than datasets, such as a row per uri when requesting field 'uri'.
+
+        :param tuple[str] field_names:
+        :param dict[str,str|float|datacube.model.Range] query:
+        :returns __generator[tuple]: sequence of results, each result is a namedtuple of your requested fields
+        """
+        result_type = namedtuple('search_result', field_names)
+
+        for _, results in self._do_search_by_product(query,
+                                                     return_fields=True,
+                                                     select_field_names=field_names):
+
+            for columns in results:
+                yield result_type(*columns)
 
     def count(self, **query):
         """
@@ -1003,7 +1021,7 @@ class DatasetResource(object):
         Perform a search, returning just the search fields of each dataset.
 
         :param dict[str,str|float|datacube.model.Range] query:
-        :rtype: dict
+        :rtype: __generator[dict]
         """
         for _, results in self._do_search_by_product(query, return_fields=True):
             for columns in results:
