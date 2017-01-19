@@ -94,13 +94,16 @@ def get_dataset_fields(dataset_search_fields):
             'ID of a metadata type',
             DATASET.c.metadata_type_ref
         ),
+
+        # Fields that can affect row selection
+
+        # Note that this field is a single uri: selecting it will result in one-result per uri.
+        # (ie. duplicate datasets if multiple uris, no dataset if no uris)
         'uri': NativeField(
             'uri',
-            "URI of dataset",
+            "Dataset URI",
             DATASET_LOCATION.c.uri_body,
             alchemy_expression=DATASET_URI_FIELD,
-            # Note that this field is a single uri: selecting it will result in one-result per uri.
-            # (ie. duplicate datasets if multiple uris, no dataset if no uris)
             affects_row_selection=True
         ),
     }

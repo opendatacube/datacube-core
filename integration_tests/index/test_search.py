@@ -303,7 +303,6 @@ def test_search_returning(index, pseudo_telemetry_type, pseudo_telemetry_dataset
     """
     :type index: datacube.index._api.Index
     """
-    dataset = pseudo_telemetry_dataset
 
     # Expect one product with our one dataset.
     results = list(index.datasets.search_returning(
@@ -313,10 +312,16 @@ def test_search_returning(index, pseudo_telemetry_type, pseudo_telemetry_dataset
     ))
     assert len(results) == 1
     id, path_range, sat_range = results[0]
-    assert id == dataset.id
+    assert id == pseudo_telemetry_dataset.id
     # TODO: output nicer types?
     assert path_range == NumericRange(Decimal('116'), Decimal('116'), '[]')
     assert sat_range == NumericRange(Decimal('74'), Decimal('84'), '[]')
+
+
+def test_search_returning_rows(index, pseudo_telemetry_type,
+                               pseudo_telemetry_dataset, pseudo_telemetry_dataset2,
+                               ls5_nbar_gtiff_type):
+    dataset = pseudo_telemetry_dataset
 
     # If returning a field like uri, there will be one result per location.
 
@@ -351,6 +356,22 @@ def test_search_returning(index, pseudo_telemetry_type, pseudo_telemetry_dataset
     assert results == {
         (dataset.id, test_uri),
         (dataset.id, test_uri2)
+    }
+
+    # A second dataset now has a location too:
+    test_uri3 = 'mdss://c10/tmp/something'
+    index.datasets.add_location(pseudo_telemetry_dataset2, test_uri3)
+    # Datasets and locations should still correctly match up...
+    results = set(index.datasets.search_returning(
+        ('id', 'uri'),
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS',
+    ))
+    assert len(results) == 3
+    assert results == {
+        (dataset.id, test_uri),
+        (dataset.id, test_uri2),
+        (pseudo_telemetry_dataset2.id, test_uri3),
     }
 
 
