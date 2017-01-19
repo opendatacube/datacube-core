@@ -23,6 +23,10 @@ def _parse_query(qs):
     return {key.lower(): (val[0] if len(val) == 1 else val) for key, val in parse_qs(qs).items()}
 
 
+def _script_url(environ):
+    return environ['wsgi.url_scheme']+'://'+environ['HTTP_HOST']+environ['SCRIPT_NAME']
+
+
 def application(environ, start_response):
     dc = datacube.Datacube()
 
@@ -32,9 +36,9 @@ def application(environ, start_response):
         return get_map(dc, args, start_response)
 
     if args.get('request') == 'GetCapabilities':
-        return get_capabilities(args, start_response)
+        return get_capabilities(dc, args, environ, start_response)
 
-    data = b"""<!DOCTYPE html>
+    data = """<!DOCTYPE html>
 <html>
 <head>
 	<title>Map</title>
@@ -51,20 +55,20 @@ def application(environ, start_response):
 	var mymap = L.map('mapid').setView([-35.28, 149.12], 12);
 
 	L.tileLayer.wms(
-        "http://localhost:8000/?",
-        {
+        "{wms_url}",
+        {{
             minZoom: 6,
             maxZoom: 19,
             layers: "ls8_nbar_albers",
             format: 'image/png',
             transparent: true,
             attribution: "Teh Cube"
-        }
+        }}
     ).addTo(mymap);
 </script>
 </body>
 </html>
-"""
+""".format(wms_url=_script_url(environ)).encode('utf-8')
 
     start_response("200 OK", [
         ("Content-Type", "text/html"),
@@ -135,7 +139,7 @@ def get_map(dc, args, start_response):
     return iter([body])
 
 
-def get_capabilities(args, start_response):
+def get_capabilities(dc, args, environ, start_response):
     template = """<?xml version='1.0' encoding="UTF-8" standalone="no" ?>
 <!DOCTYPE WMT_MS_Capabilities SYSTEM "http://schemas.opengis.net/wms/1.1.1/WMS_MS_Capabilities.dtd"
  [
@@ -176,9 +180,9 @@ def get_capabilities(args, start_response):
   <UserDefinedSymbolization SupportSLD="1" UserLayer="0" UserStyle="1" RemoteWFS="0"/>
   <Layer>
     <Title>WMS server for Datacube</Title>
-    <SRS>EPSG:4326</SRS>
     <SRS>EPSG:3577</SRS>
     <SRS>EPSG:3857</SRS>
+    <SRS>EPSG:4326</SRS>
     <LatLonBoundingBox minx="100" miny="-50" maxx="160" maxy="0"></LatLonBoundingBox>
     <BoundingBox CRS="EPSG:4326" minx="100" miny="-50" maxx="160" maxy="0"/>
     <Layer>
@@ -192,7 +196,7 @@ def get_capabilities(args, start_response):
 </Capability>
 </WMT_MS_Capabilities>
 """
-    data = template.format(location="http://localhost:8000/?").encode('utf-8')
+    data = template.format(location=_script_url(environ)).encode('utf-8')
     start_response("200 OK", [
         ("Content-Type", "application/xml"),
         ("Content-Length", str(len(data)))
