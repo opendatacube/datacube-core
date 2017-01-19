@@ -25,8 +25,8 @@ def application(environ, start_response):
     if args['REQUEST'] == 'GetMap':
         return get_map(dc, args, start_response)
 
-    if args['REQUEST'] == 'GetCapability':
-        return get_capability(args, start_response)
+    if args['REQUEST'] == 'GetCapabilities':
+        return get_capabilities(args, start_response)
 
     data = b"Hello, World!\n"
     start_response("200 OK", [
@@ -98,5 +98,5 @@ def get_map(dc, args, start_response):
     return iter([body])
 
 
-def get_capability(args, start_response):
+def get_capabilities(args, start_response):
     pass
