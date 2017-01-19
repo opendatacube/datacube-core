@@ -198,3 +198,8 @@ def get_capabilities(args, start_response):
         ("Content-Length", str(len(data)))
     ])
     return iter([data])
+
+
+if __name__ == '__main__':
+    from werkzeug.serving import run_simple  # pylint: disable=import-error
+    run_simple('127.0.0.1', 8000, application, use_debugger=True, use_reloader=True)
