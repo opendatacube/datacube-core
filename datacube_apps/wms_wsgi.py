@@ -12,15 +12,21 @@ try:
     from rasterio.io import MemoryFile  # pylint: disable=import-error
 except ImportError:
     MemoryFile = None
+
+import numpy
 from affine import Affine
 
 import datacube
 
 
+def _parse_query(qs):
+    return {key.lower(): (val[0] if len(val) == 1 else val) for key, val in parse_qs(qs).items()}
+
+
 def application(environ, start_response):
     dc = datacube.Datacube()
 
-    args = {key.lower(): (val[0] if len(val) == 1 else val) for key, val in parse_qs(environ['QUERY_STRING']).items()}
+    args = _parse_query(environ['QUERY_STRING'])
 
     if args.get('request') == 'GetMap':
         return get_map(dc, args, start_response)
@@ -82,11 +88,11 @@ def _write_png(data, bands):
                           width=width,
                           height=height,
                           count=len(bands),
-                          affine=Affine.identity(),
+                          transform=Affine.identity(),
                           nodata=0,
                           dtype='uint8') as thing:
             for idx, band in enumerate(bands, start=1):
-                scaled = (data[band].values[0, ::-1] / 12.0).astype('uint8')
+                scaled = numpy.clip(data[band].values[0, ::-1] / 12.0, 0, 255).astype('uint8')
                 thing.write_band(idx, scaled)
         return memfile.read()
 
