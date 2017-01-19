@@ -20,17 +20,48 @@ import datacube
 def application(environ, start_response):
     dc = datacube.Datacube()
 
-    args = {key: (val[0] if len(val) == 1 else val) for key, val in parse_qs(environ['QUERY_STRING']).items()}
+    args = {key.lower(): (val[0] if len(val) == 1 else val) for key, val in parse_qs(environ['QUERY_STRING']).items()}
 
-    if args['REQUEST'] == 'GetMap':
+    if args.get('request') == 'GetMap':
         return get_map(dc, args, start_response)
 
-    if args['REQUEST'] == 'GetCapabilities':
+    if args.get('request') == 'GetCapabilities':
         return get_capabilities(args, start_response)
 
-    data = b"Hello, World!\n"
+    data = b"""<!DOCTYPE html>
+<html>
+<head>
+	<title>Map</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
+	<script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
+</head>
+<body>
+
+<div id="mapid" style="width: 1200px; height: 800px;"></div>
+<script>
+	var mymap = L.map('mapid').setView([-35.28, 149.12], 12);
+
+	L.tileLayer.wms(
+        "http://localhost:8000/?",
+        {
+            minZoom: 6,
+            maxZoom: 19,
+            layers: "ls8_nbar_albers",
+            format: 'image/png',
+            transparent: true,
+            attribution: "Teh Cube"
+        }
+    ).addTo(mymap);
+</script>
+</body>
+</html>
+"""
+
     start_response("200 OK", [
-        ("Content-Type", "text/plain"),
+        ("Content-Type", "text/html"),
         ("Content-Length", str(len(data)))
     ])
     return iter([data])
@@ -61,10 +92,10 @@ def _write_png(data, bands):
 
 
 def _get_geobox(args):
-    width = int(args['WIDTH'])
-    height = int(args['HEIGHT'])
-    minx, miny, maxx, maxy = map(float, args['BBOX'].split(','))
-    crs = datacube.model.CRS(args['SRS'])
+    width = int(args['width'])
+    height = int(args['height'])
+    minx, miny, maxx, maxy = map(float, args['bbox'].split(','))
+    crs = datacube.model.CRS(args['srs'])
 
     affine = Affine.translation(minx, miny) * Affine.scale((maxx - minx) / width, (maxy - miny) / height)
     return datacube.model.GeoBox(width, height, affine, crs)
