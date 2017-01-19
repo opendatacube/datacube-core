@@ -48,7 +48,7 @@ _DATASET_METADATA = {
 
 def test_metadata_indexes_views_exist(db, default_metadata_type):
     """
-    :type db: datacube.index.postgres._api.PostgresDb
+    :type db: datacube.index.postgres._connections.PostgresDb
     :type default_metadata_type: datacube.model.MetadataType
     """
     # Metadata indexes should no longer exist.
@@ -60,7 +60,7 @@ def test_metadata_indexes_views_exist(db, default_metadata_type):
 
 def test_dataset_indexes_views_exist(db, ls5_nbar_gtiff_type):
     """
-    :type db: datacube.index.postgres._api.PostgresDb
+    :type db: datacube.index.postgres._connections.PostgresDb
     :type ls5_nbar_gtiff_type: datacube.model.DatasetType
     """
     assert ls5_nbar_gtiff_type.name == 'ls5_nbart_p54_gtiff'

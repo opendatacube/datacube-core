@@ -93,7 +93,7 @@ def test_archive_datasets(index, db, local_config, default_metadata_type):
 def test_index_duplicate_dataset(index, db, local_config, default_metadata_type):
     """
     :type index: datacube.index._api.Index
-    :type db: datacube.index.postgres._api.PostgresDb
+    :type db: datacube.index.postgres._connections.PostgresDb
     """
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
     assert not index.datasets.has(_telemetry_uuid)
@@ -122,7 +122,7 @@ def test_index_duplicate_dataset(index, db, local_config, default_metadata_type)
 def test_transactions(index, db, local_config, default_metadata_type):
     """
     :type index: datacube.index._api.Index
-    :type db: datacube.index.postgres._api.PostgresDb
+    :type db: datacube.index.postgres._connections.PostgresDb
     """
     assert not index.datasets.has(_telemetry_uuid)
 

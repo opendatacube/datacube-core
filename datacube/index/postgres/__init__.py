@@ -6,6 +6,6 @@ This package tries to contain any SQLAlchemy and database-specific code.
 """
 from __future__ import absolute_import
 
-from ._api import PostgresDb
+from ._connections import PostgresDb
 
 __all__ = ['PostgresDb']

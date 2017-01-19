@@ -8,7 +8,7 @@ from sqlalchemy.exc import OperationalError
 
 import datacube
 from datacube.index import index_connect
-from datacube.index.postgres._api import IndexSetupError
+from datacube.index.postgres._connections import IndexSetupError
 from datacube.ui import click as ui
 from datacube.ui.click import cli, handle_exception
 

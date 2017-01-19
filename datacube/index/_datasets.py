@@ -24,7 +24,7 @@ _LOG = logging.getLogger(__name__)
 class MetadataTypeResource(object):
     def __init__(self, db):
         """
-        :type db: datacube.index.postgres._api.PostgresDb
+        :type db: datacube.index.postgres._connections.PostgresDb
         """
         self._db = db
 
@@ -226,13 +226,13 @@ class MetadataTypeResource(object):
 
 class ProductResource(object):
     """
-    :type _db: datacube.index.postgres._api.PostgresDb
+    :type _db: datacube.index.postgres._connections.PostgresDb
     :type metadata_type_resource: MetadataTypeResource
     """
 
     def __init__(self, db, metadata_type_resource):
         """
-        :type db: datacube.index.postgres._api.PostgresDb
+        :type db: datacube.index.postgres._connections.PostgresDb
         :type metadata_type_resource: MetadataTypeResource
         """
         self._db = db
@@ -533,13 +533,13 @@ class ProductResource(object):
 
 class DatasetResource(object):
     """
-    :type _db: datacube.index.postgres._api.PostgresDb
+    :type _db: datacube.index.postgres._connections.PostgresDb
     :type types: datacube.index._datasets.ProductResource
     """
 
     def __init__(self, db, dataset_type_resource):
         """
-        :type db: datacube.index.postgres._api.PostgresDb
+        :type db: datacube.index.postgres._connections.PostgresDb
         :type dataset_type_resource: datacube.index._datasets.ProductResource
         """
         self._db = db
@@ -832,6 +832,9 @@ class DatasetResource(object):
         """
         for product, datasets in self._do_search_by_product(query):
             yield product, self._make_many(datasets)
+
+    def search_returning(self, field_names, **query):
+        pass
 
     def count(self, **query):
         """

@@ -22,6 +22,8 @@ from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 from sqlalchemy.dialects.postgresql.base import DOUBLE_PRECISION
 
 
+
+
 class PgField(Field):
     """
     Postgres implementation of a searchable field. May be a value inside

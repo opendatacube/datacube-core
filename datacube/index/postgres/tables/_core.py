@@ -202,3 +202,36 @@ def has_schema(engine, connection):
 
 def drop_db(connection):
     connection.execute('drop schema if exists %s cascade;' % SCHEMA_NAME)
+
+
+def to_pg_role(role):
+    """
+    >>> to_pg_role('ingest')
+    'agdc_ingest'
+    >>> to_pg_role('fake')
+    Traceback (most recent call last):
+    ...
+    ValueError: Unknown role 'fake'. Expected one of ...
+    """
+    pg_role = 'agdc_' + role.lower()
+    if pg_role not in USER_ROLES:
+        raise ValueError(
+            'Unknown role %r. Expected one of %r' %
+            (role, [r.split('_')[1] for r in USER_ROLES])
+        )
+    return pg_role
+
+
+def from_pg_role(pg_role):
+    """
+    >>> from_pg_role('agdc_admin')
+    'admin'
+    >>> from_pg_role('fake')
+    Traceback (most recent call last):
+    ...
+    ValueError: Not a pg role: 'fake'. Expected one of ...
+    """
+    if pg_role not in USER_ROLES:
+        raise ValueError('Not a pg role: %r. Expected one of %r' % (pg_role, USER_ROLES))
+
+    return pg_role.split('_')[1]
