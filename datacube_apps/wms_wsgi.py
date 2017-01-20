@@ -20,42 +20,23 @@ from affine import Affine
 import datacube
 
 
-def _parse_query(qs):
-    return {key.lower(): (val[0] if len(val) == 1 else val) for key, val in parse_qs(qs).items()}
-
-
-def _script_url(environ):
-    return environ['wsgi.url_scheme']+'://'+environ['HTTP_HOST']+environ['SCRIPT_NAME']
-
-
-def application(environ, start_response):
-    dc = datacube.Datacube()
-
-    args = _parse_query(environ['QUERY_STRING'])
-
-    if args.get('request') == 'GetMap':
-        return get_map(dc, args, start_response)
-
-    if args.get('request') == 'GetCapabilities':
-        return get_capabilities(dc, args, environ, start_response)
-
-    data = """<!DOCTYPE html>
+INDEX_TEMPLATE = """<!DOCTYPE html>
 <html>
 <head>
-	<title>Map</title>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
-	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
-	<script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
+    <title>Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
 </head>
 <body>
 
 <div id="mapid" style="width: 1200px; height: 800px;"></div>
 <script>
-	var mymap = L.map('mapid').setView([-35.28, 149.12], 12);
+    var mymap = L.map('mapid').setView([-35.28, 149.12], 12);
 
-	L.tileLayer.wms(
+    L.tileLayer.wms(
         "{wms_url}",
         {{
             minZoom: 6,
@@ -69,13 +50,92 @@ def application(environ, start_response):
 </script>
 </body>
 </html>
-""".format(wms_url=_script_url(environ)).encode('utf-8')
+"""
 
-    start_response("200 OK", [
-        ("Content-Type", "text/html"),
-        ("Content-Length", str(len(data)))
-    ])
-    return iter([data])
+
+GET_CAPS_TEMPLATE = """<?xml version='1.0' encoding="UTF-8" standalone="no" ?>
+<!DOCTYPE WMT_MS_Capabilities SYSTEM "http://schemas.opengis.net/wms/1.1.1/WMS_MS_Capabilities.dtd"
+ [
+ <!ELEMENT VendorSpecificCapabilities EMPTY>
+ ]>
+<WMT_MS_Capabilities version="1.1.1"
+        xmlns="http://www.opengis.net/wms"
+        xmlns:py="http://genshi.edgewall.org/"
+        xmlns:xlink="http://www.w3.org/1999/xlink">
+<Service>
+  <Name>Datacube WMS</Name>
+  <Title>WMS server for Datacube</Title>
+  <OnlineResource xlink:href="{location}"></OnlineResource>
+</Service>
+<Capability>
+  <Request>
+    <GetCapabilities>
+      <Format>application/vnd.ogc.wms_xml</Format>
+      <DCPType>
+        <HTTP>
+          <Get><OnlineResource xlink:href="{location}"></OnlineResource></Get>
+        </HTTP>
+      </DCPType>
+    </GetCapabilities>
+    <GetMap>
+      <Format>image/png</Format>
+      <DCPType>
+        <HTTP>
+          <Get><OnlineResource xlink:href="{location}"></OnlineResource></Get>
+        </HTTP>
+      </DCPType>
+    </GetMap>
+  </Request>
+  <Exception>
+    <Format>application/vnd.ogc.se_blank</Format>
+  </Exception>
+  <VendorSpecificCapabilities></VendorSpecificCapabilities>
+  <UserDefinedSymbolization SupportSLD="1" UserLayer="0" UserStyle="1" RemoteWFS="0"/>
+  <Layer>
+    <Title>WMS server for Datacube</Title>
+    <SRS>EPSG:3577</SRS>
+    <SRS>EPSG:3857</SRS>
+    <SRS>EPSG:4326</SRS>
+    <LatLonBoundingBox minx="100" miny="-50" maxx="160" maxy="0"></LatLonBoundingBox>
+    <BoundingBox CRS="EPSG:4326" minx="100" miny="-50" maxx="160" maxy="0"/>
+    <Layer>
+      <Name>ls8_nbar_albers</Name>
+      <Title>LS 8 NBAR</Title>
+      <Abstract>LS 8 NBAR</Abstract>
+      <LatLonBoundingBox minx="100" miny="-50" maxx="160" maxy="0"></LatLonBoundingBox>
+      <BoundingBox CRS="EPSG:4326" minx="100" miny="-50" maxx="160" maxy="0"/>
+    </Layer>
+  </Layer>
+</Capability>
+</WMT_MS_Capabilities>
+"""
+
+
+def _parse_query(qs):
+    return {key.lower(): (val[0] if len(val) == 1 else val) for key, val in parse_qs(qs).items()}
+
+
+def _script_url(environ):
+    return environ['wsgi.url_scheme']+'://'+environ['HTTP_HOST']+environ['SCRIPT_NAME']
+
+
+def application(environ, start_response):
+    with datacube.Datacube(app="WMS") as dc:
+        args = _parse_query(environ['QUERY_STRING'])
+
+        if args.get('request') == 'GetMap':
+            return get_map(dc, args, start_response)
+
+        if args.get('request') == 'GetCapabilities':
+            return get_capabilities(dc, args, environ, start_response)
+
+        data = INDEX_TEMPLATE.format(wms_url=_script_url(environ)).encode('utf-8')
+
+        start_response("200 OK", [
+            ("Content-Type", "text/html"),
+            ("Content-Length", str(len(data)))
+        ])
+        return iter([data])
 
 
 def _set_resampling(m, resampling):
@@ -160,63 +220,7 @@ def get_map(dc, args, start_response):
 
 
 def get_capabilities(dc, args, environ, start_response):
-    template = """<?xml version='1.0' encoding="UTF-8" standalone="no" ?>
-<!DOCTYPE WMT_MS_Capabilities SYSTEM "http://schemas.opengis.net/wms/1.1.1/WMS_MS_Capabilities.dtd"
- [
- <!ELEMENT VendorSpecificCapabilities EMPTY>
- ]>
-<WMT_MS_Capabilities version="1.1.1"
-        xmlns="http://www.opengis.net/wms"
-        xmlns:py="http://genshi.edgewall.org/"
-        xmlns:xlink="http://www.w3.org/1999/xlink">
-<Service>
-  <Name>Datacube WMS</Name>
-  <Title>WMS server for Datacube</Title>
-  <OnlineResource xlink:href="{location}"></OnlineResource>
-</Service>
-<Capability>
-  <Request>
-    <GetCapabilities>
-      <Format>application/vnd.ogc.wms_xml</Format>
-      <DCPType>
-        <HTTP>
-          <Get><OnlineResource xlink:href="{location}"></OnlineResource></Get>
-        </HTTP>
-      </DCPType>
-    </GetCapabilities>
-    <GetMap>
-      <Format>image/png</Format>
-      <DCPType>
-        <HTTP>
-          <Get><OnlineResource xlink:href="{location}"></OnlineResource></Get>
-        </HTTP>
-      </DCPType>
-    </GetMap>
-  </Request>
-  <Exception>
-    <Format>application/vnd.ogc.se_blank</Format>
-  </Exception>
-  <VendorSpecificCapabilities></VendorSpecificCapabilities>
-  <UserDefinedSymbolization SupportSLD="1" UserLayer="0" UserStyle="1" RemoteWFS="0"/>
-  <Layer>
-    <Title>WMS server for Datacube</Title>
-    <SRS>EPSG:3577</SRS>
-    <SRS>EPSG:3857</SRS>
-    <SRS>EPSG:4326</SRS>
-    <LatLonBoundingBox minx="100" miny="-50" maxx="160" maxy="0"></LatLonBoundingBox>
-    <BoundingBox CRS="EPSG:4326" minx="100" miny="-50" maxx="160" maxy="0"/>
-    <Layer>
-      <Name>ls8_nbar_albers</Name>
-      <Title>LS 8 NBAR</Title>
-      <Abstract>LS 8 NBAR</Abstract>
-      <LatLonBoundingBox minx="100" miny="-50" maxx="160" maxy="0"></LatLonBoundingBox>
-      <BoundingBox CRS="EPSG:4326" minx="100" miny="-50" maxx="160" maxy="0"/>
-    </Layer>
-  </Layer>
-</Capability>
-</WMT_MS_Capabilities>
-"""
-    data = template.format(location=_script_url(environ)).encode('utf-8')
+    data = GET_CAPS_TEMPLATE.format(location=_script_url(environ)).encode('utf-8')
     start_response("200 OK", [
         ("Content-Type", "application/xml"),
         ("Content-Length", str(len(data)))
