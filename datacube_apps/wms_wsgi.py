@@ -14,6 +14,7 @@ except ImportError:
     MemoryFile = None
 
 import numpy
+import xarray
 from affine import Affine
 
 import datacube
@@ -96,7 +97,7 @@ def _write_png(data, bands):
                           nodata=0,
                           dtype='uint8') as thing:
             for idx, band in enumerate(bands, start=1):
-                scaled = numpy.clip(data[band].values[0, ::-1] / 12.0, 0, 255).astype('uint8')
+                scaled = numpy.clip(data[band].values[::-1] / 12.0, 0, 255).astype('uint8')
                 thing.write_band(idx, scaled)
         return memfile.read()
 
@@ -112,15 +113,34 @@ def _get_geobox(args):
 
 
 def _load_data(dc, geobox, product, bands):
+    query = datacube.api.query.Query(product=product, geopolygon=geobox.extent, time=('2015-01-01', '2015-02-01'))
+    datasets = dc.index.datasets.search_eager(**query.search_terms)
+    datasets.sort(key=lambda d: d.center_time)
+    dataset_iter = iter(datasets)
+    to_load = []
+    for dataset in dataset_iter:
+        if dataset.extent.to_crs(geobox.crs).intersects(geobox.extent):
+            to_load.append(dataset)
+            break
+    else:
+        return None
+
+    geom = to_load[0].extent.to_crs(geobox.crs)
+    for dataset in dataset_iter:
+        if geom.contains(geobox.extent):
+            break
+        if dataset.extent.to_crs(geobox.crs).intersects(geobox.extent):
+            to_load.append(dataset)
+            geom = geom.union(dataset.extent.to_crs(geobox.crs))
+
+    holder = numpy.empty(shape=tuple(), dtype=object)
+    holder[()] = to_load
+    sources = xarray.DataArray(holder)
+
     prod = dc.index.products.get_by_name(product)
-
     measurements = [_set_resampling(m, 'cubic') for name, m in prod.measurements.items() if name in bands]
-
-    datasets = dc.find_datasets(product=product, geopolygon=geobox.extent, time=('2015-01-01', '2015-02-01'))
-    sources = dc.group_datasets(datasets, datacube.api.query.query_group_by('solar_day'))
-
     with datacube.set_options(reproject_threads=1):
-        return dc.load_data(sources[0:1], geobox, measurements)
+        return dc.load_data(sources, geobox, measurements)
 
 
 def get_map(dc, args, start_response):
