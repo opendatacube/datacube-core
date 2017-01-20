@@ -759,19 +759,24 @@ class DatasetResource(object):
 
     def add_location(self, dataset, uri):
         """
-        Add a location to the dataset.
+        Add a location to the dataset if it doesn't already exist.
         :param datacube.model.Dataset dataset: dataset
         :param str uri: fully qualified uri
+        :returns bool: Was one added?
         """
         with self._db.connect() as connection:
-            return connection.ensure_dataset_location(dataset.id, uri)
+            try:
+                connection.ensure_dataset_location(dataset.id, uri)
+                return True
+            except DuplicateRecordError:
+                return False
 
     def remove_location(self, dataset, uri):
         """
         Remove a location from the dataset if it exists.
         :param datacube.model.Dataset dataset: dataset
         :param str uri: fully qualified uri
-        :returns: True if a matching one was found
+        :returns bool: Was one removed?
         """
         with self._db.connect() as connection:
             was_removed = connection.remove_location(dataset.id, uri)

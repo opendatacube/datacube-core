@@ -190,11 +190,17 @@ def test_index_dataset_with_location(index, default_metadata_type):
     locations = index.datasets.get_locations(dataset)
     assert len(locations) == 1
     # Remove the location
-    index.datasets.remove_location(dataset, first_file.as_uri())
+    was_removed = index.datasets.remove_location(dataset, first_file.as_uri())
+    assert was_removed
+    was_removed = index.datasets.remove_location(dataset, first_file.as_uri())
+    assert not was_removed
     locations = index.datasets.get_locations(dataset)
     assert len(locations) == 0
     # Re-add the location
-    index.datasets.add_location(dataset, first_file.as_uri())
+    was_added = index.datasets.add_location(dataset, first_file.as_uri())
+    assert was_added
+    was_added = index.datasets.add_location(dataset, first_file.as_uri())
+    assert not was_added
     locations = index.datasets.get_locations(dataset)
     assert len(locations) == 1
 
