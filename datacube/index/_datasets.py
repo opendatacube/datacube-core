@@ -771,6 +771,10 @@ class DatasetResource(object):
             except DuplicateRecordError:
                 return False
 
+    def get_datasets_for_location(self, uri):
+        with self._db.connect() as connection:
+            return (self._make(row) for row in connection.get_datasets_for_location(uri))
+
     def remove_location(self, dataset, uri):
         """
         Remove a location from the dataset if it exists.

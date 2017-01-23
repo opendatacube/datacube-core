@@ -225,3 +225,7 @@ def test_index_dataset_with_location(index, default_metadata_type):
     assert locations == [second_file.as_uri(), first_file.as_uri()]
     # And the second one is newer, so it should be returned as the default local path:
     assert stored.local_path == Path(second_file)
+
+    # Ability to get datasets for a location
+    dataset_ids = [d.id for d in index.datasets.get_datasets_for_location(first_file.as_uri())]
+    assert dataset_ids == [dataset.id]
