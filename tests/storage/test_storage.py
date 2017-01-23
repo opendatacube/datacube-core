@@ -6,9 +6,10 @@ from affine import Affine, identity
 import xarray
 import mock
 import pytest
+from contextlib import contextmanager
 
 from datacube.model import GeoBox, CRS
-from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse
+from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse, read_from_source, Resampling
 
 GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
            'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
@@ -143,3 +144,54 @@ def _create_broken_netcdf(tmpdir):
 
     with netCDF4.Dataset(output_path) as nco:
         blank = nco.data_vars['blank']
+
+
+class FakeDataSource(object):
+    def __init__(self):
+        self.crs = CRS('EPSG:4326')
+        self.transform = Affine(0.25, 0, 100, 0, -0.25, -30)
+        self.nodata = -999
+        self.shape = (121, 143)
+
+        self.data = numpy.full(self.shape, self.nodata, dtype='int16')
+        self.data[:50, :50] = 100
+        self.data[:50, 50:100] = 200
+        self.data[50:100, :50] = 300
+        self.data[50:100, 50:100] = 400
+
+    def read(self, window=None, out_shape=None):
+        assert out_shape is None
+        return self.data[slice(*window[0]), slice(*window[1])]
+
+    def reproject(self, dest, dst_transform, dst_crs, dst_nodata, resampling, **kwargs):
+        source = self.read(self.source)  # TODO: read only the part the we care about
+        return rasterio.warp.reproject(source,
+                                       dest,
+                                       src_transform=self.transform,
+                                       src_crs=str(self.crs),
+                                       src_nodata=self.nodata,
+                                       dst_transform=dst_transform,
+                                       dst_crs=str(dst_crs),
+                                       dst_nodata=dst_nodata,
+                                       resampling=resampling,
+                                       **kwargs)
+
+
+def test_read_from_source():
+    data_source = FakeDataSource()
+
+    @contextmanager
+    def open():
+        yield data_source
+    source = mock.Mock()
+    source.open = open
+
+    dest = numpy.empty(data_source.shape, dtype='int16')
+    read_from_source(source,
+                     dest,
+                     dst_transform=data_source.transform,
+                     dst_nodata=data_source.nodata,
+                     dst_projection=data_source.crs,
+                     resampling=Resampling.nearest)
+
+    assert (dest == data_source.data).all()
