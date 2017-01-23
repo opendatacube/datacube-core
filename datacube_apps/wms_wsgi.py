@@ -140,7 +140,7 @@ def application(environ, start_response):
 
 def _set_resampling(m, resampling):
     mc = m.copy()
-    mc['resampling'] = resampling
+    # mc['resampling_method'] = resampling
     return mc
 
 
@@ -189,7 +189,10 @@ def _load_data(dc, geobox, product, bands):
     for dataset in dataset_iter:
         if geom.contains(geobox.extent):
             break
-        if dataset.extent.to_crs(geobox.crs).intersects(geobox.extent):
+        ds_extent = dataset.extent.to_crs(geobox.crs)
+        if geom.contains(ds_extent):
+            continue
+        if ds_extent.intersects(geobox.extent):
             to_load.append(dataset)
             geom = geom.union(dataset.extent.to_crs(geobox.crs))
 
