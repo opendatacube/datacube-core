@@ -173,6 +173,19 @@ def _get_geobox(args):
 
 
 def _load_data(dc, geobox, product, bands):
+    to_load = _get_datasets(dc, geobox, product)
+
+    holder = numpy.empty(shape=tuple(), dtype=object)
+    holder[()] = to_load
+    sources = xarray.DataArray(holder)
+
+    prod = dc.index.products.get_by_name(product)
+    measurements = [_set_resampling(m, 'cubic') for name, m in prod.measurements.items() if name in bands]
+    with datacube.set_options(reproject_threads=1):
+        return dc.load_data(sources, geobox, measurements)
+
+
+def _get_datasets(dc, geobox, product):
     query = datacube.api.query.Query(product=product, geopolygon=geobox.extent, time=('2015-01-01', '2015-02-01'))
     datasets = dc.index.datasets.search_eager(**query.search_terms)
     datasets.sort(key=lambda d: d.center_time)
@@ -195,15 +208,7 @@ def _load_data(dc, geobox, product, bands):
         if ds_extent.intersects(geobox.extent):
             to_load.append(dataset)
             geom = geom.union(dataset.extent.to_crs(geobox.crs))
-
-    holder = numpy.empty(shape=tuple(), dtype=object)
-    holder[()] = to_load
-    sources = xarray.DataArray(holder)
-
-    prod = dc.index.products.get_by_name(product)
-    measurements = [_set_resampling(m, 'cubic') for name, m in prod.measurements.items() if name in bands]
-    with datacube.set_options(reproject_threads=1):
-        return dc.load_data(sources, geobox, measurements)
+    return to_load
 
 
 def get_map(dc, args, start_response):
