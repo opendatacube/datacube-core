@@ -207,8 +207,8 @@ class BandDataSource(object):
     def shape(self):
         return self.source.shape
 
-    def read(self, window=None):
-        return self.source.ds.read(indexes=self.source.bidx, window=window)
+    def read(self, window=None, out_shape=None):
+        return self.source.ds.read(indexes=self.source.bidx, window=window, out_shape=out_shape)
 
     def reproject(self, dest, dst_transform, dst_crs, dst_nodata, resampling, **kwargs):
         return rasterio.warp.reproject(self.source,
@@ -236,8 +236,8 @@ class OverrideBandDataSource(object):
     def shape(self):
         return self.source.shape
 
-    def read(self, window=None):
-        return self.source.ds.read(indexes=self.source.bidx, window=window)
+    def read(self, window=None, out_shape=None):
+        return self.source.ds.read(indexes=self.source.bidx, window=window, out_shape=out_shape)
 
     def reproject(self, dest, dst_transform, dst_crs, dst_nodata, resampling, **kwargs):
         source = self.read(self.source)  # TODO: read only the part the we care about
