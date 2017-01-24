@@ -16,8 +16,10 @@ except ImportError:
 import numpy
 import xarray
 from affine import Affine
+from datetime import datetime, timedelta
 
 import datacube
+from datacube.utils import geometry
 
 
 INDEX_TEMPLATE = """<!DOCTYPE html>
@@ -96,19 +98,33 @@ GET_CAPS_TEMPLATE = """<?xml version='1.0' encoding="UTF-8" standalone="no" ?>
     <SRS>EPSG:3577</SRS>
     <SRS>EPSG:3857</SRS>
     <SRS>EPSG:4326</SRS>
-    <LatLonBoundingBox minx="100" miny="-50" maxx="160" maxy="0"></LatLonBoundingBox>
-    <BoundingBox CRS="EPSG:4326" minx="100" miny="-50" maxx="160" maxy="0"/>
-    <Layer>
-      <Name>ls8_nbar_albers</Name>
-      <Title>LS 8 NBAR</Title>
-      <Abstract>LS 8 NBAR</Abstract>
-      <LatLonBoundingBox minx="100" miny="-50" maxx="160" maxy="0"></LatLonBoundingBox>
-      <BoundingBox CRS="EPSG:4326" minx="100" miny="-50" maxx="160" maxy="0"/>
-    </Layer>
+    {layers}
   </Layer>
 </Capability>
 </WMT_MS_Capabilities>
 """
+
+LAYER_TEMPLATE = """
+<Layer>
+  <Name>{name}</Name>
+  <Title>{title}</Title>
+  <Abstract>{abstract}</Abstract>
+  {metadata}
+</Layer>
+"""
+
+LAYER_SPEC = {
+    'ls8_nbar_rgb': {
+        'product': 'ls8_nbar_albers',
+        'bands': ('red', 'green', 'blue'),
+        'extents': geometry.box(100, -50, 160, 0, crs=geometry.CRS('EPSG:4326')),
+        'time': {
+            'start': datetime(2013, 1, 1),
+            'end': datetime(2017, 1, 1),
+            'period': timedelta(days=0)
+        }
+    }
+}
 
 
 def _parse_query(qs):
@@ -172,8 +188,8 @@ def _get_geobox(args):
     return datacube.model.GeoBox(width, height, affine, crs)
 
 
-def _load_data(dc, geobox, product, bands):
-    to_load = _get_datasets(dc, geobox, product)
+def _load_data(dc, geobox, product, bands, time_):
+    to_load = _get_datasets(dc, geobox, product, time_)
 
     holder = numpy.empty(shape=tuple(), dtype=object)
     holder[()] = to_load
@@ -185,8 +201,8 @@ def _load_data(dc, geobox, product, bands):
         return dc.load_data(sources, geobox, measurements)
 
 
-def _get_datasets(dc, geobox, product):
-    query = datacube.api.query.Query(product=product, geopolygon=geobox.extent, time=('2015-01-01', '2015-02-01'))
+def _get_datasets(dc, geobox, product, time_):
+    query = datacube.api.query.Query(product=product, geopolygon=geobox.extent, time=time_)
     datasets = dc.index.datasets.search_eager(**query.search_terms)
     datasets.sort(key=lambda d: d.center_time)
     dataset_iter = iter(datasets)
@@ -214,10 +230,12 @@ def _get_datasets(dc, geobox, product):
 def get_map(dc, args, start_response):
     geobox = _get_geobox(args)
 
-    product = 'ls8_nbar_albers'
-    bands = ('red', 'green', 'blue')
+    layer = LAYER_SPEC[args['layers']]
+    product = layer['product']
+    bands = layer['bands']
+    time = args.get('time', '2015-01-01/2015-02-01').split('/')
 
-    data = _load_data(dc, geobox, product, bands)
+    data = _load_data(dc, geobox, product, bands, time_=time)
 
     body = _write_png(data, bands)
     start_response("200 OK", [
@@ -227,8 +245,27 @@ def get_map(dc, args, start_response):
     return iter([body])
 
 
+def get_layer_metadata(layer, product):
+    metadata = """
+<LatLonBoundingBox minx="100" miny="-50" maxx="160" maxy="0"></LatLonBoundingBox>
+<BoundingBox CRS="EPSG:4326" minx="100" miny="-50" maxx="160" maxy="0"/>
+<Dimension name="time" units="ISO8601"/>
+<Extent name="time" default="2015-01-01">2013-01-01/2017-01-01/P8D</Extent>
+    """
+    return metadata
+
+
 def get_capabilities(dc, args, environ, start_response):
-    data = GET_CAPS_TEMPLATE.format(location=_script_url(environ)).encode('utf-8')
+    layers = ""
+    for name, layer in LAYER_SPEC.items():
+        product = dc.index.products.get_by_name(layer['product'])
+        layers += LAYER_TEMPLATE.format(name=name,
+                                        title=name,
+                                        abstract=product.definition['description'],
+                                        metadata=get_layer_metadata(layer, product))
+
+
+    data = GET_CAPS_TEMPLATE.format(location=_script_url(environ), layers=layers).encode('utf-8')
     start_response("200 OK", [
         ("Content-Type", "application/xml"),
         ("Content-Length", str(len(data)))
@@ -238,4 +275,4 @@ def get_capabilities(dc, args, environ, start_response):
 
 if __name__ == '__main__':
     from werkzeug.serving import run_simple  # pylint: disable=import-error
-    run_simple('127.0.0.1', 8000, application, use_debugger=True, use_reloader=True)
+    run_simple('127.0.0.1', 8000, application, use_debugger=False, use_reloader=True)
