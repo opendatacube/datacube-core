@@ -1,13 +1,15 @@
 from __future__ import print_function, absolute_import
 
-from textwrap import dedent
-
 import netCDF4
 import numpy
+import xarray as xr
+import pytest
 
 from datacube.model import Variable, CRS
 from datacube.storage.netcdf_writer import create_netcdf, create_coordinate, create_variable, netcdfy_data, \
     create_grid_mapping_variable, flag_mask_meanings
+from datacube.storage.storage import write_dataset_to_netcdf
+from datacube.utils import DatacubeException
 
 GEO_PROJ = CRS('GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],'
                'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],'
@@ -203,3 +205,15 @@ def test_measurements_model_netcdfflags():
     assert ([0, 1023] == valid_range).all()
     assert ([1, 2, 4, 512] == masks).all()
     assert 'no_band_1_saturated no_band_2_saturated no_band_3_saturated land' == meanings
+
+
+def test_useful_error_on_write_empty_dataset(tmpnetcdf_filename):
+    with pytest.raises(DatacubeException) as excinfo:
+        ds = xr.Dataset()
+        write_dataset_to_netcdf(ds, tmpnetcdf_filename)
+    assert 'empty' in str(excinfo.value)
+
+    with pytest.raises(DatacubeException) as excinfo:
+        ds = xr.Dataset(data_vars={'blue': (('time',), numpy.array([0, 1, 2]))})
+        write_dataset_to_netcdf(ds, tmpnetcdf_filename)
+    assert 'CRS' in str(excinfo.value)

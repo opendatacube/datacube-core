@@ -11,7 +11,7 @@ from pathlib import Path
 from datacube.model import CRS
 from datacube.storage import netcdf_writer
 from datacube.config import OPTIONS
-from datacube.utils import clamp, datetime_to_seconds_since_1970, is_url, uri_to_local_path
+from datacube.utils import clamp, datetime_to_seconds_since_1970, is_url, uri_to_local_path, DatacubeException
 from datacube.compat import urlparse, urljoin
 
 try:
@@ -497,6 +497,12 @@ def write_dataset_to_netcdf(dataset, filename, global_attributes=None, variable_
     global_attributes = global_attributes or {}
     variable_params = variable_params or {}
     filename = Path(filename)
+
+    if not dataset.data_vars.keys():
+        raise DatacubeException('Cannot save empty dataset to disk.')
+
+    if not hasattr(dataset, 'crs'):
+        raise DatacubeException('Dataset does not contain CRS, cannot write to NetCDF file.')
 
     nco = create_netcdf_storage_unit(filename,
                                      dataset.crs,
