@@ -792,10 +792,12 @@ class DatasetResource(object):
 
         :param bool full_info: Include all available fields
         """
+        uri = dataset_res.uri
         return Dataset(
             self.types.get(dataset_res.dataset_type_ref),
             dataset_res.metadata,
-            dataset_res.local_uri,
+            # We guarantee that this property on the class is only a local uri.
+            uri if uri and uri.startswith('file:') else None,
             indexed_by=dataset_res.added_by if full_info else None,
             indexed_time=dataset_res.added if full_info else None,
             archived_time=dataset_res.archived

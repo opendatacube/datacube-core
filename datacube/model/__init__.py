@@ -66,7 +66,9 @@ class Dataset(object):
         #: :type: dict
         self.metadata_doc = metadata_doc
 
-        #: The local file or path that can be opened to access the raw data.
+        #: The most recent local file available to access the data, if any.
+        #: Note that a dataset can have multiple uris, not all of which are local files.
+        #: To get all uris for a dataset, use index.datasets.get_locations()
         #: :type: str
         self.local_uri = local_uri
 

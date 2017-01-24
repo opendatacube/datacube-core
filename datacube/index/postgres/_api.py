@@ -27,7 +27,8 @@ from ._fields import parse_fields, NativeField
 from .tables import DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
 
 DATASET_URI_FIELD = DATASET_LOCATION.c.uri_scheme + ':' + DATASET_LOCATION.c.uri_body
-_DATASET_SELECT_FIELDS = (
+# Fields for selecting dataset with the latest local uri
+_DATASET_SELECT_W_LOCAL = (
     DATASET,
     # The most recent file uri. We may want more advanced path selection in the future...
     select([
@@ -39,7 +40,12 @@ _DATASET_SELECT_FIELDS = (
         )
     ).order_by(
         DATASET_LOCATION.c.added.desc()
-    ).limit(1).label('local_uri')
+    ).limit(1).label('uri')
+)
+# Fields for selecting dataset with a single joined uri (specify join yourself in your query)
+_DATASET_SELECT_W_URI = (
+    DATASET,
+    DATASET_URI_FIELD.label('uri')
 )
 
 PGCODE_UNIQUE_CONSTRAINT = '23505'
@@ -206,8 +212,13 @@ class PostgresDbAPI(object):
         return bool(self._connection.execute(select([DATASET.c.id]).where(DATASET.c.id == dataset_id)).fetchone())
 
     def get_datasets_for_location(self, uri):
-        # scheme, body = _split_uri(uri)
-        return []
+        scheme, body = _split_uri(uri)
+        return self._connection.execute(
+            select(_DATASET_SELECT_W_URI).where(
+                and_(DATASET_LOCATION.c.uri_scheme == scheme,
+                     DATASET_LOCATION.c.uri_body == body)
+            )
+        ).fetchall()
 
     def insert_dataset_source(self, classifier, dataset_id, source_dataset_id):
         try:
@@ -244,13 +255,13 @@ class PostgresDbAPI(object):
 
     def get_dataset(self, dataset_id):
         return self._connection.execute(
-            select(_DATASET_SELECT_FIELDS).where(DATASET.c.id == dataset_id)
+            select(_DATASET_SELECT_W_LOCAL).where(DATASET.c.id == dataset_id)
         ).first()
 
     def get_derived_datasets(self, dataset_id):
         return self._connection.execute(
             select(
-                _DATASET_SELECT_FIELDS
+                _DATASET_SELECT_W_LOCAL
             ).select_from(
                 DATASET.join(DATASET_SOURCE, DATASET.c.id == DATASET_SOURCE.c.dataset_ref)
             ).where(
@@ -294,7 +305,7 @@ class PostgresDbAPI(object):
 
         # join the adjacency list with datasets table
         query = select(
-            _DATASET_SELECT_FIELDS + (aggd.c.sources, aggd.c.classes)
+            _DATASET_SELECT_W_LOCAL + (aggd.c.sources, aggd.c.classes)
         ).select_from(aggd.join(DATASET, DATASET.c.id == aggd.c.dataset_ref))
 
         return self._connection.execute(query).fetchall()
@@ -308,7 +319,7 @@ class PostgresDbAPI(object):
         """
         # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
         return self._connection.execute(
-            select(_DATASET_SELECT_FIELDS).where(DATASET.c.metadata.contains(metadata))
+            select(_DATASET_SELECT_W_LOCAL).where(DATASET.c.metadata.contains(metadata))
         ).fetchall()
 
     @staticmethod
@@ -328,7 +339,7 @@ class PostgresDbAPI(object):
                 for f in select_fields
             )
         else:
-            select_columns = _DATASET_SELECT_FIELDS
+            select_columns = _DATASET_SELECT_W_LOCAL
 
         if with_source_ids:
             # Include the IDs of source datasets

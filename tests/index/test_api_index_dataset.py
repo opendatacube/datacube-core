@@ -154,7 +154,7 @@ def _build_dataset(doc):
 
 _EXAMPLE_NBAR_DATASET = _build_dataset(_EXAMPLE_NBAR)
 
-DatasetRecord = namedtuple('DatasetRecord', ['id', 'metadata', 'dataset_type_ref', 'local_uri',
+DatasetRecord = namedtuple('DatasetRecord', ['id', 'metadata', 'dataset_type_ref', 'uri',
                                              'added', 'added_by', 'archived'])
 
 
