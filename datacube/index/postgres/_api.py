@@ -214,7 +214,11 @@ class PostgresDbAPI(object):
     def get_datasets_for_location(self, uri):
         scheme, body = _split_uri(uri)
         return self._connection.execute(
-            select(_DATASET_SELECT_W_URI).where(
+            select(
+                _DATASET_SELECT_W_URI
+            ).select_from(
+                DATASET_LOCATION.join(DATASET)
+            ).where(
                 and_(DATASET_LOCATION.c.uri_scheme == scheme,
                      DATASET_LOCATION.c.uri_body == body)
             )

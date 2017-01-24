@@ -6,6 +6,7 @@ Integration tests: these depend on a local Postgres instance.
 """
 from __future__ import absolute_import
 
+import copy
 import datetime
 
 import pytest
@@ -227,5 +228,9 @@ def test_index_dataset_with_location(index, default_metadata_type):
     assert stored.local_path == Path(second_file)
 
     # Ability to get datasets for a location
+    # Add a second dataset with a different location (to catch lack of joins, filtering etc)
+    second_ds_doc = copy.deepcopy(_telemetry_dataset)
+    second_ds_doc['id'] = '366f32d8-e1f8-11e6-94b4-185e0f80a5c0'
+    index.datasets.add(Dataset(type_, second_ds_doc, second_file.as_uri()))
     dataset_ids = [d.id for d in index.datasets.get_datasets_for_location(first_file.as_uri())]
     assert dataset_ids == [dataset.id]
