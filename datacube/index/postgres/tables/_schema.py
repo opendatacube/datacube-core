@@ -75,7 +75,7 @@ DATASET = Table(
 DATASET_LOCATION = Table(
     'dataset_location', _core.METADATA,
     Column('id', Integer, primary_key=True, autoincrement=True),
-    Column('dataset_ref', None, ForeignKey(DATASET.c.id), nullable=False),
+    Column('dataset_ref', None, ForeignKey(DATASET.c.id), index=True, nullable=False),
 
     # The base URI to find the dataset.
     #
@@ -91,7 +91,7 @@ DATASET_LOCATION = Table(
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
     Column('added_by', _sql.PGNAME, server_default=func.current_user(), nullable=False),
 
-    UniqueConstraint('dataset_ref', 'uri_scheme', 'uri_body'),
+    UniqueConstraint('uri_scheme', 'uri_body', 'dataset_ref'),
 )
 
 # Link datasets to their source datasets.
