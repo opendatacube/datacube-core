@@ -88,12 +88,24 @@ def _calc_offsets(off, src_size, dst_size):
     return read_off, write_off, size
 
 
+def _calc_offsets2(off, scale, src_size, dst_size):
+    if scale < 0:
+        scale = -scale
+        off = off - int(dst_size*scale)
+    read_off, write_off, size = _calc_offsets(off, src_size, int(abs(dst_size*scale)))
+    return read_off, int(round(write_off/scale)), size, int(round(size/scale))
+
+
 def _no_scale(affine, eps=0.01):
-    return abs(affine.a - 1.0) < eps and abs(affine.e - 1.0) < eps
+    return abs(abs(affine.a) - 1.0) < eps and abs(abs(affine.e) - 1.0) < eps
 
 
 def _no_fractional_translate(affine, eps=0.01):
     return abs(affine.c % 1.0) < eps and abs(affine.f % 1.0) < eps
+
+
+def _is_subsample(affine, factor=10):
+    return abs(affine.a) > factor or abs(affine.e) > factor
 
 
 def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, resampling):
@@ -105,22 +117,25 @@ def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, re
     """
     with source.open() as src:
         array_transform = ~src.transform * dst_transform
-        if (src.crs == dst_projection and _no_scale(array_transform) and
-                (resampling == Resampling.nearest or _no_fractional_translate(array_transform))):
+        # if the CRS is the same use decimated reads if possible (NN or 1:1 scaling)
+        if src.crs == dst_projection and (resampling == Resampling.nearest or
+                                          (_no_scale(array_transform) and _no_fractional_translate(array_transform))):
             dy_dx = int(round(array_transform.f)), int(round(array_transform.c))
-            read, write, shape = zip(*map(_calc_offsets, dy_dx, src.shape, dest.shape))
+            sy_sx = (array_transform.e, array_transform.a)
+            read, write, read_shape, write_shape = zip(*map(_calc_offsets2, dy_dx, sy_sx, src.shape, dest.shape))
 
             dest.fill(dst_nodata)
-            if all(shape):
-                window = ((read[0], read[0] + shape[0]), (read[1], read[1] + shape[1]))
-                tmp = src.read(window=window)
-                numpy.copyto(dest[write[0]:write[0] + shape[0], write[1]:write[1] + shape[1]],
+            if all(write_shape):
+                window = ((read[0], read[0] + read_shape[0]), (read[1], read[1] + read_shape[1]))
+                tmp = src.read(window=window, out_shape=write_shape)
+                numpy.copyto(dest
+                             [::(-1 if sy_sx[0] < 0 else 1), ::(-1 if sy_sx[1] < 0 else 1)]
+                             [write[0]:write[0] + write_shape[0], write[1]:write[1] + write_shape[1]],
                              tmp, where=(tmp != src.nodata))
         else:
             if dest.dtype == numpy.dtype('int8'):
                 dest = dest.view(dtype='uint8')
                 dst_nodata = dst_nodata.astype('uint8')
-
             src.reproject(dest,
                           dst_transform=dst_transform,
                           dst_crs=str(dst_projection),
