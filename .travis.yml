@@ -36,8 +36,8 @@ before_install:
 install:
   - export CPLUS_INCLUDE_PATH="/usr/include/gdal"
   - export C_INCLUDE_PATH="/usr/include/gdal"
+  - travis_retry pip install --upgrade pip pytest six
   - travis_retry pip install pylint==1.6.4 gdal==1.10.0 compliance-checker
-  - travis_retry pip install --upgrade pip pytest
   - travis_retry pip install .[analytics,test,interactive]
 
 script:
