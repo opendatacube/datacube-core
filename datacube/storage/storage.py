@@ -91,13 +91,15 @@ def _calc_offsets(off, src_size, dst_size):
 def _calc_offsets2(off, scale, src_size, dst_size):
     if scale < 0:
         scale = -scale
-        off = off - int(dst_size*scale)
-    read_off, write_off, size = _calc_offsets(off, src_size, int(abs(dst_size*scale)))
-    return read_off, int(round(write_off/scale)), size, int(round(size/scale))
+        read_off, write_off, size = _calc_offsets(off - dst_size*scale, src_size, dst_size*scale)
+        return int(read_off), int(dst_size - size - write_off/scale), int(size), int(size/scale)
+    else:
+        read_off, write_off, size = _calc_offsets(off, src_size, dst_size*scale)
+        return int(read_off), int(write_off/scale), int(size), int(size/scale)
 
 
 def _read_decimated(array_transform, src, dest_shape):
-    dy_dx = int(round(array_transform.f)), int(round(array_transform.c))
+    dy_dx = (array_transform.f, array_transform.c)
     sy_sx = (array_transform.e, array_transform.a)
     read, write, read_shape, write_shape = zip(*map(_calc_offsets2, dy_dx, sy_sx, src.shape, dest_shape))
     if all(write_shape):
@@ -133,9 +135,10 @@ def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, re
                                           (_no_scale(array_transform) and _no_fractional_translate(array_transform))):
             dest.fill(dst_nodata)
             tmp, offset = _read_decimated(array_transform, src, dest.shape)
-            if tmp is not None:
-                numpy.copyto(dest[offset[0]:offset[0] + tmp.shape[0], offset[1]:offset[1] + tmp.shape[1]],
-                             tmp, where=(tmp != src.nodata))
+            if tmp is None:
+                return
+            dest = dest[offset[0]:offset[0] + tmp.shape[0], offset[1]:offset[1] + tmp.shape[1]]
+            numpy.copyto(dest, tmp, where=(tmp != src.nodata))
         else:
             if dest.dtype == numpy.dtype('int8'):
                 dest = dest.view(dtype='uint8')

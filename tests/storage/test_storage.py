@@ -153,13 +153,13 @@ class FakeDataSource(object):
         self.crs = CRS('EPSG:4326')
         self.transform = Affine(0.25, 0, 100, 0, -0.25, -30)
         self.nodata = -999
-        self.shape = (121, 143)
+        self.shape = (613, 597)
 
         self.data = numpy.full(self.shape, self.nodata, dtype='int16')
-        self.data[:50, :50] = 100
-        self.data[:50, 50:100] = 200
-        self.data[50:100, :50] = 300
-        self.data[50:100, 50:100] = 400
+        self.data[:256, :256] = 100
+        self.data[:256, 256:512] = 200
+        self.data[256:512, :256] = 300
+        self.data[256:512, 256:512] = 400
 
     def read(self, window=None, out_shape=None):
         data = self.data
@@ -184,6 +184,32 @@ class FakeDataSource(object):
                                        **kwargs)
 
 
+def _test_helper(source, dst_shape, dst_dtype, dst_transform, dst_nodata, dst_projection, resampling, **kwargs):
+    result = numpy.empty(dst_shape, dtype=dst_dtype)
+    read_from_source(source,
+                     result,
+                     dst_transform=dst_transform,
+                     dst_nodata=dst_nodata,
+                     dst_projection=dst_projection,
+                     resampling=resampling,
+                     **kwargs)
+
+    expected = numpy.empty(dst_shape, dtype=dst_dtype)
+    with source.open() as src:
+        rasterio.warp.reproject(src.data,
+                                expected,
+                                src_transform=src.transform,
+                                src_crs=str(src.crs),
+                                src_nodata=src.nodata,
+                                dst_transform=dst_transform,
+                                dst_crs=str(dst_projection),
+                                dst_nodata=dst_nodata,
+                                resampling=resampling,
+                                **kwargs)
+    assert numpy.allclose(result, expected, equal_nan=True)
+    return result
+
+
 def test_read_from_source():
     data_source = FakeDataSource()
 
@@ -194,115 +220,103 @@ def test_read_from_source():
     source.open = open
 
     # one-to-one copy
-    dest = numpy.empty(data_source.shape, dtype='int16')
-    read_from_source(source,
-                     dest,
-                     dst_transform=data_source.transform,
-                     dst_nodata=data_source.nodata,
-                     dst_projection=data_source.crs,
-                     resampling=Resampling.nearest)
-    assert (dest == data_source.data).all()
+    _test_helper(source,
+                 dst_shape=data_source.shape,
+                 dst_dtype=data_source.data.dtype,
+                 dst_transform=data_source.transform,
+                 dst_nodata=data_source.nodata,
+                 dst_projection=data_source.crs,
+                 resampling=Resampling.nearest)
 
     # change dtype
-    dest = numpy.empty(data_source.shape, dtype='int32')
-    read_from_source(source,
-                     dest,
-                     dst_transform=data_source.transform,
-                     dst_nodata=data_source.nodata,
-                     dst_projection=data_source.crs,
-                     resampling=Resampling.nearest)
-
-    assert (dest == data_source.data).all()
+    _test_helper(source,
+                 dst_shape=data_source.shape,
+                 dst_dtype='int32',
+                 dst_transform=data_source.transform,
+                 dst_nodata=data_source.nodata,
+                 dst_projection=data_source.crs,
+                 resampling=Resampling.nearest)
 
     # change nodata
-    dest = numpy.empty(data_source.shape, dtype='float32')
-    read_from_source(source,
-                     dest,
-                     dst_transform=data_source.transform,
-                     dst_nodata=float('nan'),
-                     dst_projection=data_source.crs,
-                     resampling=Resampling.nearest)
-
-    assert (dest[:100, :100] == data_source.data[:100, :100]).all()
-    assert numpy.isnan(dest[100:, 100:]).all()
+    _test_helper(source,
+                 dst_shape=data_source.shape,
+                 dst_dtype='float32',
+                 dst_transform=data_source.transform,
+                 dst_nodata=float('nan'),
+                 dst_projection=data_source.crs,
+                 resampling=Resampling.nearest)
 
     # different offsets/sizes
-    dest = numpy.empty((100, 100), dtype='float32')
-    read_from_source(source,
-                     dest,
-                     dst_transform=data_source.transform*Affine.translation(-20, -20),
-                     dst_nodata=float('nan'),
-                     dst_projection=data_source.crs,
-                     resampling=Resampling.nearest)
-    assert (dest[20:100, 20:100] == data_source.data[:80, :80]).all()
+    _test_helper(source,
+                 dst_shape=(517, 557),
+                 dst_dtype='float32',
+                 dst_transform=data_source.transform * Affine.translation(-200, -200),
+                 dst_nodata=float('nan'),
+                 dst_projection=data_source.crs,
+                 resampling=Resampling.nearest)
 
-    dest = numpy.empty((200, 200), dtype='float32')
-    read_from_source(source,
-                     dest,
-                     dst_transform=data_source.transform*Affine.translation(20, 20),
-                     dst_nodata=float('nan'),
-                     dst_projection=data_source.crs,
-                     resampling=Resampling.nearest)
-    assert (dest[:80, :80] == data_source.data[20:100, 20:100]).all()
+    _test_helper(source,
+                 dst_shape=(807, 879),
+                 dst_dtype='float32',
+                 dst_transform=data_source.transform * Affine.translation(200, 200),
+                 dst_nodata=float('nan'),
+                 dst_projection=data_source.crs,
+                 resampling=Resampling.nearest)
 
-    dest = numpy.empty((200, 200), dtype='float32')
-    read_from_source(source,
-                     dest,
-                     dst_transform=data_source.transform*Affine.translation(500, -500),
-                     dst_nodata=float('nan'),
-                     dst_projection=data_source.crs,
-                     resampling=Resampling.nearest)
-    assert numpy.isnan(dest).all()
+    _test_helper(source,
+                 dst_shape=(807, 879),
+                 dst_dtype='float32',
+                 dst_transform=data_source.transform * Affine.translation(1500, -1500),
+                 dst_nodata=float('nan'),
+                 dst_projection=data_source.crs,
+                 resampling=Resampling.nearest)
 
     # flip axis
-    dest = numpy.empty((100, 100), dtype='float32')
-    read_from_source(source,
-                     dest,
-                     dst_transform=data_source.transform*Affine.translation(0, 100)*Affine.scale(1, -1),
-                     dst_nodata=float('nan'),
-                     dst_projection=data_source.crs,
-                     resampling=Resampling.nearest)
-    assert (dest[::-1, :] == data_source.data[:100, :100]).all()
+    _test_helper(source,
+                 dst_shape=(517, 557),
+                 dst_dtype='float32',
+                 dst_transform=data_source.transform * Affine.translation(0, 512) * Affine.scale(1, -1),
+                 dst_nodata=float('nan'),
+                 dst_projection=data_source.crs,
+                 resampling=Resampling.nearest)
 
-    dest = numpy.empty((100, 100), dtype='float32')
-    read_from_source(source,
-                     dest,
-                     dst_transform=data_source.transform*Affine.translation(100, 0)*Affine.scale(-1, 1),
-                     dst_nodata=float('nan'),
-                     dst_projection=data_source.crs,
-                     resampling=Resampling.nearest)
-    assert (dest[:, ::-1] == data_source.data[:100, :100]).all()
+    _test_helper(source,
+                 dst_shape=(517, 557),
+                 dst_dtype='float32',
+                 dst_transform=data_source.transform * Affine.translation(512, 0) * Affine.scale(-1, 1),
+                 dst_nodata=float('nan'),
+                 dst_projection=data_source.crs,
+                 resampling=Resampling.nearest)
 
     # scale
-    dest = numpy.empty((25, 50), dtype='float32')
-    read_from_source(source,
-                     dest,
-                     dst_transform=data_source.transform*Affine.scale(2, 4),
-                     dst_nodata=float('nan'),
-                     dst_projection=data_source.crs,
-                     resampling=Resampling.nearest)
-    assert (dest == data_source.data[2:100:4, 0:100:2]).all()
+    _test_helper(source,
+                 dst_shape=(250, 500),
+                 dst_dtype='float32',
+                 dst_transform=data_source.transform * Affine.scale(2, 4),
+                 dst_nodata=float('nan'),
+                 dst_projection=data_source.crs,
+                 resampling=Resampling.nearest)
 
-    dest = numpy.empty((50, 25), dtype='float32')
-    read_from_source(source,
-                     dest,
-                     dst_transform=data_source.transform*Affine.scale(4, 2),
-                     dst_nodata=float('nan'),
-                     dst_projection=data_source.crs,
-                     resampling=Resampling.cubic)
-    assert (dest[0:20, 0:10] == data_source.data[0:40:2, 2:40:4]).all()
-    assert (dest[0:20, 15:25] == data_source.data[0:40:2, 62:100:4]).all()
-    assert (dest[30:50, 15:25] == data_source.data[60:100:2, 62:100:4]).all()
-    assert (dest[30:50, 0:10] == data_source.data[60:100:2, 2:40:4]).all()
+    _test_helper(source,
+                 dst_shape=(500, 250),
+                 dst_dtype='float32',
+                 dst_transform=data_source.transform * Affine.scale(4, 2),
+                 dst_nodata=float('nan'),
+                 dst_projection=data_source.crs,
+                 resampling=Resampling.cubic)
 
-    dest = numpy.empty((10, 10), dtype='float32')
-    read_from_source(source,
-                     dest,
-                     dst_transform=data_source.transform*Affine.scale(10, 10),
-                     dst_nodata=float('nan'),
-                     dst_projection=data_source.crs,
-                     resampling=Resampling.cubic)
-    assert dest[1, 1] == data_source.data[10, 10]
-    assert dest[1, 8] == data_source.data[10, 80]
-    assert dest[8, 8] == data_source.data[80, 80]
-    assert dest[8, 1] == data_source.data[80, 10]
+    _test_helper(source,
+                 dst_shape=(67, 35),
+                 dst_dtype='float32',
+                 dst_transform=data_source.transform * Affine.scale(16, 8),
+                 dst_nodata=float('nan'),
+                 dst_projection=data_source.crs,
+                 resampling=Resampling.cubic)
+
+    _test_helper(source,
+                 dst_shape=(35, 67),
+                 dst_dtype='float32',
+                 dst_transform=data_source.transform * Affine.translation(5, 3) * Affine.scale(8, 16),
+                 dst_nodata=float('nan'),
+                 dst_projection=data_source.crs,
+                 resampling=Resampling.cubic)
