@@ -96,6 +96,17 @@ def _calc_offsets2(off, scale, src_size, dst_size):
     return read_off, int(round(write_off/scale)), size, int(round(size/scale))
 
 
+def _read_decimated(array_transform, src, dest_shape):
+    dy_dx = int(round(array_transform.f)), int(round(array_transform.c))
+    sy_sx = (array_transform.e, array_transform.a)
+    read, write, read_shape, write_shape = zip(*map(_calc_offsets2, dy_dx, sy_sx, src.shape, dest_shape))
+    if all(write_shape):
+        window = ((read[0], read[0] + read_shape[0]), (read[1], read[1] + read_shape[1]))
+        tmp = src.read(window=window, out_shape=write_shape)
+        return tmp[::(-1 if sy_sx[0] < 0 else 1), ::(-1 if sy_sx[1] < 0 else 1)], write
+    return None, None
+
+
 def _no_scale(affine, eps=0.01):
     return abs(abs(affine.a) - 1.0) < eps and abs(abs(affine.e) - 1.0) < eps
 
@@ -105,7 +116,7 @@ def _no_fractional_translate(affine, eps=0.01):
 
 
 def _is_subsample(affine, factor=10):
-    return abs(affine.a) > factor or abs(affine.e) > factor
+    return max(abs(affine.a), abs(affine.e)) > factor
 
 
 def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, resampling):
@@ -120,17 +131,10 @@ def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, re
         # if the CRS is the same use decimated reads if possible (NN or 1:1 scaling)
         if src.crs == dst_projection and (resampling == Resampling.nearest or
                                           (_no_scale(array_transform) and _no_fractional_translate(array_transform))):
-            dy_dx = int(round(array_transform.f)), int(round(array_transform.c))
-            sy_sx = (array_transform.e, array_transform.a)
-            read, write, read_shape, write_shape = zip(*map(_calc_offsets2, dy_dx, sy_sx, src.shape, dest.shape))
-
             dest.fill(dst_nodata)
-            if all(write_shape):
-                window = ((read[0], read[0] + read_shape[0]), (read[1], read[1] + read_shape[1]))
-                tmp = src.read(window=window, out_shape=write_shape)
-                numpy.copyto(dest
-                             [::(-1 if sy_sx[0] < 0 else 1), ::(-1 if sy_sx[1] < 0 else 1)]
-                             [write[0]:write[0] + write_shape[0], write[1]:write[1] + write_shape[1]],
+            tmp, offset = _read_decimated(array_transform, src, dest.shape)
+            if tmp is not None:
+                numpy.copyto(dest[offset[0]:offset[0] + tmp.shape[0], offset[1]:offset[1] + tmp.shape[1]],
                              tmp, where=(tmp != src.nodata))
         else:
             if dest.dtype == numpy.dtype('int8'):

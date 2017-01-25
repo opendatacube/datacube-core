@@ -201,7 +201,6 @@ def test_read_from_source():
                      dst_nodata=data_source.nodata,
                      dst_projection=data_source.crs,
                      resampling=Resampling.nearest)
-
     assert (dest == data_source.data).all()
 
     # change dtype
@@ -273,3 +272,37 @@ def test_read_from_source():
                      dst_projection=data_source.crs,
                      resampling=Resampling.nearest)
     assert (dest[:, ::-1] == data_source.data[:100, :100]).all()
+
+    # scale
+    dest = numpy.empty((25, 50), dtype='float32')
+    read_from_source(source,
+                     dest,
+                     dst_transform=data_source.transform*Affine.scale(2, 4),
+                     dst_nodata=float('nan'),
+                     dst_projection=data_source.crs,
+                     resampling=Resampling.nearest)
+    assert (dest == data_source.data[2:100:4, 0:100:2]).all()
+
+    dest = numpy.empty((50, 25), dtype='float32')
+    read_from_source(source,
+                     dest,
+                     dst_transform=data_source.transform*Affine.scale(4, 2),
+                     dst_nodata=float('nan'),
+                     dst_projection=data_source.crs,
+                     resampling=Resampling.cubic)
+    assert (dest[0:20, 0:10] == data_source.data[0:40:2, 2:40:4]).all()
+    assert (dest[0:20, 15:25] == data_source.data[0:40:2, 62:100:4]).all()
+    assert (dest[30:50, 15:25] == data_source.data[60:100:2, 62:100:4]).all()
+    assert (dest[30:50, 0:10] == data_source.data[60:100:2, 2:40:4]).all()
+
+    dest = numpy.empty((10, 10), dtype='float32')
+    read_from_source(source,
+                     dest,
+                     dst_transform=data_source.transform*Affine.scale(10, 10),
+                     dst_nodata=float('nan'),
+                     dst_projection=data_source.crs,
+                     resampling=Resampling.cubic)
+    assert dest[1, 1] == data_source.data[10, 10]
+    assert dest[1, 8] == data_source.data[10, 80]
+    assert dest[8, 8] == data_source.data[80, 80]
+    assert dest[8, 1] == data_source.data[80, 10]
