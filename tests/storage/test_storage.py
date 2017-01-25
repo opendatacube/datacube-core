@@ -206,7 +206,7 @@ def _test_helper(source, dst_shape, dst_dtype, dst_transform, dst_nodata, dst_pr
                                 dst_nodata=dst_nodata,
                                 resampling=resampling,
                                 **kwargs)
-    assert numpy.allclose(result, expected, equal_nan=True)
+    assert numpy.isclose(result, expected, equal_nan=True).all()
     return result
 
 
