@@ -6,9 +6,11 @@ from __future__ import absolute_import, division
 
 import logging
 import math
+
 import warnings
 from collections import namedtuple, OrderedDict, Sequence
 from pathlib import Path
+from uuid import UUID
 
 import numpy
 from affine import Affine
@@ -105,9 +107,10 @@ class Dataset(object):
     @property
     def id(self):
         """
-        :rtype: uuid
+        :rtype: UUID
         """
-        return self.metadata.id
+        # This is a string in a raw document.
+        return UUID(self.metadata.id)
 
     @property
     def managed(self):

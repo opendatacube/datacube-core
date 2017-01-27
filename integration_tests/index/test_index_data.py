@@ -19,11 +19,11 @@ from datacube.index.exceptions import DuplicateRecordError
 from datacube.index.postgres import PostgresDb
 from datacube.model import Dataset
 
-_telemetry_uuid = '4ec8fe97-e8b9-11e4-87ff-1040f381a756'
+_telemetry_uuid = UUID('4ec8fe97-e8b9-11e4-87ff-1040f381a756')
 _telemetry_dataset = {
     'product_type': 'satellite_telemetry_data',
     'checksum_path': 'package.sha1',
-    'id': _telemetry_uuid,
+    'id': str(_telemetry_uuid),
     'ga_label': 'LS8_OLITIRS_STD-MD_P00_LC81160740742015089ASA00_'
                 '116_074_20150330T022553Z20150330T022657',
 
@@ -145,10 +145,10 @@ def test_has_dataset(index, telemetry_dataset):
     # type: (Index, Dataset) -> None
 
     assert index.datasets.has(_telemetry_uuid)
-    assert index.datasets.has(UUID(_telemetry_uuid))
+    assert index.datasets.has(str(_telemetry_uuid))
 
-    assert not index.datasets.has('f226a278-e422-11e6-b501-185e0f80a5c0')
     assert not index.datasets.has(UUID('f226a278-e422-11e6-b501-185e0f80a5c0'))
+    assert not index.datasets.has('f226a278-e422-11e6-b501-185e0f80a5c0')
 
 
 def test_transactions(index, db, local_config, default_metadata_type):
@@ -182,7 +182,7 @@ def test_get_missing_things(index):
 
     :type index: datacube.index._api.Index
     """
-    uuid_ = '18474b58-c8a6-11e6-a4b3-185e0f80a5c0'
+    uuid_ = UUID('18474b58-c8a6-11e6-a4b3-185e0f80a5c0')
     missing_thing = index.datasets.get(uuid_, include_sources=False)
     assert missing_thing is None, "get() should return none when it doesn't exist"
 

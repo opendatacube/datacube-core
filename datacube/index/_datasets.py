@@ -12,6 +12,7 @@ from datacube import compat
 from datacube.model import Dataset, DatasetType, MetadataType
 from datacube.utils import InvalidDocException, jsonify_document, changes
 from datacube.utils.changes import get_doc_changes, check_doc_unchanged
+from uuid import UUID
 
 from . import fields
 from .exceptions import DuplicateRecordError, UnknownFieldError
@@ -551,7 +552,7 @@ class DatasetResource(object):
         """
         Get dataset by id
 
-        :param uuid id_: id of the dataset to retrieve
+        :param UUID id_: id of the dataset to retrieve
         :param bool include_sources: get the full provenance graph?
         :rtype: datacube.model.Dataset
         """
@@ -569,11 +570,11 @@ class DatasetResource(object):
 
         for dataset, result in datasets.values():
             dataset.metadata_doc['lineage']['source_datasets'] = {
-                classifier: datasets[str(source)][0].metadata_doc
+                classifier: datasets[source][0].metadata_doc
                 for source, classifier in zip(result['sources'], result['classes']) if source
                 }
             dataset.sources = {
-                classifier: datasets[str(source)][0]
+                classifier: datasets[source][0]
                 for source, classifier in zip(result['sources'], result['classes']) if source
                 }
         return datasets[id_][0]
@@ -582,7 +583,7 @@ class DatasetResource(object):
         """
         Get all derived datasets
 
-        :param uuid id_: dataset id
+        :param UUID id_: dataset id
         :rtype: list[datacube.model.Dataset]
         """
         with self._db.connect() as connection:
@@ -593,7 +594,7 @@ class DatasetResource(object):
         """
         Have we already indexed this dataset?
 
-        :param typing.Union[uuid.UUID, str] id_: dataset id
+        :param typing.Union[UUID, str] id_: dataset id
         :rtype: bool
         """
         with self._db.connect() as connection:
@@ -718,7 +719,7 @@ class DatasetResource(object):
         """
         Mark datasets as archived
 
-        :param list[uuid] ids: list of dataset ids to archive
+        :param list[UUID] ids: list of dataset ids to archive
         """
         with self._db.begin() as transaction:
             for id_ in ids:
@@ -728,7 +729,7 @@ class DatasetResource(object):
         """
         Mark datasets as not archived
 
-        :param list[uuid] ids: list of dataset ids to restore
+        :param list[UUID] ids: list of dataset ids to restore
         """
         with self._db.begin() as transaction:
             for id_ in ids:

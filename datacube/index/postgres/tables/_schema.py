@@ -57,7 +57,7 @@ DATASET_TYPE = Table(
 
 DATASET = Table(
     'dataset', _core.METADATA,
-    Column('id', postgres.UUID, primary_key=True),
+    Column('id', postgres.UUID(as_uuid=True), primary_key=True),
 
     Column('metadata_type_ref', None, ForeignKey(METADATA_TYPE.c.id), nullable=False),
     Column('dataset_type_ref', None, ForeignKey(DATASET_TYPE.c.id), index=True, nullable=False),

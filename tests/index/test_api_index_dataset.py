@@ -8,18 +8,19 @@ from contextlib import contextmanager
 from copy import deepcopy
 
 import pytest
+from uuid import UUID
 
 from datacube.index._datasets import DatasetResource
 from datacube.index.exceptions import DuplicateRecordError
 from datacube.model import DatasetType, MetadataType, Dataset
 
-_nbar_uuid = 'f2f12372-8366-11e5-817e-1040f381a756'
-_ortho_uuid = '5cf41d98-eda9-11e4-8a8e-1040f381a756'
-_telemetry_uuid = '4ec8fe97-e8b9-11e4-87ff-1040f381a756'
+_nbar_uuid = UUID('f2f12372-8366-11e5-817e-1040f381a756')
+_ortho_uuid = UUID('5cf41d98-eda9-11e4-8a8e-1040f381a756')
+_telemetry_uuid = UUID('4ec8fe97-e8b9-11e4-87ff-1040f381a756')
 
 # An NBAR with source datasets. Many fields have been removed to keep it semi-focused to our ingest test.
 _EXAMPLE_NBAR = {
-    'id': _nbar_uuid,
+    'id': str(_nbar_uuid),
     'product_type': 'nbar_brdf',
     'checksum_path': 'package.sha1',
     'ga_label': 'LS8_OLITIRS_NBAR_P54_GALPGS01-002_112_079_20140126',
@@ -44,7 +45,7 @@ _EXAMPLE_NBAR = {
             'ortho': {
                 'product_level': 'L1T',
                 'product_type': 'ortho',
-                'id': _ortho_uuid,
+                'id': str(_ortho_uuid),
                 'usgs': {
                     'scene_id': 'LC81120792014026ASA00'
                 },
@@ -99,7 +100,7 @@ _EXAMPLE_NBAR = {
                         'satellite_telemetry_data': {
                             'product_type': 'satellite_telemetry_data',
                             'checksum_path': 'package.sha1',
-                            'id': _telemetry_uuid,
+                            'id': str(_telemetry_uuid),
                             'ga_label': 'LS8_OLITIRS_STD-MD_P00_LC81160740742015089ASA00_'
                                         '116_074_20150330T022553Z20150330T022657',
 
@@ -207,7 +208,7 @@ def test_index_dataset():
     datasets = DatasetResource(mock_db, mock_types)
     dataset = datasets.add(_EXAMPLE_NBAR_DATASET)
 
-    ids = {d.metadata['id'] for d in mock_db.dataset.values()}
+    ids = {d.id for d in mock_db.dataset.values()}
     assert ids == {_nbar_uuid, _ortho_uuid, _telemetry_uuid}
 
     # Three datasets (ours and the two embedded source datasets)

@@ -11,6 +11,7 @@ from contextlib import contextmanager
 
 import os
 import shutil
+from uuid import UUID
 
 import datacube.utils
 import pytest
@@ -56,7 +57,7 @@ TEST_STORAGE_NUM_MEASUREMENTS = 2
 GEOGRAPHIC_VARS = ('latitude', 'longitude')
 PROJECTED_VARS = ('x', 'y')
 
-EXAMPLE_LS5_DATASET_ID = 'bbf3e21c-82b0-11e5-9ba1-a0000100fe80'
+EXAMPLE_LS5_DATASET_ID = UUID('bbf3e21c-82b0-11e5-9ba1-a0000100fe80')
 
 
 @pytest.fixture

@@ -214,7 +214,7 @@ class PostgresDbAPI(object):
                 select(
                     [DATASET.c.id]
                 ).where(
-                    DATASET.c.id == str(dataset_id)
+                    DATASET.c.id == dataset_id
                 )
             ).fetchone()
         )
