@@ -8,12 +8,15 @@ from __future__ import absolute_import
 
 import copy
 import datetime
-
-import pytest
 import sys
 from pathlib import Path
+from uuid import UUID
 
+import pytest
+
+from datacube.index._api import Index
 from datacube.index.exceptions import DuplicateRecordError
+from datacube.index.postgres import PostgresDb
 from datacube.model import Dataset
 
 _telemetry_uuid = '4ec8fe97-e8b9-11e4-87ff-1040f381a756'
@@ -91,6 +94,23 @@ def test_archive_datasets(index, db, local_config, default_metadata_type):
     assert len(datsets) == 1
 
 
+@pytest.fixture
+def telemetry_dataset(index, db, default_metadata_type):
+    # type: (Index, PostgresDb) -> Dataset
+    dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
+    assert not index.datasets.has(_telemetry_uuid)
+
+    with db.begin() as transaction:
+        was_inserted = transaction.insert_dataset(
+            _telemetry_dataset,
+            _telemetry_uuid,
+            dataset_type.id
+        )
+    assert was_inserted
+
+    return index.datasets.get(_telemetry_uuid)
+
+
 def test_index_duplicate_dataset(index, db, local_config, default_metadata_type):
     """
     :type index: datacube.index._api.Index
@@ -109,15 +129,26 @@ def test_index_duplicate_dataset(index, db, local_config, default_metadata_type)
     assert was_inserted
     assert index.datasets.has(_telemetry_uuid)
 
+    # Insert again.
     with pytest.raises(DuplicateRecordError):
-        # Insert again. It should be ignored.ts.types.add_document(_pseudo_telemetry_dataset_type)
         with db.connect() as connection:
             was_inserted = connection.insert_dataset(
                 _telemetry_dataset,
                 _telemetry_uuid,
                 dataset_type.id
             )
+            assert not was_inserted
     assert index.datasets.has(_telemetry_uuid)
+
+
+def test_has_dataset(index, telemetry_dataset):
+    # type: (Index, Dataset) -> None
+
+    assert index.datasets.has(_telemetry_uuid)
+    assert index.datasets.has(UUID(_telemetry_uuid))
+
+    assert not index.datasets.has('f226a278-e422-11e6-b501-185e0f80a5c0')
+    assert not index.datasets.has(UUID('f226a278-e422-11e6-b501-185e0f80a5c0'))
 
 
 def test_transactions(index, db, local_config, default_metadata_type):

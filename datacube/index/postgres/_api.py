@@ -209,7 +209,15 @@ class PostgresDbAPI(object):
             raise
 
     def contains_dataset(self, dataset_id):
-        return bool(self._connection.execute(select([DATASET.c.id]).where(DATASET.c.id == dataset_id)).fetchone())
+        return bool(
+            self._connection.execute(
+                select(
+                    [DATASET.c.id]
+                ).where(
+                    DATASET.c.id == str(dataset_id)
+                )
+            ).fetchone()
+        )
 
     def get_datasets_for_location(self, uri):
         scheme, body = _split_uri(uri)

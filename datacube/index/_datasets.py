@@ -593,7 +593,7 @@ class DatasetResource(object):
         """
         Have we already indexed this dataset?
 
-        :param uuid id_: dataset id
+        :param typing.Union[uuid.UUID, str] id_: dataset id
         :rtype: bool
         """
         with self._db.connect() as connection:
