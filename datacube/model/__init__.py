@@ -151,6 +151,19 @@ class Dataset(object):
                            top=bounds['ul']['y'], bottom=bounds['lr']['y'])
 
     @property
+    def is_archived(self):
+        """
+        Is this dataset archived?
+
+        (an archived dataset is one that is not intended to be used by users anymore: eg. it has been
+        replaced by another dataset. It will not show up in search results, but still exists in the
+        system via provenance chains or through id lookup.)
+
+        :rtype: bool
+        """
+        return self.archived_time is not None
+
+    @property
     def crs(self):
         """
         :rtype: CRS

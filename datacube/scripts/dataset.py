@@ -348,17 +348,17 @@ def _restore_one(dry_run, id_, index, restore_derived, tolerance):
     _LOG.debug("%s selected", len(to_process))
 
     # Only the already-archived ones.
-    to_process = {d for d in to_process if d.archived_time is not None}
+    to_process = {d for d in to_process if d.is_archived}
     _LOG.debug("%s selected are archived", len(to_process))
 
     def within_tolerance(dataset):
-        if not dataset.archived_time:
+        if not dataset.is_archived:
             return False
         t = target_dataset.archived_time
         return (t - tolerance) <= dataset.archived_time <= (t + tolerance)
 
     # Only those archived around the same time as the target.
-    if restore_derived and target_dataset.archived_time:
+    if restore_derived and target_dataset.is_archived:
         to_process = set(filter(within_tolerance, to_process))
         _LOG.debug("%s selected were archived within the tolerance", len(to_process))
 
