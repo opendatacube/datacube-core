@@ -12,6 +12,7 @@ import logging
 import re
 import pathlib
 from datetime import datetime, date
+from uuid import UUID
 
 from dateutil.tz import tzutc
 from math import ceil
@@ -385,6 +386,8 @@ def jsonify_document(doc):
     >>> # Converts keys to strings:
     >>> sorted(jsonify_document({1: 'a', '2': 'b'}).items())
     [('1', 'a'), ('2', 'b')]
+    >>> jsonify_document({'k': UUID("1f231570-e777-11e6-820f-185e0f80a5c0")})
+    {'k': '1f231570-e777-11e6-820f-185e0f80a5c0'}
     """
 
     def fixup_value(v):
@@ -399,6 +402,8 @@ def jsonify_document(doc):
             return v.isoformat()
         if isinstance(v, numpy.dtype):
             return v.name
+        if isinstance(v, UUID):
+            return str(v)
         return v
 
     return transform_object_tree(fixup_value, doc, key_transform=str)
