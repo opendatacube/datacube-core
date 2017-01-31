@@ -153,18 +153,16 @@ def index_cmd(index, match_rules, dtype, auto_match, check_sources, dry_run, dat
     if rules is None:
         return
 
-    datasets = load_datasets(dataset_paths, rules)
-
     # If outputting directly to terminal, show a progress bar.
     if sys.stdout.isatty():
-        with click.progressbar(datasets, label='Indexing datasets') as loadable_datasets:
-            _index_datasets(check_sources, dry_run, index, loadable_datasets)
+        with click.progressbar(dataset_paths, label='Indexing datasets') as dataset_path_iter:
+            index_dataset_paths(check_sources, dry_run, index, rules, dataset_path_iter)
     else:
-        _index_datasets(check_sources, dry_run, index, datasets)
+        index_dataset_paths(check_sources, dry_run, index, rules, dataset_paths)
 
 
-def _index_datasets(check_sources, dry_run, index, loadable_datasets):
-    for dataset in loadable_datasets:
+def index_dataset_paths(check_sources, dry_run, index, rules, dataset_paths):
+    for dataset in load_datasets(dataset_paths, rules):
         _LOG.info('Matched %s', dataset)
         if not dry_run:
             try:
