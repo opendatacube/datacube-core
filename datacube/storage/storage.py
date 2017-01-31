@@ -119,10 +119,6 @@ def _no_fractional_translate(affine, eps=0.01):
     return abs(affine.c % 1.0) < eps and abs(affine.f % 1.0) < eps
 
 
-def _is_subsample(affine, factor=10):
-    return max(abs(affine.a), abs(affine.e)) > factor
-
-
 def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, resampling):
     """
     Read from `source` into `dest`, reprojecting if necessary.
@@ -133,8 +129,8 @@ def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, re
     with source.open() as src:
         array_transform = ~src.transform * dst_transform
         # if the CRS is the same use decimated reads if possible (NN or 1:1 scaling)
-        if src.crs == dst_projection and (resampling == Resampling.nearest or
-                                          (_no_scale(array_transform) and _no_fractional_translate(array_transform))):
+        if src.crs == dst_projection and _no_scale(array_transform) and (resampling == Resampling.nearest or
+                                                                         _no_fractional_translate(array_transform)):
             dest.fill(dst_nodata)
             tmp, offset, _ = _read_decimated(array_transform, src, dest.shape)
             if tmp is None:
