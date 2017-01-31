@@ -8,18 +8,21 @@ import csv
 import datetime
 import io
 import uuid
-
 from decimal import Decimal
+from pathlib import Path
 
+import pytest
+import yaml
+from click.testing import CliRunner
+from dateutil import tz
 from psycopg2._range import NumericRange
 
-import datacube.scripts.search_tool
 import datacube.scripts.cli_app
-import pytest
-from click.testing import CliRunner
+import datacube.scripts.search_tool
+from datacube.index._api import Index
+from datacube.model import Dataset
+from datacube.model import MetadataType
 from datacube.model import Range
-from dateutil import tz
-from pathlib import Path
 
 _EXAMPLE_LS7_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('ls7-nbar-example.yaml')
 
@@ -708,6 +711,44 @@ def test_search_cli_basic(global_integration_cli_args, default_metadata_type, ps
     assert str(default_metadata_type.name) in result.output
 
     assert result.exit_code == 0
+
+
+def test_cli_info(index, global_integration_cli_args, default_metadata_type, pseudo_telemetry_dataset):
+    # type: (Index, Tuple[str], MetadataType, Dataset) -> None
+    """
+    Search datasets using the cli.
+    :type index: datacube.index._api.Index
+    :type global_integration_cli_args: tuple[str]
+    :type default_metadata_type: datacube.model.MetadataType
+    :type pseudo_telemetry_dataset: datacube.model.Dataset
+    """
+    index.datasets.add_location(pseudo_telemetry_dataset, 'file:///tmp/location1')
+    index.datasets.add_location(pseudo_telemetry_dataset, 'file:///tmp/location2')
+
+    opts = list(global_integration_cli_args)
+    opts.extend(
+        [
+            'dataset', 'info', str(pseudo_telemetry_dataset.id)
+        ]
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        datacube.scripts.cli_app.cli,
+        opts,
+        catch_exceptions=False
+    )
+
+    assert result.exit_code == 0
+
+    output_doc = yaml.safe_load(result.output)
+    assert output_doc == {
+        'location': 'file:///tmp/location2',
+        'id': str(pseudo_telemetry_dataset.id),
+        'product': 'ls8_telemetry',
+        'derived': [],
+        'sources': {}
+    }
 
 
 def test_csv_search_via_cli(global_integration_cli_args, pseudo_telemetry_type, pseudo_telemetry_dataset,

@@ -10,6 +10,7 @@ import click
 import yaml
 from click import echo
 
+from datacube.index._api import Index
 from datacube.model import Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli
@@ -241,6 +242,7 @@ def update_dry_run(index, updates, dataset):
 
 
 def build_dataset_info(index, dataset, show_derived=False):
+    # type: (Index, Dataset, bool) -> dict
     deriveds = []
     if show_derived:
         deriveds = index.datasets.get_derived(dataset.id)
@@ -252,7 +254,7 @@ def build_dataset_info(index, dataset, show_derived=False):
     #             return key
 
     return {
-        'id': dataset.id,
+        'id': str(dataset.id),
         'product': dataset.type.name,
         'location': dataset.local_uri,
         'sources': {key: build_dataset_info(index, source) for key, source in dataset.sources.items()},
@@ -272,7 +274,12 @@ def info_cmd(index, show_sources, show_derived, ids):
             click.echo('%s missing' % id_)
             continue
 
-        yaml.safe_dump(build_dataset_info(index, dataset, show_derived), stream=sys.stdout)
+        yaml.safe_dump(
+            build_dataset_info(index, dataset, show_derived),
+            default_flow_style=False,
+            indent=4,
+            stream=sys.stdout
+        )
 
 
 def _write_csv(info):
