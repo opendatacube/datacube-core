@@ -123,6 +123,16 @@ LAYER_SPEC = {
             'end': datetime(2017, 1, 1),
             'period': timedelta(days=0)
         }
+    },
+    'modis_mcd43a4_rgb': {
+        'product': 'modis_mcd43a4_tile',
+        'bands': ('Nadir_Reflectance_Band1', 'Nadir_Reflectance_Band4', 'Nadir_Reflectance_Band3'),
+        'extents': geometry.box(100, -50, 160, 0, crs=geometry.CRS('EPSG:4326')),
+        'time': {
+            'start': datetime(2013, 1, 1),
+            'end': datetime(2017, 1, 1),
+            'period': timedelta(days=0)
+        }
     }
 }
 
