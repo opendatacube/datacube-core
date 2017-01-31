@@ -1,14 +1,14 @@
 from __future__ import absolute_import
 
+import csv
+import datetime
 import logging
 import sys
-
-import csv
-import click
-from click import echo
-import datetime
-import yaml
 from pathlib import Path
+
+import click
+import yaml
+from click import echo
 
 from datacube.model import Dataset
 from datacube.ui import click as ui
@@ -145,22 +145,32 @@ def parse_match_rules_options(index, match_rules, dtype, auto_match):
               help="Verify embedded source dataset metadata is identical to the stored metadata",
               is_flag=True, default=True)
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
-@click.argument('datasets',
+@click.argument('dataset-paths',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
 @ui.pass_index()
-def index_cmd(index, match_rules, dtype, auto_match, check_sources, dry_run, datasets):
+def index_cmd(index, match_rules, dtype, auto_match, check_sources, dry_run, dataset_paths):
     rules = parse_match_rules_options(index, match_rules, dtype, auto_match)
     if rules is None:
         return
 
-    with click.progressbar(load_datasets(datasets, rules), label='Indexing datasets') as loadable_datasets:
-        for dataset in loadable_datasets:
-            _LOG.info('Matched %s', dataset)
-            if not dry_run:
-                try:
-                    index.datasets.add(dataset, skip_sources=not check_sources)
-                except ValueError as e:
-                    _LOG.error('Failed to add dataset: %s', e)
+    datasets = load_datasets(dataset_paths, rules)
+
+    # If outputting directly to terminal, show a progress bar.
+    if sys.stdout.isatty():
+        with click.progressbar(datasets, label='Indexing datasets') as loadable_datasets:
+            _index_datasets(check_sources, dry_run, index, loadable_datasets)
+    else:
+        _index_datasets(check_sources, dry_run, index, datasets)
+
+
+def _index_datasets(check_sources, dry_run, index, loadable_datasets):
+    for dataset in loadable_datasets:
+        _LOG.info('Matched %s', dataset)
+        if not dry_run:
+            try:
+                index.datasets.add(dataset, skip_sources=not check_sources)
+            except ValueError as e:
+                _LOG.error('Failed to add dataset: %s', e)
 
 
 def parse_update_rules(allow_any):
@@ -325,7 +335,7 @@ def archive_cmd(index, archive_derived, dry_run, ids):
 @click.option('--derived-tolerance-seconds',
               help="Only restore derived datasets that were archived "
                    "this recently to the original dataset",
-              default=10*60)
+              default=10 * 60)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
 def restore_cmd(index, restore_derived, derived_tolerance_seconds, dry_run, ids):
