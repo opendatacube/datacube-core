@@ -152,8 +152,10 @@ ignored-argument-names=_.*
 # Maximum number of locals for function / method body
 max-locals=16
 
+# Early return often results in clearer code.
+# The other complexity metrics are enough to prevent abuse.
 # Maximum number of return / yield for function / method body
-max-returns=6
+max-returns=128
 
 # Maximum number of branch for function / method body
 max-branches=12
