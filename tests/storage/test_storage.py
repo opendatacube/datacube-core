@@ -10,8 +10,13 @@ from contextlib import contextmanager
 
 import rasterio.warp
 
+import datacube
 from datacube.model import GeoBox, CRS
 from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse, read_from_source, Resampling
+
+from hypothesis import given
+from hypothesis.strategies import integers, floats, sampled_from, tuples, booleans
+
 
 GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
            'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
@@ -184,16 +189,7 @@ class FakeDataSource(object):
                                        **kwargs)
 
 
-def _test_helper(source, dst_shape, dst_dtype, dst_transform, dst_nodata, dst_projection, resampling, **kwargs):
-    result = numpy.empty(dst_shape, dtype=dst_dtype)
-    read_from_source(source,
-                     result,
-                     dst_transform=dst_transform,
-                     dst_nodata=dst_nodata,
-                     dst_projection=dst_projection,
-                     resampling=resampling,
-                     **kwargs)
-
+def _test_helper(source, dst_shape, dst_dtype, dst_transform, dst_nodata, dst_projection, resampling):
     expected = numpy.empty(dst_shape, dtype=dst_dtype)
     with source.open() as src:
         rasterio.warp.reproject(src.data,
@@ -204,9 +200,18 @@ def _test_helper(source, dst_shape, dst_dtype, dst_transform, dst_nodata, dst_pr
                                 dst_transform=dst_transform,
                                 dst_crs=str(dst_projection),
                                 dst_nodata=dst_nodata,
-                                resampling=resampling,
-                                **kwargs)
-    assert numpy.isclose(result, expected, atol=0, rtol=0.03, equal_nan=True).all()
+                                resampling=resampling)
+
+    result = numpy.empty(dst_shape, dtype=dst_dtype)
+    with datacube.set_options(reproject_threads=1):
+        read_from_source(source,
+                         result,
+                         dst_transform=dst_transform,
+                         dst_nodata=dst_nodata,
+                         dst_projection=dst_projection,
+                         resampling=resampling)
+
+    assert numpy.isclose(result, expected, atol=0, rtol=0.05, equal_nan=True).all()
     return result
 
 
@@ -347,3 +352,34 @@ def test_read_from_source():
                  resampling=Resampling.cubic)
 
     # TODO: crs change
+
+
+def _test_read_from_source_wild(shape, scale, flips, translate, sampling):
+    data_source = FakeDataSource()
+
+    @contextmanager
+    def open():
+        yield data_source
+    source = mock.Mock()
+    source.open = open
+
+    # one-to-one copy
+    _test_helper(source,
+                 dst_shape=shape,
+                 dst_dtype='float32',
+                 dst_transform= data_source.transform * Affine.translation(*translate) * Affine.scale(*scale),
+                 dst_nodata=float('nan'),
+                 dst_projection=data_source.crs,
+                 resampling=sampling)
+
+
+TEST_SCALES = (0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 10.0, 20.0)
+test_hyp =  given(tuples(integers(400, 800), integers(400, 800)),
+       tuples(sampled_from(TEST_SCALES), sampled_from(TEST_SCALES)),
+       tuples(booleans(), booleans()),
+       tuples(floats(-600, 600), floats(-600, 600)),
+       sampled_from([Resampling.nearest, Resampling.cubic]))(_test_read_from_source_wild)
+
+
+def test_bad():
+    _test_read_from_source_wild(shape=(400, 400), scale=(20.0, 10.0), flips=(False, False), translate=(-14.000000000100016, 0.0), sampling=Resampling.nearest)
