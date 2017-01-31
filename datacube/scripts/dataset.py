@@ -256,7 +256,7 @@ def build_dataset_info(index, dataset, show_derived=False):
     return {
         'id': str(dataset.id),
         'product': dataset.type.name,
-        'location': dataset.local_uri,
+        'locations': index.datasets.get_locations(dataset),
         'sources': {key: build_dataset_info(index, source) for key, source in dataset.sources.items()},
         'derived': [build_dataset_info(index, derived) for derived in deriveds]
     }

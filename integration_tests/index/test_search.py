@@ -743,7 +743,8 @@ def test_cli_info(index, global_integration_cli_args, default_metadata_type, pse
 
     output_doc = yaml.safe_load(result.output)
     assert output_doc == {
-        'location': 'file:///tmp/location2',
+        # Newer location first
+        'locations': ['file:///tmp/location2', 'file:///tmp/location1'],
         'id': str(pseudo_telemetry_dataset.id),
         'product': 'ls8_telemetry',
         'derived': [],
