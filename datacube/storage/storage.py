@@ -141,30 +141,6 @@ def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, re
                 return
             dest = dest[offset[0]:offset[0] + tmp.shape[0], offset[1]:offset[1] + tmp.shape[1]]
             numpy.copyto(dest, tmp, where=(tmp != src.nodata))
-        elif src.crs == dst_projection and _is_subsample(array_transform, factor=6):
-            scale = int(array_transform.a*0.25), int(array_transform.e*0.25)
-            trans = array_transform.c // scale[0], array_transform.f // scale[1]
-            tmp, _, tmp_transform = _read_decimated(Affine.scale(*scale) * Affine.translation(*trans),
-                                                    src,
-                                                    (dest.shape[0] * array_transform.e / scale[1],
-                                                     dest.shape[1] * array_transform.a / scale[0]))
-            if tmp is None:
-                dest.fill(dst_nodata)
-                return
-
-            if dest.dtype == numpy.dtype('int8'):
-                dest = dest.view(dtype='uint8')
-                dst_nodata = dst_nodata.astype('uint8')
-            rasterio.warp.reproject(tmp,
-                                    dest,
-                                    src_transform=src.transform*tmp_transform,
-                                    src_crs=str(src.crs),
-                                    src_nodata=src.nodata,
-                                    dst_transform=dst_transform,
-                                    dst_crs=str(dst_projection),
-                                    dst_nodata=dst_nodata,
-                                    resampling=resampling,
-                                    NUM_THREADS=OPTIONS['reproject_threads'])
         else:
             if dest.dtype == numpy.dtype('int8'):
                 dest = dest.view(dtype='uint8')
