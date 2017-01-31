@@ -206,7 +206,7 @@ def _test_helper(source, dst_shape, dst_dtype, dst_transform, dst_nodata, dst_pr
                                 dst_nodata=dst_nodata,
                                 resampling=resampling,
                                 **kwargs)
-    assert numpy.isclose(result, expected, equal_nan=True).all()
+    assert numpy.isclose(result, expected, atol=0, rtol=0.01, equal_nan=True).all()
     return result
 
 
@@ -316,7 +316,34 @@ def test_read_from_source():
     _test_helper(source,
                  dst_shape=(35, 67),
                  dst_dtype='float32',
-                 dst_transform=data_source.transform * Affine.translation(5, 3) * Affine.scale(8, 16),
+                 dst_transform=data_source.transform * Affine.translation(27, 35) * Affine.scale(8, 16),
                  dst_nodata=float('nan'),
                  dst_projection=data_source.crs,
                  resampling=Resampling.cubic)
+
+    _test_helper(source,
+                 dst_shape=(35, 67),
+                 dst_dtype='float32',
+                 dst_transform=data_source.transform * Affine.translation(-13, -27) * Affine.scale(8, 16),
+                 dst_nodata=float('nan'),
+                 dst_projection=data_source.crs,
+                 resampling=Resampling.cubic)
+
+    # scale + flip
+    _test_helper(source,
+                 dst_shape=(35, 67),
+                 dst_dtype='float32',
+                 dst_transform=data_source.transform * Affine.translation(15, 512+17) * Affine.scale(8, -16),
+                 dst_nodata=float('nan'),
+                 dst_projection=data_source.crs,
+                 resampling=Resampling.cubic)
+
+    _test_helper(source,
+                 dst_shape=(67, 35),
+                 dst_dtype='float32',
+                 dst_transform=data_source.transform * Affine.translation(512-23, -29) * Affine.scale(-16, 8),
+                 dst_nodata=float('nan'),
+                 dst_projection=data_source.crs,
+                 resampling=Resampling.cubic)
+
+    # TODO: crs change
