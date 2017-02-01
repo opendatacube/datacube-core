@@ -233,6 +233,7 @@ def netcdfy_coord(data):
 
 
 def netcdfy_data(data):
+    # NetCDF/CF Conventions only seem to allow storing ascii, not unicode
     if data.dtype.kind == 'S' and data.dtype.itemsize > 1:
         return data.view('S1').reshape(data.shape + (-1,))
     if data.dtype.kind == 'M':

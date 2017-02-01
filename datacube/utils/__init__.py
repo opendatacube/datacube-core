@@ -22,6 +22,7 @@ import jsonschema
 import numpy
 from osgeo import ogr
 import xarray
+import netCDF4
 
 import yaml
 
@@ -167,7 +168,7 @@ def data_resolution_and_offset(data):
 # Functions for working with YAML documents and configurations
 ###
 
-_DOCUMENT_EXTENSIONS = ('.yaml', '.yml', '.json')
+_DOCUMENT_EXTENSIONS = ('.yaml', '.yml', '.json', '.nc')
 _COMPRESSION_EXTENSIONS = ('', '.gz')
 _ALL_SUPPORTED_EXTENSIONS = tuple(doc_type + compression_type
                                   for doc_type in _DOCUMENT_EXTENSIONS
@@ -253,9 +254,27 @@ def read_documents(*paths):
                 yield path, json.load(opener(str(path), 'r'))
             except ValueError as e:
                 raise InvalidDocException('Failed to load %s: %s' % (path, e))
+        elif suffix == '.nc':
+            try:
+                for doc in read_strings_from_netcdf(path, variable='dataset'):
+                    yield path, yaml.load(doc)
+            except Exception as e:
+                raise InvalidDocException('Unable to load dataset information from NetCDF file: %s. %s' % (path, e))
         else:
             raise ValueError('Unknown document type for {}; expected one of {!r}.'
                              .format(path.name, _ALL_SUPPORTED_EXTENSIONS))
+
+
+def read_strings_from_netcdf(path, variable):
+    """Load all of the string encoded data from a variable in a NetCDF file.
+
+    By 'string', the CF conventions mean ascii.
+
+    Useful for loading dataset metadata information.
+    """
+    with netCDF4.Dataset(str(path)) as ds:
+        for chars in ds[variable]:
+            yield str(numpy.char.decode(netCDF4.chartostring(chars)))
 
 
 def validate_document(document, schema, schema_folder=None):

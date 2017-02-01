@@ -1,14 +1,13 @@
+"""
+py.test configuration fixtures
+
+This module defines any fixtures or other extensions to py.test to be used throughout the
+tests in this and sub packages.
+"""
 from __future__ import print_function, absolute_import
 
 import os
 import pytest
-
-'''
-py.test configuration plugin
-
-This module defines any fixtures or other extensions to py.test to be used throughout the
-tests in this and sub packages.
-'''
 
 
 @pytest.fixture
@@ -30,8 +29,12 @@ def data_folder(request):
 def example_netcdf_path(request):
     return str(request.fspath.dirpath('data/sample_tile.nc'))
 
+netcdf_num = 1
+
 
 @pytest.fixture
 def tmpnetcdf_filename(tmpdir):
-    filename = str(tmpdir.join('testfile_np.nc'))
+    global netcdf_num
+    filename = str(tmpdir.join('testfile_np_%s.nc' % netcdf_num))
+    netcdf_num += 1
     return filename

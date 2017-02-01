@@ -214,10 +214,10 @@ def test_read_from_source():
     data_source = FakeDataSource()
 
     @contextmanager
-    def open():
+    def fake_open():
         yield data_source
     source = mock.Mock()
-    source.open = open
+    source.open = fake_open
 
     # one-to-one copy
     _test_helper(source,

@@ -4,12 +4,16 @@ import netCDF4
 import numpy
 import xarray as xr
 import pytest
+from hypothesis import given
+from hypothesis.strategies import text
+from tests.conftest import tmpnetcdf_filename as get_tmpnetcdf_filename
+import string
 
 from datacube.model import Variable, CRS
 from datacube.storage.netcdf_writer import create_netcdf, create_coordinate, create_variable, netcdfy_data, \
     create_grid_mapping_variable, flag_mask_meanings
 from datacube.storage.storage import write_dataset_to_netcdf
-from datacube.utils import DatacubeException
+from datacube.utils import DatacubeException, read_strings_from_netcdf
 
 GEO_PROJ = CRS('GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],'
                'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],'
@@ -137,20 +141,29 @@ def test_create_sinus_netcdf(tmpnetcdf_filename):
         _ensure_geospatial(nco)
 
 
-def test_create_string_variable(tmpnetcdf_filename):
+# Work around outstanding bug with hypothesis/pytest, where function level fixtures are only run once.
+# Generate a new netcdf filename for each run, so that old files don't cause permission errors on windows
+# due to antivirus software filesystem lag.
+# See https://github.com/HypothesisWorks/hypothesis-python/issues/377
+@given(s1=text(alphabet=string.printable), s2=text(alphabet=string.printable), s3=text(alphabet=string.printable))
+def test_create_string_variable(tmpdir, s1, s2, s3):
+    tmpnetcdf_filename = get_tmpnetcdf_filename(tmpdir)
+    str_var = 'str_var'
     nco = create_netcdf(tmpnetcdf_filename)
     coord = create_coordinate(nco, 'greg', numpy.array([1.0, 3.0, 9.0]), 'cubic gregs')
 
     dtype = numpy.dtype('S100')
-    data = numpy.array(["test-str1", "test-str2", "test-str3"], dtype=dtype)
+    data = numpy.array([s1, s2, s3], dtype=dtype)
 
-    var = create_variable(nco, 'str_var', Variable(dtype, None, ('greg',), None))
+    var = create_variable(nco, str_var, Variable(dtype, None, ('greg',), None))
     var[:] = netcdfy_data(data)
     nco.close()
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
-        assert 'str_var' in nco.variables
-        assert netCDF4.chartostring(nco['str_var'][0]) == data[0]
+        assert str_var in nco.variables
+
+    for returned, expected in zip(read_strings_from_netcdf(tmpnetcdf_filename, variable=str_var), (s1, s2, s3)):
+        assert returned == expected
 
 
 def test_chunksizes(tmpnetcdf_filename):
