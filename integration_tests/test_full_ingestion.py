@@ -38,8 +38,8 @@ COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
 
 
 @pytest.mark.usefixtures('default_metadata_type',
-                         'indexed_ls5_scene_dataset_type')
-def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset, ls5_nbar_ingest_config):
+                         'indexed_ls5_scene_dataset_types')
+def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset_path, ls5_nbar_ingest_config):
     opts = list(global_integration_cli_args)
     opts.extend(
         [
@@ -47,7 +47,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset,
             'dataset',
             'add',
             '--auto-match',
-            str(example_ls5_dataset)
+            str(example_ls5_dataset_path)
         ]
     )
     result = CliRunner().invoke(
@@ -90,7 +90,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset,
         check_data_shape(nco)
         check_grid_mapping(nco)
         check_cf_compliance(nco)
-        check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset)
+        check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset_path)
         check_attributes(nco, config['global_attributes'])
 
         name = config['measurements'][0]['name']
