@@ -488,11 +488,14 @@ class ProductResource(object):
         :param dict query:
         :rtype: __generator[(DatasetType, dict)]
         """
+        def _listify(v):
+            return v if isinstance(v, list) else [v]
+
         for type_ in self.get_all():
             q = query.copy()
-            if q.pop('product', type_.name) != type_.name:
+            if type_.name not in _listify(q.pop('product', type_.name)):
                 continue
-            if q.pop('metadata_type', type_.metadata_type.name) != type_.metadata_type.name:
+            if type_.metadata_type.name not in _listify(q.pop('metadata_type', type_.metadata_type.name)):
                 continue
 
             for key, value in list(q.items()):
