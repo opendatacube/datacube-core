@@ -352,34 +352,3 @@ def test_read_from_source():
                  resampling=Resampling.cubic)
 
     # TODO: crs change
-
-
-def _test_read_from_source_wild(shape, scale, flips, translate, sampling):
-    data_source = FakeDataSource()
-
-    @contextmanager
-    def open():
-        yield data_source
-    source = mock.Mock()
-    source.open = open
-
-    # one-to-one copy
-    _test_helper(source,
-                 dst_shape=shape,
-                 dst_dtype='float32',
-                 dst_transform= data_source.transform * Affine.translation(*translate) * Affine.scale(*scale),
-                 dst_nodata=float('nan'),
-                 dst_projection=data_source.crs,
-                 resampling=sampling)
-
-
-TEST_SCALES = (0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 10.0, 20.0)
-test_hyp =  given(tuples(integers(400, 800), integers(400, 800)),
-       tuples(sampled_from(TEST_SCALES), sampled_from(TEST_SCALES)),
-       tuples(booleans(), booleans()),
-       tuples(floats(-600, 600), floats(-600, 600)),
-       sampled_from([Resampling.nearest, Resampling.cubic]))(_test_read_from_source_wild)
-
-
-def test_bad():
-    _test_read_from_source_wild(shape=(400, 400), scale=(20.0, 10.0), flips=(False, False), translate=(-14.000000000100016, 0.0), sampling=Resampling.nearest)

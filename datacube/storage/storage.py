@@ -4,6 +4,7 @@ Create/store dataset data into storage units based on the provided storage mappi
 """
 from __future__ import absolute_import, division, print_function
 
+import math
 import logging
 from contextlib import contextmanager
 from pathlib import Path
@@ -67,35 +68,36 @@ else:
         return src.affine
 
 
-def _calc_offsets(off, src_size, dst_size):
-    """
-    >>> _calc_offsets(11, 10, 12) # no overlap
-    (10, 0, 0)
-    >>> _calc_offsets(-11, 12, 10) # no overlap
-    (0, 10, 0)
-    >>> _calc_offsets(5, 10, 12) # overlap
-    (5, 0, 5)
-    >>> _calc_offsets(-5, 12, 10) # overlap
-    (0, 5, 5)
-    >>> _calc_offsets(5, 10, 4) # containment
-    (5, 0, 4)
-    >>> _calc_offsets(-5, 4, 10) # containment
-    (0, 5, 4)
-    """
-    read_off = clamp(off, 0, src_size)
-    write_off = clamp(-off, 0, dst_size)
-    size = min(src_size - read_off, dst_size - write_off)
-    return read_off, write_off, size
+def _calc_offsets_impl(off, scale, src_size, dst_size):
+    assert scale >= 1
+
+    if off >= 0:
+        write_off = 0
+    else:
+        write_off = math.ceil((-off-0.5)/scale)
+    read_off = round((write_off+0.5)*scale-0.5+off) - round(0.5*(scale-1.0))  # assuming read_size/write_size ~= scale
+    if read_off >= src_size:
+        return 0, 0, 0, 0
+
+    write_end = dst_size
+    write_size = write_end-write_off
+    read_end = read_off+round(write_size*scale)
+    if read_end > src_size:
+        # +0.5 below is a fudge that will return last row in more situations, but will change the scale more
+        write_end = math.floor((src_size-off+0.5)/scale)
+        write_size = write_end-write_off
+        read_end = clamp(read_off+round(write_size*scale), write_off, src_size)
+    read_size = read_end-read_off
+
+    return read_off, write_off, read_size, write_size
 
 
 def _calc_offsets2(off, scale, src_size, dst_size):
     if scale < 0:
-        scale = -scale
-        read_off, write_off, size = _calc_offsets(off - dst_size*scale, src_size, dst_size*scale)
-        return int(read_off), int(dst_size - size - write_off/scale), int(size), int(size/scale)
+        r_off, write_off, read_size, write_size = _calc_offsets_impl(off + dst_size*scale, -scale, src_size, dst_size)
+        return r_off, dst_size - write_size - write_off, read_size, write_size
     else:
-        read_off, write_off, size = _calc_offsets(off, src_size, dst_size*scale)
-        return int(read_off), int(write_off/scale), int(size), int(size/scale)
+        return _calc_offsets_impl(off, scale, src_size, dst_size)
 
 
 def _read_decimated(array_transform, src, dest_shape):
