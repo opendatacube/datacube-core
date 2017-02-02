@@ -5,20 +5,18 @@ Common methods for index integration tests.
 from __future__ import absolute_import
 
 import itertools
-
 import logging
-from contextlib import contextmanager
-
 import os
 import shutil
+from contextlib import contextmanager
+from pathlib import Path
 from uuid import UUID
 
-import datacube.utils
 import pytest
 import rasterio
 import yaml
-from pathlib import Path
 
+import datacube.utils
 from datacube.index.postgres import _dynamic
 
 try:
@@ -175,7 +173,7 @@ def ls5_nbar_gtiff_type(index, ls5_nbar_gtiff_doc):
 
 
 @pytest.fixture
-def example_ls5_dataset(tmpdir):
+def example_ls5_dataset_path(tmpdir):
     # Based on LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302
     dataset_dir = tmpdir.mkdir('ls5_dataset')
     shutil.copy(str(_EXAMPLE_LS5_NBAR_DATASET_FILE), str(dataset_dir.join('agdc-metadata.yaml')))
@@ -229,25 +227,36 @@ def default_metadata_type_doc(default_metadata_type_docs):
 
 
 @pytest.fixture
-def default_metadata_type(index, default_metadata_type_docs):
+def default_metadata_types(index, default_metadata_type_docs):
+    # type: (Index, list) -> list
     for d in default_metadata_type_docs:
         index.metadata_types.add(index.metadata_types.from_doc(d))
+    return index.metadata_types.get_all()
+
+
+@pytest.fixture
+def default_metadata_type(index, default_metadata_types):
     return index.metadata_types.get_by_name('eo')
 
 
 @pytest.fixture
-def indexed_ls5_scene_dataset_type(index, default_metadata_type):
+def telemetry_metadata_type(index, default_metadata_types):
+    return index.metadata_types.get_by_name('telemetry')
+
+
+@pytest.fixture
+def indexed_ls5_scene_dataset_types(index, default_metadata_type):
     """
-    :type db: datacube.index.postgres._api.PostgresDb
     :type index: datacube.index._api.Index
     :rtype: datacube.model.StorageType
     """
     dataset_types = load_test_dataset_types(DATASET_TYPES / 'ls5_scenes.yaml')
 
+    types = []
     for dataset_type in dataset_types:
-        index.products.add_document(dataset_type)
+        types.append(index.products.add_document(dataset_type))
 
-    return None
+    return types
 
 
 @pytest.fixture

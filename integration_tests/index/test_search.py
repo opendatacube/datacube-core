@@ -21,19 +21,21 @@ import datacube.scripts.cli_app
 import datacube.scripts.search_tool
 from datacube.index._api import Index
 from datacube.model import Dataset
+from datacube.model import DatasetType
 from datacube.model import MetadataType
 from datacube.model import Range
+from datacube.scripts import dataset as dataset_script
 
 _EXAMPLE_LS7_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('ls7-nbar-example.yaml')
 
 
 @pytest.fixture
-def pseudo_telemetry_type(index, default_metadata_type):
+def pseudo_ls8_type(index, default_metadata_type):
     index.products.add_document({
         'name': 'ls8_telemetry',
         'description': 'telemetry test',
         'metadata': {
-            'product_type': 'pseudo_telemetry_data',
+            'product_type': 'pseudo_ls8_data',
             'platform': {
                 'code': 'LANDSAT_8'
             },
@@ -44,19 +46,20 @@ def pseudo_telemetry_type(index, default_metadata_type):
                 'name': 'PSEUDOMD'
             }
         },
-        'metadata_type': default_metadata_type.name  # 'eo'
+        # We're actually using 'eo' because we do lat/lon searches below...
+        'metadata_type': default_metadata_type.name
     })
     return index.products.get_by_name('ls8_telemetry')
 
 
 @pytest.fixture
-def pseudo_telemetry_dataset(index, db, pseudo_telemetry_type):
+def pseudo_ls8_dataset(index, db, pseudo_ls8_type):
     id_ = str(uuid.uuid4())
     with db.connect() as connection:
         was_inserted = connection.insert_dataset(
             {
                 'id': id_,
-                'product_type': 'pseudo_telemetry_data',
+                'product_type': 'pseudo_ls8_data',
                 'checksum_path': 'package.sha1',
                 'ga_label': 'LS8_OLITIRS_STD-MD_P00_LC81160740742015089ASA00_'
                             '116_074_20150330T022553Z20150330T022657',
@@ -91,25 +94,25 @@ def pseudo_telemetry_dataset(index, db, pseudo_telemetry_type):
                 }
             },
             id_,
-            pseudo_telemetry_type.id
+            pseudo_ls8_type.id
         )
     assert was_inserted
     d = index.datasets.get(id_)
     # The dataset should have been matched to the telemetry type.
-    assert d.type.id == pseudo_telemetry_type.id
+    assert d.type.id == pseudo_ls8_type.id
 
     return d
 
 
 @pytest.fixture
-def pseudo_telemetry_dataset2(index, db, pseudo_telemetry_type):
+def pseudo_ls8_dataset2(index, db, pseudo_ls8_type):
     # Like the previous dataset, but a day later in time.
     id_ = str(uuid.uuid4())
     with db.connect() as connection:
         was_inserted = connection.insert_dataset(
             {
                 'id': id_,
-                'product_type': 'pseudo_telemetry_data',
+                'product_type': 'pseudo_ls8_data',
                 'checksum_path': 'package.sha1',
                 'ga_label': 'LS8_OLITIRS_STD-MD_P00_LC81160740742015089ASA00_'
                             '116_074_20150330T022553Z20150330T022657',
@@ -140,33 +143,58 @@ def pseudo_telemetry_dataset2(index, db, pseudo_telemetry_type):
                 }
             },
             id_,
-            pseudo_telemetry_type.id
+            pseudo_ls8_type.id
         )
     assert was_inserted
     d = index.datasets.get(id_)
     # The dataset should have been matched to the telemetry type.
-    assert d.type.id == pseudo_telemetry_type.id
+    assert d.type.id == pseudo_ls8_type.id
 
     return d
 
 
-def test_search_dataset_equals(index, pseudo_telemetry_dataset):
+@pytest.fixture
+def ls5_dataset_w_children(index, example_ls5_dataset_path, indexed_ls5_scene_dataset_types):
+    # type: (Index, Path, DatasetType) -> Dataset
+    # TODO: We need a higher-level API for indexing paths, rather than reaching inside the cli script
+    datasets = list(
+        dataset_script.load_datasets(
+            [example_ls5_dataset_path],
+            dataset_script.load_rules_from_types(index)
+        )
+    )
+    assert len(datasets) == 1
+    d = index.datasets.add(datasets[0])
+    return index.datasets.get(d.id, include_sources=True)
+
+
+@pytest.fixture
+def ls5_dataset_nbar_type(ls5_dataset_w_children, indexed_ls5_scene_dataset_types):
+    # type: (Dataset, List[DatasetType]) -> DatasetType
+    for dataset_type in indexed_ls5_scene_dataset_types:
+        if dataset_type.name == ls5_dataset_w_children.type.name:
+            return dataset_type
+    else:
+        raise RuntimeError("LS5 type was not among types")
+
+
+def test_search_dataset_equals(index, pseudo_ls8_dataset):
     """
     :type index: datacube.index._api.Index
-    :type pseudo_telemetry_dataset: datacube.model.Dataset
+    :type pseudo_ls8_dataset: datacube.model.Dataset
     """
     datasets = index.datasets.search_eager(
         platform='LANDSAT_8'
     )
     assert len(datasets) == 1
-    assert datasets[0].id == pseudo_telemetry_dataset.id
+    assert datasets[0].id == pseudo_ls8_dataset.id
 
     datasets = index.datasets.search_eager(
         platform='LANDSAT_8',
         instrument='OLI_TIRS'
     )
     assert len(datasets) == 1
-    assert datasets[0].id == pseudo_telemetry_dataset.id
+    assert datasets[0].id == pseudo_ls8_dataset.id
 
     # Wrong sensor name
     datasets = index.datasets.search_eager(
@@ -176,17 +204,17 @@ def test_search_dataset_equals(index, pseudo_telemetry_dataset):
     assert len(datasets) == 0
 
 
-def test_search_dataset_by_metadata(index, pseudo_telemetry_dataset):
+def test_search_dataset_by_metadata(index, pseudo_ls8_dataset):
     """
     :type index: datacube.index._api.Index
-    :type pseudo_telemetry_dataset: datacube.model.Dataset
+    :type pseudo_ls8_dataset: datacube.model.Dataset
     """
     datasets = index.datasets.search_by_metadata(
         {"platform": {"code": "LANDSAT_8"}, "instrument": {"name": "OLI_TIRS"}}
     )
     datasets = list(datasets)
     assert len(datasets) == 1
-    assert datasets[0].id == pseudo_telemetry_dataset.id
+    assert datasets[0].id == pseudo_ls8_dataset.id
 
     datasets = index.datasets.search_by_metadata(
         {"platform": {"code": "LANDSAT_5"}, "instrument": {"name": "TM"}}
@@ -195,10 +223,10 @@ def test_search_dataset_by_metadata(index, pseudo_telemetry_dataset):
     assert len(datasets) == 0
 
 
-def test_search_dataset_ranges(index, pseudo_telemetry_dataset):
+def test_search_dataset_ranges(index, pseudo_ls8_dataset):
     """
     :type index: datacube.index._api.Index
-    :type pseudo_telemetry_dataset: datacube.model.Dataset
+    :type pseudo_ls8_dataset: datacube.model.Dataset
     """
 
     # In the lat bounds.
@@ -210,7 +238,7 @@ def test_search_dataset_ranges(index, pseudo_telemetry_dataset):
         )
     )
     assert len(datasets) == 1
-    assert datasets[0].id == pseudo_telemetry_dataset.id
+    assert datasets[0].id == pseudo_ls8_dataset.id
 
     # Out of the lat bounds.
     datasets = index.datasets.search_eager(
@@ -239,7 +267,7 @@ def test_search_dataset_ranges(index, pseudo_telemetry_dataset):
         lat=Range(-40, -30)
     )
     assert len(datasets) == 1
-    assert datasets[0].id == pseudo_telemetry_dataset.id
+    assert datasets[0].id == pseudo_ls8_dataset.id
 
     # Single point search
     datasets = index.datasets.search_eager(
@@ -250,7 +278,7 @@ def test_search_dataset_ranges(index, pseudo_telemetry_dataset):
         )
     )
     assert len(datasets) == 1
-    assert datasets[0].id == pseudo_telemetry_dataset.id
+    assert datasets[0].id == pseudo_ls8_dataset.id
 
     datasets = index.datasets.search_eager(
         lat=30.0,
@@ -267,7 +295,7 @@ def test_search_dataset_ranges(index, pseudo_telemetry_dataset):
         time=datetime.datetime(2014, 7, 26, 23, 50, 0)
     )
     assert len(datasets) == 1
-    assert datasets[0].id == pseudo_telemetry_dataset.id
+    assert datasets[0].id == pseudo_ls8_dataset.id
 
     datasets = index.datasets.search_eager(
         lat=Range(-30.5, -29.5),
@@ -276,10 +304,10 @@ def test_search_dataset_ranges(index, pseudo_telemetry_dataset):
     assert len(datasets) == 0
 
 
-def test_search_globally(index, pseudo_telemetry_dataset):
+def test_search_globally(index, pseudo_ls8_dataset):
     """
     :type index: datacube.index._api.Index
-    :type pseudo_telemetry_dataset: datacube.model.Dataset
+    :type pseudo_ls8_dataset: datacube.model.Dataset
     """
     # Insert dataset. It should be matched to the telemetry collection.
     # No expressions means get all.
@@ -287,7 +315,8 @@ def test_search_globally(index, pseudo_telemetry_dataset):
     assert len(results) == 1
 
 
-def test_search_by_product(index, pseudo_telemetry_type, pseudo_telemetry_dataset, ls5_nbar_gtiff_type):
+def test_search_by_product(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls5_scene_dataset_types,
+                           ls5_dataset_w_children):
     """
     :type index: datacube.index._api.Index
     """
@@ -298,11 +327,71 @@ def test_search_by_product(index, pseudo_telemetry_type, pseudo_telemetry_datase
     ))
     assert len(products) == 1
     product, datasets = products[0]
-    assert product.id == pseudo_telemetry_type.id
-    assert next(datasets).id == pseudo_telemetry_dataset.id
+    assert product.id == pseudo_ls8_type.id
+    assert next(datasets).id == pseudo_ls8_dataset.id
 
 
-def test_search_returning(index, pseudo_telemetry_type, pseudo_telemetry_dataset, ls5_nbar_gtiff_type):
+def test_search_or_expressions(index,
+                               pseudo_ls8_type, pseudo_ls8_dataset,
+                               ls5_dataset_nbar_type, ls5_dataset_w_children,
+                               telemetry_metadata_type):
+    # type: (Index, DatasetType, Dataset, List[DatasetType], Dataset) -> None
+
+    # Four datasets:
+    # Our standard LS8
+    # - type=ls8_telemetry
+    # LS5 with children:
+    # - type=ls5_nbar_scene
+    # - type=ls5_level1_scene
+    # - type=ls5_satellite_telemetry_data
+
+    all_datasets = index.datasets.search_eager()
+    assert len(all_datasets) == 4
+    all_ids = set(dataset.id for dataset in all_datasets)
+
+    # OR all platforms: should return all datasets
+    datasets = index.datasets.search_eager(
+        platform=['LANDSAT_5', 'LANDSAT_7', 'LANDSAT_8']
+    )
+    assert len(datasets) == 4
+    ids = set(dataset.id for dataset in datasets)
+    assert ids == all_ids
+
+    # OR expression with only one clause.
+    datasets = index.datasets.search_eager(
+        platform=['LANDSAT_8']
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == pseudo_ls8_dataset.id
+
+    # OR two products: return two
+    datasets = index.datasets.search_eager(
+        product=[pseudo_ls8_type.name, ls5_dataset_nbar_type.name]
+    )
+    assert len(datasets) == 2
+    ids = set(dataset.id for dataset in datasets)
+    assert ids == {pseudo_ls8_dataset.id, ls5_dataset_w_children.id}
+
+    # eo OR telemetry: return all
+    datasets = index.datasets.search_eager(
+        metadata_type=[
+            telemetry_metadata_type.name,
+            pseudo_ls8_type.metadata_type.name
+        ]
+    )
+    assert len(datasets) == 4
+    ids = set(dataset.id for dataset in datasets)
+    assert ids == all_ids
+
+    # Redundant ORs should have no effect.
+    datasets = index.datasets.search_eager(
+        product=[pseudo_ls8_type.name, pseudo_ls8_type.name, pseudo_ls8_type.name]
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == pseudo_ls8_dataset.id
+
+
+def test_search_returning(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls5_scene_dataset_types):
     """
     :type index: datacube.index._api.Index
     """
@@ -315,16 +404,16 @@ def test_search_returning(index, pseudo_telemetry_type, pseudo_telemetry_dataset
     ))
     assert len(results) == 1
     id, path_range, sat_range = results[0]
-    assert id == pseudo_telemetry_dataset.id
+    assert id == pseudo_ls8_dataset.id
     # TODO: output nicer types?
     assert path_range == NumericRange(Decimal('116'), Decimal('116'), '[]')
     assert sat_range == NumericRange(Decimal('74'), Decimal('84'), '[]')
 
 
-def test_search_returning_rows(index, pseudo_telemetry_type,
-                               pseudo_telemetry_dataset, pseudo_telemetry_dataset2,
-                               ls5_nbar_gtiff_type):
-    dataset = pseudo_telemetry_dataset
+def test_search_returning_rows(index, pseudo_ls8_type,
+                               pseudo_ls8_dataset, pseudo_ls8_dataset2,
+                               indexed_ls5_scene_dataset_types):
+    dataset = pseudo_ls8_dataset
 
     # If returning a field like uri, there will be one result per location.
 
@@ -363,7 +452,7 @@ def test_search_returning_rows(index, pseudo_telemetry_type,
 
     # A second dataset now has a location too:
     test_uri3 = 'mdss://c10/tmp/something'
-    index.datasets.add_location(pseudo_telemetry_dataset2, test_uri3)
+    index.datasets.add_location(pseudo_ls8_dataset2, test_uri3)
     # Datasets and locations should still correctly match up...
     results = set(index.datasets.search_returning(
         ('id', 'uri'),
@@ -374,37 +463,37 @@ def test_search_returning_rows(index, pseudo_telemetry_type,
     assert results == {
         (dataset.id, test_uri),
         (dataset.id, test_uri2),
-        (pseudo_telemetry_dataset2.id, test_uri3),
+        (pseudo_ls8_dataset2.id, test_uri3),
     }
 
 
-def test_searches_only_type(index, pseudo_telemetry_type, pseudo_telemetry_dataset, ls5_nbar_gtiff_type):
+def test_searches_only_type(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_nbar_gtiff_type):
     """
     :type index: datacube.index._api.Index
-    :type pseudo_telemetry_type: datacube.model.DatasetType
-    :type pseudo_telemetry_dataset: datacube.model.Dataset
+    :type pseudo_ls8_type: datacube.model.DatasetType
+    :type pseudo_ls8_dataset: datacube.model.Dataset
     """
     # The dataset should have been matched to the telemetry type.
-    assert pseudo_telemetry_dataset.type.id == pseudo_telemetry_type.id
+    assert pseudo_ls8_dataset.type.id == pseudo_ls8_type.id
     assert index.datasets.search_eager()
 
     # One result in the telemetry type
     datasets = index.datasets.search_eager(
-        product=pseudo_telemetry_type.name,
+        product=pseudo_ls8_type.name,
         platform='LANDSAT_8',
         instrument='OLI_TIRS',
     )
     assert len(datasets) == 1
-    assert datasets[0].id == pseudo_telemetry_dataset.id
+    assert datasets[0].id == pseudo_ls8_dataset.id
 
     # One result in the metadata type
     datasets = index.datasets.search_eager(
-        metadata_type=pseudo_telemetry_type.metadata_type.name,
+        metadata_type=pseudo_ls8_type.metadata_type.name,
         platform='LANDSAT_8',
         instrument='OLI_TIRS',
     )
     assert len(datasets) == 1
-    assert datasets[0].id == pseudo_telemetry_dataset.id
+    assert datasets[0].id == pseudo_ls8_dataset.id
 
     # No results when searching for a different dataset type.
     datasets = index.datasets.search_eager(
@@ -420,7 +509,7 @@ def test_searches_only_type(index, pseudo_telemetry_type, pseudo_telemetry_datas
         instrument='OLI_TIRS'
     )
     assert len(datasets) == 1
-    assert datasets[0].id == pseudo_telemetry_dataset.id
+    assert datasets[0].id == pseudo_ls8_dataset.id
 
     # No results for different metadata type.
     datasets = index.datasets.search_eager(
@@ -431,19 +520,20 @@ def test_searches_only_type(index, pseudo_telemetry_type, pseudo_telemetry_datas
     assert len(datasets) == 0
 
 
-def test_search_special_fields(index, pseudo_telemetry_type, pseudo_telemetry_dataset, ls5_nbar_gtiff_type):
+def test_search_special_fields(index, pseudo_ls8_type, pseudo_ls8_dataset,
+                               ls5_dataset_w_children):
     """
     :type index: datacube.index._api.Index
-    :type pseudo_telemetry_type: datacube.model.DatasetType
-    :type pseudo_telemetry_dataset: datacube.model.Dataset
+    :type pseudo_ls8_type: datacube.model.DatasetType
+    :type pseudo_ls8_dataset: datacube.model.Dataset
     """
 
     # 'product' is a special case
     datasets = index.datasets.search_eager(
-        product=pseudo_telemetry_type.name
+        product=pseudo_ls8_type.name
     )
     assert len(datasets) == 1
-    assert datasets[0].id == pseudo_telemetry_dataset.id
+    assert datasets[0].id == pseudo_ls8_dataset.id
 
     # Unknown field: no results
     datasets = index.datasets.search_eager(
@@ -453,33 +543,33 @@ def test_search_special_fields(index, pseudo_telemetry_type, pseudo_telemetry_da
     assert len(datasets) == 0
 
 
-def test_search_conflicting_types(index, pseudo_telemetry_dataset, pseudo_telemetry_type):
+def test_search_conflicting_types(index, pseudo_ls8_dataset, pseudo_ls8_type):
     # Should return no results.
     datasets = index.datasets.search_eager(
-        product=pseudo_telemetry_type.name,
+        product=pseudo_ls8_type.name,
         # The telemetry type is not of type storage_unit.
         metadata_type='storage_unit'
     )
     assert len(datasets) == 0
 
 
-def test_fetch_all_of_md_type(index, pseudo_telemetry_dataset):
+def test_fetch_all_of_md_type(index, pseudo_ls8_dataset):
     """
     :type index: datacube.index._api.Index
-    :type pseudo_telemetry_dataset: datacube.model.Dataset
+    :type pseudo_ls8_dataset: datacube.model.Dataset
     """
     # Get every dataset of the md type.
     results = index.datasets.search_eager(
         metadata_type='eo'
     )
     assert len(results) == 1
-    assert results[0].id == pseudo_telemetry_dataset.id
+    assert results[0].id == pseudo_ls8_dataset.id
     # Get every dataset of the type.
     results = index.datasets.search_eager(
-        product=pseudo_telemetry_dataset.type.name
+        product=pseudo_ls8_dataset.type.name
     )
     assert len(results) == 1
-    assert results[0].id == pseudo_telemetry_dataset.id
+    assert results[0].id == pseudo_ls8_dataset.id
 
     # No results for another.
     results = index.datasets.search_eager(
@@ -488,19 +578,19 @@ def test_fetch_all_of_md_type(index, pseudo_telemetry_dataset):
     assert len(results) == 0
 
 
-def test_count_searches(index, pseudo_telemetry_type, pseudo_telemetry_dataset, ls5_nbar_gtiff_type):
+def test_count_searches(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_nbar_gtiff_type):
     """
     :type index: datacube.index._api.Index
-    :type pseudo_telemetry_type: datacube.model.DatasetType
-    :type pseudo_telemetry_dataset: datacube.model.Dataset
+    :type pseudo_ls8_type: datacube.model.DatasetType
+    :type pseudo_ls8_dataset: datacube.model.Dataset
     """
     # The dataset should have been matched to the telemetry type.
-    assert pseudo_telemetry_dataset.type.id == pseudo_telemetry_type.id
+    assert pseudo_ls8_dataset.type.id == pseudo_ls8_type.id
     assert index.datasets.search_eager()
 
     # One result in the telemetry type
     datasets = index.datasets.count(
-        product=pseudo_telemetry_type.name,
+        product=pseudo_ls8_type.name,
         platform='LANDSAT_8',
         instrument='OLI_TIRS',
     )
@@ -508,7 +598,7 @@ def test_count_searches(index, pseudo_telemetry_type, pseudo_telemetry_dataset, 
 
     # One result in the metadata type
     datasets = index.datasets.count(
-        metadata_type=pseudo_telemetry_type.metadata_type.name,
+        metadata_type=pseudo_ls8_type.metadata_type.name,
         platform='LANDSAT_8',
         instrument='OLI_TIRS',
     )
@@ -538,31 +628,31 @@ def test_count_searches(index, pseudo_telemetry_type, pseudo_telemetry_dataset, 
     assert datasets == 0
 
 
-def test_count_by_product_searches(index, pseudo_telemetry_type, pseudo_telemetry_dataset, ls5_nbar_gtiff_type):
+def test_count_by_product_searches(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_nbar_gtiff_type):
     """
     :type index: datacube.index._api.Index
-    :type pseudo_telemetry_type: datacube.model.DatasetType
-    :type pseudo_telemetry_dataset: datacube.model.Dataset
+    :type pseudo_ls8_type: datacube.model.DatasetType
+    :type pseudo_ls8_dataset: datacube.model.Dataset
     """
     # The dataset should have been matched to the telemetry type.
-    assert pseudo_telemetry_dataset.type.id == pseudo_telemetry_type.id
+    assert pseudo_ls8_dataset.type.id == pseudo_ls8_type.id
     assert index.datasets.search_eager()
 
     # One result in the telemetry type
     products = tuple(index.datasets.count_by_product(
-        product=pseudo_telemetry_type.name,
+        product=pseudo_ls8_type.name,
         platform='LANDSAT_8',
         instrument='OLI_TIRS',
     ))
-    assert products == ((pseudo_telemetry_type, 1),)
+    assert products == ((pseudo_ls8_type, 1),)
 
     # One result in the metadata type
     products = tuple(index.datasets.count_by_product(
-        metadata_type=pseudo_telemetry_type.metadata_type.name,
+        metadata_type=pseudo_ls8_type.metadata_type.name,
         platform='LANDSAT_8',
         instrument='OLI_TIRS',
     ))
-    assert products == ((pseudo_telemetry_type, 1),)
+    assert products == ((pseudo_ls8_type, 1),)
 
     # No results when searching for a different dataset type.
     products = tuple(index.datasets.count_by_product(
@@ -577,11 +667,11 @@ def test_count_by_product_searches(index, pseudo_telemetry_type, pseudo_telemetr
         platform='LANDSAT_8',
         instrument='OLI_TIRS',
     ))
-    assert products == ((pseudo_telemetry_type, 1),)
+    assert products == ((pseudo_ls8_type, 1),)
 
     # Only types with datasets should be returned (these params match ls5_gtiff too)
     products = tuple(index.datasets.count_by_product())
-    assert products == ((pseudo_telemetry_type, 1),)
+    assert products == ((pseudo_ls8_type, 1),)
 
     # No results for different metadata type.
     products = tuple(index.datasets.count_by_product(
@@ -590,7 +680,7 @@ def test_count_by_product_searches(index, pseudo_telemetry_type, pseudo_telemetr
     assert products == ()
 
 
-def test_count_time_groups(index, pseudo_telemetry_type, pseudo_telemetry_dataset):
+def test_count_time_groups(index, pseudo_ls8_type, pseudo_ls8_dataset):
     """
     :type index: datacube.index._api.Index
     """
@@ -599,7 +689,7 @@ def test_count_time_groups(index, pseudo_telemetry_type, pseudo_telemetry_datase
     # 'to_dt': datetime.datetime(2014, 7, 26, 23, 52, 0, 343853),
     timeline = list(index.datasets.count_product_through_time(
         '1 day',
-        product=pseudo_telemetry_type.name,
+        product=pseudo_ls8_type.name,
         time=Range(
             datetime.datetime(2014, 7, 25, tzinfo=tz.tzutc()),
             datetime.datetime(2014, 7, 27, tzinfo=tz.tzutc())
@@ -622,8 +712,8 @@ def test_count_time_groups(index, pseudo_telemetry_type, pseudo_telemetry_datase
 
 
 @pytest.mark.usefixtures('default_metadata_type',
-                         'indexed_ls5_scene_dataset_type')
-def test_source_filter(global_integration_cli_args, index, example_ls5_dataset, ls5_nbar_ingest_config):
+                         'indexed_ls5_scene_dataset_types')
+def test_source_filter(global_integration_cli_args, index, example_ls5_dataset_path, ls5_nbar_ingest_config):
     opts = list(global_integration_cli_args)
     opts.extend(
         [
@@ -631,7 +721,7 @@ def test_source_filter(global_integration_cli_args, index, example_ls5_dataset, 
             'dataset',
             'add',
             '--auto-match',
-            str(example_ls5_dataset)
+            str(example_ls5_dataset_path)
         ]
     )
     result = CliRunner().invoke(
@@ -654,13 +744,9 @@ def test_source_filter(global_integration_cli_args, index, example_ls5_dataset, 
         dss = index.datasets.search_eager(product='ls5_nbar_scene', source_filter={'gsi': 'ASA'})
 
 
-def test_count_time_groups_cli(global_integration_cli_args, pseudo_telemetry_type, pseudo_telemetry_dataset):
-    """
-    Search datasets using the cli.
-    :type global_integration_cli_args: tuple[str]
-    :type default_metadata_type: datacube.model.Collection
-    :type pseudo_telemetry_dataset: datacube.model.Dataset
-    """
+def test_count_time_groups_cli(global_integration_cli_args, pseudo_ls8_type, pseudo_ls8_dataset):
+    # type: (list, DatasetType, Dataset) -> None
+
     opts = list(global_integration_cli_args)
     opts.extend(
         [
@@ -682,17 +768,17 @@ def test_count_time_groups_cli(global_integration_cli_args, pseudo_telemetry_typ
         '{}\n'
         '    2014-07-25: 0\n'
         '    2014-07-26: 1\n'
-    ).format(pseudo_telemetry_type.name)
+    ).format(pseudo_ls8_type.name)
 
     assert result.output == expected_out
 
 
-def test_search_cli_basic(global_integration_cli_args, default_metadata_type, pseudo_telemetry_dataset):
+def test_search_cli_basic(global_integration_cli_args, telemetry_metadata_type, pseudo_ls8_dataset):
     """
     Search datasets using the cli.
     :type global_integration_cli_args: tuple[str]
-    :type default_metadata_type: datacube.model.Collection
-    :type pseudo_telemetry_dataset: datacube.model.Dataset
+    :type telemetry_metadata_type: datacube.model.MetadataType
+    :type pseudo_ls8_dataset: datacube.model.Dataset
     """
     opts = list(global_integration_cli_args)
     opts.extend(
@@ -707,28 +793,27 @@ def test_search_cli_basic(global_integration_cli_args, default_metadata_type, ps
         datacube.scripts.search_tool.cli,
         opts
     )
-    assert str(pseudo_telemetry_dataset.id) in result.output
-    assert str(default_metadata_type.name) in result.output
+    assert str(pseudo_ls8_dataset.id) in result.output
+    assert str(telemetry_metadata_type.name) in result.output
 
     assert result.exit_code == 0
 
 
-def test_cli_info(index, global_integration_cli_args, default_metadata_type, pseudo_telemetry_dataset):
-    # type: (Index, Tuple[str], MetadataType, Dataset) -> None
+def test_cli_info(index, global_integration_cli_args, pseudo_ls8_dataset):
+    # type: (Index, tuple, MetadataType, Dataset) -> None
     """
     Search datasets using the cli.
     :type index: datacube.index._api.Index
     :type global_integration_cli_args: tuple[str]
-    :type default_metadata_type: datacube.model.MetadataType
-    :type pseudo_telemetry_dataset: datacube.model.Dataset
+    :type pseudo_ls8_dataset: datacube.model.Dataset
     """
-    index.datasets.add_location(pseudo_telemetry_dataset, 'file:///tmp/location1')
-    index.datasets.add_location(pseudo_telemetry_dataset, 'file:///tmp/location2')
+    index.datasets.add_location(pseudo_ls8_dataset, 'file:///tmp/location1')
+    index.datasets.add_location(pseudo_ls8_dataset, 'file:///tmp/location2')
 
     opts = list(global_integration_cli_args)
     opts.extend(
         [
-            'dataset', 'info', str(pseudo_telemetry_dataset.id)
+            'dataset', 'info', str(pseudo_ls8_dataset.id)
         ]
     )
 
@@ -745,19 +830,19 @@ def test_cli_info(index, global_integration_cli_args, default_metadata_type, pse
     assert output_doc == {
         # Newer location first
         'locations': ['file:///tmp/location2', 'file:///tmp/location1'],
-        'id': str(pseudo_telemetry_dataset.id),
+        'id': str(pseudo_ls8_dataset.id),
         'product': 'ls8_telemetry',
         'derived': [],
         'sources': {}
     }
 
 
-def test_csv_search_via_cli(global_integration_cli_args, pseudo_telemetry_type, pseudo_telemetry_dataset,
-                            pseudo_telemetry_dataset2):
+def test_csv_search_via_cli(global_integration_cli_args, pseudo_ls8_type, pseudo_ls8_dataset,
+                            pseudo_ls8_dataset2):
     """
     Search datasets via the cli with csv output
     :type global_integration_cli_args: tuple[str]
-    :type pseudo_telemetry_dataset: datacube.model.Dataset
+    :type pseudo_ls8_dataset: datacube.model.Dataset
     """
     # Test dataset is:
     # platform: LANDSAT_8
@@ -773,11 +858,11 @@ def test_csv_search_via_cli(global_integration_cli_args, pseudo_telemetry_type, 
 
     rows = _cli_csv_search(['datasets', ' -40 < lat < -10'], global_integration_cli_args)
     assert len(rows) == 2
-    assert {rows[0]['id'], rows[1]['id']} == {str(pseudo_telemetry_dataset.id), str(pseudo_telemetry_dataset2.id)}
+    assert {rows[0]['id'], rows[1]['id']} == {str(pseudo_ls8_dataset.id), str(pseudo_ls8_dataset2.id)}
 
-    rows = _cli_csv_search(['datasets', 'product=' + pseudo_telemetry_type.name], global_integration_cli_args)
+    rows = _cli_csv_search(['datasets', 'product=' + pseudo_ls8_type.name], global_integration_cli_args)
     assert len(rows) == 2
-    assert {rows[0]['id'], rows[1]['id']} == {str(pseudo_telemetry_dataset.id), str(pseudo_telemetry_dataset2.id)}
+    assert {rows[0]['id'], rows[1]['id']} == {str(pseudo_ls8_dataset.id), str(pseudo_ls8_dataset2.id)}
 
     # Don't return on a mismatch
     rows = _cli_csv_search(['datasets', '150<lat<160'], global_integration_cli_args)
@@ -787,7 +872,7 @@ def test_csv_search_via_cli(global_integration_cli_args, pseudo_telemetry_type, 
     rows = _cli_csv_search(['datasets', 'platform=LANDSAT_8', '2014-07-24<time<2014-07-27'],
                            global_integration_cli_args)
     assert len(rows) == 1
-    assert rows[0]['id'] == str(pseudo_telemetry_dataset.id)
+    assert rows[0]['id'] == str(pseudo_ls8_dataset.id)
 
     # One matching field, one non-matching
     rows = _cli_csv_search(['datasets', '2014-07-24<time<2014-07-27', 'platform=LANDSAT_5'],
@@ -800,8 +885,8 @@ _EXPECTED_OUTPUT_HEADER = 'dataset_type_id,gsi,id,instrument,lat,lon,metadata_ty
                           'platform,product,product_type,sat_path,sat_row,time,uri'
 
 
-def test_csv_structure(global_integration_cli_args, pseudo_telemetry_type, ls5_nbar_gtiff_type,
-                       pseudo_telemetry_dataset, pseudo_telemetry_dataset2):
+def test_csv_structure(global_integration_cli_args, pseudo_ls8_type, ls5_nbar_gtiff_type,
+                       pseudo_ls8_dataset, pseudo_ls8_dataset2):
     output = _csv_search_raw(['datasets', ' -40 < lat < -10'], global_integration_cli_args)
     lines = [line.strip() for line in output.split('\n') if line]
     # A header and two dataset rows
