@@ -220,7 +220,7 @@ def process_result(index, result):
     datasets_to_add, datasets_to_update, datasets_to_archive = result
 
     for dataset in datasets_to_add:
-        index.datasets.add(dataset, skip_sources=True)
+        index.datasets.add(dataset, sources_policy='skip')
         _LOG.info('Dataset added')
 
     for dataset in datasets_to_update:

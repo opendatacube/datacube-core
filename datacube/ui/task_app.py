@@ -174,7 +174,7 @@ def check_existing_files(paths):
 
 def add_dataset_to_db(index, datasets):
     for dataset in datasets.values:
-        index.datasets.add(dataset, skip_sources=True)
+        index.datasets.add(dataset, sources_policy='skip')
         _LOG.info('Dataset added')
 
 

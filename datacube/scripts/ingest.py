@@ -208,7 +208,7 @@ def _index_datasets(index, results, skip_sources):
     n = 0
     for datasets in results:
         for dataset in datasets.values:
-            index.datasets.add(dataset, skip_sources=skip_sources)
+            index.datasets.add(dataset, sources_policy='skip')
             n += 1
     return n
 
