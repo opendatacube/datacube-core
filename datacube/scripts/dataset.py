@@ -11,6 +11,7 @@ import yaml
 from click import echo
 
 from datacube.index._api import Index
+from datacube.index.exceptions import MissingRecordError
 from datacube.model import Dataset
 from datacube.ui import click as ui
 from datacube.ui.click import cli
@@ -169,8 +170,8 @@ def index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths):
         if not dry_run:
             try:
                 index.datasets.add(dataset, sources_policy=sources_policy)
-            except ValueError as e:
-                _LOG.error('Failed to add dataset: %s', e)
+            except (ValueError, MissingRecordError) as e:
+                _LOG.error('Failed to add dataset %s: %s', dataset.local_uri, e)
 
 
 def parse_update_rules(allow_any):
