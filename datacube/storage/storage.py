@@ -107,6 +107,7 @@ def _read_decimated(array_transform, src, dest_shape):
     if all(write_shape):
         window = ((read[0], read[0] + read_shape[0]), (read[1], read[1] + read_shape[1]))
         tmp = src.read(window=window, out_shape=write_shape)
+        # TODO: transform is not quite correct here...
         transform = Affine(array_transform.a, 0, read_shape[1]+read[1] if sy_sx[1] < 0 else read[1],
                            0, array_transform.e, read_shape[0]+read[0] if sy_sx[0] < 0 else read[0])
         return tmp[::(-1 if sy_sx[0] < 0 else 1), ::(-1 if sy_sx[1] < 0 else 1)], write, transform
