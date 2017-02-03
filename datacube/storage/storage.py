@@ -86,10 +86,10 @@ def _calc_offsets_impl(off, scale, src_size, dst_size):
         # +0.5 below is a fudge that will return last row in more situations, but will change the scale more
         write_end = math.floor((src_size-off+0.5)/scale)
         write_size = write_end-write_off
-        read_end = clamp(read_off+round(write_size*scale), write_off, src_size)
+        read_end = clamp(read_off+round(write_size*scale), read_off, src_size)
     read_size = read_end-read_off
 
-    return read_off, write_off, read_size, write_size
+    return int(read_off), int(write_off), int(read_size), int(write_size)
 
 
 def _calc_offsets2(off, scale, src_size, dst_size):
@@ -107,8 +107,8 @@ def _read_decimated(array_transform, src, dest_shape):
     if all(write_shape):
         window = ((read[0], read[0] + read_shape[0]), (read[1], read[1] + read_shape[1]))
         tmp = src.read(window=window, out_shape=write_shape)
-        transform = Affine(array_transform.a, 0, read_shape[1] - read[1] if sy_sx[1] < 0 else read[1],
-                           0, array_transform.e, read_shape[0] - read[0] if sy_sx[0] < 0 else read[0])
+        transform = Affine(array_transform.a, 0, read_shape[1]+read[1] if sy_sx[1] < 0 else read[1],
+                           0, array_transform.e, read_shape[0]+read[0] if sy_sx[0] < 0 else read[0])
         return tmp[::(-1 if sy_sx[0] < 0 else 1), ::(-1 if sy_sx[1] < 0 else 1)], write, transform
     return None, None, None
 
@@ -135,21 +135,21 @@ def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, re
     with source.open() as src:
         array_transform = ~src.transform * dst_transform
         # if the CRS is the same use decimated reads if possible (NN or 1:1 scaling)
-        if src.crs == dst_projection and (resampling == Resampling.nearest or
-                                          (_no_scale(array_transform) and _no_fractional_translate(array_transform))):
+        if src.crs == dst_projection and _no_scale(array_transform) and (resampling == Resampling.nearest or
+                                                                         _no_fractional_translate(array_transform)):
             dest.fill(dst_nodata)
             tmp, offset, _ = _read_decimated(array_transform, src, dest.shape)
             if tmp is None:
                 return
             dest = dest[offset[0]:offset[0] + tmp.shape[0], offset[1]:offset[1] + tmp.shape[1]]
             numpy.copyto(dest, tmp, where=(tmp != src.nodata))
-        elif src.crs == dst_projection and _is_subsample(array_transform, factor=6):
+        elif src.crs == dst_projection and _is_subsample(array_transform, factor=8):
             scale = int(array_transform.a*0.25), int(array_transform.e*0.25)
             trans = array_transform.c // scale[0], array_transform.f // scale[1]
             tmp, _, tmp_transform = _read_decimated(Affine.scale(*scale) * Affine.translation(*trans),
                                                     src,
-                                                    (dest.shape[0] * array_transform.e / scale[1],
-                                                     dest.shape[1] * array_transform.a / scale[0]))
+                                                    (math.ceil(dest.shape[0] * array_transform.e / scale[1]),
+                                                     math.ceil(dest.shape[1] * array_transform.a / scale[0])))
             if tmp is None:
                 dest.fill(dst_nodata)
                 return
