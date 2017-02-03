@@ -18,7 +18,7 @@ from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import IntegrityError
 
-from datacube.index.exceptions import DuplicateRecordError
+from datacube.index.exceptions import DuplicateRecordError, MissingRecordError
 from datacube.index.fields import OrExpression
 from datacube.model import Range
 from . import _dynamic as dynamic
@@ -49,6 +49,7 @@ _DATASET_SELECT_W_URI = (
 )
 
 PGCODE_UNIQUE_CONSTRAINT = '23505'
+PGCODE_FOREIGN_KEY_VIOLATION = '23503'
 
 _LOG = logging.getLogger(__name__)
 
@@ -243,6 +244,8 @@ class PostgresDbAPI(object):
         except IntegrityError as e:
             if e.orig.pgcode == PGCODE_UNIQUE_CONSTRAINT:
                 raise DuplicateRecordError('Source already exists')
+            if e.orig.pgcode == PGCODE_FOREIGN_KEY_VIOLATION:
+                raise MissingRecordError("Referenced source dataset doesn't exist")
             raise
 
     def archive_dataset(self, dataset_id):
