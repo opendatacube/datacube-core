@@ -142,14 +142,15 @@ def parse_match_rules_options(index, match_rules, dtype, auto_match):
               multiple=True)
 @click.option('--auto-match', '-a', help="Automatically associate datasets with products by matching metadata",
               is_flag=True, default=False)
-@click.option('--check-sources/--no-check-sources',
-              help="Verify embedded source dataset metadata is identical to the stored metadata",
-              is_flag=True, default=True)
+@click.option('--sources-policy', type=click.Choice(['verify', 'ensure', 'skip']), default='verify',
+              help="""'verify' - verify source datasets' metadata
+'ensure' - add source dataset if it doesn't exist
+'skip' - dont add the derived dataset if source dataset doesn't exist""")
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
 @click.argument('dataset-paths',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
 @ui.pass_index()
-def index_cmd(index, match_rules, dtype, auto_match, check_sources, dry_run, dataset_paths):
+def index_cmd(index, match_rules, dtype, auto_match, sources_policy, dry_run, dataset_paths):
     rules = parse_match_rules_options(index, match_rules, dtype, auto_match)
     if rules is None:
         return
@@ -157,17 +158,17 @@ def index_cmd(index, match_rules, dtype, auto_match, check_sources, dry_run, dat
     # If outputting directly to terminal, show a progress bar.
     if sys.stdout.isatty():
         with click.progressbar(dataset_paths, label='Indexing datasets') as dataset_path_iter:
-            index_dataset_paths(check_sources, dry_run, index, rules, dataset_path_iter)
+            index_dataset_paths(sources_policy, dry_run, index, rules, dataset_path_iter)
     else:
-        index_dataset_paths(check_sources, dry_run, index, rules, dataset_paths)
+        index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths)
 
 
-def index_dataset_paths(check_sources, dry_run, index, rules, dataset_paths):
+def index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths):
     for dataset in load_datasets(dataset_paths, rules):
         _LOG.info('Matched %s', dataset)
         if not dry_run:
             try:
-                index.datasets.add(dataset, skip_sources=not check_sources)
+                index.datasets.add(dataset, sources_policy=sources_policy)
             except ValueError as e:
                 _LOG.error('Failed to add dataset: %s', e)
 
