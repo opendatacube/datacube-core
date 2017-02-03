@@ -15,7 +15,7 @@ from uuid import UUID
 import pytest
 
 from datacube.index._api import Index
-from datacube.index.exceptions import DuplicateRecordError
+from datacube.index.exceptions import DuplicateRecordError, MissingRecordError
 from datacube.index.postgres import PostgresDb
 from datacube.model import Dataset
 
@@ -195,6 +195,35 @@ def test_get_missing_things(index):
 
     missing_thing = index.products.get(id_)
     assert missing_thing is None, "get() should return none when it doesn't exist"
+
+
+def test_index_dataset_with_sources(index, default_metadata_type):
+    type_ = index.products.add_document(_pseudo_telemetry_dataset_type)
+
+    parent_doc = _telemetry_dataset.copy()
+    parent = Dataset(type_, parent_doc, None)
+    child_doc = _telemetry_dataset.copy()
+    child_doc['lineage'] = {'source_datasets': {'source': _telemetry_dataset}}
+    child_doc['id'] = '051a003f-5bba-43c7-b5f1-7f1da3ae9cfb'
+    child = Dataset(type_, child_doc, local_uri=None, sources={'source': parent})
+
+    with pytest.raises(MissingRecordError):
+        index.datasets.add(child, sources_policy='skip')
+
+    index.datasets.add(child, sources_policy='ensure')
+    assert index.datasets.get(parent.id)
+    assert index.datasets.get(child.id)
+
+    index.datasets.add(child, sources_policy='skip')
+    index.datasets.add(child, sources_policy='ensure')
+    index.datasets.add(child, sources_policy='verify')
+
+    parent_doc['platform'] = {'code': 'LANDSAT_9'}
+    index.datasets.add(child, sources_policy='ensure')
+    index.datasets.add(child, sources_policy='skip')
+
+    with pytest.raises(ValueError):  # TODO: should be DocumentMismatchError
+        index.datasets.add(child, sources_policy='verify')
 
 
 def test_index_dataset_with_location(index, default_metadata_type):

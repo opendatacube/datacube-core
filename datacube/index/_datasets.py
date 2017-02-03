@@ -4,6 +4,7 @@ API for dataset indexing, access and search.
 """
 from __future__ import absolute_import
 
+import warnings
 import logging
 from collections import namedtuple
 
@@ -603,21 +604,19 @@ class DatasetResource(object):
         with self._db.connect() as connection:
             return connection.contains_dataset(id_)
 
-    def add(self, dataset, skip_sources=False):
+    def add(self, dataset, skip_sources=False, sources_policy='verify'):
         """
         Ensure a dataset is in the index. Add it if not present.
 
         :param datacube.model.Dataset dataset: dataset to add
+        :param str sources_policy: one of 'verify' - verify the metadata, 'ensure' - add if doesn't exist, 'skip' - skip
         :param bool skip_sources: don't attempt to index source datasets (use when sources are already indexed)
         :rtype: datacube.model.Dataset
         """
         if skip_sources:
-            for source in dataset.sources.values():
-                if not self.has(source.id):
-                    self.add(source, skip_sources=skip_sources)
-        else:
-            for source in dataset.sources.values():
-                self.add(source, skip_sources=skip_sources)
+            warnings.warn('"skip_sources" is deprecated, use "sources_policy"', warnings.DeprecationWarning)
+            sources_policy = 'skip'
+        self._add_sources(dataset, sources_policy)
 
         sources_tmp = dataset.type.dataset_reader(dataset.metadata_doc).sources
         dataset.type.dataset_reader(dataset.metadata_doc).sources = {}
@@ -644,6 +643,17 @@ class DatasetResource(object):
             dataset.type.dataset_reader(dataset.metadata_doc).sources = sources_tmp
 
         return dataset
+
+    def _add_sources(self, dataset, sources_policy='verify'):
+        if sources_policy == 'ensure':
+            for source in dataset.sources.values():
+                if not self.has(source.id):
+                    self.add(source, sources_policy=sources_policy)
+        elif sources_policy == 'verify':
+            for source in dataset.sources.values():
+                self.add(source, sources_policy=sources_policy)
+        elif sources_policy != 'skip':
+            raise ValueError('sources_policy must be one of ("verify", "ensure", "skip")')
 
     def can_update(self, dataset, updates_allowed=None):
         """
