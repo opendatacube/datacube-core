@@ -161,10 +161,7 @@ class FakeDataSource(object):
         self.shape = (613, 597)
 
         self.data = numpy.full(self.shape, self.nodata, dtype='int16')
-        self.data[:256, :256] = 100
-        self.data[:256, 256:512] = 200
-        self.data[256:512, :256] = 300
-        self.data[256:512, 256:512] = 400
+        self.data[:512, :512] = numpy.arange(512) + numpy.arange(512).reshape((512, 1))
 
     def read(self, window=None, out_shape=None):
         data = self.data
