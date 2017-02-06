@@ -10,6 +10,7 @@ from contextlib import contextmanager
 
 import rasterio.warp
 
+import datacube
 from datacube.model import GeoBox, CRS
 from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse, read_from_source, Resampling
 
@@ -156,10 +157,7 @@ class FakeDataSource(object):
         self.shape = (613, 597)
 
         self.data = numpy.full(self.shape, self.nodata, dtype='int16')
-        self.data[:256, :256] = 100
-        self.data[:256, 256:512] = 200
-        self.data[256:512, :256] = 300
-        self.data[256:512, 256:512] = 400
+        self.data[:512, :512] = numpy.arange(512) + numpy.arange(512).reshape((512, 1))
 
     def read(self, window=None, out_shape=None):
         data = self.data
@@ -184,16 +182,7 @@ class FakeDataSource(object):
                                        **kwargs)
 
 
-def _test_helper(source, dst_shape, dst_dtype, dst_transform, dst_nodata, dst_projection, resampling, **kwargs):
-    result = numpy.empty(dst_shape, dtype=dst_dtype)
-    read_from_source(source,
-                     result,
-                     dst_transform=dst_transform,
-                     dst_nodata=dst_nodata,
-                     dst_projection=dst_projection,
-                     resampling=resampling,
-                     **kwargs)
-
+def _test_helper(source, dst_shape, dst_dtype, dst_transform, dst_nodata, dst_projection, resampling):
     expected = numpy.empty(dst_shape, dtype=dst_dtype)
     with source.open() as src:
         rasterio.warp.reproject(src.data,
@@ -204,9 +193,18 @@ def _test_helper(source, dst_shape, dst_dtype, dst_transform, dst_nodata, dst_pr
                                 dst_transform=dst_transform,
                                 dst_crs=str(dst_projection),
                                 dst_nodata=dst_nodata,
-                                resampling=resampling,
-                                **kwargs)
-    assert numpy.isclose(result, expected, atol=0, rtol=0.03, equal_nan=True).all()
+                                resampling=resampling)
+
+    result = numpy.empty(dst_shape, dtype=dst_dtype)
+    with datacube.set_options(reproject_threads=1):
+        read_from_source(source,
+                         result,
+                         dst_transform=dst_transform,
+                         dst_nodata=dst_nodata,
+                         dst_projection=dst_projection,
+                         resampling=resampling)
+
+    assert numpy.isclose(result, expected, atol=0, rtol=0.05, equal_nan=True).all()
     return result
 
 
