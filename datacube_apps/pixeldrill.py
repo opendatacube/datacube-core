@@ -23,7 +23,11 @@ except ImportError:  # Python 2
     import ttk
     import tkFont as font
 
+# Unavoidable with TK class hierarchy.
+# pylint: disable=too-many-ancestors
+
 import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.animation as anim
 from matplotlib.backends.backend_tkagg import NavigationToolbar2TkAgg, ToolTip
@@ -34,11 +38,6 @@ from six.moves import tkinter_tkfiledialog, tkinter_messagebox
 
 # pylint: disable=invalid-name, too-many-locals, global-variable-undefined, too-many-statements, redefined-outer-name
 # pylint: disable=broad-except
-
-# Unavoidable with TK class hierarchy.
-# pylint: disable=too-many-ancestors
-
-matplotlib.use('TkAgg')
 
 FONT = ("Helvetica", 9)
 
