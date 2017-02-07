@@ -19,12 +19,11 @@ Storage Query and Access API module
 from __future__ import absolute_import, division, print_function
 
 import logging
-from collections import defaultdict
 from itertools import chain, groupby
 
 import numpy
 
-from ..model import GeoBox
+from ..utils import geometry
 from .core import Datacube, Group, get_bounds, datatset_type_to_row
 from .query import DescriptorQuery
 
@@ -76,8 +75,8 @@ class API(object):
         dataset_descriptor['result_shape'] = tuple()
         dataset_descriptor['irregular_indices'] = {}
 
-        geobox = GeoBox.from_geopolygon(geopolygon.to_crs(dataset_type.grid_spec.crs),
-                                        dataset_type.grid_spec.resolution)
+        geobox = geometry.GeoBox.from_geopolygon(geopolygon.to_crs(dataset_type.grid_spec.crs),
+                                                 dataset_type.grid_spec.resolution)
         dims = dataset_type.dimensions
         spatial_dims = dataset_type.grid_spec.dimensions
         dataset_descriptor['dimensions'] = list(dims)
@@ -348,8 +347,8 @@ class API(object):
         datasets = list(chain.from_iterable(g for _, g in numpy.ndenumerate(sources)))
         if not geopolygon:
             geopolygon = get_bounds(datasets, dataset_type.grid_spec.crs)
-        geobox = GeoBox.from_geopolygon(geopolygon.to_crs(dataset_type.grid_spec.crs),
-                                        dataset_type.grid_spec.resolution)
+        geobox = geometry.GeoBox.from_geopolygon(geopolygon.to_crs(dataset_type.grid_spec.crs),
+                                                 dataset_type.grid_spec.resolution)
         if slices:
             _rename_spatial_keys(slices, geobox.dimensions)
             geo_slices = [slices.get(dim, slice(None)) for dim in geobox.dimensions]

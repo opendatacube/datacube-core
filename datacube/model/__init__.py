@@ -15,7 +15,6 @@ from affine import Affine
 
 from datacube.utils import geometry
 from datacube.utils import parse_time, cached_property, uri_to_local_path, intersects, schema_validated, DocReader
-from datacube.utils.geometry import GeoBox
 
 _LOG = logging.getLogger(__name__)
 
@@ -506,7 +505,7 @@ class GridSpec(object):
         res_y, res_x = self.resolution
         y, x = self.tile_coords(tile_index)
         h, w = self.tile_resolution
-        geobox = GeoBox(crs=self.crs, affine=Affine(res_x, 0.0, x, 0.0, res_y, y), width=w, height=h)
+        geobox = geometry.GeoBox(crs=self.crs, affine=Affine(res_x, 0.0, x, 0.0, res_y, y), width=w, height=h)
         return geobox
 
     def tiles(self, bounds):

@@ -11,7 +11,6 @@ from contextlib import contextmanager
 import rasterio.warp
 
 import datacube
-from datacube.model import GeoBox
 from datacube.utils import geometry
 from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse, read_from_source, Resampling
 from datacube.storage.storage import NetCDFDataSource
@@ -23,7 +22,7 @@ GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.25722
 
 def test_write_dataset_to_netcdf(tmpnetcdf_filename):
     affine = Affine.scale(0.1, 0.1) * Affine.translation(20, 30)
-    geobox = GeoBox(100, 100, affine, geometry.CRS(GEO_PROJ))
+    geobox = geometry.GeoBox(100, 100, affine, geometry.CRS(GEO_PROJ))
     dataset = xarray.Dataset(attrs={'extent': geobox.extent, 'crs': geobox.crs})
     for name, coord in geobox.coordinates.items():
         dataset[name] = (name, coord.values, {'units': coord.units, 'crs': geobox.crs})
@@ -50,7 +49,7 @@ def test_write_dataset_to_netcdf(tmpnetcdf_filename):
 
 def test_netcdf_source(tmpnetcdf_filename):
     affine = Affine.scale(0.1, 0.1) * Affine.translation(20, 30)
-    geobox = GeoBox(110, 100, affine, geometry.CRS(GEO_PROJ))
+    geobox = geometry.GeoBox(110, 100, affine, geometry.CRS(GEO_PROJ))
     dataset = xarray.Dataset(attrs={'extent': geobox.extent, 'crs': geobox.crs})
     for name, coord in geobox.coordinates.items():
         dataset[name] = (name, coord.values, {'units': coord.units, 'crs': geobox.crs})

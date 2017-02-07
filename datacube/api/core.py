@@ -15,7 +15,6 @@ from dask import array as da
 from ..config import LocalConfig
 from ..compat import string_types
 from ..index import index_connect
-from ..model import GeoBox
 from ..storage.storage import DatasetSource, reproject_and_fuse
 from ..utils import geometry, intersects, data_resolution_and_offset
 from .query import Query, query_group_by, query_geopolygon
@@ -39,7 +38,7 @@ def _xarray_extent(obj):
 
 def _xarray_geobox(obj):
     dims = obj.crs.dimensions
-    return GeoBox(obj[dims[1]].size, obj[dims[0]].size, obj.affine, obj.crs)
+    return geometry.GeoBox(obj[dims[1]].size, obj[dims[0]].size, obj.affine, obj.crs)
 
 
 xarray.Dataset.geobox = property(_xarray_geobox)
@@ -310,8 +309,8 @@ class Datacube(object):
                         raise RuntimeError("Product has no default resolution. Must specify 'resolution'")
                     resolution = grid_spec.resolution
                     align = align or grid_spec.alignment
-            geobox = GeoBox.from_geopolygon(query_geopolygon(**query) or get_bounds(observations, crs),
-                                            resolution, crs, align)
+            geobox = geometry.GeoBox.from_geopolygon(query_geopolygon(**query) or get_bounds(observations, crs),
+                                                     resolution, crs, align)
 
         group_by = query_group_by(**query)
         grouped = self.group_datasets(observations, group_by)
