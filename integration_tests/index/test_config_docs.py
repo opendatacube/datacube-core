@@ -7,7 +7,10 @@ from __future__ import absolute_import
 import copy
 
 import pytest
-from datacube.index.postgres._fields import NumericRangeDocField
+
+from datacube.index.postgres import PostgresDb
+from datacube.index.postgres._fields import NumericRangeDocField, PgField
+from datacube.model import DatasetType
 from datacube.model import Range, Dataset
 from datacube.utils import changes
 
@@ -79,7 +82,7 @@ def test_dataset_indexes_views_exist(db, ls5_nbar_gtiff_type):
     assert not _object_exists(db, 'dix_ls5_nbart_p54_gtiff_gsi'), "indexed=false field gsi shouldn't have an index"
 
 
-def test_dataset_composit_indexes_exist(db, ls5_nbar_gtiff_type):
+def test_dataset_composite_indexes_exist(db, ls5_nbar_gtiff_type):
     # This type has fields named lat/lon/time, so composite indexes should now exist for them:
     # (following the naming conventions)
     assert _object_exists(db, "dix_ls5_nbart_p54_gtiff_time_lat_lon")
@@ -89,6 +92,47 @@ def test_dataset_composit_indexes_exist(db, ls5_nbar_gtiff_type):
     assert not _object_exists(db, "dix_ls5_nbart_p54_gtiff_lat")
     assert not _object_exists(db, "dix_ls5_nbart_p54_gtiff_lon")
     assert not _object_exists(db, "dix_ls5_nbart_p54_gtiff_time")
+
+
+def test_field_expression_unchanged(ls5_nbar_gtiff_type):
+    # type: (DatasetType) -> None
+
+    # We're checking for accidental changes here in our field-to-SQL code
+
+    # If we started outputting a different expression they would quietly no longer match the expression
+    # indexes that exist in our DBs.
+
+    # The lat field on the default 'eo' metadata type.
+    # A multi-valued float range.
+    field = ls5_nbar_gtiff_type.metadata_type.dataset_fields['lat']
+    assert isinstance(field, PgField)
+    assert field.sql_expression == (
+        "agdc.float8range("
+        "least("
+        "CAST(agdc.dataset.metadata #>> '{extent, coord, ur, lat}' AS DOUBLE PRECISION), "
+        "CAST(agdc.dataset.metadata #>> '{extent, coord, lr, lat}' AS DOUBLE PRECISION), "
+        "CAST(agdc.dataset.metadata #>> '{extent, coord, ul, lat}' AS DOUBLE PRECISION), "
+        "CAST(agdc.dataset.metadata #>> '{extent, coord, ll, lat}' AS DOUBLE PRECISION)), "
+        "greatest("
+        "CAST(agdc.dataset.metadata #>> '{extent, coord, ur, lat}' AS DOUBLE PRECISION), "
+        "CAST(agdc.dataset.metadata #>> '{extent, coord, lr, lat}' AS DOUBLE PRECISION), "
+        "CAST(agdc.dataset.metadata #>> '{extent, coord, ul, lat}' AS DOUBLE PRECISION),"
+        " CAST(agdc.dataset.metadata #>> '{extent, coord, ll, lat}' AS DOUBLE PRECISION)), "
+        "'[]')")
+
+    # A single string value
+    field = ls5_nbar_gtiff_type.metadata_type.dataset_fields['platform']
+    assert isinstance(field, PgField)
+    assert field.sql_expression == (
+        "agdc.dataset.metadata #>> '{platform, code}'"
+    )
+
+    # A single integer value
+    field = ls5_nbar_gtiff_type.metadata_type.dataset_fields['orbit']
+    assert isinstance(field, PgField)
+    assert field.sql_expression == (
+        "CAST(agdc.dataset.metadata #>> '{acquisition, platform_orbit}' AS INTEGER)"
+    )
 
 
 def _object_exists(db, index_name):
