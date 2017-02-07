@@ -56,17 +56,24 @@ class OrExpression(Expression):
         return any(expr.evaluate(ctx) for expr in self.exprs)
 
 
+def as_expression(field, value):
+    """
+    Convert a single field/value to expression, following the "simple" convensions.
+    """
+    if isinstance(value, Range):
+        return field.between(value.begin, value.end)
+    if isinstance(value, list):
+        return OrExpression(*(as_expression(field, val) for val in value))
+    else:
+        return field == value
+
+
 def _to_expression(get_field, name, value):
     field = get_field(name)
     if field is None:
         raise UnknownFieldError('Unknown field %r' % name)
 
-    if isinstance(value, Range):
-        return field.between(value.begin, value.end)
-    if isinstance(value, list):
-        return OrExpression(*[_to_expression(get_field, name, val) for val in value])
-    else:
-        return field == value
+    return as_expression(field, value)
 
 
 def to_expressions(get_field, **query):

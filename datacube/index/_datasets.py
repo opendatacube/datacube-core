@@ -493,27 +493,33 @@ class ProductResource(object):
             return v if isinstance(v, list) else [v]
 
         for type_ in self.get_all():
-            q = query.copy()
-            if type_.name not in _listify(q.pop('product', type_.name)):
+            remaining_matchable = query.copy()
+            # If they specified specific product/metadata-types, we can quickly skip non-matches.
+            if type_.name not in _listify(remaining_matchable.pop('product', type_.name)):
                 continue
-            if type_.metadata_type.name not in _listify(q.pop('metadata_type', type_.metadata_type.name)):
+            if type_.metadata_type.name not in _listify(remaining_matchable.pop('metadata_type',
+                                                                                type_.metadata_type.name)):
                 continue
 
-            for key, value in list(q.items()):
-                try:
-                    exprs = fields.to_expressions(type_.metadata_type.dataset_fields.get, **{key: value})
-                except UnknownFieldError as e:
+            # Check that all the keys they specified match this product.
+            for key, value in list(remaining_matchable.items()):
+                field = type_.metadata_type.dataset_fields.get(key)
+                if not field:
+                    # This type doesn't have that field, so it cannot match.
+                    break
+                if field.extract(type_.metadata_doc) is None:
+                    # It has this field but it's not defined in the type doc, so it's unmatchable.
+                    continue
+
+                expr = fields.as_expression(field, value)
+                if expr.evaluate(type_.metadata_doc):
+                    remaining_matchable.pop(key)
+                else:
+                    # A property doesn't match this type, skip to next type.
                     break
 
-                try:
-                    if all(expr.evaluate(type_.metadata_doc) for expr in exprs):
-                        q.pop(key)
-                    else:
-                        break
-                except (AttributeError, KeyError, ValueError) as e:
-                    continue
             else:
-                yield type_, q
+                yield type_, remaining_matchable
 
     def get_all(self):
         """
@@ -972,8 +978,13 @@ class DatasetResource(object):
                               with_source_ids=False, source_filter=None):
         if source_filter:
             product_queries = list(self._get_product_queries(source_filter))
-            if len(product_queries) != 1:
+            if not product_queries:
+                # No products match our source filter, so there will be no search results regardless.
+                _LOG.info("No products match source filter")
+                return
+            if len(product_queries) > 1:
                 raise RuntimeError("Multi-product source filters are not supported. Try adding 'product' field")
+
             source_queries, source_product = product_queries[0]
             dataset_fields = source_product.metadata_type.dataset_fields
             source_exprs = tuple(fields.to_expressions(dataset_fields.get, **source_queries))

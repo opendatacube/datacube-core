@@ -733,15 +733,22 @@ def test_source_filter(global_integration_cli_args, index, example_ls5_dataset_p
     all_nbar = index.datasets.search_eager(product='ls5_nbar_scene')
     assert len(all_nbar) == 1
 
-    dss = index.datasets.search_eager(product='ls5_nbar_scene', source_filter={'product': 'ls5_level1_scene',
-                                                                               'gsi': 'ASA'})
+    dss = index.datasets.search_eager(
+        product='ls5_nbar_scene',
+        source_filter={'product': 'ls5_level1_scene', 'gsi': 'ASA'}
+    )
     assert dss == all_nbar
-    dss = index.datasets.search_eager(product='ls5_nbar_scene', source_filter={'product': 'ls5_level1_scene',
-                                                                               'gsi': 'GREG'})
+    dss = index.datasets.search_eager(
+        product='ls5_nbar_scene',
+        source_filter={'product': 'ls5_level1_scene', 'gsi': 'GREG'}
+    )
     assert dss == []
 
     with pytest.raises(RuntimeError):
-        dss = index.datasets.search_eager(product='ls5_nbar_scene', source_filter={'gsi': 'ASA'})
+        dss = index.datasets.search_eager(
+            product='ls5_nbar_scene',
+            source_filter={'gsi': 'ASA'}
+        )
 
 
 def test_count_time_groups_cli(global_integration_cli_args, pseudo_ls8_type, pseudo_ls8_dataset):
