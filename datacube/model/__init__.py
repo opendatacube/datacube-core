@@ -17,7 +17,6 @@ from affine import Affine
 
 from datacube.utils import parse_time, cached_property, uri_to_local_path, intersects, schema_validated, DocReader
 from datacube.utils import geometry
-from datacube.utils.geometry import CRS, BoundingBox
 
 _LOG = logging.getLogger(__name__)
 
@@ -144,11 +143,11 @@ class Dataset(object):
     @property
     def bounds(self):
         """
-        :rtype: rasterio.coords.BoundingBox
+        :rtype: geometry.BoundingBox
         """
         bounds = self.metadata.grid_spatial['geo_ref_points']
-        return BoundingBox(left=bounds['ul']['x'], right=bounds['lr']['x'],
-                           top=bounds['ul']['y'], bottom=bounds['lr']['y'])
+        return geometry.BoundingBox(left=bounds['ul']['x'], right=bounds['lr']['x'],
+                                    top=bounds['ul']['y'], bottom=bounds['lr']['y'])
 
     @property
     def is_archived(self):
@@ -166,23 +165,23 @@ class Dataset(object):
     @property
     def crs(self):
         """
-        :rtype: CRS
+        :rtype: geometry.CRS
         """
         projection = self.metadata.grid_spatial
 
         crs = projection.get('spatial_reference', None)
         if crs:
-            return CRS(str(crs))
+            return geometry.CRS(str(crs))
 
         # TODO: really need CRS specified properly in agdc-metadata.yaml
         if projection['datum'] == 'GDA94':
-            return CRS('EPSG:283' + str(abs(projection['zone'])))
+            return geometry.CRS('EPSG:283' + str(abs(projection['zone'])))
 
         if projection['datum'] == 'WGS84':
             if projection['zone'][-1] == 'S':
-                return CRS('EPSG:327' + str(abs(int(projection['zone'][:-1]))))
+                return geometry.CRS('EPSG:327' + str(abs(int(projection['zone'][:-1]))))
             else:
-                return CRS('EPSG:326' + str(abs(int(projection['zone'][:-1]))))
+                return geometry.CRS('EPSG:326' + str(abs(int(projection['zone'][:-1]))))
 
         raise RuntimeError('Cant figure out the projection: %s %s' % (projection['datum'], projection['zone']))
 
@@ -352,7 +351,7 @@ class DatasetType(object):
 
         if 'crs' not in storage:
             return None
-        crs = CRS(str(storage['crs']).strip())
+        crs = geometry.CRS(str(storage['crs']).strip())
 
         tile_size = None
         if 'tile_size' in storage:
@@ -444,17 +443,17 @@ class GridSpec(object):
     """
     Definition for a regular spatial grid
 
-    >>> gs = GridSpec(crs=CRS('EPSG:4326'), tile_size=(1, 1), resolution=(-0.1, 0.1), origin=(-50.05, 139.95))
+    >>> gs = GridSpec(crs=geometry.CRS('EPSG:4326'), tile_size=(1, 1), resolution=(-0.1, 0.1), origin=(-50.05, 139.95))
     >>> gs.tile_resolution
     (10, 10)
-    >>> list(gs.tiles(BoundingBox(140, -50, 141.5, -48.5)))
+    >>> list(gs.tiles(geometry.BoundingBox(140, -50, 141.5, -48.5)))
     [((0, 0), GeoBox(10, 10, Affine(0.1, 0.0, 139.95,
            0.0, -0.1, -49.05), EPSG:4326)), ((1, 0), GeoBox(10, 10, Affine(0.1, 0.0, 140.95,
            0.0, -0.1, -49.05), EPSG:4326)), ((0, 1), GeoBox(10, 10, Affine(0.1, 0.0, 139.95,
            0.0, -0.1, -48.05), EPSG:4326)), ((1, 1), GeoBox(10, 10, Affine(0.1, 0.0, 140.95,
            0.0, -0.1, -48.05), EPSG:4326))]
 
-    :param CRS crs: Coordinate System used to define the grid
+    :param geometry.CRS crs: Coordinate System used to define the grid
     :param [float,float] tile_size: (Y, X) size of each tile, in CRS units
     :param [float,float] resolution: (Y, X) size of each data point in the grid, in CRS units. Y will
                                    usually be negative.
@@ -462,7 +461,7 @@ class GridSpec(object):
     """
 
     def __init__(self, crs, tile_size, resolution, origin=None):
-        #: :rtype: CRS
+        #: :rtype: geometry.CRS
         self.crs = crs
         #: :type: (float,float)
         self.tile_size = tile_size
@@ -610,7 +609,7 @@ class GeoBox(object):
     including it's :py:class:`CRS`.
 
     >>> from affine import Affine
-    >>> t = GeoBox(4000, 4000, Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0), CRS('EPSG:4326'))
+    >>> t = GeoBox(4000, 4000, Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0), geometry.CRS('EPSG:4326'))
     >>> t.coordinates['latitude'].values
     array([-29.000125, -29.000375, -29.000625, ..., -29.999375, -29.999625,
            -29.999875])
@@ -621,7 +620,7 @@ class GeoBox(object):
     (-0.00025, 0.00025)
 
 
-    :param CRS crs: Coordinate Reference System
+    :param geometry.CRS crs: Coordinate Reference System
     :param affine.Affine affine: Affine transformation defining the location of the geobox
     """
 
@@ -644,7 +643,7 @@ class GeoBox(object):
         """
         :type geopolygon: geometry.Geometry
         :param resolution: (y_resolution, x_resolution)
-        :param CRS crs: CRS to use, if different from the geopolygon
+        :param geometry.CRS crs: CRS to use, if different from the geopolygon
         :param (float,float) align: Align geobox such that point 'align' lies on the pixel boundary.
         :rtype: GeoBox
         """
@@ -755,7 +754,7 @@ class GeoBox(object):
         """
         if self.crs.geographic:
             return self.extent
-        return self.extent.to_crs(CRS('EPSG:4326'))
+        return self.extent.to_crs(geometry.CRS('EPSG:4326'))
 
     coords = coordinates
     dims = dimensions

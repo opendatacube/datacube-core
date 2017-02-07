@@ -12,7 +12,7 @@ from pandas import to_datetime
 
 import datacube
 from datacube.utils import geometry
-from datacube.model import CRS, Dataset
+from datacube.model import Dataset
 import yaml
 try:
     from yaml import CSafeDumper as SafeDumper
@@ -44,10 +44,10 @@ def machine_info():
 def geobox_info(extent, valid_data=None):
     image_bounds = extent.boundingbox
     data_bounds = valid_data.boundingbox if valid_data else image_bounds
-    ul = geometry.point(data_bounds.left, data_bounds.top, crs=extent.crs).to_crs(CRS('EPSG:4326'))
-    ur = geometry.point(data_bounds.right, data_bounds.top, crs=extent.crs).to_crs(CRS('EPSG:4326'))
-    lr = geometry.point(data_bounds.right, data_bounds.bottom, crs=extent.crs).to_crs(CRS('EPSG:4326'))
-    ll = geometry.point(data_bounds.left, data_bounds.bottom, crs=extent.crs).to_crs(CRS('EPSG:4326'))
+    ul = geometry.point(data_bounds.left, data_bounds.top, crs=extent.crs).to_crs(geometry.CRS('EPSG:4326'))
+    ur = geometry.point(data_bounds.right, data_bounds.top, crs=extent.crs).to_crs(geometry.CRS('EPSG:4326'))
+    lr = geometry.point(data_bounds.right, data_bounds.bottom, crs=extent.crs).to_crs(geometry.CRS('EPSG:4326'))
+    ll = geometry.point(data_bounds.left, data_bounds.bottom, crs=extent.crs).to_crs(geometry.CRS('EPSG:4326'))
     doc = {
         'extent': {
             'coord': {

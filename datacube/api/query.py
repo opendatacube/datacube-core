@@ -27,7 +27,7 @@ from pandas import to_datetime as pandas_to_datetime
 import numpy as np
 
 from ..compat import string_types, integer_types
-from ..model import Range, CRS
+from ..model import Range
 from ..utils import geometry, datetime_to_seconds_since_1970
 
 _LOG = logging.getLogger(__name__)
@@ -92,7 +92,7 @@ class Query(object):
         kwargs = {}
         kwargs.update(self.search)
         if self.geopolygon:
-            geo_bb = self.geopolygon.to_crs(CRS('EPSG:4326')).boundingbox
+            geo_bb = self.geopolygon.to_crs(geometry.CRS('EPSG:4326')).boundingbox
             if geo_bb.bottom != geo_bb.top:
                 kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
             else:
@@ -210,8 +210,8 @@ def _range_to_geopolygon(**kwargs):
         if key in ['longitude', 'lon', 'long', 'x']:
             input_coords['left'], input_coords['right'] = _value_to_range(value)
         if key in ['crs', 'coordinate_reference_system']:
-            input_crs = CRS(value)
-    input_crs = input_crs or CRS('EPSG:4326')
+            input_crs = geometry.CRS(value)
+    input_crs = input_crs or geometry.CRS('EPSG:4326')
     if any(v is not None for v in input_coords.values()):
         if input_coords['left'] == input_coords['right']:
             if input_coords['top'] == input_coords['bottom']:
@@ -316,7 +316,7 @@ def _convert_to_solar_time(utc, longitude):
 
 def solar_day(dataset):
     utc = dataset.center_time
-    bb = dataset.extent.to_crs(CRS('WGS84')).boundingbox
+    bb = dataset.extent.to_crs(geometry.CRS('WGS84')).boundingbox
     assert bb.left < bb.right  # TODO: Handle dateline?
     longitude = (bb.left + bb.right) * 0.5
     solar_time = _convert_to_solar_time(utc, longitude)

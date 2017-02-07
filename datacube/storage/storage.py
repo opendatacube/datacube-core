@@ -9,11 +9,11 @@ import logging
 from contextlib import contextmanager
 from pathlib import Path
 
-from datacube.model import CRS
 from datacube.storage import netcdf_writer
 from datacube.config import OPTIONS
 from datacube.utils import clamp, data_resolution_and_offset, datetime_to_seconds_since_1970, DatacubeException
 from datacube.utils import is_url, uri_to_local_path
+from datacube.utils import geometry
 from datacube.compat import urlparse, urljoin
 
 try:
@@ -219,7 +219,7 @@ class BandDataSource(object):
 
     @property
     def crs(self):
-        return CRS(_rasterio_crs_wkt(self.source.ds))
+        return geometry.CRS(_rasterio_crs_wkt(self.source.ds))
 
     @property
     def transform(self):
@@ -260,7 +260,7 @@ class NetCDFDataSource(object):
     def crs(self):
         crs_var_name = self.variable.grid_mapping
         crs_var = self.dataset[crs_var_name]
-        return CRS(crs_var.crs_wkt)
+        return geometry.CRS(crs_var.crs_wkt)
 
     @property
     def transform(self):
@@ -367,7 +367,7 @@ class BaseRasterDataSource(object):
                     transform = self.get_transform(src.shape)
 
                 try:
-                    crs = CRS(_rasterio_crs_wkt(src))
+                    crs = geometry.CRS(_rasterio_crs_wkt(src))
                 except ValueError:
                     override = True
                     crs = self.get_crs()
@@ -505,7 +505,7 @@ def create_netcdf_storage_unit(filename,
     Create a NetCDF file on disk.
 
     :param pathlib.Path filename: filename to write to
-    :param datacube.model.CRS crs: Datacube CRS object defining the spatial projection
+    :param datacube.utils.geometry.CRS crs: Datacube CRS object defining the spatial projection
     :param dict coordinates: Dict of named `datacube.model.Coordinate`s to create
     :param dict variables: Dict of named `datacube.model.Variable`s to create
     :param dict variable_params:

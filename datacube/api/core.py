@@ -11,9 +11,7 @@ import numpy
 import xarray
 from affine import Affine
 from dask import array as da
-from rasterio.coords import BoundingBox
 
-from datacube.model import CRS
 from ..config import LocalConfig
 from ..compat import string_types
 from ..index import index_connect
@@ -33,12 +31,6 @@ def _xarray_affine(obj):
     xres, xoff = data_resolution_and_offset(obj[dims[1]].values)
     yres, yoff = data_resolution_and_offset(obj[dims[0]].values)
     return Affine.translation(xoff, yoff) * Affine.scale(xres, yres)
-
-
-def _get_min_max(data):
-    res, off = data_resolution_and_offset(data)
-    left, right = numpy.asscalar(data[0]-0.5*res), numpy.asscalar(data[-1]+0.5*res)
-    return (right, left) if res < 0 else (left, right)
 
 
 def _xarray_extent(obj):
@@ -307,7 +299,7 @@ class Datacube(object):
             if output_crs:
                 if not resolution:
                     raise RuntimeError("Must specify 'resolution' when specifying 'output_crs'")
-                crs = CRS(output_crs)
+                crs = geometry.CRS(output_crs)
             else:
                 grid_spec = self.index.products.get_by_name(product).grid_spec
                 if not grid_spec or not grid_spec.crs:

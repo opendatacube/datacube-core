@@ -1,6 +1,6 @@
 
 import numpy
-from datacube.model import BoundingBox, CRS, GridSpec
+from datacube.model import GridSpec
 from datacube.utils import geometry
 
 
@@ -12,7 +12,7 @@ def test_gridworkflow():
     # ----- fake a datacube -----
     # e.g. let there be a dataset that coincides with a grid cell
 
-    fakecrs = CRS('EPSG:4326')
+    fakecrs = geometry.CRS('EPSG:4326')
 
     grid = 100  # spatial frequency in crs units
     pixel = 10  # square pixel linear dimension in crs units

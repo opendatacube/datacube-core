@@ -9,52 +9,53 @@ from hypothesis.strategies import text
 from tests.conftest import tmpnetcdf_filename as get_tmpnetcdf_filename
 import string
 
-from datacube.model import Variable, CRS
+from datacube.model import Variable
 from datacube.storage.netcdf_writer import create_netcdf, create_coordinate, create_variable, netcdfy_data, \
     create_grid_mapping_variable, flag_mask_meanings
 from datacube.storage.storage import write_dataset_to_netcdf
-from datacube.utils import DatacubeException, read_strings_from_netcdf
+from datacube.utils import geometry, DatacubeException, read_strings_from_netcdf
 
-GEO_PROJ = CRS('GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],'
-               'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],'
-               'AUTHORITY["EPSG","4326"]]')
+GEO_PROJ = geometry.CRS("""GEOGCS["WGS 84",
+                           DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],
+                           AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],
+                           AUTHORITY["EPSG","4326"]]""")
 
-ALBERS_PROJ = CRS("""PROJCS["GDA94 / Australian Albers",
-                        GEOGCS["GDA94",
-                            DATUM["Geocentric_Datum_of_Australia_1994",
-                                SPHEROID["GRS 1980",6378137,298.257222101,
-                                    AUTHORITY["EPSG","7019"]],
-                                TOWGS84[0,0,0,0,0,0,0],
-                                AUTHORITY["EPSG","6283"]],
-                            PRIMEM["Greenwich",0,
-                                AUTHORITY["EPSG","8901"]],
-                            UNIT["degree",0.01745329251994328,
-                                AUTHORITY["EPSG","9122"]],
-                            AUTHORITY["EPSG","4283"]],
-                        UNIT["metre",1,
-                            AUTHORITY["EPSG","9001"]],
-                        PROJECTION["Albers_Conic_Equal_Area"],
-                        PARAMETER["standard_parallel_1",-18],
-                        PARAMETER["standard_parallel_2",-36],
-                        PARAMETER["latitude_of_center",0],
-                        PARAMETER["longitude_of_center",132],
-                        PARAMETER["false_easting",0],
-                        PARAMETER["false_northing",0],
-                        AUTHORITY["EPSG","3577"],
-                        AXIS["Easting",EAST],
-                        AXIS["Northing",NORTH]]""")
+ALBERS_PROJ = geometry.CRS("""PROJCS["GDA94 / Australian Albers",
+                                GEOGCS["GDA94",
+                                    DATUM["Geocentric_Datum_of_Australia_1994",
+                                        SPHEROID["GRS 1980",6378137,298.257222101,
+                                            AUTHORITY["EPSG","7019"]],
+                                        TOWGS84[0,0,0,0,0,0,0],
+                                        AUTHORITY["EPSG","6283"]],
+                                    PRIMEM["Greenwich",0,
+                                        AUTHORITY["EPSG","8901"]],
+                                    UNIT["degree",0.01745329251994328,
+                                        AUTHORITY["EPSG","9122"]],
+                                    AUTHORITY["EPSG","4283"]],
+                                UNIT["metre",1,
+                                    AUTHORITY["EPSG","9001"]],
+                                PROJECTION["Albers_Conic_Equal_Area"],
+                                PARAMETER["standard_parallel_1",-18],
+                                PARAMETER["standard_parallel_2",-36],
+                                PARAMETER["latitude_of_center",0],
+                                PARAMETER["longitude_of_center",132],
+                                PARAMETER["false_easting",0],
+                                PARAMETER["false_northing",0],
+                                AUTHORITY["EPSG","3577"],
+                                AXIS["Easting",EAST],
+                                AXIS["Northing",NORTH]]""")
 
-SINIS_PROJ = CRS("""PROJCS["Sinusoidal",
-                        GEOGCS["GCS_Undefined",
-                                DATUM["Undefined",
-                                SPHEROID["User_Defined_Spheroid",6371007.181,0.0]],
-                                PRIMEM["Greenwich",0.0],
-                                UNIT["Degree",0.0174532925199433]],
-                        PROJECTION["Sinusoidal"],
-                        PARAMETER["False_Easting",0.0],
-                        PARAMETER["False_Northing",0.0],
-                        PARAMETER["Central_Meridian",0.0],
-                        UNIT["Meter",1.0]]""")
+SINIS_PROJ = geometry.CRS("""PROJCS["Sinusoidal",
+                                GEOGCS["GCS_Undefined",
+                                        DATUM["Undefined",
+                                        SPHEROID["User_Defined_Spheroid",6371007.181,0.0]],
+                                        PRIMEM["Greenwich",0.0],
+                                        UNIT["Degree",0.0174532925199433]],
+                                PROJECTION["Sinusoidal"],
+                                PARAMETER["False_Easting",0.0],
+                                PARAMETER["False_Northing",0.0],
+                                PARAMETER["Central_Meridian",0.0],
+                                UNIT["Meter",1.0]]""")
 
 GLOBAL_ATTRS = {'test_attribute': 'test_value'}
 
