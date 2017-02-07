@@ -13,6 +13,7 @@ import rasterio.warp
 import datacube
 from datacube.model import GeoBox, CRS
 from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse, read_from_source, Resampling
+from datacube.storage.storage import NetCDFDataSource
 
 GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
            'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
@@ -44,6 +45,28 @@ def test_write_dataset_to_netcdf(tmpnetcdf_filename):
 
         assert 'abc' in var.ncattrs()
         assert var.getncattr('abc') == 'xyz'
+
+
+def test_netcdf_source(tmpnetcdf_filename):
+    affine = Affine.scale(0.1, 0.1) * Affine.translation(20, 30)
+    geobox = GeoBox(110, 100, affine, CRS(GEO_PROJ))
+    dataset = xarray.Dataset(attrs={'extent': geobox.extent, 'crs': geobox.crs})
+    for name, coord in geobox.coordinates.items():
+        dataset[name] = (name, coord.values, {'units': coord.units, 'crs': geobox.crs})
+
+    dataset['B10'] = (geobox.dimensions,
+                      numpy.arange(11000, dtype='int16').reshape(geobox.shape),
+                      {'nodata': 0, 'units': '1', 'crs': geobox.crs})
+
+    write_dataset_to_netcdf(dataset, tmpnetcdf_filename, global_attributes={'foo': 'bar'},
+                            variable_params={'B10': {'attrs': {'abc': 'xyz'}}})
+
+    with netCDF4.Dataset(tmpnetcdf_filename) as nco:
+        nco.set_auto_mask(False)
+        source = NetCDFDataSource(nco, 'B10')
+        assert source.crs == geobox.crs
+        assert source.transform.almost_equals(affine)
+        assert (source.read() == dataset['B10']).all()
 
 
 def test_first_source_is_priority_in_reproject_and_fuse():

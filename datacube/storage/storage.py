@@ -12,7 +12,8 @@ from pathlib import Path
 from datacube.model import CRS
 from datacube.storage import netcdf_writer
 from datacube.config import OPTIONS
-from datacube.utils import clamp, datetime_to_seconds_since_1970, is_url, uri_to_local_path, DatacubeException
+from datacube.utils import clamp, data_resolution_and_offset, datetime_to_seconds_since_1970, DatacubeException
+from datacube.utils import is_url, uri_to_local_path
 from datacube.compat import urlparse, urljoin
 
 try:
@@ -238,6 +239,63 @@ class BandDataSource(object):
     def reproject(self, dest, dst_transform, dst_crs, dst_nodata, resampling, **kwargs):
         return rasterio.warp.reproject(self.source,
                                        dest,
+                                       src_nodata=self.nodata,
+                                       dst_transform=dst_transform,
+                                       dst_crs=str(dst_crs),
+                                       dst_nodata=dst_nodata,
+                                       resampling=resampling,
+                                       **kwargs)
+
+
+class NetCDFDataSource(object):
+    def __init__(self, dataset, variable, slab=None, nodata=None):
+        self.dataset = dataset
+        self.variable = self.dataset[variable]
+        self.slab = slab or {}
+        if nodata is None:
+            nodata = self.variable.getncattr('_FillValue')
+        self.nodata = nodata
+
+    @property
+    def crs(self):
+        crs_var_name = self.variable.grid_mapping
+        crs_var = self.dataset[crs_var_name]
+        return CRS(crs_var.crs_wkt)
+
+    @property
+    def transform(self):
+        dims = self.crs.dimensions
+        xres, xoff = data_resolution_and_offset(self.dataset[dims[1]])
+        yres, yoff = data_resolution_and_offset(self.dataset[dims[0]])
+        return Affine.translation(xoff, yoff) * Affine.scale(xres, yres)
+
+    @property
+    def dtype(self):
+        return self.variable.dtype
+
+    @property
+    def shape(self):
+        return self.variable.shape
+
+    def read(self, window=None, out_shape=None):
+        data = self.variable
+        if window is None:
+            window = ((0, data.shape[0]), (0, data.shape[1]))
+        data_shape = (window[0][1]-window[0][0]), (window[1][1]-window[1][0])
+        if out_shape is None:
+            out_shape = data_shape
+        xidx = window[0][0] + ((numpy.arange(out_shape[1])+0.5)*(data_shape[1]/out_shape[1])-0.5).round().astype('int')
+        yidx = window[1][0] + ((numpy.arange(out_shape[0])+0.5)*(data_shape[0]/out_shape[0])-0.5).round().astype('int')
+        slab = {self.crs.dimensions[1]: xidx, self.crs.dimensions[0]: yidx}
+        slab.update(self.slab)
+        return data[tuple(slab[d] for d in self.variable.dimensions)]
+
+    def reproject(self, dest, dst_transform, dst_crs, dst_nodata, resampling, **kwargs):
+        source = self.read(self.source)  # TODO: read only the part the we care about
+        return rasterio.warp.reproject(source,
+                                       dest,
+                                       src_transform=self.transform,
+                                       src_crs=str(self.crs),
                                        src_nodata=self.nodata,
                                        dst_transform=dst_transform,
                                        dst_crs=str(dst_crs),
