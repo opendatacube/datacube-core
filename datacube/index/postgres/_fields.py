@@ -7,10 +7,7 @@ from __future__ import absolute_import
 
 from collections import namedtuple
 from datetime import datetime
-from functools import partial
-from typing import Any
-from typing import Callable
-from typing import Tuple
+from decimal import Decimal
 
 from dateutil import tz
 from psycopg2.extras import NumericRange, DateTimeTZRange
@@ -18,7 +15,6 @@ from sqlalchemy import cast, func, and_
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import INT4RANGE
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
-from sqlalchemy.dialects.postgresql.base import DOUBLE_PRECISION
 from sqlalchemy.sql import ColumnElement
 
 from datacube import compat
@@ -26,6 +22,11 @@ from datacube.index.fields import Expression, Field
 from datacube.index.postgres.tables import FLOAT8RANGE
 from datacube.model import Range
 from datacube.utils import get_doc_offset_safe
+
+try:
+    from typing import Any, Callable, Tuple
+except ImportError:
+    pass
 
 
 class PgField(Field):
@@ -227,6 +228,17 @@ class IntDocField(SimpleDocField):
         return int(s)
 
 
+class NumericDocField(SimpleDocField):
+    def value_to_alchemy(self, value):
+        return cast(value, postgres.NUMERIC)
+
+    def between(self, low, high):
+        return ValueBetweenExpression(self, low, high)
+
+    def parse_value(self, s):
+        return Decimal(s)
+
+
 class DoubleDocField(SimpleDocField):
     def value_to_alchemy(self, value):
         return cast(value, postgres.DOUBLE_PRECISION)
@@ -238,19 +250,50 @@ class DoubleDocField(SimpleDocField):
         return float(s)
 
 
+class DateDocField(SimpleDocField):
+    def value_to_alchemy(self, value):
+        if isinstance(value, datetime):
+            return _default_utc(value)
+        return func.agdc.common_timestamp(value)
+
+    def between(self, low, high):
+        return ValueBetweenExpression(self, low, high)
+
+    def parse_value(self, s):
+        try:
+            return datetime.strptime(s, "%Y-%m-%dT%H:%M:%S.%fZ")
+        except ValueError:
+            pass
+        return datetime.strptime(s, "%Y-%m-%dT%H:%M:%S")
+
+
 class RangeDocField(PgDocField):
     """
     A range of values. Has min and max values, which may be calculated from multiple
     values in the document.
     """
+    FIELD_CLASS = SimpleDocField
 
     def __init__(self, name, description, alchemy_column, indexed, min_offset=None, max_offset=None):
         super(RangeDocField, self).__init__(name, description, alchemy_column, indexed)
-        self.min_offset = min_offset
-        self.max_offset = max_offset
+        self.lower = self.FIELD_CLASS(
+            name + '.lower',
+            description,
+            alchemy_column,
+            indexed=False,
+            offset=min_offset,
+            selection='least'
+        )
+        self.greater = self.FIELD_CLASS(
+            name + '.greater',
+            description,
+            alchemy_column,
+            indexed=False,
+            offset=max_offset,
+            selection='greatest'
+        )
 
-    @property
-    def alchemy_create_range(self):
+    def value_to_alchemy(self, value):
         raise NotImplementedError('range type')
 
     @property
@@ -259,35 +302,35 @@ class RangeDocField(PgDocField):
 
     @property
     def alchemy_expression(self):
-        return self.alchemy_create_range(
-            self._alchemy_offset_value(self.min_offset, func.least),
-            self._alchemy_offset_value(self.max_offset, func.greatest),
-            # Inclusive on both sides.
-            '[]'
-        )
+        return self.value_to_alchemy((self.lower.alchemy_expression, self.greater.alchemy_expression))
 
     def __eq__(self, value):
         """
         :rtype: Expression
         """
-        return RangeContainsExpression(self, self.value_to_alchemy(value))
+        # Lower and higher are interchangeable here: they're the same type.
+        casted_val = self.lower.value_to_alchemy(value)
+        return RangeContainsExpression(self, casted_val)
 
     def extract(self, document):
-        min_val = self._extract_offset_value(document, self.min_offset, min)
-        max_val = self._extract_offset_value(document, self.max_offset, max)
+        min_val = self.lower.extract(document)
+        max_val = self.greater.extract(document)
         if not min_val and not max_val:
             return None
         return Range(min_val, max_val)
 
 
 class NumericRangeDocField(RangeDocField):
-    def value_to_alchemy(self, value):
-        return cast(value, postgres.NUMERIC)
+    FIELD_CLASS = NumericDocField
 
-    @property
-    def alchemy_create_range(self):
-        # Call the postgres 'numrange()' function, hinting to SQLAlchemy that it returns a NUMRANGE.
-        return partial(func.numrange, type_=NUMRANGE)
+    def value_to_alchemy(self, value):
+        low, high = value
+        return func.numrange(
+            low, high,
+            # Inclusive on both sides.
+            '[]',
+            type_=NUMRANGE,
+        )
 
     def between(self, low, high):
         """
@@ -297,12 +340,16 @@ class NumericRangeDocField(RangeDocField):
 
 
 class IntRangeDocField(RangeDocField):
-    def value_to_alchemy(self, value):
-        return cast(value, postgres.INTEGER)
+    FIELD_CLASS = IntDocField
 
-    @property
-    def alchemy_create_range(self):
-        return partial(func.numrange, type_=INT4RANGE)
+    def value_to_alchemy(self, value):
+        low, high = value
+        return func.numrange(
+            low, high,
+            # Inclusive on both sides.
+            '[]',
+            type_=INT4RANGE,
+        )
 
     def between(self, low, high):
         """
@@ -312,13 +359,16 @@ class IntRangeDocField(RangeDocField):
 
 
 class DoubleRangeDocField(RangeDocField):
-    @classmethod
-    def value_to_alchemy(cls, value):
-        return cast(value, DOUBLE_PRECISION)
+    FIELD_CLASS = DoubleDocField
 
-    @property
-    def alchemy_create_range(self):
-        return partial(func.agdc.float8range, type_=FLOAT8RANGE)
+    def value_to_alchemy(self, value):
+        low, high = value
+        return func.agdc.float8range(
+            low, high,
+            # Inclusive on both sides.
+            '[]',
+            type_=FLOAT8RANGE,
+        )
 
     def between(self, low, high):
         """
@@ -328,20 +378,16 @@ class DoubleRangeDocField(RangeDocField):
 
 
 class DateRangeDocField(RangeDocField):
+    FIELD_CLASS = DateDocField
+
     def value_to_alchemy(self, value):
-        if isinstance(value, datetime):
-            return self._default_utc(value)
-        return func.agdc.common_timestamp(value)
-
-    @property
-    def alchemy_create_range(self):
-        # Call the postgres 'tstzrange()' function, hinting to SQLAlchemy that it returns a TSTZRANGE.
-        return partial(func.tstzrange, type_=TSTZRANGE)
-
-    def _default_utc(self, d):
-        if d.tzinfo is None:
-            return d.replace(tzinfo=tz.tzutc())
-        return d
+        low, high = value
+        return func.tstzrange(
+            low, high,
+            # Inclusive on both sides.
+            '[]',
+            type_=TSTZRANGE,
+        )
 
     def between(self, low, high):
         """
@@ -349,8 +395,8 @@ class DateRangeDocField(RangeDocField):
         """
         return RangeBetweenExpression(
             self,
-            self._default_utc(low),
-            self._default_utc(high),
+            _default_utc(low),
+            _default_utc(high),
             _range_class=DateTimeTZRange
         )
 
@@ -495,15 +541,15 @@ def parse_fields(doc, table_column):
     return {name: _get_field(name, descriptor, table_column) for name, descriptor in doc.items()}
 
 
-def coalesce(*values):
+def _coalesce(*values):
     """
     Return first non-none value.
 
-    >>> coalesce(1, 2)
+    >>> _coalesce(1, 2)
     1
-    >>> coalesce(None, 2, 3)
+    >>> _coalesce(None, 2, 3)
     2
-    >>> coalesce(None, None, 3, None, 5)
+    >>> _coalesce(None, None, 3, None, 5)
     3
     """
     for v in values:
@@ -511,10 +557,18 @@ def coalesce(*values):
             return v
 
 
-# How to choose among multiple doc values.
-aggregation = namedtuple('aggregation', ('calc', 'pg_calc'))
+def _default_utc(d):
+    if d.tzinfo is None:
+        return d.replace(tzinfo=tz.tzutc())
+    return d
+
+
+# How to choose/combine multiple doc values.
+ValueAggregation = namedtuple('ValueAggregation', ('calc', 'pg_calc'))
 SELECTION_TYPES = {
-    'first': aggregation(coalesce, func.coalesce),
-    'least': aggregation(min, func.least),
-    'greatest': aggregation(max, func.greatest),
+    # First non-null
+    'first': ValueAggregation(_coalesce, func.coalesce),
+    # min/max
+    'least': ValueAggregation(min, func.least),
+    'greatest': ValueAggregation(max, func.greatest),
 }
