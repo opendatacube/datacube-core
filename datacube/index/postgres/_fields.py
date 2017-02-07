@@ -24,7 +24,7 @@ from datacube import compat
 from datacube.index.fields import Expression, Field
 from datacube.index.postgres.tables import FLOAT8RANGE
 from datacube.model import Range
-from datacube.utils import get_doc_offset
+from datacube.utils import get_doc_offset_safe
 
 
 class PgField(Field):
@@ -182,7 +182,7 @@ class SimpleDocField(PgDocField):
         raise NotImplementedError('Simple field between expression')
 
     def extract(self, document):
-        v = get_doc_offset(self.offset, document)
+        v = get_doc_offset_safe(self.offset, document)
         if v is None:
             return None
 
@@ -249,14 +249,9 @@ class RangeDocField(PgDocField):
         return RangeContainsExpression(self, self.value_to_alchemy(value))
 
     def extract(self, document):
-        def safe_get_doc_offset(offset, document):
-            try:
-                return get_doc_offset(offset, document)
-            except KeyError:
-                return None
 
-        min_vals = [v for v in (safe_get_doc_offset(offset, document) for offset in self.min_offset) if v]
-        max_vals = [v for v in (safe_get_doc_offset(offset, document) for offset in self.max_offset) if v]
+        min_vals = [v for v in (get_doc_offset_safe(offset, document) for offset in self.min_offset) if v]
+        max_vals = [v for v in (get_doc_offset_safe(offset, document) for offset in self.max_offset) if v]
 
         min_val = min(min_vals) if min_vals else None
         max_val = max(max_vals) if max_vals else None

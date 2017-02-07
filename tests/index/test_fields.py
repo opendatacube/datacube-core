@@ -38,6 +38,7 @@ def test_get_field():
     assert isinstance(field, SimpleDocField)
     assert field.extract({'platform': {'code': 'turtle'}}) == 'turtle'
     assert field.extract({'platform': {'code': None}}) is None
+    assert field.extract({}) is None
 
     storage_fields = parse_fields({
         'lat': {

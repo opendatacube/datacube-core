@@ -123,6 +123,23 @@ def get_doc_offset(offset, document):
     return value
 
 
+def get_doc_offset_safe(offset, document):
+    """
+    :type offset: list[str]
+    :type document: dict
+
+    >>> get_doc_offset_safe(['a'], {'a': 4})
+    4
+    >>> get_doc_offset_safe(['a', 'b'], {'a': {'b': 4}})
+    4
+    >>> get_doc_offset_safe(['a'], {})
+    """
+    try:
+        return get_doc_offset(offset, document)
+    except KeyError:
+        return None
+
+
 def _parse_time_generic(time):
     if isinstance(time, compat.string_types):
         return dateutil.parser.parse(time)
@@ -382,6 +399,7 @@ def transform_object_tree(f, o, key_transform=lambda k: k):
     >>> transform_object_tree(lambda a: a+1, {1: 1, '2': 2, 3.0: 3}, key_transform=float) == {1.0: 2, 2.0: 3, 3.0: 4}
     True
     """
+
     def recur(o_):
         return transform_object_tree(f, o_, key_transform=key_transform)
 
