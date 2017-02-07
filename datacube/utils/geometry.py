@@ -468,6 +468,12 @@ def polygon(outer, crs, *inners):
     return Geometry({'type': 'Polygon', 'coordinates': (outer, )+inners}, crs=crs)
 
 
+def polygon_from_transform(width, height, transform, crs):
+    points = [(0, 0), (0, height), (width, height), (width, 0), (0, 0)]
+    transform.itransform(points)
+    return polygon(points, crs=crs)
+
+
 def box(left, bottom, right, top, crs):
     points = [(left, bottom), (left, top), (right, top), (right, bottom), (left, bottom)]
     return polygon(points, crs=crs)
@@ -537,11 +543,8 @@ class GeoBox(object):
         self.height = height
         #: :rtype: affine.Affine
         self.affine = affine
-
-        points = [(0, 0), (0, height), (width, height), (width, 0), (0, 0)]
-        self.affine.itransform(points)
         #: :rtype: geometry.Geometry
-        self.extent = polygon(points, crs=crs)
+        self.extent = polygon_from_transform(width, height, affine, crs=crs)
 
     @classmethod
     def from_geopolygon(cls, geopolygon, resolution, crs=None, align=None):
