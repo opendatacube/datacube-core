@@ -29,6 +29,14 @@ class BoundingBox(_BoundingBox):  # pylint: disable=duplicate-bases
         return BoundingBox(left=self.left - xbuff, right=self.right + xbuff,
                            top=self.top + ybuff, bottom=self.bottom - ybuff)
 
+    @property
+    def width(self):
+        return self.right - self.left
+
+    @property
+    def height(self):
+        return self.top - self.bottom
+
 
 class CRSProjProxy(object):
     def __init__(self, crs):
