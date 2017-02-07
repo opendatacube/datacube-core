@@ -5,6 +5,7 @@ Build and index fields within documents.
 """
 from __future__ import absolute_import
 
+from collections import namedtuple
 from datetime import datetime
 from functools import partial
 from typing import Any
@@ -123,6 +124,12 @@ class PgDocField(PgField):
         # Default do nothing (eg. string datatypes)
         return value
 
+    def parse_value(self, value):
+        """
+        Parse the value from a string. May be overridden by subclasses.
+        """
+        return value
+
     def _alchemy_offset_value(self, doc_offsets, agg_function):
         # type: (Tuple[Tuple[str]], Callable[[Any], ColumnElement]) -> ColumnElement
         """
@@ -148,26 +155,47 @@ class PgDocField(PgField):
         # If there's multiple fields, we aggregate them (eg. "min()"). Otherwise use the one.
         return agg_function(*alchemy_values) if len(alchemy_values) > 1 else alchemy_values[0]
 
+    def _extract_offset_value(self, doc, doc_offsets, agg_function):
+        """
+        Extract a value for the given document offsets.
+
+        Same as _alchemy_offset_value(), but returns the value instead of an sqlalchemy expression to calc the value.
+        """
+        if not doc_offsets:
+            raise ValueError("Value requires at least one offset")
+
+        if isinstance(doc_offsets[0], compat.string_types):
+            # It's a single offset.
+            doc_offsets = [doc_offsets]
+
+        values = (get_doc_offset_safe(offset, doc) for offset in doc_offsets)
+        values = [self.parse_value(v) for v in values if v is not None]
+
+        if not values:
+            return None
+        if len(values) == 1:
+            return values[0]
+        return agg_function(*values)
+
 
 class SimpleDocField(PgDocField):
     """
     A field with a single value (eg. String, int) calculated as an offset inside a (jsonb) document.
     """
 
-    def __init__(self, name, description, alchemy_column, indexed, offset=None, agg_function=func.coalesce):
+    def __init__(self, name, description, alchemy_column, indexed, offset=None, selection='first'):
         super(SimpleDocField, self).__init__(name, description, alchemy_column, indexed)
         self.offset = offset
-        self.agg_function = agg_function
-
-    def from_string(self, s):
-        """
-        Parse the value from a string. May be overridden by subclasses.
-        """
-        return s
+        if selection not in SELECTION_TYPES:
+            raise ValueError(
+                "Unknown field selection type %s. Expected one of: %r" % (
+                    selection, (SELECTION_TYPES.keys(),),)
+            )
+        self.aggregation = SELECTION_TYPES[selection]
 
     @property
     def alchemy_expression(self):
-        return self._alchemy_offset_value(self.offset, self.agg_function)
+        return self._alchemy_offset_value(self.offset, self.aggregation.pg_calc)
 
     def __eq__(self, value):
         """
@@ -182,11 +210,7 @@ class SimpleDocField(PgDocField):
         raise NotImplementedError('Simple field between expression')
 
     def extract(self, document):
-        v = get_doc_offset_safe(self.offset, document)
-        if v is None:
-            return None
-
-        return self.from_string(v)
+        return self._extract_offset_value(document, self.offset, self.aggregation.calc)
 
     def evaluate(self, ctx):
         return self.extract(ctx)
@@ -199,7 +223,7 @@ class IntDocField(SimpleDocField):
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
 
-    def from_string(self, s):
+    def parse_value(self, s):
         return int(s)
 
 
@@ -210,7 +234,7 @@ class DoubleDocField(SimpleDocField):
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
 
-    def from_string(self, s):
+    def parse_value(self, s):
         return float(s)
 
 
@@ -249,16 +273,10 @@ class RangeDocField(PgDocField):
         return RangeContainsExpression(self, self.value_to_alchemy(value))
 
     def extract(self, document):
-
-        min_vals = [v for v in (get_doc_offset_safe(offset, document) for offset in self.min_offset) if v]
-        max_vals = [v for v in (get_doc_offset_safe(offset, document) for offset in self.max_offset) if v]
-
-        min_val = min(min_vals) if min_vals else None
-        max_val = max(max_vals) if max_vals else None
-
+        min_val = self._extract_offset_value(document, self.min_offset, min)
+        max_val = self._extract_offset_value(document, self.max_offset, max)
         if not min_val and not max_val:
             return None
-
         return Range(min_val, max_val)
 
 
@@ -475,3 +493,28 @@ def parse_fields(doc, table_column):
             )
 
     return {name: _get_field(name, descriptor, table_column) for name, descriptor in doc.items()}
+
+
+def coalesce(*values):
+    """
+    Return first non-none value.
+
+    >>> coalesce(1, 2)
+    1
+    >>> coalesce(None, 2, 3)
+    2
+    >>> coalesce(None, None, 3, None, 5)
+    3
+    """
+    for v in values:
+        if v is not None:
+            return v
+
+
+# How to choose among multiple doc values.
+aggregation = namedtuple('aggregation', ('calc', 'pg_calc'))
+SELECTION_TYPES = {
+    'first': aggregation(coalesce, func.coalesce),
+    'least': aggregation(min, func.least),
+    'greatest': aggregation(max, func.greatest),
+}
