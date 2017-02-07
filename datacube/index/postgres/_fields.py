@@ -18,6 +18,7 @@ from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 from sqlalchemy.sql import ColumnElement
 
 from datacube import compat
+from datacube import utils
 from datacube.index.fields import Expression, Field
 from datacube.index.postgres.tables import FLOAT8RANGE
 from datacube.model import Range
@@ -260,11 +261,7 @@ class DateDocField(SimpleDocField):
         return ValueBetweenExpression(self, low, high)
 
     def parse_value(self, s):
-        try:
-            return datetime.strptime(s, "%Y-%m-%dT%H:%M:%S.%fZ")
-        except ValueError:
-            pass
-        return datetime.strptime(s, "%Y-%m-%dT%H:%M:%S")
+        return utils.parse_time(s)
 
 
 class RangeDocField(PgDocField):
