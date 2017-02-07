@@ -632,6 +632,10 @@ class GeoBox(object):
                       crs=self.crs)
 
     @property
+    def transform(self):
+        return self.affine
+
+    @property
     def shape(self):
         """
         :type: (int,int)
