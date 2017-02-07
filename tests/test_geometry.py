@@ -182,3 +182,22 @@ def test_crs_equality():
     assert a == b
     assert a == c
     assert b == c
+
+
+def test_geobox():
+    points_list = [
+        [(148.2697, -35.20111), (149.31254, -35.20111), (149.31254, -36.331431), (148.2697, -36.331431)],
+        [(148.2697, 35.20111), (149.31254, 35.20111), (149.31254, 36.331431), (148.2697, 36.331431)],
+        [(-148.2697, 35.20111), (-149.31254, 35.20111), (-149.31254, 36.331431), (-148.2697, 36.331431)],
+        [(-148.2697, -35.20111), (-149.31254, -35.20111), (-149.31254, -36.331431), (-148.2697, -36.331431),
+         (148.2697, -35.20111)],
+        ]
+    for points in points_list:
+        polygon = geometry.polygon(points, crs=geometry.CRS('EPSG:3577'))
+        resolution = (-25, 25)
+        geobox = geometry.GeoBox.from_geopolygon(polygon, resolution)
+
+        assert abs(resolution[0]) > abs(geobox.extent.boundingbox.left - polygon.boundingbox.left)
+        assert abs(resolution[0]) > abs(geobox.extent.boundingbox.right - polygon.boundingbox.right)
+        assert abs(resolution[1]) > abs(geobox.extent.boundingbox.top - polygon.boundingbox.top)
+        assert abs(resolution[1]) > abs(geobox.extent.boundingbox.bottom - polygon.boundingbox.bottom)

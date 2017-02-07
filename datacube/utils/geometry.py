@@ -1,12 +1,20 @@
 from __future__ import absolute_import, division
 
+import math
 import functools
+from collections import namedtuple, OrderedDict
+
 import cachetools
+import numpy
+from affine import Affine
 
 from osgeo import ogr, osr
 from rasterio.coords import BoundingBox as _BoundingBox
 
 from datacube import compat
+
+
+Coordinate = namedtuple('Coordinate', ('values', 'units'))
 
 
 class BoundingBox(_BoundingBox):  # pylint: disable=duplicate-bases
@@ -498,3 +506,184 @@ def unary_intersection(geoms):
     compute intersection of multiple (multi)polygons
     """
     return functools.reduce(Geometry.intersection, geoms)
+
+
+class GeoBox(object):
+    """
+    Defines the location and resolution of a rectangular grid of data,
+    including it's :py:class:`CRS`.
+
+    >>> from affine import Affine
+    >>> t = GeoBox(4000, 4000, Affine(0.00025, 0.0, 151.0, 0.0, -0.00025, -29.0), CRS('EPSG:4326'))
+    >>> t.coordinates['latitude'].values
+    array([-29.000125, -29.000375, -29.000625, ..., -29.999375, -29.999625,
+           -29.999875])
+    >>> t.coordinates['longitude'].values
+    array([ 151.000125,  151.000375,  151.000625, ...,  151.999375,
+            151.999625,  151.999875])
+    >>> t.resolution
+    (-0.00025, 0.00025)
+
+
+    :param geometry.CRS crs: Coordinate Reference System
+    :param affine.Affine affine: Affine transformation defining the location of the geobox
+    """
+
+    def __init__(self, width, height, affine, crs):
+        assert height > 0 and width > 0, "Can't create GeoBox of zero size"
+        #: :type: int
+        self.width = width
+        #: :type: int
+        self.height = height
+        #: :rtype: affine.Affine
+        self.affine = affine
+
+        points = [(0, 0), (0, height), (width, height), (width, 0), (0, 0)]
+        self.affine.itransform(points)
+        #: :rtype: geometry.Geometry
+        self.extent = polygon(points, crs=crs)
+
+    @classmethod
+    def from_geopolygon(cls, geopolygon, resolution, crs=None, align=None):
+        """
+        :type geopolygon: geometry.Geometry
+        :param resolution: (y_resolution, x_resolution)
+        :param geometry.CRS crs: CRS to use, if different from the geopolygon
+        :param (float,float) align: Align geobox such that point 'align' lies on the pixel boundary.
+        :rtype: GeoBox
+        """
+        # TODO: currently only flipped Y-axis data is supported
+
+        assert resolution[1] > 0, "decreasing X coordinates are not supported"
+        assert resolution[0] < 0, "increasing Y coordinates are not supported"
+
+        align = align or (0.0, 0.0)
+        assert 0.0 <= align[1] <= abs(resolution[1]), "X align must be in [0, abs(x_resolution)] range"
+        assert 0.0 <= align[0] <= abs(resolution[0]), "Y align must be in [0, abs(y_resolution)] range"
+
+        if crs is None:
+            crs = geopolygon.crs
+        else:
+            geopolygon = geopolygon.to_crs(crs)
+
+        def align_pix(val, res, off):
+            return math.floor((val - off) / res) * res + off
+
+        bounding_box = geopolygon.boundingbox
+        left = align_pix(bounding_box.left, resolution[1], align[1])
+        top = align_pix(bounding_box.top, resolution[0], align[0])
+        affine = (Affine.translation(left, top) * Affine.scale(resolution[1], resolution[0]))
+        return GeoBox(crs=crs,
+                      affine=affine,
+                      width=max(1, int(math.ceil((bounding_box.right - left - 0.1 * resolution[1]) / resolution[1]))),
+                      height=max(1, int(math.ceil((bounding_box.bottom - top - 0.1 * resolution[0]) / resolution[0]))))
+
+    def buffered(self, ybuff, xbuff):
+        """
+        Produce a tile buffered by ybuff, xbuff (in CRS units)
+        """
+        w, h = (_round_to_res(buf, res) for buf, res in zip((ybuff, xbuff), self.resolution))
+        return self[-h:self.height+h, -w:self.width+w]
+
+    def __getitem__(self, item):
+        indexes = [slice(index.start or 0, index.stop or size, index.step or 1)
+                   for size, index in zip(self.shape, item)]
+        for index in indexes:
+            if index.step != 1:
+                raise NotImplementedError('scaling not implemented, yet')
+
+        affine = self.affine * Affine.translation(indexes[1].start, indexes[0].start)
+        return GeoBox(width=indexes[1].stop - indexes[1].start,
+                      height=indexes[0].stop - indexes[0].start,
+                      affine=affine,
+                      crs=self.crs)
+
+    @property
+    def shape(self):
+        """
+        :type: (int,int)
+        """
+        return self.height, self.width
+
+    @property
+    def crs(self):
+        """
+        :rtype: CRS
+        """
+        return self.extent.crs
+
+    @property
+    def dimensions(self):
+        """
+        List of dimension names of the GeoBox
+
+        :type: (str,str)
+        """
+        return self.crs.dimensions
+
+    @property
+    def resolution(self):
+        """
+        Resolution in Y,X dimensions
+
+        :type: (float,float)
+        """
+        return self.affine.e, self.affine.a
+
+    @property
+    def alignment(self):
+        """
+        Alignment of pixel boundaries in Y,X dimensions
+
+        :type: (float,float)
+        """
+        return self.affine.yoff % abs(self.affine.e), self.affine.xoff % abs(self.affine.a)
+
+    @property
+    def coordinates(self):
+        """
+        dict of coordinate labels
+
+        :type: dict[str,numpy.array]
+        """
+        xs = numpy.arange(self.width) * self.affine.a + (self.affine.c + self.affine.a / 2)
+        ys = numpy.arange(self.height) * self.affine.e + (self.affine.f + self.affine.e / 2)
+
+        return OrderedDict((dim, Coordinate(labels, units)) for dim, labels, units in zip(self.crs.dimensions,
+                                                                                          (ys, xs), self.crs.units))
+
+    @property
+    def geographic_extent(self):
+        """
+        :rtype: geometry.Geometry
+        """
+        if self.crs.geographic:
+            return self.extent
+        return self.extent.to_crs(CRS('EPSG:4326'))
+
+    coords = coordinates
+    dims = dimensions
+
+    def __str__(self):
+        return "GeoBox({})".format(self.geographic_extent)
+
+    def __repr__(self):
+        return "GeoBox({width}, {height}, {affine!r}, {crs})".format(
+            width=self.width,
+            height=self.height,
+            affine=self.affine,
+            crs=self.extent.crs
+        )
+
+
+def _round_to_res(value, res, acc=0.1):
+    """
+    >>> _round_to_res(0.2, 1.0)
+    1
+    >>> _round_to_res(0.0, 1.0)
+    0
+    >>> _round_to_res(0.05, 1.0)
+    0
+    """
+    res = abs(res)
+    return int(math.ceil((value - 0.1 * res) / res))
