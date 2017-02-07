@@ -130,8 +130,16 @@ class Dataset(object):
         :rtype: geometry.BoundingBox
         """
         bounds = self.metadata.grid_spatial['geo_ref_points']
-        return geometry.BoundingBox(left=bounds['ul']['x'], right=bounds['lr']['x'],
-                                    top=bounds['ul']['y'], bottom=bounds['lr']['y'])
+        return geometry.BoundingBox(left=min(bounds['ur']['x'], bounds['ll']['x']),
+                                    right=max(bounds['ur']['x'], bounds['ll']['x']),
+                                    top=max(bounds['ur']['y'], bounds['ll']['y']),
+                                    bottom=min(bounds['ur']['y'], bounds['ll']['y']))
+
+    @property
+    def transform(self):
+        bounds = self.metadata.grid_spatial['geo_ref_points']
+        return Affine(bounds['ur']['x']-bounds['ll']['x'], 0, bounds['ll']['x'],
+                      0, bounds['ur']['y']-bounds['ll']['y'], bounds['ll']['y'])
 
     @property
     def is_archived(self):

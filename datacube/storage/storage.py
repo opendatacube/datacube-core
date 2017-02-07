@@ -488,11 +488,7 @@ class DatasetSource(BaseRasterDataSource):
         return idx
 
     def get_transform(self, shape):
-        bounds = self._dataset.bounds
-        width = bounds.right - bounds.left
-        height = bounds.top - bounds.bottom
-        return (Affine.translation(bounds.left, bounds.bottom) *
-                Affine.scale(width / shape[1], height / shape[0]))
+        return self._dataset.transform * Affine.scale(1/shape[1], 1/shape[0])
 
     def get_crs(self):
         return self._dataset.crs
