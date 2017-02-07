@@ -68,6 +68,37 @@ def test_netcdf_source(tmpnetcdf_filename):
         assert source.transform.almost_equals(affine)
         assert (source.read() == dataset['B10']).all()
 
+        dest = numpy.empty((60, 50))
+        source.reproject(dest, affine, geobox.crs, 0, Resampling.nearest)
+        assert (dest == dataset['B10'][:60, :50]).all()
+
+        source.reproject(dest, affine * Affine.translation(10, 10), geobox.crs, 0, Resampling.nearest)
+        assert (dest == dataset['B10'][10:70, 10:60]).all()
+
+        source.reproject(dest, affine * Affine.translation(-10, -10), geobox.crs, 0, Resampling.nearest)
+        assert (dest[10:, 10:] == dataset['B10'][:50, :40]).all()
+
+        dest = numpy.empty((200, 200))
+        source.reproject(dest, affine, geobox.crs, 0, Resampling.nearest)
+        assert (dest[:100, :110] == dataset['B10']).all()
+
+        source.reproject(dest, affine * Affine.translation(10, 10), geobox.crs, 0, Resampling.nearest)
+        assert (dest[:90, :100] == dataset['B10'][10:, 10:]).all()
+
+        source.reproject(dest, affine * Affine.translation(-10, -10), geobox.crs, 0, Resampling.nearest)
+        assert (dest[10:110, 10:120] == dataset['B10']).all()
+
+        source.reproject(dest, affine * Affine.scale(2, 2), geobox.crs, 0, Resampling.nearest)
+        assert (dest[:50, :55] == dataset['B10'][1::2, 1::2]).all()
+
+        source.reproject(dest, affine * Affine.scale(2, 2) * Affine.translation(10, 10),
+                         geobox.crs, 0, Resampling.nearest)
+        assert (dest[:40, :45] == dataset['B10'][21::2, 21::2]).all()
+
+        source.reproject(dest, affine * Affine.scale(2, 2) * Affine.translation(-10, -10),
+                         geobox.crs, 0, Resampling.nearest)
+        assert (dest[10:60, 10:65] == dataset['B10'][1::2, 1::2]).all()
+
 
 def test_first_source_is_priority_in_reproject_and_fuse():
     crs = mock.MagicMock()

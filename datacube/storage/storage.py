@@ -70,7 +70,7 @@ else:
 
 
 def _calc_offsets_impl(off, scale, src_size, dst_size):
-    assert scale >= 1
+    assert scale >= 1-1e-15
 
     if off >= 0:
         write_off = 0
@@ -291,11 +291,18 @@ class NetCDFDataSource(object):
         return data[tuple(slab[d] for d in self.variable.dimensions)]
 
     def reproject(self, dest, dst_transform, dst_crs, dst_nodata, resampling, **kwargs):
-        source = self.read(self.source)  # TODO: read only the part the we care about
-        return rasterio.warp.reproject(source,
+        dst_poly = geometry.polygon_from_transform(dest.shape[1], dest.shape[0],
+                                                   dst_transform, dst_crs).to_crs(self.crs)
+        src_poly = geometry.polygon_from_transform(self.shape[1], self.shape[0],
+                                                   self.transform, self.crs)
+        bounds = dst_poly.intersection(src_poly)
+        geobox = geometry.GeoBox.from_geopolygon(bounds, (self.transform.e, self.transform.a), crs=self.crs)
+        tmp, _, tmp_transform = _read_decimated(~self.transform * geobox.affine, self, geobox.shape)
+
+        return rasterio.warp.reproject(tmp,
                                        dest,
-                                       src_transform=self.transform,
-                                       src_crs=str(self.crs),
+                                       src_transform=self.transform * tmp_transform,
+                                       src_crs=str(geobox.crs),
                                        src_nodata=self.nodata,
                                        dst_transform=dst_transform,
                                        dst_crs=str(dst_crs),
