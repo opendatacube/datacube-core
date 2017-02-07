@@ -522,6 +522,39 @@ def unary_intersection(geoms):
     return functools.reduce(Geometry.intersection, geoms)
 
 
+def _align_pix(left, right, res, off):
+    """
+    >>> _align_pix(20, 30, 10, 0)
+    (20, 1)
+    >>> _align_pix(20, 30.5, 10, 0)
+    (20, 1)
+    >>> _align_pix(20, 31.5, 10, 0)
+    (20, 2)
+    >>> _align_pix(20, 30, 10, 3)
+    (13, 2)
+    >>> _align_pix(20, 30, 10, -3)
+    (17, 2)
+    >>> _align_pix(20, 30, -10, 0)
+    (30, 1)
+    >>> _align_pix(19.5, 30, -10, 0)
+    (30, 1)
+    >>> _align_pix(18.5, 30, -10, 0)
+    (30, 2)
+    >>> _align_pix(20, 30, -10, 3)
+    (33, 2)
+    >>> _align_pix(20, 30, -10, -3)
+    (37, 2)
+    """
+    if res < 0:
+        res = -res
+        val = math.ceil((right - off) / res) * res + off
+        width = max(1, int(math.ceil((val - left - 0.1 * res) / res)))
+    else:
+        val = math.floor((left - off) / res) * res + off
+        width = max(1, int(math.ceil((right - val - 0.1 * res) / res)))
+    return val, width
+
+
 class GeoBox(object):
     """
     Defines the location and resolution of a rectangular grid of data,
@@ -563,11 +596,6 @@ class GeoBox(object):
         :param (float,float) align: Align geobox such that point 'align' lies on the pixel boundary.
         :rtype: GeoBox
         """
-        # TODO: currently only flipped Y-axis data is supported
-
-        assert resolution[1] > 0, "decreasing X coordinates are not supported"
-        assert resolution[0] < 0, "increasing Y coordinates are not supported"
-
         align = align or (0.0, 0.0)
         assert 0.0 <= align[1] <= abs(resolution[1]), "X align must be in [0, abs(x_resolution)] range"
         assert 0.0 <= align[0] <= abs(resolution[0]), "Y align must be in [0, abs(y_resolution)] range"
@@ -577,17 +605,11 @@ class GeoBox(object):
         else:
             geopolygon = geopolygon.to_crs(crs)
 
-        def align_pix(val, res, off):
-            return math.floor((val - off) / res) * res + off
-
         bounding_box = geopolygon.boundingbox
-        left = align_pix(bounding_box.left, resolution[1], align[1])
-        top = align_pix(bounding_box.top, resolution[0], align[0])
-        affine = (Affine.translation(left, top) * Affine.scale(resolution[1], resolution[0]))
-        return GeoBox(crs=crs,
-                      affine=affine,
-                      width=max(1, int(math.ceil((bounding_box.right - left - 0.1 * resolution[1]) / resolution[1]))),
-                      height=max(1, int(math.ceil((bounding_box.bottom - top - 0.1 * resolution[0]) / resolution[0]))))
+        offx, width = _align_pix(bounding_box.left, bounding_box.right, resolution[1], align[1])
+        offy, height = _align_pix(bounding_box.bottom, bounding_box.top, resolution[0], align[0])
+        affine = (Affine.translation(offx, offy) * Affine.scale(resolution[1], resolution[0]))
+        return GeoBox(crs=crs, affine=affine, width=width, height=height)
 
     def buffered(self, ybuff, xbuff):
         """
