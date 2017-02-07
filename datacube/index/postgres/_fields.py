@@ -5,14 +5,12 @@ Build and index fields within documents.
 """
 from __future__ import absolute_import
 
-from functools import partial
-
-from datacube import compat
-from datacube.index.fields import Expression, Field
-from datacube.index.postgres.tables import FLOAT8RANGE
-from datacube.model import Range
-from datacube.utils import get_doc_offset
 from datetime import datetime
+from functools import partial
+from typing import Any
+from typing import Callable
+from typing import Tuple
+
 from dateutil import tz
 from psycopg2.extras import NumericRange, DateTimeTZRange
 from sqlalchemy import cast, func, and_
@@ -20,8 +18,13 @@ from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.dialects.postgresql import INT4RANGE
 from sqlalchemy.dialects.postgresql import NUMRANGE, TSTZRANGE
 from sqlalchemy.dialects.postgresql.base import DOUBLE_PRECISION
+from sqlalchemy.sql import ColumnElement
 
-
+from datacube import compat
+from datacube.index.fields import Expression, Field
+from datacube.index.postgres.tables import FLOAT8RANGE
+from datacube.model import Range
+from datacube.utils import get_doc_offset
 
 
 class PgField(Field):
@@ -100,19 +103,61 @@ class NativeField(PgField):
         return None
 
 
-class SimpleDocField(PgField):
+class PgDocField(PgField):
     """
-    A field with a single value (eg. String, int)
+    A field extracted from inside a (jsonb) document.
     """
 
-    def __init__(self, name, description, alchemy_column, indexed, offset=None):
+    def extract(self, document):
+        """
+        Extract a value from the given document in pure python (no postgres).
+        """
+        raise NotImplementedError("extract()")
+
+    def value_to_alchemy(self, value):
+        """
+        Wrap the given value with any necessary type casts/conversions for this field.
+
+        Overridden by other classes as needed.
+        """
+        # Default do nothing (eg. string datatypes)
+        return value
+
+    def _alchemy_offset_value(self, doc_offsets, agg_function):
+        # type: (Tuple[Tuple[str]], Callable[[Any], ColumnElement]) -> ColumnElement
+        """
+        Get an sqlalchemy value for the given offsets of this field's sqlalchemy column.
+        If there are multiple they will be combined using the given aggregate function.
+
+        Offsets can either be single:
+            ('platform', 'code')
+        Or multiple:
+            (('platform', 'code'), ('satellite', 'name'))
+
+        In the latter case, the multiple values are combined using the given aggregate function
+        (defaults to using coalesce: grab the first non-null value)
+        """
+        if not doc_offsets:
+            raise ValueError("Value requires at least one offset")
+
+        if isinstance(doc_offsets[0], compat.string_types):
+            # It's a single offset.
+            doc_offsets = [doc_offsets]
+
+        alchemy_values = [self.value_to_alchemy(self.alchemy_column[offset].astext) for offset in doc_offsets]
+        # If there's multiple fields, we aggregate them (eg. "min()"). Otherwise use the one.
+        return agg_function(*alchemy_values) if len(alchemy_values) > 1 else alchemy_values[0]
+
+
+class SimpleDocField(PgDocField):
+    """
+    A field with a single value (eg. String, int) calculated as an offset inside a (jsonb) document.
+    """
+
+    def __init__(self, name, description, alchemy_column, indexed, offset=None, agg_function=func.coalesce):
         super(SimpleDocField, self).__init__(name, description, alchemy_column, indexed)
         self.offset = offset
-
-    @property
-    def alchemy_casted_type(self):
-        # Default no cast: string
-        return None
+        self.agg_function = agg_function
 
     def from_string(self, s):
         """
@@ -122,8 +167,7 @@ class SimpleDocField(PgField):
 
     @property
     def alchemy_expression(self):
-        _field = self.alchemy_column[self.offset].astext
-        return cast(_field, self.alchemy_casted_type) if self.alchemy_casted_type else _field
+        return self._alchemy_offset_value(self.offset, self.agg_function)
 
     def __eq__(self, value):
         """
@@ -149,9 +193,8 @@ class SimpleDocField(PgField):
 
 
 class IntDocField(SimpleDocField):
-    @property
-    def alchemy_casted_type(self):
-        return postgres.INTEGER
+    def value_to_alchemy(self, value):
+        return cast(value, postgres.INTEGER)
 
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
@@ -161,9 +204,8 @@ class IntDocField(SimpleDocField):
 
 
 class DoubleDocField(SimpleDocField):
-    @property
-    def alchemy_casted_type(self):
-        return postgres.DOUBLE_PRECISION
+    def value_to_alchemy(self, value):
+        return cast(value, postgres.DOUBLE_PRECISION)
 
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
@@ -172,7 +214,7 @@ class DoubleDocField(SimpleDocField):
         return float(s)
 
 
-class RangeDocField(PgField):
+class RangeDocField(PgDocField):
     """
     A range of values. Has min and max values, which may be calculated from multiple
     values in the document.
@@ -187,27 +229,15 @@ class RangeDocField(PgField):
     def alchemy_create_range(self):
         raise NotImplementedError('range type')
 
-    def alchemy_parse_value(self, value):
-        # Default no cast: string
-        return None
-
     @property
     def postgres_index_type(self):
         return 'gist'
 
-    def _get_expr(self, doc_offsets, agg_function, parse_value):
-        fields = [self.alchemy_column[offset].astext for offset in doc_offsets]
-
-        fields = [parse_value(field) for field in fields]
-
-        # If there's multiple fields, we aggregate them (eg. "min()"). Otherwise use the one.
-        return agg_function(*fields) if len(fields) > 1 else fields[0]
-
     @property
     def alchemy_expression(self):
         return self.alchemy_create_range(
-            self._get_expr(self.min_offset, func.least, self.alchemy_parse_value),
-            self._get_expr(self.max_offset, func.greatest, self.alchemy_parse_value),
+            self._alchemy_offset_value(self.min_offset, func.least),
+            self._alchemy_offset_value(self.max_offset, func.greatest),
             # Inclusive on both sides.
             '[]'
         )
@@ -216,7 +246,7 @@ class RangeDocField(PgField):
         """
         :rtype: Expression
         """
-        return RangeContainsExpression(self, self.alchemy_parse_value(value))
+        return RangeContainsExpression(self, self.value_to_alchemy(value))
 
     def extract(self, document):
         def safe_get_doc_offset(offset, document):
@@ -238,7 +268,7 @@ class RangeDocField(PgField):
 
 
 class NumericRangeDocField(RangeDocField):
-    def alchemy_parse_value(self, value):
+    def value_to_alchemy(self, value):
         return cast(value, postgres.NUMERIC)
 
     @property
@@ -254,7 +284,7 @@ class NumericRangeDocField(RangeDocField):
 
 
 class IntRangeDocField(RangeDocField):
-    def alchemy_parse_value(self, value):
+    def value_to_alchemy(self, value):
         return cast(value, postgres.INTEGER)
 
     @property
@@ -269,7 +299,8 @@ class IntRangeDocField(RangeDocField):
 
 
 class DoubleRangeDocField(RangeDocField):
-    def alchemy_parse_value(self, value):
+    @classmethod
+    def value_to_alchemy(cls, value):
         return cast(value, DOUBLE_PRECISION)
 
     @property
@@ -284,7 +315,7 @@ class DoubleRangeDocField(RangeDocField):
 
 
 class DateRangeDocField(RangeDocField):
-    def alchemy_parse_value(self, value):
+    def value_to_alchemy(self, value):
         if isinstance(value, datetime):
             return self._default_utc(value)
         return func.agdc.common_timestamp(value)

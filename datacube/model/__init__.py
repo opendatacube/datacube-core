@@ -228,7 +228,7 @@ class MetadataType(object):
         #: :type: dict
         self.definition = definition
 
-        #: :rtype: dict[str,datacube.index.fields.Field]
+        #: :type: dict[str,datacube.index.fields.Field]
         self.dataset_fields = dataset_search_fields
 
         #: :type: int
