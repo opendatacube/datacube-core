@@ -254,10 +254,10 @@ def build_dataset_info(index, dataset, show_derived=False):
     #         print(dataset.id, source.id)
     #         if dataset.id == source.id:
     #             return key
-
     return {
         'id': str(dataset.id),
         'product': dataset.type.name,
+        'status': 'archived' if dataset.is_archived else 'active',
         'locations': index.datasets.get_locations(dataset),
         'sources': {key: build_dataset_info(index, source) for key, source in dataset.sources.items()},
         'derived': [build_dataset_info(index, derived) for derived in deriveds]
