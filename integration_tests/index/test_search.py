@@ -4,6 +4,7 @@ Module
 """
 from __future__ import absolute_import
 
+import copy
 import csv
 import datetime
 import io
@@ -20,11 +21,17 @@ from psycopg2._range import NumericRange
 import datacube.scripts.cli_app
 import datacube.scripts.search_tool
 from datacube.index._api import Index
+from datacube.index.postgres import PostgresDb
 from datacube.model import Dataset
 from datacube.model import DatasetType
 from datacube.model import MetadataType
 from datacube.model import Range
 from datacube.scripts import dataset as dataset_script
+
+try:
+    from typing import List
+except ImportError:
+    pass
 
 _EXAMPLE_LS7_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('ls7-nbar-example.yaml')
 
@@ -122,6 +129,10 @@ def pseudo_ls8_dataset2(index, db, pseudo_ls8_type):
                 'platform': {
                     'code': 'LANDSAT_8'
                 },
+                'image': {
+                    'satellite_ref_point_start': {'x': 116, 'y': 74},
+                    'satellite_ref_point_end': {'x': 116, 'y': 84},
+                },
                 # We're unlikely to have extent info for a raw dataset, we'll use it for search tests.
                 'extent': {
                     'from_dt': datetime.datetime(2014, 7, 27, 23, 48, 0, 343853),
@@ -151,6 +162,59 @@ def pseudo_ls8_dataset2(index, db, pseudo_ls8_type):
     assert d.type.id == pseudo_ls8_type.id
 
     return d
+
+
+# Datasets 3 and 4 mirror 1 and 2 but have a different path/row.
+@pytest.fixture
+def pseudo_ls8_dataset3(index, db, pseudo_ls8_type, pseudo_ls8_dataset):
+    # type: (Index, PostgresDb, DatasetType, Dataset) -> Dataset
+
+    # Same as 1, but a different path/row
+    id_ = str(uuid.uuid4())
+    dataset_doc = copy.deepcopy(pseudo_ls8_dataset.metadata_doc)
+    dataset_doc['id'] = id_
+    dataset_doc['image'] = {
+        'satellite_ref_point_start': {'x': 116, 'y': 85},
+        'satellite_ref_point_end': {'x': 116, 'y': 87},
+    }
+
+    with db.connect() as connection:
+        was_inserted = connection.insert_dataset(
+            dataset_doc,
+            id_,
+            pseudo_ls8_type.id
+        )
+    assert was_inserted
+    d = index.datasets.get(id_)
+    # The dataset should have been matched to the telemetry type.
+    assert d.type.id == pseudo_ls8_type.id
+    return d
+
+
+@pytest.fixture
+def pseudo_ls8_dataset4(index, db, pseudo_ls8_type, pseudo_ls8_dataset2):
+    # type: (Index, PostgresDb, DatasetType, Dataset) -> Dataset
+
+    # Same as 2, but a different path/row
+    id_ = str(uuid.uuid4())
+    dataset_doc = copy.deepcopy(pseudo_ls8_dataset2.metadata_doc)
+    dataset_doc['id'] = id_
+    dataset_doc['image'] = {
+        'satellite_ref_point_start': {'x': 116, 'y': 85},
+        'satellite_ref_point_end': {'x': 116, 'y': 87},
+    }
+
+    with db.connect() as connection:
+        was_inserted = connection.insert_dataset(
+            dataset_doc,
+            id_,
+            pseudo_ls8_type.id
+        )
+        assert was_inserted
+        d = index.datasets.get(id_)
+        # The dataset should have been matched to the telemetry type.
+        assert d.type.id == pseudo_ls8_type.id
+        return d
 
 
 @pytest.fixture
@@ -335,7 +399,7 @@ def test_search_or_expressions(index,
                                pseudo_ls8_type, pseudo_ls8_dataset,
                                ls5_dataset_nbar_type, ls5_dataset_w_children,
                                telemetry_metadata_type):
-    # type: (Index, DatasetType, Dataset, List[DatasetType], Dataset) -> None
+    # type: (Index, DatasetType, Dataset, DatasetType, Dataset) -> None
 
     # Four datasets:
     # Our standard LS8
@@ -844,8 +908,60 @@ def test_cli_info(index, global_integration_cli_args, pseudo_ls8_dataset):
     }
 
 
-def test_csv_search_via_cli(global_integration_cli_args, pseudo_ls8_type, pseudo_ls8_dataset,
-                            pseudo_ls8_dataset2):
+def test_find_duplicates(index, pseudo_ls8_type,
+                         pseudo_ls8_dataset, pseudo_ls8_dataset2, pseudo_ls8_dataset3, pseudo_ls8_dataset4,
+                         ls5_dataset_w_children):
+    # type: (Index, DatasetType, Dataset, Dataset) -> None
+
+    # Our four ls8 datasets and three ls5.
+    all_datasets = index.datasets.search_eager()
+    assert len(all_datasets) == 7
+
+    # First two ls8 datasets have the same path/row, last two have a different row.
+    expected_ls8_path_row_duplicates = [
+        (
+            (
+                pseudo_ls8_type.name,
+                NumericRange(Decimal('116'), Decimal('116'), '[]'),
+                NumericRange(Decimal('74'), Decimal('84'), '[]')
+            ),
+            {pseudo_ls8_dataset.id, pseudo_ls8_dataset2.id}
+        ),
+        (
+            (
+                pseudo_ls8_type.name,
+                NumericRange(Decimal('116'), Decimal('116'), '[]'),
+                NumericRange(Decimal('85'), Decimal('87'), '[]')
+            ),
+            {pseudo_ls8_dataset3.id, pseudo_ls8_dataset4.id}
+        ),
+
+    ]
+
+    satellite_res = sorted(index.datasets.search_duplicates(
+        ('sat_path', 'sat_row'), platform='LANDSAT_8'
+    ))
+    assert satellite_res == expected_ls8_path_row_duplicates
+
+    product_res = sorted(index.datasets.search_duplicates(
+        ('sat_path', 'sat_row'), product=pseudo_ls8_type.name
+    ))
+    assert product_res == expected_ls8_path_row_duplicates
+
+    # No LS5 duplicates: there's only one of each
+    sat_res = sorted(index.datasets.search_duplicates(
+        ('sat_path', 'sat_row'), platform='LANDSAT_5'
+    ))
+    assert sat_res == []
+
+    # So searching everything should give us just the LS8 groups.
+    all_res = sorted(index.datasets.search_duplicates(
+        ('sat_path', 'sat_row')
+    ))
+    assert all_res == expected_ls8_path_row_duplicates
+
+
+def test_csv_search_via_cli(global_integration_cli_args, pseudo_ls8_type, pseudo_ls8_dataset, pseudo_ls8_dataset2):
     """
     Search datasets via the cli with csv output
     :type global_integration_cli_args: tuple[str]

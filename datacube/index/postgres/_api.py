@@ -20,11 +20,18 @@ from sqlalchemy.exc import IntegrityError
 
 from datacube.index.exceptions import DuplicateRecordError, MissingRecordError
 from datacube.index.fields import OrExpression
+from datacube.index.postgres._fields import PgExpression
 from datacube.model import Range
 from . import _dynamic as dynamic
 from . import tables
-from ._fields import parse_fields, NativeField
+from ._fields import parse_fields, NativeField, Expression, PgField
 from .tables import DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
+
+try:
+    from typing import Iterable
+    from typing import Tuple
+except ImportError:
+    pass
 
 DATASET_URI_FIELD = DATASET_LOCATION.c.uri_scheme + ':' + DATASET_LOCATION.c.uri_body
 # Fields for selecting dataset with the latest local uri
@@ -347,7 +354,8 @@ class PostgresDbAPI(object):
         return [raw_expr(expression) for expression in expressions]
 
     @staticmethod
-    def search_datasets_query(expressions, source_exprs, select_fields=None, with_source_ids=False):
+    def search_datasets_query(expressions, source_exprs=None, select_fields=None, with_source_ids=False):
+        # type: (Tuple[Expression], Tuple[Expression], Iterable[PgField], bool) -> sqlalchemy.Expression
         if select_fields:
             select_columns = tuple(
                 f.alchemy_expression.label(f.name)
@@ -427,9 +435,27 @@ class PostgresDbAPI(object):
         :type with_source_ids: bool
         :type select_fields: tuple[datacube.index.postgres._fields.PgField]
         :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
-        :rtype: dict
         """
         select_query = self.search_datasets_query(expressions, source_exprs, select_fields, with_source_ids)
+        return self._connection.execute(select_query)
+
+    def get_duplicates(self, match_fields, expressions):
+        # type: (Tuple[PgField], Tuple[PgExpression]) -> Iterable[tuple]
+        group_expressions = tuple(f.alchemy_expression for f in match_fields)
+        from_expression = PostgresDbAPI._from_expression(DATASET, expressions, match_fields)
+        where_expr = and_(DATASET.c.archived == None, *(PostgresDbAPI._alchemify_expressions(expressions)))
+
+        select_query = select(
+            (func.array_agg(DATASET.c.id),) + group_expressions
+        ).select_from(
+            from_expression
+        ).where(
+            where_expr
+        ).group_by(
+            *group_expressions
+        ).having(
+            func.count(DATASET.c.id) > 1
+        )
         return self._connection.execute(select_query)
 
     def count_datasets(self, expressions):

@@ -4,21 +4,26 @@ API for dataset indexing, access and search.
 """
 from __future__ import absolute_import
 
-import warnings
 import logging
+import warnings
 from collections import namedtuple
+from uuid import UUID
 
 from cachetools.func import lru_cache
+
 from datacube import compat
 from datacube.model import Dataset, DatasetType, MetadataType
 from datacube.utils import InvalidDocException, jsonify_document, changes
 from datacube.utils.changes import get_doc_changes, check_doc_unchanged
-from uuid import UUID
-
 from . import fields
-from .exceptions import DuplicateRecordError, UnknownFieldError
+from .exceptions import DuplicateRecordError
 
 _LOG = logging.getLogger(__name__)
+
+try:
+    from typing import Any, Iterable, Mapping, Set, Tuple
+except ImportError:
+    pass
 
 
 # It's a public api, so we can't reorganise old methods.
@@ -489,6 +494,7 @@ class ProductResource(object):
         :param dict query:
         :rtype: __generator[(DatasetType, dict)]
         """
+
         def _listify(v):
             return v if isinstance(v, list) else [v]
 
@@ -649,6 +655,37 @@ class DatasetResource(object):
             dataset.type.dataset_reader(dataset.metadata_doc).sources = sources_tmp
 
         return dataset
+
+    def search_duplicates(self, grouping_field_names, **query):
+        # type: (Tuple[str], Mapping[str, Any]) -> Iterable[tuple, Set[UUID]]
+        """
+        Find dataset ids who have duplicates of the given set of field names.
+
+        Product is always inserted as the first grouping field.
+
+        Returns each set of those field values and the datasets that have them.
+        """
+        result_type = namedtuple('search_result', ('product',) + grouping_field_names)
+
+        for product, records in self._do_duplicates_by_product(grouping_field_names, **query):
+            for record in records:
+                dataset_ids = set(record[0])
+                grouped_fields = tuple(record[1:])
+                yield result_type(product.name, *grouped_fields), dataset_ids
+
+    def _do_duplicates_by_product(self, grouping_field_names, **query):
+        product_queries = list(self._get_product_queries(query))
+        with self._db.connect() as connection:
+            for q, product in product_queries:
+                dataset_fields = product.metadata_type.dataset_fields
+                duplicate_fields = [dataset_fields[name] for name in grouping_field_names]
+
+                query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
+                yield (product,
+                       connection.get_duplicates(
+                           duplicate_fields,
+                           query_exprs
+                       ))
 
     def _add_sources(self, dataset, sources_policy='verify'):
         if sources_policy == 'ensure':
