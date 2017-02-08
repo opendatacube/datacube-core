@@ -138,8 +138,8 @@ class Dataset(object):
     @property
     def transform(self):
         bounds = self.metadata.grid_spatial['geo_ref_points']
-        return Affine(bounds['ur']['x']-bounds['ll']['x'], 0, bounds['ll']['x'],
-                      0, bounds['ur']['y']-bounds['ll']['y'], bounds['ll']['y'])
+        return Affine(bounds['lr']['x']-bounds['ul']['x'], 0, bounds['ul']['x'],
+                      0, bounds['lr']['y']-bounds['ul']['y'], bounds['ul']['y'])
 
     @property
     def is_archived(self):
