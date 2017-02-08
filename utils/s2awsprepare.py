@@ -57,7 +57,7 @@ def prepare_dataset(path):
 
     sensing_time = tileInfo['timestamp']
 
-    cs_code = (32600 if tileInfo['latitudeBand'] == "S" else 32700) + tileInfo['utmZone']
+    cs_code = 32600 + tileInfo['utmZone']
     spatial_ref = osr.SpatialReference()
     spatial_ref.ImportFromEPSG(cs_code)
 
