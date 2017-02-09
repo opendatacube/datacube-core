@@ -266,11 +266,13 @@ def build_dataset_info(index, dataset, show_sources=False, show_derived=False):
         ('locations', index.datasets.get_locations(dataset)),
     ))
     if show_sources:
-        info['sources'] = {key: build_dataset_info(index, source)
+        info['sources'] = {key: build_dataset_info(index, source,
+                                                   show_sources=True, show_derived=False)
                            for key, source in dataset.sources.items()}
 
     if show_derived:
-        info['derived'] = [build_dataset_info(index, derived)
+        info['derived'] = [build_dataset_info(index, derived,
+                                              show_sources=False, show_derived=True)
                            for derived in index.datasets.get_derived(dataset.id)]
     return info
 
