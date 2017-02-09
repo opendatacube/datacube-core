@@ -203,7 +203,6 @@ class CRS(object):
     def __eq__(self, other):
         if isinstance(other, compat.string_types):
             other = CRS(other)
-        assert isinstance(other, self.__class__)
         canonical = lambda crs: set(crs.ExportToProj4().split() + ['+wktext'])
         return canonical(self._crs) == canonical(other._crs)  # pylint: disable=protected-access
 
