@@ -3,16 +3,29 @@
 Interactive Pixel Drill for AGDCv2.
 
 """
-# pylint: disable=import-error
+# pylint: disable=import-error, wrong-import-position
+# Unavoidable with TK class hierarchy.
+# pylint: disable=too-many-ancestors
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import pandas as pd
-import numpy as np
 import argparse
-import warnings
-import datacube
-import sys
 import os
+import sys
+import warnings
+
+import matplotlib
+import numpy as np
+import pandas as pd
+
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
+import matplotlib.animation as anim
+from matplotlib.backends.backend_tkagg import NavigationToolbar2TkAgg, ToolTip
+
+import six
+from six.moves import tkinter_tkfiledialog, tkinter_messagebox
+
+import datacube
 
 try:
     import tkinter as tk
@@ -22,19 +35,6 @@ except ImportError:  # Python 2
     import Tkinter as tk
     import ttk
     import tkFont as font
-
-# Unavoidable with TK class hierarchy.
-# pylint: disable=too-many-ancestors
-
-import matplotlib
-matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
-import matplotlib.animation as anim
-from matplotlib.backends.backend_tkagg import NavigationToolbar2TkAgg, ToolTip
-
-import six
-from six.moves import tkinter_tkfiledialog, tkinter_messagebox
-
 
 # pylint: disable=invalid-name, too-many-locals, global-variable-undefined, too-many-statements, redefined-outer-name
 # pylint: disable=broad-except
