@@ -3,6 +3,12 @@
 What's New
 ==========
 
+v.1.1.18 (9 February 2017)
+--------------------------
+ - Added `sources-policy` options to `dataset add` cli
+
+ - Multiple dataset search improvements related to locations
+
 v1.1.17 Happy Festivus Continues (12 January 2017)
 --------------------------------------------------
 
