@@ -56,7 +56,7 @@ class Coordinate(MovedCoordinate):
         super(Coordinate, self).__init__(*args, **kwargs)
 
 
-class BoundingBox(MovedBoundingBox):
+class BoundingBox(MovedBoundingBox):  # pylint: disable=duplicate-bases
     def __init__(self, *args, **kwargs):
         warnings.warn("The 'BoundingBox' class was renamed to [datacube.utils.geometry.BoundingBox] and will be"
                       "removed from `datacube.model`. Please update your code.",
