@@ -626,7 +626,7 @@ class DatasetResource(object):
         :rtype: datacube.model.Dataset
         """
         if skip_sources:
-            warnings.warn('"skip_sources" is deprecated, use "sources_policy"', warnings.DeprecationWarning)
+            warnings.warn('"skip_sources" is deprecated, use "sources_policy"', DeprecationWarning)
             sources_policy = 'skip'
         self._add_sources(dataset, sources_policy)
 

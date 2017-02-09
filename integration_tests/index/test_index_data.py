@@ -217,6 +217,8 @@ def test_index_dataset_with_sources(index, default_metadata_type):
     index.datasets.add(child, sources_policy='skip')
     index.datasets.add(child, sources_policy='ensure')
     index.datasets.add(child, sources_policy='verify')
+    # Deprecated property, but it should still work until we remove it completely.
+    index.datasets.add(child, skip_sources=True)
 
     parent_doc['platform'] = {'code': 'LANDSAT_9'}
     index.datasets.add(child, sources_policy='ensure')
