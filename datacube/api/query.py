@@ -172,7 +172,7 @@ def query_geopolygon(geopolygon=None, **kwargs):
         raise ValueError('Spatial dimensions must be in the same coordinate reference system: {}'.format(crs))
 
     if geopolygon and spatial_dims:
-        raise ValueError('Cannot specify "geopolygon" and one of %s at the same time' % (SPATIAL_KEYS + CRS_KEYS))
+        raise ValueError('Cannot specify "geopolygon" and one of %s at the same time' % (SPATIAL_KEYS + CRS_KEYS,))
 
     return geopolygon or _range_to_geopolygon(**spatial_dims)
 
