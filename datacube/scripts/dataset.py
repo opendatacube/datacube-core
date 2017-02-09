@@ -250,7 +250,7 @@ def update_dry_run(index, updates, dataset):
     return can_update
 
 
-def build_dataset_info(index, dataset, show_derived=False):
+def build_dataset_info(index, dataset, show_sources=False, show_derived=False):
     # type: (Index, Dataset, bool) -> dict
 
     # def find_me(derived):
@@ -264,8 +264,10 @@ def build_dataset_info(index, dataset, show_derived=False):
         ('product', dataset.type.name),
         ('status', 'archived' if dataset.is_archived else 'active'),
         ('locations', index.datasets.get_locations(dataset)),
-        ('sources', {key: build_dataset_info(index, source) for key, source in dataset.sources.items()}),
     ))
+    if show_sources:
+        info['sources'] = {key: build_dataset_info(index, source)
+                           for key, source in dataset.sources.items()}
 
     if show_derived:
         info['derived'] = [build_dataset_info(index, derived)
@@ -287,7 +289,10 @@ def info_cmd(index, show_sources, show_derived, ids):
             continue
 
         ordered_yaml_dump(
-            build_dataset_info(index, dataset, show_derived),
+            build_dataset_info(index,
+                               dataset,
+                               show_sources=show_sources,
+                               show_derived=show_derived),
             default_flow_style=False,
             indent=4,
             stream=sys.stdout

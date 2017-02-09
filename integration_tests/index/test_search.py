@@ -937,7 +937,6 @@ def test_cli_info(index, global_integration_cli_args, pseudo_ls8_dataset):
         "locations:",
         '- file:///tmp/location2',
         '- file:///tmp/location1',
-        'sources: {}',
     ]
 
 
