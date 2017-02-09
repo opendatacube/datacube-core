@@ -3,11 +3,13 @@
 What's New
 ==========
 
-v.1.1.18 (9 February 2017)
---------------------------
+v.1.1.18 Mushroom Milkshake (9 February 2017)
+---------------------------------------------
  - Added `sources-policy` options to `dataset add` cli
 
  - Multiple dataset search improvements related to locations
+
+ - Keep hours/minutes when grouping data by `solar_day`
 
  - Code Changes: `datacube.model.[CRS,BoundingBox,Coordinate,GeoBox` have moved into
    `datacube.utils.geometry`. Any code using these should update their imports.
