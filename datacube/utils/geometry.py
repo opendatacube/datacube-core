@@ -225,6 +225,13 @@ def _make_point(pt):
     return geom
 
 
+def _make_multi(type_, maker, coords):
+    geom = ogr.Geometry(type_)
+    for coord in coords:
+        geom.AddGeometryDirectly(maker(coord))
+    return geom
+
+
 def _make_linear(type_, coordinates):
     geom = ogr.Geometry(type_)
     for pt in coordinates:
@@ -233,7 +240,7 @@ def _make_linear(type_, coordinates):
 
 
 def _make_multipoint(coordinates):
-    return _make_linear(ogr.wkbMultiPoint, coordinates)
+    return _make_multi(ogr.wkbMultiPoint, _make_point, coordinates)
 
 
 def _make_line(coordinates):
@@ -241,24 +248,15 @@ def _make_line(coordinates):
 
 
 def _make_multiline(coordinates):
-    geom = ogr.Geometry(ogr.wkbMultiLineString)
-    for line_coords in coordinates:
-        geom.AddGeometryDirectly(_make_line(line_coords))
-    return geom
+    return _make_multi(ogr.wkbMultiLineString, _make_line, coordinates)
 
 
 def _make_polygon(coordinates):
-    geom = ogr.Geometry(ogr.wkbPolygon)
-    for ring_coords in coordinates:
-        geom.AddGeometryDirectly(_make_linear(ogr.wkbLinearRing, ring_coords))
-    return geom
+    return _make_multi(ogr.wkbPolygon, functools.partial(_make_linear, ogr.wkbLinearRing), coordinates)
 
 
 def _make_multipolygon(coordinates):
-    geom = ogr.Geometry(ogr.wkbMultiPolygon)
-    for poly_coords in coordinates:
-        geom.AddGeometryDirectly(_make_polygon(poly_coords))
-    return geom
+    return _make_multi(ogr.wkbMultiPolygon, _make_polygon, coordinates)
 
 
 ###################################################
@@ -465,25 +463,65 @@ class Geometry(object):
 
 
 def point(x, y, crs):
+    """
+    >>> point(10, 10, crs=None)
+    Geometry(POINT (10 10), None)
+    """
     return Geometry({'type': 'Point', 'coordinates': (x, y)}, crs=crs)
 
 
+def multipoint(coords, crs):
+    """
+    >>> multipoint([(10, 10), (20, 20)], None)
+    Geometry(MULTIPOINT (10 10,20 20), None)
+    """
+    return Geometry({'type': 'MultiPoint', 'coordinates': coords}, crs=crs)
+
+
 def line(coords, crs):
+    """
+    >>> line([(10, 10), (20, 20), (30, 40)], None)
+    Geometry(LINESTRING (10 10,20 20,30 40), None)
+    """
     return Geometry({'type': 'LineString', 'coordinates': coords}, crs=crs)
 
 
+def multiline(coords, crs):
+    """
+    >>> multiline([[(10, 10), (20, 20), (30, 40)], [(50, 60), (70, 80), (90, 99)]], None)
+    Geometry(MULTILINESTRING ((10 10,20 20,30 40),(50 60,70 80,90 99)), None)
+    """
+    return Geometry({'type': 'MultiLineString', 'coordinates': coords}, crs=crs)
+
+
 def polygon(outer, crs, *inners):
+    """
+    >>> polygon([(10, 10), (20, 20), (20, 10), (10, 10)], None)
+    Geometry(POLYGON ((10 10,20 20,20 10,10 10)), None)
+    """
     return Geometry({'type': 'Polygon', 'coordinates': (outer, )+inners}, crs=crs)
+
+
+def multipolygon(coords, crs):
+    """
+    >>> multipolygon([[[(10, 10), (20, 20), (20, 10), (10, 10)]], [[(40, 10), (50, 20), (50, 10), (40, 10)]]], None)
+    Geometry(MULTIPOLYGON (((10 10,20 20,20 10,10 10)),((40 10,50 20,50 10,40 10))), None)
+    """
+    return Geometry({'type': 'MultiPolygon', 'coordinates': coords}, crs=crs)
+
+
+def box(left, bottom, right, top, crs):
+    """
+    >>> box(10, 10, 20, 20, None)
+    Geometry(POLYGON ((10 10,10 20,20 20,20 10,10 10)), None)
+    """
+    points = [(left, bottom), (left, top), (right, top), (right, bottom), (left, bottom)]
+    return polygon(points, crs=crs)
 
 
 def polygon_from_transform(width, height, transform, crs):
     points = [(0, 0), (0, height), (width, height), (width, 0), (0, 0)]
     transform.itransform(points)
-    return polygon(points, crs=crs)
-
-
-def box(left, bottom, right, top, crs):
-    points = [(left, bottom), (left, top), (right, top), (right, bottom), (left, bottom)]
     return polygon(points, crs=crs)
 
 
