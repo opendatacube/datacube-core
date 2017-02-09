@@ -572,6 +572,9 @@ class DatasetResource(object):
         :param bool include_sources: get the full provenance graph?
         :rtype: datacube.model.Dataset
         """
+        if isinstance(id_, compat.string_types):
+            id_ = UUID(id_)
+
         with self._db.connect() as connection:
             if not include_sources:
                 dataset = connection.get_dataset(id_)

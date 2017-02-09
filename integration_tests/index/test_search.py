@@ -11,6 +11,7 @@ import io
 import uuid
 from decimal import Decimal
 from pathlib import Path
+from uuid import UUID
 
 import pytest
 import yaml
@@ -690,6 +691,31 @@ def test_count_searches(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_nbar_gti
         instrument='OLI_TIRS'
     )
     assert datasets == 0
+
+
+def test_get_dataset_with_children(index, ls5_dataset_w_children):
+    # type: (Index, Dataset) -> None
+
+    id_ = ls5_dataset_w_children.id
+    assert isinstance(id_, UUID)
+
+    # No sources by default
+    d = index.datasets.get(id_)
+    assert list(d.sources.keys()) == []
+
+    # Ask for all sources
+    d = index.datasets.get(id_, include_sources=True)
+    assert list(d.sources.keys()) == ['level1']
+    level1 = d.sources['level1']
+    assert list(level1.sources.keys()) == ['satellite_telemetry_data']
+    assert list(level1.sources['satellite_telemetry_data'].sources) == []
+
+    # It should also work with a string id
+    d = index.datasets.get(str(id_), include_sources=True)
+    assert list(d.sources.keys()) == ['level1']
+    level1 = d.sources['level1']
+    assert list(level1.sources.keys()) == ['satellite_telemetry_data']
+    assert list(level1.sources['satellite_telemetry_data'].sources) == []
 
 
 def test_count_by_product_searches(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_nbar_gtiff_type):
