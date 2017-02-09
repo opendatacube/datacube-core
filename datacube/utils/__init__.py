@@ -9,22 +9,20 @@ import importlib
 import itertools
 import json
 import logging
-import re
 import pathlib
+import re
+from collections import OrderedDict
 from datetime import datetime, date
-from uuid import UUID
-
-from dateutil.tz import tzutc
 from math import ceil
+from uuid import UUID
 
 import dateutil.parser
 import jsonschema
-import numpy
-from osgeo import ogr
-import xarray
 import netCDF4
-
+import numpy
+import xarray
 import yaml
+from dateutil.tz import tzutc
 
 try:
     from yaml import CSafeLoader as SafeLoader
@@ -390,19 +388,25 @@ def transform_object_tree(f, o, key_transform=lambda k: k):
     :param o: document/object
     :param key_transform: Optional function to apply on any dictionary keys.
 
-    >>> transform_object_tree(lambda a: a+1, [1, 2, 3])
+    >>> add_one = lambda a: a + 1
+    >>> transform_object_tree(add_one, [1, 2, 3])
     [2, 3, 4]
-    >>> transform_object_tree(lambda a: a+1, {'a': 1, 'b': 2, 'c': 3}) == {'a': 2, 'b': 3, 'c': 4}
+    >>> transform_object_tree(add_one, {'a': 1, 'b': 2, 'c': 3}) == {'a': 2, 'b': 3, 'c': 4}
     True
-    >>> transform_object_tree(lambda a: a+1, {'a': 1, 'b': (2, 3), 'c': [4, 5]}) == {'a': 2, 'b': (3, 4), 'c': [5, 6]}
+    >>> transform_object_tree(add_one, {'a': 1, 'b': (2, 3), 'c': [4, 5]}) == {'a': 2, 'b': (3, 4), 'c': [5, 6]}
     True
-    >>> transform_object_tree(lambda a: a+1, {1: 1, '2': 2, 3.0: 3}, key_transform=float) == {1.0: 2, 2.0: 3, 3.0: 4}
+    >>> transform_object_tree(add_one, {1: 1, '2': 2, 3.0: 3}, key_transform=float) == {1.0: 2, 2.0: 3, 3.0: 4}
     True
+    >>> # Order must be maintained
+    >>> transform_object_tree(add_one, OrderedDict([('z', 1), ('w', 2), ('y', 3), ('s', 7)]))
+    OrderedDict([('z', 2), ('w', 3), ('y', 4), ('s', 8)])
     """
 
     def recur(o_):
         return transform_object_tree(f, o_, key_transform=key_transform)
 
+    if isinstance(o, OrderedDict):
+        return OrderedDict((key_transform(k), recur(v)) for k, v in o.items())
     if isinstance(o, dict):
         return {key_transform(k): recur(v) for k, v in o.items()}
     if isinstance(o, list):
@@ -435,6 +439,7 @@ def jsonify_document(doc):
                 return "Infinity"
             if v == float("-inf"):
                 return "-Infinity"
+            return v
         if isinstance(v, (datetime, date)):
             return v.isoformat()
         if isinstance(v, numpy.dtype):
