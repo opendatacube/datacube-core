@@ -4,10 +4,12 @@ import csv
 import datetime
 import logging
 import sys
+from collections import OrderedDict
 from pathlib import Path
 
 import click
 import yaml
+import yaml.resolver
 from click import echo
 
 from datacube.index._api import Index
@@ -17,6 +19,11 @@ from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.ui.common import get_metadata_path
 from datacube.utils import read_documents, changes, InvalidDocException
+
+try:
+    from typing import Iterable
+except ImportError:
+    pass
 
 _LOG = logging.getLogger('datacube-dataset')
 
@@ -252,17 +259,17 @@ def build_dataset_info(index, dataset, show_derived=False):
     #         if dataset.id == source.id:
     #             return key
 
-    info = {
-        'id': str(dataset.id),
-        'product': dataset.type.name,
-        'status': 'archived' if dataset.is_archived else 'active',
-        'locations': index.datasets.get_locations(dataset),
-        'sources': {key: build_dataset_info(index, source) for key, source in dataset.sources.items()},
-    }
+    info = OrderedDict((
+        ('id', str(dataset.id)),
+        ('product', dataset.type.name),
+        ('status', 'archived' if dataset.is_archived else 'active'),
+        ('locations', index.datasets.get_locations(dataset)),
+        ('sources', {key: build_dataset_info(index, source) for key, source in dataset.sources.items()}),
+    ))
 
     if show_derived:
         info['derived'] = [build_dataset_info(index, derived)
-                           for derived in (index.datasets.get_derived(dataset.id))]
+                           for derived in index.datasets.get_derived(dataset.id)]
     return info
 
 
@@ -272,13 +279,14 @@ def build_dataset_info(index, dataset, show_derived=False):
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
 def info_cmd(index, show_sources, show_derived, ids):
+    # type: (Index, bool, bool, Iterable[str]) -> None
     for id_ in ids:
         dataset = index.datasets.get(id_, include_sources=show_sources)
         if not dataset:
             click.echo('%s missing' % id_)
             continue
 
-        yaml.safe_dump(
+        ordered_yaml_dump(
             build_dataset_info(index, dataset, show_derived),
             default_flow_style=False,
             indent=4,
@@ -385,3 +393,24 @@ def _restore_one(dry_run, id_, index, restore_derived, tolerance):
         click.echo('restoring %s %s %s' % (d.type.name, d.id, d.local_uri))
     if not dry_run:
         index.datasets.restore(d.id for d in to_process)
+
+
+def ordered_yaml_dump(data, stream=None, **kwds):
+    """
+    Dump yaml data with support for OrderedDicts.
+
+    Allows for better human-readability of output: such as dataset ID field first, sources last.
+
+    (Ordered dicts are output identically to normal yaml dicts: their order is purely for readability)
+    """
+
+    # We can't control how many ancestors this dumper API uses.
+    # pylint: disable=too-many-ancestors
+    class OrderedDumper(yaml.SafeDumper):
+        pass
+
+    def _dict_representer(dumper, data):
+        return dumper.represent_mapping(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
+
+    OrderedDumper.add_representer(OrderedDict, _dict_representer)
+    return yaml.dump(data, stream, OrderedDumper, **kwds)

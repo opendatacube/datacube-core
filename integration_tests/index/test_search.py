@@ -896,17 +896,23 @@ def test_cli_info(index, global_integration_cli_args, pseudo_ls8_dataset):
     )
 
     assert result.exit_code == 0
+    output = result.output
 
-    output_doc = yaml.safe_load(result.output)
-    assert output_doc == {
-        # Newer location first
-        'locations': ['file:///tmp/location2', 'file:///tmp/location1'],
-        'id': str(pseudo_ls8_dataset.id),
-        'product': 'ls8_telemetry',
-        'status': 'active',
-        'derived': [],
-        'sources': {}
-    }
+    # Should be a valid yaml
+    yaml.safe_load(output)
+
+    # We output properties in order for readability:
+    output_lines = output.splitlines()
+    assert output_lines == [
+        "id: " + str(pseudo_ls8_dataset.id),
+        "product: ls8_telemetry",
+        'status: active',
+        # Newest location first
+        "locations:",
+        '- file:///tmp/location2',
+        '- file:///tmp/location1',
+        'sources: {}',
+    ]
 
 
 def test_find_duplicates(index, pseudo_ls8_type,
