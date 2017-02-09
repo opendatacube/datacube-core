@@ -192,10 +192,10 @@ def _get_geobox(args):
     width = int(args['width'])
     height = int(args['height'])
     minx, miny, maxx, maxy = map(float, args['bbox'].split(','))
-    crs = datacube.model.CRS(args['srs'])
+    crs = geometry.CRS(args['srs'])
 
     affine = Affine.translation(minx, miny) * Affine.scale((maxx - minx) / width, (maxy - miny) / height)
-    return datacube.model.GeoBox(width, height, affine, crs)
+    return geometry.GeoBox(width, height, affine, crs)
 
 
 def _load_data(dc, geobox, product, bands, time_):
