@@ -207,7 +207,7 @@ def _load_data(dc, geobox, product, bands, time_):
 
     prod = dc.index.products.get_by_name(product)
     measurements = [_set_resampling(m, 'cubic') for name, m in prod.measurements.items() if name in bands]
-    with datacube.set_options(reproject_threads=1):
+    with datacube.set_options(reproject_threads=1, fast_load=True):
         return dc.load_data(sources, geobox, measurements)
 
 
