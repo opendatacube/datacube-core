@@ -274,7 +274,7 @@ def read_documents(*paths):
         elif suffix == '.nc':
             try:
                 for doc in read_strings_from_netcdf(path, variable='dataset'):
-                    yield path, yaml.load(doc)
+                    yield path, yaml.load(doc, loader=NoDatesSafeLoader)
             except Exception as e:
                 raise InvalidDocException('Unable to load dataset information from NetCDF file: %s. %s' % (path, e))
         else:

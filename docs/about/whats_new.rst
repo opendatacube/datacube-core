@@ -9,6 +9,9 @@ v.1.1.18 (9 February 2017)
 
  - Multiple dataset search improvements related to locations
 
+ - Code Changes: `datacube.model.[CRS,BoundingBox,Coordinate,GeoBox` have moved into
+   `datacube.utils.geometry`. Any code using these should update their imports.
+
 v1.1.17 Happy Festivus Continues (12 January 2017)
 --------------------------------------------------
 

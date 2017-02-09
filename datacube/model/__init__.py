@@ -14,6 +14,10 @@ import math
 from affine import Affine
 
 from datacube.utils import geometry
+from datacube.utils.geometry import CRS as MovedCRS
+from datacube.utils.geometry import GeoBox as MovedGeoBox
+from datacube.utils.geometry import Coordinate as MovedCoordinate
+from datacube.utils.geometry import BoundingBox as MovedBoundingBox
 from datacube.utils import parse_time, cached_property, uri_to_local_path, intersects, schema_validated, DocReader
 
 _LOG = logging.getLogger(__name__)
@@ -26,6 +30,38 @@ NETCDF_VAR_OPTIONS = {'zlib', 'complevel', 'shuffle', 'fletcher32', 'contiguous'
 VALID_VARIABLE_ATTRS = {'standard_name', 'long_name', 'units', 'flags_definition'}
 
 SCHEMA_PATH = Path(__file__).parent / 'schema'
+
+
+class CRS(MovedCRS):
+    def __init__(self, *args, **kwargs):
+        warnings.warn("The 'CRS' class was renamed to [datacube.utils.geometry.CRS] and will be"
+                      "removed from `datacube.model`. Please update your code.",
+                      DeprecationWarning)
+        super(CRS, self).__init__(*args, **kwargs)
+
+
+class GeoBox(MovedGeoBox):
+    def __init__(self, *args, **kwargs):
+        warnings.warn("The 'GeoBox' class was renamed to [datacube.utils.geometry.GeoBox] and will be"
+                      "removed from `datacube.model`. Please update your code.",
+                      DeprecationWarning)
+        super(GeoBox, self).__init__(*args, **kwargs)
+
+
+class Coordinate(MovedCoordinate):
+    def __init__(self, *args, **kwargs):
+        warnings.warn("The 'Coordinate' class was renamed to [datacube.utils.geometry.Coordinate] and will be"
+                      "removed from `datacube.model`. Please update your code.",
+                      DeprecationWarning)
+        super(Coordinate, self).__init__(*args, **kwargs)
+
+
+class BoundingBox(MovedBoundingBox):
+    def __init__(self, *args, **kwargs):
+        warnings.warn("The 'BoundingBox' class was renamed to [datacube.utils.geometry.BoundingBox] and will be"
+                      "removed from `datacube.model`. Please update your code.",
+                      DeprecationWarning)
+        super(BoundingBox, self).__init__(*args, **kwargs)
 
 
 class Dataset(object):
