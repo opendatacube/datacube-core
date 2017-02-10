@@ -201,7 +201,7 @@ def test_index_dataset_with_sources(index, default_metadata_type):
     type_ = index.products.add_document(_pseudo_telemetry_dataset_type)
 
     parent_doc = _telemetry_dataset.copy()
-    parent = Dataset(type_, parent_doc, None)
+    parent = Dataset(type_, parent_doc, None, sources={})
     child_doc = _telemetry_dataset.copy()
     child_doc['lineage'] = {'source_datasets': {'source': _telemetry_dataset}}
     child_doc['id'] = '051a003f-5bba-43c7-b5f1-7f1da3ae9cfb'
@@ -237,7 +237,7 @@ def test_index_dataset_with_location(index, default_metadata_type):
     second_file = Path('/tmp/second/something.yaml').absolute()
 
     type_ = index.products.add_document(_pseudo_telemetry_dataset_type)
-    dataset = Dataset(type_, _telemetry_dataset, first_file.as_uri())
+    dataset = Dataset(type_, _telemetry_dataset, first_file.as_uri(), sources={})
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
 
@@ -293,6 +293,6 @@ def test_index_dataset_with_location(index, default_metadata_type):
     # Add a second dataset with a different location (to catch lack of joins, filtering etc)
     second_ds_doc = copy.deepcopy(_telemetry_dataset)
     second_ds_doc['id'] = '366f32d8-e1f8-11e6-94b4-185e0f80a5c0'
-    index.datasets.add(Dataset(type_, second_ds_doc, second_file.as_uri()))
+    index.datasets.add(Dataset(type_, second_ds_doc, second_file.as_uri(), sources={}))
     dataset_ids = [d.id for d in index.datasets.get_datasets_for_location(first_file.as_uri())]
     assert dataset_ids == [dataset.id]

@@ -93,11 +93,12 @@ class Dataset(object):
         #: :type: str
         self.local_uri = local_uri
 
-        #: The datasets that this dataset is derived from.
+        #: The datasets that this dataset is derived from (if requested on load).
         #: :type: dict[str, Dataset]
-        self.sources = sources or {}
+        self.sources = sources
 
-        assert set(self.metadata.sources.keys()) == set(self.sources.keys())
+        if sources is not None:
+            assert set(self.metadata.sources.keys()) == set(self.sources.keys())
 
         #: The User who indexed this dataset
         #: :type: str

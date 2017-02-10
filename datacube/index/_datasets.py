@@ -691,6 +691,9 @@ class DatasetResource(object):
                        ))
 
     def _add_sources(self, dataset, sources_policy='verify'):
+        if dataset.sources is None:
+            raise ValueError("Dataset has missing (None) sources. Was this loaded without include_sources=True?")
+
         if sources_policy == 'ensure':
             for source in dataset.sources.values():
                 if not self.has(source.id):
@@ -982,9 +985,13 @@ class DatasetResource(object):
         if product is None:
             _LOG.warning('Adding product "%s" as it doesn\'t exist.', dataset.type.name)
             product = self.types.add(dataset.type)
+        if dataset.sources is None:
+            raise ValueError("Dataset has missing (None) sources. Was this loaded without include_sources=True?")
+
         with self._db.begin() as transaction:
             try:
                 was_inserted = transaction.insert_dataset(dataset.metadata_doc, dataset.id, product.id)
+
                 for classifier, source_dataset in dataset.sources.items():
                     transaction.insert_dataset_source(classifier, dataset.id, source_dataset.id)
 

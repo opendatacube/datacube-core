@@ -168,7 +168,7 @@ def test_update_dataset(index, ls5_nbar_gtiff_doc, example_ls5_nbar_metadata_doc
     assert ls5_nbar_gtiff_type
 
     example_ls5_nbar_metadata_doc['lineage']['source_datasets'] = {}
-    dataset = Dataset(ls5_nbar_gtiff_type, example_ls5_nbar_metadata_doc, 'file:///test/doc.yaml')
+    dataset = Dataset(ls5_nbar_gtiff_type, example_ls5_nbar_metadata_doc, 'file:///test/doc.yaml', sources={})
     dataset = index.datasets.add(dataset)
     assert dataset
 
@@ -179,7 +179,7 @@ def test_update_dataset(index, ls5_nbar_gtiff_doc, example_ls5_nbar_metadata_doc
 
     # update location
     assert index.datasets.get(dataset.id).local_uri == 'file:///test/doc.yaml'
-    update = Dataset(ls5_nbar_gtiff_type, example_ls5_nbar_metadata_doc, 'file:///test/doc2.yaml')
+    update = Dataset(ls5_nbar_gtiff_type, example_ls5_nbar_metadata_doc, 'file:///test/doc2.yaml', sources={})
     index.datasets.update(update)
     updated = index.datasets.get(dataset.id)
     assert updated.local_uri == 'file:///test/doc2.yaml'

@@ -379,6 +379,9 @@ def test_search_globally(index, pseudo_ls8_dataset):
     results = list(index.datasets.search())
     assert len(results) == 1
 
+    # Dataset sources aren't loaded by default
+    assert results[0].sources is None
+
 
 def test_search_by_product(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls5_scene_dataset_types,
                            ls5_dataset_w_children):
@@ -699,9 +702,9 @@ def test_get_dataset_with_children(index, ls5_dataset_w_children):
     id_ = ls5_dataset_w_children.id
     assert isinstance(id_, UUID)
 
-    # No sources by default
+    # Sources not loaded by default
     d = index.datasets.get(id_)
-    assert list(d.sources.keys()) == []
+    assert d.sources is None
 
     # Ask for all sources
     d = index.datasets.get(id_, include_sources=True)
