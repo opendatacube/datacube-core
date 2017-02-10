@@ -61,6 +61,7 @@ setup(
         'pytest-runner'
     ],
     install_requires=[
+        'affine',
         'click>=5.0',
         'pathlib',
         'pyyaml',
