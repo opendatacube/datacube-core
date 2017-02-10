@@ -5,20 +5,20 @@ Core classes used across modules.
 from __future__ import absolute_import, division
 
 import logging
+import math
 import warnings
 from collections import namedtuple, OrderedDict, Sequence
 from pathlib import Path
 from uuid import UUID
 
-import math
 from affine import Affine
 
 from datacube.utils import geometry
-from datacube.utils.geometry import CRS as MovedCRS
-from datacube.utils.geometry import GeoBox as MovedGeoBox
-from datacube.utils.geometry import Coordinate as MovedCoordinate
-from datacube.utils.geometry import BoundingBox as MovedBoundingBox
 from datacube.utils import parse_time, cached_property, uri_to_local_path, intersects, schema_validated, DocReader
+from datacube.utils.geometry import (CRS as _CRS,
+                                     GeoBox as _GeoBox,
+                                     Coordinate as _Coordinate,
+                                     BoundingBox as _BoundingBox)
 
 _LOG = logging.getLogger(__name__)
 
@@ -32,34 +32,34 @@ VALID_VARIABLE_ATTRS = {'standard_name', 'long_name', 'units', 'flags_definition
 SCHEMA_PATH = Path(__file__).parent / 'schema'
 
 
-class CRS(MovedCRS):
+class CRS(_CRS):
     def __init__(self, *args, **kwargs):
-        warnings.warn("The 'CRS' class was renamed to [datacube.utils.geometry.CRS] and will be"
-                      "removed from `datacube.model`. Please update your code.",
+        warnings.warn("The 'CRS' class has been renamed to 'datacube.utils.geometry.CRS' and will be "
+                      "removed from 'datacube.model'. Please update your code.",
                       DeprecationWarning)
         super(CRS, self).__init__(*args, **kwargs)
 
 
-class GeoBox(MovedGeoBox):
+class GeoBox(_GeoBox):
     def __init__(self, *args, **kwargs):
-        warnings.warn("The 'GeoBox' class was renamed to [datacube.utils.geometry.GeoBox] and will be"
-                      "removed from `datacube.model`. Please update your code.",
+        warnings.warn("The 'GeoBox' class has been renamed to 'datacube.utils.geometry.GeoBox' and will be "
+                      "removed from 'datacube.model'. Please update your code.",
                       DeprecationWarning)
         super(GeoBox, self).__init__(*args, **kwargs)
 
 
-class Coordinate(MovedCoordinate):
+class Coordinate(_Coordinate):
     def __init__(self, *args, **kwargs):
-        warnings.warn("The 'Coordinate' class was renamed to [datacube.utils.geometry.Coordinate] and will be"
-                      "removed from `datacube.model`. Please update your code.",
+        warnings.warn("The 'Coordinate' class has been renamed to 'datacube.utils.geometry.Coordinate' and will be "
+                      "removed from 'datacube.model'. Please update your code.",
                       DeprecationWarning)
         super(Coordinate, self).__init__(*args, **kwargs)
 
 
-class BoundingBox(MovedBoundingBox):  # pylint: disable=duplicate-bases
+class BoundingBox(_BoundingBox):  # pylint: disable=duplicate-bases
     def __init__(self, *args, **kwargs):
-        warnings.warn("The 'BoundingBox' class was renamed to [datacube.utils.geometry.BoundingBox] and will be"
-                      "removed from `datacube.model`. Please update your code.",
+        warnings.warn("The 'BoundingBox' class has been renamed to 'datacube.utils.geometry.BoundingBox' and will be "
+                      "removed from 'datacube.model'. Please update your code.",
                       DeprecationWarning)
         super(BoundingBox, self).__init__(*args, **kwargs)
 
@@ -174,8 +174,8 @@ class Dataset(object):
     @property
     def transform(self):
         bounds = self.metadata.grid_spatial['geo_ref_points']
-        return Affine(bounds['lr']['x']-bounds['ul']['x'], 0, bounds['ul']['x'],
-                      0, bounds['lr']['y']-bounds['ul']['y'], bounds['ul']['y'])
+        return Affine(bounds['lr']['x'] - bounds['ul']['x'], 0, bounds['ul']['x'],
+                      0, bounds['lr']['y'] - bounds['ul']['y'], bounds['ul']['y'])
 
     @property
     def is_archived(self):
@@ -432,7 +432,7 @@ class DatasetType(object):
 
 
 def GeoPolygon(coordinates, crs):  # pylint: disable=invalid-name
-    warnings.warn("GeoPolygon is depricated. Use datacube.utils.geometry.polygon", DeprecationWarning)
+    warnings.warn("GeoPolygon is depricated. Use 'datacube.utils.geometry.polygon'", DeprecationWarning)
     if not isinstance(coordinates, Sequence):
         raise ValueError("points ({}) must be a sequence of (x, y) coordinates".format(coordinates))
     return geometry.polygon(coordinates + [coordinates[0]], crs=crs)
@@ -447,6 +447,8 @@ def _polygon_from_boundingbox(boundingbox, crs=None):
         (boundingbox.left, boundingbox.top),
     ]
     return geometry.polygon(points, crs=crs)
+
+
 GeoPolygon.from_boundingbox = _polygon_from_boundingbox
 
 
@@ -454,6 +456,8 @@ def _polygon_from_sources_extents(sources, geobox):
     sources_union = geometry.unary_union(source.extent.to_crs(geobox.crs) for source in sources)
     valid_data = geobox.extent.intersection(sources_union)
     return valid_data
+
+
 GeoPolygon.from_sources_extents = _polygon_from_sources_extents
 
 
