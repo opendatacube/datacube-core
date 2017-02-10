@@ -281,12 +281,77 @@ def build_dataset_info(index, dataset, show_sources=False, show_derived=False):
     return info
 
 
+def _write_csv(infos):
+    writer = csv.DictWriter(sys.stdout, ['id', 'status', 'product', 'location'], extrasaction='ignore')
+    writer.writeheader()
+
+    def add_first_location(row):
+        locations_ = row['locations']
+        row['location'] = locations_[0] if locations_ else None
+        return row
+
+    writer.writerows(map(add_first_location, infos))
+
+
+def _write_yaml(infos):
+    """
+    Dump yaml data with support for OrderedDicts.
+
+    Allows for better human-readability of output: such as dataset ID field first, sources last.
+
+    (Ordered dicts are output identically to normal yaml dicts: their order is purely for readability)
+    """
+
+    # We can't control how many ancestors this dumper API uses.
+    # pylint: disable=too-many-ancestors
+    class OrderedDumper(yaml.SafeDumper):
+        pass
+
+    def _dict_representer(dumper, data):
+        return dumper.represent_mapping(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
+
+    def _range_representer(dumper, data):
+        # type: (yaml.Dumper, Range) -> Node
+        begin, end = data
+
+        # pyyaml doesn't output timestamps in flow style as timestamps(?)
+        if isinstance(begin, datetime.datetime):
+            begin = begin.isoformat()
+        if isinstance(end, datetime.datetime):
+            end = end.isoformat()
+
+        return dumper.represent_mapping(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+            (('begin', begin), ('end', end)),
+            flow_style=True
+        )
+
+    def _reduced_accuracy_decimal_representer(dumper, data):
+        # type: (yaml.Dumper, Decimal) -> Node
+        return dumper.represent_float(
+            float(data)
+        )
+
+    OrderedDumper.add_representer(OrderedDict, _dict_representer)
+    OrderedDumper.add_representer(Range, _range_representer)
+    OrderedDumper.add_representer(Decimal, _reduced_accuracy_decimal_representer)
+    return yaml.dump_all(infos, sys.stdout, OrderedDumper, default_flow_style=False, indent=4)
+
+
+_OUTPUT_WRITERS = {
+    'csv': _write_csv,
+    'yaml': _write_yaml,
+}
+
+
 @dataset_cmd.command('info', help="Display dataset id, product, location and provenance")
 @click.option('--show-sources', help='Also show sources', is_flag=True, default=False)
 @click.option('--show-derived', help='Also show sources', is_flag=True, default=False)
+@click.option('-f', help='Output format',
+              type=click.Choice(_OUTPUT_WRITERS.keys()), default='yaml', show_default=True)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def info_cmd(index, show_sources, show_derived, ids):
+def info_cmd(index, show_sources, show_derived, f, ids):
     # type: (Index, bool, bool, Iterable[str]) -> None
 
     # Using an array wrapper to get around the lack of "nonlocal" in py2
@@ -301,33 +366,20 @@ def info_cmd(index, show_sources, show_derived, ids):
                 click.echo('%s missing' % id_, err=True)
                 missing_datasets[0] += 1
 
-    common_yaml_dump(
-        (
-            build_dataset_info(index,
-                               dataset,
-                               show_sources=show_sources,
-                               show_derived=show_derived)
-            for dataset in get_datasets(ids)
-        )
+    _OUTPUT_WRITERS[f](
+        build_dataset_info(index,
+                           dataset,
+                           show_sources=show_sources,
+                           show_derived=show_derived)
+        for dataset in get_datasets(ids)
     )
 
     sys.exit(missing_datasets[0])
 
 
-def _write_csv(infos):
-    writer = csv.DictWriter(sys.stdout, ['id', 'status', 'product', 'location'], extrasaction='ignore')
-    writer.writeheader()
-
-    def add_first_location(row):
-        locations_ = row['locations']
-        row['location'] = locations_[0] if locations_ else None
-        return row
-
-    writer.writerows(map(add_first_location, infos))
-
-
 @dataset_cmd.command('search')
-@click.option('-f', help='Output format', type=click.Choice(['yaml', 'csv']), default='csv', show_default=True)
+@click.option('-f', help='Output format',
+              type=click.Choice(_OUTPUT_WRITERS.keys()), default='yaml', show_default=True)
 @ui.parsed_search_expressions
 @ui.pass_index()
 def search_cmd(index, f, expressions):
@@ -335,11 +387,10 @@ def search_cmd(index, f, expressions):
     Search available Datasets
     """
     datasets = index.datasets.search(**expressions)
-    info = (build_dataset_info(index, dataset) for dataset in datasets)
-    {
-        'csv': _write_csv,
-        'yaml': common_yaml_dump
-    }[f](info)
+    _OUTPUT_WRITERS[f](
+        build_dataset_info(index, dataset)
+        for dataset in datasets
+    )
 
 
 def _get_derived_set(index, id_):
@@ -419,48 +470,3 @@ def _restore_one(dry_run, id_, index, restore_derived, tolerance):
         click.echo('restoring %s %s %s' % (d.type.name, d.id, d.local_uri))
     if not dry_run:
         index.datasets.restore(d.id for d in to_process)
-
-
-def common_yaml_dump(data, stream=sys.stdout):
-    """
-    Dump yaml data with support for OrderedDicts.
-
-    Allows for better human-readability of output: such as dataset ID field first, sources last.
-
-    (Ordered dicts are output identically to normal yaml dicts: their order is purely for readability)
-    """
-
-    # We can't control how many ancestors this dumper API uses.
-    # pylint: disable=too-many-ancestors
-    class OrderedDumper(yaml.SafeDumper):
-        pass
-
-    def _dict_representer(dumper, data):
-        return dumper.represent_mapping(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
-
-    def _range_representer(dumper, data):
-        # type: (yaml.Dumper, Range) -> Node
-        begin, end = data
-
-        # pyyaml doesn't output timestamps in flow style as timestamps(?)
-        if isinstance(begin, datetime.datetime):
-            begin = begin.isoformat()
-        if isinstance(end, datetime.datetime):
-            end = end.isoformat()
-
-        return dumper.represent_mapping(
-            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-            (('begin', begin), ('end', end)),
-            flow_style=True
-        )
-
-    def _reduced_accuracy_decimal_representer(dumper, data):
-        # type: (yaml.Dumper, Decimal) -> Node
-        return dumper.represent_float(
-            float(data)
-        )
-
-    OrderedDumper.add_representer(OrderedDict, _dict_representer)
-    OrderedDumper.add_representer(Range, _range_representer)
-    OrderedDumper.add_representer(Decimal, _reduced_accuracy_decimal_representer)
-    return yaml.dump_all(data, stream, OrderedDumper, default_flow_style=False, indent=4)
