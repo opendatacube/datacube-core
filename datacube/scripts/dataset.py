@@ -288,10 +288,13 @@ def build_dataset_info(index, dataset, show_sources=False, show_derived=False):
 @ui.pass_index()
 def info_cmd(index, show_sources, show_derived, ids):
     # type: (Index, bool, bool, Iterable[str]) -> None
+
+    missing_datasets = 0
     for id_ in ids:
         dataset = index.datasets.get(id_, include_sources=show_sources)
         if not dataset:
-            click.echo('%s missing' % id_)
+            click.echo('%s missing' % id_, err=True)
+            missing_datasets += 1
             continue
 
         ordered_yaml_dump(
@@ -303,6 +306,8 @@ def info_cmd(index, show_sources, show_derived, ids):
             indent=4,
             stream=sys.stdout
         )
+
+    sys.exit(missing_datasets)
 
 
 def _write_csv(info):

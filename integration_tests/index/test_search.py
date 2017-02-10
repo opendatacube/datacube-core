@@ -899,7 +899,7 @@ def test_search_cli_basic(global_integration_cli_args, telemetry_metadata_type, 
     assert result.exit_code == 0
 
 
-def test_cli_info(index, global_integration_cli_args, pseudo_ls8_dataset):
+def test_cli_info(index, global_integration_cli_args, pseudo_ls8_dataset, pseudo_ls8_dataset2):
     # type: (Index, tuple, MetadataType, Dataset) -> None
     """
     Search datasets using the cli.
@@ -928,7 +928,8 @@ def test_cli_info(index, global_integration_cli_args, pseudo_ls8_dataset):
     output = result.output
 
     # Should be a valid yaml
-    yaml.safe_load(output)
+    yaml_docs = list(yaml.safe_load_all(output))
+    assert len(yaml_docs) == 1
 
     # We output properties in order for readability:
     output_lines = output.splitlines()
@@ -952,6 +953,27 @@ def test_cli_info(index, global_integration_cli_args, pseudo_ls8_dataset):
         '    sat_row: {begin: 74, end: 84}',
         "    time: {begin: '2014-07-26T23:48:00.343853', end: '2014-07-26T23:52:00.343853'}",
     ]
+
+
+def test_cli_missing_info(global_integration_cli_args):
+    opts = list(global_integration_cli_args)
+    id_ = str(uuid.uuid4())
+    opts.extend(
+        [
+            'dataset', 'info', id_
+        ]
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        datacube.scripts.cli_app.cli,
+        opts,
+        catch_exceptions=False
+    )
+
+    assert result.exit_code == 1, "Should return exit status when dataset is missing"
+    # This should have been output to stderr, but the CliRunner doesnit distinguish
+    assert result.output == "{id} missing\n".format(id=id_)
 
 
 def test_find_duplicates(index, pseudo_ls8_type,
