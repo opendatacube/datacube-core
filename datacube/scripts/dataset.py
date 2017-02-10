@@ -301,26 +301,29 @@ def info_cmd(index, show_sources, show_derived, ids):
                 click.echo('%s missing' % id_, err=True)
                 missing_datasets[0] += 1
 
-    ordered_yaml_dump_all(
+    common_yaml_dump(
         (
             build_dataset_info(index,
                                dataset,
                                show_sources=show_sources,
                                show_derived=show_derived)
             for dataset in get_datasets(ids)
-        ),
-        default_flow_style=False,
-        indent=4,
-        stream=sys.stdout
+        )
     )
 
     sys.exit(missing_datasets[0])
 
 
-def _write_csv(info):
-    writer = csv.DictWriter(sys.stdout, ['id', 'product', 'location'], extrasaction='ignore')
+def _write_csv(infos):
+    writer = csv.DictWriter(sys.stdout, ['id', 'status', 'product', 'location'], extrasaction='ignore')
     writer.writeheader()
-    writer.writerows(info)
+
+    def add_first_location(row):
+        locations_ = row['locations']
+        row['location'] = locations_[0] if locations_ else None
+        return row
+
+    writer.writerows(map(add_first_location, infos))
 
 
 @dataset_cmd.command('search')
@@ -335,7 +338,7 @@ def search_cmd(index, f, expressions):
     info = (build_dataset_info(index, dataset) for dataset in datasets)
     {
         'csv': _write_csv,
-        'yaml': yaml.dump_all
+        'yaml': common_yaml_dump
     }[f](info)
 
 
@@ -418,7 +421,7 @@ def _restore_one(dry_run, id_, index, restore_derived, tolerance):
         index.datasets.restore(d.id for d in to_process)
 
 
-def ordered_yaml_dump_all(data, stream=None, **kwds):
+def common_yaml_dump(data, stream=sys.stdout):
     """
     Dump yaml data with support for OrderedDicts.
 
@@ -460,4 +463,4 @@ def ordered_yaml_dump_all(data, stream=None, **kwds):
     OrderedDumper.add_representer(OrderedDict, _dict_representer)
     OrderedDumper.add_representer(Range, _range_representer)
     OrderedDumper.add_representer(Decimal, _reduced_accuracy_decimal_representer)
-    return yaml.dump_all(data, stream, OrderedDumper, **kwds)
+    return yaml.dump_all(data, stream, OrderedDumper, default_flow_style=False, indent=4)
