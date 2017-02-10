@@ -70,7 +70,7 @@ else:
 
 
 def _calc_offsets_impl(off, scale, src_size, dst_size):
-    assert scale >= 1-1e-15
+    assert scale >= 1-1e-5
 
     if off >= 0:
         write_off = 0
@@ -117,7 +117,7 @@ def _read_decimated(array_transform, src, dest_shape):
     return None, None, None
 
 
-def _no_scale(affine, eps=0.01):
+def _no_scale(affine, eps=1e-5):
     return abs(abs(affine.a) - 1.0) < eps and abs(abs(affine.e) - 1.0) < eps
 
 
