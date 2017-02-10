@@ -286,12 +286,8 @@ class MetadataType(object):
     def description(self):
         return self.definition['description']
 
-    @property
-    def dataset_offsets(self):
-        return self.definition['dataset']
-
     def dataset_reader(self, dataset_doc):
-        return DocReader(self.dataset_offsets, self.dataset_fields, dataset_doc)
+        return DocReader(self.definition['dataset'], self.dataset_fields, dataset_doc)
 
     def __str__(self):
         return "MetadataType(name={name!r}, id_={id!r})".format(id=self.id, name=self.name)

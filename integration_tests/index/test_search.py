@@ -931,12 +931,23 @@ def test_cli_info(index, global_integration_cli_args, pseudo_ls8_dataset):
     output_lines = output.splitlines()
     assert output_lines == [
         "id: " + str(pseudo_ls8_dataset.id),
-        "product: ls8_telemetry",
+        'product: ls8_telemetry',
         'status: active',
         # Newest location first
-        "locations:",
+        'locations:',
         '- file:///tmp/location2',
         '- file:///tmp/location1',
+        'fields:',
+        '    gsi: null',
+        '    instrument: OLI_TIRS',
+        '    lat: {begin: -31.37116, end: -29.23394}',
+        '    lon: {begin: 149.78434, end: 152.21782}',
+        '    orbit: null',
+        '    platform: LANDSAT_8',
+        '    product_type: pseudo_ls8_data',
+        '    sat_path: {begin: 116, end: 116}',
+        '    sat_row: {begin: 74, end: 84}',
+        "    time: {begin: '2014-07-26T23:48:00.343853', end: '2014-07-26T23:52:00.343853'}",
     ]
 
 

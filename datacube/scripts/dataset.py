@@ -5,16 +5,19 @@ import datetime
 import logging
 import sys
 from collections import OrderedDict
+from decimal import Decimal
 from pathlib import Path
 
 import click
 import yaml
 import yaml.resolver
 from click import echo
+from yaml import Node
 
 from datacube.index._api import Index
 from datacube.index.exceptions import MissingRecordError
 from datacube.model import Dataset
+from datacube.model import Range
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.ui.common import get_metadata_path
@@ -264,6 +267,7 @@ def build_dataset_info(index, dataset, show_sources=False, show_derived=False):
         ('product', dataset.type.name),
         ('status', 'archived' if dataset.is_archived else 'active'),
         ('locations', index.datasets.get_locations(dataset)),
+        ('fields', dataset.metadata.search_fields)
     ))
     if show_sources:
         info['sources'] = {key: build_dataset_info(index, source,
@@ -419,5 +423,29 @@ def ordered_yaml_dump(data, stream=None, **kwds):
     def _dict_representer(dumper, data):
         return dumper.represent_mapping(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items())
 
+    def _range_representer(dumper, data):
+        # type: (yaml.Dumper, Range) -> Node
+        begin, end = data
+
+        # pyyaml doesn't output timestamps in flow style as timestamps(?)
+        if isinstance(begin, datetime.datetime):
+            begin = begin.isoformat()
+        if isinstance(end, datetime.datetime):
+            end = end.isoformat()
+
+        return dumper.represent_mapping(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+            (('begin', begin), ('end', end)),
+            flow_style=True
+        )
+
+    def _reduced_accuracy_decimal_representer(dumper, data):
+        # type: (yaml.Dumper, Decimal) -> Node
+        return dumper.represent_float(
+            float(data)
+        )
+
     OrderedDumper.add_representer(OrderedDict, _dict_representer)
+    OrderedDumper.add_representer(Range, _range_representer)
+    OrderedDumper.add_representer(Decimal, _reduced_accuracy_decimal_representer)
     return yaml.dump(data, stream, OrderedDumper, **kwds)

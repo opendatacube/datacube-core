@@ -13,6 +13,7 @@ import pathlib
 import re
 from collections import OrderedDict
 from datetime import datetime, date
+from itertools import chain
 from math import ceil
 from uuid import UUID
 
@@ -559,9 +560,9 @@ def _set_doc_offset(offset, document, value):
 
 
 class DocReader(object):
-    def __init__(self, field_offsets, search_fields, doc):
+    def __init__(self, type_definition, search_fields, doc):
         """
-        :type field_offsets: dict[str,list[str]]
+        :type system_offsets: dict[str,list[str]]
         :type doc: dict
         >>> d = DocReader({'lat': ['extent', 'lat']}, {}, doc={'extent': {'lat': 4}})
         >>> d.lat
@@ -579,41 +580,65 @@ class DocReader(object):
         AttributeError: Unknown field 'lon'. Expected one of ['lat']
         """
         self.__dict__['_doc'] = doc
-        self.__dict__['_fields'] = {name: field for name, field in search_fields.items() if hasattr(field, 'extract')}
-        self._fields.update(field_offsets)
+
+        # The user-configurable search fields for this dataset type.
+        self.__dict__['_search_fields'] = {name: field
+                                           for name, field in search_fields.items()
+                                           if hasattr(field, 'extract')}
+
+        # The field offsets that the datacube itself understands: id, format, sources etc.
+        # (See the metadata-type-schema.yaml or the comments in default-metadata-types.yaml)
+        self.__dict__['_system_offsets'] = {name: field
+                                            for name, field in type_definition.items()
+                                            if name != 'search_fields'}
 
     def __getattr__(self, name):
-        field = self._fields.get(name)
-        if field is None:
+        offset = self._system_offsets.get(name)
+        field = self._search_fields.get(name)
+        if offset:
+            return get_doc_offset(offset, self._doc)
+        elif field:
+            return field.extract(self._doc)
+        else:
             raise AttributeError(
                 'Unknown field %r. Expected one of %r' % (
-                    name, list(self._fields.keys())
+                    name, list(chain(self._system_offsets.keys(), self._search_fields.keys()))
                 )
             )
-        return self._unsafe_get_field(field)
 
     def __setattr__(self, name, val):
-        offset = self._fields.get(name)
+        offset = self._system_offsets.get(name)
         if offset is None:
             raise AttributeError(
-                'Unknown field %r. Expected one of %r' % (
+                'Unknown field offset %r. Expected one of %r' % (
                     name, list(self._fields.keys())
                 )
             )
         return _set_doc_offset(offset, self._doc, val)
 
-    def _unsafe_get_field(self, field):
-        if isinstance(field, list):
-            return get_doc_offset(field, self._doc)
-        else:
-            return field.extract(self._doc)
-
     @property
     def fields(self):
         fields = {}
-        for name, field in self._fields.items():
+        fields.update(self.search_fields)
+        fields.update(self.system_fields)
+        return fields
+
+    @property
+    def search_fields(self):
+        fields = {}
+        for name, field in self._search_fields.items():
             try:
-                fields[name] = self._unsafe_get_field(field)
+                fields[name] = field.extract(self._doc)
+            except (AttributeError, KeyError, ValueError):
+                continue
+        return fields
+
+    @property
+    def system_fields(self):
+        fields = {}
+        for name, offset in self._system_offsets.items():
+            try:
+                fields[name] = get_doc_offset(offset, self._doc)
             except (AttributeError, KeyError, ValueError):
                 continue
         return fields
