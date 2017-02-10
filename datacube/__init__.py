@@ -22,4 +22,4 @@ from .api import Datacube
 from .config import set_options
 import warnings
 
-warnings.filterwarnings('always', category=DeprecationWarning, module='^datacube\.')
+warnings.filterwarnings('always', category=DeprecationWarning, module=r'^datacube\.')
