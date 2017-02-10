@@ -954,6 +954,20 @@ def test_cli_info(index, global_integration_cli_args, pseudo_ls8_dataset, pseudo
         "    time: {begin: '2014-07-26T23:48:00.343853', end: '2014-07-26T23:52:00.343853'}",
     ]
 
+    # Request two, they should have separate yaml documents
+    opts.append(str(pseudo_ls8_dataset2.id))
+
+    runner = CliRunner()
+    result = runner.invoke(
+        datacube.scripts.cli_app.cli,
+        opts,
+        catch_exceptions=False
+    )
+    yaml_docs = list(yaml.safe_load_all(result.output))
+    assert len(yaml_docs) == 2, "Two datasets should produce two sets of info"
+    assert yaml_docs[0]['id'] == str(pseudo_ls8_dataset.id)
+    assert yaml_docs[1]['id'] == str(pseudo_ls8_dataset2.id)
+
 
 def test_cli_missing_info(global_integration_cli_args):
     opts = list(global_integration_cli_args)

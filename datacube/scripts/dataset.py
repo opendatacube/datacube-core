@@ -289,25 +289,32 @@ def build_dataset_info(index, dataset, show_sources=False, show_derived=False):
 def info_cmd(index, show_sources, show_derived, ids):
     # type: (Index, bool, bool, Iterable[str]) -> None
 
-    missing_datasets = 0
-    for id_ in ids:
-        dataset = index.datasets.get(id_, include_sources=show_sources)
-        if not dataset:
-            click.echo('%s missing' % id_, err=True)
-            missing_datasets += 1
-            continue
+    # Using an array wrapper to get around the lack of "nonlocal" in py2
+    missing_datasets = [0]
 
-        ordered_yaml_dump(
+    def get_datasets(ids):
+        for id_ in ids:
+            dataset = index.datasets.get(id_, include_sources=show_sources)
+            if dataset:
+                yield dataset
+            else:
+                click.echo('%s missing' % id_, err=True)
+                missing_datasets[0] += 1
+
+    ordered_yaml_dump_all(
+        (
             build_dataset_info(index,
                                dataset,
                                show_sources=show_sources,
-                               show_derived=show_derived),
-            default_flow_style=False,
-            indent=4,
-            stream=sys.stdout
-        )
+                               show_derived=show_derived)
+            for dataset in get_datasets(ids)
+        ),
+        default_flow_style=False,
+        indent=4,
+        stream=sys.stdout
+    )
 
-    sys.exit(missing_datasets)
+    sys.exit(missing_datasets[0])
 
 
 def _write_csv(info):
@@ -411,7 +418,7 @@ def _restore_one(dry_run, id_, index, restore_derived, tolerance):
         index.datasets.restore(d.id for d in to_process)
 
 
-def ordered_yaml_dump(data, stream=None, **kwds):
+def ordered_yaml_dump_all(data, stream=None, **kwds):
     """
     Dump yaml data with support for OrderedDicts.
 
@@ -453,4 +460,4 @@ def ordered_yaml_dump(data, stream=None, **kwds):
     OrderedDumper.add_representer(OrderedDict, _dict_representer)
     OrderedDumper.add_representer(Range, _range_representer)
     OrderedDumper.add_representer(Decimal, _reduced_accuracy_decimal_representer)
-    return yaml.dump(data, stream, OrderedDumper, **kwds)
+    return yaml.dump_all(data, stream, OrderedDumper, **kwds)
