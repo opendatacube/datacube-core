@@ -257,6 +257,19 @@ def process_tasks(index, config, source_type, output_type, tasks, queue_size, ex
     return n_successful, n_failed
 
 
+def _validate_year(ctx, param, value):
+    try:
+        if value is None:
+            return None
+        years = list(map(int, value.split('-', 2)))
+        if len(years) == 1:
+            return years[0], years[0]
+        return tuple(years)
+    except ValueError:
+        raise click.BadParameter('year must be specified as a single year (eg 1996) '
+                                 'or as an inclusive range (eg 1996-2001)')
+
+
 @cli.command('ingest', help="Ingest datasets")
 @click.option('--config-file', '-c',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
@@ -294,16 +307,3 @@ def ingest_cmd(index, config_file, year, queue_size, save_tasks, load_tasks, dry
     successful, failed = process_tasks(index, config, source_type, output_type, tasks, queue_size, executor)
     click.echo('%d successful, %d failed' % (successful, failed))
     return 0
-
-
-def _validate_year(ctx, param, value):
-    try:
-        if value is None:
-            return None
-        years = map(int, value.split('-', 2))
-        if len(years) == 1:
-            return (years[0], years[0])
-        return tuple(years)
-    except ValueError:
-        raise click.BadParameter('year must be specified as a single year (eg 1996) '
-                                 'or as an inclusive range (eg 1996-2001)')
