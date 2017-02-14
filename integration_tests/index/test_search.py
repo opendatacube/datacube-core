@@ -288,6 +288,23 @@ def test_search_dataset_by_metadata(index, pseudo_ls8_dataset):
     assert len(datasets) == 0
 
 
+def test_search_day(index, pseudo_ls8_dataset):
+    # type: (Index, Dataest) -> None
+
+    # Matches day
+    datasets = index.datasets.search_eager(
+        time=datetime.date(2014, 7, 26)
+    )
+    assert len(datasets) == 1
+    assert datasets[0].id == pseudo_ls8_dataset.id
+
+    # Different day: no match
+    datasets = index.datasets.search_eager(
+        time=datetime.date(2014, 7, 27)
+    )
+    assert len(datasets) == 0
+
+
 def test_search_dataset_ranges(index, pseudo_ls8_dataset):
     """
     :type index: datacube.index._api.Index

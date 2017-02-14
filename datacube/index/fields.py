@@ -3,7 +3,11 @@
 Common datatypes for DB drivers.
 """
 from __future__ import absolute_import
-# For the search API.
+
+from datetime import date, datetime, time
+
+from dateutil.tz import tz
+
 from datacube.model import Range
 from .exceptions import UnknownFieldError
 
@@ -62,8 +66,17 @@ def as_expression(field, value):
     """
     if isinstance(value, Range):
         return field.between(value.begin, value.end)
-    if isinstance(value, list):
+    elif isinstance(value, list):
         return OrExpression(*(as_expression(field, val) for val in value))
+    # Treat a date (day) as a time range.
+    elif isinstance(value, date) and not isinstance(value, datetime):
+        return as_expression(
+            field,
+            Range(
+                datetime.combine(value, time.min.replace(tzinfo=tz.tzutc())),
+                datetime.combine(value, time.max.replace(tzinfo=tz.tzutc()))
+            )
+        )
     else:
         return field == value
 
