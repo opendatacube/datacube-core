@@ -175,70 +175,14 @@ class RGBTileGenerator(TileGenerator):
         sources = xarray.DataArray(holder)
 
         prod = datasets[0].type
-        measurements = [_set_resampling(prod.measurements[name], 'cubic') for name in self._bands]
+        measurements = [self._set_resampling(prod.measurements[name]) for name in self._bands]
         with datacube.set_options(reproject_threads=1, fast_load=True):
             return datacube.Datacube.load_data(sources, self._geobox, measurements)
 
-
-def _parse_query(qs):
-    return {key.lower(): (val[0] if len(val) == 1 else val) for key, val in parse_qs(qs).items()}
-
-
-def _script_url(environ):
-    return environ['wsgi.url_scheme']+'://'+environ['HTTP_HOST']+environ['SCRIPT_NAME']
-
-
-def application(environ, start_response):
-    with datacube.Datacube(app="WMS") as dc:
-        args = _parse_query(environ['QUERY_STRING'])
-
-        if args.get('request') == 'GetMap':
-            return get_map(dc, args, start_response)
-
-        if args.get('request') == 'GetCapabilities':
-            return get_capabilities(dc, args, environ, start_response)
-
-        data = INDEX_TEMPLATE.format(wms_url=_script_url(environ)).encode('utf-8')
-
-        start_response("200 OK", [
-            ("Content-Type", "text/html"),
-            ("Content-Length", str(len(data)))
-        ])
-        return iter([data])
-
-
-def _set_resampling(m, resampling):
-    mc = m.copy()
-    # mc['resampling_method'] = resampling
-    return mc
-
-
-def _write_png(data):
-    width = data[data.crs.dimensions[1]].size
-    height = data[data.crs.dimensions[0]].size
-
-    with MemoryFile() as memfile:
-        with memfile.open(driver='PNG',
-                          width=width,
-                          height=height,
-                          count=len(data.data_vars),
-                          transform=Affine.identity(),
-                          nodata=0,
-                          dtype='uint8') as thing:
-            for idx, band in enumerate(data.data_vars, start=1):
-                scaled = numpy.clip(data[band].values[::-1] / 12.0, 0, 255).astype('uint8')
-                thing.write_band(idx, scaled)
-        return memfile.read()
-
-
-def _get_geobox(args):
-    width = int(args['width'])
-    height = int(args['height'])
-    minx, miny, maxx, maxy = map(float, args['bbox'].split(','))
-    crs = geometry.CRS(args['srs'])
-
-    affine = Affine.translation(minx, miny) * Affine.scale((maxx - minx) / width, (maxy - miny) / height)
-    return geometry.GeoBox(width, height, affine, crs)
+    def _set_resampling(self, measurement):
+        mc = measurement.copy()
+        # mc['resampling_method'] = 'cubic'
+        return mc
 
 
 def _get_datasets(index, geobox, product, time_):
@@ -267,31 +211,31 @@ def _get_datasets(index, geobox, product, time_):
     return to_load
 
 
-def get_map(dc, args, start_response):
-    geobox = _get_geobox(args)
-    time = args.get('time', '2015-01-01/2015-02-01').split('/')
+def application(environ, start_response):
+    with datacube.Datacube(app="WMS") as dc:
+        args = _parse_query(environ['QUERY_STRING'])
 
-    layer_config = LAYER_SPEC[args['layers']]
-    tiler = RGBTileGenerator(layer_config, geobox, time)
-    datasets = tiler.datasets(dc.index)
-    data = tiler.data(datasets)
+        if args.get('request') == 'GetMap':
+            return get_map(dc, args, start_response)
 
-    body = _write_png(data)
-    start_response("200 OK", [
-        ("Content-Type", "image/png"),
-        ("Content-Length", str(len(body)))
-    ])
-    return iter([body])
+        if args.get('request') == 'GetCapabilities':
+            return get_capabilities(dc, args, environ, start_response)
+
+        data = INDEX_TEMPLATE.format(wms_url=_script_url(environ)).encode('utf-8')
+
+        start_response("200 OK", [
+            ("Content-Type", "text/html"),
+            ("Content-Length", str(len(data)))
+        ])
+        return iter([data])
 
 
-def get_layer_metadata(layer, product):
-    metadata = """
-<LatLonBoundingBox minx="100" miny="-50" maxx="160" maxy="0"></LatLonBoundingBox>
-<BoundingBox CRS="EPSG:4326" minx="100" miny="-50" maxx="160" maxy="0"/>
-<Dimension name="time" units="ISO8601"/>
-<Extent name="time" default="2015-01-01">2013-01-01/2017-01-01/P8D</Extent>
-    """
-    return metadata
+def _parse_query(qs):
+    return {key.lower(): (val[0] if len(val) == 1 else val) for key, val in parse_qs(qs).items()}
+
+
+def _script_url(environ):
+    return environ['wsgi.url_scheme']+'://'+environ['HTTP_HOST']+environ['SCRIPT_NAME']
 
 
 def get_capabilities(dc, args, environ, start_response):
@@ -312,6 +256,61 @@ def get_capabilities(dc, args, environ, start_response):
         ("Content-Length", str(len(data)))
     ])
     return iter([data])
+
+
+def get_layer_metadata(layer, product):
+    metadata = """
+<LatLonBoundingBox minx="100" miny="-50" maxx="160" maxy="0"></LatLonBoundingBox>
+<BoundingBox CRS="EPSG:4326" minx="100" miny="-50" maxx="160" maxy="0"/>
+<Dimension name="time" units="ISO8601"/>
+<Extent name="time" default="2015-01-01">2013-01-01/2017-01-01/P8D</Extent>
+    """
+    return metadata
+
+
+def get_map(dc, args, start_response):
+    geobox = _get_geobox(args)
+    time = args.get('time', '2015-01-01/2015-02-01').split('/')
+
+    layer_config = LAYER_SPEC[args['layers']]
+    tiler = RGBTileGenerator(layer_config, geobox, time)
+    datasets = tiler.datasets(dc.index)
+    data = tiler.data(datasets)
+
+    body = _write_png(data)
+    start_response("200 OK", [
+        ("Content-Type", "image/png"),
+        ("Content-Length", str(len(body)))
+    ])
+    return iter([body])
+
+
+def _get_geobox(args):
+    width = int(args['width'])
+    height = int(args['height'])
+    minx, miny, maxx, maxy = map(float, args['bbox'].split(','))
+    crs = geometry.CRS(args['srs'])
+
+    affine = Affine.translation(minx, miny) * Affine.scale((maxx - minx) / width, (maxy - miny) / height)
+    return geometry.GeoBox(width, height, affine, crs)
+
+
+def _write_png(data):
+    width = data[data.crs.dimensions[1]].size
+    height = data[data.crs.dimensions[0]].size
+
+    with MemoryFile() as memfile:
+        with memfile.open(driver='PNG',
+                          width=width,
+                          height=height,
+                          count=len(data.data_vars),
+                          transform=Affine.identity(),
+                          nodata=0,
+                          dtype='uint8') as thing:
+            for idx, band in enumerate(data.data_vars, start=1):
+                scaled = numpy.clip(data[band].values[::-1] / 12.0, 0, 255).astype('uint8')
+                thing.write_band(idx, scaled)
+        return memfile.read()
 
 
 if __name__ == '__main__':
