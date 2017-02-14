@@ -1010,7 +1010,7 @@ def test_cli_missing_info(global_integration_cli_args):
 def test_find_duplicates(index, pseudo_ls8_type,
                          pseudo_ls8_dataset, pseudo_ls8_dataset2, pseudo_ls8_dataset3, pseudo_ls8_dataset4,
                          ls5_dataset_w_children):
-    # type: (Index, DatasetType, Dataset, Dataset) -> None
+    # type: (Index, DatasetType, Dataset, Dataset, Dataset, Dataset, Dataset) -> None
 
     # Our four ls8 datasets and three ls5.
     all_datasets = index.datasets.search_eager()
@@ -1020,7 +1020,6 @@ def test_find_duplicates(index, pseudo_ls8_type,
     expected_ls8_path_row_duplicates = [
         (
             (
-                pseudo_ls8_type.name,
                 NumericRange(Decimal('116'), Decimal('116'), '[]'),
                 NumericRange(Decimal('74'), Decimal('84'), '[]')
             ),
@@ -1028,7 +1027,6 @@ def test_find_duplicates(index, pseudo_ls8_type,
         ),
         (
             (
-                pseudo_ls8_type.name,
                 NumericRange(Decimal('116'), Decimal('116'), '[]'),
                 NumericRange(Decimal('85'), Decimal('87'), '[]')
             ),
@@ -1037,27 +1035,51 @@ def test_find_duplicates(index, pseudo_ls8_type,
 
     ]
 
-    satellite_res = sorted(index.datasets.search_duplicates(
-        ('sat_path', 'sat_row'), platform='LANDSAT_8'
+    # Specifying groups as fields:
+    f = pseudo_ls8_type.metadata_type.dataset_fields.get
+    field_res = sorted(index.datasets.search_product_duplicates(
+        pseudo_ls8_type,
+        f('sat_path'), f('sat_row')
     ))
-    assert satellite_res == expected_ls8_path_row_duplicates
-
-    product_res = sorted(index.datasets.search_duplicates(
-        ('sat_path', 'sat_row'), product=pseudo_ls8_type.name
+    assert field_res == expected_ls8_path_row_duplicates
+    # Field names as strings
+    product_res = sorted(index.datasets.search_product_duplicates(
+        pseudo_ls8_type,
+        'sat_path', 'sat_row'
     ))
     assert product_res == expected_ls8_path_row_duplicates
 
+    # Get duplicates that start on the same day
+    f = pseudo_ls8_type.metadata_type.dataset_fields.get
+    field_res = sorted(index.datasets.search_product_duplicates(
+        pseudo_ls8_type,
+        f('time').lower.day
+    ))
+
+    # Datasets 1 & 3 are on the 26th.
+    # Datasets 2 & 4 are on the 27th.
+    assert field_res == [
+        (
+            (
+                datetime.datetime(2014, 7, 26, 0, 0),
+            ),
+            {pseudo_ls8_dataset.id, pseudo_ls8_dataset3.id}
+        ),
+        (
+            (
+                datetime.datetime(2014, 7, 27, 0, 0),
+            ),
+            {pseudo_ls8_dataset2.id, pseudo_ls8_dataset4.id}
+        ),
+
+    ]
+
     # No LS5 duplicates: there's only one of each
-    sat_res = sorted(index.datasets.search_duplicates(
-        ('sat_path', 'sat_row'), platform='LANDSAT_5'
+    sat_res = sorted(index.datasets.search_product_duplicates(
+        ls5_dataset_w_children.type,
+        'sat_path', 'sat_row'
     ))
     assert sat_res == []
-
-    # So searching everything should give us just the LS8 groups.
-    all_res = sorted(index.datasets.search_duplicates(
-        ('sat_path', 'sat_row')
-    ))
-    assert all_res == expected_ls8_path_row_duplicates
 
 
 def test_csv_search_via_cli(global_integration_cli_args, pseudo_ls8_type, pseudo_ls8_dataset, pseudo_ls8_dataset2):

@@ -6,8 +6,9 @@ Build and index fields within documents.
 from __future__ import absolute_import
 
 from collections import namedtuple
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
+
 
 from dateutil import tz
 from psycopg2.extras import NumericRange, DateTimeTZRange
@@ -25,7 +26,7 @@ from datacube.model import Range
 from datacube.utils import get_doc_offset_safe
 
 try:
-    from typing import Any, Callable, Tuple
+    from typing import Any, Callable, Tuple, Union
 except ImportError:
     pass
 
@@ -253,15 +254,33 @@ class DoubleDocField(SimpleDocField):
 
 class DateDocField(SimpleDocField):
     def value_to_alchemy(self, value):
+        # type: (Union[datetime, date, str, ColumnElement]) -> Union[datetime, date, str, ColumnElement]
+        """
+        Wrap a value as needed for this field type.
+        """
         if isinstance(value, datetime):
             return _default_utc(value)
-        return func.agdc.common_timestamp(value)
+        # SQLAlchemy expression or string are parsed in pg as dates.
+        elif isinstance(value, (ColumnElement,) + compat.string_types):
+            return func.agdc.common_timestamp(value)
+        else:
+            raise ValueError("Value not readable as date: %r" % (value,))
 
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
 
     def parse_value(self, s):
         return utils.parse_time(s)
+
+    @property
+    def day(self):
+        """Get field truncated to the day"""
+        return NativeField(
+            '{}_day'.format(self.name),
+            'Day of {}'.format(self.description),
+            self.alchemy_column,
+            alchemy_expression=cast(func.date_trunc('day', self.alchemy_expression), postgres.TIMESTAMP)
+        )
 
 
 class RangeDocField(PgDocField):
@@ -274,7 +293,7 @@ class RangeDocField(PgDocField):
     def __init__(self, name, description, alchemy_column, indexed, min_offset=None, max_offset=None):
         super(RangeDocField, self).__init__(name, description, alchemy_column, indexed)
         self.lower = self.FIELD_CLASS(
-            name + '.lower',
+            name + '_lower',
             description,
             alchemy_column,
             indexed=False,
@@ -282,7 +301,7 @@ class RangeDocField(PgDocField):
             selection='least'
         )
         self.greater = self.FIELD_CLASS(
-            name + '.greater',
+            name + '_greater',
             description,
             alchemy_column,
             indexed=False,

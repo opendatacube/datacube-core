@@ -80,7 +80,7 @@ def _split_uri(uri):
     return scheme, body
 
 
-def get_dataset_fields(dataset_search_fields):
+def get_native_fields():
     # Native fields (hard-coded into the schema)
     fields = {
         'id': NativeField(
@@ -121,6 +121,11 @@ def get_dataset_fields(dataset_search_fields):
             affects_row_selection=True
         ),
     }
+    return fields
+
+
+def get_dataset_fields(dataset_search_fields):
+    fields = get_native_fields()
 
     # noinspection PyTypeChecker
     fields.update(
@@ -442,15 +447,13 @@ class PostgresDbAPI(object):
     def get_duplicates(self, match_fields, expressions):
         # type: (Tuple[PgField], Tuple[PgExpression]) -> Iterable[tuple]
         group_expressions = tuple(f.alchemy_expression for f in match_fields)
-        from_expression = PostgresDbAPI._from_expression(DATASET, expressions, match_fields)
-        where_expr = and_(DATASET.c.archived == None, *(PostgresDbAPI._alchemify_expressions(expressions)))
 
         select_query = select(
             (func.array_agg(DATASET.c.id),) + group_expressions
         ).select_from(
-            from_expression
+            PostgresDbAPI._from_expression(DATASET, expressions, match_fields)
         ).where(
-            where_expr
+            and_(DATASET.c.archived == None, *(PostgresDbAPI._alchemify_expressions(expressions)))
         ).group_by(
             *group_expressions
         ).having(
