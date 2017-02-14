@@ -25,7 +25,6 @@ from datacube.index._api import Index
 from datacube.index.postgres import PostgresDb
 from datacube.model import Dataset
 from datacube.model import DatasetType
-from datacube.model import MetadataType
 from datacube.model import Range
 from datacube.scripts import dataset as dataset_script
 
@@ -917,7 +916,7 @@ def test_search_cli_basic(global_integration_cli_args, telemetry_metadata_type, 
 
 
 def test_cli_info(index, global_integration_cli_args, pseudo_ls8_dataset, pseudo_ls8_dataset2):
-    # type: (Index, tuple, MetadataType, Dataset) -> None
+    # type: (Index, tuple, Dataset, Dataset) -> None
     """
     Search datasets using the cli.
     :type index: datacube.index._api.Index
@@ -949,7 +948,7 @@ def test_cli_info(index, global_integration_cli_args, pseudo_ls8_dataset, pseudo
     assert len(yaml_docs) == 1
 
     # We output properties in order for readability:
-    output_lines = output.splitlines()
+    output_lines = [l for l in output.splitlines() if not l.startswith('indexed:')]
     assert output_lines == [
         "id: " + str(pseudo_ls8_dataset.id),
         'product: ls8_telemetry',
@@ -971,6 +970,11 @@ def test_cli_info(index, global_integration_cli_args, pseudo_ls8_dataset, pseudo
         "    time: {begin: '2014-07-26T23:48:00.343853', end: '2014-07-26T23:52:00.343853'}",
     ]
 
+    # Check indexed time separately, as we don't care what timezone it's displayed in.
+    indexed_time = yaml_docs[0]['indexed']
+    assert isinstance(indexed_time, datetime.datetime)
+    assert assume_utc(indexed_time) == assume_utc(pseudo_ls8_dataset.indexed_time)
+
     # Request two, they should have separate yaml documents
     opts.append(str(pseudo_ls8_dataset2.id))
 
@@ -984,6 +988,13 @@ def test_cli_info(index, global_integration_cli_args, pseudo_ls8_dataset, pseudo
     assert len(yaml_docs) == 2, "Two datasets should produce two sets of info"
     assert yaml_docs[0]['id'] == str(pseudo_ls8_dataset.id)
     assert yaml_docs[1]['id'] == str(pseudo_ls8_dataset2.id)
+
+
+def assume_utc(d):
+    if d.tzinfo is None:
+        return d.replace(tzinfo=tz.tzutc())
+    else:
+        return d.astimezone(tz.tzutc())
 
 
 def test_cli_missing_info(global_integration_cli_args):

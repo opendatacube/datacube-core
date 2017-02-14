@@ -256,19 +256,19 @@ def update_dry_run(index, updates, dataset):
 def build_dataset_info(index, dataset, show_sources=False, show_derived=False):
     # type: (Index, Dataset, bool) -> dict
 
-    # def find_me(derived):
-    #     for key, source in derived.sources.items():
-    #         print(dataset.id, source.id)
-    #         if dataset.id == source.id:
-    #             return key
-
     info = OrderedDict((
         ('id', str(dataset.id)),
         ('product', dataset.type.name),
-        ('status', 'archived' if dataset.is_archived else 'active'),
-        ('locations', index.datasets.get_locations(dataset)),
-        ('fields', dataset.metadata.search_fields)
+        ('status', 'archived' if dataset.is_archived else 'active')
     ))
+
+    # Optional when loading a dataset.
+    if dataset.indexed_time is not None:
+        info['indexed'] = dataset.indexed_time
+
+    info['locations'] = index.datasets.get_locations(dataset)
+    info['fields'] = dataset.metadata.search_fields
+
     if show_sources:
         info['sources'] = {key: build_dataset_info(index, source,
                                                    show_sources=True, show_derived=False)
@@ -278,6 +278,7 @@ def build_dataset_info(index, dataset, show_sources=False, show_derived=False):
         info['derived'] = [build_dataset_info(index, derived,
                                               show_sources=False, show_derived=True)
                            for derived in index.datasets.get_derived(dataset.id)]
+
     return info
 
 
