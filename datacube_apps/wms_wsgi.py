@@ -43,7 +43,7 @@ INDEX_TEMPLATE = """<!DOCTYPE html>
         {{
             minZoom: 6,
             maxZoom: 19,
-            layers: "ls8_nbar_albers",
+            layers: "ls8_nbar_rgb",
             format: 'image/png',
             transparent: true,
             attribution: "Teh Cube"
@@ -124,6 +124,16 @@ LAYER_SPEC = {
             'period': timedelta(days=0)
         }
     },
+    'ls8_l1t_rgb': {
+        'product': 'ls8_l1t_scene',
+        'bands': ('red', 'green', 'blue'),
+        'extents': geometry.box(100, -50, 160, 0, crs=geometry.CRS('EPSG:4326')),
+        'time': {
+            'start': datetime(2013, 1, 1),
+            'end': datetime(2017, 1, 1),
+            'period': timedelta(days=0)
+        }
+    },
     'modis_mcd43a4_rgb': {
         'product': 'modis_mcd43a4_tile',
         'bands': ('Nadir_Reflectance_Band1', 'Nadir_Reflectance_Band4', 'Nadir_Reflectance_Band3'),
@@ -135,6 +145,39 @@ LAYER_SPEC = {
         }
     }
 }
+
+
+class TileGenerator(object):
+    def __init__(self, **kwargs):
+        pass
+
+    def datasets(self, index):
+        pass
+
+    def data(self, datasets):
+        pass
+
+
+class RGBTileGenerator(TileGenerator):
+    def __init__(self, config, geobox, time, **kwargs):
+        super(RGBTileGenerator, self).__init__(**kwargs)
+        self._product = config['product']
+        self._bands = config['bands']
+        self._geobox = geobox
+        self._time = time
+
+    def datasets(self, index):
+        return _get_datasets(index, self._geobox, self._product, self._time)
+
+    def data(self, datasets):
+        holder = numpy.empty(shape=tuple(), dtype=object)
+        holder[()] = datasets
+        sources = xarray.DataArray(holder)
+
+        prod = datasets[0].type
+        measurements = [_set_resampling(prod.measurements[name], 'cubic') for name in self._bands]
+        with datacube.set_options(reproject_threads=1, fast_load=True):
+            return datacube.Datacube.load_data(sources, self._geobox, measurements)
 
 
 def _parse_query(qs):
@@ -170,7 +213,7 @@ def _set_resampling(m, resampling):
     return mc
 
 
-def _write_png(data, bands):
+def _write_png(data):
     width = data[data.crs.dimensions[1]].size
     height = data[data.crs.dimensions[0]].size
 
@@ -178,11 +221,11 @@ def _write_png(data, bands):
         with memfile.open(driver='PNG',
                           width=width,
                           height=height,
-                          count=len(bands),
+                          count=len(data.data_vars),
                           transform=Affine.identity(),
                           nodata=0,
                           dtype='uint8') as thing:
-            for idx, band in enumerate(bands, start=1):
+            for idx, band in enumerate(data.data_vars, start=1):
                 scaled = numpy.clip(data[band].values[::-1] / 12.0, 0, 255).astype('uint8')
                 thing.write_band(idx, scaled)
         return memfile.read()
@@ -198,22 +241,9 @@ def _get_geobox(args):
     return geometry.GeoBox(width, height, affine, crs)
 
 
-def _load_data(dc, geobox, product, bands, time_):
-    to_load = _get_datasets(dc, geobox, product, time_)
-
-    holder = numpy.empty(shape=tuple(), dtype=object)
-    holder[()] = to_load
-    sources = xarray.DataArray(holder)
-
-    prod = dc.index.products.get_by_name(product)
-    measurements = [_set_resampling(m, 'cubic') for name, m in prod.measurements.items() if name in bands]
-    with datacube.set_options(reproject_threads=1, fast_load=True):
-        return dc.load_data(sources, geobox, measurements)
-
-
-def _get_datasets(dc, geobox, product, time_):
+def _get_datasets(index, geobox, product, time_):
     query = datacube.api.query.Query(product=product, geopolygon=geobox.extent, time=time_)
-    datasets = dc.index.datasets.search_eager(**query.search_terms)
+    datasets = index.datasets.search_eager(**query.search_terms)
     datasets.sort(key=lambda d: d.center_time)
     dataset_iter = iter(datasets)
     to_load = []
@@ -239,15 +269,14 @@ def _get_datasets(dc, geobox, product, time_):
 
 def get_map(dc, args, start_response):
     geobox = _get_geobox(args)
-
-    layer = LAYER_SPEC[args['layers']]
-    product = layer['product']
-    bands = layer['bands']
     time = args.get('time', '2015-01-01/2015-02-01').split('/')
 
-    data = _load_data(dc, geobox, product, bands, time_=time)
+    layer_config = LAYER_SPEC[args['layers']]
+    tiler = RGBTileGenerator(layer_config, geobox, time)
+    datasets = tiler.datasets(dc.index)
+    data = tiler.data(datasets)
 
-    body = _write_png(data, bands)
+    body = _write_png(data)
     start_response("200 OK", [
         ("Content-Type", "image/png"),
         ("Content-Length", str(len(body)))
@@ -269,6 +298,8 @@ def get_capabilities(dc, args, environ, start_response):
     layers = ""
     for name, layer in LAYER_SPEC.items():
         product = dc.index.products.get_by_name(layer['product'])
+        if not product:
+            continue
         layers += LAYER_TEMPLATE.format(name=name,
                                         title=name,
                                         abstract=product.definition['description'],
