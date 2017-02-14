@@ -678,16 +678,6 @@ class PostgresDbAPI(object):
                 rebuild_all, concurrently
             )
 
-        for dataset_type in self.get_all_dataset_types():
-            self._setup_dataset_type_fields(
-                dataset_type['id'],
-                dataset_type['name'],
-                search_fields[dataset_type['metadata_type_ref']],
-                dataset_type['definition']['metadata'],
-                rebuild_all,
-                concurrently
-            )
-
     def _setup_metadata_type_fields(self, id_, name, fields, rebuild_all=False, concurrently=True):
         # Metadata fields are no longer used (all queries are per-dataset-type): exclude all.
         # This will have the effect of removing any old indexes that still exist.
@@ -696,6 +686,16 @@ class PostgresDbAPI(object):
         dataset_filter = and_(DATASET.c.archived == None, DATASET.c.metadata_type_ref == id_)
         dynamic.check_dynamic_fields(self._connection, concurrently, dataset_filter,
                                      exclude_fields, fields, name, rebuild_all)
+
+        for dataset_type in self._get_dataset_types_for_metadata_type(id_):
+            self._setup_dataset_type_fields(
+                dataset_type['id'],
+                dataset_type['name'],
+                fields,
+                dataset_type['definition']['metadata'],
+                rebuild_all,
+                concurrently
+            )
 
     def _setup_dataset_type_fields(self, id_, name, fields, metadata_doc,
                                    rebuild_all=False, concurrently=True):
@@ -718,6 +718,15 @@ class PostgresDbAPI(object):
 
     def get_all_dataset_types(self):
         return self._connection.execute(DATASET_TYPE.select().order_by(DATASET_TYPE.c.name.asc())).fetchall()
+
+    def _get_dataset_types_for_metadata_type(self, id_):
+        return self._connection.execute(
+            DATASET_TYPE.select(
+            ).where(
+                DATASET_TYPE.c.metadata_type_ref == id_
+            ).order_by(
+                DATASET_TYPE.c.name.asc()
+            )).fetchall()
 
     def get_all_metadata_types(self):
         return self._connection.execute(METADATA_TYPE.select().order_by(METADATA_TYPE.c.name.asc())).fetchall()

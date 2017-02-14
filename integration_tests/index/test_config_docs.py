@@ -380,3 +380,22 @@ def test_filter_types_by_search(index, ls5_nbar_gtiff_type):
         product_type='nbar',
     ))
     assert res == []
+
+
+def test_update_metadata_type(db, index, ls5_nbar_gtiff_type):
+    type_doc = copy.deepcopy(ls5_nbar_gtiff_type.metadata_type.definition)
+    type_doc['dataset']['search_fields']['test_indexed'] = {
+        'description': 'indexed test field',
+        'offset': ['test', 'indexed']
+    }
+    type_doc['dataset']['search_fields']['test_not_indexed'] = {
+        'description': 'not indexed test field',
+        'offset': ['test', 'not', 'indexed'],
+        'indexed': False
+    }
+
+    index.metadata_types.update_document(type_doc)
+
+    assert ls5_nbar_gtiff_type.name == 'ls5_nbart_p54_gtiff'
+    assert _object_exists(db, "dix_ls5_nbart_p54_gtiff_test_indexed")
+    assert not _object_exists(db, "dix_ls5_nbart_p54_gtiff_test_not_indexed")
