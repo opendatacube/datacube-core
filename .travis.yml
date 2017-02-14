@@ -1,4 +1,6 @@
 language: python
+dist: trusty
+
 git:
   # We need a deeper depth for 'git descibe' to ensure
   # we can reach the last tagged version.
@@ -17,7 +19,9 @@ cache:
 
 # Install required packages
 addons:
-  postgresql: "9.4"
+  postgresql: "9.5"
+  services:
+    - postgresql
   apt:
     packages:
     - libhdf5-serial-dev
