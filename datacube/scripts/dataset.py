@@ -253,7 +253,7 @@ def update_dry_run(index, updates, dataset):
     return can_update
 
 
-def build_dataset_info(index, dataset, show_sources=False, show_derived=False):
+def build_dataset_info(index, dataset, show_sources=False, show_derived=False, depth=1, max_depth=99):
     # type: (Index, Dataset, bool) -> dict
 
     info = OrderedDict((
@@ -269,15 +269,18 @@ def build_dataset_info(index, dataset, show_sources=False, show_derived=False):
     info['locations'] = index.datasets.get_locations(dataset)
     info['fields'] = dataset.metadata.search_fields
 
-    if show_sources:
-        info['sources'] = {key: build_dataset_info(index, source,
-                                                   show_sources=True, show_derived=False)
-                           for key, source in dataset.sources.items()}
+    if depth < max_depth:
+        if show_sources:
+            info['sources'] = {key: build_dataset_info(index, source,
+                                                       show_sources=True, show_derived=False,
+                                                       depth=depth + 1, max_depth=max_depth)
+                               for key, source in dataset.sources.items()}
 
-    if show_derived:
-        info['derived'] = [build_dataset_info(index, derived,
-                                              show_sources=False, show_derived=True)
-                           for derived in index.datasets.get_derived(dataset.id)]
+        if show_derived:
+            info['derived'] = [build_dataset_info(index, derived,
+                                                  show_sources=False, show_derived=True,
+                                                  depth=depth + 1, max_depth=max_depth)
+                               for derived in index.datasets.get_derived(dataset.id)]
 
     return info
 
@@ -350,9 +353,14 @@ _OUTPUT_WRITERS = {
 @click.option('--show-derived', help='Also show sources', is_flag=True, default=False)
 @click.option('-f', help='Output format',
               type=click.Choice(_OUTPUT_WRITERS.keys()), default='yaml', show_default=True)
+@click.option('--max-depth',
+              help='Maximum sources/derived depth to travel',
+              type=int,
+              # Unlikely to be hit, but will avoid total-death by circular-references.
+              default=99)
 @click.argument('ids', nargs=-1)
 @ui.pass_index()
-def info_cmd(index, show_sources, show_derived, f, ids):
+def info_cmd(index, show_sources, show_derived, f, max_depth, ids):
     # type: (Index, bool, bool, Iterable[str]) -> None
 
     # Using an array wrapper to get around the lack of "nonlocal" in py2
@@ -371,7 +379,8 @@ def info_cmd(index, show_sources, show_derived, f, ids):
         build_dataset_info(index,
                            dataset,
                            show_sources=show_sources,
-                           show_derived=show_derived)
+                           show_derived=show_derived,
+                           max_depth=max_depth)
         for dataset in get_datasets(ids)
     )
 
