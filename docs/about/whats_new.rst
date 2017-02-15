@@ -3,8 +3,16 @@
 What's New
 ==========
 
-v.1.1.18 Mushroom Milkshake (9 February 2017)
----------------------------------------------
+v1.1.19
+-------
+ - Implemented improvements to `dataset search` and `info` cli outputs
+
+ - Can now specify a range of years to process to `ingest` cli (e.g. 2000-2005)
+
+ - Fixed `metadata_type update` cli not creating indexes (running `system init` will create missing ones)
+
+v1.1.18 Mushroom Milkshake (9 February 2017)
+--------------------------------------------
  - Added `sources-policy` options to `dataset add` cli
 
  - Multiple dataset search improvements related to locations
