@@ -3,17 +3,19 @@
 What's New
 ==========
 
-v1.1.19
--------
+v1.2.0 Boring as Batman (15 February 2017)
+------------------------------------------
  - Implemented improvements to `dataset search` and `info` cli outputs
 
  - Can now specify a range of years to process to `ingest` cli (e.g. 2000-2005)
 
  - Fixed `metadata_type update` cli not creating indexes (running `system init` will create missing ones)
 
- - Enable indexing of datacube generated NetCDF files. Makes it much easier to pull
-   some selected data into a private datacube index.
+ - Enable indexing of datacube generated NetCDF files. Making it much easier to pull
+   selected data into a private datacube index.
    Use by running `datacube dataset add selected_netcdf.nc`.
+
+ - Switch versioning system to increment the second digit instead of the third.
 
 v1.1.18 Mushroom Milkshake (9 February 2017)
 --------------------------------------------
