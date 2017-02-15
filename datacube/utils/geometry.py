@@ -455,6 +455,15 @@ class Geometry(object):
     def __repr__(self):
         return 'Geometry(%s, %s)' % (self._geom, self.crs)
 
+    # Implement pickle/unpickle
+    # It does work without these two methods, but gdal/ogr prints 'ERROR 1: Empty geometries cannot be constructed'
+    # when unpickling, which is quite unpleasant.
+    def __getstate__(self):
+        return {'geo': self.json, 'crs': self.crs}
+
+    def __setstate__(self, state):
+        self.__init__(**state)
+
 
 ###########################################
 # Helper constructor functions a la shapely
