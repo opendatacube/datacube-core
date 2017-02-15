@@ -349,6 +349,8 @@ class Mock(MagicMock):
 
 
 sys.modules.update((mod_name, Mock()) for mod_name in NATIVE_MODULES)
+sys.modules['rasterio.coords'].BoundingBox = Mock
+
 
 # Clean up generated documentation files that RTD seems to be having trouble with
 if on_rtd:
