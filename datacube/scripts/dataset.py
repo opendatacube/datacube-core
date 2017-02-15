@@ -348,9 +348,9 @@ _OUTPUT_WRITERS = {
 }
 
 
-@dataset_cmd.command('info', help="Display dataset id, product, location and provenance")
-@click.option('--show-sources', help='Also show sources', is_flag=True, default=False)
-@click.option('--show-derived', help='Also show sources', is_flag=True, default=False)
+@dataset_cmd.command('info', help="Display dataset information")
+@click.option('--show-sources', help='Also show source datasets', is_flag=True, default=False)
+@click.option('--show-derived', help='Also show derived datasets', is_flag=True, default=False)
 @click.option('-f', help='Output format',
               type=click.Choice(_OUTPUT_WRITERS.keys()), default='yaml', show_default=True)
 @click.option('--max-depth',
