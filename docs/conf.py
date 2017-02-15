@@ -126,7 +126,7 @@ autosummary_generate = True
 
 extlinks = {'issue': ('https://github.com/data-cube/agdc-v2/issues/%s', 'GH')}
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/2.7/', None),
+    'python': ('https://docs.python.org/3.5/', None),
     'pandas': ('http://pandas.pydata.org/pandas-docs/stable/', None),
     'numpy': ('http://docs.scipy.org/doc/numpy/', None),
     'xarray': ('http://xarray.pydata.org/en/stable/', None),

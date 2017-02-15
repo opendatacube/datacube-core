@@ -457,7 +457,7 @@ class Datacube(object):
         Load data from :meth:`group_datasets` into an :class:`xarray.Dataset`.
 
         :param xarray.DataArray sources:
-            DataArray holding a list of :class:`datacube.model.Dataset`s, grouped along the time dimension
+            DataArray holding a list of :class:`datacube.model.Dataset`, grouped along the time dimension
 
         :param GeoBox geobox:
             A GeoBox defining the output spatial projection and resolution
