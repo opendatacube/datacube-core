@@ -11,6 +11,10 @@ v1.1.19
 
  - Fixed `metadata_type update` cli not creating indexes (running `system init` will create missing ones)
 
+ - Enable indexing of datacube generated NetCDF files. Makes it much easier to pull
+   some selected data into a private datacube index.
+   Use by running `datacube dataset add selected_netcdf.nc`.
+
 v1.1.18 Mushroom Milkshake (9 February 2017)
 --------------------------------------------
  - Added `sources-policy` options to `dataset add` cli
