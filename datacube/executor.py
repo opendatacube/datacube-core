@@ -17,6 +17,8 @@ from __future__ import absolute_import, division
 import sys
 import six
 
+_REMOTE_LOG_FORMAT_STRING = '%(asctime)s {} %(process)d %(name)s %(levelname)s %(message)s'
+
 
 class SerialExecutor(object):
     @staticmethod
@@ -64,6 +66,18 @@ class SerialExecutor(object):
         pass
 
 
+def setup_logging():
+    import logging
+    import socket
+
+    hostname = socket.gethostname()
+    log_format_string = _REMOTE_LOG_FORMAT_STRING.format(hostname)
+
+    handler = logging.StreamHandler()
+    handler.formatter = logging.Formatter(log_format_string)
+    logging.root.handlers = [handler]
+
+
 def _get_distributed_executor(scheduler):
     """
     :param scheduler: Address of a scheduler
@@ -80,6 +94,10 @@ def _get_distributed_executor(scheduler):
             :return:
             """
             self._executor = executor
+            self.setup_logging()
+
+        def setup_logging(self):
+            self._executor.run(setup_logging)
 
         def submit(self, func, *args, **kwargs):
             return self._executor.submit(func, *args, pure=False, **kwargs)
