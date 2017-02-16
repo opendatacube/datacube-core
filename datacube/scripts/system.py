@@ -57,7 +57,7 @@ def database_init(index, default_types, init_users, rebuild, lock_table):
     echo('Done.')
 
 
-@system.command('check', help='Initialise the system')
+@system.command('check', help='Check and display current configuration')
 @ui.pass_config
 def check(config_file):
     """
