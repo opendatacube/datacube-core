@@ -275,10 +275,15 @@ class ProductResource(object):
 
         return DatasetType(metadata_type, definition)
 
-    def add(self, type_):
+    def add(self, type_, allow_table_lock=False):
         """
         Add a Product.
 
+        :param allow_table_lock:
+            Allow an exclusive lock to be taken on the table while creating the indexes.
+            This will halt other user's requests until completed.
+
+            If false, creation will be slightly slower and cannot be done in a transaction.
         :param datacube.model.DatasetType type_: Product to add
         :rtype: datacube.model.DatasetType
         """
@@ -295,14 +300,15 @@ class ProductResource(object):
             metadata_type = self.metadata_type_resource.get_by_name(type_.metadata_type.name)
             if metadata_type is None:
                 _LOG.warning('Adding metadata_type "%s" as it doesn\'t exist.', type_.metadata_type.name)
-                metadata_type = self.metadata_type_resource.add(type_.metadata_type)
+                metadata_type = self.metadata_type_resource.add(type_.metadata_type, allow_table_lock=allow_table_lock)
             with self._db.connect() as connection:
                 connection.add_dataset_type(
                     name=type_.name,
                     metadata=type_.metadata_doc,
                     metadata_type_id=metadata_type.id,
                     search_fields=metadata_type.dataset_fields,
-                    definition=type_.definition
+                    definition=type_.definition,
+                    concurrently=not allow_table_lock,
                 )
         return self.get_by_name(type_.name)
 
