@@ -371,7 +371,7 @@ class ProductResource(object):
         existing = self.get_by_name(product.name)
         changing_metadata_type = product.metadata_type.name != existing.metadata_type.name
         if changing_metadata_type:
-            assert False, "TODO: Ask Jeremy WTF is going on here"
+            raise ValueError("Unsafe change: cannot (currently) switch metadata types for a product")
             # TODO: Ask Jeremy WTF is going on here
             # If the two metadata types declare the same field with different postgres expressions
             # we can't safely change it.
@@ -404,7 +404,7 @@ class ProductResource(object):
 
     def update_document(self, definition, allow_unsafe_updates=False):
         """
-        Update a Product using its difinition
+        Update a Product using its definition
 
         :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :param dict definition: product definition document
