@@ -6,6 +6,8 @@ from pprint import pprint
 
 import click
 from click import echo
+
+from datacube.index._api import Index
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.utils import read_documents, InvalidDocException
@@ -19,18 +21,21 @@ def metadata_type():
 
 
 @metadata_type.command('add')
+@click.option('--allow-exclusive-lock/--forbid-exclusive-lock', is_flag=True, default=False,
+              help='Allow index to be locked from other users while updating (default: false)')
 @click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
 @ui.pass_index()
-def add_metadata_types(index, files):
+def add_metadata_types(index, allow_exclusive_lock, files):
+    # type: (Index, bool, list) -> None
     """
     Add or update metadata types in the index
     """
     for descriptor_path, parsed_doc in read_documents(*(Path(f) for f in files)):
         try:
             type_ = index.metadata_types.from_doc(parsed_doc)
-            index.metadata_types.add(type_)
+            index.metadata_types.add(type_, allow_table_lock=allow_exclusive_lock)
         except InvalidDocException as e:
             _LOG.exception(e)
             _LOG.error('Invalid metadata type definition: %s', descriptor_path)
@@ -42,13 +47,16 @@ def add_metadata_types(index, files):
     '--allow-unsafe/--forbid-unsafe', is_flag=True, default=False,
     help="Allow unsafe updates (default: false)"
 )
+@click.option('--allow-exclusive-lock/--forbid-exclusive-lock', is_flag=True, default=False,
+              help='Allow index to be locked from other users while updating (default: false)')
 @click.option('--dry-run', '-d', is_flag=True, default=False,
               help='Check if everything is ok')
 @click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
 @ui.pass_index()
-def update_metadata_types(index, allow_unsafe, dry_run, files):
+def update_metadata_types(index, allow_unsafe, allow_exclusive_lock, dry_run, files):
+    # type: (Index, bool, bool, bool, list) -> None
     """
     Update existing metadata types.
 
@@ -66,7 +74,11 @@ def update_metadata_types(index, allow_unsafe, dry_run, files):
             continue
 
         if not dry_run:
-            index.metadata_types.update(type_, allow_unsafe_updates=allow_unsafe)
+            index.metadata_types.update(
+                type_,
+                allow_unsafe_updates=allow_unsafe,
+                allow_table_lock=allow_exclusive_lock,
+            )
             echo('Updated "%s"' % type_.name)
         else:
             can_update, safe_changes, unsafe_changes = index.metadata_types.can_update(

@@ -1,13 +1,14 @@
 from __future__ import absolute_import
 
 import logging
-
-import click
-from click import echo
 from pathlib import Path
 from pprint import pprint
 
+import click
+from click import echo
+
 from datacube import Datacube
+from datacube.index._api import Index
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.utils import read_documents, InvalidDocException
@@ -21,18 +22,21 @@ def product():
 
 
 @product.command('add')
+@click.option('--allow-exclusive-lock/--forbid-exclusive-lock', is_flag=True, default=False,
+              help='Allow index to be locked from other users while updating (default: false)')
 @click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
 @ui.pass_index()
-def add_dataset_types(index, files):
+def add_dataset_types(index, allow_exclusive_lock, files):
+    # type: (Index, bool, list) -> None
     """
     Add or update products in the index
     """
     for descriptor_path, parsed_doc in read_documents(*(Path(f) for f in files)):
         try:
             type_ = index.products.from_doc(parsed_doc)
-            index.products.add(type_)
+            index.products.add(type_, allow_table_lock=allow_exclusive_lock)
             echo('Added "%s"' % type_.name)
         except InvalidDocException as e:
             _LOG.exception(e)
@@ -45,13 +49,16 @@ def add_dataset_types(index, files):
     '--allow-unsafe/--forbid-unsafe', is_flag=True, default=False,
     help="Allow unsafe updates (default: false)"
 )
+@click.option('--allow-exclusive-lock/--forbid-exclusive-lock', is_flag=True, default=False,
+              help='Allow index to be locked from other users while updating (default: false)')
 @click.option('--dry-run', '-d', is_flag=True, default=False,
               help='Check if everything is ok')
 @click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
 @ui.pass_index()
-def update_dataset_types(index, allow_unsafe, dry_run, files):
+def update_dataset_types(index, allow_unsafe, allow_exclusive_lock, dry_run, files):
+    # type: (Index, bool, bool, bool, list) -> None
     """
     Update existing products.
 
@@ -70,7 +77,11 @@ def update_dataset_types(index, allow_unsafe, dry_run, files):
 
         if not dry_run:
             try:
-                index.products.update(type_, allow_unsafe_updates=allow_unsafe)
+                index.products.update(
+                    type_,
+                    allow_unsafe_updates=allow_unsafe,
+                    allow_table_lock=allow_exclusive_lock,
+                )
                 echo('Updated "%s"' % type_.name)
             except ValueError as e:
                 echo('Failed to update "%s": %s' % (type_.name, e))

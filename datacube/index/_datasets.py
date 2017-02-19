@@ -104,7 +104,7 @@ class MetadataTypeResource(object):
 
         return allow_unsafe_updates or not bad_changes, good_changes, bad_changes
 
-    def update(self, metadata_type, allow_unsafe_updates=False):
+    def update(self, metadata_type, allow_unsafe_updates=False, allow_table_lock=False):
         """
         Update a metadata type from the document. Unsafe changes will throw a ValueError by default.
 
@@ -112,6 +112,11 @@ class MetadataTypeResource(object):
 
         :param datacube.model.MetadataType metadata_type: updated MetadataType
         :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
+        :param allow_table_lock:
+            Allow an exclusive lock to be taken on the table while creating the indexes.
+            This will halt other user's requests until completed.
+
+            If false, creation will be slower and cannot be done in a transaction.
         :rtype: datacube.model.MetadataType
         """
         can_update, safe_changes, unsafe_changes = self.can_update(metadata_type, allow_unsafe_updates)
@@ -136,7 +141,7 @@ class MetadataTypeResource(object):
             connection.update_metadata_type(
                 name=metadata_type.name,
                 definition=metadata_type.definition,
-                concurrently=True
+                concurrently=not allow_table_lock
             )
 
         self.get_by_name_unsafe.cache_clear()
@@ -321,7 +326,7 @@ class ProductResource(object):
 
         :param datacube.model.DatasetType product: Product to update
         :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
-            :rtype: bool,list[change],list[change]
+        :rtype: bool,list[change],list[change]
         """
         DatasetType.validate(product.definition)
 
@@ -344,7 +349,7 @@ class ProductResource(object):
 
         return allow_unsafe_updates or not bad_changes, good_changes, bad_changes
 
-    def update(self, product, allow_unsafe_updates=False):
+    def update(self, product, allow_unsafe_updates=False, allow_table_lock=False):
         """
         Update a product. Unsafe changes will throw a ValueError by default.
 
@@ -353,6 +358,11 @@ class ProductResource(object):
 
         :param datacube.model.DatasetType product: Product to update
         :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
+        :param allow_table_lock:
+            Allow an exclusive lock to be taken on the table while creating the indexes.
+            This will halt other user's requests until completed.
+
+            If false, creation will be slower and cannot be done in a transaction.
         :rtype: datacube.model.DatasetType
         """
 
@@ -395,29 +405,39 @@ class ProductResource(object):
         metadata_type = self.metadata_type_resource.get_by_name(product.metadata_type.name)
         # TODO: should we add metadata type here?
         assert metadata_type, "TODO: should we add metadata type here?"
-        with self._db.begin() as trans:
-            trans.update_dataset_type(
+        with self._db.connect() as conn:
+            conn.update_dataset_type(
                 name=product.name,
                 metadata=product.metadata_doc,
                 metadata_type_id=metadata_type.id,
                 search_fields=metadata_type.dataset_fields,
                 definition=product.definition,
-                update_metadata_type=changing_metadata_type
+                update_metadata_type=changing_metadata_type,
+                concurrently=not allow_table_lock
             )
 
         self.get_by_name_unsafe.cache_clear()
         self.get_unsafe.cache_clear()
 
-    def update_document(self, definition, allow_unsafe_updates=False):
+    def update_document(self, definition, allow_unsafe_updates=False, allow_table_lock=False):
         """
         Update a Product using its definition
 
         :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :param dict definition: product definition document
+        :param allow_table_lock:
+            Allow an exclusive lock to be taken on the table while creating the indexes.
+            This will halt other user's requests until completed.
+
+            If false, creation will be slower and cannot be done in a transaction.
         :rtype: datacube.model.DatasetType
         """
         type_ = self.from_doc(definition)
-        return self.update(type_, allow_unsafe_updates=allow_unsafe_updates)
+        return self.update(
+            type_,
+            allow_unsafe_updates=allow_unsafe_updates,
+            allow_table_lock=allow_table_lock,
+        )
 
     def add_document(self, definition):
         """
