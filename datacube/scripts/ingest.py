@@ -90,13 +90,14 @@ def get_app_metadata(config, config_file):
     return doc
 
 
-def get_filename(config, tile_index, sources):
+def get_filename(config, tile_index, sources, **kwargs):
     file_path_template = str(Path(config['location'], config['file_path_template']))
     time_format = '%Y%m%d%H%M%S%f'
     return Path(file_path_template.format(
         tile_index=tile_index,
         start_time=to_datetime(sources.time.values[0]).strftime(time_format),
-        end_time=to_datetime(sources.time.values[-1]).strftime(time_format)))
+        end_time=to_datetime(sources.time.values[-1]).strftime(time_format),
+        **kwargs))
 
 
 def get_measurements(source_type, config):
