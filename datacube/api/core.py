@@ -490,7 +490,8 @@ class Datacube(object):
             def data_func(measurement):
                 return _make_dask_array(sources, geobox, measurement, fuse_func, dask_chunks)
 
-        return Datacube.create_storage(sources.coords, geobox, measurements, data_func)
+        return Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
+                                       geobox, measurements, data_func)
 
     @staticmethod
     def measurement_data(sources, geobox, measurement, fuse_func=None, dask_chunks=None):
