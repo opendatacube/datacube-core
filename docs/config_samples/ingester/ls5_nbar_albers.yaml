@@ -4,7 +4,7 @@ output_type: ls5_nbar_albers
 description: Landsat 5 Surface Reflectance NBAR 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
 
 location: '/media/simonaoliver/datacube/tiles'
-file_path_template: 'LS5_TM_NBAR/LS5_TM_NBAR_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+file_path_template: 'LS5_TM_NBAR/LS5_TM_NBAR_3577_{tile_index[0]}_{tile_index[1]}_{start_time}_v{version}.nc'
 global_attributes: 
   title: Surface Reflectance NBAR+ 25 v2
   summary: |

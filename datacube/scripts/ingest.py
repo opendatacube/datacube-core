@@ -140,6 +140,8 @@ def load_config_from_file(index, config):
 
 
 def create_task_list(index, output_type, year, source_type, config):
+    config['taskfile_version'] = int(time.time())
+
     query = {}
     if year:
         query['time'] = Range(datetime(year=year[0], month=1, day=1), datetime(year=year[1] + 1, month=1, day=1))
@@ -185,7 +187,7 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
         fuse_func = {'copy': None}[config.get(FUSER_KEY, 'copy')]
         data = Datacube.load_data(tile.sources, tile.geobox, measurements, fuse_func=fuse_func)
     nudata = data.rename(namemap)
-    file_path = get_filename(config, tile_index, tile.sources)
+    file_path = get_filename(config, tile_index, tile.sources, version=config['taskfile_version'])
 
     def _make_dataset(labels, sources):
         return make_dataset(product=output_type,
