@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 from datetime import datetime
 import logging
+import os
 import click
 import cachetools
 import functools
@@ -55,8 +56,19 @@ def unpickle_stream(filename):
 
 
 def save_tasks(config, tasks, taskfile):
+    """Saves the config
+
+    :param config: dict of configuration options common to all tasks
+    :param tasks:
+    :param str taskfile: Name of output file
+    :return:
+    """
     i = pickle_stream(itertools.chain([config], tasks), taskfile)
-    _LOG.info('Saved config and %d tasks to %s', i, taskfile)
+    if i == 0:
+        os.remove(taskfile)
+    else:
+        _LOG.info('Saved config and %d tasks to %s', i, taskfile)
+    return i
 
 
 def load_tasks(taskfile):
@@ -134,8 +146,8 @@ def task_app(make_config, make_tasks):
                 config, tasks = load_tasks(input_tasks_file)
 
             if output_tasks_file:
-                save_tasks(config, tasks, output_tasks_file)
-                return
+                num_tasks_saved = save_tasks(config, tasks, output_tasks_file)
+                return num_tasks_saved != 0
 
             return app_func(index, config, tasks, *args, **kwargs)
 
@@ -178,7 +190,11 @@ def add_dataset_to_db(index, datasets):
         _LOG.info('Dataset added')
 
 
-def run_tasks(tasks, executor, run_task, process_result, queue_size=50):
+def do_nothing(result):
+    pass
+
+
+def run_tasks(tasks, executor, run_task, process_result=do_nothing, queue_size=50):
     """
     :param tasks: iterable of tasks. Usually a generator to create them as required.
     :param executor: a datacube executor, similar to `distributed.Client` or `concurrent.futures`
