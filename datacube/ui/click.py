@@ -220,7 +220,7 @@ def _setup_executor(ctx, param, value):
 executor_cli_options = click.option('--executor',
                                     type=(click.Choice(EXECUTOR_TYPES.keys()), str),
                                     default=('serial', None),
-                                    help="Run parallelized, either locally or distrbuted. eg:\n"
+                                    help="Run parallelized, either locally or distributed. eg:\n"
                                          "--executor multiproc 4 (OR)\n"
                                          "--executor distributed 10.0.0.8:8888",
                                     callback=_setup_executor)
