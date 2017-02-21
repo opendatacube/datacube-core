@@ -562,7 +562,7 @@ def test_search_returning_rows(index, pseudo_ls8_type,
     }
 
 
-def test_searches_only_type(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_nbar_gtiff_type):
+def test_searches_only_type(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_telem_type):
     """
     :type index: datacube.index._api.Index
     :type pseudo_ls8_type: datacube.model.DatasetType
@@ -592,7 +592,7 @@ def test_searches_only_type(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_nbar
 
     # No results when searching for a different dataset type.
     datasets = index.datasets.search_eager(
-        product=ls5_nbar_gtiff_type.name,
+        product=ls5_telem_type.name,
         platform='LANDSAT_8',
         instrument='OLI_TIRS'
     )
@@ -683,7 +683,7 @@ def test_fetch_all_of_md_type(index, pseudo_ls8_dataset):
     assert len(results) == 0
 
 
-def test_count_searches(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_nbar_gtiff_type):
+def test_count_searches(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_telem_type):
     """
     :type index: datacube.index._api.Index
     :type pseudo_ls8_type: datacube.model.DatasetType
@@ -711,7 +711,7 @@ def test_count_searches(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_nbar_gti
 
     # No results when searching for a different dataset type.
     datasets = index.datasets.count(
-        product=ls5_nbar_gtiff_type.name,
+        product=ls5_telem_type.name,
         platform='LANDSAT_8',
         instrument='OLI_TIRS'
     )
@@ -758,7 +758,7 @@ def test_get_dataset_with_children(index, ls5_dataset_w_children):
     assert list(level1.sources['satellite_telemetry_data'].sources) == []
 
 
-def test_count_by_product_searches(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_nbar_gtiff_type):
+def test_count_by_product_searches(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_telem_type):
     """
     :type index: datacube.index._api.Index
     :type pseudo_ls8_type: datacube.model.DatasetType
@@ -786,7 +786,7 @@ def test_count_by_product_searches(index, pseudo_ls8_type, pseudo_ls8_dataset, l
 
     # No results when searching for a different dataset type.
     products = tuple(index.datasets.count_by_product(
-        product=ls5_nbar_gtiff_type.name,
+        product=ls5_telem_type.name,
         platform='LANDSAT_8',
         instrument='OLI_TIRS'
     ))
@@ -1161,7 +1161,7 @@ _EXPECTED_OUTPUT_HEADER = 'dataset_type_id,gsi,id,instrument,lat,lon,metadata_do
                           'orbit,platform,product,product_type,sat_path,sat_row,time,uri'
 
 
-def test_csv_structure(global_integration_cli_args, pseudo_ls8_type, ls5_nbar_gtiff_type,
+def test_csv_structure(global_integration_cli_args, pseudo_ls8_type, ls5_telem_type,
                        pseudo_ls8_dataset, pseudo_ls8_dataset2):
     output = _csv_search_raw(['datasets', ' -40 < lat < -10'], global_integration_cli_args)
     lines = [line.strip() for line in output.split('\n') if line]
