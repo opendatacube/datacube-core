@@ -149,27 +149,27 @@ def dict_api(index):
 
 
 @pytest.fixture
-def ls5_nbar_gtiff_doc(default_metadata_type):
+def ls5_telem_doc(telemetry_metadata_type):
     return {
-        "name": "ls5_nbart_p54_gtiff",
+        "name": "ls5_telem_test",
         "description": 'LS5 Test',
         "metadata": {
             "platform": {
                 "code": "LANDSAT_5"
             },
-            "product_type": "nbart",
-            "ga_level": "P54",
+            "product_type": "satellite_telemetry_data",
+            "ga_level": "P00",
             "format": {
-                "name": "GeoTIFF"
+                "name": "RCC"
             }
         },
-        "metadata_type": default_metadata_type.name  # "eo"
+        "metadata_type": telemetry_metadata_type.name
     }
 
 
 @pytest.fixture
-def ls5_nbar_gtiff_type(index, ls5_nbar_gtiff_doc):
-    return index.products.add_document(ls5_nbar_gtiff_doc)
+def ls5_telem_type(index, ls5_telem_doc):
+    return index.products.add_document(ls5_telem_doc)
 
 
 @pytest.fixture
@@ -224,6 +224,11 @@ def default_metadata_type_docs():
 @pytest.fixture
 def default_metadata_type_doc(default_metadata_type_docs):
     return [doc for doc in default_metadata_type_docs if doc['name'] == 'eo'][0]
+
+
+@pytest.fixture
+def telemetry_metadata_type_doc(default_metadata_type_docs):
+    return [doc for doc in default_metadata_type_docs if doc['name'] == 'telemetry'][0]
 
 
 @pytest.fixture
