@@ -632,6 +632,10 @@ def test_search_by_uri(index, ls5_dataset_w_children):
                                            uri=ls5_dataset_w_children.local_uri)
     assert len(datasets) == 1
 
+    datasets = index.datasets.search_eager(product=ls5_dataset_w_children.type.name,
+                                           uri='file:///x/yz')
+    assert len(datasets) == 0
+
 
 def test_search_conflicting_types(index, pseudo_ls8_dataset, pseudo_ls8_type):
     # Should return no results.
