@@ -201,3 +201,60 @@ def test_geobox():
         assert abs(resolution[0]) > abs(geobox.extent.boundingbox.right - polygon.boundingbox.right)
         assert abs(resolution[1]) > abs(geobox.extent.boundingbox.top - polygon.boundingbox.top)
         assert abs(resolution[1]) > abs(geobox.extent.boundingbox.bottom - polygon.boundingbox.bottom)
+
+
+def test_wrap_dateline():
+    sinus_crs = geometry.CRS("""PROJCS["unnamed",
+GEOGCS["Unknown datum based upon the custom spheroid",
+DATUM["Not specified (based on custom spheroid)", SPHEROID["Custom spheroid",6371007.181,0]],
+PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],
+PROJECTION["Sinusoidal"],
+PARAMETER["longitude_of_center",0],
+PARAMETER["false_easting",0],
+PARAMETER["false_northing",0],
+UNIT["Meter",1]]""")
+    albers_crs = geometry.CRS('EPSG:3577')
+    geog_crs = geometry.CRS('EPSG:4326')
+
+    wrap = geometry.polygon([(12231455.716333, -5559752.598333),
+                             (12231455.716333, -4447802.078667),
+                             (13343406.236, -4447802.078667),
+                             (13343406.236, -5559752.598333),
+                             (12231455.716333, -5559752.598333)], crs=sinus_crs)
+    wrapped = wrap.to_crs(geog_crs)
+    assert wrapped.type == 'Polygon'
+    wrapped = wrap.to_crs(geog_crs, wrapdateline=True)
+    # assert wrapped.type == 'MultiPolygon' TODO: these cases are quite hard to implement.
+    # hopefully GDAL's CutGeometryOnDateLineAndAddToMulti will be available through py API at some point
+
+    wrap = geometry.polygon([(13343406.236, -5559752.598333),
+                             (13343406.236, -4447802.078667),
+                             (14455356.755667, -4447802.078667),
+                             (14455356.755667, -5559752.598333),
+                             (13343406.236, -5559752.598333)], crs=sinus_crs)
+    wrapped = wrap.to_crs(geog_crs)
+    assert wrapped.type == 'Polygon'
+    wrapped = wrap.to_crs(geog_crs, wrapdateline=True)
+    # assert wrapped.type == 'MultiPolygon' TODO: same as above
+
+    wrap = geometry.polygon([(14455356.755667, -5559752.598333),
+                             (14455356.755667, -4447802.078667),
+                             (15567307.275333, -4447802.078667),
+                             (15567307.275333, -5559752.598333),
+                             (14455356.755667, -5559752.598333)], crs=sinus_crs)
+    wrapped = wrap.to_crs(geog_crs)
+    assert wrapped.type == 'Polygon'
+    wrapped = wrap.to_crs(geog_crs, wrapdateline=True)
+    # assert wrapped.type == 'MultiPolygon' TODO: same as above
+
+    wrap = geometry.polygon([(3658653.1976781483, -4995675.379595791),
+                             (4025493.916030875, -3947239.249752495),
+                             (4912789.243100313, -4297237.125269571),
+                             (4465089.861944263, -5313778.16975072),
+                             (3658653.1976781483, -4995675.379595791)], crs=albers_crs)
+    wrapped = wrap.to_crs(geog_crs)
+    assert wrapped.type == 'Polygon'
+    assert wrapped.intersects(geometry.line([(0, -90), (0, 90)], crs=geog_crs))
+    wrapped = wrap.to_crs(geog_crs, wrapdateline=True)
+    assert wrapped.type == 'MultiPolygon'
+    assert not wrapped.intersects(geometry.line([(0, -90), (0, 90)], crs=geog_crs))

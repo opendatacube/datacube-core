@@ -422,7 +422,16 @@ class Geometry(object):
     def simplify(self, tolerance):
         return _make_geom_from_ogr(self._geom.Simplify(tolerance), self.crs)
 
-    def to_crs(self, crs, resolution=None):
+    def to_crs(self, crs, resolution=None, wrapdateline=False):
+        """
+        Convert geometry to a different Coordinate Reference System
+        :param CRS crs: CRS to convert to
+        :param float resolution: Subdivide the geometry such it has no segment longer then the given distance.
+        :param bool wrapdateline: Attempt to gracefully handle geometry that intersects the dateline
+                                  when converting to geographic projections.
+                                  Currently only works in few specific cases (source CRS is smooth over the dateline).
+        :rtype: Geometry
+        """
         if self.crs == crs:
             return self
 
@@ -431,6 +440,11 @@ class Geometry(object):
 
         transform = osr.CoordinateTransformation(self.crs._crs, crs._crs)  # pylint: disable=protected-access
         clone = self._geom.Clone()
+
+        if wrapdateline and crs.geographic:
+            rtransform = osr.CoordinateTransformation(crs._crs, self.crs._crs)  # pylint: disable=protected-access
+            clone = _chop_along_antimeridian(clone, transform, rtransform)
+
         clone.Segmentize(resolution)
         clone.Transform(transform)
 
@@ -463,6 +477,61 @@ class Geometry(object):
 
     def __setstate__(self, state):
         self.__init__(**state)
+
+
+def _dist(x, y):
+    return x*x + y*y
+
+
+def _chop_along_antimeridian(geom, transform, rtransform):
+    """
+    attempt to cut the geometry along the dateline
+    idea borrowed from TransformBeforeAntimeridianToWGS84 with minor mods...
+    """
+    minx, maxx, miny, maxy = geom.GetEnvelope()
+
+    midx, midy = (minx+maxx)/2, (miny+maxy)/2
+    mid_lon, mid_lat, _ = transform.TransformPoint(midx, midy)
+
+    eps = 1.0e-9
+    if not _is_smooth_across_dateline(mid_lat, transform, rtransform, eps):
+        return geom
+
+    left_of_dt = _make_line([(180 - eps, -90), (180 - eps, 90)])
+    left_of_dt.Segmentize(1)
+    left_of_dt.Transform(rtransform)
+
+    if not left_of_dt.Intersects(geom):
+        return geom
+
+    right_of_dt = _make_line([(-180 + eps, -90), (-180 + eps, 90)])
+    right_of_dt.Segmentize(1)
+    right_of_dt.Transform(rtransform)
+
+    chopper = _make_multipolygon([[[(minx, maxy), (minx, miny)] + left_of_dt.GetPoints() + [(minx, maxy)]],
+                                  [[(maxx, maxy), (maxx, miny)] + right_of_dt.GetPoints() + [(maxx, maxy)]]])
+    return geom.Intersection(chopper)
+
+
+def _is_smooth_across_dateline(mid_lat, transform, rtransform, eps):
+    """
+    test whether the CRS is smooth over the dateline
+    idea borrowed from IsAntimeridianProjToWGS84 with minor mods...
+    """
+    left_of_dt_x, left_of_dt_y, _ = rtransform.TransformPoint(180-eps, mid_lat)
+    right_of_dt_x, right_of_dt_y, _ = rtransform.TransformPoint(-180+eps, mid_lat)
+
+    if _dist(right_of_dt_x-left_of_dt_x, right_of_dt_y-left_of_dt_y) > 1:
+        return False
+
+    left_of_dt_lon, left_of_dt_lat, _ = transform.TransformPoint(left_of_dt_x, left_of_dt_y)
+    right_of_dt_lon, right_of_dt_lat, _ = transform.TransformPoint(right_of_dt_x, right_of_dt_y)
+    if (_dist(left_of_dt_lon - 180 + eps, left_of_dt_lat - mid_lat) > 2 * eps or
+            _dist(right_of_dt_lon + 180 - eps, right_of_dt_lat - mid_lat) > 2 * eps):
+        return False
+
+    return True
+
 
 
 ###########################################
