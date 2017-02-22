@@ -21,6 +21,7 @@ from datacube.storage.masking import make_mask
 from datacube.ui import click as ui
 from datacube import Datacube
 from datacube.utils.dates import date_sequence
+from datacube.helpers import ga_pq_fuser
 
 DEFAULT_MEASUREMENTS = ['red', 'green', 'blue']
 
@@ -139,7 +140,7 @@ def compute_mosaic(products, measurements, **parsed_expressions):
 
             pq = dc.load(product=prodname.replace('nbar', 'pq'),
                          group_by='solar_day',
-                         fuse_func=pq_fuser,
+                         fuse_func=ga_pq_fuser,
                          **parsed_expressions)
 
             if len(pq) == 0:
@@ -163,16 +164,6 @@ def compute_mosaic(products, measurements, **parsed_expressions):
     dataset = xr.concat(datasets, dim='time')
 
     return dataset.median(dim='time')
-
-
-def pq_fuser(dest, src):
-    valid_val = (1 << VALID_BIT)
-
-    no_data_dest_mask = ~(dest & valid_val).astype(bool)
-    np.copyto(dest, src, where=no_data_dest_mask)
-
-    both_data_mask = (valid_val & dest & src).astype(bool)
-    np.copyto(dest, src & dest, where=both_data_mask)
 
 
 def write_xarray_to_image(filename, dataset, dtype='uint16'):
