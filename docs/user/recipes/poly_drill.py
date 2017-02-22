@@ -29,7 +29,7 @@ def main():
     shape_file = 'my_shape_file.shp'
     with fiona.open(shape_file) as shapes:
         crs = geometry.CRS(shapes.crs_wkt)
-        first_geometry = next(shapes)['geometry']
+        first_geometry = next(iter(shapes))['geometry']
         geom = geometry.Geometry(first_geometry, crs=crs)
 
     query = {
