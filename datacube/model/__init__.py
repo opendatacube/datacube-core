@@ -449,15 +449,6 @@ def _polygon_from_boundingbox(boundingbox, crs=None):
 GeoPolygon.from_boundingbox = _polygon_from_boundingbox
 
 
-def _polygon_from_sources_extents(sources, geobox):
-    sources_union = geometry.unary_union(source.extent.to_crs(geobox.crs) for source in sources)
-    valid_data = geobox.extent.intersection(sources_union)
-    return valid_data
-
-
-GeoPolygon.from_sources_extents = _polygon_from_sources_extents
-
-
 class FlagsDefinition(object):
     def __init__(self, flags_def_dict):
         self.flags_def_dict = flags_def_dict
