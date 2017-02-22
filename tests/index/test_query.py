@@ -25,10 +25,21 @@ _fields = {
 def test_parse_simple_expression():
     assert {'platform': 4} == parse_expressions('platform = 4')
     assert {'platform': 'LANDSAT_8'} == parse_expressions('platform = "LANDSAT_8"')
+    assert {'platform': 'LANDSAT_8'} == parse_expressions('platform = LANDSAT_8')
+    assert {'platform': 'LAND SAT_8'} == parse_expressions('platform = "LAND SAT_8"')
 
     between_exp = {'lat': Range(4, 6)}
     assert between_exp == parse_expressions('4<lat<6')
     assert between_exp == parse_expressions('6 > lat > 4')
+
+
+def test_parse_uri_expression():
+    assert {'uri': 'file:///f/data/test.nc'} == parse_expressions('uri = file:///f/data/test.nc')
+    assert {'uri': 'file:///f/data/test.nc'} == parse_expressions('uri = "file:///f/data/test.nc"')
+    assert {'uri': 'file:///f/data/test me.nc'} == parse_expressions('uri = "file:///f/data/test me.nc"')
+    assert {'uri': 'file:///C:/f/data/test.nc'} == parse_expressions('uri = file:///C:/f/data/test.nc')
+    assert {'uri': 'file:///C:/f/data/test.nc'} == parse_expressions('uri = "file:///C:/f/data/test.nc"')
+    assert {'uri': 'file:///C:/f/data/test me.nc'} == parse_expressions('uri = "file:///C:/f/data/test me.nc"')
 
 
 def test_parse_multiple_simple_expressions():
