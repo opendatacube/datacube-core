@@ -4,6 +4,7 @@ Tools for masking data based on a bit-mask variable with attached definition.
 The main functions are `make_mask(variable)` `describe_flags(variable)`
 """
 import collections
+import warnings
 
 from datacube.utils import generate_table
 
@@ -116,6 +117,15 @@ def valid_data_mask(data):
 
 def mask_valid_data(data, keep_attrs=True):
     """
+    Deprecated. This function was poorly named. It is now available as `mask_invalid_data`.
+    """
+    warnings.warn("`mask_valid_data` has been renamed to `mask_invalid_data`. Please use that instead.",
+                  DeprecationWarning)
+    return mask_invalid_data(data, keep_attrs=keep_attrs)
+
+
+def mask_invalid_data(data, keep_attrs=True):
+    """
     Sets all `nodata` values to ``nan``.
 
     This will convert converts numeric data to type `float`.
@@ -126,7 +136,7 @@ def mask_valid_data(data, keep_attrs=True):
     """
     if isinstance(data, Dataset):
         # Pass keep_attrs as a positional arg to the DataArray func
-        return data.apply(mask_valid_data, keep_attrs=keep_attrs, args=(keep_attrs,))
+        return data.apply(mask_invalid_data, keep_attrs=keep_attrs, args=(keep_attrs,))
 
     if isinstance(data, DataArray):
         if 'nodata' not in data.attrs:
@@ -136,7 +146,7 @@ def mask_valid_data(data, keep_attrs=True):
             out_data_array.attrs = data.attrs
         return out_data_array
 
-    raise TypeError('valid_data_mask not supported for type %s', type(data))
+    raise TypeError('mask_invalid_data not supported for type %s', type(data))
 
 
 def create_mask_value(bits_def, **flags):
