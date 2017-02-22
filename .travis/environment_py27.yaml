@@ -1,0 +1,30 @@
+name: agdc
+dependencies:
+- python=2.7
+- pyyaml
+- sqlalchemy
+- python-dateutil
+- jsonschema
+- cachetools
+- numpy
+- numexpr
+- rasterio
+- singledispatch
+- netcdf4
+- psycopg2
+- gdal
+- dask
+- xarray
+- pylint # testing
+- pep8 # testing
+- fiona # movie generator app
+- mock # testing
+- hypothesis # testing
+- matplotlib # pixel drill app
+- pathlib
+- compliance-checker
+- pip:
+  - pypeg2
+  - pytest-cov # testing
+  - pytest-logging
+  - pytest-faulthandler
