@@ -7,7 +7,7 @@ v1.2.2
 ------
 
  - Added `--allow-exclusive-lock/--forbid-exclusive-lock` flag to `product add/update` cli to
- allow index to be locked from other users while updating (might speed the operation up)
+   allow index to be locked from other users while updating (might speed the operation up)
 
  - {version} can now be used in ingester filename patterns
 
