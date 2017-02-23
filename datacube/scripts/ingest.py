@@ -97,6 +97,7 @@ def get_filename(config, tile_index, sources, **kwargs):
         tile_index=tile_index,
         start_time=to_datetime(sources.time.values[0]).strftime(time_format),
         end_time=to_datetime(sources.time.values[-1]).strftime(time_format),
+        version=config['taskfile_version'],
         **kwargs))
 
 
@@ -187,7 +188,7 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
         fuse_func = {'copy': None}[config.get(FUSER_KEY, 'copy')]
         data = Datacube.load_data(tile.sources, tile.geobox, measurements, fuse_func=fuse_func)
     nudata = data.rename(namemap)
-    file_path = get_filename(config, tile_index, tile.sources, version=config['taskfile_version'])
+    file_path = get_filename(config, tile_index, tile.sources)
 
     def _make_dataset(labels, sources):
         return make_dataset(product=output_type,
