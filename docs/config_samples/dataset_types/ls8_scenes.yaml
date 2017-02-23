@@ -364,7 +364,7 @@ measurements:
           bits: [0]
           description: Cirrus cloud
           values: {0: false, 1: true}
-        cirrus_cloud:
+        cloud:
           bits: [1]
           description: Cloud
           values: {0: false, 1: true}
