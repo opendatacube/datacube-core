@@ -156,7 +156,7 @@ def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, re
 
 
 @contextmanager
-def ignore_if(ignore_errors):
+def ignore_exceptions_if(ignore_errors):
     """Ignore Exceptions raised within this block if ignore_errors is True"""
     if ignore_errors:
         try:
@@ -195,14 +195,14 @@ def reproject_and_fuse(sources, destination, dst_transform, dst_projection, dst_
     if len(sources) == 0:
         return destination
     elif len(sources) == 1:
-        with ignore_if(skip_broken_datasets):
+        with ignore_exceptions_if(skip_broken_datasets):
             read_from_source(sources[0], destination, dst_transform, dst_nodata, dst_projection, resampling)
         return destination
     else:
         # Muitiple sources, we need to fuse them together into a single array
         buffer_ = numpy.empty(destination.shape, dtype=destination.dtype)
         for source in sources:
-            with ignore_if(skip_broken_datasets):
+            with ignore_exceptions_if(skip_broken_datasets):
                 read_from_source(source, buffer_, dst_transform, dst_nodata, dst_projection, resampling)
                 fuse_func(destination, buffer_)
 
