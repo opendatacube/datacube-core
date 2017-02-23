@@ -33,26 +33,32 @@ try:
 except ImportError:
     pass
 
-DATASET_URI_FIELD = DATASET_LOCATION.c.uri_scheme + ':' + DATASET_LOCATION.c.uri_body
+
+def _dataset_uri_field(table):
+    return table.c.uri_scheme + ':' + table.c.uri_body
+
 # Fields for selecting dataset with the latest local uri
+# Need to alias the table otherwise we can get name collisions when joining with dataset_location outside of this query
+SELECTED_DATASET_LOCATION = DATASET_LOCATION.alias('selected_dataset_location')
 _DATASET_SELECT_W_LOCAL = (
     DATASET,
     # The most recent file uri. We may want more advanced path selection in the future...
     select([
-        DATASET_URI_FIELD,
+        _dataset_uri_field(SELECTED_DATASET_LOCATION),
     ]).where(
         and_(
-            DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
-            DATASET_LOCATION.c.uri_scheme == 'file'
+            SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
+            SELECTED_DATASET_LOCATION.c.uri_scheme == 'file'
         )
     ).order_by(
-        DATASET_LOCATION.c.added.desc()
+        SELECTED_DATASET_LOCATION.c.added.desc()
     ).limit(1).label('uri')
 )
+
 # Fields for selecting dataset with a single joined uri (specify join yourself in your query)
 _DATASET_SELECT_W_URI = (
     DATASET,
-    DATASET_URI_FIELD.label('uri')
+    _dataset_uri_field(DATASET_LOCATION).label('uri')
 )
 
 PGCODE_UNIQUE_CONSTRAINT = '23505'
@@ -108,7 +114,6 @@ def get_native_fields():
             'ID of a metadata type',
             DATASET.c.metadata_type_ref
         ),
-
         # Fields that can affect row selection
 
         # Note that this field is a single uri: selecting it will result in one-result per uri.
@@ -117,7 +122,7 @@ def get_native_fields():
             'uri',
             "Dataset URI",
             DATASET_LOCATION.c.uri_body,
-            alchemy_expression=DATASET_URI_FIELD,
+            alchemy_expression=_dataset_uri_field(DATASET_LOCATION),
             affects_row_selection=True
         ),
     }
@@ -736,7 +741,7 @@ class PostgresDbAPI(object):
             record[0]
             for record in self._connection.execute(
                 select([
-                    DATASET_URI_FIELD
+                    _dataset_uri_field(DATASET_LOCATION)
                 ]).where(
                     DATASET_LOCATION.c.dataset_ref == dataset_id
                 ).order_by(

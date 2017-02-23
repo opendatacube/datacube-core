@@ -32,6 +32,9 @@ NUMBER = re.compile(r"[-+]?(\d*\.\d+|\d+\.\d*|\d+)")
 LIMITED_STRING = re.compile(r"[a-zA-Z][\w\._-]*")
 # Inside string quotation marks. Kept simple. We're not supporting escapes or much else yet...
 STRING_CONTENTS = re.compile(r"[\w\s\._-]*")
+# URI
+URI_CONTENTS = re.compile(r"[a-z0-9+.-]+://([:/\w\._-])*")
+URI_CONTENTS_WITH_SPACE = re.compile(r"[a-z0-9+.-]+://([:/\s\w\._-])*")
 
 # Either a day '2016-02-20' or a month '2016-02'
 DATE = re.compile(r"\d{4}-\d{2}(-\d{2})?")
@@ -53,8 +56,10 @@ class StringValue(Expr):
         self.value = value
 
     grammar = [
+        attr(u'value', URI_CONTENTS),
         attr(u'value', LIMITED_STRING),
-        (u'"', attr(u'value', STRING_CONTENTS), u'"')
+        (u'"', attr(u'value', URI_CONTENTS_WITH_SPACE), u'"'),
+        (u'"', attr(u'value', STRING_CONTENTS), u'"'),
     ]
 
     def __str__(self):

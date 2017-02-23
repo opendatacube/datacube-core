@@ -540,6 +540,9 @@ class ProductResource(object):
                 if not field:
                     # This type doesn't have that field, so it cannot match.
                     break
+                if not hasattr(field, 'extract'):
+                    # non-document/native field
+                    continue
                 if field.extract(type_.metadata_doc) is None:
                     # It has this field but it's not defined in the type doc, so it's unmatchable.
                     continue
