@@ -178,8 +178,8 @@ def process_result(index, result):
     for dataset in datasets.values:
         _LOG.info('Updating dataset location: %s', dataset.local_path)
         old_uri = dataset.local_uri
-        index.datasets.add_location(dataset, new_uri)
-        index.datasets.remove_location(dataset, old_uri)  # TODO: archive_location
+        index.datasets.add_location(dataset.id, new_uri)
+        index.datasets.remove_location(dataset.id, old_uri)  # TODO: archive_location
 
 
 def do_nothing(*args, **kwargs):
