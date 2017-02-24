@@ -161,7 +161,7 @@ def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=Fal
 
     sql = [
         'create role %s nologin inherit' % name,
-        'createuser' if add_user else 'nocreateuser',
+        'createrole' if add_user else 'nocreaterole',
         'createdb' if create_db else 'nocreatedb'
     ]
     if inherits_from:
