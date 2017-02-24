@@ -840,24 +840,32 @@ class DatasetResource(object):
             out.update(type_.metadata_type.dataset_fields)
         return out
 
-    def get_locations(self, dataset):
+    def get_locations(self, id_):
         """
-        :param datacube.model.Dataset dataset: dataset
+        :param typing.Union[UUID, str] id_: dataset id
         :rtype: list[str]
         """
-        with self._db.connect() as connection:
-            return connection.get_locations(dataset.id)
+        if isinstance(id_, Dataset):
+            warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
+            id_ = id_.id
 
-    def add_location(self, dataset, uri):
+        with self._db.connect() as connection:
+            return connection.get_locations(id_)
+
+    def add_location(self, id_, uri):
         """
         Add a location to the dataset if it doesn't already exist.
-        :param datacube.model.Dataset dataset: dataset
+        :param typing.Union[UUID, str] id_: dataset id
         :param str uri: fully qualified uri
         :returns bool: Was one added?
         """
+        if isinstance(id_, Dataset):
+            warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
+            id_ = id_.id
+
         with self._db.connect() as connection:
             try:
-                connection.ensure_dataset_location(dataset.id, uri)
+                connection.ensure_dataset_location(id_, uri)
                 return True
             except DuplicateRecordError:
                 return False
@@ -866,15 +874,19 @@ class DatasetResource(object):
         with self._db.connect() as connection:
             return (self._make(row) for row in connection.get_datasets_for_location(uri))
 
-    def remove_location(self, dataset, uri):
+    def remove_location(self, id_, uri):
         """
         Remove a location from the dataset if it exists.
-        :param datacube.model.Dataset dataset: dataset
+        :param typing.Union[UUID, str] id_: dataset id
         :param str uri: fully qualified uri
         :returns bool: Was one removed?
         """
+        if isinstance(id_, Dataset):
+            warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
+            id_ = id_.id
+
         with self._db.connect() as connection:
-            was_removed = connection.remove_location(dataset.id, uri)
+            was_removed = connection.remove_location(id_, uri)
             return was_removed
 
     def _make(self, dataset_res, full_info=False):

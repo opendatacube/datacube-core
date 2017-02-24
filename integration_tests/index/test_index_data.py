@@ -250,28 +250,28 @@ def test_index_dataset_with_location(index, default_metadata_type):
     # Ingesting again should have no effect.
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
-    locations = index.datasets.get_locations(dataset)
+    locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 1
     # Remove the location
-    was_removed = index.datasets.remove_location(dataset, first_file.as_uri())
+    was_removed = index.datasets.remove_location(dataset.id, first_file.as_uri())
     assert was_removed
-    was_removed = index.datasets.remove_location(dataset, first_file.as_uri())
+    was_removed = index.datasets.remove_location(dataset.id, first_file.as_uri())
     assert not was_removed
-    locations = index.datasets.get_locations(dataset)
+    locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 0
     # Re-add the location
-    was_added = index.datasets.add_location(dataset, first_file.as_uri())
+    was_added = index.datasets.add_location(dataset.id, first_file.as_uri())
     assert was_added
-    was_added = index.datasets.add_location(dataset, first_file.as_uri())
+    was_added = index.datasets.add_location(dataset.id, first_file.as_uri())
     assert not was_added
-    locations = index.datasets.get_locations(dataset)
+    locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 1
 
     # Ingesting with a new path should add the second one too.
     dataset.local_uri = second_file.as_uri()
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
-    locations = index.datasets.get_locations(dataset)
+    locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 2
     # Newest to oldest.
     assert locations == [second_file.as_uri(), first_file.as_uri()]
@@ -282,7 +282,7 @@ def test_index_dataset_with_location(index, default_metadata_type):
     dataset.local_uri = None
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
-    locations = index.datasets.get_locations(dataset)
+    locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 2
     # Newest to oldest.
     assert locations == [second_file.as_uri(), first_file.as_uri()]
