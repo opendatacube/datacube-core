@@ -1,3 +1,5 @@
+.. _database_setup:
+
 Database Setup
 ==============
 

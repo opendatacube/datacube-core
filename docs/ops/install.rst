@@ -15,4 +15,5 @@ These installation instructions are tested on:
 
    windows
    ubuntu
+   centos
    macosx
