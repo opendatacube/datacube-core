@@ -46,7 +46,8 @@ def _ensure_view(conn, fields, name, replace_existing, where_expression):
             tables.CreateView(
                 view_name,
                 select(
-                    [field.alchemy_expression.label(field.name) for field in fields.values()]
+                    [field.alchemy_expression.label(field.name) for field in fields.values()
+                     if not field.affects_row_selection]
                 ).select_from(
                     tables.DATASET.join(tables.DATASET_TYPE).join(tables.METADATA_TYPE)
                 ).where(where_expression)
