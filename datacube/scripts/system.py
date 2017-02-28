@@ -30,15 +30,19 @@ def system():
     help="Include user roles and grants. (default: true)"
 )
 @click.option(
+    '--recreate-views/--no-recreate-views', is_flag=True, default=True,
+    help="Recreate dynamic views"
+)
+@click.option(
     '--rebuild/--no-rebuild', is_flag=True, default=False,
-    help="Rebuild dynamic indexes & views (caution: slow)"
+    help="Rebuild all dynamic fields (caution: slow)"
 )
 @click.option(
     '--lock-table/--no-lock-table', is_flag=True, default=False,
     help="Allow table to be locked (eg. while creating missing indexes)"
 )
 @ui.pass_index(expect_initialised=False)
-def database_init(index, default_types, init_users, rebuild, lock_table):
+def database_init(index, default_types, init_users, recreate_views, rebuild, lock_table):
     echo('Initialising database...')
 
     was_created = index.init_db(with_default_types=default_types,
@@ -52,7 +56,8 @@ def database_init(index, default_types, init_users, rebuild, lock_table):
     echo('Checking indexes/views.')
     index.metadata_types.check_field_indexes(
         allow_table_lock=lock_table,
-        rebuild_all=rebuild
+        rebuild_indexes=rebuild,
+        rebuild_views=recreate_views or rebuild,
     )
     echo('Done.')
 
