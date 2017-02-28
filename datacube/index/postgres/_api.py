@@ -633,7 +633,8 @@ class PostgresDbAPI(object):
 
         # Initialise search fields.
         self._setup_dataset_type_fields(type_id, name, search_fields, definition['metadata'],
-                                        concurrently=concurrently)
+                                        concurrently=concurrently,
+                                        rebuild_view=True)
         return type_id
 
     def add_metadata_type(self, name, definition, concurrently=False):
@@ -663,13 +664,15 @@ class PostgresDbAPI(object):
 
         search_fields = get_dataset_fields(definition['dataset']['search_fields'])
         self._setup_metadata_type_fields(
-            type_id, name, search_fields, concurrently=concurrently
+            type_id, name, search_fields,
+            concurrently=concurrently,
+            rebuild_views=True,
         )
 
         return type_id
 
-    def check_dynamic_fields(self, concurrently=False, rebuild_all=False):
-        _LOG.info('Checking dynamic views/indexes. (rebuild all = %s)', rebuild_all)
+    def check_dynamic_fields(self, concurrently=False, rebuild_views=False, rebuild_indexes=False):
+        _LOG.info('Checking dynamic views/indexes. (rebuild views=%s, indexes=%s)', rebuild_views, rebuild_indexes)
 
         search_fields = {}
 
@@ -680,17 +683,21 @@ class PostgresDbAPI(object):
                 metadata_type['id'],
                 metadata_type['name'],
                 fields,
-                rebuild_all, concurrently
+                rebuild_indexes=rebuild_indexes,
+                rebuild_views=rebuild_views,
+                concurrently=concurrently,
             )
 
-    def _setup_metadata_type_fields(self, id_, name, fields, rebuild_all=False, concurrently=True):
+    def _setup_metadata_type_fields(self, id_, name, fields,
+                                    rebuild_indexes=False, rebuild_views=False, concurrently=True):
         # Metadata fields are no longer used (all queries are per-dataset-type): exclude all.
         # This will have the effect of removing any old indexes that still exist.
         exclude_fields = tuple(fields)
 
         dataset_filter = and_(DATASET.c.archived == None, DATASET.c.metadata_type_ref == id_)
         dynamic.check_dynamic_fields(self._connection, concurrently, dataset_filter,
-                                     exclude_fields, fields, name, rebuild_all)
+                                     exclude_fields, fields, name,
+                                     rebuild_indexes=rebuild_indexes, rebuild_view=rebuild_views)
 
         for dataset_type in self._get_dataset_types_for_metadata_type(id_):
             self._setup_dataset_type_fields(
@@ -698,17 +705,19 @@ class PostgresDbAPI(object):
                 dataset_type['name'],
                 fields,
                 dataset_type['definition']['metadata'],
-                rebuild_all,
-                concurrently
+                rebuild_view=rebuild_views,
+                rebuild_indexes=rebuild_indexes,
+                concurrently=concurrently
             )
 
     def _setup_dataset_type_fields(self, id_, name, fields, metadata_doc,
-                                   rebuild_all=False, concurrently=True):
+                                   rebuild_indexes=False, rebuild_view=False, concurrently=True):
         dataset_filter = and_(DATASET.c.archived == None, DATASET.c.dataset_type_ref == id_)
         excluded_field_names = tuple(self._get_active_field_names(fields, metadata_doc))
 
         dynamic.check_dynamic_fields(self._connection, concurrently, dataset_filter,
-                                     excluded_field_names, fields, name, rebuild_all)
+                                     excluded_field_names, fields, name,
+                                     rebuild_indexes=rebuild_indexes, rebuild_view=rebuild_view)
 
     @staticmethod
     def _get_active_field_names(fields, metadata_doc):

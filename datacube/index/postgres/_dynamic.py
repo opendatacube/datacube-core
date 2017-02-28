@@ -61,7 +61,8 @@ def _ensure_view(conn, fields, name, replace_existing, where_expression):
         conn.execute('drop view %s' % legacy_name)
 
 
-def check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_names, fields, name, rebuild_all):
+def check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_names, fields, name,
+                         rebuild_indexes=False, rebuild_view=False):
     """
     Check that we have expected indexes and views for the given fields
     """
@@ -85,7 +86,7 @@ def check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_name
                 [fields.get(f) for f in composite_names],
                 name, dataset_filter,
                 concurrently=concurrently,
-                replace_existing=rebuild_all,
+                replace_existing=rebuild_indexes,
                 # If all fields were excluded individually it should be removed.
                 should_exist=not all_are_excluded,
                 index_type='gist'
@@ -101,10 +102,10 @@ def check_dynamic_fields(conn, concurrently, dataset_filter, excluded_field_name
             name, dataset_filter,
             should_exist=field.indexed and (field.name not in all_exclusions),
             concurrently=concurrently,
-            replace_existing=rebuild_all,
+            replace_existing=rebuild_indexes,
         )
     # A view of all fields
-    _ensure_view(conn, fields, name, rebuild_all, dataset_filter)
+    _ensure_view(conn, fields, name, rebuild_view, dataset_filter)
 
 
 def _check_field_index(conn, fields, name_prefix, filter_expression,
