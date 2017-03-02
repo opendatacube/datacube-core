@@ -13,6 +13,7 @@ These installation instructions are tested on:
 .. toctree::
    :maxdepth: 2
 
+   conda
    windows
    ubuntu
    macosx
