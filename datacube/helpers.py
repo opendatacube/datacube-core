@@ -21,9 +21,9 @@ def write_geotiff(filename, dataset, time_index=None, profile_override=None):
     """
     Write an xarray dataset to a geotiff
 
-    :attr bands: ordered list of dataset names
-    :attr time_index: time index to write to file
+    :param filename: Output filename
     :attr dataset: xarray dataset containing multiple bands to write to file
+    :attr time_index: time index to write to file
     :attr profile_override: option dict, overrides rasterio file creation options.
     """
     profile_override = profile_override or {}
@@ -42,7 +42,7 @@ def write_geotiff(filename, dataset, time_index=None, profile_override=None):
     })
     profile.update(profile_override)
 
-    with rasterio.open(filename, 'w', **profile) as dest:
+    with rasterio.open(str(filename), 'w', **profile) as dest:
         for bandnum, data in enumerate(dataset.data_vars.values(), start=1):
             dest.write(data.isel(time=time_index).data, bandnum)
 
