@@ -114,6 +114,11 @@ def get_native_fields():
             'ID of a metadata type',
             DATASET.c.metadata_type_ref
         ),
+        'metadata_doc': NativeField(
+            'metadata_doc',
+            'Full metadata document',
+            DATASET.c.metadata
+        ),
         # Fields that can affect row selection
 
         # Note that this field is a single uri: selecting it will result in one-result per uri.

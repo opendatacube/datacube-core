@@ -476,6 +476,7 @@ def test_search_or_expressions(index,
 
 
 def test_search_returning(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls5_scene_dataset_types):
+    # type: (Index, DatasetType, Dataset, list) -> None
     """
     :type index: datacube.index._api.Index
     """
@@ -492,6 +493,16 @@ def test_search_returning(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls
     # TODO: output nicer types?
     assert path_range == NumericRange(Decimal('116'), Decimal('116'), '[]')
     assert sat_range == NumericRange(Decimal('74'), Decimal('84'), '[]')
+
+    results = list(index.datasets.search_returning(
+        ('id', 'metadata_doc',),
+        platform='LANDSAT_8',
+        instrument='OLI_TIRS',
+    ))
+    assert len(results) == 1
+    id, document = results[0]
+    assert id == pseudo_ls8_dataset.id
+    assert document == pseudo_ls8_dataset.metadata_doc
 
 
 def test_search_returning_rows(index, pseudo_ls8_type,
@@ -1146,8 +1157,8 @@ def test_csv_search_via_cli(global_integration_cli_args, pseudo_ls8_type, pseudo
 
 
 # Headers are currently in alphabetical order.
-_EXPECTED_OUTPUT_HEADER = 'dataset_type_id,gsi,id,instrument,lat,lon,metadata_type,metadata_type_id,orbit,' \
-                          'platform,product,product_type,sat_path,sat_row,time,uri'
+_EXPECTED_OUTPUT_HEADER = 'dataset_type_id,gsi,id,instrument,lat,lon,metadata_doc,metadata_type,metadata_type_id,' \
+                          'orbit,platform,product,product_type,sat_path,sat_row,time,uri'
 
 
 def test_csv_structure(global_integration_cli_args, pseudo_ls8_type, ls5_nbar_gtiff_type,
