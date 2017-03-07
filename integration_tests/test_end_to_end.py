@@ -4,6 +4,7 @@ import shutil
 from subprocess import call
 
 import numpy
+import rasterio
 
 import pytest
 from click.testing import CliRunner
@@ -173,12 +174,13 @@ def check_open_with_dc(index):
     assert 'variable' in data_array.dims
     assert (data_array != -999).any()
 
-    lazy_data_array = dc.load(product='ls5_nbar_albers', latitude=(-35, -36), longitude=(149, 150),
-                              stack='variable', dask_chunks={'time': 1, 'x': 1000, 'y': 1000})
-    assert lazy_data_array.data.dask
-    assert lazy_data_array.ndim == data_array.ndim
-    assert 'variable' in lazy_data_array.dims
-    assert lazy_data_array[1, :2, 950:1050, 950:1050].equals(data_array[1, :2, 950:1050, 950:1050])
+    with rasterio.Env():
+        lazy_data_array = dc.load(product='ls5_nbar_albers', latitude=(-35, -36), longitude=(149, 150),
+                                  stack='variable', dask_chunks={'time': 1, 'x': 1000, 'y': 1000})
+        assert lazy_data_array.data.dask
+        assert lazy_data_array.ndim == data_array.ndim
+        assert 'variable' in lazy_data_array.dims
+        assert lazy_data_array[1, :2, 950:1050, 950:1050].equals(data_array[1, :2, 950:1050, 950:1050])
 
     dataset = dc.load(product='ls5_nbar_albers', measurements=['blue'])
     assert dataset['blue'].size
@@ -186,12 +188,13 @@ def check_open_with_dc(index):
     dataset = dc.load(product='ls5_nbar_albers', latitude=(-35.2, -35.3), longitude=(149.1, 149.2))
     assert dataset['blue'].size
 
-    lazy_dataset = dc.load(product='ls5_nbar_albers', latitude=(-35.2, -35.3), longitude=(149.1, 149.2),
-                           dask_chunks={'time': 1})
-    assert lazy_dataset['blue'].data.dask
-    assert lazy_dataset.blue[:2, :100, :100].equals(dataset.blue[:2, :100, :100])
-    assert lazy_dataset.isel(time=slice(0, 2), x=slice(950, 1050), y=slice(950, 1050)).equals(
-        dataset.isel(time=slice(0, 2), x=slice(950, 1050), y=slice(950, 1050)))
+    with rasterio.Env():
+        lazy_dataset = dc.load(product='ls5_nbar_albers', latitude=(-35.2, -35.3), longitude=(149.1, 149.2),
+                               dask_chunks={'time': 1})
+        assert lazy_dataset['blue'].data.dask
+        assert lazy_dataset.blue[:2, :100, :100].equals(dataset.blue[:2, :100, :100])
+        assert lazy_dataset.isel(time=slice(0, 2), x=slice(950, 1050), y=slice(950, 1050)).equals(
+            dataset.isel(time=slice(0, 2), x=slice(950, 1050), y=slice(950, 1050)))
 
     dataset_like = dc.load(product='ls5_nbar_albers', measurements=['blue'], like=dataset)
     assert (dataset.blue == dataset_like.blue).all()
