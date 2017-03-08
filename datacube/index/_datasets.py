@@ -901,6 +901,19 @@ class DatasetResource(object):
             was_removed = connection.remove_location(id_, uri)
             return was_removed
 
+    def archive_location(self, id_, uri):
+        """
+        Archive a location of the dataset if it exists.
+        :param typing.Union[UUID, str] id_: dataset id
+        :param str uri: fully qualified uri
+        """
+        if isinstance(id_, Dataset):
+            warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
+            id_ = id_.id
+
+        with self._db.connect() as connection:
+            connection.archive_location(id_, uri)
+
     def _make(self, dataset_res, full_info=False):
         """
         :rtype datacube.model.Dataset

@@ -91,6 +91,9 @@ DATASET_LOCATION = Table(
     Column('added', DateTime(timezone=True), server_default=func.now(), nullable=False),
     Column('added_by', _sql.PGNAME, server_default=func.current_user(), nullable=False),
 
+    # Date it was archived. Null for active locations.
+    Column('archived', DateTime(timezone=True), default=None, nullable=True),
+
     UniqueConstraint('uri_scheme', 'uri_body', 'dataset_ref'),
 )
 

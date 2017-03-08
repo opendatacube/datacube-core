@@ -757,7 +757,7 @@ class PostgresDbAPI(object):
                 select([
                     _dataset_uri_field(DATASET_LOCATION)
                 ]).where(
-                    DATASET_LOCATION.c.dataset_ref == dataset_id
+                    and_(DATASET_LOCATION.c.dataset_ref == dataset_id, DATASET_LOCATION.c.archived == None)
                 ).order_by(
                     DATASET_LOCATION.c.added.desc()
                 )
@@ -781,6 +781,18 @@ class PostgresDbAPI(object):
             )
         )
         return res.rowcount > 0
+
+    def archive_location(self, dataset_id, uri):
+        scheme, body = _split_uri(uri)
+        self._connection.execute(
+            DATASET_LOCATION.update().where(
+                DATASET_LOCATION.c.dataset_ref == dataset_id
+            ).where(
+                DATASET_LOCATION.c.archived == None
+            ).values(
+                archived=func.now()
+            )
+        )
 
     def __repr__(self):
         return "PostgresDb<connection={!r}>".format(self._connection)
