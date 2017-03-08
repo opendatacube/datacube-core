@@ -211,8 +211,9 @@ def check_open_with_dc(index):
 
     products_df = dc.list_products()
     assert len(products_df)
-    assert len(products_df[products_df['name'].isin(['ls5_nbar_albers'])])
-    assert len(products_df[products_df['name'].isin(['ls5_pq_albers'])])
+    assert 'ls5_nbar_albers' in products_df.index
+    assert 'ls5_pq_albers' in products_df.index
+    assert 'fake_product' not in products_df.index
 
     assert len(dc.list_measurements())
 
