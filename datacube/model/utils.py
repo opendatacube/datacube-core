@@ -24,7 +24,8 @@ def machine_info():
     info = {
         'software_versions': {
             'python': {'version': sys.version},
-            'datacube': {'version': datacube.__version__, 'repo_url': 'https://github.com/data-cube/agdc-v2.git'},
+            'datacube': {'version': datacube.__version__,
+                         'repo_url': 'https://github.com/opendatacube/datacube-core.git'},
         },
         'hostname': platform.node(),
     }

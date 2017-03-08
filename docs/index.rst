@@ -66,7 +66,7 @@ Support
 
 The best way to get help with the Data Cube is to open an issue on Github_.
 
-.. _Github: http://github.com/data-cube/agdc-v2/issues
+.. _Github: http://github.com/opendatacube/datacube-core/issues
 
 
 Indices and tables

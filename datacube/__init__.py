@@ -4,7 +4,7 @@ Datacube
 
 Provides access to multi-dimensional data, with a focus on Earth observations data such as LANDSAT.
 
-To use this module, see the `Developer Guide <http://agdc-v2.readthedocs.io/en/stable/dev/developer.html>`_.
+To use this module, see the `Developer Guide <http://datacube-core.readthedocs.io/en/stable/dev/developer.html>`_.
 
 The main class to access the datacube is :py:class:`datacube.Datacube`.
 

@@ -31,7 +31,7 @@ Developer setup
 
 1. Clone:
 
-   -  ``git clone https://github.com/datacube-core/agdc-v2.git``
+   -  ``git clone https://github.com/opendatacube/datacube-core.git``
 
 2. Install the native libraries for `GDAL <http://www.gdal.org/>`__ &
    NetCDF4.

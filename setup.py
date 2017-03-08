@@ -21,7 +21,7 @@ setup(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
 
-    url='https://github.com/data-cube/agdc-v2',
+    url='https://github.com/opendatacube/datacube-core',
     author='AGDC Collaboration',
     maintainer='AGDC Collaboration',
     maintainer_email='',
