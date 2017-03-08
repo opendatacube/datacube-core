@@ -14,7 +14,7 @@ systems.
 Documentation
 =============
 
-See the `user guide <http://datacube-core.readthedocs.org/en/develop/>`__ for
+See the `user guide <http://agdc-v2.readthedocs.io/en/develop/>`__ for
 installation & usage of the datacube, and for documentation of the API.
 
 Requirements
