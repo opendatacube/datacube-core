@@ -188,7 +188,7 @@ def process_result(index, result):
         _LOG.info('Updating dataset location: %s', dataset.local_path)
         old_uri = dataset.local_uri
         index.datasets.add_location(dataset.id, new_uri)
-        index.datasets.remove_location(dataset.id, old_uri)  # TODO: archive_location
+        index.datasets.archive_location(dataset.id, old_uri)
 
 
 @click.command(name=APP_NAME)
