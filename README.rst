@@ -17,6 +17,9 @@ Documentation
 See the `user guide <http://agdc-v2.readthedocs.io/en/develop/>`__ for
 installation & usage of the datacube, and for documentation of the API.
 
+`Join our Slack <https://opendatacube.signup.team/>`__ if you need help
+setting up or using Data Cube Core.
+
 Requirements
 ============
 
