@@ -574,11 +574,13 @@ def set_resampling_method(measurements, resampling=None):
 
 def datatset_type_to_row(dt):
     row = {
-        'id': dt.id,
         'name': dt.name,
         'description': dt.definition['description'],
     }
-    row.update(dt.fields)
+    # Only show fields whose value is fixed for this product.
+    # (ie, those set in the product definition, not differing between datasets).
+    # Otherwise there's a sea of NaN fields.
+    row.update({k: v for (k, v) in dt.fields.items() if v is not None})
     if dt.grid_spec is not None:
         row.update({
             'crs': dt.grid_spec.crs,
