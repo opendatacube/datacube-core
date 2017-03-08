@@ -55,7 +55,7 @@ script:
   - ./check-code.sh integration_tests
 
 after_success:
-  - coveralls
+  - test $TRAVIS_PYTHON_VERSION = "3.5" && coveralls
 
 notifications:
   slack:

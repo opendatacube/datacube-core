@@ -6,6 +6,7 @@ dependencies:
 - python-dateutil
 - jsonschema
 - cachetools
+- coveralls
 - numpy
 - numexpr
 - rasterio
