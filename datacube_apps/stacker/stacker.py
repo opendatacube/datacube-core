@@ -158,24 +158,28 @@ def do_stack_task(config, task):
         except ValueError:
             nco[name][:] = netcdf_writer.netcdfy_data(variable.values)
         nco.sync()
-
     nco.close()
 
     if config.get('check_data_identical', False):
-        def update_dataset_location(labels, dataset):
-            new_dataset = copy.copy(dataset)
-            new_dataset.local_uri = output_uri
-            return [dataset]
-
-        updated_datasets = xr_apply(unwrapped_datasets, update_dataset_location, dtype='O')
-        new_tile = datacube.api.Tile(sources=updated_datasets, geobox=tile.geobox)
+        new_tile = make_updated_tile(unwrapped_datasets, output_uri, tile.geobox)
         new_data = datacube.api.GridWorkflow.load(new_tile, dask_chunks=chunk_profile)
 
-        if not all((data == new_data).all().values()):  # TODO: force dask to single process? (5 slices * 2 == ~1GB)
-            _LOG.error("Mismatch found for %s, not indexing", output_filename)
-            raise ValueError("Mismatch found for %s, not indexing" % output_filename)
+        with dask.set_options(get=dask.async.get_sync):
+            if not all((data == new_data).all().values()):
+                _LOG.error("Mismatch found for %s, not indexing", output_filename)
+                raise ValueError("Mismatch found for %s, not indexing" % output_filename)
 
     return unwrapped_datasets, output_uri
+
+
+def make_updated_tile(old_datasets, new_uri, geobox):
+    def update_dataset_location(labels, dataset):
+        new_dataset = copy.copy(dataset)
+        new_dataset.local_uri = new_uri
+        return [dataset]
+
+    updated_datasets = xr_apply(old_datasets, update_dataset_location, dtype='O')
+    return datacube.api.Tile(sources=updated_datasets, geobox=geobox)
 
 
 def process_result(index, result):
