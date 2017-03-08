@@ -643,6 +643,9 @@ class DocReader(object):
                 continue
         return fields
 
+    def __dir__(self):
+        return self.fields.keys()
+
 
 def import_function(func_ref):
     """
