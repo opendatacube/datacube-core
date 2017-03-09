@@ -14,7 +14,7 @@ systems.
 Documentation
 =============
 
-See the `user guide <http://agdc-v2.readthedocs.io/en/develop/>`__ for
+See the `user guide <http://datacube-core.readthedocs.io/en/latest/>`__ for
 installation & usage of the datacube, and for documentation of the API.
 
 `Join our Slack <https://opendatacube.signup.team/>`__ if you need help
@@ -73,5 +73,5 @@ Developer setup
    :target: https://travis-ci.org/opendatacube/datacube-core
 .. |Coverage Status| image:: https://coveralls.io/repos/opendatacube/datacube-core/badge.svg?branch=develop&service=github
    :target: https://coveralls.io/github/opendatacube/datacube-core?branch=develop
-.. |Documentation Status| image:: https://readthedocs.org/projects/datacube-core/badge/?version=develop
-   :target: http://datacube-core.readthedocs.org/en/develop/
+.. |Documentation Status| image:: https://readthedocs.org/projects/datacube-core/badge/?version=latest
+   :target: http://datacube-core.readthedocs.org/en/latest/
