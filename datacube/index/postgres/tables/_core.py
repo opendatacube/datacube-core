@@ -179,8 +179,9 @@ def create_user(conn, username, key, role):
     )
 
 
-def drop_user(engine, username):
-    engine.execute('drop role {username}'.format(username=username))
+def drop_user(engine, *usernames):
+    for username in usernames:
+        engine.execute('drop role {username}'.format(username=username))
 
 
 def grant_role(engine, role, users):
