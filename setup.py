@@ -78,6 +78,8 @@ setup(
         'singledispatch',
         'sqlalchemy',
         'xarray',
+        'boto3',
+        'SharedArray',
     ],
     extras_require=extras_require,
     tests_require=tests_require,
