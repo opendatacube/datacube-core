@@ -24,8 +24,10 @@ dependencies:
 - matplotlib # pixel drill app
 - pathlib
 - compliance-checker
+- boto3
 - pip:
   - pypeg2
   - pytest-cov # testing
   - pytest-logging
   - pytest-faulthandler
+  - SharedArray
