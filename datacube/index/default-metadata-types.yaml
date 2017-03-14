@@ -2,8 +2,7 @@ name: eo
 description: |
     Earth Observation datasets.
 
-    Type of datasets produced by the eodatasets library.
-    (or of similar structure)
+    Expected metadata structure produced by the eodatasets library, as used internally at GA.
 
     https://github.com/GeoscienceAustralia/eo-datasets
 
@@ -118,10 +117,9 @@ dataset:
 
 name: telemetry
 description: |
-    telemetry datasets.
+    Satellite telemetry datasets.
 
-    Type of datasets produced by the eodatasets library.
-    (or of similar structure)
+    Expected metadata structure produced by telemetry datasets from the eodatasets library, as used internally at GA.
 
     https://github.com/GeoscienceAustralia/eo-datasets
 
