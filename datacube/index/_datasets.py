@@ -864,6 +864,18 @@ class DatasetResource(object):
         with self._db.connect() as connection:
             return connection.get_locations(id_)
 
+    def get_archived_locations(self, id_):
+        """
+        :param typing.Union[UUID, str] id_: dataset id
+        :rtype: list[str]
+        """
+        if isinstance(id_, Dataset):
+            warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
+            id_ = id_.id
+
+        with self._db.connect() as connection:
+            return connection.get_archived_locations(id_)
+
     def add_location(self, id_, uri):
         """
         Add a location to the dataset if it doesn't already exist.
@@ -906,13 +918,30 @@ class DatasetResource(object):
         Archive a location of the dataset if it exists.
         :param typing.Union[UUID, str] id_: dataset id
         :param str uri: fully qualified uri
+        :return bool: location was able to be archived
         """
         if isinstance(id_, Dataset):
             warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
             id_ = id_.id
 
         with self._db.connect() as connection:
-            connection.archive_location(id_, uri)
+            was_archived = connection.archive_location(id_, uri)
+            return was_archived
+
+    def restore_location(self, id_, uri):
+        """
+        Un-archive a location of the dataset if it exists.
+        :param typing.Union[UUID, str] id_: dataset id
+        :param str uri: fully qualified uri
+        :return bool: location was able to be restored
+        """
+        if isinstance(id_, Dataset):
+            warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
+            id_ = id_.id
+
+        with self._db.connect() as connection:
+            was_restored = connection.restore_location(id_, uri)
+            return was_restored
 
     def _make(self, dataset_res, full_info=False):
         """

@@ -764,6 +764,20 @@ class PostgresDbAPI(object):
             ).fetchall()
             ]
 
+    def get_archived_locations(self, dataset_id):
+        return [
+            record[0]
+            for record in self._connection.execute(
+                select([
+                    _dataset_uri_field(DATASET_LOCATION)
+                ]).where(
+                    and_(DATASET_LOCATION.c.dataset_ref == dataset_id, DATASET_LOCATION.c.archived != None)
+                ).order_by(
+                    DATASET_LOCATION.c.added.desc()
+                )
+            ).fetchall()
+            ]
+
     def remove_location(self, dataset_id, uri):
         """
         Remove the given location for a dataset
@@ -784,7 +798,7 @@ class PostgresDbAPI(object):
 
     def archive_location(self, dataset_id, uri):
         scheme, body = _split_uri(uri)
-        self._connection.execute(
+        res = self._connection.execute(
             DATASET_LOCATION.update().where(
                 DATASET_LOCATION.c.dataset_ref == dataset_id
             ).where(
@@ -793,6 +807,20 @@ class PostgresDbAPI(object):
                 archived=func.now()
             )
         )
+        return res.rowcount > 0
+
+    def restore_location(self, dataset_id, uri):
+        scheme, body = _split_uri(uri)
+        res = self._connection.execute(
+            DATASET_LOCATION.update().where(
+                DATASET_LOCATION.c.dataset_ref == dataset_id
+            ).where(
+                DATASET_LOCATION.c.archived != None
+            ).values(
+                archived=None
+            )
+        )
+        return res.rowcount > 0
 
     def __repr__(self):
         return "PostgresDb<connection={!r}>".format(self._connection)
