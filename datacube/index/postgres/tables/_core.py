@@ -124,12 +124,12 @@ def schema_is_latest(engine):
     """
     Is the schema up-to-date?
     """
-    is_unification = _pg_exists(engine, schema_qualified('dataset_type'))
-    is_updated = not _pg_exists(engine, schema_qualified('uq_dataset_source_dataset_ref'))
-
     # We may have versioned schema in the future.
-    # For now, we know updates ahve been applied if the dataset_type table exists,
-    return is_unification and is_updated
+    # For now, we know updates have been applied if certain objects exist,
+
+    has_dataset_source_update = not _pg_exists(engine, schema_qualified('uq_dataset_source_dataset_ref'))
+    has_uri_searches = _pg_exists(engine, schema_qualified('ix_agdc_dataset_location_dataset_ref'))
+    return has_dataset_source_update and has_uri_searches
 
 
 def update_schema(engine):
@@ -137,7 +137,7 @@ def update_schema(engine):
     if not is_unification:
         raise ValueError('Pre-unification database cannot be updated.')
 
-    # Remove surrogate key from dataset_source: it makes the table larger for no benefit.
+    # Removal of surrogate key from dataset_source: it makes the table larger for no benefit.
     if _pg_exists(engine, schema_qualified('uq_dataset_source_dataset_ref')):
         _LOG.info('Applying surrogate-key update')
         engine.execute("""
@@ -150,8 +150,24 @@ def update_schema(engine):
         """)
         _LOG.info('Completed surrogate-key update')
 
+    # float8range is needed if the user uses the double-range field type.
     if not engine.execute("SELECT 1 FROM pg_type WHERE typname = 'float8range'").scalar():
         engine.execute(TYPES_INIT_SQL)
+
+    # Update uri indexes to allow dataset search-by-uri.
+    if not _pg_exists(engine, schema_qualified('ix_agdc_dataset_location_dataset_ref')):
+        _LOG.info('Applying uri-search update')
+        engine.execute("""
+        begin;
+          -- Add a separate index by dataset.
+          create index ix_agdc_dataset_location_dataset_ref on agdc.dataset_location (dataset_ref);
+
+          -- Replace (dataset, uri) index with (uri, dataset) index.
+          alter table agdc.dataset_location add constraint uq_dataset_location_uri_scheme unique (uri_scheme, uri_body, dataset_ref);
+          alter table agdc.dataset_location drop constraint uq_dataset_location_dataset_ref;
+        commit;
+        """)
+        _LOG.info('Completed uri-search update')
 
 
 def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=False):
