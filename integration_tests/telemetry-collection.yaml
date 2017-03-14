@@ -1,9 +1,0 @@
-name: landsat_telemetry
-description: Landsat telemetry data
-metadata_type: eo
-
-match:
-    metadata:
-        product_type: satellite_telemetry_data
-    # Higher priority than the default
-    priority: 50

@@ -238,7 +238,7 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
     assert updated.local_uri == 'file:///test/doc5.yaml'
 
 
-def test_update_dataset_type(index, ls5_telem_type, ls5_telem_doc, telemetry_metadata_type_doc):
+def test_update_dataset_type(index, ls5_telem_type, ls5_telem_doc, ga_metadata_type_doc):
     """
     :type ls5_telem_type: datacube.model.DatasetType
     :type index: datacube.index._api.Index
@@ -262,7 +262,7 @@ def test_update_dataset_type(index, ls5_telem_type, ls5_telem_doc, telemetry_met
 
     # Specifying metadata type definition (rather than name) should be allowed
     full_doc = copy.deepcopy(ls5_telem_doc)
-    full_doc['metadata_type'] = telemetry_metadata_type_doc
+    full_doc['metadata_type'] = ga_metadata_type_doc
     index.products.update_document(full_doc)
 
     # Remove fixed field, forcing a new index to be created (as datasets can now differ for the field).
