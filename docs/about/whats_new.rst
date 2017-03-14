@@ -15,6 +15,10 @@ v1.2.3
 
  - URI searches are now better supported from the cli: `datacube dataset search uri = file:///some/uri/here`
 
+ - Platform-specific (Landsat) fields have been removed from the default `eo`
+   metadata type in order to keep it minimal. Users & products can still add
+   their own metadata types to use extra fields.
+
  - We are now part of Open Data Cube, and have a new home at https://github.com/opendatacube/datacube-core
 
 v1.2.2
