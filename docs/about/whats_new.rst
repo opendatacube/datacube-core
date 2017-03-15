@@ -1,5 +1,7 @@
 .. _whats_new:
 
+.. default-role:: code
+
 What's New
 ==========
 

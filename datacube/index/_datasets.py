@@ -880,6 +880,7 @@ class DatasetResource(object):
     def add_location(self, id_, uri):
         """
         Add a location to the dataset if it doesn't already exist.
+        
         :param typing.Union[UUID, str] id_: dataset id
         :param str uri: fully qualified uri
         :returns bool: Was one added?
@@ -902,6 +903,7 @@ class DatasetResource(object):
     def remove_location(self, id_, uri):
         """
         Remove a location from the dataset if it exists.
+        
         :param typing.Union[UUID, str] id_: dataset id
         :param str uri: fully qualified uri
         :returns bool: Was one removed?
