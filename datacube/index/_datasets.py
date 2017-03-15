@@ -126,7 +126,7 @@ class MetadataTypeResource(object):
             return
 
         if not can_update:
-            full_message = "Unsafe changes at " + ", ".join(".".join(offset) for offset, _, _ in unsafe_changes)
+            full_message = "Unsafe changes at " + ", ".join(".".join(map(str, offset)) for offset, _, _ in unsafe_changes)
             raise ValueError(full_message)
 
         _LOG.info("Updating metadata type %s", metadata_type.name)
