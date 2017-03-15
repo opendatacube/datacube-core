@@ -8,8 +8,7 @@ v1.2.3
 
  - Updated the Postgres product views to include the whole dataset metadata document.
 
- - `init` now recreates the product views by default every time it is run: rerun init on
-   your datacube to get the improved views.
+ - `init` now recreates the product views by default every time it is run.
 
  - Updated `init` to support Postgres 9.6
 
@@ -20,6 +19,10 @@ v1.2.3
    their own metadata types to use extra fields.
 
  - We are now part of Open Data Cube, and have a new home at https://github.com/opendatacube/datacube-core
+
+This release now enforces the uri index changes to be applied: it will prompt you to rerun `init` as
+an administrator to update your existing cubes: `datacube -v system init` (this command can be run without affecting
+read-only users, but will briefly pause writes)
 
 v1.2.2
 ------
