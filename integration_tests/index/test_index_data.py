@@ -267,6 +267,17 @@ def test_index_dataset_with_location(index, default_metadata_type):
     locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 1
 
+    was_archived = index.datasets.archive_location(dataset.id, first_file.as_uri())
+    assert was_archived
+    locations = index.datasets.get_locations(dataset.id)
+    assert len(locations) == 0
+    locations = index.datasets.get_archived_locations(dataset.id)
+    assert len(locations) == 1
+    was_restored = index.datasets.restore_location(dataset.id, first_file.as_uri())
+    assert was_restored
+    locations = index.datasets.get_locations(dataset.id)
+    assert len(locations) == 1
+
     # Ingesting with a new path should add the second one too.
     dataset.local_uri = second_file.as_uri()
     index.datasets.add(dataset)
