@@ -113,6 +113,19 @@ def _pg_exists(conn, name):
     return conn.execute("SELECT to_regclass(%s)", name).scalar() is not None
 
 
+def _pg_column_exists(conn, table, column):
+    """
+    Does a postgres object exist?
+    :rtype bool
+    """
+    return conn.execute("""
+                        select TRUE from pg_attribute "
+                        "where attrelid = to_regclass(%s) "
+                        "and attname = %s "
+                        "and not attisdropped
+                        """, schema_qualified(table), column) is not None
+
+
 def database_exists(engine):
     """
     Have they init'd this database?
@@ -152,6 +165,10 @@ def update_schema(engine):
 
     if not engine.execute("SELECT 1 FROM pg_type WHERE typname = 'float8range'").scalar():
         engine.execute(TYPES_INIT_SQL)
+
+    if not _pg_column_exists(engine, schema_qualified('dataset_location'), 'archived'):
+        engine.execute("alter table agdc.dataset_location add column archived TIMESTAMP WITH TIME ZONE")
+
 
 
 def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=False):
