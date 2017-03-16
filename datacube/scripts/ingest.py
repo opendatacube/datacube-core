@@ -47,7 +47,8 @@ def morph_dataset_type(source_type, config):
     output_type.definition['managed'] = True
     output_type.definition['description'] = config['description']
     output_type.definition['storage'] = config['storage']
-    output_type.metadata_doc['format'] = {'name': config['storage']['driver']} # TODO: Is it fine to assume the format is dictated by the driver?
+    # TODO: Is it fine to assume the format is dictated by the driver?
+    output_type.metadata_doc['format'] = {'name': config['storage']['driver']}
 
     output_type.definition['storage'] = {k: v for (k, v) in config['storage'].items()
                                          if k in ('crs', 'tile_size', 'resolution', 'origin')}
@@ -329,7 +330,9 @@ def _validate_year(ctx, param, value):
 @ui.executor_cli_options
 @ui.pass_index(app_name='agdc-ingest')
 def ingest_cmd(index, config_file, year, queue_size, save_tasks, load_tasks, dry_run, executor):
-    _LOG.debug('In ingest_cmd:\n - index=%s\n - config_file=%s\n - year=%s\n - queue_size=%s\n - save_tasks=%s\n - load_tasks=%s\n - dry_run=%s\n - executor=%s', index, config_file, year, queue_size, save_tasks, load_tasks, dry_run, executor)
+    _LOG.debug('In ingest_cmd:\n - index=%s\n - config_file=%s\n - year=%s\n - queue_size=%s\n' \
+               +'- save_tasks=%s\n - load_tasks=%s\n - dry_run=%s\n - executor=%s',
+               index, config_file, year, queue_size, save_tasks, load_tasks, dry_run, executor)
 
     if config_file:
         config = load_config_from_file(index, config_file)

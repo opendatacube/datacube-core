@@ -42,7 +42,6 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset_
     opts = list(global_integration_cli_args)
     opts.extend(
         [
-#            '-v',
             'dataset',
             'add',
             '--auto-match',
@@ -54,7 +53,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset_
         opts,
         catch_exceptions=False
     )
-    #print(result.output)
+    # print(result.output)
     assert not result.exception
     assert result.exit_code == 0
 
@@ -80,7 +79,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset_
     assert not result.exception
     assert result.exit_code == 0
 
-    ## Tests for NetCDF 
+    # # Tests for NetCDF
     # datasets = index.datasets.search_eager(product='ls5_nbar_albers')
     # assert len(datasets) > 0
     # assert datasets[0].managed
