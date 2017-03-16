@@ -89,7 +89,7 @@ def local_config(integration_config_paths):
     return LocalConfig.find(integration_config_paths)
 
 
-@pytest.fixture(params=["UTC", ])
+@pytest.fixture(params=["US/Pacific", "UTC", ])
 def db(local_config, request):
     timezone = request.param
 
