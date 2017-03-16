@@ -170,7 +170,6 @@ def update_schema(engine):
         engine.execute("alter table agdc.dataset_location add column archived TIMESTAMP WITH TIME ZONE")
 
 
-
 def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=False):
     if has_role(engine, name):
         _LOG.debug('Role exists: %s', name)
