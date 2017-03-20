@@ -137,7 +137,7 @@ def test_list_users_does_not_fail(global_integration_cli_args, local_config):
     assert result.exit_code == 0
 
 
-def test_db_init_noop(global_integration_cli_args, local_config, ls5_nbar_gtiff_type):
+def test_db_init_noop(global_integration_cli_args, local_config, ls5_telem_type):
     # Run on an existing database.
     result = _run_cli(
         global_integration_cli_args,
@@ -149,10 +149,10 @@ def test_db_init_noop(global_integration_cli_args, local_config, ls5_nbar_gtiff_
     assert result.exit_code == 0
     assert 'Updated.' in result.output
     # It should not rebuild indexes by default
-    assert 'Dropping index: dix_{}'.format(ls5_nbar_gtiff_type.name) not in result.output
+    assert 'Dropping index: dix_{}'.format(ls5_telem_type.name) not in result.output
 
 
-def test_db_init_rebuild(global_integration_cli_args, local_config, ls5_nbar_gtiff_type):
+def test_db_init_rebuild(global_integration_cli_args, local_config, ls5_telem_type):
 
     # We set the field creation logging to debug, as we assert its logging output below.
     _dynamic._LOG.setLevel(logging.DEBUG)
@@ -168,13 +168,13 @@ def test_db_init_rebuild(global_integration_cli_args, local_config, ls5_nbar_gti
     assert result.exit_code == 0
     assert 'Updated.' in result.output
     # It should have recreated views and indexes.
-    assert 'Dropping index: dix_{}'.format(ls5_nbar_gtiff_type.name) in result.output
-    assert 'Creating index: dix_{}'.format(ls5_nbar_gtiff_type.name) in result.output
+    assert 'Dropping index: dix_{}'.format(ls5_telem_type.name) in result.output
+    assert 'Creating index: dix_{}'.format(ls5_telem_type.name) in result.output
     assert 'Dropping view: {schema}.dv_{name}_dataset'.format(
-        schema=SCHEMA_NAME, name=ls5_nbar_gtiff_type.name
+        schema=SCHEMA_NAME, name=ls5_telem_type.name
     ) in result.output
     assert 'Creating view: {schema}.dv_{name}_dataset'.format(
-        schema=SCHEMA_NAME, name=ls5_nbar_gtiff_type.name
+        schema=SCHEMA_NAME, name=ls5_telem_type.name
     ) in result.output
 
 

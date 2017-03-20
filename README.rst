@@ -14,8 +14,11 @@ systems.
 Documentation
 =============
 
-See the `user guide <http://datacube-core.readthedocs.org/en/develop/>`__ for
+See the `user guide <http://datacube-core.readthedocs.io/en/latest/>`__ for
 installation & usage of the datacube, and for documentation of the API.
+
+`Join our Slack <https://opendatacube.signup.team/>`__ if you need help
+setting up or using Data Cube Core.
 
 Requirements
 ============
@@ -31,7 +34,7 @@ Developer setup
 
 1. Clone:
 
-   -  ``git clone https://github.com/datacube-core/agdc-v2.git``
+   -  ``git clone https://github.com/opendatacube/datacube-core.git``
 
 2. Install the native libraries for `GDAL <http://www.gdal.org/>`__ &
    NetCDF4.
@@ -70,5 +73,5 @@ Developer setup
    :target: https://travis-ci.org/opendatacube/datacube-core
 .. |Coverage Status| image:: https://coveralls.io/repos/opendatacube/datacube-core/badge.svg?branch=develop&service=github
    :target: https://coveralls.io/github/opendatacube/datacube-core?branch=develop
-.. |Documentation Status| image:: https://readthedocs.org/projects/datacube-core/badge/?version=develop
-   :target: http://datacube-core.readthedocs.org/en/develop/
+.. |Documentation Status| image:: https://readthedocs.org/projects/datacube-core/badge/?version=latest
+   :target: http://datacube-core.readthedocs.org/en/latest/

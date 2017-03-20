@@ -844,10 +844,12 @@ class PostgresDbAPI(object):
         pg_role = tables.to_pg_role(role)
         tables.create_user(self._connection, username, password, pg_role)
 
-    def drop_user(self, username):
-        tables.drop_user(self._connection, username)
+    def drop_users(self, users):
+        # type: (Iterable[str]) -> None
+        tables.drop_user(self._connection, *users)
 
     def grant_role(self, role, users):
+        # type: (str, Iterable[str]) -> None
         """
         Grant a role to a user.
         """

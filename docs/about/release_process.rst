@@ -48,11 +48,11 @@ stable version.
     Ask Simon Oliver for the MailChimp details.
 
 
-.. _Travis: https://travis-ci.org/data-cube/agdc-v2
+.. _Travis: https://travis-ci.org/opendatacube/datacube-core
 
-.. _readthedocs: http://readthedocs.org/projects/agdc-v2/builds/
+.. _readthedocs: http://readthedocs.org/projects/datacube-core/builds/
 
-.. _Datacube: https://github.com/data-cube/agdc-v2/releases
+.. _Datacube: https://github.com/opendatacube/datacube-core/releases
 
 .. _Jira: https://gaautobots.atlassian.net/projects/ACDD?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page&status=unreleased
 

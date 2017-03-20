@@ -107,12 +107,12 @@ Datacube installation
 ---------------------
 
 Obtain a current copy of the datacube source code from GitHub. A simple way is to extract 
-https://github.com/data-cube/agdc-v2/archive/develop.zip 
+https://github.com/opendatacube/datacube-core/archive/develop.zip
 into a subdirectory of the python environment. 
 
 Install the datacube module by running::
 
-    cd agdc-v2-develop
+    cd datacube-core-develop
     python setup.py install
 
 

@@ -107,26 +107,26 @@ class UserResource(object):
     def __init__(self, db):
         self._db = db
 
-    def grant_role(self, role, *users):
+    def grant_role(self, role, *usernames):
         """
         Grant a role to users
         """
         with self._db.connect() as connection:
-            connection.grant_role(role, users)
+            connection.grant_role(role, usernames)
 
-    def create_user(self, user_name, password, role):
+    def create_user(self, username, password, role):
         """
         Create a new user.
         """
         with self._db.connect() as connection:
-            connection.create_user(user_name, password, role)
+            connection.create_user(username, password, role)
 
-    def delete_user(self, user_name):
+    def delete_user(self, *usernames):
         """
         Delete a user
         """
         with self._db.connect() as connection:
-            connection.drop_user(user_name)
+            connection.drop_users(usernames)
 
     def list_users(self):
         """
@@ -134,5 +134,5 @@ class UserResource(object):
         :rtype: list[(str, str, str)]
         """
         with self._db.connect() as connection:
-            for user in connection.list_users():
-                yield user
+            for role, user, description in connection.list_users():
+                yield role, user, description

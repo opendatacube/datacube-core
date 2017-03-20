@@ -149,27 +149,27 @@ def dict_api(index):
 
 
 @pytest.fixture
-def ls5_nbar_gtiff_doc(default_metadata_type):
+def ls5_telem_doc(ga_metadata_type):
     return {
-        "name": "ls5_nbart_p54_gtiff",
+        "name": "ls5_telem_test",
         "description": 'LS5 Test',
         "metadata": {
             "platform": {
                 "code": "LANDSAT_5"
             },
-            "product_type": "nbart",
-            "ga_level": "P54",
+            "product_type": "satellite_telemetry_data",
+            "ga_level": "P00",
             "format": {
-                "name": "GeoTIFF"
+                "name": "RCC"
             }
         },
-        "metadata_type": default_metadata_type.name  # "eo"
+        "metadata_type": ga_metadata_type.name
     }
 
 
 @pytest.fixture
-def ls5_nbar_gtiff_type(index, ls5_nbar_gtiff_doc):
-    return index.products.add_document(ls5_nbar_gtiff_doc)
+def ls5_telem_type(index, ls5_telem_doc):
+    return index.products.add_document(ls5_telem_doc)
 
 
 @pytest.fixture
@@ -227,11 +227,28 @@ def default_metadata_type_doc(default_metadata_type_docs):
 
 
 @pytest.fixture
+def telemetry_metadata_type_doc(default_metadata_type_docs):
+    return [doc for doc in default_metadata_type_docs if doc['name'] == 'telemetry'][0]
+
+
+@pytest.fixture
+def ga_metadata_type_doc():
+    _FULL_EO_METADATA = Path(__file__).parent.joinpath('extensive-eo-metadata.yaml')
+    [(path, eo_md_type)] = datacube.utils.read_documents(_FULL_EO_METADATA)
+    return eo_md_type
+
+
+@pytest.fixture
 def default_metadata_types(index, default_metadata_type_docs):
     # type: (Index, list) -> list
     for d in default_metadata_type_docs:
         index.metadata_types.add(index.metadata_types.from_doc(d))
     return index.metadata_types.get_all()
+
+
+@pytest.fixture
+def ga_metadata_type(index, ga_metadata_type_doc):
+    return index.metadata_types.add(index.metadata_types.from_doc(ga_metadata_type_doc))
 
 
 @pytest.fixture
@@ -245,12 +262,17 @@ def telemetry_metadata_type(index, default_metadata_types):
 
 
 @pytest.fixture
-def indexed_ls5_scene_dataset_types(index, default_metadata_type):
+def indexed_ls5_scene_dataset_types(index, ga_metadata_type):
     """
     :type index: datacube.index._api.Index
     :rtype: datacube.model.StorageType
     """
-    dataset_types = load_test_dataset_types(DATASET_TYPES / 'ls5_scenes.yaml')
+
+    dataset_types = load_test_dataset_types(
+        DATASET_TYPES / 'ls5_scenes.yaml',
+        # Use our larger metadata type with a more diverse set of field types.
+        metadata_type=ga_metadata_type
+    )
 
     types = []
     for dataset_type in dataset_types:
@@ -264,9 +286,9 @@ def example_ls5_nbar_metadata_doc():
     return load_yaml_file(_EXAMPLE_LS5_NBAR_DATASET_FILE)[0]
 
 
-def load_test_dataset_types(filename):
+def load_test_dataset_types(filename, metadata_type=None):
     types = load_yaml_file(filename)
-    return [alter_dataset_type_for_testing(type_) for type_ in types]
+    return [alter_dataset_type_for_testing(type_, metadata_type=metadata_type) for type_ in types]
 
 
 def load_yaml_file(filename):
@@ -274,7 +296,7 @@ def load_yaml_file(filename):
         return list(yaml.load_all(f, Loader=SafeLoader))
 
 
-def alter_dataset_type_for_testing(type_):
+def alter_dataset_type_for_testing(type_, metadata_type=None):
     if 'measurements' in type_:
         type_ = limit_num_measurements(type_)
     if 'storage' in type_:
@@ -282,6 +304,10 @@ def alter_dataset_type_for_testing(type_):
             type_ = shrink_storage_type(type_, GEOGRAPHIC_VARS)
         else:
             type_ = shrink_storage_type(type_, PROJECTED_VARS)
+
+    if metadata_type:
+        type_['metadata_type'] = metadata_type.name
+
     return type_
 
 

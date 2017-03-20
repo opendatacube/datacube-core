@@ -24,10 +24,10 @@ Python and packages
 -------------------
 Python 2.7 and 3.5+ are supported.
 
-Download the latest version of the software from the `repository <https://github.com/data-cube/agdc-v2>`_ and install it::
+Download the latest version of the software from the `repository <https://github.com/opendatacube/datacube-core>`_ and install it::
 
-    git clone https://github.com/data-cube/agdc-v2
-    cd agdc-v2
+    git clone https://github.com/opendatacube/datacube-core
+    cd datacube-core
     git checkout develop
     python setup.py install
 

@@ -204,6 +204,8 @@ def _range_to_geopolygon(**kwargs):
     input_crs = None
     input_coords = {'left': None, 'bottom': None, 'right': None, 'top': None}
     for key, value in kwargs.items():
+        if value is None:
+            continue
         key = key.lower()
         if key in ['latitude', 'lat', 'y']:
             input_coords['top'], input_coords['bottom'] = _value_to_range(value)

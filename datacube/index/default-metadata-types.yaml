@@ -2,8 +2,7 @@ name: eo
 description: |
     Earth Observation datasets.
 
-    Type of datasets produced by the eodatasets library.
-    (or of similar structure)
+    Expected metadata structure produced by the eodatasets library, as used internally at GA.
 
     https://github.com/GeoscienceAustralia/eo-datasets
 
@@ -114,46 +113,13 @@ dataset:
             - [extent, to_dt]
             - [extent, center_dt]
 
-        gsi:
-            description: Ground Station Identifier (eg. ASA)
-            offset: [acquisition, groundstation, code]
-            indexed: false
-
-        orbit:
-            description: Orbit number
-            offset: [acquisition, platform_orbit]
-            type: integer
-
-        sat_path:
-            description: Landsat path
-
-            type: integer-range
-            min_offset:
-            - [image, satellite_ref_point_start, x]
-            max_offset:
-            - [image, satellite_ref_point_end, x]
-            # If an end is not specified, use the start.
-            - [image, satellite_ref_point_start, x]
-
-        sat_row:
-            description: Landsat row
-
-            type: integer-range
-            min_offset:
-            - [image, satellite_ref_point_start, y]
-            max_offset:
-            - [image, satellite_ref_point_end, y]
-            # If an end is not specified, use the start.
-            - [image, satellite_ref_point_start, y]
-
 ---
 
 name: telemetry
 description: |
-    telemetry datasets.
+    Satellite telemetry datasets.
 
-    Type of datasets produced by the eodatasets library.
-    (or of similar structure)
+    Expected metadata structure produced by telemetry datasets from the eodatasets library, as used internally at GA.
 
     https://github.com/GeoscienceAustralia/eo-datasets
 

@@ -42,4 +42,4 @@ configuration file.
     datacube ingest -c {configuration_file}
 
 
-`Configuration samples <https://github.com/data-cube/agdc-v2/tree/develop/docs/config_samples>`_ are available as part of the open source Github repository.
+`Configuration samples <https://github.com/opendatacube/datacube-core/tree/develop/docs/config_samples>`_ are available as part of the open source Github repository.

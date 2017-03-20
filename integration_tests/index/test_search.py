@@ -25,6 +25,7 @@ from datacube.index._api import Index
 from datacube.index.postgres import PostgresDb
 from datacube.model import Dataset
 from datacube.model import DatasetType
+from datacube.model import MetadataType
 from datacube.model import Range
 from datacube.scripts import dataset as dataset_script
 
@@ -33,11 +34,9 @@ try:
 except ImportError:
     pass
 
-_EXAMPLE_LS7_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('ls7-nbar-example.yaml')
-
 
 @pytest.fixture
-def pseudo_ls8_type(index, default_metadata_type):
+def pseudo_ls8_type(index, ga_metadata_type):
     index.products.add_document({
         'name': 'ls8_telemetry',
         'description': 'telemetry test',
@@ -53,8 +52,7 @@ def pseudo_ls8_type(index, default_metadata_type):
                 'name': 'PSEUDOMD'
             }
         },
-        # We're actually using 'eo' because we do lat/lon searches below...
-        'metadata_type': default_metadata_type.name
+        'metadata_type': ga_metadata_type.name
     })
     return index.products.get_by_name('ls8_telemetry')
 
@@ -418,8 +416,8 @@ def test_search_by_product(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_l
 def test_search_or_expressions(index,
                                pseudo_ls8_type, pseudo_ls8_dataset,
                                ls5_dataset_nbar_type, ls5_dataset_w_children,
-                               telemetry_metadata_type):
-    # type: (Index, DatasetType, Dataset, DatasetType, Dataset) -> None
+                               default_metadata_type, telemetry_metadata_type):
+    # type: (Index, DatasetType, Dataset, DatasetType, Dataset, MetadataType, MetadataType) -> None
 
     # Four datasets:
     # Our standard LS8
@@ -459,7 +457,11 @@ def test_search_or_expressions(index,
     # eo OR telemetry: return all
     datasets = index.datasets.search_eager(
         metadata_type=[
+            # LS5 + children
+            default_metadata_type.name,
+            # Nothing
             telemetry_metadata_type.name,
+            # LS8 dataset
             pseudo_ls8_type.metadata_type.name
         ]
     )
@@ -562,7 +564,7 @@ def test_search_returning_rows(index, pseudo_ls8_type,
     }
 
 
-def test_searches_only_type(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_nbar_gtiff_type):
+def test_searches_only_type(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_telem_type):
     """
     :type index: datacube.index._api.Index
     :type pseudo_ls8_type: datacube.model.DatasetType
@@ -592,7 +594,7 @@ def test_searches_only_type(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_nbar
 
     # No results when searching for a different dataset type.
     datasets = index.datasets.search_eager(
-        product=ls5_nbar_gtiff_type.name,
+        product=ls5_telem_type.name,
         platform='LANDSAT_8',
         instrument='OLI_TIRS'
     )
@@ -659,13 +661,11 @@ def test_search_conflicting_types(index, pseudo_ls8_dataset, pseudo_ls8_type):
 
 
 def test_fetch_all_of_md_type(index, pseudo_ls8_dataset):
-    """
-    :type index: datacube.index._api.Index
-    :type pseudo_ls8_dataset: datacube.model.Dataset
-    """
+    # type: (Index, Dataset) -> None
+
     # Get every dataset of the md type.
     results = index.datasets.search_eager(
-        metadata_type='eo'
+        metadata_type=pseudo_ls8_dataset.metadata_type.name
     )
     assert len(results) == 1
     assert results[0].id == pseudo_ls8_dataset.id
@@ -683,12 +683,9 @@ def test_fetch_all_of_md_type(index, pseudo_ls8_dataset):
     assert len(results) == 0
 
 
-def test_count_searches(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_nbar_gtiff_type):
-    """
-    :type index: datacube.index._api.Index
-    :type pseudo_ls8_type: datacube.model.DatasetType
-    :type pseudo_ls8_dataset: datacube.model.Dataset
-    """
+def test_count_searches(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_telem_type):
+    # type: (Index, DatasetType, Dataset) -> None
+
     # The dataset should have been matched to the telemetry type.
     assert pseudo_ls8_dataset.type.id == pseudo_ls8_type.id
     assert index.datasets.search_eager()
@@ -711,7 +708,7 @@ def test_count_searches(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_nbar_gti
 
     # No results when searching for a different dataset type.
     datasets = index.datasets.count(
-        product=ls5_nbar_gtiff_type.name,
+        product=ls5_telem_type.name,
         platform='LANDSAT_8',
         instrument='OLI_TIRS'
     )
@@ -758,12 +755,9 @@ def test_get_dataset_with_children(index, ls5_dataset_w_children):
     assert list(level1.sources['satellite_telemetry_data'].sources) == []
 
 
-def test_count_by_product_searches(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_nbar_gtiff_type):
-    """
-    :type index: datacube.index._api.Index
-    :type pseudo_ls8_type: datacube.model.DatasetType
-    :type pseudo_ls8_dataset: datacube.model.Dataset
-    """
+def test_count_by_product_searches(index, pseudo_ls8_type, pseudo_ls8_dataset, ls5_telem_type):
+    # type: (Index, DatasetType, Dataset, DatasetType) -> None
+
     # The dataset should have been matched to the telemetry type.
     assert pseudo_ls8_dataset.type.id == pseudo_ls8_type.id
     assert index.datasets.search_eager()
@@ -786,7 +780,7 @@ def test_count_by_product_searches(index, pseudo_ls8_type, pseudo_ls8_dataset, l
 
     # No results when searching for a different dataset type.
     products = tuple(index.datasets.count_by_product(
-        product=ls5_nbar_gtiff_type.name,
+        product=ls5_telem_type.name,
         platform='LANDSAT_8',
         instrument='OLI_TIRS'
     ))
@@ -811,9 +805,7 @@ def test_count_by_product_searches(index, pseudo_ls8_type, pseudo_ls8_dataset, l
 
 
 def test_count_time_groups(index, pseudo_ls8_type, pseudo_ls8_dataset):
-    """
-    :type index: datacube.index._api.Index
-    """
+    # type: (Index, DatasetType, Dataset) -> None
 
     # 'from_dt': datetime.datetime(2014, 7, 26, 23, 48, 0, 343853),
     # 'to_dt': datetime.datetime(2014, 7, 26, 23, 52, 0, 343853),
@@ -841,7 +833,7 @@ def test_count_time_groups(index, pseudo_ls8_type, pseudo_ls8_dataset):
     ]
 
 
-@pytest.mark.usefixtures('default_metadata_type',
+@pytest.mark.usefixtures('ga_metadata_type',
                          'indexed_ls5_scene_dataset_types')
 def test_source_filter(global_integration_cli_args, index, example_ls5_dataset_path, ls5_nbar_ingest_config):
     opts = list(global_integration_cli_args)
@@ -862,6 +854,9 @@ def test_source_filter(global_integration_cli_args, index, example_ls5_dataset_p
 
     all_nbar = index.datasets.search_eager(product='ls5_nbar_scene')
     assert len(all_nbar) == 1
+    all_level1 = index.datasets.search_eager(product='ls5_level1_scene')
+    assert len(all_level1) == 1
+    assert all_level1[0].metadata.gsi == 'ASA'
 
     dss = index.datasets.search_eager(
         product='ls5_nbar_scene',
@@ -979,6 +974,7 @@ def test_cli_info(index, global_integration_cli_args, pseudo_ls8_dataset, pseudo
         '- file:///tmp/location2',
         '- file:///tmp/location1',
         'fields:',
+        '    format: PSEUDOMD',
         '    gsi: null',
         '    instrument: OLI_TIRS',
         '    lat: {begin: -31.37116, end: -29.23394}',
@@ -1157,11 +1153,11 @@ def test_csv_search_via_cli(global_integration_cli_args, pseudo_ls8_type, pseudo
 
 
 # Headers are currently in alphabetical order.
-_EXPECTED_OUTPUT_HEADER = 'dataset_type_id,gsi,id,instrument,lat,lon,metadata_doc,metadata_type,metadata_type_id,' \
-                          'orbit,platform,product,product_type,sat_path,sat_row,time,uri'
+_EXPECTED_OUTPUT_HEADER = 'dataset_type_id,format,gsi,id,instrument,lat,lon,metadata_doc,metadata_type,' \
+                          'metadata_type_id,orbit,platform,product,product_type,sat_path,sat_row,time,uri'
 
 
-def test_csv_structure(global_integration_cli_args, pseudo_ls8_type, ls5_nbar_gtiff_type,
+def test_csv_structure(global_integration_cli_args, pseudo_ls8_type, ls5_telem_type,
                        pseudo_ls8_dataset, pseudo_ls8_dataset2):
     output = _csv_search_raw(['datasets', ' -40 < lat < -10'], global_integration_cli_args)
     lines = [line.strip() for line in output.split('\n') if line]
