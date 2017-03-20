@@ -22,8 +22,8 @@ from .s3io import S3IO
 
 class S3AIO(object):
 
-    def __init__(self):
-        self.s3io = S3IO()
+    def __init__(self, enable_s3=True, file_path=None):
+        self.s3io = S3IO(enable_s3, file_path)
 
     def bytes_to_array(self, data, shape, dtype):
         array = np.empty(shape=shape, dtype=dtype)

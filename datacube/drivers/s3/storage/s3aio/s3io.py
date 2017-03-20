@@ -31,8 +31,12 @@ class S3IO:
 
     # enable_s3: True = reads/writes to s3
     # enable_s3: False = reads/writes to disk ***for testing only***
-    def __init__(self, enable_s3=True):
+    def __init__(self, enable_s3=True, file_path=None):
         self.enable_s3 = enable_s3
+        if file_path is None:
+            self.file_path = expanduser("~")+"/S3IO/"
+        else:
+            self.file_path = file_path
 
     def list_created_arrays(self):
         result = [f for f in os.listdir("/dev/shm") if f.startswith('S3IO')]
@@ -73,7 +77,7 @@ class S3IO:
                 error_code = int(e.response['Error']['Code'])
                 raise Exception("ClientError", error_code)
         else:
-            directory = expanduser("~")+"/S3IO/"
+            directory = self.file_path
             return [f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f))]
 
     def list_objects(self, s3_bucket, prefix='', max_keys=100, new_session=False):
@@ -89,7 +93,7 @@ class S3IO:
                 error_code = int(e.response['Error']['Code'])
                 raise Exception("ClientError", error_code)
         else:
-            directory = expanduser("~")+"/S3IO/"+str(s3_bucket)
+            directory = self.file_path+"/"+str(s3_bucket)
             return [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
 
     def bucket_exists(self, s3_bucket, new_session=False):
@@ -104,7 +108,7 @@ class S3IO:
                 raise Exception("ClientError", error_code)
             return True
         else:
-            directory = expanduser("~")+"/S3IO/"+str(s3_bucket)
+            directory = self.file_path+"/"+str(s3_bucket)
             return os.path.exists(directory) and os.path.isdir(directory)
 
     def object_exists(self, s3_bucket, s3_key, new_session=False):
@@ -119,7 +123,7 @@ class S3IO:
                 raise Exception("ClientError", error_code)
             return True
         else:
-            directory = expanduser("~")+"/S3IO/"+str(s3_bucket)+"/"+str(s3_key)
+            directory = self.file_path+"/"+str(s3_bucket)+"/"+str(s3_key)
             return os.path.exists(directory) and os.path.isfile(directory)
 
     def put_bytes(self, s3_bucket, s3_key, data, new_session=False):
@@ -128,7 +132,7 @@ class S3IO:
             s3 = self.s3_resource(new_session)
             s3.meta.client.put_object(Bucket=s3_bucket, Key=s3_key, Body=io.BytesIO(data))
         else:
-            directory = expanduser("~")+"/S3IO/"+str(s3_bucket)
+            directory = self.file_path+"/"+str(s3_bucket)
             if not os.path.exists(directory):
                 os.makedirs(directory)
             f = open(directory+"/"+str(s3_key), "wb")
@@ -289,7 +293,7 @@ class S3IO:
                     break
                 break
         else:
-            directory = expanduser("~")+"/S3IO/"+str(s3_bucket)
+            directory = self.file_path+"/"+str(s3_bucket)
             if not os.path.exists(directory):
                 return
             f = open(directory+"/"+str(s3_key), "rb")
@@ -312,12 +316,13 @@ class S3IO:
                     break
                 break
         else:
-            directory = expanduser("~")+"/S3IO/"+str(s3_bucket)
+            directory = self.file_path+"/"+str(s3_bucket)
             if not os.path.exists(directory):
                 return
             f = open(directory+"/"+str(s3_key), "rb")
             f.seek(s3_start, 0)
             d = f.read(s3_end-s3_start)
+            d = np.frombuffer(d, dtype=np.uint8, count=-1, offset=0)
             f.close()
             return d
 
