@@ -119,10 +119,10 @@ def _pg_column_exists(conn, table, column):
     :rtype bool
     """
     return conn.execute("""
-                        select TRUE from pg_attribute "
-                        "where attrelid = to_regclass(%s) "
-                        "and attname = %s "
-                        "and not attisdropped
+                        select TRUE from pg_attribute
+                        where attrelid = to_regclass(%s)
+                        and attname = %s
+                        and not attisdropped
                         """, schema_qualified(table), column) is not None
 
 
