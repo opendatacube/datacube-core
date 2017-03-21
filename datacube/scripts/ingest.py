@@ -47,7 +47,14 @@ def morph_dataset_type(source_type, config):
     output_type.definition['managed'] = True
     output_type.definition['description'] = config['description']
     output_type.definition['storage'] = config['storage']
-    output_type.metadata_doc['format'] = {'name': 'NetCDF'}
+    driver = output_type.definition['storage']['driver'].lower()
+    if driver == 'netcdf cf':
+        output_type.metadata_doc['format'] = {'name': 'NetCDF'}
+    elif driver == 's3':
+        output_type.metadata_doc['format'] = {'name': 's3'}
+    else:
+        raise ValueError('Unknown driver: %s' % output_type.definition['storage']['driver'])
+
 
     output_type.definition['storage'] = {k: v for (k, v) in config['storage'].items()
                                          if k in ('crs', 'tile_size', 'resolution', 'origin')}
@@ -233,7 +240,13 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
     datasets = xr_apply(tile.sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
     nudata['dataset'] = datasets_to_doc(datasets)
 
-    write_dataset_to_netcdf(nudata, file_path, global_attributes, variable_params)
+    driver = output_type.definition['storage']['driver'].lower()
+    if driver == 'netcdf cf':
+        write_dataset_to_netcdf(nudata, file_path, global_attributes, variable_params)
+    elif driver == 's3':
+        _LOG.warning('s3 storage not integrated yet!')
+    else:
+        raise ValueError('Unknown driver: %s' % output_type.definition['storage']['driver'])
     _LOG.info('Finished task %s', tile_index)
 
     return datasets

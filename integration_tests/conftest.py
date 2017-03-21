@@ -189,12 +189,12 @@ def example_ls5_dataset_path(tmpdir):
     return Path(str(dataset_dir))
 
 
-@pytest.fixture
-def ls5_nbar_ingest_config(tmpdir):
+# For s3, change to: @pytest.fixture(params=['NetCDF CF', 's3'])
+@pytest.fixture(params=['NetCDF CF'])
+def ls5_nbar_ingest_config(tmpdir, request):
     dataset_dir = tmpdir.mkdir('ls5_nbar_ingest_test')
     config = load_yaml_file(LS5_NBAR_INGEST_CONFIG)[0]
-
-    config = alter_dataset_type_for_testing(config)
+    config = alter_dataset_type_for_testing(config, request.param)
     config['location'] = str(dataset_dir)
 
     config_path = dataset_dir.join('ls5_nbar_ingest_config.yaml')
@@ -296,10 +296,13 @@ def load_yaml_file(filename):
         return list(yaml.load_all(f, Loader=SafeLoader))
 
 
-def alter_dataset_type_for_testing(type_, metadata_type=None):
+def alter_dataset_type_for_testing(type_, driver='NetCDF CF', metadata_type=None):
     if 'measurements' in type_:
         type_ = limit_num_measurements(type_)
     if 'storage' in type_:
+        storage = type_['storage']
+        if 'driver' in storage:
+            storage['driver'] = driver
         if is_geogaphic(type_):
             type_ = shrink_storage_type(type_, GEOGRAPHIC_VARS)
         else:
