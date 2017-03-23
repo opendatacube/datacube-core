@@ -156,12 +156,12 @@ def update_schema(engine):
         _LOG.info('Applying surrogate-key update')
         engine.execute("""
         begin;
-          alter table agdc.dataset_source drop constraint pk_dataset_source;
-          alter table agdc.dataset_source drop constraint uq_dataset_source_dataset_ref;
-          alter table agdc.dataset_source add constraint pk_dataset_source primary key(dataset_ref, classifier);
-          alter table agdc.dataset_source drop column id;
+          alter table {schema}.dataset_source drop constraint pk_dataset_source;
+          alter table {schema}.dataset_source drop constraint uq_dataset_source_dataset_ref;
+          alter table {schema}.dataset_source add constraint pk_dataset_source primary key(dataset_ref, classifier);
+          alter table {schema}.dataset_source drop column id;
         commit;
-        """)
+        """.format(schema=SCHEMA_NAME))
         _LOG.info('Completed surrogate-key update')
 
     # float8range is needed if the user uses the double-range field type.
@@ -170,8 +170,9 @@ def update_schema(engine):
 
     if not _pg_column_exists(engine, schema_qualified('dataset_location'), 'archived'):
         _LOG.info('Applying dataset_location.archived update')
-        engine.execute("alter table %s add column archived TIMESTAMP WITH TIME ZONE",
-                       schema_qualified('dataset_location'))
+        engine.execute("""
+          alter table {schema}.dataset_location add column archived TIMESTAMP WITH TIME ZONE
+          """.format(schema=SCHEMA_NAME))
         _LOG.info('Completed dataset_location.archived update')
 
     # Update uri indexes to allow dataset search-by-uri.
@@ -180,13 +181,13 @@ def update_schema(engine):
         engine.execute("""
         begin;
           -- Add a separate index by dataset.
-          create index ix_agdc_dataset_location_dataset_ref on agdc.dataset_location (dataset_ref);
+          create index ix_agdc_dataset_location_dataset_ref on {schema}.dataset_location (dataset_ref);
 
           -- Replace (dataset, uri) index with (uri, dataset) index.
-          alter table agdc.dataset_location add constraint uq_dataset_location_uri_scheme unique (uri_scheme, uri_body, dataset_ref);
-          alter table agdc.dataset_location drop constraint uq_dataset_location_dataset_ref;
+          alter table {schema}.dataset_location add constraint uq_dataset_location_uri_scheme unique (uri_scheme, uri_body, dataset_ref);
+          alter table {schema}.dataset_location drop constraint uq_dataset_location_dataset_ref;
         commit;
-        """)
+        """.format(schema=SCHEMA_NAME))
         _LOG.info('Completed uri-search update')
 
 
