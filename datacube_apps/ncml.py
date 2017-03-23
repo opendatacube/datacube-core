@@ -129,6 +129,7 @@ def write_ncml_file(ncml_filename, file_locations, header_attrs):
         ncml_file.write('</netcdf>\n')
 
 
+#: pylint: disable=invalid-name
 cell_index_option = click.option('--cell-index', 'cell_index',
                                  help='Limit to a particular cell (e.g. 14,-11)',
                                  callback=task_app.validate_cell_index, default=None)
@@ -140,6 +141,7 @@ def ncml_app():
     pass
 
 
+#: pylint: disable=invalid-name
 command_options = datacube.ui.click.compose(
     datacube.ui.click.config_option,
     datacube.ui.click.pass_index(app_name=APP_NAME),
