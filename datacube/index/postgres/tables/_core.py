@@ -170,7 +170,8 @@ def update_schema(engine):
 
     if not _pg_column_exists(engine, schema_qualified('dataset_location'), 'archived'):
         _LOG.info('Applying dataset_location.archived update')
-        engine.execute("alter table agdc.dataset_location add column archived TIMESTAMP WITH TIME ZONE")
+        engine.execute("alter table %s add column archived TIMESTAMP WITH TIME ZONE",
+                       schema_qualified('dataset_location'))
         _LOG.info('Completed dataset_location.archived update')
 
     # Update uri indexes to allow dataset search-by-uri.
