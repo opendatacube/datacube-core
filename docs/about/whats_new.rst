@@ -20,6 +20,9 @@ v1.2.3
    metadata type in order to keep it minimal. Users & products can still add
    their own metadata types to use additional fields.
 
+ - Dataset locations can now be archived, not just deleted. This represents a location that is still accessible
+   but is deprecated.
+
  - We are now part of Open Data Cube, and have a new home at https://github.com/opendatacube/datacube-core
 
 This release now enforces the uri index changes to be applied: it will prompt you to rerun ``init`` as
