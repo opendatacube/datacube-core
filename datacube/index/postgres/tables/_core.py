@@ -119,11 +119,11 @@ def _pg_column_exists(conn, table, column):
     :rtype bool
     """
     return conn.execute("""
-                        select TRUE from pg_attribute
+                        select 1 from pg_attribute
                         where attrelid = to_regclass(%s)
                         and attname = %s
                         and not attisdropped
-                        """, table, column) is not None
+                        """, table, column).scalar() is not None
 
 
 def database_exists(engine):
