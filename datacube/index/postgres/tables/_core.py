@@ -142,7 +142,8 @@ def schema_is_latest(engine):
 
     has_dataset_source_update = not _pg_exists(engine, schema_qualified('uq_dataset_source_dataset_ref'))
     has_uri_searches = _pg_exists(engine, schema_qualified('ix_agdc_dataset_location_dataset_ref'))
-    return has_dataset_source_update and has_uri_searches
+    has_dataset_location = _pg_column_exists(engine, schema_qualified('dataset_location'), 'archived')
+    return has_dataset_source_update and has_uri_searches and has_dataset_location
 
 
 def update_schema(engine):
