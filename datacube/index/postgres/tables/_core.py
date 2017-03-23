@@ -18,7 +18,10 @@ SQL_NAMING_CONVENTIONS = {
     "uq": "uq_%(table_name)s_%(column_0_name)s",
     "ck": "ck_%(table_name)s_%(constraint_name)s",
     "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
-    "pk": "pk_%(table_name)s"
+    "pk": "pk_%(table_name)s",
+    # Other prefixes handled outside of sqlalchemy:
+    # dix: dynamic-index, those indexes created automatically based on search field configuration.
+    # tix: test-index, created by hand for testing, particularly in dev.
 }
 SCHEMA_NAME = 'agdc'
 METADATA = MetaData(naming_convention=SQL_NAMING_CONVENTIONS, schema=SCHEMA_NAME)
@@ -140,8 +143,10 @@ def schema_is_latest(engine):
     # We may have versioned schema in the future.
     # For now, we know updates have been applied if certain objects exist,
 
+    location_first_index = 'ix_{schema}_dataset_location_dataset_ref'.format(schema=SCHEMA_NAME)
+
     has_dataset_source_update = not _pg_exists(engine, schema_qualified('uq_dataset_source_dataset_ref'))
-    has_uri_searches = _pg_exists(engine, schema_qualified('ix_agdc_dataset_location_dataset_ref'))
+    has_uri_searches = _pg_exists(engine, schema_qualified(location_first_index))
     has_dataset_location = _pg_column_exists(engine, schema_qualified('dataset_location'), 'archived')
     return has_dataset_source_update and has_uri_searches and has_dataset_location
 
@@ -176,12 +181,12 @@ def update_schema(engine):
         _LOG.info('Completed dataset_location.archived update')
 
     # Update uri indexes to allow dataset search-by-uri.
-    if not _pg_exists(engine, schema_qualified('ix_agdc_dataset_location_dataset_ref')):
+    if not _pg_exists(engine, schema_qualified('ix_{schema}_dataset_location_dataset_ref'.format(schema=SCHEMA_NAME))):
         _LOG.info('Applying uri-search update')
         engine.execute("""
         begin;
           -- Add a separate index by dataset.
-          create index ix_agdc_dataset_location_dataset_ref on {schema}.dataset_location (dataset_ref);
+          create index ix_{schema}_dataset_location_dataset_ref on {schema}.dataset_location (dataset_ref);
 
           -- Replace (dataset, uri) index with (uri, dataset) index.
           alter table {schema}.dataset_location add constraint uq_dataset_location_uri_scheme unique (uri_scheme, uri_body, dataset_ref);
