@@ -3,7 +3,7 @@
 What's New
 ==========
 
-v1.2.3
+v1.3.0
 ------
 
  - Updated the Postgres product views to include the whole dataset metadata document.
