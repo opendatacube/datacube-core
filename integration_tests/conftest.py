@@ -39,6 +39,12 @@ eotiles: {eotiles_tile_folder}
 INTEGRATION_DEFAULT_CONFIG_PATH = Path(__file__).parent.joinpath('agdcintegration.conf')
 
 _EXAMPLE_LS5_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('example-ls5-nbar.yaml')
+_EXAMPLE_LS5_NBAR_DATASET_FILE_TMPL = Path(__file__).parent.joinpath('example-ls5-nbar_%d.yaml')
+EXAMPLE_LS5_NBAR_DATASET_IDS = {
+    302: UUID('81c328d7-b5f4-41c0-9980-47560e6e8907')
+    # 505: UUID('dffb6d9b-8a68-4e01-87b6-3f2759968645'),
+    # 606: UUID('6bceffa0-e813-4017-af56-1f86bc9795ee')
+}
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs' / 'config_samples'
@@ -187,6 +193,36 @@ def example_ls5_dataset_path(tmpdir):
         create_empty_geotiff(str(path))
 
     return Path(str(dataset_dir))
+
+
+@pytest.fixture
+def example_ls5_dataset_paths(tmpdir):
+    '''Create 3 sample observations.
+
+    Each observation corresponds to a different timestamp, based on
+    `LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900[302, 505, 606]` and
+    contains 3 empty geotiffs, for 3 bands.
+
+    Returns:
+      dict: Dict of directories containing each observation, indexed
+      by observation id.
+    '''
+    scene_name = 'LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900%d'
+    dataset_dir = tmpdir.mkdir('ls5_dataset')
+    dataset_dirs = {}
+    for obs_id in EXAMPLE_LS5_NBAR_DATASET_IDS.keys():
+        obs_name = scene_name % obs_id
+        obs_dir = dataset_dir.mkdir(obs_name)
+        shutil.copy(str(_EXAMPLE_LS5_NBAR_DATASET_FILE_TMPL) % obs_id,
+                    str(obs_dir.join('agdc-metadata.yaml')))
+        geotiff_name = '%s_B{}0.tif' % obs_name
+        scene_dir = obs_dir.mkdir('scene01')
+        scene_dir.join('report.txt').write('Example')
+        for band in (1, 2, 3):
+            path = scene_dir.join(geotiff_name.format(band))
+            create_empty_geotiff(str(path))
+        dataset_dirs[obs_id] = Path(str(obs_dir))
+    return dataset_dirs
 
 
 # For s3, change to: @pytest.fixture(params=['NetCDF CF', 's3'])

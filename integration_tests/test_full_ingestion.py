@@ -14,7 +14,7 @@ from datacube.api.query import query_group_by
 
 import datacube.scripts.cli_app
 from datacube.utils import geometry, read_documents
-from .conftest import EXAMPLE_LS5_DATASET_ID
+from .conftest import EXAMPLE_LS5_NBAR_DATASET_IDS
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
@@ -38,29 +38,34 @@ COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
 
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_dataset_types')
-def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset_path, ls5_nbar_ingest_config):
-    opts = list(global_integration_cli_args)
-    opts.extend(
-        [
-            '-v',
-            'dataset',
-            'add',
-            '--auto-match',
-            str(example_ls5_dataset_path)
-        ]
-    )
-    result = CliRunner().invoke(
-        datacube.scripts.cli_app.cli,
-        opts,
-        catch_exceptions=False
-    )
-    print(result.output)
-    assert not result.exception
-    assert result.exit_code == 0
+def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset_paths, ls5_nbar_ingest_config):
 
-    ensure_dataset_is_indexed(index)
+    for obs_id, example_ls5_dataset_path in example_ls5_dataset_paths.items():
+        opts = list(global_integration_cli_args)
+        opts.extend(
+            [
+                '-v',
+                'dataset',
+                'add',
+                '--auto-match',
+                str(example_ls5_dataset_path)
+            ]
+        )
+        result = CliRunner().invoke(
+            datacube.scripts.cli_app.cli,
+            opts,
+            catch_exceptions=False
+        )
+        print(result.output)
+        assert not result.exception
+        assert result.exit_code == 0
+
+    ensure_datasets_are_indexed(index)
 
     config_path, config = ls5_nbar_ingest_config
+
+    # TODO(csiro) Set time dimension when testing
+    # config['storage']['tile_size']['time'] = 2
 
     opts = list(global_integration_cli_args)
     opts.extend(
@@ -98,10 +103,12 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset_
     check_open_with_api(index)
 
 
-def ensure_dataset_is_indexed(index):
+def ensure_datasets_are_indexed(index):
     datasets = index.datasets.search_eager(product='ls5_nbar_scene')
-    assert len(datasets) == 1
-    assert datasets[0].id == EXAMPLE_LS5_DATASET_ID
+    assert len(datasets) == len(EXAMPLE_LS5_NBAR_DATASET_IDS)
+    valid_uuids = list(EXAMPLE_LS5_NBAR_DATASET_IDS.values())
+    for dataset in datasets:
+        assert dataset.id in valid_uuids
 
 
 def check_grid_mapping(nco):
