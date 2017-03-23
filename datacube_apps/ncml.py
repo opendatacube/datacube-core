@@ -8,6 +8,7 @@ import logging
 import os
 from datetime import datetime
 from functools import partial
+from itertools import groupby
 
 import click
 from dateutil import tz
@@ -24,18 +25,27 @@ _LOG = logging.getLogger(__name__)
 APP_NAME = 'datacube-ncml'
 
 
-def get_filename(config, cell_index):
-    file_path_template = str(Path(config['location'], config['ncml_path_template']))
-    return file_path_template.format(tile_index=cell_index)
+def get_filename(config, cell_index, year=None):
+    if year is None:
+        file_path_template = str(Path(config['location'], config['ncml_path_template']))
+    else:
+        file_path_template = str(Path(config['location'], config['partial_ncml_path_template']))
+    return file_path_template.format(tile_index=cell_index, start_time=year)
 
 
-def make_ncml_tasks(index, config, cell_index=None, **kwargs):
+def make_ncml_tasks(index, config, cell_index=None, year=None, **kwargs):
     product = config['product']
 
+    query = {}
+    if year is not None:
+        query['time'] = datetime(year=year, month=1, day=1), datetime(year=year + 1, month=1, day=1)
+
+    config['nested_years'] = kwargs.get('nested_years', [])
+
     gw = datacube.api.GridWorkflow(index=index, product=product.name)
-    cells = gw.list_cells(product=product.name, cell_index=cell_index)
+    cells = gw.list_cells(product=product.name, cell_index=cell_index, **query)
     for (cell_index, tile) in cells.items():
-        output_filename = get_filename(config, cell_index)
+        output_filename = get_filename(config, cell_index, year)
         yield dict(tile=tile,
                    cell_index=cell_index,
                    output_filename=output_filename)
@@ -66,16 +76,37 @@ def get_history_attribute(config, task):
 
 def do_ncml_task(config, task):
     tile = task['tile']
-    ncml_filename = task['output_filename']
+    nested_years = config['nested_years']
 
-    ncml_header = """<netcdf xmlns="http://www.unidata.ucar.edu/namespaces/netcdf/ncml-2.2">
-      <attribute name='date_created' type='string' value='{date_created}' />
-      <attribute name='history' type='string' value='{history}' />
-      <aggregation dimName="time" type="joinExisting">"""
+    def get_sources_filepath(sources):
+        year = int(str(sources.time.values.astype('datetime64[Y]')))
+        if year in nested_years:
+            file_path_template = str(Path(config['location'], config['partial_ncml_path_template']))
+            return file_path_template.format(tile_index=task['cell_index'], start_time=year), True
+        else:
+            return str(sources.item()[0].local_path), False
 
-    ncml_footer = """
-      </aggregation>
-    </netcdf>"""
+    header_attrs = dict(date_created=datetime.today().isoformat(),
+                        history=get_history_attribute(config, task))
+
+    file_locations = []
+    for (file_location, is_nested_ncml), sources in groupby(tile.sources, get_sources_filepath):
+        file_locations.append(file_location)
+        if is_nested_ncml:
+            write_ncml_file(file_location, [str(source.item()[0].local_path) for source in sources], header_attrs)
+
+    write_ncml_file(task['output_filename'], file_locations, header_attrs)
+
+
+def write_ncml_file(ncml_filename, file_locations, header_attrs):
+    filename = Path(ncml_filename)
+    if filename.exists():
+        raise RuntimeError('NCML already exists: %s' % filename)
+
+    try:
+        filename.parent.mkdir(parents=True)
+    except OSError:
+        pass
 
     netcdf_def = """
         <netcdf xmlns="http://www.unidata.ucar.edu/namespaces/netcdf/ncml-2.2" location="{path}">
@@ -84,27 +115,74 @@ def do_ncml_task(config, task):
         </netcdf>"""
 
     with open(ncml_filename, 'w') as ncml_file:
-        ncml_file.write(ncml_header.format(date_created=datetime.today().isoformat(),
-                                           history=get_history_attribute(config, task)))
-        for timeslice_sources in tile.sources.values:
-            ncml_file.write(netcdf_def.format(path=str(timeslice_sources[0].local_path)))
-        ncml_file.write(ncml_footer)
+        ncml_file.write('<netcdf xmlns="http://www.unidata.ucar.edu/namespaces/netcdf/ncml-2.2">\n')
+
+        for key, value in header_attrs.items():
+            ncml_file.write("  <attribute name='{key}' type='string' value='{value}' />\n".format(key=key, value=value))
+
+        ncml_file.write('  <aggregation dimName="time" type="joinExisting">\n')
+
+        for file_location in file_locations:
+            ncml_file.write(netcdf_def.format(path=file_location))
+
+        ncml_file.write('  </aggregation>\n')
+        ncml_file.write('</netcdf>\n')
 
 
-@click.command(name=APP_NAME)
-@datacube.ui.click.pass_index(app_name=APP_NAME)
-@datacube.ui.click.global_cli_options
-@click.option('--cell-index', 'cell_index', help='Limit the process to a particular cell (e.g. 14,-11)',
-              callback=task_app.validate_cell_index, default=None)
-@task_app.queue_size_option
-@task_app.task_app_options
+cell_index_option = click.option('--cell-index', 'cell_index',
+                                 help='Limit to a particular cell (e.g. 14,-11)',
+                                 callback=task_app.validate_cell_index, default=None)
+
+
+@click.group(name=APP_NAME, help='NCML creation utility')
+@datacube.ui.click.version_option
+def ncml_app():
+    pass
+
+
+command_options = datacube.ui.click.compose(
+    datacube.ui.click.config_option,
+    datacube.ui.click.pass_index(app_name=APP_NAME),
+    datacube.ui.click.logfile_option,
+    cell_index_option,
+    task_app.queue_size_option,
+    datacube.ui.click.executor_cli_options,
+)
+
+
+@ncml_app.command(short_help='Create an ncml file')
+@command_options
+@click.argument('app_config')
 @task_app.task_app(make_config=make_ncml_config, make_tasks=make_ncml_tasks)
-def main(index, config, tasks, executor, queue_size, **kwargs):
+def full(index, config, tasks, executor, queue_size, **kwargs):
     click.echo('Starting datacube ncml utility...')
 
     task_func = partial(do_ncml_task, config)
     task_app.run_tasks(tasks, executor, task_func, None, queue_size)
 
 
+@ncml_app.command(short_help='Create a full ncml file with nested ncml files for particular years')
+@command_options
+@click.argument('app_config')
+@click.argument('nested_years', nargs=-1, type=click.INT)
+@task_app.task_app(make_config=make_ncml_config, make_tasks=make_ncml_tasks)
+def nest(index, config, tasks, executor, queue_size, **kwargs):
+    click.echo('Starting datacube ncml utility...')
+
+    task_func = partial(do_ncml_task, config)
+    task_app.run_tasks(tasks, executor, task_func, None, queue_size)
+
+
+@ncml_app.command(short_help='Update a single year ncml file')
+@command_options
+@click.argument('app_config')
+@click.argument('year', type=click.INT)
+@task_app.task_app(make_config=make_ncml_config, make_tasks=make_ncml_tasks)
+def update(index, config, tasks, executor, queue_size, **kwargs):
+    click.echo('Starting datacube ncml utility...')
+
+    task_func = partial(do_ncml_task, config)
+    task_app.run_tasks(tasks, executor, task_func, None, queue_size)
+
 if __name__ == '__main__':
-    main()
+    ncml_app()
