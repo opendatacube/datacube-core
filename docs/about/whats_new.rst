@@ -6,25 +6,30 @@ What's New
 v1.3.0
 ------
 
- - Updated the Postgres product views to include the whole dataset metadata document.
+ - Updated the Postgres product views to include the whole dataset metadata
+   document.
 
- - ``datacube system init`` now recreates the product views by default every time it is run, and now supports Postgres 9.6.
+ - ``datacube system init`` now recreates the product views by default every
+   time it is run, and now supports Postgres 9.6.
 
  - URI searches are now better supported from the cli: ``datacube dataset search uri = file:///some/uri/here``
 
- - ``datacube user delete`` now supports multiple user arguments.
+ - ``datacube user`` now supports a user description (via ``--description``)
+   when creating a user, and delete accepts multiple user arguments.
 
  - Platform-specific (Landsat) fields have been removed from the default ``eo``
    metadata type in order to keep it minimal. Users & products can still add
    their own metadata types to use additional fields.
 
- - Dataset locations can now be archived, not just deleted. This represents a location that is still accessible
-   but is deprecated.
+ - Dataset locations can now be archived, not just deleted. This represents a
+   location that is still accessible but is deprecated.
 
- - We are now part of Open Data Cube, and have a new home at https://github.com/opendatacube/datacube-core
+ - We are now part of Open Data Cube, and have a new home at
+   https://github.com/opendatacube/datacube-core
 
-This release now enforces the uri index changes to be applied: it will prompt you to rerun ``init`` as
-an administrator to update your existing cubes: ``datacube -v system init`` (this command can be run without affecting
+This release now enforces the uri index changes to be applied: it will prompt
+you to rerun ``init`` as an administrator to update your existing cubes:
+``datacube -v system init`` (this command can be run without affecting
 read-only users, but will briefly pause writes)
 
 v1.2.2
