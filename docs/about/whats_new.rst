@@ -8,9 +8,7 @@ v1.3.0
 
  - Updated the Postgres product views to include the whole dataset metadata document.
 
- - ``init`` now recreates the product views by default every time it is run.
-
- - Updated ``init`` to support Postgres 9.6
+ - ``datacube system init`` now recreates the product views by default every time it is run, and now supports Postgres 9.6.
 
  - URI searches are now better supported from the cli: ``datacube dataset search uri = file:///some/uri/here``
 
