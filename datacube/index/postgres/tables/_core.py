@@ -192,7 +192,7 @@ def _escape_pg_identifier(engine, name):
     return engine.execute("select quote_ident(%s)", name).scalar()
 
 
-def create_user(conn, username, key, role):
+def create_user(conn, username, key, role, description=None):
     if role not in USER_ROLES:
         raise ValueError('Unknown role %r. Expected one of %r' % (role, USER_ROLES))
     username = _escape_pg_identifier(conn, username)
@@ -200,6 +200,10 @@ def create_user(conn, username, key, role):
         'create user {username} password %s in role {role}'.format(username=username, role=role),
         key
     )
+    if description:
+        conn.execute(
+            'comment on role {username} is %s'.format(username=username), description
+        )
 
 
 def drop_user(engine, *usernames):

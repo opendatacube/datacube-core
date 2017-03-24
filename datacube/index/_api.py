@@ -58,9 +58,7 @@ class Index(object):
     :type metadata_types: datacube.index._datasets.MetadataTypeResource
     """
     def __init__(self, db):
-        """
-        :type db: datacube.index.postgres._api.PostgresDb
-        """
+        # type: (PostgresDb) -> None
         self._db = db
 
         self.users = UserResource(db)
@@ -105,6 +103,7 @@ class Index(object):
 
 class UserResource(object):
     def __init__(self, db):
+        # type: (PostgresDb) -> None
         self._db = db
 
     def grant_role(self, role, *usernames):
@@ -114,12 +113,12 @@ class UserResource(object):
         with self._db.connect() as connection:
             connection.grant_role(role, usernames)
 
-    def create_user(self, username, password, role):
+    def create_user(self, username, password, role, description=None):
         """
         Create a new user.
         """
         with self._db.connect() as connection:
-            connection.create_user(username, password, role)
+            connection.create_user(username, password, role, description=description)
 
     def delete_user(self, *usernames):
         """

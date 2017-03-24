@@ -800,9 +800,9 @@ class PostgresDbAPI(object):
         for row in result:
             yield tables.from_pg_role(row['role_name']), row['user_name'], row['description']
 
-    def create_user(self, username, password, role):
+    def create_user(self, username, password, role, description=None):
         pg_role = tables.to_pg_role(role)
-        tables.create_user(self._connection, username, password, pg_role)
+        tables.create_user(self._connection, username, password, pg_role, description=description)
 
     def drop_users(self, users):
         # type: (Iterable[str]) -> None
