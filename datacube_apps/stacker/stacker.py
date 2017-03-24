@@ -18,7 +18,6 @@ from dateutil import tz
 import pandas as pd
 from pandas.tseries.offsets import YearBegin, YearEnd
 from pathlib import Path
-import xarray as xr
 
 import datacube
 from datacube.api import Tile
@@ -36,7 +35,7 @@ APP_NAME = 'datacube-stacker'
 
 
 def get_filename(config, cell_index, year):
-    file_path_template = str(Path(config['location'], config['stacked_file_path_template']))
+    file_path_template = str(Path(config['location'], config['file_path_template']))
     return file_path_template.format(tile_index=cell_index, start_time=year, version=config['taskfile_version'])
 
 
@@ -132,9 +131,15 @@ def do_stack_task(config, task):
     variable_params = config['variable_params']
 
     output_filename = Path(task['output_filename'])
+    output_uri = output_filename.absolute().as_uri()
     tile = task['tile']
 
-    data = datacube.api.GridWorkflow.load(tile, dask_chunks=config['storage']['chunking'])
+    # Only use the time chunk size (eg 5), but not spatial chunks
+    # This means the file only gets opened once per band, and all data is available when compressing on write
+    # 5 * 4000 * 4000 * 2bytes == 152MB, so mem usage is not an issue
+    chunk_profile = {'time': config['storage']['chunking']['time']}
+
+    data = datacube.api.GridWorkflow.load(tile, dask_chunks=chunk_profile)
 
     unwrapped_datasets = xr_apply(tile.sources, _unwrap_dataset_list, dtype='O')
     data['dataset'] = datasets_to_doc(unwrapped_datasets)
@@ -153,24 +158,28 @@ def do_stack_task(config, task):
         except ValueError:
             nco[name][:] = netcdf_writer.netcdfy_data(variable.values)
         nco.sync()
-
     nco.close()
 
+    if config.get('check_data_identical', False):
+        new_tile = make_updated_tile(unwrapped_datasets, output_uri, tile.geobox)
+        new_data = datacube.api.GridWorkflow.load(new_tile, dask_chunks=chunk_profile)
+
+        with dask.set_options(get=dask.async.get_sync):
+            if not all((data == new_data).all().values()):
+                _LOG.error("Mismatch found for %s, not indexing", output_filename)
+                raise ValueError("Mismatch found for %s, not indexing" % output_filename)
+
+    return unwrapped_datasets, output_uri
+
+
+def make_updated_tile(old_datasets, new_uri, geobox):
     def update_dataset_location(labels, dataset):
         new_dataset = copy.copy(dataset)
-        new_dataset.local_uri = output_filename.absolute().as_uri()
+        new_dataset.local_uri = new_uri
         return [dataset]
 
-    updated_datasets = xr_apply(unwrapped_datasets, update_dataset_location, dtype='O')
-    new_tile = datacube.api.Tile(sources=updated_datasets, geobox=tile.geobox)
-
-    new_data = datacube.api.GridWorkflow.load(new_tile, dask_chunks=config['storage']['chunking'])
-
-    if not data.identical(new_data):
-        _LOG.error("Mismatch found for %s, not indexing", output_filename)
-        raise ValueError("Mismatch found for %s, not indexing" % output_filename)
-
-    return unwrapped_datasets, output_filename.absolute().as_uri()
+    updated_datasets = xr_apply(old_datasets, update_dataset_location, dtype='O')
+    return datacube.api.Tile(sources=updated_datasets, geobox=geobox)
 
 
 def process_result(index, result):
@@ -179,11 +188,7 @@ def process_result(index, result):
         _LOG.info('Updating dataset location: %s', dataset.local_path)
         old_uri = dataset.local_uri
         index.datasets.add_location(dataset.id, new_uri)
-        index.datasets.remove_location(dataset.id, old_uri)  # TODO: archive_location
-
-
-def do_nothing(*args, **kwargs):
-    pass
+        index.datasets.archive_location(dataset.id, old_uri)
 
 
 @click.command(name=APP_NAME)
@@ -203,7 +208,7 @@ def main(index, config, tasks, executor, queue_size, **kwargs):
     click.echo('Starting stacking utility...')
 
     task_func = partial(do_stack_task, config)
-    process_func = partial(process_result, index) if config['index_datasets'] else do_nothing
+    process_func = partial(process_result, index) if config['index_datasets'] else None
     task_app.run_tasks(tasks, executor, task_func, process_func, queue_size)
 
 

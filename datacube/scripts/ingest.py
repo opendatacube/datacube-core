@@ -20,7 +20,7 @@ from datacube.model import DatasetType, Range, GeoPolygon
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.storage.storage import write_dataset_to_netcdf
 from datacube.ui import click as ui
-from datacube.utils import read_documents
+from datacube.utils import read_documents, changes
 from datacube.ui.task_app import check_existing_files, load_tasks as load_tasks_, save_tasks as save_tasks_
 
 from datacube.ui.click import cli
@@ -46,8 +46,10 @@ def morph_dataset_type(source_type, config):
     output_type.definition['name'] = config['output_type']
     output_type.definition['managed'] = True
     output_type.definition['description'] = config['description']
-    output_type.definition['storage'] = config['storage']
     output_type.metadata_doc['format'] = {'name': 'NetCDF'}
+
+    output_type.definition['storage'] = {k: v for (k, v) in config['storage'].items()
+                                         if k in ('crs', 'tile_size', 'resolution', 'origin')}
 
     def merge_measurement(measurement, spec):
         measurement.update({k: spec.get(k, measurement[k]) for k in ('name', 'nodata', 'dtype')})
@@ -122,7 +124,35 @@ def make_output_type(index, config):
 
     output_type = morph_dataset_type(source_type, config)
     _LOG.info('Created DatasetType %s', output_type.name)
-    output_type = index.products.add(output_type)
+
+    # Some storage fields should not be in the product definition, and should be removed.
+    # To handle backwards compatibility for now, ignore them with custom rules,
+    # rather than using the default checks done by index.products.add
+    existing = index.products.get_by_name(output_type.name)
+    backwards_compatible_fields = True
+    if existing and backwards_compatible_fields:
+        updates_allowed = {
+            ('description',): changes.allow_any,
+            ('metadata_type',): changes.allow_any,
+            ('storage', 'chunking'): changes.allow_any,
+            ('storage', 'driver'): changes.allow_any,
+            ('storage', 'dimension_order'): changes.allow_any,
+            ('metadata',): changes.allow_truncation
+        }
+
+        doc_changes = changes.get_doc_changes(output_type.definition,
+                                              datacube.utils.jsonify_document(existing.definition))
+        good_changes, bad_changes = changes.classify_changes(doc_changes, updates_allowed)
+        if bad_changes:
+            raise ValueError(
+                '{} differs from stored ({})'.format(
+                    output_type.name,
+                    ', '.join(['{}: {!r}!={!r}'.format('.'.join(offset), v1, v2) for offset, v1, v2 in bad_changes])
+                )
+            )
+        output_type = index.products.update(output_type, allow_unsafe_updates=True)
+    else:
+        output_type = index.products.add(output_type)
 
     return source_type, output_type
 

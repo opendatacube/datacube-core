@@ -3,6 +3,7 @@ from __future__ import absolute_import
 from datetime import datetime
 import logging
 import os
+import time
 import click
 import cachetools
 import functools
@@ -30,6 +31,7 @@ def load_config(index, app_config_file, make_config, make_tasks, *args, **kwargs
     app_config_path = Path(app_config_file)
     _, config = next(read_documents(app_config_path))
     config['app_config_file'] = app_config_path.name
+    config['task_timestamp'] = int(time.time())
 
     config = make_config(index, config, **kwargs)
 
@@ -194,7 +196,7 @@ def do_nothing(result):
     pass
 
 
-def run_tasks(tasks, executor, run_task, process_result=do_nothing, queue_size=50):
+def run_tasks(tasks, executor, run_task, process_result=None, queue_size=50):
     """
     :param tasks: iterable of tasks. Usually a generator to create them as required.
     :param executor: a datacube executor, similar to `distributed.Client` or `concurrent.futures`
@@ -205,6 +207,7 @@ def run_tasks(tasks, executor, run_task, process_result=do_nothing, queue_size=5
                        processed, and how much memory is available to buffer them.
     """
     click.echo('Starting processing...')
+    process_result = process_result or do_nothing
     results = []
     task_queue = itertools.islice(tasks, queue_size)
     for task in task_queue:

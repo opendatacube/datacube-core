@@ -3,36 +3,39 @@
 What's New
 ==========
 
-v1.2.3
+v1.3.0
 ------
 
  - Updated the Postgres product views to include the whole dataset metadata document.
 
- - `init` now recreates the product views by default every time it is run.
+ - ``init`` now recreates the product views by default every time it is run.
 
- - Updated `init` to support Postgres 9.6
+ - Updated ``init`` to support Postgres 9.6
 
- - URI searches are now better supported from the cli: `datacube dataset search uri = file:///some/uri/here`
+ - URI searches are now better supported from the cli: ``datacube dataset search uri = file:///some/uri/here``
 
- - `datacube user delete` now supports multiple user arguments.
+ - ``datacube user delete`` now supports multiple user arguments.
 
- - Platform-specific (Landsat) fields have been removed from the default `eo`
+ - Platform-specific (Landsat) fields have been removed from the default ``eo``
    metadata type in order to keep it minimal. Users & products can still add
    their own metadata types to use additional fields.
 
+ - Dataset locations can now be archived, not just deleted. This represents a location that is still accessible
+   but is deprecated.
+
  - We are now part of Open Data Cube, and have a new home at https://github.com/opendatacube/datacube-core
 
-This release now enforces the uri index changes to be applied: it will prompt you to rerun `init` as
-an administrator to update your existing cubes: `datacube -v system init` (this command can be run without affecting
+This release now enforces the uri index changes to be applied: it will prompt you to rerun ``init`` as
+an administrator to update your existing cubes: ``datacube -v system init`` (this command can be run without affecting
 read-only users, but will briefly pause writes)
 
 v1.2.2
 ------
 
- - Added `--allow-exclusive-lock` flag to product add/update commands, allowing faster index updates when
+ - Added ``--allow-exclusive-lock`` flag to product add/update commands, allowing faster index updates when
    system usage can be halted.
 
- - {version} can now be used in ingester filename patterns
+ - ``{version}`` can now be used in ingester filename patterns
 
 v1.2.0 Boring as Batman (15 February 2017)
 ------------------------------------------
