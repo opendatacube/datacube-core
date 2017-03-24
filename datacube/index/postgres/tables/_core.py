@@ -185,10 +185,17 @@ def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=Fal
     engine.execute(' '.join(sql))
 
 
+def _escape_pg_identifier(engine, name):
+    # New (2.7+) versions of psycopg2 have function: extensions.quote_ident()
+    # But it's too bleeding edge right now. We'll ask the server to escape instead, as
+    # these are not performance sensitive.
+    return engine.execute("select quote_ident(%s)", name).scalar()
+
+
 def create_user(conn, username, key, role):
     if role not in USER_ROLES:
         raise ValueError('Unknown role %r. Expected one of %r' % (role, USER_ROLES))
-
+    username = _escape_pg_identifier(conn, username)
     conn.execute(
         'create user {username} password %s in role {role}'.format(username=username, role=role),
         key
@@ -197,13 +204,14 @@ def create_user(conn, username, key, role):
 
 def drop_user(engine, *usernames):
     for username in usernames:
-        engine.execute('drop role {username}'.format(username=username))
+        engine.execute('drop role {username}'.format(username=_escape_pg_identifier(engine, username)))
 
 
 def grant_role(engine, role, users):
     if role not in USER_ROLES:
         raise ValueError('Unknown role %r. Expected one of %r' % (role, USER_ROLES))
 
+    users = [_escape_pg_identifier(engine, user) for user in users]
     with engine.begin():
         engine.execute('revoke {roles} from {users}'.format(users=', '.join(users), roles=', '.join(USER_ROLES)))
         engine.execute('grant {role} to {users}'.format(users=', '.join(users), role=role))
