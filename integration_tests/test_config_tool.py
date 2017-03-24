@@ -4,15 +4,16 @@ Module
 """
 from __future__ import absolute_import, print_function
 
-import random
-
-import datacube.scripts.cli_app
 import logging
+import random
+from pathlib import Path
+
+import pytest
 from click.testing import CliRunner
 
+import datacube.scripts.cli_app
 from datacube.index.postgres import _dynamic
 from datacube.index.postgres.tables._core import drop_db, has_schema, SCHEMA_NAME
-from pathlib import Path
 
 _LOG = logging.getLogger(__name__)
 
@@ -153,7 +154,6 @@ def test_db_init_noop(global_integration_cli_args, local_config, ls5_telem_type)
 
 
 def test_db_init_rebuild(global_integration_cli_args, local_config, ls5_telem_type):
-
     # We set the field creation logging to debug, as we assert its logging output below.
     _dynamic._LOG.setLevel(logging.DEBUG)
 
@@ -196,7 +196,14 @@ def test_db_init(global_integration_cli_args, db, local_config):
         assert has_schema(db._engine, connection._connection)
 
 
-def test_user_creation(global_integration_cli_args, db, default_metadata_type):
+@pytest.mark.parametrize("username, user_description", [
+    ('test_"user"_{n}', None),
+    ('test_"user"_{n}', 'Test user description'),
+    # Test that names are escaped
+    ('user_"invalid+_chars_{n}', None),
+    ('user_invalid_desc_{n}', 'Invalid "\' chars in description'),
+])
+def test_user_creation(global_integration_cli_args, db, username, user_description, default_metadata_type):
     """
     Add a user, grant them, delete them.
 
@@ -207,41 +214,41 @@ def test_user_creation(global_integration_cli_args, db, default_metadata_type):
 
     print('{} mappings'.format(existing_mappings))
 
-    test_number = random.randint(111111, 999999)
-    user_name = 'test_user_{}'.format(test_number)
+    username = username.format(n=random.randint(111111, 999999))
 
     # No user exists.
-    assert_no_user(global_integration_cli_args, user_name)
+    assert_no_user(global_integration_cli_args, username)
 
     # Create them
+    args = ['-v', 'user', 'create', 'ingest', username]
+    if user_description:
+        args.extend(['--description', user_description])
     _run_cli(
         global_integration_cli_args,
         datacube.scripts.cli_app.cli,
-        [
-            '-v', 'user', 'create', 'ingest', user_name
-        ]
+        args
     )
-    assert_user_with_role(global_integration_cli_args, 'ingest', user_name)
+    assert_user_with_role(global_integration_cli_args, 'ingest', username)
 
     # Grant them 'manage' permission
     _run_cli(
         global_integration_cli_args,
         datacube.scripts.cli_app.cli,
         [
-            '-v', 'user', 'grant', 'manage', user_name
+            '-v', 'user', 'grant', 'manage', username
         ]
     )
-    assert_user_with_role(global_integration_cli_args, 'manage', user_name)
+    assert_user_with_role(global_integration_cli_args, 'manage', username)
 
     # Delete them
     _run_cli(
         global_integration_cli_args,
         datacube.scripts.cli_app.cli,
         [
-            '-v', 'user', 'delete', user_name
+            '-v', 'user', 'delete', username
         ]
     )
-    assert_no_user(global_integration_cli_args, user_name)
+    assert_no_user(global_integration_cli_args, username)
 
 
 def assert_user_with_role(global_integration_cli_args, role, user_name):
