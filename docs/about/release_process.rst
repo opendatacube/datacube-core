@@ -41,6 +41,9 @@ stable version.
         python setup.py sdist bdist_wheel
         twine upload dist/*
 
+#. Update conda-forge recipe
+    Follow the instrucions under **Updating datacube-feedstock** in the `Datcube Feedstock`_ repository
+
 #. Update the default version on `raijin`
     Follow the instructions under **Update default version** in the `Datacube Environment`_ repository
 
@@ -57,3 +60,5 @@ stable version.
 .. _Jira: https://gaautobots.atlassian.net/projects/ACDD?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page&status=unreleased
 
 .. _Datacube Environment: https://github.com/GeoscienceAustralia/ga-datacube-env#data-cube-module
+
+.. _Datcube Feedstock: https://github.com/conda-forge/datacube-feedstock#updating-datacube-feedstock
