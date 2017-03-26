@@ -13,6 +13,7 @@ from copy import deepcopy
 from pathlib import Path
 from pandas import to_datetime
 from datetime import datetime
+from pprint import pprint
 
 import datacube
 from datacube.api.core import Datacube
@@ -30,15 +31,22 @@ _LOG = logging.getLogger('agdc-ingest')
 FUSER_KEY = 'fuse_data'
 
 
-def find_diff(input_type, output_type, index, **query):
+def find_diff(input_type, output_type, index, time_size, **query):
     from datacube.api.grid_workflow import GridWorkflow
     workflow = GridWorkflow(index, output_type.grid_spec)
 
-    tiles_in = workflow.list_tiles(product=input_type.name, **query)
-    tiles_out = workflow.list_tiles(product=output_type.name, **query)
+    tiles_in = workflow.list_cells(product=input_type.name, **query)
+    tiles_out = workflow.list_cells(product=output_type.name, **query)
 
     tasks = [{'tile': tile, 'tile_index': key} for key, tile in tiles_in.items() if key not in tiles_out]
-    return tasks
+
+    new_tasks = []
+    for task in tasks:
+        tiles = task['tile'].split('time', time_size)
+        for t in tiles:
+            new_tasks.append({'tile': t[1], 'tile_index': task['tile_index']})
+
+    return new_tasks
 
 
 def morph_dataset_type(source_type, config):
@@ -189,7 +197,8 @@ def create_task_list(index, output_type, year, source_type, config):
         query['x'] = Range(bounds['left'], bounds['right'])
         query['y'] = Range(bounds['bottom'], bounds['top'])
 
-    tasks = find_diff(source_type, output_type, index, **query)
+    time_size = config['storage']['tile_size']['time']
+    tasks = find_diff(source_type, output_type, index, time_size, **query)
     _LOG.info('%s tasks discovered', len(tasks))
 
     def check_valid(tile, tile_index):
@@ -334,6 +343,7 @@ def _validate_year(ctx, param, value):
 def ingest_cmd(index, config_file, year, queue_size, save_tasks, load_tasks, dry_run, executor):
     if config_file:
         config = load_config_from_file(index, config_file)
+        variable_params = get_variable_params(config)
         source_type, output_type = make_output_type(index, config)
 
         tasks = create_task_list(index, output_type, year, source_type, config)

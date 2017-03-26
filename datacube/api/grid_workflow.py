@@ -80,17 +80,20 @@ class Tile(object):
         geobox = self.geobox[chunk[len(self.sources.shape):]]
         return Tile(sources, geobox)
 
-    def split(self, dim):
+    # TODO(csiro) Split on time range
+    def split(self, dim, step=1):
         """
-        Splits along a non-spatial dimension into Tile objects with a length of 1 in the `dim` dimension.
+        Splits along a non-spatial dimension into Tile objects with a length of 1 or more in the `dim` dimension.
 
         :param dim: Name of the non-spatial dimension to split
+        :param step: step size to split
         :return: tuple(key, Tile)
         """
         axis = self.dims.index(dim)
         indexer = [slice(None)] * len(self.dims)
-        for i in range(self.sources[dim].size):
-            indexer[axis] = slice(i, i + 1)
+        size = self.sources[dim].size
+        for i in range(0, size, step):
+            indexer[axis] = slice(i, min(size, i + step))
             yield self.sources[dim].values[i], self[tuple(indexer)]
 
     def __str__(self):
