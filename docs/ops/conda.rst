@@ -30,29 +30,22 @@ Create the environment
 
 .. code::
 
-    conda create --name datacube python=3.5 cachetools dask gdal jsonschema netcdf4 numexpr numpy pathlib psycopg2 python-dateutil pyyaml rasterio singledispatch sqlalchemy xarray
+    conda create --name cubeenv python=3.5 datacube
 
 Activate the environment on **Linux** and **OS X**
 
 .. code::
 
-    source activate datacube
+    source activate cubeenv
 
 Activate the environment on **Windows**
 
 .. code::
 
-    activate datacube
+    activate cubeenv
 
 Find out more about managing virtual environments here https://conda.io/docs/using/envs.html
 
-
-Install datacube
-----------------
-
-.. code::
-
-    pip install datacube
 
 Install other packages
 ----------------------
