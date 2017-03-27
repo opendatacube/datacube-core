@@ -38,6 +38,7 @@ def find_diff(input_type, output_type, index, time_size, **query):
     tiles_in = workflow.list_cells(product=input_type.name, **query)
     tiles_out = workflow.list_cells(product=output_type.name, **query)
 
+    #TODO(csiro) Remove duplicates based on dataset_id / time. Could contain duplicates.
     tasks = [{'tile': tile, 'tile_index': key} for key, tile in tiles_in.items() if key not in tiles_out]
 
     new_tasks = []
@@ -197,7 +198,10 @@ def create_task_list(index, output_type, year, source_type, config):
         query['x'] = Range(bounds['left'], bounds['right'])
         query['y'] = Range(bounds['bottom'], bounds['top'])
 
-    time_size = config['storage']['tile_size']['time']
+    time_size = 1
+    if 'time' in config['storage']['tile_size']:
+        time_size = config['storage']['tile_size']['time']
+
     tasks = find_diff(source_type, output_type, index, time_size, **query)
     _LOG.info('%s tasks discovered', len(tasks))
 
