@@ -41,12 +41,37 @@ class S3AIO(object):
         var1 = map(self.chunks_indices_1d, itertools.repeat(0), shape, chunk)
         return itertools.product(*var1)
 
+    def put_array_in_s3(self, array, chunk_size, base_name, bucket):
+        idx = list(self.chunk_indices_nd(array.shape, chunk_size))
+        keys = [base_name+'_'+str(i) for i in range(len(idx))]
+        self.shard_array_to_s3_mp(array, idx, bucket, keys)
+        return list(zip(keys, idx))
+
     def shard_array_to_s3(self, array, indices, s3_bucket, s3_keys):
         # todo: multiprocess put_bytes or if large put_bytes_mpu
         for s3_key, index in zip(s3_keys, indices):
             self.s3io.put_bytes(s3_bucket, s3_key, bytes(array[index].data))
 
-    # @profile
+    def work_shard_array_to_s3(self, args):
+        return self.work_shard_array_to_s3_impl(*args)
+
+    def work_shard_array_to_s3_impl(self, s3_key, index, array_name, s3_bucket):
+        array = sa.attach(array_name)
+        self.s3io.put_bytes(s3_bucket, s3_key, bytes(array[index].data))
+
+    def shard_array_to_s3_mp(self, array, indices, s3_bucket, s3_keys):
+        num_processes = cpu_count()
+        pool = Pool(num_processes)
+        array_name = '_'.join(['SA3IO', str(uuid.uuid4()), str(os.getpid())])
+        sa.create(array_name, shape=array.shape, dtype=array.dtype)
+        shared_array = sa.attach(array_name)
+        shared_array[:] = array
+
+        pool.map_async(self.work_shard_array_to_s3, zip(s3_keys, indices, repeat(array_name), repeat(s3_bucket)))
+        pool.close()
+        pool.join()
+        sa.delete(array_name)
+
     def assemble_array_from_s3(self, array, indices, s3_bucket, s3_keys, dtype):
         for s3_key, index in zip(s3_keys, indices):
             b = self.s3io.get_bytes(s3_bucket, s3_key)
