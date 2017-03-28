@@ -1,7 +1,7 @@
 '''
 S3IO Class
 
-Low level byte read/writes to S3
+Low level byte read/writes to a single S3 object
 
 Single-threaded. set new_session = False
 Multi-threaded. set new_session = True

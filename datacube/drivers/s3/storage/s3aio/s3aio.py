@@ -1,7 +1,7 @@
 '''
 S3AIO Class
 
-Array wrapper class
+Array access to a single S3 object
 
 '''
 
@@ -25,6 +25,9 @@ class S3AIO(object):
     def __init__(self, enable_s3=True, file_path=None):
         self.s3io = S3IO(enable_s3, file_path)
 
+    def s3io(self):
+        return self.s3io
+
     def bytes_to_array(self, data, shape, dtype):
         array = np.empty(shape=shape, dtype=dtype)
         array.data[0:len(data)] = data
@@ -32,53 +35,6 @@ class S3AIO(object):
 
     def copy_bytes_to_shared_array(self, shared_array, start, end, data):
         shared_array.data[start:end] = data
-
-    def chunks_indices_1d(self, begin, end, step):
-        for i in range(begin, end, step):
-            yield slice(i, min(end, i + step))
-
-    def chunk_indices_nd(self, shape, chunk):
-        var1 = map(self.chunks_indices_1d, itertools.repeat(0), shape, chunk)
-        return itertools.product(*var1)
-
-    def put_array_in_s3(self, array, chunk_size, base_name, bucket):
-        idx = list(self.chunk_indices_nd(array.shape, chunk_size))
-        keys = [base_name+'_'+str(i) for i in range(len(idx))]
-        self.shard_array_to_s3_mp(array, idx, bucket, keys)
-        return list(zip(keys, idx))
-
-    def shard_array_to_s3(self, array, indices, s3_bucket, s3_keys):
-        # todo: multiprocess put_bytes or if large put_bytes_mpu
-        for s3_key, index in zip(s3_keys, indices):
-            self.s3io.put_bytes(s3_bucket, s3_key, bytes(array[index].data))
-
-    def work_shard_array_to_s3(self, args):
-        return self.work_shard_array_to_s3_impl(*args)
-
-    def work_shard_array_to_s3_impl(self, s3_key, index, array_name, s3_bucket):
-        array = sa.attach(array_name)
-        self.s3io.put_bytes(s3_bucket, s3_key, bytes(array[index].data))
-
-    def shard_array_to_s3_mp(self, array, indices, s3_bucket, s3_keys):
-        num_processes = cpu_count()
-        pool = Pool(num_processes)
-        array_name = '_'.join(['SA3IO', str(uuid.uuid4()), str(os.getpid())])
-        sa.create(array_name, shape=array.shape, dtype=array.dtype)
-        shared_array = sa.attach(array_name)
-        shared_array[:] = array
-
-        pool.map_async(self.work_shard_array_to_s3, zip(s3_keys, indices, repeat(array_name), repeat(s3_bucket)))
-        pool.close()
-        pool.join()
-        sa.delete(array_name)
-
-    def assemble_array_from_s3(self, array, indices, s3_bucket, s3_keys, dtype):
-        for s3_key, index in zip(s3_keys, indices):
-            b = self.s3io.get_bytes(s3_bucket, s3_key)
-            m = memoryview(b)
-            shape = tuple((i.stop - i.start) for i in index)
-            array[index] = np.ndarray(shape, buffer=m, dtype=dtype)
-        return array
 
     def to_1d(self, index, shape):
         return np.ravel_multi_index(index, shape)
