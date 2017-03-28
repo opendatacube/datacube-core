@@ -31,16 +31,37 @@ _LOG = logging.getLogger('agdc-ingest')
 FUSER_KEY = 'fuse_data'
 
 
+def remove_duplicates(cells_in, cells_out):
+    '''Remove tiles in `cells_in` which belong to `cells_out`.
+
+    Tiles are compared based on their signature: `(extent,
+    timestamp)`.
+    '''
+    if not cells_out:
+        return
+
+    # Compute signatures of cells_out
+    sigs_out = {(extent, timestamp) \
+            for extent, cell in cells_out.items() \
+            for timestamp in cell.sources.coords['time'].values}
+    # Index cells_in accordingly
+    for extent, cell in cells_in.items():
+        tiles = cell.sources
+        to_add = [timestamp \
+                  for timestamp in tiles.coords['time'].values \
+                  if not (extent, timestamp) in sigs_out]
+        cell.sources = tiles.loc[to_add]
+
+
 def find_diff(input_type, output_type, index, time_size, **query):
     from datacube.api.grid_workflow import GridWorkflow
     workflow = GridWorkflow(index, output_type.grid_spec)
 
-    tiles_in = workflow.list_cells(product=input_type.name, **query)
-    tiles_out = workflow.list_cells(product=output_type.name, **query)
+    cells_in = workflow.list_cells(product=input_type.name, **query)
+    cells_out = workflow.list_cells(product=output_type.name, **query)
 
-    #TODO(csiro) Remove duplicates based on dataset_id / time. Could contain duplicates.
-    tasks = [{'tile': tile, 'tile_index': key} for key, tile in tiles_in.items() if key not in tiles_out]
-
+    remove_duplicates(cells_in, cells_out)
+    tasks = [{'tile': cell, 'tile_index': extent} for extent, cell in cells_in.items()]
     new_tasks = []
     for task in tasks:
         tiles = task['tile'].split('time', time_size)
