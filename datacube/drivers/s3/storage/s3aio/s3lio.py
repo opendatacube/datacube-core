@@ -7,6 +7,7 @@ Labeled Array access, backed by multiple S3 objects.
 
 import os
 import uuid
+import hashlib
 import itertools
 import numpy as np
 from itertools import repeat
@@ -27,7 +28,7 @@ class S3LIO(object):
     def __init__(self, enable_s3=True, file_path=None):
         self.s3aio = S3AIO(enable_s3, file_path)
 
-    def chunk_indices_1d(begin, end, step, bound_slice=None):
+    def chunk_indices_1d(self, begin, end, step, bound_slice=None):
         if bound_slice is None:
             for i in range(begin, end, step):
                 yield slice(i, min(end, i + step))
@@ -40,13 +41,17 @@ class S3LIO(object):
                     continue
                 yield slice(max(i, bound_begin), min(end, i + step))
 
-    def chunk_indices_nd(shape, chunk, array_slice=None):
-        var1 = map(chunk_indices_1d, itertools.repeat(0), shape, chunk, array_slice)
+    def chunk_indices_nd(self, shape, chunk, array_slice=None):
+        if array_slice is None:
+            array_slice = itertools.repeat(None)
+        var1 = map(self.chunk_indices_1d, itertools.repeat(0), shape, chunk, array_slice)
         return itertools.product(*var1)
 
-    def put_array_in_s3(self, array, chunk_size, base_name, bucket):
+    def put_array_in_s3(self, array, chunk_size, base_name, bucket, spread=False):
         idx = list(self.chunk_indices_nd(array.shape, chunk_size))
         keys = [base_name+'_'+str(i) for i in range(len(idx))]
+        if spread:
+            keys = [hashlib.md5(k.encode('utf-8')).hexdigest()[0:6] + '_' + k for k in keys]
         self.shard_array_to_s3_mp(array, idx, bucket, keys)
         return list(zip(keys, idx))
 
