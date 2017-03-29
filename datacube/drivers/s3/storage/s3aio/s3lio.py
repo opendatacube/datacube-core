@@ -27,12 +27,21 @@ class S3LIO(object):
     def __init__(self, enable_s3=True, file_path=None):
         self.s3aio = S3AIO(enable_s3, file_path)
 
-    def chunks_indices_1d(self, begin, end, step):
-        for i in range(begin, end, step):
-            yield slice(i, min(end, i + step))
+    def chunk_indices_1d(begin, end, step, bound_slice=None):
+        if bound_slice is None:
+            for i in range(begin, end, step):
+                yield slice(i, min(end, i + step))
+        else:
+            bound_begin = bound_slice.start
+            bound_end = bound_slice.stop
+            end = min(end, bound_end)
+            for i in range(begin, end, step):
+                if i < bound_begin and i+step <= bound_begin:
+                    continue
+                yield slice(max(i, bound_begin), min(end, i + step))
 
-    def chunk_indices_nd(self, shape, chunk):
-        var1 = map(self.chunks_indices_1d, itertools.repeat(0), shape, chunk)
+    def chunk_indices_nd(shape, chunk, array_slice=None):
+        var1 = map(chunk_indices_1d, itertools.repeat(0), shape, chunk, array_slice)
         return itertools.product(*var1)
 
     def put_array_in_s3(self, array, chunk_size, base_name, bucket):
