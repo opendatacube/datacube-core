@@ -7,7 +7,6 @@ from datacube.utils import DatacubeException
 from datacube.drivers.driver import Driver
 from datacube.drivers.s3.storage.s3aio.s3lio import S3LIO
 from pathlib import Path
-from collections import abc
 
 class S3Driver(Driver):
     '''S3 storage driver. A placeholder for now.
@@ -35,11 +34,11 @@ class S3Driver(Driver):
         :return tuple chunksizes: the validated chunksizes as a
         3-floats tuple.
         '''
-        if not 'chunksizes' in variable_param:
+        if 'chunksizes'not in variable_param:
             raise DatacubeException('Dataset does not contain chunking values, ' \
                                     +'cannot write to storage.')
         chunksizes = variable_param['chunksizes']
-        if not isinstance(chunksizes, abc.Iterable):
+        if not isinstance(chunksizes, (list, tuple, set)):
             raise DatacubeException('Dataset contains invalid chunking values, ' \
                                     +'cannot write to storage.')
         try:
@@ -47,7 +46,7 @@ class S3Driver(Driver):
         except ValueError:
             raise DatacubeException('Dataset contains invalid chunking values, ' \
                                     +'cannot write to storage.')
-        if not len(chunksizes) == 3:
+        if len(chunksizes) != 3:
             raise DatacubeException('Dataset contains invalid chunking values, ' \
                                     +'cannot write to storage.')
         return chunksizes
