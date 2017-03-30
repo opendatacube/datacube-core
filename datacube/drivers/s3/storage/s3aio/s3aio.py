@@ -25,6 +25,8 @@ class S3AIO(object):
     def __init__(self, enable_s3=True, file_path=None):
         self.s3io = S3IO(enable_s3, file_path)
 
+    # TODO(csiro): Fix issue and remove pylint flag below
+    # pylint: disable=method-hidden
     def s3io(self):
         return self.s3io
 

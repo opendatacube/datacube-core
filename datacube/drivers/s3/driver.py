@@ -5,9 +5,6 @@ from __future__ import absolute_import
 import logging
 from datacube.utils import DatacubeException
 from datacube.drivers.driver import Driver
-# TODO(csiro): Add a __init__.py in datacube.drivers.s3.storage and
-# fix pylint issued below it.
-# pylint: disable=import-error
 from datacube.drivers.s3.storage.s3aio.s3lio import S3LIO
 from pathlib import Path
 from collections import abc

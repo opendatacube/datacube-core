@@ -102,6 +102,8 @@ class S3LIO(object):
         return result
 
     # labeled geo-coordinates data retrieval.
+    # TODO(csiro): Fix issue and remove pylint flag below
+    # pylint: disable=redefined-builtin
     def get_data(self, base_location, macro_shape, micro_shape, dtype, slice, s3_bucket):
         # shape and chunk are overloaded.
         # should use macro_shape to mean shape of the array pre-chunking.
@@ -109,6 +111,8 @@ class S3LIO(object):
         pass
 
     # integer index data retrieval.
+    # TODO(csiro): Fix issue and remove pylint flag below
+    # pylint: disable=redefined-builtin
     def get_data_unlabeled(self, base_location, macro_shape, micro_shape, dtype, slice, s3_bucket):
         # shape and chunk are overloaded.
         # should use macro_shape to mean shape of the array pre-chunking.
