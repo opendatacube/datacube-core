@@ -27,6 +27,8 @@ except ImportError:
 # pylint: disable=too-many-locals, too-many-public-methods
 
 
+# TODO(csiro): Fix issue and remove pylint flag below
+# pylint: disable=old-style-class
 class S3IO:
 
     # enable_s3: True = reads/writes to s3
@@ -40,6 +42,8 @@ class S3IO:
 
     def list_created_arrays(self):
         result = [f for f in os.listdir("/dev/shm") if f.startswith('S3IO')]
+        # TODO(csiro): Fix issue and remove pylint flag below
+        # pylint: disable=superfluous-parens
         print(result)
         return result
 

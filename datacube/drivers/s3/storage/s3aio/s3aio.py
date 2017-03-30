@@ -104,6 +104,8 @@ class S3AIO(object):
     def work_get_slice(self, args):
         return self.work_get_slice_impl(*args)
 
+    # TODO(csiro): Fix issue and remove pylint flag below
+    # pylint: disable=too-many-locals
     def work_get_slice_impl(self, block, array_name, offset, s3_bucket, s3_key, shape, dtype):
         result = sa.attach(array_name)
         cell, sub_range = block
