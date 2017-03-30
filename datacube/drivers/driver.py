@@ -16,3 +16,19 @@ class Driver(object):
     def name(self):
         '''A human-readable name for this driver.'''
         return 'Base driver'
+
+
+    @abstractmethod
+    def write_dataset_to_storage(self, dataset, *args, **kargs):
+        '''Write a Data Cube style xarray Dataset to the storage.
+
+        Requires a spatial Dataset, with attached coordinates and
+        global crs attribute. This does not include the indexing step.
+
+        :param `xarray.Dataset` dataset: The dataset
+        :param list args: Storage-specific positional arguments
+        :param list kargs: Storage-specific keyword arguments
+        :return: Storage-specific write operation output, e.g. data
+        relevant to the indexing
+        '''
+        return None

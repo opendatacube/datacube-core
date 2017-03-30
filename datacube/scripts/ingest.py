@@ -19,7 +19,7 @@ import datacube
 from datacube.api.core import Datacube
 from datacube.model import DatasetType, Range, GeoPolygon
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
-from datacube.storage.storage import write_dataset_to_netcdf
+from datacube.storage.storage import write_dataset_to_storage
 from datacube.ui import click as ui
 from datacube.utils import read_documents, changes
 from datacube.ui.task_app import check_existing_files, load_tasks as load_tasks_, save_tasks as save_tasks_
@@ -274,13 +274,8 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
     datasets = xr_apply(tile.sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
     nudata['dataset'] = datasets_to_doc(datasets)
 
-    driver = output_type.definition['storage']['driver'].lower()
-    if driver == 'netcdf cf':
-        write_dataset_to_netcdf(nudata, file_path, global_attributes, variable_params)
-    elif driver == 's3':
-        _LOG.warning('s3 storage not integrated yet!')
-    else:
-        raise ValueError('Unknown driver: %s' % output_type.definition['storage']['driver'])
+    write_dataset_to_storage(output_type.definition['storage']['driver'], nudata,
+                             file_path, global_attributes, variable_params)
     _LOG.info('Finished task %s', tile_index)
 
     return datasets
