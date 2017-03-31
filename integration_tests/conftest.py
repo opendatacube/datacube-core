@@ -230,7 +230,7 @@ def example_ls5_dataset_paths(tmpdir):
 def ls5_nbar_ingest_config(tmpdir, request):
     dataset_dir = tmpdir.mkdir('ls5_nbar_ingest_test')
     config = load_yaml_file(LS5_NBAR_INGEST_CONFIG)[0]
-    config = alter_dataset_type_for_testing(config, request.param)
+    config = alter_dataset_type_for_testing(config, driver=request.param)
     config['location'] = str(dataset_dir)
 
     config_path = dataset_dir.join('ls5_nbar_ingest_config.yaml')
