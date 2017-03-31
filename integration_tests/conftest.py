@@ -332,7 +332,7 @@ def load_yaml_file(filename):
         return list(yaml.load_all(f, Loader=SafeLoader))
 
 
-def alter_dataset_type_for_testing(type_, driver='NetCDF CF', metadata_type=None):
+def alter_dataset_type_for_testing(type_, metadata_type=None, driver='NetCDF CF'):
     if 'measurements' in type_:
         type_ = limit_num_measurements(type_)
     if 'storage' in type_:
