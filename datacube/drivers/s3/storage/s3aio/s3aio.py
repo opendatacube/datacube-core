@@ -25,11 +25,6 @@ class S3AIO(object):
     def __init__(self, enable_s3=True, file_path=None):
         self.s3io = S3IO(enable_s3, file_path)
 
-    # TODO(csiro): Fix issue and remove pylint flag below
-    # pylint: disable=method-hidden
-    def s3io(self):
-        return self.s3io
-
     def bytes_to_array(self, data, shape, dtype):
         array = np.empty(shape=shape, dtype=dtype)
         array.data[0:len(data)] = data
@@ -104,7 +99,6 @@ class S3AIO(object):
     def work_get_slice(self, args):
         return self.work_get_slice_impl(*args)
 
-    # TODO(csiro): Fix issue and remove pylint flag below
     # pylint: disable=too-many-locals
     def work_get_slice_impl(self, block, array_name, offset, s3_bucket, s3_key, shape, dtype):
         result = sa.attach(array_name)

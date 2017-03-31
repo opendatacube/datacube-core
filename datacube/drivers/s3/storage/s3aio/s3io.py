@@ -8,6 +8,8 @@ Multi-threaded. set new_session = True
 
 '''
 
+from __future__ import print_function
+
 import io
 import os
 import uuid
@@ -27,9 +29,7 @@ except ImportError:
 # pylint: disable=too-many-locals, too-many-public-methods
 
 
-# TODO(csiro): Fix issue and remove pylint flag below
-# pylint: disable=old-style-class
-class S3IO:
+class S3IO(object):
 
     # enable_s3: True = reads/writes to s3
     # enable_s3: False = reads/writes to disk ***for testing only***

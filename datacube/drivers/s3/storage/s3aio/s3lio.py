@@ -90,7 +90,7 @@ class S3LIO(object):
         return array
 
     # converts positional(spatial/temporal) coordinates to array integer coordinates
-    def regular_index(self, query, dimension_range, shape):
+    def regular_index(self, query, dimension_range, shape, flatten=False):
         # regular_index((-35+2*0.128, 149+2*0.128), ((-35,-34),(149,150)), (4000, 4000))
         # regular_index((-35+0.128, 149+0.128), ((-35, -35+0.128),(149, 148+0.128)), (512, 512))
 
@@ -98,23 +98,35 @@ class S3LIO(object):
         offset = [dr[0] for dr in dimension_range]
         point = np.around([q-o for q, o in zip(query, offset)], S3LIO.DECIMAL_PLACES)
 
-        result = np.floor([(p/l)*s for p, l, s in zip(point, length, shape)])
+        result = np.floor([(p/l)*s for p, l, s in zip(point, length, shape)]).astype(int)
+
+        if flatten:
+            return self.s3aio.to_1d(tuple(result), shape)
+
         return result
 
     # labeled geo-coordinates data retrieval.
-    # TODO(csiro): Fix issue and remove pylint flag below
-    # pylint: disable=redefined-builtin
-    def get_data(self, base_location, macro_shape, micro_shape, dtype, slice, s3_bucket):
+    def get_data(self, base_location, macro_shape, micro_shape, dtype, labeled_slice, s3_bucket):
         # shape and chunk are overloaded.
         # should use macro_shape to mean shape of the array pre-chunking.
         # should use micro_shape to mean chunk size of the array.
+        # 1. reproject query crs -> native crs
+        # 2. regular_index native crs -> integer indexing
+        # 3. get_data_unlabeled
         pass
 
     # integer index data retrieval.
-    # TODO(csiro): Fix issue and remove pylint flag below
-    # pylint: disable=redefined-builtin
-    def get_data_unlabeled(self, base_location, macro_shape, micro_shape, dtype, slice, s3_bucket):
+    def get_data_unlabeled(self, base_location, macro_shape, micro_shape, dtype, array_slice, s3_bucket):
         # shape and chunk are overloaded.
         # should use macro_shape to mean shape of the array pre-chunking.
         # should use micro_shape to mean chunk size of the array.
+        # slices = self.chunk_indices_nd(macro_shape, micro_shape, array_slice)
+        # chunk_ids = [np.ravel_multi_index(tuple([s.start for s in s]), macro_shape) for s in slices]
+        # keys = ['_'.join(["base_location", str(i)]) for i in chunk_ids]
+        # keys = [hashlib.md5(k.encode('utf-8')).hexdigest()[0:6] + '_' + k for k in keys]
+        # zipped = zip(keys, chunk_ids, slices)
+
+        # 1. create shared array of "macro_shape" size and of dtype
+        # 2. create 1 process per zipped task.
+        # 3. get slice from s3 and write into shared array.
         pass
