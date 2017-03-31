@@ -77,7 +77,7 @@ def morph_dataset_type(source_type, config):
     output_type.definition['managed'] = True
     output_type.definition['description'] = config['description']
     output_type.definition['storage'] = config['storage']
-    driver = output_type.definition['storage']['driver'].lower()
+    driver = config['storage']['driver'].lower()
     if driver == 'netcdf cf':
         output_type.metadata_doc['format'] = {'name': 'NetCDF'}
     elif driver == 's3':
@@ -87,7 +87,7 @@ def morph_dataset_type(source_type, config):
 
 
     output_type.definition['storage'] = {k: v for (k, v) in config['storage'].items()
-                                         if k in ('crs', 'tile_size', 'resolution', 'origin')}
+                                         if k in ('crs', 'driver', 'tile_size', 'resolution', 'origin')}
 
     def merge_measurement(measurement, spec):
         measurement.update({k: spec.get(k, measurement[k]) for k in ('name', 'nodata', 'dtype')})
