@@ -100,6 +100,25 @@ class S3IO(object):
             directory = self.file_path+"/"+str(s3_bucket)
             return [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
 
+    def delete_objects(self, s3_bucket, keys, new_session=False):
+        if self.enable_s3:
+            s3 = self.s3_resource(new_session)
+            b = s3.Bucket(s3_bucket)
+            key_list = dict(zip('Key', keys))
+            key_list = [{'Key': v} for v in keys]
+            response = b.delete_objects(Delete={'Objects': key_list})
+            if 'ResponseMetadata' in response and 'HTTPStatusCode' in response['ResponseMetadata'] and \
+               response['ResponseMetadata']['HTTPStatusCode'] == 200 and 'Deleted' in response:
+                return [d['Key'] for d in response['Deleted']]
+        else:
+            directory = self.file_path+"/"+str(s3_bucket)
+            response = []
+            for k in keys:
+                if os.path.exists(directory+"/"+k) and os.path.isfile(directory+"/"+k):
+                    os.remove(directory+"/"+k)
+                    response.append(k)
+            return response
+
     def bucket_exists(self, s3_bucket, new_session=False):
         if self.enable_s3:
             try:
