@@ -117,7 +117,8 @@ DATASET_SOURCE = Table(
 
 
 
-# The mapping between a AGDC dataset (single time slice, multiple bands) and band to an S3 dataset (multiple times, single bands)
+# The mapping between a AGDC dataset (single time slice, multiple bands) and
+# band to an S3 dataset (multiple times, single bands)
 # (dataset_ref,band) <-> s3_dataset_ref
 # S3_dataset_mapping
 #     datset_ref :: UUID
@@ -139,7 +140,6 @@ S3_DATASET_MAPPING = Table(
 # --         | ['height', 'time', 'lat', 'lon'] | [false, false, true, true] | [[140,0.05,191.2],[-27,-0.05,-78.2]]
 # --         | [[50,100,150],[636419487, 637024619, 638406989, 641949039, 642554192, 643936587, 644713840,
 #               ..., 645318986, 648083782, 648861033, 650243428]]
-# --        
 # S3_DATASET:
 #   id :: UUID
 #   dataset_key :: String   -- S3 object name without the chunk id
