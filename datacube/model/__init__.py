@@ -75,7 +75,7 @@ class Dataset(object):
     :param list[str] uris: All active uris for the dataset
     """
 
-    def __init__(self, type_, metadata_doc, uris, sources=None,
+    def __init__(self, type_, metadata_doc, local_uri=None, uris=None, sources=None,
                  indexed_by=None, indexed_time=None, archived_time=None):
         assert isinstance(type_, DatasetType)
 
@@ -86,6 +86,16 @@ class Dataset(object):
         #: or inside a NetCDF file, and as JSON-B inside the database index.
         #: :type: dict
         self.metadata_doc = metadata_doc
+
+        if local_uri:
+            warnings.warn(
+                "Dataset.local_uri has been replaced with list Dataset.uris",
+                DeprecationWarning
+            )
+            if not uris:
+                uris = []
+
+            uris.append(local_uri)
 
         #: Active URIs in order from newest to oldest
         self.uris = uris
