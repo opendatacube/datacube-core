@@ -71,7 +71,7 @@ def create_dataset(dataset_doc, uri, rules):
     dataset_type = find_matching_product(rules, dataset_doc)
     sources = {cls: create_dataset(source_doc, None, rules)
                for cls, source_doc in dataset_type.dataset_reader(dataset_doc).sources.items()}
-    return Dataset(dataset_type, dataset_doc, uri, sources=sources)
+    return Dataset(dataset_type, dataset_doc, uris=[uri] if uri else None, sources=sources)
 
 
 def load_rules_from_file(filename, index):
@@ -266,7 +266,7 @@ def build_dataset_info(index, dataset, show_sources=False, show_derived=False, d
     if dataset.indexed_time is not None:
         info['indexed'] = dataset.indexed_time
 
-    info['locations'] = index.datasets.get_locations(dataset.id)
+    info['locations'] = dataset.uris
     info['fields'] = dataset.metadata.search_fields
 
     if depth < max_depth:

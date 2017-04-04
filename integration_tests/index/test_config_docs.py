@@ -179,7 +179,7 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
     assert ls5_telem_type
 
     example_ls5_nbar_metadata_doc['lineage']['source_datasets'] = {}
-    dataset = Dataset(ls5_telem_type, example_ls5_nbar_metadata_doc, 'file:///test/doc.yaml', sources={})
+    dataset = Dataset(ls5_telem_type, example_ls5_nbar_metadata_doc, uris=['file:///test/doc.yaml'], sources={})
     dataset = index.datasets.add(dataset)
     assert dataset
 
@@ -190,7 +190,7 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
 
     # update location
     assert index.datasets.get(dataset.id).local_uri == 'file:///test/doc.yaml'
-    update = Dataset(ls5_telem_type, example_ls5_nbar_metadata_doc, 'file:///test/doc2.yaml', sources={})
+    update = Dataset(ls5_telem_type, example_ls5_nbar_metadata_doc, uris=['file:///test/doc2.yaml'], sources={})
     index.datasets.update(update)
     updated = index.datasets.get(dataset.id)
     assert updated.local_uri == 'file:///test/doc2.yaml'
@@ -207,7 +207,7 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
     # adding more metadata and changing location
     doc = copy.deepcopy(updated.metadata_doc)
     doc['test2'] = {'some': 'other thing'}
-    update = Dataset(ls5_telem_type, doc, 'file:///test/doc3.yaml')
+    update = Dataset(ls5_telem_type, doc, uris=['file:///test/doc3.yaml'])
     index.datasets.update(update)
     updated = index.datasets.get(dataset.id)
     assert updated.metadata_doc['test1'] == {'some': 'thing'}
@@ -217,7 +217,7 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
     # changing stuff isn't allowed by default
     doc = copy.deepcopy(updated.metadata_doc)
     doc['product_type'] = 'foobar'
-    update = Dataset(ls5_telem_type, doc, 'file:///test/doc4.yaml')
+    update = Dataset(ls5_telem_type, doc, uris=['file:///test/doc4.yaml'])
     with pytest.raises(ValueError):
         index.datasets.update(update)
     updated = index.datasets.get(dataset.id)
@@ -229,6 +229,7 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
     # allowed changes go through
     doc = copy.deepcopy(updated.metadata_doc)
     doc['product_type'] = 'foobar'
+    # Backwards compat: third argument was a single local uri.
     update = Dataset(ls5_telem_type, doc, 'file:///test/doc5.yaml')
     index.datasets.update(update, {('product_type',): changes.allow_any})
     updated = index.datasets.get(dataset.id)

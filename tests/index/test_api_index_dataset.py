@@ -150,12 +150,12 @@ _EXAMPLE_DATASET_TYPE = DatasetType(
 
 def _build_dataset(doc):
     sources = {name: _build_dataset(src) for name, src in doc['lineage']['source_datasets'].items()}
-    return Dataset(_EXAMPLE_DATASET_TYPE, doc, 'file://test.zzz', sources)
+    return Dataset(_EXAMPLE_DATASET_TYPE, doc, uris=['file://test.zzz'], sources=sources)
 
 
 _EXAMPLE_NBAR_DATASET = _build_dataset(_EXAMPLE_NBAR)
 
-DatasetRecord = namedtuple('DatasetRecord', ['id', 'metadata', 'dataset_type_ref', 'uri',
+DatasetRecord = namedtuple('DatasetRecord', ['id', 'metadata', 'dataset_type_ref', 'uris',
                                              'added', 'added_by', 'archived'])
 
 
@@ -175,7 +175,7 @@ class MockDb(object):
     def get_dataset(self, id):
         return self.dataset.get(id, None)
 
-    def ensure_dataset_location(self, *args, **kwargs):
+    def ensure_dataset_locations(self, *args, **kwargs):
         return
 
     def insert_dataset(self, metadata_doc, dataset_id, dataset_type_id):
