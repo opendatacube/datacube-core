@@ -56,7 +56,9 @@ LS5_NBAR_NAME = 'ls5_nbar'
 LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_albers.yaml'
 LS5_NBAR_ALBERS_NAME = 'ls5_nbar_albers'
 
-TEST_STORAGE_SHRINK_FACTOR = 100
+# Resolution and chunking shrink factors
+TEST_STORAGE_SHRINK_FACTORS = (100, 100)
+TEST_STORAGE_SHRINK_FACTORS_S3 = (100, 5)
 TEST_STORAGE_NUM_MEASUREMENTS = 2
 GEOGRAPHIC_VARS = ('latitude', 'longitude')
 PROJECTED_VARS = ('x', 'y')
@@ -226,12 +228,16 @@ def example_ls5_dataset_paths(tmpdir):
 
 
 # For s3, change to: @pytest.fixture(params=['NetCDF CF', 's3'])
-@pytest.fixture(params=['NetCDF CF'])
+@pytest.fixture(params=['NetCDF CF', 's3-test'])
 def ls5_nbar_ingest_config(tmpdir, request):
     dataset_dir = tmpdir.mkdir('ls5_nbar_ingest_test')
     config = load_yaml_file(LS5_NBAR_INGEST_CONFIG)[0]
     config = alter_dataset_type_for_testing(config, driver=request.param)
     config['location'] = str(dataset_dir)
+    if 'storage' in config and \
+       'driver' in config['storage'] and \
+       config['storage']['driver'] in ('s3', 's3-test'):
+        config['container'] = str(dataset_dir)
 
     config_path = dataset_dir.join('ls5_nbar_ingest_config.yaml')
     with open(str(config_path), 'w') as stream:
@@ -337,12 +343,15 @@ def alter_dataset_type_for_testing(type_, metadata_type=None, driver='NetCDF CF'
         type_ = limit_num_measurements(type_)
     if 'storage' in type_:
         storage = type_['storage']
+        shrink_factors = TEST_STORAGE_SHRINK_FACTORS
         if 'driver' in storage:
             storage['driver'] = driver
+            if driver in ('s3', 's3-test'):
+                shrink_factors = TEST_STORAGE_SHRINK_FACTORS_S3
         if is_geogaphic(type_):
-            type_ = shrink_storage_type(type_, GEOGRAPHIC_VARS)
+            type_ = shrink_storage_type(type_, GEOGRAPHIC_VARS, shrink_factors)
         else:
-            type_ = shrink_storage_type(type_, PROJECTED_VARS)
+            type_ = shrink_storage_type(type_, PROJECTED_VARS, shrink_factors)
 
     if metadata_type:
         type_['metadata_type'] = metadata_type.name
@@ -366,9 +375,9 @@ def is_geogaphic(storage_type):
     return 'latitude' in storage_type['storage']['resolution']
 
 
-def shrink_storage_type(storage_type, variables):
+def shrink_storage_type(storage_type, variables, shrink_factors):
     storage = storage_type['storage']
     for var in variables:
-        storage['resolution'][var] = storage['resolution'][var] * TEST_STORAGE_SHRINK_FACTOR
-        storage['chunking'][var] = storage['chunking'][var] / TEST_STORAGE_SHRINK_FACTOR
+        storage['resolution'][var] = storage['resolution'][var] * shrink_factors[0]
+        storage['chunking'][var] = storage['chunking'][var] / shrink_factors[1]
     return storage_type

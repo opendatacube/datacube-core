@@ -611,6 +611,4 @@ def write_dataset_to_storage(driver, dataset, *args, **kargs):
     if driver not in drivers:
         raise ValueError('Unknown driver: %s' % driver)
 
-    drivers[driver].write_dataset_to_storage(dataset, *args, **kargs)
-
-    _LOG.debug('Wrote to storage with %s driver', drivers[driver].name)
+    return drivers[driver].write_dataset_to_storage(dataset, *args, **kargs)

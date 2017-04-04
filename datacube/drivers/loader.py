@@ -39,6 +39,11 @@ class DriverLoader(object):
     their `name` as defined in `__init__.py`'s `DRIVER_SPEC`. These
     are instantiated on the first call to that method and cached until
     the loader object is deleted.
+
+    TODO(csiro): Look into making this class instantiated as a
+    singleton, possibly using a global variable, or by adding a
+    long-term reference to it in the initialisation scripts (datacube
+    and click?)
     '''
 
     DRIVER_SPEC = 'DRIVER_SPEC'
