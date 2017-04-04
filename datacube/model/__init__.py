@@ -72,10 +72,10 @@ class Dataset(object):
 
     :type type_: DatasetType
     :param dict metadata_doc: the document (typically a parsed json/yaml)
-    :param str local_uri: A URI to access this dataset locally.
+    :param list[str] uris: All active uris for the dataset
     """
 
-    def __init__(self, type_, metadata_doc, local_uri, sources=None,
+    def __init__(self, type_, metadata_doc, uris, sources=None,
                  indexed_by=None, indexed_time=None, archived_time=None):
         assert isinstance(type_, DatasetType)
 
@@ -87,11 +87,8 @@ class Dataset(object):
         #: :type: dict
         self.metadata_doc = metadata_doc
 
-        #: The most recent local file available to access the data, if any.
-        #: Note that a dataset can have multiple uris, not all of which are local files.
-        #: To get all uris for a dataset, use index.datasets.get_locations()
-        #: :type: str
-        self.local_uri = local_uri
+        #: Active URIs in order from newest to oldest
+        self.uris = uris
 
         #: The datasets that this dataset is derived from (if requested on load).
         #: :type: dict[str, Dataset]
@@ -114,6 +111,18 @@ class Dataset(object):
     @property
     def metadata_type(self):
         return self.type.metadata_type if self.type else None
+
+    @property
+    def local_uri(self):
+        """
+        The latest local file uri, if any.
+        :rtype: str
+        """
+        local_uris = [uri for uri in self.uris if uri.startswith('file:')]
+        if local_uris:
+            return local_uris[0]
+
+        return None
 
     @property
     def local_path(self):

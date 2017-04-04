@@ -8,12 +8,13 @@ import uuid
 
 import numpy
 import xarray
+import yaml
 from pandas import to_datetime
 
 import datacube
-from datacube.utils import geometry
 from datacube.model import Dataset
-import yaml
+from datacube.utils import geometry
+
 try:
     from yaml import CSafeDumper as SafeDumper
 except ImportError:
@@ -190,7 +191,7 @@ def make_dataset(product, sources, extent, center_time, valid_data=None, uri=Non
 
     return Dataset(product,
                    document,
-                   local_uri=uri,
+                   uris=[uri] if uri else None,
                    sources={str(idx): dataset for idx, dataset in enumerate(sources)})
 
 

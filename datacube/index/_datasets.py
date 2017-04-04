@@ -692,10 +692,10 @@ class DatasetResource(object):
                     )
 
                 # reinsert attempt? try updating the location
-                if dataset.local_uri:
+                if dataset.uris:
                     try:
                         with self._db.connect() as connection:
-                            connection.ensure_dataset_location(dataset.id, dataset.local_uri)
+                            connection.ensure_dataset_locations(dataset.id, dataset.uris)
                     except DuplicateRecordError as e:
                         _LOG.warning(str(e))
         finally:
@@ -788,9 +788,7 @@ class DatasetResource(object):
         can_update, safe_changes, unsafe_changes = self.can_update(dataset, updates_allowed)
 
         if not safe_changes and not unsafe_changes:
-            if dataset.local_uri != existing.local_uri:
-                with self._db.begin() as transaction:
-                    transaction.ensure_dataset_location(dataset.id, dataset.local_uri)
+            self._ensure_new_locations(dataset, existing)
             _LOG.info("No changes detected for dataset %s", dataset.id)
             return
 
@@ -814,12 +812,21 @@ class DatasetResource(object):
                 if not transaction.update_dataset(dataset.metadata_doc, dataset.id, product.id):
                     raise ValueError("Failed to update dataset %s..." % dataset.id)
 
-                if dataset.local_uri != existing.local_uri:
-                    transaction.ensure_dataset_location(dataset.id, dataset.local_uri)
+            self._ensure_new_locations(dataset, existing)
         finally:
             dataset.type.dataset_reader(dataset.metadata_doc).sources = sources_tmp
 
         return dataset
+
+    def _ensure_new_locations(self, dataset, existing):
+        new_uris = set(dataset.uris) - set(existing.uris)
+        if new_uris:
+            for uri in new_uris:
+                # We have to do each in separate transactions because the method catches exceptions,
+                # which will invalidate the transaction.
+                # We probably want to do so anyway, as they are independently valid.
+                with self._db.begin() as transaction:
+                    transaction.ensure_dataset_locations(dataset.id, [uri] if uri else None)
 
     def archive(self, ids):
         """
@@ -891,9 +898,13 @@ class DatasetResource(object):
             warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
             id_ = id_.id
 
+        if not uri:
+            warnings.warn("Cannot add empty uri. (dataset %s)" % id_)
+            return False
+
         with self._db.connect() as connection:
             try:
-                connection.ensure_dataset_location(id_, uri)
+                connection.ensure_dataset_locations(id_, [uri])
                 return True
             except DuplicateRecordError:
                 return False
@@ -953,12 +964,13 @@ class DatasetResource(object):
 
         :param bool full_info: Include all available fields
         """
-        uri = dataset_res.uri
+        uris = dataset_res.uris
+        if uris:
+            uris = [uri for uri in uris if uri] if uris else []
         return Dataset(
-            self.types.get(dataset_res.dataset_type_ref),
-            dataset_res.metadata,
-            # We guarantee that this property on the class is only a local uri.
-            uri if uri and uri.startswith('file:') else None,
+            type_=self.types.get(dataset_res.dataset_type_ref),
+            metadata_doc=dataset_res.metadata,
+            uris=uris,
             indexed_by=dataset_res.added_by if full_info else None,
             indexed_time=dataset_res.added if full_info else None,
             archived_time=dataset_res.archived
@@ -1096,8 +1108,8 @@ class DatasetResource(object):
                 # try to update location in the same transaction as insertion.
                 # if insertion fails we'll try updating location later
                 # if insertion succeeds the location bit can't possibly fail
-                if dataset.local_uri:
-                    transaction.ensure_dataset_location(dataset.id, dataset.local_uri)
+                if dataset.uris:
+                    transaction.ensure_dataset_locations(dataset.id, dataset.uris)
             except DuplicateRecordError as e:
                 _LOG.warning(str(e))
         return was_inserted
