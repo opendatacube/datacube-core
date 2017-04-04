@@ -126,7 +126,7 @@ DATASET_SOURCE = Table(
 S3_DATASET_MAPPING = Table(
     's3_dataset_mapping', _core.METADATA,
     Column('id', Integer, primary_key=True, autoincrement=True),
-    Column('dataset_ref', None, ForeignKey(DATASET.c.id) , nullable=False),
+    Column('dataset_ref', None, ForeignKey(DATASET.c.id), nullable=False),
     Column('band', String, nullable=False),
     Column('s3_dataset_ref', None, ForeignKey(DATASET.c.id), nullable=False),
     UniqueConstraint('dataset_ref', 'band')
