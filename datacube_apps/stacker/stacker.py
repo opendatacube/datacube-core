@@ -21,6 +21,7 @@ from pathlib import Path
 
 import datacube
 from datacube.api import Tile
+from datacube.model import Dataset
 from datacube.model.utils import xr_apply, datasets_to_doc
 from datacube.storage import netcdf_writer
 from datacube.storage.storage import create_netcdf_storage_unit
@@ -174,8 +175,9 @@ def do_stack_task(config, task):
 
 def make_updated_tile(old_datasets, new_uri, geobox):
     def update_dataset_location(labels, dataset):
+        # type: (object, Dataset) -> list
         new_dataset = copy.copy(dataset)
-        new_dataset.local_uri = new_uri
+        new_dataset.uris = [new_uri]
         return [dataset]
 
     updated_datasets = xr_apply(old_datasets, update_dataset_location, dtype='O')
