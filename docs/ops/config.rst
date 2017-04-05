@@ -5,8 +5,8 @@ See also :ref:`create-configuration-file` for the datacube config file.
 
 .. _product-doc:
 
-Product
--------
+Product definition
+------------------
 Product description document defines some of the metadata common to all the datasets belonging to the products.
 It also describes the measurements that product has and some of the properties of the measurements.
 
@@ -81,8 +81,8 @@ measurements
 
 .. _dataset-metadata-doc:
 
-Dataset
--------
+Dataset metadata document
+-------------------------
 Dataset document defines critical metadata of the dataset such as:
 
     - measurements
@@ -217,8 +217,8 @@ lineage
 
 .. _ingestion-config:
 
-Metadata Type
--------------
+Metadata Type Definition
+------------------------
 Metadata Type document defines searchable bits of metadata within `Dataset`_ documents.
 
 Ingestion Config
@@ -323,10 +323,25 @@ Runtime Config
 
 Runtime Config document specifies database connection configuration options:
 
+This is loaded from the following locations in order, if they exist, with properties from latter files
+overriding those in earlier ones:
+
+ * /etc/datacube.conf
+ * $DATACUBE_CONFIG_PATH
+ * ~/.datacube.conf
+ * datacube.conf
+
 .. code-block:: text
 
     [datacube]
-    db_hostname: 127.0.0.1
     db_database: datacube
-    db_username: cubeuser
+
+    # A blank host will use a local socket. Specify a hostname (such as localhost) to use TCP.
+    db_hostname:
+
+    # Credentials are optional: you might have other Postgres authentication configured.
+    # The default username is the current user id
+    # db_username:
+    # A blank password will fall back to default postgres driver authentication, such as reading your ~/.pgpass file.
+    # db_password:
 

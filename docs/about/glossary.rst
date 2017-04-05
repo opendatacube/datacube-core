@@ -6,7 +6,8 @@ Glossary
 .. glossary::
 
    AGDC
-      The Australian Geoscience Data Cube
+      The Australian Geoscience Data Cube, an Australian implementation of the
+      ODC.
 
    API
       The Data Cube Application Programming Interface gives programmers full
@@ -29,7 +30,7 @@ Glossary
       Open Data Cube
 
    PostgreSQL
-      The high performance database engine used as an index of Dataset by the
+      The high performance database engine used as an index of Datasets by the
       Data Cube. It is both a relational and document database, and the Data
       Cube schema makes use of both of these capabilities.
 

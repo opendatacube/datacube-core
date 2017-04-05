@@ -33,7 +33,7 @@ Datacube looks for a configuration file in ~/.datacube.conf or in the location s
     [datacube]
     db_database: datacube
 
-    # A blank host will use a local socket. Specify a hostname to use TCP.
+    # A blank host will use a local socket. Specify a hostname (such as localhost) to use TCP.
     db_hostname:
 
     # Credentials are optional: you might have other Postgres authentication configured.

@@ -12,7 +12,7 @@ Standalone Tools
 The Data Cube software comes with several tools that can be used for data
 exploration and exporting, without writing any code.
 
-* `datacube-search`
+* `datacube` (see ``datacube --help`` after installation)
 * `pixeldrill`
 * `movie_generator`
 
