@@ -68,7 +68,6 @@ what type of **units** the measurement is in, a **nodata** value, and even a way
 of specifying **bit level descriptions** or the **spectral response** in the
 case of reflectance data.
 
-
 A set of example Product definitions are supplied in
 `docs/config_samples/dataset_types` to cover some common Geoscience Australia
 and other Earth Observation Data.
@@ -90,13 +89,13 @@ search by, such as lat, lon and time, but you can include any information you de
 It is typically stored in YAML documents, but JSON is also supported. It is stored in the index
 for searching, querying and accessing the data.
 
-The data from Geoscience Australia already comes with relevent files (named ``ga-metadata.yaml``), so
+The data from Geoscience Australia already comes with relevant files (named ``ga-metadata.yaml``), so
 no further steps are required for indexing them.
 
 For third party datasets, see :ref:`prepare-scripts`.
 
-:ref:`dataset-metadata-doc` is required to accompany the dataset for it to be
- recognised by Data Cube. It defines critical metadata of the dataset such as:
+A :ref:`dataset-metadata-doc` is required to accompany the dataset for it to be
+recognised by the Data Cube. It defines critical metadata of the dataset such as:
 
     - measurements
     - platform and sensor names
