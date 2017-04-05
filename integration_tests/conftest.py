@@ -227,8 +227,8 @@ def example_ls5_dataset_paths(tmpdir):
     return dataset_dirs
 
 
-# For s3, change to: @pytest.fixture(params=['NetCDF CF', 's3'])
-@pytest.fixture(params=['NetCDF CF', 's3-test'])
+# For s3, change to: @pytest.fixture(params=['NetCDF CF', 's3-test'])
+@pytest.fixture(params=['NetCDF CF'])
 def ls5_nbar_ingest_config(tmpdir, request):
     dataset_dir = tmpdir.mkdir('ls5_nbar_ingest_test')
     config = load_yaml_file(LS5_NBAR_INGEST_CONFIG)[0]
