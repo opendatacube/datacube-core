@@ -5,7 +5,7 @@ See also :ref:`create-configuration-file` for the datacube config file.
 
 .. _product-doc:
 
-Product definition
+Product Definition
 ------------------
 Product description document defines some of the metadata common to all the datasets belonging to the products.
 It also describes the measurements that product has and some of the properties of the measurements.
@@ -20,7 +20,7 @@ description
     Product description
 
 metadata_type
-    `Metadata Type`_ name
+    Name of the `Metadata Type Definition`_
 
 metadata
     Dictionary containing bits of metadata common to all the datasets in the product.
@@ -81,7 +81,7 @@ measurements
 
 .. _dataset-metadata-doc:
 
-Dataset metadata document
+Dataset Metadata Document
 -------------------------
 Dataset document defines critical metadata of the dataset such as:
 
@@ -309,7 +309,7 @@ storage
 
 
 measurements
-    Mapping of the input measurement names as specified in `Dataset`_
+    Mapping of the input measurement names as specified in the `Dataset Metadata Document`_
     to the per-measurement ingestion parameters
 
     dtype
