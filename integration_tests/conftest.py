@@ -36,6 +36,8 @@ testdata: {test_tile_folder}
 eotiles: {eotiles_tile_folder}
 """
 
+GEOTIFF_SIZE = (250, 250)  # (9721, 8521)
+'''(width, height) of geotiff to create.'''
 INTEGRATION_DEFAULT_CONFIG_PATH = Path(__file__).parent.joinpath('agdcintegration.conf')
 
 _EXAMPLE_LS5_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('example-ls5-nbar.yaml')
@@ -228,7 +230,7 @@ def example_ls5_dataset_paths(tmpdir):
 
 
 # For s3, change to: @pytest.fixture(params=['NetCDF CF', 's3-test'])
-@pytest.fixture(params=['NetCDF CF'])
+@pytest.fixture(params=['NetCDF CF', 's3-test'])
 def ls5_nbar_ingest_config(tmpdir, request):
     dataset_dir = tmpdir.mkdir('ls5_nbar_ingest_test')
     config = load_yaml_file(LS5_NBAR_INGEST_CONFIG)[0]
@@ -250,10 +252,10 @@ def create_empty_geotiff(path):
                 'crs': 'EPSG:28355',
                 'driver': 'GTiff',
                 'dtype': 'int16',
-                'height': 8521,
+                'height': GEOTIFF_SIZE[1],
                 'nodata': -999.0,
                 'transform': [25.0, 0.0, 638000.0, 0.0, -25.0, 6276000.0],
-                'width': 9721}
+                'width': GEOTIFF_SIZE[0]}
     with rasterio.open(path, 'w', **metadata) as dst:
         pass
 

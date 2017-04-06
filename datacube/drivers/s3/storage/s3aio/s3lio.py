@@ -10,6 +10,7 @@ import uuid
 import hashlib
 import itertools
 import numpy as np
+import six.moves
 from itertools import repeat
 from multiprocessing import Pool, freeze_support, cpu_count
 import SharedArray as sa
@@ -44,7 +45,7 @@ class S3LIO(object):
     def chunk_indices_nd(self, shape, chunk, array_slice=None):
         if array_slice is None:
             array_slice = itertools.repeat(None)
-        var1 = map(self.chunk_indices_1d, itertools.repeat(0), shape, chunk, array_slice)
+        var1 = six.moves.map(self.chunk_indices_1d, itertools.repeat(0), shape, chunk, array_slice)
         return itertools.product(*var1)
 
     def put_array_in_s3(self, array, chunk_size, base_name, bucket, spread=False):
@@ -74,8 +75,7 @@ class S3LIO(object):
         sa.create(array_name, shape=array.shape, dtype=array.dtype)
         shared_array = sa.attach(array_name)
         shared_array[:] = array
-
-        pool.map_async(self.work_shard_array_to_s3, zip(s3_keys, indices, repeat(array_name), repeat(s3_bucket)))
+        pool.imap(self.work_shard_array_to_s3, list(zip(s3_keys, indices, repeat(array_name), repeat(s3_bucket))))
         pool.close()
         pool.join()
         sa.delete(array_name)
