@@ -1,5 +1,5 @@
 Open Data Cube
-===============================
+==============
 
 The Open Data Cube provides an integrated gridded data
 analysis environment for decades of analysis ready earth observation satellite
