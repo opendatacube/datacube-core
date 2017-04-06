@@ -1,18 +1,16 @@
 from __future__ import absolute_import, division
 
-import math
 import functools
+import math
 from collections import namedtuple, OrderedDict
 
 import cachetools
 import numpy
 from affine import Affine
-
 from osgeo import ogr, osr
 from rasterio.coords import BoundingBox as _BoundingBox
 
 from datacube import compat
-
 
 Coordinate = namedtuple('Coordinate', ('values', 'units'))
 
@@ -46,16 +44,24 @@ class CRSProjProxy(object):
         return self._crs.GetProjParm(item)
 
 
+class InvalidCRSError(ValueError):
+    pass
+
+
 @cachetools.cached({})
 def _make_crs(crs_str):
     crs = osr.SpatialReference()
 
-    result = crs.SetFromUserInput(crs_str)
-    if result == ogr.OGRERR_NONE:
-        raise ValueError('Not a recognised CRS string: %r' % crs_str)
+    # We don't bother checking the return code for errors, as the below ExportToProj4 does a more thorough job.
+    crs.SetFromUserInput(crs_str)
+
+    # Some will "validly" be parsed above, but return OGRERR_CORRUPT_DATA error when used here.
+    # see the PROJCS["unnamed... doctest below for an example.
+    if not crs.ExportToProj4():
+        raise InvalidCRSError("Not a valid CRS: %r" % crs_str)
 
     if crs.IsGeographic() == crs.IsProjected():
-        raise ValueError('CRS must be geographic or projected: %r' % crs_str)
+        raise InvalidCRSError('CRS must be geographic or projected: %r' % crs_str)
 
     return crs
 
@@ -89,10 +95,11 @@ class CRS(object):
     True
     >>> CRS('EPSG:3577') == CRS('EPSG:4326')
     False
-    >>> CRS('blah')
+    >>> CRS('cupcakes')
     Traceback (most recent call last):
         ...
-    ValueError: Not a valid CRS: blah
+    ValueError: Not a recognised CRS string: 'cupcakes'
+    >>> # This one validly parses, but returns "Corrupt data" from gdal when used.
     >>> CRS('PROJCS["unnamed",'
     ... 'GEOGCS["WGS 84", DATUM["WGS_1984", SPHEROID["WGS 84",6378137,298.257223563, AUTHORITY["EPSG","7030"]],'
     ... 'AUTHORITY["EPSG","6326"]], PRIMEM["Greenwich",0, AUTHORITY["EPSG","8901"]],'
@@ -106,6 +113,7 @@ class CRS(object):
         """
 
         :param crs_str: string representation of a CRS, often an EPSG code like 'EPSG:4326'
+        :raises: InvalidCRSError
         """
         if isinstance(crs_str, CRS):
             crs_str = crs_str.crs_str
@@ -536,7 +544,6 @@ def _is_smooth_across_dateline(mid_lat, transform, rtransform, eps):
         return False
 
     return True
-
 
 
 ###########################################
