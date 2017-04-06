@@ -197,14 +197,16 @@ class Dataset(object):
         :rtype: geometry.CRS
         """
         projection = self.metadata.grid_spatial
+        if not projection:
+            return None
 
         crs = projection.get('spatial_reference', None)
         if crs:
             return geometry.CRS(str(crs))
 
+        # Try to infer CRS
         zone_ = projection.get('zone')
         datum_ = projection.get('datum')
-
         if zone_ and datum_:
             try:
                 # TODO: really need CRS specified properly in agdc-metadata.yaml
@@ -216,15 +218,12 @@ class Dataset(object):
                     else:
                         return geometry.CRS('EPSG:326' + str(abs(int(zone_[:-1]))))
             except geometry.InvalidCRSError:
-                raise RuntimeError(
-                    "Can't figure out projection: possibly invalid zone (%r) for datum (%r)." % (zone_, datum_)
+                # We still return None, as they didn't specify a CRS explicitly...
+                _LOG.warning(
+                    "Can't figure out projection: possibly invalid zone (%r) for datum (%r).", zone_, datum_
                 )
-            raise RuntimeError('Cant figure out the projection: %s %s' % (datum_, zone_))
 
-        # Backwards compatibility: raise exception when no crs found.
-        # (A lot of code does not check for None)
-        # To act like a property this should probably just return None.
-        raise RuntimeError('No CRS specified (and not inferable)')
+        return None
 
     @cached_property
     def extent(self):
