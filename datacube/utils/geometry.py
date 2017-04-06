@@ -49,9 +49,14 @@ class CRSProjProxy(object):
 @cachetools.cached({})
 def _make_crs(crs_str):
     crs = osr.SpatialReference()
-    crs.SetFromUserInput(crs_str)
-    if not crs.ExportToProj4() or crs.IsGeographic() == crs.IsProjected():
-        raise ValueError('Not a valid CRS: %s' % crs_str)
+
+    result = crs.SetFromUserInput(crs_str)
+    if result == ogr.OGRERR_NONE:
+        raise ValueError('Not a recognised CRS string: %r' % crs_str)
+
+    if crs.IsGeographic() == crs.IsProjected():
+        raise ValueError('CRS must be geographic or projected: %r' % crs_str)
+
     return crs
 
 
