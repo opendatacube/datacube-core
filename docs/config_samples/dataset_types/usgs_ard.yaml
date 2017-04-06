@@ -4,7 +4,7 @@ description: Landsat 5 USGS ARD 30 metre tile
 metadata_type: eo
 
 storage:
-    crs: PROJCS["North_America_Albers_Equal_Area_Conic",GEOGCS["GCS_North_American_1983",DATUM["North_American_Datum_1983",SPHEROID["GRS_1980",6378137,298.257222101]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]],PROJECTION["Albers_Conic_Equal_Area"],PARAMETER["False_Easting",0],PARAMETER["False_Northing",0],PARAMETER["longitude_of_center",-96],PARAMETER["Standard_Parallel_1",20],PARAMETER["Standard_Parallel_2",60],PARAMETER["latitude_of_center",40],UNIT["Meter",1],AUTHORITY["EPSG","102008"]]
+    crs: PROJCS["Albers", GEOGCS["NAD83", DATUM["North_American_Datum_1983", SPHEROID["GRS 1980",6378137,298.2572221010042, AUTHORITY["EPSG","7019"]], AUTHORITY["EPSG","6269"]], PRIMEM["Greenwich",0], UNIT["degree",0.0174532925199433],AUTHORITY["EPSG","4269"]], PROJECTION["Albers_Conic_Equal_Area"], PARAMETER["standard_parallel_1",29.5], PARAMETER["standard_parallel_2",45.5], PARAMETER["latitude_of_center",23], PARAMETER["longitude_of_center",-96], PARAMETER["false_easting",0], PARAMETER["false_northing",0], UNIT["metre",1,AUTHORITY["EPSG","9001"]]]
     resolution:
         x: 30
         y: -30
