@@ -202,17 +202,29 @@ class Dataset(object):
         if crs:
             return geometry.CRS(str(crs))
 
-        # TODO: really need CRS specified properly in agdc-metadata.yaml
-        if projection['datum'] == 'GDA94':
-            return geometry.CRS('EPSG:283' + str(abs(projection['zone'])))
+        zone_ = projection.get('zone')
+        datum_ = projection.get('datum')
 
-        if projection['datum'] == 'WGS84':
-            if projection['zone'][-1] == 'S':
-                return geometry.CRS('EPSG:327' + str(abs(int(projection['zone'][:-1]))))
-            else:
-                return geometry.CRS('EPSG:326' + str(abs(int(projection['zone'][:-1]))))
+        if zone_ and datum_:
+            try:
+                # TODO: really need CRS specified properly in agdc-metadata.yaml
+                if datum_ == 'GDA94':
+                    return geometry.CRS('EPSG:283' + str(abs(zone_)))
+                if datum_ == 'WGS84':
+                    if zone_[-1] == 'S':
+                        return geometry.CRS('EPSG:327' + str(abs(int(zone_[:-1]))))
+                    else:
+                        return geometry.CRS('EPSG:326' + str(abs(int(zone_[:-1]))))
+            except geometry.InvalidCRSError:
+                raise RuntimeError(
+                    "Can't figure out projection: possibly invalid zone (%r) for datum (%r)." % (zone_, datum_)
+                )
+            raise RuntimeError('Cant figure out the projection: %s %s' % (datum_, zone_))
 
-        raise RuntimeError('Cant figure out the projection: %s %s' % (projection['datum'], projection['zone']))
+        # Backwards compatibility: raise exception when no crs found.
+        # (A lot of code does not check for None)
+        # To act like a property this should probably just return None.
+        raise RuntimeError('No CRS specified (and not inferable)')
 
     @cached_property
     def extent(self):
