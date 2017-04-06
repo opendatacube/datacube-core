@@ -32,6 +32,7 @@ def test_crs_parse(indexed_ls5_scene_dataset_types):
 
     }, local_uri=None)
     assert str(d.crs) == 'EPSG:3577'
+    assert d.extent is not None
 
     # Valid datum/zone as seen on our LS5 scene, should infer crs.
     d = Dataset(product, {
@@ -53,10 +54,12 @@ def test_crs_parse(indexed_ls5_scene_dataset_types):
         }
     }, local_uri=None)
     assert str(d.crs) == 'EPSG:28351'
+    assert d.extent is not None
 
     # No projection specified in the dataset
     d = Dataset(product, {}, local_uri=None)
     assert d.crs is None
+    assert d.extent is None
 
     # Invalid datum/zone, can't infer
     d = Dataset(product, {

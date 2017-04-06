@@ -234,14 +234,24 @@ class Dataset(object):
         def xytuple(obj):
             return obj['x'], obj['y']
 
+        # If no projection or crs, they have no extent.
         projection = self.metadata.grid_spatial
+        if not projection:
+            return None
+        crs = self.crs
+        if not crs:
+            _LOG.debug("No CRS, assuming no extent (dataset %s)", self.id)
+            return None
 
-        if 'valid_data' in projection:
-            return geometry.Geometry(projection['valid_data'], crs=self.crs)
-        else:
-            geo_ref_points = projection['geo_ref_points']
+        valid_data = projection.get('valid_data')
+        geo_ref_points = projection.get('geo_ref_points')
+        if valid_data:
+            return geometry.Geometry(valid_data, crs=crs)
+        elif geo_ref_points:
             return geometry.polygon([xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr', 'll')],
-                                    crs=self.crs)
+                                    crs=crs)
+
+        return None
 
     def __eq__(self, other):
         return self.id == other.id
