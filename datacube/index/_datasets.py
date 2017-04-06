@@ -733,7 +733,10 @@ class DatasetResource(object):
 
     def _add_sources(self, dataset, sources_policy='verify'):
         if dataset.sources is None:
-            raise ValueError("Dataset has missing (None) sources. Was this loaded without include_sources=True?")
+            raise ValueError('Dataset has missing (None) sources. Was this loaded without include_sources=True?\n'
+                             'Note that: \n'
+                             '  sources=None means "not loaded", '
+                             '  sources={}   means there are no sources (eg. raw telemetry data)')
 
         if sources_policy == 'ensure':
             for source in dataset.sources.values():
