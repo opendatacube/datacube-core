@@ -1,5 +1,3 @@
-import pytest
-
 from datacube.model import Dataset
 from datacube.model import MetadataType
 
@@ -32,7 +30,7 @@ def test_crs_parse(indexed_ls5_scene_dataset_types):
             }
         }
 
-    })
+    }, local_uri=None)
     assert str(d.crs) == 'EPSG:3577'
 
     # Valid datum/zone as seen on our LS5 scene, should infer crs.
@@ -53,8 +51,12 @@ def test_crs_parse(indexed_ls5_scene_dataset_types):
                 "resampling_option": "CUBIC_CONVOLUTION"
             }
         }
-    })
+    }, local_uri=None)
     assert str(d.crs) == 'EPSG:28351'
+
+    # No projection specified in the dataset
+    d = Dataset(product, {}, local_uri=None)
+    assert d.crs is None
 
     # Invalid datum/zone, can't infer
     d = Dataset(product, {
@@ -74,8 +76,7 @@ def test_crs_parse(indexed_ls5_scene_dataset_types):
                 "resampling_option": "CUBIC_CONVOLUTION"
             }
         }
-    })
-    with pytest.raises(RuntimeError,
-                       message="Can't figure out projection: "
-                               "possibly invalid zone (-60) for datum ('GDA94')."):
-        crs = d.crs
+    }, local_uri=None)
+    # Prints warning: Can't figure out projection: possibly invalid zone (-60) for datum ('GDA94')."
+    # We still return None, rather than error, as they didn't specify a CRS explicitly
+    assert d.crs is None

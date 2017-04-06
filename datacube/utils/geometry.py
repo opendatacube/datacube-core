@@ -98,7 +98,7 @@ class CRS(object):
     >>> CRS('cupcakes')
     Traceback (most recent call last):
         ...
-    ValueError: Not a recognised CRS string: 'cupcakes'
+    datacube.utils.geometry.InvalidCRSError: Not a valid CRS: 'cupcakes'
     >>> # This one validly parses, but returns "Corrupt data" from gdal when used.
     >>> CRS('PROJCS["unnamed",'
     ... 'GEOGCS["WGS 84", DATUM["WGS_1984", SPHEROID["WGS 84",6378137,298.257223563, AUTHORITY["EPSG","7030"]],'
@@ -106,7 +106,7 @@ class CRS(object):
     ... 'UNIT["degree",0.0174532925199433, AUTHORITY["EPSG","9122"]], AUTHORITY["EPSG","4326"]]]')
     Traceback (most recent call last):
         ...
-    ValueError: Not a valid CRS: ...
+    datacube.utils.geometry.InvalidCRSError: Not a valid CRS: 'PROJCS["...
     """
 
     def __init__(self, crs_str):
