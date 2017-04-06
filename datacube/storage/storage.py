@@ -11,7 +11,6 @@ from pathlib import Path
 from abc import ABCMeta, abstractmethod
 from six import add_metaclass
 
-from datacube.drivers.loader import DriverLoader
 from datacube.storage import netcdf_writer
 from datacube.config import OPTIONS
 from datacube.utils import clamp, data_resolution_and_offset, datetime_to_seconds_since_1970, DatacubeException
@@ -590,25 +589,3 @@ def write_dataset_to_netcdf(dataset, filename, global_attributes=None, variable_
         nco[name][:] = netcdf_writer.netcdfy_data(variable.values)
 
     nco.close()
-
-
-# TODO(csiro): I would suggest moving this into the driver loader,
-# making it a driver manager.
-def write_dataset_to_storage(driver, dataset, *args, **kargs):
-    '''Write a Data Cube style xarray Dataset to the storage.
-
-    Requires a spatial Dataset, with attached coordinates and global
-    crs attribute. This does not include the indexing step.
-
-    :param str driver: The name of the driver
-    :param `xarray.Dataset` dataset: The dataset
-    :param list args: Storage-specific positional arguments
-    :param list kargs: Storage-specific keyword arguments
-    :return: Storage-specific write operation output, e.g. data
-        relevant to the indexing
-    '''
-    drivers = DriverLoader().drivers
-    if driver not in drivers:
-        raise ValueError('Unknown driver: %s' % driver)
-
-    return drivers[driver].write_dataset_to_storage(dataset, *args, **kargs)
