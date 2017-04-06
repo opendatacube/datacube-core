@@ -578,6 +578,9 @@ class DocReader(object):
         Traceback (most recent call last):
         ...
         AttributeError: Unknown field 'lon'. Expected one of ['lat']
+        >>> # If that section of doc doesn't exist, treat the value not specified (None)
+        >>> d = DocReader({'platform': ['platform', 'code']}, {}, doc={})
+        >>> d.platform
         """
         self.__dict__['_doc'] = doc
 
@@ -596,7 +599,7 @@ class DocReader(object):
         offset = self._system_offsets.get(name)
         field = self._search_fields.get(name)
         if offset:
-            return get_doc_offset(offset, self._doc)
+            return get_doc_offset_safe(offset, self._doc)
         elif field:
             return field.extract(self._doc)
         else:
