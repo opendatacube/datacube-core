@@ -95,18 +95,21 @@ class CRS(object):
     True
     >>> CRS('EPSG:3577') == CRS('EPSG:4326')
     False
-    >>> CRS('cupcakes')
-    Traceback (most recent call last):
-        ...
-    datacube.utils.geometry.InvalidCRSError: Not a valid CRS: 'cupcakes'
+    >>> # Due to Py 2 and 3 inconsistency in traceback formatting, we need to wrap the exceptions. Yuck.
+    >>> try:
+    ...    CRS('cupcakes')
+    ... except InvalidCRSError as e:
+    ...    print(e)
+    Not a valid CRS: 'cupcakes'
     >>> # This one validly parses, but returns "Corrupt data" from gdal when used.
-    >>> CRS('PROJCS["unnamed",'
-    ... 'GEOGCS["WGS 84", DATUM["WGS_1984", SPHEROID["WGS 84",6378137,298.257223563, AUTHORITY["EPSG","7030"]],'
-    ... 'AUTHORITY["EPSG","6326"]], PRIMEM["Greenwich",0, AUTHORITY["EPSG","8901"]],'
-    ... 'UNIT["degree",0.0174532925199433, AUTHORITY["EPSG","9122"]], AUTHORITY["EPSG","4326"]]]')
-    Traceback (most recent call last):
-        ...
-    datacube.utils.geometry.InvalidCRSError: Not a valid CRS: 'PROJCS["...
+    >>> try:
+    ...     CRS('PROJCS["unnamed",'
+    ...     'GEOGCS["WGS 84", DATUM["WGS_1984", SPHEROID["WGS 84",6378137,298.257223563, AUTHORITY["EPSG","7030"]],'
+    ...     'AUTHORITY["EPSG","6326"]], PRIMEM["Greenwich",0, AUTHORITY["EPSG","8901"]],'
+    ...     'UNIT["degree",0.0174532925199433, AUTHORITY["EPSG","9122"]], AUTHORITY["EPSG","4326"]]]')
+    ... except InvalidCRSError as e:
+    ...    print(e)
+    Not a valid CRS: 'PROJCS["...
     """
 
     def __init__(self, crs_str):
