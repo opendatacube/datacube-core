@@ -1,6 +1,7 @@
 # coding=utf-8
 # We're using references that don't exist in python 3 (unicode, long):
 # pylint: skip-file
+
 """
 Compatibility helpers for Python 2 and 3.
 
@@ -22,7 +23,9 @@ if not PY2:
     range = range
 
     import configparser
+
     NoOptionError = configparser.NoOptionError
+
 
     def read_config(default_text=None):
         config = configparser.ConfigParser()
@@ -31,9 +34,16 @@ if not PY2:
         return config
 
 
+    # noinspection PyUnresolvedReferences
     from urllib.parse import urlparse, urljoin
+    # noinspection PyUnresolvedReferences
     from urllib.request import url2pathname
+    # noinspection PyUnresolvedReferences
     from itertools import zip_longest
+    # noinspection PyUnresolvedReferences
+    import urllib.parse as url_parse_module
+
+
 else:
     text_type = unicode
     string_types = (str, unicode)
@@ -46,7 +56,9 @@ else:
 
     import ConfigParser
     from io import StringIO
+
     NoOptionError = ConfigParser.NoOptionError
+
 
     def read_config(default_text=None):
         config = ConfigParser.SafeConfigParser()
@@ -54,9 +66,15 @@ else:
             config.readfp(StringIO(default_text))
         return config
 
+
+    # noinspection PyUnresolvedReferences
     from urlparse import urlparse, urljoin
+    # noinspection PyUnresolvedReferences
     from urllib import url2pathname
+    # noinspection PyUnresolvedReferences
     from itertools import izip_longest as zip_longest
+    # noinspection PyUnresolvedReferences
+    import urlparse as url_parse_module
 
 
 def with_metaclass(meta, *bases):
