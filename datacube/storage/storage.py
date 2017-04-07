@@ -9,7 +9,7 @@ import math
 from contextlib import contextmanager
 from pathlib import Path
 
-from datacube.compat import urlparse, urljoin
+from datacube.compat import urlparse, urljoin, url_parse_module
 from datacube.config import OPTIONS
 from datacube.model import Dataset
 from datacube.storage import netcdf_writer
@@ -416,6 +416,19 @@ class RasterFileDataSource(BaseRasterDataSource):
         return self.crs
 
 
+def register_scheme(*schemes):
+    """
+    Register additional uri schemes as supporting relative offsets (etc), so that band/measurement paths can be
+    calculated relative to the base uri.
+    """
+    url_parse_module.uses_netloc.extend(schemes)
+    url_parse_module.uses_relative.extend(schemes)
+    url_parse_module.uses_params.extend(schemes)
+
+# Not recognised by python by default. Doctests below will fail without it.
+register_scheme('s3')
+
+
 def _resolve_url(base_url, path):
     """
     If path is a URL or an absolute path return URL
@@ -429,6 +442,12 @@ def _resolve_url(base_url, path):
     'file:///foo/abc'
     >>> _resolve_url('file:///foo/abc', '/bar')
     'file:///bar'
+    >>> _resolve_url('http://foo.com/abc/odc-metadata.yaml', 'band-5.tif')
+    'http://foo.com/abc/band-5.tif'
+    >>> _resolve_url('s3://foo.com/abc/odc-metadata.yaml', 'band-5.tif')
+    's3://foo.com/abc/band-5.tif'
+    >>> _resolve_url('s3://foo.com/abc/odc-metadata.yaml?something', 'band-5.tif')
+    's3://foo.com/abc/band-5.tif'
     """
     if path:
         if is_url(path):
