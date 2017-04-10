@@ -17,9 +17,12 @@ import time
 import boto3
 import botocore
 import numpy as np
+from six.moves import reduce, zip
+from operator import mul
 from os.path import expanduser, exists
 from itertools import repeat
-from multiprocessing import Pool, freeze_support, cpu_count
+from pathos.multiprocessing import ProcessingPool as Pool
+from pathos.multiprocessing import freeze_support, cpu_count
 import SharedArray as sa
 try:
     from StringIO import StringIO
@@ -177,19 +180,22 @@ class S3IO(object):
         if not self.enable_s3:
             return self.put_bytes(s3_bucket, s3_key, data, new_session)
 
+        if not isinstance(data, memoryview):
+            data = memoryview(data)
         assert isinstance(data, memoryview), 'data must be a memoryview'
         s3 = self.s3_resource(new_session)
         mpu = s3.meta.client.create_multipart_upload(Bucket=s3_bucket, Key=s3_key)
 
-        num_blocks = int(np.ceil(data.nbytes/float(block_size)))
+        nbytes = reduce(mul, data.shape, 1)*data.itemsize
+        num_blocks = int(np.ceil(nbytes/float(block_size)))
         parts_dict = dict(Parts=[])
 
         for block_number in range(num_blocks):
             part_number = block_number + 1
             start = block_number*block_size
             end = (block_number+1)*block_size
-            if end > data.nbytes:
-                end = data.nbytes
+            if end > nbytes:
+                end = nbytes
             data_chunk = io.BytesIO(data[start:end])
 
             response = s3.meta.client.upload_part(Bucket=s3_bucket,
@@ -206,44 +212,44 @@ class S3IO(object):
                                                                 MultipartUpload=parts_dict)
         return mpu_response
 
-    def work_put(self, args):
-        return self.work_put_impl(*args)
-
-    def work_put_impl(self, block_number, data, s3_bucket, s3_key, block_size, mpu):
-        response = boto3.resource('s3').meta.client.upload_part(Bucket=s3_bucket,
-                                                                Key=s3_key,
-                                                                UploadId=mpu['UploadId'],
-                                                                PartNumber=block_number + 1,
-                                                                Body=data)
-
-        return dict(PartNumber=block_number + 1, ETag=response['ETag'])
-
     def put_bytes_mpu_mp(self, s3_bucket, s3_key, data, block_size, new_session=False):
+        def work_put(block_number, data, s3_bucket, s3_key, block_size, mpu):
+            response = boto3.resource('s3').meta.client.upload_part(Bucket=s3_bucket,
+                                                                    Key=s3_key,
+                                                                    UploadId=mpu['UploadId'],
+                                                                    PartNumber=block_number + 1,
+                                                                    Body=data)
+
+            return dict(PartNumber=block_number + 1, ETag=response['ETag'])
+
         if not self.enable_s3:
             return self.put_bytes(s3_bucket, s3_key, data, new_session)
 
+        if not isinstance(data, memoryview):
+            data = memoryview(data)
         s3 = self.s3_resource(new_session)
 
         mpu = s3.meta.client.create_multipart_upload(Bucket=s3_bucket, Key=s3_key)
-        num_blocks = int(np.ceil(data.nbytes/float(block_size)))
+        nbytes = reduce(mul, data.shape, 1)*data.itemsize
+        num_blocks = int(np.ceil(nbytes/float(block_size)))
         data_chunks = []
         for block_number in range(num_blocks):
             start = block_number*block_size
             end = (block_number+1)*block_size
-            if end > data.nbytes:
-                end = data.nbytes
+            if end > nbytes:
+                end = nbytes
             data_chunks.append(io.BytesIO(data[start:end]))
 
         parts_dict = dict(Parts=[])
         blocks = range(num_blocks)
         num_processes = cpu_count()
         pool = Pool(num_processes)
-        results = pool.map_async(self.work_put, zip(blocks, data_chunks, repeat(s3_bucket), repeat(s3_key),
-                                                    repeat(block_size), repeat(mpu)))
+        results = pool.map(work_put, blocks, data_chunks, repeat(s3_bucket), repeat(s3_key),
+                           repeat(block_size), repeat(mpu))
         pool.close()
         pool.join()
 
-        for result in results.get():
+        for result in results:
             parts_dict['Parts'].append(result)
 
         mpu_response = boto3.resource('s3').meta.client.complete_multipart_upload(Bucket=s3_bucket,
@@ -253,27 +259,24 @@ class S3IO(object):
 
         return mpu_response
 
-    def work_put_shm(self, args):
-        return self.work_put_impl_shm(*args)
-
-    def work_put_impl_shm(self, block_number, array_name, s3_bucket, s3_key, block_size, mpu):
-        part_number = block_number + 1
-        start = block_number*block_size
-        end = (block_number+1)*block_size
-        shared_array = sa.attach(array_name)
-        data_chunk = io.BytesIO(shared_array.data[start:end])
-
-        s3 = boto3.session.Session().resource('s3')
-        # s3 = boto3.resource('s3')
-        response = s3.meta.client.upload_part(Bucket=s3_bucket,
-                                              Key=s3_key,
-                                              UploadId=mpu['UploadId'],
-                                              PartNumber=part_number,
-                                              Body=data_chunk)
-
-        return dict(PartNumber=part_number, ETag=response['ETag'])
-
     def put_bytes_mpu_mp_shm(self, s3_bucket, s3_key, array_name, block_size, new_session=False):
+        def work_put_shm(block_number, array_name, s3_bucket, s3_key, block_size, mpu):
+            part_number = block_number + 1
+            start = block_number*block_size
+            end = (block_number+1)*block_size
+            shared_array = sa.attach(array_name)
+            data_chunk = io.BytesIO(shared_array.data[start:end])
+
+            s3 = boto3.session.Session().resource('s3')
+            # s3 = boto3.resource('s3')
+            response = s3.meta.client.upload_part(Bucket=s3_bucket,
+                                                  Key=s3_key,
+                                                  UploadId=mpu['UploadId'],
+                                                  PartNumber=part_number,
+                                                  Body=data_chunk)
+
+            return dict(PartNumber=part_number, ETag=response['ETag'])
+
         if not self.enable_s3:
             data = sa.attach(array_name)
             return self.put_bytes(s3_bucket, s3_key, data, new_session)
@@ -288,12 +291,12 @@ class S3IO(object):
         blocks = range(num_blocks)
         num_processes = cpu_count()
         pool = Pool(num_processes)
-        results = pool.map_async(self.work_put_shm, zip(blocks, repeat(array_name), repeat(s3_bucket),
-                                                        repeat(s3_key), repeat(block_size), repeat(mpu)))
+        results = pool.map(work_put_shm, blocks, repeat(array_name), repeat(s3_bucket),
+                           repeat(s3_key), repeat(block_size), repeat(mpu))
         pool.close()
         pool.join()
 
-        for result in results.get():
+        for result in results:
             parts_dict['Parts'].append(result)
 
         mpu_response = s3.meta.client.complete_multipart_upload(Bucket=s3_bucket,
@@ -349,20 +352,17 @@ class S3IO(object):
             f.close()
             return d
 
-    def work_get(self, args):
-        return self.work_get_impl(*args)
-
-    def work_get_impl(self, block_number, array_name, s3_bucket, s3_key, s3_max_size, block_size):
-        start = block_number*block_size
-        end = (block_number+1)*block_size
-        if end > s3_max_size:
-            end = s3_max_size
-        d = self.get_byte_range(s3_bucket, s3_key, start, end, True)
-        # d = np.frombuffer(d, dtype=np.uint8, count=-1, offset=0)
-        shared_array = sa.attach(array_name)
-        shared_array[start:end] = d
-
     def get_byte_range_mp(self, s3_bucket, s3_key, s3_start, s3_end, block_size, new_session=False):
+        def work_get(block_number, array_name, s3_bucket, s3_key, s3_max_size, block_size):
+            start = block_number*block_size
+            end = (block_number+1)*block_size
+            if end > s3_max_size:
+                end = s3_max_size
+            d = self.get_byte_range(s3_bucket, s3_key, start, end, True)
+            # d = np.frombuffer(d, dtype=np.uint8, count=-1, offset=0)
+            shared_array = sa.attach(array_name)
+            shared_array[start:end] = d
+
         if not self.enable_s3:
             return self.get_byte_range(s3_bucket, s3_key, s3_start, s3_end, new_session)
 
@@ -379,8 +379,8 @@ class S3IO(object):
         sa.create(array_name, shape=(s3_obj_size), dtype=np.uint8)
         shared_array = sa.attach(array_name)
 
-        pool.map_async(self.work_get, zip(blocks, repeat(array_name), repeat(s3_bucket), repeat(s3_key),
-                                          repeat(s3_max_size), repeat(block_size)))
+        pool.map(work_get, blocks, repeat(array_name), repeat(s3_bucket), repeat(s3_key),
+                 repeat(s3_max_size), repeat(block_size))
         pool.close()
         pool.join()
         sa.delete(array_name)
