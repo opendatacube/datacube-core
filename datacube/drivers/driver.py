@@ -36,3 +36,17 @@ class Driver(object):
         relevant to the indexing
         '''
         return None
+
+
+    @abstractmethod
+    def index_connect(self, local_config=None, application_name=None, validate_connection=True):
+        '''Connect to the index for this driver.
+
+        :param application_name: A short, alphanumeric name to identify this application.
+        :param local_config: Config object to use.
+        :type local_config: :py:class:`datacube.config.LocalConfig`, optional
+        :param validate_connection: Validate database connection and schema immediately
+        :raises datacube.index.postgres._api.EnvironmentError:
+        :rtype: Index
+        '''
+        return None

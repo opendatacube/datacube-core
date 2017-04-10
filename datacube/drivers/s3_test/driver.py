@@ -7,10 +7,11 @@ CAUTION: if run as root, this may write anywhere in the filesystem.
 from __future__ import absolute_import
 
 import logging
+from pathlib import Path
 from datacube.utils import DatacubeException
 from datacube.drivers.driver import Driver
 from datacube.drivers.s3.storage.s3aio.s3lio import S3LIO
-from pathlib import Path
+from datacube.index import index_connect as index_conn
 
 class S3TestDriver(Driver):
     '''S3 Test storage driver, using filesystem rather than actual s3, for
@@ -88,3 +89,8 @@ class S3TestDriver(Driver):
             self.logger.debug('Wrote %d chunks %s to s3 bucket: %s, object: %s',
                               len(key_maps[band]), chunk, bucket, basename)
         return key_maps
+
+
+    def index_connect(self, local_config=None, application_name=None, validate_connection=True):
+        '''See :meth:`datacube.drivers.driver.index_connect`'''
+        return index_conn(local_config, application_name, validate_connection)

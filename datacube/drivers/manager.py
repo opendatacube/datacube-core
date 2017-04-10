@@ -117,3 +117,11 @@ class DriverManager(object):
         if driver not in self.drivers:
             raise ValueError('Unknown storage driver: %s' % driver)
         return self.drivers[driver].write_dataset_to_storage(dataset, *args, **kargs)
+
+
+    def index_connect(self, driver, local_config=None, application_name=None, validate_connection=True):
+        if not driver:
+            raise ValueError('A driver must be specified to call its methods.')
+        if driver not in self.drivers:
+            raise ValueError('Unknown storage driver: %s' % driver)
+        return self.drivers[driver].index_connect(local_config, application_name, validate_connection)

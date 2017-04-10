@@ -39,12 +39,19 @@ COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_dataset_types')
 def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset_paths, ls5_nbar_ingest_config):
+    config_path, config = ls5_nbar_ingest_config
+    driver = 'NetCDF CF'
+    if 'storage' in config and \
+       'driver' in config['storage']:
+        driver = config['storage']['driver']
 
     for obs_id, example_ls5_dataset_path in example_ls5_dataset_paths.items():
         opts = list(global_integration_cli_args)
         opts.extend(
             [
                 '-v',
+                '--driver',
+                driver,
                 'dataset',
                 'add',
                 '--auto-match',
@@ -62,8 +69,6 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset_
 
     ensure_datasets_are_indexed(index)
 
-    config_path, config = ls5_nbar_ingest_config
-
     # TODO(csiro) Set time dimension when testing
     # config['storage']['tile_size']['time'] = 2
 
@@ -71,6 +76,8 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset_
     opts.extend(
         [
             '-v',
+            '--driver',
+            driver,
             'ingest',
             '--config-file',
             str(config_path)
@@ -87,9 +94,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset_
 
     # TODO(csiro): Add checks on data and indexing when available. For
     # now, stop test here for s3 and s3-test drivers
-    if 'storage' in config and \
-       'driver' in config['storage'] and \
-       config['storage']['driver'] in ('s3', 's3-test'):
+    if driver in ('s3', 's3-test'):
         print('s3-test: Stopping here for now')
         return
 
