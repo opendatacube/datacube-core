@@ -7,10 +7,11 @@ Array access to a single S3 object
 
 import os
 import uuid
-import itertools
 import numpy as np
-from itertools import repeat
-from multiprocessing import Pool, freeze_support, cpu_count
+from six.moves import zip
+from itertools import repeat, product
+from pathos.multiprocessing import ProcessingPool as Pool
+from pathos.multiprocessing import freeze_support, cpu_count
 import SharedArray as sa
 try:
     from StringIO import StringIO
@@ -71,8 +72,8 @@ class S3AIO(object):
 
         outer = array_slice[:-end]
         outer_ranges = [range(s.start, s.stop) for s in outer]
-        outer_cells = list(itertools.product(*outer_ranges))
-        blocks = list(zip(outer_cells, itertools.repeat(array_slice[start:])))
+        outer_cells = list(product(*outer_ranges))
+        blocks = list(zip(outer_cells, repeat(array_slice[start:])))
         item_size = np.dtype(dtype).itemsize
 
         results = []
@@ -96,30 +97,25 @@ class S3AIO(object):
 
         return result
 
-    def work_get_slice(self, args):
-        return self.work_get_slice_impl(*args)
-
-    # pylint: disable=too-many-locals
-    def work_get_slice_impl(self, block, array_name, offset, s3_bucket, s3_key, shape, dtype):
-        result = sa.attach(array_name)
-        cell, sub_range = block
-        pprint(block)
-
-        item_size = np.dtype(dtype).itemsize
-        s3_start = (np.ravel_multi_index(cell+tuple([s.start for s in sub_range]), shape)) * item_size
-        s3_end = (np.ravel_multi_index(cell+tuple([s.stop-1 for s in sub_range]), shape)+1) * item_size
-        data = self.s3io.get_byte_range(s3_bucket, s3_key, s3_start, s3_end)
-
-        t = [slice(x.start-o, x.stop-o) if isinstance(x, slice) else x-o for x, o in
-             zip(cell+tuple(sub_range), offset)]
-        if data.dtype != dtype:
-            data = np.frombuffer(data, dtype=dtype, count=-1, offset=0)
-            # data = data.reshape([s.stop - s.start for s in sub_range])
-
-        # pprint(data)
-        result[t] = data.reshape([s.stop - s.start for s in sub_range])
-
     def get_slice_mp(self, array_slice, shape, dtype, s3_bucket, s3_key):  # pylint: disable=too-many-locals
+        # pylint: disable=too-many-locals
+        def work_get_slice(block, array_name, offset, s3_bucket, s3_key, shape, dtype):
+            result = sa.attach(array_name)
+            cell, sub_range = block
+
+            item_size = np.dtype(dtype).itemsize
+            s3_start = (np.ravel_multi_index(cell+tuple([s.start for s in sub_range]), shape)) * item_size
+            s3_end = (np.ravel_multi_index(cell+tuple([s.stop-1 for s in sub_range]), shape)+1) * item_size
+            data = self.s3io.get_byte_range(s3_bucket, s3_key, s3_start, s3_end)
+
+            t = [slice(x.start-o, x.stop-o) if isinstance(x, slice) else x-o for x, o in
+                 zip(cell+tuple(sub_range), offset)]
+            if data.dtype != dtype:
+                data = np.frombuffer(data, dtype=dtype, count=-1, offset=0)
+                # data = data.reshape([s.stop - s.start for s in sub_range])
+
+            result[t] = data.reshape([s.stop - s.start for s in sub_range])
+
         cdim = self.cdims(array_slice, shape)
 
         try:
@@ -131,8 +127,8 @@ class S3AIO(object):
 
         outer = array_slice[:-end]
         outer_ranges = [range(s.start, s.stop) for s in outer]
-        outer_cells = list(itertools.product(*outer_ranges))
-        blocks = list(zip(outer_cells, itertools.repeat(array_slice[start:])))
+        outer_cells = list(product(*outer_ranges))
+        blocks = list(zip(outer_cells, repeat(array_slice[start:])))
         offset = [s.start for s in array_slice]
 
         num_processes = cpu_count()
@@ -141,8 +137,8 @@ class S3AIO(object):
         sa.create(array_name, shape=[s.stop - s.start for s in array_slice], dtype=dtype)
         shared_array = sa.attach(array_name)
 
-        pool.map_async(self.work_get_slice, zip(blocks, repeat(array_name), repeat(offset), repeat(s3_bucket),
-                                                repeat(s3_key), repeat(shape), repeat(dtype)))
+        pool.map(work_get_slice, blocks, repeat(array_name), repeat(offset), repeat(s3_bucket),
+                 repeat(s3_key), repeat(shape), repeat(dtype))
         pool.close()
         pool.join()
         sa.delete(array_name)
@@ -176,8 +172,8 @@ class S3AIO(object):
 
         outer = array_slice[:-end]
         outer_ranges = [range(s.start, s.stop) for s in outer]
-        outer_cells = list(itertools.product(*outer_ranges))
-        blocks = list(zip(outer_cells, itertools.repeat(array_slice[start:])))
+        outer_cells = list(product(*outer_ranges))
+        blocks = list(zip(outer_cells, repeat(array_slice[start:])))
         item_size = np.dtype(dtype).itemsize
 
         results = []

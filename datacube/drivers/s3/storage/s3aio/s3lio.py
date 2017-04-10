@@ -13,7 +13,7 @@ import numpy as np
 from six.moves import map, zip
 from itertools import repeat, product
 from pathos.multiprocessing import ProcessingPool as Pool
-from multiprocessing import freeze_support, cpu_count
+from pathos.multiprocessing import freeze_support, cpu_count
 import SharedArray as sa
 try:
     from StringIO import StringIO
