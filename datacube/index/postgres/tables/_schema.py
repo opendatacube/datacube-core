@@ -8,6 +8,7 @@ import logging
 
 from sqlalchemy import ForeignKey, UniqueConstraint, PrimaryKeyConstraint, CheckConstraint, SmallInteger
 from sqlalchemy import Table, Column, Integer, String, DateTime, Boolean, Float
+from sqlalchemy import text
 from sqlalchemy.dialects import postgresql as postgres
 from sqlalchemy.sql import func
 
@@ -126,7 +127,8 @@ DATASET_SOURCE = Table(
 #     S3_dataset_ref :: UUID
 S3_DATASET_MAPPING = Table(
     's3_dataset_mapping', _core.METADATA,
-    Column('id', Integer, primary_key=True, autoincrement=True),
+    Column('id', postgres.UUID(as_uuid=True), primary_key=True, autoincrement=True,
+           server_default=text("uuid_generate_v4()")),
     Column('dataset_ref', None, ForeignKey(DATASET.c.id), nullable=False),
     Column('band', String, nullable=False),
     Column('s3_dataset_ref', None, ForeignKey(DATASET.c.id), nullable=False),
@@ -156,7 +158,7 @@ S3_DATASET_MAPPING = Table(
 #                                 -- like times as timestamps
 S3_DATASET = Table(
     's3_dataset', _core.METADATA,
-    Column('id', postgres.UUID(as_uuid=True), primary_key=True),
+    Column('id', postgres.UUID(as_uuid=True), primary_key=True, server_default=text("uuid_generate_v4()")),
     Column('dataset_key', String, nullable=False),
     Column('band', String, nullable=False),
     Column('macro_shape', postgres.ARRAY(Integer, dimensions=1), nullable=False),
@@ -189,7 +191,7 @@ S3_DATASET = Table(
 
 S3_DATASET_CHUNK = Table(
     's3_dataset_chunk', _core.METADATA,
-    Column('id', Integer, primary_key=True, autoincrement=True),
+    Column('id', postgres.UUID(as_uuid=True), primary_key=True, server_default=text("uuid_generate_v4()")),
     Column('s3_dataset_ref', None, ForeignKey(S3_DATASET.c.id), nullable=False),
     Column('bucket', String, nullable=False),
     Column('chunk_id', Integer, nullable=False),
