@@ -147,6 +147,7 @@ class MetadataTypeResource(object):
 
         self.get_by_name_unsafe.cache_clear()
         self.get_unsafe.cache_clear()
+        return self.get_by_name(metadata_type.name)
 
     def update_document(self, definition, allow_unsafe_updates=False):
         """
@@ -431,6 +432,7 @@ class ProductResource(object):
 
         self.get_by_name_unsafe.cache_clear()
         self.get_unsafe.cache_clear()
+        return self.get_by_name(product.name)
 
     def update_document(self, definition, allow_unsafe_updates=False, allow_table_lock=False):
         """
