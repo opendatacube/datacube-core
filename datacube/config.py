@@ -113,9 +113,10 @@ class LocalConfig(object):
         return self._prop('db_port') or '5432'
 
     def __str__(self):
-        return "LocalConfig<loaded_from={}, config={})".format(self.files_loaded or 'defaults',
-                                                               dict(self._config[DATACUBE_SECTION])
-                                                               )
+        return "LocalConfig<loaded_from={}, config={})".format(
+            self.files_loaded or 'defaults',
+            dict(self._config[DATACUBE_SECTION])
+        )
 
     def __repr__(self):
         return self.__str__()

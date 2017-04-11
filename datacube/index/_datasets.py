@@ -319,7 +319,8 @@ class ProductResource(object):
             metadata_type = self.metadata_type_resource.get_by_name(product.metadata_type.name)
             if metadata_type is None:
                 _LOG.warning('Adding metadata_type "%s" as it doesn\'t exist.', product.metadata_type.name)
-                metadata_type = self.metadata_type_resource.add(product.metadata_type, allow_table_lock=allow_table_lock)
+                metadata_type = self.metadata_type_resource.add(product.metadata_type,
+                                                                allow_table_lock=allow_table_lock)
             with self._db.connect() as connection:
                 connection.add_dataset_type(
                     name=product.name,
@@ -637,11 +638,11 @@ class DatasetResource(object):
             dataset.metadata_doc['lineage']['source_datasets'] = {
                 classifier: datasets[source][0].metadata_doc
                 for source, classifier in zip(result['sources'], result['classes']) if source
-                }
+            }
             dataset.sources = {
                 classifier: datasets[source][0]
                 for source, classifier in zip(result['sources'], result['classes']) if source
-                }
+            }
         return datasets[id_][0]
 
     def get_derived(self, id_):
@@ -885,7 +886,7 @@ class DatasetResource(object):
     def add_location(self, id_, uri):
         """
         Add a location to the dataset if it doesn't already exist.
-        
+
         :param typing.Union[UUID, str] id_: dataset id
         :param str uri: fully qualified uri
         :returns bool: Was one added?
@@ -908,7 +909,7 @@ class DatasetResource(object):
     def remove_location(self, id_, uri):
         """
         Remove a location from the dataset if it exists.
-        
+
         :param typing.Union[UUID, str] id_: dataset id
         :param str uri: fully qualified uri
         :returns bool: Was one removed?
