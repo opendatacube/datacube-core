@@ -197,22 +197,33 @@ class Dataset(object):
         :rtype: geometry.CRS
         """
         projection = self.metadata.grid_spatial
+        if not projection:
+            return None
 
         crs = projection.get('spatial_reference', None)
         if crs:
             return geometry.CRS(str(crs))
 
-        # TODO: really need CRS specified properly in agdc-metadata.yaml
-        if projection['datum'] == 'GDA94':
-            return geometry.CRS('EPSG:283' + str(abs(projection['zone'])))
+        # Try to infer CRS
+        zone_ = projection.get('zone')
+        datum_ = projection.get('datum')
+        if zone_ and datum_:
+            try:
+                # TODO: really need CRS specified properly in agdc-metadata.yaml
+                if datum_ == 'GDA94':
+                    return geometry.CRS('EPSG:283' + str(abs(zone_)))
+                if datum_ == 'WGS84':
+                    if zone_[-1] == 'S':
+                        return geometry.CRS('EPSG:327' + str(abs(int(zone_[:-1]))))
+                    else:
+                        return geometry.CRS('EPSG:326' + str(abs(int(zone_[:-1]))))
+            except geometry.InvalidCRSError:
+                # We still return None, as they didn't specify a CRS explicitly...
+                _LOG.warning(
+                    "Can't figure out projection: possibly invalid zone (%r) for datum (%r).", zone_, datum_
+                )
 
-        if projection['datum'] == 'WGS84':
-            if projection['zone'][-1] == 'S':
-                return geometry.CRS('EPSG:327' + str(abs(int(projection['zone'][:-1]))))
-            else:
-                return geometry.CRS('EPSG:326' + str(abs(int(projection['zone'][:-1]))))
-
-        raise RuntimeError('Cant figure out the projection: %s %s' % (projection['datum'], projection['zone']))
+        return None
 
     @cached_property
     def extent(self):
@@ -223,14 +234,24 @@ class Dataset(object):
         def xytuple(obj):
             return obj['x'], obj['y']
 
+        # If no projection or crs, they have no extent.
         projection = self.metadata.grid_spatial
+        if not projection:
+            return None
+        crs = self.crs
+        if not crs:
+            _LOG.debug("No CRS, assuming no extent (dataset %s)", self.id)
+            return None
 
-        if 'valid_data' in projection:
-            return geometry.Geometry(projection['valid_data'], crs=self.crs)
-        else:
-            geo_ref_points = projection['geo_ref_points']
+        valid_data = projection.get('valid_data')
+        geo_ref_points = projection.get('geo_ref_points')
+        if valid_data:
+            return geometry.Geometry(valid_data, crs=crs)
+        elif geo_ref_points:
             return geometry.polygon([xytuple(geo_ref_points[key]) for key in ('ll', 'ul', 'ur', 'lr', 'll')],
-                                    crs=self.crs)
+                                    crs=crs)
+
+        return None
 
     def __eq__(self, other):
         return self.id == other.id
