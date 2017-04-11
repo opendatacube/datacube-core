@@ -293,7 +293,7 @@ class ProductResource(object):
 
         return DatasetType(metadata_type, definition)
 
-    def add(self, type_, allow_table_lock=False):
+    def add(self, product, allow_table_lock=False):
         """
         Add a Product.
 
@@ -302,33 +302,33 @@ class ProductResource(object):
             This will halt other user's requests until completed.
 
             If false, creation will be slightly slower and cannot be done in a transaction.
-        :param datacube.model.DatasetType type_: Product to add
+        :param datacube.model.DatasetType product: Product to add
         :rtype: datacube.model.DatasetType
         """
-        DatasetType.validate(type_.definition)
+        DatasetType.validate(product.definition)
 
-        existing = self.get_by_name(type_.name)
+        existing = self.get_by_name(product.name)
         if existing:
             check_doc_unchanged(
                 existing.definition,
-                jsonify_document(type_.definition),
-                'Metadata Type {}'.format(type_.name)
+                jsonify_document(product.definition),
+                'Metadata Type {}'.format(product.name)
             )
         else:
-            metadata_type = self.metadata_type_resource.get_by_name(type_.metadata_type.name)
+            metadata_type = self.metadata_type_resource.get_by_name(product.metadata_type.name)
             if metadata_type is None:
-                _LOG.warning('Adding metadata_type "%s" as it doesn\'t exist.', type_.metadata_type.name)
-                metadata_type = self.metadata_type_resource.add(type_.metadata_type, allow_table_lock=allow_table_lock)
+                _LOG.warning('Adding metadata_type "%s" as it doesn\'t exist.', product.metadata_type.name)
+                metadata_type = self.metadata_type_resource.add(product.metadata_type, allow_table_lock=allow_table_lock)
             with self._db.connect() as connection:
                 connection.add_dataset_type(
-                    name=type_.name,
-                    metadata=type_.metadata_doc,
+                    name=product.name,
+                    metadata=product.metadata_doc,
                     metadata_type_id=metadata_type.id,
                     search_fields=metadata_type.dataset_fields,
-                    definition=type_.definition,
+                    definition=product.definition,
                     concurrently=not allow_table_lock,
                 )
-        return self.get_by_name(type_.name)
+        return self.get_by_name(product.name)
 
     def can_update(self, product, allow_unsafe_updates=False):
         """
