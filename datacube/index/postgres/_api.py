@@ -30,6 +30,8 @@ from .tables import (
     S3_DATASET_MAPPING, S3_DATASET, S3_DATASET_CHUNK
 )
 
+import uuid
+
 try:
     from typing import Iterable
     from typing import Tuple
@@ -880,6 +882,7 @@ class PostgresDbAPI(object):
         """
         res = self._connection.execute(
             S3_DATASET_MAPPING.insert().values(
+                id=uuid.uuid4(),
                 dataset_ref=dataset_ref,
                 band=band,
                 s3_dataset_ref=s3_dataset_ref,
@@ -912,6 +915,7 @@ class PostgresDbAPI(object):
         """
         res = self._connection.execute(
             S3_DATASET.insert().values(
+                id=uuid.uuid4(),
                 dataset_key=dataset_key,
                 band=band,
                 macro_shape=macro_shape,
@@ -945,6 +949,7 @@ class PostgresDbAPI(object):
         :rtype uuid.UUID
         """
         res = self._connection.insert().values(
+            id=uuid.uuid4(),
             s3_dataset_ref=s3_dataset_ref,
             bucket=bucket,
             chunk_id=chunk_id,
