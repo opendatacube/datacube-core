@@ -19,7 +19,7 @@ import datacube
 from datacube.api.core import Datacube
 from datacube.model import DatasetType, Range, GeoPolygon
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
-from datacube.storage.storage import write_dataset_to_storage
+from datacube.drivers.manager import DriverManager
 from datacube.ui import click as ui
 from datacube.utils import read_documents, changes
 from datacube.ui.task_app import check_existing_files, load_tasks as load_tasks_, save_tasks as save_tasks_
@@ -80,8 +80,8 @@ def morph_dataset_type(source_type, config):
     driver = config['storage']['driver'].lower()
     if driver == 'netcdf cf':
         output_type.metadata_doc['format'] = {'name': 'NetCDF'}
-    elif driver == 's3':
-        output_type.metadata_doc['format'] = {'name': 's3'}
+    elif driver in ('s3', 's3-test'):
+        output_type.metadata_doc['format'] = {'name': driver}
     else:
         raise ValueError('Unknown driver: %s' % output_type.definition['storage']['driver'])
 
@@ -112,6 +112,8 @@ def get_variable_params(config):
                                                                               'contiguous',
                                                                               'attrs'}}
         variable_params[varname]['chunksizes'] = chunking
+        if 'container' in config:
+            variable_params[varname]['container'] = config['container']
 
     return variable_params
 
@@ -274,8 +276,11 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
     datasets = xr_apply(tile.sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
     nudata['dataset'] = datasets_to_doc(datasets)
 
-    write_dataset_to_storage(output_type.definition['storage']['driver'], nudata,
-                             file_path, global_attributes, variable_params)
+    # Until ingest becomes a class and DriverManager an instance
+    # variable, we call the constructor each time. DriverManager being
+    # a singleton, there is little overhead, though.
+    output = DriverManager().write_dataset_to_storage(output_type.definition['storage']['driver'],
+                                                      nudata, file_path, global_attributes, variable_params)
     _LOG.info('Finished task %s', tile_index)
 
     return datasets

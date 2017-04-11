@@ -6,12 +6,14 @@ Labeled Array access, backed by multiple S3 objects.
 '''
 
 import os
+import sys
 import uuid
 import hashlib
-import itertools
 import numpy as np
-from itertools import repeat
-from multiprocessing import Pool, freeze_support, cpu_count
+from six.moves import map, zip
+from itertools import repeat, product
+from pathos.multiprocessing import ProcessingPool as Pool
+from pathos.multiprocessing import freeze_support, cpu_count
 import SharedArray as sa
 try:
     from StringIO import StringIO
@@ -43,11 +45,19 @@ class S3LIO(object):
 
     def chunk_indices_nd(self, shape, chunk, array_slice=None):
         if array_slice is None:
-            array_slice = itertools.repeat(None)
-        var1 = map(self.chunk_indices_1d, itertools.repeat(0), shape, chunk, array_slice)
-        return itertools.product(*var1)
+            array_slice = repeat(None)
+        var1 = map(self.chunk_indices_1d, repeat(0), shape, chunk, array_slice)
+        return product(*var1)
 
     def put_array_in_s3(self, array, chunk_size, base_name, bucket, spread=False):
+        idx = list(self.chunk_indices_nd(array.shape, chunk_size))
+        keys = [base_name+'_'+str(i) for i in range(len(idx))]
+        if spread:
+            keys = [hashlib.md5(k.encode('utf-8')).hexdigest()[0:6] + '_' + k for k in keys]
+        self.shard_array_to_s3(array, idx, bucket, keys)
+        return list(zip(keys, idx))
+
+    def put_array_in_s3_mp(self, array, chunk_size, base_name, bucket, spread=False):
         idx = list(self.chunk_indices_nd(array.shape, chunk_size))
         keys = [base_name+'_'+str(i) for i in range(len(idx))]
         if spread:
@@ -58,24 +68,26 @@ class S3LIO(object):
     def shard_array_to_s3(self, array, indices, s3_bucket, s3_keys):
         # todo: multiprocess put_bytes or if large put_bytes_mpu
         for s3_key, index in zip(s3_keys, indices):
-            self.s3aio.s3io.put_bytes(s3_bucket, s3_key, bytes(array[index].data))
-
-    def work_shard_array_to_s3(self, args):
-        return self.work_shard_array_to_s3_impl(*args)
-
-    def work_shard_array_to_s3_impl(self, s3_key, index, array_name, s3_bucket):
-        array = sa.attach(array_name)
-        self.s3aio.s3io.put_bytes(s3_bucket, s3_key, bytes(array[index].data))
+            if sys.version_info >= (3, 5):
+                self.s3aio.s3io.put_bytes(s3_bucket, s3_key, bytes(array[index].data))
+            else:
+                self.s3aio.s3io.put_bytes(s3_bucket, s3_key, bytes(np.ascontiguousarray(array[index]).data))
 
     def shard_array_to_s3_mp(self, array, indices, s3_bucket, s3_keys):
+        def work_shard_array_to_s3(s3_key, index, array_name, s3_bucket):
+            array = sa.attach(array_name)
+            if sys.version_info >= (3, 5):
+                self.s3aio.s3io.put_bytes(s3_bucket, s3_key, bytes(array[index].data))
+            else:
+                self.s3aio.s3io.put_bytes(s3_bucket, s3_key, bytes(np.ascontiguousarray(array[index]).data))
+
         num_processes = cpu_count()
         pool = Pool(num_processes)
         array_name = '_'.join(['SA3IO', str(uuid.uuid4()), str(os.getpid())])
         sa.create(array_name, shape=array.shape, dtype=array.dtype)
         shared_array = sa.attach(array_name)
         shared_array[:] = array
-
-        pool.map_async(self.work_shard_array_to_s3, zip(s3_keys, indices, repeat(array_name), repeat(s3_bucket)))
+        results = pool.map(work_shard_array_to_s3, s3_keys, indices, repeat(array_name), repeat(s3_bucket))
         pool.close()
         pool.join()
         sa.delete(array_name)

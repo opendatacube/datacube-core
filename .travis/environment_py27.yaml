@@ -24,6 +24,7 @@ dependencies:
 - pathlib
 - compliance-checker
 - boto3
+- pathos
 - pip:
   - pypeg2
   - pytest-cov # testing

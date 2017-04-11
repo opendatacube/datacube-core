@@ -1,4 +1,8 @@
-'''S3 storage driver class
+'''S3 Test storage driver class. To avoid credential issues with
+travis accessing s3, we use a filesystem based s3 driver for testing
+purposes.
+
+CAUTION: if run as root, this may write anywhere in the filesystem.
 '''
 from __future__ import absolute_import
 
@@ -9,20 +13,28 @@ from datacube.drivers.driver import Driver
 from datacube.drivers.s3.storage.s3aio.s3lio import S3LIO
 from datacube.index import index_connect as index_conn
 
-class S3Driver(Driver):
-    '''S3 storage driver. A placeholder for now.
+class S3TestDriver(Driver):
+    '''S3 Test storage driver, using filesystem rather than actual s3, for
+    testing purposes only.
     '''
 
     def __init__(self):
+        '''Initialise the s3 test driver.
+
+        CAUTION: if run as root, this may write anywhere in the
+        filesystem.
+        '''
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.storage = S3LIO(False)
+        # Initialise with the root at the top of the filesystem, so
+        # that the `container` path can be absolute.
+        self.storage = S3LIO(False, '/')
 
 
     @property
     def name(self):
         '''See :meth:`datacube.drivers.driver.name`
         '''
-        return 's3'
+        return 's3-test'
 
 
     def _get_chunksizes(self, chunksizes):
@@ -70,6 +82,7 @@ class S3Driver(Driver):
             if 'container' not in param:
                 raise DatacubeException('Missing `container` parameter, cannot write to storage.')
             bucket = param['container']
+            self.storage.filepath = bucket
             basename = '%s_%s' % (filename.stem, band)
             data = dataset.data_vars[band].values
             key_maps[band] = self.storage.put_array_in_s3(data, chunk, basename, bucket, True)

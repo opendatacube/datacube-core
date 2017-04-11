@@ -14,8 +14,8 @@ import click
 
 from datacube import config, __version__
 from datacube.executor import get_executor
-from datacube.index import index_connect
 from pathlib import Path
+from datacube.drivers.manager import DriverManager
 
 from datacube.ui.expression import parse_expressions
 from sqlalchemy.exc import OperationalError, ProgrammingError
@@ -132,6 +132,12 @@ def _set_config(ctx, param, value):
     ctx.obj['config_file'] = parsed_config
 
 
+def _set_driver(ctx, param, value):
+    if not ctx.obj:
+        ctx.obj = {}
+    ctx.obj['driver'] = value
+
+
 #: pylint: disable=invalid-name
 version_option = click.option('--version', is_flag=True, callback=_print_version,
                               expose_value=False, is_eager=True)
@@ -145,6 +151,9 @@ logfile_option = click.option('--log-file', multiple=True, callback=_add_logfile
 config_option = click.option('--config_file', '-C', multiple=True, default='', callback=_set_config,
                              expose_value=False)
 #: pylint: disable=invalid-name
+driver_option = click.option('--driver', '-D', default='NetCDF CF', callback=_set_driver,
+                             expose_value=False)
+#: pylint: disable=invalid-name
 log_queries_option = click.option('--log-queries', is_flag=True, callback=_log_queries,
                                   expose_value=False, help="Print database queries.")
 
@@ -154,6 +163,7 @@ global_cli_options = compose(
     version_option,
     verbose_option,
     logfile_option,
+    driver_option,
     config_option,
     log_queries_option
 )
@@ -185,9 +195,11 @@ def pass_index(app_name=None, expect_initialised=True):
         def with_index(*args, **kwargs):
             ctx = click.get_current_context()
             try:
-                index = index_connect(ctx.obj['config_file'],
-                                      application_name=app_name or ctx.command_path,
-                                      validate_connection=expect_initialised)
+                index = DriverManager().index_connect(
+                    ctx.obj['driver'],
+                    ctx.obj['config_file'],
+                    application_name=app_name or ctx.command_path,
+                    validate_connection=expect_initialised)
                 _LOG.debug("Connected to datacube index: %s", index)
                 return f(index, *args, **kwargs)
             except (OperationalError, ProgrammingError) as e:
