@@ -40,6 +40,8 @@ db_connection_timeout: 60
 # eotiles: file:///g/data/...
 """
 
+DATACUBE_SECTION = 'datacube'
+
 
 class LocalConfig(object):
     """
@@ -66,7 +68,7 @@ class LocalConfig(object):
         files_loaded = config.read([p for p in paths if p])
         return LocalConfig(config, files_loaded)
 
-    def _prop(self, key, section='datacube'):
+    def _prop(self, key, section=DATACUBE_SECTION):
         try:
             return self._config.get(section, key)
         except compat.NoOptionError:
@@ -111,8 +113,9 @@ class LocalConfig(object):
         return self._prop('db_port') or '5432'
 
     def __str__(self):
-        return "LocalConfig<loaded_from={})".format(self._files_loaded or
-                                                    'defaults')
+        return "LocalConfig<loaded_from={}, config={})".format(self.files_loaded or 'defaults',
+                                                               dict(self._config[DATACUBE_SECTION])
+                                                               )
 
     def __repr__(self):
         return self.__str__()
@@ -137,6 +140,7 @@ class set_options(object):
 
         datacube.set_options(reproject_threads=16)
     """
+
     def __init__(self, **kwargs):
         self.old = OPTIONS.copy()
         OPTIONS.update(kwargs)
