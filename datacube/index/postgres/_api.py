@@ -25,7 +25,12 @@ from datacube.model import Range
 from . import _dynamic as dynamic
 from . import tables
 from ._fields import parse_fields, NativeField, Expression, PgField
-from .tables import DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
+from .tables import (
+    DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE,
+    S3_DATASET_MAPPING, S3_DATASET, S3_DATASET_CHUNK
+)
+
+import uuid
 
 try:
     from typing import Iterable
@@ -860,3 +865,98 @@ class PostgresDbAPI(object):
                 raise ValueError('Unknown user %r' % user)
 
         tables.grant_role(self._connection, pg_role, users)
+
+
+
+    #
+    # S3 specific functions
+    #
+    # See .tables for description of each column
+
+    def put_s3_mapping(self, dataset_ref, band, s3_dataset_ref):
+        """
+        :type dataset_ref: str or uuid.UUID
+        :type band: str
+        :type s3_dataset_ref: uuid.UUID
+        :rtype uuid.UUID
+        """
+        res = self._connection.execute(
+            S3_DATASET_MAPPING.insert().values(
+                id=uuid.uuid4(),
+                dataset_ref=dataset_ref,
+                band=band,
+                s3_dataset_ref=s3_dataset_ref,
+            )
+        )
+
+        return res.inserted_primary_key[0]
+
+    def put_s3_dataset(self,
+                       dataset_key,
+                       band,
+                       macro_shape,
+                       chunk_size,
+                       numpy_type,
+                       dimensions,
+                       regular_dims,
+                       regular_index,
+                       irregular_index):
+        """
+        :type dataset_id: str or uuid.UUID
+        :type band: str
+        :type macro_shape: array[int]
+        :type chunk_size: array[int]
+        :type numpy_type: str
+        :type dimensions: array[str]
+        :type regular_dims: array[bool]
+        :type regular_index: array[array[float]]
+        :type irregular_index: array[array[float]]
+        :rtype: uuid.UUID
+        """
+        res = self._connection.execute(
+            S3_DATASET.insert().values(
+                id=uuid.uuid4(),
+                dataset_key=dataset_key,
+                band=band,
+                macro_shape=macro_shape,
+                chunk_size=chunk_size,
+                numpy_type=numpy_type,
+                dimensions=dimensions,
+                regular_dims=regular_dims,
+                regular_index=regular_index,
+                irregular_index=irregular_index
+            )
+        )
+
+        return res.inserted_primary_key[0]
+
+    def put_s3_dataset_chunk(self,
+                             s3_dataset_ref,
+                             bucket,
+                             chunk_id,
+                             compression_scheme,
+                             micro_shape,
+                             index_min,
+                             index_max):
+        """
+        :type s3_dataset_ref: uuid.UUID
+        :type bucket: str
+        :type chunk_id: str
+        :type compression_scheme: str
+        :type micro_shape: array[int]
+        :type index_min: array[float]
+        :type index_max: array[float]
+        :rtype uuid.UUID
+        """
+        res = self._connection.insert().values(
+            id=uuid.uuid4(),
+            s3_dataset_ref=s3_dataset_ref,
+            bucket=bucket,
+            chunk_id=chunk_id,
+            compression_scheme=compression_scheme,
+            micro_shape=micro_shape,
+            index_min=index_min,
+            index_max=index_max
+        )
+
+        return res.inserted_primary_key[0]
