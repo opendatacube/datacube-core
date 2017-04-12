@@ -51,30 +51,39 @@ class DriverManager(object):
     __instance = None
     '''Singleton instance of this manager.'''
 
-    __drivers = {}
-    '''Avaliable drivers, indexed by name.'''
+    __driver = None
+    '''Current driver.'''
+
+    __drivers = None
+    '''Singleton list of all available drivers, indexed by name.'''
 
 
-    def __new__(cls):
-        '''Instantiate the singleton and load all available drivers.
+    def __new__(cls, driver_name=None, local_config=None,
+                application_name=None, validate_connection=True):
+        '''(Re-)Instantiate the singleton by loading the driver and initialising
+        its index.
+
+        The singleton gets re-instantiated each time a new
+        DriverManager is created and `driver_name` is specified.
         '''
-        if cls.__instance is None:
+        if driver_name or cls.__instance is None:
             cls.__instance = super(DriverManager, cls).__new__(cls)
             cls.__instance.logger = logging.getLogger(cls.__name__)
             # pylint: disable=protected-access
-            cls.__instance.__load_drivers()
-            cls.__instance.logger.debug('Loaded %d storage drivers: %s',
-                                        len(cls.__instance.drivers),
-                                        ', '.join(cls.__instance.drivers.keys()))
+            cls.__instance.__load_driver(driver_name, local_config, application_name, validate_connection)
+            cls.__instance.logger.info('Ready with driver: %s', cls.__instance.driver)
         return cls.__instance
 
 
-    def __load_drivers(self):
-        '''Lookup and instantiate all available drivers.
+    def __load_driver(self, driver_name, local_config, application_name, validate_connection):
+        '''Lookup and instantiate driver.
         '''
+        if not driver_name:
+            raise ValueError('A storage driver must be specified to initialise the manager.')
         for init_path in Path(__file__).parent.glob('*/__init__.py'):
             init = load_module(str(init_path.parent.stem), str(init_path))
-            if self.DRIVER_SPEC in init.__dict__:
+            if self.DRIVER_SPEC in init.__dict__ and \
+               init.__dict__[self.DRIVER_SPEC][0] == driver_name:
                 spec = init.__dict__[self.DRIVER_SPEC]
                 # pylint: disable=old-division
                 filepath = init_path.parent / spec[2]
@@ -82,27 +91,51 @@ class DriverManager(object):
                 module = load_module(spec[1], str(init_path.parent / spec[2]))
                 driver_cls = getattr(module, spec[1])
                 if not issubclass(driver_cls, Driver):
-                    self.logger.warning('Driver plugin `%s` is not a subclass of the abstract Driver class. ' \
-                                        +'It will be ignored!', driver_cls)
-                    continue
-                self.__drivers[spec[0]] = driver_cls()
+                    raise ValueError('Driver plugin `%s` is not a subclass of the abstract Driver class.',
+                                     driver_cls)
+                self.__driver = driver_cls(spec[0], local_config, application_name, validate_connection)
+
+
+    @property
+    def driver(self):
+        '''Current driver.
+        '''
+        return self.__driver
 
 
     @property
     def drivers(self):
         '''Dictionary of drivers available, indexed by their name.
+
+        This singleton list is populated on first call of this property.
         '''
+        if self.__drivers is None:
+            self.__drivers = []
+            for init_path in Path(__file__).parent.glob('*/__init__.py'):
+                init = load_module(str(init_path.parent.stem), str(init_path))
+                if self.DRIVER_SPEC in init.__dict__:
+                    spec = init.__dict__[self.DRIVER_SPEC]
+                    # pylint: disable=old-division
+                    filepath = init_path.parent / spec[2]
+                    # pylint: disable=old-division
+                    module = load_module(spec[1], str(init_path.parent / spec[2]))
+                    driver_cls = getattr(module, spec[1])
+                    if not issubclass(driver_cls, Driver):
+                        self.logger.warning('Driver plugin `%s` is not a subclass of the abstract Driver class. ',
+                                            driver_cls)
+                        continue
+                    self.__drivers.append(spec[0])
         return self.__drivers
 
 
     def __str__(self):
         '''Human-readable list of available drivers as a string.
         '''
-        return '%s(%s)' % (self.__class__.__name__,
-                           ', '.join(self.drivers.keys()))
+        return '%s(driver: %s)' % (self.__class__.__name__,
+                                   self.driver.name)
 
 
-    def write_dataset_to_storage(self, driver, dataset, *args, **kargs):
+    def write_dataset_to_storage(self, dataset, *args, **kargs):
         '''Forwards a call to a specific driver.
 
         An additional first parameter must be specified:
@@ -112,16 +145,8 @@ class DriverManager(object):
         See :meth:`datacube.drivers.driver.write_dataset_to_storage`
         for the other parameters and return value.
         '''
-        if not driver:
-            raise ValueError('A driver must be specified to call its methods.')
-        if driver not in self.drivers:
-            raise ValueError('Unknown storage driver: %s' % driver)
-        return self.drivers[driver].write_dataset_to_storage(dataset, *args, **kargs)
+        return self.driver.write_dataset_to_storage(dataset, *args, **kargs)
 
 
-    def index_connect(self, driver, local_config=None, application_name=None, validate_connection=True):
-        if not driver:
-            raise ValueError('A driver must be specified to call its methods.')
-        if driver not in self.drivers:
-            raise ValueError('Unknown storage driver: %s' % driver)
-        return self.drivers[driver].index_connect(local_config, application_name, validate_connection)
+    def index_datasets(self, datasets, sources_policy):
+        return self.driver.index.add_datasets(datasets, sources_policy)

@@ -77,17 +77,9 @@ def morph_dataset_type(source_type, config):
     output_type.definition['managed'] = True
     output_type.definition['description'] = config['description']
     output_type.definition['storage'] = config['storage']
-    driver = config['storage']['driver'].lower()
-    if driver == 'netcdf cf':
-        output_type.metadata_doc['format'] = {'name': 'NetCDF'}
-    elif driver in ('s3', 's3-test'):
-        output_type.metadata_doc['format'] = {'name': driver}
-    else:
-        raise ValueError('Unknown driver: %s' % output_type.definition['storage']['driver'])
-
-
     output_type.definition['storage'] = {k: v for (k, v) in config['storage'].items()
                                          if k in ('crs', 'driver', 'tile_size', 'resolution', 'origin')}
+    output_type.metadata_doc['format'] = {'name': DriverManager().driver.format}
 
     def merge_measurement(measurement, spec):
         measurement.update({k: spec.get(k, measurement[k]) for k in ('name', 'nodata', 'dtype')})
@@ -279,19 +271,18 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
     # Until ingest becomes a class and DriverManager an instance
     # variable, we call the constructor each time. DriverManager being
     # a singleton, there is little overhead, though.
-    output = DriverManager().write_dataset_to_storage(output_type.definition['storage']['driver'],
-                                                      nudata, file_path, global_attributes, variable_params)
+    datasets.attrs['storage_output'] = DriverManager().write_dataset_to_storage(nudata,
+                                                                                file_path,
+                                                                                global_attributes,
+                                                                                variable_params)
     _LOG.info('Finished task %s', tile_index)
-
     return datasets
 
 
 def _index_datasets(index, results, skip_sources):
     n = 0
     for datasets in results:
-        for dataset in datasets.values:
-            index.datasets.add(dataset, sources_policy='skip')
-            n += 1
+        n += DriverManager().index_datasets(datasets, sources_policy='verify')
     return n
 
 

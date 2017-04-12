@@ -7,22 +7,16 @@ from pathlib import Path
 from datacube.utils import DatacubeException
 from datacube.drivers.driver import Driver
 from datacube.drivers.s3.storage.s3aio.s3lio import S3LIO
-from datacube.index import index_connect as index_conn
+from datacube.drivers.s3.index import Index
 
 class S3Driver(Driver):
     '''S3 storage driver. A placeholder for now.
     '''
 
-    def __init__(self):
+    def __init__(self, name, local_config=None, application_name=None, validate_connection=True):
+        super(self.__class__, self).__init__(name, local_config, application_name, validate_connection)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.storage = S3LIO(False)
-
-
-    @property
-    def name(self):
-        '''See :meth:`datacube.drivers.driver.name`
-        '''
-        return 's3'
 
 
     def _get_chunksizes(self, chunksizes):
@@ -78,6 +72,6 @@ class S3Driver(Driver):
         return key_maps
 
 
-    def index_connect(self, local_config=None, application_name=None, validate_connection=True):
-        '''See :meth:`datacube.drivers.driver.index_connect`'''
-        return index_conn(local_config, application_name, validate_connection)
+    def _init_index(self, local_config=None, application_name=None, validate_connection=True):
+        '''See :meth:`datacube.drivers.driver._init_index`'''
+        return Index(local_config, application_name, validate_connection)

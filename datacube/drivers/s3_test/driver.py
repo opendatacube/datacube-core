@@ -8,22 +8,24 @@ from __future__ import absolute_import
 
 import logging
 from pathlib import Path
+
 from datacube.utils import DatacubeException
 from datacube.drivers.driver import Driver
 from datacube.drivers.s3.storage.s3aio.s3lio import S3LIO
-from datacube.index import index_connect as index_conn
+from datacube.drivers.s3.index import Index
 
 class S3TestDriver(Driver):
     '''S3 Test storage driver, using filesystem rather than actual s3, for
     testing purposes only.
     '''
 
-    def __init__(self):
+    def __init__(self, name, local_config=None, application_name=None, validate_connection=True):
         '''Initialise the s3 test driver.
 
         CAUTION: if run as root, this may write anywhere in the
         filesystem.
         '''
+        super(self.__class__, self).__init__(name, local_config, application_name, validate_connection)
         self.logger = logging.getLogger(self.__class__.__name__)
         # Initialise with the root at the top of the filesystem, so
         # that the `container` path can be absolute.
@@ -31,10 +33,9 @@ class S3TestDriver(Driver):
 
 
     @property
-    def name(self):
-        '''See :meth:`datacube.drivers.driver.name`
-        '''
-        return 's3-test'
+    def format(self):
+        '''Output format for this driver for use in metadata.'''
+        return 's3'
 
 
     def _get_chunksizes(self, chunksizes):
@@ -91,6 +92,6 @@ class S3TestDriver(Driver):
         return key_maps
 
 
-    def index_connect(self, local_config=None, application_name=None, validate_connection=True):
-        '''See :meth:`datacube.drivers.driver.index_connect`'''
-        return index_conn(local_config, application_name, validate_connection)
+    def _init_index(self, local_config=None, application_name=None, validate_connection=True):
+        '''See :meth:`datacube.drivers.driver.init_index`'''
+        return Index(local_config, application_name, validate_connection)

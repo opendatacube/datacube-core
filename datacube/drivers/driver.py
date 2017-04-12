@@ -15,11 +15,44 @@ class Driver(object):
     access.
     '''
 
+    __name = None
+    '''Driver's name.'''
+
+    __index = None
+    '''Driver's index.'''
+
+
+    def __init__(self, name, local_config=None, application_name=None, validate_connection=True):
+        '''Initialise the driver's name and index.
+
+        This should be called by subclasses, or the name and index set manually.
+        '''
+        self.__name = name
+        self.__index = self._init_index(local_config, application_name, validate_connection)
+
+
     @property
-    @abstractmethod
     def name(self):
         '''A human-readable name for this driver.'''
-        return 'Base driver'
+        if not self.__name:
+            raise ValueError('Driver was not initialised properly. Make sure you call the base class _init__')
+        return self.__name
+
+
+    @property
+    def format(self):
+        '''Output format for this driver for use in metadata.
+
+        Defaults to driver name, but may need to be overriden by some drivers.'''
+        return self.__name
+
+
+    @property
+    def index(self):
+        '''This driver's index.'''
+        if not self.__index:
+            raise ValueError('Driver was not initialised properly. Make sure you call the base class _init__')
+        return self.__index
 
 
     @abstractmethod
@@ -39,8 +72,8 @@ class Driver(object):
 
 
     @abstractmethod
-    def index_connect(self, local_config=None, application_name=None, validate_connection=True):
-        '''Connect to the index for this driver.
+    def _init_index(self, local_config=None, application_name=None, validate_connection=True):
+        '''Initialise this driver's index.
 
         :param application_name: A short, alphanumeric name to identify this application.
         :param local_config: Config object to use.
