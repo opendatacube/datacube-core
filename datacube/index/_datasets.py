@@ -123,7 +123,7 @@ class MetadataTypeResource(object):
 
         if not safe_changes and not unsafe_changes:
             _LOG.info("No changes detected for metadata type %s", metadata_type.name)
-            return
+            return self.get_by_name(metadata_type.name)
 
         if not can_update:
             full_message = "Unsafe changes at " + ", ".join(".".join(map(str, offset))
@@ -385,7 +385,7 @@ class ProductResource(object):
 
         if not safe_changes and not unsafe_changes:
             _LOG.info("No changes detected for product %s", product.name)
-            return
+            return self.get_by_name(product.name)
 
         if not can_update:
             full_message = "Unsafe changes at " + ", ".join(".".join(offset) for offset, _, _ in unsafe_changes)
@@ -757,7 +757,7 @@ class DatasetResource(object):
 
         :param datacube.model.Dataset dataset: Dataset to update
         :param dict updates_allowed: Allowed updates
-            :rtype: bool,list[change],list[change]
+        :rtype: bool,list[change],list[change]
         """
         existing = self.get(dataset.id, include_sources=True)
         if not existing:
@@ -785,7 +785,7 @@ class DatasetResource(object):
         Update dataset metadata and location
         :param datacube.model.Dataset dataset: Dataset to update
         :param updates_allowed: Allowed updates
-        :return:
+        :rtype: datacube.model.Dataset
         """
         existing = self.get(dataset.id)
         can_update, safe_changes, unsafe_changes = self.can_update(dataset, updates_allowed)
@@ -795,7 +795,7 @@ class DatasetResource(object):
                 with self._db.begin() as transaction:
                     transaction.ensure_dataset_location(dataset.id, dataset.local_uri)
             _LOG.info("No changes detected for dataset %s", dataset.id)
-            return
+            return dataset
 
         if not can_update:
             full_message = "Unsafe changes at " + ", ".join(".".join(offset) for offset, _, _ in unsafe_changes)
