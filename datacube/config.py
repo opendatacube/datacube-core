@@ -30,14 +30,6 @@ db_hostname:
 db_database: datacube
 # If a connection is unused for this length of time, expect it to be invalidated.
 db_connection_timeout: 60
-
-[locations]
-# Where to reach storage locations from the current machine.
-#  -> Location names (here 'eotiles') are arbitrary, but correspond to names used in the
-#     storage types.
-#  -> We may eventually support remote protocols (http, S3, etc) to lazily fetch remote data.
-# Define these in your own datacube.conf file.
-# eotiles: file:///g/data/...
 """
 
 DATACUBE_SECTION = 'datacube'
@@ -85,13 +77,6 @@ class LocalConfig(object):
     @property
     def db_connection_timeout(self):
         return int(self._prop('db_connection_timeout'))
-
-    @property
-    def location_mappings(self):
-        """
-        :rtype: dict[str, str]
-        """
-        return dict(self._config.items('locations'))
 
     @property
     def db_username(self):
