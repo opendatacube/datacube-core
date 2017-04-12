@@ -80,6 +80,7 @@ setup(
         'xarray',
         'boto3',
         'SharedArray',
+        'pathos',
     ],
     extras_require=extras_require,
     tests_require=tests_require,
