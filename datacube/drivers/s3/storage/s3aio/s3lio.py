@@ -51,11 +51,12 @@ class S3LIO(object):
 
     def put_array_in_s3(self, array, chunk_size, base_name, bucket, spread=False):
         idx = list(self.chunk_indices_nd(array.shape, chunk_size))
-        keys = [base_name+'_'+str(i) for i in range(len(idx))]
+        chunk_ids = [i for i in range(len(idx))]
+        keys = [base_name+'_'+str(i) for i in chunk_ids]
         if spread:
             keys = [hashlib.md5(k.encode('utf-8')).hexdigest()[0:6] + '_' + k for k in keys]
         self.shard_array_to_s3(array, idx, bucket, keys)
-        return list(zip(keys, idx))
+        return list(zip(keys, idx, chunk_ids))
 
     def put_array_in_s3_mp(self, array, chunk_size, base_name, bucket, spread=False):
         idx = list(self.chunk_indices_nd(array.shape, chunk_size))
