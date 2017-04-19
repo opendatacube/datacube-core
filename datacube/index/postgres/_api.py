@@ -919,7 +919,7 @@ class PostgresDbAPI(object):
             S3_DATASET.insert().values(
                 id=uuid.uuid4(),
                 dataset_key=dataset_key,
-                base_name = base_name,
+                base_name=base_name,
                 band=band,
                 macro_shape=macro_shape,
                 chunk_size=chunk_size,
