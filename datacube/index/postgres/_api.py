@@ -893,6 +893,7 @@ class PostgresDbAPI(object):
 
     def put_s3_dataset(self,
                        dataset_key,
+                       base_name,
                        band,
                        macro_shape,
                        chunk_size,
@@ -903,6 +904,7 @@ class PostgresDbAPI(object):
                        irregular_index):
         """
         :type dataset_id: str or uuid.UUID
+        :type base_name: str
         :type band: str
         :type macro_shape: array[int]
         :type chunk_size: array[int]
@@ -917,6 +919,7 @@ class PostgresDbAPI(object):
             S3_DATASET.insert().values(
                 id=uuid.uuid4(),
                 dataset_key=dataset_key,
+                base_name = base_name,
                 band=band,
                 macro_shape=macro_shape,
                 chunk_size=chunk_size,

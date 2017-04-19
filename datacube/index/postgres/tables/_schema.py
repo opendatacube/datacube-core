@@ -144,6 +144,7 @@ S3_DATASET_MAPPING = Table(
 # S3_DATASET:
 #   id :: UUID
 #   dataset_key :: String   -- S3 object name without the chunk id
+#   base_name :: String     -- The macro array name
 #   band :: String          -- The band contained in this dataset
 #   macroshape :: [Integer] -- The integer dimensions of this datset
 #   chunk_size :: [Integer] -- The default size of each sub-dataset chunk - allows
@@ -159,6 +160,7 @@ S3_DATASET = Table(
     's3_dataset', _core.METADATA,
     Column('id', postgres.UUID(as_uuid=True), primary_key=True),
     Column('dataset_key', String, nullable=False),
+    Column('base_name', String, nullable=False),
     Column('band', String, nullable=False),
     Column('macro_shape', postgres.ARRAY(Integer, dimensions=1), nullable=False),
     Column('chunk_size', postgres.ARRAY(Integer, dimensions=1), nullable=False),
