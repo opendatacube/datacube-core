@@ -5,6 +5,17 @@
 What's New
 ==========
 
+v1.3.1 (20 April 2017)
+----------------------
+
+ - Docs now refer to "Open Data Cube"
+
+ - Docs describe how to use ``conda`` to install datacube.
+
+ - Bug fixes for the stacking process.
+
+ - Various other bug fixes and document updates.
+
 v1.3.0
 ------
 
