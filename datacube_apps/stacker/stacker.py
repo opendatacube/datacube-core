@@ -45,7 +45,7 @@ def get_temp_file(final_output_path):
     """
     Get a temp file path
     Changes "/path/file.nc" to "/path/.tmp/file.nc.host.pid.tmp"
-    :param Path final_output_path: 
+    :param Path final_output_path:
     :return: Path to temporarily write output
     :rtype: Path
     """
@@ -175,14 +175,7 @@ def do_stack_task(config, task):
                                          data.data_vars,
                                          variable_params,
                                          global_attributes)
-
-        for name, variable in data.data_vars.items():
-            try:
-                with dask.set_options(get=dask.async.get_sync):
-                    da.store(variable.data, nco[name], lock=True)
-            except ValueError:
-                nco[name][:] = netcdf_writer.netcdfy_data(variable.values)
-            nco.sync()
+        write_data_variables(data.data_vars, nco)
         nco.close()
 
         temp_filename.rename(output_filename)
@@ -190,11 +183,7 @@ def do_stack_task(config, task):
         if config.get('check_data_identical', False):
             new_tile = make_updated_tile(unwrapped_datasets, output_uri, tile.geobox)
             new_data = datacube.api.GridWorkflow.load(new_tile, dask_chunks=chunk_profile)
-
-            with dask.set_options(get=dask.async.get_sync):
-                if not all((data == new_data).all().values()):
-                    _LOG.error("Mismatch found for %s, not indexing", output_filename)
-                    raise ValueError("Mismatch found for %s, not indexing" % output_filename)
+            check_identical(data, new_data, output_filename)
 
     except Exception as e:
         if temp_filename.exists():
@@ -202,6 +191,24 @@ def do_stack_task(config, task):
         raise e
 
     return unwrapped_datasets, output_uri
+
+
+def write_data_variables(data_vars, nco):
+    for name, variable in data_vars.items():
+        try:
+            with dask.set_options(get=dask.async.get_sync):
+                da.store(variable.data, nco[name], lock=True)
+        except ValueError:
+            nco[name][:] = netcdf_writer.netcdfy_data(variable.values)
+        nco.sync()
+
+
+def check_identical(data1, data2, output_filename):
+    with dask.set_options(get=dask.async.get_sync):
+        if not all((data1 == data2).all().values()):
+            _LOG.error("Mismatch found for %s, not indexing", output_filename)
+            raise ValueError("Mismatch found for %s, not indexing" % output_filename)
+    return True
 
 
 def make_updated_tile(old_datasets, new_uri, geobox):
