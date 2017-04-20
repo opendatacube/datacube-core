@@ -63,14 +63,16 @@ def save_tasks(config, tasks, taskfile):
     :param config: dict of configuration options common to all tasks
     :param tasks:
     :param str taskfile: Name of output file
-    :return:
+    :return: Number of tasks saved to the file
     """
     i = pickle_stream(itertools.chain([config], tasks), taskfile)
-    if i == 0:
+    if i <= 1:
+        # Only saved the config, no tasks!
         os.remove(taskfile)
+        return 0
     else:
         _LOG.info('Saved config and %d tasks to %s', i, taskfile)
-    return i
+    return i - 1
 
 
 def load_tasks(taskfile):
