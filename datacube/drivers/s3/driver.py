@@ -1,20 +1,29 @@
-'''S3 storage driver class
-'''
+'''S3 storage driver module.'''
 from __future__ import absolute_import
 
 import logging
 from pathlib import Path
+import numpy as np
 from datacube.utils import DatacubeException
 from datacube.drivers.driver import Driver
 from datacube.drivers.s3.storage.s3aio.s3lio import S3LIO
 from datacube.drivers.s3.index import Index
 
 class S3Driver(Driver):
-    '''S3 storage driver. A placeholder for now.
-    '''
+    '''S3 storage driver.'''
+
+    EPSILON = {
+        'x': 0.00000001,
+        'y': 0.00000001,
+        'time': 0.00000001,
+        'default': 0.00000001
+    }
+    '''Margin error allowed when comparing coord intervals to determine
+    whether a coord is regular or not.'''
 
     def __init__(self, name, local_config=None, application_name=None, validate_connection=True):
-        super(self.__class__, self).__init__(name, local_config, application_name, validate_connection)
+        '''Initialise the s3 storage.'''
+        super(S3Driver, self).__init__(name, local_config, application_name, validate_connection)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.storage = S3LIO(False)
 
@@ -24,7 +33,7 @@ class S3Driver(Driver):
 
         We expect a list/tuple of 3 integers.
 
-        :param dict param: the raw chunksizes parameter, to be
+        :param dict chunksizes: the raw chunksizes parameter, to be
         validated.
         :return tuple chunksizes: the validated chunksizes as a an
         integers tuple.
@@ -40,10 +49,90 @@ class S3Driver(Driver):
         return chunksizes
 
 
+    def get_reg_irreg_index(self, coord, data):
+        '''Returns the regular/irregular information for a single dataset
+        coordinate.
+
+        Data is considered regular if it is equally spaced, give or
+        take a predefined error magine defined per coord type in
+        `self.EPSILON`.
+        :param str coord: Coordinate name, e.g. 'x' or 'time'.
+          data(ndarray): The coordinates values.
+        :return: Returns a tuple `(regular_dimension, regular_index,
+          irregular_index)` where `regular_dimension` is a boolean
+          indicating whether `coord` is regular. If so,
+          `irregular_index` is `None` and `regular_index` is the tuple
+          `(min_val, max_val, step)` representing the minimum and
+          maximum values of that coordinate range and the step
+          used. Otherwise, `regular_index` is `None` and
+          `irregular_index` is the list of the `coord` values.
+        :rtype: tuple
+        '''
+        epsilon = self.EPSILON[coord] if coord in self.EPSILON else self.EPSILON['default']
+        regular = False # Default for single element
+        delta = None
+        previous = None
+        for datum in data.tolist():
+            if previous:
+                if not delta:
+                    regular = True
+                    delta = datum - previous
+                elif abs(datum - previous - delta) > epsilon:
+                    regular = False
+                    break
+            previous = datum
+        if regular:
+            return (True, (np.min(data), np.max(data), np.float64(delta)), None)
+        return (False, None, data)
+
+
+    def get_reg_irreg_indices(self, coords):
+        '''Returns the regular/irregular information for all the dataset
+        coordinates.
+
+        :param xarray.Coordinates coords: The dict-like dataset
+          coordinates.
+        :return: Returns a tuple of lists `(regular_dimension,
+          regular_index, irregular_index)` with each list compiling
+          the results of :meth:`get_reg_irreg_index` for each coord in
+          `coords`.
+        :rtype: tuple
+        '''
+        return zip(*[self.get_reg_irreg_index(coord, coords[coord].values) \
+                     for coord in coords])
+
+
+    def _get_index(self, chunk, coords, dims, index_type='min'):
+        '''Return the min or max index of chunk in coord space.
+
+        It basically returns the nth coord value with `n`
+        corresponding to the chunk's `start` or `stop - 1` value.
+
+        :param slice chunk: The chunk providing the n index.
+        :param xarray.Coordinates coords: The dict-like dataset
+          coordinates.
+        :param list dims: The dimension names for each axis.
+        :param str index_type: Whether to fetch the `min` or `max`
+          index. Default: `min`.
+        :return: List of coord values corresponding to the chunk's
+          min/max index.
+        :rtype: list
+        '''
+        if index_type == 'min':
+            idx = lambda x: x.start
+        else:
+            idx = lambda x: x.stop - 1
+        return [coords[dim].values[idx(chunk_dim)] for dim, chunk_dim in zip(dims, chunk)]
+
+
     def write_dataset_to_storage(self, dataset, *args, **kargs):
         '''See :meth:`datacube.drivers.driver.write_dataset_to_storage`
 
-        :return: dict: list of s3 key maps (tuples) indexed by band.
+        :param args: At least 3 arguments are required: filename,
+          global_attributes and variable_params.
+        :return: Dictionary of metadata consigning the s3 storage
+          information. This is required for indexing in particular.
+        :rtype: dict
         '''
         if len(args) < 3:
             raise DatacubeException('Missing configuration paramters, cannot write to storage.')
@@ -56,20 +145,42 @@ class S3Driver(Driver):
         if not hasattr(dataset, 'crs'):
             raise DatacubeException('Dataset does not contain CRS, cannot write to storage.')
 
-        key_maps = {}
+        outputs = {}
         for band, param in variable_params.items():
+            output = {}
             if 'chunksizes' not in param:
                 raise DatacubeException('Missing `chunksizes` parameter, cannot write to storage.')
-            chunk = self._get_chunksizes(param['chunksizes'])
+            output['chunk_size'] = self._get_chunksizes(param['chunksizes'])
             if 'container' not in param:
                 raise DatacubeException('Missing `container` parameter, cannot write to storage.')
-            bucket = param['container']
-            basename = '%s_%s' % (filename.stem, band)
-            data = dataset.data_vars[band].values
-            key_maps[band] = self.storage.put_array_in_s3(data, chunk, basename, bucket, True)
-            self.logger.debug('Wrote %d chunks %s to s3 bucket: %s, object: %s',
-                              len(key_maps[band]), chunk, bucket, basename)
-        return key_maps
+            output['bucket'] = param['container']
+            self.storage.filepath = output['bucket']  # For the s3_test driver only
+            output['base_name'] = '%s_%s' % (filename.stem, band)
+            key_maps = self.storage.put_array_in_s3(dataset[band].values,
+                                                    output['chunk_size'],
+                                                    output['base_name'],
+                                                    output['bucket'],
+                                                    True)
+            output['key_maps'] = [{
+                's3_key': s3_key,
+                'chunk': chunk,
+                'chunk_id': chunk_id,
+                'compression': None,
+                'index_min': self._get_index(chunk, dataset[band].coords, dataset[band].dims, 'min'),
+                'index_max': self._get_index(chunk, dataset[band].coords, dataset[band].dims, 'max')
+            } for (s3_key, chunk, chunk_id) in key_maps]
+            output['dimensions'] = dataset[band].dims
+            output['macro_shape'] = dataset[band].shape
+            output['numpy_type'] = dataset[band].dtype.str
+            (output['regular_dims'],
+             output['regular_index'],
+             output['irregular_index']) = self.get_reg_irreg_indices(dataset[band].coords)
+
+            self.logger.info('Wrote %d chunks of size %s to s3 bucket: %s, base_name: %s',
+                             len(output['key_maps']), output['chunk_size'],
+                             output['bucket'], output['base_name'])
+            outputs[band] = output
+        return outputs
 
 
     def _init_index(self, local_config=None, application_name=None, validate_connection=True):

@@ -4,7 +4,7 @@ from __future__ import absolute_import
 
 from datacube.drivers.driver import Driver
 from datacube.storage.storage import write_dataset_to_netcdf
-from datacube.drivers.s3.index import Index
+from datacube.drivers.netcdf.index import Index
 
 
 class NetCDFDriver(Driver):

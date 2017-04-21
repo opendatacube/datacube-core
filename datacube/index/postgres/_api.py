@@ -873,11 +873,11 @@ class PostgresDbAPI(object):
     #
     # See .tables for description of each column
 
-    def put_s3_mapping(self, dataset_ref, band, s3_dataset_ref):
+    def put_s3_mapping(self, dataset_ref, band, s3_dataset_id):
         """
-        :type dataset_ref: str or uuid.UUID
+        :type dataset_ref: uuid.UUID
         :type band: str
-        :type s3_dataset_ref: uuid.UUID
+        :type s3_dataset_id: uuid.UUID
         :rtype uuid.UUID
         """
         res = self._connection.execute(
@@ -885,14 +885,14 @@ class PostgresDbAPI(object):
                 id=uuid.uuid4(),
                 dataset_ref=dataset_ref,
                 band=band,
-                s3_dataset_ref=s3_dataset_ref,
+                s3_dataset_id=s3_dataset_id,
             )
         )
 
         return res.inserted_primary_key[0]
 
     def put_s3_dataset(self,
-                       dataset_key,
+                       s3_dataset_id,
                        base_name,
                        band,
                        macro_shape,
@@ -903,7 +903,7 @@ class PostgresDbAPI(object):
                        regular_index,
                        irregular_index):
         """
-        :type dataset_id: str or uuid.UUID
+        :type s3_dataset_id: uuid.UUID
         :type base_name: str
         :type band: str
         :type macro_shape: array[int]
@@ -917,8 +917,7 @@ class PostgresDbAPI(object):
         """
         res = self._connection.execute(
             S3_DATASET.insert().values(
-                id=uuid.uuid4(),
-                dataset_key=dataset_key,
+                id=s3_dataset_id,
                 base_name=base_name,
                 band=band,
                 macro_shape=macro_shape,
@@ -934,7 +933,8 @@ class PostgresDbAPI(object):
         return res.inserted_primary_key[0]
 
     def put_s3_dataset_chunk(self,
-                             s3_dataset_ref,
+                             s3_dataset_id,
+                             s3_key,
                              bucket,
                              chunk_id,
                              compression_scheme,
@@ -942,7 +942,8 @@ class PostgresDbAPI(object):
                              index_min,
                              index_max):
         """
-        :type s3_dataset_ref: uuid.UUID
+        :type s3_dataset_id: uuid.UUID
+        :type key: str
         :type bucket: str
         :type chunk_id: str
         :type compression_scheme: str
@@ -951,15 +952,18 @@ class PostgresDbAPI(object):
         :type index_max: array[float]
         :rtype uuid.UUID
         """
-        res = self._connection.insert().values(
-            id=uuid.uuid4(),
-            s3_dataset_ref=s3_dataset_ref,
-            bucket=bucket,
-            chunk_id=chunk_id,
-            compression_scheme=compression_scheme,
-            micro_shape=micro_shape,
-            index_min=index_min,
-            index_max=index_max
+        res = self._connection.execute(
+            S3_DATASET_CHUNK.insert().values(
+                id=uuid.uuid4(),
+                s3_dataset_id=s3_dataset_id,
+                s3_key=s3_key,
+                bucket=bucket,
+                chunk_id=chunk_id,
+                compression_scheme=compression_scheme,
+                micro_shape=micro_shape,
+                index_min=index_min,
+                index_max=index_max
+            )
         )
 
         return res.inserted_primary_key[0]

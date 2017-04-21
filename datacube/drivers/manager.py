@@ -136,17 +136,19 @@ class DriverManager(object):
 
 
     def write_dataset_to_storage(self, dataset, *args, **kargs):
-        '''Forwards a call to a specific driver.
-
-        An additional first parameter must be specified:
-        :param: str driver: The name of the driver to handle this
-          call. If unknown, a `ValueError` exception will be raised.
+        '''Store a dataset using the the current driver.
 
         See :meth:`datacube.drivers.driver.write_dataset_to_storage`
-        for the other parameters and return value.
         '''
         return self.driver.write_dataset_to_storage(dataset, *args, **kargs)
 
 
     def index_datasets(self, datasets, sources_policy):
+        '''Index several datasets using the current driver.
+
+        :param datasets: The datasets to be indexed.
+        :param str sources_policy: The sources policy.
+        :return: The number of datasets indexed.
+        :rtype: int
+        '''
         return self.driver.index.add_datasets(datasets, sources_policy)

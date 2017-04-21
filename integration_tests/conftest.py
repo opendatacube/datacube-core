@@ -60,7 +60,7 @@ LS5_NBAR_ALBERS_NAME = 'ls5_nbar_albers'
 
 # Resolution and chunking shrink factors
 TEST_STORAGE_SHRINK_FACTORS = (100, 100)
-TEST_STORAGE_SHRINK_FACTORS_S3 = (100, 5)
+TEST_STORAGE_SHRINK_FACTORS_S3 = (100, 12)
 TEST_STORAGE_NUM_MEASUREMENTS = 2
 GEOGRAPHIC_VARS = ('latitude', 'longitude')
 PROJECTED_VARS = ('x', 'y')
@@ -235,6 +235,8 @@ def ls5_nbar_ingest_config(tmpdir, request):
     dataset_dir = tmpdir.mkdir('ls5_nbar_ingest_test')
     config = load_yaml_file(LS5_NBAR_INGEST_CONFIG)[0]
     config = alter_dataset_type_for_testing(config, driver=request.param)
+    # config['storage']['chunking']['time'] = 2
+    # config['storage']['tile_size']['time'] = 3
     config['location'] = str(dataset_dir)
     if 'storage' in config and \
        'driver' in config['storage'] and \
