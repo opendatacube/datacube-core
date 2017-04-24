@@ -289,6 +289,26 @@ def test_index_dataset_with_location(index, default_metadata_type):
     # And the second one is newer, so it should be returned as the default local path:
     assert stored.local_path == Path(second_file)
 
+    # Can archive and restore the first file, and location order is preserved
+    was_archived = index.datasets.archive_location(dataset.id, first_file.as_uri())
+    assert was_archived
+    locations = index.datasets.get_locations(dataset.id)
+    assert locations == [second_file.as_uri()]
+    was_restored = index.datasets.restore_location(dataset.id, first_file.as_uri())
+    assert was_restored
+    locations = index.datasets.get_locations(dataset.id)
+    assert locations == [second_file.as_uri(), first_file.as_uri()]
+
+    # Can archive and restore the second file, and location order is preserved
+    was_archived = index.datasets.archive_location(dataset.id, second_file.as_uri())
+    assert was_archived
+    locations = index.datasets.get_locations(dataset.id)
+    assert locations == [first_file.as_uri()]
+    was_restored = index.datasets.restore_location(dataset.id, second_file.as_uri())
+    assert was_restored
+    locations = index.datasets.get_locations(dataset.id)
+    assert locations == [second_file.as_uri(), first_file.as_uri()]
+
     # Ingestion again without location should have no effect.
     dataset.uri = None
     index.datasets.add(dataset)

@@ -799,9 +799,12 @@ class PostgresDbAPI(object):
         scheme, body = _split_uri(uri)
         res = self._connection.execute(
             DATASET_LOCATION.update().where(
-                DATASET_LOCATION.c.dataset_ref == dataset_id
-            ).where(
-                DATASET_LOCATION.c.archived == None
+                and_(
+                    DATASET_LOCATION.c.dataset_ref == dataset_id,
+                    DATASET_LOCATION.c.uri_scheme == scheme,
+                    DATASET_LOCATION.c.uri_body == body,
+                    DATASET_LOCATION.c.archived == None,
+                )
             ).values(
                 archived=func.now()
             )
@@ -812,9 +815,12 @@ class PostgresDbAPI(object):
         scheme, body = _split_uri(uri)
         res = self._connection.execute(
             DATASET_LOCATION.update().where(
-                DATASET_LOCATION.c.dataset_ref == dataset_id
-            ).where(
-                DATASET_LOCATION.c.archived != None
+                and_(
+                    DATASET_LOCATION.c.dataset_ref == dataset_id,
+                    DATASET_LOCATION.c.uri_scheme == scheme,
+                    DATASET_LOCATION.c.uri_body == body,
+                    DATASET_LOCATION.c.archived != None,
+                )
             ).values(
                 archived=None
             )
