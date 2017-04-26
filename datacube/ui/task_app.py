@@ -140,7 +140,7 @@ def task_app(make_config, make_tasks):
     def decorate(app_func):
         def with_app_args(index, app_config=None, input_tasks_file=None, output_tasks_file=None, *args, **kwargs):
             if (app_config is None) == (input_tasks_file is None):
-                click.echo('Must specify exactly one of --config, --load-tasks')
+                click.echo('Must specify exactly one of --app-config, --load-tasks')
                 click.get_current_context().exit(1)
 
             if app_config is not None:
