@@ -197,6 +197,14 @@ def add_dataset_to_db(index, datasets):
 def do_nothing(result):
     pass
 
+def _wrap_impl(f, args, kwargs, task):
+    'needs to be at the top level'
+    return f(task, *args, **kwargs)
+
+def wrap_task(f, *args, **kwargs):
+    'turn function `f(task, *args, **kwargs)` into `g(task)` in pickle-able fashion'
+    return functools.partial(_wrap_impl, f, args, kwargs)
+
 
 def run_tasks(tasks, executor, run_task, process_result=None, queue_size=50):
     """
