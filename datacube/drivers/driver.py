@@ -65,7 +65,7 @@ class Driver(object):
         :param `xarray.Dataset` dataset: The dataset
         :param list args: Storage-specific positional arguments
         :param list kargs: Storage-specific keyword arguments
-        :return: Storage-specific write operation output, e.g. data 
+        :return: Storage-specific write operation output, e.g. data
           relevant to the indexing
         '''
         return None
