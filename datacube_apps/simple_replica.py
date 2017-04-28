@@ -17,32 +17,25 @@ are specified the same as when using the API to search for datasets.
     db_password: xxxxxxxxxxxx
     remote_dir: /g/data/
     local_dir: C:/datacube/
-    
+
     replicated_data:
     - product: ls5_pq_albers
       crs: EPSG:3577
       x: [1200000, 1300000]
       y: [-4200000, -4300000]
       time: [2008-01-01, 2010-01-01]
-    
+
     - product: ls7_pq_albers
       crs: EPSG:3577
       x: [1200000, 1300000]
       y: [-4200000, -4300000]
       time: [2008-01-01, 2010-01-01]
-    
+
     - product: ls8_pq_albers
       crs: EPSG:3577
       x: [1200000, 1300000]
       y: [-4200000, -4300000]
       time: [2008-01-01, 2010-01-01]
-
-Requirements, limitations and assumptions:
-
-- Remote datacube files and database are accessed via an SSH host that can be logged into without a password, ie.
-  with a local SSH key agent.
-- The remote datacube index must be at the same version as the local codebase.
-- 
 
 """
 
@@ -121,6 +114,7 @@ class DatacubeReplicator:
             remote_bind_address=(self.remote_dc_config.db_hostname, int(self.remote_dc_config.db_port)))
         self.tunnel.start()
 
+        # pylint: disable=protected-access
         self.remote_dc_config._config['datacube']['db_hostname'] = '127.0.0.1'
         self.remote_dc_config._config['datacube']['db_port'] = str(self.tunnel.local_bind_port)
         self.remote_dc_config._config['datacube']['db_username'] = self.remote_user
