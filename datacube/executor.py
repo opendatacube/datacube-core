@@ -21,6 +21,9 @@ _REMOTE_LOG_FORMAT_STRING = '%(asctime)s {} %(process)d %(name)s %(levelname)s %
 
 
 class SerialExecutor(object):
+    def __repr__(self):
+        return 'SerialExecutor'
+
     @staticmethod
     def submit(func, *args, **kwargs):
         return func, args, kwargs
@@ -152,6 +155,10 @@ def _get_concurrent_executor(workers):
     class MultiprocessingExecutor(object):
         def __init__(self, pool):
             self._pool = pool
+
+        def __repr__(self):
+            max_workers = self._pool.__dict__.get('_max_workers', '??')
+            return 'Multiprocessing ({})'.format(max_workers)
 
         def submit(self, func, *args, **kwargs):
             return self._pool.submit(func, *args, **kwargs)
