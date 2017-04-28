@@ -34,10 +34,7 @@ Data Access API
 See :doc:`api` for more details
 
 
+Datacube Storage Drivers
+------------------------
 
-Datacube Storage
-----------------
-
-.. automodule:: datacube.storage
-   :members:
-
+See :doc:`driver` for more details

@@ -1,6 +1,6 @@
 '''This module implements a simple plugin manager for storage drivers.
 
-Drivers are automatcally loaded provided they:
+Drivers are automatically loaded provided they:
   - Store all code in a direct subdirectory, e.g. `s3/`
   - Include a `DRIVER_SPEC` attribute in the `__init__.py`. This
     attribute must be a tuple indicating `(<name>, <class_name>,

@@ -149,6 +149,5 @@ class DriverManager(object):
         :param datasets: The datasets to be indexed.
         :param str sources_policy: The sources policy.
         :return: The number of datasets indexed.
-        :rtype: int
         '''
         return self.driver.index.add_datasets(datasets, sources_policy)

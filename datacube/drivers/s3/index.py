@@ -12,7 +12,7 @@ from datacube.index.postgres import PostgresDb
 
 # pylint: disable=protected-access
 class Index(datacube.index._api.Index):
-    '''The s3 indexer extends the existing postgrs indexer functionality
+    '''The s3 indexer extends the existing postgres indexer functionality
     by writing additional s3 information to specific tables.
     '''
 

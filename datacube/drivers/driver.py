@@ -65,8 +65,8 @@ class Driver(object):
         :param `xarray.Dataset` dataset: The dataset
         :param list args: Storage-specific positional arguments
         :param list kargs: Storage-specific keyword arguments
-        :return: Storage-specific write operation output, e.g. data
-        relevant to the indexing
+        :return: Storage-specific write operation output, e.g. data 
+          relevant to the indexing
         '''
         return None
 
@@ -80,6 +80,5 @@ class Driver(object):
         :type local_config: :py:class:`datacube.config.LocalConfig`, optional
         :param validate_connection: Validate database connection and schema immediately
         :raises datacube.index.postgres._api.EnvironmentError:
-        :rtype: Index
         '''
         return None

@@ -46,6 +46,7 @@ facility for use by NCI users.
    dev/data_model
    dev/api
    dev/model
+   dev/driver
    dev/index
    dev/analytics_engine
    dev/external
@@ -75,4 +76,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

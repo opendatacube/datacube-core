@@ -34,9 +34,9 @@ class S3Driver(Driver):
         We expect a list/tuple of 3 integers.
 
         :param dict chunksizes: the raw chunksizes parameter, to be
-        validated.
+          validated.
         :return tuple chunksizes: the validated chunksizes as a an
-        integers tuple.
+          integers tuple.
         '''
         if not isinstance(chunksizes, (list, tuple, set)):
             raise DatacubeException('Dataset contains invalid chunking values, cannot write to storage.')
@@ -56,6 +56,7 @@ class S3Driver(Driver):
         Data is considered regular if it is equally spaced, give or
         take a predefined error magine defined per coord type in
         `self.EPSILON`.
+
         :param str coord: Coordinate name, e.g. 'x' or 'time'.
           data(ndarray): The coordinates values.
         :return: Returns a tuple `(regular_dimension, regular_index,
