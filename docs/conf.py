@@ -134,7 +134,8 @@ intersphinx_mapping = {
 }
 
 click_utils_commands = {'datacube-search': 'datacube.scripts.search_tool:cli',
-                        'datacube': 'datacube.scripts.cli_app:cli'}
+                        'datacube': 'datacube.scripts.cli_app:cli',
+                        'datacube-simple-replica': 'datacube_apps.simple_replica:replicate'}
 
 graphviz_output_format = 'svg'
 
