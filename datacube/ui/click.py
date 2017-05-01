@@ -13,7 +13,7 @@ import sys
 import click
 
 from datacube import config, __version__
-from datacube.executor import get_executor
+from datacube.executor import get_executor, mk_celery_executor
 from datacube.index import index_connect
 from pathlib import Path
 
@@ -206,7 +206,8 @@ def parse_endpoint(value):
 EXECUTOR_TYPES = {
     'serial': lambda _: get_executor(None, None),
     'multiproc': lambda workers: get_executor(None, int(workers)),
-    'distributed': lambda addr: get_executor(parse_endpoint(addr), True)
+    'distributed': lambda addr: get_executor(parse_endpoint(addr), True),
+    'celery': lambda addr: mk_celery_executor(*parse_endpoint(addr))
 }
 
 

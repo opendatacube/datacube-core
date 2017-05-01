@@ -229,3 +229,7 @@ def get_executor(scheduler, workers):
         return concurrent_exec
 
     return SerialExecutor()
+
+def mk_celery_executor(host, port):
+    from ._celery_runner import CeleryExecutor
+    return CeleryExecutor(host, port)

@@ -56,8 +56,10 @@ def make_tasks(db_index, config, **opts):
 
     unused(db_index, opts)
 
-    tasks = [{'val': i} for i in range(num_tasks)]
-    return tasks
+    for i in range(num_tasks):
+        print('Generating task: {}'.format(i))
+        yield {'val':i}
+
 
 def run_task(task, op):
     """ Runs across multiple cpus/nodes
@@ -96,7 +98,7 @@ def app_main(db_index, config, tasks, executor, **opts):
     unused(db_index, opts, config)
 
     click.echo('Using executor {}'.format(repr(executor)))
-    task_runner = wrap_task(run_tasks, config['op'])
+    task_runner = wrap_task(run_task, config['op'])
 
     click.echo('Task function size: {}'.format(
         len(dumps(task_runner))
