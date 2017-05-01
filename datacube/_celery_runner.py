@@ -39,22 +39,15 @@ def launch_worker(argv=None):
 
 class CeleryExecutor(object):
     def __init__(self, host=None, port=None):
-        pass
-        #TODO: figure out a way to change app post construction, if that's possible
-
         # print('Celery: {}:{}'.format(host, port))
-        # if host:
-        #     app.conf.update(broker_host=host)
 
-        # if port:
-        #     app.conf.update(broker_port=port)
-
-        # if port or host:
-        #     db = '0'
-        #     url = 'redis://{}:{}/{}'.format(host if host else 'localhost',
-        #                                     port if port else 6379,
-        #                                     db)
-        #     app.conf.update(result_backend=url)
+        if port or host:
+            db = '0'
+            url = 'redis://{}:{}/{}'.format(host if host else 'localhost',
+                                            port if port else 6379,
+                                            db)
+            app.conf.update(result_backend=url,
+                            broker_url=url)
 
 
     def __repr__(self):
