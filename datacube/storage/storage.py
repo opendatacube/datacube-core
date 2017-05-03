@@ -12,6 +12,7 @@ from abc import ABCMeta, abstractmethod
 from six import add_metaclass
 
 from datacube.storage import netcdf_writer
+from datacube.drivers.datasource import DataSource
 from datacube.config import OPTIONS
 from datacube.utils import clamp, data_resolution_and_offset, datetime_to_seconds_since_1970, DatacubeException
 from datacube.utils import is_url, uri_to_local_path
@@ -345,7 +346,7 @@ class OverrideBandDataSource(object):
                                        **kwargs)
 
 
-class BaseRasterDataSource(object):
+class BaseRasterDataSource(DataSource):
     """
     Interface used by fuse_sources and read_from_source
     """
@@ -465,7 +466,7 @@ def _url2rasterio(url_str, fmt, layer):
     return str(uri_to_local_path(url_str))
 
 
-class DatasetSource(BaseRasterDataSource):
+class RasterDatasetSource(BaseRasterDataSource):
     """Data source for reading from a Datacube Dataset"""
     def __init__(self, dataset, measurement_id):
         self._dataset = dataset
@@ -473,7 +474,7 @@ class DatasetSource(BaseRasterDataSource):
         url = _resolve_url(dataset.local_uri, self._measurement['path'])
         filename = _url2rasterio(url, dataset.format, self._measurement.get('layer'))
         nodata = dataset.type.measurements[measurement_id].get('nodata')
-        super(DatasetSource, self).__init__(filename, nodata=nodata)
+        super(RasterDatasetSource, self).__init__(filename, nodata=nodata)
 
     def get_bandnumber(self, src):
         if 'netcdf' not in self._dataset.format.lower():

@@ -80,20 +80,25 @@ class DriverManager(object):
         '''
         if not driver_name:
             raise ValueError('A storage driver must be specified to initialise the manager.')
+        valid = []
         for init_path in Path(__file__).parent.glob('*/__init__.py'):
             init = load_module(str(init_path.parent.stem), str(init_path))
-            if self.DRIVER_SPEC in init.__dict__ and \
-               init.__dict__[self.DRIVER_SPEC][0] == driver_name:
-                spec = init.__dict__[self.DRIVER_SPEC]
-                # pylint: disable=old-division
-                filepath = init_path.parent / spec[2]
-                # pylint: disable=old-division
-                module = load_module(spec[1], str(init_path.parent / spec[2]))
-                driver_cls = getattr(module, spec[1])
-                if not issubclass(driver_cls, Driver):
-                    raise ValueError('Driver plugin `%s` is not a subclass of the abstract Driver class.',
-                                     driver_cls)
-                self.__driver = driver_cls(spec[0], local_config, application_name, validate_connection)
+            if self.DRIVER_SPEC in init.__dict__:
+                valid.append(init.__dict__[self.DRIVER_SPEC][0])
+                if init.__dict__[self.DRIVER_SPEC][0] == driver_name:
+                    spec = init.__dict__[self.DRIVER_SPEC]
+                    # pylint: disable=old-division
+                    filepath = init_path.parent / spec[2]
+                    # pylint: disable=old-division
+                    module = load_module(spec[1], str(init_path.parent / spec[2]))
+                    driver_cls = getattr(module, spec[1])
+                    if not issubclass(driver_cls, Driver):
+                        raise ValueError('Driver plugin `%s` is not a subclass of the abstract Driver class.',
+                                         driver_cls)
+                    self.__driver = driver_cls(spec[0], local_config, application_name, validate_connection)
+        if not self.__driver:
+            raise ValueError('Invalid driver specified. Valid drivers are: %s' % ', '.join(valid))
+
 
 
     @property
@@ -151,3 +156,13 @@ class DriverManager(object):
         :return: The number of datasets indexed.
         '''
         return self.driver.index.add_datasets(datasets, sources_policy)
+
+
+    def get_datasource(self, dataset, measurement_id):
+        '''Dataset source for reading from a Datacube Dataset.
+
+        :param dataset: The dataset to read.
+        :param measurement_id: The band ID.
+        :return: :ref:`DataSource` object.
+        '''
+        return self.driver.get_datasource(dataset, measurement_id)

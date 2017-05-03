@@ -15,7 +15,8 @@ from dask import array as da
 from ..config import LocalConfig
 from ..compat import string_types
 from ..index import index_connect
-from ..storage.storage import DatasetSource, reproject_and_fuse
+from datacube.drivers.manager import DriverManager
+from ..storage.storage import reproject_and_fuse
 from ..utils import geometry, intersects, data_resolution_and_offset
 from .query import Query, query_group_by, query_geopolygon
 
@@ -55,7 +56,7 @@ class Datacube(object):
 
     :type index: datacube.index._api.Index
     """
-    def __init__(self, index=None, config=None, app=None):
+    def __init__(self, index=None, config=None, app=None, driver='NetCDF CF'):
         """
         Create the interface for the query and storage access.
 
@@ -78,10 +79,14 @@ class Datacube(object):
             if config is not None:
                 if isinstance(config, string_types):
                     config = LocalConfig.find([config])
-                self.index = index_connect(config, application_name=app)
+                DriverManager(driver, config, application_name=app)
             else:
-                self.index = index_connect(application_name=app)
+                DriverManager(driver, application_name=app)
+            self.index = DriverManager().driver.index
+
         else:
+            # TODO(csiro): What to do in that case: need to handle properly
+            #DriverManager(driver)
             self.index = index
 
     def list_products(self, show_archived=False, with_pandas=True):
@@ -540,7 +545,7 @@ def fuse_lazy(datasets, geobox, measurement, fuse_func=None, prepend_dims=0):
 
 
 def _fuse_measurement(dest, datasets, geobox, measurement, skip_broken_datasets=False, fuse_func=None):
-    reproject_and_fuse([DatasetSource(dataset, measurement['name']) for dataset in datasets],
+    reproject_and_fuse([DriverManager().get_datasource(dataset, measurement['name']) for dataset in datasets],
                        dest,
                        geobox.affine,
                        geobox.crs,

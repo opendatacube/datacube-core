@@ -8,6 +8,7 @@ from datacube.utils import DatacubeException
 from datacube.drivers.driver import Driver
 from datacube.drivers.s3.storage.s3aio.s3lio import S3LIO
 from datacube.drivers.s3.index import Index
+from datacube.drivers.s3.datasource import S3DataSource
 
 class S3Driver(Driver):
     '''S3 storage driver.'''
@@ -56,7 +57,6 @@ class S3Driver(Driver):
         Data is considered regular if it is equally spaced, give or
         take a predefined error magine defined per coord type in
         `self.EPSILON`.
-
         :param str coord: Coordinate name, e.g. 'x' or 'time'.
           data(ndarray): The coordinates values.
         :return: Returns a tuple `(regular_dimension, regular_index,
@@ -67,7 +67,6 @@ class S3Driver(Driver):
           maximum values of that coordinate range and the step
           used. Otherwise, `regular_index` is `None` and
           `irregular_index` is the list of the `coord` values.
-        :rtype: tuple
         '''
         epsilon = self.EPSILON[coord] if coord in self.EPSILON else self.EPSILON['default']
         regular = False # Default for single element
@@ -97,7 +96,6 @@ class S3Driver(Driver):
           regular_index, irregular_index)` with each list compiling
           the results of :meth:`get_reg_irreg_index` for each coord in
           `coords`.
-        :rtype: tuple
         '''
         return zip(*[self.get_reg_irreg_index(coord, coords[coord].values) \
                      for coord in coords])
@@ -117,7 +115,6 @@ class S3Driver(Driver):
           index. Default: `min`.
         :return: List of coord values corresponding to the chunk's
           min/max index.
-        :rtype: list
         '''
         if index_type == 'min':
             idx = lambda x: x.start
@@ -133,7 +130,6 @@ class S3Driver(Driver):
           global_attributes and variable_params.
         :return: Dictionary of metadata consigning the s3 storage
           information. This is required for indexing in particular.
-        :rtype: dict
         '''
         if len(args) < 3:
             raise DatacubeException('Missing configuration paramters, cannot write to storage.')
@@ -187,3 +183,8 @@ class S3Driver(Driver):
     def _init_index(self, local_config=None, application_name=None, validate_connection=True):
         '''See :meth:`datacube.drivers.driver._init_index`'''
         return Index(local_config, application_name, validate_connection)
+
+
+    def get_datasource(self, dataset, measurement_id):
+        '''See :meth:`datacube.drivers.driver.get_datasource`'''
+        return S3DataSource(dataset, measurement_id)
