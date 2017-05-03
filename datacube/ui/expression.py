@@ -130,7 +130,7 @@ class DateValue(Expr):
         return datetime(year, month, day, tzinfo=tz.tzutc())
 
 
-def last_day(year, month):
+def last_day_of_month(year, month):
     first_weekday, last_day = calendar.monthrange(year, month)
     return last_day
 
@@ -153,11 +153,14 @@ class DateRangeValue(Expr):
     def as_value(self):
         """
         >>> DateRangeValue(value='2017-03-03').as_value()
-        Range(begin=datetime.datetime(2017, 3, 3, 0, 0, tzinfo=tzutc()), end=datetime.datetime(2017, 3, 3, 23, 59, 59, tzinfo=tzutc()))
+        Range(begin=datetime.datetime(2017, 3, 3, 0, 0, tzinfo=tzutc()), \
+end=datetime.datetime(2017, 3, 3, 23, 59, 59, tzinfo=tzutc()))
         >>> DateRangeValue(value='2017-03').as_value()
-        Range(begin=datetime.datetime(2017, 3, 1, 0, 0, tzinfo=tzutc()), end=datetime.datetime(2017, 3, 31, 23, 59, 59, tzinfo=tzutc()))
+        Range(begin=datetime.datetime(2017, 3, 1, 0, 0, tzinfo=tzutc()), \
+end=datetime.datetime(2017, 3, 31, 23, 59, 59, tzinfo=tzutc()))
         >>> DateRangeValue(value='2017').as_value()
-        Range(begin=datetime.datetime(2017, 1, 1, 0, 0, tzinfo=tzutc()), end=datetime.datetime(2017, 12, 31, 23, 59, 59, tzinfo=tzutc()))
+        Range(begin=datetime.datetime(2017, 1, 1, 0, 0, tzinfo=tzutc()), \
+end=datetime.datetime(2017, 12, 31, 23, 59, 59, tzinfo=tzutc()))
         """
         parts = self.value.split('-')
         parts.reverse()
@@ -170,7 +173,7 @@ class DateRangeValue(Expr):
             raise RuntimeError("More than three components in date expression? %r" % self.value)
 
         month_range = (month, month) if month else (1, 12)
-        day_range = (day, day) if day else (1, last_day(year, month_range[1]))
+        day_range = (day, day) if day else (1, last_day_of_month(year, month_range[1]))
 
         return Range(
             datetime(year, month_range[0], day_range[0], 0, 0, tzinfo=tz.tzutc()),
