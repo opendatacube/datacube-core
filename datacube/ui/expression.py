@@ -226,9 +226,15 @@ class BetweenExpression(Expr):
 
     range_values = [DateValue, NumericValue]
     grammar = [
+        # low < field < high
         (attr(u'low_value', range_values), u'<', FIELD_NAME, u'<', attr(u'high_value', range_values)),
+        # high > field > low
         (attr(u'high_value', range_values), u'>', FIELD_NAME, u'>', attr(u'low_value', range_values)),
-        (FIELD_NAME, u'between', attr(u'low_value', range_values), u'and', attr(u'high_value', range_values)),
+        # field in range(low, high)
+        (FIELD_NAME, u'in', u'range',
+         u'(',
+         attr(u'low_value', range_values), u',', attr(u'high_value', range_values),
+         u')'),
     ]
 
     def __str__(self):

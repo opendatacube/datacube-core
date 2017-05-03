@@ -1168,9 +1168,9 @@ def test_csv_search_via_cli(global_integration_cli_args, pseudo_ls8_type, pseudo
     matches_none('2015 < time < 2016')
     matches_none('2014 < time < 2014')
 
-    matches_both('time between 2014-7 and 2014-8')
-    matches_none('time between 2014-6 and 2014-7')
-    matches_both('time between 2005 and 2015')
+    matches_both('time in range(2014-7, 2014-8)')
+    matches_none('time in range(2014-6, 2014-7)')
+    matches_both('time in range(2005, 2015)')
 
 
 # Headers are currently in alphabetical order.
