@@ -10,14 +10,14 @@ REDIS_URL = 'redis://localhost:6379/0'
 def mk_celery_app():
     url = os.environ.get('REDIS', REDIS_URL)
 
-    app = Celery('datacube_task', broker=url, backend=url)
+    _app = Celery('datacube_task', broker=url, backend=url)
 
-    app.conf.update(
+    _app.conf.update(
         task_serializer='pickle',
         result_serializer='pickle',
         accept_content=['pickle'])
 
-    return app
+    return _app
 
 
 # Celery worker launch script expects to see app object at the top level
@@ -99,8 +99,6 @@ class CeleryExecutor(object):
 
     @staticmethod
     def as_completed(futures):
-        from time import sleep
-
         while len(futures) > 0:
             pending = []
 
@@ -154,7 +152,6 @@ def launch_redis(port=6379, params=None, **kwargs):
     from os import path
     import subprocess
     import shutil
-    from time import sleep
 
     def stringify(v):
         if isinstance(v, str):
