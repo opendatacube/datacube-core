@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """ Sample task app
 """
 from __future__ import absolute_import, print_function
@@ -43,8 +44,10 @@ def make_config(db_index, config, **opts):
     unused(db_index)
 
     # Override config value with command line value, or set to default value of 10
-    config['num_tasks'] = opts.get('num_tasks',
-                                   config.get('num_tasks', 10))
+    num_tasks = opts.get('num_tasks')
+    if num_tasks is None:
+        num_tasks = config.get('num_tasks', 10)
+    config['num_tasks'] = num_tasks
 
     return config
 
