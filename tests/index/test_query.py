@@ -63,6 +63,7 @@ def test_parse_dates():
         'time': Range(datetime(2014, 2, 1, tzinfo=tzutc()), datetime(2014, 3, 1, tzinfo=tzutc()))
     }
     assert implied_feb_2014 == parse_expressions('2014-02 < time < 2014-03')
+    assert implied_feb_2014 == parse_expressions('time between 2014-02 and 2014-03')
 
 
 def test_parse_date_ranges():

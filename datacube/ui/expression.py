@@ -135,7 +135,7 @@ def last_day_of_month(year, month):
     return last_day
 
 
-class DateRangeValue(Expr):
+class VagueDateValue(Expr):
     def __init__(self, value=None):
         self.value = value
 
@@ -152,13 +152,13 @@ class DateRangeValue(Expr):
 
     def as_value(self):
         """
-        >>> DateRangeValue(value='2017-03-03').as_value()
+        >>> VagueDateValue(value='2017-03-03').as_value()
         Range(begin=datetime.datetime(2017, 3, 3, 0, 0, tzinfo=tzutc()), \
 end=datetime.datetime(2017, 3, 3, 23, 59, 59, tzinfo=tzutc()))
-        >>> DateRangeValue(value='2017-03').as_value()
+        >>> VagueDateValue(value='2017-03').as_value()
         Range(begin=datetime.datetime(2017, 3, 1, 0, 0, tzinfo=tzutc()), \
 end=datetime.datetime(2017, 3, 31, 23, 59, 59, tzinfo=tzutc()))
-        >>> DateRangeValue(value='2017').as_value()
+        >>> VagueDateValue(value='2017').as_value()
         Range(begin=datetime.datetime(2017, 1, 1, 0, 0, tzinfo=tzutc()), \
 end=datetime.datetime(2017, 12, 31, 23, 59, 59, tzinfo=tzutc()))
         """
@@ -188,7 +188,7 @@ class InExpression(Expr):
         self.year = year
 
     grammar = [
-        (FIELD_NAME, u'in', attr(u'value', [DateRangeValue]))
+        (FIELD_NAME, u'in', attr(u'value', [VagueDateValue]))
     ]
 
     def __str__(self):
@@ -228,7 +228,7 @@ class BetweenExpression(Expr):
     grammar = [
         (attr(u'low_value', range_values), u'<', FIELD_NAME, u'<', attr(u'high_value', range_values)),
         (attr(u'high_value', range_values), u'>', FIELD_NAME, u'>', attr(u'low_value', range_values)),
-        (FIELD_NAME, u'between', attr(u'low_value', NumericValue), u'and', attr(u'high_value', range_values)),
+        (FIELD_NAME, u'between', attr(u'low_value', range_values), u'and', attr(u'high_value', range_values)),
     ]
 
     def __str__(self):
