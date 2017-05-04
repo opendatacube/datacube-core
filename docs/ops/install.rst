@@ -6,6 +6,7 @@ Installation
 These installation instructions build a Data Cube environment that can be used to ingest data (with config files from github) and run analytics processes.
 
 The Data Cube is a set of python code with dependencies including:
+
 * Python 2.7 or 3.5
 * GDAL
 * PostgeSQL database
