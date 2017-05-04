@@ -5,13 +5,6 @@ Ubuntu
 Required software
 -----------------
 
-Ubuntu 16.04 includes packages for PostgreSQL 9.5. On earlier versions of Ubuntu you can use the postgresql.org repo as
-described on [their download page](http://www.postgresql.org/download/linux/ubuntu/).
-
-PostgreSQL::
-
-    apt-get install postgresql-9.5 postgresql-client-9.5 postgresql-contrib-9.5
-
 HDF5, and netCDF4::
 
    apt-get install libhdf5-serial-dev libnetcdf-dev
@@ -30,7 +23,7 @@ Optional packages (useful utilities, docs)::
 Python and packages
 -------------------
 
-Python 2.7 and 3.4+ are supported.
+Python 2.7 and 3.5+ are supported.
 
 Download the latest version of the software from the `repository <https://github.com/opendatacube/datacube-core>`_ and install it::
 
