@@ -15,7 +15,7 @@ These dependencies along with the target operating system environment should be 
 
 The recommended method for installing the Data Cube is to use a container and package manager. The instructions below are for Miniconda and PostgreSQL.
 
-Other methods to build and install the Data Cube are maintained by the communityand are available at https://github.com/opendatacube/community-contributions
+Other methods to build and install the Data Cube are maintained by the community and are available at https://github.com/opendatacube/documentation. These may include docker recipes and operating system specific deployments.
 
 .. toctree::
    :maxdepth: 2
