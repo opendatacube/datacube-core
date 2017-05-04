@@ -65,7 +65,7 @@ class CeleryExecutor(object):
             if host in ['localhost', '127.0.0.1']:
                 self._shutdown = launch_redis(port if port else 6379)
             else:
-                raise ConnectionError("Can't connect to redis server @ {}:{}".format(host, port))
+                raise IOError("Can't connect to redis server @ {}:{}".format(host, port))
 
     def __del__(self):
         if self._shutdown:
