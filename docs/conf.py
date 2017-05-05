@@ -247,7 +247,6 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     ('index', 'ODC.tex', u'Open Data Cube Documentation',
-     u'Geoscience Australia, CSIRO, NCI', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -277,7 +276,6 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'odc', u'Open Data Cube Documentation',
-     [u'Geoscience Australia, CSIRO, NCI'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -291,7 +289,6 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     ('index', 'ODC', u'Open Data Cube Documentation',
-     u'Geoscience Australia, CSIRO, NCI', 'AGDC', 'One line description of project.',
      'Miscellaneous'),
 ]
 

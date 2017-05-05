@@ -5,7 +5,6 @@
 # Author:     Peter Wang
 #
 # Created:    7 October 2015
-#             (CSIRO)
 #             Code based on PyParsing fourFn example by Paul McGuire
 #             Used with his with permission
 #             (http://pyparsing.wikispaces.com/file/view/fourFn.py)

@@ -5,7 +5,6 @@
 # Author:     Peter Wang
 #
 # Created:    14 July 2015
-#             (CSIRO)
 #             Adapted get_pqa_mask function from stacker.py by Josh Sixsmith &
 #             Alex IP of Geoscience Australia
 #             https://github.com/GeoscienceAustralia/agdc/blob/master/src/stacker.py
