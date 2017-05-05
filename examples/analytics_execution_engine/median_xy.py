@@ -7,7 +7,6 @@
 # Author:     Peter Wang
 #
 # Created:    22 December 2015
-# Copyright:  2015 Commonwealth Scientific and Industrial Research Organisation
 #             (CSIRO)
 # License:    This software is open source under the Apache v2.0 License
 #             as provided in the accompanying LICENSE file or available from
