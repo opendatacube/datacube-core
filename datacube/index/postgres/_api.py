@@ -53,6 +53,7 @@ _DATASET_SELECT_W_LOCAL = (
     ]).where(
         and_(
             SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
+            ## TODO(csiro) replace 'file' by the list of uri schemas that the drivers can support
             SELECTED_DATASET_LOCATION.c.uri_scheme == 'file'
         )
     ).order_by(
@@ -890,6 +891,23 @@ class PostgresDbAPI(object):
         )
 
         return res.inserted_primary_key[0]
+
+
+    def get_s3_mapping(self, dataset_ref, band):
+        """
+        :type dataset_ref: uuid.UUID
+        :type band: str
+        :type s3_dataset_id: uuid.UUID
+        :rtype uuid.UUID
+        """
+        return self._connection.execute(
+            select(
+                [S3_DATASET_MAPPING.c.s3_dataset_id]
+            ).where(
+                S3_DATASET_MAPPING.c.dataset_ref == dataset_ref
+            )
+        ).fetchall()
+
 
     def put_s3_dataset(self,
                        s3_dataset_id,

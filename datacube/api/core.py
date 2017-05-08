@@ -56,7 +56,7 @@ class Datacube(object):
 
     :type index: datacube.index._api.Index
     """
-    def __init__(self, index=None, config=None, app=None, driver='NetCDF CF'):
+    def __init__(self, index=None, config=None, app=None):
         """
         Create the interface for the query and storage access.
 
@@ -79,15 +79,13 @@ class Datacube(object):
             if config is not None:
                 if isinstance(config, string_types):
                     config = LocalConfig.find([config])
-                DriverManager(driver, config, application_name=app)
+                DriverManager(local_config=config, application_name=app)
             else:
-                DriverManager(driver, application_name=app)
-            self.index = DriverManager().driver.index
-
+                DriverManager(application_name=app)
         else:
-            # TODO(csiro): What to do in that case: need to handle properly
-            #DriverManager(driver)
-            self.index = index
+            DriverManager(index=index)
+        self.index = DriverManager().driver.index
+
 
     def list_products(self, show_archived=False, with_pandas=True):
         """

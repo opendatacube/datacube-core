@@ -22,11 +22,17 @@ class S3Driver(Driver):
     '''Margin error allowed when comparing coord intervals to determine
     whether a coord is regular or not.'''
 
-    def __init__(self, name, local_config=None, application_name=None, validate_connection=True):
+    def __init__(self, name, index=None, *index_args, **index_kargs):
         '''Initialise the s3 storage.'''
-        super(S3Driver, self).__init__(name, local_config, application_name, validate_connection)
+        super(S3Driver, self).__init__(name, index, *index_args, **index_kargs)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.storage = S3LIO(False)
+
+
+    @property
+    def uri_scheme(self):
+        '''URI scheme used by this driver.'''
+        return 's3'
 
 
     def _get_chunksizes(self, chunksizes):
@@ -180,9 +186,12 @@ class S3Driver(Driver):
         return outputs
 
 
-    def _init_index(self, local_config=None, application_name=None, validate_connection=True):
-        '''See :meth:`datacube.drivers.driver._init_index`'''
-        return Index(local_config, application_name, validate_connection)
+    def _init_index(self, db=None, *args, **kargs):
+        '''See :meth:`datacube.drivers.driver.init_index`'''
+        local_config = kargs['local_config'] if 'local_config' in kargs else None
+        application_name = kargs['application_name'] if 'application_name' in kargs else None
+        validate_connection = kargs['validate_connection'] if 'validate_connection' in kargs else True
+        return Index(local_config, application_name, validate_connection, db)
 
 
     def get_datasource(self, dataset, measurement_id):

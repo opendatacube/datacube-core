@@ -113,7 +113,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset_
         name = config['measurements'][0]['name']
         check_attributes(nco[name], config['measurements'][0]['attrs'])
     check_open_with_xarray(ds_path)
-    check_open_with_api(index, driver)
+    check_open_with_api(index)
 
 
 def ensure_datasets_are_indexed(index):
@@ -184,9 +184,9 @@ def check_open_with_xarray(file_path):
     xarray.open_dataset(str(file_path))
 
 
-def check_open_with_api(index, driver):
+def check_open_with_api(index):
     from datacube import Datacube
-    dc = Datacube(index=index, driver=driver)
+    dc = Datacube(index=index)
 
     input_type_name = 'ls5_nbar_albers'
     input_type = dc.index.products.get_by_name(input_type_name)

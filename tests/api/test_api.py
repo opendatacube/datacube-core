@@ -1,12 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
 from datacube.api import API
+from datacube.drivers.manager import DriverManager
 
 
 def test_get_descriptor_no_data():
     from mock import MagicMock
 
     mock_index = MagicMock()
+    DriverManager(index=mock_index)
 
     api = API(index=mock_index)
 
@@ -38,6 +40,7 @@ def test_get_descriptor_some_data():
     su.storage_type.name
     su.variables.values.return_value = ['t', 'x', 'y']
     mock_index = MagicMock()
+    DriverManager(index=mock_index)
 
     # mock_index.datasets.get_fields.return_value = dict(product=None)
     mock_index.storage.search.return_value = [su]

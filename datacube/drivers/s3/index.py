@@ -9,6 +9,7 @@ import numpy as np
 from datacube.config import LocalConfig
 import datacube.index._api
 from datacube.index.postgres import PostgresDb
+from datacube.model import Dataset
 
 # pylint: disable=protected-access
 class Index(datacube.index._api.Index):
@@ -16,14 +17,17 @@ class Index(datacube.index._api.Index):
     by writing additional s3 information to specific tables.
     '''
 
-    def __init__(self, local_config=None, application_name=None, validate_connection=True):
+    def __init__(self, local_config=None, application_name=None, validate_connection=True, db=None, uri_scheme='s3'):
         '''Initialise the index and its dataset resource.'''
-        if local_config is None:
-            local_config = LocalConfig.find()
-        super(Index, self).__init__(PostgresDb.from_config(local_config,
-                                                           application_name=application_name,
-                                                           validate_connection=validate_connection))
+        if db is None:
+            if local_config is None:
+                local_config = LocalConfig.find()
+            db = PostgresDb.from_config(local_config,
+                                        application_name=application_name,
+                                        validate_connection=validate_connection)
+        super(Index, self).__init__(db)
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.uri_scheme = uri_scheme
         self.datasets = DatasetResource(self._db, self.products)
 
 
@@ -47,6 +51,8 @@ class Index(datacube.index._api.Index):
         dataset_refs = []
         n = 0
         for dataset in datasets.values:
+            if dataset.local_uri:
+                dataset.local_uri = '%s:%s' % (self.uri_scheme, dataset.local_uri.split(':', 1)[1])
             self.datasets.add(dataset, sources_policy='skip')
             dataset_refs.append(dataset.id)
             n += 1
@@ -179,3 +185,36 @@ class DatasetResource(datacube.index._datasets.DatasetResource):
 
                 # Add mappings
                 self._add_s3_dataset_mappings(transaction, s3_dataset_id, band, dataset_refs)
+
+
+    def _make(self, dataset_res, full_info=False):
+        """
+        :rtype datacube.model.Dataset
+
+        :param bool full_info: Include all available fields
+        """
+        uri = dataset_res.uri
+        dataset = Dataset(
+            self.types.get(dataset_res.dataset_type_ref),
+            dataset_res.metadata,
+            # We guarantee that this property on the class is only a local uri.
+            uri if uri and uri.startswith('file:') else None,
+            indexed_by=dataset_res.added_by if full_info else None,
+            indexed_time=dataset_res.added if full_info else None,
+            archived_time=dataset_res.archived
+        )
+
+        # dataset_res keys: ['id', 'metadata_type_ref', 'dataset_type_ref', 'metadata',
+        # 'archived', 'added', 'added_by', 'uri']
+        self.logger.debug('@@@@@@@@@@ %s', uri)
+
+        # Pull from s3 tables here?
+        with self._db.connect() as connection:
+            self.logger.debug('get_s3_mapping(%s, %s)', dataset_res.id, dataset_res.uri)
+            res = connection.get_s3_mapping(dataset_res.id, None)
+            self.logger.debug('@@@@@@@@@@ %s', res)
+
+
+        # dataset.driver_metadata = {} # for all bands
+
+        return dataset

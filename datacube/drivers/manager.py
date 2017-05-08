@@ -44,6 +44,11 @@ class DriverManager(object):
     `drivers` class to each specific driver.
     '''
 
+    DEFAULT_DRIVER = 'NetCDF CF'
+    '''Default driver, assuming its code is present. Otherwise any other
+    driver gets selected.
+    '''
+
     DRIVER_SPEC = 'DRIVER_SPEC'
     '''Attribue name where driver information is stored in `__init__.py`.
     '''
@@ -58,86 +63,122 @@ class DriverManager(object):
     '''Singleton list of all available drivers, indexed by name.'''
 
 
-    def __new__(cls, driver_name=None, local_config=None,
-                application_name=None, validate_connection=True):
-        '''(Re-)Instantiate the singleton by loading the driver and initialising
-        its index.
+    def __new__(cls, default_driver_name=None, index=None, *index_args, **index_kargs):
+        '''Initialise the singleton and/or reload drivers.
 
-        The singleton gets re-instantiated each time a new
-        DriverManager is created and `driver_name` is specified.
+        The singleton gets re-instantiated each time a new default
+        driver name is specified or an index is passed. Otherwise, the
+        current instance gets returned, and contains a default driver,
+        list of available drivers.
+
+        Each driver get initialised during instantiation, including
+        the initialisation of their index, using the `index_args` and
+        `index_kargs` optional arguments. If index is specified, it is
+        passed to the driver to be used internally in place of the
+        original index, as a test feature.
+
+        The reason for re-instantiating the instance when a default
+        driver or index is specified, is because caching these leaves
+        the system in an inconsistent state, e.g. when testing various
+        drivers.
+
+        TODO: Ideally, the driver manager should not be a singleton
+        but an object being instantiated by the entry point to the
+        system, e.g. :mod:`datacube.ui.click` or
+        :mod:`datacube.api.core`. This implementation is intended to
+        limit the changes to the existing codebase until plugin
+        drivers are fully developped.
+
+        :param str default_driver_name: The name of the default driver
+          to be used by the manager if no driver is specified in the
+          dataset.
+        :param index: An index object behaving like
+          :class:`datacube.index._api.Index`.
+        :param args: Optional positional arguments to be passed to the
+          index on initialisation. Caution: In the current
+          implementation all parameters get passed to all potential
+          indexes.
+        :param args: Optional keyword arguments to be passed to the
+          index on initialisation. Caution: In the current
+          implementation all parameters get passed to all potential
+          indexes.
         '''
-        if driver_name or cls.__instance is None:
-            cls.__instance = super(DriverManager, cls).__new__(cls)
-            cls.__instance.logger = logging.getLogger(cls.__name__)
+        if cls.__instance is None or default_driver_name or index:
+            instance = super(DriverManager, cls).__new__(cls)
+            instance.logger = logging.getLogger(cls.__name__)
             # pylint: disable=protected-access
-            cls.__instance.__load_driver(driver_name, local_config, application_name, validate_connection)
-            cls.__instance.logger.info('Ready with driver: %s', cls.__instance.driver)
+            instance._load_drivers(index, *index_args, **index_kargs)
+            # pylint: disable=protected-access
+            instance._set_default_driver(default_driver_name)
+            cls.__instance = instance
         return cls.__instance
 
 
-    def __load_driver(self, driver_name, local_config, application_name, validate_connection):
-        '''Lookup and instantiate driver.
+    def _load_drivers(self, index, *index_args, **index_kargs):
+        '''Load and initialise all available drivers.
+
+        See :meth:`__init__` for a description of the parameters.
         '''
-        if not driver_name:
-            raise ValueError('A storage driver must be specified to initialise the manager.')
-        valid = []
+        self.__drivers = {}
         for init_path in Path(__file__).parent.glob('*/__init__.py'):
             init = load_module(str(init_path.parent.stem), str(init_path))
             if self.DRIVER_SPEC in init.__dict__:
-                valid.append(init.__dict__[self.DRIVER_SPEC][0])
-                if init.__dict__[self.DRIVER_SPEC][0] == driver_name:
-                    spec = init.__dict__[self.DRIVER_SPEC]
-                    # pylint: disable=old-division
-                    filepath = init_path.parent / spec[2]
-                    # pylint: disable=old-division
-                    module = load_module(spec[1], str(init_path.parent / spec[2]))
-                    driver_cls = getattr(module, spec[1])
-                    if not issubclass(driver_cls, Driver):
-                        raise ValueError('Driver plugin `%s` is not a subclass of the abstract Driver class.',
-                                         driver_cls)
-                    self.__driver = driver_cls(spec[0], local_config, application_name, validate_connection)
-        if not self.__driver:
-            raise ValueError('Invalid driver specified. Valid drivers are: %s' % ', '.join(valid))
+                spec = init.__dict__[self.DRIVER_SPEC]
+                # pylint: disable=old-division
+                filepath = init_path.parent / spec[2]
+                # pylint: disable=old-division
+                module = load_module(spec[1], str(init_path.parent / spec[2]))
+                driver_cls = getattr(module, spec[1])
+                if issubclass(driver_cls, Driver):
+                    driver = driver_cls(spec[0], index, *index_args, **index_kargs)
+                    self.__drivers[driver.name] = driver
+                else:
+                    self.logger.warning('Driver plugin "%s" is not a subclass of the abstract Driver class.',
+                                        driver_cls)
+        if len(self.__drivers) < 1:
+            raise RuntimeError('No plugin driver found, Datacube cannot operate.')
 
+
+    def _set_default_driver(self, driver_name):
+        '''Set the default driver.
+
+        The default driver is used by the manager if no driver is
+        specified in the dataset.
+
+        :param str default_driver_name: The name of the default
+          driver.
+        '''
+        if driver_name:
+            if not driver_name in self.__drivers:
+                raise ValueError('Default driver "%s" is not available in %s' % (
+                    driver_name, ', '.join(self.__drivers.keys())))
+        else:
+            driver_name = self.DEFAULT_DRIVER
+            if driver_name not in self.__drivers:
+                driver_name = list(self.__drivers.values())[0].name
+        self.__driver = self.__drivers[driver_name]
+        self.logger.info('Reloaded drivers. Using default driver: %s', driver_name)
 
 
     @property
     def driver(self):
-        '''Current driver.
+        '''Current default driver.
         '''
         return self.__driver
 
 
     @property
     def drivers(self):
-        '''Dictionary of drivers available, indexed by their name.
-
-        This singleton list is populated on first call of this property.
-        '''
-        if self.__drivers is None:
-            self.__drivers = []
-            for init_path in Path(__file__).parent.glob('*/__init__.py'):
-                init = load_module(str(init_path.parent.stem), str(init_path))
-                if self.DRIVER_SPEC in init.__dict__:
-                    spec = init.__dict__[self.DRIVER_SPEC]
-                    # pylint: disable=old-division
-                    filepath = init_path.parent / spec[2]
-                    # pylint: disable=old-division
-                    module = load_module(spec[1], str(init_path.parent / spec[2]))
-                    driver_cls = getattr(module, spec[1])
-                    if not issubclass(driver_cls, Driver):
-                        self.logger.warning('Driver plugin `%s` is not a subclass of the abstract Driver class. ',
-                                            driver_cls)
-                        continue
-                    self.__drivers.append(spec[0])
+        '''Dictionary of drivers available, indexed by their name.'''
         return self.__drivers
 
 
     def __str__(self):
         '''Human-readable list of available drivers as a string.
         '''
-        return '%s(driver: %s)' % (self.__class__.__name__,
-                                   self.driver.name)
+        return '%s(default driver: %s; available drivers: %s)' % (
+            self.__class__.__name__, self.driver.name,
+            ', '.join(self.__drivers.keys()))
 
 
     def write_dataset_to_storage(self, dataset, *args, **kargs):
@@ -158,11 +199,43 @@ class DriverManager(object):
         return self.driver.index.add_datasets(datasets, sources_policy)
 
 
-    def get_datasource(self, dataset, measurement_id):
-        '''Dataset source for reading from a Datacube Dataset.
+    def get_driver_by_scheme(self, dataset):
+        '''Returns the driver required to read a dataset.
+
+        Since a request into the index is required to pull the
+        locations for the dataset, this method uses the default
+        driver's index to identify the location and then finds the
+        first available driver able to deal withe uri scheme.
+
+        TODO: Several drivers may be able to process a given scheme in
+        the current design. This should be discussed for future
+        implementations.
+
+        :param datacube.model.Dataset dataset: A dataset with at least
+          one location expected to be registered in the index. The
+          first location found is used to extract the uri scheme. If
+          no location is found, the scheme defaults to `file`.
+        '''
+        locations = self.driver.index.datasets.get_locations(dataset.id)
+        scheme = locations[0].split(':', 1)[0] if locations and locations[0] else 'file'
+        for driver in self.__drivers.values():
+            if scheme == driver.uri_scheme:
+                return driver
+        raise ValueError('No driver found for scheme "%s"' % scheme)
+
+
+    def get_index_specifics(self, dataset, band_name=None):
+        '''TODO(csiro) implement this method in each driver as required.
 
         :param dataset: The dataset to read.
-        :param measurement_id: The band ID.
-        :return: :ref:`DataSource` object.
+        :param str band_name: The band name.
+
         '''
-        return self.driver.get_datasource(dataset, measurement_id)
+        specifics = {}
+        driver = self.get_driver_by_scheme(dataset)
+        # TODO(csiro) Extract driver specifics from self.get_driver_by_scheme(dataset)
+        return specifics
+
+
+    def get_datasource(self, dataset, band_name=None):
+        return self.get_driver_by_scheme(dataset).get_datasource(dataset, band_name)

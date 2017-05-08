@@ -12,13 +12,15 @@ from datacube.index.postgres import PostgresDb
 class Index(datacube.index._api.Index):
     '''NetCDF driver wrapper.'''
 
-    def __init__(self, local_config=None, application_name=None, validate_connection=True):
+    def __init__(self, local_config=None, application_name=None, validate_connection=True, db=None):
         '''Initialise the index.'''
-        if local_config is None:
-            local_config = LocalConfig.find()
-        super(Index, self).__init__(PostgresDb.from_config(local_config,
-                                                           application_name=application_name,
-                                                           validate_connection=validate_connection))
+        if db is None:
+            if local_config is None:
+                local_config = LocalConfig.find()
+            db = PostgresDb.from_config(local_config,
+                                        application_name=application_name,
+                                        validate_connection=validate_connection)
+        super(Index, self).__init__(db)
         self.logger = logging.getLogger(self.__class__.__name__)
 
 

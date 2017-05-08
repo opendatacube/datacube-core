@@ -13,6 +13,7 @@ from uuid import UUID
 from datacube.index._datasets import DatasetResource
 from datacube.index.exceptions import DuplicateRecordError
 from datacube.model import DatasetType, MetadataType, Dataset
+from datacube.drivers.manager import DriverManager
 
 _nbar_uuid = UUID('f2f12372-8366-11e5-817e-1040f381a756')
 _ortho_uuid = UUID('5cf41d98-eda9-11e4-8a8e-1040f381a756')
@@ -159,6 +160,11 @@ DatasetRecord = namedtuple('DatasetRecord', ['id', 'metadata', 'dataset_type_ref
                                              'added', 'added_by', 'archived'])
 
 
+class MockIndex(object):
+    def __init__(self, db):
+        self._db = db
+
+
 class MockDb(object):
     def __init__(self):
         self.dataset = {}
@@ -174,6 +180,9 @@ class MockDb(object):
 
     def get_dataset(self, id):
         return self.dataset.get(id, None)
+
+    def get_locations(self, dataset):
+        return ['file:xxx']
 
     def ensure_dataset_location(self, *args, **kwargs):
         return
@@ -204,6 +213,8 @@ class MockTypesResource(object):
 
 def test_index_dataset():
     mock_db = MockDb()
+    mock_index = MockIndex(mock_db)
+    DriverManager(index=mock_index)
     mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
     datasets = DatasetResource(mock_db, mock_types)
     dataset = datasets.add(_EXAMPLE_NBAR_DATASET)
@@ -235,6 +246,8 @@ def test_index_dataset():
 
 def test_index_already_ingested_source_dataset():
     mock_db = MockDb()
+    mock_index = MockIndex(mock_db)
+    DriverManager(index=mock_index)
     mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
     datasets = DatasetResource(mock_db, mock_types)
     dataset = datasets.add(_EXAMPLE_NBAR_DATASET.sources['ortho'])
@@ -249,6 +262,8 @@ def test_index_already_ingested_source_dataset():
 
 def test_index_two_levels_already_ingested():
     mock_db = MockDb()
+    mock_index = MockIndex(mock_db)
+    DriverManager(index=mock_index)
     mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
     datasets = DatasetResource(mock_db, mock_types)
     dataset = datasets.add(_EXAMPLE_NBAR_DATASET.sources['ortho'].sources['satellite_telemetry_data'])

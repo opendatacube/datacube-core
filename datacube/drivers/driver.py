@@ -22,13 +22,30 @@ class Driver(object):
     '''Driver's index.'''
 
 
-    def __init__(self, name, local_config=None, application_name=None, validate_connection=True):
+    def __init__(self, name, index=None, *index_args, **index_kargs):
         '''Initialise the driver's name and index.
 
         This should be called by subclasses, or the name and index set manually.
+
+        :param str name: The name this driver should be referred to as.
+        :param index: An index object behaving like
+          :class:`datacube.index._api.Index`. In the current
+          implementation, only the `index._db` variable is used, and
+          is passed to the index initialisation method, that should
+          basically replace the existing DB connection with that
+          variable.
+        :param args: Optional positional arguments to be passed to the
+          index on initialisation. Caution: In the current
+          implementation all parameters get passed to all potential
+          indexes.
+        :param args: Optional keyword arguments to be passed to the
+          index on initialisation. Caution: In the current
+          implementation all parameters get passed to all potential
+          indexes.
         '''
         self.__name = name
-        self.__index = self._init_index(local_config, application_name, validate_connection)
+        # pylint: disable=protected-access
+        self.__index = self._init_index(index._db if index else None, *index_args, **index_kargs)
 
 
     @property
@@ -45,6 +62,12 @@ class Driver(object):
 
         Defaults to driver name, but may need to be overriden by some drivers.'''
         return self.__name
+
+
+    @property
+    def uri_scheme(self):
+        '''URI scheme used by this driver.'''
+        return 'file'
 
 
     @property
@@ -72,13 +95,19 @@ class Driver(object):
 
 
     @abstractmethod
-    def _init_index(self, local_config=None, application_name=None, validate_connection=True):
+    def _init_index(self, db=None, *index_args, **index_kargs):
         '''Initialise this driver's index.
 
-        :param application_name: A short, alphanumeric name to identify this application.
-        :param local_config: Config object to use.
-        :type local_config: :py:class:`datacube.config.LocalConfig`, optional
-        :param validate_connection: Validate database connection and schema immediately
-        :raises datacube.index.postgres._api.EnvironmentError:
+        :param db: A DB connection that should be used by the
+          index. This is provided for test support only, and not all
+          drivers may support it in the future.
+        :param args: Optional positional arguments to be passed to the
+          index on initialisation. Caution: In the current
+          implementation all parameters get passed to all potential
+          indexes.
+        :param args: Optional keyword arguments to be passed to the
+          index on initialisation. Caution: In the current
+          implementation all parameters get passed to all potential
+          indexes.
         '''
         return None

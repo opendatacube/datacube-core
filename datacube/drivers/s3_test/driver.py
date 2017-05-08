@@ -14,13 +14,19 @@ class S3TestDriver(S3Driver):
     testing purposes only.
     '''
 
-    def __init__(self, name, local_config=None, application_name=None, validate_connection=True):
+    def __init__(self, name, index=None, *index_args, **index_kargs):
         '''Initialise the s3 test driver.
 
-        CAUTION: if run as root, this may write anywhere in the
+        Caution: if run as root, this may write anywhere in the
         filesystem.
         '''
-        super(S3TestDriver, self).__init__(name, local_config, application_name, validate_connection)
+        super(S3TestDriver, self).__init__(name, index, *index_args, **index_kargs)
         # Initialise with the root at the top of the filesystem, so
         # that the `container` path can be absolute.
         self.storage = S3LIO(False, '/')
+
+
+    @property
+    def uri_scheme(self):
+        '''URI scheme used by this driver.'''
+        return 'file_s3'
