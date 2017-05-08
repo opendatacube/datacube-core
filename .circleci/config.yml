@@ -52,7 +52,23 @@ jobs:
           command: |
             export PATH="$HOME/miniconda/bin:$PATH"
             source activate agdc
-            ./check-code.sh integration_tests
+
+            pep8 tests integration_tests examples utils --max-line-length 120
+
+            pylint -j 2 --reports no datacube datacube_apps
+
+            # Run tests, taking coverage.
+            # Users can specify extra folders as arguments.
+            py.test --junitxml=test-reports/pytest-datacube.log -r sx --cov datacube --durations=5 datacube tests datacube_apps integration_tests
+
+
+      - store_artifacts:
+          path: test-reports
+          destination: reports
+
+      - store_test_results:
+          path: test-reports
+
 
       - run:
           name: Build Documentation
@@ -65,8 +81,3 @@ jobs:
       - store_artifacts:
           path: docs/_build/html
           destination: docs
-      # - store_artifacts:
-      #     path: test-reports/coverage
-      #     destination: reports
-      # - store_test_results:
-      #     path: "test-reports/"
