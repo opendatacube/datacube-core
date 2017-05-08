@@ -4,7 +4,7 @@ jobs:
     docker:
       - image: python:3.6
         environment:
-          CONDA_ENV_FILE: .travis/environment_py27.yaml
+          CONDA_ENV_FILE: .travis/environment_py35.yaml
           DATABASE_URL: postgresql://ubuntu@localhost/circle_test?sslmode=disable
       - image: postgres:9.6
         environment:
@@ -13,11 +13,6 @@ jobs:
           POSTGRES_PASSWORD: ""
     working_directory: ~/datacube-core
     steps:
-          # Create Postgres users and database
-      # Note the YAML heredoc '|' for nicer formatting
-      # - run: |
-      #     sudo -u root createuser -h localhost --superuser ubuntu &&
-      #     sudo createdb -h localhost test_db
       - run:
           name: Install Conda + Setup Conda
           working_directory: ~
@@ -51,7 +46,7 @@ jobs:
       #     key: datacube-core-{{ .Branch }}-{{ checksum "yarn.lock" }}
       #     paths:
       #       - "/home/ubuntu/.yarn-cache"
-      
+
       - run:
           name: Run All Tests
           command: |
@@ -67,11 +62,11 @@ jobs:
             source activate agdc
             make html
 
-      # - store_artifacts:
-      #     path: test-reports/coverage
-      #     destination: reports
       - store_artifacts:
           path: docs/_build/html
           destination: docs
+      # - store_artifacts:
+      #     path: test-reports/coverage
+      #     destination: reports
       # - store_test_results:
       #     path: "test-reports/"
