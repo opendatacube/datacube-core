@@ -7,8 +7,12 @@ import os
 REDIS_URL = 'redis://localhost:6379/0'
 
 
-def mk_celery_app():
-    url = os.environ.get('REDIS', REDIS_URL)
+def mk_celery_app(addr=None):
+
+    if addr is None:
+        url = os.environ.get('REDIS', REDIS_URL)
+    else:
+        url = 'redis://{}:{}/0'.format(*addr)
 
     _app = Celery('datacube_task', broker=url, backend=url)
 
@@ -25,6 +29,12 @@ def mk_celery_app():
 app = mk_celery_app()
 
 
+def set_address(host, port=6379, db=0):
+    url = 'redis://{}:{}/{}'.format(host, port, db)
+    app.conf.update(result_backend=url,
+                    broker_url=url)
+
+
 @app.task()
 def run_cloud_pickled_function(f_data, *args, **kwargs):
     from cloudpickle import loads
@@ -38,9 +48,12 @@ def submit_cloud_pickled_function(f, *args, **kwargs):
     return run_cloud_pickled_function.delay(f_data, *args, **kwargs)
 
 
-def launch_worker(argv=None):
-    import sys
-    argv = sys.argv if argv is None else argv
+def launch_worker(host, port=6379, num_threads=None):
+    set_address(host, port)
+
+    argv = ['worker', '-A', 'datacube._celery_runner']
+    if num_threads is not None:
+        argv.extend(['-c', str(num_threads)])
 
     app.worker_main(argv)
 
@@ -51,12 +64,8 @@ class CeleryExecutor(object):
         self._shutdown = None
 
         if port or host:
-            db = '0'
-            url = 'redis://{}:{}/{}'.format(host if host else 'localhost',
-                                            port if port else 6379,
-                                            db)
-            app.conf.update(result_backend=url,
-                            broker_url=url)
+            set_address(host if host else 'localhost',
+                        port if port else 6379)
 
         host = host if host else 'localhost'
         port = port if port else 6379

@@ -11,8 +11,6 @@ from datacube.ui.task_app import task_app, task_app_options, run_tasks, wrap_tas
 
 APP_NAME = 'dummy'
 
-# pylint: disable=invalid-name
-
 
 def random_sleep(amount_secs=0.1, prop=0.5):
     'emulate processing time variance'
@@ -31,7 +29,7 @@ def unused(*_, **_unused):
 def make_config(db_index, config, **opts):
     """Called after parsing command line arguments and initialising database index.
 
-    The idea is to inject extra configs based on the content of the data base,
+    The idea is to inject extra configs based on the content of the database,
     app config file and command line arguments.
 
     """
@@ -115,6 +113,5 @@ def app_main(db_index, config, tasks, executor, **opts):
 
 
 if __name__ == '__main__':
-    # pylint: disable=no-value-for-parameter
     random.seed()
     app_main()
