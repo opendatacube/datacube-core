@@ -193,12 +193,13 @@ class DatasetResource(datacube.index._datasets.DatasetResource):
 
         :param bool full_info: Include all available fields
         """
-        uri = dataset_res.uri
+        uris = dataset_res.uris
+        if uris:
+            uris = [uri for uri in uris if uri] if uris else []
         dataset = Dataset(
-            self.types.get(dataset_res.dataset_type_ref),
-            dataset_res.metadata,
-            # We guarantee that this property on the class is only a local uri.
-            uri if uri and uri.startswith('file:') else None,
+            type_=self.types.get(dataset_res.dataset_type_ref),
+            metadata_doc=dataset_res.metadata,
+            uris=uris,
             indexed_by=dataset_res.added_by if full_info else None,
             indexed_time=dataset_res.added if full_info else None,
             archived_time=dataset_res.archived
@@ -206,11 +207,11 @@ class DatasetResource(datacube.index._datasets.DatasetResource):
 
         # dataset_res keys: ['id', 'metadata_type_ref', 'dataset_type_ref', 'metadata',
         # 'archived', 'added', 'added_by', 'uri']
-        self.logger.debug('@@@@@@@@@@ %s', uri)
+        self.logger.debug('@@@@@@@@@@ %s', uris)
 
         # Pull from s3 tables here?
         with self._db.connect() as connection:
-            self.logger.debug('get_s3_mapping(%s, %s)', dataset_res.id, dataset_res.uri)
+            self.logger.debug('get_s3_mapping(%s, %s)', dataset_res.id, dataset_res.uris)
             res = connection.get_s3_mapping(dataset_res.id, None)
             self.logger.debug('@@@@@@@@@@ %s', res)
 
