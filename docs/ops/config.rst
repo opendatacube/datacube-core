@@ -5,8 +5,8 @@ See also :ref:`create-configuration-file` for the datacube config file.
 
 .. _product-doc:
 
-Product
--------
+Product Definition
+------------------
 Product description document defines some of the metadata common to all the datasets belonging to the products.
 It also describes the measurements that product has and some of the properties of the measurements.
 
@@ -20,7 +20,7 @@ description
     Product description
 
 metadata_type
-    `Metadata Type`_ name
+    Name of the `Metadata Type Definition`_
 
 metadata
     Dictionary containing bits of metadata common to all the datasets in the product.
@@ -81,8 +81,8 @@ measurements
 
 .. _dataset-metadata-doc:
 
-Dataset
--------
+Dataset Metadata Document
+-------------------------
 Dataset document defines critical metadata of the dataset such as:
 
     - measurements
@@ -217,9 +217,19 @@ lineage
 
 .. _ingestion-config:
 
-Metadata Type
--------------
-Metadata Type document defines searchable bits of metadata within `Dataset`_ documents.
+Metadata Type Definition
+------------------------
+A Metadata Type defines which fields should be searchable in your product or dataset metadata.
+
+A metadata type is added by default called 'eo' with platform/instrument/lat/lon/time fields.
+
+You would create a new metadata type if you want custom fields to be searchable for your products, or
+if you want to structure your metadata documents differently.
+
+You can see the default metadata type in the repository at ``datacube/index/default-metadata-types.yaml``.
+
+Or more elaborate examples (with fewer comments) in GA's configuration
+repository: https://github.com/GeoscienceAustralia/datacube-ingestion
 
 Ingestion Config
 ----------------
@@ -299,7 +309,7 @@ storage
 
 
 measurements
-    Mapping of the input measurement names as specified in `Dataset`_
+    Mapping of the input measurement names as specified in the `Dataset Metadata Document`_
     to the per-measurement ingestion parameters
 
     dtype
@@ -323,10 +333,25 @@ Runtime Config
 
 Runtime Config document specifies database connection configuration options:
 
+This is loaded from the following locations in order, if they exist, with properties from latter files
+overriding those in earlier ones:
+
+ * /etc/datacube.conf
+ * $DATACUBE_CONFIG_PATH
+ * ~/.datacube.conf
+ * datacube.conf
+
 .. code-block:: text
 
     [datacube]
-    db_hostname: 127.0.0.1
     db_database: datacube
-    db_username: cubeuser
+
+    # A blank host will use a local socket. Specify a hostname (such as localhost) to use TCP.
+    db_hostname:
+
+    # Credentials are optional: you might have other Postgres authentication configured.
+    # The default username is the current user id
+    # db_username:
+    # A blank password will fall back to default postgres driver authentication, such as reading your ~/.pgpass file.
+    # db_password:
 

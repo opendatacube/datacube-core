@@ -72,8 +72,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Australian Geoscience Data Cube'
-copyright = u'2016, Geoscience Australia, CSIRO, NCI'
+project = u'Open Data Cube'
+copyright = u'2017, Geoscience Australia, CSIRO, NCI'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -229,7 +229,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'AGDCdoc'
+htmlhelp_basename = 'ODCdoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -249,7 +249,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    ('index', 'AGDC.tex', u'AGDC Documentation',
+    ('index', 'ODC.tex', u'Open Data Cube Documentation',
      u'Geoscience Australia, CSIRO, NCI', 'manual'),
 ]
 
@@ -279,7 +279,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'agdc', u'AGDC Documentation',
+    ('index', 'odc', u'Open Data Cube Documentation',
      [u'Geoscience Australia, CSIRO, NCI'], 1)
 ]
 
@@ -293,7 +293,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    ('index', 'AGDC', u'AGDC Documentation',
+    ('index', 'ODC', u'Open Data Cube Documentation',
      u'Geoscience Australia, CSIRO, NCI', 'AGDC', 'One line description of project.',
      'Miscellaneous'),
 ]

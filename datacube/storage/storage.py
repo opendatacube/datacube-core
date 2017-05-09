@@ -4,20 +4,21 @@ Create/store dataset data into storage units based on the provided storage mappi
 """
 from __future__ import absolute_import, division, print_function
 
-import math
 import logging
+import math
 from contextlib import contextmanager
 from pathlib import Path
 from abc import ABCMeta, abstractmethod
 from six import add_metaclass
 
+from datacube.compat import urlparse, urljoin, url_parse_module
+from datacube.config import OPTIONS
+from datacube.model import Dataset
 from datacube.storage import netcdf_writer
 from datacube.drivers.datasource import DataSource
-from datacube.config import OPTIONS
 from datacube.utils import clamp, data_resolution_and_offset, datetime_to_seconds_since_1970, DatacubeException
-from datacube.utils import is_url, uri_to_local_path
 from datacube.utils import geometry
-from datacube.compat import urlparse, urljoin
+from datacube.utils import is_url, uri_to_local_path
 
 try:
     from yaml import CSafeDumper as SafeDumper
@@ -34,7 +35,6 @@ try:
     from rasterio.warp import Resampling
 except ImportError:
     from rasterio.warp import RESAMPLING as Resampling
-
 
 _LOG = logging.getLogger(__name__)
 
@@ -350,6 +350,7 @@ class BaseRasterDataSource(DataSource):
     """
     Interface used by fuse_sources and read_from_source
     """
+
     def __init__(self, filename, nodata):
         self.filename = filename
         self.nodata = nodata
@@ -418,6 +419,19 @@ class RasterFileDataSource(BaseRasterDataSource):
         return self.crs
 
 
+def register_scheme(*schemes):
+    """
+    Register additional uri schemes as supporting relative offsets (etc), so that band/measurement paths can be
+    calculated relative to the base uri.
+    """
+    url_parse_module.uses_netloc.extend(schemes)
+    url_parse_module.uses_relative.extend(schemes)
+    url_parse_module.uses_params.extend(schemes)
+
+# Not recognised by python by default. Doctests below will fail without it.
+register_scheme('s3')
+
+
 def _resolve_url(base_url, path):
     """
     If path is a URL or an absolute path return URL
@@ -431,6 +445,12 @@ def _resolve_url(base_url, path):
     'file:///foo/abc'
     >>> _resolve_url('file:///foo/abc', '/bar')
     'file:///bar'
+    >>> _resolve_url('http://foo.com/abc/odc-metadata.yaml', 'band-5.tif')
+    'http://foo.com/abc/band-5.tif'
+    >>> _resolve_url('s3://foo.com/abc/odc-metadata.yaml', 'band-5.tif')
+    's3://foo.com/abc/band-5.tif'
+    >>> _resolve_url('s3://foo.com/abc/odc-metadata.yaml?something', 'band-5.tif')
+    's3://foo.com/abc/band-5.tif'
     """
     if path:
         if is_url(path):
@@ -466,12 +486,31 @@ def _url2rasterio(url_str, fmt, layer):
     return str(uri_to_local_path(url_str))
 
 
+def _choose_location(dataset):
+    # type: (Dataset) -> str
+
+    # If there's a local (filesystem) URI, prefer it.
+    local_uri = dataset.local_uri
+    if local_uri:
+        return local_uri
+
+    uris = dataset.uris
+    if not uris:
+        # Location-less datasets should have been filtered already.
+        raise RuntimeError("No recorded location for dataset {}".format(dataset))
+
+    # Newest location first, use it.
+    # We may want more nuanced selection in the future.
+    return uris[0]
+
+
 class RasterDatasetSource(BaseRasterDataSource):
     """Data source for reading from a Datacube Dataset"""
+
     def __init__(self, dataset, measurement_id):
         self._dataset = dataset
         self._measurement = dataset.measurements[measurement_id]
-        url = _resolve_url(dataset.local_uri, self._measurement['path'])
+        url = _resolve_url(_choose_location(dataset), self._measurement['path'])
         filename = _url2rasterio(url, dataset.format, self._measurement.get('layer'))
         nodata = dataset.type.measurements[measurement_id].get('nodata')
         super(RasterDatasetSource, self).__init__(filename, nodata=nodata)

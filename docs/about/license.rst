@@ -1,6 +1,6 @@
 .. _license:
 
-AGDC License
-------------
+ODC License
+-----------
 
     .. include:: ../../LICENSE

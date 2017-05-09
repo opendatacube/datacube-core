@@ -36,28 +36,3 @@ db_database: overridden_db
                                      str(files.joinpath('override.conf'))])
     assert config.db_hostname == 'overridden.test.lan'
     assert config.db_database == 'overridden_db'
-
-
-def test_get_locations():
-    files = util.write_files({
-        'base.conf': """[locations]
-ls7_ortho: file:///tmp/test/ls7_ortho
-t_archive: file:///tmp/test/t_archive
-        """,
-        'override.conf': """[locations]
-t_archive: file:///tmp/override
-        """
-    })
-
-    config = LocalConfig.find(paths=[str(files.joinpath('base.conf'))])
-    assert config.location_mappings == {
-        'ls7_ortho': 'file:///tmp/test/ls7_ortho',
-        't_archive': 'file:///tmp/test/t_archive'
-    }
-
-    config = LocalConfig.find(paths=[str(files.joinpath('base.conf')),
-                                     str(files.joinpath('override.conf'))])
-    assert config.location_mappings == {
-        'ls7_ortho': 'file:///tmp/test/ls7_ortho',
-        't_archive': 'file:///tmp/override'
-    }

@@ -25,6 +25,8 @@ dependencies:
 - compliance-checker
 - boto3
 - pathos
+- compliance-checker = 3.0.3
+- pygeoif = 0.6 # compliance-checker 3.0.3 fails with 0.7
 - pip:
   - pypeg2
   - pytest-cov # testing

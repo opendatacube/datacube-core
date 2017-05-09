@@ -9,6 +9,7 @@ import datetime
 import itertools
 import logging
 import os
+import socket
 from functools import partial
 
 import click
@@ -21,6 +22,7 @@ from pathlib import Path
 
 import datacube
 from datacube.api import Tile
+from datacube.model import Dataset
 from datacube.model.utils import xr_apply, datasets_to_doc
 from datacube.storage import netcdf_writer
 from datacube.storage.storage import create_netcdf_storage_unit
@@ -39,6 +41,27 @@ def get_filename(config, cell_index, year):
     return file_path_template.format(tile_index=cell_index, start_time=year, version=config['taskfile_version'])
 
 
+def get_temp_file(final_output_path):
+    """
+    Get a temp file path
+    Changes "/path/file.nc" to "/path/.tmp/file.nc.host.pid.tmp"
+    :param Path final_output_path:
+    :return: Path to temporarily write output
+    :rtype: Path
+    """
+
+    tmp_folder = final_output_path.parent / '.tmp'
+    id_file = '{host}.{pid}'.format(host=socket.gethostname(), pid=os.getpid())
+    tmp_path = (tmp_folder / final_output_path.stem).with_suffix(final_output_path.suffix + id_file + '.tmp')
+    try:
+        tmp_folder.mkdir(parents=True)
+    except OSError:
+        pass
+    if tmp_path.exists():
+        tmp_path.unlink()
+    return tmp_path
+
+
 def make_stacker_tasks(index, config, **kwargs):
     product = config['product']
     query = {kw: arg for kw, arg in kwargs.items() if kw in ['time', 'cell_index'] and arg is not None}
@@ -51,14 +74,14 @@ def make_stacker_tasks(index, config, **kwargs):
             if len(storage_files) > 1:
                 year_tile = gw.update_tile_lineage(year_tile)
                 output_filename = get_filename(config, cell_index, year)
-                _LOG.info('Stacking required for: year=%d, cell=%s. Output=%s', year, cell_index, output_filename)
+                _LOG.info('Stacking required for: year=%s, cell=%s. Output=%s', year, cell_index, output_filename)
                 yield dict(year=year,
                            tile=year_tile,
                            cell_index=cell_index,
                            output_filename=output_filename)
             elif len(storage_files) == 1:
                 [only_filename] = storage_files
-                _LOG.info('Stacking not required for: year=%d, cell=%s. existing=%s', year, cell_index, only_filename)
+                _LOG.info('Stacking not required for: year=%s, cell=%s. existing=%s', year, cell_index, only_filename)
 
 
 def make_stacker_config(index, config, export_path=None, **query):
@@ -132,6 +155,7 @@ def do_stack_task(config, task):
 
     output_filename = Path(task['output_filename'])
     output_uri = output_filename.absolute().as_uri()
+    temp_filename = get_temp_file(output_filename)
     tile = task['tile']
 
     # Only use the time chunk size (eg 5), but not spatial chunks
@@ -144,39 +168,55 @@ def do_stack_task(config, task):
     unwrapped_datasets = xr_apply(tile.sources, _unwrap_dataset_list, dtype='O')
     data['dataset'] = datasets_to_doc(unwrapped_datasets)
 
-    nco = create_netcdf_storage_unit(output_filename,
-                                     data.crs,
-                                     data.coords,
-                                     data.data_vars,
-                                     variable_params,
-                                     global_attributes)
+    try:
+        nco = create_netcdf_storage_unit(temp_filename,
+                                         data.crs,
+                                         data.coords,
+                                         data.data_vars,
+                                         variable_params,
+                                         global_attributes)
+        write_data_variables(data.data_vars, nco)
+        nco.close()
 
-    for name, variable in data.data_vars.items():
+        temp_filename.rename(output_filename)
+
+        if config.get('check_data_identical', False):
+            new_tile = make_updated_tile(unwrapped_datasets, output_uri, tile.geobox)
+            new_data = datacube.api.GridWorkflow.load(new_tile, dask_chunks=chunk_profile)
+            check_identical(data, new_data, output_filename)
+
+    except Exception as e:
+        if temp_filename.exists():
+            temp_filename.unlink()
+        raise e
+
+    return unwrapped_datasets, output_uri
+
+
+def write_data_variables(data_vars, nco):
+    for name, variable in data_vars.items():
         try:
             with dask.set_options(get=dask.async.get_sync):
                 da.store(variable.data, nco[name], lock=True)
         except ValueError:
             nco[name][:] = netcdf_writer.netcdfy_data(variable.values)
         nco.sync()
-    nco.close()
 
-    if config.get('check_data_identical', False):
-        new_tile = make_updated_tile(unwrapped_datasets, output_uri, tile.geobox)
-        new_data = datacube.api.GridWorkflow.load(new_tile, dask_chunks=chunk_profile)
 
-        with dask.set_options(get=dask.async.get_sync):
-            if not all((data == new_data).all().values()):
-                _LOG.error("Mismatch found for %s, not indexing", output_filename)
-                raise ValueError("Mismatch found for %s, not indexing" % output_filename)
-
-    return unwrapped_datasets, output_uri
+def check_identical(data1, data2, output_filename):
+    with dask.set_options(get=dask.async.get_sync):
+        if not all((data1 == data2).all().values()):
+            _LOG.error("Mismatch found for %s, not indexing", output_filename)
+            raise ValueError("Mismatch found for %s, not indexing" % output_filename)
+    return True
 
 
 def make_updated_tile(old_datasets, new_uri, geobox):
     def update_dataset_location(labels, dataset):
+        # type: (object, Dataset) -> list
         new_dataset = copy.copy(dataset)
-        new_dataset.local_uri = new_uri
-        return [dataset]
+        new_dataset.uris = [new_uri]
+        return [new_dataset]
 
     updated_datasets = xr_apply(old_datasets, update_dataset_location, dtype='O')
     return datacube.api.Tile(sources=updated_datasets, geobox=geobox)

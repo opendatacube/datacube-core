@@ -237,7 +237,7 @@ def test_index_dataset_with_location(index, default_metadata_type):
     second_file = Path('/tmp/second/something.yaml').absolute()
 
     type_ = index.products.add_document(_pseudo_telemetry_dataset_type)
-    dataset = Dataset(type_, _telemetry_dataset, first_file.as_uri(), sources={})
+    dataset = Dataset(type_, _telemetry_dataset, uris=[first_file.as_uri()], sources={})
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
 
@@ -279,7 +279,7 @@ def test_index_dataset_with_location(index, default_metadata_type):
     assert len(locations) == 1
 
     # Ingesting with a new path should add the second one too.
-    dataset.local_uri = second_file.as_uri()
+    dataset.uris = [second_file.as_uri()]
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
     locations = index.datasets.get_locations(dataset.id)
@@ -289,8 +289,28 @@ def test_index_dataset_with_location(index, default_metadata_type):
     # And the second one is newer, so it should be returned as the default local path:
     assert stored.local_path == Path(second_file)
 
+    # Can archive and restore the first file, and location order is preserved
+    was_archived = index.datasets.archive_location(dataset.id, first_file.as_uri())
+    assert was_archived
+    locations = index.datasets.get_locations(dataset.id)
+    assert locations == [second_file.as_uri()]
+    was_restored = index.datasets.restore_location(dataset.id, first_file.as_uri())
+    assert was_restored
+    locations = index.datasets.get_locations(dataset.id)
+    assert locations == [second_file.as_uri(), first_file.as_uri()]
+
+    # Can archive and restore the second file, and location order is preserved
+    was_archived = index.datasets.archive_location(dataset.id, second_file.as_uri())
+    assert was_archived
+    locations = index.datasets.get_locations(dataset.id)
+    assert locations == [first_file.as_uri()]
+    was_restored = index.datasets.restore_location(dataset.id, second_file.as_uri())
+    assert was_restored
+    locations = index.datasets.get_locations(dataset.id)
+    assert locations == [second_file.as_uri(), first_file.as_uri()]
+
     # Ingestion again without location should have no effect.
-    dataset.local_uri = None
+    dataset.uri = None
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
     locations = index.datasets.get_locations(dataset.id)
@@ -304,6 +324,6 @@ def test_index_dataset_with_location(index, default_metadata_type):
     # Add a second dataset with a different location (to catch lack of joins, filtering etc)
     second_ds_doc = copy.deepcopy(_telemetry_dataset)
     second_ds_doc['id'] = '366f32d8-e1f8-11e6-94b4-185e0f80a5c0'
-    index.datasets.add(Dataset(type_, second_ds_doc, second_file.as_uri(), sources={}))
+    index.datasets.add(Dataset(type_, second_ds_doc, uris=[second_file.as_uri()], sources={}))
     dataset_ids = [d.id for d in index.datasets.get_datasets_for_location(first_file.as_uri())]
     assert dataset_ids == [dataset.id]

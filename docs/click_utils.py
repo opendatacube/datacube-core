@@ -38,7 +38,9 @@ def generate_help_text(command, prefix):
     ctx = click.Context(command)
     help_opts = command.get_help_option(ctx).opts
     full_cmd = ' '.join(prefix)
-    block = section(None, title(None, full_cmd), ids=[make_id(full_cmd)], names=[full_cmd])
+    block = section(None,
+                    title(None, full_cmd),
+                    ids=[make_id(full_cmd)], names=[full_cmd])
     if help_opts:
         h = "$ {} {}\n".format(full_cmd, help_opts[0]) + command.get_help(ctx)
         block.append(literal_block(None, h, language='console'))

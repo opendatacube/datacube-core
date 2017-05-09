@@ -42,29 +42,25 @@ except ImportError:
 def _dataset_uri_field(table):
     return table.c.uri_scheme + ':' + table.c.uri_body
 
-# Fields for selecting dataset with the latest local uri
-# Need to alias the table otherwise we can get name collisions when joining with dataset_location outside of this query
-SELECTED_DATASET_LOCATION = DATASET_LOCATION.alias('selected_dataset_location')
-_DATASET_SELECT_W_LOCAL = (
-    DATASET,
-    # The most recent file uri. We may want more advanced path selection in the future...
-    select([
-        _dataset_uri_field(SELECTED_DATASET_LOCATION),
-    ]).where(
-        and_(
-            SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
-            ## TODO(csiro) replace 'file' by the list of uri schemas that the drivers can support
-            SELECTED_DATASET_LOCATION.c.uri_scheme == 'file'
-        )
-    ).order_by(
-        SELECTED_DATASET_LOCATION.c.added.desc()
-    ).limit(1).label('uri')
-)
 
-# Fields for selecting dataset with a single joined uri (specify join yourself in your query)
-_DATASET_SELECT_W_URI = (
+# Fields for selecting dataset with uris
+# Need to alias the table, as queries may join the location table for filtering.
+SELECTED_DATASET_LOCATION = DATASET_LOCATION.alias('selected_dataset_location')
+_DATASET_SELECT_FIELDS = (
     DATASET,
-    _dataset_uri_field(DATASET_LOCATION).label('uri')
+    # All active URIs, from newest to oldest
+    func.array(
+        select([
+            _dataset_uri_field(SELECTED_DATASET_LOCATION)
+        ]).where(
+            and_(
+                SELECTED_DATASET_LOCATION.c.dataset_ref == DATASET.c.id,
+                SELECTED_DATASET_LOCATION.c.archived == None
+            )
+        ).order_by(
+            SELECTED_DATASET_LOCATION.c.added.desc()
+        ).label('uris')
+    ).label('uris')
 )
 
 PGCODE_UNIQUE_CONSTRAINT = '23505'
@@ -217,25 +213,27 @@ class PostgresDbAPI(object):
         )
         return res.rowcount > 0
 
-    def ensure_dataset_location(self, dataset_id, uri):
+    def ensure_dataset_locations(self, dataset_id, uris):
         """
         Add a location to a dataset if it is not already recorded.
         :type dataset_id: str or uuid.UUID
-        :type uri: str
+        :type uris: list[str]
         """
-        scheme, body = _split_uri(uri)
 
-        try:
-            self._connection.execute(
-                DATASET_LOCATION.insert(),
-                dataset_ref=dataset_id,
-                uri_scheme=scheme,
-                uri_body=body,
-            )
-        except IntegrityError as e:
-            if e.orig.pgcode == PGCODE_UNIQUE_CONSTRAINT:
-                raise DuplicateRecordError('Location already exists: %s' % uri)
-            raise
+        for uri in uris:
+            scheme, body = _split_uri(uri)
+
+            try:
+                self._connection.execute(
+                    DATASET_LOCATION.insert(),
+                    dataset_ref=dataset_id,
+                    uri_scheme=scheme,
+                    uri_body=body,
+                )
+            except IntegrityError as e:
+                if e.orig.pgcode == PGCODE_UNIQUE_CONSTRAINT:
+                    raise DuplicateRecordError('Location already exists: %s' % uri)
+                raise
 
     def contains_dataset(self, dataset_id):
         return bool(
@@ -252,7 +250,7 @@ class PostgresDbAPI(object):
         scheme, body = _split_uri(uri)
         return self._connection.execute(
             select(
-                _DATASET_SELECT_W_URI
+                _DATASET_SELECT_FIELDS
             ).select_from(
                 DATASET_LOCATION.join(DATASET)
             ).where(
@@ -298,13 +296,13 @@ class PostgresDbAPI(object):
 
     def get_dataset(self, dataset_id):
         return self._connection.execute(
-            select(_DATASET_SELECT_W_LOCAL).where(DATASET.c.id == dataset_id)
+            select(_DATASET_SELECT_FIELDS).where(DATASET.c.id == dataset_id)
         ).first()
 
     def get_derived_datasets(self, dataset_id):
         return self._connection.execute(
             select(
-                _DATASET_SELECT_W_LOCAL
+                _DATASET_SELECT_FIELDS
             ).select_from(
                 DATASET.join(DATASET_SOURCE, DATASET.c.id == DATASET_SOURCE.c.dataset_ref)
             ).where(
@@ -348,7 +346,7 @@ class PostgresDbAPI(object):
 
         # join the adjacency list with datasets table
         query = select(
-            _DATASET_SELECT_W_LOCAL + (aggd.c.sources, aggd.c.classes)
+            _DATASET_SELECT_FIELDS + (aggd.c.sources, aggd.c.classes)
         ).select_from(aggd.join(DATASET, DATASET.c.id == aggd.c.dataset_ref))
 
         return self._connection.execute(query).fetchall()
@@ -362,7 +360,7 @@ class PostgresDbAPI(object):
         """
         # Find any storage types whose 'dataset_metadata' document is a subset of the metadata.
         return self._connection.execute(
-            select(_DATASET_SELECT_W_LOCAL).where(DATASET.c.metadata.contains(metadata))
+            select(_DATASET_SELECT_FIELDS).where(DATASET.c.metadata.contains(metadata))
         ).fetchall()
 
     @staticmethod
@@ -383,7 +381,7 @@ class PostgresDbAPI(object):
                 for f in select_fields
             )
         else:
-            select_columns = _DATASET_SELECT_W_LOCAL
+            select_columns = _DATASET_SELECT_FIELDS
 
         if with_source_ids:
             # Include the IDs of source datasets
@@ -806,9 +804,12 @@ class PostgresDbAPI(object):
         scheme, body = _split_uri(uri)
         res = self._connection.execute(
             DATASET_LOCATION.update().where(
-                DATASET_LOCATION.c.dataset_ref == dataset_id
-            ).where(
-                DATASET_LOCATION.c.archived == None
+                and_(
+                    DATASET_LOCATION.c.dataset_ref == dataset_id,
+                    DATASET_LOCATION.c.uri_scheme == scheme,
+                    DATASET_LOCATION.c.uri_body == body,
+                    DATASET_LOCATION.c.archived == None,
+                )
             ).values(
                 archived=func.now()
             )
@@ -819,9 +820,12 @@ class PostgresDbAPI(object):
         scheme, body = _split_uri(uri)
         res = self._connection.execute(
             DATASET_LOCATION.update().where(
-                DATASET_LOCATION.c.dataset_ref == dataset_id
-            ).where(
-                DATASET_LOCATION.c.archived != None
+                and_(
+                    DATASET_LOCATION.c.dataset_ref == dataset_id,
+                    DATASET_LOCATION.c.uri_scheme == scheme,
+                    DATASET_LOCATION.c.uri_body == body,
+                    DATASET_LOCATION.c.archived != None,
+                )
             ).values(
                 archived=None
             )

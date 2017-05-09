@@ -146,7 +146,9 @@ def test_create_sinus_netcdf(tmpnetcdf_filename):
 # Generate a new netcdf filename for each run, so that old files don't cause permission errors on windows
 # due to antivirus software filesystem lag.
 # See https://github.com/HypothesisWorks/hypothesis-python/issues/377
-@given(s1=text(alphabet=string.printable), s2=text(alphabet=string.printable), s3=text(alphabet=string.printable))
+@given(s1=text(alphabet=string.printable, max_size=100),
+       s2=text(alphabet=string.printable, max_size=100),
+       s3=text(alphabet=string.printable, max_size=100))
 def test_create_string_variable(tmpdir, s1, s2, s3):
     tmpnetcdf_filename = get_tmpnetcdf_filename(tmpdir)
     str_var = 'str_var'

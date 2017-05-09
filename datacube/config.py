@@ -30,15 +30,9 @@ db_hostname:
 db_database: datacube
 # If a connection is unused for this length of time, expect it to be invalidated.
 db_connection_timeout: 60
-
-[locations]
-# Where to reach storage locations from the current machine.
-#  -> Location names (here 'eotiles') are arbitrary, but correspond to names used in the
-#     storage types.
-#  -> We may eventually support remote protocols (http, S3, etc) to lazily fetch remote data.
-# Define these in your own datacube.conf file.
-# eotiles: file:///g/data/...
 """
+
+DATACUBE_SECTION = 'datacube'
 
 
 class LocalConfig(object):
@@ -66,7 +60,7 @@ class LocalConfig(object):
         files_loaded = config.read([p for p in paths if p])
         return LocalConfig(config, files_loaded)
 
-    def _prop(self, key, section='datacube'):
+    def _prop(self, key, section=DATACUBE_SECTION):
         try:
             return self._config.get(section, key)
         except compat.NoOptionError:
@@ -83,13 +77,6 @@ class LocalConfig(object):
     @property
     def db_connection_timeout(self):
         return int(self._prop('db_connection_timeout'))
-
-    @property
-    def location_mappings(self):
-        """
-        :rtype: dict[str, str]
-        """
-        return dict(self._config.items('locations'))
 
     @property
     def db_username(self):
@@ -111,8 +98,10 @@ class LocalConfig(object):
         return self._prop('db_port') or '5432'
 
     def __str__(self):
-        return "LocalConfig<loaded_from={})".format(self._files_loaded or
-                                                    'defaults')
+        return "LocalConfig<loaded_from={}, config={})".format(
+            self.files_loaded or 'defaults',
+            dict(self._config[DATACUBE_SECTION])
+        )
 
     def __repr__(self):
         return self.__str__()
@@ -137,6 +126,7 @@ class set_options(object):
 
         datacube.set_options(reproject_threads=16)
     """
+
     def __init__(self, **kwargs):
         self.old = OPTIONS.copy()
         OPTIONS.update(kwargs)

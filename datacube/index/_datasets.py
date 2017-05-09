@@ -124,7 +124,7 @@ class MetadataTypeResource(object):
 
         if not safe_changes and not unsafe_changes:
             _LOG.info("No changes detected for metadata type %s", metadata_type.name)
-            return
+            return self.get_by_name(metadata_type.name)
 
         if not can_update:
             full_message = "Unsafe changes at " + ", ".join(".".join(map(str, offset))
@@ -148,6 +148,7 @@ class MetadataTypeResource(object):
 
         self.get_by_name_unsafe.cache_clear()
         self.get_unsafe.cache_clear()
+        return self.get_by_name(metadata_type.name)
 
     def update_document(self, definition, allow_unsafe_updates=False):
         """
@@ -294,7 +295,7 @@ class ProductResource(object):
 
         return DatasetType(metadata_type, definition)
 
-    def add(self, type_, allow_table_lock=False):
+    def add(self, product, allow_table_lock=False):
         """
         Add a Product.
 
@@ -303,33 +304,34 @@ class ProductResource(object):
             This will halt other user's requests until completed.
 
             If false, creation will be slightly slower and cannot be done in a transaction.
-        :param datacube.model.DatasetType type_: Product to add
+        :param datacube.model.DatasetType product: Product to add
         :rtype: datacube.model.DatasetType
         """
-        DatasetType.validate(type_.definition)
+        DatasetType.validate(product.definition)
 
-        existing = self.get_by_name(type_.name)
+        existing = self.get_by_name(product.name)
         if existing:
             check_doc_unchanged(
                 existing.definition,
-                jsonify_document(type_.definition),
-                'Metadata Type {}'.format(type_.name)
+                jsonify_document(product.definition),
+                'Metadata Type {}'.format(product.name)
             )
         else:
-            metadata_type = self.metadata_type_resource.get_by_name(type_.metadata_type.name)
+            metadata_type = self.metadata_type_resource.get_by_name(product.metadata_type.name)
             if metadata_type is None:
-                _LOG.warning('Adding metadata_type "%s" as it doesn\'t exist.', type_.metadata_type.name)
-                metadata_type = self.metadata_type_resource.add(type_.metadata_type, allow_table_lock=allow_table_lock)
+                _LOG.warning('Adding metadata_type "%s" as it doesn\'t exist.', product.metadata_type.name)
+                metadata_type = self.metadata_type_resource.add(product.metadata_type,
+                                                                allow_table_lock=allow_table_lock)
             with self._db.connect() as connection:
                 connection.add_dataset_type(
-                    name=type_.name,
-                    metadata=type_.metadata_doc,
+                    name=product.name,
+                    metadata=product.metadata_doc,
                     metadata_type_id=metadata_type.id,
                     search_fields=metadata_type.dataset_fields,
-                    definition=type_.definition,
+                    definition=product.definition,
                     concurrently=not allow_table_lock,
                 )
-        return self.get_by_name(type_.name)
+        return self.get_by_name(product.name)
 
     def can_update(self, product, allow_unsafe_updates=False):
         """
@@ -384,7 +386,7 @@ class ProductResource(object):
 
         if not safe_changes and not unsafe_changes:
             _LOG.info("No changes detected for product %s", product.name)
-            return
+            return self.get_by_name(product.name)
 
         if not can_update:
             full_message = "Unsafe changes at " + ", ".join(".".join(offset) for offset, _, _ in unsafe_changes)
@@ -432,6 +434,7 @@ class ProductResource(object):
 
         self.get_by_name_unsafe.cache_clear()
         self.get_unsafe.cache_clear()
+        return self.get_by_name(product.name)
 
     def update_document(self, definition, allow_unsafe_updates=False, allow_table_lock=False):
         """
@@ -636,11 +639,11 @@ class DatasetResource(object):
             dataset.metadata_doc['lineage']['source_datasets'] = {
                 classifier: datasets[source][0].metadata_doc
                 for source, classifier in zip(result['sources'], result['classes']) if source
-                }
+            }
             dataset.sources = {
                 classifier: datasets[source][0]
                 for source, classifier in zip(result['sources'], result['classes']) if source
-                }
+            }
         return datasets[id_][0]
 
     def get_derived(self, id_):
@@ -693,10 +696,10 @@ class DatasetResource(object):
                     )
 
                 # reinsert attempt? try updating the location
-                if dataset.local_uri:
+                if dataset.uris:
                     try:
                         with self._db.connect() as connection:
-                            connection.ensure_dataset_location(dataset.id, dataset.local_uri)
+                            connection.ensure_dataset_locations(dataset.id, dataset.uris)
                     except DuplicateRecordError as e:
                         _LOG.warning(str(e))
         finally:
@@ -734,7 +737,10 @@ class DatasetResource(object):
 
     def _add_sources(self, dataset, sources_policy='verify'):
         if dataset.sources is None:
-            raise ValueError("Dataset has missing (None) sources. Was this loaded without include_sources=True?")
+            raise ValueError('Dataset has missing (None) sources. Was this loaded without include_sources=True?\n'
+                             'Note that: \n'
+                             '  sources=None means "not loaded", '
+                             '  sources={}   means there are no sources (eg. raw telemetry data)')
 
         if sources_policy == 'ensure':
             for source in dataset.sources.values():
@@ -752,7 +758,7 @@ class DatasetResource(object):
 
         :param datacube.model.Dataset dataset: Dataset to update
         :param dict updates_allowed: Allowed updates
-            :rtype: bool,list[change],list[change]
+        :rtype: bool,list[change],list[change]
         """
         existing = self.get(dataset.id, include_sources=True)
         if not existing:
@@ -780,17 +786,15 @@ class DatasetResource(object):
         Update dataset metadata and location
         :param datacube.model.Dataset dataset: Dataset to update
         :param updates_allowed: Allowed updates
-        :return:
+        :rtype: datacube.model.Dataset
         """
         existing = self.get(dataset.id)
         can_update, safe_changes, unsafe_changes = self.can_update(dataset, updates_allowed)
 
         if not safe_changes and not unsafe_changes:
-            if dataset.local_uri != existing.local_uri:
-                with self._db.begin() as transaction:
-                    transaction.ensure_dataset_location(dataset.id, dataset.local_uri)
+            self._ensure_new_locations(dataset, existing)
             _LOG.info("No changes detected for dataset %s", dataset.id)
-            return
+            return dataset
 
         if not can_update:
             full_message = "Unsafe changes at " + ", ".join(".".join(offset) for offset, _, _ in unsafe_changes)
@@ -812,12 +816,21 @@ class DatasetResource(object):
                 if not transaction.update_dataset(dataset.metadata_doc, dataset.id, product.id):
                     raise ValueError("Failed to update dataset %s..." % dataset.id)
 
-                if dataset.local_uri != existing.local_uri:
-                    transaction.ensure_dataset_location(dataset.id, dataset.local_uri)
+            self._ensure_new_locations(dataset, existing)
         finally:
             dataset.type.dataset_reader(dataset.metadata_doc).sources = sources_tmp
 
         return dataset
+
+    def _ensure_new_locations(self, dataset, existing):
+        new_uris = set(dataset.uris) - set(existing.uris)
+        if new_uris:
+            for uri in new_uris:
+                # We have to do each in separate transactions because the method catches exceptions,
+                # which will invalidate the transaction.
+                # We probably want to do so anyway, as they are independently valid.
+                with self._db.begin() as transaction:
+                    transaction.ensure_dataset_locations(dataset.id, [uri] if uri else None)
 
     def archive(self, ids):
         """
@@ -881,6 +894,7 @@ class DatasetResource(object):
     def add_location(self, id_, uri):
         """
         Add a location to the dataset if it doesn't already exist.
+
         :param typing.Union[UUID, str] id_: dataset id
         :param str uri: fully qualified uri
         :returns bool: Was one added?
@@ -889,9 +903,13 @@ class DatasetResource(object):
             warnings.warn("Passing dataset is deprecated after 1.2.2, pass dataset.id", DeprecationWarning)
             id_ = id_.id
 
+        if not uri:
+            warnings.warn("Cannot add empty uri. (dataset %s)" % id_)
+            return False
+
         with self._db.connect() as connection:
             try:
-                connection.ensure_dataset_location(id_, uri)
+                connection.ensure_dataset_locations(id_, [uri])
                 return True
             except DuplicateRecordError:
                 return False
@@ -903,6 +921,7 @@ class DatasetResource(object):
     def remove_location(self, id_, uri):
         """
         Remove a location from the dataset if it exists.
+
         :param typing.Union[UUID, str] id_: dataset id
         :param str uri: fully qualified uri
         :returns bool: Was one removed?
@@ -951,12 +970,13 @@ class DatasetResource(object):
 
         :param bool full_info: Include all available fields
         """
-        uri = dataset_res.uri
+        uris = dataset_res.uris
+        if uris:
+            uris = [uri for uri in uris if uri] if uris else []
         dataset = Dataset(
-            self.types.get(dataset_res.dataset_type_ref),
-            dataset_res.metadata,
-            # We guarantee that this property on the class is only a local uri.
-            uri if uri and uri.startswith('file:') else None,
+            type_=self.types.get(dataset_res.dataset_type_ref),
+            metadata_doc=dataset_res.metadata,
+            uris=uris,
             indexed_by=dataset_res.added_by if full_info else None,
             indexed_time=dataset_res.added if full_info else None,
             archived_time=dataset_res.archived
@@ -1096,8 +1116,8 @@ class DatasetResource(object):
                 # try to update location in the same transaction as insertion.
                 # if insertion fails we'll try updating location later
                 # if insertion succeeds the location bit can't possibly fail
-                if dataset.local_uri:
-                    transaction.ensure_dataset_location(dataset.id, dataset.local_uri)
+                if dataset.uris:
+                    transaction.ensure_dataset_locations(dataset.id, dataset.uris)
             except DuplicateRecordError as e:
                 _LOG.warning(str(e))
         return was_inserted

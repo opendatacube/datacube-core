@@ -10,17 +10,17 @@ can start to load in some data. This step is performed using the **datacube**
 command line tool.
 
 When you load data into the Data Cube, all you are doing is recording the
-existence of and detailed metadata about the data into the **database**. None of
+existence of and detailed metadata about the data into the **index**. None of
 the data itself is copied, moved or transformed. This is therefore a relatively
-safe and fase process.
+safe and fast process.
 
 Prerequisites for Indexing Data
 -------------------------------
 
  * A working Data Cube setup
  * Some *Analysis Ready Data* to load
- * A Product Type configuration loaded into the database for each Dataset
- * Dataset YAML files for each dataset
+ * A Product definition added to your Data Cube for each type of dataset
+ * Dataset metadata documents for each individual dataset
 
 
 Sample Earth Observation Data
@@ -50,23 +50,23 @@ Once you have downloaded some data, it will need :ref:`metadata preparation
 
 .. _product-definitions:
 
-Product Definitions
--------------------
+Product Definition
+------------------
 
 The Data Cube can handle many different types of data, and requires a bit of
-information up front to know what to do with them. This is the task of the
+information up front to know what to do with them. This is the task of a
 Product Definition.
 
 A Product Definition provides a short **name**, a **description**, some basic
 source **metadata** and (optionally) a list of **measurements** describing the
-type of data that will be contained in the Datasets of it's type.
+type of data that will be contained in the Datasets of its type. In Landsat Surface
+Reflectance, for example, the measurements are the list of bands.
 
 The **measurements** is an ordered list of data, which specify a **name** and
 some **aliases**, a data type or **dtype**, and some options extras including
 what type of **units** the measurement is in, a **nodata** value, and even a way
 of specifying **bit level descriptions** or the **spectral response** in the
 case of reflectance data.
-
 
 A set of example Product definitions are supplied in
 `docs/config_samples/dataset_types` to cover some common Geoscience Australia
@@ -82,18 +82,20 @@ To load Products into your Data Cube run::
 
 Dataset Documents
 -----------------
-As well as the product information loaded in the previous step, every Dataset
-requires some metadata describing what the data represents and where it has come
-from, as well has what sort of files it is stored in. We call this *blah* and it
-is expected to be stored in _YAML_ documents. It is what is loaded into the
-Database for searching, querying and accessing the data.
+Every dataset requires a metadata document describing what the data represents and where it has come
+from, as well has what format it is stored in. At a minimum, you need the dimensions or fields your want to
+search by, such as lat, lon and time, but you can include any information you deem useful.
 
-In the case of data from Geoscience Australia, no further steps are required.
+It is typically stored in YAML documents, but JSON is also supported. It is stored in the index
+for searching, querying and accessing the data.
+
+The data from Geoscience Australia already comes with relevant files (named ``ga-metadata.yaml``), so
+no further steps are required for indexing them.
 
 For third party datasets, see :ref:`prepare-scripts`.
 
-:ref:`dataset-metadata-doc` is required to accompany the dataset for it to be
- recognised by Data Cube. It defines critical metadata of the dataset such as:
+A :ref:`dataset-metadata-doc` is required to accompany the dataset for it to be
+recognised by the Data Cube. It defines critical metadata of the dataset such as:
 
     - measurements
     - platform and sensor names

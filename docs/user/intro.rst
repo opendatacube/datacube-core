@@ -9,7 +9,7 @@ The Data Cube is a system designed to:
 * Provide a :term:`Python` based :term:`API` for high performance querying and data access
 * Give scientists and other users easy ability to perform Exploratory Data Analysis
 * Allow scalable continent scale processing of the stored data
-* Track the providence of all the contained data to allow for quality control and updates
+* Track the provenance of all the contained data to allow for quality control and updates
 
 Getting Started
 ===============
@@ -37,21 +37,23 @@ Types of Datasets in a Data Cube
 When using the Data Cube, it will contain records about 3 different types of
 products and datasets.
 
-========================= ============= ================
- Type of product/dataset   In Database   Data available
-========================= ============= ================
- Referenced                Yes           No
-------------------------- ------------- ----------------
- Indexed                   Yes           Maybe
-------------------------- ------------- ----------------
- Managed                   Yes           Yes
-========================= ============= ================
+================= ========== ================= ================================
+ Type of dataset   In Index   Data available           Typical data
+================= ========== ================= ================================
+ Referenced           Yes           No           Historic or provenance record
+----------------- ---------- ----------------- --------------------------------
+ Indexed              Yes           Maybe             Created externally
+----------------- ---------- ----------------- --------------------------------
+ Ingested             Yes           Yes         Created within the Data Cube
+================= ========== ================= ================================
 
 Referenced Datasets
 ~~~~~~~~~~~~~~~~~~~
 
-The existence of these datasets is know about through the provenance history
-of datasets, but the raw data files are not tracked by the Data Cube.
+The existence and metadata of these datasets is known but the data itself is not
+accessible to the Data Cube. ie. A dataset without a location.
+
+These usually come from the provenance / source information of other datasets.
 
 Example:
 
@@ -60,7 +62,7 @@ Example:
 Indexed Datasets
 ~~~~~~~~~~~~~~~~
 
-Data has been available on disk at some point, with associated metadata
+Data is available (has a file location or uri), with associated metadata
 available in a format understood by the Data Cube.
 
 Example:
@@ -68,10 +70,10 @@ Example:
 - USGS Landsat Scenes with prepared ``agdc-metadata.yaml``
 - GA Landsat Scenes
 
-Managed Datasets
-~~~~~~~~~~~~~~~~
+Ingested Datasets
+~~~~~~~~~~~~~~~~~
 
-On disk data has been created by/and is managed by the Data Cube. The data has
+Data has been created by/and is managed by the Data Cube. The data has typically been
 been copied, compressed, tiled and possibly re-projected into a shape suitable
 for analysis, and stored in NetCDF4 files.
 
