@@ -51,8 +51,8 @@ class Index(datacube.index._api.Index):
         dataset_refs = []
         n = 0
         for dataset in datasets.values:
-            if dataset.local_uri:
-                dataset.local_uri = '%s:%s' % (self.uri_scheme, dataset.local_uri.split(':', 1)[1])
+            # if dataset.local_uri:
+            #     dataset.local_uri = '%s:%s' % (self.uri_scheme, dataset.local_uri.split(':', 1)[1])
             self.datasets.add(dataset, sources_policy='skip')
             dataset_refs.append(dataset.id)
             n += 1
