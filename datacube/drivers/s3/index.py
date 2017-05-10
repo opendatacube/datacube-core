@@ -51,8 +51,9 @@ class Index(datacube.index._api.Index):
         dataset_refs = []
         n = 0
         for dataset in datasets.values:
-            # if dataset.local_uri:
-            #     dataset.local_uri = '%s:%s' % (self.uri_scheme, dataset.local_uri.split(':', 1)[1])
+            # Set uri scheme to s3
+            dataset.uris = ['%s:%s' % (self.uri_scheme, uri.split(':', 1)[1]) for uri in dataset.uris] \
+                           if dataset.uris else []
             self.datasets.add(dataset, sources_policy='skip')
             dataset_refs.append(dataset.id)
             n += 1
@@ -61,6 +62,19 @@ class Index(datacube.index._api.Index):
         else:
             raise ValueError('Some datasets could not be indexed, hence no s3 indexing will happen.')
         return n
+
+
+    def get_specifics(self, dataset):
+        s3_datasets = []
+        with self._db.begin() as transaction:
+            for band in dataset.measurements.keys():
+                datasets = transaction.get_s3_dataset(dataset.id, band)
+                for dataset in datasets:
+                    s3_datasets.append({
+                        'metadata': dataset,
+                        'chunks': transaction.get_s3_dataset_chunk(dataset.id)
+                    })
+        return s3_datasets
 
 
 # pylint: disable=protected-access
@@ -212,8 +226,8 @@ class DatasetResource(datacube.index._datasets.DatasetResource):
         # Pull from s3 tables here?
         with self._db.connect() as connection:
             self.logger.debug('get_s3_mapping(%s, %s)', dataset_res.id, dataset_res.uris)
-            res = connection.get_s3_mapping(dataset_res.id, None)
-            self.logger.debug('@@@@@@@@@@ %s', res)
+#            res = connection.get_s3_mapping(dataset_res.id, None)
+#            self.logger.debug('@@@@@@@@@@ %s', res)
 
 
         # dataset.driver_metadata = {} # for all bands

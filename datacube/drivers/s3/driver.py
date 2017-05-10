@@ -194,6 +194,10 @@ class S3Driver(Driver):
         return Index(local_config, application_name, validate_connection, db)
 
 
+    def get_index_specifics(self, dataset):
+        return self.index.get_specifics(dataset)
+
+
     def get_datasource(self, dataset, measurement_id):
         '''See :meth:`datacube.drivers.driver.get_datasource`'''
         return S3DataSource(dataset, measurement_id)

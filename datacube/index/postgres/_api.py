@@ -872,19 +872,12 @@ class PostgresDbAPI(object):
         tables.grant_role(self._connection, pg_role, users)
 
 
-
-    #
     # S3 specific functions
-    #
     # See .tables for description of each column
-
     def put_s3_mapping(self, dataset_ref, band, s3_dataset_id):
-        """
-        :type dataset_ref: uuid.UUID
+        """:type dataset_ref: uuid.UUID
         :type band: str
-        :type s3_dataset_id: uuid.UUID
-        :rtype uuid.UUID
-        """
+        :type s3_dataset_id: uuid.UUID"""
         res = self._connection.execute(
             S3_DATASET_MAPPING.insert().values(
                 id=uuid.uuid4(),
@@ -893,39 +886,14 @@ class PostgresDbAPI(object):
                 s3_dataset_id=s3_dataset_id,
             )
         )
-
         return res.inserted_primary_key[0]
 
 
-    def get_s3_mapping(self, dataset_ref, band):
-        """
-        :type dataset_ref: uuid.UUID
-        :type band: str
-        :type s3_dataset_id: uuid.UUID
-        :rtype uuid.UUID
-        """
-        return self._connection.execute(
-            select(
-                [S3_DATASET_MAPPING.c.s3_dataset_id]
-            ).where(
-                S3_DATASET_MAPPING.c.dataset_ref == dataset_ref
-            )
-        ).fetchall()
-
-
-    def put_s3_dataset(self,
-                       s3_dataset_id,
-                       base_name,
-                       band,
-                       macro_shape,
-                       chunk_size,
-                       numpy_type,
-                       dimensions,
-                       regular_dims,
-                       regular_index,
+    def put_s3_dataset(self, s3_dataset_id, base_name, band,
+                       macro_shape, chunk_size, numpy_type,
+                       dimensions, regular_dims, regular_index,
                        irregular_index):
-        """
-        :type s3_dataset_id: uuid.UUID
+        """:type s3_dataset_id: uuid.UUID
         :type base_name: str
         :type band: str
         :type macro_shape: array[int]
@@ -934,9 +902,7 @@ class PostgresDbAPI(object):
         :type dimensions: array[str]
         :type regular_dims: array[bool]
         :type regular_index: array[array[float]]
-        :type irregular_index: array[array[float]]
-        :rtype: uuid.UUID
-        """
+        :type irregular_index: array[array[float]]"""
         res = self._connection.execute(
             S3_DATASET.insert().values(
                 id=s3_dataset_id,
@@ -954,26 +920,46 @@ class PostgresDbAPI(object):
 
         return res.inserted_primary_key[0]
 
-    def put_s3_dataset_chunk(self,
-                             s3_dataset_id,
-                             s3_key,
-                             bucket,
-                             chunk_id,
-                             compression_scheme,
-                             micro_shape,
-                             index_min,
-                             index_max):
-        """
-        :type s3_dataset_id: uuid.UUID
+
+    def get_s3_dataset(self, dataset_ref, band):
+        """:type dataset_ref: uuid.UUID
+        :type band: str"""
+        return self._connection.execute(
+            select(
+                [S3_DATASET.c.id,
+                 S3_DATASET.c.base_name,
+                 S3_DATASET.c.band,
+                 S3_DATASET.c.macro_shape,
+                 S3_DATASET.c.chunk_size,
+                 S3_DATASET.c.numpy_type,
+                 S3_DATASET.c.dimensions,
+                 S3_DATASET.c.regular_dims,
+                 S3_DATASET.c.regular_index,
+                 S3_DATASET.c.irregular_index]
+            ).select_from(
+                S3_DATASET.join(S3_DATASET_MAPPING,
+                                S3_DATASET_MAPPING.c.s3_dataset_id == S3_DATASET.c.id,
+                                isouter=True)
+            ).where(
+                and_(
+                    S3_DATASET_MAPPING.c.dataset_ref == dataset_ref,
+                    S3_DATASET_MAPPING.c.band == band
+                )
+            )
+        ).fetchall()
+
+
+    def put_s3_dataset_chunk(self, s3_dataset_id, s3_key, bucket,
+                             chunk_id, compression_scheme,
+                             micro_shape, index_min, index_max):
+        """:type s3_dataset_id: uuid.UUID
         :type key: str
         :type bucket: str
         :type chunk_id: str
         :type compression_scheme: str
         :type micro_shape: array[int]
         :type index_min: array[float]
-        :type index_max: array[float]
-        :rtype uuid.UUID
-        """
+        :type index_max: array[float]"""
         res = self._connection.execute(
             S3_DATASET_CHUNK.insert().values(
                 id=uuid.uuid4(),
@@ -987,5 +973,21 @@ class PostgresDbAPI(object):
                 index_max=index_max
             )
         )
-
         return res.inserted_primary_key[0]
+
+
+    def get_s3_dataset_chunk(self, s3_dataset_id):
+        """:type s3_dataset_id: uuid.UUID"""
+        return self._connection.execute(
+            select(
+                [S3_DATASET_CHUNK.c.s3_key,
+                 S3_DATASET_CHUNK.c.bucket,
+                 S3_DATASET_CHUNK.c.chunk_id,
+                 S3_DATASET_CHUNK.c.compression_scheme,
+                 S3_DATASET_CHUNK.c.micro_shape,
+                 S3_DATASET_CHUNK.c.index_min,
+                 S3_DATASET_CHUNK.c.index_max]
+            ).where(
+                S3_DATASET_CHUNK.c.s3_dataset_id == s3_dataset_id,
+            )
+        ).fetchall()

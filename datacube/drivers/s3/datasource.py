@@ -77,6 +77,12 @@ class S3Source(object):
 class S3DataSource(DataSource):
     '''Data source for reading from a Datacube Dataset'''
     def __init__(self, dataset, band_name):
+        import pprint
+        pp = pprint.PrettyPrinter(indent=2)
+        pp.pprint(dataset.__dict__)
+        import sys
+        sys.exit(0)
+
         self._dataset = dataset
         self.band_name = band_name
         self._measurement = dataset.measurements[band_name]

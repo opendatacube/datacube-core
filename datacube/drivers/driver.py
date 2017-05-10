@@ -111,3 +111,7 @@ class Driver(object):
           indexes.
         '''
         return None
+
+
+    def get_index_specifics(self, dataset):
+        return None

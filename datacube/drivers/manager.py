@@ -202,39 +202,45 @@ class DriverManager(object):
     def get_driver_by_scheme(self, dataset):
         '''Returns the driver required to read a dataset.
 
-        Since a request into the index is required to pull the
-        locations for the dataset, this method uses the default
-        driver's index to identify the location and then finds the
-        first available driver able to deal withe uri scheme.
+        Assuming all the dataset `uris` use the same scheme, this
+        method returns a driver able to handle that scheme. Caution:
+        several drivers may be able to process a given scheme in the
+        current design, hence the return value of this method may not
+        be deterministic.
 
-        TODO: Several drivers may be able to process a given scheme in
-        the current design. This should be discussed for future
+        :todo: Discuss unique scheme per driver for future
         implementations.
 
-        :param datacube.model.Dataset dataset: A dataset with at least
-          one location expected to be registered in the index. The
-          first location found is used to extract the uri scheme. If
-          no location is found, the scheme defaults to `file`.
+        :param datacube.model.Dataset dataset: A dataset for which to
+          find a driver.
+        :return: A driver able to handle this dataset. The first
+          element in the dataset's `uris` is used to determine the
+          dataset scheme. If not available, the scheme defaults to
+          `file`.
         '''
-        locations = self.driver.index.datasets.get_locations(dataset.id)
-        scheme = locations[0].split(':', 1)[0] if locations and locations[0] else 'file'
+        scheme = dataset.uris[0].split(':', 1)[0] if dataset.uris and dataset.uris[0] else 'file'
         for driver in self.__drivers.values():
             if scheme == driver.uri_scheme:
                 return driver
         raise ValueError('No driver found for scheme "%s"' % scheme)
 
 
-    def get_index_specifics(self, dataset, band_name=None):
-        '''TODO(csiro) implement this method in each driver as required.
+    def add_index_specifics(self, dataset):
+        '''Pull index specific data for a dataset.
+
+        Different drivers may store specific metadata when indexing a
+        dataset, which can be retrieved by this method and appended to
+        `dataset.index_specifics` as a dictionary indexed by
+        `band_name`.
 
         :param dataset: The dataset to read.
         :param str band_name: The band name.
-
         '''
         specifics = {}
         driver = self.get_driver_by_scheme(dataset)
-        # TODO(csiro) Extract driver specifics from self.get_driver_by_scheme(dataset)
-        return specifics
+        if not hasattr(dataset, 'index_specifics'):
+            dataset.index_specifics = {}
+        dataset.index_specifics = driver.get_index_specifics(dataset)
 
 
     def get_datasource(self, dataset, band_name=None):

@@ -981,7 +981,7 @@ class DatasetResource(object):
             indexed_time=dataset_res.added if full_info else None,
             archived_time=dataset_res.archived
         )
-        DriverManager().get_index_specifics(dataset) # raises an exception if uri scheme unsupported
+        DriverManager().add_index_specifics(dataset) # raises an ValueError if uri scheme unsupported
         return dataset
 
     def _make_many(self, query_result):

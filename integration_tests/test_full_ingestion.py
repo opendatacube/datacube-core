@@ -95,6 +95,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset_
     # TODO(csiro): Add checks on data and indexing when available. For
     # now, stop test here for s3 and s3-test drivers
     if driver in ('s3', 's3-test'):
+        # check_open_with_api(index)
         print('s3-test: Stopping here for now')
         return
 
