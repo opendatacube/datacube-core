@@ -111,6 +111,7 @@ class S3LIO(object):
         return array
 
     # converts positional(spatial/temporal) coordinates to array integer coordinates
+    # pylint: disable=too-many-locals
     def regular_index(self, query, dimension_range, shape, flatten=False):
         # regular_index((-35+2*0.128, 149+2*0.128), ((-35,-34),(149,150)), (4000, 4000))
         # regular_index((-35+0.128, 149+0.128), ((-35, -35+0.128),(149, 148+0.128)), (512, 512))
