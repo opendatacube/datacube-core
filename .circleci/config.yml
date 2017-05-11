@@ -37,7 +37,7 @@ jobs:
             conda env create -q -n agdc --file .travis/environment_py35.yaml
             source activate agdc
             conda install -q sphinx sphinx_rtd_theme mock click # Stuff for docs
-            pip install .[analytics,test,interactive,docs] --no-deps --upgrade
+            pip install .[analytics,test,interactive,replicas,docs] --no-deps --upgrade
 
       # - restore_cache:
       #     key: projectname-{{ .Branch }}-{{ checksum "yarn.lock" }}
