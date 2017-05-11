@@ -90,19 +90,6 @@ Also, install the python notebook interface for working with datacube example no
 
     pip install jupyter
 
-PostgreSQL Portable
--------------------
-
-An easy to install version of PostgreSQL can be downloaded from http://sourceforge.net/projects/postgresqlportable/ . It can install and run as an unprivileged windows user.
-
-After installing, launch ``PostgreSQLPortable.exe`` (and place a shortcut in the windows Startup menu).
-
-To prepare the database for first use, enter the following commands in the PostgrSQL Portable window,
-substituting "u12345" with your windows login user-ID::
-
-    create role u12345 superuser login;
-    create database datacube;
-
 Datacube installation
 ---------------------
 

@@ -1,8 +1,8 @@
 from __future__ import absolute_import, print_function
 
+import json
 import logging
 from pathlib import Path
-from pprint import pprint
 
 import click
 from click import echo
@@ -106,7 +106,7 @@ def show_metadata_type(index, metadata_type_name, verbose):
     print(metadata_type_obj.description)
     print('Search fields: %s' % ', '.join(sorted(metadata_type_obj.dataset_fields.keys())))
     if verbose:
-        pprint(metadata_type_obj.definition, width=100)
+        echo(json.dumps(metadata_type_obj.definition, indent=4))
 
 
 @metadata_type.command('list')

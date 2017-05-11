@@ -12,10 +12,6 @@ Homebrew::
 
     /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 
-Postgres.app::
-
-    http://postgresapp.com/
-
 HDF5, netCDF4, and GDAL::
 
    brew install hdf5 netcdf gdal

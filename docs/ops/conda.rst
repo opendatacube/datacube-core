@@ -2,12 +2,6 @@
 Miniconda (recommended)
 =======================
 
-Install Postgres
-----------------
-
-Download and install PostgreSQL for your platform https://www.postgresql.org/download
-
-
 Install Miniconda
 -----------------
 

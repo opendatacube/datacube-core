@@ -37,8 +37,8 @@ def schema_qualified(name):
     return '{}.{}'.format(SCHEMA_NAME, name)
 
 
-def _get_connection_info(connection):
-    db, user = connection.execute("select current_database(), current_user").fetchall()[0]
+def _get_quoted_connection_info(connection):
+    db, user = connection.execute("select quote_ident(current_database()), quote_ident(current_user)").fetchone()
     return db, user
 
 
@@ -49,7 +49,7 @@ def ensure_db(engine, with_permissions=True):
     is_new = False
     c = engine.connect()
 
-    db_name, db_user = _get_connection_info(c)
+    quoted_db_name, quoted_user = _get_quoted_connection_info(c)
 
     if with_permissions:
         _LOG.info('Ensuring user roles.')
@@ -60,7 +60,7 @@ def ensure_db(engine, with_permissions=True):
 
         c.execute("""
         grant all on database {db} to agdc_admin;
-        """.format(db=db_name))
+        """.format(db=quoted_db_name))
 
     if not has_schema(engine, c):
         is_new = True
@@ -80,8 +80,6 @@ def ensure_db(engine, with_permissions=True):
             raise
         finally:
             if with_permissions:
-                # psycopg doesn't have an equivalent to server-side quote_ident(). ?
-                quoted_user = db_user.replace('"', '""')
                 c.execute('set role "{}"'.format(quoted_user))
 
     if with_permissions:
