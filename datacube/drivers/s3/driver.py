@@ -191,7 +191,7 @@ class S3Driver(Driver):
         local_config = kargs['local_config'] if 'local_config' in kargs else None
         application_name = kargs['application_name'] if 'application_name' in kargs else None
         validate_connection = kargs['validate_connection'] if 'validate_connection' in kargs else True
-        return Index(local_config, application_name, validate_connection, db)
+        return Index(local_config, application_name, validate_connection, db, self.uri_scheme)
 
 
     def get_index_specifics(self, dataset):

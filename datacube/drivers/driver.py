@@ -78,6 +78,14 @@ class Driver(object):
         return self.__index
 
 
+    def as_uri(self, path):
+        '''Set or replace the uri scheme for a path according to the driver's.
+        '''
+        path = str(path)
+        body = path.split(':', 1)[1] if ':' in path else path
+        return '%s:%s' % (self.uri_scheme, body)
+
+
     @abstractmethod
     def write_dataset_to_storage(self, dataset, *args, **kargs):
         '''Write a Data Cube style xarray Dataset to the storage.

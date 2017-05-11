@@ -10,6 +10,7 @@ from datacube.config import LocalConfig
 import datacube.index._api
 from datacube.index.postgres import PostgresDb
 from datacube.model import Dataset
+from datacube.drivers.manager import DriverManager
 
 # pylint: disable=protected-access
 class Index(datacube.index._api.Index):
@@ -28,7 +29,7 @@ class Index(datacube.index._api.Index):
         super(Index, self).__init__(db)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.uri_scheme = uri_scheme
-        self.datasets = DatasetResource(self._db, self.products)
+        self.datasets = DatasetResource(self._db, self.products, self.uri_scheme)
 
 
     def add_datasets(self, datasets, sources_policy='verify'):
@@ -51,9 +52,6 @@ class Index(datacube.index._api.Index):
         dataset_refs = []
         n = 0
         for dataset in datasets.values:
-            # Set uri scheme to s3
-            dataset.uris = ['%s:%s' % (self.uri_scheme, uri.split(':', 1)[1]) for uri in dataset.uris] \
-                           if dataset.uris else []
             self.datasets.add(dataset, sources_policy='skip')
             dataset_refs.append(dataset.id)
             n += 1
@@ -64,17 +62,8 @@ class Index(datacube.index._api.Index):
         return n
 
 
-    def get_specifics(self, dataset):
-        s3_datasets = []
-        with self._db.begin() as transaction:
-            for band in dataset.measurements.keys():
-                datasets = transaction.get_s3_dataset(dataset.id, band)
-                for dataset in datasets:
-                    s3_datasets.append({
-                        'metadata': dataset,
-                        'chunks': transaction.get_s3_dataset_chunk(dataset.id)
-                    })
-        return s3_datasets
+    def __repr__(self):
+        return "S3Index<db={!r}>".format(self._db)
 
 
 # pylint: disable=protected-access
@@ -83,10 +72,18 @@ class DatasetResource(datacube.index._datasets.DatasetResource):
     additional s3 information to specific tables.
     '''
 
-    def __init__(self, db, dataset_type_resource):
+    def __init__(self, db, dataset_type_resource, uri_scheme='s3'):
         '''Initialise the data resource.'''
         super(DatasetResource, self).__init__(db, dataset_type_resource)
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.uri_scheme = uri_scheme
+
+
+    def add(self, dataset, *args, **kargs):
+        # Set uri scheme to s3
+        dataset.uris = ['%s:%s' % (self.uri_scheme, uri.split(':', 1)[1]) for uri in dataset.uris] \
+                       if dataset.uris else []
+        return super(DatasetResource, self).add(dataset, *args, **kargs)
 
 
     def _add_s3_dataset(self, transaction, s3_dataset_id, band, output):
@@ -202,34 +199,24 @@ class DatasetResource(datacube.index._datasets.DatasetResource):
 
 
     def _make(self, dataset_res, full_info=False):
-        """
-        :rtype datacube.model.Dataset
+        '''Pull index data from the DB for a dataset.
 
-        :param bool full_info: Include all available fields
-        """
-        uris = dataset_res.uris
-        if uris:
-            uris = [uri for uri in uris if uri] if uris else []
-        dataset = Dataset(
-            type_=self.types.get(dataset_res.dataset_type_ref),
-            metadata_doc=dataset_res.metadata,
-            uris=uris,
-            indexed_by=dataset_res.added_by if full_info else None,
-            indexed_time=dataset_res.added if full_info else None,
-            archived_time=dataset_res.archived
-        )
+        This methods returns a dataset with its document along with a
+        `s3_metadata` variable containing the s3 indexing metadata.
 
-        # dataset_res keys: ['id', 'metadata_type_ref', 'dataset_type_ref', 'metadata',
-        # 'archived', 'added', 'added_by', 'uri']
-        self.logger.debug('@@@@@@@@@@ %s', uris)
+        :param dataset_ref: See :meth:`datacube.index._datasets.DatasetResource._make`
+        :param full_info: See :meth:`datacube.index._datasets.DatasetResource._make`
+        '''
+        dataset = super(DatasetResource, self)._make(dataset_res, full_info)
 
-        # Pull from s3 tables here?
-        with self._db.connect() as connection:
-            self.logger.debug('get_s3_mapping(%s, %s)', dataset_res.id, dataset_res.uris)
-#            res = connection.get_s3_mapping(dataset_res.id, None)
-#            self.logger.debug('@@@@@@@@@@ %s', res)
-
-
-        # dataset.driver_metadata = {} # for all bands
-
+        dataset.s3_metadata = []
+        if dataset.measurements:
+            with self._db.begin() as transaction:
+                for band in dataset.measurements.keys():
+                    s3_datasets = transaction.get_s3_dataset(dataset.id, band)
+                    for s3_dataset in s3_datasets:
+                        dataset.s3_metadata.append({
+                            's3_dataset': s3_dataset,
+                            's3_chunks': transaction.get_s3_dataset_chunk(s3_dataset.id)
+                        })
         return dataset

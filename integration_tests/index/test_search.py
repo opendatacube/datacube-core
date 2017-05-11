@@ -640,13 +640,16 @@ def test_search_special_fields(index, pseudo_ls8_type, pseudo_ls8_dataset,
     assert len(datasets) == 0
 
 
-def test_search_by_uri(index, ls5_dataset_w_children):
+def test_search_by_uri(index, ls5_dataset_w_children, driver):
     datasets = index.datasets.search_eager(product=ls5_dataset_w_children.type.name,
                                            uri=ls5_dataset_w_children.local_uri)
-    assert len(datasets) == 1
+    if driver.uri_scheme == 'file':
+        assert len(datasets) == 1
+    else:
+        assert len(datasets) == 0
 
     datasets = index.datasets.search_eager(product=ls5_dataset_w_children.type.name,
-                                           uri='file:///x/yz')
+                                           uri='%s:///x/yz' % driver.uri_scheme)
     assert len(datasets) == 0
 
 

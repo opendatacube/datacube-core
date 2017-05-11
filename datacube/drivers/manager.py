@@ -142,18 +142,25 @@ class DriverManager(object):
     def _set_default_driver(self, driver_name):
         '''Set the default driver.
 
-        The default driver is used by the manager if no driver is
-        specified in the dataset.
+        If driver_name is None, then the driver currently in use
+        remains active, or the default driver for the class is used as
+        last resort..
 
-        :param str default_driver_name: The name of the default
-          driver.
+        :param str driver_name: The name of the driver to set as
+          current driver.
         '''
         if driver_name:
             if not driver_name in self.__drivers:
                 raise ValueError('Default driver "%s" is not available in %s' % (
                     driver_name, ', '.join(self.__drivers.keys())))
         else:
-            driver_name = self.DEFAULT_DRIVER
+            # Keep existing default driver if it exists
+
+            if DriverManager.__instance and DriverManager.__instance.__driver: # pylint: disable=protected-access
+                # pylint: disable=protected-access
+                driver_name = DriverManager.__instance.__driver.name
+            else:
+                driver_name = self.DEFAULT_DRIVER
             if driver_name not in self.__drivers:
                 driver_name = list(self.__drivers.values())[0].name
         self.__driver = self.__drivers[driver_name]
@@ -223,24 +230,6 @@ class DriverManager(object):
             if scheme == driver.uri_scheme:
                 return driver
         raise ValueError('No driver found for scheme "%s"' % scheme)
-
-
-    def add_index_specifics(self, dataset):
-        '''Pull index specific data for a dataset.
-
-        Different drivers may store specific metadata when indexing a
-        dataset, which can be retrieved by this method and appended to
-        `dataset.index_specifics` as a dictionary indexed by
-        `band_name`.
-
-        :param dataset: The dataset to read.
-        :param str band_name: The band name.
-        '''
-        specifics = {}
-        driver = self.get_driver_by_scheme(dataset)
-        if not hasattr(dataset, 'index_specifics'):
-            dataset.index_specifics = {}
-        dataset.index_specifics = driver.get_index_specifics(dataset)
 
 
     def get_datasource(self, dataset, band_name=None):

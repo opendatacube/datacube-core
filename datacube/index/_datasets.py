@@ -14,7 +14,6 @@ from cachetools.func import lru_cache
 from datacube import compat
 from datacube.index.fields import Field
 from datacube.model import Dataset, DatasetType, MetadataType
-from datacube.drivers.manager import DriverManager
 from datacube.utils import InvalidDocException, jsonify_document, changes
 from datacube.utils.changes import get_doc_changes, check_doc_unchanged
 from . import fields
@@ -981,7 +980,6 @@ class DatasetResource(object):
             indexed_time=dataset_res.added if full_info else None,
             archived_time=dataset_res.archived
         )
-        DriverManager().add_index_specifics(dataset) # raises an ValueError if uri scheme unsupported
         return dataset
 
     def _make_many(self, query_result):

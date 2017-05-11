@@ -24,6 +24,7 @@ try:
 except ImportError:
     from yaml import SafeLoader
 
+from datacube.drivers.manager import DriverManager
 from datacube.api import API
 from datacube.config import LocalConfig
 from datacube.index._api import Index, _DEFAULT_METADATA_TYPES_PATH
@@ -66,6 +67,11 @@ GEOGRAPHIC_VARS = ('latitude', 'longitude')
 PROJECTED_VARS = ('x', 'y')
 
 EXAMPLE_LS5_DATASET_ID = UUID('bbf3e21c-82b0-11e5-9ba1-a0000100fe80')
+
+
+class MockIndex(object):
+    def __init__(self, db):
+        self._db = db
 
 
 @pytest.fixture
@@ -142,12 +148,26 @@ def remove_dynamic_indexes():
         table.indexes.intersection_update([i for i in table.indexes if not i.name.startswith('dix_')])
 
 
+@pytest.fixture(params=['NetCDF CF', 's3-test'])
+def driver(db, request):
+    '''Initialise all drivers and set current default one.
+
+    Each driver has an index for which the passed `db` replaces the
+    original db.
+    '''
+    # A hack to only run specific tests for s3-test:
+    # if request.param == 's3-test' and not 'test_full_ingestion' in str(request._parent_request):
+    #    pytest.skip('Skipping s3 test on everything but full ingestion for now')
+    yield DriverManager(default_driver_name=request.param,
+                        index=MockIndex(db)).driver
+    # While not necessary, we reset the driver manager completely at
+    # the end
+    DriverManager().__instance = None
+
+
 @pytest.fixture
-def index(db):
-    """
-    :type db: datacube.index.postgres._api.PostgresDb
-    """
-    return Index(db)
+def index(driver):
+    return driver.index
 
 
 @pytest.fixture
@@ -229,12 +249,11 @@ def example_ls5_dataset_paths(tmpdir):
     return dataset_dirs
 
 
-# For s3, change to: @pytest.fixture(params=['NetCDF CF', 's3-test'])
-@pytest.fixture(params=['NetCDF CF', 's3-test'])
-def ls5_nbar_ingest_config(tmpdir, request):
+@pytest.fixture
+def ls5_nbar_ingest_config(tmpdir, driver):
     dataset_dir = tmpdir.mkdir('ls5_nbar_ingest_test')
     config = load_yaml_file(LS5_NBAR_INGEST_CONFIG)[0]
-    config = alter_dataset_type_for_testing(config, driver=request.param)
+    config = alter_dataset_type_for_testing(config, driver=driver.name)
     # config['storage']['chunking']['time'] = 2
     # config['storage']['tile_size']['time'] = 3
     config['location'] = str(dataset_dir)
