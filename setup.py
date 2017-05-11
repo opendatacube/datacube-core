@@ -11,6 +11,7 @@ extras_require = {
     'distributed': ['distributed', 'dask[distributed]'],
     'analytics': ['scipy', 'pyparsing', 'numexpr'],
     'doc': ['Sphinx', 'setuptools'],
+    'replicas': ['paramiko', 'sshtunnel', 'tqdm'],
     'test': tests_require,
 }
 # An 'all' option, following ipython naming conventions.

@@ -63,7 +63,7 @@ def uri_to_path(uri):
     return uri.replace('file://', '')
 
 
-class DatacubeReplicator:
+class DatacubeReplicator(object):
     def __init__(self, config):
         self.remote_host = config['remote_host']
         self.remote_user = config['remote_user']
