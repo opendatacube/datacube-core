@@ -61,6 +61,10 @@ class S3AIO(object):
         #       - data size
         #       - data contiguity
 
+        # truncate array_slice to shape
+        # array_slice = [slice(max(0, s.start) - min(sh, s.stop)) for s, sh in zip(array_sliced, shape)]
+        array_slice = [slice(max(0, s.start), min(sh, s.stop)) for s, sh in zip(array_slice, shape)]
+
         cdim = self.cdims(array_slice, shape)
 
         try:
@@ -133,7 +137,7 @@ class S3AIO(object):
 
         num_processes = cpu_count()
         pool = Pool(num_processes)
-        array_name = '_'.join(['SA3IO', str(uuid.uuid4()), str(os.getpid())])
+        array_name = '_'.join(['S3AIO', str(uuid.uuid4()), str(os.getpid())])
         sa.create(array_name, shape=[s.stop - s.start for s in array_slice], dtype=dtype)
         shared_array = sa.attach(array_name)
 
