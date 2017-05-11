@@ -47,7 +47,7 @@ install:
 
   - conda env create -n agdc --file $CONDA_ENV_FILE
   - source activate agdc
-  - pip install .[analytics,test,interactive,replicas] --no-deps --upgrade
+  - pip install . --no-deps --upgrade
 
   - pip freeze
 
