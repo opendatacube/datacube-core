@@ -210,6 +210,10 @@ def reproject_and_fuse(sources, destination, dst_transform, dst_projection, dst_
 
 
 class BandDataSource(object):
+    """Wrapper for a rasterio.Band object
+
+    :param source: rasterio.Band
+    """
     def __init__(self, source, nodata=None):
         self.source = source
         if nodata is None:
@@ -234,6 +238,8 @@ class BandDataSource(object):
         return self.source.shape
 
     def read(self, window=None, out_shape=None):
+        """Read data in the native format, returning a native array
+        """
         return self.source.ds.read(indexes=self.source.bidx, window=window, out_shape=out_shape)
 
     def reproject(self, dest, dst_transform, dst_crs, dst_nodata, resampling, **kwargs):
@@ -312,6 +318,12 @@ class NetCDFDataSource(object):
 
 
 class OverrideBandDataSource(object):
+    """Wrapper for a rasterio.Band object that overrides nodata, crs and transform
+
+    This is useful for files with malformed or missing properties
+
+    :param source: rasterio.Band
+    """
     def __init__(self, source, nodata, crs, transform):
         self.source = source
         self.nodata = nodata
@@ -327,6 +339,8 @@ class OverrideBandDataSource(object):
         return self.source.shape
 
     def read(self, window=None, out_shape=None):
+        """Read data in the native format, returning a native array
+        """
         return self.source.ds.read(indexes=self.source.bidx, window=window, out_shape=out_shape)
 
     def reproject(self, dest, dst_transform, dst_crs, dst_nodata, resampling, **kwargs):

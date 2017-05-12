@@ -13,7 +13,7 @@ import rasterio.warp
 import datacube
 from datacube.utils import geometry
 from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse, read_from_source, Resampling
-from datacube.storage.storage import NetCDFDataSource
+from datacube.storage.storage import NetCDFDataSource, OverrideBandDataSource
 
 GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
            'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
@@ -399,3 +399,28 @@ def test_read_from_source():
                  resampling=Resampling.cubic)
 
     # TODO: crs change
+
+
+def test_read_raster_with_custom_crs_and_transform(example_gdal_path):
+    import numpy as np
+
+    with rasterio.open(example_gdal_path) as src:
+        band = rasterio.band(src, 1)
+        crs = geometry.CRS('EPSG:3577')
+        nodata = -999
+        transform = Affine(25.0, 0.0, 1000000.0,
+                           0.0, -25.0, -900000.0)
+
+        # Read all raw data from source file
+        band_data_source = OverrideBandDataSource(band, nodata, crs, transform)
+        dest1 = band_data_source.read()
+        assert dest1.shape
+
+        # Attempt to read with the same transform parameters
+        dest2 = np.full(shape=(4000, 4000), fill_value=nodata, dtype=np.float32)
+        dst_transform = transform
+        dst_crs = crs
+        dst_nodata = nodata
+        resampling = datacube.storage.storage.RESAMPLING_METHODS['nearest']
+        band_data_source.reproject(dest2, dst_transform, dst_crs, dst_nodata, resampling)
+        assert (dest1 == dest2).all()
