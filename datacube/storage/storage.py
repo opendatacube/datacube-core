@@ -344,7 +344,7 @@ class OverrideBandDataSource(object):
         return self.source.ds.read(indexes=self.source.bidx, window=window, out_shape=out_shape)
 
     def reproject(self, dest, dst_transform, dst_crs, dst_nodata, resampling, **kwargs):
-        source = self.read(self.source)  # TODO: read only the part the we care about
+        source = self.read()  # TODO: read only the part the we care about
         return rasterio.warp.reproject(source,
                                        dest,
                                        src_transform=self.transform,
