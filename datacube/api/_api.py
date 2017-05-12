@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from itertools import chain, groupby
+import warnings
 
 import numpy
 
@@ -49,6 +50,8 @@ class API(object):
         :param datacube:
         :type datacube: :class:`datacube.Datacube`
         """
+        warnings.warn("Descriptor interface is deprecated.", DeprecationWarning)
+
         if datacube is not None:
             self.datacube = datacube
         elif index is not None:
