@@ -40,6 +40,7 @@ are specified the same as when using the API to search for datasets.
 """
 
 import logging
+import os.path
 from configparser import ConfigParser
 from pathlib import Path
 
@@ -56,7 +57,7 @@ from datacube.ui.click import global_cli_options
 
 LOG = logging.getLogger('simple_replicator')
 
-DEFAULT_REPLICATION_CONFIG = str(Path('~/.datacube.replication.conf').expanduser())
+DEFAULT_REPLICATION_CONFIG = os.path.expanduser('~/.datacube.replication.conf')
 
 
 def uri_to_path(uri):
