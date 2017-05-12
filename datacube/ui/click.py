@@ -210,6 +210,8 @@ EXECUTOR_TYPES = {
     'celery': lambda addr: mk_celery_executor(*parse_endpoint(addr))
 }
 
+EXECUTOR_TYPES['dask'] = EXECUTOR_TYPES['distributed']  # Add alias "dask" for distributed
+
 
 def _setup_executor(ctx, param, value):
     try:
