@@ -178,7 +178,8 @@ def launch_redis(port=6379, params=None, **kwargs):
 
     workdir = tempfile.mkdtemp(prefix='redis-')
 
-    defaults = dict({'maxmemory-policy': 'noeviction'},
+    defaults = dict({'maxmemory-policy': 'noeviction',
+                     'protected-mode': False}, #TODO: security concern, good enough for testing on NCI for now
                     daemonize=True,
                     port=port,
                     databases=4,
