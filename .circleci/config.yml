@@ -37,7 +37,14 @@ jobs:
             conda env create -q -n agdc --file .travis/environment_py35.yaml
             source activate agdc
             conda install -q sphinx sphinx_rtd_theme mock click # Stuff for docs
-            pip install .[analytics,test,interactive,docs] --no-deps --upgrade
+
+      - run:
+          name: Install Data Cube Code
+          command: |
+            export PATH="$HOME/miniconda/bin:$PATH"
+            source activate agdc
+
+            pip install . --no-deps --upgrade
 
       # - restore_cache:
       #     key: projectname-{{ .Branch }}-{{ checksum "yarn.lock" }}
@@ -81,3 +88,10 @@ jobs:
       - store_artifacts:
           path: docs/_build/html
           destination: docs
+
+      - run:
+          name: Upload Code Coverage to coveralls.io
+          run: |
+            export PATH="$HOME/miniconda/bin:$PATH"
+            source activate agdc
+            coveralls
