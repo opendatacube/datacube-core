@@ -202,6 +202,7 @@ def check_open_with_dc(index):
     data_array = dc.load(product='ls5_nbar_albers',
                          latitude=(-35, -36), longitude=(149, 150),
                          measurements=['blue'], group_by='solar_day')
+    assert data_array.shape
 
     dataset = dc.load(product='ls5_nbar_albers', latitude=(-35.2, -35.3), longitude=(149.1, 149.2), align=(5, 20))
     assert dataset.geobox.affine.f % abs(dataset.geobox.affine.e) == 5

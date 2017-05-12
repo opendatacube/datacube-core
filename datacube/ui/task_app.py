@@ -10,6 +10,8 @@ import functools
 import itertools
 from pathlib import Path
 
+import pandas as pd
+
 try:
     import cPickle as pickle
 except ImportError:
@@ -121,11 +123,31 @@ def validate_year(ctx, param, value):
     try:
         if value is None:
             return None
-        years = [int(y) for y in value.split('-', 2)]
-        return datetime(year=years[0], month=1, day=1), datetime(year=years[-1] + 1, month=1, day=1)
+        years = [pd.Period(y) for y in value.split('-', 2)]
+        return years[0].start_time.to_datetime(), years[-1].end_time.to_datetime()
     except ValueError:
         raise click.BadParameter('year must be specified as a single year (eg 1996) '
                                  'or as an inclusive range (eg 1996-2001)')
+
+
+def year_splitter(start, end):
+    """
+    Produces a list of time ranges based that represent each year in the range.
+
+    `year_splitter('1992', '1993')` returns:
+
+    ::
+        [('1992-01-01 00:00:00', '1992-12-31 23:59:59.9999999'),
+         ('1993-01-01 00:00:00', '1993-12-31 23:59:59.9999999')]
+
+    :param str start: start year
+    :param str end: end year
+    :return Generator[tuple(str, str)]: strings representing the ranges
+    """
+    start_ts = pd.Timestamp(start)
+    end_ts = pd.Timestamp(end)
+    for p in pd.period_range(start=start_ts, end=end_ts, freq='A'):
+        yield str(p.start_time), str(p.end_time)
 
 
 def task_app(make_config, make_tasks):

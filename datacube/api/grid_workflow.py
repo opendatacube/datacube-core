@@ -6,6 +6,7 @@ import xarray
 from itertools import groupby
 from collections import OrderedDict
 import warnings
+import pandas as pd
 
 from ..utils import intersects
 from .query import Query, query_group_by
@@ -92,6 +93,30 @@ class Tile(object):
         for i in range(self.sources[dim].size):
             indexer[axis] = slice(i, i + 1)
             yield self.sources[dim].values[i], self[tuple(indexer)]
+
+    def split_by_time(self, freq='A', time_dim='time', **kwargs):
+        """
+        Splits along the `time` dimension, into periods, using pandas offsets, such as:
+        :
+            'A': Annual
+            'Q': Quarter
+            'M': Month
+        See: http://pandas.pydata.org/pandas-docs/stable/timeseries.html?highlight=rollback#timeseries-offset-aliases
+
+        :param freq: time series frequency
+        :param time_dim: name of the time dimension
+        :param kwargs: other keyword arguments passed to ``pandas.period_range``
+        :return: Generator[tuple(str, Tile)] generator of the key string (eg '1994') and the slice of Tile
+        """
+        start_range = self.sources[time_dim][0].data
+        end_range = self.sources[time_dim][-1].data
+
+        for p in pd.period_range(start=start_range,
+                                 end=end_range,
+                                 freq=freq,
+                                 **kwargs):
+            sources_slice = self.sources.loc[{time_dim: slice(p.start_time, p.end_time)}]
+            yield str(p), Tile(sources=sources_slice, geobox=self.geobox)
 
     def __str__(self):
         return "Tile<sources={!r},\n\tgeobox={!r}>".format(self.sources, self.geobox)
