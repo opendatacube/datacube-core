@@ -336,7 +336,10 @@ NATIVE_MODULES = [
     'numpy',
     'matplotlib',
     'matplotlib.pyplot',
-    'scipy', 'scipy.io'
+    'scipy', 'scipy.io',
+    'paramiko',
+    'sshtunnel',
+    'tqdm',
 
 ]
 
