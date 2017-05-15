@@ -4,6 +4,8 @@ Utility functions used in storage modules
 """
 from __future__ import absolute_import, division, print_function
 
+import os
+import stat
 import gzip
 import importlib
 import itertools
@@ -690,3 +692,37 @@ def tile_iter(tile, chunk_size):
     """
     steps = _tuplify(tile.dims, chunk_size, tile.shape)
     return _block_iter(steps, tile.shape)
+
+
+def write_user_secret_file(text, fname, in_home_dir=False):
+    "Write file only readable/writeable by the user"
+
+    if in_home_dir:
+        fname = os.path.join(os.environ['HOME'], fname)
+
+    mode = stat.S_IRUSR | stat.S_IWUSR  # Make sure file is readable by current user only
+    with os.fdopen(os.open(fname, os.O_WRONLY | os.O_CREAT, mode), 'w') as handle:
+        handle.write(text)
+
+
+def slurp(fname, in_home_dir=False):
+    """
+    Read the entire file into a string
+    :param fname: file path
+    :param in_home_dir: if True treat fname as a path relative to $HOME folder
+    :return: Content of a file or None if file doesn't exist or can not be read for any other reason
+    """
+    if in_home_dir:
+        fname = os.path.join(os.environ['HOME'], fname)
+    try:
+        with open(fname, "r") as handle:
+            return handle.read()
+    except:
+        return None
+
+
+def gen_password(num_random_bytes=12):
+    """ Generate random password
+    """
+    import base64
+    return base64.urlsafe_b64encode(os.urandom(num_random_bytes)).decode('utf-8')
