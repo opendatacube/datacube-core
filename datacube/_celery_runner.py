@@ -1,3 +1,6 @@
+from __future__ import print_function
+from __future__ import absolute_import
+
 from celery import Celery
 from time import sleep
 import redis
@@ -29,8 +32,12 @@ def mk_celery_app(addr=None):
 app = mk_celery_app()
 
 
-def set_address(host, port=6379, db=0):
-    url = 'redis://{}:{}/{}'.format(host, port, db)
+def set_address(host, port=6379, db=0, password=None):
+    if password is None:
+        url = 'redis://{}:{}/{}'.format(host, port, db)
+    else:
+        url = 'redis://:{}@{}:{}/{}'.format(password, host, port, db)
+
     app.conf.update(result_backend=url,
                     broker_url=url)
 
@@ -48,31 +55,54 @@ def submit_cloud_pickled_function(f, *args, **kwargs):
     return run_cloud_pickled_function.delay(f_data, *args, **kwargs)
 
 
-def launch_worker(host, port=6379, num_threads=None):
-    set_address(host, port)
+def launch_worker(host, port=6379, password=None, nprocs=None):
+    if password == '':
+        password = get_redis_password(generate_if_missing=False)
+
+    set_address(host, port, password=password)
 
     argv = ['worker', '-A', 'datacube._celery_runner']
-    if num_threads is not None:
-        argv.extend(['-c', str(num_threads)])
+    if nprocs is not None:
+        argv.extend(['-c', str(nprocs)])
 
     app.worker_main(argv)
 
 
+def get_redis_password(generate_if_missing=False):
+    from .utils import write_user_secret_file, slurp, gen_password
+
+    REDIS_PASSWORD_FILE = '.datacube-redis'
+
+    password = slurp(REDIS_PASSWORD_FILE, in_home_dir=True)
+    if password is not None:
+        return password
+
+    if generate_if_missing:
+        password = gen_password(12)
+        write_user_secret_file(password, REDIS_PASSWORD_FILE, in_home_dir=True)
+
+    return password
+
+
 class CeleryExecutor(object):
-    def __init__(self, host=None, port=None):
+    def __init__(self, host=None, port=None, password=None):
         # print('Celery: {}:{}'.format(host, port))
         self._shutdown = None
 
-        if port or host:
+        if port or host or password:
+            if password == '':
+                password = get_redis_password(generate_if_missing=True)
+
             set_address(host if host else 'localhost',
-                        port if port else 6379)
+                        port if port else 6379,
+                        password=password)
 
         host = host if host else 'localhost'
         port = port if port else 6379
 
-        if not check_redis(host, port):
+        if not check_redis(host, port, password):
             if host in ['localhost', '127.0.0.1']:
-                self._shutdown = launch_redis(port if port else 6379)
+                self._shutdown = launch_redis(port if port else 6379, password=password)
             else:
                 raise IOError("Can't connect to redis server @ {}:{}".format(host, port))
 
@@ -147,20 +177,24 @@ class CeleryExecutor(object):
         future.forget()
 
 
-def check_redis(host='localhost', port=6379):
-    server = redis.Redis(host, port)
+def check_redis(host='localhost', port=6379, password=None):
+    server = redis.Redis(host, port, password=password)
     try:
         server.ping()
     except redis.exceptions.ConnectionError:
         return False
+    except redis.exceptions.ResponseError as error:
+        print('Redis responded with an error: {}'.format(error))
+        return False
     return True
 
 
-def launch_redis(port=6379, params=None, **kwargs):
+def launch_redis(port=6379, password=None, params=None, **kwargs):
     import tempfile
     from os import path
     import subprocess
     import shutil
+    from .utils import write_user_secret_file
 
     def stringify(v):
         if isinstance(v, str):
@@ -171,15 +205,17 @@ def launch_redis(port=6379, params=None, **kwargs):
 
         return str(v)
 
+    def fix_key(k):
+        return k.replace('_', '-')
+
     def write_config(params, cfgfile):
-        lines = ['{} {}\n'.format(k, stringify(v)) for k, v in params.items()]
-        with open(cfgfile, "w") as f:
-            f.writelines(lines)
+        lines = ['{} {}'.format(fix_key(k), stringify(v)) for k, v in params.items()]
+        cfg_txt = '\n'.join(lines)
+        write_user_secret_file(cfg_txt, cfgfile)
 
     workdir = tempfile.mkdtemp(prefix='redis-')
 
-    defaults = dict({'maxmemory-policy': 'noeviction',
-                     'protected-mode': False}, #TODO: security concern, good enough for testing on NCI for now
+    defaults = dict(maxmemory_policy='noeviction',
                     daemonize=True,
                     port=port,
                     databases=4,
@@ -189,10 +225,15 @@ def launch_redis(port=6379, params=None, **kwargs):
                     pidfile=path.join(workdir, 'redis.pid'),
                     logfile=path.join(workdir, 'redis.log'))
 
+    if password is not None:
+        defaults['requirepass'] = password
+
     if params:
         defaults.update(params)
 
     defaults.update(kwargs)
+
+    redis_password = defaults.get('requirepass', None)
 
     cfgfile = path.join(workdir, 'redis.cfg')
     write_config(defaults, cfgfile)
@@ -201,7 +242,7 @@ def launch_redis(port=6379, params=None, **kwargs):
         shutil.rmtree(workdir)
 
     def shutdown():
-        server = redis.Redis('localhost', port)
+        server = redis.Redis('localhost', port, password=redis_password)
         server.shutdown()
         sleep(1)
         cleanup()

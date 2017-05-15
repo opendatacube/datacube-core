@@ -231,6 +231,13 @@ def get_executor(scheduler, workers):
     return SerialExecutor()
 
 
-def mk_celery_executor(host, port):
+def mk_celery_executor(host, port, password=''):
+    """
+    :param host: Address of the redis database server
+    :param port: Port of the redis database server
+    :password: Authentication for redis or None or ''
+               '' -- load from home folder, or generate if missing,
+               None -- no authentication
+    """
     from ._celery_runner import CeleryExecutor
-    return CeleryExecutor(host, port)
+    return CeleryExecutor(host, port, password=password)

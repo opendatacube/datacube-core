@@ -22,9 +22,9 @@ def parse_executor_opt(ctx, param, value):
     return (ex_type, host, port)
 
 
-def launch_celery_worker(host, port, nprocs):
+def launch_celery_worker(host, port, nprocs, password=''):
     from datacube import _celery_runner as cr
-    cr.launch_worker(host, port, nprocs)
+    cr.launch_worker(host, port, password=password, nprocs=nprocs)
 
 
 def launch_distributed_worker(host, port, nprocs, nthreads=1):
