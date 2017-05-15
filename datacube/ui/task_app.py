@@ -8,6 +8,7 @@ import click
 import cachetools
 import functools
 import itertools
+import re
 from pathlib import Path
 
 import pandas as pd
@@ -110,6 +111,30 @@ task_app_options = dc_ui.compose(
 )
 
 
+def _cell_list_from_file(filename):
+    cell_matcher = re.compile(r'(\-?\d+)(?:\s*(?:,|_|\s)\s*)(\-?\d+)')
+    with open(filename) as cell_file:
+        for line in cell_file:
+            match = cell_matcher.match(line)
+            if match:
+                yield tuple(int(i) for i in match.groups())
+
+
+def cell_list_to_file(filename, cell_list):
+    with open('cell_index.txt', 'w') as cell_file:
+        for cell in cell_list:
+            cell_file.write('{0},{1}\n'.format(*cell))
+
+
+def validate_cell_list(ctx, param, value):
+    try:
+        if value is None:
+            return None
+        return list(_cell_list_from_file(value))
+    except ValueError:
+        raise click.BadParameter('cell_index_list must be a file with lines in the form "14,-11"')
+
+
 def validate_cell_index(ctx, param, value):
     try:
         if value is None:
@@ -148,6 +173,19 @@ def year_splitter(start, end):
     end_ts = pd.Timestamp(end)
     for p in pd.period_range(start=start_ts, end=end_ts, freq='A'):
         yield str(p.start_time), str(p.end_time)
+
+
+#: pylint: disable=invalid-name
+cell_index_option = click.option('--cell-index', 'cell_index',
+                                 help='Limit the process to a particular cell (e.g. 14,-11)',
+                                 callback=validate_cell_index, default=None)
+#: pylint: disable=invalid-name
+cell_index_list_option = click.option('--cell-index-list', 'cell_index_list',
+                                      help='Limit the process to a file of cells indexes (e.g. 14,-11)',
+                                      callback=validate_cell_list, default=None)
+#: pylint: disable=invalid-name
+year_option = click.option('--year', 'time', help='Limit the process to a particular year',
+                           callback=validate_year)
 
 
 def task_app(make_config, make_tasks):
