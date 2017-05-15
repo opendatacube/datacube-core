@@ -5,6 +5,13 @@
 What's New
 ==========
 
+v1.4.0
+------
+
+- Adds more convenient year/date range search expressions (see `#226`_)
+
+.. _#226: https://github.com/opendatacube/datacube-core/pull/226
+
 v1.3.1 (20 April 2017)
 ----------------------
 

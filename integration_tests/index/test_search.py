@@ -1116,6 +1116,7 @@ def test_csv_search_via_cli(global_integration_cli_args, pseudo_ls8_type, pseudo
     :type global_integration_cli_args: tuple[str]
     :type pseudo_ls8_dataset: datacube.model.Dataset
     """
+
     # Test dataset is:
     # platform: LANDSAT_8
     # from: 2014-7-26  23:48:00
@@ -1128,28 +1129,48 @@ def test_csv_search_via_cli(global_integration_cli_args, pseudo_ls8_type, pseudo
 
     # Dataset 2 is the same but on day 2014-7-27
 
-    rows = _cli_csv_search(['datasets', ' -40 < lat < -10'], global_integration_cli_args)
-    assert len(rows) == 2
-    assert {rows[0]['id'], rows[1]['id']} == {str(pseudo_ls8_dataset.id), str(pseudo_ls8_dataset2.id)}
+    def matches_both(*args):
+        rows = _cli_csv_search(('datasets',) + args, global_integration_cli_args)
+        assert len(rows) == 2
+        assert {rows[0]['id'], rows[1]['id']} == {str(pseudo_ls8_dataset.id), str(pseudo_ls8_dataset2.id)}
 
-    rows = _cli_csv_search(['datasets', 'product=' + pseudo_ls8_type.name], global_integration_cli_args)
-    assert len(rows) == 2
-    assert {rows[0]['id'], rows[1]['id']} == {str(pseudo_ls8_dataset.id), str(pseudo_ls8_dataset2.id)}
+    def matches_1(*args):
+        rows = _cli_csv_search(('datasets',) + args, global_integration_cli_args)
+        assert len(rows) == 1
+        assert rows[0]['id'] == str(pseudo_ls8_dataset.id)
+
+    def matches_none(*args):
+        rows = _cli_csv_search(('datasets',) + args, global_integration_cli_args)
+        assert len(rows) == 0
+
+    matches_both(' -40 < lat < -10')
+    matches_both('product=' + pseudo_ls8_type.name)
 
     # Don't return on a mismatch
-    rows = _cli_csv_search(['datasets', '150<lat<160'], global_integration_cli_args)
-    assert len(rows) == 0
+    matches_none('150<lat<160')
 
     # Match only a single dataset using multiple fields
-    rows = _cli_csv_search(['datasets', 'platform=LANDSAT_8', '2014-07-24<time<2014-07-27'],
-                           global_integration_cli_args)
-    assert len(rows) == 1
-    assert rows[0]['id'] == str(pseudo_ls8_dataset.id)
+    matches_1('platform=LANDSAT_8', '2014-07-24<time<2014-07-27')
 
     # One matching field, one non-matching
-    rows = _cli_csv_search(['datasets', '2014-07-24<time<2014-07-27', 'platform=LANDSAT_5'],
-                           global_integration_cli_args)
-    assert len(rows) == 0
+    matches_none('2014-07-24<time<2014-07-27', 'platform=LANDSAT_5')
+
+    # Test date shorthand
+    matches_both('2014-7 < time < 2014-8')
+    matches_none('2014-6 < time < 2014-7')
+
+    matches_both('time in 2014-07')
+    matches_none('time in 2014-08')
+    matches_both('time in 2014')
+    matches_none('time in 2015')
+
+    matches_both('2014 < time < 2015')
+    matches_none('2015 < time < 2016')
+    matches_none('2014 < time < 2014')
+
+    matches_both('time in range(2014-7, 2014-8)')
+    matches_none('time in range(2014-6, 2014-7)')
+    matches_both('time in range(2005, 2015)')
 
 
 # Headers are currently in alphabetical order.
