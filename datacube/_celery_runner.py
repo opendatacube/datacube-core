@@ -189,7 +189,7 @@ def check_redis(host='localhost', port=6379, password=None):
     return True
 
 
-def launch_redis(port=6379, password=None, params=None, **kwargs):
+def launch_redis(port=6379, password=None, **kwargs):
     import tempfile
     from os import path
     import subprocess
@@ -227,13 +227,10 @@ def launch_redis(port=6379, password=None, params=None, **kwargs):
 
     if password is not None:
         defaults['requirepass'] = password
-
-    if params:
-        defaults.update(params)
+    else:
+        password = defaults.get('requirepass', None)
 
     defaults.update(kwargs)
-
-    redis_password = defaults.get('requirepass', None)
 
     cfgfile = path.join(workdir, 'redis.cfg')
     write_config(defaults, cfgfile)
@@ -242,7 +239,7 @@ def launch_redis(port=6379, password=None, params=None, **kwargs):
         shutil.rmtree(workdir)
 
     def shutdown():
-        server = redis.Redis('localhost', port, password=redis_password)
+        server = redis.Redis('localhost', port, password=password)
         server.shutdown()
         sleep(1)
         cleanup()
