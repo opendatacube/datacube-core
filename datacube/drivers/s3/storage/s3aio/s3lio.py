@@ -162,6 +162,7 @@ class S3LIO(object):
 
         # data slices for each chunk
         slices = list(self.chunk_indices_nd(macro_shape, micro_shape, array_slice))
+        pprint(slices)
 
         # chunk id's for each data slice
         slice_starts = [tuple([s.start for s in s]) for s in slices]
@@ -179,6 +180,8 @@ class S3LIO(object):
         if use_hash:
             keys = [hashlib.md5(k.encode('utf-8')).hexdigest()[0:6] + '_' + k for k in keys]
 
+        # data = np.zeros(shape=[s.stop - s.start for s in array_slice], dtype=dtype)
+
         # create shared array
         array_name = '_'.join(['S3LIO', str(uuid.uuid4()), str(os.getpid())])
         sa.create(array_name, shape=[s.stop - s.start for s in array_slice], dtype=dtype)
@@ -188,9 +191,10 @@ class S3LIO(object):
         offset = tuple([i.start for i in array_slice])
         # calculate data slices
         data_slices = [tuple([slice(s.start-o, s.stop-o) for s, o in zip(s, offset)]) for s in slices]
-        local_slices = [tuple([slice((s.start % cs if s.start >= cs else s.start),
-                                     (s.stop % (cs+1)+1 if s.stop >= cs+1 else s.stop))
-                               for s, cs in zip(s, micro_shape)]) for s in slices]
+        # calculate local slices
+        origin = [[s.start % cs if s.start >= cs else s.start for s, cs in zip(s, micro_shape)] for s in slices]
+        size = [[s.stop-s.start for s in s] for s in data_slices]
+        local_slices = [[slice(o, o+s) for o, s in zip(o, s)] for o, s in zip(origin, size)]
 
         zipped = zip(keys, data_slices, local_slices, chunk_shapes, repeat(offset))
 
