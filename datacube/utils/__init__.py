@@ -717,7 +717,7 @@ def slurp(fname, in_home_dir=False):
     try:
         with open(fname, "r") as handle:
             return handle.read()
-    except:
+    except IOError:
         return None
 
 
