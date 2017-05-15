@@ -6,6 +6,7 @@ jobs:
         environment:
           CONDA_ENV_FILE: .travis/environment_py35.yaml
           DATABASE_URL: postgresql://ubuntu@localhost/circle_test?sslmode=disable
+          CONDA_ENV_NAME: datacube
       - image: postgres:9.6
         environment:
           POSTGRES_USER: root
@@ -34,10 +35,17 @@ jobs:
           name: Setup Environment
           command: |
             export PATH="$HOME/miniconda/bin:$PATH"
-            conda env create -q -n agdc --file .travis/environment_py35.yaml
-            source activate agdc
+            conda env create -q -n $CONDA_ENV_NAME --file .travis/environment_py35.yaml
+            source activate $CONDA_ENV_NAME
             conda install -q sphinx sphinx_rtd_theme mock click # Stuff for docs
-            pip install .[analytics,test,interactive,docs] --no-deps --upgrade
+
+      - run:
+          name: Install Data Cube Code
+          command: |
+            export PATH="$HOME/miniconda/bin:$PATH"
+            source activate $CONDA_ENV_NAME
+
+            pip install . --no-deps --upgrade
 
       # - restore_cache:
       #     key: projectname-{{ .Branch }}-{{ checksum "yarn.lock" }}
@@ -51,7 +59,7 @@ jobs:
           name: Run All Tests
           command: |
             export PATH="$HOME/miniconda/bin:$PATH"
-            source activate agdc
+            source activate $CONDA_ENV_NAME
 
             pep8 tests integration_tests examples utils --max-line-length 120
 
@@ -75,9 +83,16 @@ jobs:
           working_directory: ~/datacube-core/docs
           command: |
             export PATH="$HOME/miniconda/bin:$PATH"
-            source activate agdc
+            source activate $CONDA_ENV_NAME
             make html
 
       - store_artifacts:
           path: docs/_build/html
           destination: docs
+
+      - run:
+          name: Upload Code Coverage to coveralls.io
+          command: |
+            export PATH="$HOME/miniconda/bin:$PATH"
+            source activate $CONDA_ENV_NAME
+            coveralls
