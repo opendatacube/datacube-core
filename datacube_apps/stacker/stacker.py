@@ -61,33 +61,13 @@ def get_temp_file(final_output_path):
     return tmp_path
 
 
-def year_splitter(start, end):
-    """
-    Produces a list of time ranges based that represent each year in the range.
-
-    `year_splitter('1992', '1993')` returns:
-
-    ::
-        [('1992-01-01 00:00:00', '1992-12-31 23:59:59.9999999'),
-         ('1993-01-01 00:00:00', '1993-12-31 23:59:59.9999999')]
-
-    :param start str: start year
-    :param end str: end year
-    :return Generator[tuple(str, str)]: strings representing the ranges
-    """
-    start_ts = pd.Timestamp(start)
-    end_ts = pd.Timestamp(end)
-    for p in pd.period_range(start=start_ts, end=end_ts, freq='A'):
-        yield str(p.start_time), str(p.end_time)
-
-
 def make_stacker_tasks(index, config, **kwargs):
     product = config['product']
     query = {kw: arg for kw, arg in kwargs.items() if kw in ['cell_index'] and arg is not None}
 
     gw = datacube.api.GridWorkflow(index=index, product=product.name)
 
-    time_query_list = year_splitter(*kwargs['time']) if 'time' in kwargs else [None]
+    time_query_list = task_app.year_splitter(*kwargs['time']) if 'time' in kwargs else [None]
 
     for time_query in time_query_list:
         cells = gw.list_cells(product=product.name, time=time_query, **query)
