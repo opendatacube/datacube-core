@@ -11,6 +11,7 @@ extras_require = {
     'distributed': ['distributed', 'dask[distributed]'],
     'analytics': ['scipy', 'pyparsing', 'numexpr'],
     'doc': ['Sphinx', 'setuptools'],
+    'replicas': ['paramiko', 'sshtunnel', 'tqdm'],
     'test': tests_require,
 }
 # An 'all' option, following ipython naming conventions.
@@ -88,7 +89,8 @@ setup(
             'datacube = datacube.scripts.cli_app:cli',
             'datacube-stacker = datacube_apps.stacker:main',
             'pixeldrill = datacube_apps.pixeldrill:main [interactive]',
-            'movie_generator = datacube_apps.movie_generator:main'
+            'movie_generator = datacube_apps.movie_generator:main',
+            'datacube-simple-replica = datacube_apps.simple_replica:replicate'
         ]
     },
 )
