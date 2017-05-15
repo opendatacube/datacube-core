@@ -1,3 +1,5 @@
+.. _replication:
+
 ================
 Data Replication
 ================
@@ -63,8 +65,9 @@ Caveats and limitations
 -----------------------
 
 - Remote datacube files and database are accessed via an SSH host that can be
- logged into without a password, ie. by using local SSH key agent.
+  logged into without a password, ie. by using local SSH key agent.
 - The remote datacube index must be same version as the local datacube code.
+
 
 Command line documentation
 --------------------------

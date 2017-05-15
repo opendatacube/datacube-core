@@ -10,7 +10,19 @@ v1.4.0
 
 - Adds more convenient year/date range search expressions (see `#226`_)
 
+- Adds a :ref:`simple replication utility <replication>` (see `#223`_)
+
+- Fixed issue reading products without embedded CRS info, such as `bom_rainfall_grid` (see `#224`_)
+
+- Fixed issues with stacking and ncml creation for NetCDF files
+
+- Various documentation and bug fixes
+
+- Added CircleCI as a continuous build system, for previewing generated documenation on pull
+
 .. _#226: https://github.com/opendatacube/datacube-core/pull/226
+.. _#223: https://github.com/opendatacube/datacube-core/pull/223
+.. _#224: https://github.com/opendatacube/datacube-core/issues/224
 
 v1.3.1 (20 April 2017)
 ----------------------
