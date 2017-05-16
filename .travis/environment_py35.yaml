@@ -16,7 +16,6 @@ dependencies:
 - gdal
 - dask
 - xarray
-- celery >= 4
 - redis-py # redis client lib, used by celery
 - redis # redis server
 - pylint # testing
@@ -32,6 +31,7 @@ dependencies:
 - sshtunnel # for simple-replicas
 - tqdm # for simple-replicas
 - pip:
+  - celery >= 4
   - pypeg2
   - pytest-cov # testing
   - pytest-logging
