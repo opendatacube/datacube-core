@@ -16,7 +16,7 @@ dependencies:
 - gdal
 - dask
 - xarray
-- celery
+- celery >= 4
 - redis-py # redis client lib, used by celery
 - redis # redis server
 - pylint # testing

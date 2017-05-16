@@ -79,6 +79,8 @@ setup(
         'singledispatch',
         'sqlalchemy',
         'xarray',
+        'celery>=4',
+        'redis',
     ],
     extras_require=extras_require,
     tests_require=tests_require,
