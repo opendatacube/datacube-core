@@ -87,7 +87,7 @@ def test_clamp(x, lower_bound, upper_bound):
     assert lower_bound <= new_x <= upper_bound
 
 
-@given(integers(min_value=1, max_value=30))
+@given(integers(min_value=10, max_value=30))
 def test_gen_pass(n_bytes):
     password1 = gen_password(n_bytes)
     password2 = gen_password(n_bytes)
