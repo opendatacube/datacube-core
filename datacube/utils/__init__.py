@@ -694,18 +694,20 @@ def tile_iter(tile, chunk_size):
     return _block_iter(steps, tile.shape)
 
 
-def write_user_secret_file(text, fname, in_home_dir=False):
+def write_user_secret_file(text, fname, in_home_dir=False, mode='w'):
     "Write file only readable/writeable by the user"
 
     if in_home_dir:
         fname = os.path.join(os.environ['HOME'], fname)
 
-    mode = stat.S_IRUSR | stat.S_IWUSR  # Make sure file is readable by current user only
-    with os.fdopen(os.open(fname, os.O_WRONLY | os.O_CREAT, mode), 'w') as handle:
+    open_flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+    access = stat.S_IRUSR | stat.S_IWUSR  # Make sure file is readable by current user only
+    with os.fdopen(os.open(fname, open_flags, access), mode) as handle:
         handle.write(text)
+        handle.close()
 
 
-def slurp(fname, in_home_dir=False):
+def slurp(fname, in_home_dir=False, mode='r'):
     """
     Read the entire file into a string
     :param fname: file path
@@ -715,7 +717,7 @@ def slurp(fname, in_home_dir=False):
     if in_home_dir:
         fname = os.path.join(os.environ['HOME'], fname)
     try:
-        with open(fname, "r") as handle:
+        with open(fname, mode) as handle:
             return handle.read()
     except IOError:
         return None
