@@ -61,31 +61,27 @@ def get_temp_file(final_output_path):
     return tmp_path
 
 
-def make_stacker_tasks(index, config, **kwargs):
-    product = config['product']
-    query = {kw: arg for kw, arg in kwargs.items() if kw in ['cell_index'] and arg is not None}
+def make_stacker_tasks(index, config, cell_index=None, time=None, **kwargs):
+    gw = datacube.api.GridWorkflow(index=index, product=config['product'].name)
 
-    gw = datacube.api.GridWorkflow(index=index, product=product.name)
-
-    time_query_list = task_app.year_splitter(*kwargs['time']) if 'time' in kwargs else [None]
-
-    for time_query in time_query_list:
-        cells = gw.list_cells(product=product.name, time=time_query, **query)
-        for (cell_index, tile) in cells.items():
+    for query in task_app.break_query_into_years(time):
+        cells = gw.list_cells(product=config['product'].name, cell_index=cell_index, **query)
+        for (cell_index_key, tile) in cells.items():
             for (year, year_tile) in tile.split_by_time(freq='A'):
                 storage_files = set(ds.local_path for ds in itertools.chain(*year_tile.sources.values))
                 if len(storage_files) > 1:
                     year_tile = gw.update_tile_lineage(year_tile)
-                    output_filename = get_filename(config, cell_index, year)
-                    _LOG.info('Stacking required for: year=%s, cell=%s. Output=%s', year, cell_index, output_filename)
+                    output_filename = get_filename(config, cell_index_key, year)
+                    _LOG.info('Stacking required for: year=%s, cell=%s. Output=%s',
+                              year, cell_index_key, output_filename)
                     yield dict(year=year,
                                tile=year_tile,
-                               cell_index=cell_index,
+                               cell_index=cell_index_key,
                                output_filename=output_filename)
                 elif len(storage_files) == 1:
                     [only_filename] = storage_files
                     _LOG.info('Stacking not required for: year=%s, cell=%s. existing=%s',
-                              year, cell_index, only_filename)
+                              year, cell_index_key, only_filename)
 
 
 def make_stacker_config(index, config, export_path=None, **query):
@@ -236,6 +232,7 @@ def process_result(index, result):
 @task_app.task_app_options
 @task_app.task_app(make_config=make_stacker_config, make_tasks=make_stacker_tasks)
 def main(index, config, tasks, executor, queue_size, **kwargs):
+    """This script creates NetCDF files containing an entire year of tiles in the same file."""
     click.echo('Starting stacking utility...')
 
     task_func = partial(do_stack_task, config)

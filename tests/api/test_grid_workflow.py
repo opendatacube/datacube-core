@@ -126,13 +126,12 @@ def test_gridworkflow():
     assert len(padded_tile[1, -2, ti].sources.values[0]) == 2
 
 
-def test_cell():
-    """ Test GridWorkflow with padding option. """
+def test_gridworkflow_with_time_depth():
+    """Test GridWorkflow with time series.
+    Also test `Tile` methods `split` and `split_by_time`
+    """
     from mock import MagicMock
     import datetime
-
-    # ----- fake a datacube -----
-    # e.g. let there be a dataset that coincides with a grid cell
 
     fakecrs = geometry.CRS('EPSG:4326')
 
@@ -156,7 +155,7 @@ def test_cell():
     fakeindex.datasets.get_field_names.return_value = ['time']  # permit query on time
     fakeindex.datasets.search_eager.return_value = list(make_fake_datasets(100))
 
-    # ------ test without padding ----
+    # ------ test with time dimension ----
 
     from datacube.api.grid_workflow import GridWorkflow
     gw = GridWorkflow(fakeindex, gridspec)
@@ -164,8 +163,12 @@ def test_cell():
 
     cells = gw.list_cells(**query)
     for cell_index, cell in cells.items():
+
+        #  test Tile.split()
         for label, tile in cell.split('time'):
             assert tile.shape == (1, 10, 10)
+
+        #  test Tile.split_by_time()
         for year, year_cell in cell.split_by_time(freq='A'):
             for t in year_cell.sources.time.values:
                 assert str(t)[:4] == year

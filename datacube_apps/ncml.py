@@ -176,6 +176,10 @@ command_options = datacube.ui.click.compose(
 @click.argument('app_config')
 @task_app.task_app(make_config=make_ncml_config, make_tasks=make_ncml_tasks)
 def full(index, config, tasks, executor, queue_size, **kwargs):
+    """Create ncml files for the full time depth of the product
+
+    e.g. datacube-ncml full <app_config_yaml>
+    """
     click.echo('Starting datacube ncml utility...')
 
     task_func = partial(do_ncml_task, config)
@@ -188,6 +192,13 @@ def full(index, config, tasks, executor, queue_size, **kwargs):
 @click.argument('nested_years', nargs=-1, type=click.INT)
 @task_app.task_app(make_config=make_ncml_config, make_tasks=make_ncml_tasks)
 def nest(index, config, tasks, executor, queue_size, **kwargs):
+    """Create ncml files for the full time, with nested ncml files covering the given years
+
+    e.g. datacube-ncml nest <app_config_yaml> 2016 2017
+
+    This will refer to the actual files (hopefully stacked), and make ncml files for the given (ie unstacked) years.
+    Use the `update` command when new data is added to a year, without having to rerun for the entire time depth.
+    """
     click.echo('Starting datacube ncml utility...')
 
     task_func = partial(do_ncml_task, config)
@@ -200,6 +211,12 @@ def nest(index, config, tasks, executor, queue_size, **kwargs):
 @click.argument('year', type=click.INT)
 @task_app.task_app(make_config=make_ncml_config, make_tasks=make_ncml_tasks)
 def update(index, config, tasks, executor, queue_size, **kwargs):
+    """Update a single year ncml file
+
+    e.g datacube-ncml <app_config_yaml> 1996
+
+    This can be used to update an existing ncml file created with `nest` when new data is added.
+    """
     click.echo('Starting datacube ncml utility...')
 
     task_func = partial(do_ncml_task, config)

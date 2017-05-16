@@ -155,6 +155,12 @@ def validate_year(ctx, param, value):
                                  'or as an inclusive range (eg 1996-2001)')
 
 
+def break_query_into_years(time_query, **kwargs):
+    if time_query is None:
+        return kwargs
+    return [{'time': time_range}.update(kwargs) for time_range in year_splitter(*time_query)]
+
+
 def year_splitter(start, end):
     """
     Produces a list of time ranges based that represent each year in the range.
