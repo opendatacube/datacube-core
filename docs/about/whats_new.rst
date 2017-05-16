@@ -20,6 +20,8 @@ v1.4.0
 
 - Added CircleCI as a continuous build system, for previewing generated documenation on pull
 
+- Require ``xarray`` >= 0.9. Solves common problems caused by losing embedded ``flag_def`` and ``crs`` attributes.
+
 .. _#226: https://github.com/opendatacube/datacube-core/pull/226
 .. _#223: https://github.com/opendatacube/datacube-core/pull/223
 .. _#224: https://github.com/opendatacube/datacube-core/issues/224

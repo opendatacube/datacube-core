@@ -78,7 +78,7 @@ setup(
         'rasterio>=0.34',
         'singledispatch',
         'sqlalchemy',
-        'xarray',
+        'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
     ],
     extras_require=extras_require,
     tests_require=tests_require,
