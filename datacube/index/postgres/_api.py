@@ -889,13 +889,14 @@ class PostgresDbAPI(object):
         return res.inserted_primary_key[0]
 
 
-    def put_s3_dataset(self, s3_dataset_id, base_name, band,
+    def put_s3_dataset(self, s3_dataset_id, base_name, band, bucket,
                        macro_shape, chunk_size, numpy_type,
                        dimensions, regular_dims, regular_index,
                        irregular_index):
         """:type s3_dataset_id: uuid.UUID
         :type base_name: str
         :type band: str
+        :type bucket: str
         :type macro_shape: array[int]
         :type chunk_size: array[int]
         :type numpy_type: str
@@ -908,6 +909,7 @@ class PostgresDbAPI(object):
                 id=s3_dataset_id,
                 base_name=base_name,
                 band=band,
+                bucket=bucket,
                 macro_shape=macro_shape,
                 chunk_size=chunk_size,
                 numpy_type=numpy_type,
@@ -929,6 +931,7 @@ class PostgresDbAPI(object):
                 [S3_DATASET.c.id,
                  S3_DATASET.c.base_name,
                  S3_DATASET.c.band,
+                 S3_DATASET.c.bucket,
                  S3_DATASET.c.macro_shape,
                  S3_DATASET.c.chunk_size,
                  S3_DATASET.c.numpy_type,
@@ -949,12 +952,11 @@ class PostgresDbAPI(object):
         ).fetchall()
 
 
-    def put_s3_dataset_chunk(self, s3_dataset_id, s3_key, bucket,
+    def put_s3_dataset_chunk(self, s3_dataset_id, s3_key,
                              chunk_id, compression_scheme,
                              micro_shape, index_min, index_max):
         """:type s3_dataset_id: uuid.UUID
         :type key: str
-        :type bucket: str
         :type chunk_id: str
         :type compression_scheme: str
         :type micro_shape: array[int]
@@ -965,7 +967,6 @@ class PostgresDbAPI(object):
                 id=uuid.uuid4(),
                 s3_dataset_id=s3_dataset_id,
                 s3_key=s3_key,
-                bucket=bucket,
                 chunk_id=chunk_id,
                 compression_scheme=compression_scheme,
                 micro_shape=micro_shape,
@@ -981,7 +982,6 @@ class PostgresDbAPI(object):
         return self._connection.execute(
             select(
                 [S3_DATASET_CHUNK.c.s3_key,
-                 S3_DATASET_CHUNK.c.bucket,
                  S3_DATASET_CHUNK.c.chunk_id,
                  S3_DATASET_CHUNK.c.compression_scheme,
                  S3_DATASET_CHUNK.c.micro_shape,

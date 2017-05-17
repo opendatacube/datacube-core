@@ -5,6 +5,8 @@ from __future__ import absolute_import
 
 from abc import ABCMeta, abstractmethod
 from six import add_metaclass
+from contextlib import contextmanager
+
 
 @add_metaclass(ABCMeta)
 class DataSource(object):
@@ -12,16 +14,7 @@ class DataSource(object):
     '''
 
     @abstractmethod
-    def get_bandnumber(self, src):
-        '''Return the band number for a dataset source.
-
-        :param src: TODO(csiro) Do we need it for non NetCDF sources?
-        :return: The band index number.
-        '''
-        return None
-
-
-    @abstractmethod
+    @contextmanager
     def open(self):
         return None
 

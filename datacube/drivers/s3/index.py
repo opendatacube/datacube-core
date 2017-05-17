@@ -110,13 +110,16 @@ class DatasetResource(datacube.index._datasets.DatasetResource):
             irregular_indices = [index + [None] * (irregular_max_size - len(index)) \
                                  for index in irregular_indices]
 
-        self.logger.debug('put_s3_dataset(%s, %s, %s, %s, %s, %s, %s, %s ,%s, %s)',
-                          s3_dataset_id, output['base_name'], band, output['macro_shape'],
-                          output['chunk_size'], output['numpy_type'], output['dimensions'],
-                          output['regular_dims'], regular_indices, irregular_indices)
+        self.logger.debug('put_s3_dataset(%s, %s, %s, %s, %s, %s, %s, %s, %s ,%s, %s)', s3_dataset_id,
+                          output['base_name'], band, output['bucket'],
+                          output['macro_shape'], output['chunk_size'],
+                          output['numpy_type'], output['dimensions'],
+                          output['regular_dims'], regular_indices,
+                          irregular_indices)
         transaction.put_s3_dataset(s3_dataset_id,
                                    output['base_name'],
                                    band,
+                                   output['bucket'],
                                    output['macro_shape'],
                                    output['chunk_size'],
                                    output['numpy_type'],
@@ -142,13 +145,12 @@ class DatasetResource(datacube.index._datasets.DatasetResource):
             index_min = list(map(np.asscalar, key_map['index_min']))
             index_max = list(map(np.asscalar, key_map['index_max']))
 
-            self.logger.debug('put_s3_dataset_chunk(%s, %s, %s, %s, %s, %s, %s, %s)',
-                              s3_dataset_id, key_map['s3_key'], output['bucket'],
+            self.logger.debug('put_s3_dataset_chunk(%s, %s, %s, %s, %s, %s, %s)',
+                              s3_dataset_id, key_map['s3_key'],
                               key_map['chunk_id'], key_map['compression'], micro_shape,
                               index_min, index_max)
             transaction.put_s3_dataset_chunk(s3_dataset_id,
                                              key_map['s3_key'],
-                                             output['bucket'],
                                              key_map['chunk_id'],
                                              key_map['compression'],
                                              micro_shape,
@@ -209,14 +211,14 @@ class DatasetResource(datacube.index._datasets.DatasetResource):
         '''
         dataset = super(DatasetResource, self)._make(dataset_res, full_info)
 
-        dataset.s3_metadata = []
+        dataset.s3_metadata = {}
         if dataset.measurements:
             with self._db.begin() as transaction:
                 for band in dataset.measurements.keys():
                     s3_datasets = transaction.get_s3_dataset(dataset.id, band)
                     for s3_dataset in s3_datasets:
-                        dataset.s3_metadata.append({
+                        dataset.s3_metadata[band] = {
                             's3_dataset': s3_dataset,
                             's3_chunks': transaction.get_s3_dataset_chunk(s3_dataset.id)
-                        })
+                        }
         return dataset

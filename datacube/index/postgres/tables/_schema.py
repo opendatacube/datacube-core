@@ -120,6 +120,7 @@ S3_DATASET = Table(
     Column('id', postgres.UUID(as_uuid=True), primary_key=True),
     Column('base_name', String, nullable=False),
     Column('band', String, nullable=False),
+    Column('bucket', String, nullable=False),
     Column('macro_shape', postgres.ARRAY(Integer, dimensions=1), nullable=False),
     Column('chunk_size', postgres.ARRAY(Integer, dimensions=1), nullable=False),
     Column('numpy_type', String, nullable=False),
@@ -139,6 +140,8 @@ s3_dataset:
   dataset_key :: String         -- S3 object name without the chunk id
   base_name :: String           -- The macro array name
   band :: String                -- The band contained in this dataset
+  bucket :: String              -- The S3 bucket where the object is stored (so we can potentially
+                                -- shard based on bucket)
   macroshape :: [Integer]       -- The integer dimensions of this datset
   chunk_size :: [Integer]       -- The default size of each sub-dataset chunk - allows
                                 -- the chunk_id to be a single number which maps into this N-dimensional structure
@@ -156,7 +159,6 @@ S3_DATASET_CHUNK = Table(
     Column('id', postgres.UUID(as_uuid=True), primary_key=True),
     Column('s3_dataset_id', None, ForeignKey(S3_DATASET.c.id), nullable=False),
     Column('s3_key', String, nullable=False),
-    Column('bucket', String, nullable=False),
     Column('chunk_id', Integer, nullable=False),
     Column('compression_scheme', String, nullable=True),
     Column('micro_shape', postgres.ARRAY(Integer, dimensions=1), nullable=False),
@@ -170,8 +172,6 @@ An example record may look like:
          | 'none' | [1,5,256,256] | [50, 636419487, 140, -27] | [50, 642554192, 152.8, -39.8]
 s3_dataset_chunk:
   s3_dataset_id :: UUID        -- The parent dataset for this chunk
-  bucket :: String             -- The S3 bucket where the object is stored (so we can potentially
-                               -- shard based on bucket)
   s3key :: String              -- The S3 object key (this with the bucket makes up the S3 URI)
   chunk_id :: Integer          -- The (linear) index into the parent dataset for this chunk, see chunk_size
   band :: String               -- The band for this chunk -- Is this needed?? The parent already defines this
