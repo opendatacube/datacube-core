@@ -29,4 +29,4 @@ class S3TestDriver(S3Driver):
     @property
     def uri_scheme(self):
         '''URI scheme used by this driver.'''
-        return 'file_s3'
+        return 'file-s3'
