@@ -13,6 +13,7 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
+import numpy as np
 import rasterio
 import yaml
 
@@ -278,7 +279,11 @@ def create_empty_geotiff(path):
                 'transform': [25.0, 0.0, 638000.0, 0.0, -25.0, 6276000.0],
                 'width': GEOTIFF_SIZE[0]}
     with rasterio.open(path, 'w', **metadata) as dst:
-        pass
+        data = np.zeros(GEOTIFF_SIZE, dtype=np.int16)
+        for i in range(GEOTIFF_SIZE[0]):
+            for j in range(GEOTIFF_SIZE[1]):
+                data[i, j] = int(str(i)+str(j))
+        dst.write(data.astype(rasterio.int16), 1)
 
 
 @pytest.fixture
