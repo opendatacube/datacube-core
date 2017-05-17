@@ -5,6 +5,7 @@ from __future__ import absolute_import
 import logging
 import sys
 from pathlib import Path
+from collections import Iterable
 
 from .driver import Driver
 
@@ -206,7 +207,7 @@ class DriverManager(object):
         return self.driver.index.add_datasets(datasets, sources_policy)
 
 
-    def get_driver_by_scheme(self, dataset):
+    def get_driver_by_scheme(self, uris):
         '''Returns the driver required to read a dataset.
 
         Assuming all the dataset `uris` use the same scheme, this
@@ -218,14 +219,19 @@ class DriverManager(object):
         :todo: Discuss unique scheme per driver for future
         implementations.
 
-        :param datacube.model.Dataset dataset: A dataset for which to
-          find a driver.
-        :return: A driver able to handle this dataset. The first
-          element in the dataset's `uris` is used to determine the
-          dataset scheme. If not available, the scheme defaults to
-          `file`.
+        :param list uris: List of dataset locations, which may or may
+          not contain a scheme. If not, it will default to `file`.
+        :return: A driver able to handle the first `uri` is used to
+          determine the dataset scheme. If not available, the scheme
+          defaults to `file`.
         '''
-        scheme = dataset.uris[0].split(':', 1)[0] if dataset.uris and dataset.uris[0] else 'file'
+        scheme = 'file'
+        # Use only the first uri (if there is one)
+        if isinstance(uris, Iterable) and len(uris) > 0:
+            parts = uris[0].split(':', 1)
+            # If there is a scheme and body there must be 2 parts
+            if len(parts) == 2:
+                scheme = parts[0]
         for driver in self.__drivers.values():
             if scheme == driver.uri_scheme:
                 return driver
@@ -233,4 +239,4 @@ class DriverManager(object):
 
 
     def get_datasource(self, dataset, band_name=None):
-        return self.get_driver_by_scheme(dataset).get_datasource(dataset, band_name)
+        return self.get_driver_by_scheme(dataset.uris).get_datasource(dataset, band_name)

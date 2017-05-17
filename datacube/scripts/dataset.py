@@ -18,6 +18,7 @@ from datacube.index._api import Index
 from datacube.index.exceptions import MissingRecordError
 from datacube.model import Dataset
 from datacube.model import Range
+from datacube.drivers.manager import DriverManager
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.ui.common import get_metadata_path
@@ -166,6 +167,8 @@ def index_cmd(index, match_rules, dtype, auto_match, sources_policy, dry_run, da
     if rules is None:
         return
 
+    # Let driver manager determine the best driver/index for the paths
+    index = DriverManager().get_driver_by_scheme(dataset_paths).index
     # If outputting directly to terminal, show a progress bar.
     if sys.stdout.isatty():
         with click.progressbar(dataset_paths, label='Indexing datasets') as dataset_path_iter:
