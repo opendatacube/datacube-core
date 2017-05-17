@@ -3,6 +3,9 @@ Tests for datacube._celery_runner
 """
 
 from time import sleep
+import os
+import subprocess
+import pytest
 from datacube import _celery_runner as cr
 
 PORT = 29374
@@ -57,15 +60,37 @@ def test_launch_redis_with_custom_password():
     assert is_running is False
 
 
-def _echo(x):
+def _echo(x, please_fail=False):
+    if please_fail:
+        raise IOError('Fake I/O error, cause you asked')
     return x
 
 
-def test_celery_noop():
+def test_celery_with_worker():
     DATA = [1, 2, 3, 4]
-    runner = cr.CeleryExecutor(host='localhost', port=PORT)
-    future = runner.submit(_echo, 0)
 
+    def launch_worker():
+        args = ['bash', '-c',
+                'nohup datacube-worker --executor celery localhost:{} --nprocs 1 &'.format(PORT)]
+        try:
+            subprocess.check_call(args)
+        except subprocess.CalledProcessError:
+            return False
+
+        return True
+
+    if os.name == 'nt':
+        return
+
+    assert cr.check_redis('localhost', port=PORT, password='') is False
+
+    runner = cr.CeleryExecutor(host='localhost', port=PORT, password='')
+    sleep(REDIS_WAIT)
+
+    assert cr.check_redis('localhost', port=PORT, password='')
+
+    # no workers yet
+    future = runner.submit(_echo, 0)
     assert future.ready() is False
     runner.release(future)
 
@@ -77,5 +102,23 @@ def test_celery_noop():
     assert len(completed) == 0
     assert len(failed) == 0
     assert len(pending) == len(DATA)
+    # not worker test done
+
+    worker_started_ok = launch_worker()
+    assert worker_started_ok
+
+    futures = runner.map(_echo, DATA)
+    results = runner.results(futures)
+
+    assert len(results) == len(DATA)
+    assert set(results) == set(DATA)
+
+    # Test failure pass-through
+    future = runner.submit(_echo, "", please_fail=True)
+
+    for ff in runner.as_completed([future]):
+        assert ff.ready() is True
+        with pytest.raises(IOError):
+            runner.result(ff)
 
     del runner
