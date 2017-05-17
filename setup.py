@@ -88,6 +88,8 @@ setup(
             'datacube-search = datacube.scripts.search_tool:cli',
             'datacube = datacube.scripts.cli_app:cli',
             'datacube-stacker = datacube_apps.stacker:main',
+            'datacube-fixer = datacube_apps.stacker:fixer_main',
+            'datacube-ncml = datacube_apps.ncml:ncml_app',
             'pixeldrill = datacube_apps.pixeldrill:main [interactive]',
             'movie_generator = datacube_apps.movie_generator:main',
             'datacube-simple-replica = datacube_apps.simple_replica:replicate'

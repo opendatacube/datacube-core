@@ -124,3 +124,51 @@ def test_gridworkflow():
     assert len(padded_tile) == 1
     assert padded_tile[1, -2, ti].shape == (1, 14, 14)
     assert len(padded_tile[1, -2, ti].sources.values[0]) == 2
+
+
+def test_gridworkflow_with_time_depth():
+    """Test GridWorkflow with time series.
+    Also test `Tile` methods `split` and `split_by_time`
+    """
+    from mock import MagicMock
+    import datetime
+
+    fakecrs = geometry.CRS('EPSG:4326')
+
+    grid = 100  # spatial frequency in crs units
+    pixel = 10  # square pixel linear dimension in crs units
+    # if cell(0,0) has lower left corner at grid origin,
+    # and cell indices increase toward upper right,
+    # then this will be cell(1,-2).
+    gridspec = GridSpec(crs=fakecrs, tile_size=(grid, grid), resolution=(-pixel, pixel))  # e.g. product gridspec
+
+    def make_fake_datasets(num_datasets):
+        start_time = datetime.datetime(2001, 2, 15)
+        delta = datetime.timedelta(days=16)
+        for i in range(num_datasets):
+            fakedataset = MagicMock()
+            fakedataset.extent = geometry.box(left=grid, bottom=-grid, right=2*grid, top=-2*grid, crs=fakecrs)
+            fakedataset.center_time = start_time + (delta * i)
+            yield fakedataset
+
+    fakeindex = MagicMock()
+    fakeindex.datasets.get_field_names.return_value = ['time']  # permit query on time
+    fakeindex.datasets.search_eager.return_value = list(make_fake_datasets(100))
+
+    # ------ test with time dimension ----
+
+    from datacube.api.grid_workflow import GridWorkflow
+    gw = GridWorkflow(fakeindex, gridspec)
+    query = dict(product='fake_product_name')
+
+    cells = gw.list_cells(**query)
+    for cell_index, cell in cells.items():
+
+        #  test Tile.split()
+        for label, tile in cell.split('time'):
+            assert tile.shape == (1, 10, 10)
+
+        #  test Tile.split_by_time()
+        for year, year_cell in cell.split_by_time(freq='A'):
+            for t in year_cell.sources.time.values:
+                assert str(t)[:4] == year
