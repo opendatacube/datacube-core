@@ -178,6 +178,9 @@ class CeleryExecutor(object):
 
 
 def check_redis(host='localhost', port=6379, password=None):
+    if password == '':
+        password = get_redis_password()
+
     server = redis.Redis(host, port, password=password)
     try:
         server.ping()
@@ -226,6 +229,9 @@ def launch_redis(port=6379, password=None, **kwargs):
                     logfile=path.join(workdir, 'redis.log'))
 
     if password is not None:
+        if password == '':
+            password = get_redis_password(generate_if_missing=True)
+
         defaults['requirepass'] = password
     else:
         password = defaults.get('requirepass', None)
