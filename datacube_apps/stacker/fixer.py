@@ -1,5 +1,7 @@
 """
-Create time-stacked NetCDF files
+Finds single timeslice files that have not been stacked (based on filename), and rewrites them
+
+This tool is used to update NetCDF metadata for files that are not picked up by the stacker
 
 """
 from __future__ import absolute_import, print_function
@@ -9,18 +11,20 @@ import datetime
 import itertools
 import logging
 import os
+import re
 import socket
 from functools import partial
+from collections import Counter
 
 import click
 import dask.array as da
 import dask
 from dateutil import tz
-import pandas as pd
 from pathlib import Path
+import pandas as pd
+import xarray as xr
 
 import datacube
-from datacube.api import Tile
 from datacube.model import Dataset
 from datacube.model.utils import xr_apply, datasets_to_doc
 from datacube.storage import netcdf_writer
@@ -32,12 +36,12 @@ from datacube.ui.click import to_pathlib
 _LOG = logging.getLogger(__name__)
 
 
-APP_NAME = 'datacube-stacker'
+APP_NAME = 'datacube-fixer'
 
 
-def get_filename(config, cell_index, year):
+def make_filename(config, cell_index, start_time):
     file_path_template = str(Path(config['location'], config['file_path_template']))
-    return file_path_template.format(tile_index=cell_index, start_time=year, version=config['taskfile_version'])
+    return file_path_template.format(tile_index=cell_index, start_time=start_time, version=config['taskfile_version'])
 
 
 def get_temp_file(final_output_path):
@@ -61,30 +65,42 @@ def get_temp_file(final_output_path):
     return tmp_path
 
 
-def make_stacker_tasks(index, config, cell_index=None, time=None, **kwargs):
+FIND_TIME_RE = re.compile(r'.+_(?P<start_time>\d+)(?:_v\d+)?\.nc\Z')
+
+
+def get_single_dataset_paths(cell):
+    cnt = Counter(ds.local_path for ds in itertools.chain(*cell.sources.values))
+    files_to_fix = [local_path for local_path, count in cnt.items()
+                    if count == 1 and FIND_TIME_RE.search(str(local_path)).groups()]
+    return files_to_fix
+
+
+def make_fixer_tasks(index, config, time=None, cell_index=None, **kwargs):
+    """Find datasets that have a location not shared by other datasets and make it into a task
+    """
     gw = datacube.api.GridWorkflow(index=index, product=config['product'].name)
 
     for query in task_app.break_query_into_years(time):
         cells = gw.list_cells(product=config['product'].name, cell_index=cell_index, **query)
-        for (cell_index_key, tile) in cells.items():
-            for (year, year_tile) in tile.split_by_time(freq='A'):
-                storage_files = set(ds.local_path for ds in itertools.chain(*year_tile.sources.values))
-                if len(storage_files) > 1:
-                    year_tile = gw.update_tile_lineage(year_tile)
-                    output_filename = get_filename(config, cell_index_key, year)
-                    _LOG.info('Stacking required for: year=%s, cell=%s. Output=%s',
-                              year, cell_index_key, output_filename)
-                    yield dict(year=year,
-                               tile=year_tile,
-                               cell_index=cell_index_key,
-                               output_filename=output_filename)
-                elif len(storage_files) == 1:
-                    [only_filename] = storage_files
-                    _LOG.info('Stacking not required for: year=%s, cell=%s. existing=%s',
-                              year, cell_index_key, only_filename)
+
+        for cell_index_key, cell in cells.items():
+            files_to_fix = get_single_dataset_paths(cell)
+            if files_to_fix:
+                for time, tile in cell.split('time'):
+                    source_path = tile.sources.values.item()[0].local_path
+                    if source_path in files_to_fix:
+                        tile = gw.update_tile_lineage(tile)
+                        start_time = '{0:%Y%m%d%H%M%S%f}'.format(pd.Timestamp(time).to_datetime())
+                        output_filename = make_filename(config, cell_index_key, start_time)
+                        _LOG.info('Fixing required for: time=%s, cell=%s. Output=%s',
+                                  start_time, cell_index_key, output_filename)
+                        yield dict(start_time=time,
+                                   tile=tile,
+                                   cell_index=cell_index_key,
+                                   output_filename=output_filename)
 
 
-def make_stacker_config(index, config, export_path=None, **query):
+def make_fixer_config(index, config, export_path=None, **query):
     config['product'] = index.products.get_by_name(config['output_type'])
 
     if export_path is not None:
@@ -113,8 +129,19 @@ def make_stacker_config(index, config, export_path=None, **query):
     return config
 
 
-def get_history_attribute(config, task):
-    return '{dt} {user} {app} ({ver}) {args}  # {comment}'.format(
+def build_history_string(config, task, keep_original=True):
+    tile = task['tile']
+    input_path = str(tile.sources[0].item()[0].local_path)
+    if keep_original:
+        original_dataset = xr.open_dataset(input_path)
+        original_history = original_dataset.attrs.get('history', '')
+    else:
+        original_history = 'Original file at {}'.format(input_path)
+
+    if original_history:
+        original_history += '\n'
+
+    new_history = '{dt} {user} {app} ({ver}) {args}  # {comment}'.format(
         dt=datetime.datetime.now(tz.tzlocal()).isoformat(),
         user=os.environ.get('USERNAME') or os.environ.get('USER'),
         app=APP_NAME,
@@ -123,20 +150,23 @@ def get_history_attribute(config, task):
                         str(config['version']),
                         str(config['taskfile_version']),
                         task['output_filename'],
-                        str(task['year']),
+                        str(task['start_time']),
                         str(task['cell_index'])
                        ]),
-        comment='Stacking datasets for a year into a single NetCDF file'
+        comment='Updating NetCDF metadata from config file'
     )
+    return original_history + new_history
 
 
 def _unwrap_dataset_list(labels, dataset_list):
     return dataset_list[0]
 
 
-def do_stack_task(config, task):
+def do_fixer_task(config, task):
     global_attributes = config['global_attributes']
-    global_attributes['history'] = get_history_attribute(config, task)
+
+    # Don't keep the original history if we are trying to fix it
+    global_attributes['history'] = build_history_string(config, task, keep_original=False)
 
     variable_params = config['variable_params']
 
@@ -230,15 +260,15 @@ def process_result(index, result):
               type=click.Path(exists=True, writable=True, file_okay=False))
 @task_app.queue_size_option
 @task_app.task_app_options
-@task_app.task_app(make_config=make_stacker_config, make_tasks=make_stacker_tasks)
-def main(index, config, tasks, executor, queue_size, **kwargs):
-    """This script creates NetCDF files containing an entire year of tiles in the same file."""
-    click.echo('Starting stacking utility...')
+@task_app.task_app(make_config=make_fixer_config, make_tasks=make_fixer_tasks)
+def fixer(index, config, tasks, executor, queue_size, **kwargs):
+    """This script rewrites unstacked dataset files to correct their NetCDF metadata."""
+    click.echo('Starting fixer utility...')
 
-    task_func = partial(do_stack_task, config)
+    task_func = partial(do_fixer_task, config)
     process_func = partial(process_result, index) if config['index_datasets'] else None
     task_app.run_tasks(tasks, executor, task_func, process_func, queue_size)
 
 
 if __name__ == '__main__':
-    main()
+    fixer()
