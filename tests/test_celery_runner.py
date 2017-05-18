@@ -60,14 +60,13 @@ def test_launch_redis_with_custom_password():
     assert is_running is False
 
 
-def _echo(x, please_fail=False):
-    if please_fail:
-        raise IOError('Fake I/O error, cause you asked')
-    return x
-
-
 def test_celery_with_worker():
     DATA = [1, 2, 3, 4]
+
+    def _echo(x, please_fail=False):
+        if please_fail:
+            raise IOError('Fake I/O error, cause you asked')
+        return x
 
     def launch_worker():
         args = ['bash', '-c',
