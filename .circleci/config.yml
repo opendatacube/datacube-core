@@ -55,7 +55,7 @@ jobs:
 
             hash -r
             echo $PATH
-            which redis-server
+            echo $(which redis-server)
 
             pep8 tests integration_tests examples utils --max-line-length 120
 
