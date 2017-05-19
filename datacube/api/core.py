@@ -312,6 +312,8 @@ class Datacube(object):
             geobox = geometry.GeoBox.from_geopolygon(query_geopolygon(**query) or get_bounds(observations, crs),
                                                      resolution, crs, align)
 
+        _validate_geobox(geobox)
+
         group_by = query_group_by(**query)
         grouped = self.group_datasets(observations, group_by)
 
@@ -530,6 +532,21 @@ class Datacube(object):
 
     def __exit__(self, type_, value, traceback):
         self.close()
+
+
+def _validate_geobox(geobox):
+    min_res, max_res = 0.1, 1e6
+    if geobox.crs.geographic:
+        min_res, max_res = min_res*1e-5, max_res*1e-5
+
+    if abs(geobox.resolution[0]) < min_res or abs(geobox.resolution[1]) < min_res:
+        raise ValueError('Resolution too high: %d x %d' % geobox.resolution[::-1])
+
+    if abs(geobox.resolution[0]) > max_res or abs(geobox.resolution[1]) > max_res:
+        raise ValueError('Resolution too coarse: %d x %d' % geobox.resolution[::-1])
+
+    if geobox.width * geobox.height > 1e12:
+        raise ValueError('Geobox too large: %d x %d' % geobox.shape[::-1])
 
 
 def fuse_lazy(datasets, geobox, measurement, fuse_func=None, prepend_dims=0):
