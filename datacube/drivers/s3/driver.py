@@ -200,4 +200,4 @@ class S3Driver(Driver):
 
     def get_datasource(self, dataset, measurement_id):
         '''See :meth:`datacube.drivers.driver.get_datasource`'''
-        return S3DataSource(dataset, measurement_id)
+        return S3DataSource(dataset, measurement_id, self.storage)
