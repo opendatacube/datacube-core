@@ -8,9 +8,10 @@ import itertools
 import logging
 import os
 import shutil
+from datetime import datetime, timedelta
 from contextlib import contextmanager
 from pathlib import Path
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 import numpy as np
@@ -38,17 +39,14 @@ testdata: {test_tile_folder}
 eotiles: {eotiles_tile_folder}
 """
 
-GEOTIFF_SIZE = (250, 250)  # (9721, 8521)
+GEOTIFF_SIZE = (9721, 8521)  # (250, 250)  # (9721, 8521)
 '''(width, height) of geotiff to create.'''
+
 INTEGRATION_DEFAULT_CONFIG_PATH = Path(__file__).parent.joinpath('agdcintegration.conf')
 
 _EXAMPLE_LS5_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('example-ls5-nbar.yaml')
-_EXAMPLE_LS5_NBAR_DATASET_FILE_TMPL = Path(__file__).parent.joinpath('example-ls5-nbar_%d.yaml')
-EXAMPLE_LS5_NBAR_DATASET_IDS = {
-    302: UUID('81c328d7-b5f4-41c0-9980-47560e6e8907')
-    # 505: UUID('dffb6d9b-8a68-4e01-87b6-3f2759968645'),
-    # 606: UUID('6bceffa0-e813-4017-af56-1f86bc9795ee')
-}
+_TIME_SLICES = 1
+'''Number of time slices to create in the sample data.'''
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs' / 'config_samples'
@@ -222,31 +220,56 @@ def example_ls5_dataset_path(tmpdir):
 
 @pytest.fixture
 def example_ls5_dataset_paths(tmpdir):
-    '''Create 3 sample observations.
+    '''Create sample raw observations (dataset + geotiff).
 
-    Each observation corresponds to a different timestamp, based on
-    `LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900[302, 505, 606]` and
-    contains 3 empty geotiffs, for 3 bands.
+    `_TIME_SLICES` observations are created by writing versions of
+    `_EXAMPLE_LS5_NBAR_DATASET_FILE` with distinct date and ID
+    parameters and creating geotiffs accordingly. 3 bands are created.
 
-    Returns:
-      dict: Dict of directories containing each observation, indexed
-      by observation id.
+    :param tmpdir: The temp directoru in which to create the datasets.
+    :return: dict: Dict of directories containing each observation,
+      indexed by dataset UUID.
+
     '''
-    scene_name = 'LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900%d'
+    start = datetime(1990, 3, 2)
+    scene_name = 'LS5_TM_NBAR_P54_GANBAR01-002_090_084_{0:%Y%m%d}'
     dataset_dir = tmpdir.mkdir('ls5_dataset')
     dataset_dirs = {}
-    for obs_id in EXAMPLE_LS5_NBAR_DATASET_IDS.keys():
-        obs_name = scene_name % obs_id
+    with open(str(_EXAMPLE_LS5_NBAR_DATASET_FILE), 'r') as yaml_file:
+        yaml = yaml_file.read()
+
+    # We make a single geotiff file and copy it to each time slice and
+    # band, to save time
+    geotiff_path = dataset_dir.join('generic.tif')
+    geotiff = create_empty_geotiff(str(geotiff_path))
+
+    for time_count in range(_TIME_SLICES):
+        # Create one time slice each 24h after the start date
+        day = start + timedelta(days=time_count)
+        obs_name = scene_name.format(day)
         obs_dir = dataset_dir.mkdir(obs_name)
-        shutil.copy(str(_EXAMPLE_LS5_NBAR_DATASET_FILE_TMPL) % obs_id,
-                    str(obs_dir.join('agdc-metadata.yaml')))
-        geotiff_name = '%s_B{}0.tif' % obs_name
+        uuid = uuid4()
+        # Replace all items that must be unique: dates (2 formats),
+        # Dataset UUID, UUIDs appearing in lineage. Remove `output`
+        # subdirectory.
+        day_yaml = yaml \
+            .replace(start.strftime('%Y-%m-%d'), day.strftime('%Y-%m-%d')) \
+            .replace(start.strftime('%Y%m%d'), day.strftime('%Y%m%d')) \
+            .replace('bbf3e21c-82b0-11e5-9ba1-a0000100fe80', str(uuid)) \
+            .replace('ee983642-1cd3-11e6-aaba-a0000100fe80', str(uuid4())) \
+            .replace('100a8412-6017-11e5-b4fe-ac162d791418', str(uuid4())) \
+            .replace('product/', '')
+        with open(str(obs_dir.join('agdc-metadata.yaml')), 'w') as yaml_file:
+            yaml_file.write(day_yaml)
         scene_dir = obs_dir.mkdir('scene01')
         scene_dir.join('report.txt').write('Example')
+        geotiff_name = '%s_B{}0.tif' % obs_name
         for band in (1, 2, 3):
             path = scene_dir.join(geotiff_name.format(band))
-            create_empty_geotiff(str(path))
-        dataset_dirs[obs_id] = Path(str(obs_dir))
+            shutil.copy(str(geotiff_path), str(path))
+        dataset_dirs[uuid] = Path(str(obs_dir))
+
+    os.remove(str(geotiff_path))
     return dataset_dirs
 
 
@@ -279,11 +302,21 @@ def create_empty_geotiff(path):
                 'transform': [25.0, 0.0, 638000.0, 0.0, -25.0, 6276000.0],
                 'width': GEOTIFF_SIZE[0]}
     with rasterio.open(path, 'w', **metadata) as dst:
-        data = np.zeros(GEOTIFF_SIZE, dtype=np.int16)
-        for i in range(GEOTIFF_SIZE[0]):
-            for j in range(GEOTIFF_SIZE[1]):
-                data[i, j] = int(str(i)+str(j))
-        dst.write(data.astype(rasterio.int16), 1)
+        pass
+        # Write in corners (fast)
+        # data = np.zeros(GEOTIFF_SIZE, dtype=np.int16)
+        # data[0][0] = 100
+        # data[GEOTIFF_SIZE[0] - 1][0] = 200
+        # data[0][GEOTIFF_SIZE[1] - 1] = 300
+        # data[GEOTIFF_SIZE[0] - 1][GEOTIFF_SIZE[1] - 1] = 400
+        # print('>>>>>>>>>>', data)
+
+        # Write arranged data (slow)
+        # dst.write(data, 1) #.astype(rasterio.int16), 1)
+        # for i in range(GEOTIFF_SIZE[0]):
+        #     for j in range(GEOTIFF_SIZE[1]):
+        #         data[i, j] = int(str(i)+str(j))
+        # dst.write(data.astype(rasterio.int16), 1)
 
 
 @pytest.fixture

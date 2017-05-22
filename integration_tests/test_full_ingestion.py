@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import warnings
 from pathlib import Path
+from uuid import UUID
 
 import netCDF4
 import numpy as np
@@ -14,7 +15,6 @@ from datacube.api.query import query_group_by
 
 import datacube.scripts.cli_app
 from datacube.utils import geometry, read_documents
-from .conftest import EXAMPLE_LS5_NBAR_DATASET_IDS
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
@@ -45,7 +45,9 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset_
        'driver' in config['storage']:
         driver = config['storage']['driver']
 
-    for obs_id, example_ls5_dataset_path in example_ls5_dataset_paths.items():
+    valid_uuids = []
+    for uuid, example_ls5_dataset_path in example_ls5_dataset_paths.items():
+        valid_uuids.append(uuid)
         opts = list(global_integration_cli_args)
         opts.extend(
             [
@@ -67,7 +69,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset_
         assert not result.exception
         assert result.exit_code == 0
 
-    ensure_datasets_are_indexed(index)
+    ensure_datasets_are_indexed(index, valid_uuids)
 
     # TODO(csiro) Set time dimension when testing
     # config['storage']['tile_size']['time'] = 2
@@ -92,35 +94,31 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset_
     assert not result.exception
     assert result.exit_code == 0
 
-    # TODO(csiro): Add checks on data and indexing when available. For
-    # now, stop test here for s3 and s3-test drivers
-    if driver in ('s3', 's3-test'):
-        check_open_with_api(index)
-        print('s3-test: Stopping here for now')
-        return
-
     datasets = index.datasets.search_eager(product='ls5_nbar_albers')
     assert len(datasets) > 0
     assert datasets[0].managed
 
-    ds_path = str(datasets[0].local_path)
-    with netCDF4.Dataset(ds_path) as nco:
-        check_data_shape(nco)
-        check_grid_mapping(nco)
-        check_cf_compliance(nco)
-        check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset_path)
-        check_attributes(nco, config['global_attributes'])
+    check_open_with_api(index, len(valid_uuids))
+    check_data_with_api(index, len(valid_uuids))
 
-        name = config['measurements'][0]['name']
-        check_attributes(nco[name], config['measurements'][0]['attrs'])
-    check_open_with_xarray(ds_path)
-    check_open_with_api(index)
+    # NetCDF specific checks, based on the saved NetCDF file
+    if driver == 'NetCDF CF':
+        ds_path = str(datasets[0].local_path)
+        with netCDF4.Dataset(ds_path) as nco:
+            check_data_shape(nco)
+            check_grid_mapping(nco)
+            check_cf_compliance(nco)
+            check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset_paths)
+            check_attributes(nco, config['global_attributes'])
+
+            name = config['measurements'][0]['name']
+            check_attributes(nco[name], config['measurements'][0]['attrs'])
+        check_open_with_xarray(ds_path)
 
 
-def ensure_datasets_are_indexed(index):
+def ensure_datasets_are_indexed(index, valid_uuids):
     datasets = index.datasets.search_eager(product='ls5_nbar_scene')
-    assert len(datasets) == len(EXAMPLE_LS5_NBAR_DATASET_IDS)
-    valid_uuids = list(EXAMPLE_LS5_NBAR_DATASET_IDS.values())
+    assert len(datasets) == len(valid_uuids)
     for dataset in datasets:
         assert dataset.id in valid_uuids
 
@@ -166,15 +164,23 @@ def check_attributes(obj, attrs):
         assert obj.getncattr(k) == v
 
 
-def check_dataset_metadata_in_storage_unit(nco, dataset_dir):
+def check_dataset_metadata_in_storage_unit(nco, dataset_dirs):
+    '''Check one of the NetCDF files metadata against the original
+    metadata.'''
     assert len(nco.variables['dataset']) == 1  # 1 time slice
     stored_metadata = nco.variables['dataset'][0]
     if not isinstance(stored_metadata, str):
         stored_metadata = netCDF4.chartostring(stored_metadata)
         stored_metadata = str(np.char.decode(stored_metadata))
-    ds_filename = dataset_dir / 'agdc-metadata.yaml'
-
     stored = yaml.safe_load(stored_metadata)
+
+    assert 'lineage' in stored
+    assert 'source_datasets' in stored['lineage']
+    assert '0' in stored['lineage']['source_datasets']
+    assert 'id' in stored['lineage']['source_datasets']['0']
+    source_uuid = UUID(stored['lineage']['source_datasets']['0']['id'])
+    assert source_uuid in dataset_dirs
+    ds_filename = dataset_dirs[source_uuid] / 'agdc-metadata.yaml'
     [(_, original)] = read_documents(ds_filename)
     assert len(stored['lineage']['source_datasets']) == 1
     assert next(iter(stored['lineage']['source_datasets'].values())) == original
@@ -185,7 +191,7 @@ def check_open_with_xarray(file_path):
     xarray.open_dataset(str(file_path))
 
 
-def check_open_with_api(index):
+def check_open_with_api(index, time_slices):
     from datacube import Datacube
     dc = Datacube(index=index)
 
@@ -197,4 +203,25 @@ def check_open_with_api(index):
     group_by = query_group_by('time')
     sources = dc.group_datasets(observations, group_by)
     data = dc.load_data(sources, geobox, input_type.measurements.values())
-    assert data.blue.shape == (1, 200, 200)
+    assert data.blue.shape == (time_slices, 200, 200)
+
+
+def check_data_with_api(index, time_slices):
+    from datacube import Datacube
+    dc = Datacube(index=index)
+
+    input_type_name = 'ls5_nbar_albers'
+    input_type = dc.index.products.get_by_name(input_type_name)
+
+    # https://mygeodata.cloud/cs2cs/
+    # EPSG:3577 (1500000;-3900000) <--> EPSG:28355 (636826.221971;6144968.36619)
+    # EPSG:3577 (1516212.85946;-3769333.07648) <--> EPSG:28355 (638000.0;6276000.0)
+    # geobox = geometry.GeoBox(200, 200, Affine(25, 0.0, 1516212.85946, 0.0, -25, -3769333.07648),
+    # geometry.CRS('EPSG:3577'))
+    geobox = geometry.GeoBox(200, 200, Affine(25, 0.0, 1500000, 0.0, -25, -3900000), geometry.CRS('EPSG:3577'))
+    observations = dc.find_datasets(product='ls5_nbar_albers', geopolygon=geobox.extent)
+    group_by = query_group_by('time')
+    sources = dc.group_datasets(observations, group_by)
+    data = dc.load_data(sources, geobox, input_type.measurements.values())
+    # print(data.blue)
+    assert data.blue.values[0][0][0] == 0
