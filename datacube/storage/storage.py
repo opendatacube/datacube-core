@@ -541,7 +541,7 @@ class DatasetSource(BaseRasterDataSource):
             if isinstance(band, integer_types):
                 return band
             else:
-                _LOG.warn('Expected "band" property to be of integer type')
+                _LOG.warning('Expected "band" property to be of integer type')
 
         if 'netcdf' not in self._dataset.format.lower():
             layer_id = self._measurement.get('layer', 1)
