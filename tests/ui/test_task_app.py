@@ -60,3 +60,80 @@ def test_task_app_with_task_file(tmpdir):
     assert taskfile.check()
 
     my_test_app(index, input_tasks_file=str(taskfile), app_arg=True)
+
+
+def test_task_app_year_splitting():
+    import pandas as pd
+    from datacube.ui.task_app import validate_year, break_query_into_years
+    one_millisecond = pd.Timedelta('1 ms')
+
+    def is_close(ts1, ts2, max_delta=one_millisecond):
+        return abs(pd.Timestamp(ts1) - pd.Timestamp(ts2)) < max_delta
+
+    year_range = validate_year(None, None, '1996-2004')
+    assert is_close(year_range[0], '1996-01-01 00:00:00')
+    assert is_close(year_range[1], '2004-12-31 23:59:59.999999999')
+
+    year_range = validate_year(None, None, '2003')
+    assert is_close(year_range[0], '2003-01-01 00:00:00')
+    assert is_close(year_range[1], '2003-12-31 23:59:59.999999999')
+
+    # Test that a no year range makes a single query
+    year_range = None
+    query = break_query_into_years(year_range)
+    assert len(query) == 1
+    assert query[0] == {}
+
+    # Test that a no year range makes a single query with additional params
+    year_range = None
+    test_cell_index = (11, 12)
+    query = break_query_into_years(year_range, cell_index=test_cell_index)
+    assert len(query) == 1
+    assert query[0] == {'cell_index': test_cell_index}
+
+    # Test that a single year makes a single query
+    year_range = ("1996", "1996")
+    query = break_query_into_years(year_range)
+    assert len(query) == 1
+    assert is_close(query[0]['time'][0], '1996-01-01 00:00:00')
+    assert is_close(query[0]['time'][1], '1996-12-31 23:59:59.999999999')
+
+    # Test that a multiple years makes multiple queries
+    year_range = ("1996", "1997")
+    query = break_query_into_years(year_range)
+    assert len(query) == 2
+    assert is_close(query[0]['time'][0], '1996-01-01 00:00:00')
+    assert is_close(query[0]['time'][1], '1996-12-31 23:59:59.999999999')
+    assert is_close(query[1]['time'][0], '1997-01-01 00:00:00')
+    assert is_close(query[1]['time'][1], '1997-12-31 23:59:59.999999999')
+
+    # Check that additional kwargs can be used in the query
+    year_range = ("1996", "1997")
+    test_cell_index = (11, 12)
+    query = break_query_into_years(year_range, cell_index=test_cell_index)
+    assert len(query) == 2
+    assert is_close(query[0]['time'][0], '1996-01-01 00:00:00')
+    assert is_close(query[0]['time'][1], '1996-12-31 23:59:59.999999999')
+    assert query[0]['cell_index'] == test_cell_index
+    assert is_close(query[1]['time'][0], '1997-01-01 00:00:00')
+    assert is_close(query[1]['time'][1], '1997-12-31 23:59:59.999999999')
+    assert query[1]['cell_index'] == test_cell_index
+
+
+def test_task_app_cell_index(tmpdir):
+    from datacube.ui.task_app import validate_cell_index, validate_cell_list, cell_list_to_file
+
+    assert validate_cell_index(None, None, '17,-12') == (17, -12)
+
+    cell_list = [(17, 12), (16, -10), (-23, 0)]
+
+    cell_list_file = tmpdir.join('cell_list.txt')
+    if cell_list_file.exists():
+        cell_list_file.unlink()
+    assert not cell_list_file.check()
+
+    cell_list_to_file(str(cell_list_file), cell_list)
+
+    assert cell_list_file.check()
+
+    assert validate_cell_list(None, None, str(cell_list_file)) == cell_list
