@@ -4,7 +4,8 @@ Module
 """
 from __future__ import absolute_import
 
-from datacube.ui.task_app import task_app
+from datacube.ui.task_app import task_app, run_tasks
+import datacube.executor
 
 
 def make_test_config(index, config, **kwargs):
@@ -153,3 +154,21 @@ def test_task_app_cell_index(tmpdir):
     assert cell_list_file.check()
 
     assert validate_cell_list(None, None, str(cell_list_file)) == cell_list
+
+
+def test_run_tasks():
+    executor = datacube.executor.SerialExecutor()
+    tasks = ({'val': i} for i in range(3))
+    tasks_to_do = list(range(3))
+
+    def task_func(task):
+        x = task['val']
+        return (x, x**2)
+
+    def process_result_func(result):
+        assert result[0]**2 == result[1]
+        tasks_to_do.remove(result[0])
+
+    run_tasks(tasks, executor, task_func, process_result_func)
+
+    assert not tasks_to_do
