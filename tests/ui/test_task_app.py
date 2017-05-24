@@ -62,6 +62,22 @@ def test_task_app_with_task_file(tmpdir):
     my_test_app(index, input_tasks_file=str(taskfile), app_arg=True)
 
 
+def test_task_app_with_no_tasks(tmpdir):
+    index = 'Fake Index'
+
+    app_config = tmpdir.join("app_config.yaml")
+    app_config.write('name: Test Config\r\n'
+                     'description: This is my test app config file\r\n'
+                     'num_tasks: 0')
+
+    taskfile = tmpdir.join("tasks.bin")
+    assert not taskfile.check()
+
+    my_test_app(index, app_config=str(app_config), output_tasks_file=str(taskfile), config_arg=True, task_arg=True)
+
+    assert not taskfile.check()
+
+
 def test_task_app_year_splitting():
     import pandas as pd
     from datacube.ui.task_app import validate_year, break_query_into_years
