@@ -12,7 +12,7 @@ def make_test_config(index, config, **kwargs):
     assert 'config_arg' in kwargs
 
     config['some_item'] = 'make_test_config'
-    config['num_tasks'] = kwargs.get('num_tasks', 3)
+    config['num_tasks'] = config.get('num_tasks', 3)
     return config
 
 
