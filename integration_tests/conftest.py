@@ -33,6 +33,14 @@ from datacube.index._api import Index, _DEFAULT_METADATA_TYPES_PATH
 from datacube.index.postgres import PostgresDb
 from datacube.index.postgres.tables import _core
 
+# On Windows, symlinks are not supported in Python 2 and require
+# specific privileges otherwise, so we copy instead of linking
+if os.name == 'nt' or not hasattr(os, 'symlink'):
+    symlink = shutil.copy
+else:
+    symlink = os.symlink
+
+
 _SINGLE_RUN_CONFIG_TEMPLATE = """
 [locations]
 testdata: {test_tile_folder}
@@ -47,6 +55,9 @@ INTEGRATION_DEFAULT_CONFIG_PATH = Path(__file__).parent.joinpath('agdcintegratio
 _EXAMPLE_LS5_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('example-ls5-nbar.yaml')
 _TIME_SLICES = 1
 '''Number of time slices to create in the sample data.'''
+
+_BANDS = 3
+'''Number of bands to generate geotiffs for.'''
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs' / 'config_samples'
@@ -201,25 +212,64 @@ def ls5_telem_type(index, ls5_telem_doc):
     return index.products.add_document(ls5_telem_doc)
 
 
+@pytest.fixture(scope='session')
+def geotiffs(tmpdir_factory):
+    '''Create one geotiff per band, to be uses by all tests in the session.
+
+    :return: Dict of geotiffs paths indexed by band. These geotiffs
+      can then be symlinked by each test to save generation time and
+      disk space.
+    '''
+    tiffs = {}
+    tiffs_dir = tmpdir_factory.mktemp('tiffs')
+    metadata = {'count': 1,
+                'crs': 'EPSG:28355',
+                'driver': 'GTiff',
+                'dtype': 'int16',
+                'height': GEOTIFF_SIZE[1],
+                'nodata': -999.0,
+                'transform': [25.0, 0.0, 638000.0, 0.0, -25.0, 6276000.0],
+                'width': GEOTIFF_SIZE[0]}
+    for band in range(_BANDS):
+        path = str(tiffs_dir.join('band%02d.tif' % (band + 1)))
+        with rasterio.open(path, 'w', **metadata) as dst:
+            pass
+            # Write in corners (fast)
+            # data = np.zeros(GEOTIFF_SIZE, dtype=np.int16)
+            # data[0][0] = 100
+            # data[GEOTIFF_SIZE[0] - 1][0] = 200
+            # data[0][GEOTIFF_SIZE[1] - 1] = 300
+            # data[GEOTIFF_SIZE[0] - 1][GEOTIFF_SIZE[1] - 1] = 400
+            # print('>>>>>>>>>>', data)
+
+            # Write arranged data (slow)
+            # dst.write(data, 1) #.astype(rasterio.int16), 1)
+            # for i in range(GEOTIFF_SIZE[0]):
+            #     for j in range(GEOTIFF_SIZE[1]):
+            #         data[i, j] = int(str(i)+str(j))
+            # dst.write(data.astype(rasterio.int16), 1)
+        tiffs[band] = path
+    return tiffs
+
+
 @pytest.fixture
-def example_ls5_dataset_path(tmpdir):
+def example_ls5_dataset_path(tmpdir, geotiffs):
     # Based on LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302
     dataset_dir = tmpdir.mkdir('ls5_dataset')
     shutil.copy(str(_EXAMPLE_LS5_NBAR_DATASET_FILE), str(dataset_dir.join('agdc-metadata.yaml')))
 
-    # Write geotiffs
+    # Link geotiffs
     geotiff_name = "LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B{}0.tif"
     scene_dir = dataset_dir.mkdir('product').mkdir('scene01')
     scene_dir.join('report.txt').write('Example')
-    for num in (1, 2, 3):
-        path = scene_dir.join(geotiff_name.format(num))
-        create_empty_geotiff(str(path))
-
+    for band in range(_BANDS):
+        path = scene_dir.join(geotiff_name.format(band + 1))
+        symlink(str(geotiffs[band]), str(path))
     return Path(str(dataset_dir))
 
 
 @pytest.fixture
-def example_ls5_dataset_paths(tmpdir):
+def example_ls5_dataset_paths(tmpdir, geotiffs):
     '''Create sample raw observations (dataset + geotiff).
 
     `_TIME_SLICES` observations are created by writing versions of
@@ -237,11 +287,6 @@ def example_ls5_dataset_paths(tmpdir):
     dataset_dirs = {}
     with open(str(_EXAMPLE_LS5_NBAR_DATASET_FILE), 'r') as yaml_file:
         yaml = yaml_file.read()
-
-    # We make a single geotiff file and copy it to each time slice and
-    # band, to save time
-    geotiff_path = dataset_dir.join('generic.tif')
-    geotiff = create_empty_geotiff(str(geotiff_path))
 
     for time_count in range(_TIME_SLICES):
         # Create one time slice each 24h after the start date
@@ -264,12 +309,10 @@ def example_ls5_dataset_paths(tmpdir):
         scene_dir = obs_dir.mkdir('scene01')
         scene_dir.join('report.txt').write('Example')
         geotiff_name = '%s_B{}0.tif' % obs_name
-        for band in (1, 2, 3):
-            path = scene_dir.join(geotiff_name.format(band))
-            shutil.copy(str(geotiff_path), str(path))
+        for band in range(_BANDS):
+            path = scene_dir.join(geotiff_name.format(band + 1))
+            symlink(str(geotiffs[band]), str(path))
         dataset_dirs[uuid] = Path(str(obs_dir))
-
-    os.remove(str(geotiff_path))
     return dataset_dirs
 
 
@@ -290,33 +333,6 @@ def ls5_nbar_ingest_config(tmpdir, driver):
     with open(str(config_path), 'w') as stream:
         yaml.dump(config, stream)
     return config_path, config
-
-
-def create_empty_geotiff(path):
-    metadata = {'count': 1,
-                'crs': 'EPSG:28355',
-                'driver': 'GTiff',
-                'dtype': 'int16',
-                'height': GEOTIFF_SIZE[1],
-                'nodata': -999.0,
-                'transform': [25.0, 0.0, 638000.0, 0.0, -25.0, 6276000.0],
-                'width': GEOTIFF_SIZE[0]}
-    with rasterio.open(path, 'w', **metadata) as dst:
-        pass
-        # Write in corners (fast)
-        # data = np.zeros(GEOTIFF_SIZE, dtype=np.int16)
-        # data[0][0] = 100
-        # data[GEOTIFF_SIZE[0] - 1][0] = 200
-        # data[0][GEOTIFF_SIZE[1] - 1] = 300
-        # data[GEOTIFF_SIZE[0] - 1][GEOTIFF_SIZE[1] - 1] = 400
-        # print('>>>>>>>>>>', data)
-
-        # Write arranged data (slow)
-        # dst.write(data, 1) #.astype(rasterio.int16), 1)
-        # for i in range(GEOTIFF_SIZE[0]):
-        #     for j in range(GEOTIFF_SIZE[1]):
-        #         data[i, j] = int(str(i)+str(j))
-        # dst.write(data.astype(rasterio.int16), 1)
 
 
 @pytest.fixture
