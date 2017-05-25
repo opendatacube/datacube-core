@@ -5,8 +5,10 @@
 What's New
 ==========
 
-v1.4.1 (24 May 2017)
+v1.4.1 (25 May 2017)
 --------------------
+
+ - Support for reading multiband HDF datasets, such as MODIS collection 6
 
  - Workaround for rasterio issue when reprojecting stacked data
 
