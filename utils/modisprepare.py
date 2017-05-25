@@ -48,10 +48,22 @@ def fill_image_data(doc, granule_path):
             assert format_ == subds[0][:index - 1]
 
         layer = subds[0][index + len(quoted) + 1:]
-        bands[layer.split(':')[-1]] = {
-            'path': granule_path.name,
-            'layer': layer
-        }
+
+        band_name = layer.split(':')[-1]
+
+        if band_name.find('_Parameters_') >= 0:
+            for band, suffix in enumerate(['iso', 'vol', 'geo'], 1):
+                bands[band_name + '_' + suffix] = {
+                    'band': band,
+                    'path': granule_path.name,
+                    'layer': layer
+                }
+
+        else:
+            bands[band_name] = {
+                'path': granule_path.name,
+                'layer': layer
+            }
     del gran_file
 
     if not format_:

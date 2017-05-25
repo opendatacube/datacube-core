@@ -534,6 +534,15 @@ class DatasetSource(BaseRasterDataSource):
         super(DatasetSource, self).__init__(filename, nodata=nodata)
 
     def get_bandnumber(self, src):
+
+        # If `band` property is set to an integer it overrides any other logic
+        band = self._measurement.get('band')
+        if band is not None:
+            if isinstance(band, integer_types):
+                return band
+            else:
+                _LOG.warning('Expected "band" property to be of integer type')
+
         if 'netcdf' not in self._dataset.format.lower():
             layer_id = self._measurement.get('layer', 1)
             return layer_id if isinstance(layer_id, integer_types) else 1
