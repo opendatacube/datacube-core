@@ -185,7 +185,7 @@ def pass_index(app_name=None, expect_initialised=True):
         def with_index(*args, **kwargs):
             ctx = click.get_current_context()
             try:
-                index = index_connect(ctx.obj['config_file'],
+                index = index_connect(ctx.obj.get('config_file') if ctx.obj else None,
                                       application_name=app_name or ctx.command_path,
                                       validate_connection=expect_initialised)
                 ctx.obj['index'] = index
