@@ -523,9 +523,15 @@ def _choose_location(dataset):
 
 
 class DatasetSource(BaseRasterDataSource):
-    """Data source for reading from a Datacube Dataset"""
+    """Data source for reading from a Data Cube Dataset"""
 
     def __init__(self, dataset, measurement_id):
+        """
+        Initialise for reading from a Data Cube Dataset.
+
+        :param Dataset dataset: dataset to read from
+        :param str measurement_id: measurement to read. a single 'band' or 'slice'
+        """
         self._dataset = dataset
         self._measurement = dataset.measurements[measurement_id]
         url = _resolve_url(_choose_location(dataset), self._measurement['path'])
