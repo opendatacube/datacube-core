@@ -57,6 +57,7 @@ class S3Source(object):
         self.band_name = band_name
         self.ds = self.S3DS(self)
         self.bidx = 1 # Called but unused in s3
+        self.shape = dataset.s3_metadata[band_name]['s3_dataset'].macro_shape
 
 
     def read(self, window, write_shape):

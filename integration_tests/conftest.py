@@ -11,6 +11,7 @@ import shutil
 from datetime import datetime, timedelta
 from contextlib import contextmanager
 from pathlib import Path
+from copy import copy
 from uuid import UUID, uuid4
 
 import pytest
@@ -47,8 +48,24 @@ testdata: {test_tile_folder}
 eotiles: {eotiles_tile_folder}
 """
 
-GEOTIFF_SIZE = (9721, 8521)  # (250, 250)  # (9721, 8521)
-'''(width, height) of geotiff to create.'''
+GEOTIFF = {
+    'date': datetime(1990, 3, 2),
+    'shape': {
+        'x': 432,
+        'y': 321
+    },
+    'pixel_size': {
+        'x': 25.0,
+        'y': -25.0
+    },
+    'crs': 'EPSG:28355',  # 'EPSG:28355'
+    'ul': {
+        'x': 638000.0,  # Coords must match crs
+        'y': 6276000.0  # Coords must match crs
+    }
+}
+GEOTIFF_SIZE = (8721, 9681)  # (250, 250)  # (9721, 8521)
+'''(height, width) of geotiff to create.'''
 
 INTEGRATION_DEFAULT_CONFIG_PATH = Path(__file__).parent.joinpath('agdcintegration.conf')
 
@@ -220,52 +237,114 @@ def geotiffs(tmpdir_factory):
       can then be symlinked by each test to save generation time and
       disk space.
     '''
-    tiffs = {}
     tiffs_dir = tmpdir_factory.mktemp('tiffs')
+
+    # Generate the custom geotiff yamls
+    yamls = [_make_geotiff_yaml(tiffs_dir, _EXAMPLE_LS5_NBAR_DATASET_FILE, day_offset)
+             for day_offset in range(_TIME_SLICES)]
+
+    # Generate the custom geotiff files
+    tiffs = _make_geotiffs(tiffs_dir)
+    return (yamls, tiffs)
+
+
+def _make_geotiffs(tiffs_dir):
+    # Generate the custom geotiff files
+    tiffs = {}
     metadata = {'count': 1,
-                'crs': 'EPSG:28355',
+                'crs': GEOTIFF['crs'],
                 'driver': 'GTiff',
                 'dtype': 'int16',
-                'height': GEOTIFF_SIZE[1],
+                'width': GEOTIFF['shape']['x'],
+                'height': GEOTIFF['shape']['y'],
                 'nodata': -999.0,
-                'transform': [25.0, 0.0, 638000.0, 0.0, -25.0, 6276000.0],
-                'width': GEOTIFF_SIZE[0]}
+                'transform': [GEOTIFF['pixel_size']['x'],
+                              0.0,
+                              GEOTIFF['ul']['x'],
+                              0.0,
+                              GEOTIFF['pixel_size']['y'],
+                              GEOTIFF['ul']['y']]}
+
     for band in range(_BANDS):
         path = str(tiffs_dir.join('band%02d.tif' % (band + 1)))
         with rasterio.open(path, 'w', **metadata) as dst:
-            pass
-            # Write in corners (fast)
-            # data = np.zeros(GEOTIFF_SIZE, dtype=np.int16)
-            # data[0][0] = 100
-            # data[GEOTIFF_SIZE[0] - 1][0] = 200
-            # data[0][GEOTIFF_SIZE[1] - 1] = 300
-            # data[GEOTIFF_SIZE[0] - 1][GEOTIFF_SIZE[1] - 1] = 400
-            # print('>>>>>>>>>>', data)
-
-            # Write arranged data (slow)
-            # dst.write(data, 1) #.astype(rasterio.int16), 1)
-            # for i in range(GEOTIFF_SIZE[0]):
-            #     for j in range(GEOTIFF_SIZE[1]):
-            #         data[i, j] = int(str(i)+str(j))
-            # dst.write(data.astype(rasterio.int16), 1)
+            # Write (100:100) corners
+            data = np.zeros((GEOTIFF['shape']['y'], GEOTIFF['shape']['x']), dtype=np.int16)
+            lr = (GEOTIFF['shape']['y'], GEOTIFF['shape']['x'])
+            data[0:100, 0:100] = 100
+            data[lr[0] - 100:lr[0], 0:100] = 200
+            data[0:100, lr[1] - 100:lr[1]] = 300
+            data[lr[0] - 100:lr[0], lr[1] - 100:lr[1]] = 400
+            dst.write(data, 1)
         tiffs[band] = path
     return tiffs
 
 
-@pytest.fixture
-def example_ls5_dataset_path(tmpdir, geotiffs):
-    # Based on LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302
-    dataset_dir = tmpdir.mkdir('ls5_dataset')
-    shutil.copy(str(_EXAMPLE_LS5_NBAR_DATASET_FILE), str(dataset_dir.join('agdc-metadata.yaml')))
+def _make_geotiff_yaml(tiffs_dir, src_path, day_offset):
+    config = load_yaml_file(src_path)[0]
+    ul = GEOTIFF['ul']
+    lr = {dim: ul[dim] + GEOTIFF['shape'][dim] * GEOTIFF['pixel_size'][dim] for dim in ('x', 'y')}
+    config['grid_spatial']['projection']['geo_ref_points'] = {
+        'ul': ul,
+        'ur': {
+            'x': lr['x'],
+            'y': ul['y']
+        },
+        'll': {
+            'x': ul['x'],
+            'y': lr['y']
+        },
+        'lr': lr
+    }
+    # Shift dates by the specific offset
+    delta = timedelta(days=day_offset)
+    day_orig = config['acquisition']['aos'].strftime('%Y%m%d')
+    config['acquisition']['aos'] += delta
+    config['acquisition']['los'] += delta
+    config['extent']['from_dt'] += delta
+    config['extent']['center_dt'] += delta
+    config['extent']['to_dt'] += delta
+    day = config['acquisition']['aos'].strftime('%Y%m%d')
 
-    # Link geotiffs
-    geotiff_name = "LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B{}0.tif"
-    scene_dir = dataset_dir.mkdir('product').mkdir('scene01')
-    scene_dir.join('report.txt').write('Example')
-    for band in range(_BANDS):
-        path = scene_dir.join(geotiff_name.format(band + 1))
-        symlink(str(geotiffs[band]), str(path))
-    return Path(str(dataset_dir))
+    # Set the main UUID and assign random UUIDs where needed
+    uuid = uuid4()
+    config['id'] = str(uuid)
+    level1 = config['lineage']['source_datasets']['level1']
+    level1['id'] = str(uuid4())
+    level1['lineage']['source_datasets']['satellite_telemetry_data']['id'] = str(uuid4())
+
+    # Alter band data
+    bands = config['image']['bands']
+    for band in bands.keys():
+        # Copy dict to avoid aliases in yaml output (for better legibility)
+        bands[band]['shape'] = copy(GEOTIFF['shape'])
+        bands[band]['cell_size'] = {
+            dim: abs(GEOTIFF['pixel_size'][dim]) for dim in ('x', 'y')}
+        bands[band]['path'] = bands[band]['path'].replace('product/', '').replace(day_orig, day)
+
+    dest_path = str(tiffs_dir.join('agdc-metadata_%s.yaml' % day))
+    with open(dest_path, 'w') as dest_yaml:
+        yaml.dump(config, dest_yaml)
+    return {
+        'day': day,
+        'uuid': uuid,
+        'path': dest_path
+    }
+
+
+@pytest.fixture
+def example_ls5_dataset_path(example_ls5_dataset_paths):
+    return list(example_ls5_dataset_paths.values())[0]
+    # # Link geotiff yaml and files
+    # dataset_dir = tmpdir.mkdir('ls5_dataset')
+    # symlink(str(geotiffs[0]['yaml']), str(dataset_dir.join('agdc-metadata.yaml')))
+    # geotiff_name = "LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B{}0.tif"
+    # scene_dir = dataset_dir.mkdir('product').mkdir('scene01')
+    # scene_dir.join('report.txt').write('Example')
+    # for band in range(_BANDS):
+    #     path = scene_dir.join(geotiff_name.format(band + 1))
+    #     symlink(str(geotiffs[band]), str(path))
+    # return Path(str(dataset_dir))
 
 
 @pytest.fixture
@@ -281,38 +360,21 @@ def example_ls5_dataset_paths(tmpdir, geotiffs):
       indexed by dataset UUID.
 
     '''
-    start = datetime(1990, 3, 2)
-    scene_name = 'LS5_TM_NBAR_P54_GANBAR01-002_090_084_{0:%Y%m%d}'
-    dataset_dir = tmpdir.mkdir('ls5_dataset')
     dataset_dirs = {}
-    with open(str(_EXAMPLE_LS5_NBAR_DATASET_FILE), 'r') as yaml_file:
-        yaml = yaml_file.read()
 
-    for time_count in range(_TIME_SLICES):
-        # Create one time slice each 24h after the start date
-        day = start + timedelta(days=time_count)
-        obs_name = scene_name.format(day)
+    dataset_dir = tmpdir.mkdir('ls5_dataset')
+    for geo_yaml in geotiffs[0]:
+        obs_name = 'LS5_TM_NBAR_P54_GANBAR01-002_090_084_%s' % geo_yaml['day']
         obs_dir = dataset_dir.mkdir(obs_name)
-        uuid = uuid4()
-        # Replace all items that must be unique: dates (2 formats),
-        # Dataset UUID, UUIDs appearing in lineage. Remove `output`
-        # subdirectory.
-        day_yaml = yaml \
-            .replace(start.strftime('%Y-%m-%d'), day.strftime('%Y-%m-%d')) \
-            .replace(start.strftime('%Y%m%d'), day.strftime('%Y%m%d')) \
-            .replace('bbf3e21c-82b0-11e5-9ba1-a0000100fe80', str(uuid)) \
-            .replace('ee983642-1cd3-11e6-aaba-a0000100fe80', str(uuid4())) \
-            .replace('100a8412-6017-11e5-b4fe-ac162d791418', str(uuid4())) \
-            .replace('product/', '')
-        with open(str(obs_dir.join('agdc-metadata.yaml')), 'w') as yaml_file:
-            yaml_file.write(day_yaml)
+        symlink(str(geo_yaml['path']), str(obs_dir.join('agdc-metadata.yaml')))
+
         scene_dir = obs_dir.mkdir('scene01')
         scene_dir.join('report.txt').write('Example')
         geotiff_name = '%s_B{}0.tif' % obs_name
         for band in range(_BANDS):
             path = scene_dir.join(geotiff_name.format(band + 1))
-            symlink(str(geotiffs[band]), str(path))
-        dataset_dirs[uuid] = Path(str(obs_dir))
+            symlink(str(geotiffs[1][band]), str(path))
+        dataset_dirs[geo_yaml['uuid']] = Path(str(obs_dir))
     return dataset_dirs
 
 
@@ -321,6 +383,7 @@ def ls5_nbar_ingest_config(tmpdir, driver):
     dataset_dir = tmpdir.mkdir('ls5_nbar_ingest_test')
     config = load_yaml_file(LS5_NBAR_INGEST_CONFIG)[0]
     config = alter_dataset_type_for_testing(config, driver=driver.name)
+    config['storage']['crs'] = 'EPSG:28355'
     # config['storage']['chunking']['time'] = 2
     # config['storage']['tile_size']['time'] = 3
     config['location'] = str(dataset_dir)
