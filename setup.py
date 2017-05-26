@@ -57,6 +57,7 @@ setup(
         '': ['*.yaml', '*/*.yaml'],
     },
     scripts=[
+        'datacube_apps/scripts/pbs_helpers.sh'
     ],
     setup_requires=[
         'pytest-runner'
