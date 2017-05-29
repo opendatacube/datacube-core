@@ -283,6 +283,20 @@ def read_documents(*paths):
                              .format(path.name, _ALL_SUPPORTED_EXTENSIONS))
 
 
+def netcdf_extract_string(chars):
+    """
+    Convert netcdf S|U chars to Unicode string.
+    """
+    if isinstance(chars, str):
+        return chars
+
+    chars = netCDF4.chartostring(chars)
+    if chars.dtype.kind == 'U':
+        return str(chars)
+    else:
+        return str(numpy.char.decode(chars))
+
+
 def read_strings_from_netcdf(path, variable):
     """Load all of the string encoded data from a variable in a NetCDF file.
 
@@ -292,12 +306,7 @@ def read_strings_from_netcdf(path, variable):
     """
     with netCDF4.Dataset(str(path)) as ds:
         for chars in ds[variable]:
-            chars = netCDF4.chartostring(chars)
-            if chars.dtype.kind == 'U':
-                yield str(chars)
-            else:
-                yield str(numpy.char.decode(chars))
-
+            yield netcdf_extract_string(chars)
 
 def validate_document(document, schema, schema_folder=None):
     try:
