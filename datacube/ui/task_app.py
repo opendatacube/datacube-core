@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-from datetime import datetime
 import logging
 import os
 import time
@@ -263,12 +262,18 @@ def add_dataset_to_db(index, datasets):
 def do_nothing(result):
     pass
 
+
 def _wrap_impl(f, args, kwargs, task):
-    'needs to be at the top level'
+    """
+    Helper method, needs to be at the top level
+    """
     return f(task, *args, **kwargs)
 
+
 def wrap_task(f, *args, **kwargs):
-    'turn function `f(task, *args, **kwargs)` into `g(task)` in pickle-able fashion'
+    """
+    Turn function `f(task, *args, **kwargs)` into `g(task)` in pickle-able fashion
+    """
     return functools.partial(_wrap_impl, f, args, kwargs)
 
 
