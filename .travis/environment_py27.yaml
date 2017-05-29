@@ -10,7 +10,7 @@ dependencies:
 - numexpr
 - rasterio
 - singledispatch
-- netcdf4
+- netcdf4 = 1.2.7 # Travis fails with 1.2.8
 - psycopg2
 - gdal
 - dask
