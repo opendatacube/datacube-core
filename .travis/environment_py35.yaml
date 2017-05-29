@@ -11,7 +11,7 @@ dependencies:
 - numexpr
 - rasterio
 - singledispatch
-- netcdf4 <= 1.2.7 # char2string and compliance checker related problems in 1.2.8
+- netcdf4
 - psycopg2
 - gdal
 - dask
@@ -26,6 +26,7 @@ dependencies:
 - matplotlib # pixel drill app
 - pathlib
 - compliance-checker = 3.0.3
+- cython # used by netcdf4 at compile only, but needed for compliance checker to load plugins
 - pygeoif = 0.6 # compliance-checker 3.0.3 fails with 0.7
 - paramiko # for simple-replicas
 - sshtunnel # for simple-replicas
