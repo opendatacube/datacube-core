@@ -7,20 +7,12 @@ import numpy as np
 from datacube.utils import DatacubeException
 from datacube.drivers.driver import Driver
 from datacube.drivers.s3.storage.s3aio.s3lio import S3LIO
+from datacube.drivers.utils import DriverUtils
 from datacube.drivers.s3.index import Index
 from datacube.drivers.s3.datasource import S3DataSource
 
 class S3Driver(Driver):
     '''S3 storage driver.'''
-
-    EPSILON = {
-        'x': 0.00000001,
-        'y': 0.00000001,
-        'time': 0.00000001,
-        'default': 0.00000001
-    }
-    '''Margin error allowed when comparing coord intervals to determine
-    whether a coord is regular or not.'''
 
     def __init__(self, name, index=None, *index_args, **index_kargs):
         '''Initialise the s3 storage.'''
@@ -61,8 +53,7 @@ class S3Driver(Driver):
         coordinate.
 
         Data is considered regular if it is equally spaced, give or
-        take a predefined error magine defined per coord type in
-        `self.EPSILON`.
+        take a predefined error magin defined per coord type.
         :param str coord: Coordinate name, e.g. 'x' or 'time'.
           data(ndarray): The coordinates values.
         :return: Returns a tuple `(regular_dimension, regular_index,
@@ -74,7 +65,7 @@ class S3Driver(Driver):
           used. Otherwise, `regular_index` is `None` and
           `irregular_index` is the list of the `coord` values.
         '''
-        epsilon = self.EPSILON[coord] if coord in self.EPSILON else self.EPSILON['default']
+        epsilon = DriverUtils.epsilon(coord)
         regular = False # Default for single element
         delta = None
         previous = None

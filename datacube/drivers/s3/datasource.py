@@ -12,6 +12,7 @@ from numpy import dtype
 from datacube.drivers.datasource import DataSource
 from datacube.storage.storage import OverrideBandDataSource
 from datacube.utils import datetime_to_seconds_since_1970
+from datacube.drivers.utils import DriverUtils
 
 
 class S3Source(object):
@@ -135,9 +136,11 @@ class S3DataSource(DataSource):
         if s3_dataset.regular_dims[0]: # If time is regular
             return int((sec_since_1970 - s3_dataset.regular_index[0]) / s3_dataset.regular_index[2])
         else:
+            epsilon = DriverUtils.epsilon('time')
             for idx, timestamp in enumerate(s3_dataset.irregular_index[0]):
-                if abs(sec_since_1970 - timestamp/1000000000.0) < 0.000001:
+                if abs(sec_since_1970 - timestamp / 1000000000.0) < epsilon:
                     return idx
+        raise ValueError('Cannot find band number for centre time %s' % time)
 
 
     def get_transform(self, shape):
