@@ -39,7 +39,7 @@ class S3Source(object):
             :return: The data returned by the parent
               :meth:`S3Source.read` method.
             '''
-            return self.parent.read(window, out_shape)
+            return self.parent.read(indexes, window, out_shape)
 
 
     def __init__(self, dataset, band_name, storage):
@@ -57,10 +57,10 @@ class S3Source(object):
         self.band_name = band_name
         self.ds = self.S3DS(self)
         self.bidx = 1 # Called but unused in s3
-        self.shape = dataset.s3_metadata[band_name]['s3_dataset'].macro_shape
+        self.shape = dataset.s3_metadata[band_name]['s3_dataset'].macro_shape[-2:]
 
 
-    def read(self, window, write_shape):
+    def read(self, indexes, window, write_shape):
         '''Read a dataset slice from the storage.
 
         :param window: If an :class:`S3Source` then the macro shape of
@@ -75,18 +75,21 @@ class S3Source(object):
         '''
         s3_dataset = self.dataset.s3_metadata[self.band_name]['s3_dataset']
         if isinstance(window, S3Source):
-            slices = tuple([slice(0, a) for a in s3_dataset.macro_shape[1:]])
+            slices = tuple([slice(0, a) for a in s3_dataset.macro_shape[-2:]])
         else:
             slices = tuple([slice(a[0], a[1]) for a in window])
 
+        # emulate a nd slice (time + 2D) -> (3D)
+        slices = (slice(indexes, indexes+1),) + slices
+
         self.logger.debug('Retrieving data from s3 (%s, slices: %s)', s3_dataset.base_name, slices)
         return self.storage.get_data_unlabeled(s3_dataset.base_name,
-                                               s3_dataset.macro_shape[1:],
-                                               s3_dataset.chunk_size[1:],
+                                               s3_dataset.macro_shape,
+                                               s3_dataset.chunk_size,
                                                dtype(s3_dataset.numpy_type),
                                                slices,
                                                s3_dataset.bucket,
-                                               True)
+                                               True)[0]
 
 
 class S3DataSource(DataSource):
@@ -116,23 +119,25 @@ class S3DataSource(DataSource):
           :class:`datacube.storage.storage.OverrideBandDataSource`
           which uses an :class:`S3Source` as a source.
         '''
+        self.source.bidx = self.get_bandnumber()
+
         yield OverrideBandDataSource(self.source,
                                      nodata=self.nodata,
                                      crs=self.get_crs(),
                                      transform=self.get_transform(self.macro_shape))
 
 
-    # Unused in s3. (untested)
-    # def get_bandnumber(self, src):
-    #     time = self._dataset.center_time
-    #     sec_since_1970 = datetime_to_seconds_since_1970(time)
-    #     s3_dataset = dataset.s3_metadata[band_name]['s3_dataset']
-    #     if s3_dataset.regular_dims[0]: # If time is regular
-    #         return int((sec_since_1970 - s3_dataset.regular_indices[0]) / s3_dataset.regular_indices[2])
-    #     else:
-    #         for idx, timestamp in enumerate(s3_dataset.irregular_indices):
-    #             if abs(sec_since_1970 - timestamp) < S3Driver.EPSILON['time']:
-    #                 return idx
+    def get_bandnumber(self):
+        time = self._dataset.center_time
+        sec_since_1970 = datetime_to_seconds_since_1970(time)
+        s3_dataset = self._dataset.s3_metadata[self.source.band_name]['s3_dataset']
+
+        if s3_dataset.regular_dims[0]: # If time is regular
+            return int((sec_since_1970 - s3_dataset.regular_index[0]) / s3_dataset.regular_index[2])
+        else:
+            for idx, timestamp in enumerate(s3_dataset.irregular_index[0]):
+                if abs(sec_since_1970 - timestamp/1000000000.0) < 0.000001:
+                    return idx
 
 
     def get_transform(self, shape):
