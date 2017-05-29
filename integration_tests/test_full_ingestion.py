@@ -99,7 +99,7 @@ def test_full_ingestion(global_integration_cli_args, index, example_ls5_dataset_
     assert datasets[0].managed
 
     check_open_with_api(index, len(valid_uuids))
-    # check_data_with_api(index, len(valid_uuids))
+    check_data_with_api(index, len(valid_uuids))
 
     # NetCDF specific checks, based on the saved NetCDF file
     if driver == 'NetCDF CF':
