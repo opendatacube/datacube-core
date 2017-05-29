@@ -292,7 +292,11 @@ def read_strings_from_netcdf(path, variable):
     """
     with netCDF4.Dataset(str(path)) as ds:
         for chars in ds[variable]:
-            yield str(numpy.char.decode(netCDF4.chartostring(chars)))
+            chars = netCDF4.chartostring(chars)
+            if chars.dtype.kind == 'U':
+                yield str(chars)
+            else:
+                yield str(numpy.char.decode(chars))
 
 
 def validate_document(document, schema, schema_folder=None):
