@@ -248,7 +248,7 @@ def read_documents(*paths):
     the datacube we use JSON in PostgreSQL and it will turn our dates
     to strings anyway.
 
-    :type paths: list[pathlib.Path]
+    :type paths: pathlib.Path
     :rtype: tuple[(pathlib.Path, dict)]
     """
     for path in paths:

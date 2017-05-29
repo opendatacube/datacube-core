@@ -121,7 +121,7 @@ def _cell_list_from_file(filename):
 
 
 def cell_list_to_file(filename, cell_list):
-    with open('cell_index.txt', 'w') as cell_file:
+    with open(filename, 'w') as cell_file:
         for cell in cell_list:
             cell_file.write('{0},{1}\n'.format(*cell))
 
@@ -149,7 +149,7 @@ def validate_year(ctx, param, value):
         if value is None:
             return None
         years = [pd.Period(y) for y in value.split('-', 2)]
-        return years[0].start_time.to_datetime(), years[-1].end_time.to_datetime()
+        return years[0].start_time.to_pydatetime(warn=False), years[-1].end_time.to_pydatetime(warn=False)
     except ValueError:
         raise click.BadParameter('year must be specified as a single year (eg 1996) '
                                  'or as an inclusive range (eg 1996-2001)')
@@ -157,8 +157,8 @@ def validate_year(ctx, param, value):
 
 def break_query_into_years(time_query, **kwargs):
     if time_query is None:
-        return kwargs
-    return [{'time': time_range}.update(kwargs) for time_range in year_splitter(*time_query)]
+        return [kwargs]
+    return [dict(time=time_range, **kwargs) for time_range in year_splitter(*time_query)]
 
 
 def year_splitter(start, end):

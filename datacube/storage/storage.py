@@ -394,7 +394,14 @@ class BaseRasterDataSource(object):
                     override = True
                     crs = self.get_crs()
 
+                # The 1.0 onwards release of rasterio has a bug that means it
+                # cannot read multiband data into a numpy array during reprojection
+                # We override it here to force the reading and reprojection into separate steps
+                # TODO: Remove when rasterio bug fixed
                 bandnumber = self.get_bandnumber(src)
+                if bandnumber > 1 and str(rasterio.__version__) >= '1.0':
+                    override = True
+
                 band = rasterio.band(src, bandnumber)
                 nodata = numpy.dtype(band.dtype).type(src.nodatavals[0] if src.nodatavals[0] is not None
                                                       else self.nodata)
@@ -516,9 +523,15 @@ def _choose_location(dataset):
 
 
 class DatasetSource(BaseRasterDataSource):
-    """Data source for reading from a Datacube Dataset"""
+    """Data source for reading from a Data Cube Dataset"""
 
     def __init__(self, dataset, measurement_id):
+        """
+        Initialise for reading from a Data Cube Dataset.
+
+        :param Dataset dataset: dataset to read from
+        :param str measurement_id: measurement to read. a single 'band' or 'slice'
+        """
         self._dataset = dataset
         self._measurement = dataset.measurements[measurement_id]
         url = _resolve_url(_choose_location(dataset), self._measurement['path'])
@@ -527,6 +540,15 @@ class DatasetSource(BaseRasterDataSource):
         super(DatasetSource, self).__init__(filename, nodata=nodata)
 
     def get_bandnumber(self, src):
+
+        # If `band` property is set to an integer it overrides any other logic
+        band = self._measurement.get('band')
+        if band is not None:
+            if isinstance(band, integer_types):
+                return band
+            else:
+                _LOG.warning('Expected "band" property to be of integer type')
+
         if 'netcdf' not in self._dataset.format.lower():
             layer_id = self._measurement.get('layer', 1)
             return layer_id if isinstance(layer_id, integer_types) else 1
