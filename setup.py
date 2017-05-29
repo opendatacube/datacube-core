@@ -69,7 +69,7 @@ setup(
         'dask[array]',
         'gdal>=1.9',
         'jsonschema',
-        'netcdf4',
+        'netcdf4<=1.2.7',  # char2string and compliance checker related problems in 1.2.8
         'numpy',
         'pathlib',
         'psycopg2',
