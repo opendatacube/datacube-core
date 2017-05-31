@@ -150,7 +150,6 @@ def _parse_time_generic(time):
 try:
     import ciso8601  # pylint: disable=wrong-import-position
 
-
     def parse_time(time):
         try:
             result = ciso8601.parse_datetime(time)
@@ -263,15 +262,15 @@ def read_documents(*paths):
 
         if suffix in ('.yaml', '.yml'):
             try:
-                with opener(str(path), 'r') as file:
-                    for parsed_doc in yaml.load_all(file, Loader=NoDatesSafeLoader):
+                with opener(str(path), 'r') as handle:
+                    for parsed_doc in yaml.load_all(handle, Loader=NoDatesSafeLoader):
                         yield path, parsed_doc
             except yaml.YAMLError as e:
                 raise InvalidDocException('Failed to load %s: %s' % (path, e))
         elif suffix == '.json':
             try:
-                with opener(str(path), 'r') as file:
-                    yield path, json.load(file)
+                with opener(str(path), 'r') as handle:
+                    yield path, json.load(handle)
             except ValueError as e:
                 raise InvalidDocException('Failed to load %s: %s' % (path, e))
         elif suffix == '.nc':
@@ -309,6 +308,7 @@ def read_strings_from_netcdf(path, variable):
     with netCDF4.Dataset(str(path)) as ds:
         for chars in ds[variable]:
             yield netcdf_extract_string(chars)
+
 
 def validate_document(document, schema, schema_folder=None):
     try:
