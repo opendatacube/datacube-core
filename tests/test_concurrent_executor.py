@@ -68,7 +68,10 @@ def run_tests_for_runner(runner, sleep_amount=0.5):
 def test_concurrent_executor():
     runner = get_executor(None, 2)
     assert str(runner).find('Multi') >= 0
+    run_tests_for_runner(runner, 0.3)
 
+    runner = get_executor(None, 2, use_cloud_pickle=False)
+    assert str(runner).find('Multi') >= 0
     run_tests_for_runner(runner, 0.3)
 
 

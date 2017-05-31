@@ -146,22 +146,39 @@ def _get_distributed_executor(scheduler):
         return None
 
 
-def _get_concurrent_executor(workers):
+def _run_cloud_pickled_function(f_data, *args, **kwargs):
+    from cloudpickle import loads
+    func = loads(f_data)
+    return func(*args, **kwargs)
+
+
+def _get_concurrent_executor(workers, use_cloud_pickle=False):
     try:
         from concurrent.futures import ProcessPoolExecutor, as_completed
     except ImportError:
         return None
 
+    def mk_submitter(pool, use_cloud_pickle):
+        def submit_direct(func, *args, **kwargs):
+            return pool.submit(func, *args, **kwargs)
+
+        def submit_cloud_pickle(func, *args, **kwargs):
+            from cloudpickle import dumps
+            return pool.submit(_run_cloud_pickled_function, dumps(func), *args, **kwargs)
+
+        return submit_cloud_pickle if use_cloud_pickle else submit_direct
+
     class MultiprocessingExecutor(object):
-        def __init__(self, pool):
+        def __init__(self, pool, use_cloud_pickle):
             self._pool = pool
+            self._submitter = mk_submitter(pool, use_cloud_pickle)
 
         def __repr__(self):
             max_workers = self._pool.__dict__.get('_max_workers', '??')
             return 'Multiprocessing ({})'.format(max_workers)
 
         def submit(self, func, *args, **kwargs):
-            return self._pool.submit(func, *args, **kwargs)
+            return self._submitter(func, *args, **kwargs)
 
         def map(self, func, iterable):
             return [self.submit(func, data) for data in iterable]
@@ -206,15 +223,19 @@ def _get_concurrent_executor(workers):
         def release(future):
             pass
 
-    return MultiprocessingExecutor(ProcessPoolExecutor(workers if workers > 0 else None))
+    if workers <= 0:
+        return None
+
+    return MultiprocessingExecutor(ProcessPoolExecutor(workers), use_cloud_pickle)
 
 
-def get_executor(scheduler, workers):
+def get_executor(scheduler, workers, use_cloud_pickle=True):
     """
     Return a task executor based on input parameters. Falling back as required.
 
     :param scheduler: IP address and port of a distributed.Scheduler, or a Scheduler instance
     :param workers: Number of processes to start for process based parallel execution
+    :param use_cloud_pickle: Only applies when scheduler is None and workers > 0, default is True
     """
     if not workers:
         return SerialExecutor()
@@ -224,7 +245,7 @@ def get_executor(scheduler, workers):
         if distributed_exec:
             return distributed_exec
 
-    concurrent_exec = _get_concurrent_executor(workers)
+    concurrent_exec = _get_concurrent_executor(workers, use_cloud_pickle=use_cloud_pickle)
     if concurrent_exec:
         return concurrent_exec
 
