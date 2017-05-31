@@ -263,13 +263,15 @@ def read_documents(*paths):
 
         if suffix in ('.yaml', '.yml'):
             try:
-                for parsed_doc in yaml.load_all(opener(str(path), 'r'), Loader=NoDatesSafeLoader):
-                    yield path, parsed_doc
+                with opener(str(path), 'r') as file:
+                    for parsed_doc in yaml.load_all(file, Loader=NoDatesSafeLoader):
+                        yield path, parsed_doc
             except yaml.YAMLError as e:
                 raise InvalidDocException('Failed to load %s: %s' % (path, e))
         elif suffix == '.json':
             try:
-                yield path, json.load(opener(str(path), 'r'))
+                with opener(str(path), 'r') as file:
+                    yield path, json.load(file)
             except ValueError as e:
                 raise InvalidDocException('Failed to load %s: %s' % (path, e))
         elif suffix == '.nc':
