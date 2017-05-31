@@ -4,6 +4,7 @@ import warnings
 from pathlib import Path
 from uuid import UUID
 
+from math import ceil
 import netCDF4
 import numpy as np
 import pytest
@@ -15,6 +16,8 @@ from datacube.api.query import query_group_by
 
 import datacube.scripts.cli_app
 from datacube.utils import geometry, read_documents
+
+from integration_tests.conftest import GEOTIFF
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
@@ -206,19 +209,36 @@ def check_open_with_api(index, time_slices):
 
 
 def check_data_with_api(index, time_slices):
+    '''Chek retrieved data for specific values.
+
+    We scale down by 100 and check for predefined values in the
+    corners.
+    '''
     from datacube import Datacube
     dc = Datacube(index=index)
 
+    # Make the retrieved data 100 less granular
+    shape_x = int(GEOTIFF['shape']['x'] / 100.0)
+    shape_y = int(GEOTIFF['shape']['y'] / 100.0)
+    pixel_x = int(GEOTIFF['pixel_size']['x'] * 100)
+    pixel_y = int(GEOTIFF['pixel_size']['y'] * 100)
+
     input_type_name = 'ls5_nbar_albers'
     input_type = dc.index.products.get_by_name(input_type_name)
-    geobox = geometry.GeoBox(10, 10, Affine(2500, 0.0, 638000, 0.0, -2500, 6276000), geometry.CRS('EPSG:28355'))
+    geobox = geometry.GeoBox(shape_x + 1, shape_y + 1,
+                             Affine(pixel_x, 0.0, GEOTIFF['ul']['x'], 0.0, pixel_y, GEOTIFF['ul']['y']),
+                             geometry.CRS(GEOTIFF['crs']))
     observations = dc.find_datasets(product='ls5_nbar_albers', geopolygon=geobox.extent)
     group_by = query_group_by('time')
     sources = dc.group_datasets(observations, group_by)
     data = dc.load_data(sources, geobox, input_type.measurements.values())
-    # print(data.blue.values[0][0:4, 0:6])
-    assert np.array_equal(data.blue.values[0][0:4, 0:6],
-                          [[100, 0, 0, 0, 300, -999],
-                           [0, 0, 0, 0, 0, -999],
-                           [200, 0, 0, 0, 400, -999],
-                           [-999, -999, -999, -999, -999, -999]])
+    for time_slice in range(time_slices):
+        expected = np.zeros((shape_y, shape_x), dtype=np.int16)
+        expected[0, 0] = 100 + time_slice
+        expected[-1, 0] = 200 + time_slice
+        expected[0, -1] = 300 + time_slice
+        expected[-1, -1] = 400 + time_slice
+        # print('Expected: \n%s\n' % expected)
+        # print('Retrieved:\n%s\n' % data.blue.values[time_slice])
+        assert np.array_equal(data.blue.values[time_slice][:shape_y, :shape_x], expected)
+        assert data.blue.values[time_slice][-1, -1] == -999

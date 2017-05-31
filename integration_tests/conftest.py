@@ -11,7 +11,7 @@ import shutil
 from datetime import datetime, timedelta
 from contextlib import contextmanager
 from pathlib import Path
-from copy import copy
+from copy import copy, deepcopy
 from uuid import UUID, uuid4
 
 import pytest
@@ -64,13 +64,11 @@ GEOTIFF = {
         'y': 6276000.0  # Coords must match crs
     }
 }
-GEOTIFF_SIZE = (8721, 9681)  # (250, 250)  # (9721, 8521)
-'''(height, width) of geotiff to create.'''
 
 INTEGRATION_DEFAULT_CONFIG_PATH = Path(__file__).parent.joinpath('agdcintegration.conf')
 
 _EXAMPLE_LS5_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('example-ls5-nbar.yaml')
-_TIME_SLICES = 1
+_TIME_SLICES = 3
 '''Number of time slices to create in the sample data.'''
 
 _BANDS = 3
@@ -88,7 +86,6 @@ LS5_NBAR_ALBERS_NAME = 'ls5_nbar_albers'
 
 # Resolution and chunking shrink factors
 TEST_STORAGE_SHRINK_FACTORS = (100, 100)
-TEST_STORAGE_SHRINK_FACTORS_S3 = (100, 12)
 TEST_STORAGE_NUM_MEASUREMENTS = 2
 GEOGRAPHIC_VARS = ('latitude', 'longitude')
 PROJECTED_VARS = ('x', 'y')
@@ -231,57 +228,32 @@ def ls5_telem_type(index, ls5_telem_doc):
 
 @pytest.fixture(scope='session')
 def geotiffs(tmpdir_factory):
-    '''Create one geotiff per band, to be uses by all tests in the session.
+    '''Create test geotiffs and corresponding yamls.
 
-    :return: Dict of geotiffs paths indexed by band. These geotiffs
-      can then be symlinked by each test to save generation time and
-      disk space.
+    We create one yaml per time slice, itself comprising one geotiff
+    per band, each with specific custom data that can be later
+    tested. These are meant to be used by all tests in the current
+    session, by way of symlinking the yamls and tiffs returned by this
+    fixture, in order to save disk space (and potentially generation
+    time).
+
+    The yamls are customised versions of
+    :ref:`_EXAMPLE_LS5_NBAR_DATASET_FILE` shifted by 24h and with
+    spatial coords reflecting the size of the test geotiff, defined in
+    :ref:`GEOTIFF`.
+
+    :param tmpdir_fatory: pytest tmp dir factory.
+    :return: List of dictionaries `{'day':..., 'uuid':..., 'path':...,
+      'tiffs':...}` with `day`: compact day string, e.g. `19900302`,
+      `uuid` a unique UUID for this dataset (i.e. specific day),
+      `path`: path to the yaml ingestion file, `tiffs`: list of paths
+      to the actual geotiffs in that dataset, one per band.
+
     '''
     tiffs_dir = tmpdir_factory.mktemp('tiffs')
 
-    # Generate the custom geotiff yamls
-    yamls = [_make_geotiff_yaml(tiffs_dir, _EXAMPLE_LS5_NBAR_DATASET_FILE, day_offset)
-             for day_offset in range(_TIME_SLICES)]
-
-    # Generate the custom geotiff files
-    tiffs = _make_geotiffs(tiffs_dir)
-    return (yamls, tiffs)
-
-
-def _make_geotiffs(tiffs_dir):
-    # Generate the custom geotiff files
-    tiffs = {}
-    metadata = {'count': 1,
-                'crs': GEOTIFF['crs'],
-                'driver': 'GTiff',
-                'dtype': 'int16',
-                'width': GEOTIFF['shape']['x'],
-                'height': GEOTIFF['shape']['y'],
-                'nodata': -999.0,
-                'transform': [GEOTIFF['pixel_size']['x'],
-                              0.0,
-                              GEOTIFF['ul']['x'],
-                              0.0,
-                              GEOTIFF['pixel_size']['y'],
-                              GEOTIFF['ul']['y']]}
-
-    for band in range(_BANDS):
-        path = str(tiffs_dir.join('band%02d.tif' % (band + 1)))
-        with rasterio.open(path, 'w', **metadata) as dst:
-            # Write (100:100) corners
-            data = np.zeros((GEOTIFF['shape']['y'], GEOTIFF['shape']['x']), dtype=np.int16)
-            lr = (GEOTIFF['shape']['y'], GEOTIFF['shape']['x'])
-            data[0:100, 0:100] = 100
-            data[lr[0] - 100:lr[0], 0:100] = 200
-            data[0:100, lr[1] - 100:lr[1]] = 300
-            data[lr[0] - 100:lr[0], lr[1] - 100:lr[1]] = 400
-            dst.write(data, 1)
-        tiffs[band] = path
-    return tiffs
-
-
-def _make_geotiff_yaml(tiffs_dir, src_path, day_offset):
-    config = load_yaml_file(src_path)[0]
+    config = load_yaml_file(_EXAMPLE_LS5_NBAR_DATASET_FILE)[0]
+    # Customise the spatial coordinates
     ul = GEOTIFF['ul']
     lr = {dim: ul[dim] + GEOTIFF['shape'][dim] * GEOTIFF['pixel_size'][dim] for dim in ('x', 'y')}
     config['grid_spatial']['projection']['geo_ref_points'] = {
@@ -296,6 +268,20 @@ def _make_geotiff_yaml(tiffs_dir, src_path, day_offset):
         },
         'lr': lr
     }
+    # Generate the custom geotiff yamls
+    return [_make_tiffs_and_yamls(tiffs_dir, config, day_offset)
+            for day_offset in range(_TIME_SLICES)]
+
+
+def _make_tiffs_and_yamls(tiffs_dir, config, day_offset):
+    '''Make a custom yaml and tiff for a day offset.
+
+    :param path-like tiffs_dir: The base path to receive the tiffs.
+    :param dict config: The yaml config to be cloned and altered.
+    :param int day_offset: how many days to offset the original yaml
+      by.
+    '''
+    config = deepcopy(config)
     # Shift dates by the specific offset
     delta = timedelta(days=day_offset)
     day_orig = config['acquisition']['aos'].strftime('%Y%m%d')
@@ -328,53 +314,79 @@ def _make_geotiff_yaml(tiffs_dir, src_path, day_offset):
     return {
         'day': day,
         'uuid': uuid,
-        'path': dest_path
+        'path': dest_path,
+        'tiffs': _make_geotiffs(tiffs_dir, day_offset)  # make 1 geotiff per band
     }
+
+
+def _make_geotiffs(tiffs_dir, day_offset):
+    '''Generate custom geotiff files, one per band.'''
+    tiffs = {}
+    metadata = {'count': 1,
+                'crs': GEOTIFF['crs'],
+                'driver': 'GTiff',
+                'dtype': 'int16',
+                'width': GEOTIFF['shape']['x'],
+                'height': GEOTIFF['shape']['y'],
+                'nodata': -999.0,
+                'transform': [GEOTIFF['pixel_size']['x'],
+                              0.0,
+                              GEOTIFF['ul']['x'],
+                              0.0,
+                              GEOTIFF['pixel_size']['y'],
+                              GEOTIFF['ul']['y']]}
+
+    for band in range(_BANDS):
+        path = str(tiffs_dir.join('band%02d_time%02d.tif' % ((band + 1), day_offset)))
+        with rasterio.open(path, 'w', **metadata) as dst:
+            # Write data in "corners" (rounded down by 100, for a size of 100x100)
+            data = np.zeros((GEOTIFF['shape']['y'], GEOTIFF['shape']['x']), dtype=np.int16)
+            lr = (100 * int(GEOTIFF['shape']['y'] / 100.0),
+                  100 * int(GEOTIFF['shape']['x'] / 100.0))
+            data[0:100, 0:100] = 100 + day_offset
+            data[lr[0] - 100:lr[0], 0:100] = 200 + day_offset
+            data[0:100, lr[1] - 100:lr[1]] = 300 + day_offset
+            data[lr[0] - 100:lr[0], lr[1] - 100:lr[1]] = 400 + day_offset
+            dst.write(data, 1)
+        tiffs[band] = path
+    return tiffs
 
 
 @pytest.fixture
 def example_ls5_dataset_path(example_ls5_dataset_paths):
+    '''Create a single sample raw observation (dataset + geotiff).'''
     return list(example_ls5_dataset_paths.values())[0]
-    # # Link geotiff yaml and files
-    # dataset_dir = tmpdir.mkdir('ls5_dataset')
-    # symlink(str(geotiffs[0]['yaml']), str(dataset_dir.join('agdc-metadata.yaml')))
-    # geotiff_name = "LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900302_B{}0.tif"
-    # scene_dir = dataset_dir.mkdir('product').mkdir('scene01')
-    # scene_dir.join('report.txt').write('Example')
-    # for band in range(_BANDS):
-    #     path = scene_dir.join(geotiff_name.format(band + 1))
-    #     symlink(str(geotiffs[band]), str(path))
-    # return Path(str(dataset_dir))
 
 
 @pytest.fixture
 def example_ls5_dataset_paths(tmpdir, geotiffs):
     '''Create sample raw observations (dataset + geotiff).
 
-    `_TIME_SLICES` observations are created by writing versions of
-    `_EXAMPLE_LS5_NBAR_DATASET_FILE` with distinct date and ID
-    parameters and creating geotiffs accordingly. 3 bands are created.
+    This fixture should be used by eah test requiring a set of
+    observations over multiple time slices. The actual geotiffs and
+    corresponding yamls are symlinks to a set created for the whole
+    test session, in order to save disk and time.
 
-    :param tmpdir: The temp directoru in which to create the datasets.
+    :param tmpdir: The temp directory in which to create the datasets.
+    :param list geotiffs: List of session geotiffs and yamls, to be
+      linked from this unique observation set sample.
     :return: dict: Dict of directories containing each observation,
       indexed by dataset UUID.
-
     '''
     dataset_dirs = {}
-
     dataset_dir = tmpdir.mkdir('ls5_dataset')
-    for geo_yaml in geotiffs[0]:
-        obs_name = 'LS5_TM_NBAR_P54_GANBAR01-002_090_084_%s' % geo_yaml['day']
+    for geotiff in geotiffs:
+        obs_name = 'LS5_TM_NBAR_P54_GANBAR01-002_090_084_%s' % geotiff['day']
         obs_dir = dataset_dir.mkdir(obs_name)
-        symlink(str(geo_yaml['path']), str(obs_dir.join('agdc-metadata.yaml')))
+        symlink(str(geotiff['path']), str(obs_dir.join('agdc-metadata.yaml')))
 
         scene_dir = obs_dir.mkdir('scene01')
         scene_dir.join('report.txt').write('Example')
         geotiff_name = '%s_B{}0.tif' % obs_name
         for band in range(_BANDS):
             path = scene_dir.join(geotiff_name.format(band + 1))
-            symlink(str(geotiffs[1][band]), str(path))
-        dataset_dirs[geo_yaml['uuid']] = Path(str(obs_dir))
+            symlink(str(geotiff['tiffs'][band]), str(path))
+        dataset_dirs[geotiff['uuid']] = Path(str(obs_dir))
     return dataset_dirs
 
 
@@ -384,8 +396,8 @@ def ls5_nbar_ingest_config(tmpdir, driver):
     config = load_yaml_file(LS5_NBAR_INGEST_CONFIG)[0]
     config = alter_dataset_type_for_testing(config, driver=driver.name)
     config['storage']['crs'] = 'EPSG:28355'
-    # config['storage']['chunking']['time'] = 2
-    # config['storage']['tile_size']['time'] = 3
+    config['storage']['chunking']['time'] = 1
+    # config['storage']['tile_size']['time'] = 2
     config['location'] = str(dataset_dir)
     if 'storage' in config and \
        'driver' in config['storage'] and \
@@ -483,19 +495,11 @@ def alter_dataset_type_for_testing(type_, metadata_type=None, driver='NetCDF CF'
         type_ = limit_num_measurements(type_)
     if 'storage' in type_:
         storage = type_['storage']
-        shrink_factors = TEST_STORAGE_SHRINK_FACTORS
-        if 'driver' in storage:
-            storage['driver'] = driver
-            if driver in ('s3', 's3-test'):
-                shrink_factors = TEST_STORAGE_SHRINK_FACTORS_S3
-        if is_geogaphic(type_):
-            type_ = shrink_storage_type(type_, GEOGRAPHIC_VARS, shrink_factors)
-        else:
-            type_ = shrink_storage_type(type_, PROJECTED_VARS, shrink_factors)
-
+        type_ = shrink_storage_type(type_,
+                                    GEOGRAPHIC_VARS if is_geogaphic(type_) else PROJECTED_VARS,
+                                    TEST_STORAGE_SHRINK_FACTORS)
     if metadata_type:
         type_['metadata_type'] = metadata_type.name
-
     return type_
 
 
