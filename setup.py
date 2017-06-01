@@ -81,6 +81,7 @@ setup(
         'boto3',
         'SharedArray',
         'pathos',
+        'zstandard',
     ],
     extras_require=extras_require,
     tests_require=tests_require,

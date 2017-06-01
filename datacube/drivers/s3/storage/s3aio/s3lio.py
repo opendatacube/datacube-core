@@ -10,17 +10,16 @@ import sys
 import uuid
 import hashlib
 import numpy as np
+import SharedArray as sa
 from six import integer_types
 from six.moves import map, zip
 from itertools import repeat, product
-from pathos.multiprocessing import ProcessingPool as Pool
+from pathos.multiprocessing import ProcessingPool
 from pathos.multiprocessing import freeze_support, cpu_count
-import SharedArray as sa
 try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
-from pprint import pprint
 from .s3aio import S3AIO
 
 
@@ -28,8 +27,13 @@ class S3LIO(object):
 
     DECIMAL_PLACES = 6
 
-    def __init__(self, enable_s3=True, file_path=None):
-        self.s3aio = S3AIO(enable_s3, file_path)
+    def __init__(self, enable_s3=True, file_path=None, num_threads=30):
+        self.s3aio = S3AIO(enable_s3, file_path, num_threads)
+
+        if num_threads is None:
+            num_threads = cpu_count()
+
+        self.pool = ProcessingPool(num_threads)
 
     def chunk_indices_1d(self, begin, end, step, bound_slice=None, return_as_shape=False):
         if bound_slice is None:
@@ -63,7 +67,6 @@ class S3LIO(object):
         if spread:
             keys = [hashlib.md5(k.encode('utf-8')).hexdigest()[0:6] + '_' + k for k in keys]
         self.shard_array_to_s3(array, idx, bucket, keys)
-        #s3_dataset_id, chunk, chunk_id
         return list(zip(keys, idx, chunk_ids))
 
     def put_array_in_s3_mp(self, array, chunk_size, base_name, bucket, spread=False):
@@ -90,15 +93,12 @@ class S3LIO(object):
             else:
                 self.s3aio.s3io.put_bytes(s3_bucket, s3_key, bytes(np.ascontiguousarray(array[index]).data))
 
-        num_processes = cpu_count()
-        pool = Pool(num_processes)
         array_name = '_'.join(['SA3IO', str(uuid.uuid4()), str(os.getpid())])
         sa.create(array_name, shape=array.shape, dtype=array.dtype)
         shared_array = sa.attach(array_name)
         shared_array[:] = array
-        results = pool.map(work_shard_array_to_s3, s3_keys, indices, repeat(array_name), repeat(s3_bucket))
-        pool.close()
-        pool.join()
+        results = self.pool.map(work_shard_array_to_s3, s3_keys, indices, repeat(array_name), repeat(s3_bucket))
+
         sa.delete(array_name)
 
     def assemble_array_from_s3(self, array, indices, s3_bucket, s3_keys, dtype):
@@ -162,7 +162,6 @@ class S3LIO(object):
 
         # data slices for each chunk
         slices = list(self.chunk_indices_nd(macro_shape, micro_shape, array_slice))
-        pprint(slices)
 
         # chunk id's for each data slice
         slice_starts = [tuple([s.start for s in s]) for s in slices]
@@ -180,7 +179,56 @@ class S3LIO(object):
         if use_hash:
             keys = [hashlib.md5(k.encode('utf-8')).hexdigest()[0:6] + '_' + k for k in keys]
 
-        # data = np.zeros(shape=[s.stop - s.start for s in array_slice], dtype=dtype)
+        data = np.zeros(shape=[s.stop - s.start for s in array_slice], dtype=dtype)
+
+        # calculate offsets
+        offset = tuple([i.start for i in array_slice])
+        # calculate data slices
+        data_slices = [tuple([slice(s.start-o, s.stop-o) for s, o in zip(s, offset)]) for s in slices]
+        # calculate local slices
+        origin = [[s.start % cs if s.start >= cs else s.start for s, cs in zip(s, micro_shape)] for s in slices]
+        size = [[s.stop-s.start for s in s] for s in data_slices]
+        local_slices = [[slice(o, o+s) for o, s in zip(o, s)] for o, s in zip(origin, size)]
+
+        zipped = zip(keys, data_slices, local_slices, chunk_shapes, repeat(offset))
+
+        # get the slices and populate the data array.
+        for s3_key, data_slice, local_slice, shape, offset in zipped:
+            data[data_slice] = self.s3aio.get_slice_by_bbox(local_slice, shape, dtype, s3_bucket, s3_key)
+
+        return data
+
+    def get_data_unlabeled_mp(self, base_location, macro_shape, micro_shape, dtype, array_slice, s3_bucket,
+                              use_hash=False):
+        # TODO(csiro):
+        #     - use SharedArray for data
+        #     - multiprocess the for loop depending on slice size.
+        #     - not very efficient, redo
+        #     - point retrieval via integer index instead of slicing operator.
+        #
+        # element_ids = [np.ravel_multi_index(tuple([s.start for s in s]), macro_shape) for s in slices]
+        def work_data_unlabeled(array_name, s3_key, data_slice, local_slice, shape, offset):
+            result = sa.attach(array_name)
+            result[data_slice] = self.s3aio.get_slice_by_bbox(local_slice, shape, dtype, s3_bucket, s3_key)
+
+        # data slices for each chunk
+        slices = list(self.chunk_indices_nd(macro_shape, micro_shape, array_slice))
+
+        # chunk id's for each data slice
+        slice_starts = [tuple([s.start for s in s]) for s in slices]
+
+        chunk_ids = [self.s3aio.to_1d(tuple(np.floor([(p/float(s)) for p, s, in zip(c, micro_shape)]).astype(int)),
+                                      tuple([(int(np.ceil(a/float(b)))) for a, b in zip(macro_shape, micro_shape)]))
+                     for c in slice_starts]
+
+        # chunk_sizes for each chunk
+        chunk_shapes = list(self.chunk_indices_nd(macro_shape, micro_shape, None, True))
+        chunk_shapes = [chunk_shapes[c] for c in chunk_ids]
+
+        # compute keys
+        keys = ['_'.join([base_location, str(i)]) for i in chunk_ids]
+        if use_hash:
+            keys = [hashlib.md5(k.encode('utf-8')).hexdigest()[0:6] + '_' + k for k in keys]
 
         # create shared array
         array_name = '_'.join(['S3LIO', str(uuid.uuid4()), str(os.getpid())])
@@ -198,9 +246,8 @@ class S3LIO(object):
 
         zipped = zip(keys, data_slices, local_slices, chunk_shapes, repeat(offset))
 
-        # get the slices and populate the data array.
-        for s3_key, data_slice, local_slice, shape, offset in zipped:
-            data[data_slice] = self.s3aio.get_slice(local_slice, shape, dtype, s3_bucket, s3_key)
+        self.pool.map(work_data_unlabeled, repeat(array_name), keys, data_slices, local_slices, chunk_shapes,
+                      repeat(offset))
 
         sa.delete(array_name)
 

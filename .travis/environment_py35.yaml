@@ -26,6 +26,7 @@ dependencies:
 - compliance-checker
 - boto3
 - pathos
+- zstandard
 - compliance-checker = 3.0.3
 - pygeoif = 0.6 # compliance-checker 3.0.3 fails with 0.7
 - pip:

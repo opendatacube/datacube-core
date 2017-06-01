@@ -15,15 +15,18 @@ import os
 import uuid
 import time
 import boto3
+import boto3.session
 import botocore
+import zstd
+import SharedArray as sa
 import numpy as np
 from six.moves import reduce, zip
 from operator import mul
 from os.path import expanduser, exists
 from itertools import repeat
-from pathos.multiprocessing import ProcessingPool as Pool
+from pathos.multiprocessing import ProcessingPool
 from pathos.multiprocessing import freeze_support, cpu_count
-import SharedArray as sa
+
 try:
     from StringIO import StringIO
 except ImportError:
@@ -36,15 +39,20 @@ class S3IO(object):
 
     # enable_s3: True = reads/writes to s3
     # enable_s3: False = reads/writes to disk ***for testing only***
-    def __init__(self, enable_s3=True, file_path=None):
+    def __init__(self, enable_s3=True, file_path=None, num_threads=30):
         self.enable_s3 = enable_s3
         if file_path is None:
             self.file_path = expanduser("~")+"/S3IO/"
         else:
             self.file_path = file_path
 
+        if num_threads is None:
+            num_threads = cpu_count()
+
+        self.pool = ProcessingPool(num_threads)
+
     def list_created_arrays(self):
-        result = [f for f in os.listdir("/dev/shm") if f.startswith('S3IO')]
+        result = [f for f in os.listdir("/dev/shm") if f.startswith('S3') or f.startswith('DCCORE')]
         # TODO(csiro): Fix issue and remove pylint flag below
         # pylint: disable=superfluous-parens
         print(result)
@@ -154,6 +162,10 @@ class S3IO(object):
 
     def put_bytes(self, s3_bucket, s3_key, data, new_session=False):
         # assert isinstance(data, memoryview), 'data must be a memoryview'
+
+        cctx = zstd.ZstdCompressor(level=9, write_content_size=True)
+        data = cctx.compress(data)
+
         if self.enable_s3:
             s3 = self.s3_resource(new_session)
             s3.meta.client.put_object(Bucket=s3_bucket, Key=s3_key, Body=io.BytesIO(data))
@@ -242,12 +254,9 @@ class S3IO(object):
 
         parts_dict = dict(Parts=[])
         blocks = range(num_blocks)
-        num_processes = cpu_count()
-        pool = Pool(num_processes)
-        results = pool.map(work_put, blocks, data_chunks, repeat(s3_bucket), repeat(s3_key),
-                           repeat(block_size), repeat(mpu))
-        pool.close()
-        pool.join()
+
+        results = self.pool.map(work_put, blocks, data_chunks, repeat(s3_bucket), repeat(s3_key),
+                                repeat(block_size), repeat(mpu))
 
         for result in results:
             parts_dict['Parts'].append(result)
@@ -289,12 +298,9 @@ class S3IO(object):
         num_blocks = int(np.ceil(shared_array.nbytes/float(block_size)))
         parts_dict = dict(Parts=[])
         blocks = range(num_blocks)
-        num_processes = cpu_count()
-        pool = Pool(num_processes)
-        results = pool.map(work_put_shm, blocks, repeat(array_name), repeat(s3_bucket),
-                           repeat(s3_key), repeat(block_size), repeat(mpu))
-        pool.close()
-        pool.join()
+
+        results = self.pool.map(work_put_shm, blocks, repeat(array_name), repeat(s3_bucket),
+                                repeat(s3_key), repeat(block_size), repeat(mpu))
 
         for result in results:
             parts_dict['Parts'].append(result)
@@ -372,16 +378,13 @@ class S3IO(object):
         s3_max_size = s3o['ContentLength']
         s3_obj_size = s3_end-s3_start
         num_streams = int(np.ceil(s3_obj_size/block_size))
-        num_processes = cpu_count()
-        pool = Pool(num_processes)
         blocks = range(num_streams)
         array_name = '_'.join(['S3IO', s3_bucket, s3_key, str(uuid.uuid4()), str(os.getpid())])
         sa.create(array_name, shape=(s3_obj_size), dtype=np.uint8)
         shared_array = sa.attach(array_name)
 
-        pool.map(work_get, blocks, repeat(array_name), repeat(s3_bucket), repeat(s3_key),
-                 repeat(s3_max_size), repeat(block_size))
-        pool.close()
-        pool.join()
+        self.pool.map(work_get, blocks, repeat(array_name), repeat(s3_bucket), repeat(s3_key),
+                      repeat(s3_max_size), repeat(block_size))
+
         sa.delete(array_name)
         return shared_array

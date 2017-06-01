@@ -18,7 +18,7 @@ class S3Driver(Driver):
         '''Initialise the s3 storage.'''
         super(S3Driver, self).__init__(name, index, *index_args, **index_kargs)
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.storage = S3LIO(False)
+        self.storage = S3LIO()
 
 
     @property

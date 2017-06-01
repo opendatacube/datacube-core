@@ -1,16 +1,21 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-from itertools import groupby
+from itertools import groupby, repeat
 from collections import namedtuple, OrderedDict
 from math import ceil
 import warnings
 
+import os
+import uuid
 import pandas
 import numpy
 import xarray
+import SharedArray as sa
 from affine import Affine
 from dask import array as da
+from pathos.threading import ThreadPool
+from six.moves import zip
 
 from ..config import LocalConfig
 from ..compat import string_types
@@ -137,7 +142,7 @@ class Datacube(object):
 
     #: pylint: disable=too-many-arguments, too-many-locals
     def load(self, product=None, measurements=None, output_crs=None, resolution=None, resampling=None, stack=False,
-             dask_chunks=None, like=None, fuse_func=None, align=None, datasets=None, **query):
+             dask_chunks=None, like=None, fuse_func=None, align=None, datasets=None, use_threads=False, **query):
         """
         Load data as an ``xarray`` object.  Each measurement will be a data variable in the :class:`xarray.Dataset`.
 
@@ -322,7 +327,7 @@ class Datacube(object):
         measurements = set_resampling_method(measurements, resampling)
 
         result = self.load_data(grouped, geobox, measurements.values(),
-                                fuse_func=fuse_func, dask_chunks=dask_chunks)
+                                fuse_func=fuse_func, dask_chunks=dask_chunks, use_threads=use_threads)
         if not stack:
             return result
         else:
@@ -452,7 +457,8 @@ class Datacube(object):
         return Datacube.load_data(*args, **kwargs)
 
     @staticmethod
-    def load_data(sources, geobox, measurements, fuse_func=None, dask_chunks=None, skip_broken_datasets=False):
+    def load_data(sources, geobox, measurements, fuse_func=None, dask_chunks=None, skip_broken_datasets=False,
+                  use_threads=False):
         """
         Load data from :meth:`group_datasets` into an :class:`xarray.Dataset`.
 
@@ -481,10 +487,25 @@ class Datacube(object):
         """
         if dask_chunks is None:
             def data_func(measurement):
-                data = numpy.full(sources.shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
-                for index, datasets in numpy.ndenumerate(sources.values):
-                    _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
-                                      skip_broken_datasets=skip_broken_datasets)
+                if not use_threads:
+                    data = numpy.full(sources.shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
+                    for index, datasets in numpy.ndenumerate(sources.values):
+                        _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
+                                          skip_broken_datasets=skip_broken_datasets)
+                else:
+                    def work_load_data(array_name, index, datasets):
+                        data = sa.attach(array_name)
+                        _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
+                                          skip_broken_datasets=skip_broken_datasets)
+
+                    array_name = '_'.join(['DCCORE', str(uuid.uuid4()), str(os.getpid())])
+                    sa.create(array_name, shape=sources.shape + geobox.shape, dtype=measurement['dtype'])
+                    data = sa.attach(array_name)
+                    data[:] = measurement['nodata']
+
+                    pool = ThreadPool(32)
+                    pool.map(work_load_data, repeat(array_name), *zip(*numpy.ndenumerate(sources.values)))
+                    sa.delete(array_name)
                 return data
         else:
             def data_func(measurement):

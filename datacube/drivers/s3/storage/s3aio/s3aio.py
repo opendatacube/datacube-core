@@ -7,24 +7,29 @@ Array access to a single S3 object
 
 import os
 import uuid
+import zstd
 import numpy as np
+import SharedArray as sa
 from six.moves import zip
 from itertools import repeat, product
-from pathos.multiprocessing import ProcessingPool as Pool
+from pathos.multiprocessing import ProcessingPool
 from pathos.multiprocessing import freeze_support, cpu_count
-import SharedArray as sa
 try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
-from pprint import pprint
 from .s3io import S3IO
 
 
 class S3AIO(object):
 
-    def __init__(self, enable_s3=True, file_path=None):
-        self.s3io = S3IO(enable_s3, file_path)
+    def __init__(self, enable_s3=True, file_path=None, num_threads=30):
+        self.s3io = S3IO(enable_s3, file_path, num_threads)
+
+        if num_threads is None:
+            num_threads = cpu_count()
+
+        self.pool = ProcessingPool(num_threads)
 
     def bytes_to_array(self, data, shape, dtype):
         array = np.empty(shape=shape, dtype=dtype)
@@ -135,16 +140,13 @@ class S3AIO(object):
         blocks = list(zip(outer_cells, repeat(array_slice[start:])))
         offset = [s.start for s in array_slice]
 
-        num_processes = cpu_count()
-        pool = Pool(num_processes)
         array_name = '_'.join(['S3AIO', str(uuid.uuid4()), str(os.getpid())])
         sa.create(array_name, shape=[s.stop - s.start for s in array_slice], dtype=dtype)
         shared_array = sa.attach(array_name)
 
-        pool.map(work_get_slice, blocks, repeat(array_name), repeat(offset), repeat(s3_bucket),
-                 repeat(s3_key), repeat(shape), repeat(dtype))
-        pool.close()
-        pool.join()
+        self.pool.map(work_get_slice, blocks, repeat(array_name), repeat(offset), repeat(s3_bucket),
+                      repeat(s3_key), repeat(shape), repeat(dtype))
+
         sa.delete(array_name)
         return shared_array
 
@@ -160,10 +162,18 @@ class S3AIO(object):
         s3_begin = (np.ravel_multi_index(tuple([s.start for s in array_slice]), shape)) * item_size
         s3_end = (np.ravel_multi_index(tuple([s.stop-1 for s in array_slice]), shape)+1) * item_size
 
-        if s3_end-s3_begin <= 5*1024*1024:
-            d = self.s3io.get_byte_range(s3_bucket, s3_key, s3_begin, s3_end)
-        else:
-            d = self.s3io.get_byte_range_mp(s3_bucket, s3_key, s3_begin, s3_end, 5*1024*1024)
+        # if s3_end-s3_begin <= 5*1024*1024:
+        #     d = self.s3io.get_byte_range(s3_bucket, s3_key, s3_begin, s3_end)
+        # else:
+        #     d = self.s3io.get_byte_range_mp(s3_bucket, s3_key, s3_begin, s3_end, 5*1024*1024)
+
+        d = self.s3io.get_bytes(s3_bucket, s3_key)
+
+        cctx = zstd.ZstdDecompressor()
+        d = cctx.decompress(d)
+
+        d = np.frombuffer(d, dtype=np.uint8, count=-1, offset=0)
+        d = d[s3_begin:s3_end]
 
         cdim = self.cdims(array_slice, shape)
 
