@@ -23,4 +23,5 @@ Other methods to build and install the Data Cube are maintained by the community
    conda
    windows
    ubuntu
+   centos
    macosx

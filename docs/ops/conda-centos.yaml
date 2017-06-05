@@ -1,0 +1,25 @@
+name: datacube
+dependencies:
+- python=3.5
+- bottleneck
+- cachetools
+- click
+- dask
+- gdal >=1.9
+- jsonschema
+- netcdf4
+- numpy
+- pathlib
+- pandas
+- pip
+- psycopg2
+- python-dateutil
+- pyyaml
+- rasterio
+- shapely
+- singledispatch
+- sqlalchemy
+- xarray
+- pip:
+  - ciso8601
+  - pypeg2

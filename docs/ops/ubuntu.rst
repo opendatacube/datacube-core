@@ -37,6 +37,4 @@ It may be useful to use conda to install binary packages::
 
     conda install psycopg2 gdal libgdal hdf5 rasterio netcdf4 libnetcdf pandas
 
-.. note::
 
-    Usage of virtual environments is recommended
