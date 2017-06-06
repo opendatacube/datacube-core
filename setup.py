@@ -57,6 +57,7 @@ setup(
         '': ['*.yaml', '*/*.yaml'],
     },
     scripts=[
+        'datacube_apps/scripts/pbs_helpers.sh'
     ],
     setup_requires=[
         'pytest-runner'
@@ -78,6 +79,8 @@ setup(
         'rasterio>=0.34',
         'singledispatch',
         'sqlalchemy',
+        'celery>=4',
+        'redis',
         'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
     ],
     extras_require=extras_require,
@@ -88,6 +91,7 @@ setup(
             'datacube-search = datacube.scripts.search_tool:cli',
             'datacube = datacube.scripts.cli_app:cli',
             'datacube-stacker = datacube_apps.stacker:main',
+            'datacube-worker = datacube_apps.worker:main',
             'datacube-fixer = datacube_apps.stacker:fixer_main',
             'datacube-ncml = datacube_apps.ncml:ncml_app',
             'pixeldrill = datacube_apps.pixeldrill:main [interactive]',

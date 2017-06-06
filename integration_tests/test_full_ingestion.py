@@ -4,7 +4,6 @@ import warnings
 from pathlib import Path
 
 import netCDF4
-import numpy as np
 import pytest
 
 import yaml
@@ -13,7 +12,7 @@ from affine import Affine
 from datacube.api.query import query_group_by
 
 import datacube.scripts.cli_app
-from datacube.utils import geometry, read_documents
+from datacube.utils import geometry, read_documents, netcdf_extract_string
 from .conftest import EXAMPLE_LS5_DATASET_ID
 
 PROJECT_ROOT = Path(__file__).parents[1]
@@ -147,10 +146,7 @@ def check_attributes(obj, attrs):
 
 def check_dataset_metadata_in_storage_unit(nco, dataset_dir):
     assert len(nco.variables['dataset']) == 1  # 1 time slice
-    stored_metadata = nco.variables['dataset'][0]
-    if not isinstance(stored_metadata, str):
-        stored_metadata = netCDF4.chartostring(stored_metadata)
-        stored_metadata = str(np.char.decode(stored_metadata))
+    stored_metadata = netcdf_extract_string(nco.variables['dataset'][0])
     ds_filename = dataset_dir / 'agdc-metadata.yaml'
 
     stored = yaml.safe_load(stored_metadata)

@@ -53,6 +53,10 @@ jobs:
             export PATH="$HOME/miniconda/bin:$PATH"
             source activate agdc
 
+            hash -r
+            echo $PATH
+            echo $(which redis-server)
+
             pep8 tests integration_tests examples utils --max-line-length 120
 
             pylint -j 2 --reports no datacube datacube_apps
