@@ -216,5 +216,6 @@ class DatasetResource(base_dataset.DatasetResource):
                     for s3_dataset in s3_datasets:
                         dataset.s3_metadata[band] = {
                             's3_dataset': s3_dataset,
-                            's3_chunks': transaction.get_s3_dataset_chunk(s3_dataset.id)
+                            # TODO(csiro): commenting this out for now, not using it yet.
+                            # 's3_chunks': transaction.get_s3_dataset_chunk(s3_dataset.id)
                         }
