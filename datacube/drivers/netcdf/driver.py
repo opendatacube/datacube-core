@@ -29,12 +29,9 @@ class NetCDFDriver(Driver):
         return write_dataset_to_netcdf(dataset, *args, **kargs)
 
 
-    def _init_index(self, db=None, *args, **kargs):
+    def _init_index(self, driver_manager, index, *args, **kargs):
         '''See :meth:`datacube.drivers.driver.init_index`'''
-        local_config = kargs['local_config'] if 'local_config' in kargs else None
-        application_name = kargs['application_name'] if 'application_name' in kargs else None
-        validate_connection = kargs['validate_connection'] if 'validate_connection' in kargs else True
-        return Index(local_config, application_name, validate_connection, db)
+        return Index(driver_manager, index, *args, **kargs)
 
 
     def get_datasource(self, dataset, measurement_id):

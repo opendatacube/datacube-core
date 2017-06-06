@@ -4,24 +4,27 @@ from __future__ import absolute_import
 
 import logging
 
-from datacube.config import LocalConfig
-import datacube.index._api
-from datacube.index.postgres import PostgresDb
+import datacube.drivers.index as base_index
 
-# pylint: disable=protected-access
-class Index(datacube.index._api.Index):
+
+class Index(base_index.Index, base_index.IndexExtension):
     '''NetCDF driver wrapper.'''
 
-    def __init__(self, local_config=None, application_name=None, validate_connection=True, db=None):
+    def __init__(self, driver_manager, index=None, *args, **kargs):
         '''Initialise the index.'''
-        if db is None:
-            if local_config is None:
-                local_config = LocalConfig.find()
-            db = PostgresDb.from_config(local_config,
-                                        application_name=application_name,
-                                        validate_connection=validate_connection)
-        super(Index, self).__init__(db)
-        self.logger = logging.getLogger(self.__class__.__name__)
+        super(Index, self).__init__(driver_manager, index, *args, **kargs)
+
+
+    def add_specifics(self, dataset):
+        '''Extend the dataset doc with driver specific index data.
+
+        There is no specific info to add for NetCDF as is constitutes
+        the base index.
+
+        :param :cls:`datacube.model.Dataset` dataset: The dataset to
+          add NetCDF-specific indexing data to.
+        '''
+        pass
 
 
     def add_datasets(self, datasets, sources_policy='verify'):

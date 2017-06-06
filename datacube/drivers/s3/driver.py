@@ -14,9 +14,9 @@ from datacube.drivers.s3.datasource import S3DataSource
 class S3Driver(Driver):
     '''S3 storage driver.'''
 
-    def __init__(self, name, index=None, *index_args, **index_kargs):
+    def __init__(self, driver_manager, name, index=None, *index_args, **index_kargs):
         '''Initialise the s3 storage.'''
-        super(S3Driver, self).__init__(name, index, *index_args, **index_kargs)
+        super(S3Driver, self).__init__(driver_manager, name, index, *index_args, **index_kargs)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.storage = S3LIO()
 
@@ -177,12 +177,9 @@ class S3Driver(Driver):
         return outputs
 
 
-    def _init_index(self, db=None, *args, **kargs):
+    def _init_index(self, driver_manager, index, *args, **kargs):
         '''See :meth:`datacube.drivers.driver.init_index`'''
-        local_config = kargs['local_config'] if 'local_config' in kargs else None
-        application_name = kargs['application_name'] if 'application_name' in kargs else None
-        validate_connection = kargs['validate_connection'] if 'validate_connection' in kargs else True
-        return Index(local_config, application_name, validate_connection, db, self.uri_scheme)
+        return Index(self.uri_scheme, driver_manager, index, *args, **kargs)
 
 
     def get_index_specifics(self, dataset):

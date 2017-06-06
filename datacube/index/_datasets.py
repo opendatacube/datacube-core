@@ -603,11 +603,12 @@ class DatasetResource(object):
     :type types: datacube.index._datasets.ProductResource
     """
 
-    def __init__(self, db, dataset_type_resource):
+    def __init__(self, driver_manager, db, dataset_type_resource):
         """
         :type db: datacube.index.postgres._connections.PostgresDb
         :type dataset_type_resource: datacube.index._datasets.ProductResource
         """
+        self._driver_manager = driver_manager
         self._db = db
         self.types = dataset_type_resource
 
@@ -980,6 +981,7 @@ class DatasetResource(object):
             indexed_time=dataset_res.added if full_info else None,
             archived_time=dataset_res.archived
         )
+        self._driver_manager.add_specifics(dataset)
         return dataset
 
     def _make_many(self, query_result):

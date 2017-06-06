@@ -22,7 +22,7 @@ class Driver(object):
     '''Driver's index.'''
 
 
-    def __init__(self, name, index=None, *index_args, **index_kargs):
+    def __init__(self, driver_manager, name, index=None, *index_args, **index_kargs):
         '''Initialise the driver's name and index.
 
         This should be called by subclasses, or the name and index set manually.
@@ -44,8 +44,9 @@ class Driver(object):
           indexes.
         '''
         self.__name = name
+        self._driver_manager = driver_manager
         # pylint: disable=protected-access
-        self.__index = self._init_index(index._db if index else None, *index_args, **index_kargs)
+        self.__index = self._init_index(driver_manager, index, *index_args, **index_kargs)
 
 
     @property
@@ -103,9 +104,10 @@ class Driver(object):
 
 
     @abstractmethod
-    def _init_index(self, db=None, *index_args, **index_kargs):
+    def _init_index(self, driver_manager, index, *args, **kargs):
         '''Initialise this driver's index.
 
+        :param driver_manager: The driver manager.
         :param db: A DB connection that should be used by the
           index. This is provided for test support only, and not all
           drivers may support it in the future.
@@ -118,8 +120,4 @@ class Driver(object):
           implementation all parameters get passed to all potential
           indexes.
         '''
-        return None
-
-
-    def get_index_specifics(self, dataset):
         return None

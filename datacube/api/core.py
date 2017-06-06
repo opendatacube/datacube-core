@@ -19,7 +19,6 @@ from six.moves import zip
 
 from ..config import LocalConfig
 from ..compat import string_types
-from ..index import index_connect
 from datacube.drivers.manager import DriverManager
 from ..storage.storage import reproject_and_fuse
 from ..utils import geometry, intersects, data_resolution_and_offset
@@ -68,8 +67,6 @@ class Datacube(object):
         If no index or config is given, the default configuration is used for database connection.
 
         :param Index index: The database index to use.
-
-            Can be created by :class:`datacube.index.index_connect`.
 
         :param LocalConfig config: A config object or a path to a config file that defines the connection.
 

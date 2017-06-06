@@ -214,9 +214,9 @@ class MockTypesResource(object):
 def test_index_dataset():
     mock_db = MockDb()
     mock_index = MockIndex(mock_db)
-    DriverManager(index=mock_index)
+    driver_manager = DriverManager(index=mock_index)
     mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
-    datasets = DatasetResource(mock_db, mock_types)
+    datasets = DatasetResource(driver_manager, mock_db, mock_types)
     dataset = datasets.add(_EXAMPLE_NBAR_DATASET)
 
     ids = {d.id for d in mock_db.dataset.values()}
@@ -247,9 +247,9 @@ def test_index_dataset():
 def test_index_already_ingested_source_dataset():
     mock_db = MockDb()
     mock_index = MockIndex(mock_db)
-    DriverManager(index=mock_index)
+    driver_manager = DriverManager(index=mock_index)
     mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
-    datasets = DatasetResource(mock_db, mock_types)
+    datasets = DatasetResource(driver_manager, mock_db, mock_types)
     dataset = datasets.add(_EXAMPLE_NBAR_DATASET.sources['ortho'])
 
     assert len(mock_db.dataset) == 2
@@ -263,9 +263,9 @@ def test_index_already_ingested_source_dataset():
 def test_index_two_levels_already_ingested():
     mock_db = MockDb()
     mock_index = MockIndex(mock_db)
-    DriverManager(index=mock_index)
+    driver_manager = DriverManager(index=mock_index)
     mock_types = MockTypesResource(_EXAMPLE_DATASET_TYPE)
-    datasets = DatasetResource(mock_db, mock_types)
+    datasets = DatasetResource(driver_manager, mock_db, mock_types)
     dataset = datasets.add(_EXAMPLE_NBAR_DATASET.sources['ortho'].sources['satellite_telemetry_data'])
 
     assert len(mock_db.dataset) == 1

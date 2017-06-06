@@ -201,7 +201,7 @@ def pass_index(app_name=None, expect_initialised=True):
                               local_config=ctx.obj['config_file'],
                               application_name=app_name or ctx.command_path,
                               validate_connection=expect_initialised)
-                index = DriverManager().driver.index
+                index = DriverManager().index
                 _LOG.debug("Connected to datacube index: %s", index)
                 return f(index, *args, **kwargs)
             except (OperationalError, ProgrammingError) as e:

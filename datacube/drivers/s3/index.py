@@ -3,33 +3,33 @@ from __future__ import absolute_import
 
 import logging
 from uuid import uuid4
-from datetime import datetime
 import numpy as np
 
-from datacube.config import LocalConfig
-import datacube.index._api
-from datacube.index.postgres import PostgresDb
-from datacube.model import Dataset
-from datacube.drivers.manager import DriverManager
+import datacube.drivers.index as base_index
+import datacube.index._datasets as base_dataset
 
-# pylint: disable=protected-access
-class Index(datacube.index._api.Index):
+
+class Index(base_index.Index, base_index.IndexExtension):
     '''The s3 indexer extends the existing postgres indexer functionality
     by writing additional s3 information to specific tables.
     '''
 
-    def __init__(self, local_config=None, application_name=None, validate_connection=True, db=None, uri_scheme='s3'):
+    def __init__(self, uri_scheme, driver_manager, index=None, *args, **kargs):
         '''Initialise the index and its dataset resource.'''
-        if db is None:
-            if local_config is None:
-                local_config = LocalConfig.find()
-            db = PostgresDb.from_config(local_config,
-                                        application_name=application_name,
-                                        validate_connection=validate_connection)
-        super(Index, self).__init__(db)
-        self.logger = logging.getLogger(self.__class__.__name__)
+        super(Index, self).__init__(driver_manager, index, *args, **kargs)
         self.uri_scheme = uri_scheme
-        self.datasets = DatasetResource(self._db, self.products, self.uri_scheme)
+        self.datasets = DatasetResource(driver_manager, self._db, self.products, self.uri_scheme)
+
+
+    def add_specifics(self, dataset):
+        '''Extend the dataset doc with driver specific index data.
+
+        The dataset is modified in place.
+
+        :param :cls:`datacube.model.Dataset` dataset: The dataset to
+          add s3-specific indexing data to.
+        '''
+        self.datasets.add_specifics(dataset)
 
 
     def add_datasets(self, datasets, sources_policy='verify'):
@@ -66,15 +66,14 @@ class Index(datacube.index._api.Index):
         return "S3Index<db={!r}>".format(self._db)
 
 
-# pylint: disable=protected-access
-class DatasetResource(datacube.index._datasets.DatasetResource):
+class DatasetResource(base_dataset.DatasetResource):
     '''The s3 dataset resource extends the postgres one by writing
     additional s3 information to specific tables.
     '''
 
-    def __init__(self, db, dataset_type_resource, uri_scheme='s3'):
+    def __init__(self, driver_manager, db, dataset_type_resource, uri_scheme='s3'):
         '''Initialise the data resource.'''
-        super(DatasetResource, self).__init__(db, dataset_type_resource)
+        super(DatasetResource, self).__init__(driver_manager, db, dataset_type_resource)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.uri_scheme = uri_scheme
 
@@ -200,17 +199,15 @@ class DatasetResource(datacube.index._datasets.DatasetResource):
                 self._add_s3_dataset_mappings(transaction, s3_dataset_id, band, dataset_refs)
 
 
-    def _make(self, dataset_res, full_info=False):
-        '''Pull index data from the DB for a dataset.
+    def add_specifics(self, dataset):
+        '''Extend the dataset doc with driver specific index data.
 
-        This methods returns a dataset with its document along with a
-        `s3_metadata` variable containing the s3 indexing metadata.
+        This methods extends the dataset document with a `s3_metadata`
+        variable containing the s3 indexing metadata.
 
-        :param dataset_ref: See :meth:`datacube.index._datasets.DatasetResource._make`
-        :param full_info: See :meth:`datacube.index._datasets.DatasetResource._make`
+        :param :cls:`datacube.model.Dataset` dataset: The dataset to
+          add NetCDF-specific indexing data to.
         '''
-        dataset = super(DatasetResource, self)._make(dataset_res, full_info)
-
         dataset.s3_metadata = {}
         if dataset.measurements:
             with self._db.begin() as transaction:
@@ -221,4 +218,3 @@ class DatasetResource(datacube.index._datasets.DatasetResource):
                             's3_dataset': s3_dataset,
                             's3_chunks': transaction.get_s3_dataset_chunk(s3_dataset.id)
                         }
-        return dataset

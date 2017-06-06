@@ -17,26 +17,6 @@ _LOG = logging.getLogger(__name__)
 _DEFAULT_METADATA_TYPES_PATH = Path(__file__).parent.joinpath('default-metadata-types.yaml')
 
 
-def connect(local_config=None, application_name=None, validate_connection=True):
-    # type: (LocalConfig, str, bool) -> Index
-    """
-    Connect to the index. Default Postgres implementation.
-
-    :param application_name: A short, alphanumeric name to identify this application.
-    :param local_config: Config object to use.
-    :type local_config: :py:class:`datacube.config.LocalConfig`, optional
-    :param validate_connection: Validate database connection and schema immediately
-    :raises datacube.index.postgres._api.EnvironmentError:
-    :rtype: Index
-    """
-    if local_config is None:
-        local_config = LocalConfig.find()
-
-    return Index(
-        PostgresDb.from_config(local_config, application_name=application_name, validate_connection=validate_connection)
-    )
-
-
 class Index(object):
     """
     Access to the datacube index.
@@ -57,14 +37,14 @@ class Index(object):
     :type products: datacube.index._datasets.DatasetTypeResource
     :type metadata_types: datacube.index._datasets.MetadataTypeResource
     """
-    def __init__(self, db):
+    def __init__(self, driver_manager, db):
         # type: (PostgresDb) -> None
         self._db = db
 
         self.users = UserResource(db)
         self.metadata_types = MetadataTypeResource(db)
         self.products = ProductResource(db, self.metadata_types)
-        self.datasets = DatasetResource(db, self.products)
+        self.datasets = DatasetResource(driver_manager, db, self.products)
 
     @property
     def url(self):

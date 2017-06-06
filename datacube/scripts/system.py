@@ -7,7 +7,7 @@ from click import echo
 from sqlalchemy.exc import OperationalError
 
 import datacube
-from datacube.index import index_connect
+from datacube.drivers.manager import DriverManager
 from datacube.index.postgres._connections import IndexSetupError
 from datacube.ui import click as ui
 from datacube.ui.click import cli, handle_exception
@@ -77,7 +77,8 @@ def check(config_file):
     echo('\n')
     echo('Attempting connect')
     try:
-        index = index_connect(local_config=config_file)
+        # Initialise driver manager singleton
+        index = DriverManager(default_driver_name=None, index=None, local_config=config_file).index
         echo('Success.')
         for role, user, description in index.users.list_users():
             if user == config_file.db_username:

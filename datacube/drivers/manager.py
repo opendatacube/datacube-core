@@ -8,6 +8,7 @@ from pathlib import Path
 from collections import Iterable
 
 from .driver import Driver
+from .index import Index
 
 # Dynamic loading from filename varies across python versions
 # Based on http://stackoverflow.com/a/67692
@@ -57,6 +58,9 @@ class DriverManager(object):
     __instance = None
     '''Singleton instance of this manager.'''
 
+    __index = None
+    '''Generic index.'''
+
     __driver = None
     '''Current driver.'''
 
@@ -94,7 +98,11 @@ class DriverManager(object):
           to be used by the manager if no driver is specified in the
           dataset.
         :param index: An index object behaving like
-          :class:`datacube.index._api.Index`.
+          :class:`datacube.index._api.Index` and used for testing
+          purposes only. In the current implementation, only the
+          `index._db` variable is used, and is passed to the index
+          initialisation method, that should basically replace the
+          existing DB connection with that variable.
         :param args: Optional positional arguments to be passed to the
           index on initialisation. Caution: In the current
           implementation all parameters get passed to all potential
@@ -107,6 +115,9 @@ class DriverManager(object):
         if cls.__instance is None or default_driver_name or index:
             instance = super(DriverManager, cls).__new__(cls)
             instance.logger = logging.getLogger(cls.__name__)
+            # Initialise the generic index
+            # pylint: disable=protected-access
+            instance.__index = Index(instance, index, *index_args, **index_kargs)
             # pylint: disable=protected-access
             instance._load_drivers(index, *index_args, **index_kargs)
             # pylint: disable=protected-access
@@ -131,7 +142,7 @@ class DriverManager(object):
                 module = load_module(spec[1], str(init_path.parent / spec[2]))
                 driver_cls = getattr(module, spec[1])
                 if issubclass(driver_cls, Driver):
-                    driver = driver_cls(spec[0], index, *index_args, **index_kargs)
+                    driver = driver_cls(self, spec[0], index, *index_args, **index_kargs)
                     self.__drivers[driver.name] = driver
                 else:
                     self.logger.warning('Driver plugin "%s" is not a subclass of the abstract Driver class.',
@@ -156,7 +167,6 @@ class DriverManager(object):
                     driver_name, ', '.join(self.__drivers.keys())))
         else:
             # Keep existing default driver if it exists
-
             if DriverManager.__instance and DriverManager.__instance.__driver: # pylint: disable=protected-access
                 # pylint: disable=protected-access
                 driver_name = DriverManager.__instance.__driver.name
@@ -165,7 +175,8 @@ class DriverManager(object):
             if driver_name not in self.__drivers:
                 driver_name = list(self.__drivers.values())[0].name
         self.__driver = self.__drivers[driver_name]
-        self.logger.info('Reloaded drivers. Using default driver: %s', driver_name)
+        self.logger.info('Reloaded %d drivers. Using default driver: %s',
+                         len(self.__drivers), driver_name)
 
 
     @property
@@ -173,6 +184,13 @@ class DriverManager(object):
         '''Current default driver.
         '''
         return self.__driver
+
+
+    @property
+    def index(self):
+        '''Generic index.
+        '''
+        return self.__index
 
 
     @property
@@ -240,3 +258,7 @@ class DriverManager(object):
 
     def get_datasource(self, dataset, band_name=None):
         return self.get_driver_by_scheme(dataset.uris).get_datasource(dataset, band_name)
+
+
+    def add_specifics(self, dataset):
+        return self.get_driver_by_scheme(dataset.uris).index.add_specifics(dataset)
