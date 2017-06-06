@@ -97,11 +97,11 @@ class Datacube(object):
             return rows
 
         keys = set(k for r in rows for k in r)
-        main_cols = ['id', 'name', 'description']
+        main_cols = ['name', 'description']
         grid_cols = ['crs', 'resolution', 'tile_size', 'spatial_dimensions']
-        other_cols = list(keys - set(main_cols) - set(grid_cols))
+        other_cols = sorted(list(keys - set(main_cols) - set(grid_cols)))
         cols = main_cols + other_cols + grid_cols
-        return pandas.DataFrame(rows, columns=cols).set_index('id')
+        return pandas.DataFrame(rows, columns=cols).set_index('name')
 
     def list_measurements(self, show_archived=False, with_pandas=True):
         """
@@ -574,11 +574,16 @@ def set_resampling_method(measurements, resampling=None):
 
 def datatset_type_to_row(dt):
     row = {
-        'id': dt.id,
         'name': dt.name,
         'description': dt.definition['description'],
     }
-    row.update(dt.fields)
+    # Only show columns for fields whose value is fixed for this product.
+    # (ie, those set in the product definition, not differing between datasets).
+    # Otherwise there's a sea of NaN fields.
+    product_fields = {k: v for (k, v) in dt.fields.items() if v is not None}
+    row.update(product_fields)
+
+    row['search_fields'] = list(sorted(k for (k, v) in dt.fields.items() if v is None))
     if dt.grid_spec is not None:
         row.update({
             'crs': dt.grid_spec.crs,
