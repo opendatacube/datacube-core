@@ -3,6 +3,13 @@ Developers Guide
 
 This documentation applies to version: |version|
 
+Developer Setup
+---------------
+.. toctree::
+   :maxdepth: 2
+   
+   ubuntu_dev
+
 Exploratory Data Analysis
 -------------------------
 
