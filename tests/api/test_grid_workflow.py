@@ -26,6 +26,7 @@ def test_gridworkflow():
     fakedataset.center_time = t = datetime.datetime(2001, 2, 15)
 
     fakeindex = MagicMock()
+    fakeindex._db = None
     fakeindex.datasets.get_field_names.return_value = ['time']  # permit query on time
     fakeindex.datasets.search_eager.return_value = [fakedataset]
 
@@ -33,6 +34,9 @@ def test_gridworkflow():
 
     from datacube.api.grid_workflow import GridWorkflow
     gw = GridWorkflow(fakeindex, gridspec)
+    # Need to force the fake index otherwise the driver manager will
+    # only take its _db
+    gw.index = fakeindex
     query = dict(product='fake_product_name', time=('2001-1-1 00:00:00', '2001-3-31 23:59:59'))
 
     # test backend : that it finds the expected cell/dataset

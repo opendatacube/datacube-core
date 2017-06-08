@@ -10,6 +10,7 @@ import warnings
 from ..utils import intersects
 from .query import Query, query_group_by
 from .core import Datacube, set_resampling_method
+from datacube.drivers.manager import DriverManager
 
 _LOG = logging.getLogger(__name__)
 
@@ -114,7 +115,7 @@ class GridWorkflow(object):
     and can be serialized for use with the `distributed` package.
     """
 
-    def __init__(self, index, grid_spec=None, product=None):
+    def __init__(self, index, grid_spec=None, product=None, driver_manager=None):
         """
         Create a grid workflow tool.
 
@@ -124,7 +125,8 @@ class GridWorkflow(object):
         :param GridSpec grid_spec: The grid projection and resolution
         :param str product: The name of an existing product, if no grid_spec is supplied.
         """
-        self.index = index
+        self.driver_manager = driver_manager if driver_manager else DriverManager(index=index)
+        self.index = self.driver_manager.index
         if grid_spec is None:
             product = self.index.products.get_by_name(product)
             grid_spec = product and product.grid_spec
@@ -307,7 +309,8 @@ class GridWorkflow(object):
         return self.tile_sources(observations, query_group_by(**query))
 
     @staticmethod
-    def load(tile, measurements=None, dask_chunks=None, fuse_func=None, resampling=None, skip_broken_datasets=False):
+    def load(tile, measurements=None, dask_chunks=None, fuse_func=None, resampling=None,
+             skip_broken_datasets=False, driver_manager=None):
         """
         Load data for a cell/tile.
 
@@ -351,7 +354,8 @@ class GridWorkflow(object):
         measurements = set_resampling_method(measurements, resampling)
 
         dataset = Datacube.load_data(tile.sources, tile.geobox, measurements.values(), dask_chunks=dask_chunks,
-                                     fuse_func=fuse_func, skip_broken_datasets=skip_broken_datasets)
+                                     fuse_func=fuse_func, skip_broken_datasets=skip_broken_datasets,
+                                     driver_manager=driver_manager)
 
         return dataset
 

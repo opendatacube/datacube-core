@@ -97,6 +97,10 @@ class MockIndex(object):
     def __init__(self, db):
         self._db = db
 
+    @property
+    def url(self):
+        return self._db.url
+
 
 @pytest.fixture
 def integration_config_paths(tmpdir):
@@ -130,10 +134,11 @@ def local_config(integration_config_paths):
 
 
 @pytest.fixture(params=["US/Pacific", "UTC", ])
-def db(local_config, request):
+def driver_manager(local_config, request):
     timezone = request.param
-
-    db = PostgresDb.from_config(local_config, application_name='test-run', validate_connection=False)
+    driver_manager = DriverManager(index=None, local_config=local_config,
+                                   application_name='test-run', validate_connection=False)
+    db = driver_manager.index._db
 
     # Drop and recreate tables so our tests have a clean db.
     with db.connect() as connection:
@@ -151,8 +156,13 @@ def db(local_config, request):
     # We don't need informational create/drop messages for every config change.
     _dynamic._LOG.setLevel(logging.WARN)
 
-    yield db
-    db.close()
+    yield driver_manager
+    driver_manager.close()
+
+
+@pytest.fixture
+def db(driver_manager):
+    yield driver_manager.index._db
 
 
 @contextmanager
@@ -173,20 +183,9 @@ def remove_dynamic_indexes():
 
 
 @pytest.fixture(params=['NetCDF CF', 's3-test'])
-def driver(db, request):
-    '''Initialise all drivers and set current default one.
-
-    Each driver has an index for which the passed `db` replaces the
-    original db.
-    '''
-    # A hack to only run specific tests for s3-test:
-    # if request.param == 's3-test' and not 'test_full_ingestion' in str(request._parent_request):
-    #    pytest.skip('Skipping s3 test on everything but full ingestion for now')
-    yield DriverManager(default_driver_name=request.param,
-                        index=MockIndex(db)).driver
-    # While not necessary, we reset the driver manager completely at
-    # the end
-    DriverManager().__instance = None
+def driver(driver_manager, request):
+    driver_manager.set_default_driver(request.param)
+    return driver_manager.driver
 
 
 @pytest.fixture
@@ -394,14 +393,12 @@ def example_ls5_dataset_paths(tmpdir, geotiffs):
 def ls5_nbar_ingest_config(tmpdir, driver):
     dataset_dir = tmpdir.mkdir('ls5_nbar_ingest_test')
     config = load_yaml_file(LS5_NBAR_INGEST_CONFIG)[0]
-    config = alter_dataset_type_for_testing(config, driver=driver.name)
+    config = alter_dataset_type_for_testing(config)
     config['storage']['crs'] = 'EPSG:28355'
     config['storage']['chunking']['time'] = 1
     # config['storage']['tile_size']['time'] = 2
     config['location'] = str(dataset_dir)
-    if 'storage' in config and \
-       'driver' in config['storage'] and \
-       config['storage']['driver'] in ('s3', 's3-test'):
+    if driver.name in ('s3', 's3-test'):
         config['container'] = str(dataset_dir)
 
     config_path = dataset_dir.join('ls5_nbar_ingest_config.yaml')
@@ -490,7 +487,7 @@ def load_yaml_file(filename):
         return list(yaml.load_all(f, Loader=SafeLoader))
 
 
-def alter_dataset_type_for_testing(type_, metadata_type=None, driver='NetCDF CF'):
+def alter_dataset_type_for_testing(type_, metadata_type=None):
     if 'measurements' in type_:
         type_ = limit_num_measurements(type_)
     if 'storage' in type_:

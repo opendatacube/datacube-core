@@ -41,9 +41,10 @@ def system():
     '--lock-table/--no-lock-table', is_flag=True, default=False,
     help="Allow table to be locked (eg. while creating missing indexes)"
 )
-@ui.pass_index(expect_initialised=False)
-def database_init(index, default_types, init_users, recreate_views, rebuild, lock_table):
+@ui.pass_driver_manager(expect_initialised=False)
+def database_init(driver_manager, default_types, init_users, recreate_views, rebuild, lock_table):
     echo('Initialising database...')
+    index = driver_manager.index
 
     was_created = index.init_db(with_default_types=default_types,
                                 with_permissions=init_users)
@@ -60,6 +61,7 @@ def database_init(index, default_types, init_users, recreate_views, rebuild, loc
         rebuild_views=recreate_views or rebuild,
     )
     echo('Done.')
+    driver_manager.close()
 
 
 @system.command('check', help='Check and display current configuration')

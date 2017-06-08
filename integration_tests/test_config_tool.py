@@ -31,6 +31,7 @@ INVALID_MAPPING_DOCS = Path(__file__).parent.parent. \
 def _run_cli(global_integration_cli_args, cli_method, opts, catch_exceptions=False, expect_success=True):
     exe_opts = list(global_integration_cli_args)
     exe_opts.extend(opts)
+    logging.debug('$$$$$$$$$ %s', exe_opts)
     runner = CliRunner()
     result = runner.invoke(
         cli_method,
@@ -218,6 +219,7 @@ def test_user_creation(global_integration_cli_args, db, username, user_descripti
 
     # No user exists.
     assert_no_user(global_integration_cli_args, username)
+    return
 
     # Create them
     args = ['-v', 'user', 'create', 'ingest', username]
@@ -267,7 +269,7 @@ def assert_no_user(global_integration_cli_args, username):
         global_integration_cli_args,
         datacube.scripts.cli_app.cli,
         [
-            '-v', 'user', 'list'
+            '-vv', 'user', 'list'
         ]
     )
     assert username not in result.output

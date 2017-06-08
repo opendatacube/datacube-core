@@ -33,7 +33,7 @@ def get_filename(config, cell_index, year=None):
     return file_path_template.format(tile_index=cell_index, start_time=year)
 
 
-def make_ncml_tasks(index, config, cell_index=None, year=None, **kwargs):
+def make_ncml_tasks(driver_manager, config, cell_index=None, year=None, **kwargs):
     product = config['product']
 
     query = {}
@@ -42,7 +42,7 @@ def make_ncml_tasks(index, config, cell_index=None, year=None, **kwargs):
 
     config['nested_years'] = kwargs.get('nested_years', [])
 
-    gw = datacube.api.GridWorkflow(index=index, product=product.name)
+    gw = datacube.api.GridWorkflow(index=None, product=product.name, driver_manager=driver_manager)
     cells = gw.list_cells(product=product.name, cell_index=cell_index, **query)
     for (cell_index, tile) in cells.items():
         output_filename = get_filename(config, cell_index, year)
@@ -51,8 +51,8 @@ def make_ncml_tasks(index, config, cell_index=None, year=None, **kwargs):
                    output_filename=output_filename)
 
 
-def make_ncml_config(index, config, export_path=None, **query):
-    config['product'] = index.products.get_by_name(config['output_type'])
+def make_ncml_config(driver_manager, config, export_path=None, **query):
+    config['product'] = driver_manager.index.products.get_by_name(config['output_type'])
 
     if not os.access(config['location'], os.W_OK):
         _LOG.warning('Current user appears not have write access output location: %s', config['location'])
@@ -144,7 +144,7 @@ def ncml_app():
 #: pylint: disable=invalid-name
 command_options = datacube.ui.click.compose(
     datacube.ui.click.config_option,
-    datacube.ui.click.pass_index(app_name=APP_NAME),
+    datacube.ui.click.pass_driver_manager(app_name=APP_NAME),
     datacube.ui.click.logfile_option,
     cell_index_option,
     task_app.queue_size_option,
@@ -156,11 +156,13 @@ command_options = datacube.ui.click.compose(
 @command_options
 @click.argument('app_config')
 @task_app.task_app(make_config=make_ncml_config, make_tasks=make_ncml_tasks)
-def full(index, config, tasks, executor, queue_size, **kwargs):
+def full(driver_manager, config, tasks, executor, queue_size, **kwargs):
+    index = driver_manager.index
     click.echo('Starting datacube ncml utility...')
 
     task_func = partial(do_ncml_task, config)
     task_app.run_tasks(tasks, executor, task_func, None, queue_size)
+    driver_manager.close()
 
 
 @ncml_app.command(short_help='Create a full ncml file with nested ncml files for particular years')
@@ -168,11 +170,13 @@ def full(index, config, tasks, executor, queue_size, **kwargs):
 @click.argument('app_config')
 @click.argument('nested_years', nargs=-1, type=click.INT)
 @task_app.task_app(make_config=make_ncml_config, make_tasks=make_ncml_tasks)
-def nest(index, config, tasks, executor, queue_size, **kwargs):
+def nest(driver_manager, config, tasks, executor, queue_size, **kwargs):
+    index = driver_manager.index
     click.echo('Starting datacube ncml utility...')
 
     task_func = partial(do_ncml_task, config)
     task_app.run_tasks(tasks, executor, task_func, None, queue_size)
+    driver_manager.close()
 
 
 @ncml_app.command(short_help='Update a single year ncml file')
@@ -180,11 +184,14 @@ def nest(index, config, tasks, executor, queue_size, **kwargs):
 @click.argument('app_config')
 @click.argument('year', type=click.INT)
 @task_app.task_app(make_config=make_ncml_config, make_tasks=make_ncml_tasks)
-def update(index, config, tasks, executor, queue_size, **kwargs):
+def update(driver_manager, config, tasks, executor, queue_size, **kwargs):
+    index = driver_manager.index
     click.echo('Starting datacube ncml utility...')
 
     task_func = partial(do_ncml_task, config)
     task_app.run_tasks(tasks, executor, task_func, None, queue_size)
+    driver_manager.close()
+
 
 if __name__ == '__main__':
     ncml_app()

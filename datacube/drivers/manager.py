@@ -6,6 +6,8 @@ import logging
 import sys
 from pathlib import Path
 from collections import Iterable
+import atexit
+import random
 
 from .driver import Driver
 from .index import Index
@@ -55,9 +57,6 @@ class DriverManager(object):
     '''Attribue name where driver information is stored in `__init__.py`.
     '''
 
-    __instance = None
-    '''Singleton instance of this manager.'''
-
     __index = None
     '''Generic index.'''
 
@@ -68,7 +67,7 @@ class DriverManager(object):
     '''Singleton list of all available drivers, indexed by name.'''
 
 
-    def __new__(cls, default_driver_name=None, index=None, *index_args, **index_kargs):
+    def __init__(self, index=None, *index_args, **index_kargs):
         '''Initialise the singleton and/or reload drivers.
 
         The singleton gets re-instantiated each time a new default
@@ -112,25 +111,43 @@ class DriverManager(object):
           implementation all parameters get passed to all potential
           indexes.
         '''
-        if cls.__instance is None or default_driver_name or index:
-            instance = super(DriverManager, cls).__new__(cls)
-            instance.logger = logging.getLogger(cls.__name__)
-            # Initialise the generic index
-            # pylint: disable=protected-access
-            instance.__index = Index(instance, index, *index_args, **index_kargs)
-            # pylint: disable=protected-access
-            instance._load_drivers(index, *index_args, **index_kargs)
-            # pylint: disable=protected-access
-            instance._set_default_driver(default_driver_name)
-            cls.__instance = instance
-        return cls.__instance
+        self.logger = logging.getLogger(self.__class__.__name__)
+        # Initialise the generic index
+        # pylint: disable=protected-access
+        self.set_index(index, *index_args, **index_kargs)
+        self.reload_drivers(index, *index_args, **index_kargs)
+        self.set_default_driver(DriverManager.DEFAULT_DRIVER)
+        self.logger.info('Ready. %s', self.index)
 
 
-    def _load_drivers(self, index, *index_args, **index_kargs):
+    def close(self):
+        if self.__drivers:
+            for driver in self.__drivers.values():
+                # pylint: disable=protected-access
+                if driver.index._db != self.__index._db:
+                    driver.index.close()
+        if self.__index:
+            self.__index.close()
+        self.logger.info('Closed index connections')
+
+
+    def set_index(self, index=None, *index_args, **index_kargs):
+        if self.__index:
+            self.__index.close()
+        self.__index = Index(self, index, *index_args, **index_kargs)
+        self.logger.debug('Generic index set to %s', self.__index)
+
+
+    def reload_drivers(self, index=None, *index_args, **index_kargs):
         '''Load and initialise all available drivers.
 
         See :meth:`__init__` for a description of the parameters.
         '''
+        if self.__drivers:
+            for driver in self.__drivers.values():
+                # pylint: disable=protected-access
+                if driver.index._db != self.__index._db:
+                    driver.index.close()
         self.__drivers = {}
         for init_path in Path(__file__).parent.glob('*/__init__.py'):
             init = load_module(str(init_path.parent.stem), str(init_path))
@@ -149,9 +166,10 @@ class DriverManager(object):
                                         driver_cls)
         if len(self.__drivers) < 1:
             raise RuntimeError('No plugin driver found, Datacube cannot operate.')
+        self.logger.debug('Reloaded %d drivers.', len(self.__drivers))
 
 
-    def _set_default_driver(self, driver_name):
+    def set_default_driver(self, driver_name):
         '''Set the default driver.
 
         If driver_name is None, then the driver currently in use
@@ -161,22 +179,11 @@ class DriverManager(object):
         :param str driver_name: The name of the driver to set as
           current driver.
         '''
-        if driver_name:
-            if not driver_name in self.__drivers:
-                raise ValueError('Default driver "%s" is not available in %s' % (
-                    driver_name, ', '.join(self.__drivers.keys())))
-        else:
-            # Keep existing default driver if it exists
-            if DriverManager.__instance and DriverManager.__instance.__driver: # pylint: disable=protected-access
-                # pylint: disable=protected-access
-                driver_name = DriverManager.__instance.__driver.name
-            else:
-                driver_name = self.DEFAULT_DRIVER
-            if driver_name not in self.__drivers:
-                driver_name = list(self.__drivers.values())[0].name
+        if not driver_name in self.__drivers:
+            raise ValueError('Default driver "%s" is not available in %s' % (
+                driver_name, ', '.join(self.__drivers.keys())))
         self.__driver = self.__drivers[driver_name]
-        self.logger.info('Reloaded %d drivers. Using default driver: %s',
-                         len(self.__drivers), driver_name)
+        self.logger.debug('Using default driver: %s', driver_name)
 
 
     @property

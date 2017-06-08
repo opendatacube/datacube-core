@@ -216,7 +216,7 @@ def pseudo_ls8_dataset4(index, db, pseudo_ls8_type, pseudo_ls8_dataset2):
 
 
 @pytest.fixture
-def ls5_dataset_w_children(index, example_ls5_dataset_path, indexed_ls5_scene_dataset_types):
+def ls5_dataset_w_children(driver, index, example_ls5_dataset_path, indexed_ls5_scene_dataset_types):
     # type: (Index, Path, DatasetType) -> Dataset
     # TODO: We need a higher-level API for indexing paths, rather than reaching inside the cli script
     datasets = list(

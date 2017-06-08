@@ -185,29 +185,27 @@ def pass_config(f):
     return functools.update_wrapper(new_func, f)
 
 
-def pass_index(app_name=None, expect_initialised=True):
-    """Get a connection to the index as the first argument.
+def pass_driver_manager(app_name=None, expect_initialised=True):
+    """Get a driver manager as the first argument.
 
     A short name name of the application can be specified for logging purposes.
     """
 
     def decorate(f):
-        def with_index(*args, **kwargs):
+        def with_driver_manager(*args, **kwargs):
             ctx = click.get_current_context()
             try:
-                # Initialise driver manager singleton
-                DriverManager(default_driver_name=ctx.obj['driver'],
-                              index=None,
-                              local_config=ctx.obj['config_file'],
-                              application_name=app_name or ctx.command_path,
-                              validate_connection=expect_initialised)
-                index = DriverManager().index
-                _LOG.debug("Connected to datacube index: %s", index)
-                return f(index, *args, **kwargs)
+                driver_manager = DriverManager(index=None,
+                                               local_config=ctx.obj['config_file'],
+                                               application_name=app_name or ctx.command_path,
+                                               validate_connection=expect_initialised)
+                driver_manager.set_default_driver(ctx.obj['driver'])
+                _LOG.debug("Driver manager ready")
+                return f(driver_manager, *args, **kwargs)
             except (OperationalError, ProgrammingError) as e:
                 handle_exception('Error Connecting to database: %s', e)
 
-        return functools.update_wrapper(with_index, f)
+        return functools.update_wrapper(with_driver_manager, f)
 
     return decorate
 

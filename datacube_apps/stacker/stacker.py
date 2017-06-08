@@ -62,11 +62,11 @@ def get_temp_file(final_output_path):
     return tmp_path
 
 
-def make_stacker_tasks(index, config, **kwargs):
+def make_stacker_tasks(driver_manager, config, **kwargs):
     product = config['product']
     query = {kw: arg for kw, arg in kwargs.items() if kw in ['time', 'cell_index'] and arg is not None}
 
-    gw = datacube.api.GridWorkflow(index=index, product=product.name)
+    gw = datacube.api.GridWorkflow(index=None, product=product.name, driver_manager=driver_manager)
     cells = gw.list_cells(product=product.name, **query)
     for (cell_index, tile) in cells.items():
         for (year, year_tile) in _split_by_year(tile):
@@ -84,8 +84,8 @@ def make_stacker_tasks(index, config, **kwargs):
                 _LOG.info('Stacking not required for: year=%s, cell=%s. existing=%s', year, cell_index, only_filename)
 
 
-def make_stacker_config(index, config, export_path=None, **query):
-    config['product'] = index.products.get_by_name(config['output_type'])
+def make_stacker_config(driver_manager, config, export_path=None, **query):
+    config['product'] = driver_manager.index.products.get_by_name(config['output_type'])
 
     if export_path is not None:
         config['location'] = export_path
@@ -232,7 +232,7 @@ def process_result(index, result):
 
 
 @click.command(name=APP_NAME)
-@datacube.ui.click.pass_index(app_name=APP_NAME)
+@datacube.ui.click.pass_driver_manager(app_name=APP_NAME)
 @datacube.ui.click.global_cli_options
 @click.option('--cell-index', 'cell_index', help='Limit the process to a particular cell (e.g. 14,-11)',
               callback=task_app.validate_cell_index, default=None)
@@ -244,12 +244,14 @@ def process_result(index, result):
 @task_app.queue_size_option
 @task_app.task_app_options
 @task_app.task_app(make_config=make_stacker_config, make_tasks=make_stacker_tasks)
-def main(index, config, tasks, executor, queue_size, **kwargs):
+def main(driver_manager, config, tasks, executor, queue_size, **kwargs):
+    index = driver_manager.index
     click.echo('Starting stacking utility...')
 
     task_func = partial(do_stack_task, config)
     process_func = partial(process_result, index) if config['index_datasets'] else None
     task_app.run_tasks(tasks, executor, task_func, process_func, queue_size)
+    driver_manager.close()
 
 
 if __name__ == '__main__':

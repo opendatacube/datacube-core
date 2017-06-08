@@ -64,6 +64,7 @@ class Index(base_index.Index, IndexExtension):
           indexes.
 
         '''
+        self.logger = logging.getLogger(self.__class__.__name__)
         if index is None:
             local_config = kargs['local_config'] if 'local_config' in kargs else None
             application_name = kargs['application_name'] if 'application_name' in kargs else None
@@ -76,7 +77,6 @@ class Index(base_index.Index, IndexExtension):
         else:
             db = index._db # pylint: disable=protected-access
         super(Index, self).__init__(driver_manager, db)
-        self.logger = logging.getLogger(self.__class__.__name__)
 
 
     def add_specifics(self, dataset):

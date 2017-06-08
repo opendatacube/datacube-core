@@ -34,7 +34,7 @@ class API(object):
     """
     Interface for use by the ``AnalyticsEngine`` and ``ExecutionEngine`` modules.
     """
-    def __init__(self, index=None, app=None, datacube=None):
+    def __init__(self, index=None, app=None, datacube=None, driver_manager=None):
         """
         Creates the interface for query and storage access.
 
@@ -49,10 +49,13 @@ class API(object):
         :param datacube:
         :type datacube: :class:`datacube.Datacube`
         """
+        self.driver_manager = driver_manager
         if datacube is not None:
             self.datacube = datacube
         elif index is not None:
-            self.datacube = Datacube(index)
+            self.datacube = Datacube(index, driver_manager=driver_manager)
+        elif driver_manager is not None:
+            self.datacube = Datacube(driver_manager=driver_manager)
         else:
             app = app or 'Datacube-API'
             self.datacube = Datacube(app=app)
@@ -402,8 +405,10 @@ class API(object):
         }
         for measurement_name, measurement in dataset_type.measurements.items():
             if measurements is None or measurement_name in measurements:
-                dt_data['arrays'][measurement_name] = self.datacube.measurement_data(sources, geobox, measurement,
-                                                                                     dask_chunks=dask_chunks)
+                dt_data['arrays'][measurement_name] = self.datacube.measurement_data(
+                    sources, geobox, measurement,
+                    dask_chunks=dask_chunks,
+                    driver_manager=self.driver_manager)
         return dt_data
 
     def list_products(self):

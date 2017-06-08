@@ -60,7 +60,7 @@ class Datacube(object):
 
     :type index: datacube.index._api.Index
     """
-    def __init__(self, index=None, config=None, app=None):
+    def __init__(self, index=None, config=None, app=None, driver_manager=None):
         """
         Create the interface for the query and storage access.
 
@@ -77,16 +77,27 @@ class Datacube(object):
             advised that be used.  Required if an index is not supplied, otherwise ignored.
         :return: Datacube object
         """
-        if index is None:
+        self._to_close = None
+        if index:
+            self.driver_manager = DriverManager(index=index)
+            self._to_close = self.driver_manager
+        elif driver_manager:
+            self.driver_manager = driver_manager
+        else:
             if config is not None:
                 if isinstance(config, string_types):
                     config = LocalConfig.find([config])
-                DriverManager(local_config=config, application_name=app)
+                self.driver_manager = DriverManager(local_config=config, application_name=app)
             else:
-                DriverManager(application_name=app)
-        else:
-            DriverManager(index=index)
-        self.index = DriverManager().driver.index
+                self.driver_manager = DriverManager(application_name=app)
+            self._to_close = self.driver_manager
+        self.index = self.driver_manager.index
+
+
+    def __del__(self):
+        '''Best effort to close any driver manager opened here.'''
+        if self._to_close:
+            self._to_close.close()
 
 
     def list_products(self, show_archived=False, with_pandas=True):
@@ -324,7 +335,8 @@ class Datacube(object):
         measurements = set_resampling_method(measurements, resampling)
 
         result = self.load_data(grouped, geobox, measurements.values(),
-                                fuse_func=fuse_func, dask_chunks=dask_chunks, use_threads=use_threads)
+                                fuse_func=fuse_func, dask_chunks=dask_chunks, use_threads=use_threads,
+                                driver_manager=self.driver_manager)
         if not stack:
             return result
         else:
@@ -455,7 +467,7 @@ class Datacube(object):
 
     @staticmethod
     def load_data(sources, geobox, measurements, fuse_func=None, dask_chunks=None, skip_broken_datasets=False,
-                  use_threads=False):
+                  use_threads=False, driver_manager=None):
         """
         Load data from :meth:`group_datasets` into an :class:`xarray.Dataset`.
 
@@ -488,12 +500,14 @@ class Datacube(object):
                     data = numpy.full(sources.shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
                     for index, datasets in numpy.ndenumerate(sources.values):
                         _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
-                                          skip_broken_datasets=skip_broken_datasets)
+                                          skip_broken_datasets=skip_broken_datasets,
+                                          driver_manager=driver_manager)
                 else:
                     def work_load_data(array_name, index, datasets):
                         data = sa.attach(array_name)
                         _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
-                                          skip_broken_datasets=skip_broken_datasets)
+                                          skip_broken_datasets=skip_broken_datasets,
+                                          driver_manager=driver_manager)
 
                     array_name = '_'.join(['DCCORE', str(uuid.uuid4()), str(os.getpid())])
                     sa.create(array_name, shape=sources.shape + geobox.shape, dtype=measurement['dtype'])
@@ -506,13 +520,15 @@ class Datacube(object):
                 return data
         else:
             def data_func(measurement):
-                return _make_dask_array(sources, geobox, measurement, fuse_func, dask_chunks)
+                return _make_dask_array(sources, geobox, measurement, fuse_func, dask_chunks,
+                                        driver_manager=driver_manager)
 
         return Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
                                        geobox, measurements, data_func)
 
     @staticmethod
-    def measurement_data(sources, geobox, measurement, fuse_func=None, dask_chunks=None):
+    def measurement_data(sources, geobox, measurement, fuse_func=None, dask_chunks=None,
+                         driver_manager=None):
         """
         Retrieve a single measurement variable as a :class:`xarray.DataArray`.
 
@@ -529,7 +545,8 @@ class Datacube(object):
 
         .. seealso:: :meth:`load_data`
         """
-        dataset = Datacube.load_data(sources, geobox, [measurement], fuse_func=fuse_func, dask_chunks=dask_chunks)
+        dataset = Datacube.load_data(sources, geobox, [measurement], fuse_func=fuse_func,
+                                     dask_chunks=dask_chunks, driver_manager=driver_manager)
         dataarray = dataset[measurement['name']]
         dataarray.attrs['crs'] = dataset.crs
         return dataarray
@@ -553,15 +570,16 @@ class Datacube(object):
         self.close()
 
 
-def fuse_lazy(datasets, geobox, measurement, fuse_func=None, prepend_dims=0):
+def fuse_lazy(datasets, geobox, measurement, fuse_func=None, prepend_dims=0, driver_manager=None):
     prepend_shape = (1,) * prepend_dims
     data = numpy.full(geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
-    _fuse_measurement(data, datasets, geobox, measurement, fuse_func)
+    _fuse_measurement(data, datasets, geobox, measurement, fuse_func=fuse_func, driver_manager=driver_manager)
     return data.reshape(prepend_shape + geobox.shape)
 
 
-def _fuse_measurement(dest, datasets, geobox, measurement, skip_broken_datasets=False, fuse_func=None):
-    reproject_and_fuse([DriverManager().get_datasource(dataset, measurement['name']) for dataset in datasets],
+def _fuse_measurement(dest, datasets, geobox, measurement, skip_broken_datasets=False,
+                      fuse_func=None, driver_manager=None):
+    reproject_and_fuse([driver_manager.get_datasource(dataset, measurement['name']) for dataset in datasets],
                        dest,
                        geobox.affine,
                        geobox.crs,
@@ -638,7 +656,9 @@ def _calculate_chunk_sizes(sources, geobox, dask_chunks):
     return irr_chunks, grid_chunks
 
 
-def _make_dask_array(sources, geobox, measurement, fuse_func=None, dask_chunks=None):
+# pylint: disable=too-many-locals
+def _make_dask_array(sources, geobox, measurement, fuse_func=None, dask_chunks=None,
+                     driver_manager=None):
     dsk_name = 'datacube_' + measurement['name']
 
     irr_chunks, grid_chunks = _calculate_chunk_sizes(sources, geobox, dask_chunks)
@@ -650,7 +670,8 @@ def _make_dask_array(sources, geobox, measurement, fuse_func=None, dask_chunks=N
     for irr_index, datasets in numpy.ndenumerate(sources.values):
         for grid_index, subset_geobox in geobox_subsets.items():
             dsk[(dsk_name,) + irr_index + grid_index] = (fuse_lazy,
-                                                         datasets, subset_geobox, measurement, fuse_func, sources.ndim)
+                                                         datasets, subset_geobox, measurement,
+                                                         fuse_func, sources.ndim, driver_manager)
 
     data = da.Array(dsk, dsk_name,
                     chunks=(sliced_irr_chunks + grid_chunks),
