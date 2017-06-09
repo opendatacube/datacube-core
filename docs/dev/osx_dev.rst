@@ -1,8 +1,10 @@
 ======================
-Ubuntu Developer Setup
+Mac OSX Developer Setup
 ======================
 
-Base OS: Ubuntu 16.04 LTS
+**Under construction**
+
+Base OS: Mac OSX
 
 This guide will setup an ODC core development environment and includes:
 
@@ -18,17 +20,15 @@ Required software
 
 GDAL, HDF5, and netCDF4::
 
-    sudo apt-get install libgdal1-dev libhdf5-serial-dev libnetcdf-dev
+    
 
 Postgres::
 
-    sudo apt-get install postgresql-9.5 postgresql-client-9.5 postgresql-contrib-9.5
+    
 
 Optional packages (useful utilities, docs)::
 
-    sudo apt-get install postgresql-doc-9.5 libhdf5-doc netcdf-doc libgdal-doc
-    sudo apt-get install hdf5-tools netcdf-bin gdal-bin pgadmin3
-
+ 
 Python and packages
 -------------------
 
@@ -49,11 +49,9 @@ Install required python packages and create an odc conda environment.
 
 Python 3.5::
 
-    conda env create -n odc --file .travis/environment_py35.yaml sphinx
-
+ 
 Python 2.7::
 
-    conda env create -n odc --file .travis/environment_py27.yaml sphinx
 
 Activate odc python environment::
 
@@ -69,11 +67,9 @@ If this is a new installation of Postgres on your system it is probably wise to 
 
 In a terminal, type::
 
-	sudo -u postgres psql postgres
 
 Set a password for the "postgres" database role using the command::
 
-	\password postgres
 	
 and set the password when prompted. The password text will be hidden from the console for security purposes.
 
@@ -83,18 +79,13 @@ By default in Ubuntu, Postgresql is configured to use 'ident sameuser' authentic
 
 Since the only user who can connect to a fresh install is the postgres user, here is how to create yourself a database account (which is in this case also a database superuser) with the same name as your login name and then create a password for the user::
 
-     sudo -u postgres createuser --superuser $USER
-     sudo -u postgres psql
-
-     postgres=# \password $USER
 
 Now we can create an agdcintegration database for testing::
 
-    createdb agdcintegration
-
+ 
 Connecting to your own database to try out some SQL should now be as easy as::
 
-    psql -d agdcintegration
+
 
 
 Open Data Cube source and development configuration
@@ -106,8 +97,6 @@ Download the latest version of the software from the `repository <https://github
     cd datacube-core
 
 We need to specify the database user and password for the ODC integration testing. To do this::
-
-    cp integration_tests/agdcintegration.conf ~/.datacube_integration.conf
 
 Then edit the ~/.datacube_integration.conf with a text editor and add the following lines replacing <foo> with your username and <foobar> with the database user password you set above (not the postgres one, your <foo> one)::
 
@@ -124,13 +113,8 @@ Verify it all works
 
 Run the integration tests::
 
-    cd datacube-core
-    ./check-code.sh integration_tests
-
+ 
 Build the documentation::
 
-    cd datacube-core/docs
-    make html
-    chromium-browser _build/html/index.html
-
+ 
 
