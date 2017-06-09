@@ -1,6 +1,6 @@
-======================
+=======================
 Windows Developer Setup
-======================
+=======================
 
 **Under construction**
 
@@ -17,25 +17,24 @@ This guide will setup an ODC core development environment and includes:
 Required software
 -----------------
 
-GDAL, HDF5, and netCDF4::
+Postgres:
 
-   
-Postgres::
+    Download and install from `here <https://www.enterprisedb.com/downloads/postgres-postgresql-downloads#windows>`_.
 
     
-Optional packages (useful utilities, docs)::
+Optional packages (useful utilities, docs):
 
     
 
 Python and packages
 -------------------
 
-Python 2.7 and 3.5+ are supported.
+Python 2.7 and 3.5+ are supported. Python 3.6 is recommended.
 
 Anaconda Python
 ~~~~~~~~~~~~~~~
 
-`Install Anaconda Python <https://www.continuum.io/downloads#linux>`_
+`Install Anaconda Python <https://www.continuum.io/downloads#windows>`_
 
 Add conda-forge to package channels::
 
@@ -43,17 +42,19 @@ Add conda-forge to package channels::
 
 Conda Environments are recommended for use in isolating your ODC development environment from your system installation and other python evironments.
 
-Install required python packages and create an odc conda environment.
+Install required python packages and create an ``odc`` conda environment.
 
 Python 3.5::
 
+    conda env create -n odc --file .travis/environment_py35.yaml sphinx
 
 Python 2.7::
 
+    conda env create -n odc --file .travis/environment_py27.yaml sphinx
 
-Activate odc python environment::
+Activate ``odc`` python environment::
 
-    source activate odc
+    activate odc
 
 Postgres database configuration
 -------------------------------
@@ -71,9 +72,10 @@ Download the latest version of the software from the `repository <https://github
 
 We need to specify the database user and password for the ODC integration testing. To do this::
 
+    copy integration_tests\agdcintegration.conf %HOME%\.datacube_integration.conf
     
 
-Then edit the ~/.datacube_integration.conf with a text editor and add the following lines replacing <foo> with your username and <foobar> with the database user password you set above (not the postgres one, your <foo> one)::
+Then edit the ``%HOME%\.datacube_integration.conf`` with a text editor and add the following lines replacing ``<foo>`` with your username and ``<foobar>`` with the database user password you set above (not the postgres one, your ``<foo>`` one)::
 
     [datacube]
     db_hostname: localhost
@@ -86,9 +88,14 @@ Verify it all works
 
 Run the integration tests::
 
+    cd datacube-core
+    pytest
+
 
 Build the documentation::
 
-
+    cd datacube-core/docs
+    make html
+    open _build/html/index.html
 
 
