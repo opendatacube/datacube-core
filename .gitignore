@@ -67,3 +67,6 @@ docs/html/
 
 # Generated Documentation
 docs/dev/generate/
+
+#Local Visual Studio Code configurations
+.vscode/
