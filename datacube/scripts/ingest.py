@@ -238,7 +238,7 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
     return datasets
 
 
-def _index_datasets(index, results, skip_sources):
+def _index_datasets(index, results):
     n = 0
     for datasets in results:
         for dataset in datasets.values:
