@@ -12,6 +12,7 @@ import click
 import yaml
 import yaml.resolver
 from click import echo
+import json
 from yaml import Node
 
 from datacube.index._api import Index
@@ -44,7 +45,7 @@ def find_matching_product(rules, doc):
     """:rtype: datacube.model.DatasetType"""
     matched = [rule for rule in rules if changes.contains(doc, rule['metadata'])]
     if not matched:
-        raise BadMatch('No matching Product found for %s' % doc.get('id', 'unidentified'))
+        raise BadMatch('No matching Product found for %s' % json.dumps(doc, indent=4))
     if len(matched) > 1:
         raise BadMatch('Too many matching Products found for %s. Matched %s.' % (
             doc.get('id', 'unidentified'), matched))
