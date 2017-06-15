@@ -1,19 +1,21 @@
 from __future__ import absolute_import, division, print_function
 
-import numpy
-import netCDF4
-from affine import Affine, identity
-import xarray
-import mock
-import pytest
 from contextlib import contextmanager
 
+import mock
+import netCDF4
+import numpy
+import pytest
 import rasterio.warp
+import xarray
+from affine import Affine, identity
 
 import datacube
+from datacube.model import Dataset, DatasetType, MetadataType
+from datacube.storage.storage import NetCDFDataSource, OverrideBandDataSource
+from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse, read_from_source, Resampling, \
+    DatasetSource
 from datacube.utils import geometry
-from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse, read_from_source, Resampling
-from datacube.storage.storage import NetCDFDataSource
 
 GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
            'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
@@ -218,8 +220,8 @@ class FakeDataSource(object):
         if window:
             data = self.data[slice(*window[0]), slice(*window[1])]
         if out_shape:
-            xidx = ((numpy.arange(out_shape[1])+0.5)*(data.shape[1]/out_shape[1])-0.5).round().astype('int')
-            yidx = ((numpy.arange(out_shape[0])+0.5)*(data.shape[0]/out_shape[0])-0.5).round().astype('int')
+            xidx = ((numpy.arange(out_shape[1]) + 0.5) * (data.shape[1] / out_shape[1]) - 0.5).round().astype('int')
+            yidx = ((numpy.arange(out_shape[0]) + 0.5) * (data.shape[0] / out_shape[0]) - 0.5).round().astype('int')
             data = data[numpy.meshgrid(yidx, xidx, indexing='ij')]
         return data
 
@@ -268,6 +270,7 @@ def test_read_from_source():
     @contextmanager
     def fake_open():
         yield data_source
+
     source = mock.Mock()
     source.open = fake_open
 
@@ -385,7 +388,7 @@ def test_read_from_source():
     _test_helper(source,
                  dst_shape=(35, 67),
                  dst_dtype='float32',
-                 dst_transform=data_source.transform * Affine.translation(15, 512+17) * Affine.scale(8, -16),
+                 dst_transform=data_source.transform * Affine.translation(15, 512 + 17) * Affine.scale(8, -16),
                  dst_nodata=float('nan'),
                  dst_projection=data_source.crs,
                  resampling=Resampling.cubic)
@@ -393,9 +396,104 @@ def test_read_from_source():
     _test_helper(source,
                  dst_shape=(67, 35),
                  dst_dtype='float32',
-                 dst_transform=data_source.transform * Affine.translation(512-23, -29) * Affine.scale(-16, 8),
+                 dst_transform=data_source.transform * Affine.translation(512 - 23, -29) * Affine.scale(-16, 8),
                  dst_nodata=float('nan'),
                  dst_projection=data_source.crs,
                  resampling=Resampling.cubic)
 
     # TODO: crs change
+
+
+def test_read_raster_with_custom_crs_and_transform(example_gdal_path):
+    import numpy as np
+
+    with rasterio.open(example_gdal_path) as src:
+        band = rasterio.band(src, 1)
+        crs = geometry.CRS('EPSG:3577')
+        nodata = -999
+        transform = Affine(25.0, 0.0, 1000000.0,
+                           0.0, -25.0, -900000.0)
+
+        # Read all raw data from source file
+        band_data_source = OverrideBandDataSource(band, nodata, crs, transform)
+        dest1 = band_data_source.read()
+        assert dest1.shape
+
+        # Attempt to read with the same transform parameters
+        dest2 = np.full(shape=(4000, 4000), fill_value=nodata, dtype=np.float32)
+        dst_transform = transform
+        dst_crs = crs
+        dst_nodata = nodata
+        resampling = datacube.storage.storage.RESAMPLING_METHODS['nearest']
+        band_data_source.reproject(dest2, dst_transform, dst_crs, dst_nodata, resampling)
+        assert (dest1 == dest2).all()
+
+
+_EXAMPLE_METADATA_TYPE = MetadataType(
+    {
+        'name': 'eo',
+        'dataset': dict(
+            id=['id'],
+            label=['ga_label'],
+            creation_time=['creation_dt'],
+            measurements=['image', 'bands'],
+            sources=['lineage', 'source_datasets'],
+            format=['format', 'name'],
+        )
+    },
+    dataset_search_fields={}
+)
+
+_EXAMPLE_DATASET_TYPE = DatasetType(
+    _EXAMPLE_METADATA_TYPE,
+    {
+        'name': 'ls5_nbar_scene',
+        'description': "Landsat 5 NBAR 25 metre",
+        'metadata_type': 'eo',
+        'metadata': {},
+        'measurements': [
+            {'aliases': ['band_2', '2'],
+             'dtype': 'int16',
+             'name': 'green',
+             'nodata': -999,
+             'units': '1'}],
+    }
+)
+
+
+def test_multiband_support_in_datasetsource():
+    defn = {
+        "id": '12345678123456781234567812345678',
+        "format": {"name": "hdf"},
+        'measurements': {'green': {'nodata': -999}},
+        "image": {
+            "bands": {
+                'green': {
+                    'type': 'reflective',
+                    'cell_size': 25.0,
+                    'path': 'product/LS8_OLITIRS_NBAR_P54_GALPGS01-002_112_079_20140126_B1.tif',
+                    'label': 'Coastal Aerosol',
+                    'number': '1',
+                },
+            }
+        }
+    }
+
+    # Without new band attribute, default to band number 1
+    d = Dataset(_EXAMPLE_DATASET_TYPE, defn, uris=['file:///tmp'])
+
+    ds = DatasetSource(d, measurement_id='green')
+
+    bandnum = ds.get_bandnumber(None)
+
+    assert bandnum == 1
+
+    #############
+    # With new 'image.bands.[band].band' attribute
+    band_num = 3
+    defn['image']['bands']['green']['band'] = band_num
+    d = Dataset(_EXAMPLE_DATASET_TYPE, defn, uris=['file:///tmp'])
+
+    ds = DatasetSource(d, measurement_id='green')
+
+    assert ds.get_bandnumber(None) == band_num

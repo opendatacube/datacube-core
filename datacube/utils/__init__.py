@@ -4,6 +4,8 @@ Utility functions used in storage modules
 """
 from __future__ import absolute_import, division, print_function
 
+import os
+import stat
 import gzip
 import importlib
 import itertools
@@ -148,7 +150,6 @@ def _parse_time_generic(time):
 try:
     import ciso8601  # pylint: disable=wrong-import-position
 
-
     def parse_time(time):
         try:
             result = ciso8601.parse_datetime(time)
@@ -246,7 +247,7 @@ def read_documents(*paths):
     the datacube we use JSON in PostgreSQL and it will turn our dates
     to strings anyway.
 
-    :type paths: list[pathlib.Path]
+    :type paths: pathlib.Path
     :rtype: tuple[(pathlib.Path, dict)]
     """
     for path in paths:
@@ -261,13 +262,15 @@ def read_documents(*paths):
 
         if suffix in ('.yaml', '.yml'):
             try:
-                for parsed_doc in yaml.load_all(opener(str(path), 'r'), Loader=NoDatesSafeLoader):
-                    yield path, parsed_doc
+                with opener(str(path), 'r') as handle:
+                    for parsed_doc in yaml.load_all(handle, Loader=NoDatesSafeLoader):
+                        yield path, parsed_doc
             except yaml.YAMLError as e:
                 raise InvalidDocException('Failed to load %s: %s' % (path, e))
         elif suffix == '.json':
             try:
-                yield path, json.load(opener(str(path), 'r'))
+                with opener(str(path), 'r') as handle:
+                    yield path, json.load(handle)
             except ValueError as e:
                 raise InvalidDocException('Failed to load %s: %s' % (path, e))
         elif suffix == '.nc':
@@ -281,6 +284,20 @@ def read_documents(*paths):
                              .format(path.name, _ALL_SUPPORTED_EXTENSIONS))
 
 
+def netcdf_extract_string(chars):
+    """
+    Convert netcdf S|U chars to Unicode string.
+    """
+    if isinstance(chars, str):
+        return chars
+
+    chars = netCDF4.chartostring(chars)
+    if chars.dtype.kind == 'U':
+        return str(chars)
+    else:
+        return str(numpy.char.decode(chars))
+
+
 def read_strings_from_netcdf(path, variable):
     """Load all of the string encoded data from a variable in a NetCDF file.
 
@@ -290,7 +307,7 @@ def read_strings_from_netcdf(path, variable):
     """
     with netCDF4.Dataset(str(path)) as ds:
         for chars in ds[variable]:
-            yield str(numpy.char.decode(netCDF4.chartostring(chars)))
+            yield netcdf_extract_string(chars)
 
 
 def validate_document(document, schema, schema_folder=None):
@@ -690,3 +707,39 @@ def tile_iter(tile, chunk_size):
     """
     steps = _tuplify(tile.dims, chunk_size, tile.shape)
     return _block_iter(steps, tile.shape)
+
+
+def write_user_secret_file(text, fname, in_home_dir=False, mode='w'):
+    "Write file only readable/writeable by the user"
+
+    if in_home_dir:
+        fname = os.path.join(os.environ['HOME'], fname)
+
+    open_flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+    access = stat.S_IRUSR | stat.S_IWUSR  # Make sure file is readable by current user only
+    with os.fdopen(os.open(fname, open_flags, access), mode) as handle:
+        handle.write(text)
+        handle.close()
+
+
+def slurp(fname, in_home_dir=False, mode='r'):
+    """
+    Read the entire file into a string
+    :param fname: file path
+    :param in_home_dir: if True treat fname as a path relative to $HOME folder
+    :return: Content of a file or None if file doesn't exist or can not be read for any other reason
+    """
+    if in_home_dir:
+        fname = os.path.join(os.environ['HOME'], fname)
+    try:
+        with open(fname, mode) as handle:
+            return handle.read()
+    except IOError:
+        return None
+
+
+def gen_password(num_random_bytes=12):
+    """ Generate random password
+    """
+    import base64
+    return base64.urlsafe_b64encode(os.urandom(num_random_bytes)).decode('utf-8')

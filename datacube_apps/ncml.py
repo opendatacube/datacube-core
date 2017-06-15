@@ -33,26 +33,37 @@ def get_filename(config, cell_index, year=None):
     return file_path_template.format(tile_index=cell_index, start_time=year)
 
 
-def make_ncml_tasks(index, config, cell_index=None, year=None, **kwargs):
+def make_ncml_tasks(index, config, cell_index=None, year=None, cell_index_list=None, **kwargs):
     product = config['product']
 
     query = {}
     if year is not None:
         query['time'] = datetime(year=year, month=1, day=1), datetime(year=year + 1, month=1, day=1)
 
-    config['nested_years'] = kwargs.get('nested_years', [])
-
     gw = datacube.api.GridWorkflow(index=index, product=product.name)
-    cells = gw.list_cells(product=product.name, cell_index=cell_index, **query)
-    for (cell_index, tile) in cells.items():
-        output_filename = get_filename(config, cell_index, year)
-        yield dict(tile=tile,
-                   cell_index=cell_index,
-                   output_filename=output_filename)
+
+    if cell_index_list is None:
+        if cell_index is not None:
+            cell_index_list = [cell_index]
+        else:
+            cell_index_list = []
+
+    for cell_index in cell_index_list:
+        cells = gw.list_cells(product=product.name, cell_index=cell_index, **query)
+        for (cell_index, tile) in cells.items():
+            output_filename = get_filename(config, cell_index, year)
+            yield dict(tile=tile,
+                       cell_index=cell_index,
+                       output_filename=output_filename)
 
 
-def make_ncml_config(index, config, export_path=None, **query):
+def make_ncml_config(index, config, export_path=None, nested_years=None, **query):
     config['product'] = index.products.get_by_name(config['output_type'])
+
+    config['nested_years'] = nested_years if nested_years is not None else []
+
+    if export_path is not None:
+        config['location'] = export_path
 
     if not os.access(config['location'], os.W_OK):
         _LOG.warning('Current user appears not have write access output location: %s', config['location'])
@@ -100,11 +111,13 @@ def do_ncml_task(config, task):
 
 def write_ncml_file(ncml_filename, file_locations, header_attrs):
     filename = Path(ncml_filename)
-    if filename.exists():
-        raise RuntimeError('NCML already exists: %s' % filename)
+    temp_filename = Path().joinpath(*filename.parts[:-1]) / '.tmp' / filename.parts[-1]
+
+    if temp_filename.exists():
+        temp_filename.unlink()
 
     try:
-        filename.parent.mkdir(parents=True)
+        temp_filename.parent.mkdir(parents=True)
     except OSError:
         pass
 
@@ -114,7 +127,7 @@ def write_ncml_file(ncml_filename, file_locations, header_attrs):
             <remove name="dataset_nchar" type="dimension" />
         </netcdf>"""
 
-    with open(ncml_filename, 'w') as ncml_file:
+    with open(str(temp_filename), 'w') as ncml_file:
         ncml_file.write('<netcdf xmlns="http://www.unidata.ucar.edu/namespaces/netcdf/ncml-2.2">\n')
 
         for key, value in header_attrs.items():
@@ -128,11 +141,10 @@ def write_ncml_file(ncml_filename, file_locations, header_attrs):
         ncml_file.write('  </aggregation>\n')
         ncml_file.write('</netcdf>\n')
 
+    if filename.exists():
+        filename.unlink()
 
-#: pylint: disable=invalid-name
-cell_index_option = click.option('--cell-index', 'cell_index',
-                                 help='Limit to a particular cell (e.g. 14,-11)',
-                                 callback=task_app.validate_cell_index, default=None)
+    temp_filename.rename(filename)
 
 
 @click.group(name=APP_NAME, help='NCML creation utility')
@@ -146,9 +158,16 @@ command_options = datacube.ui.click.compose(
     datacube.ui.click.config_option,
     datacube.ui.click.pass_index(app_name=APP_NAME),
     datacube.ui.click.logfile_option,
-    cell_index_option,
+    task_app.cell_index_option,
+    task_app.cell_index_list_option,
     task_app.queue_size_option,
+    task_app.load_tasks_option,
+    task_app.save_tasks_option,
     datacube.ui.click.executor_cli_options,
+    click.option('--export-path', 'export_path',
+                 help='Write the stacked files to an external location instead of the location in the app config',
+                 default=None,
+                 type=click.Path(exists=True, writable=True, file_okay=False)),
 )
 
 
@@ -157,6 +176,10 @@ command_options = datacube.ui.click.compose(
 @click.argument('app_config')
 @task_app.task_app(make_config=make_ncml_config, make_tasks=make_ncml_tasks)
 def full(index, config, tasks, executor, queue_size, **kwargs):
+    """Create ncml files for the full time depth of the product
+
+    e.g. datacube-ncml full <app_config_yaml>
+    """
     click.echo('Starting datacube ncml utility...')
 
     task_func = partial(do_ncml_task, config)
@@ -169,6 +192,13 @@ def full(index, config, tasks, executor, queue_size, **kwargs):
 @click.argument('nested_years', nargs=-1, type=click.INT)
 @task_app.task_app(make_config=make_ncml_config, make_tasks=make_ncml_tasks)
 def nest(index, config, tasks, executor, queue_size, **kwargs):
+    """Create ncml files for the full time, with nested ncml files covering the given years
+
+    e.g. datacube-ncml nest <app_config_yaml> 2016 2017
+
+    This will refer to the actual files (hopefully stacked), and make ncml files for the given (ie unstacked) years.
+    Use the `update` command when new data is added to a year, without having to rerun for the entire time depth.
+    """
     click.echo('Starting datacube ncml utility...')
 
     task_func = partial(do_ncml_task, config)
@@ -181,6 +211,12 @@ def nest(index, config, tasks, executor, queue_size, **kwargs):
 @click.argument('year', type=click.INT)
 @task_app.task_app(make_config=make_ncml_config, make_tasks=make_ncml_tasks)
 def update(index, config, tasks, executor, queue_size, **kwargs):
+    """Update a single year ncml file
+
+    e.g datacube-ncml <app_config_yaml> 1996
+
+    This can be used to update an existing ncml file created with `nest` when new data is added.
+    """
     click.echo('Starting datacube ncml utility...')
 
     task_func = partial(do_ncml_task, config)

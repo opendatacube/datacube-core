@@ -29,6 +29,7 @@ and  related data from multiple satellite and other acquisition systems.
    ops/config
    ops/prepare_scripts
    ops/tools
+   ops/replication
 
 .. toctree::
    :maxdepth: 2

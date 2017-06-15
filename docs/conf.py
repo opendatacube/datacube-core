@@ -133,7 +133,8 @@ intersphinx_mapping = {
 }
 
 click_utils_commands = {'datacube-search': 'datacube.scripts.search_tool:cli',
-                        'datacube': 'datacube.scripts.cli_app:cli'}
+                        'datacube': 'datacube.scripts.cli_app:cli',
+                        'datacube-simple-replica': 'datacube_apps.simple_replica:replicate'}
 
 graphviz_output_format = 'svg'
 
@@ -192,7 +193,7 @@ html_static_path = ['_static']
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
-#html_use_smartypants = True
+html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
 #html_sidebars = {}
@@ -329,7 +330,10 @@ NATIVE_MODULES = [
     'numpy',
     'matplotlib',
     'matplotlib.pyplot',
-    'scipy', 'scipy.io'
+    'scipy', 'scipy.io',
+    'paramiko',
+    'sshtunnel',
+    'tqdm',
 
 ]
 

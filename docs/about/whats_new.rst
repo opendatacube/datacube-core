@@ -5,6 +5,36 @@
 What's New
 ==========
 
+v1.4.1 (25 May 2017)
+--------------------
+
+ - Support for reading multiband HDF datasets, such as MODIS collection 6
+
+ - Workaround for rasterio issue when reprojecting stacked data
+
+ - Bug fixes for command line arg handling
+
+v1.4.0 (17 May 2017)
+--------------------
+
+- Adds more convenient year/date range search expressions (see `#226`_)
+
+- Adds a :ref:`simple replication utility <replication>` (see `#223`_)
+
+- Fixed issue reading products without embedded CRS info, such as `bom_rainfall_grid` (see `#224`_)
+
+- Fixed issues with stacking and ncml creation for NetCDF files
+
+- Various documentation and bug fixes
+
+- Added CircleCI as a continuous build system, for previewing generated documenation on pull
+
+- Require ``xarray`` >= 0.9. Solves common problems caused by losing embedded ``flag_def`` and ``crs`` attributes.
+
+.. _#226: https://github.com/opendatacube/datacube-core/pull/226
+.. _#223: https://github.com/opendatacube/datacube-core/pull/223
+.. _#224: https://github.com/opendatacube/datacube-core/issues/224
+
 v1.3.1 (20 April 2017)
 ----------------------
 

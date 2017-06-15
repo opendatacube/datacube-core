@@ -1,10 +1,10 @@
 from __future__ import absolute_import
 
 import os
-import base64
 import logging
 import click
 
+from datacube.utils import gen_password
 from datacube.config import LocalConfig
 from datacube.index._api import Index
 from datacube.ui import click as ui
@@ -55,7 +55,7 @@ def create_user(config, index, role, user, description):
     """
     Create a User
     """
-    password = base64.urlsafe_b64encode(os.urandom(12)).decode('utf-8')
+    password = gen_password(12)
     index.users.create_user(user, password, role, description=description)
 
     click.echo('{host}:{port}:*:{username}:{password}'.format(

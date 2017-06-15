@@ -272,7 +272,7 @@ class ProductResource(object):
         Create a Product from its definitions
 
         :param dict definition: product definition document
-        :rtype: datacube.model.DatasetType
+        :rtype: DatasetType
         """
         # This column duplication is getting out of hand:
         DatasetType.validate(definition)
@@ -303,8 +303,8 @@ class ProductResource(object):
             This will halt other user's requests until completed.
 
             If false, creation will be slightly slower and cannot be done in a transaction.
-        :param datacube.model.DatasetType product: Product to add
-        :rtype: datacube.model.DatasetType
+        :param DatasetType product: Product to add
+        :rtype: DatasetType
         """
         DatasetType.validate(product.definition)
 
@@ -339,7 +339,7 @@ class ProductResource(object):
         (An unsafe change is anything that may potentially make the product
         incompatible with existing datasets of that type)
 
-        :param datacube.model.DatasetType product: Product to update
+        :param DatasetType product: Product to update
         :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :rtype: bool,list[change],list[change]
         """
@@ -371,14 +371,14 @@ class ProductResource(object):
         (An unsafe change is anything that may potentially make the product
         incompatible with existing datasets of that type)
 
-        :param datacube.model.DatasetType product: Product to update
+        :param DatasetType product: Product to update
         :param bool allow_unsafe_updates: Allow unsafe changes. Use with caution.
         :param allow_table_lock:
             Allow an exclusive lock to be taken on the table while creating the indexes.
             This will halt other user's requests until completed.
 
             If false, creation will be slower and cannot be done in a transaction.
-        :rtype: datacube.model.DatasetType
+        :rtype: DatasetType
         """
 
         can_update, safe_changes, unsafe_changes = self.can_update(product, allow_unsafe_updates)
@@ -446,7 +446,7 @@ class ProductResource(object):
             This will halt other user's requests until completed.
 
             If false, creation will be slower and cannot be done in a transaction.
-        :rtype: datacube.model.DatasetType
+        :rtype: DatasetType
         """
         type_ = self.from_doc(definition)
         return self.update(
@@ -460,7 +460,7 @@ class ProductResource(object):
         Add a Product using its difinition
 
         :param dict definition: product definition document
-        :rtype: datacube.model.DatasetType
+        :rtype: DatasetType
         """
         type_ = self.from_doc(definition)
         return self.add(type_)
@@ -470,7 +470,7 @@ class ProductResource(object):
         Retrieve Product by id
 
         :param int id_: id of the Product
-        :rtype: datacube.model.DatasetType
+        :rtype: DatasetType
         """
         try:
             return self.get_unsafe(id_)
@@ -482,7 +482,7 @@ class ProductResource(object):
         Retrieve Product by name
 
         :param str name: name of the Product
-        :rtype: datacube.model.DatasetType
+        :rtype: DatasetType
         """
         try:
             return self.get_by_name_unsafe(name)
@@ -578,7 +578,7 @@ class ProductResource(object):
         """
         Retrieve all Products
 
-        :rtype: iter[datacube.model.DatasetType]
+        :rtype: iter[DatasetType]
         """
         with self._db.connect() as connection:
             return (self._make(record) for record in connection.get_all_dataset_types())
@@ -588,7 +588,7 @@ class ProductResource(object):
 
     def _make(self, query_row):
         """
-        :rtype datacube.model.DatasetType
+        :rtype DatasetType
         """
         return DatasetType(
             definition=query_row['definition'],
@@ -617,7 +617,7 @@ class DatasetResource(object):
 
         :param UUID id_: id of the dataset to retrieve
         :param bool include_sources: get the full provenance graph?
-        :rtype: datacube.model.Dataset
+        :rtype: Dataset
         """
         if isinstance(id_, compat.string_types):
             id_ = UUID(id_)
@@ -650,7 +650,7 @@ class DatasetResource(object):
         Get all derived datasets
 
         :param UUID id_: dataset id
-        :rtype: list[datacube.model.Dataset]
+        :rtype: list[Dataset]
         """
         with self._db.connect() as connection:
             return [self._make(result, full_info=True)
@@ -666,17 +666,26 @@ class DatasetResource(object):
         with self._db.connect() as connection:
             return connection.contains_dataset(id_)
 
-    def add(self, dataset, skip_sources=False, sources_policy='verify'):
+    def add(self, dataset, sources_policy='verify', **kwargs):
         """
-        Ensure a dataset is in the index. Add it if not present.
+        Add ``dataset`` to the index. No-op if it is already present.
 
-        :param datacube.model.Dataset dataset: dataset to add
-        :param str sources_policy: one of 'verify' - verify the metadata, 'ensure' - add if doesn't exist, 'skip' - skip
-        :param bool skip_sources: don't attempt to index source datasets (use when sources are already indexed)
-        :rtype: datacube.model.Dataset
+        :param Dataset dataset: dataset to add
+        :param str sources_policy: how should source datasets included in this dataset be handled:
+
+                ``verify``
+                    Verify that each source exists in the index, and that they are identical.
+
+                ``ensure``
+                    Add source datasets to the index if they doesn't exist.
+
+                ``skip``
+                    don't attempt to index source datasets (use when sources are already indexed)
+
+        :rtype: Dataset
         """
-        if skip_sources:
-            warnings.warn('"skip_sources" is deprecated, use "sources_policy"', DeprecationWarning)
+        if 'skip_sources' in kwargs and kwargs['skip_sources']:
+            warnings.warn('"skip_sources" is deprecated, use "sources_policy=\'skip\'"', DeprecationWarning)
             sources_policy = 'skip'
         self._add_sources(dataset, sources_policy)
 
@@ -755,7 +764,7 @@ class DatasetResource(object):
         """
         Check if dataset can be updated. Return bool,safe_changes,unsafe_changes
 
-        :param datacube.model.Dataset dataset: Dataset to update
+        :param Dataset dataset: Dataset to update
         :param dict updates_allowed: Allowed updates
         :rtype: bool,list[change],list[change]
         """
@@ -783,9 +792,9 @@ class DatasetResource(object):
     def update(self, dataset, updates_allowed=None):
         """
         Update dataset metadata and location
-        :param datacube.model.Dataset dataset: Dataset to update
+        :param Dataset dataset: Dataset to update
         :param updates_allowed: Allowed updates
-        :rtype: datacube.model.Dataset
+        :rtype: Dataset
         """
         existing = self.get(dataset.id)
         can_update, safe_changes, unsafe_changes = self.can_update(dataset, updates_allowed)
@@ -965,7 +974,7 @@ class DatasetResource(object):
 
     def _make(self, dataset_res, full_info=False):
         """
-        :rtype datacube.model.Dataset
+        :rtype Dataset
 
         :param bool full_info: Include all available fields
         """
@@ -983,7 +992,7 @@ class DatasetResource(object):
 
     def _make_many(self, query_result):
         """
-        :rtype list[datacube.model.Dataset]
+        :rtype list[Dataset]
         """
         return (self._make(dataset) for dataset in query_result)
 
@@ -994,7 +1003,7 @@ class DatasetResource(object):
         Caution – slow! This will usually not use indexes.
 
         :param dict metadata:
-        :rtype: list[datacube.model.Dataset]
+        :rtype: list[Dataset]
         """
         with self._db.connect() as connection:
             for dataset in self._make_many(connection.search_datasets_by_metadata(metadata)):
@@ -1004,8 +1013,8 @@ class DatasetResource(object):
         """
         Perform a search, returning results as Dataset objects.
 
-        :param dict[str,str|float|datacube.model.Range] query:
-        :rtype: __generator[datacube.model.Dataset]
+        :param dict[str,str|float|Range] query:
+        :rtype: __generator[Dataset]
         """
         source_filter = query.pop('source_filter', None)
         for _, datasets in self._do_search_by_product(query, source_filter=source_filter):
@@ -1017,7 +1026,7 @@ class DatasetResource(object):
         Perform a search, returning datasets grouped by product type.
 
         :param dict[str,str|float|datacube.model.Range] query:
-        :rtype: __generator[(datacube.model.DatasetType,  __generator[datacube.model.Dataset])]]
+        :rtype: __generator[(DatasetType,  __generator[Dataset])]]
         """
         for product, datasets in self._do_search_by_product(query):
             yield product, self._make_many(datasets)
@@ -1063,7 +1072,7 @@ class DatasetResource(object):
 
         :param dict[str,str|float|datacube.model.Range] query:
         :returns: Sequence of (product, count)
-        :rtype: __generator[(datacube.model.DatasetType,  int)]]
+        :rtype: __generator[(DatasetType,  int)]]
         """
         return self._do_count_by_product(query)
 
@@ -1075,7 +1084,7 @@ class DatasetResource(object):
         :param dict[str,str|float|datacube.model.Range] query:
         :param str period: Time range for each slice: '1 month', '1 day' etc.
         :returns: For each matching product type, a list of time ranges and their count.
-        :rtype: __generator[(datacube.model.DatasetType, list[(datetime.datetime, datetime.datetime), int)]]
+        :rtype: __generator[(DatasetType, list[(datetime.datetime, datetime.datetime), int)]]
         """
         return self._do_time_count(period, query)
 
@@ -1230,6 +1239,6 @@ class DatasetResource(object):
         Perform a search, returning results as Dataset objects.
 
         :param dict[str,str|float|datacube.model.Range] query:
-        :rtype: list[datacube.model.Dataset]
+        :rtype: list[Dataset]
         """
         return list(self.search(**query))
