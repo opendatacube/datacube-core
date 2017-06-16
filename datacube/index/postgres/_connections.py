@@ -66,7 +66,6 @@ class PostgresDb(object):
 
     @staticmethod
     def _create_engine(url, application_name=None, pool_timeout=60):
-        _LOG.info('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Create engine')
         return create_engine(
             url,
             echo=False,

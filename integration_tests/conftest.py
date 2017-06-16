@@ -184,7 +184,7 @@ def remove_dynamic_indexes():
 
 @pytest.fixture(params=['NetCDF CF', 's3-test'])
 def driver(driver_manager, request):
-    driver_manager.set_default_driver(request.param)
+    driver_manager.set_current_driver(request.param)
     return driver_manager.driver
 
 

@@ -6,8 +6,6 @@ import logging
 import sys
 from pathlib import Path
 from collections import Iterable
-import atexit
-import random
 
 from .driver import Driver
 from .index import Index
@@ -37,23 +35,24 @@ else: # python 2
 
 
 class DriverManager(object):
-    '''The manager loads and manages storage drivers added as plugins. Its
-    `driver` attribute returns a dictionary of drivers instances,
-    indexed by their `name` as defined in `__init__.py`'s
-    `DRIVER_SPEC`. The manager is a singleton and only looks up
-    drivers on its first initialisation, but instantiates them all
-    before caching them.
+    '''Storage drivers are added as plugins providing a storage driver and
+    indexing mechanisms. The manager loads and initialise all
+    available plugins when it starts and makes them available by
+    name. It also includes a generic index allowing to load a dataset
+    metadata from the index using only basic information about the
+    dataset, in particular, without knowing what driver is required to
+    retrieve the actual data.
 
-    The manager also forwards calls to the abstract methods of the
-    `drivers` class to each specific driver.
+    A 'current' driver can be set in the manager and which can be used
+    to handle datasets which don't specifiy a storage driver in their
+    metadata.
     '''
 
-    DEFAULT_DRIVER = 'NetCDF CF'
-    '''Default driver, assuming its code is present. Otherwise any other
-    driver gets selected.
+    _DEFAULT_DRIVER = 'NetCDF CF'
+    '''Default 'current' driver, assuming its code is present.
     '''
 
-    DRIVER_SPEC = 'DRIVER_SPEC'
+    _DRIVER_SPEC = 'DRIVER_SPEC'
     '''Attribue name where driver information is stored in `__init__.py`.
     '''
 
@@ -64,38 +63,18 @@ class DriverManager(object):
     '''Current driver.'''
 
     __drivers = None
-    '''Singleton list of all available drivers, indexed by name.'''
+    '''List of all available drivers, indexed by name.'''
 
 
     def __init__(self, index=None, *index_args, **index_kargs):
-        '''Initialise the singleton and/or reload drivers.
-
-        The singleton gets re-instantiated each time a new default
-        driver name is specified or an index is passed. Otherwise, the
-        current instance gets returned, and contains a default driver,
-        list of available drivers.
+        '''Initialise the manager.
 
         Each driver get initialised during instantiation, including
         the initialisation of their index, using the `index_args` and
-        `index_kargs` optional arguments. If index is specified, it is
-        passed to the driver to be used internally in place of the
-        original index, as a test feature.
+        `index_kargs` optional arguments. If `index` is specified, it
+        is passed to the driver for its DB connection to be used
+        internally, as a test feature.
 
-        The reason for re-instantiating the instance when a default
-        driver or index is specified, is because caching these leaves
-        the system in an inconsistent state, e.g. when testing various
-        drivers.
-
-        TODO: Ideally, the driver manager should not be a singleton
-        but an object being instantiated by the entry point to the
-        system, e.g. :mod:`datacube.ui.click` or
-        :mod:`datacube.api.core`. This implementation is intended to
-        limit the changes to the existing codebase until plugin
-        drivers are fully developped.
-
-        :param str default_driver_name: The name of the default driver
-          to be used by the manager if no driver is specified in the
-          dataset.
         :param index: An index object behaving like
           :class:`datacube.index._api.Index` and used for testing
           purposes only. In the current implementation, only the
@@ -104,11 +83,11 @@ class DriverManager(object):
           existing DB connection with that variable.
         :param args: Optional positional arguments to be passed to the
           index on initialisation. Caution: In the current
-          implementation all parameters get passed to all potential
+          implementation all parameters get passed to all available
           indexes.
         :param args: Optional keyword arguments to be passed to the
           index on initialisation. Caution: In the current
-          implementation all parameters get passed to all potential
+          implementation all parameters get passed to all available
           indexes.
         '''
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -116,11 +95,12 @@ class DriverManager(object):
         # pylint: disable=protected-access
         self.set_index(index, *index_args, **index_kargs)
         self.reload_drivers(index, *index_args, **index_kargs)
-        self.set_default_driver(DriverManager.DEFAULT_DRIVER)
-        self.logger.info('Ready. %s', self.index)
+        self.set_current_driver(DriverManager._DEFAULT_DRIVER)
+        self.logger.debug('Ready. %s', self)
 
 
     def close(self):
+        '''Close all drivers' index connections.'''
         if self.__drivers:
             for driver in self.__drivers.values():
                 # pylint: disable=protected-access
@@ -128,10 +108,27 @@ class DriverManager(object):
                     driver.index.close()
         if self.__index:
             self.__index.close()
-        self.logger.info('Closed index connections')
+        self.logger.debug('Closed index connections')
 
 
     def set_index(self, index=None, *index_args, **index_kargs):
+        '''Initialise the generic index.
+
+        :param index: An index object behaving like
+          :class:`datacube.index._api.Index` and used for testing
+          purposes only. In the current implementation, only the
+          `index._db` variable is used, and is passed to the index
+          initialisation method, that should basically replace the
+          existing DB connection with that variable.
+        :param args: Optional positional arguments to be passed to the
+          index on initialisation. Caution: In the current
+          implementation all parameters get passed to all available
+          indexes.
+        :param args: Optional keyword arguments to be passed to the
+          index on initialisation. Caution: In the current
+          implementation all parameters get passed to all available
+          indexes.
+        '''
         if self.__index:
             self.__index.close()
         self.__index = Index(self, index, *index_args, **index_kargs)
@@ -139,9 +136,23 @@ class DriverManager(object):
 
 
     def reload_drivers(self, index=None, *index_args, **index_kargs):
-        '''Load and initialise all available drivers.
+        '''Load and initialise all available drivers and their indexes.
 
-        See :meth:`__init__` for a description of the parameters.
+
+        :param index: An index object behaving like
+          :class:`datacube.index._api.Index` and used for testing
+          purposes only. In the current implementation, only the
+          `index._db` variable is used, and is passed to the index
+          initialisation method, that should basically replace the
+          existing DB connection with that variable.
+        :param args: Optional positional arguments to be passed to the
+          index on initialisation. Caution: In the current
+          implementation all parameters get passed to all available
+          indexes.
+        :param args: Optional keyword arguments to be passed to the
+          index on initialisation. Caution: In the current
+          implementation all parameters get passed to all available
+          indexes.
         '''
         if self.__drivers:
             for driver in self.__drivers.values():
@@ -151,8 +162,8 @@ class DriverManager(object):
         self.__drivers = {}
         for init_path in Path(__file__).parent.glob('*/__init__.py'):
             init = load_module(str(init_path.parent.stem), str(init_path))
-            if self.DRIVER_SPEC in init.__dict__:
-                spec = init.__dict__[self.DRIVER_SPEC]
+            if self._DRIVER_SPEC in init.__dict__:
+                spec = init.__dict__[self._DRIVER_SPEC]
                 # pylint: disable=old-division
                 filepath = init_path.parent / spec[2]
                 # pylint: disable=old-division
@@ -169,12 +180,11 @@ class DriverManager(object):
         self.logger.debug('Reloaded %d drivers.', len(self.__drivers))
 
 
-    def set_default_driver(self, driver_name):
-        '''Set the default driver.
+    def set_current_driver(self, driver_name):
+        '''Set the current driver.
 
         If driver_name is None, then the driver currently in use
-        remains active, or the default driver for the class is used as
-        last resort..
+        remains active, or a default driver is used as last resort.
 
         :param str driver_name: The name of the driver to set as
           current driver.
@@ -188,7 +198,7 @@ class DriverManager(object):
 
     @property
     def driver(self):
-        '''Current default driver.
+        '''Current driver.
         '''
         return self.__driver
 
@@ -207,11 +217,10 @@ class DriverManager(object):
 
 
     def __str__(self):
-        '''Human-readable list of available drivers as a string.
+        '''Information about the available drivers.
         '''
-        return '%s(default driver: %s; available drivers: %s)' % (
-            self.__class__.__name__, self.driver.name,
-            ', '.join(self.__drivers.keys()))
+        return 'DriverManager(current driver: %s; available drivers: %s)' % (
+            self.driver.name, ', '.join(self.__drivers.keys()))
 
 
     def write_dataset_to_storage(self, dataset, *args, **kargs):
@@ -242,7 +251,7 @@ class DriverManager(object):
         be deterministic.
 
         :todo: Discuss unique scheme per driver for future
-        implementations.
+          implementations.
 
         :param list uris: List of dataset locations, which may or may
           not contain a scheme. If not, it will default to `file`.
@@ -264,8 +273,26 @@ class DriverManager(object):
 
 
     def get_datasource(self, dataset, band_name=None):
+        '''Returns a data source to read a dataset band data.
+
+        The appropriate driver is determined from the dataset uris,
+        then the datasource created using that driver.
+        :param dataset: The dataset to read.
+        :param band_name: the name of the band to read.
+
+        '''
         return self.get_driver_by_scheme(dataset.uris).get_datasource(dataset, band_name)
 
 
     def add_specifics(self, dataset):
+        '''Pulls driver-specific index data from the DB.
+
+        This method should only be called by the generic index to pull
+        driver-specific metadata from the index. The appropriate
+        driver is determined from the dataset uris, then the
+        specific data retrieved using that driver.
+
+        :param dataset: The dataset for which to extract the specific
+          data.
+        '''
         return self.get_driver_by_scheme(dataset.uris).index.add_specifics(dataset)

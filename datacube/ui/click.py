@@ -199,7 +199,7 @@ def pass_driver_manager(app_name=None, expect_initialised=True):
                                                local_config=ctx.obj['config_file'],
                                                application_name=app_name or ctx.command_path,
                                                validate_connection=expect_initialised)
-                driver_manager.set_default_driver(ctx.obj['driver'])
+                driver_manager.set_current_driver(ctx.obj['driver'])
                 _LOG.debug("Driver manager ready")
                 return f(driver_manager, *args, **kwargs)
             except (OperationalError, ProgrammingError) as e:
