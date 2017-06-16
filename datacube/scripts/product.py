@@ -29,9 +29,9 @@ def product():
                 nargs=-1)
 @ui.pass_driver_manager()
 def add_dataset_types(driver_manager, allow_exclusive_lock, files):
-    # type: (Index, bool, list) -> None
+    # type: (DriverManager, bool, list) -> None
     """
-    Add or update products in the index
+    Add or update products in the generic index.
     """
     index = driver_manager.index
     for descriptor_path, parsed_doc in read_documents(*(Path(f) for f in files)):
@@ -60,7 +60,7 @@ def add_dataset_types(driver_manager, allow_exclusive_lock, files):
                 nargs=-1)
 @ui.pass_driver_manager()
 def update_dataset_types(driver_manager, allow_unsafe, allow_exclusive_lock, dry_run, files):
-    # type: (Index, bool, bool, bool, list) -> None
+    # type: (DriverManager, bool, bool, bool, list) -> None
     """
     Update existing products.
 
@@ -113,7 +113,7 @@ def update_dataset_types(driver_manager, allow_unsafe, allow_exclusive_lock, dry
 @ui.pass_driver_manager()
 def list_products(driver_manager):
     """
-    List products that are defined in the index
+    List products that are defined in the generic index.
     """
     index = driver_manager.index
     dc = Datacube(index)
@@ -134,7 +134,7 @@ def list_products(driver_manager):
 @ui.pass_driver_manager()
 def show_product(driver_manager, product_name):
     """
-    Show details about a product in the index
+    Show details about a product in the generic index.
     """
     index = driver_manager.index
     product_def = index.products.get_by_name(product_name)

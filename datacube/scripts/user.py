@@ -55,7 +55,7 @@ def grant(driver_manager, role, users):
 @ui.pass_driver_manager()
 @ui.pass_config
 def create_user(config, driver_manager, role, user, description):
-    # type: (LocalConfig, Index, str, str, str) -> None
+    # type: (LocalConfig, DriverManager, str, str, str) -> None
     """
     Create a User
     """

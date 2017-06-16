@@ -28,7 +28,7 @@ def metadata_type():
                 nargs=-1)
 @ui.pass_driver_manager()
 def add_metadata_types(driver_manager, allow_exclusive_lock, files):
-    # type: (Index, bool, list) -> None
+    # type: (DriverManager, bool, list) -> None
     """
     Add or update metadata types in the index
     """
@@ -58,7 +58,7 @@ def add_metadata_types(driver_manager, allow_exclusive_lock, files):
                 nargs=-1)
 @ui.pass_driver_manager()
 def update_metadata_types(driver_manager, allow_unsafe, allow_exclusive_lock, dry_run, files):
-    # type: (Index, bool, bool, bool, list) -> None
+    # type: (DriverManager, bool, bool, bool, list) -> None
     """
     Update existing metadata types.
 
@@ -119,7 +119,7 @@ def show_metadata_type(driver_manager, metadata_type_name, verbose):
 @ui.pass_driver_manager()
 def list_metadata_types(driver_manager):
     """
-    List metadata types that are defined in the index
+    List metadata types that are defined in the generic index.
     """
     index = driver_manager.index
     metadata_types = list(index.metadata_types.get_all())

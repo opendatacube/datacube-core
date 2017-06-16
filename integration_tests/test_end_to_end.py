@@ -75,7 +75,7 @@ def test_end_to_end(global_integration_cli_args, driver_manager, testdata_dir):
     One dataset configuration specifies Australian Albers Equal Area Projection,
     the other is simply latitude/longitude.
 
-    The input dataset should be recorded in the index, and two sets of netcdf storage units
+    The input dataset should be recorded in the index, and two sets of storage units
     should be created on disk and recorded in the index.
     """
     index = driver_manager.index

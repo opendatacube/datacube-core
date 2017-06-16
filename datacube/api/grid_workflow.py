@@ -121,9 +121,16 @@ class GridWorkflow(object):
 
         Either grid_spec or product must be supplied.
 
-        :param Index index: The database index to use.
+        :param Index index: The database index to use. This feature
+          will become deprecated, so `driver_manager` should be used
+          instead, unless a specific index DB needs to be set in the
+          driver manager for testing purposes.
         :param GridSpec grid_spec: The grid projection and resolution
         :param str product: The name of an existing product, if no grid_spec is supplied.
+        :param DriverManager driver_manager: The driver manager to
+          use. If not specified, an new manager will be created using
+          the index if specified, or the default configuration
+          otherwise.
         """
         self.driver_manager = driver_manager if driver_manager else DriverManager(index=index)
         self.index = self.driver_manager.index
@@ -340,6 +347,11 @@ class GridWorkflow(object):
             Valid values are: ``'nearest', 'cubic', 'bilinear', 'cubic_spline', 'lanczos', 'average'``
 
             Defaults to ``'nearest'``.
+
+        :param DriverManager driver_manager: The driver manager to
+          use. If not specified, an new manager will be created using
+          the index if specified, or the default configuration
+          otherwise.
 
         :rtype: :py:class:`xarray.Dataset`
 

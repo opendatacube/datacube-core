@@ -66,7 +66,11 @@ class Datacube(object):
 
         If no index or config is given, the default configuration is used for database connection.
 
-        :param Index index: The database index to use.
+        :param Index index: The database index to use. This feature
+          will become deprecated, so `driver_manager` should be used
+          instead, unless a specific index DB needs to be set in the
+          driver manager for testing purposes.
+        :type index: :py:class:`datacube.index._api.Index` or None.
 
         :param LocalConfig config: A config object or a path to a config file that defines the connection.
 
@@ -75,7 +79,14 @@ class Datacube(object):
 
             The application name is used to track down problems with database queries, so it is strongly
             advised that be used.  Required if an index is not supplied, otherwise ignored.
+
+        :param DriverManager driver_manager: The driver manager to
+          use. If not specified, an new manager will be created using
+          the index if specified, or the default configuration
+          otherwise.
+
         :return: Datacube object
+
         """
         self._to_close = None
         if index:
@@ -490,6 +501,11 @@ class Datacube(object):
             See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
             for more information.
 
+        :param DriverManager driver_manager: The driver manager to
+          use. If not specified, an new manager will be created using
+          the index if specified, or the default configuration
+          otherwise.
+
         :rtype: xarray.Dataset
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
@@ -538,9 +554,12 @@ class Datacube(object):
         :param fuse_func: function to merge successive arrays as an output
         :param dict dask_chunks: If the data should be loaded as needed using :class:`dask.array.Array`,
             specify the chunk size in each output direction.
-
             See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
             for more information.
+        :param DriverManager driver_manager: The driver manager to
+          use. If not specified, an new manager will be created using
+          the index if specified, or the default configuration
+          otherwise.
         :rtype: :class:`xarray.DataArray`
 
         .. seealso:: :meth:`load_data`

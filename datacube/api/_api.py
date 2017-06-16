@@ -40,14 +40,20 @@ class API(object):
 
         If no datacube or index is given, the default configuration is used for database connection, etc.
 
-        :param index: The database index to use
-        :type index: :py:class:`datacube.index._api.Index` or None
+        :param Index index: The database index to use. This feature
+          will become deprecated, so `driver_manager` should be used
+          instead, unless a specific index DB needs to be set in the
+          driver manager for testing purposes.
         :param app: A short, alphanumeric name to identify this application.
             The application name is used to track down problems with database queries, so it is strongly
             advised that be used.  If an index is supplied, application name is ignored.
         :type app: string, required if no index is given
         :param datacube:
         :type datacube: :class:`datacube.Datacube`
+        :param DriverManager driver_manager: The driver manager to
+          use. If not specified, an new manager will be created using
+          the index if specified, or the default configuration
+          otherwise.
         """
         self.driver_manager = driver_manager
         if datacube is not None:

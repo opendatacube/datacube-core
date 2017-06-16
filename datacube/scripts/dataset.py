@@ -365,7 +365,7 @@ _OUTPUT_WRITERS = {
 @click.argument('ids', nargs=-1)
 @ui.pass_driver_manager()
 def info_cmd(driver_manager, show_sources, show_derived, f, max_depth, ids):
-    # type: (Index, bool, bool, Iterable[str]) -> None
+    # type: (DriverManager, bool, bool, Iterable[str]) -> None
 
     index = driver_manager.index
     # Using an array wrapper to get around the lack of "nonlocal" in py2
