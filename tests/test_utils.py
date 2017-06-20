@@ -4,14 +4,15 @@ Test date sequence generation functions as used by statistics apps
 
 """
 import os
+import string
 
 import pytest
 from dateutil.parser import parse
 from pandas import to_datetime
 from hypothesis import given
-from hypothesis.strategies import integers
+from hypothesis.strategies import integers, text
 
-from datacube.utils import uri_to_local_path, clamp
+from datacube.utils import uri_to_local_path, clamp, gen_password, write_user_secret_file, slurp
 from datacube.utils.dates import date_sequence
 
 
@@ -84,3 +85,23 @@ def test_clamp(x, lower_bound, upper_bound):
     if lower_bound <= x <= upper_bound:
         assert new_x == x
     assert lower_bound <= new_x <= upper_bound
+
+
+@given(integers(min_value=10, max_value=30))
+def test_gen_pass(n_bytes):
+    password1 = gen_password(n_bytes)
+    password2 = gen_password(n_bytes)
+    assert len(password1) >= n_bytes
+    assert len(password2) >= n_bytes
+    assert password1 != password2
+
+
+@given(text(alphabet=string.digits + string.ascii_letters + ' ,:.![]?', max_size=20))
+def test_write_user_secret_file(txt):
+    fname = u".tst-datacube-uefvwr4cfkkl0ijk.txt"
+
+    write_user_secret_file(txt, fname)
+    txt_back = slurp(fname)
+    os.remove(fname)
+    assert txt == txt_back
+    assert slurp(fname) is None

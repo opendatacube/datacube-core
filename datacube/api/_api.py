@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from itertools import chain, groupby
+import warnings
 
 import numpy
 
@@ -55,7 +56,10 @@ class API(object):
           the index if specified, or the default configuration
           otherwise.
         """
+        warnings.warn("Descriptor interface is deprecated.", DeprecationWarning)
+
         self.driver_manager = driver_manager
+
         if datacube is not None:
             self.datacube = datacube
         elif index is not None:

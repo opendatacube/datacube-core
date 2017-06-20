@@ -37,7 +37,7 @@ stable version.
 #. Upload the build to PyPi.
 
     .. code-block:: bash
-    
+
         python setup.py sdist bdist_wheel
         twine upload dist/*
 
@@ -59,6 +59,6 @@ stable version.
 
 .. _Jira: https://gaautobots.atlassian.net/projects/ACDD?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page&status=unreleased
 
-.. _Datacube Environment: https://github.com/GeoscienceAustralia/ga-datacube-env#data-cube-module
+.. _Datacube Environment: https://github.com/GeoscienceAustralia/ga-datacube-env#building-a-release
 
 .. _Datcube Feedstock: https://github.com/conda-forge/datacube-feedstock#updating-datacube-feedstock

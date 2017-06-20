@@ -8,6 +8,7 @@ from math import ceil
 import netCDF4
 import numpy as np
 import pytest
+import hashlib
 
 import yaml
 from click.testing import CliRunner
@@ -15,10 +16,10 @@ from affine import Affine
 from datacube.api.query import query_group_by
 
 import datacube.scripts.cli_app
-from datacube.utils import geometry, read_documents
+from datacube.utils import geometry, read_documents, netcdf_extract_string
 from datacube.drivers.manager import DriverManager
 
-from integration_tests.conftest import GEOTIFF
+from .conftest import EXAMPLE_LS5_DATASET_ID, GEOTIFF
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
@@ -168,10 +169,7 @@ def check_dataset_metadata_in_storage_unit(nco, dataset_dirs):
     '''Check one of the NetCDF files metadata against the original
     metadata.'''
     assert len(nco.variables['dataset']) == 1  # 1 time slice
-    stored_metadata = nco.variables['dataset'][0]
-    if not isinstance(stored_metadata, str):
-        stored_metadata = netCDF4.chartostring(stored_metadata)
-        stored_metadata = str(np.char.decode(stored_metadata))
+    stored_metadata = netcdf_extract_string(nco.variables['dataset'][0])
     stored = yaml.safe_load(stored_metadata)
 
     assert 'lineage' in stored
@@ -229,13 +227,7 @@ def check_data_with_api(driver_manager, time_slices):
     group_by = query_group_by('time')
     sources = dc.group_datasets(observations, group_by)
     data = dc.load_data(sources, geobox, input_type.measurements.values(), driver_manager=driver_manager)
+    assert hashlib.md5(data.green.data).hexdigest() == '7f5ace486e88d33edf3512e8de6b6996'
+    assert hashlib.md5(data.blue.data).hexdigest() == 'b58204f1e10dd678b292df188c242c7e'
     for time_slice in range(time_slices):
-        expected = np.zeros((shape_y, shape_x), dtype=np.int16)
-        expected[0, 0] = 100 + time_slice
-        expected[-1, 0] = 200 + time_slice
-        expected[0, -1] = 300 + time_slice
-        expected[-1, -1] = 400 + time_slice
-        # print('Expected: \n%s\n' % expected)
-        # print('Retrieved:\n%s\n' % data.blue.values[time_slice])
-        assert np.array_equal(data.blue.values[time_slice][:shape_y, :shape_x], expected)
         assert data.blue.values[time_slice][-1, -1] == -999

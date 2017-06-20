@@ -108,7 +108,11 @@ class Datacube(object):
     def __del__(self):
         '''Best effort to close any driver manager opened here.'''
         if self._to_close:
-            self._to_close.close()
+            try:
+                self._to_close.close()
+            # pylint: disable=bare-except
+            except:
+                self.logger.debug('Connections already closed')
 
 
     def list_products(self, show_archived=False, with_pandas=True):

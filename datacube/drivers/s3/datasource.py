@@ -75,7 +75,7 @@ class S3Source(object):
           calls.
         '''
         s3_dataset = self.dataset.s3_metadata[self.band_name]['s3_dataset']
-        if isinstance(window, S3Source):
+        if isinstance(window, S3Source) or window is None:
             slices = tuple([slice(0, a) for a in s3_dataset.macro_shape[-2:]])
         else:
             slices = tuple([slice(a[0], a[1]) for a in window])

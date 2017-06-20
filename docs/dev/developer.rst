@@ -3,6 +3,15 @@ Developers Guide
 
 This documentation applies to version: |version|
 
+Developer Setup
+---------------
+.. toctree::
+   :maxdepth: 1
+   
+   ubuntu_dev
+   windows_dev
+   osx_dev
+
 Exploratory Data Analysis
 -------------------------
 

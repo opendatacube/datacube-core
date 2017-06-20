@@ -1,8 +1,8 @@
 from __future__ import absolute_import
 
+import json
 import logging
 from pathlib import Path
-from pprint import pprint
 
 import click
 from click import echo
@@ -138,5 +138,5 @@ def show_product(driver_manager, product_name):
     """
     index = driver_manager.index
     product_def = index.products.get_by_name(product_name)
-    pprint(product_def.definition)
+    click.echo_via_pager(json.dumps(product_def.definition, indent=4))
     driver_manager.close()

@@ -340,12 +340,16 @@ def _make_geotiffs(tiffs_dir, day_offset):
         with rasterio.open(path, 'w', **metadata) as dst:
             # Write data in "corners" (rounded down by 100, for a size of 100x100)
             data = np.zeros((GEOTIFF['shape']['y'], GEOTIFF['shape']['x']), dtype=np.int16)
+            data[:] = np.arange(GEOTIFF['shape']['y']*GEOTIFF['shape']['x']) \
+                        .reshape((GEOTIFF['shape']['y'], GEOTIFF['shape']['x'])) + 10*band + day_offset
+            '''
             lr = (100 * int(GEOTIFF['shape']['y'] / 100.0),
                   100 * int(GEOTIFF['shape']['x'] / 100.0))
             data[0:100, 0:100] = 100 + day_offset
             data[lr[0] - 100:lr[0], 0:100] = 200 + day_offset
             data[0:100, lr[1] - 100:lr[1]] = 300 + day_offset
             data[lr[0] - 100:lr[0], lr[1] - 100:lr[1]] = 400 + day_offset
+            '''
             dst.write(data, 1)
         tiffs[band] = path
     return tiffs

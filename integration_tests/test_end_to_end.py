@@ -201,9 +201,10 @@ def check_open_with_dc(driver_manager):
     dataset_like = dc.load(product='ls5_nbar_albers', measurements=['blue'], like=dataset)
     assert (dataset.blue == dataset_like.blue).all()
 
-    data_array = dc.load(product='ls5_nbar_albers',
-                         latitude=(-35, -36), longitude=(149, 150),
-                         measurements=['blue'], group_by='solar_day')
+    solar_day_dataset = dc.load(product='ls5_nbar_albers',
+                                latitude=(-35, -36), longitude=(149, 150),
+                                measurements=['blue'], group_by='solar_day')
+    assert 0 < solar_day_dataset.time.size <= dataset.time.size
 
     dataset = dc.load(product='ls5_nbar_albers', latitude=(-35.2, -35.3), longitude=(149.1, 149.2), align=(5, 20))
     assert dataset.geobox.affine.f % abs(dataset.geobox.affine.e) == 5

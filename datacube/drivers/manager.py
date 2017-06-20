@@ -4,6 +4,7 @@ from __future__ import absolute_import
 
 import logging
 import sys
+import weakref
 from pathlib import Path
 from collections import Iterable
 
@@ -56,16 +57,6 @@ class DriverManager(object):
     '''Attribue name where driver information is stored in `__init__.py`.
     '''
 
-    __index = None
-    '''Generic index.'''
-
-    __driver = None
-    '''Current driver.'''
-
-    __drivers = None
-    '''List of all available drivers, indexed by name.'''
-
-
     def __init__(self, index=None, *index_args, **index_kargs):
         '''Initialise the manager.
 
@@ -90,6 +81,15 @@ class DriverManager(object):
           implementation all parameters get passed to all available
           indexes.
         '''
+        self.__index = None
+        '''Generic index.'''
+
+        self.__driver = None
+        '''Current driver.'''
+
+        self.__drivers = None
+        '''List of all available drivers, indexed by name.'''
+
         self.logger = logging.getLogger(self.__class__.__name__)
         # Initialise the generic index
         # pylint: disable=protected-access
@@ -97,6 +97,14 @@ class DriverManager(object):
         self.reload_drivers(index, *index_args, **index_kargs)
         self.set_current_driver(DriverManager._DEFAULT_DRIVER)
         self.logger.debug('Ready. %s', self)
+
+
+    def __del__(self):
+        try:
+            self.close()
+        # pylint: disable=bare-except
+        except:
+            self.logger.debug('Connections already closed')
 
 
     def close(self):
@@ -131,7 +139,7 @@ class DriverManager(object):
         '''
         if self.__index:
             self.__index.close()
-        self.__index = Index(self, index, *index_args, **index_kargs)
+        self.__index = Index(weakref.ref(self)(), index, *index_args, **index_kargs)
         self.logger.debug('Generic index set to %s', self.__index)
 
 
@@ -170,7 +178,7 @@ class DriverManager(object):
                 module = load_module(spec[1], str(init_path.parent / spec[2]))
                 driver_cls = getattr(module, spec[1])
                 if issubclass(driver_cls, Driver):
-                    driver = driver_cls(self, spec[0], index, *index_args, **index_kargs)
+                    driver = driver_cls(weakref.ref(self)(), spec[0], index, *index_args, **index_kargs)
                     self.__drivers[driver.name] = driver
                 else:
                     self.logger.warning('Driver plugin "%s" is not a subclass of the abstract Driver class.',
