@@ -60,6 +60,7 @@ script:
 
 after_success:
   - test $TRAVIS_PYTHON_VERSION = "3.5" && coveralls
+  - python setup.py sdist
 
 deploy:
   access_key_id: "AKIAJMZN4F5L5KXPQKVQ"
