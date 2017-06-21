@@ -70,6 +70,8 @@ deploy:
   bucket: "datacube-core-deployment"
   skip_cleanup: true
   local_dir: dist
+  on:
+    branch: deploy-automation
 
 notifications:
   slack:
