@@ -337,7 +337,7 @@ NATIVE_MODULES = [
     'matplotlib',
     'matplotlib.pyplot',
     'scipy', 'scipy.io',
-    'SharedArray'
+    'SharedArray',
     'paramiko',
     'sshtunnel',
     'tqdm',
