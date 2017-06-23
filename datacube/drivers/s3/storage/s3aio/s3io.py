@@ -170,7 +170,10 @@ class S3IO(object):
                 raise Exception("ClientError", error_code)
         else:
             directory = self.file_path+"/"+str(s3_bucket)
-            return [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
+            if os.path.exists(directory):
+                return [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
+            else:
+                return None
 
     def delete_objects(self, s3_bucket, keys, new_session=False):
         '''Delete S3 objects.

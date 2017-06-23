@@ -5,6 +5,13 @@
 What's New
 ==========
 
+v1.4.2
+------
+
+ - Support for AWS S3 array storage
+
+ - Driver Manager support for NetCDF, S3, S3-file drivers.
+
 v1.4.1 (25 May 2017)
 --------------------
 
