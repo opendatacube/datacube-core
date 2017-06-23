@@ -23,29 +23,74 @@ from .s3io import S3IO
 
 class S3AIO(object):
 
-    def __init__(self, enable_s3=True, file_path=None, num_threads=30):
-        self.s3io = S3IO(enable_s3, file_path, num_threads)
+    def __init__(self, enable_s3=True, file_path=None, num_workers=30):
+        '''Initialise the S3 array IO interface.
 
-        if num_threads is None:
-            num_threads = cpu_count()
+        :param bool enable_s3: Flag to store objects in s3 or disk.
+            True: store in S3
+            False: store on disk (for testing purposes)
+        :param str file_path: The root directory for the emulated s3 buckets when enable_se is set to False.
+        :param int num_workers: The number of workers for parallel IO.
+        '''
+        self.s3io = S3IO(enable_s3, file_path, num_workers)
 
-        self.pool = ProcessingPool(num_threads)
+        if num_workers is None:
+            num_workers = cpu_count()
+
+        self.pool = ProcessingPool(num_workers)
 
     def bytes_to_array(self, data, shape, dtype):
+        '''Converts bytes to an array.
+
+        :param bytes data: Source bytes.
+        :param tuple shape: Shape of the destination array.
+        :return: Returns the array.
+        '''
         array = np.empty(shape=shape, dtype=dtype)
         array.data[0:len(data)] = data
         return array
 
     def copy_bytes_to_shared_array(self, shared_array, start, end, data):
+        '''Copies bytes into a shared array.
+
+        :param shared_array shared_array: Shared array object.
+        :param int start: Start of the data range.
+        :param int end: End of the data range.
+        :param bytes data: Source bytes.
+        :return: Returns the shared array.
+        '''
         shared_array.data[start:end] = data
 
     def to_1d(self, index, shape):
+        '''Converts nD index to 1D index.
+
+        :param tuple index: N-D Index to be converted.
+        :param tuple shape: Shape to be used for conversion.
+        :return: Returns the 1D index.
+        '''
         return np.ravel_multi_index(index, shape)
 
     def to_nd(self, index, shape):
+        '''Converts 1D index to nD index.
+
+        :param tuple index: 1D Index to be converted.
+        :param tuple shape: Shape to be used for conversion.
+        :return: Returns the ND index.
+        '''
         np.unravel_index(index, shape)
 
     def get_point(self, index_point, shape, dtype, s3_bucket, s3_key):
+        '''Gets a point in the nd array stored in S3.
+
+        Only works if compression is off.
+
+        :param tuple index_point: Index of the point to be retrieved.
+        :param tuple shape: Shape of the stored data.
+        :param numpy.dtype: dtype of the stored data.
+        :param str s3_bucket: S3 bucket name
+        :param str s3_key: S3 key name
+        :return: Returns the point data.
+        '''
         item_size = np.dtype(dtype).itemsize
         idx = self.to_1d(index_point, shape) * item_size
         b = self.s3io.get_byte_range(s3_bucket, s3_key, idx, idx+item_size)
@@ -57,6 +102,17 @@ class S3AIO(object):
                 for sl, sh in zip(slices, shape)]
 
     def get_slice(self, array_slice, shape, dtype, s3_bucket, s3_key):  # pylint: disable=too-many-locals
+        '''Gets a slice of the nd array stored in S3.
+
+        Only works if compression is off.
+
+        :param tuple array_slice: tuple of slices to retrieve.
+        :param tuple shape: Shape of the stored data.
+        :param numpy.dtype: dtype of the stored data.
+        :param str s3_bucket: S3 bucket name
+        :param str s3_key: S3 key name
+        :return: Returns the data slice.
+        '''
         # convert array_slice into into sub-slices of maximum contiguous blocks
 
         # Todo:
@@ -107,6 +163,17 @@ class S3AIO(object):
         return result
 
     def get_slice_mp(self, array_slice, shape, dtype, s3_bucket, s3_key):  # pylint: disable=too-many-locals
+        '''Gets a slice of the nd array stored in S3 in parallel.
+
+        Only works if compression is off.
+
+        :param tuple array_slice: tuple of slices to retrieve.
+        :param tuple shape: Shape of the stored data.
+        :param numpy.dtype: dtype of the stored data.
+        :param str s3_bucket: S3 bucket name
+        :param str s3_key: S3 key name
+        :return: Returns the data slice.
+        '''
         # pylint: disable=too-many-locals
         def work_get_slice(block, array_name, offset, s3_bucket, s3_key, shape, dtype):
             result = sa.attach(array_name)
@@ -151,6 +218,15 @@ class S3AIO(object):
         return shared_array
 
     def get_slice_by_bbox(self, array_slice, shape, dtype, s3_bucket, s3_key):  # pylint: disable=too-many-locals
+        '''Gets a slice of the nd array stored in S3 by bounding box.
+
+        :param tuple array_slice: tuple of slices to retrieve.
+        :param tuple shape: Shape of the stored data.
+        :param numpy.dtype: dtype of the stored data.
+        :param str s3_bucket: S3 bucket name
+        :param str s3_key: S3 key name
+        :return: Returns the data slice.
+        '''
         # Todo:
         #   - parallelise reads and writes
         #     - option 1. use get_byte_range_mp

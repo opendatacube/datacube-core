@@ -36,22 +36,38 @@ except ImportError:
 
 
 class S3IO(object):
+    '''low level S3 byte IO interface.
+    '''
 
     # enable_s3: True = reads/writes to s3
     # enable_s3: False = reads/writes to disk ***for testing only***
-    def __init__(self, enable_s3=True, file_path=None, num_threads=30):
+    def __init__(self, enable_s3=True, file_path=None, num_workers=30):
+        '''Initialise the low level S3 byte IO interface.
+
+        :param bool enable_s3: Flag to store objects in s3 or disk.
+            True: store in S3
+            False: store on disk (for testing purposes)
+        :param str file_path: The root directory for the emulated s3 buckets when enable_se is set to False.
+        :param int num_workers: The number of workers for parallel IO.
+        '''
         self.enable_s3 = enable_s3
         if file_path is None:
             self.file_path = expanduser("~")+"/S3IO/"
         else:
             self.file_path = file_path
 
-        if num_threads is None:
-            num_threads = cpu_count()
+        if num_workers is None:
+            num_workers = cpu_count()
 
-        self.pool = ProcessingPool(num_threads)
+        self.pool = ProcessingPool(num_workers)
 
     def list_created_arrays(self):
+        '''List the created shared memory arrays.
+
+          Arrays are prefixed by 'S3' or 'DCCORE'.
+
+        :return: Returns the list of created arrays.
+        '''
         result = [f for f in os.listdir("/dev/shm") if f.startswith('S3') or f.startswith('DCCORE')]
         # TODO(csiro): Fix issue and remove pylint flag below
         # pylint: disable=superfluous-parens
@@ -59,10 +75,21 @@ class S3IO(object):
         return result
 
     def delete_created_arrays(self):
+        '''Delete all created shared memory arrays.
+
+          Arrays are prefixed by 'S3' or 'DCCORE'.
+        '''
         for a in self.list_created_arrays():
             sa.delete(a)
 
     def s3_resource(self, new_session=False):
+        '''Create a S3 resource.
+
+        :param bool new_session: Flag to create a new session or reuse existing session.
+            True: create new session
+            False: reuse existing session
+        :return: Returns a reference to the S3 resource.
+        '''
         if not self.enable_s3:
             return
         if new_session is True:
@@ -72,18 +99,42 @@ class S3IO(object):
         return s3
 
     def s3_bucket(self, s3_bucket, new_session=False):
+        '''get a reference to a S3 bucket.
+
+        :param str s3_bucket: name of the s3 bucket.
+        :param bool new_session: Flag to create a new session or reuse existing session.
+            True: create new session
+            False: reuse existing session
+        :return: Returns a reference to the S3 bucket.
+        '''
         if not self.enable_s3:
             return
         s3 = self.s3_resource(new_session)
         return s3.Bucket(s3_bucket)
 
     def s3_object(self, s3_bucket, s3_key, new_session=False):
+        '''get a reference to a S3 object.
+
+        :param str s3_bucket: name of the s3 bucket.
+        :param str s3_key: name of the s3 key.
+        :param bool new_session: Flag to create a new session or reuse existing session.
+            True: create new session
+            False: reuse existing session
+        :return: Returns a reference to the S3 object.
+        '''
         if not self.enable_s3:
             return
         s3 = self.s3_resource(new_session)
         return s3.Bucket(s3_bucket).Object(s3_key)
 
     def list_buckets(self, new_session=False):
+        '''List S3 buckets.
+
+        :param bool new_session: Flag to create a new session or reuse existing session.
+            True: create new session
+            False: reuse existing session
+        :return: Returns list of Buckets
+        '''
         if self.enable_s3:
             try:
                 s3 = self.s3_resource(new_session)
@@ -96,6 +147,16 @@ class S3IO(object):
             return [f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f))]
 
     def list_objects(self, s3_bucket, prefix='', max_keys=100, new_session=False):
+        '''List S3 objects.
+
+        :param str s3_bucket: name of the s3 bucket.
+        :param str prefix: prefix of buckets to list
+        :param int max_keys: max keys to return
+        :param bool new_session: Flag to create a new session or reuse existing session.
+            True: create new session
+            False: reuse existing session
+        :return: Returns list of objects.
+        '''
         if self.enable_s3:
             try:
                 s3 = self.s3_resource(new_session)
@@ -112,6 +173,15 @@ class S3IO(object):
             return [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
 
     def delete_objects(self, s3_bucket, keys, new_session=False):
+        '''Delete S3 objects.
+
+        :param str s3_bucket: name of the s3 bucket.
+        :param int keys: list of s3 keys to delete
+        :param bool new_session: Flag to create a new session or reuse existing session.
+            True: create new session
+            False: reuse existing session
+        :return: Returns List of deleted objects.
+        '''
         if self.enable_s3:
             s3 = self.s3_resource(new_session)
             b = s3.Bucket(s3_bucket)
@@ -131,6 +201,14 @@ class S3IO(object):
             return response
 
     def bucket_exists(self, s3_bucket, new_session=False):
+        '''Check if bucket exists.
+
+        :param str s3_bucket: name of the s3 bucket.
+        :param bool new_session: Flag to create a new session or reuse existing session.
+            True: create new session
+            False: reuse existing session
+        :return: Returns True if bucket exsits, otherwise False.
+        '''
         if self.enable_s3:
             try:
                 s3 = self.s3_resource(new_session)
@@ -146,6 +224,15 @@ class S3IO(object):
             return os.path.exists(directory) and os.path.isdir(directory)
 
     def object_exists(self, s3_bucket, s3_key, new_session=False):
+        '''Check if object exists.
+
+        :param str s3_bucket: name of the s3 bucket.
+        :param str s3_key: name of the s3 key.
+        :param bool new_session: Flag to create a new session or reuse existing session.
+            True: create new session
+            False: reuse existing session
+        :return: Returns True if object exsits, otherwise False.
+        '''
         if self.enable_s3:
             try:
                 s3 = self.s3_resource(new_session)
@@ -161,6 +248,15 @@ class S3IO(object):
             return os.path.exists(directory) and os.path.isfile(directory)
 
     def put_bytes(self, s3_bucket, s3_key, data, new_session=False):
+        '''Put bytes into a S3 object.
+
+        :param str s3_bucket: name of the s3 bucket.
+        :param str s3_key: name of the s3 key.
+        :param bytes data: data to store in s3.
+        :param bool new_session: Flag to create a new session or reuse existing session.
+            True: create new session
+            False: reuse existing session
+        '''
         # assert isinstance(data, memoryview), 'data must be a memoryview'
 
         cctx = zstd.ZstdCompressor(level=9, write_content_size=True)
@@ -189,6 +285,17 @@ class S3IO(object):
     #                               Body=io.BytesIO(data))
 
     def put_bytes_mpu(self, s3_bucket, s3_key, data, block_size, new_session=False):
+        '''Put bytes into a S3 object using Multi-Part upload
+
+        :param str s3_bucket: name of the s3 bucket.
+        :param str s3_key: name of the s3 key.
+        :param bytes data: data to store in s3.
+        :param int block_size: block size for upload.
+        :param bool new_session: Flag to create a new session or reuse existing session.
+            True: create new session
+            False: reuse existing session
+        :return: Multi-part upload response
+        '''
         if not self.enable_s3:
             return self.put_bytes(s3_bucket, s3_key, data, new_session)
 
@@ -225,6 +332,17 @@ class S3IO(object):
         return mpu_response
 
     def put_bytes_mpu_mp(self, s3_bucket, s3_key, data, block_size, new_session=False):
+        '''Put bytes into a S3 object using Multi-Part upload in parallel
+
+        :param str s3_bucket: name of the s3 bucket.
+        :param str s3_key: name of the s3 key.
+        :param bytes data: data to store in s3.
+        :param int block_size: block size for upload.
+        :param bool new_session: Flag to create a new session or reuse existing session.
+            True: create new session
+            False: reuse existing session
+        :return: Multi-part upload response
+        '''
         def work_put(block_number, data, s3_bucket, s3_key, block_size, mpu):
             response = boto3.resource('s3').meta.client.upload_part(Bucket=s3_bucket,
                                                                     Key=s3_key,
@@ -269,6 +387,17 @@ class S3IO(object):
         return mpu_response
 
     def put_bytes_mpu_mp_shm(self, s3_bucket, s3_key, array_name, block_size, new_session=False):
+        '''Put bytes into a S3 object using Multi-Part upload in parallel with shared memory
+
+        :param str s3_bucket: name of the s3 bucket.
+        :param str s3_key: name of the s3 key.
+        :param bytes data: data to store in s3.
+        :param int block_size: block size for upload.
+        :param bool new_session: Flag to create a new session or reuse existing session.
+            True: create new session
+            False: reuse existing session
+        :return: Multi-part upload response
+        '''
         def work_put_shm(block_number, array_name, s3_bucket, s3_key, block_size, mpu):
             part_number = block_number + 1
             start = block_number*block_size
@@ -312,6 +441,15 @@ class S3IO(object):
         return mpu_response
 
     def get_bytes(self, s3_bucket, s3_key, new_session=False):
+        '''Gets bytes from a S3 object
+
+        :param str s3_bucket: name of the s3 bucket.
+        :param str s3_key: name of the s3 key.
+        :param bool new_session: Flag to create a new session or reuse existing session.
+            True: create new session
+            False: reuse existing session
+        :return: Requested bytes
+        '''
         if self.enable_s3:
             while True:
                 s3 = self.s3_resource(new_session)
@@ -335,6 +473,17 @@ class S3IO(object):
             return d
 
     def get_byte_range(self, s3_bucket, s3_key, s3_start, s3_end, new_session=False):
+        '''Gets bytes from a S3 object within a range.
+
+        :param str s3_bucket: name of the s3 bucket.
+        :param str s3_key: name of the s3 key.
+        :param int s3_start: begin of range.
+        :param int s3_end: begin of range.
+        :param bool new_session: Flag to create a new session or reuse existing session.
+            True: create new session
+            False: reuse existing session
+        :return: Requested bytes
+        '''
         if self.enable_s3:
             while True:
                 s3 = self.s3_resource(new_session)
@@ -359,6 +508,18 @@ class S3IO(object):
             return d
 
     def get_byte_range_mp(self, s3_bucket, s3_key, s3_start, s3_end, block_size, new_session=False):
+        '''Gets bytes from a S3 object within a range in parallel.
+
+        :param str s3_bucket: name of the s3 bucket.
+        :param str s3_key: name of the s3 key.
+        :param int s3_start: begin of range.
+        :param int s3_end: begin of range.
+        :param int block_size: block size for download.
+        :param bool new_session: Flag to create a new session or reuse existing session.
+            True: create new session
+            False: reuse existing session
+        :return: Requested bytes
+        '''
         def work_get(block_number, array_name, s3_bucket, s3_key, s3_max_size, block_size):
             start = block_number*block_size
             end = (block_number+1)*block_size
