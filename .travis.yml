@@ -62,7 +62,7 @@ after_success:
   - test $TRAVIS_PYTHON_VERSION = "3.5" && coveralls
 
 before_deploy:
-  - python setup.py bdist --dist-dir dist/$TRAVIS_PYTHON_VERSION
+  - python setup.py sdist --dist-dir dist/$TRAVIS_PYTHON_VERSION
 
 deploy:
   access_key_id: "AKIAJMZN4F5L5KXPQKVQ"
