@@ -60,6 +60,8 @@ script:
 
 after_success:
   - test $TRAVIS_PYTHON_VERSION = "3.5" && coveralls
+
+before_deploy:
   - python setup.py bdist --dist-dir dist/$TRAVIS_PYTHON_VERSION
 
 deploy:
@@ -69,10 +71,10 @@ deploy:
   provider: s3
   bucket: "datacube-core-deployment"
   region: "ap-southeast-2"
-  skip_cleanup: true
   local_dir: dist
   on:
     branch: deploy-automation
+    python: "3.5"
 
 notifications:
   slack:
