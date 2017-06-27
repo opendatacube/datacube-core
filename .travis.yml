@@ -69,6 +69,7 @@ deploy:
   bucket: "datacube-core-deployment"
   region: "ap-southeast-2"
   local_dir: dist
+  skip_cleanup: true
   on:
     branch: deploy-automation
     python: "3.5"
