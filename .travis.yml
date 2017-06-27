@@ -14,10 +14,6 @@ matrix:
     - python: "2.7"
       env: CONDA_ENV_FILE=.travis/environment_py27.yaml
 
-cache:
-  directories:
-    - $HOME/.cache/pip
-
 # Install required packages
 addons:
   postgresql: "9.5"
@@ -57,6 +53,7 @@ install:
 
 script:
   - ./check-code.sh integration_tests
+  - conda clean --all --yes
 
 after_success:
   - test $TRAVIS_PYTHON_VERSION = "3.5" && coveralls
