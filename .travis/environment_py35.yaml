@@ -18,7 +18,7 @@ dependencies:
 - xarray
 - redis-py # redis client lib, used by celery
 - redis # redis server
-- pylint # testing
+- pylint = 1.6.5 # testing
 - pep8 # testing
 - fiona # movie generator app
 - mock # testing
