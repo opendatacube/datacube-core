@@ -1,4 +1,4 @@
-'''S3 storage driver module.'''
+"""S3 storage driver module."""
 from __future__ import absolute_import
 
 import logging
@@ -11,24 +11,23 @@ from datacube.drivers.utils import DriverUtils
 from datacube.drivers.s3.index import Index
 from datacube.drivers.s3.datasource import S3DataSource
 
+
 class S3Driver(Driver):
-    '''S3 storage driver.'''
+    """S3 storage driver."""
 
     def __init__(self, driver_manager, name, index=None, *index_args, **index_kargs):
-        '''Initialise the s3 storage.'''
+        """Initialise the s3 storage."""
         super(S3Driver, self).__init__(driver_manager, name, index, *index_args, **index_kargs)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.storage = S3LIO()
 
-
     @property
     def uri_scheme(self):
-        '''URI scheme used by this driver.'''
+        """URI scheme used by this driver."""
         return 's3'
 
-
     def _get_chunksizes(self, chunksizes):
-        '''Return the chunk sizes as an int tuple, if valid.
+        """Return the chunk sizes as an int tuple, if valid.
 
         We expect a list/tuple of 3 integers.
 
@@ -36,7 +35,7 @@ class S3Driver(Driver):
           validated.
         :return tuple chunksizes: the validated chunksizes as a an
           integers tuple.
-        '''
+        """
         if not isinstance(chunksizes, (list, tuple, set)):
             raise DatacubeException('Dataset contains invalid chunking values, cannot write to storage.')
         try:
@@ -47,9 +46,8 @@ class S3Driver(Driver):
             raise DatacubeException('Dataset contains invalid chunking values, cannot write to storage.')
         return chunksizes
 
-
     def get_reg_irreg_index(self, coord, data):
-        '''Returns the regular/irregular information for a single dataset
+        """Returns the regular/irregular information for a single dataset
         coordinate.
 
         Data is considered regular if it is equally spaced, give or
@@ -64,9 +62,9 @@ class S3Driver(Driver):
           maximum values of that coordinate range and the step
           used. Otherwise, `regular_index` is `None` and
           `irregular_index` is the list of the `coord` values.
-        '''
+        """
         epsilon = DriverUtils.epsilon(coord)
-        regular = False # Default for single element
+        regular = False  # Default for single element
         delta = None
         previous = None
         for datum in data.tolist():
@@ -79,12 +77,11 @@ class S3Driver(Driver):
                     break
             previous = datum
         if regular:
-            return (True, (np.min(data), np.max(data), np.float64(delta)), None)
-        return (False, None, data)
-
+            return True, (np.min(data), np.max(data), np.float64(delta)), None
+        return False, None, data
 
     def get_reg_irreg_indices(self, coords):
-        '''Returns the regular/irregular information for all the dataset
+        """Returns the regular/irregular information for all the dataset
         coordinates.
 
         :param xarray.Coordinates coords: The dict-like dataset
@@ -93,13 +90,12 @@ class S3Driver(Driver):
           regular_index, irregular_index)` with each list compiling
           the results of :meth:`get_reg_irreg_index` for each coord in
           `coords`.
-        '''
+        """
         return zip(*[self.get_reg_irreg_index(coord, coords[coord].values) \
                      for coord in coords])
 
-
     def _get_index(self, chunk, coords, dims, index_type='min'):
-        '''Return the min or max index of chunk in coord space.
+        """Return the min or max index of chunk in coord space.
 
         It basically returns the nth coord value with `n`
         corresponding to the chunk's `start` or `stop - 1` value.
@@ -112,22 +108,21 @@ class S3Driver(Driver):
           index. Default: `min`.
         :return: List of coord values corresponding to the chunk's
           min/max index.
-        '''
+        """
         if index_type == 'min':
             idx = lambda x: x.start
         else:
             idx = lambda x: x.stop - 1
         return [coords[dim].values[idx(chunk_dim)] for dim, chunk_dim in zip(dims, chunk)]
 
-
     def write_dataset_to_storage(self, dataset, *args, **kargs):
-        '''See :meth:`datacube.drivers.driver.write_dataset_to_storage`
+        """See :meth:`datacube.drivers.driver.write_dataset_to_storage`
 
         :param args: At least 3 arguments are required: filename,
           global_attributes and variable_params.
         :return: Dictionary of metadata consigning the s3 storage
           information. This is required for indexing in particular.
-        '''
+        """
         if len(args) < 3:
             raise DatacubeException('Missing configuration paramters, cannot write to storage.')
         filename = Path(args[0])
@@ -176,16 +171,13 @@ class S3Driver(Driver):
             outputs[band] = output
         return outputs
 
-
     def _init_index(self, driver_manager, index, *args, **kargs):
-        '''See :meth:`datacube.drivers.driver.init_index`'''
+        """See :meth:`datacube.drivers.driver.init_index`"""
         return Index(self.uri_scheme, driver_manager, index, *args, **kargs)
-
 
     def get_index_specifics(self, dataset):
         return self.index.get_specifics(dataset)
 
-
     def get_datasource(self, dataset, measurement_id):
-        '''See :meth:`datacube.drivers.driver.get_datasource`'''
+        """See :meth:`datacube.drivers.driver.get_datasource`"""
         return S3DataSource(dataset, measurement_id, self.storage)

@@ -1,7 +1,7 @@
-'''Module containing the abstract `Driver` class to be implemented by
+"""Module containing the abstract `Driver` class to be implemented by
 all storage drivers. There is a 1:1 relationship between a driver and
 storage mechanism.
-'''
+"""
 from __future__ import absolute_import
 
 from abc import ABCMeta, abstractmethod
@@ -9,11 +9,11 @@ from six import add_metaclass
 
 @add_metaclass(ABCMeta)
 class Driver(object):
-    '''Abstract base class for storage drivers.
+    """Abstract base class for storage drivers.
 
     TODO(csiro): Add more methods to cater for indexing and data
     access.
-    '''
+    """
 
     __name = None
     '''Driver's name.'''
@@ -23,7 +23,7 @@ class Driver(object):
 
 
     def __init__(self, driver_manager, name, index=None, *index_args, **index_kargs):
-        '''Initialise the driver's name and index.
+        """Initialise the driver's name and index.
 
         This should be called by subclasses, or the name and index set manually.
 
@@ -42,7 +42,7 @@ class Driver(object):
           index on initialisation. Caution: In the current
           implementation all parameters get passed to all potential
           indexes.
-        '''
+        """
         self.__name = name
         self._driver_manager = driver_manager
         # pylint: disable=protected-access
@@ -51,7 +51,7 @@ class Driver(object):
 
     @property
     def name(self):
-        '''A human-readable name for this driver.'''
+        """A human-readable name for this driver."""
         if not self.__name:
             raise ValueError('Driver was not initialised properly. Make sure you call the base class _init__')
         return self.__name
@@ -59,29 +59,29 @@ class Driver(object):
 
     @property
     def format(self):
-        '''Output format for this driver for use in metadata.
+        """Output format for this driver for use in metadata.
 
-        Defaults to driver name, but may need to be overriden by some drivers.'''
+        Defaults to driver name, but may need to be overriden by some drivers."""
         return self.__name
 
 
     @property
     def uri_scheme(self):
-        '''URI scheme used by this driver.'''
+        """URI scheme used by this driver."""
         return 'file'
 
 
     @property
     def index(self):
-        '''This driver's index.'''
+        """This driver's index."""
         if not self.__index:
             raise ValueError('Driver was not initialised properly. Make sure you call the base class _init__')
         return self.__index
 
 
     def as_uri(self, path):
-        '''Set or replace the uri scheme for a path according to the driver's.
-        '''
+        """Set or replace the uri scheme for a path according to the driver's.
+        """
         path = str(path)
         body = path.split(':', 1)[1] if ':' in path else path
         return '%s:%s' % (self.uri_scheme, body)
@@ -89,7 +89,7 @@ class Driver(object):
 
     @abstractmethod
     def write_dataset_to_storage(self, dataset, *args, **kargs):
-        '''Write a Data Cube style xarray Dataset to the storage.
+        """Write a Data Cube style xarray Dataset to the storage.
 
         Requires a spatial Dataset, with attached coordinates and
         global crs attribute. This does not include the indexing step.
@@ -99,13 +99,13 @@ class Driver(object):
         :param list kargs: Storage-specific keyword arguments
         :return: Storage-specific write operation output, e.g. data
           relevant to the indexing
-        '''
+        """
         return None
 
 
     @abstractmethod
     def _init_index(self, driver_manager, index, *args, **kargs):
-        '''Initialise this driver's index.
+        """Initialise this driver's index.
 
         :param driver_manager: The driver manager.
         :param db: A DB connection that should be used by the
@@ -119,5 +119,5 @@ class Driver(object):
           index on initialisation. Caution: In the current
           implementation all parameters get passed to all potential
           indexes.
-        '''
+        """
         return None

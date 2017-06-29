@@ -1,9 +1,9 @@
-'''
+"""
 S3AIO Class
 
 Array access to a single S3 object
 
-'''
+"""
 
 import os
 import uuid
@@ -24,39 +24,39 @@ from .s3io import S3IO
 class S3AIO(object):
 
     def __init__(self, enable_compression=True, enable_s3=True, file_path=None, num_workers=30):
-        '''Initialise the S3 array IO interface.
+        """Initialise the S3 array IO interface.
 
         :param bool enable_s3: Flag to store objects in s3 or disk.
             True: store in S3
             False: store on disk (for testing purposes)
         :param str file_path: The root directory for the emulated s3 buckets when enable_se is set to False.
         :param int num_workers: The number of workers for parallel IO.
-        '''
+        """
         self.s3io = S3IO(enable_s3, file_path, num_workers)
 
         self.pool = ProcessingPool(num_workers)
         self.enable_compression = enable_compression
 
     def to_1d(self, index, shape):
-        '''Converts nD index to 1D index.
+        """Converts nD index to 1D index.
 
         :param tuple index: N-D Index to be converted.
         :param tuple shape: Shape to be used for conversion.
         :return: Returns the 1D index.
-        '''
+        """
         return np.ravel_multi_index(index, shape)
 
     def to_nd(self, index, shape):
-        '''Converts 1D index to nD index.
+        """Converts 1D index to nD index.
 
         :param tuple index: 1D Index to be converted.
         :param tuple shape: Shape to be used for conversion.
         :return: Returns the ND index.
-        '''
+        """
         return np.unravel_index(index, shape)
 
     def get_point(self, index_point, shape, dtype, s3_bucket, s3_key):
-        '''Gets a point in the nd array stored in S3.
+        """Gets a point in the nd array stored in S3.
 
         Only works if compression is off.
 
@@ -66,7 +66,7 @@ class S3AIO(object):
         :param str s3_bucket: S3 bucket name
         :param str s3_key: S3 key name
         :return: Returns the point data.
-        '''
+        """
         item_size = np.dtype(dtype).itemsize
         idx = self.to_1d(index_point, shape) * item_size
         if self.enable_compression:
@@ -83,7 +83,7 @@ class S3AIO(object):
                 for sl, sh in zip(slices, shape)]
 
     def get_slice(self, array_slice, shape, dtype, s3_bucket, s3_key):  # pylint: disable=too-many-locals
-        '''Gets a slice of the nd array stored in S3.
+        """Gets a slice of the nd array stored in S3.
 
         Only works if compression is off.
 
@@ -93,7 +93,7 @@ class S3AIO(object):
         :param str s3_bucket: S3 bucket name
         :param str s3_key: S3 key name
         :return: Returns the data slice.
-        '''
+        """
         # convert array_slice into into sub-slices of maximum contiguous blocks
 
         # Todo:
@@ -147,7 +147,7 @@ class S3AIO(object):
         return result
 
     def get_slice_mp(self, array_slice, shape, dtype, s3_bucket, s3_key):  # pylint: disable=too-many-locals
-        '''Gets a slice of the nd array stored in S3 in parallel.
+        """Gets a slice of the nd array stored in S3 in parallel.
 
         Only works if compression is off.
 
@@ -157,7 +157,7 @@ class S3AIO(object):
         :param str s3_bucket: S3 bucket name
         :param str s3_key: S3 key name
         :return: Returns the data slice.
-        '''
+        """
         # pylint: disable=too-many-locals
         def work_get_slice(block, array_name, offset, s3_bucket, s3_key, shape, dtype):
             result = sa.attach(array_name)
@@ -205,7 +205,7 @@ class S3AIO(object):
         return shared_array
 
     def get_slice_by_bbox(self, array_slice, shape, dtype, s3_bucket, s3_key):  # pylint: disable=too-many-locals
-        '''Gets a slice of the nd array stored in S3 by bounding box.
+        """Gets a slice of the nd array stored in S3 by bounding box.
 
         :param tuple array_slice: tuple of slices to retrieve.
         :param tuple shape: Shape of the stored data.
@@ -213,7 +213,7 @@ class S3AIO(object):
         :param str s3_bucket: S3 bucket name
         :param str s3_key: S3 key name
         :return: Returns the data slice.
-        '''
+        """
         # Todo:
         #   - parallelise reads and writes
         #     - option 1. use get_byte_range_mp

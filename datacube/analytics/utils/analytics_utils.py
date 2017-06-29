@@ -28,20 +28,16 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import math
-import csv
 import numpy as np
 from scipy import ndimage
-from scipy.io import netcdf
-from osgeo import gdal, osr
-import xarray
 
 
 def plot(array_result):
-    '''
+    """
     Wrapper to Plot a 1D, 2D and 3D array
     Parameters:
         array_result: computed array as a result of execution
-    '''
+    """
 
     dims = len(array_result['array_result'].values()[0].shape)
 
@@ -54,11 +50,11 @@ def plot(array_result):
 
 
 def plot_1d(array_result):
-    '''
+    """
     Plot a 1D array
     Parameters:
         array_result: computed array as a result of execution
-    '''
+    """
     print('plot1D')
     img = array_result['array_result'].values()[0]
 
@@ -74,11 +70,11 @@ def plot_1d(array_result):
 
 
 def plot_2d(array_result):
-    '''
+    """
     Plot a 2D array
     Parameters:
         array_result: computed array as a result of execution
-    '''
+    """
     print('plot2D')
     import matplotlib.pyplot as plt
     img = array_result['array_result'].values()[0]
@@ -96,11 +92,11 @@ def plot_2d(array_result):
 
 
 def plot_3d(array_result):
-    '''
+    """
     Plot a 3D array
     Parameters:
         array_result: computed array as a result of execution
-    '''
+    """
     print('plot3D')
     import matplotlib.pyplot as plt
     img = array_result['array_result'].values()[0]
@@ -125,14 +121,14 @@ def plot_3d(array_result):
 
 
 def get_pqa_mask(pqa_ndarray):
-    '''
+    """
     create pqa_mask from a ndarray
 
     Parameters:
         pqa_ndarray: input pqa array
         good_pixel_masks: known good pixel values
         dilation: amount of dilation to apply
-    '''
+    """
 
     good_pixel_masks = [32767, 16383, 2457]
     dilation = 3

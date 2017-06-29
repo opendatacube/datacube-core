@@ -1,5 +1,5 @@
-'''Module used to dynamically load storage drivers.
-'''
+"""Module used to dynamically load storage drivers.
+"""
 from __future__ import absolute_import
 
 import logging
@@ -14,31 +14,37 @@ from .index import Index
 
 # Dynamic loading from filename varies across python versions
 # Based on http://stackoverflow.com/a/67692
-if sys.version_info >= (3, 5): # python 3.5+
+if sys.version_info >= (3, 5):  # python 3.5+
     # pylint: disable=import-error
     from importlib.util import spec_from_file_location, module_from_spec
+
+
     def load_mod(name, filepath):
         spec = spec_from_file_location(name, filepath)
         mod = module_from_spec(spec)
         spec.loader.exec_module(mod)
         sys.modules[spec.name] = mod
         return mod
+
+
     # pylint: disable=invalid-name, redefined-variable-type
     load_module = load_mod
-elif sys.version_info[0] == 3: # python 3.3, 3.4: untested
+elif sys.version_info[0] == 3:  # python 3.3, 3.4: untested
     # pylint: disable=import-error
     from importlib.machinery import SourceFileLoader
+
     # pylint: disable=invalid-name, redefined-variable-type
     load_module = SourceFileLoader
-else: # python 2
+else:  # python 2
     # pylint: disable=import-error
     import imp
+
     # pylint: disable=invalid-name, redefined-variable-type
     load_module = imp.load_source
 
 
 class DriverManager(object):
-    '''Storage drivers are added as plugins providing a storage driver and
+    """Storage drivers are added as plugins providing a storage driver and
     indexing mechanisms. The manager loads and initialise all
     available plugins when it starts and makes them available by
     name. It also includes a generic index allowing to load a dataset
@@ -49,7 +55,7 @@ class DriverManager(object):
     A 'current' driver can be set in the manager and which can be used
     to handle datasets which don't specifiy a storage driver in their
     metadata.
-    '''
+    """
 
     _DEFAULT_DRIVER = 'NetCDF CF'
     '''Default 'current' driver, assuming its code is present.
@@ -60,7 +66,7 @@ class DriverManager(object):
     '''
 
     def __init__(self, index=None, *index_args, **index_kargs):
-        '''Initialise the manager.
+        """Initialise the manager.
 
         Each driver get initialised during instantiation, including
         the initialisation of their index, using the `index_args` and
@@ -82,7 +88,7 @@ class DriverManager(object):
           index on initialisation. Caution: In the current
           implementation all parameters get passed to all available
           indexes.
-        '''
+        """
 
         self._orig = {'index': dumps(index), 'index_args': index_args, 'index_kargs': index_kargs}
 
@@ -104,11 +110,9 @@ class DriverManager(object):
         self.set_current_driver(DriverManager._DEFAULT_DRIVER)
         self.logger.debug('Ready. %s', self)
 
-
     def __getstate__(self):
         self._orig['current_driver'] = self.driver.name
         return self._orig
-
 
     def __setstate__(self, state):
         self.__init__(index=loads(state['index']), *state['index_args'], **state['index_kargs'])
@@ -123,9 +127,8 @@ class DriverManager(object):
             if hasattr(self, 'logger'):
                 self.logger.debug('Connections already closed')
 
-
     def close(self):
-        '''Close all drivers' index connections.'''
+        """Close all drivers' index connections."""
         if self.__drivers:
             for driver in self.__drivers.values():
                 # pylint: disable=protected-access
@@ -137,9 +140,8 @@ class DriverManager(object):
         if hasattr(self, 'logger'):
             self.logger.debug('Closed index connections')
 
-
     def set_index(self, index=None, *index_args, **index_kargs):
-        '''Initialise the generic index.
+        """Initialise the generic index.
 
         :param index: An index object behaving like
           :class:`datacube.index._api.Index` and used for testing
@@ -155,15 +157,14 @@ class DriverManager(object):
           index on initialisation. Caution: In the current
           implementation all parameters get passed to all available
           indexes.
-        '''
+        """
         if self.__index:
             self.__index.close()
         self.__index = Index(weakref.ref(self)(), index, *index_args, **index_kargs)
         self.logger.debug('Generic index set to %s', self.__index)
 
-
     def reload_drivers(self, index=None, *index_args, **index_kargs):
-        '''Load and initialise all available drivers and their indexes.
+        """Load and initialise all available drivers and their indexes.
 
 
         :param index: An index object behaving like
@@ -180,7 +181,7 @@ class DriverManager(object):
           index on initialisation. Caution: In the current
           implementation all parameters get passed to all available
           indexes.
-        '''
+        """
         if self.__drivers:
             for driver in self.__drivers.values():
                 # pylint: disable=protected-access
@@ -206,70 +207,62 @@ class DriverManager(object):
             raise RuntimeError('No plugin driver found, Datacube cannot operate.')
         self.logger.debug('Reloaded %d drivers.', len(self.__drivers))
 
-
     def set_current_driver(self, driver_name):
-        '''Set the current driver.
+        """Set the current driver.
 
         If driver_name is None, then the driver currently in use
         remains active, or a default driver is used as last resort.
 
         :param str driver_name: The name of the driver to set as
           current driver.
-        '''
+        """
         if not driver_name in self.__drivers:
             raise ValueError('Default driver "%s" is not available in %s' % (
                 driver_name, ', '.join(self.__drivers.keys())))
         self.__driver = self.__drivers[driver_name]
         self.logger.debug('Using default driver: %s', driver_name)
 
-
     @property
     def driver(self):
-        '''Current driver.
-        '''
+        """Current driver.
+        """
         return self.__driver
-
 
     @property
     def index(self):
-        '''Generic index.
-        '''
+        """Generic index.
+        """
         return self.__index
-
 
     @property
     def drivers(self):
-        '''Dictionary of drivers available, indexed by their name.'''
+        """Dictionary of drivers available, indexed by their name."""
         return self.__drivers
 
-
     def __str__(self):
-        '''Information about the available drivers.
-        '''
+        """Information about the available drivers.
+        """
         return 'DriverManager(current driver: %s; available drivers: %s)' % (
             self.driver.name, ', '.join(self.__drivers.keys()))
 
-
     def write_dataset_to_storage(self, dataset, *args, **kargs):
-        '''Store a dataset using the the current driver.
+        """Store a dataset using the the current driver.
 
         See :meth:`datacube.drivers.driver.write_dataset_to_storage`
-        '''
+        """
         return self.driver.write_dataset_to_storage(dataset, *args, **kargs)
 
-
     def index_datasets(self, datasets, sources_policy):
-        '''Index several datasets using the current driver.
+        """Index several datasets using the current driver.
 
         :param datasets: The datasets to be indexed.
         :param str sources_policy: The sources policy.
         :return: The number of datasets indexed.
-        '''
+        """
         return self.driver.index.add_datasets(datasets, sources_policy)
 
-
     def get_driver_by_scheme(self, uris):
-        '''Returns the driver required to read a dataset.
+        """Returns the driver required to read a dataset.
 
         Assuming all the dataset `uris` use the same scheme, this
         method returns a driver able to handle that scheme. Caution:
@@ -285,7 +278,7 @@ class DriverManager(object):
         :return: A driver able to handle the first `uri` is used to
           determine the dataset scheme. If not available, the scheme
           defaults to `file`.
-        '''
+        """
         scheme = 'file'
         # Use only the first uri (if there is one)
         if isinstance(uris, Iterable) and uris:
@@ -298,21 +291,19 @@ class DriverManager(object):
                 return driver
         raise ValueError('No driver found for scheme "%s"' % scheme)
 
-
     def get_datasource(self, dataset, band_name=None):
-        '''Returns a data source to read a dataset band data.
+        """Returns a data source to read a dataset band data.
 
         The appropriate driver is determined from the dataset uris,
         then the datasource created using that driver.
         :param dataset: The dataset to read.
         :param band_name: the name of the band to read.
 
-        '''
+        """
         return self.get_driver_by_scheme(dataset.uris).get_datasource(dataset, band_name)
 
-
     def add_specifics(self, dataset):
-        '''Pulls driver-specific index data from the DB.
+        """Pulls driver-specific index data from the DB.
 
         This method should only be called by the generic index to pull
         driver-specific metadata from the index. The appropriate
@@ -321,5 +312,5 @@ class DriverManager(object):
 
         :param dataset: The dataset for which to extract the specific
           data.
-        '''
+        """
         return self.get_driver_by_scheme(dataset.uris).index.add_specifics(dataset)

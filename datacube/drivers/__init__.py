@@ -1,4 +1,4 @@
-'''This module implements a simple plugin manager for storage drivers.
+"""This module implements a simple plugin manager for storage drivers.
 
 Drivers are automatically loaded provided they:
   - Store all code in a direct subdirectory, e.g. `s3/`
@@ -18,4 +18,4 @@ Drivers are automatically loaded provided they:
 indexed by their `name` as defined in `DRIVER_SPEC`. These are
 instantiated on the first call to that method and cached until the
 loader object is deleted.
-'''
+"""

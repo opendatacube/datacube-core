@@ -116,6 +116,7 @@ def product_counts(driver_manager, period, expressions):
             click.echo('    {}: {}'.format(formatted_dt, count))
     driver_manager.close()
 
+
 @singledispatch
 def printable(val):
     return val

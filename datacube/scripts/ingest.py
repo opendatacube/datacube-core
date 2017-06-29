@@ -5,6 +5,7 @@ import logging
 import click
 import cachetools
 import itertools
+
 try:
     import cPickle as pickle
 except ImportError:
@@ -31,18 +32,18 @@ FUSER_KEY = 'fuse_data'
 
 
 def remove_duplicates(cells_in, cells_out):
-    '''Remove tiles in `cells_in` which belong to `cells_out`.
+    """Remove tiles in `cells_in` which belong to `cells_out`.
 
     Tiles are compared based on their signature: `(extent,
     timestamp)`.
-    '''
+    """
     if not cells_out:
         return
 
     # Compute signatures of cells_out
     sigs_out = {(extent, timestamp) \
-            for extent, cell in cells_out.items() \
-            for timestamp in cell.sources.coords['time'].values}
+                for extent, cell in cells_out.items() \
+                for timestamp in cell.sources.coords['time'].values}
     # Index cells_in accordingly
     for extent, cell in cells_in.items():
         tiles = cell.sources
@@ -295,6 +296,7 @@ def _index_datasets(driver_manager, results, skip_sources):
 
 def process_tasks(driver_manager, config, source_type, output_type, tasks, queue_size, executor):
     index = driver_manager.index
+
     # driver_manager_dump = dumps(driver_manager)
 
     def submit_task(task):
@@ -311,7 +313,7 @@ def process_tasks(driver_manager, config, source_type, output_type, tasks, queue
 
     tasks = iter(tasks)
     while True:
-        pending += [submit_task(task) for task in itertools.islice(tasks, max(0, queue_size-len(pending)))]
+        pending += [submit_task(task) for task in itertools.islice(tasks, max(0, queue_size - len(pending)))]
         if not pending:
             break
 

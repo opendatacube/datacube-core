@@ -15,6 +15,7 @@ import numpy as np
 
 import rasterio
 import rasterio.warp
+
 try:
     from rasterio.warp import Resampling
 except ImportError:
@@ -91,7 +92,7 @@ def reproject(src_data_array, src_crs, dst_crs, resolution=None, resampling=Resa
         Note: No attempt is made to update spatial attributes, e.g. spatial_ref, bounds, etc
     :return: A reprojected :class:`xarray.DataArray`
     """
-    #TODO: Support lazy loading of data with dask imperative function
+    # TODO: Support lazy loading of data with dask imperative function
     src_data = np.copy(src_data_array.load().data)
 
     src_affine = _make_src_affine(src_data_array)
@@ -149,8 +150,8 @@ def _solar_day(utc, latitude):
 
 def _get_mean_longitude(dataset):
     x, y = _get_spatial_dims(dataset)
-    mean_lat = float(dataset[x][0] + dataset[x][-1])/2.
-    mean_lon = float(dataset[y][0] + dataset[y][-1])/2.
+    mean_lat = float(dataset[x][0] + dataset[x][-1]) / 2.
+    mean_lon = float(dataset[y][0] + dataset[y][-1]) / 2.
     bounds = {'left': mean_lon, 'right': mean_lon, 'top': mean_lat, 'bottom': mean_lat}
     left, bottom, right, top = rasterio.warp.transform_bounds(str(dataset.crs), 'EPSG:4326', **bounds)
     return left

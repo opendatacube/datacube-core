@@ -69,6 +69,7 @@ def contains(v1, v2, case_sensitive=False):
 class MissingSentinel(object):
     def __str__(self):
         return "missing"
+
     def __repr__(self):
         return "missing"
 MISSING = MissingSentinel()

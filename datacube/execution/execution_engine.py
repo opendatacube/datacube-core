@@ -39,13 +39,11 @@ from datacube.analytics.analytics_engine import OperationType
 from datacube.analytics.utils.analytics_utils import get_pqa_mask
 from datacube.ndexpr import NDexpr
 
-
 LOG = logging.getLogger(__name__)
 LOG.setLevel(logging.INFO)
 
 
 class ExecutionEngine(object):
-
     REDUCTION_FNS = {"all": xr.DataArray.all,
                      "any": xr.DataArray.any,
                      "argmax": xr.DataArray.argmax,
@@ -84,7 +82,7 @@ class ExecutionEngine(object):
             elif op_type == OperationType.Cloud_Mask:
                 self.execute_cloud_mask(task)
             elif op_type == OperationType.Reduction and \
-                    len([s for s in self.REDUCTION_FNS.keys() if s in function]) > 0:
+                            len([s for s in self.REDUCTION_FNS.keys() if s in function]) > 0:
                 self.execute_reduction(task)
             elif op_type == OperationType.Bandmath:
                 self.execute_bandmath(task)
@@ -145,7 +143,7 @@ class ExecutionEngine(object):
         pqa_mask = get_pqa_mask(mask_array.values)
 
         masked_array = xr.DataArray.where(data_array, pqa_mask)
-        #masked_array = masked_array.fillna(no_data_value)
+        # masked_array = masked_array.fillna(no_data_value)
 
         self.cache[key] = {}
 
@@ -176,7 +174,7 @@ class ExecutionEngine(object):
         array_result['array_result'][key] = self.nd.evaluate(value['function'],
                                                              local_dict=arrays,
                                                              user_functions=self.udfuncs)
-        #array_result['array_result'][key] = array_result['array_result'][key].fillna(no_data_value)
+        # array_result['array_result'][key] = array_result['array_result'][key].fillna(no_data_value)
 
         array_desc = self.cache[value['array_input'][0]]
 
@@ -196,14 +194,14 @@ class ExecutionEngine(object):
 
         arrays = {}
         for task_name in value['array_input']:
-            #for k, v in self.cache[task_name]['array_result'].items():
+            # for k, v in self.cache[task_name]['array_result'].items():
             #    arrays[k] = v.astype(float).values
             arrays.update(self.cache[task_name]['array_result'])
 
         array_result = {}
         array_result['array_result'] = {}
         array_result['array_result'][key] = xr.DataArray(ne.evaluate(value['function'], arrays))
-        #array_result['array_result'][key] = self.nd.evaluate(value['function'],  arrays)
+        # array_result['array_result'][key] = self.nd.evaluate(value['function'],  arrays)
 
         array_desc = self.cache[value['array_input'][0]]
 
@@ -248,11 +246,11 @@ class ExecutionEngine(object):
 
         if sys.version_info >= (3, 0):
             if 'skipna' in list(inspect.signature(self.REDUCTION_FNS[function_name]).parameters.keys()) and \
-               function_name != 'prod':
+                            function_name != 'prod':
                 args['skipna'] = True
         else:
             if 'skipna' in inspect.getargspec(self.REDUCTION_FNS[function_name])[0] and \
-               function_name != 'prod':
+                            function_name != 'prod':
                 args['skipna'] = True
 
         array_result['array_result'][key] = func(xr.DataArray(array_data), **args)

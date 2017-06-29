@@ -1,4 +1,4 @@
-'''S3 indexing module.'''
+"""S3 indexing module."""
 from __future__ import absolute_import
 
 import logging
@@ -10,30 +10,28 @@ import datacube.index._datasets as base_dataset
 
 
 class Index(base_index.Index, base_index.IndexExtension):
-    '''The s3 indexer extends the existing postgres indexer functionality
+    """The s3 indexer extends the existing postgres indexer functionality
     by writing additional s3 information to specific tables.
-    '''
+    """
 
     def __init__(self, uri_scheme, driver_manager, index=None, *args, **kargs):
-        '''Initialise the index and its dataset resource.'''
+        """Initialise the index and its dataset resource."""
         super(Index, self).__init__(driver_manager, index, *args, **kargs)
         self.uri_scheme = uri_scheme
         self.datasets = DatasetResource(driver_manager, self._db, self.products, self.uri_scheme)
 
-
     def add_specifics(self, dataset):
-        '''Extend the dataset doc with driver specific index data.
+        """Extend the dataset doc with driver specific index data.
 
         The dataset is modified in place.
 
         :param :cls:`datacube.model.Dataset` dataset: The dataset to
           add s3-specific indexing data to.
-        '''
+        """
         self.datasets.add_specifics(dataset)
 
-
     def add_datasets(self, datasets, sources_policy='verify'):
-        '''Index several datasets using the current driver.
+        """Index several datasets using the current driver.
 
         Perform the normal indexing, followed by the s3 specific
         indexing. If the normal indexing fails for any dataset, then
@@ -46,7 +44,7 @@ class Index(base_index.Index, base_index.IndexExtension):
         :return: The number of datasets indexed.
         :rtype: int
 
-        '''
+        """
         if not 'storage_output' in datasets.attrs:
             raise ValueError('s3 storage output not received, indexing aborted.')
         dataset_refs = []
@@ -61,39 +59,36 @@ class Index(base_index.Index, base_index.IndexExtension):
             raise ValueError('Some datasets could not be indexed, hence no s3 indexing will happen.')
         return n
 
-
     def __repr__(self):
         return "S3Index<db={!r}>".format(self._db)
 
 
 class DatasetResource(base_dataset.DatasetResource):
-    '''The s3 dataset resource extends the postgres one by writing
+    """The s3 dataset resource extends the postgres one by writing
     additional s3 information to specific tables.
-    '''
+    """
 
     def __init__(self, driver_manager, db, dataset_type_resource, uri_scheme='s3'):
-        '''Initialise the data resource.'''
+        """Initialise the data resource."""
         super(DatasetResource, self).__init__(driver_manager, db, dataset_type_resource)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.uri_scheme = uri_scheme
 
-
     def add(self, dataset, sources_policy='verify', **kwargs):
         # Set uri scheme to s3
         dataset.uris = ['%s:%s' % (self.uri_scheme, uri.split(':', 1)[1]) for uri in dataset.uris] \
-                       if dataset.uris else []
+            if dataset.uris else []
         return super(DatasetResource, self).add(dataset, sources_policy, **kwargs)
 
-
     def _add_s3_dataset(self, transaction, s3_dataset_id, band, output):
-        '''Add the new s3 dataset to DB.
+        """Add the new s3 dataset to DB.
 
         :param transaction: Postgres transaction.
         :param uuid s3_dataset_id: The uuid of the s3 dataset.
         :param str band: The band to index this set for.
         :param dict output: Dictionary of metadata consigning
           the s3 storage information for that band.
-        '''
+        """
         # Build regular indices as list of triple scalars (as
         # numpy types are not accepted by sqlalchemy)
         regular_indices = [list(map(np.asscalar, index)) \
@@ -127,17 +122,15 @@ class DatasetResource(base_dataset.DatasetResource):
                                    regular_indices,
                                    irregular_indices)
 
-
-
     def _add_s3_dataset_chunks(self, transaction, s3_dataset_id, band, output):
-        '''Add details of chunks composing this s3 dataset to DB.
+        """Add details of chunks composing this s3 dataset to DB.
 
         :param transaction: Postgres transaction.
         :param uuid s3_dataset_id: The uuid of the s3 dataset.
         :param str band: The band to index this set for.
         :param dict output: Dictionary of metadata consigning
           the s3 storage information for that band.
-        '''
+        """
         for key_map in output['key_maps']:
             micro_shape = [chunk_dim.stop - chunk_dim.start for chunk_dim in key_map['chunk']]
             # Convert index_min and index_max to scalars
@@ -156,9 +149,8 @@ class DatasetResource(base_dataset.DatasetResource):
                                              index_min,
                                              index_max)
 
-
     def _add_s3_dataset_mappings(self, transaction, s3_dataset_id, band, dataset_refs):
-        '''Add mappings between postgres datsets and s3 datasets to DB.
+        """Add mappings between postgres datsets and s3 datasets to DB.
 
         :param transaction: Postgres transaction.
         :param uuid s3_dataset_id: The uuid of the s3 dataset.
@@ -166,23 +158,22 @@ class DatasetResource(base_dataset.DatasetResource):
         :param list dataset_refs: The list of dataset references
           (uuids) that all point to the s3 dataset entry being
           created.
-        '''
+        """
         for dataset_ref in dataset_refs:
             self.logger.debug('put_s3_mapping(%s, %s, %s)', dataset_ref, band, s3_dataset_id)
             transaction.put_s3_mapping(dataset_ref,
                                        band,
                                        s3_dataset_id)
 
-
     def add_s3_tables(self, dataset_refs, storage_output):
-        '''Add index data to s3 tables.
+        """Add index data to s3 tables.
 
         :param list dataset_refs: The list of dataset references
           (uuids) that all point to the s3 dataset entry being
           created.
         :param dict storage_output: Dictionary of metadata consigning
           the s3 storage information.
-        '''
+        """
         # Roll back if any exception arise
         with self._db.begin() as transaction:
             for band, output in storage_output.items():
@@ -198,16 +189,15 @@ class DatasetResource(base_dataset.DatasetResource):
                 # Add mappings
                 self._add_s3_dataset_mappings(transaction, s3_dataset_id, band, dataset_refs)
 
-
     def add_specifics(self, dataset):
-        '''Extend the dataset doc with driver specific index data.
+        """Extend the dataset doc with driver specific index data.
 
         This methods extends the dataset document with a `s3_metadata`
         variable containing the s3 indexing metadata.
 
         :param :cls:`datacube.model.Dataset` dataset: The dataset to
           add NetCDF-specific indexing data to.
-        '''
+        """
         dataset.s3_metadata = {}
         if dataset.measurements:
             with self._db.begin() as transaction:

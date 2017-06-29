@@ -510,14 +510,14 @@ class NDexpr(object):
             return False
 
     def get_pqa_mask(self, pqa_ndarray):
-        '''
+        """
         create pqa_mask from a ndarray
 
         Parameters:
             pqa_ndarray: input pqa array
             good_pixel_masks: known good pixel values
             dilation: amount of dilation to apply
-        '''
+        """
         good_pixel_masks = [32767, 16383, 2457]
         dilation = 3
         pqa_mask = np.zeros(pqa_ndarray.shape, dtype=np.bool)

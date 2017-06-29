@@ -1,9 +1,9 @@
-'''
+"""
 S3LIO Class
 
 Labeled Array access, backed by multiple S3 objects.
 
-'''
+"""
 
 import os
 import sys
@@ -29,21 +29,21 @@ class S3LIO(object):
     DECIMAL_PLACES = 6
 
     def __init__(self, enable_compression=True, enable_s3=True, file_path=None, num_workers=30):
-        '''Initialise the S3 Labeled IO interface.
+        """Initialise the S3 Labeled IO interface.
 
         :param bool enable_s3: Flag to store objects in s3 or disk.
             True: store in S3
             False: store on disk (for testing purposes)
         :param str file_path: The root directory for the emulated s3 buckets when enable_se is set to False.
         :param int num_workers: The number of workers for parallel IO.
-        '''
+        """
         self.s3aio = S3AIO(enable_compression, enable_s3, file_path, num_workers)
 
         self.pool = ProcessingPool(num_workers)
         self.enable_compression = enable_compression
 
     def chunk_indices_1d(self, begin, end, step, bound_slice=None, return_as_shape=False):
-        '''Chunk a 1D index.
+        """Chunk a 1D index.
 
         :param int begin: Start of index range.
         :param int end: Stop of index range.
@@ -51,7 +51,7 @@ class S3LIO(object):
         :param Slice bound_slice: bounds of the index range
         :param bool return_as_shape: Returns as a shape if set to True, otherwise a Slice.
         :return: Returns the chunked indices
-        '''
+        """
         if bound_slice is None:
             for i in range(begin, end, step):
                 if return_as_shape:
@@ -71,21 +71,21 @@ class S3LIO(object):
                     yield slice(max(i, bound_begin), min(end, i + step))
 
     def chunk_indices_nd(self, shape, chunk, array_slice=None, return_as_shape=False):
-        '''Chunk a nD index.
+        """Chunk a nD index.
 
         :param tuple shape: Shape of the index
         :param tuple chunk: desired chunk size
         :param tuple array_slice: The array slice
         :param bool return_as_shape: Returns as a shape if set to True, otherwise a Slice.
         :return: Returns the chunked indices
-        '''
+        """
         if array_slice is None:
             array_slice = repeat(None)
         var1 = map(self.chunk_indices_1d, repeat(0), shape, chunk, array_slice, repeat(return_as_shape))
         return product(*var1)
 
     def put_array_in_s3(self, array, chunk_size, base_name, bucket, spread=False):
-        '''Put array in S3.
+        """Put array in S3.
 
         :param ndarray array: array to be put into S3
         :param tuple chunk_size: chunk size to use for storage
@@ -93,7 +93,7 @@ class S3LIO(object):
         :param str bucket: S3 bucket to use
         :param bool spread: Flag to use a deterministic hash as a prefix.
         :return: Returns the a a dict of (keys, indices, chunk ids)
-        '''
+        """
         idx = list(self.chunk_indices_nd(array.shape, chunk_size))
         chunk_ids = [i for i in range(len(idx))]
         keys = [base_name+'_'+str(i) for i in chunk_ids]
@@ -103,7 +103,7 @@ class S3LIO(object):
         return list(zip(keys, idx, chunk_ids))
 
     def put_array_in_s3_mp(self, array, chunk_size, base_name, bucket, spread=False):
-        '''Put array in S3 in parallel.
+        """Put array in S3 in parallel.
 
         :param ndarray array: array to be put into S3
         :param tuple chunk_size: chunk size to use for storage
@@ -111,7 +111,7 @@ class S3LIO(object):
         :param str bucket: S3 bucket to use
         :param bool spread: Flag to use a deterministic hash as a prefix.
         :return: Returns the a a dict of (keys, indices, chunk ids)
-        '''
+        """
         idx = list(self.chunk_indices_nd(array.shape, chunk_size))
         keys = [base_name+'_'+str(i) for i in range(len(idx))]
         if spread:
@@ -120,13 +120,13 @@ class S3LIO(object):
         return list(zip(keys, idx))
 
     def shard_array_to_s3(self, array, indices, s3_bucket, s3_keys):
-        '''Shard array to S3.
+        """Shard array to S3.
 
         :param ndarray array: array to be put into S3
         :param list indices: indices corrsponding to the s3 keys
         :param str s3_bucket: S3 bucket to use
         :param list s3_keys: List of S3 keys corresponding to the indices.
-        '''
+        """
         # todo: multiprocess put_bytes or if large put_bytes_mpu
         for s3_key, index in zip(s3_keys, indices):
             if sys.version_info >= (3, 5):
@@ -141,13 +141,13 @@ class S3LIO(object):
             self.s3aio.s3io.put_bytes(s3_bucket, s3_key, data)
 
     def shard_array_to_s3_mp(self, array, indices, s3_bucket, s3_keys):
-        '''Shard array to S3 in parallel.
+        """Shard array to S3 in parallel.
 
         :param ndarray array: array to be put into S3
         :param list indices: indices corrsponding to the s3 keys
         :param str s3_bucket: S3 bucket to use
         :param list s3_keys: List of S3 keys corresponding to the indices.
-        '''
+        """
         def work_shard_array_to_s3(s3_key, index, array_name, s3_bucket):
             array = sa.attach(array_name)
             if sys.version_info >= (3, 5):
@@ -170,14 +170,14 @@ class S3LIO(object):
         sa.delete(array_name)
 
     def assemble_array_from_s3(self, array, indices, s3_bucket, s3_keys, dtype):
-        '''Reconstruct an array from S3.
+        """Reconstruct an array from S3.
 
         :param ndarray array: array to be put into S3
         :param list indices: indices corrsponding to the s3 keys
         :param str s3_bucket: S3 bucket to use
         :param list s3_keys: List of S3 keys corresponding to the indices.
         :return: The assembled array.
-        '''
+        """
         # TODO: parallelize this
         for s3_key, index in zip(s3_keys, indices):
             b = self.s3aio.s3io.get_bytes(s3_bucket, s3_key)
@@ -191,14 +191,14 @@ class S3LIO(object):
     # converts positional(spatial/temporal) coordinates to array integer coordinates
     # pylint: disable=too-many-locals
     def regular_index(self, query, dimension_range, shape, flatten=False):
-        '''converts positional(spatial/temporal) coordinates to array integer coordinates
+        """converts positional(spatial/temporal) coordinates to array integer coordinates
 
         :param tuple query: The range query.
         :param tuple dimension_range: Dimension range extents.
         :param tuple shape: Shape.
         :param bool flatten: returns 1D index
         :return: The regular index.
-        '''
+        """
         # regular_index((-35+2*0.128, 149+2*0.128), ((-35,-34),(149,150)), (4000, 4000))
         # regular_index((-35+0.128, 149+0.128), ((-35, -35+0.128),(149, 148+0.128)), (512, 512))
 
@@ -225,7 +225,7 @@ class S3LIO(object):
     # labeled geo-coordinates data retrieval.
     def get_data(self, base_location, dimension_range, micro_shape, dtype, labeled_slice, s3_bucket,
                  use_hash=False):
-        '''Gets geo-referenced indexed data from S3.
+        """Gets geo-referenced indexed data from S3.
 
         Not yet implemented.
 
@@ -237,7 +237,7 @@ class S3LIO(object):
         :param str s3_bucket: The S3 bucket name.
         :param bool use_hash: Whether to prefix the key with a deterministic hash.
         :return: The nd array.
-        '''
+        """
         # shape and chunk are overloaded.
         # should use macro_shape to mean shape of the array pre-chunking.
         # should use micro_shape to mean chunk size of the array.
@@ -250,7 +250,7 @@ class S3LIO(object):
     # pylint: disable=too-many-locals
     def get_data_unlabeled(self, base_location, macro_shape, micro_shape, dtype, array_slice, s3_bucket,
                            use_hash=False):
-        '''Gets integer indexed data from S3.
+        """Gets integer indexed data from S3.
 
         :param str base_location: The base location of the requested data.
         :param tuple macro_shape: The macro shape of the data.
@@ -260,7 +260,7 @@ class S3LIO(object):
         :param str s3_bucket: The S3 bucket name.
         :param bool use_hash: Whether to prefix the key with a deterministic hash.
         :return: The nd array.
-        '''
+        """
         # TODO(csiro):
         #     - use SharedArray for data
         #     - multiprocess the for loop depending on slice size.
@@ -309,7 +309,7 @@ class S3LIO(object):
 
     def get_data_unlabeled_mp(self, base_location, macro_shape, micro_shape, dtype, array_slice, s3_bucket,
                               use_hash=False):
-        '''Gets integer indexed data from S3 in parallel.
+        """Gets integer indexed data from S3 in parallel.
 
         :param str base_location: The base location of the requested data.
         :param tuple macro_shape: The macro shape of the data.
@@ -319,7 +319,7 @@ class S3LIO(object):
         :param str s3_bucket: The S3 bucket name.
         :param bool use_hash: Whether to prefix the key with a deterministic hash.
         :return: The nd array.
-        '''
+        """
         # TODO(csiro):
         #     - use SharedArray for data
         #     - multiprocess the for loop depending on slice size.
