@@ -73,7 +73,7 @@ def create_coordinate(nco, name, labels, units):
     :type name: str
     :type labels: numpy.array
     :type units: str
-    :return: netCDF4.Variable
+    :rtype: netCDF4.Variable
     """
     labels = netcdfy_coord(labels)
 
@@ -92,7 +92,7 @@ def create_variable(nco, name, var, set_crs=False, attrs=None, **kwargs):
     """
     :param nco:
     :param name:
-    :type var: datacube.model.Variable
+    :param datacube.model.Variable var:
     :param kwargs:
     :return:
     """
