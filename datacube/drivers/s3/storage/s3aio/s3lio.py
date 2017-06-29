@@ -9,6 +9,7 @@ import os
 import sys
 import uuid
 import hashlib
+import zstd
 import numpy as np
 import SharedArray as sa
 from six import integer_types
@@ -27,7 +28,7 @@ class S3LIO(object):
 
     DECIMAL_PLACES = 6
 
-    def __init__(self, enable_s3=True, file_path=None, num_workers=30):
+    def __init__(self, enable_compression=True, enable_s3=True, file_path=None, num_workers=30):
         '''Initialise the S3 Labeled IO interface.
 
         :param bool enable_s3: Flag to store objects in s3 or disk.
@@ -36,12 +37,10 @@ class S3LIO(object):
         :param str file_path: The root directory for the emulated s3 buckets when enable_se is set to False.
         :param int num_workers: The number of workers for parallel IO.
         '''
-        self.s3aio = S3AIO(enable_s3, file_path, num_workers)
-
-        if num_workers is None:
-            num_workers = cpu_count()
+        self.s3aio = S3AIO(enable_compression, enable_s3, file_path, num_workers)
 
         self.pool = ProcessingPool(num_workers)
+        self.enable_compression = enable_compression
 
     def chunk_indices_1d(self, begin, end, step, bound_slice=None, return_as_shape=False):
         '''Chunk a 1D index.
@@ -131,9 +130,15 @@ class S3LIO(object):
         # todo: multiprocess put_bytes or if large put_bytes_mpu
         for s3_key, index in zip(s3_keys, indices):
             if sys.version_info >= (3, 5):
-                self.s3aio.s3io.put_bytes(s3_bucket, s3_key, bytes(array[index].data))
+                data = bytes(array[index].data)
             else:
-                self.s3aio.s3io.put_bytes(s3_bucket, s3_key, bytes(np.ascontiguousarray(array[index]).data))
+                data = bytes(np.ascontiguousarray(array[index]).data)
+
+            if self.enable_compression:
+                cctx = zstd.ZstdCompressor(level=9, write_content_size=True)
+                data = cctx.compress(data)
+
+            self.s3aio.s3io.put_bytes(s3_bucket, s3_key, data)
 
     def shard_array_to_s3_mp(self, array, indices, s3_bucket, s3_keys):
         '''Shard array to S3 in parallel.
@@ -146,9 +151,15 @@ class S3LIO(object):
         def work_shard_array_to_s3(s3_key, index, array_name, s3_bucket):
             array = sa.attach(array_name)
             if sys.version_info >= (3, 5):
-                self.s3aio.s3io.put_bytes(s3_bucket, s3_key, bytes(array[index].data))
+                data = bytes(array[index].data)
             else:
-                self.s3aio.s3io.put_bytes(s3_bucket, s3_key, bytes(np.ascontiguousarray(array[index]).data))
+                data = bytes(np.ascontiguousarray(array[index]).data)
+
+            if self.enable_compression:
+                cctx = zstd.ZstdCompressor(level=9, write_content_size=True)
+                data = cctx.compress(data)
+
+            self.s3aio.s3io.put_bytes(s3_bucket, s3_key, data)
 
         array_name = '_'.join(['SA3IO', str(uuid.uuid4()), str(os.getpid())])
         sa.create(array_name, shape=array.shape, dtype=array.dtype)
@@ -170,6 +181,9 @@ class S3LIO(object):
         # TODO: parallelize this
         for s3_key, index in zip(s3_keys, indices):
             b = self.s3aio.s3io.get_bytes(s3_bucket, s3_key)
+            if self.enable_compression:
+                cctx = zstd.ZstdDecompressor()
+                b = cctx.decompress(b)
             m = memoryview(b)
             shape = tuple((i.stop - i.start) for i in index)
             array[index] = np.ndarray(shape, buffer=m, dtype=dtype)
@@ -201,14 +215,13 @@ class S3LIO(object):
         result = np.floor([(p/l)*s for p, l, s in zip(point, length, shape)]).astype(int)
         result = [min(r, s-1) for r, s in zip(result, shape)]
 
-        print(length, offset, point, result)
+        # print(length, offset, point, result)
 
         if flatten:
             # return self.s3aio.to_1d(tuple(result), shape)
             macro_shape = tuple([(int(np.ceil(a/b))) for a, b in zip(dimension_range, shape)])
-            print(result, macro_shape)
+            # print(result, macro_shape)
             return self.s3aio.to_1d(tuple(result), macro_shape)
-
         return result
 
     # labeled geo-coordinates data retrieval.

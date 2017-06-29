@@ -7,6 +7,7 @@ import sys
 import weakref
 from pathlib import Path
 from collections import Iterable
+from dill import loads, dumps
 
 from .driver import Driver
 from .index import Index
@@ -20,6 +21,7 @@ if sys.version_info >= (3, 5): # python 3.5+
         spec = spec_from_file_location(name, filepath)
         mod = module_from_spec(spec)
         spec.loader.exec_module(mod)
+        sys.modules[spec.name] = mod
         return mod
     # pylint: disable=invalid-name, redefined-variable-type
     load_module = load_mod
@@ -81,6 +83,9 @@ class DriverManager(object):
           implementation all parameters get passed to all available
           indexes.
         '''
+
+        self._orig = {'index': dumps(index), 'index_args': index_args, 'index_kargs': index_kargs}
+
         self.__index = None
         '''Generic index.'''
 
@@ -91,6 +96,7 @@ class DriverManager(object):
         '''List of all available drivers, indexed by name.'''
 
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.is_clone = False
         # Initialise the generic index
         # pylint: disable=protected-access
         self.set_index(index, *index_args, **index_kargs)
@@ -99,12 +105,23 @@ class DriverManager(object):
         self.logger.debug('Ready. %s', self)
 
 
+    def __getstate__(self):
+        self._orig['current_driver'] = self.driver.name
+        return self._orig
+
+
+    def __setstate__(self, state):
+        self.__init__(index=loads(state['index']), *state['index_args'], **state['index_kargs'])
+        self.set_current_driver(state['current_driver'])
+        self.is_clone = True
+
     def __del__(self):
         try:
             self.close()
         # pylint: disable=bare-except
         except:
-            self.logger.debug('Connections already closed')
+            if hasattr(self, 'logger'):
+                self.logger.debug('Connections already closed')
 
 
     def close(self):
@@ -116,7 +133,9 @@ class DriverManager(object):
                     driver.index.close()
         if self.__index:
             self.__index.close()
-        self.logger.debug('Closed index connections')
+
+        if hasattr(self, 'logger'):
+            self.logger.debug('Closed index connections')
 
 
     def set_index(self, index=None, *index_args, **index_kargs):
@@ -269,7 +288,7 @@ class DriverManager(object):
         '''
         scheme = 'file'
         # Use only the first uri (if there is one)
-        if isinstance(uris, Iterable) and len(uris) > 0:
+        if isinstance(uris, Iterable) and uris:
             parts = uris[0].split(':', 1)
             # If there is a scheme and body there must be 2 parts
             if len(parts) == 2:

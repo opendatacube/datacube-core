@@ -23,7 +23,7 @@ class S3TestDriver(S3Driver):
         super(S3TestDriver, self).__init__(name, index, *index_args, **index_kargs)
         # Initialise with the root at the top of the filesystem, so
         # that the `container` path can be absolute.
-        self.storage = S3LIO(False, '/')
+        self.storage = S3LIO(True, False, '/')
 
 
     @property

@@ -23,7 +23,7 @@ from .s3io import S3IO
 
 class S3AIO(object):
 
-    def __init__(self, enable_s3=True, file_path=None, num_workers=30):
+    def __init__(self, enable_compression=True, enable_s3=True, file_path=None, num_workers=30):
         '''Initialise the S3 array IO interface.
 
         :param bool enable_s3: Flag to store objects in s3 or disk.
@@ -34,32 +34,8 @@ class S3AIO(object):
         '''
         self.s3io = S3IO(enable_s3, file_path, num_workers)
 
-        if num_workers is None:
-            num_workers = cpu_count()
-
         self.pool = ProcessingPool(num_workers)
-
-    def bytes_to_array(self, data, shape, dtype):
-        '''Converts bytes to an array.
-
-        :param bytes data: Source bytes.
-        :param tuple shape: Shape of the destination array.
-        :return: Returns the array.
-        '''
-        array = np.empty(shape=shape, dtype=dtype)
-        array.data[0:len(data)] = data
-        return array
-
-    def copy_bytes_to_shared_array(self, shared_array, start, end, data):
-        '''Copies bytes into a shared array.
-
-        :param shared_array shared_array: Shared array object.
-        :param int start: Start of the data range.
-        :param int end: End of the data range.
-        :param bytes data: Source bytes.
-        :return: Returns the shared array.
-        '''
-        shared_array.data[start:end] = data
+        self.enable_compression = enable_compression
 
     def to_1d(self, index, shape):
         '''Converts nD index to 1D index.
@@ -77,7 +53,7 @@ class S3AIO(object):
         :param tuple shape: Shape to be used for conversion.
         :return: Returns the ND index.
         '''
-        np.unravel_index(index, shape)
+        return np.unravel_index(index, shape)
 
     def get_point(self, index_point, shape, dtype, s3_bucket, s3_key):
         '''Gets a point in the nd array stored in S3.
@@ -93,7 +69,12 @@ class S3AIO(object):
         '''
         item_size = np.dtype(dtype).itemsize
         idx = self.to_1d(index_point, shape) * item_size
-        b = self.s3io.get_byte_range(s3_bucket, s3_key, idx, idx+item_size)
+        if self.enable_compression:
+            b = self.s3io.get_bytes(s3_bucket, s3_key)
+            cctx = zstd.ZstdDecompressor()
+            b = cctx.decompress(b)[idx:idx+item_size]
+        else:
+            b = self.s3io.get_byte_range(s3_bucket, s3_key, idx, idx+item_size)
         a = np.frombuffer(b, dtype=dtype, count=-1, offset=0)
         return a
 
@@ -121,6 +102,9 @@ class S3AIO(object):
         #     - option 2. smarter byte range subsets depending on:
         #       - data size
         #       - data contiguity
+
+        if self.enable_compression:
+            return self.get_slice_by_bbox(array_slice, shape, dtype, s3_bucket, s3_key)
 
         # truncate array_slice to shape
         # array_slice = [slice(max(0, s.start) - min(sh, s.stop)) for s, sh in zip(array_sliced, shape)]
@@ -192,6 +176,9 @@ class S3AIO(object):
 
             result[t] = data.reshape([s.stop - s.start for s in sub_range])
 
+        if self.enable_compression:
+            return self.get_slice_by_bbox(array_slice, shape, dtype, s3_bucket, s3_key)
+
         cdim = self.cdims(array_slice, shape)
 
         try:
@@ -245,8 +232,9 @@ class S3AIO(object):
 
         d = self.s3io.get_bytes(s3_bucket, s3_key)
 
-        cctx = zstd.ZstdDecompressor()
-        d = cctx.decompress(d)
+        if self.enable_compression:
+            cctx = zstd.ZstdDecompressor()
+            d = cctx.decompress(d)
 
         d = np.frombuffer(d, dtype=np.uint8, count=-1, offset=0)
         d = d[s3_begin:s3_end]
@@ -284,15 +272,3 @@ class S3AIO(object):
             result[t] = data.reshape([s.stop - s.start for s in sub_range])
 
         return result
-
-    # def shape_to_idx(self, slices):
-    #     dims_but_last = slices[:-1]
-    #     ranges = [range(0, s) for s in slices]
-    #     cell_addresses = list(itertools.product(*ranges))
-    #     return cell_addresses
-
-    # def slice_to_idx(self, slices):
-    #     # slices_but_last = slices[:-1]
-    #     ranges = [range(s.start, s.stop) for s in slices]
-    #     cell_addresses = list(itertools.product(*ranges))
-    #     return cell_addresses

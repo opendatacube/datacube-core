@@ -247,7 +247,7 @@ def check_open_with_grid_workflow(driver_manager):
     dt = index.products.get_by_name(type_name)
 
     from datacube.api.grid_workflow import GridWorkflow
-    gw = GridWorkflow(index, dt.grid_spec)
+    gw = GridWorkflow(None, dt.grid_spec, driver_manager=driver_manager)
 
     cells = gw.list_cells(product=type_name, cell_index=LBG_CELL)
     assert LBG_CELL in cells

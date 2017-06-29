@@ -56,9 +56,6 @@ class S3IO(object):
         else:
             self.file_path = file_path
 
-        if num_workers is None:
-            num_workers = cpu_count()
-
         self.pool = ProcessingPool(num_workers)
 
     def list_created_arrays(self):
@@ -262,8 +259,8 @@ class S3IO(object):
         '''
         # assert isinstance(data, memoryview), 'data must be a memoryview'
 
-        cctx = zstd.ZstdCompressor(level=9, write_content_size=True)
-        data = cctx.compress(data)
+        # cctx = zstd.ZstdCompressor(level=9, write_content_size=True)
+        # data = cctx.compress(data)
 
         if self.enable_s3:
             s3 = self.s3_resource(new_session)

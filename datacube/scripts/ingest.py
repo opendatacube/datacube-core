@@ -13,7 +13,6 @@ from copy import deepcopy
 from pathlib import Path
 from pandas import to_datetime
 from datetime import datetime
-from pprint import pprint
 
 import datacube
 from datacube.api.core import Datacube
@@ -246,6 +245,7 @@ def create_task_list(driver_manager, output_type, year, source_type, config):
 
 def ingest_work(driver_manager, config, source_type, output_type, tile, tile_index):
     _LOG.info('Starting task %s', tile_index)
+
     namemap = get_namemap(config)
     measurements = get_measurements(source_type, config)
     variable_params = get_variable_params(config)
@@ -278,6 +278,11 @@ def ingest_work(driver_manager, config, source_type, output_type, tile, tile_ind
                                                                                global_attributes,
                                                                                variable_params)
     _LOG.info('Finished task %s', tile_index)
+
+    # When using multiproc executor, Driver Manager is a clone.
+    if driver_manager.is_clone:
+        driver_manager.close()
+
     return datasets
 
 
@@ -290,6 +295,8 @@ def _index_datasets(driver_manager, results, skip_sources):
 
 def process_tasks(driver_manager, config, source_type, output_type, tasks, queue_size, executor):
     index = driver_manager.index
+    # driver_manager_dump = dumps(driver_manager)
+
     def submit_task(task):
         _LOG.info('Submitting task: %s', task['tile_index'])
         return executor.submit(ingest_work,
