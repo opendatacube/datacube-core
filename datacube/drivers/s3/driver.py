@@ -91,7 +91,7 @@ class S3Driver(Driver):
           the results of :meth:`get_reg_irreg_index` for each coord in
           `coords`.
         """
-        return zip(*[self.get_reg_irreg_index(coord, coords[coord].values) \
+        return zip(*[self.get_reg_irreg_index(coord, coords[coord].values)
                      for coord in coords])
 
     def _get_index(self, chunk, coords, dims, index_type='min'):

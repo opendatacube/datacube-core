@@ -216,7 +216,7 @@ class DriverManager(object):
         :param str driver_name: The name of the driver to set as
           current driver.
         """
-        if not driver_name in self.__drivers:
+        if driver_name not in self.__drivers:
             raise ValueError('Default driver "%s" is not available in %s' % (
                 driver_name, ', '.join(self.__drivers.keys())))
         self.__driver = self.__drivers[driver_name]

@@ -21,7 +21,6 @@ from datetime import datetime, timedelta
 import datacube
 from datacube.utils import geometry
 
-
 INDEX_TEMPLATE = """<!DOCTYPE html>
 <html>
 <head>
@@ -53,7 +52,6 @@ INDEX_TEMPLATE = """<!DOCTYPE html>
 </body>
 </html>
 """
-
 
 GET_CAPS_TEMPLATE = """<?xml version='1.0' encoding="UTF-8" standalone="no" ?>
 <!DOCTYPE WMT_MS_Capabilities SYSTEM "http://schemas.opengis.net/wms/1.1.1/WMS_MS_Capabilities.dtd"
@@ -235,7 +233,7 @@ def _parse_query(qs):
 
 
 def _script_url(environ):
-    return environ['wsgi.url_scheme']+'://'+environ['HTTP_HOST']+environ['SCRIPT_NAME']
+    return environ['wsgi.url_scheme'] + '://' + environ['HTTP_HOST'] + environ['SCRIPT_NAME']
 
 
 def get_capabilities(dc, args, environ, start_response):
@@ -248,7 +246,6 @@ def get_capabilities(dc, args, environ, start_response):
                                         title=name,
                                         abstract=product.definition['description'],
                                         metadata=get_layer_metadata(layer, product))
-
 
     data = GET_CAPS_TEMPLATE.format(location=_script_url(environ), layers=layers).encode('utf-8')
     start_response("200 OK", [
@@ -315,4 +312,5 @@ def _write_png(data):
 
 if __name__ == '__main__':
     from werkzeug.serving import run_simple  # pylint: disable=import-error
+
     run_simple('127.0.0.1', 8000, application, use_debugger=False, use_reloader=True)

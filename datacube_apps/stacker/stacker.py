@@ -28,9 +28,7 @@ from datacube.storage.storage import create_netcdf_storage_unit
 from datacube.ui import task_app
 from datacube.ui.click import to_pathlib
 
-
 _LOG = logging.getLogger(__name__)
-
 
 APP_NAME = 'datacube-stacker'
 
@@ -125,7 +123,7 @@ def get_history_attribute(config, task):
                         task['output_filename'],
                         str(task['year']),
                         str(task['cell_index'])
-                       ]),
+                        ]),
         comment='Stacking datasets for a year into a single NetCDF file'
     )
 

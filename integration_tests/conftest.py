@@ -227,7 +227,7 @@ def ls5_telem_type(index, ls5_telem_doc):
 
 @pytest.fixture(scope='session')
 def geotiffs(tmpdir_factory):
-    '''Create test geotiffs and corresponding yamls.
+    """Create test geotiffs and corresponding yamls.
 
     We create one yaml per time slice, itself comprising one geotiff
     per band, each with specific custom data that can be later
@@ -248,7 +248,7 @@ def geotiffs(tmpdir_factory):
       `path`: path to the yaml ingestion file, `tiffs`: list of paths
       to the actual geotiffs in that dataset, one per band.
 
-    '''
+    """
     tiffs_dir = tmpdir_factory.mktemp('tiffs')
 
     config = load_yaml_file(_EXAMPLE_LS5_NBAR_DATASET_FILE)[0]
@@ -273,13 +273,13 @@ def geotiffs(tmpdir_factory):
 
 
 def _make_tiffs_and_yamls(tiffs_dir, config, day_offset):
-    '''Make a custom yaml and tiff for a day offset.
+    """Make a custom yaml and tiff for a day offset.
 
     :param path-like tiffs_dir: The base path to receive the tiffs.
     :param dict config: The yaml config to be cloned and altered.
     :param int day_offset: how many days to offset the original yaml
       by.
-    '''
+    """
     config = deepcopy(config)
     # Shift dates by the specific offset
     delta = timedelta(days=day_offset)
@@ -319,7 +319,7 @@ def _make_tiffs_and_yamls(tiffs_dir, config, day_offset):
 
 
 def _make_geotiffs(tiffs_dir, day_offset):
-    '''Generate custom geotiff files, one per band.'''
+    """Generate custom geotiff files, one per band."""
     tiffs = {}
     metadata = {'count': 1,
                 'crs': GEOTIFF['crs'],
@@ -357,13 +357,13 @@ def _make_geotiffs(tiffs_dir, day_offset):
 
 @pytest.fixture
 def example_ls5_dataset_path(example_ls5_dataset_paths):
-    '''Create a single sample raw observation (dataset + geotiff).'''
+    """Create a single sample raw observation (dataset + geotiff)."""
     return list(example_ls5_dataset_paths.values())[0]
 
 
 @pytest.fixture
 def example_ls5_dataset_paths(tmpdir, geotiffs):
-    '''Create sample raw observations (dataset + geotiff).
+    """Create sample raw observations (dataset + geotiff).
 
     This fixture should be used by eah test requiring a set of
     observations over multiple time slices. The actual geotiffs and
@@ -375,7 +375,7 @@ def example_ls5_dataset_paths(tmpdir, geotiffs):
       linked from this unique observation set sample.
     :return: dict: Dict of directories containing each observation,
       indexed by dataset UUID.
-    '''
+    """
     dataset_dirs = {}
     dataset_dir = tmpdir.mkdir('ls5_dataset')
     for geotiff in geotiffs:

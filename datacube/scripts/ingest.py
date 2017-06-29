@@ -19,7 +19,6 @@ import datacube
 from datacube.api.core import Datacube
 from datacube.model import DatasetType, Range, GeoPolygon
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
-from datacube.drivers.manager import DriverManager
 from datacube.ui import click as ui
 from datacube.utils import read_documents, changes
 from datacube.ui.task_app import check_existing_files, load_tasks as load_tasks_, save_tasks as save_tasks_

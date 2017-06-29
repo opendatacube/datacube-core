@@ -45,7 +45,7 @@ class Index(base_index.Index, base_index.IndexExtension):
         :rtype: int
 
         """
-        if not 'storage_output' in datasets.attrs:
+        if 'storage_output' not in datasets.attrs:
             raise ValueError('s3 storage output not received, indexing aborted.')
         dataset_refs = []
         n = 0

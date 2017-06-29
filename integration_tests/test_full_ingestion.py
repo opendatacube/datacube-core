@@ -166,8 +166,8 @@ def check_attributes(obj, attrs):
 
 
 def check_dataset_metadata_in_storage_unit(nco, dataset_dirs):
-    '''Check one of the NetCDF files metadata against the original
-    metadata.'''
+    """Check one of the NetCDF files metadata against the original
+    metadata."""
     assert len(nco.variables['dataset']) == 1  # 1 time slice
     stored_metadata = netcdf_extract_string(nco.variables['dataset'][0])
     stored = yaml.safe_load(stored_metadata)
@@ -204,11 +204,11 @@ def check_open_with_api(driver_manager, time_slices):
 
 
 def check_data_with_api(driver_manager, time_slices):
-    '''Chek retrieved data for specific values.
+    """Chek retrieved data for specific values.
 
     We scale down by 100 and check for predefined values in the
     corners.
-    '''
+    """
     from datacube import Datacube
     dc = Datacube(driver_manager=driver_manager)
 

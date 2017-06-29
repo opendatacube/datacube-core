@@ -7,6 +7,7 @@ from __future__ import absolute_import
 from abc import ABCMeta, abstractmethod
 from six import add_metaclass
 
+
 @add_metaclass(ABCMeta)
 class Driver(object):
     """Abstract base class for storage drivers.
@@ -15,12 +16,11 @@ class Driver(object):
     access.
     """
 
+    #: Driver's Name
     __name = None
-    '''Driver's name.'''
 
+    #: Driver's Index
     __index = None
-    '''Driver's index.'''
-
 
     def __init__(self, driver_manager, name, index=None, *index_args, **index_kargs):
         """Initialise the driver's name and index.
@@ -48,14 +48,12 @@ class Driver(object):
         # pylint: disable=protected-access
         self.__index = self._init_index(driver_manager, index, *index_args, **index_kargs)
 
-
     @property
     def name(self):
         """A human-readable name for this driver."""
         if not self.__name:
             raise ValueError('Driver was not initialised properly. Make sure you call the base class _init__')
         return self.__name
-
 
     @property
     def format(self):
@@ -64,12 +62,10 @@ class Driver(object):
         Defaults to driver name, but may need to be overriden by some drivers."""
         return self.__name
 
-
     @property
     def uri_scheme(self):
         """URI scheme used by this driver."""
         return 'file'
-
 
     @property
     def index(self):
@@ -78,14 +74,12 @@ class Driver(object):
             raise ValueError('Driver was not initialised properly. Make sure you call the base class _init__')
         return self.__index
 
-
     def as_uri(self, path):
         """Set or replace the uri scheme for a path according to the driver's.
         """
         path = str(path)
         body = path.split(':', 1)[1] if ':' in path else path
         return '%s:%s' % (self.uri_scheme, body)
-
 
     @abstractmethod
     def write_dataset_to_storage(self, dataset, *args, **kargs):
@@ -101,7 +95,6 @@ class Driver(object):
           relevant to the indexing
         """
         return None
-
 
     @abstractmethod
     def _init_index(self, driver_manager, index, *args, **kargs):
