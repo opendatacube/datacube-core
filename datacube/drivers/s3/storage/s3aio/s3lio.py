@@ -184,9 +184,8 @@ class S3LIO(object):
             if self.enable_compression:
                 cctx = zstd.ZstdDecompressor()
                 b = cctx.decompress(b)
-            m = memoryview(b)
             shape = tuple((i.stop - i.start) for i in index)
-            array[index] = np.ndarray(shape, buffer=m, dtype=dtype)
+            array[index] = np.ndarray(shape, buffer=b, dtype=dtype)
         return array
 
     # converts positional(spatial/temporal) coordinates to array integer coordinates
@@ -212,15 +211,14 @@ class S3LIO(object):
 
         point = np.around([q-o for q, o in zip(query, offset)], S3LIO.DECIMAL_PLACES)
 
-        result = np.floor([(p/l)*s for p, l, s in zip(point, length, shape)]).astype(int)
+        result = np.floor([(float(p)/float(l))*s for p, l, s in zip(point, length, shape)]).astype(int)
         result = [min(r, s-1) for r, s in zip(result, shape)]
 
         # print(length, offset, point, result)
 
         if flatten:
             # return self.s3aio.to_1d(tuple(result), shape)
-            macro_shape = tuple([(int(np.ceil(a/b))) for a, b in zip(dimension_range, shape)])
-            # print(result, macro_shape)
+            macro_shape = tuple([(int(np.ceil(float(a)/float(b)))) for a, b in zip(dimension_range, shape)])
             return self.s3aio.to_1d(tuple(result), macro_shape)
         return result
 

@@ -70,7 +70,7 @@ def test_put_array_in_s3_mp_without_compression(tmpdir):
     assert np.array_equal(x, e)
 
 
-def test_put_array_in_s3_without_compression(tmpdir):
+def test_put_array_in_s3_with_compression(tmpdir):
     import datacube.drivers.s3.storage.s3aio as s3aio
     import numpy as np
     s = s3aio.S3LIO(True, False, str(tmpdir))
@@ -84,7 +84,7 @@ def test_put_array_in_s3_without_compression(tmpdir):
     assert np.array_equal(x, e)
 
 
-def test_put_array_in_s3_mp_without_compression(tmpdir):
+def test_put_array_in_s3_mp_with_compression(tmpdir):
     import datacube.drivers.s3.storage.s3aio as s3aio
     import numpy as np
     s = s3aio.S3LIO(True, False, str(tmpdir))
@@ -104,6 +104,8 @@ def test_regular_index():
     i = s.regular_index((-35+2*0.128, 149+2*0.128), ((-35, -34), (149, 150)), (4000, 4000))
     assert i == [1024, 1024]
 
+    i = s.regular_index((3, 1, 1), (5, 5, 5), (3, 3, 3))
+    assert i == [1, 0, 0]
     i = s.regular_index((3, 1, 1), (5, 5, 5), (3, 3, 3), True)
     assert i == 4
 
@@ -270,9 +272,9 @@ def test_put_bytes(tmpdir):
     b = s.get_bytes('arrayio', '1234test')
     assert bytes(data.data) == bytes(b)
     b = s.get_byte_range('arrayio', '1234test', 1, 4)
-    assert bytes(data.data)[1:4] == bytes(b)
+    assert bytes(data[1:4]) == bytes(b)
     b = s.get_byte_range_mp('arrayio', '1234test', 1, 4, 2)
-    assert bytes(data.data)[1:4] == bytes(b)
+    assert bytes(data[1:4]) == bytes(b)
 
     s.delete_objects('arrayio', ['1234test'])
     assert not s.object_exists('arrayio', '1234test')
@@ -299,9 +301,9 @@ def test_put_bytes_mpu(tmpdir):
     b = s.get_bytes('arrayio', '1234test')
     assert bytes(data.data) == bytes(b)
     b = s.get_byte_range('arrayio', '1234test', 1, 4)
-    assert bytes(data.data)[1:4] == bytes(b)
+    assert bytes(data[1:4]) == bytes(b)
     b = s.get_byte_range_mp('arrayio', '1234test', 1, 4, 2)
-    assert bytes(data.data)[1:4] == bytes(b)
+    assert bytes(data[1:4]) == bytes(b)
 
     s.delete_objects('arrayio', ['1234test'])
     assert not s.object_exists('arrayio', '1234test')
@@ -328,9 +330,9 @@ def test_put_bytes_mpu_mp(tmpdir):
     b = s.get_bytes('arrayio', '1234test')
     assert bytes(data.data) == bytes(b)
     b = s.get_byte_range('arrayio', '1234test', 1, 4)
-    assert bytes(data.data)[1:4] == bytes(b)
+    assert bytes(data[1:4]) == bytes(b)
     b = s.get_byte_range_mp('arrayio', '1234test', 1, 4, 2)
-    assert bytes(data.data)[1:4] == bytes(b)
+    assert bytes(data[1:4]) == bytes(b)
 
     s.delete_objects('arrayio', ['1234test'])
     assert not s.object_exists('arrayio', '1234test')
@@ -366,9 +368,9 @@ def test_put_bytes_mpu_mp_shm(tmpdir):
     b = s.get_bytes('arrayio', '1234test')
     assert bytes(data.data) == bytes(b)
     b = s.get_byte_range('arrayio', '1234test', 1, 4)
-    assert bytes(data.data)[1:4] == bytes(b)
+    assert bytes(data[1:4]) == bytes(b)
     b = s.get_byte_range_mp('arrayio', '1234test', 1, 4, 2)
-    assert bytes(data.data)[1:4] == bytes(b)
+    assert bytes(data[1:4]) == bytes(b)
 
     s.delete_objects('arrayio', ['1234test'])
     assert not s.object_exists('arrayio', '1234test')
