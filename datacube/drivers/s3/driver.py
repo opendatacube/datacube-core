@@ -43,7 +43,7 @@ class S3Driver(Driver):
             chunksizes = tuple(map(int, chunksizes))
         except ValueError:
             raise DatacubeException('Dataset contains invalid chunking values, cannot write to storage.')
-        if len(chunksizes) == 0:
+        if not chunksizes:
             raise DatacubeException('Dataset contains invalid chunking values, cannot write to storage.')
         return chunksizes
 

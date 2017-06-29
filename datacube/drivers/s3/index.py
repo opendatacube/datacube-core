@@ -78,11 +78,11 @@ class DatasetResource(base_dataset.DatasetResource):
         self.uri_scheme = uri_scheme
 
 
-    def add(self, dataset, *args, **kargs):
+    def add(self, dataset, sources_policy='verify', **kwargs):
         # Set uri scheme to s3
         dataset.uris = ['%s:%s' % (self.uri_scheme, uri.split(':', 1)[1]) for uri in dataset.uris] \
                        if dataset.uris else []
-        return super(DatasetResource, self).add(dataset, *args, **kargs)
+        return super(DatasetResource, self).add(dataset, sources_policy, **kwargs)
 
 
     def _add_s3_dataset(self, transaction, s3_dataset_id, band, output):
