@@ -123,7 +123,7 @@ def get_history_attribute(config, task):
                         task['output_filename'],
                         str(task['year']),
                         str(task['cell_index'])
-                        ]),
+                       ]),
         comment='Stacking datasets for a year into a single NetCDF file'
     )
 
