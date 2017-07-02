@@ -211,6 +211,7 @@ def create_empty_geotiff(path):
                 'height': 8521,
                 'nodata': -999.0,
                 'transform': [25.0, 0.0, 638000.0, 0.0, -25.0, 6276000.0],
+                'compress': 'lzw',
                 'width': 9721}
     with rasterio.open(path, 'w', **metadata) as dst:
         pass
