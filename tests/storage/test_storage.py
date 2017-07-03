@@ -275,131 +275,146 @@ def test_read_from_source():
     source.open = fake_open
 
     # one-to-one copy
-    assert_same_read_results(source,
-                             dst_shape=data_source.shape,
-                             dst_dtype=data_source.data.dtype,
-                             dst_transform=data_source.transform,
-                             dst_nodata=data_source.nodata,
-                             dst_projection=data_source.crs,
-                             resampling=Resampling.nearest)
+    assert_same_read_results(
+        source,
+        dst_shape=data_source.shape,
+        dst_dtype=data_source.data.dtype,
+        dst_transform=data_source.transform,
+        dst_nodata=data_source.nodata,
+        dst_projection=data_source.crs,
+        resampling=Resampling.nearest)
 
     # change dtype
-    assert_same_read_results(source,
-                             dst_shape=data_source.shape,
-                             dst_dtype='int32',
-                             dst_transform=data_source.transform,
-                             dst_nodata=data_source.nodata,
-                             dst_projection=data_source.crs,
-                             resampling=Resampling.nearest)
+    assert_same_read_results(
+        source,
+        dst_shape=data_source.shape,
+        dst_dtype='int32',
+        dst_transform=data_source.transform,
+        dst_nodata=data_source.nodata,
+        dst_projection=data_source.crs,
+        resampling=Resampling.nearest)
 
     # change nodata
-    assert_same_read_results(source,
-                             dst_shape=data_source.shape,
-                             dst_dtype='float32',
-                             dst_transform=data_source.transform,
-                             dst_nodata=float('nan'),
-                             dst_projection=data_source.crs,
-                             resampling=Resampling.nearest)
+    assert_same_read_results(
+        source,
+        dst_shape=data_source.shape,
+        dst_dtype='float32',
+        dst_transform=data_source.transform,
+        dst_nodata=float('nan'),
+        dst_projection=data_source.crs,
+        resampling=Resampling.nearest)
 
     # different offsets/sizes
-    assert_same_read_results(source,
-                             dst_shape=(517, 557),
-                             dst_dtype='float32',
-                             dst_transform=data_source.transform * Affine.translation(-200, -200),
-                             dst_nodata=float('nan'),
-                             dst_projection=data_source.crs,
-                             resampling=Resampling.nearest)
+    assert_same_read_results(
+        source,
+        dst_shape=(517, 557),
+        dst_dtype='float32',
+        dst_transform=data_source.transform * Affine.translation(-200, -200),
+        dst_nodata=float('nan'),
+        dst_projection=data_source.crs,
+        resampling=Resampling.nearest)
 
-    assert_same_read_results(source,
-                             dst_shape=(807, 879),
-                             dst_dtype='float32',
-                             dst_transform=data_source.transform * Affine.translation(200, 200),
-                             dst_nodata=float('nan'),
-                             dst_projection=data_source.crs,
-                             resampling=Resampling.nearest)
+    assert_same_read_results(
+        source,
+        dst_shape=(807, 879),
+        dst_dtype='float32',
+        dst_transform=data_source.transform * Affine.translation(200, 200),
+        dst_nodata=float('nan'),
+        dst_projection=data_source.crs,
+        resampling=Resampling.nearest)
 
-    assert_same_read_results(source,
-                             dst_shape=(807, 879),
-                             dst_dtype='float32',
-                             dst_transform=data_source.transform * Affine.translation(1500, -1500),
-                             dst_nodata=float('nan'),
-                             dst_projection=data_source.crs,
-                             resampling=Resampling.nearest)
+    assert_same_read_results(
+        source,
+        dst_shape=(807, 879),
+        dst_dtype='float32',
+        dst_transform=data_source.transform * Affine.translation(1500, -1500),
+        dst_nodata=float('nan'),
+        dst_projection=data_source.crs,
+        resampling=Resampling.nearest)
 
     # flip axis
-    assert_same_read_results(source,
-                             dst_shape=(517, 557),
-                             dst_dtype='float32',
-                             dst_transform=data_source.transform * Affine.translation(0, 512) * Affine.scale(1, -1),
-                             dst_nodata=float('nan'),
-                             dst_projection=data_source.crs,
-                             resampling=Resampling.nearest)
+    assert_same_read_results(
+        source,
+        dst_shape=(517, 557),
+        dst_dtype='float32',
+        dst_transform=data_source.transform * Affine.translation(0, 512) * Affine.scale(1, -1),
+        dst_nodata=float('nan'),
+        dst_projection=data_source.crs,
+        resampling=Resampling.nearest)
 
-    assert_same_read_results(source,
-                             dst_shape=(517, 557),
-                             dst_dtype='float32',
-                             dst_transform=data_source.transform * Affine.translation(512, 0) * Affine.scale(-1, 1),
-                             dst_nodata=float('nan'),
-                             dst_projection=data_source.crs,
-                             resampling=Resampling.nearest)
+    assert_same_read_results(
+        source,
+        dst_shape=(517, 557),
+        dst_dtype='float32',
+        dst_transform=data_source.transform * Affine.translation(512, 0) * Affine.scale(-1, 1),
+        dst_nodata=float('nan'),
+        dst_projection=data_source.crs,
+        resampling=Resampling.nearest)
 
     # scale
-    assert_same_read_results(source,
-                             dst_shape=(250, 500),
-                             dst_dtype='float32',
-                             dst_transform=data_source.transform * Affine.scale(2, 4),
-                             dst_nodata=float('nan'),
-                             dst_projection=data_source.crs,
-                             resampling=Resampling.nearest)
+    assert_same_read_results(
+        source,
+        dst_shape=(250, 500),
+        dst_dtype='float32',
+        dst_transform=data_source.transform * Affine.scale(2, 4),
+        dst_nodata=float('nan'),
+        dst_projection=data_source.crs,
+        resampling=Resampling.nearest)
 
-    assert_same_read_results(source,
-                             dst_shape=(500, 250),
-                             dst_dtype='float32',
-                             dst_transform=data_source.transform * Affine.scale(4, 2),
-                             dst_nodata=float('nan'),
-                             dst_projection=data_source.crs,
-                             resampling=Resampling.cubic)
+    assert_same_read_results(
+        source,
+        dst_shape=(500, 250),
+        dst_dtype='float32',
+        dst_transform=data_source.transform * Affine.scale(4, 2),
+        dst_nodata=float('nan'),
+        dst_projection=data_source.crs,
+        resampling=Resampling.cubic)
 
-    assert_same_read_results(source,
-                             dst_shape=(67, 35),
-                             dst_dtype='float32',
-                             dst_transform=data_source.transform * Affine.scale(16, 8),
-                             dst_nodata=float('nan'),
-                             dst_projection=data_source.crs,
-                             resampling=Resampling.cubic)
+    assert_same_read_results(
+        source,
+        dst_shape=(67, 35),
+        dst_dtype='float32',
+        dst_transform=data_source.transform * Affine.scale(16, 8),
+        dst_nodata=float('nan'),
+        dst_projection=data_source.crs,
+        resampling=Resampling.cubic)
 
-    assert_same_read_results(source,
-                             dst_shape=(35, 67),
-                             dst_dtype='float32',
-                             dst_transform=data_source.transform * Affine.translation(27, 35) * Affine.scale(8, 16),
-                             dst_nodata=float('nan'),
-                             dst_projection=data_source.crs,
-                             resampling=Resampling.cubic)
+    assert_same_read_results(
+        source,
+        dst_shape=(35, 67),
+        dst_dtype='float32',
+        dst_transform=data_source.transform * Affine.translation(27, 35) * Affine.scale(8, 16),
+        dst_nodata=float('nan'),
+        dst_projection=data_source.crs,
+        resampling=Resampling.cubic)
 
-    assert_same_read_results(source,
-                             dst_shape=(35, 67),
-                             dst_dtype='float32',
-                             dst_transform=data_source.transform * Affine.translation(-13, -27) * Affine.scale(8, 16),
-                             dst_nodata=float('nan'),
-                             dst_projection=data_source.crs,
-                             resampling=Resampling.cubic)
+    assert_same_read_results(
+        source,
+        dst_shape=(35, 67),
+        dst_dtype='float32',
+        dst_transform=data_source.transform * Affine.translation(-13, -27) * Affine.scale(8, 16),
+        dst_nodata=float('nan'),
+        dst_projection=data_source.crs,
+        resampling=Resampling.cubic)
 
     # scale + flip
-    assert_same_read_results(source,
-                             dst_shape=(35, 67),
-                             dst_dtype='float32',
-                             dst_transform=data_source.transform * Affine.translation(15, 512 + 17) * Affine.scale(8, -16),
-                             dst_nodata=float('nan'),
-                             dst_projection=data_source.crs,
-                             resampling=Resampling.cubic)
+    assert_same_read_results(
+        source,
+        dst_shape=(35, 67),
+        dst_dtype='float32',
+        dst_transform=data_source.transform * Affine.translation(15, 512 + 17) * Affine.scale(8, -16),
+        dst_nodata=float('nan'),
+        dst_projection=data_source.crs,
+        resampling=Resampling.cubic)
 
-    assert_same_read_results(source,
-                             dst_shape=(67, 35),
-                             dst_dtype='float32',
-                             dst_transform=data_source.transform * Affine.translation(512 - 23, -29) * Affine.scale(-16, 8),
-                             dst_nodata=float('nan'),
-                             dst_projection=data_source.crs,
-                             resampling=Resampling.cubic)
+    assert_same_read_results(
+        source,
+        dst_shape=(67, 35),
+        dst_dtype='float32',
+        dst_transform=data_source.transform * Affine.translation(512 - 23, -29) * Affine.scale(-16, 8),
+        dst_nodata=float('nan'),
+        dst_projection=data_source.crs,
+        resampling=Resampling.cubic)
 
     # TODO: crs change
 

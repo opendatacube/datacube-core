@@ -117,8 +117,8 @@ class API(object):
             return str(ds.local_path)
 
         datasets.sort(key=dataset_path)
-        for path, datasets in groupby(datasets, key=dataset_path):
-            datasets = list(datasets)
+        for path, dataset_group in groupby(datasets, key=dataset_path):
+            datasets = list(dataset_group)
             su = {}
             times = [dataset.center_time for dataset in datasets]
             xs = [x for dataset in datasets for x in (dataset.bounds.left, dataset.bounds.right)]

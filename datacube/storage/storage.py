@@ -284,8 +284,10 @@ class BandDataSource(object):
 #         data_shape = (window[0][1]-window[0][0]), (window[1][1]-window[1][0])
 #         if out_shape is None:
 #             out_shape = data_shape
-#         xidx = window[0][0] + ((numpy.arange(out_shape[1])+0.5)*(data_shape[1]/out_shape[1])-0.5).round().astype('int')
-#         yidx = window[1][0] + ((numpy.arange(out_shape[0])+0.5)*(data_shape[0]/out_shape[0])-0.5).round().astype('int')
+#         xidx = window[0][0] + ((
+# numpy.arange(out_shape[1])+0.5)*(data_shape[1]/out_shape[1])-0.5).round().astype('int')
+#         yidx = window[1][0] + ((
+# numpy.arange(out_shape[0])+0.5)*(data_shape[0]/out_shape[0])-0.5).round().astype('int')
 #         slab = {self.crs.dimensions[1]: xidx, self.crs.dimensions[0]: yidx}
 #         slab.update(self.slab)
 #         return data[tuple(slab[d] for d in self.variable.dimensions)]
