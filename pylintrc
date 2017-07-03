@@ -14,7 +14,9 @@ disable=no-self-use,
     no-value-for-parameter,
     file-ignored,
     wrong-import-order,
-    ungrouped-imports
+    ungrouped-imports,
+    len-as-condition,
+    no-else-return
 
 enable=python3
 
