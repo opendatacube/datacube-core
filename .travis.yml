@@ -11,8 +11,10 @@ cache: pip
 
 matrix:
   include:
+    - python: "3.6"
+      env: CONDA_ENV_FILE=.travis/environment_py3.yaml
     - python: "3.5"
-      env: CONDA_ENV_FILE=.travis/environment_py35.yaml
+      env: CONDA_ENV_FILE=.travis/environment_py3.yaml
     - python: "2.7"
       env: CONDA_ENV_FILE=.travis/environment_py27.yaml
 
@@ -55,14 +57,16 @@ install:
 
 script:
   - ./check-code.sh integration_tests
+  # Take extra steps to minimise disk space. We have run out a few times.
   - conda clean --all --yes
 
 after_success:
-  - test $TRAVIS_PYTHON_VERSION = "3.5" && coveralls
+  - test $TRAVIS_PYTHON_VERSION = "3.6" && coveralls
 
 before_deploy:
   - python setup.py sdist --dist-dir dist/$TRAVIS_PYTHON_VERSION
 
+# On success, upload a package to an S3 Bucket. Used for continuous deployment.
 deploy:
   access_key_id: "AKIAJMZN4F5L5KXPQKVQ"
   secret_access_key:
@@ -73,8 +77,8 @@ deploy:
   local_dir: dist
   skip_cleanup: true
   on:
-    branch: deploy-automation
-    python: "3.5"
+    branch: develop
+    python: "3.6"
 
 notifications:
   slack:
