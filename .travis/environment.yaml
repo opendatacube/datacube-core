@@ -1,4 +1,8 @@
 name: agdc
+channels:
+- conda-forge
+- defaults
+- nodefaults
 dependencies:
 - pyyaml
 - sqlalchemy
