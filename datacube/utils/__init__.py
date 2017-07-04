@@ -28,8 +28,6 @@ import xarray
 import yaml
 from dateutil.tz import tzutc
 
-from datacube.storage.storage import _LOG
-
 try:
     from yaml import CSafeLoader as SafeLoader
 except ImportError:

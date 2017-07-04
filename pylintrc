@@ -1,4 +1,5 @@
 [MASTER]
+# ndexpr is crashing pylint. Hopefully remove this ignore when https://github.com/PyCQA/pylint/issues/1563 is fixed
 ignore=ndexpr
 
 [MESSAGES CONTROL]
