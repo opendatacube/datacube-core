@@ -50,8 +50,6 @@ class API(object):
         :param datacube:
         :type datacube: :class:`datacube.Datacube`
         """
-        warnings.warn("Descriptor interface is deprecated.", DeprecationWarning)
-
         if datacube is not None:
             self.datacube = datacube
         elif index is not None:
