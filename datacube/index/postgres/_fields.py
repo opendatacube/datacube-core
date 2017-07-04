@@ -225,8 +225,8 @@ class IntDocField(SimpleDocField):
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
 
-    def parse_value(self, s):
-        return int(s)
+    def parse_value(self, value):
+        return int(value)
 
 
 class NumericDocField(SimpleDocField):
@@ -236,8 +236,8 @@ class NumericDocField(SimpleDocField):
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
 
-    def parse_value(self, s):
-        return Decimal(s)
+    def parse_value(self, value):
+        return Decimal(value)
 
 
 class DoubleDocField(SimpleDocField):
@@ -247,8 +247,8 @@ class DoubleDocField(SimpleDocField):
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
 
-    def parse_value(self, s):
-        return float(s)
+    def parse_value(self, value):
+        return float(value)
 
 
 class DateDocField(SimpleDocField):
@@ -268,8 +268,8 @@ class DateDocField(SimpleDocField):
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
 
-    def parse_value(self, s):
-        return utils.parse_time(s)
+    def parse_value(self, value):
+        return utils.parse_time(value)
 
     @property
     def day(self):

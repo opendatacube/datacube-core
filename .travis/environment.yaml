@@ -1,6 +1,9 @@
 name: agdc
+channels:
+- conda-forge
+- defaults
+- nodefaults
 dependencies:
-- python=3.5
 - pyyaml
 - sqlalchemy
 - python-dateutil
@@ -8,7 +11,7 @@ dependencies:
 - cachetools
 - coveralls
 - numpy
-- numexpr
+- numexpr # For AE/EE
 - rasterio
 - singledispatch
 - netcdf4

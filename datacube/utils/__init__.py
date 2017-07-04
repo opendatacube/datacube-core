@@ -14,6 +14,7 @@ import logging
 import pathlib
 import re
 from collections import OrderedDict
+from contextlib import contextmanager
 from datetime import datetime, date
 from itertools import chain
 from math import ceil
@@ -743,3 +744,15 @@ def gen_password(num_random_bytes=12):
     """
     import base64
     return base64.urlsafe_b64encode(os.urandom(num_random_bytes)).decode('utf-8')
+
+
+@contextmanager
+def ignore_exceptions_if(ignore_errors):
+    """Ignore Exceptions raised within this block if ignore_errors is True"""
+    if ignore_errors:
+        try:
+            yield
+        except OSError as e:
+            _LOG.warning('Ignoring Exception: %s', e)
+    else:
+        yield

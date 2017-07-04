@@ -124,7 +124,6 @@ class Query(object):
 class DescriptorQuery(Query):
     def __init__(self, descriptor_request=None):
         super(DescriptorQuery, self).__init__()
-        warnings.warn("Descriptor interface is deprecated.", DeprecationWarning)
 
         if descriptor_request is None:
             descriptor_request = {}

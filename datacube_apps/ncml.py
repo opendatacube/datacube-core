@@ -48,12 +48,12 @@ def make_ncml_tasks(index, config, cell_index=None, year=None, cell_index_list=N
         else:
             cell_index_list = []
 
-    for cell_index in cell_index_list:
-        cells = gw.list_cells(product=product.name, cell_index=cell_index, **query)
-        for (cell_index, tile) in cells.items():
-            output_filename = get_filename(config, cell_index, year)
+    for requested_cell_index in cell_index_list:
+        cells = gw.list_cells(product=product.name, cell_index=requested_cell_index, **query)
+        for (found_cell_index, tile) in cells.items():
+            output_filename = get_filename(config, found_cell_index, year)
             yield dict(tile=tile,
-                       cell_index=cell_index,
+                       cell_index=found_cell_index,
                        output_filename=output_filename)
 
 
@@ -94,8 +94,8 @@ def do_ncml_task(config, task):
         if year in nested_years:
             file_path_template = str(Path(config['location'], config['partial_ncml_path_template']))
             return file_path_template.format(tile_index=task['cell_index'], start_time=year), True
-        else:
-            return str(sources.item()[0].local_path), False
+
+        return str(sources.item()[0].local_path), False
 
     header_attrs = dict(date_created=datetime.today().isoformat(),
                         history=get_history_attribute(config, task))

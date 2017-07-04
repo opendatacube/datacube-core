@@ -7,6 +7,7 @@ from __future__ import absolute_import, print_function
 import logging
 import random
 from pathlib import Path
+import re
 
 import pytest
 from click.testing import CliRunner
@@ -114,10 +115,13 @@ def test_config_check(global_integration_cli_args, local_config):
         ]
     )
     assert result.exit_code == 0
-    host_line = 'Host: {}'.format(local_config.db_hostname)
-    assert host_line in result.output
-    user_line = 'User: {}'.format(local_config.db_username)
-    assert user_line in result.output
+
+    host_regex = re.compile('.*Host:\s+{}.*'.format(local_config.db_hostname),
+                            flags=re.DOTALL)  # Match across newlines
+    user_regex = re.compile('.*User:\s+{}.*'.format(local_config.db_username),
+                            flags=re.DOTALL)
+    assert host_regex.match(result.output)
+    assert user_regex.match(result.output)
 
 
 def test_list_users_does_not_fail(global_integration_cli_args, local_config):

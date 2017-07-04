@@ -1,3 +1,6 @@
+[MASTER]
+# ndexpr is crashing pylint. Hopefully remove this ignore when https://github.com/PyCQA/pylint/issues/1563 is fixed
+ignore=ndexpr
 
 [MESSAGES CONTROL]
 disable=no-self-use,
@@ -14,7 +17,9 @@ disable=no-self-use,
     no-value-for-parameter,
     file-ignored,
     wrong-import-order,
-    ungrouped-imports
+    ungrouped-imports,
+    len-as-condition,
+    no-else-return
 
 enable=python3
 

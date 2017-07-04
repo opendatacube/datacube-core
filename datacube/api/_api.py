@@ -50,8 +50,6 @@ class API(object):
         :param datacube:
         :type datacube: :class:`datacube.Datacube`
         """
-        warnings.warn("Descriptor interface is deprecated.", DeprecationWarning)
-
         if datacube is not None:
             self.datacube = datacube
         elif index is not None:
@@ -117,8 +115,8 @@ class API(object):
             return str(ds.local_path)
 
         datasets.sort(key=dataset_path)
-        for path, datasets in groupby(datasets, key=dataset_path):
-            datasets = list(datasets)
+        for path, dataset_group in groupby(datasets, key=dataset_path):
+            datasets = list(dataset_group)
             su = {}
             times = [dataset.center_time for dataset in datasets]
             xs = [x for dataset in datasets for x in (dataset.bounds.left, dataset.bounds.right)]
