@@ -1,6 +1,5 @@
 name: agdc
 dependencies:
-- python=3.5
 - pyyaml
 - sqlalchemy
 - python-dateutil
