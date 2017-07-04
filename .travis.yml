@@ -8,19 +8,12 @@ git:
 
 language: python
 python:
+# We don't use the travis python, but we will use it for the build matrix
   - "2.7"
   - "3.5"
   - "3.6"
 cache: pip
 
-matrix:
-  include:
-    - python: "3.6"
-      env: CONDA_ENV_FILE=.travis/environment_py3.yaml
-    - python: "3.5"
-      env: CONDA_ENV_FILE=.travis/environment_py3.yaml
-    - python: "2.7"
-      env: CONDA_ENV_FILE=.travis/environment_py27.yaml
 
 # Install required packages
 addons:
@@ -52,7 +45,7 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
 
-  - conda env create -n agdc --file $CONDA_ENV_FILE python=$TRAVIS_PYTHON_VERSION
+  - conda env create -n agdc --file .travis/environment.yaml python=$TRAVIS_PYTHON_VERSION
 
   # try to reclaim some space -- delete downloaded packages
   - conda clean --all --yes

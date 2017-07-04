@@ -1,13 +1,13 @@
 name: agdc
 dependencies:
-- python=2.7
 - pyyaml
 - sqlalchemy
 - python-dateutil
 - jsonschema
 - cachetools
+- coveralls
 - numpy
-- numexpr
+- numexpr # For AE/EE
 - rasterio
 - singledispatch
 - netcdf4
@@ -16,7 +16,6 @@ dependencies:
 - dask
 - xarray
 - redis-py # redis client lib, used by celery
-- redis # redis server
 - pylint = 1.6.5 # testing
 - pep8 # testing
 - fiona # movie generator app
