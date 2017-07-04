@@ -205,7 +205,7 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
     # adding more metadata should always be allowed
     doc = copy.deepcopy(updated.metadata_doc)
     doc['test1'] = {'some': 'thing'}
-    update = Dataset(ls5_telem_type, doc, updated.local_uri)
+    update = Dataset(ls5_telem_type, doc, uris=updated.uris)
     index.datasets.update(update)
     updated = index.datasets.get(dataset.id)
     assert updated.metadata_doc['test1'] == {'some': 'thing'}
