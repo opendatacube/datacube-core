@@ -7,6 +7,10 @@ git:
   depth: 99999
 
 language: python
+python:
+  - "2.7"
+  - "3.5"
+  - "3.6"
 cache: pip
 
 matrix:
@@ -23,10 +27,13 @@ addons:
   postgresql: "9.5"
   services:
     - postgresql
+    - redis-server
 
 before_install:
   # Create a database for the integration tests.
   - createdb agdcintegration
+  - df -h
+  - df -i
 
 install:
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
@@ -42,10 +49,10 @@ install:
   - conda config --prepend channels conda-forge
   - conda update --all
 
-  # print conda info
+  # Useful for debugging any issues with conda
   - conda info -a
 
-  - conda env create -n agdc --file $CONDA_ENV_FILE
+  - conda env create -n agdc --file $CONDA_ENV_FILE python=$TRAVIS_PYTHON_VERSION
 
   # try to reclaim some space -- delete downloaded packages
   - conda clean --all --yes

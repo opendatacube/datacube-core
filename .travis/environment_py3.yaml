@@ -1,6 +1,5 @@
 name: agdc
 dependencies:
-- python=3.5
 - pyyaml
 - sqlalchemy
 - python-dateutil
@@ -17,7 +16,6 @@ dependencies:
 - dask
 - xarray
 - redis-py # redis client lib, used by celery
-- redis # redis server
 - pylint = 1.6.5 # testing
 - pep8 # testing
 - fiona # movie generator app
