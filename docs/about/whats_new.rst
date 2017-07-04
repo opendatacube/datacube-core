@@ -5,6 +5,19 @@
 What's New
 ==========
 
+v1.5.0 (????)
+-------------
+
+Usability Improvements
+~~~~~~~~~~~~~~~~~~~~~~
+
+ - When `datacube dataset add` is unable to add a Dataset to the index, print
+   out the entire Dataset to make it easier to debug the problem.
+
+ - Give `datacube system check` prettier and more readable output.
+
+ - Make `celery` and `redis` optional when installing.
+
 v1.4.1 (25 May 2017)
 --------------------
 
