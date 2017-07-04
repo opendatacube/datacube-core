@@ -48,7 +48,7 @@ install:
   - conda env create -n agdc --file $CONDA_ENV_FILE
 
   # try to reclaim some space -- delete downloaded packages
-  - conda clean --tarballs --yes
+  - conda clean --all --yes
 
   - source activate agdc
   - pip install . --no-deps --upgrade
