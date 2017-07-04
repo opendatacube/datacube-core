@@ -1,3 +1,5 @@
+[MASTER]
+ignore=ndexpr
 
 [MESSAGES CONTROL]
 disable=no-self-use,
