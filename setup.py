@@ -12,6 +12,7 @@ extras_require = {
     'analytics': ['scipy', 'pyparsing', 'numexpr'],
     'doc': ['Sphinx', 'setuptools'],
     'replicas': ['paramiko', 'sshtunnel', 'tqdm'],
+    'celery': ['celery>=4', 'redis'],
     'test': tests_require,
 }
 # An 'all' option, following ipython naming conventions.
@@ -79,8 +80,6 @@ setup(
         'rasterio>=0.34',
         'singledispatch',
         'sqlalchemy',
-        'celery>=4',
-        'redis',
         'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
     ],
     extras_require=extras_require,

@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import logging
 
 import click
-from click import echo
+from click import echo, style
 from sqlalchemy.exc import OperationalError
 
 import datacube
@@ -49,9 +49,9 @@ def database_init(index, default_types, init_users, recreate_views, rebuild, loc
                                 with_permissions=init_users)
 
     if was_created:
-        echo('Created.')
+        echo(style('Created.', bold=True))
     else:
-        echo('Updated.')
+        echo(style('Updated.', bold=True))
 
     echo('Checking indexes/views.')
     index.metadata_types.check_field_indexes(
@@ -68,20 +68,22 @@ def check(config_file):
     """
     Verify & view current configuration
     """
-    echo('Version: %s' % datacube.__version__)
-    echo('Read configurations files from: %s' % config_file.files_loaded)
-    echo('Host: {}:{}'.format(config_file.db_hostname or 'localhost', config_file.db_port or '5432'))
-    echo('Database: {}'.format(config_file.db_database))
-    echo('User: {}'.format(config_file.db_username))
+    echo('Version:\t' + style(str(datacube.__version__), bold=True))
+    echo('Config files:\t' + style(','.join(config_file.files_loaded), bold=True))
+    echo('Host:\t\t' +
+         style('{}:{}'.format(config_file.db_hostname or 'localhost',
+                              config_file.db_port or '5432'), bold=True))
+    echo('Database:\t' + style('{}'.format(config_file.db_database), bold=True))
+    echo('User:\t\t' + style('{}'.format(config_file.db_username), bold=True))
 
-    echo('\n')
-    echo('Attempting connect')
+    echo()
+    echo('Valid connection:\t', nl=False)
     try:
         index = index_connect(local_config=config_file)
-        echo('Success.')
+        echo(style('YES', bold=True))
         for role, user, description in index.users.list_users():
             if user == config_file.db_username:
-                echo('You have %s privileges.' % role.upper())
+                echo('You have %s privileges.' % style(role.upper(), bold=True))
     except OperationalError as e:
         handle_exception('Error Connecting to Database: %s', e)
     except IndexSetupError as e:
