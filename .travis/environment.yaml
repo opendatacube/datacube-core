@@ -1,6 +1,9 @@
 name: agdc
+channels:
+- conda-forge
+- defaults
+- nodefaults
 dependencies:
-- python=3.5
 - pyyaml
 - sqlalchemy
 - python-dateutil
@@ -8,7 +11,7 @@ dependencies:
 - cachetools
 - coveralls
 - numpy
-- numexpr
+- numexpr # For AE/EE
 - rasterio
 - singledispatch
 - netcdf4
@@ -17,8 +20,7 @@ dependencies:
 - dask
 - xarray
 - redis-py # redis client lib, used by celery
-- redis # redis server
-- pylint # testing
+- pylint = 1.6.5 # testing
 - pep8 # testing
 - fiona # movie generator app
 - mock # testing
