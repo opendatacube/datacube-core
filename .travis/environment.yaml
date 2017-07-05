@@ -40,7 +40,7 @@ dependencies:
 - pip:
   - celery >= 4
   - pypeg2
-  - pylint = 1.7.2 # testing
+  - pylint == 1.7.2 # testing
   - pytest-cov # testing
   - pytest-logging
   - pytest-faulthandler
