@@ -215,7 +215,7 @@ class Dataset(object):
         """
         Is this dataset active?
 
-        (ie. is hasn't been archived)
+        (ie. dataset hasn't been archived)
 
         :rtype: bool
         """
