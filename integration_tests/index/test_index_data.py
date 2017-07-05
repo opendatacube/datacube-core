@@ -82,16 +82,27 @@ def test_archive_datasets(index, db, local_config, default_metadata_type):
     assert was_inserted
     assert index.datasets.has(_telemetry_uuid)
 
-    datsets = index.datasets.search_eager()
-    assert len(datsets) == 1
+    datasets = index.datasets.search_eager()
+    assert len(datasets) == 1
+    assert datasets[0].is_active
 
     index.datasets.archive([_telemetry_uuid])
-    datsets = index.datasets.search_eager()
-    assert len(datsets) == 0
+    datasets = index.datasets.search_eager()
+    assert len(datasets) == 0
+
+    # The model should show it as archived now.
+    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    assert indexed_dataset.is_archived
+    assert not indexed_dataset.is_active
 
     index.datasets.restore([_telemetry_uuid])
-    datsets = index.datasets.search_eager()
-    assert len(datsets) == 1
+    datasets = index.datasets.search_eager()
+    assert len(datasets) == 1
+
+    # And now active
+    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    assert indexed_dataset.is_active
+    assert not indexed_dataset.is_archived
 
 
 @pytest.fixture
