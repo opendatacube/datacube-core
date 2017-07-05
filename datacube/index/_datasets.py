@@ -897,7 +897,21 @@ class DatasetResource(object):
             id_ = id_.id
 
         with self._db.connect() as connection:
-            return connection.get_archived_locations(id_)
+            return [uri for uri, archived_dt in connection.get_archived_locations(id_)]
+
+    def get_archived_location_times(self, id_):
+        """
+        Get each archived location along with the time it was archived.
+
+        :param typing.Union[UUID, str] id_: dataset id
+        :rtype: List[Tuple[str, datetime.datetime]]
+        """
+        if isinstance(id_, Dataset):
+            raise RuntimeError("Passing a dataset has been deprecated for all index apis, and "
+                               "is not supported in new apis. Pass the id of your dataset.")
+
+        with self._db.connect() as connection:
+            return list(connection.get_archived_locations(id_))
 
     def add_location(self, id_, uri):
         """
