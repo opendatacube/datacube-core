@@ -27,19 +27,19 @@ if sys.version_info >= (3, 5):  # python 3.5+
         return mod
 
 
-    # pylint: disable=invalid-name, redefined-variable-type
+    # pylint: disable=invalid-name
     load_module = load_mod
 elif sys.version_info[0] == 3:  # python 3.3, 3.4: untested
     # pylint: disable=import-error
     from importlib.machinery import SourceFileLoader
 
-    # pylint: disable=invalid-name, redefined-variable-type
+    # pylint: disable=invalid-name
     load_module = SourceFileLoader
 else:  # python 2
     # pylint: disable=import-error
     import imp
 
-    # pylint: disable=invalid-name, redefined-variable-type
+    # pylint: disable=invalid-name
     load_module = imp.load_source
 
 

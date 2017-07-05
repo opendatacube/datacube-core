@@ -5,12 +5,27 @@
 What's New
 ==========
 
-v1.4.2
-------
+v1.5.0 (????)
+-------------
+
+New Features
+~~~~~~~~~~~~
 
  - Support for AWS S3 array storage
 
  - Driver Manager support for NetCDF, S3, S3-file drivers.
+
+Usability Improvements
+~~~~~~~~~~~~~~~~~~~~~~
+
+ - When `datacube dataset add` is unable to add a Dataset to the index, print
+   out the entire Dataset to make it easier to debug the problem.
+
+ - Give `datacube system check` prettier and more readable output.
+
+ - Make `celery` and `redis` optional when installing.
+
+ - Significantly reduced disk space usage for integration tests
 
 v1.4.1 (25 May 2017)
 --------------------

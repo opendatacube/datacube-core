@@ -81,8 +81,7 @@ class ExecutionEngine(object):
                 self.execute_expression(task)
             elif op_type == OperationType.Cloud_Mask:
                 self.execute_cloud_mask(task)
-            elif op_type == OperationType.Reduction and \
-                            len([s for s in self.REDUCTION_FNS.keys() if s in function]) > 0:
+            elif op_type == OperationType.Reduction and [s for s in self.REDUCTION_FNS if s in function]:
                 self.execute_reduction(task)
             elif op_type == OperationType.Bandmath:
                 self.execute_bandmath(task)

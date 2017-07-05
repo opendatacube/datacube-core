@@ -10,10 +10,6 @@ import datacube.drivers.index as base_index
 class Index(base_index.Index, base_index.IndexExtension):
     """NetCDF driver wrapper."""
 
-    def __init__(self, driver_manager, index=None, *args, **kargs):
-        """Initialise the index."""
-        super(Index, self).__init__(driver_manager, index, *args, **kargs)
-
     def add_specifics(self, dataset):
         """Extend the dataset doc with driver specific index data.
 

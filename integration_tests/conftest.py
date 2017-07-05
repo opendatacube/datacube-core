@@ -411,6 +411,20 @@ def ls5_nbar_ingest_config(tmpdir, driver):
     return config_path, config
 
 
+def create_empty_geotiff(path):
+    metadata = {'count': 1,
+                'crs': 'EPSG:28355',
+                'driver': 'GTiff',
+                'dtype': 'int16',
+                'height': 8521,
+                'nodata': -999.0,
+                'transform': [25.0, 0.0, 638000.0, 0.0, -25.0, 6276000.0],
+                'compress': 'lzw',
+                'width': 9721}
+    with rasterio.open(path, 'w', **metadata) as dst:
+        pass
+
+
 @pytest.fixture
 def default_metadata_type_docs():
     return [doc for (path, doc) in datacube.utils.read_documents(_DEFAULT_METADATA_TYPES_PATH)]

@@ -219,10 +219,7 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc, dri
     # adding more metadata should always be allowed
     doc = copy.deepcopy(updated.metadata_doc)
     doc['test1'] = {'some': 'thing'}
-    if driver.uri_scheme == 'file':
-        update = Dataset(ls5_telem_type, doc, updated.local_uri)
-    else:
-        update = Dataset(ls5_telem_type, doc, uris=updated.uris)
+    update = Dataset(ls5_telem_type, doc, uris=updated.uris)
     index.datasets.update(update)
     updated = index.datasets.get(dataset.id)
     assert updated.metadata_doc['test1'] == {'some': 'thing'}
@@ -266,7 +263,8 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc, dri
     doc = copy.deepcopy(updated.metadata_doc)
     doc['product_type'] = 'foobar'
     # Backwards compat: third argument was a single local uri.
-    update = Dataset(ls5_telem_type, doc, '%s:///test/doc4.yaml' % driver.uri_scheme)
+    with pytest.warns(DeprecationWarning):
+        update = Dataset(ls5_telem_type, doc, '%s:///test/doc4.yaml' % driver.uri_scheme)
     index.datasets.update(update, {('product_type',): changes.allow_any})
     updated = index.datasets.get(dataset.id)
     assert updated.metadata_doc['test1'] == {'some': 'thing'}

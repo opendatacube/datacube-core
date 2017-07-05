@@ -202,7 +202,8 @@ def pass_driver_manager(app_name=None, expect_initialised=True):
                                                application_name=app_name or ctx.command_path,
                                                validate_connection=expect_initialised)
                 driver_manager.set_current_driver(ctx.obj['driver'])
-                _LOG.debug("Driver manager ready")
+                _LOG.debug("Driver manager ready. Connected to index: %s",
+                           driver_manager.index)
                 return f(driver_manager, *args, **kwargs)
             except (OperationalError, ProgrammingError) as e:
                 handle_exception('Error Connecting to database: %s', e)

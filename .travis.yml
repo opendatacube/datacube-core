@@ -7,12 +7,13 @@ git:
   depth: 99999
 
 language: python
-matrix:
-  include:
-    - python: "3.5"
-      env: CONDA_ENV_FILE=.travis/environment_py35.yaml
-    - python: "2.7"
-      env: CONDA_ENV_FILE=.travis/environment_py27.yaml
+python:
+# We don't use the travis python, but we will use it for the build matrix
+  - "2.7"
+  - "3.5"
+  - "3.6"
+cache: pip
+
 
 cache:
   directories:
@@ -23,10 +24,13 @@ addons:
   postgresql: "9.5"
   services:
     - postgresql
+    - redis-server
 
 before_install:
   # Create a database for the integration tests.
   - createdb agdcintegration
+  - df -h
+  - df -i
 
 install:
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
@@ -42,10 +46,10 @@ install:
   - conda config --prepend channels conda-forge
   - conda update --all
 
-  # print conda info
+  # Useful for debugging any issues with conda
   - conda info -a
 
-  - conda env create -n agdc --file $CONDA_ENV_FILE
+  - conda env create -n agdc --file .travis/environment.yaml python=$TRAVIS_PYTHON_VERSION
 
   # try to reclaim some space -- delete downloaded packages
   - conda clean --tarballs --yes
@@ -54,12 +58,38 @@ install:
   - pip install . --no-deps --upgrade
 
   - pip freeze
+  - df -h
+  - df -i
 
 script:
+  - df -h
+  - df -i
+  - conda clean --all --yes
   - ./check-code.sh integration_tests
+  # Take extra steps to minimise disk space. We have run out a few times.
+  - conda clean --all --yes
+  - df -h
+  - df -i
 
 after_success:
-  - test $TRAVIS_PYTHON_VERSION = "3.5" && coveralls
+  - test $TRAVIS_PYTHON_VERSION = "3.6" && coveralls
+
+before_deploy:
+  - python setup.py sdist --dist-dir dist/$TRAVIS_PYTHON_VERSION
+
+# On success, upload a package to an S3 Bucket. Used for continuous deployment.
+deploy:
+  access_key_id: "AKIAJMZN4F5L5KXPQKVQ"
+  secret_access_key:
+    secure: owxrrQc4i1jfAwvASFewdMzNdi93zpwnoEhsTJQS/f3SkD083XpefUr4H7Mg8cZiq5grT6NpoYkG6QDoxz30Kn5IbDIHewRy3I11uwz02JGUkzxv+/7hLOnoM/LM993WWXA+YQJmrO4HvncDy3Hgbw98xkKOeqsQ1XlYR8Lp5NUQnwJtLkouOJYfJSU/ZuIyetYC3bO2JkF/smtEPmVPJ8ZJjAQEqCdiUJsvMWKDlDh+cLOKM6EBTorE8GTECfMY+HUy74nH7xdkJ2xQm6PjO2wJVtcgCW377Jfn7IJqMhmlhA6fnkguyb58S5NkwwSynFizm7GidtbAxTeaIHimB3B6ImWUQu/maiWrWpMZGyqoC+l3+zQ/jg5Pam9Crtff8odFNT/tvwVGMTxuVkUxYRZ87XGM+G4D29xV/FGs0oqyn3Jw4SPXmg1bBymJOwmL+YogYFvJAR77MmbBUcf6SCogJzvI4Z2IFe9afMCbZaNeSD1GGh+EYCjJIKrpc9sY2ZxON1Mgv1bQ9FnSrDxyCUYEsshh8x9AaAFcYdGRGc6V0IT/5gopH3gf+XC+Q2OQHGC5oiaJ0+R4BoT3YuxEYfpBHvrpWk30Ug8C9ZgxoGK2xjabKiJ/2LlKe+xHoe77ZWZCkc1RocZnSHFBaFgaQrzppWsty04WGHl5fIVgH1Q=
+  provider: s3
+  bucket: "datacube-core-deployment"
+  region: "ap-southeast-2"
+  local_dir: dist
+  skip_cleanup: true
+  on:
+    branch: develop
+    python: "3.6"
 
 notifications:
   slack:

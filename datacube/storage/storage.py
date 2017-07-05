@@ -1,6 +1,12 @@
 # coding=utf-8
 """
-Create/store dataset data into storage units based on the provided storage mappings
+Create/store dataset data into storage units based on the provided storage mappings.
+
+Important functions are:
+
+* :func:`reproject_and_fuse`
+* :func:`read_from_source`
+
 """
 from __future__ import absolute_import, division, print_function
 
@@ -16,7 +22,7 @@ from datacube.config import OPTIONS
 from datacube.model import Dataset
 from datacube.storage import netcdf_writer
 from datacube.drivers.datasource import DataSource
-from datacube.utils import clamp, data_resolution_and_offset, datetime_to_seconds_since_1970, DatacubeException
+from datacube.utils import clamp, datetime_to_seconds_since_1970, DatacubeException, ignore_exceptions_if
 from datacube.utils import geometry
 from datacube.utils import is_url, uri_to_local_path
 
@@ -28,8 +34,7 @@ import numpy
 
 from affine import Affine
 from datacube.compat import integer_types
-import rasterio.warp
-import rasterio.crs
+import rasterio
 
 try:
     from rasterio.warp import Resampling
@@ -132,7 +137,7 @@ def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, re
     """
     Read from `source` into `dest`, reprojecting if necessary.
 
-    :param BaseRasterDataSource source: Data source
+    :param RasterioDataSource source: Data source
     :param numpy.ndarray dest: Data destination
     """
     with source.open() as src:
@@ -158,24 +163,12 @@ def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, re
                           NUM_THREADS=OPTIONS['reproject_threads'])
 
 
-@contextmanager
-def ignore_exceptions_if(ignore_errors):
-    """Ignore Exceptions raised within this block if ignore_errors is True"""
-    if ignore_errors:
-        try:
-            yield
-        except OSError as e:
-            _LOG.warning('Ignoring Exception: %s', e)
-    else:
-        yield
-
-
 def reproject_and_fuse(sources, destination, dst_transform, dst_projection, dst_nodata,
                        resampling='nearest', fuse_func=None, skip_broken_datasets=False):
     """
     Reproject and fuse `sources` into a 2D numpy array `destination`.
 
-    :param List[BaseRasterDataSource] sources: Data sources to open and read from
+    :param List[RasterioDataSource] sources: Data sources to open and read from
     :param numpy.ndarray destination: ndarray of appropriate size to read data into
     :type resampling: str
     :type fuse_func: callable or None
@@ -213,9 +206,10 @@ def reproject_and_fuse(sources, destination, dst_transform, dst_projection, dst_
 
 
 class BandDataSource(object):
-    """Wrapper for a rasterio.Band object
+    """
+    Wrapper for a :class:`rasterio.Band` object
 
-    :param source: rasterio.Band
+    :type source: rasterio.Band
     """
     def __init__(self, source, nodata=None):
         self.source = source
@@ -241,7 +235,7 @@ class BandDataSource(object):
         return self.source.shape
 
     def read(self, window=None, out_shape=None):
-        """Read data in the native format, returning a native array
+        """Read data in the native format, returning a numpy array
         """
         return self.source.ds.read(indexes=self.source.bidx, window=window, out_shape=out_shape)
 
@@ -256,76 +250,79 @@ class BandDataSource(object):
                                        **kwargs)
 
 
-class NetCDFDataSource(object):
-    def __init__(self, dataset, variable, slab=None, nodata=None):
-        self.dataset = dataset
-        self.variable = self.dataset[variable]
-        self.slab = slab or {}
-        if nodata is None:
-            nodata = self.variable.getncattr('_FillValue')
-        self.nodata = nodata
-
-    @property
-    def crs(self):
-        crs_var_name = self.variable.grid_mapping
-        crs_var = self.dataset[crs_var_name]
-        return geometry.CRS(crs_var.crs_wkt)
-
-    @property
-    def transform(self):
-        dims = self.crs.dimensions
-        xres, xoff = data_resolution_and_offset(self.dataset[dims[1]])
-        yres, yoff = data_resolution_and_offset(self.dataset[dims[0]])
-        return Affine.translation(xoff, yoff) * Affine.scale(xres, yres)
-
-    @property
-    def dtype(self):
-        return self.variable.dtype
-
-    @property
-    def shape(self):
-        return self.variable.shape
-
-    def read(self, window=None, out_shape=None):
-        data = self.variable
-        if window is None:
-            window = ((0, data.shape[0]), (0, data.shape[1]))
-        data_shape = (window[0][1]-window[0][0]), (window[1][1]-window[1][0])
-        if out_shape is None:
-            out_shape = data_shape
-        xidx = window[0][0] + ((numpy.arange(out_shape[1])+0.5)*(data_shape[1]/out_shape[1])-0.5).round().astype('int')
-        yidx = window[1][0] + ((numpy.arange(out_shape[0])+0.5)*(data_shape[0]/out_shape[0])-0.5).round().astype('int')
-        slab = {self.crs.dimensions[1]: xidx, self.crs.dimensions[0]: yidx}
-        slab.update(self.slab)
-        return data[tuple(slab[d] for d in self.variable.dimensions)]
-
-    def reproject(self, dest, dst_transform, dst_crs, dst_nodata, resampling, **kwargs):
-        dst_poly = geometry.polygon_from_transform(dest.shape[1], dest.shape[0],
-                                                   dst_transform, dst_crs).to_crs(self.crs)
-        src_poly = geometry.polygon_from_transform(self.shape[1], self.shape[0],
-                                                   self.transform, self.crs)
-        bounds = dst_poly.intersection(src_poly)
-        geobox = geometry.GeoBox.from_geopolygon(bounds, (self.transform.e, self.transform.a), crs=self.crs)
-        tmp, _, tmp_transform = _read_decimated(~self.transform * geobox.affine, self, geobox.shape)
-
-        return rasterio.warp.reproject(tmp,
-                                       dest,
-                                       src_transform=self.transform * tmp_transform,
-                                       src_crs=str(geobox.crs),
-                                       src_nodata=self.nodata,
-                                       dst_transform=dst_transform,
-                                       dst_crs=str(dst_crs),
-                                       dst_nodata=dst_nodata,
-                                       resampling=resampling,
-                                       **kwargs)
+# class NetCDFDataSource(object):
+#     def __init__(self, dataset, variable, slab=None, nodata=None):
+#         self.dataset = dataset
+#         self.variable = self.dataset[variable]
+#         self.slab = slab or {}
+#         if nodata is None:
+#             nodata = self.variable.getncattr('_FillValue')
+#         self.nodata = nodata
+#
+#     @property
+#     def crs(self):
+#         crs_var_name = self.variable.grid_mapping
+#         crs_var = self.dataset[crs_var_name]
+#         return geometry.CRS(crs_var.crs_wkt)
+#
+#     @property
+#     def transform(self):
+#         dims = self.crs.dimensions
+#         xres, xoff = data_resolution_and_offset(self.dataset[dims[1]])
+#         yres, yoff = data_resolution_and_offset(self.dataset[dims[0]])
+#         return Affine.translation(xoff, yoff) * Affine.scale(xres, yres)
+#
+#     @property
+#     def dtype(self):
+#         return self.variable.dtype
+#
+#     @property
+#     def shape(self):
+#         return self.variable.shape
+#
+#     def read(self, window=None, out_shape=None):
+#         data = self.variable
+#         if window is None:
+#             window = ((0, data.shape[0]), (0, data.shape[1]))
+#         data_shape = (window[0][1]-window[0][0]), (window[1][1]-window[1][0])
+#         if out_shape is None:
+#             out_shape = data_shape
+#         xidx = window[0][0] + ((
+# numpy.arange(out_shape[1])+0.5)*(data_shape[1]/out_shape[1])-0.5).round().astype('int')
+#         yidx = window[1][0] + ((
+# numpy.arange(out_shape[0])+0.5)*(data_shape[0]/out_shape[0])-0.5).round().astype('int')
+#         slab = {self.crs.dimensions[1]: xidx, self.crs.dimensions[0]: yidx}
+#         slab.update(self.slab)
+#         return data[tuple(slab[d] for d in self.variable.dimensions)]
+#
+#     def reproject(self, dest, dst_transform, dst_crs, dst_nodata, resampling, **kwargs):
+#         dst_poly = geometry.polygon_from_transform(dest.shape[1], dest.shape[0],
+#                                                    dst_transform, dst_crs).to_crs(self.crs)
+#         src_poly = geometry.polygon_from_transform(self.shape[1], self.shape[0],
+#                                                    self.transform, self.crs)
+#         bounds = dst_poly.intersection(src_poly)
+#         geobox = geometry.GeoBox.from_geopolygon(bounds, (self.transform.e, self.transform.a), crs=self.crs)
+#         tmp, _, tmp_transform = _read_decimated(~self.transform * geobox.affine, self, geobox.shape)
+#
+#         return rasterio.warp.reproject(tmp,
+#                                        dest,
+#                                        src_transform=self.transform * tmp_transform,
+#                                        src_crs=str(geobox.crs),
+#                                        src_nodata=self.nodata,
+#                                        dst_transform=dst_transform,
+#                                        dst_crs=str(dst_crs),
+#                                        dst_nodata=dst_nodata,
+#                                        resampling=resampling,
+#                                        **kwargs)
 
 
 class OverrideBandDataSource(object):
     """Wrapper for a rasterio.Band object that overrides nodata, crs and transform
 
-    This is useful for files with malformed or missing properties
+    This is useful for files with malformed or missing properties.
 
-    :param source: rasterio.Band
+
+    :type source: rasterio.Band
     """
     def __init__(self, source, nodata, crs, transform):
         self.source = source
@@ -360,11 +357,11 @@ class OverrideBandDataSource(object):
                                        **kwargs)
 
 
-class BaseRasterDataSource(DataSource):
+class RasterioDataSource(object):
     """
-    Interface used by fuse_sources and read_from_source
-    """
+    Abstract class used by fuse_sources and :func:`read_from_source`
 
+    """
     def __init__(self, filename, nodata):
         self.filename = filename
         self.nodata = nodata
@@ -380,7 +377,7 @@ class BaseRasterDataSource(DataSource):
 
     @contextmanager
     def open(self):
-        """Context manager which returns a `BandDataSource`"""
+        """Context manager which returns a :class:`BandDataSource`"""
         try:
             _LOG.debug("opening %s", self.filename)
             with rasterio.open(self.filename) as src:
@@ -419,7 +416,7 @@ class BaseRasterDataSource(DataSource):
             raise e
 
 
-class RasterFileDataSource(BaseRasterDataSource):
+class RasterFileDataSource(RasterioDataSource):
     def __init__(self, filename, bandnumber, nodata=None, crs=None, transform=None):
         super(RasterFileDataSource, self).__init__(filename, nodata)
         self.bandnumber = bandnumber
@@ -525,7 +522,7 @@ def _choose_location(dataset):
     return uris[0]
 
 
-class RasterDatasetSource(BaseRasterDataSource):
+class RasterDatasetSource(RasterioDataSource):
     """Data source for reading from a Data Cube Dataset"""
 
     def __init__(self, dataset, measurement_id):

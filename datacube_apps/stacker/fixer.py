@@ -86,15 +86,15 @@ def make_fixer_tasks(driver_manager, config, time=None, cell_index=None, **kwarg
         for cell_index_key, cell in cells.items():
             files_to_fix = get_single_dataset_paths(cell)
             if files_to_fix:
-                for time, tile in cell.split('time'):
+                for cell_time, tile in cell.split('time'):
                     source_path = tile.sources.values.item()[0].local_path
                     if source_path in files_to_fix:
                         tile = gw.update_tile_lineage(tile)
-                        start_time = '{0:%Y%m%d%H%M%S%f}'.format(pd.Timestamp(time).to_datetime())
+                        start_time = '{0:%Y%m%d%H%M%S%f}'.format(pd.Timestamp(cell_time).to_datetime())
                         output_filename = make_filename(config, cell_index_key, start_time)
                         _LOG.info('Fixing required for: time=%s, cell=%s. Output=%s',
                                   start_time, cell_index_key, output_filename)
-                        yield dict(start_time=time,
+                        yield dict(start_time=cell_time,
                                    tile=tile,
                                    cell_index=cell_index_key,
                                    output_filename=output_filename)
