@@ -21,7 +21,6 @@ dependencies:
 - xarray
 - redis-py # redis client lib, used by celery
 - redis # redis server
-- pylint = 1.6.5 # testing
 - pep8 # testing
 - fiona # movie generator app
 - mock # testing
@@ -41,6 +40,7 @@ dependencies:
 - pip:
   - celery >= 4
   - pypeg2
+  - pylint = 1.7.2 # testing
   - pytest-cov # testing
   - pytest-logging
   - pytest-faulthandler
