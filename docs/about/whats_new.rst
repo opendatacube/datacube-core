@@ -22,6 +22,9 @@ Usability Improvements
 
  - `Dataset` objects now have an `is_active` field to mirror `is_archived`.
 
+ - Added `index.datasets.get_archived_location_times()` to see when each
+   location was archived.
+
 v1.4.1 (25 May 2017)
 --------------------
 
