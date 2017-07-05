@@ -89,6 +89,7 @@ deploy:
   skip_cleanup: true
   on:
     branch: develop
+    repo: opendatacube/datacube-core
     python: "3.6"
 
 notifications:
