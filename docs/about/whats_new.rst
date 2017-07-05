@@ -20,6 +20,8 @@ Usability Improvements
 
  - Significantly reduced disk space usage for integration tests
 
+ - `Dataset` objects now have an `is_active` field to mirror `is_archived`.
+
 v1.4.1 (25 May 2017)
 --------------------
 
