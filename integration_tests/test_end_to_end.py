@@ -64,9 +64,6 @@ def copy_and_update_ingestion_configs(destination, output_dir, configs):
                     output.write(line)
 
 
-ignore_me = pytest.mark.xfail(True, reason="get_data/get_description still to be fixed in Unification")
-
-
 @pytest.mark.usefixtures('default_metadata_type')
 def test_end_to_end(global_integration_cli_args, driver_manager, testdata_dir):
     """

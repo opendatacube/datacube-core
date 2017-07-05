@@ -357,7 +357,7 @@ class OverrideBandDataSource(object):
                                        **kwargs)
 
 
-class RasterioDataSource(object):
+class RasterioDataSource(DataSource):
     """
     Abstract class used by fuse_sources and :func:`read_from_source`
 

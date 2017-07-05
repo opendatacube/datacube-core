@@ -334,7 +334,7 @@ def process_tasks(driver_manager, config, source_type, output_type, tasks, queue
             # TODO: ideally we wouldn't block here indefinitely
             # maybe limit gather to 50-100 results and put the rest into a index backlog
             # this will also keep the queue full
-            n_successful += _index_datasets(index, executor.results(completed))
+            n_successful += _index_datasets(driver_manager, executor.results(completed))
         except Exception:  # pylint: disable=broad-except
             _LOG.exception('Gather failed')
             pending += completed
