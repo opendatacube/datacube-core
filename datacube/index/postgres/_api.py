@@ -764,10 +764,12 @@ class PostgresDbAPI(object):
             ]
 
     def get_archived_locations(self, dataset_id):
-        # Return list of uri and archived_time
+        """
+        Return a list of uris and archived_times for a dataset
+        """
         return [
-            (record[0], record[1])
-            for record in self._connection.execute(
+            (location_uri, archived_time)
+            for location_uri, archived_time in self._connection.execute(
                 select([
                     _dataset_uri_field(DATASET_LOCATION), DATASET_LOCATION.c.archived
                 ]).where(
