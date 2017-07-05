@@ -764,11 +764,12 @@ class PostgresDbAPI(object):
             ]
 
     def get_archived_locations(self, dataset_id):
+        # Return list of uri and archived_time
         return [
-            record[0]
+            (record[0], record[1])
             for record in self._connection.execute(
                 select([
-                    _dataset_uri_field(DATASET_LOCATION)
+                    _dataset_uri_field(DATASET_LOCATION), DATASET_LOCATION.c.archived
                 ]).where(
                     and_(DATASET_LOCATION.c.dataset_ref == dataset_id, DATASET_LOCATION.c.archived != None)
                 ).order_by(
