@@ -13,6 +13,7 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
+from dateutil import tz
 
 from datacube.index._api import Index
 from datacube.index.exceptions import DuplicateRecordError, MissingRecordError
@@ -82,16 +83,27 @@ def test_archive_datasets(index, db, local_config, default_metadata_type):
     assert was_inserted
     assert index.datasets.has(_telemetry_uuid)
 
-    datsets = index.datasets.search_eager()
-    assert len(datsets) == 1
+    datasets = index.datasets.search_eager()
+    assert len(datasets) == 1
+    assert datasets[0].is_active
 
     index.datasets.archive([_telemetry_uuid])
-    datsets = index.datasets.search_eager()
-    assert len(datsets) == 0
+    datasets = index.datasets.search_eager()
+    assert len(datasets) == 0
+
+    # The model should show it as archived now.
+    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    assert indexed_dataset.is_archived
+    assert not indexed_dataset.is_active
 
     index.datasets.restore([_telemetry_uuid])
-    datsets = index.datasets.search_eager()
-    assert len(datsets) == 1
+    datasets = index.datasets.search_eager()
+    assert len(datasets) == 1
+
+    # And now active
+    indexed_dataset = index.datasets.get(_telemetry_uuid)
+    assert indexed_dataset.is_active
+    assert not indexed_dataset.is_archived
 
 
 @pytest.fixture
@@ -271,12 +283,26 @@ def test_index_dataset_with_location(index, default_metadata_type, driver):
     locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 1
 
+    # A rough date is ok: 1:01 beforehand just in case someone runs this during daylight savings time conversion :)
+    # (any UTC conversion errors will be off by much more than this for PST/AEST)
+    before_archival_dt = utc_now() - datetime.timedelta(hours=1, minutes=1)
+
     was_archived = index.datasets.archive_location(dataset.id, first_uri)
     assert was_archived
     locations = index.datasets.get_locations(dataset.id)
-    assert len(locations) == 0
+    assert locations == []
     locations = index.datasets.get_archived_locations(dataset.id)
+
     assert len(locations) == 1
+    assert locations == [first_uri]
+
+    # It should return the time archived.
+    location_times = index.datasets.get_archived_location_times(dataset.id)
+    assert len(location_times) == 1
+    location, archived_time = location_times[0]
+    assert location == first_file.as_uri()
+    assert utc_now() > archived_time > before_archival_dt
+
     was_restored = index.datasets.restore_location(dataset.id, first_uri)
     assert was_restored
     locations = index.datasets.get_locations(dataset.id)
@@ -337,3 +363,8 @@ def test_index_dataset_with_location(index, default_metadata_type, driver):
     index.datasets.add(Dataset(type_, second_ds_doc, uris=[second_uri], sources={}))
     dataset_ids = [d.id for d in index.datasets.get_datasets_for_location(first_uri)]
     assert dataset_ids == [dataset.id]
+
+
+def utc_now():
+    # utcnow() doesn't include a tzinfo.
+    return datetime.datetime.utcnow().replace(tzinfo=tz.tzutc())

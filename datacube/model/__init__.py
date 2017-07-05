@@ -211,6 +211,17 @@ class Dataset(object):
         return self.archived_time is not None
 
     @property
+    def is_active(self):
+        """
+        Is this dataset active?
+
+        (ie. dataset hasn't been archived)
+
+        :rtype: bool
+        """
+        return not self.is_archived
+
+    @property
     def crs(self):
         """
         :rtype: geometry.CRS
