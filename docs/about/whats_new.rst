@@ -18,6 +18,8 @@ Usability Improvements
 
  - Make `celery` and `redis` optional when installing.
 
+ - Significantly reduced disk space usage for integration tests
+
 v1.4.1 (25 May 2017)
 --------------------
 
