@@ -31,7 +31,7 @@ def _print_version(ctx, param, value):
 
     click.echo(
         '{prog}, version {version}'.format(
-            prog='Data Cube',
+            prog='Open Data Cube core',
             version=__version__
         )
     )
