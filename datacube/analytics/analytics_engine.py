@@ -29,6 +29,7 @@ from pprint import pprint
 import numpy as np
 import numexpr as ne
 
+from datacube.compat import string_types
 from datacube.api import API
 
 LOG = logging.getLogger(__name__)
@@ -89,14 +90,9 @@ class AnalyticsEngine(object):
     def create_array(self, storage_type, variables, dimensions, name):
         """Creates an array descriptor with metadata about what the data will look like"""
 
-        try:
-            basestring
-        except NameError:
-            basestring = str
-
         # construct query descriptor
         query_parameters = {}
-        if isinstance(storage_type, basestring):
+        if isinstance(storage_type, string_types):
             query_parameters['storage_type'] = storage_type
         else:
             query_parameters['platform'] = storage_type[0]
