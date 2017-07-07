@@ -62,7 +62,7 @@ install:
 
 script:
   # Ensure we are running against the correct python version
-  - [[ `python --version` == *"$TRAVIS_PYTHON_VERSION"* ]]
+  - '[[ `python --version` == *"$TRAVIS_PYTHON_VERSION"* ]]'
   - conda clean --all --yes
   - ./check-code.sh integration_tests
   # Take extra steps to minimise disk space. We have run out a few times.
