@@ -9,38 +9,9 @@ from pathlib import Path
 from collections import Iterable
 from dill import loads, dumps
 
+from ..compat import load_module
 from .driver import Driver
 from .index import Index
-
-# Dynamic loading from filename varies across python versions
-# Based on http://stackoverflow.com/a/67692
-if sys.version_info >= (3, 5):  # python 3.5+
-    # pylint: disable=import-error
-    from importlib.util import spec_from_file_location, module_from_spec
-
-
-    def load_mod(name, filepath):
-        spec = spec_from_file_location(name, filepath)
-        mod = module_from_spec(spec)
-        spec.loader.exec_module(mod)
-        sys.modules[spec.name] = mod
-        return mod
-
-
-    # pylint: disable=invalid-name
-    load_module = load_mod
-elif sys.version_info[0] == 3:  # python 3.3, 3.4: untested
-    # pylint: disable=import-error
-    from importlib.machinery import SourceFileLoader
-
-    # pylint: disable=invalid-name
-    load_module = SourceFileLoader
-else:  # python 2
-    # pylint: disable=import-error
-    import imp
-
-    # pylint: disable=invalid-name
-    load_module = imp.load_source
 
 
 class DriverManager(object):
@@ -57,13 +28,11 @@ class DriverManager(object):
     metadata.
     """
 
+    #: Default 'current' driver, assuming its code is present.
     _DEFAULT_DRIVER = 'NetCDF CF'
-    '''Default 'current' driver, assuming its code is present.
-    '''
 
+    #: Attribue name where driver information is stored in `__init__.py`.
     _DRIVER_SPEC = 'DRIVER_SPEC'
-    '''Attribue name where driver information is stored in `__init__.py`.
-    '''
 
     def __init__(self, index=None, *index_args, **index_kargs):
         """Initialise the manager.

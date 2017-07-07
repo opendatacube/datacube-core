@@ -160,6 +160,9 @@ class PostgresDbAPI(object):
     def rollback(self):
         self._connection.execute(text('ROLLBACK'))
 
+    def execute(self, command):
+        return self._connection.execute(command)
+
     def insert_dataset(self, metadata_doc, dataset_id, dataset_type_id):
         """
         Insert dataset if not already indexed.
@@ -873,124 +876,3 @@ class PostgresDbAPI(object):
                 raise ValueError('Unknown user %r' % user)
 
         tables.grant_role(self._connection, pg_role, users)
-
-
-    # S3 specific functions
-    # See .tables for description of each column
-    def put_s3_mapping(self, dataset_ref, band, s3_dataset_id):
-        """:type dataset_ref: uuid.UUID
-        :type band: str
-        :type s3_dataset_id: uuid.UUID"""
-        res = self._connection.execute(
-            S3_DATASET_MAPPING.insert().values(
-                id=uuid.uuid4(),
-                dataset_ref=dataset_ref,
-                band=band,
-                s3_dataset_id=s3_dataset_id,
-            )
-        )
-        return res.inserted_primary_key[0]
-
-
-    def put_s3_dataset(self, s3_dataset_id, base_name, band, bucket,
-                       macro_shape, chunk_size, numpy_type,
-                       dimensions, regular_dims, regular_index,
-                       irregular_index):
-        """:type s3_dataset_id: uuid.UUID
-        :type base_name: str
-        :type band: str
-        :type bucket: str
-        :type macro_shape: array[int]
-        :type chunk_size: array[int]
-        :type numpy_type: str
-        :type dimensions: array[str]
-        :type regular_dims: array[bool]
-        :type regular_index: array[array[float]]
-        :type irregular_index: array[array[float]]"""
-        res = self._connection.execute(
-            S3_DATASET.insert().values(
-                id=s3_dataset_id,
-                base_name=base_name,
-                band=band,
-                bucket=bucket,
-                macro_shape=macro_shape,
-                chunk_size=chunk_size,
-                numpy_type=numpy_type,
-                dimensions=dimensions,
-                regular_dims=regular_dims,
-                regular_index=regular_index,
-                irregular_index=irregular_index
-            )
-        )
-
-        return res.inserted_primary_key[0]
-
-
-    def get_s3_dataset(self, dataset_ref, band):
-        """:type dataset_ref: uuid.UUID
-        :type band: str"""
-        return self._connection.execute(
-            select(
-                [S3_DATASET.c.id,
-                 S3_DATASET.c.base_name,
-                 S3_DATASET.c.band,
-                 S3_DATASET.c.bucket,
-                 S3_DATASET.c.macro_shape,
-                 S3_DATASET.c.chunk_size,
-                 S3_DATASET.c.numpy_type,
-                 S3_DATASET.c.dimensions,
-                 S3_DATASET.c.regular_dims,
-                 S3_DATASET.c.regular_index,
-                 S3_DATASET.c.irregular_index]
-            ).select_from(
-                S3_DATASET.join(S3_DATASET_MAPPING,
-                                S3_DATASET_MAPPING.c.s3_dataset_id == S3_DATASET.c.id,
-                                isouter=True)
-            ).where(
-                and_(
-                    S3_DATASET_MAPPING.c.dataset_ref == dataset_ref,
-                    S3_DATASET_MAPPING.c.band == band
-                )
-            )
-        ).fetchall()
-
-
-    def put_s3_dataset_chunk(self, s3_dataset_id, s3_key,
-                             chunk_id, compression_scheme,
-                             micro_shape, index_min, index_max):
-        """:type s3_dataset_id: uuid.UUID
-        :type key: str
-        :type chunk_id: str
-        :type compression_scheme: str
-        :type micro_shape: array[int]
-        :type index_min: array[float]
-        :type index_max: array[float]"""
-        res = self._connection.execute(
-            S3_DATASET_CHUNK.insert().values(
-                id=uuid.uuid4(),
-                s3_dataset_id=s3_dataset_id,
-                s3_key=s3_key,
-                chunk_id=chunk_id,
-                compression_scheme=compression_scheme,
-                micro_shape=micro_shape,
-                index_min=index_min,
-                index_max=index_max
-            )
-        )
-        return res.inserted_primary_key[0]
-
-
-    def get_s3_dataset_chunk(self, s3_dataset_id):
-        """:type s3_dataset_id: uuid.UUID"""
-        return self._connection.execute(
-            select(
-                [S3_DATASET_CHUNK.c.s3_key,
-                 S3_DATASET_CHUNK.c.chunk_id,
-                 S3_DATASET_CHUNK.c.compression_scheme,
-                 S3_DATASET_CHUNK.c.micro_shape,
-                 S3_DATASET_CHUNK.c.index_min,
-                 S3_DATASET_CHUNK.c.index_max]
-            ).where(
-                S3_DATASET_CHUNK.c.s3_dataset_id == s3_dataset_id,
-            )
-        ).fetchall()
