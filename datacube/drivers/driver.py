@@ -79,7 +79,7 @@ class Driver(object):
         """
         path = str(path)
         body = path.split(':', 1)[1] if ':' in path else path
-        return '%s:%s' % (self.uri_scheme, body)
+        return '%s://%s' % (self.uri_scheme, body)
 
     @abstractmethod
     def write_dataset_to_storage(self, dataset, *args, **kargs):

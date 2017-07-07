@@ -58,7 +58,7 @@ class Index(base_index.Index, IndexExtension):
           index on initialisation. Caution: In the current
           implementation all parameters get passed to all potential
           indexes.
-        :param args: Optional keyword arguments to be passed to the
+        :param kargs: Optional keyword arguments to be passed to the
           index on initialisation. Caution: In the current
           implementation all parameters get passed to all potential
           indexes.
