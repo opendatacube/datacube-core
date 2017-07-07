@@ -121,7 +121,7 @@ class AnalyticsEngine(object):
 
             array_result = {}
             # storage_type_key
-            if isinstance(storage_type, basestring):
+            if isinstance(storage_type, string_types):
                 array_result['storage_type'] = storage_type
             else:
                 array_result['platform'] = storage_type[0]
