@@ -91,6 +91,7 @@ deploy:
     upload_dir: $DEPLOY_PATH
     skip_cleanup: true
     on:
+      all_branches: true  # Let the condition below decide if the branch is to be deployed
       condition: $TRAVIS_BRANCH = "develop" || ! -z "${TRAVIS_TAG}"  # develop branch or tags
       repo: opendatacube/datacube-core
       python: "3.6"
