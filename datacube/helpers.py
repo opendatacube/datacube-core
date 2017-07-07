@@ -3,6 +3,7 @@ Useful functions for Datacube users
 
 Not used internally, those should go in `utils.py`
 """
+from __future__ import absolute_import
 import rasterio
 import numpy as np
 

@@ -5,7 +5,6 @@ Utility functions used in storage modules
 from __future__ import absolute_import, division, print_function
 
 import os
-import stat
 import gzip
 import importlib
 import itertools
@@ -329,7 +328,7 @@ def validate_document(document, schema, schema_folder=None):
         validator = jsonschema.Draft4Validator(schema, resolver=ref_resolver)
         validator.validate(document)
     except jsonschema.ValidationError as e:
-        raise InvalidDocException(e.message)
+        raise InvalidDocException(e)
 
 
 # TODO: Replace with Pandas
@@ -717,7 +716,7 @@ def write_user_secret_file(text, fname, in_home_dir=False, mode='w'):
         fname = os.path.join(os.environ['HOME'], fname)
 
     open_flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
-    access = stat.S_IRUSR | stat.S_IWUSR  # Make sure file is readable by current user only
+    access = 0o600  # Make sure file is readable by current user only
     with os.fdopen(os.open(fname, open_flags, access), mode) as handle:
         handle.write(text)
         handle.close()

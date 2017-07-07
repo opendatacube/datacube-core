@@ -3,6 +3,8 @@ Tools for masking data based on a bit-mask variable with attached definition.
 
 The main functions are `make_mask(variable)` `describe_flags(variable)`
 """
+from __future__ import absolute_import
+
 import collections
 import warnings
 
