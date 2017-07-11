@@ -41,13 +41,18 @@ def system():
     '--lock-table/--no-lock-table', is_flag=True, default=False,
     help="Allow table to be locked (eg. while creating missing indexes)"
 )
+@click.option(
+    '--create-s3-tables', '-s3', is_flag=True, default=False,
+    help="Create S3 datables."
+)
 @ui.pass_driver_manager(expect_initialised=False)
-def database_init(driver_manager, default_types, init_users, recreate_views, rebuild, lock_table):
+def database_init(driver_manager, default_types, init_users, recreate_views, rebuild, lock_table, create_s3_tables):
     echo('Initialising database...')
     index = driver_manager.index
 
     was_created = index.init_db(with_default_types=default_types,
-                                with_permissions=init_users)
+                                with_permissions=init_users,
+                                with_s3_tables=create_s3_tables)
 
     if was_created:
         echo(style('Created.', bold=True))

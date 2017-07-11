@@ -147,7 +147,7 @@ def driver_manager(local_config, request):
 
     # Disable informational messages since we're doing this on every test run.
     with _increase_logging(_core._LOG) as _:
-        _core.ensure_db(db._engine)
+        _core.ensure_db(db._engine, with_s3_tables=True)
 
     c = db._engine.connect()
     c.execute('alter database %s set timezone = %r' % (local_config.db_database, str(timezone)))

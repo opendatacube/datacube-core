@@ -10,6 +10,7 @@ from datacube.drivers.s3.storage.s3aio.s3lio import S3LIO
 from datacube.drivers.utils import DriverUtils
 from datacube.drivers.s3.index import Index
 from datacube.drivers.s3.datasource import S3DataSource
+from datacube.index.postgres.tables import _pg_exists
 
 
 class S3Driver(Driver):
@@ -25,6 +26,22 @@ class S3Driver(Driver):
     def uri_scheme(self):
         """URI scheme used by this driver."""
         return 's3'
+
+    def check_requirements(self):
+        """Check requirements are satisfied.
+
+        :return: True if requirements is satisfied, otherwise returns False
+        """
+        # check database
+        # pylint: disable=protected-access
+        try:
+            with self.index._db.connect() as connection:
+                return (_pg_exists(connection._connection, "agdc.s3_dataset") and
+                        _pg_exists(connection._connection, "agdc.s3_dataset_chunk") and
+                        _pg_exists(connection._connection, "agdc.s3_dataset_mapping"))
+        except AttributeError:
+            self.logger.warning('Should only be here for tests.')
+            return True
 
     def _get_chunksizes(self, chunksizes):
         """Return the chunk sizes as an int tuple, if valid.

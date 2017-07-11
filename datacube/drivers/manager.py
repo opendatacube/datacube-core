@@ -7,7 +7,7 @@ import sys
 import weakref
 from pathlib import Path
 from collections import Iterable
-from dill import loads, dumps
+from cloudpickle import loads, dumps
 
 from ..compat import load_module
 from .driver import Driver
@@ -164,10 +164,17 @@ class DriverManager(object):
                 # pylint: disable=old-division
                 filepath = init_path.parent / spec[2]
                 # pylint: disable=old-division
-                module = load_module(spec[1], str(init_path.parent / spec[2]))
+                try:
+                    module = load_module(spec[1], str(init_path.parent / spec[2]))
+                except ImportError:
+                    self.logger.warning('Import Failed for Driver plugin "%s", skipping.', spec[1])
+                    continue
                 driver_cls = getattr(module, spec[1])
                 if issubclass(driver_cls, Driver):
                     driver = driver_cls(weakref.ref(self)(), spec[0], index, *index_args, **index_kargs)
+                    if not driver.check_requirements():
+                        self.logger.warning('Driver plugin "%s" failed requirements check, skipping.', spec[1])
+                        continue
                     self.__drivers[driver.name] = driver
                 else:
                     self.logger.warning('Driver plugin "%s" is not a subclass of the abstract Driver class.',

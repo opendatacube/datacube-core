@@ -74,6 +74,13 @@ class Driver(object):
             raise ValueError('Driver was not initialised properly. Make sure you call the base class _init__')
         return self.__index
 
+    def check_requirements(self):
+        """Check requirements are satisfied.
+
+        :return: True if requirements is satisfied, otherwise returns False
+        """
+        return True
+
     def as_uri(self, path):
         """Set or replace the uri scheme for a path according to the driver's.
         """

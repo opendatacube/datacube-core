@@ -7,11 +7,15 @@ from math import ceil
 import warnings
 
 import os
+import sys
 import uuid
 import pandas
 import numpy
 import xarray
-import SharedArray as sa
+try:
+    import SharedArray as sa
+except ImportError:
+    pass
 from affine import Affine
 from dask import array as da
 from pathos.threading import ThreadPool
@@ -309,6 +313,12 @@ class Datacube(object):
             Optional. If this is a non-empty list of :class:`datacube.model.Dataset` objects, these will be loaded
             instead of performing a database lookup.
 
+        :param bool use_threads:
+            Optional. If this is set to True, IO will be multi-thread.
+            May not work for all drivers due to locking/GIL.
+
+            Default is False.
+
         :return: Requested data in a :class:`xarray.Dataset`.
             As a :class:`xarray.DataArray` if the ``stack`` variable is supplied.
 
@@ -503,6 +513,12 @@ class Datacube(object):
             See the documentation on using `xarray with dask <http://xarray.pydata.org/en/stable/dask.html>`_
             for more information.
 
+        :param bool use_threads:
+            Optional. If this is set to True, IO will be multi-thread.
+            May not work for all drivers due to locking/GIL.
+
+            Default is False.
+
         :param DriverManager driver_manager: The driver manager to
           use. If not specified, an new manager will be created using
           the index if specified, or the default configuration
@@ -512,6 +528,9 @@ class Datacube(object):
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
+        if use_threads and 'SharedArray' not in sys.modules:
+            use_threads = False
+
         if dask_chunks is None:
             def data_func(measurement):
                 if not use_threads:

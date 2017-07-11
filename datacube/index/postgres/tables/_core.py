@@ -25,6 +25,7 @@ SQL_NAMING_CONVENTIONS = {
 }
 SCHEMA_NAME = 'agdc'
 METADATA = MetaData(naming_convention=SQL_NAMING_CONVENTIONS, schema=SCHEMA_NAME)
+S3_METADATA = MetaData(naming_convention=SQL_NAMING_CONVENTIONS, schema=SCHEMA_NAME)
 
 _LOG = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ def _get_quoted_connection_info(connection):
     return db, user
 
 
-def ensure_db(engine, with_permissions=True):
+def ensure_db(engine, with_permissions=True, with_s3_tables=False):
     """
     Initialise the db if needed.
     """
@@ -74,6 +75,8 @@ def ensure_db(engine, with_permissions=True):
             _LOG.info('Creating tables.')
             c.execute(TYPES_INIT_SQL)
             METADATA.create_all(c)
+            if with_s3_tables:
+                S3_METADATA.create_all(c)
             c.execute('commit')
         except:
             c.execute('rollback')

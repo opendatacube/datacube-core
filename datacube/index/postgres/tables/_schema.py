@@ -116,7 +116,7 @@ DATASET_SOURCE = Table(
 
 # --- S3-driver specific Tables ---
 S3_DATASET = Table(
-    's3_dataset', _core.METADATA,
+    's3_dataset', _core.S3_METADATA,
     Column('id', postgres.UUID(as_uuid=True), primary_key=True),
     Column('base_name', String, nullable=False),
     Column('band', String, nullable=False),
@@ -155,7 +155,7 @@ s3_dataset:
 
 
 S3_DATASET_CHUNK = Table(
-    's3_dataset_chunk', _core.METADATA,
+    's3_dataset_chunk', _core.S3_METADATA,
     Column('id', postgres.UUID(as_uuid=True), primary_key=True),
     Column('s3_dataset_id', None, ForeignKey(S3_DATASET.c.id), nullable=False),
     Column('s3_key', String, nullable=False),
@@ -186,7 +186,7 @@ s3_dataset_chunk:
 
 
 S3_DATASET_MAPPING = Table(
-    's3_dataset_mapping', _core.METADATA,
+    's3_dataset_mapping', _core.S3_METADATA,
     Column('id', postgres.UUID(as_uuid=True), primary_key=True),
     Column('dataset_ref', None, ForeignKey(DATASET.c.id), nullable=False),
     Column('band', String, nullable=False),
