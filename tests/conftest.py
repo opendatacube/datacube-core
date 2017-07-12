@@ -21,6 +21,12 @@ def example_gdal_path(data_folder):
 
 
 @pytest.fixture
+def no_crs_gdal_path(data_folder):
+    """Return the pathname of a GDAL file that doesn't contain a valid CRS."""
+    return str(os.path.join(data_folder, 'no_crs_ds.tif'))
+
+
+@pytest.fixture
 def data_folder():
     return os.path.join(os.path.split(os.path.realpath(__file__))[0], 'data')
 

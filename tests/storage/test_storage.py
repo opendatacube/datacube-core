@@ -12,7 +12,7 @@ from affine import Affine, identity
 
 import datacube
 from datacube.model import Dataset, DatasetType, MetadataType
-from datacube.storage.storage import OverrideBandDataSource
+from datacube.storage.storage import OverrideBandDataSource, RasterFileDataSource
 from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse, read_from_source, Resampling, \
     DatasetSource
 from datacube.utils import geometry
@@ -440,6 +440,22 @@ def test_read_raster_with_custom_crs_and_transform(example_gdal_path):
         resampling = datacube.storage.storage.RESAMPLING_METHODS['nearest']
         band_data_source.reproject(dest2, dst_transform, dst_crs, dst_nodata, resampling)
         assert (dest1 == dest2).all()
+
+
+def test_read_from_file_with_missing_crs(no_crs_gdal_path):
+    """
+    We need to be able to read from data files even when GDAL can't automatically gather all the metdata.
+
+     The :class:`RasterFileDataSource` is able to override the nodata, crs and transform attributes if necessary.
+    """
+    crs = geometry.CRS('EPSG:4326')
+    nodata = -999
+    transform = Affine(0.01, 0.0, 111.975,
+                       0.0, 0.01, -9.975)
+    data_source = RasterFileDataSource(no_crs_gdal_path, bandnumber=1, nodata=nodata, crs=crs, transform=transform)
+    with data_source.open() as src:
+        dest1 = src.read()
+        assert dest1.shape == (10, 10)
 
 
 _EXAMPLE_METADATA_TYPE = MetadataType(
