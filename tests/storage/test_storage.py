@@ -446,7 +446,7 @@ def test_read_from_file_with_missing_crs(no_crs_gdal_path):
     """
     We need to be able to read from data files even when GDAL can't automatically gather all the metdata.
 
-     The :class:`RasterFileDataSource` is able to override the nodata, crs and transform attributes if necessary.
+    The :class:`RasterFileDataSource` is able to override the nodata, CRS and transform attributes if necessary.
     """
     crs = geometry.CRS('EPSG:4326')
     nodata = -999
