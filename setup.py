@@ -13,6 +13,7 @@ extras_require = {
     'doc': ['Sphinx', 'setuptools'],
     'replicas': ['paramiko', 'sshtunnel', 'tqdm'],
     'celery': ['celery>=4', 'redis'],
+    's3': ['boto3', 'SharedArray', 'pathos', 'zstandard'],
     'test': tests_require,
 }
 # An 'all' option, following ipython naming conventions.
@@ -81,10 +82,6 @@ setup(
         'singledispatch',
         'sqlalchemy',
         'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
-        'boto3',
-        'SharedArray',
-        'pathos',
-        'zstandard',
     ],
     extras_require=extras_require,
     tests_require=tests_require,
