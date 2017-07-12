@@ -27,7 +27,7 @@ class S3Driver(Driver):
         """URI scheme used by this driver."""
         return 's3'
 
-    def check_requirements(self):
+    def requirements_satisfied(self):
         """Check requirements are satisfied.
 
         :return: True if requirements is satisfied, otherwise returns False
