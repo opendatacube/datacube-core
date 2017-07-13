@@ -4,7 +4,7 @@ from contextlib import contextmanager
 
 import mock
 import netCDF4
-import numpy
+import numpy as np
 import pytest
 import rasterio.warp
 import xarray
@@ -12,7 +12,7 @@ from affine import Affine, identity
 
 import datacube
 from datacube.model import Dataset, DatasetType, MetadataType
-from datacube.storage.storage import OverrideBandDataSource
+from datacube.storage.storage import OverrideBandDataSource, RasterFileDataSource
 from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse, read_from_source, Resampling, \
     DatasetSource
 from datacube.utils import geometry
@@ -30,7 +30,7 @@ def test_write_dataset_to_netcdf(tmpnetcdf_filename):
         dataset[name] = (name, coord.values, {'units': coord.units, 'crs': geobox.crs})
 
     dataset['B10'] = (geobox.dimensions,
-                      numpy.arange(10000, dtype='int16').reshape(geobox.shape),
+                      np.arange(10000, dtype='int16').reshape(geobox.shape),
                       {'nodata': 0, 'units': '1', 'crs': geobox.crs})
 
     write_dataset_to_netcdf(dataset, tmpnetcdf_filename, global_attributes={'foo': 'bar'},
@@ -57,7 +57,7 @@ def test_write_dataset_to_netcdf(tmpnetcdf_filename):
 #         dataset[name] = (name, coord.values, {'units': coord.units, 'crs': geobox.crs})
 #
 #     dataset['B10'] = (geobox.dimensions,
-#                       numpy.arange(11000, dtype='int16').reshape(geobox.shape),
+#                       np.arange(11000, dtype='int16').reshape(geobox.shape),
 #                       {'nodata': 0, 'units': '1', 'crs': geobox.crs})
 #
 #     write_dataset_to_netcdf(dataset, tmpnetcdf_filename, global_attributes={'foo': 'bar'},
@@ -70,7 +70,7 @@ def test_write_dataset_to_netcdf(tmpnetcdf_filename):
 #         assert source.transform.almost_equals(affine)
 #         assert (source.read() == dataset['B10']).all()
 #
-#         dest = numpy.empty((60, 50))
+#         dest = np.empty((60, 50))
 #         source.reproject(dest, affine, geobox.crs, 0, Resampling.nearest)
 #         assert (dest == dataset['B10'][:60, :50]).all()
 #
@@ -80,7 +80,7 @@ def test_write_dataset_to_netcdf(tmpnetcdf_filename):
 #         source.reproject(dest, affine * Affine.translation(-10, -10), geobox.crs, 0, Resampling.nearest)
 #         assert (dest[10:, 10:] == dataset['B10'][:50, :40]).all()
 #
-#         dest = numpy.empty((200, 200))
+#         dest = np.empty((200, 200))
 #         source.reproject(dest, affine, geobox.crs, 0, Resampling.nearest)
 #         assert (dest[:100, :110] == dataset['B10']).all()
 #
@@ -111,7 +111,7 @@ def test_first_source_is_priority_in_reproject_and_fuse():
     source2 = _mock_datasetsource([[2, 2], [2, 2]], crs=crs, shape=shape)
     sources = [source1, source2]
 
-    output_data = numpy.full(shape, fill_value=no_data, dtype='int16')
+    output_data = np.full(shape, fill_value=no_data, dtype='int16')
     reproject_and_fuse(sources, output_data, dst_transform=identity, dst_projection=crs, dst_nodata=no_data)
 
     assert (output_data == 1).all()
@@ -126,7 +126,7 @@ def test_second_source_used_when_first_is_empty():
     source2 = _mock_datasetsource([[2, 2], [2, 2]], crs=crs, shape=shape)
     sources = [source1, source2]
 
-    output_data = numpy.full(shape, fill_value=no_data, dtype='int16')
+    output_data = np.full(shape, fill_value=no_data, dtype='int16')
     reproject_and_fuse(sources, output_data, dst_transform=identity, dst_projection=crs, dst_nodata=no_data)
 
     assert (output_data == 2).all()
@@ -141,7 +141,7 @@ def test_mixed_result_when_first_source_partially_empty():
     source2 = _mock_datasetsource([[2, 2], [2, 2]], crs=crs, shape=shape)
     sources = [source1, source2]
 
-    output_data = numpy.full(shape, fill_value=no_data, dtype='int16')
+    output_data = np.full(shape, fill_value=no_data, dtype='int16')
     reproject_and_fuse(sources, output_data, dst_transform=identity, dst_projection=crs, dst_nodata=no_data)
 
     assert (output_data == [[1, 1], [2, 2]]).all()
@@ -154,7 +154,7 @@ def _mock_datasetsource(value, crs=None, shape=(2, 2)):
     rio_reader.crs = crs
     rio_reader.transform = identity
     rio_reader.shape = shape
-    rio_reader.read.return_value = numpy.array(value)
+    rio_reader.read.return_value = np.array(value)
 
     # Use the following if a reproject were to be required
     # def fill_array(dest, *args, **kwargs):
@@ -175,7 +175,7 @@ def test_read_from_broken_source():
     rio_reader = source1.open.return_value.__enter__.return_value
     rio_reader.read.side_effect = OSError('Read or write failed')
 
-    output_data = numpy.full(shape, fill_value=no_data, dtype='int16')
+    output_data = np.full(shape, fill_value=no_data, dtype='int16')
 
     # Check exception is raised
     with pytest.raises(OSError):
@@ -212,17 +212,17 @@ class FakeDataSource(object):
         self.nodata = -999
         self.shape = (613, 597)
 
-        self.data = numpy.full(self.shape, self.nodata, dtype='int16')
-        self.data[:512, :512] = numpy.arange(512) + numpy.arange(512).reshape((512, 1))
+        self.data = np.full(self.shape, self.nodata, dtype='int16')
+        self.data[:512, :512] = np.arange(512) + np.arange(512).reshape((512, 1))
 
     def read(self, window=None, out_shape=None):
         data = self.data
         if window:
             data = self.data[slice(*window[0]), slice(*window[1])]
         if out_shape:
-            xidx = ((numpy.arange(out_shape[1]) + 0.5) * (data.shape[1] / out_shape[1]) - 0.5).round().astype('int')
-            yidx = ((numpy.arange(out_shape[0]) + 0.5) * (data.shape[0] / out_shape[0]) - 0.5).round().astype('int')
-            data = data[numpy.meshgrid(yidx, xidx, indexing='ij')]
+            xidx = ((np.arange(out_shape[1]) + 0.5) * (data.shape[1] / out_shape[1]) - 0.5).round().astype('int')
+            yidx = ((np.arange(out_shape[0]) + 0.5) * (data.shape[0] / out_shape[0]) - 0.5).round().astype('int')
+            data = data[np.meshgrid(yidx, xidx, indexing='ij')]
         return data
 
     def reproject(self, dest, dst_transform, dst_crs, dst_nodata, resampling, **kwargs):
@@ -239,7 +239,7 @@ class FakeDataSource(object):
 
 
 def assert_same_read_results(source, dst_shape, dst_dtype, dst_transform, dst_nodata, dst_projection, resampling):
-    expected = numpy.empty(dst_shape, dtype=dst_dtype)
+    expected = np.empty(dst_shape, dtype=dst_dtype)
     with source.open() as src:
         rasterio.warp.reproject(src.data,
                                 expected,
@@ -251,7 +251,7 @@ def assert_same_read_results(source, dst_shape, dst_dtype, dst_transform, dst_no
                                 dst_nodata=dst_nodata,
                                 resampling=resampling)
 
-    result = numpy.empty(dst_shape, dtype=dst_dtype)
+    result = np.empty(dst_shape, dtype=dst_dtype)
     with datacube.set_options(reproject_threads=1):
         read_from_source(source,
                          result,
@@ -260,7 +260,7 @@ def assert_same_read_results(source, dst_shape, dst_dtype, dst_transform, dst_no
                          dst_projection=dst_projection,
                          resampling=resampling)
 
-    assert numpy.isclose(result, expected, atol=0, rtol=0.05, equal_nan=True).all()
+    assert np.isclose(result, expected, atol=0, rtol=0.05, equal_nan=True).all()
     return result
 
 
@@ -420,8 +420,6 @@ def test_read_from_source():
 
 
 def test_read_raster_with_custom_crs_and_transform(example_gdal_path):
-    import numpy as np
-
     with rasterio.open(example_gdal_path) as src:
         band = rasterio.band(src, 1)
         crs = geometry.CRS('EPSG:3577')
@@ -442,6 +440,22 @@ def test_read_raster_with_custom_crs_and_transform(example_gdal_path):
         resampling = datacube.storage.storage.RESAMPLING_METHODS['nearest']
         band_data_source.reproject(dest2, dst_transform, dst_crs, dst_nodata, resampling)
         assert (dest1 == dest2).all()
+
+
+def test_read_from_file_with_missing_crs(no_crs_gdal_path):
+    """
+    We need to be able to read from data files even when GDAL can't automatically gather all the metdata.
+
+    The :class:`RasterFileDataSource` is able to override the nodata, CRS and transform attributes if necessary.
+    """
+    crs = geometry.CRS('EPSG:4326')
+    nodata = -999
+    transform = Affine(0.01, 0.0, 111.975,
+                       0.0, 0.01, -9.975)
+    data_source = RasterFileDataSource(no_crs_gdal_path, bandnumber=1, nodata=nodata, crs=crs, transform=transform)
+    with data_source.open() as src:
+        dest1 = src.read()
+        assert dest1.shape == (10, 10)
 
 
 _EXAMPLE_METADATA_TYPE = MetadataType(

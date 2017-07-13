@@ -5,8 +5,16 @@
 What's New
 ==========
 
-v1.5.0 (????)
--------------
+v1.5.1 Purpler Unicorn (13 July 2017)
+-------------------------------------
+
+ - Fix bug #261. Unable to load Australian Rainfall Grid Data. This was as a
+   result of the CRS/Transformation override functionality being broken when
+   using the latest `rasterio` version `1.0a9`
+
+
+v1.5.0 Purple Unicorn (9 July 2017)
+-----------------------------------
 
 Usability Improvements
 ~~~~~~~~~~~~~~~~~~~~~~

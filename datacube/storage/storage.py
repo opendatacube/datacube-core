@@ -61,7 +61,10 @@ def _rasterio_resampling_method(resampling):
 
 if str(rasterio.__version__) >= '0.36.0':
     def _rasterio_crs_wkt(src):
-        return str(src.crs.wkt)
+        if src.crs:
+            return str(src.crs.wkt)
+        else:
+            return ''
 else:
     def _rasterio_crs_wkt(src):
         return str(src.crs_wkt)
