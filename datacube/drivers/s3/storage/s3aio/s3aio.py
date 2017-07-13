@@ -4,6 +4,7 @@ S3AIO Class
 Array access to a single S3 object
 
 """
+from __future__ import absolute_import
 
 import os
 import uuid

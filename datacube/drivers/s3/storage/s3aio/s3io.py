@@ -8,7 +8,7 @@ Multi-threaded. set new_session = True
 
 """
 
-from __future__ import print_function
+from __future__ import print_function, absolute_import, division
 
 import io
 import os
