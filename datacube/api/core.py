@@ -18,7 +18,10 @@ except ImportError:
     pass
 from affine import Affine
 from dask import array as da
-from pathos.threading import ThreadPool
+try:
+    from pathos.threading import ThreadPool
+except ImportError:
+    pass
 from six.moves import zip
 
 from ..config import LocalConfig
@@ -528,7 +531,7 @@ class Datacube(object):
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
-        if use_threads and 'SharedArray' not in sys.modules:
+        if use_threads and ('SharedArray' not in sys.modules or 'ThreadPool' not in sys.modules):
             use_threads = False
 
         if dask_chunks is None:

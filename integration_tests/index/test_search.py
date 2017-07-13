@@ -1214,5 +1214,5 @@ def _cli_search(args, global_integration_cli_args):
         datacube.scripts.search_tool.cli,
         opts,
         catch_exceptions=False
-    )
+    )  # Annoyingly, this runner merges stderr and stdout together
     return result

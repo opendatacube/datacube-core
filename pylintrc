@@ -19,7 +19,8 @@ disable=no-self-use,
     wrong-import-order,
     ungrouped-imports,
     len-as-condition,
-    no-else-return
+    no-else-return,
+    import-error
 
 enable=python3
 

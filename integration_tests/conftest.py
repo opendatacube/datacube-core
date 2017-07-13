@@ -184,7 +184,10 @@ def remove_dynamic_indexes():
 
 @pytest.fixture(params=['NetCDF CF', 's3-test'])
 def driver(driver_manager, request):
-    driver_manager.set_current_driver(request.param)
+    driver_name = request.param
+    if driver_name not in driver_manager.drivers:
+        pytest.skip(driver_name + " not currently available")
+    driver_manager.set_current_driver(driver_name)
     return driver_manager.driver
 
 

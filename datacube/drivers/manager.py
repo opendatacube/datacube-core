@@ -1,9 +1,8 @@
 """Module used to dynamically load storage drivers.
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, division
 
 import logging
-import sys
 import weakref
 from pathlib import Path
 from collections import Iterable
@@ -161,23 +160,21 @@ class DriverManager(object):
             init = load_module(str(init_path.parent.stem), str(init_path))
             if self._DRIVER_SPEC in init.__dict__:
                 spec = init.__dict__[self._DRIVER_SPEC]
-                # pylint: disable=old-division
                 filepath = init_path.parent / spec[2]
-                # pylint: disable=old-division
                 try:
-                    module = load_module(spec[1], str(init_path.parent / spec[2]))
+                    driver_module = load_module(spec[1], str(filepath))
                 except ImportError:
-                    self.logger.warning('Import Failed for Driver plugin "%s", skipping.', spec[1])
+                    self.logger.info('Import Failed for Driver plugin "%s", skipping.', spec[1])
                     continue
-                driver_cls = getattr(module, spec[1])
+                driver_cls = getattr(driver_module, spec[1])
                 if issubclass(driver_cls, Driver):
                     driver = driver_cls(weakref.ref(self)(), spec[0], index, *index_args, **index_kargs)
                     if not driver.requirements_satisfied():
-                        self.logger.warning('Driver plugin "%s" failed requirements check, skipping.', spec[1])
+                        self.logger.info('Driver plugin "%s" failed requirements check, skipping.', spec[1])
                         continue
                     self.__drivers[driver.name] = driver
                 else:
-                    self.logger.warning('Driver plugin "%s" is not a subclass of the abstract Driver class.',
+                    self.logger.info('Driver plugin "%s" is not a subclass of the abstract Driver class.',
                                         driver_cls)
         if len(self.__drivers) < 1:
             raise RuntimeError('No plugin driver found, Datacube cannot operate.')
