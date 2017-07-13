@@ -9,6 +9,8 @@
 """
 Persistence API implementation for postgres.
 """
+from __future__ import absolute_import
+
 import logging
 
 from sqlalchemy import cast

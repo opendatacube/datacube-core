@@ -3,6 +3,8 @@
 ignore=ndexpr
 
 [MESSAGES CONTROL]
+enable=python3
+
 disable=no-self-use,
     star-args,
     duplicate-code,
@@ -20,9 +22,14 @@ disable=no-self-use,
     ungrouped-imports,
     len-as-condition,
     no-else-return,
-    import-error
+    import-error,
+    round-builtin, # py2.7
+    map-builtin-not-iterating, # py2.7
+    range-builtin-not-iterating, # py2.7
+    zip-builtin-not-iterating, # py2.7
+    nonzero-method, # py2.7
+    eq-without-hash # py2.7
 
-enable=python3
 
 [BASIC]
 

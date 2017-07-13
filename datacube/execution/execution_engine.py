@@ -5,8 +5,6 @@
 # Author:     Peter Wang
 #
 # Created:    14 July 2015
-# Copyright:  2015 Commonwealth Scientific and Industrial Research Organisation
-#             (CSIRO)
 # License:    This software is open source under the Apache v2.0 License
 #             as provided in the accompanying LICENSE file or available from
 #             https://github.com/data-cube/agdc-v2/blob/master/LICENSE

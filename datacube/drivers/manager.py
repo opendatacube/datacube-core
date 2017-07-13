@@ -175,7 +175,7 @@ class DriverManager(object):
                     self.__drivers[driver.name] = driver
                 else:
                     self.logger.info('Driver plugin "%s" is not a subclass of the abstract Driver class.',
-                                        driver_cls)
+                                     driver_cls)
         if len(self.__drivers) < 1:
             raise RuntimeError('No plugin driver found, Datacube cannot operate.')
         self.logger.debug('Reloaded %d drivers.', len(self.__drivers))

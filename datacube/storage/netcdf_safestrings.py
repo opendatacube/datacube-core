@@ -6,6 +6,7 @@ written as UTF-8 encoded bytes.
 
 For more information see https://github.com/Unidata/netcdf4-python/issues/448
 """
+from __future__ import absolute_import
 import netCDF4
 
 from datacube.compat import string_types

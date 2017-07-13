@@ -73,7 +73,6 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Open Data Cube'
-copyright = u'2017, Geoscience Australia, CSIRO, NCI'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -218,8 +217,6 @@ html_use_smartypants = True
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
 #html_show_sphinx = True
 
-# If true, "(C) Copyright ..." is shown in the HTML footer. Default is True.
-#html_show_copyright = True
 
 # If true, an OpenSearch description file will be output, and all pages will
 # contain a <link> tag referring to it.  The value of this option must be the
@@ -250,8 +247,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    ('index', 'ODC.tex', u'Open Data Cube Documentation',
-     u'Geoscience Australia, CSIRO, NCI', 'manual'),
+    ('index', 'ODC.tex', u'Open Data Cube Documentation')
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -280,8 +276,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'odc', u'Open Data Cube Documentation',
-     [u'Geoscience Australia, CSIRO, NCI'], 1)
+    ('index', 'odc', u'Open Data Cube Documentation')
 ]
 
 # If true, show URL addresses after external links.
@@ -295,7 +290,6 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     ('index', 'ODC', u'Open Data Cube Documentation',
-     u'Geoscience Australia, CSIRO, NCI', 'AGDC', 'One line description of project.',
      'Miscellaneous'),
 ]
 

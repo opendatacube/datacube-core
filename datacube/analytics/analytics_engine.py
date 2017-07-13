@@ -5,8 +5,6 @@
 # Author:     Peter Wang
 #
 # Created:    14 July 2015
-# Copyright:  2015 Commonwealth Scientific and Industrial Research Organisation
-#             (CSIRO)
 # License:    This software is open source under the Apache v2.0 License
 #             as provided in the accompanying LICENSE file or available from
 #             https://github.com/data-cube/agdc-v2/blob/master/LICENSE
@@ -31,6 +29,7 @@ from pprint import pprint
 import numpy as np
 import numexpr as ne
 
+from datacube.compat import string_types
 from datacube.api import API
 
 LOG = logging.getLogger(__name__)
@@ -91,14 +90,9 @@ class AnalyticsEngine(object):
     def create_array(self, storage_type, variables, dimensions, name):
         """Creates an array descriptor with metadata about what the data will look like"""
 
-        try:
-            basestring
-        except NameError:
-            basestring = str
-
         # construct query descriptor
         query_parameters = {}
-        if isinstance(storage_type, basestring):
+        if isinstance(storage_type, string_types):
             query_parameters['storage_type'] = storage_type
         else:
             query_parameters['platform'] = storage_type[0]
@@ -127,7 +121,7 @@ class AnalyticsEngine(object):
 
             array_result = {}
             # storage_type_key
-            if isinstance(storage_type, basestring):
+            if isinstance(storage_type, string_types):
                 array_result['storage_type'] = storage_type
             else:
                 array_result['platform'] = storage_type[0]

@@ -34,7 +34,7 @@ def write_pretty(out_f, field_names, search_results, terminal_size=click.get_ter
     terminal_width = terminal_size[0]
     record_num = 1
 
-    field_header_width = max(map(len, field_names))
+    field_header_width = max(len(name) for name in field_names)
     field_output_format = '{:<' + str(field_header_width) + '} | {}'
 
     for result in search_results:

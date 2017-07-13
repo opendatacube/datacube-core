@@ -4,7 +4,7 @@ jobs:
     docker:
       - image: python:3.6
         environment:
-          CONDA_ENV_FILE: .travis/environment_py35.yaml
+          CONDA_ENV_FILE: .travis/environment.yaml
           DATABASE_URL: postgresql://ubuntu@localhost/circle_test?sslmode=disable
       - image: postgres:9.6
         environment:
@@ -34,7 +34,7 @@ jobs:
           name: Setup Environment
           command: |
             export PATH="$HOME/miniconda/bin:$PATH"
-            conda env create -q -n agdc --file .travis/environment_py35.yaml
+            conda env create -q -n agdc --file .travis/environment.yaml
             source activate agdc
             conda install -q sphinx sphinx_rtd_theme mock click # Stuff for docs
             pip install . --no-deps --upgrade

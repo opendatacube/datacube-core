@@ -5,7 +5,7 @@ Interactive Pixel Drill for AGDCv2.
 """
 # pylint: disable=import-error, wrong-import-position
 # Unavoidable with TK class hierarchy.
-# pylint: disable=too-many-ancestors
+# pylint: disable=too-many-ancestors, redefined-builtin
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import argparse

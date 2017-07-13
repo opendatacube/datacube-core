@@ -299,7 +299,7 @@ def _write_csv(infos):
         row['location'] = locations_[0] if locations_ else None
         return row
 
-    writer.writerows(map(add_first_location, infos))
+    writer.writerows(add_first_location(row) for row in infos)
 
 
 def _write_yaml(infos):
