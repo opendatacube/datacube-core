@@ -118,21 +118,9 @@ def check_doc_unchanged(original, new, doc_name):
     """
     Raise an error if any fields have been modified on a document.
 
-    :param original:
-    :param new:
-    :param doc_name:
-    :return:
-
-
-    >>> check_doc_unchanged({'a': 1}, {'a': 1}, 'Letters')
-    >>> check_doc_unchanged({'a': 1}, {'a': 2}, 'Letters')
-    Traceback (most recent call last):
-    ...
-    datacube.utils.changes.DocumentMismatchError: Letters differs from stored (a: 1!=2)
-    >>> check_doc_unchanged({'a': {'b': 1}}, {'a': {'b': 2}}, 'Letters')
-    Traceback (most recent call last):
-    ...
-    datacube.utils.changes.DocumentMismatchError: Letters differs from stored (a.b: 1!=2)
+    :param original: original document
+    :param new: new document to compare against the original
+    :param doc_name: Label used to name the document
     """
     changes = get_doc_changes(original, new)
 
