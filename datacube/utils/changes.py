@@ -128,11 +128,11 @@ def check_doc_unchanged(original, new, doc_name):
     >>> check_doc_unchanged({'a': 1}, {'a': 2}, 'Letters')
     Traceback (most recent call last):
     ...
-    ValueError: Letters differs from stored (a: 1!=2)
+    datacube.utils.changes.DocumentMismatchError: Letters differs from stored (a: 1!=2)
     >>> check_doc_unchanged({'a': {'b': 1}}, {'a': {'b': 2}}, 'Letters')
     Traceback (most recent call last):
     ...
-    ValueError: Letters differs from stored (a.b: 1!=2)
+    datacube.utils.changes.DocumentMismatchError: Letters differs from stored (a.b: 1!=2)
     """
     changes = get_doc_changes(original, new)
 
