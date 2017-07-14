@@ -126,14 +126,17 @@ doc_changes = [
     ({'a': {'c': 1}}, {'a': {'b': 1}}, [(('a', 'b'), MISSING, 1), (('a', 'c'), 1, MISSING)])
 ]
 
+
 @pytest.mark.parametrize("v1, v2, expected", doc_changes)
 def test_get_doc_changes(v1, v2, expected):
     rval = get_doc_changes(v1, v2)
     assert rval == expected
 
+
 def test_get_doc_changes():
     rval = get_doc_changes({}, None, base_prefix=('a',))
     assert rval == [(('a',), {}, None)]
+
 
 @pytest.mark.parametrize("v1, v2, expected", doc_changes)
 def test_check_doc_unchanged(v1, v2, expected):
@@ -143,4 +146,3 @@ def test_check_doc_unchanged(v1, v2, expected):
     else:
         # No Error Raised
         check_doc_unchanged(v1, v2, 'name')
-
