@@ -57,7 +57,7 @@ def add_dataset_types(index, allow_exclusive_lock, files):
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
 @ui.pass_index()
-def update_dataset_types(index, allow_unsafe, allow_exclusive_lock, dry_run, files):
+def update_products(index, allow_unsafe, allow_exclusive_lock, dry_run, files):
     # type: (Index, bool, bool, bool, list) -> None
     """
     Update existing products.
@@ -106,8 +106,9 @@ def update_dataset_types(index, allow_unsafe, allow_exclusive_lock, dry_run, fil
 
 
 @product.command('list')
-@ui.pass_datacube()
-def list_products(dc):
+@click.option('--names', is_flag=True, default=False, help='Output product names only, one per line.')
+@ui.pass_index()
+def list_products(index, simple):
     """
     List products that are defined in the generic index.
     """
@@ -117,6 +118,8 @@ def list_products(dc):
         echo('No products discovered :(')
         return
 
+    if simple:
+        echo('\n'.join(list(products['names'])))
     echo(products.to_string(columns=('name', 'description', 'product_type', 'instrument',
                                      'format', 'platform'),
                             justify='left'))
@@ -131,3 +134,14 @@ def show_product(index, product_name):
     """
     product_def = index.products.get_by_name(product_name)
     click.echo_via_pager(json.dumps(product_def.definition, indent=4))
+
+
+@product.command('export')
+@ui.pass_index()
+def export_products(index):
+    """Export all products into YAML."""
+    import yaml
+
+    all_products = index.products.get_all()
+    all_product_definitions = (product.definition for product in all_products)
+    click.echo_via_pager(yaml.dump_all(all_product_definitions))

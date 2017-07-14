@@ -103,10 +103,11 @@ def show_metadata_type(index, metadata_type_name, verbose):
     Show information about a metadata type.
     """
     metadata_type_obj = index.metadata_types.get_by_name(metadata_type_name)
-    print(metadata_type_obj.description)
-    print('Search fields: %s' % ', '.join(sorted(metadata_type_obj.dataset_fields.keys())))
     if verbose:
         echo(json.dumps(metadata_type_obj.definition, indent=4))
+    else:
+        print(metadata_type_obj.description)
+        print('Search fields: %s' % ', '.join(sorted(metadata_type_obj.dataset_fields.keys())))
 
 
 @metadata_type.command('list')
