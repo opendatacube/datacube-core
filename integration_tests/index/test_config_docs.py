@@ -165,7 +165,7 @@ def test_idempotent_add_dataset_type(index, ls5_telem_type, ls5_telem_doc):
     # But if we add the same type with differing properties we should get an error:
     different_telemetry_type = copy.deepcopy(ls5_telem_doc)
     different_telemetry_type['metadata']['ga_label'] = 'something'
-    with pytest.raises(ValueError):
+    with pytest.raises(changes.DocumentMismatchError):
         index.products.add_document(different_telemetry_type)
 
         # TODO: Support for adding/changing search fields?
