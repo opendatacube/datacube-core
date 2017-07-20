@@ -4,6 +4,8 @@ storage mechanism.
 """
 from __future__ import absolute_import
 
+import re
+from pathlib import Path
 from abc import ABCMeta, abstractmethod
 from six import add_metaclass
 
@@ -84,9 +86,8 @@ class Driver(object):
     def as_uri(self, path):
         """Set or replace the uri scheme for a path according to the driver's.
         """
-        path = str(path)
-        body = path.split(':', 1)[1] if ':' in path else path
-        return '%s://%s' % (self.uri_scheme, body)
+        path = Path(path).as_uri()
+        return re.sub("^file", self.uri_scheme, path)
 
     @abstractmethod
     def write_dataset_to_storage(self, dataset, *args, **kargs):
