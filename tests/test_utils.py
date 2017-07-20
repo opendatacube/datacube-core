@@ -13,6 +13,7 @@ from hypothesis import given
 from hypothesis.strategies import integers, text
 
 from datacube.utils import uri_to_local_path, clamp, gen_password, write_user_secret_file, slurp
+from datacube.utils.changes import check_doc_unchanged, get_doc_changes, MISSING, DocumentMismatchError
 from datacube.utils.dates import date_sequence
 
 
@@ -105,3 +106,54 @@ def test_write_user_secret_file(txt):
     os.remove(fname)
     assert txt == txt_back
     assert slurp(fname) is None
+
+
+doc_changes = [
+    (1, 1, []),
+    ({}, {}, []),
+    ({'a': 1}, {'a': 1}, []),
+    ({'a': {'b': 1}}, {'a': {'b': 1}}, []),
+    ([1, 2, 3], [1, 2, 3], []),
+    ([1, 2, [3, 4, 5]], [1, 2, [3, 4, 5]], []),
+    (1, 2, [((), 1, 2)]),
+    ([1, 2, 3], [2, 1, 3], [((0,), 1, 2), ((1,), 2, 1)]),
+    ([1, 2, [3, 4, 5]], [1, 2, [3, 6, 7]], [((2, 1), 4, 6), ((2, 2), 5, 7)]),
+    ({'a': 1}, {'a': 2}, [(('a',), 1, 2)]),
+    ({'a': 1}, {'a': 2}, [(('a',), 1, 2)]),
+    ({'a': 1}, {'b': 1}, [(('a',), 1, MISSING), (('b',), MISSING, 1)]),
+    ({'a': {'b': 1}}, {'a': {'b': 2}}, [(('a', 'b'), 1, 2)]),
+    ({}, {'b': 1}, [(('b',), MISSING, 1)]),
+    ({'a': {'c': 1}}, {'a': {'b': 1}}, [(('a', 'b'), MISSING, 1), (('a', 'c'), 1, MISSING)])
+]
+
+
+@pytest.mark.parametrize("v1, v2, expected", doc_changes)
+def test_get_doc_changes(v1, v2, expected):
+    rval = get_doc_changes(v1, v2)
+    assert rval == expected
+
+
+def test_get_doc_changes():
+    rval = get_doc_changes({}, None, base_prefix=('a',))
+    assert rval == [(('a',), {}, None)]
+
+
+@pytest.mark.parametrize("v1, v2, expected", doc_changes)
+def test_check_doc_unchanged(v1, v2, expected):
+    if expected != []:
+        with pytest.raises(DocumentMismatchError):
+            rval = check_doc_unchanged(v1, v2, 'name')
+    else:
+        # No Error Raised
+        check_doc_unchanged(v1, v2, 'name')
+
+
+def test_more_check_doc_unchanged():
+    # No exception raised
+    check_doc_unchanged({'a': 1}, {'a': 1}, 'Letters')
+
+    with pytest.raises(DocumentMismatchError, message='Letters differs from stored (a: 1!=2)'):
+        check_doc_unchanged({'a': 1}, {'a': 2}, 'Letters')
+
+    with pytest.raises(DocumentMismatchError, message='Letters differs from stored (a.b: 1!=2)'):
+        check_doc_unchanged({'a': {'b': 1}}, {'a': {'b': 2}}, 'Letters')

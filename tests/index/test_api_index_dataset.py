@@ -14,6 +14,7 @@ from datacube.index._datasets import DatasetResource
 from datacube.index.exceptions import DuplicateRecordError
 from datacube.model import DatasetType, MetadataType, Dataset
 from datacube.drivers.manager import DriverManager
+from datacube.utils.changes import DocumentMismatchError
 
 _nbar_uuid = UUID('f2f12372-8366-11e5-817e-1040f381a756')
 _ortho_uuid = UUID('5cf41d98-eda9-11e4-8a8e-1040f381a756')
@@ -240,7 +241,7 @@ def test_index_dataset():
 
     ds2 = deepcopy(_EXAMPLE_NBAR_DATASET)
     ds2.metadata_doc['product_type'] = 'zzzz'
-    with pytest.raises(ValueError):
+    with pytest.raises(DocumentMismatchError):
         dataset = datasets.add(ds2)
 
 

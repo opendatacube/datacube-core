@@ -19,6 +19,7 @@ from dateutil import tz
 from datacube.index._api import Index
 from datacube.index.exceptions import DuplicateRecordError, MissingRecordError
 from datacube.index.postgres import PostgresDb
+from datacube.utils.changes import DocumentMismatchError
 from datacube.model import Dataset
 
 _telemetry_uuid = UUID('4ec8fe97-e8b9-11e4-87ff-1040f381a756')
@@ -237,7 +238,7 @@ def test_index_dataset_with_sources(index, default_metadata_type):
     index.datasets.add(child, sources_policy='ensure')
     index.datasets.add(child, sources_policy='skip')
 
-    with pytest.raises(ValueError):  # TODO: should be DocumentMismatchError
+    with pytest.raises(DocumentMismatchError):
         index.datasets.add(child, sources_policy='verify')
 
 
