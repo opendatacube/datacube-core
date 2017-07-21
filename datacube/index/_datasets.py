@@ -145,8 +145,8 @@ class MetadataTypeResource(object):
                 concurrently=not allow_table_lock
             )
 
-        self.get_by_name_unsafe.cache_clear()
-        self.get_unsafe.cache_clear()
+        self.get_by_name.cache_clear()
+        self.get.cache_clear()
         return self.get_by_name(metadata_type.name)
 
     def update_document(self, definition, allow_unsafe_updates=False):
@@ -161,26 +161,11 @@ class MetadataTypeResource(object):
         """
         return self.update(self.from_doc(definition), allow_unsafe_updates=allow_unsafe_updates)
 
+    @lru_cache()
     def get(self, id_):
         """
         :rtype: datacube.model.MetadataType
         """
-        try:
-            return self.get_unsafe(id_)
-        except KeyError:
-            return None
-
-    def get_by_name(self, name):
-        """
-        :rtype: datacube.model.MetadataType
-        """
-        try:
-            return self.get_by_name_unsafe(name)
-        except KeyError:
-            return None
-
-    @lru_cache()
-    def get_unsafe(self, id_):
         with self._db.connect() as connection:
             record = connection.get_metadata_type(id_)
         if record is None:
@@ -188,7 +173,10 @@ class MetadataTypeResource(object):
         return self._make_from_query_row(record)
 
     @lru_cache()
-    def get_by_name_unsafe(self, name):
+    def get_by_name(self, name):
+        """
+        :rtype: datacube.model.MetadataType
+        """
         with self._db.connect() as connection:
             record = connection.get_metadata_type_by_name(name)
         if not record:
@@ -431,8 +419,8 @@ class ProductResource(object):
                 concurrently=not allow_table_lock
             )
 
-        self.get_by_name_unsafe.cache_clear()
-        self.get_unsafe.cache_clear()
+        self.get_by_name.cache_clear()
+        self.get.cache_clear()
         return self.get_by_name(product.name)
 
     def update_document(self, definition, allow_unsafe_updates=False, allow_table_lock=False):
@@ -465,6 +453,7 @@ class ProductResource(object):
         type_ = self.from_doc(definition)
         return self.add(type_)
 
+    @lru_cache()
     def get(self, id_):
         """
         Retrieve Product by id
@@ -472,25 +461,6 @@ class ProductResource(object):
         :param int id_: id of the Product
         :rtype: DatasetType
         """
-        try:
-            return self.get_unsafe(id_)
-        except KeyError:
-            return None
-
-    def get_by_name(self, name):
-        """
-        Retrieve Product by name
-
-        :param str name: name of the Product
-        :rtype: DatasetType
-        """
-        try:
-            return self.get_by_name_unsafe(name)
-        except KeyError:
-            return None
-
-    @lru_cache()
-    def get_unsafe(self, id_):
         with self._db.connect() as connection:
             result = connection.get_dataset_type(id_)
         if not result:
@@ -498,7 +468,13 @@ class ProductResource(object):
         return self._make(result)
 
     @lru_cache()
-    def get_by_name_unsafe(self, name):
+    def get_by_name(self, name):
+        """
+        Retrieve Product by name
+
+        :param str name: name of the Product
+        :rtype: DatasetType
+        """
         with self._db.connect() as connection:
             result = connection.get_dataset_type_by_name(name)
         if not result:

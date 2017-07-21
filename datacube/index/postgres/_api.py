@@ -294,7 +294,7 @@ class PostgresDbAPI(object):
     def get_dataset(self, dataset_id):
         return self._connection.execute(
             select(_DATASET_SELECT_FIELDS).where(DATASET.c.id == dataset_id)
-        ).first()
+        ).one()
 
     def get_derived_datasets(self, dataset_id):
         return self._connection.execute(
@@ -568,22 +568,22 @@ class PostgresDbAPI(object):
     def get_dataset_type(self, id_):
         return self._connection.execute(
             DATASET_TYPE.select().where(DATASET_TYPE.c.id == id_)
-        ).first()
+        ).one()
 
     def get_metadata_type(self, id_):
         return self._connection.execute(
             METADATA_TYPE.select().where(METADATA_TYPE.c.id == id_)
-        ).first()
+        ).one()
 
     def get_dataset_type_by_name(self, name):
         return self._connection.execute(
             DATASET_TYPE.select().where(DATASET_TYPE.c.name == name)
-        ).first()
+        ).one()
 
     def get_metadata_type_by_name(self, name):
         return self._connection.execute(
             METADATA_TYPE.select().where(METADATA_TYPE.c.name == name)
-        ).first()
+        ).one()
 
     def add_dataset_type(self,
                          name,
