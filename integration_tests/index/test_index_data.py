@@ -203,11 +203,11 @@ def test_get_missing_things(index):
     assert missing_thing is None, "get() should return none when it doesn't exist"
 
     id_ = sys.maxsize
-    missing_thing = index.metadata_types.get(id_)
-    assert missing_thing is None, "get() should return none when it doesn't exist"
+    with pytest.raises(KeyError, message="get metadata_type should raise an exception when one doesn't exist"):
+        index.metadata_types.get(id_)
 
-    missing_thing = index.products.get(id_)
-    assert missing_thing is None, "get() should return none when it doesn't exist"
+    with pytest.raises(KeyError, message="get product should raise an exception when one doesn't exist"):
+        index.products.get(id_)
 
 
 def test_index_dataset_with_sources(index, default_metadata_type):

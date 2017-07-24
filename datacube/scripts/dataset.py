@@ -81,9 +81,6 @@ def load_rules_from_file(filename, index):
 
     for rule in rules:
         type_ = index.products.get_by_name(rule['type'])
-        if not type_:
-            _LOG.error('DatasetType %s does not exists', rule['type'])
-            return
         if not changes.contains(type_.metadata_doc, rule['metadata']):
             _LOG.error('DatasetType %s can\'t be matched by its own rule', rule['type'])
             return
@@ -97,9 +94,6 @@ def load_rules_from_types(index, type_names=None):
     if type_names:
         for name in type_names:
             type_ = index.products.get_by_name(name)
-            if not type_:
-                _LOG.error('DatasetType %s does not exists', name)
-                return
             types.append(type_)
     else:
         types += index.products.get_all()

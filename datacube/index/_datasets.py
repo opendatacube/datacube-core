@@ -59,15 +59,15 @@ class MetadataTypeResource(object):
         # This column duplication is getting out of hand:
         MetadataType.validate(metadata_type.definition)
 
-        existing = self.get_by_name(metadata_type.name)
-        if existing:
+        try:
+            existing = self.get_by_name(metadata_type.name)
             # They've passed us the same one again. Make sure it matches what is stored.
             check_doc_unchanged(
                 existing.definition,
                 jsonify_document(metadata_type.definition),
                 'Metadata Type {}'.format(metadata_type.name)
             )
-        else:
+        except KeyError:
             with self._db.connect() as connection:
                 connection.add_metadata_type(
                     name=metadata_type.name,
@@ -296,14 +296,14 @@ class ProductResource(object):
         """
         DatasetType.validate(product.definition)
 
-        existing = self.get_by_name(product.name)
-        if existing:
+        try:
+            existing = self.get_by_name(product.name)
             check_doc_unchanged(
                 existing.definition,
                 jsonify_document(product.definition),
                 'Metadata Type {}'.format(product.name)
             )
-        else:
+        except KeyError:
             metadata_type = self.metadata_type_resource.get_by_name(product.metadata_type.name)
             if metadata_type is None:
                 _LOG.warning('Adding metadata_type "%s" as it doesn\'t exist.', product.metadata_type.name)
@@ -334,8 +334,6 @@ class ProductResource(object):
         DatasetType.validate(product.definition)
 
         existing = self.get_by_name(product.name)
-        if not existing:
-            raise ValueError('Unknown product %s, cannot update – did you intend to add it?' % product.name)
 
         updates_allowed = {
             ('description',): changes.allow_any,
@@ -1095,8 +1093,9 @@ class DatasetResource(object):
     def _try_add(self, dataset):
         was_inserted = False
 
-        product = self.types.get_by_name(dataset.type.name)
-        if product is None:
+        try:
+            product = self.types.get_by_name(dataset.type.name)
+        except KeyError:
             _LOG.warning('Adding product "%s" as it doesn\'t exist.', dataset.type.name)
             product = self.types.add(dataset.type)
         if dataset.sources is None:
