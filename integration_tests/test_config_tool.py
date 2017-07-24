@@ -10,7 +10,6 @@ from pathlib import Path
 import re
 
 import pytest
-import sqlalchemy
 from click.testing import CliRunner
 
 import datacube.scripts.cli_app
