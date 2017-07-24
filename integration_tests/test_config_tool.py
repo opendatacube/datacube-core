@@ -10,6 +10,7 @@ from pathlib import Path
 import re
 
 import pytest
+import sqlalchemy
 from click.testing import CliRunner
 
 import datacube.scripts.cli_app
@@ -200,28 +201,44 @@ def test_db_init(global_integration_cli_args, db, local_config):
         assert has_schema(db._engine, connection._connection)
 
 
-@pytest.mark.parametrize("username, user_description", [
+@pytest.fixture(params=[
     ('test_"user"_{n}', None),
     ('test_"user"_{n}', 'Test user description'),
     # Test that names are escaped
-    ('user_"invalid+_chars_{n}', None),
-    ('user_invalid_desc_{n}', 'Invalid "\' chars in description'),
-])
-def test_user_creation(global_integration_cli_args, db, username, user_description, default_metadata_type):
+    ('test_user_"invalid+_chars_{n}', None),
+    ('test_user_invalid_desc_{n}', 'Invalid "\' chars in description')])
+def example_user(global_integration_cli_args, db, request):
+    username, description = request.param
+
+    username = username.format(n=random.randint(111111, 999999))
+
+    # test_roles = (user_name for role_name, user_name, desc in roles if user_name.startswith('test_'))
+    with db.connect() as connection:
+        users = (user_name for role_name, user_name, desc in connection.list_users())
+        if username in users:
+            connection.drop_users([username])
+
+    # No user exists.
+    assert_no_user(global_integration_cli_args, username)
+
+    yield username, description
+
+    with db.connect() as connection:
+        users = (user_name for role_name, user_name, desc in connection.list_users())
+        if username in users:
+            connection.drop_users([username])
+
+
+def test_user_creation(global_integration_cli_args, example_user):
     """
     Add a user, grant them, delete them.
+
+    This test requires role creation privileges on the PostgreSQL instance used for testing...
 
     :type global_integration_cli_args: tuple[str]
     :type db: datacube.index.postgres._api.PostgresDb
     """
-    existing_mappings = _dataset_type_count(db)
-
-    print('{} mappings'.format(existing_mappings))
-
-    username = username.format(n=random.randint(111111, 999999))
-
-    # No user exists.
-    assert_no_user(global_integration_cli_args, username)
+    username, user_description = example_user
 
     # Create them
     args = ['-v', 'user', 'create', 'ingest', username]
