@@ -531,7 +531,7 @@ class Datacube(object):
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
-        if use_threads and ('SharedArray' not in sys.modules or 'ThreadPool' not in sys.modules):
+        if use_threads and ('SharedArray' not in sys.modules or 'pathos.threading' not in sys.modules):
             use_threads = False
 
         if dask_chunks is None:
