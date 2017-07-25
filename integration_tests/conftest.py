@@ -186,7 +186,7 @@ def remove_dynamic_indexes():
 def driver(driver_manager, request):
     driver_name = request.param
     if driver_name not in driver_manager.drivers:
-        pytest.skip(driver_name + " not currently available")
+        pytest.skip(driver_name + " driver not able to be loaded in this environment")
     driver_manager.set_current_driver(driver_name)
     return driver_manager.driver
 
