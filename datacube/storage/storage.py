@@ -11,7 +11,6 @@ Important functions are:
 from __future__ import absolute_import, division, print_function
 
 import logging
-import math
 from contextlib import contextmanager
 from pathlib import Path
 from abc import ABCMeta, abstractmethod
@@ -21,8 +20,7 @@ from datacube.compat import urlparse, urljoin, url_parse_module
 from datacube.config import OPTIONS
 from datacube.model import Dataset
 from datacube.storage import netcdf_writer
-from datacube.drivers.datasource import DataSource
-from datacube.utils import clamp, datetime_to_seconds_since_1970, DatacubeException, ignore_exceptions_if
+from datacube.utils import datetime_to_seconds_since_1970, DatacubeException, ignore_exceptions_if
 from datacube.utils import geometry
 from datacube.utils import is_url, uri_to_local_path
 
@@ -80,62 +78,6 @@ else:
         return src.affine
 
 
-def _calc_offsets_impl(off, scale, src_size, dst_size):
-    assert scale >= 1-1e-5
-
-    if off >= 0:
-        write_off = 0
-    else:
-        write_off = math.ceil((-off-0.5)/scale)
-    read_off = round((write_off+0.5)*scale-0.5+off) - round(0.5*(scale-1.0))  # assuming read_size/write_size ~= scale
-    if read_off >= src_size:
-        return 0, 0, 0, 0
-
-    write_end = dst_size
-    write_size = write_end-write_off
-    read_end = read_off+round(write_size*scale)
-    if read_end > src_size:
-        # +0.5 below is a fudge that will return last row in more situations, but will change the scale more
-        write_end = math.floor((src_size-off+0.5)/scale)
-        write_size = write_end-write_off
-        read_end = clamp(read_off+round(write_size*scale), read_off, src_size)
-    read_size = read_end-read_off
-
-    return int(read_off), int(write_off), int(read_size), int(write_size)
-
-
-def _calc_offsets2(off, scale, src_size, dst_size):
-    if scale < 0:
-        r_off, write_off, read_size, write_size = _calc_offsets_impl(off + dst_size*scale, -scale, src_size, dst_size)
-        return r_off, dst_size - write_size - write_off, read_size, write_size
-    else:
-        return _calc_offsets_impl(off, scale, src_size, dst_size)
-
-
-def _read_decimated(array_transform, src, dest_shape):
-    dy_dx = (array_transform.f, array_transform.c)
-    sy_sx = (array_transform.e, array_transform.a)
-    read, write, read_shape, write_shape = zip(*map(_calc_offsets2, dy_dx, sy_sx, src.shape, dest_shape))
-    if all(write_shape):
-        window = ((read[0], read[0] + read_shape[0]), (read[1], read[1] + read_shape[1]))
-        tmp = src.read(window=window, out_shape=write_shape)
-        scale = (read_shape[0]/write_shape[0] if sy_sx[0] > 0 else -read_shape[0]/write_shape[0],
-                 read_shape[1]/write_shape[1] if sy_sx[1] > 0 else -read_shape[1]/write_shape[1])
-        offset = (read[0] + (0 if sy_sx[0] > 0 else read_shape[0]),
-                  read[1] + (0 if sy_sx[1] > 0 else read_shape[1]))
-        transform = Affine(scale[1], 0, offset[1], 0, scale[0], offset[0])
-        return tmp[::(-1 if sy_sx[0] < 0 else 1), ::(-1 if sy_sx[1] < 0 else 1)], write, transform
-    return None, None, None
-
-
-def _no_scale(affine, eps=1e-5):
-    return abs(abs(affine.a) - 1.0) < eps and abs(abs(affine.e) - 1.0) < eps
-
-
-def _no_fractional_translate(affine, eps=0.01):
-    return abs(affine.c % 1.0) < eps and abs(affine.f % 1.0) < eps
-
-
 def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, resampling):
     """
     Read from `source` into `dest`, reprojecting if necessary.
@@ -144,26 +86,15 @@ def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, re
     :param numpy.ndarray dest: Data destination
     """
     with source.open() as src:
-        array_transform = ~src.transform * dst_transform
-        # if the CRS is the same use decimated reads if possible (NN or 1:1 scaling)
-        if src.crs == dst_projection and _no_scale(array_transform) and (resampling == Resampling.nearest or
-                                                                         _no_fractional_translate(array_transform)):
-            dest.fill(dst_nodata)
-            tmp, offset, _ = _read_decimated(array_transform, src, dest.shape)
-            if tmp is None:
-                return
-            dest = dest[offset[0]:offset[0] + tmp.shape[0], offset[1]:offset[1] + tmp.shape[1]]
-            numpy.copyto(dest, tmp, where=(tmp != src.nodata))
-        else:
-            if dest.dtype == numpy.dtype('int8'):
-                dest = dest.view(dtype='uint8')
-                dst_nodata = dst_nodata.astype('uint8')
-            src.reproject(dest,
-                          dst_transform=dst_transform,
-                          dst_crs=str(dst_projection),
-                          dst_nodata=dst_nodata,
-                          resampling=resampling,
-                          NUM_THREADS=OPTIONS['reproject_threads'])
+        if dest.dtype == numpy.dtype('int8'):
+            dest = dest.view(dtype='uint8')
+            dst_nodata = dst_nodata.astype('uint8')
+        src.reproject(dest,
+                      dst_transform=dst_transform,
+                      dst_crs=str(dst_projection),
+                      dst_nodata=dst_nodata,
+                      resampling=resampling,
+                      NUM_THREADS=OPTIONS['reproject_threads'])
 
 
 def reproject_and_fuse(sources, destination, dst_transform, dst_projection, dst_nodata,
@@ -214,6 +145,7 @@ class BandDataSource(object):
 
     :type source: rasterio.Band
     """
+
     def __init__(self, source, nodata=None):
         self.source = source
         if nodata is None:
@@ -243,14 +175,19 @@ class BandDataSource(object):
         return self.source.ds.read(indexes=self.source.bidx, window=window, out_shape=out_shape)
 
     def reproject(self, dest, dst_transform, dst_crs, dst_nodata, resampling, **kwargs):
-        return rasterio.warp.reproject(self.source,
-                                       dest,
-                                       src_nodata=self.nodata,
-                                       dst_transform=dst_transform,
-                                       dst_crs=str(dst_crs),
-                                       dst_nodata=dst_nodata,
-                                       resampling=resampling,
-                                       **kwargs)
+        """
+        Read from `self.source` and store into `dest`, reprojecting if necessary.
+
+        :param np.ndarray dest: Data is read or reprojected and stored in this array
+        """
+        rasterio.warp.reproject(self.source,
+                                dest,
+                                src_nodata=self.nodata,
+                                dst_transform=dst_transform,
+                                dst_crs=str(dst_crs),
+                                dst_nodata=dst_nodata,
+                                resampling=resampling,
+                                **kwargs)
 
 
 # class NetCDFDataSource(object):
@@ -327,6 +264,7 @@ class OverrideBandDataSource(object):
 
     :type source: rasterio.Band
     """
+
     def __init__(self, source, nodata, crs, transform):
         self.source = source
         self.nodata = nodata
@@ -365,6 +303,7 @@ class RasterioDataSource(DataSource):
     Abstract class used by fuse_sources and :func:`read_from_source`
 
     """
+
     def __init__(self, filename, nodata):
         self.filename = filename
         self.nodata = nodata
@@ -448,6 +387,7 @@ def register_scheme(*schemes):
     url_parse_module.uses_netloc.extend(schemes)
     url_parse_module.uses_relative.extend(schemes)
     url_parse_module.uses_params.extend(schemes)
+
 
 # Not recognised by python by default. Doctests below will fail without it.
 register_scheme('s3')
@@ -573,7 +513,7 @@ class RasterDatasetSource(RasterioDataSource):
         return idx
 
     def get_transform(self, shape):
-        return self._dataset.transform * Affine.scale(1/shape[1], 1/shape[0])
+        return self._dataset.transform * Affine.scale(1 / shape[1], 1 / shape[0])
 
     def get_crs(self):
         return self._dataset.crs

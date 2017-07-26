@@ -157,9 +157,9 @@ def _mock_datasetsource(value, crs=None, shape=(2, 2)):
     rio_reader.read.return_value = np.array(value)
 
     # Use the following if a reproject were to be required
-    # def fill_array(dest, *args, **kwargs):
-    #     dest[:] = value
-    # rio_reader.reproject.side_effect = fill_array
+    def fill_array(dest, *args, **kwargs):
+        dest[:] = value
+    rio_reader.reproject.side_effect = fill_array
     return dataset_source
 
 
@@ -173,7 +173,7 @@ def test_read_from_broken_source():
     sources = [source1, source2]
 
     rio_reader = source1.open.return_value.__enter__.return_value
-    rio_reader.read.side_effect = OSError('Read or write failed')
+    rio_reader.reproject.side_effect = OSError('Read or write failed')
 
     output_data = np.full(shape, fill_value=no_data, dtype='int16')
 
