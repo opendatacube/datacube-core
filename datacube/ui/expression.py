@@ -29,12 +29,12 @@ FIELD_NAME = attr(u'field_name', word)
 
 NUMBER = re.compile(r"[-+]?(\d*\.\d+|\d+\.\d*|\d+)")
 # A limited string can be used without quotation marks.
-LIMITED_STRING = re.compile(r"[a-zA-Z][\w\._-]*")
+LIMITED_STRING = re.compile(r"[a-zA-Z][\w._-]*")
 # Inside string quotation marks. Kept simple. We're not supporting escapes or much else yet...
-STRING_CONTENTS = re.compile(r"[\w\s\._-]*")
+STRING_CONTENTS = re.compile(r"[\w\s._-]*")
 # URI
-URI_CONTENTS = re.compile(r"[a-z0-9+.-]+://([:/\w\._-])*")
-URI_CONTENTS_WITH_SPACE = re.compile(r"[a-z0-9+.-]+://([:/\s\w\._-])*")
+URI_CONTENTS = re.compile(r"[a-z0-9+.-]+://([:/\w._-])*")
+URI_CONTENTS_WITH_SPACE = re.compile(r"[a-z0-9+.-]+://([:/\s\w._-])*")
 
 # Either a day '2016-02-20' or a month '2016-02'
 DATE = re.compile(r"\d{4}-\d{1,2}(-\d{1,2})?")

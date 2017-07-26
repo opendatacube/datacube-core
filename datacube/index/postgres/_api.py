@@ -27,7 +27,12 @@ from datacube.model import Range
 from . import _dynamic as dynamic
 from . import tables
 from ._fields import parse_fields, NativeField, Expression, PgField
-from .tables import DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
+from .tables import (
+    DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE,
+    S3_DATASET_MAPPING, S3_DATASET, S3_DATASET_CHUNK
+)
+
+import uuid
 
 try:
     from typing import Iterable
@@ -156,6 +161,9 @@ class PostgresDbAPI(object):
 
     def rollback(self):
         self._connection.execute(text('ROLLBACK'))
+
+    def execute(self, command):
+        return self._connection.execute(command)
 
     def insert_dataset(self, metadata_doc, dataset_id, dataset_type_id):
         """

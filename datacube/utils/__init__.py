@@ -710,7 +710,7 @@ def tile_iter(tile, chunk_size):
 
 
 def write_user_secret_file(text, fname, in_home_dir=False, mode='w'):
-    "Write file only readable/writeable by the user"
+    """Write file only readable/writeable by the user"""
 
     if in_home_dir:
         fname = os.path.join(os.environ['HOME'], fname)

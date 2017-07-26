@@ -2,6 +2,12 @@
 import numpy
 from datacube.model import GridSpec
 from datacube.utils import geometry
+from mock import MagicMock
+
+
+class PickableMock(MagicMock):
+    def __reduce__(self):
+        return (MagicMock, ())
 
 
 def test_gridworkflow():
@@ -25,7 +31,8 @@ def test_gridworkflow():
     fakedataset.extent = geometry.box(left=grid, bottom=-grid, right=2*grid, top=-2*grid, crs=fakecrs)
     fakedataset.center_time = t = datetime.datetime(2001, 2, 15)
 
-    fakeindex = MagicMock()
+    fakeindex = PickableMock()
+    fakeindex._db = None
     fakeindex.datasets.get_field_names.return_value = ['time']  # permit query on time
     fakeindex.datasets.search_eager.return_value = [fakedataset]
 
@@ -33,6 +40,9 @@ def test_gridworkflow():
 
     from datacube.api.grid_workflow import GridWorkflow
     gw = GridWorkflow(fakeindex, gridspec)
+    # Need to force the fake index otherwise the driver manager will
+    # only take its _db
+    gw.index = fakeindex
     query = dict(product='fake_product_name', time=('2001-1-1 00:00:00', '2001-3-31 23:59:59'))
 
     # test backend : that it finds the expected cell/dataset
@@ -151,7 +161,7 @@ def test_gridworkflow_with_time_depth():
             fakedataset.center_time = start_time + (delta * i)
             yield fakedataset
 
-    fakeindex = MagicMock()
+    fakeindex = PickableMock()
     fakeindex.datasets.get_field_names.return_value = ['time']  # permit query on time
     fakeindex.datasets.search_eager.return_value = list(make_fake_datasets(100))
 

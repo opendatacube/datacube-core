@@ -1,0 +1,41 @@
+acquisition:
+  aos: '1990-05-05 23:05:08'
+  groundstation: {code: ASN}
+  los: '1990-05-05 23:13:15'
+creation_dt: '1990-05-05 23:05:08'
+extent:
+  center_dt: '1990-05-05 23:10:28'
+  coord:
+    ll: {lat: -35.62166386930717, lon: 148.50177502563741}
+    lr: {lat: -35.55843703702701, lon: 151.18102548713313}
+    ul: {lat: -33.65618145050668, lon: 148.46674748154885}
+    ur: {lat: -33.597399214036585, lon: 151.08379772803488}
+  from_dt: '1990-05-05 23:10:16'
+  to_dt: '1990-05-05 23:10:40'
+format: {name: GeoTiff}
+grid_spatial:
+  projection:
+    geo_ref_points:
+      ll: {x: 636000.0, y: 6056975.0}
+      lr: {x: 879025.0, y: 6056975.0}
+      ul: {x: 636000.0, y: 6275000.0}
+      ur: {x: 879025.0, y: 6275000.0}
+    spatial_reference: PROJCS["GDA94 / MGA zone 55",GEOGCS["GDA94",DATUM["Geocentric_Datum_of_Australia_1994",SPHEROID["GRS
+      1980",6378137,298.257222101,AUTHORITY["EPSG","7019"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6283"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4283"]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",0],PARAMETER["central_meridian",147],PARAMETER["scale_factor",0.9996],PARAMETER["false_easting",500000],PARAMETER["false_northing",10000000],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Easting",EAST],AXIS["Northing",NORTH],AUTHORITY["EPSG","28355"]]
+id: dffb6d9b-8a68-4e01-87b6-3f2759968645
+image:
+  bands:
+    '1': {path: scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900505_B10.tif}
+    '2': {path: scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900505_B20.tif}
+    '3': {path: scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900505_B30.tif}
+    '4': {path: scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900505_B40.tif}
+    '5': {path: scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900505_B50.tif}
+    '7': {path: scene01/LS5_TM_NBAR_P54_GANBAR01-002_090_084_19900505_B70.tif}
+  satellite_ref_point_end: {x: 90, y: 84}
+  satellite_ref_point_start: {x: 90, y: 84}
+instrument: {name: TM}
+lineage:
+  source_datasets: {}
+platform: {code: LANDSAT_5}
+processing_level: P54
+product_type: nbar

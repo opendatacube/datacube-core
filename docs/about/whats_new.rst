@@ -16,6 +16,13 @@ v1.5.1 Purpler Unicorn (13 July 2017)
 v1.5.0 Purple Unicorn (9 July 2017)
 -----------------------------------
 
+New Features
+~~~~~~~~~~~~
+
+ - Support for AWS S3 array storage
+
+ - Driver Manager support for NetCDF, S3, S3-file drivers.
+
 Usability Improvements
 ~~~~~~~~~~~~~~~~~~~~~~
 

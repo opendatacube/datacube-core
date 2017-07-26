@@ -327,14 +327,14 @@ NATIVE_MODULES = [
     'rasterio.crs',
     'gdal', 'osgeo.gdal',
     'osr',
-    'numpy',
+    'numpy', 'numpy.core.multiarray',
     'matplotlib',
     'matplotlib.pyplot',
     'scipy', 'scipy.io',
+    'SharedArray',
     'paramiko',
     'sshtunnel',
     'tqdm',
-
 ]
 
 from mock import Mock as MagicMock

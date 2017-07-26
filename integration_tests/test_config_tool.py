@@ -32,6 +32,7 @@ INVALID_MAPPING_DOCS = Path(__file__).parent.parent. \
 def _run_cli(global_integration_cli_args, cli_method, opts, catch_exceptions=False, expect_success=True):
     exe_opts = list(global_integration_cli_args)
     exe_opts.extend(opts)
+
     runner = CliRunner()
     result = runner.invoke(
         cli_method,

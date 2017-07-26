@@ -39,6 +39,7 @@ and  related data from multiple satellite and other acquisition systems.
    dev/data_model
    dev/api
    dev/model
+   dev/driver
    dev/index
    dev/analytics_engine
    dev/external
@@ -68,4 +69,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

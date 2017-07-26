@@ -53,8 +53,9 @@ from tqdm import tqdm
 
 from datacube import Datacube
 from datacube.config import LocalConfig, _DEFAULT_CONF
-from datacube.index import index_connect
+
 from datacube.ui.click import global_cli_options
+from datacube.drivers.manager import DriverManager
 
 LOG = logging.getLogger('simple_replicator')
 
@@ -79,7 +80,7 @@ class DatacubeReplicator(object):
         self.tunnel = None
         self.remote_dc_config = None
         self.remote_dc = None
-        self.local_index = index_connect()
+        self.local_index = DriverManager().index
 
     def run(self):
         self.connect()

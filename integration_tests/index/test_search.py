@@ -216,8 +216,8 @@ def pseudo_ls8_dataset4(index, db, pseudo_ls8_type, pseudo_ls8_dataset2):
 
 
 @pytest.fixture
-def ls5_dataset_w_children(index, example_ls5_dataset_path, indexed_ls5_scene_dataset_types):
-    # type: (Index, Path, DatasetType) -> Dataset
+def ls5_dataset_w_children(driver, index, example_ls5_dataset_path, indexed_ls5_scene_dataset_types):
+    # type: (Driver, Path, DatasetType) -> Dataset
     # TODO: We need a higher-level API for indexing paths, rather than reaching inside the cli script
     datasets = list(
         dataset_script.load_datasets(
@@ -640,13 +640,16 @@ def test_search_special_fields(index, pseudo_ls8_type, pseudo_ls8_dataset,
     assert len(datasets) == 0
 
 
-def test_search_by_uri(index, ls5_dataset_w_children):
+def test_search_by_uri(index, ls5_dataset_w_children, driver):
     datasets = index.datasets.search_eager(product=ls5_dataset_w_children.type.name,
                                            uri=ls5_dataset_w_children.local_uri)
-    assert len(datasets) == 1
+    if driver.uri_scheme == 'file':
+        assert len(datasets) == 1
+    else:
+        assert len(datasets) == 0
 
     datasets = index.datasets.search_eager(product=ls5_dataset_w_children.type.name,
-                                           uri='file:///x/yz')
+                                           uri='%s:///x/yz' % driver.uri_scheme)
     assert len(datasets) == 0
 
 
@@ -1211,5 +1214,5 @@ def _cli_search(args, global_integration_cli_args):
         datacube.scripts.search_tool.cli,
         opts,
         catch_exceptions=False
-    )
+    )  # Annoyingly, this runner merges stderr and stdout together
     return result

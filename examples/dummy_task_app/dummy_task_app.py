@@ -13,7 +13,7 @@ APP_NAME = 'dummy'
 
 
 def random_sleep(amount_secs=0.1, prop=0.5):
-    'emulate processing time variance'
+    """emulate processing time variance"""
     from time import sleep
     from random import uniform
 
@@ -22,7 +22,7 @@ def random_sleep(amount_secs=0.1, prop=0.5):
 
 
 def unused(*_, **_unused):
-    "Used to silence pylint warnings"
+    """Used to silence pylint warnings"""
     pass
 
 

@@ -161,8 +161,9 @@ def parse_match_rules_options(index, match_rules, dtype, auto_match):
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
 @click.argument('dataset-paths',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
-@ui.pass_index()
-def index_cmd(index, match_rules, dtype, auto_match, sources_policy, dry_run, dataset_paths):
+@ui.pass_driver_manager()
+def index_cmd(driver_manager, match_rules, dtype, auto_match, sources_policy, dry_run, dataset_paths):
+    index = driver_manager.index
     rules = parse_match_rules_options(index, match_rules, dtype, auto_match)
     if rules is None:
         return
@@ -173,6 +174,7 @@ def index_cmd(index, match_rules, dtype, auto_match, sources_policy, dry_run, da
             index_dataset_paths(sources_policy, dry_run, index, rules, dataset_path_iter)
     else:
         index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths)
+    driver_manager.close()
 
 
 def index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths):
@@ -202,8 +204,9 @@ def parse_update_rules(allow_any):
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
 @click.argument('datasets',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
-@ui.pass_index()
-def update_cmd(index, allow_any, match_rules, dtype, auto_match, dry_run, datasets):
+@ui.pass_driver_manager()
+def update_cmd(driver_manager, allow_any, match_rules, dtype, auto_match, dry_run, datasets):
+    index = driver_manager.index
     rules = parse_match_rules_options(index, match_rules, dtype, auto_match)
     if rules is None:
         return
@@ -228,6 +231,7 @@ def update_cmd(index, allow_any, match_rules, dtype, auto_match, dry_run, datase
             else:
                 fail += 1
     echo('%d successful, %d failed' % (success, fail))
+    driver_manager.close()
 
 
 def update_dry_run(index, updates, dataset):
@@ -360,10 +364,11 @@ _OUTPUT_WRITERS = {
               # Unlikely to be hit, but will avoid total-death by circular-references.
               default=99)
 @click.argument('ids', nargs=-1)
-@ui.pass_index()
-def info_cmd(index, show_sources, show_derived, f, max_depth, ids):
-    # type: (Index, bool, bool, Iterable[str]) -> None
+@ui.pass_driver_manager()
+def info_cmd(driver_manager, show_sources, show_derived, f, max_depth, ids):
+    # type: (DriverManager, bool, bool, Iterable[str]) -> None
 
+    index = driver_manager.index
     # Using an array wrapper to get around the lack of "nonlocal" in py2
     missing_datasets = [0]
 
@@ -384,7 +389,7 @@ def info_cmd(index, show_sources, show_derived, f, max_depth, ids):
                            max_depth=max_depth)
         for dataset in get_datasets(ids)
     )
-
+    driver_manager.close()
     sys.exit(missing_datasets[0])
 
 
@@ -392,16 +397,18 @@ def info_cmd(index, show_sources, show_derived, f, max_depth, ids):
 @click.option('-f', help='Output format',
               type=click.Choice(_OUTPUT_WRITERS.keys()), default='yaml', show_default=True)
 @ui.parsed_search_expressions
-@ui.pass_index()
-def search_cmd(index, f, expressions):
+@ui.pass_driver_manager()
+def search_cmd(driver_manager, f, expressions):
     """
     Search available Datasets
     """
+    index = driver_manager.index
     datasets = index.datasets.search(**expressions)
     _OUTPUT_WRITERS[f](
         build_dataset_info(index, dataset)
         for dataset in datasets
     )
+    driver_manager.close()
 
 
 def _get_derived_set(index, id_):
@@ -423,14 +430,16 @@ def _get_derived_set(index, id_):
 @click.option('--dry-run', help="Don't archive. Display datasets that would get archived",
               is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
-@ui.pass_index()
-def archive_cmd(index, archive_derived, dry_run, ids):
+@ui.pass_driver_manager()
+def archive_cmd(driver_manager, archive_derived, dry_run, ids):
+    index = driver_manager.index
     for id_ in ids:
         to_process = _get_derived_set(index, id_) if archive_derived else [index.datasets.get(id_)]
         for d in to_process:
             click.echo('archiving %s %s %s' % (d.type.name, d.id, d.local_uri))
         if not dry_run:
             index.datasets.archive(d.id for d in to_process)
+    driver_manager.close()
 
 
 @dataset_cmd.command('restore', help="Restore datasets")
@@ -442,12 +451,14 @@ def archive_cmd(index, archive_derived, dry_run, ids):
                    "this recently to the original dataset",
               default=10 * 60)
 @click.argument('ids', nargs=-1)
-@ui.pass_index()
-def restore_cmd(index, restore_derived, derived_tolerance_seconds, dry_run, ids):
+@ui.pass_driver_manager()
+def restore_cmd(driver_manager, restore_derived, derived_tolerance_seconds, dry_run, ids):
+    index = driver_manager.index
     tolerance = datetime.timedelta(seconds=derived_tolerance_seconds)
 
     for id_ in ids:
         _restore_one(dry_run, id_, index, restore_derived, tolerance)
+    driver_manager.close()
 
 
 def _restore_one(dry_run, id_, index, restore_derived, tolerance):

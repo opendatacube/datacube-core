@@ -7,7 +7,7 @@ from click import echo, style
 from sqlalchemy.exc import OperationalError
 
 import datacube
-from datacube.index import index_connect
+from datacube.drivers.manager import DriverManager
 from datacube.index.postgres._connections import IndexSetupError
 from datacube.ui import click as ui
 from datacube.ui.click import cli, handle_exception
@@ -41,12 +41,18 @@ def system():
     '--lock-table/--no-lock-table', is_flag=True, default=False,
     help="Allow table to be locked (eg. while creating missing indexes)"
 )
-@ui.pass_index(expect_initialised=False)
-def database_init(index, default_types, init_users, recreate_views, rebuild, lock_table):
+@click.option(
+    '--create-s3-tables', '-s3', is_flag=True, default=False,
+    help="Create S3 datables."
+)
+@ui.pass_driver_manager(expect_initialised=False)
+def database_init(driver_manager, default_types, init_users, recreate_views, rebuild, lock_table, create_s3_tables):
     echo('Initialising database...')
+    index = driver_manager.index
 
     was_created = index.init_db(with_default_types=default_types,
-                                with_permissions=init_users)
+                                with_permissions=init_users,
+                                with_s3_tables=create_s3_tables)
 
     if was_created:
         echo(style('Created.', bold=True))
@@ -60,6 +66,7 @@ def database_init(index, default_types, init_users, recreate_views, rebuild, loc
         rebuild_views=recreate_views or rebuild,
     )
     echo('Done.')
+    driver_manager.close()
 
 
 @system.command('check', help='Check and display current configuration')
@@ -79,7 +86,8 @@ def check(config_file):
     echo()
     echo('Valid connection:\t', nl=False)
     try:
-        index = index_connect(local_config=config_file)
+        # Initialise driver manager singleton
+        index = DriverManager(default_driver_name=None, index=None, local_config=config_file).index
         echo(style('YES', bold=True))
         for role, user, description in index.users.list_users():
             if user == config_file.db_username:

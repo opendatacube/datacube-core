@@ -14,11 +14,14 @@ import logging
 import math
 from contextlib import contextmanager
 from pathlib import Path
+from abc import ABCMeta, abstractmethod
+from six import add_metaclass
 
 from datacube.compat import urlparse, urljoin, url_parse_module
 from datacube.config import OPTIONS
 from datacube.model import Dataset
 from datacube.storage import netcdf_writer
+from datacube.drivers.datasource import DataSource
 from datacube.utils import clamp, datetime_to_seconds_since_1970, DatacubeException, ignore_exceptions_if
 from datacube.utils import geometry
 from datacube.utils import is_url, uri_to_local_path
@@ -168,7 +171,7 @@ def reproject_and_fuse(sources, destination, dst_transform, dst_projection, dst_
     """
     Reproject and fuse `sources` into a 2D numpy array `destination`.
 
-    :param List[BaseRasterDataSource] sources: Data sources to open and read from
+    :param List[RasterioDataSource] sources: Data sources to open and read from
     :param numpy.ndarray destination: ndarray of appropriate size to read data into
     :type resampling: str
     :type fuse_func: callable or None
@@ -357,7 +360,7 @@ class OverrideBandDataSource(object):
                                        **kwargs)
 
 
-class RasterioDataSource(object):
+class RasterioDataSource(DataSource):
     """
     Abstract class used by fuse_sources and :func:`read_from_source`
 
@@ -522,7 +525,7 @@ def _choose_location(dataset):
     return uris[0]
 
 
-class DatasetSource(RasterioDataSource):
+class RasterDatasetSource(RasterioDataSource):
     """Data source for reading from a Data Cube Dataset"""
 
     def __init__(self, dataset, measurement_id):
@@ -537,7 +540,7 @@ class DatasetSource(RasterioDataSource):
         url = _resolve_url(_choose_location(dataset), self._measurement['path'])
         filename = _url2rasterio(url, dataset.format, self._measurement.get('layer'))
         nodata = dataset.type.measurements[measurement_id].get('nodata')
-        super(DatasetSource, self).__init__(filename, nodata=nodata)
+        super(RasterDatasetSource, self).__init__(filename, nodata=nodata)
 
     def get_bandnumber(self, src):
 

@@ -171,7 +171,7 @@ def test_idempotent_add_dataset_type(index, ls5_telem_type, ls5_telem_doc):
         # TODO: Support for adding/changing search fields?
 
 
-def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
+def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc, driver):
     """
     :type index: datacube.index._api.Index
     """
@@ -179,28 +179,42 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
     assert ls5_telem_type
 
     example_ls5_nbar_metadata_doc['lineage']['source_datasets'] = {}
-    dataset = Dataset(ls5_telem_type, example_ls5_nbar_metadata_doc, uris=['file:///test/doc.yaml'], sources={})
+    dataset = Dataset(ls5_telem_type, example_ls5_nbar_metadata_doc,
+                      uris=['%s:///test/doc.yaml' % driver.uri_scheme],
+                      sources={})
     dataset = index.datasets.add(dataset)
     assert dataset
 
     # update with the same doc should do nothing
     index.datasets.update(dataset)
     updated = index.datasets.get(dataset.id)
-    assert updated.local_uri == 'file:///test/doc.yaml'
-    assert updated.uris == ['file:///test/doc.yaml']
+    print('>>>>', updated.local_uri)
+    if driver.uri_scheme == 'file':
+        assert updated.local_uri == 'file:///test/doc.yaml'
+    else:
+        assert updated.local_uri is None
+    assert updated.uris == ['%s:///test/doc.yaml' % driver.uri_scheme]
 
     # update location
-    assert index.datasets.get(dataset.id).local_uri == 'file:///test/doc.yaml'
-    update = Dataset(ls5_telem_type, example_ls5_nbar_metadata_doc, uris=['file:///test/doc2.yaml'], sources={})
+    if driver.uri_scheme == 'file':
+        assert index.datasets.get(dataset.id).local_uri == 'file:///test/doc.yaml'
+    else:
+        assert updated.local_uri is None
+    update = Dataset(ls5_telem_type, example_ls5_nbar_metadata_doc,
+                     uris=['%s:///test/doc2.yaml' % driver.uri_scheme],
+                     sources={})
     index.datasets.update(update)
     updated = index.datasets.get(dataset.id)
-
     # New locations are appended on update.
     # They may be indexing the same dataset from a different location: we don't want to remove the original location.
     # Returns the most recently added
-    assert updated.local_uri == 'file:///test/doc2.yaml'
+    if driver.uri_scheme == 'file':
+        assert updated.local_uri == 'file:///test/doc2.yaml'
+    else:
+        assert updated.local_uri is None
     # But both still exist (newest-to-oldest order)
-    assert updated.uris == ['file:///test/doc2.yaml', 'file:///test/doc.yaml']
+    assert updated.uris == ['%s:///test/doc2.yaml' % driver.uri_scheme,
+                            '%s:///test/doc.yaml' % driver.uri_scheme]
 
     # adding more metadata should always be allowed
     doc = copy.deepcopy(updated.metadata_doc)
@@ -209,18 +223,24 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
     index.datasets.update(update)
     updated = index.datasets.get(dataset.id)
     assert updated.metadata_doc['test1'] == {'some': 'thing'}
-    assert updated.local_uri == 'file:///test/doc2.yaml'
+    if driver.uri_scheme == 'file':
+        assert updated.local_uri == 'file:///test/doc2.yaml'
+    else:
+        assert updated.local_uri is None
     assert len(updated.uris) == 2
 
     # adding more metadata and changing location
     doc = copy.deepcopy(updated.metadata_doc)
     doc['test2'] = {'some': 'other thing'}
-    update = Dataset(ls5_telem_type, doc, uris=['file:///test/doc3.yaml'])
+    update = Dataset(ls5_telem_type, doc, uris=['%s:///test/doc3.yaml' % driver.uri_scheme])
     index.datasets.update(update)
     updated = index.datasets.get(dataset.id)
     assert updated.metadata_doc['test1'] == {'some': 'thing'}
     assert updated.metadata_doc['test2'] == {'some': 'other thing'}
-    assert updated.local_uri == 'file:///test/doc3.yaml'
+    if driver.uri_scheme == 'file':
+        assert updated.local_uri == 'file:///test/doc3.yaml'
+    else:
+        assert updated.local_uri is None
     assert len(updated.uris) == 3
 
     # changing existing metadata fields isn't allowed by default
@@ -233,7 +253,10 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
     assert updated.metadata_doc['test1'] == {'some': 'thing'}
     assert updated.metadata_doc['test2'] == {'some': 'other thing'}
     assert updated.metadata_doc['product_type'] == 'nbar'
-    assert updated.local_uri == 'file:///test/doc3.yaml'
+    if driver.uri_scheme == 'file':
+        assert updated.local_uri == 'file:///test/doc3.yaml'
+    else:
+        assert updated.local_uri is None
     assert len(updated.uris) == 3
 
     # allowed changes go through
@@ -241,13 +264,16 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc):
     doc['product_type'] = 'foobar'
     # Backwards compat: third argument was a single local uri.
     with pytest.warns(DeprecationWarning):
-        update = Dataset(ls5_telem_type, doc, 'file:///test/doc4.yaml')
+        update = Dataset(ls5_telem_type, doc, '%s:///test/doc4.yaml' % driver.uri_scheme)
     index.datasets.update(update, {('product_type',): changes.allow_any})
     updated = index.datasets.get(dataset.id)
     assert updated.metadata_doc['test1'] == {'some': 'thing'}
     assert updated.metadata_doc['test2'] == {'some': 'other thing'}
     assert updated.metadata_doc['product_type'] == 'foobar'
-    assert updated.local_uri == 'file:///test/doc4.yaml'
+    if driver.uri_scheme == 'file':
+        assert updated.local_uri == 'file:///test/doc4.yaml'
+    else:
+        assert updated.local_uri is None
 
 
 def test_update_dataset_type(index, ls5_telem_type, ls5_telem_doc, ga_metadata_type_doc):

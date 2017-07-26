@@ -43,6 +43,29 @@ if not PY2:
     # noinspection PyUnresolvedReferences
     import urllib.parse as url_parse_module
 
+    # Dynamic loading from filename varies across python versions
+    # Based on http://stackoverflow.com/a/67692
+    if sys.version_info >= (3, 5):
+        # pylint: disable=import-error
+        from importlib.util import spec_from_file_location, module_from_spec
+
+
+        def load_mod(name, filepath):
+            spec = spec_from_file_location(name, filepath)
+            mod = module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            sys.modules[spec.name] = mod
+            return mod
+
+
+        # pylint: disable=invalid-name
+        load_module = load_mod
+    elif sys.version_info[0] == 3:  # python 3.3, 3.4: untested
+        # pylint: disable=import-error
+        from importlib.machinery import SourceFileLoader
+
+        # pylint: disable=invalid-name
+        load_module = SourceFileLoader
 
 else:
     text_type = unicode
@@ -75,6 +98,11 @@ else:
     from itertools import izip_longest as zip_longest
     # noinspection PyUnresolvedReferences
     import urlparse as url_parse_module
+
+    import imp
+
+    # pylint: disable=invalid-name
+    load_module = imp.load_source
 
 
 def with_metaclass(meta, *bases):

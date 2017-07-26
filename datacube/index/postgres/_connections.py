@@ -165,13 +165,13 @@ class PostgresDb(object):
             _LOG.warning('Application name is too long: Truncating to %s chars', (64 - len(_LIB_ID) - 1))
         return full_name[-64:]
 
-    def init(self, with_permissions=True):
+    def init(self, with_permissions=True, with_s3_tables=False):
         """
         Init a new database (if not already set up).
 
         :return: If it was newly created.
         """
-        is_new = tables.ensure_db(self._engine, with_permissions=with_permissions)
+        is_new = tables.ensure_db(self._engine, with_permissions=with_permissions, with_s3_tables=with_s3_tables)
         if not is_new:
             tables.update_schema(self._engine)
 

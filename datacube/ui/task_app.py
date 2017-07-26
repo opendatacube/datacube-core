@@ -111,7 +111,7 @@ task_app_options = dc_ui.compose(
 
 
 def _cell_list_from_file(filename):
-    cell_matcher = re.compile(r'(\-?\d+)(?:\s*(?:,|_|\s)\s*)(\-?\d+)')
+    cell_matcher = re.compile(r'(-?\d+)(?:\s*(?:,|_|\s)\s*)(-?\d+)')
     with open(filename) as cell_file:
         for line in cell_file:
             match = cell_matcher.match(line)

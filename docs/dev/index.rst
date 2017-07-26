@@ -7,7 +7,7 @@ Public Method
 -------------
 
 .. automodule:: datacube.index
-    :members: index_connect
+    :members:
 
 Private Indexing Modules
 ------------------------

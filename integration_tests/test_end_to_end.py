@@ -12,6 +12,7 @@ from pathlib import Path
 
 import datacube.scripts.cli_app
 from datacube.compat import string_types
+from datacube.drivers.manager import DriverManager
 
 import imp
 
@@ -63,21 +64,18 @@ def copy_and_update_ingestion_configs(destination, output_dir, configs):
                     output.write(line)
 
 
-ignore_me = pytest.mark.xfail(True, reason="get_data/get_description still to be fixed in Unification")
-
-
 @pytest.mark.usefixtures('default_metadata_type')
-def test_end_to_end(global_integration_cli_args, index, testdata_dir):
+def test_end_to_end(global_integration_cli_args, driver_manager, testdata_dir):
     """
     Loads two dataset configurations, then ingests a sample Landsat 5 scene
 
     One dataset configuration specifies Australian Albers Equal Area Projection,
     the other is simply latitude/longitude.
 
-    The input dataset should be recorded in the index, and two sets of netcdf storage units
+    The input dataset should be recorded in the index, and two sets of storage units
     should be created on disk and recorded in the index.
     """
-
+    index = driver_manager.index
     lbg_nbar = testdata_dir / 'lbg' / LBG_NBAR
     lbg_pq = testdata_dir / 'lbg' / LBG_PQ
     ls5_nbar_albers_ingest_config = testdata_dir / LS5_NBAR_ALBERS
@@ -106,19 +104,19 @@ def test_end_to_end(global_integration_cli_args, index, testdata_dir):
                       global_integration_cli_args +
                       ['-v', 'ingest', '-c', str(ls5_pq_albers_ingest_config)])
 
-    check_open_with_api(index)
-    check_open_with_dc(index)
-    check_open_with_grid_workflow(index)
-    check_analytics_list_searchables(index)
-    check_get_descriptor(index)
-    check_get_data(index)
-    check_get_data_subset(index)
-    check_get_descriptor_data(index)
-    check_get_descriptor_data_storage_type(index)
-    check_analytics_create_array(index)
-    check_analytics_ndvi_mask_median_expression(index)
-    check_analytics_ndvi_mask_median_expression_storage_type(index)
-    check_analytics_pixel_drill(index)
+    check_open_with_api(driver_manager)
+    check_open_with_dc(driver_manager)
+    check_open_with_grid_workflow(driver_manager)
+    check_analytics_list_searchables(driver_manager)
+    check_get_descriptor(driver_manager)
+    check_get_data(driver_manager)
+    check_get_data_subset(driver_manager)
+    check_get_descriptor_data(driver_manager)
+    check_get_descriptor_data_storage_type(driver_manager)
+    check_analytics_create_array(driver_manager)
+    check_analytics_ndvi_mask_median_expression(driver_manager)
+    check_analytics_ndvi_mask_median_expression_storage_type(driver_manager)
+    check_analytics_pixel_drill(driver_manager)
 
 
 def run_click_command(command, args):
@@ -132,9 +130,10 @@ def run_click_command(command, args):
     assert result.exit_code == 0
 
 
-def check_open_with_api(index):
+def check_open_with_api(driver_manager):
     from datacube.api import API
-    api = API(index=index)
+    index = driver_manager.index
+    api = API(driver_manager=driver_manager)
 
     # fields = api.list_fields()
     # assert 'product' in fields
@@ -153,9 +152,9 @@ def check_open_with_api(index):
     assert abs(data['element_sizes'][2] - ALBERS_ELEMENT_SIZE) < .0000001
 
 
-def check_open_with_dc(index):
+def check_open_with_dc(driver_manager):
     from datacube.api.core import Datacube
-    dc = Datacube(index=index)
+    dc = Datacube(driver_manager=driver_manager)
 
     data_array = dc.load(product='ls5_nbar_albers', measurements=['blue'], stack='variable')
     assert data_array.shape
@@ -239,12 +238,13 @@ def check_open_with_dc(index):
     assert results['lanczos'] < results['average']
 
 
-def check_open_with_grid_workflow(index):
+def check_open_with_grid_workflow(driver_manager):
+    index = driver_manager.index
     type_name = 'ls5_nbar_albers'
     dt = index.products.get_by_name(type_name)
 
     from datacube.api.grid_workflow import GridWorkflow
-    gw = GridWorkflow(index, dt.grid_spec)
+    gw = GridWorkflow(None, dt.grid_spec, driver_manager=driver_manager)
 
     cells = gw.list_cells(product=type_name, cell_index=LBG_CELL)
     assert LBG_CELL in cells
@@ -259,13 +259,13 @@ def check_open_with_grid_workflow(index):
     assert tile.shape[1] == 4000
     assert tile.shape[2] == 4000
     assert tile[:1, :100, :100].shape == (1, 100, 100)
-    dataset_cell = gw.load(tile, measurements=['blue'])
+    dataset_cell = gw.load(tile, measurements=['blue'], driver_manager=driver_manager)
     assert dataset_cell['blue'].shape == tile.shape
 
     for timestamp, tile_slice in tile.split('time'):
         assert tile_slice.shape == (1, 4000, 4000)
 
-    dataset_cell = gw.load(tile)
+    dataset_cell = gw.load(tile, driver_manager=driver_manager)
     assert all(m in dataset_cell for m in ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
 
     ts = numpy.datetime64('1992-03-23T23:14:25.500000000')
@@ -275,17 +275,17 @@ def check_open_with_grid_workflow(index):
     assert tile_key in tiles
 
     tile = tiles[tile_key]
-    dataset_cell = gw.load(tile, measurements=['blue'])
+    dataset_cell = gw.load(tile, measurements=['blue'], driver_manager=driver_manager)
     assert dataset_cell['blue'].size
 
-    dataset_cell = gw.load(tile)
+    dataset_cell = gw.load(tile, driver_manager=driver_manager)
     assert all(m in dataset_cell for m in ['blue', 'green', 'red', 'nir', 'swir1', 'swir2'])
 
 
-def check_analytics_list_searchables(index):
+def check_analytics_list_searchables(driver_manager):
     from datacube.analytics.analytics_engine import AnalyticsEngine
 
-    a = AnalyticsEngine(index=index)
+    a = AnalyticsEngine(driver_manager=driver_manager)
     result = a.list_searchables()
 
     assert len(result) > 0
@@ -298,11 +298,11 @@ def check_analytics_list_searchables(index):
         assert result[storage_type]['storage_type']
 
 
-def check_get_descriptor(index):
+def check_get_descriptor(driver_manager):
     from datetime import datetime
     from datacube.api import API
 
-    g = API(index=index)
+    g = API(driver_manager=driver_manager)
 
     platform = 'LANDSAT_5'
     product = 'nbar'
@@ -374,13 +374,13 @@ def check_get_descriptor(index):
         assert isinstance(su['storage_shape'], tuple)
 
 
-def check_get_data(index):
+def check_get_data(driver_manager):
     import numpy as np
     import xarray as xr
     from datetime import datetime
     from datacube.api import API
 
-    g = API(index=index)
+    g = API(driver_manager=driver_manager)
 
     platform = 'LANDSAT_5'
     product = 'nbar'
@@ -457,11 +457,11 @@ def check_get_data(index):
         assert dim in list(d['arrays'][var2].dims)
 
 
-def check_get_data_subset(index):
+def check_get_data_subset(driver_manager):
     from datetime import datetime
     from datacube.api import API
 
-    g = API(index=index)
+    g = API(driver_manager=driver_manager)
 
     platform = 'LANDSAT_5'
     product = 'nbar'
@@ -493,11 +493,11 @@ def check_get_data_subset(index):
     assert d['arrays'][var2].shape == (1, 5, 5)
 
 
-def check_get_descriptor_data(index):
+def check_get_descriptor_data(driver_manager):
     from datetime import datetime
     from datacube.api import API
 
-    g = API(index=index)
+    g = API(driver_manager=driver_manager)
 
     platform = 'LANDSAT_5'
     product = 'nbar'
@@ -538,11 +538,11 @@ def check_get_descriptor_data(index):
     assert d2['arrays'][var2].shape[2] > 0
 
 
-def check_get_descriptor_data_storage_type(index):
+def check_get_descriptor_data_storage_type(driver_manager):
     from datetime import datetime
     from datacube.api import API
 
-    g = API(index=index)
+    g = API(driver_manager=driver_manager)
 
     storage_type = 'ls5_nbar_albers'
     var1 = 'red'
@@ -581,13 +581,13 @@ def check_get_descriptor_data_storage_type(index):
     assert d2['arrays'][var2].shape[2] > 0
 
 
-def check_analytics_create_array(index):
+def check_analytics_create_array(driver_manager):
     from datetime import datetime
     from datacube.analytics.analytics_engine import AnalyticsEngine
     from datacube.execution.execution_engine import ExecutionEngine
 
-    a = AnalyticsEngine(index=index)
-    e = ExecutionEngine(index=index)
+    a = AnalyticsEngine(driver_manager=driver_manager)
+    e = ExecutionEngine(driver_manager=driver_manager)
 
     platform = 'LANDSAT_5'
     product = 'nbar'
@@ -606,13 +606,13 @@ def check_analytics_create_array(index):
     assert e.cache['get_data']
 
 
-def check_analytics_ndvi_mask_median_expression(index):
+def check_analytics_ndvi_mask_median_expression(driver_manager):
     from datetime import datetime
     from datacube.analytics.analytics_engine import AnalyticsEngine
     from datacube.execution.execution_engine import ExecutionEngine
 
-    a = AnalyticsEngine(index=index)
-    e = ExecutionEngine(index=index)
+    a = AnalyticsEngine(driver_manager=driver_manager)
+    e = ExecutionEngine(driver_manager=driver_manager)
 
     platform = 'LANDSAT_5'
     product = 'nbar'
@@ -648,13 +648,13 @@ def check_analytics_ndvi_mask_median_expression(index):
     assert e.cache['medianT']
 
 
-def check_analytics_ndvi_mask_median_expression_storage_type(index):
+def check_analytics_ndvi_mask_median_expression_storage_type(driver_manager):
     from datetime import datetime
     from datacube.analytics.analytics_engine import AnalyticsEngine
     from datacube.execution.execution_engine import ExecutionEngine
 
-    a = AnalyticsEngine(index=index)
-    e = ExecutionEngine(index=index)
+    a = AnalyticsEngine(driver_manager=driver_manager)
+    e = ExecutionEngine(driver_manager=driver_manager)
 
     nbar_storage_type = 'ls5_nbar_albers'
     var1 = 'nir'
@@ -689,13 +689,13 @@ def check_analytics_ndvi_mask_median_expression_storage_type(index):
     assert e.cache['medianT']
 
 
-def check_analytics_pixel_drill(index):
+def check_analytics_pixel_drill(driver_manager):
     from datetime import datetime
     from datacube.analytics.analytics_engine import AnalyticsEngine
     from datacube.execution.execution_engine import ExecutionEngine
 
-    a = AnalyticsEngine(index=index)
-    e = ExecutionEngine(index=index)
+    a = AnalyticsEngine(driver_manager=driver_manager)
+    e = ExecutionEngine(driver_manager=driver_manager)
 
     nbar_storage_type = 'ls5_nbar_albers'
     var1 = 'nir'

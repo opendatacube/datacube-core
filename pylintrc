@@ -22,6 +22,7 @@ disable=no-self-use,
     ungrouped-imports,
     len-as-condition,
     no-else-return,
+    import-error,
     round-builtin, # py2.7
     map-builtin-not-iterating, # py2.7
     range-builtin-not-iterating, # py2.7
