@@ -189,6 +189,12 @@ class BandDataSource(object):
                                 resampling=resampling,
                                 **kwargs)
 
+    def __repr__(self):
+        return "BandDataSource(source={!r},...)".format(self.source)
+
+    def __str__(self):
+        return self.__repr__()
+
 
 # class NetCDFDataSource(object):
 #     def __init__(self, dataset, variable, slab=None, nodata=None):
@@ -517,6 +523,12 @@ class RasterDatasetSource(RasterioDataSource):
 
     def get_crs(self):
         return self._dataset.crs
+
+    def __repr__(self):
+        return "DatasetSource(dataset={!r},measurement={!r})".format(self._dataset, self._measurement)
+
+    def __str__(self):
+        return self.__repr__()
 
 
 def create_netcdf_storage_unit(filename,
