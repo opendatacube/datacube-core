@@ -13,8 +13,6 @@ from __future__ import absolute_import, division, print_function
 import logging
 from contextlib import contextmanager
 from pathlib import Path
-from abc import ABCMeta, abstractmethod
-from six import add_metaclass
 
 from datacube.compat import urlparse, urljoin, url_parse_module
 from datacube.config import OPTIONS
@@ -310,7 +308,7 @@ class OverrideBandDataSource(object):
                                        **kwargs)
 
 
-class RasterioDataSource(DataSource):
+class RasterioDataSource(object):
     """
     Abstract class used by fuse_sources and :func:`read_from_source`
 
