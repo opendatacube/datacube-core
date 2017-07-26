@@ -89,12 +89,18 @@ def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, re
         if dest.dtype == numpy.dtype('int8'):
             dest = dest.view(dtype='uint8')
             dst_nodata = dst_nodata.astype('uint8')
+
+        num_threads = OPTIONS['reproject_threads']
+        # A bug in rasterio or GDAL causes data reads to fail if only a single row is requested and num_threads > 1
+        if dest.shape[0] == 1:
+            num_threads = 1
+
         src.reproject(dest,
                       dst_transform=dst_transform,
                       dst_crs=str(dst_projection),
                       dst_nodata=dst_nodata,
                       resampling=resampling,
-                      NUM_THREADS=OPTIONS['reproject_threads'])
+                      num_threads=num_threads)
 
 
 def reproject_and_fuse(sources, destination, dst_transform, dst_projection, dst_nodata,
