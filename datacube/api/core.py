@@ -431,7 +431,7 @@ class Datacube(object):
         return sources
 
     @staticmethod
-    def create_storage(coords, geobox, measurements, data_func=None):
+    def create_storage(coords, geobox, measurements, data_func=None, use_threads=False):
         """
         Create a :class:`xarray.Dataset` and (optionally) fill it with data.
 
@@ -451,6 +451,12 @@ class Datacube(object):
             function to fill the storage with data. It is called once for each measurement, with the measurement
             as an argument. It should return an appropriately shaped numpy array.
 
+        :param bool use_threads:
+            Optional. If this is set to True, IO will be multi-thread.
+            May not work for all drivers due to locking/GIL.
+
+            Default is False.
+
         :rtype: :class:`xarray.Dataset`
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
@@ -467,8 +473,20 @@ class Datacube(object):
         for name, coord in geobox.coordinates.items():
             result[name] = (name, coord.values, {'units': coord.units})
 
+        def work_measurements(measurement, data_func):
+            return data_func(measurement)
+
+        if use_threads and ('SharedArray' not in sys.modules or 'pathos.threading' not in sys.modules):
+            use_threads = False
+
+        if use_threads:
+            pool = ThreadPool(32)
+            results = pool.map(work_measurements, measurements, repeat(data_func))
+        else:
+            results = [data_func(a) for a in measurements]
+
         for measurement in measurements:
-            data = data_func(measurement)
+            data = results.pop(0)
 
             attrs = {
                 'nodata': measurement.get('nodata'),
@@ -564,7 +582,7 @@ class Datacube(object):
                                         driver_manager=driver_manager)
 
         return Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
-                                       geobox, measurements, data_func)
+                                       geobox, measurements, data_func, use_threads)
 
     @staticmethod
     def measurement_data(sources, geobox, measurement, fuse_func=None, dask_chunks=None,
