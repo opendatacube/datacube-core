@@ -13,7 +13,7 @@ extras_require = {
     'doc': ['Sphinx', 'setuptools'],
     'replicas': ['paramiko', 'sshtunnel', 'tqdm'],
     'celery': ['celery>=4', 'redis'],
-    's3': ['boto3', 'SharedArray', 'pathos', 'zstandard'],
+    's3': ['boto3==1.4.3', 'SharedArray', 'pathos', 'zstandard'],
     'test': tests_require,
 }
 # An 'all' option, following ipython naming conventions.

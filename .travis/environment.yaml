@@ -28,7 +28,7 @@ dependencies:
 - matplotlib # pixel drill app
 - pathlib
 - compliance-checker
-- boto3
+- boto3 = 1.4.3
 - pathos
 - zstandard
 - compliance-checker = 3.0.3
