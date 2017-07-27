@@ -60,14 +60,14 @@ class DriverManager(object):
 
         self._orig = {'index': dumps(index), 'index_args': index_args, 'index_kargs': index_kargs}
 
+        #: Data Cube Index
         self.__index = None
-        '''Generic index.'''
 
+        #: Current driver
         self.__driver = None
-        '''Current driver.'''
 
+        #: List of all available drivers, indexed by name.
         self.__drivers = None
-        '''List of all available drivers, indexed by name.'''
 
         self.logger = logging.getLogger(self.__class__.__name__)
         self.is_clone = False
@@ -117,11 +117,11 @@ class DriverManager(object):
           `index._db` variable is used, and is passed to the index
           initialisation method, that should basically replace the
           existing DB connection with that variable.
-        :param args: Optional positional arguments to be passed to the
+        :param index_args: Optional positional arguments to be passed to the
           index on initialisation. Caution: In the current
           implementation all parameters get passed to all available
           indexes.
-        :param args: Optional keyword arguments to be passed to the
+        :param index_kargs: Optional keyword arguments to be passed to the
           index on initialisation. Caution: In the current
           implementation all parameters get passed to all available
           indexes.
@@ -141,11 +141,11 @@ class DriverManager(object):
           `index._db` variable is used, and is passed to the index
           initialisation method, that should basically replace the
           existing DB connection with that variable.
-        :param args: Optional positional arguments to be passed to the
+        :param index_args: Optional positional arguments to be passed to the
           index on initialisation. Caution: In the current
           implementation all parameters get passed to all available
           indexes.
-        :param args: Optional keyword arguments to be passed to the
+        :param index_kargs: Optional keyword arguments to be passed to the
           index on initialisation. Caution: In the current
           implementation all parameters get passed to all available
           indexes.
@@ -203,7 +203,7 @@ class DriverManager(object):
 
     @property
     def index(self):
-        """Generic index.
+        """Data Cube index.
         """
         return self.__index
 

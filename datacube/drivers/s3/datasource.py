@@ -18,12 +18,12 @@ from datacube.drivers.utils import DriverUtils
 class S3Source(object):
     """A data reader class, with an API similar to rasterio so it can be
     used without modification as a source in
-    :class:`datacube.storage.storage.OverrideBandDataSource`.
+    :class:`OverrideBandDataSource`.
     """
 
     class S3DS(object):
         """An inner reader class, mimicking the `source.ds` within
-        :class:`datacube.storage.storage.OverrideBandDataSource`.
+        :class:`OverrideBandDataSource`.
         """
 
         def __init__(self, parent):
