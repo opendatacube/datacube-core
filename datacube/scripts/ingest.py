@@ -165,7 +165,6 @@ def make_output_type(driver_manager, config):
     if existing and backwards_compatible_fields:
         updates_allowed = {
             ('description',): changes.allow_any,
-            ('metadata_type',): changes.allow_any,
             ('storage', 'chunking'): changes.allow_any,
             ('storage', 'driver'): changes.allow_any,
             ('storage', 'dimension_order'): changes.allow_any,
