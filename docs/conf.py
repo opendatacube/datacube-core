@@ -306,46 +306,41 @@ texinfo_documents = [
 
 
 # Mock modules that need native libraries.
-# See: http://read-the-docs.readthedocs.org/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
-NATIVE_MODULES = [
+
+autodoc_mock_imports = [
     'rasterio',
     'netcdf4',
     'pypeg2',
     'osgeo',
-    'rasterio.warp',
     'numexpr',
-    'rasterio.coords',
     'netCDF4',
-    'netCDF4.Dataset',
     'jsonschema',
     'xarray',
     'dask',
-    'dask.array',
     'pandas',
-    'rasterio.crs',
-    'gdal', 'osgeo.gdal',
+    'gdal',
+    'osgeo',
     'osr',
-    'numpy', 'numpy.core.multiarray',
+    'numpy',
     'matplotlib',
-    'matplotlib.pyplot',
-    'scipy', 'scipy.io',
+    'scipy',
     'SharedArray',
     'paramiko',
     'sshtunnel',
     'tqdm',
 ]
 
-from mock import Mock as MagicMock
-
-
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name):
-        return Mock()
-
-
-sys.modules.update((mod_name, Mock()) for mod_name in NATIVE_MODULES)
-sys.modules['rasterio.coords'].BoundingBox = Mock
+# from mock import Mock as MagicMock
+#
+#
+# class Mock(MagicMock):
+#     @classmethod
+#     def __getattr__(cls, name):
+#         return Mock()
+#
+#
+# sys.modules.update((mod_name, Mock()) for mod_name in NATIVE_MODULES)
+# sys.modules['rasterio.coords'].BoundingBox = Mock
 
 
 # Clean up generated documentation files that RTD seems to be having trouble with

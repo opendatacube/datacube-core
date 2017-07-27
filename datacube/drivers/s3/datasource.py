@@ -10,7 +10,7 @@ from affine import Affine
 from numpy import dtype
 
 from datacube.drivers.datasource import DataSource
-from datacube.storage.storage import OverrideBandDataSource
+from datacube.storage.storage import OverrideBandSource
 from datacube.utils import datetime_to_seconds_since_1970
 from datacube.drivers.utils import DriverUtils
 
@@ -119,10 +119,10 @@ class S3DataSource(DataSource):
         """
         self.source.bidx = self.get_bandnumber()
 
-        yield OverrideBandDataSource(self.source,
-                                     nodata=self.nodata,
-                                     crs=self.get_crs(),
-                                     transform=self.get_transform(self.macro_shape))
+        yield OverrideBandSource(self.source,
+                                 nodata=self.nodata,
+                                 crs=self.get_crs(),
+                                 transform=self.get_transform(self.macro_shape))
 
     def get_bandnumber(self):
         time = self._dataset.center_time

@@ -36,7 +36,7 @@ class DriverManager(object):
     def __init__(self, index=None, *index_args, **index_kargs):
         """Initialise the manager.
 
-        Each driver get initialised during instantiation, including
+        Each driver is initialised during instantiation, including
         the initialisation of their index, using the `index_args` and
         `index_kargs` optional arguments. If `index` is specified, it
         is passed to the driver for its DB connection to be used
@@ -48,10 +48,12 @@ class DriverManager(object):
           `index._db` variable is used, and is passed to the index
           initialisation method, that should basically replace the
           existing DB connection with that variable.
+
         :param args: Optional positional arguments to be passed to the
           index on initialisation. Caution: In the current
           implementation all parameters get passed to all available
           indexes.
+
         :param args: Optional keyword arguments to be passed to the
           index on initialisation. Caution: In the current
           implementation all parameters get passed to all available

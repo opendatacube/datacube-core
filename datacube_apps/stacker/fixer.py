@@ -28,7 +28,7 @@ import datacube
 from datacube.model import Dataset
 from datacube.model.utils import xr_apply, datasets_to_doc
 from datacube.storage import netcdf_writer
-from datacube.storage.storage import create_netcdf_storage_unit
+from datacube.drivers.netcdf.driver import create_netcdf_storage_unit
 from datacube.ui import task_app
 from datacube.ui.click import to_pathlib
 

@@ -17,8 +17,7 @@ from pathlib import Path
 from datacube.compat import urlparse, urljoin, url_parse_module
 from datacube.config import OPTIONS
 from datacube.model import Dataset
-from datacube.storage import netcdf_writer
-from datacube.utils import datetime_to_seconds_since_1970, DatacubeException, ignore_exceptions_if
+from datacube.utils import datetime_to_seconds_since_1970, ignore_exceptions_if
 from datacube.utils import geometry
 from datacube.utils import is_url, uri_to_local_path
 
@@ -122,7 +121,7 @@ def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, re
     """
     Read from `source` into `dest`, reprojecting if necessary.
 
-    :param RasterioDataSource source: Data source
+    :param BaseRasterioSource source: Data source
     :param numpy.ndarray dest: Data destination
     """
     with source.open() as src:
@@ -130,8 +129,8 @@ def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, re
             dest = dest.view(dtype='uint8')
             dst_nodata = dst_nodata.astype('uint8')
 
-        num_threads = OPTIONS['reproject_threads']
         # A bug in rasterio or GDAL causes data reads to fail if only a single row is requested and num_threads > 1
+        num_threads = OPTIONS['reproject_threads']
         if dest.shape[0] == 1:
             num_threads = 1
 
@@ -143,7 +142,7 @@ def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, re
                       num_threads=num_threads)
 
 
-class BandDataSource(object):
+class RasterioBandSource(object):
     """
     Wrapper for a :class:`rasterio.Band` object
 
@@ -266,11 +265,12 @@ class BandDataSource(object):
 #                                        **kwargs)
 
 
-class OverrideBandDataSource(object):
-    """Wrapper for a rasterio.Band object that overrides nodata, crs and transform
+class OverrideBandSource(object):
+    """
+    Wrapper for a :class:`rasterio.Band` object that overrides `nodata`, `crs` and `transform`
 
-    This is useful for files with malformed or missing properties.
-
+    This is useful for files with malformed or missing properties, eg. the poorly supported
+    BoM rainfall data stored in NetCDF on the NCI.
 
     :type source: rasterio.Band
     """
@@ -308,10 +308,12 @@ class OverrideBandDataSource(object):
                                        **kwargs)
 
 
-class RasterioDataSource(object):
+class BaseRasterioSource(object):
     """
-    Abstract class used by fuse_sources and :func:`read_from_source`
+    Abstract class used by :func:`read_from_source`
 
+    Concrete implementations available in :class:`RasterFileDataSource` and
+    :class:`RasterDatasetSource`.
     """
 
     def __init__(self, filename, nodata):
@@ -359,16 +361,16 @@ class RasterioDataSource(object):
                                                       else self.nodata)
 
                 if override:
-                    yield OverrideBandDataSource(band, nodata=nodata, crs=crs, transform=transform)
+                    yield OverrideBandSource(band, nodata=nodata, crs=crs, transform=transform)
                 else:
-                    yield BandDataSource(band, nodata=nodata)
+                    yield RasterioBandSource(band, nodata=nodata)
 
         except Exception as e:
             _LOG.error("Error opening source dataset: %s", self.filename)
             raise e
 
 
-class RasterFileDataSource(RasterioDataSource):
+class RasterFileDataSource(BaseRasterioSource):
     def __init__(self, filename, bandnumber, nodata=None, crs=None, transform=None):
         super(RasterFileDataSource, self).__init__(filename, nodata)
         self.bandnumber = bandnumber
@@ -387,6 +389,66 @@ class RasterFileDataSource(RasterioDataSource):
         if self.crs is None:
             raise RuntimeError('No CRS in the data and no fallback')
         return self.crs
+
+
+class DatacubeRasterSource(BaseRasterioSource):
+    """Data source for reading from a Data Cube Dataset"""
+
+    def __init__(self, dataset, measurement_id):
+        """
+        Initialise for reading from a Data Cube Dataset.
+
+        :param Dataset dataset: dataset to read from
+        :param str measurement_id: measurement to read. a single 'band' or 'slice'
+        """
+        self._dataset = dataset
+        self._measurement = dataset.measurements[measurement_id]
+        url = _resolve_url(_choose_location(dataset), self._measurement['path'])
+        filename = _url2rasterio(url, dataset.format, self._measurement.get('layer'))
+        nodata = dataset.type.measurements[measurement_id].get('nodata')
+        super(DatacubeRasterSource, self).__init__(filename, nodata=nodata)
+
+    def get_bandnumber(self, src):
+
+        # If `band` property is set to an integer it overrides any other logic
+        band = self._measurement.get('band')
+        if band is not None:
+            if isinstance(band, integer_types):
+                return band
+            else:
+                _LOG.warning('Expected "band" property to be of integer type')
+
+        if 'netcdf' not in self._dataset.format.lower():
+            layer_id = self._measurement.get('layer', 1)
+            return layer_id if isinstance(layer_id, integer_types) else 1
+
+        tag_name = GDAL_NETCDF_DIM + 'time'
+        if tag_name not in src.tags(1):  # TODO: support time-less datasets properly
+            return 1
+
+        time = self._dataset.center_time
+        sec_since_1970 = datetime_to_seconds_since_1970(time)
+
+        idx = 0
+        dist = float('+inf')
+        for i in range(1, src.count + 1):
+            v = float(src.tags(i)[tag_name])
+            if abs(sec_since_1970 - v) < dist:
+                idx = i
+                dist = abs(sec_since_1970 - v)
+        return idx
+
+    def get_transform(self, shape):
+        return self._dataset.transform * Affine.scale(1 / shape[1], 1 / shape[0])
+
+    def get_crs(self):
+        return self._dataset.crs
+
+    def __repr__(self):
+        return "DatasetSource(dataset={!r},measurement={!r})".format(self._dataset, self._measurement)
+
+    def __str__(self):
+        return self.__repr__()
 
 
 def register_scheme(*schemes):
@@ -473,151 +535,3 @@ def _choose_location(dataset):
     # Newest location first, use it.
     # We may want more nuanced selection in the future.
     return uris[0]
-
-
-class RasterDatasetSource(RasterioDataSource):
-    """Data source for reading from a Data Cube Dataset"""
-
-    def __init__(self, dataset, measurement_id):
-        """
-        Initialise for reading from a Data Cube Dataset.
-
-        :param Dataset dataset: dataset to read from
-        :param str measurement_id: measurement to read. a single 'band' or 'slice'
-        """
-        self._dataset = dataset
-        self._measurement = dataset.measurements[measurement_id]
-        url = _resolve_url(_choose_location(dataset), self._measurement['path'])
-        filename = _url2rasterio(url, dataset.format, self._measurement.get('layer'))
-        nodata = dataset.type.measurements[measurement_id].get('nodata')
-        super(RasterDatasetSource, self).__init__(filename, nodata=nodata)
-
-    def get_bandnumber(self, src):
-
-        # If `band` property is set to an integer it overrides any other logic
-        band = self._measurement.get('band')
-        if band is not None:
-            if isinstance(band, integer_types):
-                return band
-            else:
-                _LOG.warning('Expected "band" property to be of integer type')
-
-        if 'netcdf' not in self._dataset.format.lower():
-            layer_id = self._measurement.get('layer', 1)
-            return layer_id if isinstance(layer_id, integer_types) else 1
-
-        tag_name = GDAL_NETCDF_DIM + 'time'
-        if tag_name not in src.tags(1):  # TODO: support time-less datasets properly
-            return 1
-
-        time = self._dataset.center_time
-        sec_since_1970 = datetime_to_seconds_since_1970(time)
-
-        idx = 0
-        dist = float('+inf')
-        for i in range(1, src.count + 1):
-            v = float(src.tags(i)[tag_name])
-            if abs(sec_since_1970 - v) < dist:
-                idx = i
-                dist = abs(sec_since_1970 - v)
-        return idx
-
-    def get_transform(self, shape):
-        return self._dataset.transform * Affine.scale(1 / shape[1], 1 / shape[0])
-
-    def get_crs(self):
-        return self._dataset.crs
-
-    def __repr__(self):
-        return "DatasetSource(dataset={!r},measurement={!r})".format(self._dataset, self._measurement)
-
-    def __str__(self):
-        return self.__repr__()
-
-
-def create_netcdf_storage_unit(filename,
-                               crs, coordinates, variables, variable_params, global_attributes=None,
-                               netcdfparams=None):
-    """
-    Create a NetCDF file on disk.
-
-    :param pathlib.Path filename: filename to write to
-    :param datacube.utils.geometry.CRS crs: Datacube CRS object defining the spatial projection
-    :param dict coordinates: Dict of named `datacube.model.Coordinate`s to create
-    :param dict variables: Dict of named `datacube.model.Variable`s to create
-    :param dict variable_params:
-        Dict of dicts, with keys matching variable names, of extra parameters for variables
-    :param dict global_attributes: named global attributes to add to output file
-    :param dict netcdfparams: Extra parameters to use when creating netcdf file
-    :return: open netCDF4.Dataset object, ready for writing to
-    """
-    filename = Path(filename)
-    if filename.exists():
-        raise RuntimeError('Storage Unit already exists: %s' % filename)
-
-    try:
-        filename.parent.mkdir(parents=True)
-    except OSError:
-        pass
-
-    _LOG.info('Creating storage unit: %s', filename)
-
-    nco = netcdf_writer.create_netcdf(str(filename), **(netcdfparams or {}))
-
-    for name, coord in coordinates.items():
-        netcdf_writer.create_coordinate(nco, name, coord.values, coord.units)
-
-    netcdf_writer.create_grid_mapping_variable(nco, crs)
-
-    for name, variable in variables.items():
-        set_crs = all(dim in variable.dims for dim in crs.dimensions)
-        var_params = variable_params.get(name, {})
-        data_var = netcdf_writer.create_variable(nco, name, variable, set_crs=set_crs, **var_params)
-
-        for key, value in var_params.get('attrs', {}).items():
-            setattr(data_var, key, value)
-
-    for key, value in (global_attributes or {}).items():
-        setattr(nco, key, value)
-
-    return nco
-
-
-def write_dataset_to_netcdf(dataset, filename, global_attributes=None, variable_params=None,
-                            netcdfparams=None):
-    """
-    Write a Data Cube style xarray Dataset to a NetCDF file
-
-    Requires a spatial Dataset, with attached coordinates and global crs attribute.
-
-    :param `xarray.Dataset` dataset:
-    :param filename: Output filename
-    :param global_attributes: Global file attributes. dict of attr_name: attr_value
-    :param variable_params: dict of variable_name: {param_name: param_value, [...]}
-                            Allows setting storage and compression options per variable.
-                            See the `netCDF4.Dataset.createVariable` for available
-                            parameters.
-    :param netcdfparams: Optional params affecting netCDF file creation
-    """
-    global_attributes = global_attributes or {}
-    variable_params = variable_params or {}
-    filename = Path(filename)
-
-    if not dataset.data_vars.keys():
-        raise DatacubeException('Cannot save empty dataset to disk.')
-
-    if not hasattr(dataset, 'crs'):
-        raise DatacubeException('Dataset does not contain CRS, cannot write to NetCDF file.')
-
-    nco = create_netcdf_storage_unit(filename,
-                                     dataset.crs,
-                                     dataset.coords,
-                                     dataset.data_vars,
-                                     variable_params,
-                                     global_attributes,
-                                     netcdfparams)
-
-    for name, variable in dataset.data_vars.items():
-        nco[name][:] = netcdf_writer.netcdfy_data(variable.values)
-
-    nco.close()

@@ -1,10 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
+from functools import partial
 from itertools import groupby, repeat
 from collections import namedtuple, OrderedDict
 from math import ceil
-import warnings
+
 
 import os
 import sys
@@ -35,6 +36,8 @@ _LOG = logging.getLogger(__name__)
 
 
 Group = namedtuple('Group', ['key', 'datasets'])
+
+THREADING_REQS_AVAILABLE = ('SharedArray' in sys.modules and 'pathos.threading' in sys.modules)
 
 
 def _xarray_affine(obj):
@@ -88,12 +91,9 @@ class Datacube(object):
             advised that be used.  Required if an index is not supplied, otherwise ignored.
 
         :param DriverManager driver_manager: The driver manager to
-          use. If not specified, an new manager will be created using
+          use. If not specified, a new manager will be created using
           the index if specified, or the default configuration
           otherwise.
-
-        :return: Datacube object
-
         """
         self._to_close = None
         if index:
@@ -186,8 +186,8 @@ class Datacube(object):
 
             See :meth:`list_products` for the list of products with their names and properties.
 
-            A product can also be selected by searched using fields, but must only match one product.
-            ::
+            A product can also be selected by searching using fields, but must only match one product.
+            For example::
 
                 platform='LANDSAT_5',
                 product_type='ndvi'
@@ -225,6 +225,9 @@ class Datacube(object):
 
             For data that has different values for the scene overlap the requires more complex rules for combining data,
             such as GA's Pixel Quality dataset, a function can be provided to the merging into a single time slice.
+
+            See :func:`datacube.helpers.ga_pq_fuser` for an example implementation.
+
             ::
 
                 def pq_fuser(dest, src):
@@ -299,8 +302,8 @@ class Datacube(object):
             for more information.
 
         :param xarray.Dataset like:
-            Uses the output of a previous ``load()`` to form the basis of a request for another product.
-            E.g.::
+            Uses the output of some already loaded to form the spatial and temporary query parameters
+            to load data for another product. E.g.::
 
                 pq = dc.load(product='ls5_pq_albers', like=nbar_dataset)
 
@@ -322,8 +325,8 @@ class Datacube(object):
 
             Default is False.
 
-        :return: Requested data in a :class:`xarray.Dataset`.
-            As a :class:`xarray.DataArray` if the ``stack`` variable is supplied.
+        :return: Requested data in a :class:`xarray.Dataset`, or
+            as a :class:`xarray.DataArray` if the ``stack`` variable is supplied.
 
         :rtype: :class:`xarray.Dataset` or :class:`xarray.DataArray`
         """
@@ -331,39 +334,15 @@ class Datacube(object):
         if not observations:
             return None if stack else xarray.Dataset()
 
-        if like:
-            if output_crs is not None:
-                raise RuntimeError("'like' and 'output_crs' are not supported together")
-            if resolution is not None:
-                raise RuntimeError("'like' and 'resolution' are not supported together")
-            if align is not None:
-                raise RuntimeError("'like' and 'align' are not supported together")
-            geobox = like.geobox
-        else:
-            if output_crs:
-                if not resolution:
-                    raise RuntimeError("Must specify 'resolution' when specifying 'output_crs'")
-                crs = geometry.CRS(output_crs)
-            else:
-                grid_spec = self.index.products.get_by_name(product).grid_spec
-                if not grid_spec or not grid_spec.crs:
-                    raise RuntimeError("Product has no default CRS. Must specify 'output_crs' and 'resolution'")
-                crs = grid_spec.crs
-                if not resolution:
-                    if not grid_spec.resolution:
-                        raise RuntimeError("Product has no default resolution. Must specify 'resolution'")
-                    resolution = grid_spec.resolution
-                    align = align or grid_spec.alignment
-            geobox = geometry.GeoBox.from_geopolygon(query_geopolygon(**query) or get_bounds(observations, crs),
-                                                     resolution, crs, align)
+        geobox = self._geobox_from_spatial_args(align, like, observations, output_crs, product, query, resolution)
 
         group_by = query_group_by(**query)
-        grouped = self.group_datasets(observations, group_by)
+        grouped_datasets = self.group_datasets(observations, group_by)
 
         measurements = self.index.products.get_by_name(product).lookup_measurements(measurements)
         measurements = set_resampling_method(measurements, resampling)
 
-        result = self.load_data(grouped, geobox, measurements.values(),
+        result = self.load_data(grouped_datasets, geobox, measurements.values(),
                                 fuse_func=fuse_func, dask_chunks=dask_chunks, use_threads=use_threads,
                                 driver_manager=self.driver_manager)
         if not stack:
@@ -441,7 +420,8 @@ class Datacube(object):
 
         :param data_func:
             function to fill the storage with data. It is called once for each measurement, with the measurement
-            as an argument. It should return an appropriately shaped numpy array.
+            as an argument. It should return an appropriately shaped numpy array. If not provided, an empty
+            *Dataset* is returned instead.
 
         :param bool use_threads:
             Optional. If this is set to True, IO will be multi-thread.
@@ -468,8 +448,7 @@ class Datacube(object):
         def work_measurements(measurement, data_func):
             return data_func(measurement)
 
-        if use_threads and ('SharedArray' not in sys.modules or 'pathos.threading' not in sys.modules):
-            use_threads = False
+        use_threads = use_threads and THREADING_REQS_AVAILABLE
 
         if use_threads:
             pool = ThreadPool(32)
@@ -535,50 +514,41 @@ class Datacube(object):
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
-        if use_threads and ('SharedArray' not in sys.modules or 'pathos.threading' not in sys.modules):
-            use_threads = False
+        if driver_manager is None:
+            driver_manager = DriverManager()
 
-        if dask_chunks is None:
-            if not use_threads:
-                def data_provider(measurement):
-                    data = numpy.full(sources.shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
-                    for index, datasets in numpy.ndenumerate(sources.values):
-                        _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
-                                          skip_broken_datasets=skip_broken_datasets,
-                                          driver_manager=driver_manager)
-                    return data
+        # Check we have appropriate modules available for threaded load support
+        use_threads = use_threads and THREADING_REQS_AVAILABLE
 
-            else:
-                def data_provider(measurement):
-                    def work_load_data(array_name, index, datasets):
-                        data = sa.attach(array_name)
-                        _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
-                                          skip_broken_datasets=skip_broken_datasets,
-                                          driver_manager=driver_manager)
-
-                    array_name = '_'.join(['DCCORE', str(uuid.uuid4()), str(os.getpid())])
-                    sa.create(array_name, shape=sources.shape + geobox.shape, dtype=measurement['dtype'])
-                    data = sa.attach(array_name)
-                    data[:] = measurement['nodata']
-
-                    pool = ThreadPool(32)
-                    pool.map(work_load_data, repeat(array_name), *zip(*numpy.ndenumerate(sources.values)))
-                    sa.delete(array_name)
-                    return data
+        if dask_chunks is not None:
+            get_data_loader = partial(get_lazy_loader, dask_chunks=dask_chunks)
         else:
-            def data_provider(measurement):
-                return _make_dask_array(sources, geobox, measurement, fuse_func, dask_chunks,
-                                        driver_manager=driver_manager)
+            if use_threads:
+                get_data_loader = get_threaded_loader
+            else:
+                get_data_loader = get_simple_loader
 
         coordinates = OrderedDict((dim, sources.coords[dim]) for dim in sources.dims)
-        return Datacube.create_storage(coords=coordinates, geobox=geobox, measurements=measurements,
-                                       data_func=data_provider, use_threads=use_threads)
+        return Datacube.create_storage(coords=coordinates,
+                                       geobox=geobox,
+                                       measurements=measurements,
+                                       data_func=get_data_loader(sources, geobox, fuse_func,
+                                                                 skip_broken_datasets, driver_manager),
+                                       use_threads=use_threads)
 
     @staticmethod
     def measurement_data(sources, geobox, measurement, fuse_func=None, dask_chunks=None,
                          driver_manager=None):
         """
         Retrieve a single measurement variable as a :class:`xarray.DataArray`.
+
+        .. note:
+
+            This method appears to only be used by the deprecated `get_data()/get_descriptor()`
+             :class:`~datacube.api.API`, so is a prime candidate for future removal.
+
+
+        .. seealso:: :meth:`load_data`
 
         :param xarray.DataArray sources: DataArray holding a list of :class:`datacube.model.Dataset` objects
         :param GeoBox geobox: A GeoBox defining the output spatial projection and resolution
@@ -592,15 +562,41 @@ class Datacube(object):
           use. If not specified, an new manager will be created using
           the index if specified, or the default configuration
           otherwise.
-        :rtype: :class:`xarray.DataArray`
-
-        .. seealso:: :meth:`load_data`
+        :rtype: xarray.DataArray
         """
         dataset = Datacube.load_data(sources, geobox, [measurement], fuse_func=fuse_func,
                                      dask_chunks=dask_chunks, driver_manager=driver_manager)
         dataarray = dataset[measurement['name']]
         dataarray.attrs['crs'] = dataset.crs
         return dataarray
+
+    def _geobox_from_spatial_args(self, align, like, observations, output_crs, product, query, resolution):
+        if like:
+            if output_crs is not None:
+                raise RuntimeError("'like' and 'output_crs' are not supported together")
+            if resolution is not None:
+                raise RuntimeError("'like' and 'resolution' are not supported together")
+            if align is not None:
+                raise RuntimeError("'like' and 'align' are not supported together")
+            geobox = like.geobox
+        else:
+            if output_crs:
+                if not resolution:
+                    raise RuntimeError("Must specify 'resolution' when specifying 'output_crs'")
+                crs = geometry.CRS(output_crs)
+            else:
+                grid_spec = self.index.products.get_by_name(product).grid_spec
+                if not grid_spec or not grid_spec.crs:
+                    raise RuntimeError("Product has no default CRS. Must specify 'output_crs' and 'resolution'")
+                crs = grid_spec.crs
+                if not resolution:
+                    if not grid_spec.resolution:
+                        raise RuntimeError("Product has no default resolution. Must specify 'resolution'")
+                    resolution = grid_spec.resolution
+                    align = align or grid_spec.alignment
+            geobox = geometry.GeoBox.from_geopolygon(query_geopolygon(**query) or
+                                                     get_bounds(observations, crs), resolution, crs, align)
+        return geobox
 
     def __str__(self):
         return "Datacube<index={!r}>".format(self.index)
@@ -620,16 +616,56 @@ class Datacube(object):
     def __exit__(self, type_, value, traceback):
         self.close()
 
-
-def fuse_lazy(datasets, geobox, measurement, fuse_func=None, prepend_dims=0, driver_manager=None):
-    prepend_shape = (1,) * prepend_dims
-    data = numpy.full(geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
-    _fuse_measurement(data, datasets, geobox, measurement, fuse_func=fuse_func, driver_manager=driver_manager)
-    return data.reshape(prepend_shape + geobox.shape)
+##########################
+# Data Loader Functions
+##########################
 
 
-def _fuse_measurement(dest, datasets, geobox, measurement, skip_broken_datasets=False,
-                      fuse_func=None, driver_manager=None):
+def get_simple_loader(sources, geobox, fuse_func, skip_broken_datasets, driver_manager):
+    def data_provider(measurement):
+        data = numpy.full(sources.shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
+        for index, datasets in numpy.ndenumerate(sources.values):
+            load_measurement_data(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
+                                  skip_broken_datasets=skip_broken_datasets,
+                                  driver_manager=driver_manager)
+        return data
+    return data_provider
+
+
+def get_threaded_loader(sources, geobox, fuse_func, skip_broken_datasets, driver_manager):
+    def data_provider(measurement):
+        def work_load_data(array_name, index, datasets):
+            data = sa.attach(array_name)
+            load_measurement_data(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
+                                  skip_broken_datasets=skip_broken_datasets,
+                                  driver_manager=driver_manager)
+
+        array_name = '_'.join(['DCCORE', str(uuid.uuid4()), str(os.getpid())])
+        sa.create(array_name, shape=sources.shape + geobox.shape, dtype=measurement['dtype'])
+        data = sa.attach(array_name)
+        data[:] = measurement['nodata']
+
+        pool = ThreadPool(32)
+        pool.map(work_load_data, repeat(array_name), *zip(*numpy.ndenumerate(sources.values)))
+        sa.delete(array_name)
+        return data
+    return data_provider
+
+
+def get_lazy_loader(sources, geobox, fuse_func, skip_broken_datasets, driver_manager, dask_chunks):
+    def data_provider(measurement):
+        return _make_dask_array(sources, geobox, measurement, fuse_func, dask_chunks,
+                                driver_manager=driver_manager)
+    return data_provider
+
+
+def load_measurement_data(dest, datasets, geobox, measurement, skip_broken_datasets=False,
+                          fuse_func=None, driver_manager=None):
+    """Loads data for a single Dataset Measurement, storing it into ``dest``.
+
+    Requires a :class:`DriverManager` to find an appropriate driver to load the dataset.
+
+    """
     reproject_and_fuse([driver_manager.get_datasource(dataset, measurement['name']) for dataset in datasets],
                        dest,
                        geobox.affine,
@@ -696,7 +732,7 @@ def _make_dask_array(sources, geobox, measurement, fuse_func=None, dask_chunks=N
 
     for irr_index, datasets in numpy.ndenumerate(sources.values):
         for grid_index, subset_geobox in geobox_subsets.items():
-            dsk[(dsk_name,) + irr_index + grid_index] = (fuse_lazy,
+            dsk[(dsk_name,) + irr_index + grid_index] = (_fuse_lazy,
                                                          datasets, subset_geobox, measurement,
                                                          fuse_func, sources.ndim, driver_manager)
 
@@ -736,3 +772,10 @@ def _chunk_geobox(geobox, chunk_size):
                   for d, c, stop in zip(grid_index, chunk_size, geobox.shape)]
         geobox_subsets[grid_index] = geobox[slices]
     return geobox_subsets
+
+
+def _fuse_lazy(datasets, geobox, measurement, fuse_func=None, prepend_dims=0, driver_manager=None):
+    prepend_shape = (1,) * prepend_dims
+    data = numpy.full(geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
+    load_measurement_data(data, datasets, geobox, measurement, fuse_func=fuse_func, driver_manager=driver_manager)
+    return data.reshape(prepend_shape + geobox.shape)
