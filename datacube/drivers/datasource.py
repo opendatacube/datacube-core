@@ -19,6 +19,10 @@ class DataSource(object):
         return None
 
     @abstractmethod
+    def get_bandnumber(self):
+        pass
+
+    @abstractmethod
     def get_transform(self, shape):
         return None
 

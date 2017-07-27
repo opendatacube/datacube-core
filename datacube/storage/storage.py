@@ -80,24 +80,24 @@ def reproject_and_fuse(sources, destination, dst_transform, dst_projection, dst_
     """
     Reproject and fuse `sources` into a 2D numpy array `destination`.
 
-    :param List[RasterioDataSource] sources: Data sources to open and read from
-    :param numpy.ndarray destination: ndarray of appropriate size to read data into
+    :param list(datacube.drivers.DataSource) sources:
+        Data sources to open and read from
+
+    :param numpy.ndarray destination:
+        ndarray of appropriate size to read data into
+
     :type resampling: str
+
     :type fuse_func: callable or None
-    :param bool skip_broken_datasets: Carry on in the face of adversity and failing reads.
+
+    :param bool skip_broken_datasets:
+        Carry on in the face of adversity and failing reads.
     """
     assert len(destination.shape) == 2
 
     resampling = _rasterio_resampling_method(resampling)
 
-    def copyto_fuser(dest, src):
-        """
-        :type dest: numpy.ndarray
-        :type src: numpy.ndarray
-        """
-        numpy.copyto(dest, src, where=(dest == dst_nodata))
-
-    fuse_func = fuse_func or copyto_fuser
+    fuse_func = fuse_func or get_default_copyto_fuser(dst_nodata)
 
     destination.fill(dst_nodata)
     if len(sources) == 0:
@@ -115,6 +115,16 @@ def reproject_and_fuse(sources, destination, dst_transform, dst_projection, dst_
                 fuse_func(destination, buffer_)
 
         return destination
+
+
+def get_default_copyto_fuser(destination_nodata):
+    def copyto_fuser(dest, src):
+        """
+        :type dest: numpy.ndarray
+        :type src: numpy.ndarray
+        """
+        numpy.copyto(dest, src, where=(dest == destination_nodata))
+    return copyto_fuser
 
 
 def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, resampling):

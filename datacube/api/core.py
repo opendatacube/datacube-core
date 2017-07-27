@@ -623,20 +623,20 @@ class Datacube(object):
 
 def get_simple_loader(sources, geobox, fuse_func, skip_broken_datasets, driver_manager):
     def data_provider(measurement):
-        data = numpy.full(sources.shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
+        destination = numpy.full(sources.shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
         for index, datasets in numpy.ndenumerate(sources.values):
-            load_measurement_data(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
+            load_measurement_data(destination[index], datasets, geobox, measurement, fuse_func=fuse_func,
                                   skip_broken_datasets=skip_broken_datasets,
                                   driver_manager=driver_manager)
-        return data
+        return destination
     return data_provider
 
 
 def get_threaded_loader(sources, geobox, fuse_func, skip_broken_datasets, driver_manager):
     def data_provider(measurement):
         def work_load_data(array_name, index, datasets):
-            data = sa.attach(array_name)
-            load_measurement_data(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
+            destination = sa.attach(array_name)
+            load_measurement_data(destination[index], datasets, geobox, measurement, fuse_func=fuse_func,
                                   skip_broken_datasets=skip_broken_datasets,
                                   driver_manager=driver_manager)
 
@@ -659,18 +659,18 @@ def get_lazy_loader(sources, geobox, fuse_func, skip_broken_datasets, driver_man
     return data_provider
 
 
-def load_measurement_data(dest, datasets, geobox, measurement, skip_broken_datasets=False,
+def load_measurement_data(destination, datasets, geobox, measurement, skip_broken_datasets=False,
                           fuse_func=None, driver_manager=None):
-    """Loads data for a single Dataset Measurement, storing it into ``dest``.
+    """Loads data for a single Dataset Measurement, storing it into ``destination``.
 
     Requires a :class:`DriverManager` to find an appropriate driver to load the dataset.
 
     """
     reproject_and_fuse([driver_manager.get_datasource(dataset, measurement['name']) for dataset in datasets],
-                       dest,
+                       destination,
                        geobox.affine,
                        geobox.crs,
-                       dest.dtype.type(measurement['nodata']),
+                       destination.dtype.type(measurement['nodata']),
                        resampling=measurement.get('resampling_method', 'nearest'),
                        fuse_func=fuse_func,
                        skip_broken_datasets=skip_broken_datasets)
