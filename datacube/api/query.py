@@ -20,7 +20,6 @@ from __future__ import absolute_import, division, print_function
 import logging
 import datetime
 import collections
-import warnings
 
 from dateutil import tz
 from pandas import to_datetime as pandas_to_datetime
@@ -43,27 +42,41 @@ OTHER_KEYS = ('measurements', 'group_by', 'output_crs', 'resolution', 'set_nan',
 
 
 class Query(object):
-    def __init__(self, index=None, product=None, geopolygon=None, like=None, **kwargs):
-        """Parses a kwarg dict for query parameters
+    """Parses search terms in preparation for querying the Data Cube Index.
 
-        :param datacube.index._api.Index index: An optional `index` object, if checking of field names is desired.
-        :param str product: name of product
-        :param Union[datacube.utils.Geometry|None] geopolygon: spatial bounds of the search
-        :param xarray.Dataset like: spatio-temporal bounds of `like` are used for the search
-        :param kwargs:
-         * `measurements` - list of measurements to retrieve
-         * `latitude`, `lat`, `y`, `longitude`, `lon`, `long`, `x` - tuples (min, max) bounding spatial dimensions
-         * `crs` - spatial coordinate reference system to interpret the spatial bounds
-         * `group_by` - observation grouping method. One of 'time', 'solar_day'. Default is 'time'
-        """
+    Create a :class:`Query` object by passing it a set of search terms as keyword arguments.
+
+    >>> query = Query(product='ls5_nbar_albers', time=('2001-01-01', '2002-01-01'))
+
+    Use by accessing :attr:`search_terms`.
+
+    >>> query.search_terms
+    {'time': Range(begin=datetime.datetime(2001, 1, 1, 0, 0, tzinfo=<UTC>), end=datetime.datetime(2002, 1, 1, 0, 0, tzinfo=<UTC>)), 'product': 'ls5_nbar_albers'}
+
+    By passing in an ``index``, the search parameters will be validated as existing on the ``product``.
+
+    Used by :meth:`datacube.Datacube.find_datasets` and :meth:`datacube.Datacube.load`.
+
+    :param ~datacube.index._api.Index index: An optional `index` object, if checking of field names is desired.
+    :param str product: name of product
+    :param geopolygon: spatial bounds of the search
+    :type geopolygon: geometry.Geometry or None
+    :param xarray.Dataset like: spatio-temporal bounds of `like` are used for the search
+    :param search_terms:
+     * `measurements` - list of measurements to retrieve
+     * `latitude`, `lat`, `y`, `longitude`, `lon`, `long`, `x` - tuples (min, max) bounding spatial dimensions
+     * `crs` - spatial coordinate reference system to interpret the spatial bounds
+     * `group_by` - observation grouping method. One of `time`, `solar_day`. Default is `time`
+    """
+    def __init__(self, index=None, product=None, geopolygon=None, like=None, **search_terms):
         self.product = product
-        self.geopolygon = query_geopolygon(geopolygon=geopolygon, **kwargs)
-        if 'source_filter' in kwargs and kwargs['source_filter'] is not None:
-            self.source_filter = Query(**kwargs['source_filter'])
+        self.geopolygon = query_geopolygon(geopolygon=geopolygon, **search_terms)
+        if 'source_filter' in search_terms and search_terms['source_filter'] is not None:
+            self.source_filter = Query(**search_terms['source_filter'])
         else:
             self.source_filter = None
 
-        remaining_keys = set(kwargs.keys()) - set(SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
+        remaining_keys = set(search_terms.keys()) - set(SPATIAL_KEYS + CRS_KEYS + OTHER_KEYS)
         if index:
             unknown_keys = remaining_keys - set(index.datasets.get_field_names())
             # TODO: What about keys source filters, and what if the keys don't match up with this product...
@@ -72,10 +85,12 @@ class Query(object):
 
         self.search = {}
         for key in remaining_keys:
-            self.search.update(_values_to_search(**{key: kwargs[key]}))
+            self.search.update(_values_to_search(**{key: search_terms[key]}))
 
         if like:
-            assert self.geopolygon is None, "'like' with other spatial bounding parameters is not supported"
+            if self.geopolygon is not None:
+                raise RuntimeError("'like' with other spatial bounding parameters is not supported")
+
             self.geopolygon = getattr(like, 'extent', self.geopolygon)
 
             if 'time' not in self.search:
@@ -89,23 +104,28 @@ class Query(object):
 
     @property
     def search_terms(self):
-        kwargs = {}
-        kwargs.update(self.search)
+        """
+        Access the search terms as a dictionary.
+
+        :type: dict
+        """
+        search_terms = {}
+        search_terms.update(self.search)
         if self.geopolygon:
             geo_bb = self.geopolygon.to_crs(geometry.CRS('EPSG:4326')).boundingbox
             if geo_bb.bottom != geo_bb.top:
-                kwargs['lat'] = Range(geo_bb.bottom, geo_bb.top)
+                search_terms['lat'] = Range(geo_bb.bottom, geo_bb.top)
             else:
-                kwargs['lat'] = geo_bb.bottom
+                search_terms['lat'] = geo_bb.bottom
             if geo_bb.left != geo_bb.right:
-                kwargs['lon'] = Range(geo_bb.left, geo_bb.right)
+                search_terms['lon'] = Range(geo_bb.left, geo_bb.right)
             else:
-                kwargs['lon'] = geo_bb.left
+                search_terms['lon'] = geo_bb.left
         if self.product:
-            kwargs['product'] = self.product
+            search_terms['product'] = self.product
         if self.source_filter:
-            kwargs['source_filter'] = self.source_filter.search_terms
-        return kwargs
+            search_terms['source_filter'] = self.source_filter.search_terms
+        return search_terms
 
     def __repr__(self):
         return self.__str__()
@@ -121,6 +141,9 @@ class Query(object):
 
 
 class DescriptorQuery(Query):
+    """
+    Representation of an old `get_descriptor()/get_data()` style query for the :class:`datacube.API`.
+    """
     def __init__(self, descriptor_request=None):
         super(DescriptorQuery, self).__init__()
 

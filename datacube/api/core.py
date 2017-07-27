@@ -332,9 +332,12 @@ class Datacube(object):
             return None if stack else xarray.Dataset()
 
         if like:
-            assert output_crs is None, "'like' and 'output_crs' are not supported together"
-            assert resolution is None, "'like' and 'resolution' are not supported together"
-            assert align is None, "'like' and 'align' are not supported together"
+            if output_crs is not None:
+                raise RuntimeError("'like' and 'output_crs' are not supported together")
+            if resolution is not None:
+                raise RuntimeError("'like' and 'resolution' are not supported together")
+            if align is not None:
+                raise RuntimeError("'like' and 'align' are not supported together")
             geobox = like.geobox
         else:
             if output_crs:
@@ -370,17 +373,17 @@ class Datacube(object):
                 stack = 'measurement'
             return result.to_array(dim=stack)
 
-    def find_datasets(self, **kwargs):
+    def find_datasets(self, **search_terms):
         """
-        Find datasets for a product.
+        Search the index and return all datasets for a product matching the search terms.
 
-        :param kwargs: see :class:`datacube.api.query.Query`
+        :param search_terms: see :class:`datacube.api.query.Query`
         :return: list of datasets
         :rtype: list[:class:`datacube.model.Dataset`]
 
         .. seealso:: :meth:`group_datasets` :meth:`load_data`
         """
-        query = Query(self.index, **kwargs)
+        query = Query(self.index, **search_terms)
         if not query.product:
             raise RuntimeError('must specify a product')
 
