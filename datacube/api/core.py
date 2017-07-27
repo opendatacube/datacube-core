@@ -370,11 +370,6 @@ class Datacube(object):
                 stack = 'measurement'
             return result.to_array(dim=stack)
 
-    def product_observations(self, **kwargs):
-        warnings.warn("product_observations() has been renamed to find_datasets() and will eventually be removed",
-                      DeprecationWarning)
-        return self.find_datasets(**kwargs)
-
     def find_datasets(self, **kwargs):
         """
         Find datasets for a product.
@@ -396,12 +391,6 @@ class Datacube(object):
             # Check against the bounding box of the original scene, can throw away some portions
 
         return datasets
-
-    @staticmethod
-    def product_sources(datasets, group_by):
-        warnings.warn("product_sources() has been renamed to group_datasets() and will eventually be removed",
-                      DeprecationWarning)
-        return Datacube.group_datasets(datasets, group_by)
 
     @staticmethod
     def group_datasets(datasets, group_by):
@@ -502,12 +491,6 @@ class Datacube(object):
             result[measurement['name']] = (dims, data, attrs)
 
         return result
-
-    @staticmethod
-    def product_data(*args, **kwargs):
-        warnings.warn("product_data() has been renamed to load_data() and will eventually be removed",
-                      DeprecationWarning)
-        return Datacube.load_data(*args, **kwargs)
 
     @staticmethod
     def load_data(sources, geobox, measurements, fuse_func=None, dask_chunks=None, skip_broken_datasets=False,
