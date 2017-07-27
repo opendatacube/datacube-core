@@ -76,31 +76,6 @@ else:
         return src.affine
 
 
-def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, resampling):
-    """
-    Read from `source` into `dest`, reprojecting if necessary.
-
-    :param RasterioDataSource source: Data source
-    :param numpy.ndarray dest: Data destination
-    """
-    with source.open() as src:
-        if dest.dtype == numpy.dtype('int8'):
-            dest = dest.view(dtype='uint8')
-            dst_nodata = dst_nodata.astype('uint8')
-
-        num_threads = OPTIONS['reproject_threads']
-        # A bug in rasterio or GDAL causes data reads to fail if only a single row is requested and num_threads > 1
-        if dest.shape[0] == 1:
-            num_threads = 1
-
-        src.reproject(dest,
-                      dst_transform=dst_transform,
-                      dst_crs=str(dst_projection),
-                      dst_nodata=dst_nodata,
-                      resampling=resampling,
-                      num_threads=num_threads)
-
-
 def reproject_and_fuse(sources, destination, dst_transform, dst_projection, dst_nodata,
                        resampling='nearest', fuse_func=None, skip_broken_datasets=False):
     """
@@ -141,6 +116,31 @@ def reproject_and_fuse(sources, destination, dst_transform, dst_projection, dst_
                 fuse_func(destination, buffer_)
 
         return destination
+
+
+def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, resampling):
+    """
+    Read from `source` into `dest`, reprojecting if necessary.
+
+    :param RasterioDataSource source: Data source
+    :param numpy.ndarray dest: Data destination
+    """
+    with source.open() as src:
+        if dest.dtype == numpy.dtype('int8'):
+            dest = dest.view(dtype='uint8')
+            dst_nodata = dst_nodata.astype('uint8')
+
+        num_threads = OPTIONS['reproject_threads']
+        # A bug in rasterio or GDAL causes data reads to fail if only a single row is requested and num_threads > 1
+        if dest.shape[0] == 1:
+            num_threads = 1
+
+        src.reproject(dest,
+                      dst_transform=dst_transform,
+                      dst_crs=str(dst_projection),
+                      dst_nodata=dst_nodata,
+                      resampling=resampling,
+                      num_threads=num_threads)
 
 
 class BandDataSource(object):
