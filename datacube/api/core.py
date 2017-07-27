@@ -539,14 +539,17 @@ class Datacube(object):
             use_threads = False
 
         if dask_chunks is None:
-            def data_func(measurement):
-                if not use_threads:
+            if not use_threads:
+                def data_provider(measurement):
                     data = numpy.full(sources.shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
                     for index, datasets in numpy.ndenumerate(sources.values):
                         _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
                                           skip_broken_datasets=skip_broken_datasets,
                                           driver_manager=driver_manager)
-                else:
+                    return data
+
+            else:
+                def data_provider(measurement):
                     def work_load_data(array_name, index, datasets):
                         data = sa.attach(array_name)
                         _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
@@ -561,14 +564,15 @@ class Datacube(object):
                     pool = ThreadPool(32)
                     pool.map(work_load_data, repeat(array_name), *zip(*numpy.ndenumerate(sources.values)))
                     sa.delete(array_name)
-                return data
+                    return data
         else:
-            def data_func(measurement):
+            def data_provider(measurement):
                 return _make_dask_array(sources, geobox, measurement, fuse_func, dask_chunks,
                                         driver_manager=driver_manager)
 
-        return Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
-                                       geobox, measurements, data_func, use_threads)
+        coordinates = OrderedDict((dim, sources.coords[dim]) for dim in sources.dims)
+        return Datacube.create_storage(coords=coordinates, geobox=geobox, measurements=measurements,
+                                       data_func=data_provider, use_threads=use_threads)
 
     @staticmethod
     def measurement_data(sources, geobox, measurement, fuse_func=None, dask_chunks=None,
