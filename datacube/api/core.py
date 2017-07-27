@@ -671,33 +671,9 @@ def datatset_type_to_row(dt):
         })
     return row
 
-
-def _chunk_geobox(geobox, chunk_size):
-    num_grid_chunks = [int(ceil(s/float(c))) for s, c in zip(geobox.shape, chunk_size)]
-    geobox_subsets = {}
-    for grid_index in numpy.ndindex(*num_grid_chunks):
-        slices = [slice(min(d*c, stop), min((d+1)*c, stop))
-                  for d, c, stop in zip(grid_index, chunk_size, geobox.shape)]
-        geobox_subsets[grid_index] = geobox[slices]
-    return geobox_subsets
-
-
-def _calculate_chunk_sizes(sources, geobox, dask_chunks):
-    valid_keys = sources.dims + geobox.dimensions
-    bad_keys = set(dask_chunks) - set(valid_keys)
-    if bad_keys:
-        raise KeyError('Unknown dask_chunk dimension {}. Valid dimensions are: {}', bad_keys, valid_keys)
-
-    # If chunk size is not specified, the entire dimension length is used, as in xarray
-    chunks = {dim: size for dim, size in zip(sources.dims, sources.shape)}
-    chunks.update({dim: size for dim, size in zip(geobox.dimensions, geobox.shape)})
-
-    chunks.update(dask_chunks)
-
-    irr_chunks = tuple(chunks[dim] for dim in sources.dims)
-    grid_chunks = tuple(chunks[dim] for dim in geobox.dimensions)
-
-    return irr_chunks, grid_chunks
+###########################
+# Dask Lazy Loading Helpers
+###########################
 
 
 # pylint: disable=too-many-locals
@@ -725,3 +701,31 @@ def _make_dask_array(sources, geobox, measurement, fuse_func=None, dask_chunks=N
     if irr_chunks != sliced_irr_chunks:
         data = data.rechunk(chunks=(irr_chunks + grid_chunks))
     return data
+
+
+def _calculate_chunk_sizes(sources, geobox, dask_chunks):
+    valid_keys = sources.dims + geobox.dimensions
+    bad_keys = set(dask_chunks) - set(valid_keys)
+    if bad_keys:
+        raise KeyError('Unknown dask_chunk dimension {}. Valid dimensions are: {}', bad_keys, valid_keys)
+
+    # If chunk size is not specified, the entire dimension length is used, as in xarray
+    chunks = {dim: size for dim, size in zip(sources.dims, sources.shape)}
+    chunks.update({dim: size for dim, size in zip(geobox.dimensions, geobox.shape)})
+
+    chunks.update(dask_chunks)
+
+    irr_chunks = tuple(chunks[dim] for dim in sources.dims)
+    grid_chunks = tuple(chunks[dim] for dim in geobox.dimensions)
+
+    return irr_chunks, grid_chunks
+
+
+def _chunk_geobox(geobox, chunk_size):
+    num_grid_chunks = [int(ceil(s/float(c))) for s, c in zip(geobox.shape, chunk_size)]
+    geobox_subsets = {}
+    for grid_index in numpy.ndindex(*num_grid_chunks):
+        slices = [slice(min(d*c, stop), min((d+1)*c, stop))
+                  for d, c, stop in zip(grid_index, chunk_size, geobox.shape)]
+        geobox_subsets[grid_index] = geobox[slices]
+    return geobox_subsets
