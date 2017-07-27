@@ -335,6 +335,7 @@ NATIVE_MODULES = [
     'paramiko',
     'sshtunnel',
     'tqdm',
+    'cloudpickle',
 ]
 
 from mock import Mock as MagicMock
