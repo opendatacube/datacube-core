@@ -1,23 +1,25 @@
 from __future__ import absolute_import, division, print_function
 
 import logging
-from itertools import groupby, repeat
-from collections import namedtuple, OrderedDict
-from math import ceil
-import warnings
-
 import os
 import sys
 import uuid
-import pandas
+import warnings
+from collections import namedtuple, OrderedDict
+from itertools import groupby, repeat
+from math import ceil
+
 import numpy
+import pandas
 import xarray
+
 try:
     import SharedArray as sa
 except ImportError:
     pass
 from affine import Affine
 from dask import array as da
+
 try:
     from pathos.threading import ThreadPool
 except ImportError:
@@ -32,7 +34,6 @@ from ..utils import geometry, intersects, data_resolution_and_offset
 from .query import Query, query_group_by, query_geopolygon
 
 _LOG = logging.getLogger(__name__)
-
 
 Group = namedtuple('Group', ['key', 'datasets'])
 
@@ -67,6 +68,7 @@ class Datacube(object):
 
     :type index: datacube.index._api.Index
     """
+
     def __init__(self, index=None, config=None, app=None, driver_manager=None):
         """
         Create the interface for the query and storage access.
@@ -461,6 +463,7 @@ class Datacube(object):
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
+
         def empty_func(measurement_):
             coord_shape = tuple(coord_.size for coord_ in coords.values())
             return numpy.full(coord_shape + geobox.shape, measurement_['nodata'], dtype=measurement_['dtype'])
@@ -549,6 +552,9 @@ class Datacube(object):
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
+        if driver_manager is None:
+            driver_manager = DriverManager()
+
         if use_threads and ('SharedArray' not in sys.modules or 'pathos.threading' not in sys.modules):
             use_threads = False
 
@@ -690,10 +696,10 @@ def datatset_type_to_row(dt):
 
 
 def _chunk_geobox(geobox, chunk_size):
-    num_grid_chunks = [int(ceil(s/float(c))) for s, c in zip(geobox.shape, chunk_size)]
+    num_grid_chunks = [int(ceil(s / float(c))) for s, c in zip(geobox.shape, chunk_size)]
     geobox_subsets = {}
     for grid_index in numpy.ndindex(*num_grid_chunks):
-        slices = [slice(min(d*c, stop), min((d+1)*c, stop))
+        slices = [slice(min(d * c, stop), min((d + 1) * c, stop))
                   for d, c, stop in zip(grid_index, chunk_size, geobox.shape)]
         geobox_subsets[grid_index] = geobox[slices]
     return geobox_subsets
