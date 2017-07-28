@@ -549,6 +549,9 @@ class Datacube(object):
 
         .. seealso:: :meth:`find_datasets` :meth:`group_datasets`
         """
+        if driver_manager is None:
+            driver_manager = DriverManager()
+        
         if use_threads and ('SharedArray' not in sys.modules or 'pathos.threading' not in sys.modules):
             use_threads = False
 
