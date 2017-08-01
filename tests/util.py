@@ -92,6 +92,16 @@ def _write_files_to_dir(directory_path, file_dict):
                     raise Exception('Unexpected file contents: %s' % type(contents))
 
 
+def write_file(name, contents):
+    # type: (str, str) -> pathlib.Path
+    """
+    Write a single file to an automatically-deleted temporary directory
+
+    """
+    d = write_files({name: contents})
+    return d.joinpath(name)
+
+
 def temp_dir():
     """
     Create and return a temporary directory that will be deleted automatically on exit.
@@ -157,4 +167,4 @@ def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
     Testing aproximate equality for floats
     See https://docs.python.org/3/whatsnew/3.5.html#pep-485-a-function-for-testing-approximate-equality
     """
-    return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+    return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)

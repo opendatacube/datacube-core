@@ -387,17 +387,22 @@ class ProductResource(object):
             _LOG.info("No changes detected for product %s", product.name)
             return self.get_by_name(product.name)
 
+        for offset, old_val, new_val in safe_changes:
+            _LOG.info("Safe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
+
+        for offset, old_val, new_val in unsafe_changes:
+            _LOG.info("Unsafe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
+
         if not can_update:
-            full_message = "Unsafe changes at " + ", ".join(".".join(offset) for offset, _, _ in unsafe_changes)
+            full_message = "Unsafe changes at " + (
+                ", ".join(
+                    _readable_offset(offset)
+                    for offset, _, _ in unsafe_changes
+                )
+            )
             raise ValueError(full_message)
 
         _LOG.info("Updating product %s", product.name)
-
-        for offset, old_val, new_val in safe_changes:
-            _LOG.info("Safe change from %r to %r", old_val, new_val)
-
-        for offset, old_val, new_val in unsafe_changes:
-            _LOG.info("Unsafe change from %r to %r", old_val, new_val)
 
         existing = self.get_by_name(product.name)
         changing_metadata_type = product.metadata_type.name != existing.metadata_type.name
@@ -595,6 +600,10 @@ class ProductResource(object):
             metadata_type=self.metadata_type_resource.get(query_row['metadata_type_ref']),
             id_=query_row['id'],
         )
+
+
+def _readable_offset(offset):
+    return '.'.join(map(str, offset))
 
 
 class DatasetResource(object):
