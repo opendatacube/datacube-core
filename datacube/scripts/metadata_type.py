@@ -26,13 +26,12 @@ def metadata_type():
 @click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
-@ui.pass_driver_manager()
-def add_metadata_types(driver_manager, allow_exclusive_lock, files):
-    # type: (DriverManager, bool, list) -> None
+@ui.pass_index()
+def add_metadata_types(index, allow_exclusive_lock, files):
+    # type: (Index, bool, list) -> None
     """
     Add or update metadata types in the index
     """
-    index = driver_manager.index
     for descriptor_path, parsed_doc in read_documents(*(Path(f) for f in files)):
         try:
             type_ = index.metadata_types.from_doc(parsed_doc)
@@ -55,9 +54,9 @@ def add_metadata_types(driver_manager, allow_exclusive_lock, files):
 @click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
-@ui.pass_driver_manager()
-def update_metadata_types(driver_manager, allow_unsafe, allow_exclusive_lock, dry_run, files):
-    # type: (DriverManager, bool, bool, bool, list) -> None
+@ui.pass_index()
+def update_metadata_types(index, allow_unsafe, allow_exclusive_lock, dry_run, files):
+    # type: (Index, bool, bool, bool, list) -> None
     """
     Update existing metadata types.
 
@@ -66,7 +65,6 @@ def update_metadata_types(driver_manager, allow_unsafe, allow_exclusive_lock, dr
     (An unsafe change is anything that may potentially make the metadata type
     incompatible with existing ones of the same name)
     """
-    index = driver_manager.index
     for descriptor_path, parsed_doc in read_documents(*(Path(f) for f in files)):
         try:
             type_ = index.metadata_types.from_doc(parsed_doc)
@@ -99,12 +97,11 @@ def update_metadata_types(driver_manager, allow_unsafe, allow_exclusive_lock, dr
 @metadata_type.command('show')
 @click.option('-v', '--verbose', is_flag=True)
 @click.argument('metadata_type_name', nargs=1)
-@ui.pass_driver_manager()
-def show_metadata_type(driver_manager, metadata_type_name, verbose):
+@ui.pass_index()
+def show_metadata_type(index, metadata_type_name, verbose):
     """
     Show information about a metadata type.
     """
-    index = driver_manager.index
     metadata_type_obj = index.metadata_types.get_by_name(metadata_type_name)
     print(metadata_type_obj.description)
     print('Search fields: %s' % ', '.join(sorted(metadata_type_obj.dataset_fields.keys())))
@@ -113,12 +110,11 @@ def show_metadata_type(driver_manager, metadata_type_name, verbose):
 
 
 @metadata_type.command('list')
-@ui.pass_driver_manager()
-def list_metadata_types(driver_manager):
+@ui.pass_index()
+def list_metadata_types(index):
     """
     List metadata types that are defined in the generic index.
     """
-    index = driver_manager.index
     metadata_types = list(index.metadata_types.get_all())
 
     if not metadata_types:

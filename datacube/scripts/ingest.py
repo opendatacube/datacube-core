@@ -294,9 +294,6 @@ def _index_datasets(driver_manager, results):
 
 
 def process_tasks(driver_manager, config, source_type, output_type, tasks, queue_size, executor):
-    index = driver_manager.index
-
-    # driver_manager_dump = dumps(driver_manager)
 
     def submit_task(task):
         _LOG.info('Submitting task: %s', task['tile_index'])

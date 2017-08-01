@@ -161,9 +161,8 @@ def parse_match_rules_options(index, match_rules, dtype, auto_match):
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
 @click.argument('dataset-paths',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
-@ui.pass_driver_manager()
-def index_cmd(driver_manager, match_rules, dtype, auto_match, sources_policy, dry_run, dataset_paths):
-    index = driver_manager.index
+@ui.pass_index()
+def index_cmd(index, match_rules, dtype, auto_match, sources_policy, dry_run, dataset_paths):
     rules = parse_match_rules_options(index, match_rules, dtype, auto_match)
     if rules is None:
         return
@@ -203,9 +202,8 @@ def parse_update_rules(allow_any):
 @click.option('--dry-run', help='Check if everything is ok', is_flag=True, default=False)
 @click.argument('datasets',
                 type=click.Path(exists=True, readable=True, writable=False), nargs=-1)
-@ui.pass_driver_manager()
-def update_cmd(driver_manager, allow_any, match_rules, dtype, auto_match, dry_run, datasets):
-    index = driver_manager.index
+@ui.pass_index()
+def update_cmd(index, allow_any, match_rules, dtype, auto_match, dry_run, datasets):
     rules = parse_match_rules_options(index, match_rules, dtype, auto_match)
     if rules is None:
         return
@@ -362,11 +360,10 @@ _OUTPUT_WRITERS = {
               # Unlikely to be hit, but will avoid total-death by circular-references.
               default=99)
 @click.argument('ids', nargs=-1)
-@ui.pass_driver_manager()
-def info_cmd(driver_manager, show_sources, show_derived, f, max_depth, ids):
-    # type: (DriverManager, bool, bool, Iterable[str]) -> None
+@ui.pass_index()
+def info_cmd(index, show_sources, show_derived, f, max_depth, ids):
+    # type: (Index, bool, bool, Iterable[str]) -> None
 
-    index = driver_manager.index
     # Using an array wrapper to get around the lack of "nonlocal" in py2
     missing_datasets = [0]
 
@@ -394,12 +391,11 @@ def info_cmd(driver_manager, show_sources, show_derived, f, max_depth, ids):
 @click.option('-f', help='Output format',
               type=click.Choice(_OUTPUT_WRITERS.keys()), default='yaml', show_default=True)
 @ui.parsed_search_expressions
-@ui.pass_driver_manager()
-def search_cmd(driver_manager, f, expressions):
+@ui.pass_index()
+def search_cmd(index, f, expressions):
     """
     Search available Datasets
     """
-    index = driver_manager.index
     datasets = index.datasets.search(**expressions)
     _OUTPUT_WRITERS[f](
         build_dataset_info(index, dataset)
@@ -426,9 +422,8 @@ def _get_derived_set(index, id_):
 @click.option('--dry-run', help="Don't archive. Display datasets that would get archived",
               is_flag=True, default=False)
 @click.argument('ids', nargs=-1)
-@ui.pass_driver_manager()
-def archive_cmd(driver_manager, archive_derived, dry_run, ids):
-    index = driver_manager.index
+@ui.pass_index()
+def archive_cmd(index, archive_derived, dry_run, ids):
     for id_ in ids:
         to_process = _get_derived_set(index, id_) if archive_derived else [index.datasets.get(id_)]
         for d in to_process:
@@ -446,9 +441,8 @@ def archive_cmd(driver_manager, archive_derived, dry_run, ids):
                    "this recently to the original dataset",
               default=10 * 60)
 @click.argument('ids', nargs=-1)
-@ui.pass_driver_manager()
-def restore_cmd(driver_manager, restore_derived, derived_tolerance_seconds, dry_run, ids):
-    index = driver_manager.index
+@ui.pass_index()
+def restore_cmd(index, restore_derived, derived_tolerance_seconds, dry_run, ids):
     tolerance = datetime.timedelta(seconds=derived_tolerance_seconds)
 
     for id_ in ids:
