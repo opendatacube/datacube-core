@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 
 import click
+import sys
 from click import echo
 
 from datacube import Datacube
@@ -67,12 +68,14 @@ def update_dataset_types(index, allow_unsafe, allow_exclusive_lock, dry_run, fil
     (An unsafe change is anything that may potentially make the product
     incompatible with existing datasets of that type)
     """
+    failures = 0
     for descriptor_path, parsed_doc in read_documents(*(Path(f) for f in files)):
         try:
             type_ = index.products.from_doc(parsed_doc)
         except InvalidDocException as e:
             _LOG.exception(e)
             _LOG.error('Invalid product definition: %s', descriptor_path)
+            failures += 1
             continue
 
         if not dry_run:
@@ -85,15 +88,16 @@ def update_dataset_types(index, allow_unsafe, allow_exclusive_lock, dry_run, fil
                 echo('Updated "%s"' % type_.name)
             except ValueError as e:
                 echo('Failed to update "%s": %s' % (type_.name, e))
+                failures += 1
         else:
             can_update, safe_changes, unsafe_changes = index.products.can_update(type_,
                                                                                  allow_unsafe_updates=allow_unsafe)
 
             for offset, old_val, new_val in safe_changes:
-                echo('Safe change in "%s" from %r to %r' % (type_.name, old_val, new_val))
+                echo('Safe change in %r %s from %r to %r' % (type_.name, _readable_offset(offset), old_val, new_val))
 
             for offset, old_val, new_val in unsafe_changes:
-                echo('Unsafe change in "%s" from %r to %r' % (type_.name, old_val, new_val))
+                echo('Unsafe change in %r %s from %r to %r' % (type_.name, _readable_offset(offset), old_val, new_val))
 
             if can_update:
                 echo('Can update "%s": %s unsafe changes, %s safe changes' % (type_.name,
@@ -103,6 +107,11 @@ def update_dataset_types(index, allow_unsafe, allow_exclusive_lock, dry_run, fil
                 echo('Cannot update "%s": %s unsafe changes, %s safe changes' % (type_.name,
                                                                                  len(unsafe_changes),
                                                                                  len(safe_changes)))
+    sys.exit(failures)
+
+
+def _readable_offset(offset):
+    return '.'.join(map(str, offset))
 
 
 @product.command('list')
