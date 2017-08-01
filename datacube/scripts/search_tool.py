@@ -95,7 +95,6 @@ def datasets(ctx, driver_manager, expressions):
         sorted(index.datasets.get_field_names()),
         index.datasets.search_summaries(**expressions)
     )
-    driver_manager.close()
 
 
 @cli.command('product-counts')
@@ -114,7 +113,6 @@ def product_counts(driver_manager, period, expressions):
         for timerange, count in series:
             formatted_dt = _assume_utc(timerange[0]).strftime("%Y-%m-%d")
             click.echo('    {}: {}'.format(formatted_dt, count))
-    driver_manager.close()
 
 
 @singledispatch

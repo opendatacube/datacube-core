@@ -43,7 +43,6 @@ def add_dataset_types(driver_manager, allow_exclusive_lock, files):
             _LOG.exception(e)
             _LOG.error('Invalid product definition: %s', descriptor_path)
             continue
-    driver_manager.close()
 
 
 @product.command('update')
@@ -126,7 +125,6 @@ def list_products(driver_manager):
     echo(products.to_string(columns=('name', 'description', 'product_type', 'instrument',
                                      'format', 'platform'),
                             justify='left'))
-    driver_manager.close()
 
 
 @product.command('show')
@@ -139,4 +137,3 @@ def show_product(driver_manager, product_name):
     index = driver_manager.index
     product_def = index.products.get_by_name(product_name)
     click.echo_via_pager(json.dumps(product_def.definition, indent=4))
-    driver_manager.close()

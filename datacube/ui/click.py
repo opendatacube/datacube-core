@@ -190,22 +190,27 @@ def pass_config(f):
 def pass_driver_manager(app_name=None, expect_initialised=True):
     """Get a driver manager as the first argument.
 
-    A short name name of the application can be specified for logging purposes.
+    :param str app_name:
+        A short name of the application for logging purposes.
+    :param bool expect_initialised:
+        Whether to connect immediately on startup. Useful to catch connection config issues immediately,
+        but if you're planning to fork before any usage (such as in the case of some web servers),
+        you may not want this. For more information on thread/process usage, see datacube.index._api.Index
     """
 
     def decorate(f):
         def with_driver_manager(*args, **kwargs):
             ctx = click.get_current_context()
             try:
-                driver_manager = DriverManager(index=None,
-                                               local_config=ctx.obj['config_file'],
-                                               application_name=app_name or ctx.command_path,
-                                               validate_connection=expect_initialised)
-                driver_manager.set_current_driver(ctx.obj['driver'])
-                ctx.obj['index'] = driver_manager.index
-                _LOG.debug("Driver manager ready. Connected to index: %s",
-                           driver_manager.index)
-                return f(driver_manager, *args, **kwargs)
+                with DriverManager(index=None,
+                                   local_config=ctx.obj['config_file'],
+                                   application_name=app_name or ctx.command_path,
+                                   validate_connection=expect_initialised) as driver_manager:
+                    driver_manager.set_current_driver(ctx.obj['driver'])
+                    ctx.obj['index'] = driver_manager.index
+                    _LOG.debug("Driver manager ready. Connected to index: %s",
+                               driver_manager.index)
+                    return f(driver_manager, *args, **kwargs)
             except (OperationalError, ProgrammingError) as e:
                 handle_exception('Error Connecting to database: %s', e)
 

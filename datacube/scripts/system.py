@@ -66,7 +66,6 @@ def database_init(driver_manager, default_types, init_users, recreate_views, reb
         rebuild_views=recreate_views or rebuild,
     )
     echo('Done.')
-    driver_manager.close()
 
 
 @system.command('check', help='Check and display current configuration')

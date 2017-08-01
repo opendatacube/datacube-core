@@ -393,5 +393,5 @@ def ingest_cmd(driver_manager, config_file, year, queue_size, save_tasks, load_t
 
     successful, failed = process_tasks(driver_manager, config, source_type, output_type, tasks, queue_size, executor)
     click.echo('%d successful, %d failed' % (successful, failed))
-    driver_manager.close()
+
     return 0

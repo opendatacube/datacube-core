@@ -41,7 +41,6 @@ def add_metadata_types(driver_manager, allow_exclusive_lock, files):
             _LOG.exception(e)
             _LOG.error('Invalid metadata type definition: %s', descriptor_path)
             continue
-    driver_manager.close()
 
 
 @metadata_type.command('update')
@@ -95,7 +94,6 @@ def update_metadata_types(driver_manager, allow_unsafe, allow_exclusive_lock, dr
                 echo('Cannot update "%s": %s unsafe changes, %s safe changes' % (type_.name,
                                                                                  len(unsafe_changes),
                                                                                  len(safe_changes)))
-    driver_manager.close()
 
 
 @metadata_type.command('show')
@@ -113,8 +111,6 @@ def show_metadata_type(driver_manager, metadata_type_name, verbose):
     if verbose:
         echo(json.dumps(metadata_type_obj.definition, indent=4))
 
-    driver_manager.close()
-
 
 @metadata_type.command('list')
 @ui.pass_driver_manager()
@@ -131,4 +127,3 @@ def list_metadata_types(driver_manager):
 
     for m in metadata_types:
         echo(m)
-    driver_manager.close()

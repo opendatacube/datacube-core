@@ -174,7 +174,6 @@ def index_cmd(driver_manager, match_rules, dtype, auto_match, sources_policy, dr
             index_dataset_paths(sources_policy, dry_run, index, rules, dataset_path_iter)
     else:
         index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths)
-    driver_manager.close()
 
 
 def index_dataset_paths(sources_policy, dry_run, index, rules, dataset_paths):
@@ -231,7 +230,6 @@ def update_cmd(driver_manager, allow_any, match_rules, dtype, auto_match, dry_ru
             else:
                 fail += 1
     echo('%d successful, %d failed' % (success, fail))
-    driver_manager.close()
 
 
 def update_dry_run(index, updates, dataset):
@@ -389,7 +387,6 @@ def info_cmd(driver_manager, show_sources, show_derived, f, max_depth, ids):
                            max_depth=max_depth)
         for dataset in get_datasets(ids)
     )
-    driver_manager.close()
     sys.exit(missing_datasets[0])
 
 
@@ -408,7 +405,6 @@ def search_cmd(driver_manager, f, expressions):
         build_dataset_info(index, dataset)
         for dataset in datasets
     )
-    driver_manager.close()
 
 
 def _get_derived_set(index, id_):
@@ -439,7 +435,6 @@ def archive_cmd(driver_manager, archive_derived, dry_run, ids):
             click.echo('archiving %s %s %s' % (d.type.name, d.id, d.local_uri))
         if not dry_run:
             index.datasets.archive(d.id for d in to_process)
-    driver_manager.close()
 
 
 @dataset_cmd.command('restore', help="Restore datasets")
@@ -458,7 +453,6 @@ def restore_cmd(driver_manager, restore_derived, derived_tolerance_seconds, dry_
 
     for id_ in ids:
         _restore_one(dry_run, id_, index, restore_derived, tolerance)
-    driver_manager.close()
 
 
 def _restore_one(dry_run, id_, index, restore_derived, tolerance):

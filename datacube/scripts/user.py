@@ -29,7 +29,6 @@ def list_users(driver_manager):
     index = driver_manager.index
     for role, user, description in index.users.list_users():
         click.echo('{0:6}\t{1:15}\t{2}'.format(role, user, description if description else ''))
-    driver_manager.close()
 
 
 @user_cmd.command('grant')
@@ -44,7 +43,6 @@ def grant(driver_manager, role, users):
     """
     index = driver_manager.index
     index.users.grant_role(role, *users)
-    driver_manager.close()
 
 
 @user_cmd.command('create')
@@ -69,7 +67,6 @@ def create_user(config, driver_manager, role, user, description):
         username=user,
         password=password
     ))
-    driver_manager.close()
 
 
 @user_cmd.command('delete')
@@ -82,4 +79,3 @@ def delete_user(config, driver_manager, users):
     """
     index = driver_manager.index
     index.users.delete_user(*users)
-    driver_manager.close()
