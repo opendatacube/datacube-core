@@ -18,9 +18,7 @@ import datacube
 from datacube.ui import task_app
 from datacube.ui.click import to_pathlib
 
-
 _LOG = logging.getLogger(__name__)
-
 
 APP_NAME = 'datacube-ncml'
 
@@ -185,7 +183,6 @@ def full(driver_manager, config, tasks, executor, queue_size, **kwargs):
 
     task_func = partial(do_ncml_task, config)
     task_app.run_tasks(tasks, executor, task_func, None, queue_size)
-    driver_manager.close()
 
 
 @ncml_app.command(short_help='Create a full ncml file with nested ncml files for particular years')
@@ -206,7 +203,6 @@ def nest(driver_manager, config, tasks, executor, queue_size, **kwargs):
 
     task_func = partial(do_ncml_task, config)
     task_app.run_tasks(tasks, executor, task_func, None, queue_size)
-    driver_manager.close()
 
 
 @ncml_app.command(short_help='Update a single year ncml file')
@@ -226,7 +222,6 @@ def update(driver_manager, config, tasks, executor, queue_size, **kwargs):
 
     task_func = partial(do_ncml_task, config)
     task_app.run_tasks(tasks, executor, task_func, None, queue_size)
-    driver_manager.close()
 
 
 if __name__ == '__main__':

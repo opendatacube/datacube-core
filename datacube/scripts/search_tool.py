@@ -20,7 +20,7 @@ from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS
 from datacube.ui.expression import parse_expressions
 
-PASS_DRIVER_MANAGER = ui.pass_driver_manager('datacube-search')
+PASS_INDEX = ui.pass_index('datacube-search')
 
 
 def printable_values(d):
@@ -84,37 +84,33 @@ def cli(ctx, f):
 
 @cli.command()
 @ui.parsed_search_expressions
-@PASS_DRIVER_MANAGER
+@PASS_INDEX
 @click.pass_context
-def datasets(ctx, driver_manager, expressions):
+def datasets(ctx, index, expressions):
     """
     Search available Datasets
     """
-    index = driver_manager.index
     ctx.obj['write_results'](
         sorted(index.datasets.get_field_names()),
         index.datasets.search_summaries(**expressions)
     )
-    driver_manager.close()
 
 
 @cli.command('product-counts')
 @click.argument('period', nargs=1)
 @ui.parsed_search_expressions
-@PASS_DRIVER_MANAGER
-def product_counts(driver_manager, period, expressions):
+@PASS_INDEX
+def product_counts(index, period, expressions):
     """
     Count product Datasets available by period
 
     PERIOD: eg. 1 month, 6 months, 1 year
     """
-    index = driver_manager.index
     for product, series in index.datasets.count_by_product_through_time(period, **expressions):
         click.echo(product.name)
         for timerange, count in series:
             formatted_dt = _assume_utc(timerange[0]).strftime("%Y-%m-%d")
             click.echo('    {}: {}'.format(formatted_dt, count))
-    driver_manager.close()
 
 
 @singledispatch

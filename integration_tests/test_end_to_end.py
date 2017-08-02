@@ -75,7 +75,7 @@ def test_end_to_end(global_integration_cli_args, driver_manager, testdata_dir):
     The input dataset should be recorded in the index, and two sets of storage units
     should be created on disk and recorded in the index.
     """
-    index = driver_manager.index
+
     lbg_nbar = testdata_dir / 'lbg' / LBG_NBAR
     lbg_pq = testdata_dir / 'lbg' / LBG_PQ
     ls5_nbar_albers_ingest_config = testdata_dir / LS5_NBAR_ALBERS
@@ -132,7 +132,7 @@ def run_click_command(command, args):
 
 def check_open_with_api(driver_manager):
     from datacube.api import API
-    index = driver_manager.index
+
     api = API(driver_manager=driver_manager)
 
     # fields = api.list_fields()
@@ -239,9 +239,9 @@ def check_open_with_dc(driver_manager):
 
 
 def check_open_with_grid_workflow(driver_manager):
-    index = driver_manager.index
+
     type_name = 'ls5_nbar_albers'
-    dt = index.products.get_by_name(type_name)
+    dt = driver_manager.index.products.get_by_name(type_name)
 
     from datacube.api.grid_workflow import GridWorkflow
     gw = GridWorkflow(None, dt.grid_spec, driver_manager=driver_manager)

@@ -27,13 +27,12 @@ def product():
 @click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
-@ui.pass_driver_manager()
-def add_dataset_types(driver_manager, allow_exclusive_lock, files):
+@ui.pass_index()
+def add_dataset_types(index, allow_exclusive_lock, files):
     # type: (DriverManager, bool, list) -> None
     """
     Add or update products in the generic index.
     """
-    index = driver_manager.index
     for descriptor_path, parsed_doc in read_documents(*(Path(f) for f in files)):
         try:
             type_ = index.products.from_doc(parsed_doc)
@@ -43,7 +42,6 @@ def add_dataset_types(driver_manager, allow_exclusive_lock, files):
             _LOG.exception(e)
             _LOG.error('Invalid product definition: %s', descriptor_path)
             continue
-    driver_manager.close()
 
 
 @product.command('update')
@@ -58,9 +56,9 @@ def add_dataset_types(driver_manager, allow_exclusive_lock, files):
 @click.argument('files',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
-@ui.pass_driver_manager()
-def update_dataset_types(driver_manager, allow_unsafe, allow_exclusive_lock, dry_run, files):
-    # type: (DriverManager, bool, bool, bool, list) -> None
+@ui.pass_index()
+def update_dataset_types(index, allow_unsafe, allow_exclusive_lock, dry_run, files):
+    # type: (Index, bool, bool, bool, list) -> None
     """
     Update existing products.
 
@@ -69,7 +67,6 @@ def update_dataset_types(driver_manager, allow_unsafe, allow_exclusive_lock, dry
     (An unsafe change is anything that may potentially make the product
     incompatible with existing datasets of that type)
     """
-    index = driver_manager.index
     for descriptor_path, parsed_doc in read_documents(*(Path(f) for f in files)):
         try:
             type_ = index.products.from_doc(parsed_doc)
@@ -106,17 +103,14 @@ def update_dataset_types(driver_manager, allow_unsafe, allow_exclusive_lock, dry
                 echo('Cannot update "%s": %s unsafe changes, %s safe changes' % (type_.name,
                                                                                  len(unsafe_changes),
                                                                                  len(safe_changes)))
-    driver_manager.close()
 
 
 @product.command('list')
-@ui.pass_driver_manager()
-def list_products(driver_manager):
+@ui.pass_datacube()
+def list_products(dc):
     """
     List products that are defined in the generic index.
     """
-    index = driver_manager.index
-    dc = Datacube(index)
     products = dc.list_products()
 
     if products.empty:
@@ -126,17 +120,14 @@ def list_products(driver_manager):
     echo(products.to_string(columns=('name', 'description', 'product_type', 'instrument',
                                      'format', 'platform'),
                             justify='left'))
-    driver_manager.close()
 
 
 @product.command('show')
 @click.argument('product_name', nargs=1)
-@ui.pass_driver_manager()
-def show_product(driver_manager, product_name):
+@ui.pass_index()
+def show_product(index, product_name):
     """
     Show details about a product in the generic index.
     """
-    index = driver_manager.index
     product_def = index.products.get_by_name(product_name)
     click.echo_via_pager(json.dumps(product_def.definition, indent=4))
-    driver_manager.close()
