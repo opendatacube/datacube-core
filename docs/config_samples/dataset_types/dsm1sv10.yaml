@@ -22,4 +22,3 @@ measurements:
         dtype: float32
         nodata: .nan
         units: 'metre'
-

@@ -242,8 +242,6 @@ measurements:
 
 ---
 
-
-
 name: ls7_ledaps_scene
 description: Landsat 7 LEDAPS 25 metre
 metadata_type: eo
