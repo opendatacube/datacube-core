@@ -92,16 +92,6 @@ def _write_files_to_dir(directory_path, file_dict):
                     raise Exception('Unexpected file contents: %s' % type(contents))
 
 
-def write_file(name, contents):
-    # type: (str, str) -> pathlib.Path
-    """
-    Write a single file to an automatically-deleted temporary directory
-
-    """
-    d = write_files({name: contents})
-    return d.joinpath(name)
-
-
 def temp_dir():
     """
     Create and return a temporary directory that will be deleted automatically on exit.
