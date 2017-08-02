@@ -356,7 +356,12 @@ class ProductResource(object):
             # You can safely make the match rules looser but not tighter.
             # Tightening them could exclude datasets already matched to the product.
             # (which would make search results wrong)
-            ('metadata',): changes.allow_truncation
+            ('metadata',): changes.allow_truncation,
+
+            # Some old storage fields should not be in the product definition any more: allow removal.
+            ('storage', 'chunking'): changes.allow_removal,
+            ('storage', 'driver'): changes.allow_removal,
+            ('storage', 'dimension_order'): changes.allow_removal,
         }
 
         doc_changes = get_doc_changes(existing.definition, jsonify_document(product.definition))
