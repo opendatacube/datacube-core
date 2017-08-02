@@ -45,3 +45,4 @@ dependencies:
   - pytest-logging
   - pytest-faulthandler
   - SharedArray
+  - yamllint # testing
