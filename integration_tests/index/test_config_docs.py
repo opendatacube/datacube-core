@@ -308,7 +308,12 @@ def test_update_dataset_type(index, ls5_telem_type, ls5_telem_doc, ga_metadata_t
     assert updated_type.definition['metadata']['ga_label'] == 'something'
 
 
-def test_dataset_update_cli(index, global_integration_cli_args, ls5_telem_type, ls5_telem_doc, ga_metadata_type):
+def test_product_update_cli(index,
+                            global_integration_cli_args,
+                            ls5_telem_type,
+                            ls5_telem_doc,
+                            ga_metadata_type,
+                            tmpdir):
     # type: (Index, list, DatasetType, dict, MetadataType) -> None
     """
     Test updating products via cli
@@ -337,7 +342,8 @@ def test_dataset_update_cli(index, global_integration_cli_args, ls5_telem_type, 
         return index.products.get_by_name(product_doc['name']).definition
 
     # Update an unchanged file, should be unchanged.
-    file_path = write_file('product.yaml', yaml.dump(ls5_telem_doc))
+    file_path = tmpdir.join('unmodified-product.yaml')
+    file_path.write(_to_yaml(ls5_telem_doc))
     result = run_update_product(file_path)
     assert str('Updated "ls5_telem_test"') in result.output
     assert get_current(index, ls5_telem_doc) == ls5_telem_doc
@@ -346,7 +352,8 @@ def test_dataset_update_cli(index, global_integration_cli_args, ls5_telem_type, 
     # Try to add an unknown property: this should be forbidden by validation of dataset-type-schema.yaml
     modified_doc = copy.deepcopy(ls5_telem_doc)
     modified_doc['extra'] = {}
-    file_path = write_file('product.yaml', yaml.dump(modified_doc))
+    file_path = tmpdir.join('invalid-product.yaml')
+    file_path.write(_to_yaml(modified_doc))
     result = run_update_product(file_path)
     assert str('Additional properties are not allowed') in result.output
     # Return error code for failure!
@@ -358,7 +365,8 @@ def test_dataset_update_cli(index, global_integration_cli_args, ls5_telem_type, 
     # numbers as keys in yaml)
     modified_doc = copy.deepcopy(ls5_telem_doc)
     modified_doc['metadata'][42] = 'hello'
-    file_path = write_file('product.yaml', yaml.dump(modified_doc))
+    file_path = tmpdir.join('unsafe-change-to-product.yaml')
+    file_path.write(_to_yaml(modified_doc))
     result = run_update_product(file_path)
     assert "Unsafe change in metadata.42 from missing to 'hello'" in result.output
     # Return error code for failure!
@@ -374,6 +382,11 @@ def test_dataset_update_cli(index, global_integration_cli_args, ls5_telem_type, 
     modified_doc = copy.deepcopy(ls5_telem_doc)
     modified_doc['metadata']['42'] = 'hello'
     assert get_current(index, ls5_telem_doc) == modified_doc
+
+
+def _to_yaml(ls5_telem_doc):
+    # Need to explicitly allow unicode in Py2
+    return yaml.safe_dump(ls5_telem_doc, allow_unicode=True)
 
 
 def test_update_metadata_type(index, default_metadata_type_docs, default_metadata_type):
