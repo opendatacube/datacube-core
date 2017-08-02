@@ -4,6 +4,12 @@
 
 What's New
 ==========
+(02 Aug 2017)utils/lsusgsprepare.py
+-------------------------------------
+-New file added under utils for USGS prepare script for Collection 1 data.
+-Dataset path is given as a folder in directory after downloading data.
+
+
 
 v1.5.1 Purpler Unicorn (13 July 2017)
 -------------------------------------

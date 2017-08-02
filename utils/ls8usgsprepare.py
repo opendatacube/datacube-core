@@ -1,4 +1,3 @@
-
 """
 Ingest data from the command-line.
 """
@@ -19,7 +18,6 @@ except ImportError:
     from urlparse import urlparse, urljoin
     from urllib2 import urlopen
 
-
 MTL_PAIRS_RE = re.compile(r'(\w+)\s=\s(.*)')
 
 
@@ -38,15 +36,15 @@ def _parse_group(lines):
 
     for line in lines:
 
-            match = MTL_PAIRS_RE.findall(line.decode('utf-8'))
-            if match:
-                key, value = match[0]
-                if key == 'GROUP':
-                    tree[value] = _parse_group(lines)
-                elif key == 'END_GROUP':
-                    break
-                else:
-                    tree[key] = _parse_value(value)
+        match = MTL_PAIRS_RE.findall(line.decode('utf-8'))
+        if match:
+            key, value = match[0]
+            if key == 'GROUP':
+                tree[value] = _parse_group(lines)
+            elif key == 'END_GROUP':
+                break
+            else:
+                tree[key] = _parse_value(value)
     return tree
 
 
@@ -65,6 +63,7 @@ def get_coords(geo_ref_points, spatial_ref):
     def transform(p):
         lon, lat, z = t.TransformPoint(p['x'], p['y'])
         return {'lon': lon, 'lat': lat}
+
     return {key: transform(p) for key, p in geo_ref_points.items()}
 
 
@@ -73,11 +72,14 @@ def get_mtl(path):
     Path is pointing to the folder , where the USGS Landsat scene list in MTL format is downloaded
     from Earth Explorer or GloVis
     """
+    newfile = "Empty File"
     for file in os.listdir(path):
         if file.endswith("MTL.txt"):
             metafile = file
-    f=open(os.path.join(path,metafile),'rb')
-    return _parse_group(f)['L1_METADATA_FILE']
+            newfile = open(os.path.join(path, metafile), 'rb')
+    return _parse_group(newfile)['L1_METADATA_FILE']
+
+
 #    return _parse_group(path)['L1_METADATA_FILE'])
 
 def prepare_dataset(path):
@@ -154,8 +156,8 @@ def absolutify_paths(doc, path):
 @click.command(help="Prepare USGS Landsat Collection 1 data for ingestion into the Data Cube."
                     "To Set the Path for referring the datasets -Download the  Landsat scene data "
                     " from Earth Explorer or GloVis into some_space_available_folder and unpack the file. "
-                    " For example: yourscript.py --output [Yaml- which writes datasets into this file for indexing] [Path for dataset as : /home/some_space_available_folder/]")
-
+                    " For example: yourscript.py --output [Yaml- which writes datasets into this file for indexing] "
+                    "[Path for dataset as : /home/some_space_available_folder/]")
 @click.option('--output', help="Write datasets into this file",
               type=click.Path(exists=False, writable=True, dir_okay=False))
 @click.argument('datasets',
@@ -173,9 +175,3 @@ def main(output, datasets):
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
