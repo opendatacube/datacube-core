@@ -129,31 +129,9 @@ def make_output_type(index, config):
     output_type = morph_dataset_type(source_type, config, index)
     _LOG.info('Created DatasetType %s', output_type.name)
 
-    # Some storage fields should not be in the product definition, and should be removed.
-    # To handle backwards compatibility for now, ignore them with custom rules,
-    # rather than using the default checks done by index.products.add
     existing = index.products.get_by_name(output_type.name)
-    backwards_compatible_fields = True
-    if existing and backwards_compatible_fields:
-        updates_allowed = {
-            ('description',): changes.allow_any,
-            ('storage', 'chunking'): changes.allow_any,
-            ('storage', 'driver'): changes.allow_any,
-            ('storage', 'dimension_order'): changes.allow_any,
-            ('metadata',): changes.allow_truncation
-        }
-
-        doc_changes = changes.get_doc_changes(output_type.definition,
-                                              datacube.utils.jsonify_document(existing.definition))
-        good_changes, bad_changes = changes.classify_changes(doc_changes, updates_allowed)
-        if bad_changes:
-            raise ValueError(
-                '{} differs from stored ({})'.format(
-                    output_type.name,
-                    ', '.join(['{}: {!r}!={!r}'.format('.'.join(offset), v1, v2) for offset, v1, v2 in bad_changes])
-                )
-            )
-        output_type = index.products.update(output_type, allow_unsafe_updates=True)
+    if existing:
+        output_type = index.products.update(output_type)
     else:
         output_type = index.products.add(output_type)
 
