@@ -204,6 +204,8 @@ class DriverManager(object):
     @property
     def index(self):
         """Generic index.
+
+        :rtype: Index
         """
         return self.__index
 
