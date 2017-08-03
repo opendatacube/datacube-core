@@ -4,7 +4,7 @@
 
 What's New
 ==========
-(03 Aug 2017)utils/lsusgsprepare.py
+(03 Aug 2017)utils/ls_usgs_prepare.py
 -------------------------------------
 -New file added under utils for USGS prepare script for Collection 1 data.
 -Dataset path is given as a folder in directory after downloading data.
