@@ -172,11 +172,13 @@ def absolutify_paths(doc, path):
     return doc
 
 
-@click.command(help="Prepare USGS Landsat Collection 1 data for ingestion into the Data Cube."
-                    "To Set the Path for referring the datasets -Download the  Landsat scene data "
-                    " from Earth Explorer or GloVis into some_space_available_folder and unpack the file. "
-                    " For example: yourscript.py --output [Yaml- which writes datasets into this file for indexing] "
-                    "[Path for dataset as : /home/some_space_available_folder/]")
+@click.command(help="""\b
+                    Prepare USGS Landsat Collection 1 data for ingestion into the Data Cube.
+                    To Set the Path for referring the datasets -
+                    Download the  Landsat scene data from Earth Explorer or GloVis into some_space_available_folder 
+                     and unpack the file.
+                    For example: yourscript.py --output [Yaml- which writes datasets into this file for indexing]
+                    [Path for dataset as : /home/some_space_available_folder/]""")
 @click.option('--output', required=False, help="Write datasets into this file",
               type=click.Path(exists=False, writable=True, dir_okay=False))
 @click.argument('datasets',
