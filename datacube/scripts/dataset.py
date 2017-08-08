@@ -237,12 +237,6 @@ def update_dry_run(index, updates, dataset):
         echo('Cannot update %s: %s' % (dataset.id, e))
         return False
 
-    for offset, old_val, new_val in safe_changes:
-        echo('Safe change in %s:%s from %r to %r' % (dataset.id, '.'.join(offset), old_val, new_val))
-
-    for offset, old_val, new_val in unsafe_changes:
-        echo('Unsafe change in %s:%s from %r to %r' % (dataset.id, '.'.join(offset), old_val, new_val))
-
     if can_update:
         echo('Can update %s: %s unsafe changes, %s safe changes' % (dataset.id,
                                                                     len(unsafe_changes),
