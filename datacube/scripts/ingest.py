@@ -120,7 +120,14 @@ def get_namemap(config):
     return {spec['src_varname']: spec['name'] for spec in config['measurements']}
 
 
-def make_output_type(index, config):
+def ensure_output_type(index, config, allow_product_changes=False):
+    # type: (Index, dict, bool) -> (DatasetType, DatasetType)
+    """
+    Create the output product for the given ingest config if it doesn't already exist.
+
+    It will throw a ValueError if the config already exists but differs from the existing.
+    Set allow_product_changes=True to allow changes.
+    """
     source_type = index.products.get_by_name(config['source_type'])
     if not source_type:
         click.echo("Source DatasetType %s does not exist" % config['source_type'])
@@ -131,7 +138,12 @@ def make_output_type(index, config):
 
     existing = index.products.get_by_name(output_type.name)
     if existing:
-        output_type = index.products.update(output_type)
+        can_update, safe_changes, unsafe_changes = index.products.can_update(output_type)
+        if safe_changes or unsafe_changes:
+            if not allow_product_changes:
+                raise ValueError("Ingest config differs from the existing output product, "
+                                 "but allow_product_changes=False")
+            output_type = index.products.update(output_type)
     else:
         output_type = index.products.add(output_type)
 
@@ -296,17 +308,27 @@ def _validate_year(ctx, param, value):
 @click.option('--load-tasks', help='Load tasks from the specified file',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
 @click.option('--dry-run', '-d', is_flag=True, default=False, help='Check if everything is ok')
+@click.option('--allow-product-changes', is_flag=True, default=False,
+              help='Allow the output product definition to be updated if it differs.')
 @ui.executor_cli_options
 @ui.pass_index(app_name='agdc-ingest')
-def ingest_cmd(index, config_file, year, queue_size, save_tasks, load_tasks, dry_run, executor):
+def ingest_cmd(index,
+               config_file,
+               year,
+               queue_size,
+               save_tasks,
+               load_tasks,
+               dry_run,
+               executor,
+               allow_product_changes):
     if config_file:
         config = load_config_from_file(index, config_file)
-        source_type, output_type = make_output_type(index, config)
+        source_type, output_type = ensure_output_type(index, config, allow_product_changes=allow_product_changes)
 
         tasks = create_task_list(index, output_type, year, source_type, config)
     elif load_tasks:
         config, tasks = load_tasks_(load_tasks)
-        source_type, output_type = make_output_type(index, config)
+        source_type, output_type = ensure_output_type(index, config, allow_product_changes=allow_product_changes)
     else:
         click.echo('Must specify exactly one of --config-file, --load-tasks')
         return 1
