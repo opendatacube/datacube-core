@@ -153,8 +153,14 @@ def get_namemap(config):
     return {spec['src_varname']: spec['name'] for spec in config['measurements']}
 
 
-def make_output_type(driver_manager, config):
-    # type: (DriverManager, dict) -> (DatasetType, DatasetType)
+def ensure_output_type(driver_manager, config, allow_product_changes=False):
+    # type: (DriverManager, dict, bool) -> (DatasetType, DatasetType)
+    """
+    Create the output product for the given ingest config if it doesn't already exist.
+
+    It will throw a ValueError if the config already exists but differs from the existing.
+    Set allow_product_changes=True to allow changes.
+    """
 
     index = driver_manager.index
     source_type = index.products.get_by_name(config['source_type'])
@@ -167,7 +173,12 @@ def make_output_type(driver_manager, config):
 
     existing = index.products.get_by_name(output_type.name)
     if existing:
-        output_type = index.products.update(output_type)
+        can_update, safe_changes, unsafe_changes = index.products.can_update(output_type)
+        if safe_changes or unsafe_changes:
+            if not allow_product_changes:
+                raise ValueError("Ingest config differs from the existing output product, "
+                                 "but allow_product_changes=False")
+            output_type = index.products.update(output_type)
     else:
         output_type = index.products.add(output_type)
 
@@ -279,7 +290,6 @@ def _index_datasets(driver_manager, results):
 
 
 def process_tasks(driver_manager, config, source_type, output_type, tasks, queue_size, executor):
-
     def submit_task(task):
         _LOG.info('Submitting task: %s', task['tile_index'])
         return executor.submit(ingest_work,
@@ -348,19 +358,30 @@ def _validate_year(ctx, param, value):
 @click.option('--load-tasks', help='Load tasks from the specified file',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
 @click.option('--dry-run', '-d', is_flag=True, default=False, help='Check if everything is ok')
+@click.option('--allow-product-changes', is_flag=True, default=False,
+              help='Allow the output product definition to be updated if it differs.')
 @ui.executor_cli_options
 @ui.pass_driver_manager(app_name='agdc-ingest')
-def ingest_cmd(driver_manager, config_file, year, queue_size, save_tasks, load_tasks, dry_run, executor):
+def ingest_cmd(driver_manager,
+               config_file,
+               year,
+               queue_size,
+               save_tasks,
+               load_tasks,
+               dry_run,
+               executor,
+               allow_product_changes):
     index = driver_manager.index
     if config_file:
         config = load_config_from_file(index, config_file)
-        variable_params = get_variable_params(config)
-        source_type, output_type = make_output_type(driver_manager, config)
+        source_type, output_type = ensure_output_type(driver_manager, config,
+                                                      allow_product_changes=allow_product_changes)
 
         tasks = create_task_list(driver_manager, output_type, year, source_type, config)
     elif load_tasks:
         config, tasks = load_tasks_(load_tasks)
-        source_type, output_type = make_output_type(driver_manager, config)
+        source_type, output_type = ensure_output_type(driver_manager, config,
+                                                      allow_product_changes=allow_product_changes)
     else:
         click.echo('Must specify exactly one of --config-file, --load-tasks')
         return 1
