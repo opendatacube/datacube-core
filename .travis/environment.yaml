@@ -16,7 +16,6 @@ dependencies:
 - singledispatch
 - netcdf4
 - psycopg2
-- gdal
 - dask
 - xarray
 - redis-py # redis client lib, used by celery

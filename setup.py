@@ -68,7 +68,6 @@ setup(
         'cachetools',
         'click>=5.0',
         'dask[array]',
-        'gdal>=1.9',
         'jsonschema',
         'netcdf4',
         'numpy',
