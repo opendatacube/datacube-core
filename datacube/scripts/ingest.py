@@ -41,8 +41,12 @@ def find_diff(input_type, output_type, index, **query):
     return tasks
 
 
-def morph_dataset_type(source_type, config):
-    output_type = DatasetType(source_type.metadata_type, deepcopy(source_type.definition))
+def morph_dataset_type(source_type, config, index):
+    output_metadata_type = source_type.metadata_type
+    if 'metadata_type' in config:
+        output_metadata_type = index.metadata_types.get_by_name(config['metadata_type'])
+
+    output_type = DatasetType(output_metadata_type, deepcopy(source_type.definition))
     output_type.definition['name'] = config['output_type']
     output_type.definition['managed'] = True
     output_type.definition['description'] = config['description']
@@ -122,7 +126,7 @@ def make_output_type(index, config):
         click.echo("Source DatasetType %s does not exist" % config['source_type'])
         click.get_current_context().exit(1)
 
-    output_type = morph_dataset_type(source_type, config)
+    output_type = morph_dataset_type(source_type, config, index)
     _LOG.info('Created DatasetType %s', output_type.name)
 
     # Some storage fields should not be in the product definition, and should be removed.
