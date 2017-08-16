@@ -10,6 +10,7 @@ import re
 import click
 from osgeo import osr
 import os
+from pathlib import Path
 
 images1 = [('1', 'coastal_aerosol'),
            ('2', 'blue'),
@@ -88,14 +89,19 @@ def get_coords(geo_ref_points, spatial_ref):
     return {key: transform(p) for key, p in geo_ref_points.items()}
 
 
-def satellite_ref(sat):
+def satellite_ref(sat, file_name):
     """
     To load the band_names for referencing either LANDSAT8 or LANDSAT7 or LANDSAT5 bands
+    Landsat7 and Landsat5 have same band names
     """
+    name = (Path(file_name)).stem
+    name_len = name.split('_')
     if sat == 'LANDSAT_8':
         sat_img = images1
-    else:
+    elif len(name_len) > 7:
         sat_img = images2
+    else:
+        sat_img = images2[:6]
     return sat_img
 
 
@@ -105,37 +111,39 @@ def get_mtl(path):
     from Earth Explorer or GloVis
     """
     newfile = "Empty File"
+    metafile = "Name_of_File"
     for file in os.listdir(path):
         if file.endswith("MTL.txt"):
             metafile = file
             newfile = open(os.path.join(path, metafile), 'rb')
-    return _parse_group(newfile)['L1_METADATA_FILE']
+    return _parse_group(newfile)['L1_METADATA_FILE'], metafile
 
 
 def prepare_dataset(path):
-    info = get_mtl(path)
+    info, fileinfo = get_mtl(path)
+    # Copying [PRODUCT_METADATA] group into 'info_pm'
+    info_pm = info['PRODUCT_METADATA']
+    level = info_pm['DATA_TYPE']
+    product_type = info_pm['DATA_TYPE']
 
-    level = info['PRODUCT_METADATA']['DATA_TYPE']
-    product_type = info['PRODUCT_METADATA']['DATA_TYPE']
-
-    sensing_time = info['PRODUCT_METADATA']['DATE_ACQUIRED'] + ' ' + info['PRODUCT_METADATA']['SCENE_CENTER_TIME']
+    sensing_time = info_pm['DATE_ACQUIRED'] + ' ' + info_pm['SCENE_CENTER_TIME']
 
     cs_code = 32600 + info['PROJECTION_PARAMETERS']['UTM_ZONE']
     spatial_ref = osr.SpatialReference()
     spatial_ref.ImportFromEPSG(cs_code)
 
-    geo_ref_points = get_geo_ref_points(info['PRODUCT_METADATA'])
-    satellite = info['PRODUCT_METADATA']['SPACECRAFT_ID']
+    geo_ref_points = get_geo_ref_points(info_pm)
+    satellite = info_pm['SPACECRAFT_ID']
 
-    images = satellite_ref(satellite)
+    images = satellite_ref(satellite, fileinfo)
     return {
         'id': str(uuid.uuid5(uuid.NAMESPACE_URL, path)),
         'processing_level': level,
         'product_type': product_type,
         # 'creation_dt': ct_time,
         'label': info['METADATA_FILE_INFO']['LANDSAT_SCENE_ID'],
-        'platform': {'code': info['PRODUCT_METADATA']['SPACECRAFT_ID']},
-        'instrument': {'name': info['PRODUCT_METADATA']['SENSOR_ID']},
+        'platform': {'code': satellite},
+        'instrument': {'name': info_pm['SENSOR_ID']},
         # 'acquisition': {'groundstation': {'code': station}},
         'extent': {
             'from_dt': sensing_time,
@@ -143,7 +151,7 @@ def prepare_dataset(path):
             'center_dt': sensing_time,
             'coord': get_coords(geo_ref_points, spatial_ref),
         },
-        'format': {'name': info['PRODUCT_METADATA']['OUTPUT_FORMAT']},
+        'format': {'name': info_pm['OUTPUT_FORMAT']},
         'grid_spatial': {
             'projection': {
                 'geo_ref_points': geo_ref_points,
@@ -156,7 +164,7 @@ def prepare_dataset(path):
         'image': {
             'bands': {
                 image[1]: {
-                    'path': info['PRODUCT_METADATA']['FILE_NAME_BAND_' + image[0]],
+                    'path': info_pm['FILE_NAME_BAND_' + image[0]],
                     'layer': 1,
                 } for image in images
             }
@@ -174,9 +182,10 @@ def absolutify_paths(doc, path):
 
 @click.command(help="""\b
                     Prepare USGS Landsat Collection 1 data for ingestion into the Data Cube.
+                    This prepare script supports only for MTL.txt metadata file
                     To Set the Path for referring the datasets -
-                    Download the  Landsat scene data from Earth Explorer or GloVis into some_space_available_folder 
-                     and unpack the file.
+                    Download the  Landsat scene data from Earth Explorer or GloVis into 
+                    'some_space_available_folder' and unpack the file.
                     For example: yourscript.py --output [Yaml- which writes datasets into this file for indexing]
                     [Path for dataset as : /home/some_space_available_folder/]""")
 @click.option('--output', required=False, help="Write datasets into this file",
