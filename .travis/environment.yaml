@@ -15,7 +15,7 @@ dependencies:
 - rasterio
 - singledispatch
 - netcdf4
-- gdal = 2.1.4
+- gdal
 - psycopg2
 - dask
 - xarray
