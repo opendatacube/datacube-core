@@ -14,7 +14,7 @@ dependencies:
 - numexpr # For AE/EE
 - rasterio
 - singledispatch
-- netcdf4 = 1.2.7 # Travis fails with 1.2.8
+- netcdf4
 - psycopg2
 - gdal
 - dask
