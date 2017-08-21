@@ -1,6 +1,9 @@
 
 from __future__ import absolute_import
 
+import osgeo
+import pytest
+
 try:
     import cPickle as pickle
 except ImportError:
@@ -203,6 +206,8 @@ def test_geobox():
         assert abs(resolution[1]) > abs(geobox.extent.boundingbox.bottom - polygon.boundingbox.bottom)
 
 
+@pytest.mark.xfail(tuple(int(i) for i in osgeo.__version__.split('.')) < (2, 2),
+                   reason='Fails under GDAL 2.1')
 def test_wrap_dateline():
     sinus_crs = geometry.CRS("""PROJCS["unnamed",
 GEOGCS["Unknown datum based upon the custom spheroid",
