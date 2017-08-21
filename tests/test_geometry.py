@@ -207,7 +207,7 @@ def test_geobox():
 
 
 @pytest.mark.skipif(tuple(int(i) for i in osgeo.__version__.split('.')) < (2, 2),
-                    reason='Fails under GDAL 2.1') 
+                    reason='Fails under GDAL 2.1')
 def test_wrap_dateline():
     sinus_crs = geometry.CRS("""PROJCS["unnamed",
 GEOGCS["Unknown datum based upon the custom spheroid",
