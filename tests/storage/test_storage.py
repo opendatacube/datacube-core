@@ -419,6 +419,109 @@ def test_read_from_source():
     # TODO: crs change
 
 
+def test_failed_data_read(make_sample_geotiff):
+    # rds = RasterDatasetSource(example_netcdf_path, 'B1')
+    sample_geotiff_path, rio_args, written_data = make_sample_geotiff
+
+    src_transform = Affine(25.0, 0.0, 1200000.0,
+                           0.0, -25.0, -4200000.0)
+    source = RasterFileDataSource(str(sample_geotiff_path), 1, transform=src_transform)
+
+    dest = np.zeros_like(written_data)
+    dst_transform = rio_args['transform']
+    dst_nodata = -999
+    dst_projection = geometry.CRS('EPSG:3577')
+    dst_resampling = Resampling.nearest
+
+    # Read exactly the hunk of data that we wrote
+    dst_transform = Affine(25.0, 0.0, 1273275.0,
+                           0.0, -25.0, -4172325.0)
+    read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, dst_resampling)
+
+    assert np.all(written_data == dest)
+
+
+def test_read_data_with_rasterdatasetsource(make_sample_geotiff):
+    # rds = RasterDatasetSource(example_netcdf_path, 'B1')
+    sample_geotiff_path, rio_args, written_data = make_sample_geotiff
+
+    source = RasterFileDataSource(str(sample_geotiff_path), 1)
+
+    dest = np.zeros_like(written_data)
+    dst_transform = rio_args['transform']
+    dst_nodata = -999
+    dst_projection = geometry.CRS('EPSG:3577')
+    dst_resampling = Resampling.nearest
+
+    # Read exactly the hunk of data that we wrote
+    read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, dst_resampling)
+
+    assert np.all(written_data == dest)
+
+    # Try reading from partially outside of our area
+    xoff = 50
+    offset_transform = dst_transform * Affine.translation(xoff, 0)
+    dest = np.zeros_like(written_data)
+
+    read_from_source(source, dest, offset_transform, dst_nodata, dst_projection, dst_resampling)
+    assert np.all(written_data[:, xoff:] == dest[:, :xoff])
+
+    # Try reading from partially outside of our area
+    xoff = -50
+    offset_transform = dst_transform * Affine.translation(xoff, 0)
+    dest = np.zeros_like(written_data)
+
+    read_from_source(source, dest, offset_transform, dst_nodata, dst_projection, dst_resampling)
+    assert np.all(written_data[:, xoff:] == dest[:, :xoff])
+
+    # Try reading from partially outside of our area
+    xoff = 50
+    offset_transform = dst_transform * Affine.translation(xoff, 0) * Affine.scale(2)
+    dest = np.zeros_like(written_data)
+
+    read_from_source(source, dest, offset_transform, dst_nodata, dst_projection, dst_resampling)
+    assert np.all(written_data[:, xoff:] == dest[:, :xoff])
+
+    # Try reading from partially outside of our area
+    xoff = 50
+    offset_transform = dst_transform * Affine.translation(xoff, 0) * Affine.scale(10)
+    dest = np.zeros_like(written_data)
+
+    read_from_source(source, dest, offset_transform, dst_nodata, dst_projection, dst_resampling)
+    assert np.all(written_data[:, xoff:] == dest[:, :xoff])
+
+    # Try reading from complete outside of our area, should return nodata
+    xoff = 300
+    offset_transform = dst_transform * Affine.translation(xoff, 0)
+    dest = np.zeros_like(written_data)
+
+    read_from_source(source, dest, offset_transform, dst_nodata, dst_projection, dst_resampling)
+    assert np.all(rio_args['nodata'] == dest)
+
+
+
+@pytest.fixture
+def make_sample_geotiff(tmpdir):
+    """ Make a sample geotiff, filled with random data, and twice as tall as it is wide. """
+    sample_geotiff = tmpdir.mkdir('tiffs').join('sample.tif')
+    transform = Affine(25.0, 0.0, 0,
+                       0.0, -25.0, 0)
+    sample_data = np.random.randint(10000, size=(200, 100), dtype=np.int16)
+    rio_args = {
+        'height': sample_data.shape[0],
+        'width': sample_data.shape[1],
+        'count': 1,
+        'dtype': sample_data.dtype,
+        'crs': 'EPSG:3577',
+        'transform': transform,
+        'nodata': -999
+    }
+    with rasterio.open(str(sample_geotiff), 'w', driver='GTiff', **rio_args) as dst:
+        dst.write(sample_data, 1)
+
+    return str(sample_geotiff), rio_args, sample_data
+
+
 def test_read_raster_with_custom_crs_and_transform(example_gdal_path):
     with rasterio.open(example_gdal_path) as src:
         band = rasterio.band(src, 1)
@@ -526,3 +629,4 @@ def test_multiband_support_in_datasetsource():
     ds = DatasetSource(d, measurement_id='green')
 
     assert ds.get_bandnumber(None) == band_num
+
