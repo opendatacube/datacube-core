@@ -16,6 +16,9 @@ from datacube.storage.storage import OverrideBandDataSource, RasterFileDataSourc
 from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse, read_from_source, Resampling, \
     DatasetSource
 from datacube.utils import geometry
+from model import Variable
+from storage.storage import create_netcdf_storage_unit
+from utils.geometry import GeoBox, CRS
 
 GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
            'AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],' \
@@ -425,17 +428,18 @@ def test_failed_data_read(make_sample_geotiff):
 
     src_transform = Affine(25.0, 0.0, 1200000.0,
                            0.0, -25.0, -4200000.0)
-    source = RasterFileDataSource(str(sample_geotiff_path), 1, transform=src_transform)
+    source = RasterFileDataSource(sample_geotiff_path, 1, transform=src_transform)
 
     dest = np.zeros_like(written_data)
+    dest = np.zeros((20, 100))
     dst_transform = rio_args['transform']
     dst_nodata = -999
     dst_projection = geometry.CRS('EPSG:3577')
     dst_resampling = Resampling.nearest
 
     # Read exactly the hunk of data that we wrote
-    dst_transform = Affine(25.0, 0.0, 1273275.0,
-                           0.0, -25.0, -4172325.0)
+    dst_transform = Affine(25.0, 0.0, 127327.0,
+                           0.0, -25.0, -417232.0)
     read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, dst_resampling)
 
     assert np.all(written_data == dest)
@@ -499,11 +503,10 @@ def test_read_data_with_rasterdatasetsource(make_sample_geotiff):
     assert np.all(rio_args['nodata'] == dest)
 
 
-
 @pytest.fixture
 def make_sample_geotiff(tmpdir):
     """ Make a sample geotiff, filled with random data, and twice as tall as it is wide. """
-    sample_geotiff = tmpdir.mkdir('tiffs').join('sample.tif')
+    sample_geotiff = str(tmpdir.mkdir('tiffs').join('sample.tif'))
     transform = Affine(25.0, 0.0, 0,
                        0.0, -25.0, 0)
     sample_data = np.random.randint(10000, size=(200, 100), dtype=np.int16)
@@ -516,10 +519,48 @@ def make_sample_geotiff(tmpdir):
         'transform': transform,
         'nodata': -999
     }
-    with rasterio.open(str(sample_geotiff), 'w', driver='GTiff', **rio_args) as dst:
+    with rasterio.open(sample_geotiff, 'w', driver='GTiff', **rio_args) as dst:
         dst.write(sample_data, 1)
 
-    return str(sample_geotiff), rio_args, sample_data
+    return sample_geotiff, rio_args, sample_data
+
+
+@pytest.mark.parametrize("dst_transform", [
+    Affine(25.0, 0.0, 1273275.0, 0.0, -25.0, -4172325.0),
+    Affine(25.0, 0.0, 127327.0, 0.0, -25.0, -417232.0)
+])
+@pytest.mark.xfail
+def test_read_data_from_netcdf(make_sample_netcdf, dst_transform):
+    sample_nc, geobox, written_data = make_sample_netcdf
+
+    source = RasterFileDataSource('NETCDF:%s:sample' % sample_nc, 1)
+
+    dest = np.zeros((200, 1000))
+    dst_nodata = -999
+    dst_projection = geometry.CRS('EPSG:3577')
+    dst_resampling = Resampling.nearest
+
+    # Read exactly the hunk of data that we wrote
+    read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, dst_resampling)
+
+    assert np.all(written_data == dest)
+
+
+@pytest.fixture
+def make_sample_netcdf(tmpdir):
+    sample_nc = str(tmpdir.mkdir('netcdfs').join('sample.nc'))
+    geobox = GeoBox(4000, 4000, affine=Affine(25.0, 0.0, 1200000, 0.0, -25.0, -4200000), crs=CRS('EPSG:3577'))
+
+    sample_data = np.random.randint(10000, size=(4000, 4000), dtype=np.int16)
+
+    variables = {'sample': Variable(sample_data.dtype, nodata=-999, dims=geobox.dimensions, units=1)}
+    nco = create_netcdf_storage_unit(sample_nc, geobox.crs, geobox.coordinates, variables=variables, variable_params={})
+
+    nco['sample'][:] = sample_data
+
+    nco.close()
+
+    return sample_nc, geobox, sample_data
 
 
 def test_read_raster_with_custom_crs_and_transform(example_gdal_path):
@@ -629,4 +670,3 @@ def test_multiband_support_in_datasetsource():
     ds = DatasetSource(d, measurement_id='green')
 
     assert ds.get_bandnumber(None) == band_num
-
