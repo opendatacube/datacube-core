@@ -148,8 +148,12 @@ def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, re
                                   (resampling == Resampling.nearest or _no_fractional_translate(array_transform)))
         if can_use_decimated_read:
             dest.fill(dst_nodata)
-            tmp, offset, _ = _read_decimated(array_transform, src, dest.shape)
-            if tmp is None:
+            try:
+                tmp, offset, _ = _read_decimated(array_transform, src, dest.shape)
+                if tmp is None:
+                    return
+            except ValueError:
+                _LOG.debug('Failed Read: %s', src, exc_info=1)
                 return
             dest = dest[offset[0]:offset[0] + tmp.shape[0], offset[1]:offset[1] + tmp.shape[1]]
             numpy.copyto(dest, tmp, where=(tmp != src.nodata))

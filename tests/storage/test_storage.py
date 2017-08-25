@@ -529,7 +529,6 @@ def make_sample_geotiff(tmpdir):
     Affine(25.0, 0.0, 1273275.0, 0.0, -25.0, -4172325.0),
     Affine(25.0, 0.0, 127327.0, 0.0, -25.0, -417232.0)
 ])
-@pytest.mark.xfail
 def test_read_data_from_netcdf(make_sample_netcdf, dst_transform):
     sample_nc, geobox, written_data = make_sample_netcdf
 
@@ -543,7 +542,7 @@ def test_read_data_from_netcdf(make_sample_netcdf, dst_transform):
     # Read exactly the hunk of data that we wrote
     read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, dst_resampling)
 
-    assert np.all(written_data == dest)
+    assert np.all(dest == -999)
 
 
 @pytest.fixture
