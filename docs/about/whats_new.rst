@@ -5,6 +5,12 @@
 What's New
 ==========
 
+v1.6.0 ??????? (?? ??????? 2017)
+--------------------------------
+
+ - Make :class:`CRS` equality comparisons a little bit looser. Trust either a _Proj.4_ based comparison
+   or a _GDAL_ based comparison. (Closed #243)
+
 v1.5.1 Purpler Unicorn (13 July 2017)
 -------------------------------------
 
