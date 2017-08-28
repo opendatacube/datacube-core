@@ -376,11 +376,13 @@ def test_product_update_cli(index,
 
     # Try to add an unknown property: this should be forbidden by validation of dataset-type-schema.yaml
     modified_doc = copy.deepcopy(ls5_telem_doc)
-    modified_doc['extra'] = {}
+    modified_doc['newly_added_property'] = {}
     file_path = tmpdir.join('invalid-product.yaml')
     file_path.write(_to_yaml(modified_doc))
     result = run_update_product(file_path)
-    assert str('Additional properties are not allowed') in result.output
+
+    # The error message differs between jsonschema versions, but should always mention the invalid property name.
+    assert "newly_added_property" in result.output
     # Return error code for failure!
     assert result.exit_code == 1
     assert get_current(index, ls5_telem_doc) == ls5_telem_doc
