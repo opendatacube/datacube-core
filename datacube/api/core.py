@@ -535,7 +535,7 @@ class Datacube(object):
 def fuse_lazy(datasets, geobox, measurement, fuse_func=None, prepend_dims=0):
     prepend_shape = (1,) * prepend_dims
     data = numpy.full(geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
-    _fuse_measurement(data, datasets, geobox, measurement, fuse_func)
+    _fuse_measurement(data, datasets, geobox, measurement, fuse_func=fuse_func)
     return data.reshape(prepend_shape + geobox.shape)
 
 
