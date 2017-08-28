@@ -16,7 +16,7 @@ from datacube.storage.storage import OverrideBandDataSource, RasterFileDataSourc
 from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse, read_from_source, Resampling, \
     DatasetSource
 from datacube.utils import geometry
-from model import Variable
+from datacube.model import Variable
 from storage.storage import create_netcdf_storage_unit
 from utils.geometry import GeoBox, CRS
 
