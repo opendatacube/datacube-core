@@ -624,6 +624,7 @@ def _calculate_chunk_sizes(sources, geobox, dask_chunks):
 
 
 def _make_dask_array(sources, geobox, measurement, skip_broken_datasets=False, fuse_func=None, dask_chunks=None):
+    #: pylint: disable=too-many-locals
     dsk_name = 'datacube_' + measurement['name']
 
     irr_chunks, grid_chunks = _calculate_chunk_sizes(sources, geobox, dask_chunks)
