@@ -5,6 +5,16 @@
 What's New
 ==========
 
+v1.5.2 Purpler Unicorn with Stars (28 August 2017)
+--------------------------------------------------
+
+ - Fix bug when reading data in native projection, but outside `source` area. Often hit when running `datacube-stats`
+
+ - Fix error loading and fusing data using `dask`. (Fixes #276)
+
+ - When reading data, implement `skip_broken_datasets` for the `dask` case too
+
+
 v1.5.1 Purpler Unicorn (13 July 2017)
 -------------------------------------
 
