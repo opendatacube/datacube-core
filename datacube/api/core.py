@@ -15,7 +15,7 @@ from dask import array as da
 from ..config import LocalConfig
 from ..compat import string_types
 from ..index import index_connect
-from ..storage.storage import DatasetSource, reproject_and_fuse
+from ..storage.storage import RasterDatasetSource, reproject_and_fuse
 from ..utils import geometry, intersects, data_resolution_and_offset
 from .query import Query, query_group_by, query_geopolygon
 
@@ -540,7 +540,7 @@ def fuse_lazy(datasets, geobox, measurement, fuse_func=None, prepend_dims=0):
 
 
 def _fuse_measurement(dest, datasets, geobox, measurement, skip_broken_datasets=False, fuse_func=None):
-    reproject_and_fuse([DatasetSource(dataset, measurement['name']) for dataset in datasets],
+    reproject_and_fuse([RasterDatasetSource(dataset, measurement['name']) for dataset in datasets],
                        dest,
                        geobox.affine,
                        geobox.crs,
