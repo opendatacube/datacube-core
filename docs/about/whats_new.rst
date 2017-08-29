@@ -5,6 +5,11 @@
 What's New
 ==========
 
+v1.6.0 ??????? (?? ??????? 2017)
+--------------------------------
+
+ - Make :class:`CRS` equality comparisons a little bit looser. Trust either a _Proj.4_ based comparison
+   or a _GDAL_ based comparison. (Closed #243)
 
  - Allow creation of :class:`Geometry` objects from 3d representations. The Z axis is simply thrown away.
 

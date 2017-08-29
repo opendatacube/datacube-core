@@ -219,8 +219,14 @@ class CRS(object):
     def __eq__(self, other):
         if isinstance(other, compat.string_types):
             other = CRS(other)
-        canonical = lambda crs: set(crs.ExportToProj4().split() + ['+wktext'])
-        return canonical(self._crs) == canonical(other._crs)  # pylint: disable=protected-access
+        gdal_thinks_issame = self._crs.IsSame(other._crs) == 1  # pylint: disable=protected-access
+        if gdal_thinks_issame:
+            return True
+
+        def to_canonincal_proj4(crs):
+            return set(crs.ExportToProj4().split() + ['+wktext'])
+        proj4_repr_is_same = to_canonincal_proj4(self._crs) == to_canonincal_proj4(other._crs)  # pylint: disable=protected-access
+        return proj4_repr_is_same
 
     def __ne__(self, other):
         if isinstance(other, compat.string_types):
