@@ -219,8 +219,14 @@ class CRS(object):
     def __eq__(self, other):
         if isinstance(other, compat.string_types):
             other = CRS(other)
-        canonical = lambda crs: set(crs.ExportToProj4().split() + ['+wktext'])
-        return canonical(self._crs) == canonical(other._crs)  # pylint: disable=protected-access
+        gdal_thinks_issame = self._crs.IsSame(other._crs) == 1  # pylint: disable=protected-access
+        if gdal_thinks_issame:
+            return True
+
+        def to_canonincal_proj4(crs):
+            return set(crs.ExportToProj4().split() + ['+wktext'])
+        proj4_repr_is_same = to_canonincal_proj4(self._crs) == to_canonincal_proj4(other._crs)  # pylint: disable=protected-access
+        return proj4_repr_is_same
 
     def __ne__(self, other):
         if isinstance(other, compat.string_types):
@@ -250,7 +256,8 @@ def _make_multi(type_, maker, coords):
 def _make_linear(type_, coordinates):
     geom = ogr.Geometry(type_)
     for pt in coordinates:
-        geom.AddPoint_2D(*pt)
+        # Ignore the third dimension
+        geom.AddPoint_2D(*pt[0:2])
     return geom
 
 
@@ -321,7 +328,11 @@ def _wrap_binary_geom(method):
 
 class Geometry(object):
     """
-    Geometry with CRS
+    2D Geometry with CRS
+
+    Instantiate with a GeoJSON structure
+
+    If 3D coordinates are supplied, they are converted to 2D by dropping the Z points.
 
     :type _geom: ogr.Geometry
     :type crs: CRS

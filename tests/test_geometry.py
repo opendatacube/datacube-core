@@ -1,4 +1,3 @@
-
 from __future__ import absolute_import
 
 import osgeo
@@ -111,19 +110,19 @@ def test_unary_union():
 
     union1 = geometry.unary_union([box1, box4])
     assert union1.type == 'MultiPolygon'
-    assert union1.area == 2.0*box1.area
+    assert union1.area == 2.0 * box1.area
 
     union2 = geometry.unary_union([box1, box2])
     assert union2.type == 'Polygon'
-    assert union2.area == 1.5*box1.area
+    assert union2.area == 1.5 * box1.area
 
     union3 = geometry.unary_union([box1, box2, box3, box4])
     assert union3.type == 'Polygon'
-    assert union3.area == 2.5*box1.area
+    assert union3.area == 2.5 * box1.area
 
     union4 = geometry.unary_union([union1, box2, box3])
     assert union4.type == 'Polygon'
-    assert union4.area == 2.5*box1.area
+    assert union4.area == 2.5 * box1.area
 
 
 def test_unary_intersection():
@@ -160,31 +159,54 @@ def test_unary_intersection():
     assert inter6.is_empty
 
 
-def test_crs_equality():
-    a = geometry.CRS("""PROJCS["unnamed",GEOGCS["Unknown datum based upon the custom spheroid",
-                       DATUM["Not specified (based on custom spheroid)",SPHEROID["Custom spheroid",6371007.181,0]],
-                       PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],PROJECTION["Sinusoidal"],
-                       PARAMETER["longitude_of_center",0],PARAMETER["false_easting",0],
-                       PARAMETER["false_northing",0],UNIT["Meter",1]]""")
-    b = geometry.CRS("""PROJCS["unnamed",GEOGCS["unnamed ellipse",DATUM["unknown",SPHEROID["unnamed",6371007.181,0]],
-                       PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],PROJECTION["Sinusoidal"],
-                       PARAMETER["longitude_of_center",0],PARAMETER["false_easting",0],
-                       PARAMETER["false_northing",0],UNIT["Meter",1]]""")
-    c = geometry.CRS('+a=6371007.181 +b=6371007.181 +units=m +y_0=0 +proj=sinu +lon_0=0 +no_defs +x_0=0')
-    assert a == b
-    assert a == c
-    assert b == c
+class TestCRSEqualityComparisons(object):
+    def test_sinusoidal_comparison(self):
+        a = geometry.CRS("""PROJCS["unnamed",GEOGCS["Unknown datum based upon the custom spheroid",
+                           DATUM["Not specified (based on custom spheroid)",SPHEROID["Custom spheroid",6371007.181,0]],
+                           PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],PROJECTION["Sinusoidal"],
+                           PARAMETER["longitude_of_center",0],PARAMETER["false_easting",0],
+                           PARAMETER["false_northing",0],UNIT["Meter",1]]""")
+        b = geometry.CRS("""PROJCS["unnamed",GEOGCS["unnamed ellipse",
+                           DATUM["unknown",SPHEROID["unnamed",6371007.181,0]],
+                           PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],PROJECTION["Sinusoidal"],
+                           PARAMETER["longitude_of_center",0],PARAMETER["false_easting",0],
+                           PARAMETER["false_northing",0],UNIT["Meter",1]]""")
+        c = geometry.CRS('+a=6371007.181 +b=6371007.181 +units=m +y_0=0 +proj=sinu +lon_0=0 +no_defs +x_0=0')
+        assert a == b
+        assert a == c
+        assert b == c
 
-    assert a != geometry.CRS('EPSG:4326')
+        assert a != geometry.CRS('EPSG:4326')
 
-    a = geometry.CRS("""GEOGCS["GEOCENTRIC DATUM of AUSTRALIA",DATUM["GDA94",SPHEROID["GRS80",6378137,298.257222101]],
-                        PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]]""")
-    b = geometry.CRS("""GEOGCS["GRS 1980(IUGG, 1980)",DATUM["unknown",SPHEROID["GRS80",6378137,298.257222101]],
-                        PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]]""")
-    c = geometry.CRS('+proj=longlat +no_defs +ellps=GRS80')
-    assert a == b
-    assert a == c
-    assert b == c
+    def test_grs80_comparison(self):
+        a = geometry.CRS("""GEOGCS["GEOCENTRIC DATUM of AUSTRALIA",DATUM["GDA94",SPHEROID["GRS80",6378137,298.257222101]],
+                            PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]]""")
+        b = geometry.CRS("""GEOGCS["GRS 1980(IUGG, 1980)",DATUM["unknown",SPHEROID["GRS80",6378137,298.257222101]],
+                            PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]]""")
+        c = geometry.CRS('+proj=longlat +no_defs +ellps=GRS80')
+        assert a == b
+        assert a == c
+        assert b == c
+
+        assert a != geometry.CRS('EPSG:4326')
+
+    def test_australian_albers_comparison(self):
+        a = geometry.CRS("""PROJCS["GDA94_Australian_Albers",GEOGCS["GCS_GDA_1994",
+                            DATUM["Geocentric_Datum_of_Australia_1994",SPHEROID["GRS_1980",6378137,298.257222101]],
+                            PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]],
+                            PROJECTION["Albers_Conic_Equal_Area"],
+                            PARAMETER["standard_parallel_1",-18],
+                            PARAMETER["standard_parallel_2",-36],
+                            PARAMETER["latitude_of_center",0],
+                            PARAMETER["longitude_of_center",132],
+                            PARAMETER["false_easting",0],
+                            PARAMETER["false_northing",0],
+                            UNIT["Meter",1]]""")
+        b = geometry.CRS('EPSG:3577')
+
+        assert a == b
+
+        assert a != geometry.CRS('EPSG:4326')
 
 
 def test_geobox():
@@ -194,7 +216,7 @@ def test_geobox():
         [(-148.2697, 35.20111), (-149.31254, 35.20111), (-149.31254, 36.331431), (-148.2697, 36.331431)],
         [(-148.2697, -35.20111), (-149.31254, -35.20111), (-149.31254, -36.331431), (-148.2697, -36.331431),
          (148.2697, -35.20111)],
-        ]
+    ]
     for points in points_list:
         polygon = geometry.polygon(points, crs=geometry.CRS('EPSG:3577'))
         resolution = (-25, 25)
@@ -210,14 +232,14 @@ def test_geobox():
                    reason='Fails under GDAL 2.1')
 def test_wrap_dateline():
     sinus_crs = geometry.CRS("""PROJCS["unnamed",
-GEOGCS["Unknown datum based upon the custom spheroid",
-DATUM["Not specified (based on custom spheroid)", SPHEROID["Custom spheroid",6371007.181,0]],
-PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],
-PROJECTION["Sinusoidal"],
-PARAMETER["longitude_of_center",0],
-PARAMETER["false_easting",0],
-PARAMETER["false_northing",0],
-UNIT["Meter",1]]""")
+                           GEOGCS["Unknown datum based upon the custom spheroid",
+                           DATUM["Not specified (based on custom spheroid)", SPHEROID["Custom spheroid",6371007.181,0]],
+                           PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],
+                           PROJECTION["Sinusoidal"],
+                           PARAMETER["longitude_of_center",0],
+                           PARAMETER["false_easting",0],
+                           PARAMETER["false_northing",0],
+                           UNIT["Meter",1]]""")
     albers_crs = geometry.CRS('EPSG:3577')
     geog_crs = geometry.CRS('EPSG:4326')
 
@@ -263,3 +285,23 @@ UNIT["Meter",1]]""")
     wrapped = wrap.to_crs(geog_crs, wrapdateline=True)
     assert wrapped.type == 'MultiPolygon'
     assert not wrapped.intersects(geometry.line([(0, -90), (0, 90)], crs=geog_crs))
+
+
+def test_3d_geometry_converted_to_2d_geometry():
+    coordinates = [(115.8929714190001, -28.577007674999948, 0.0),
+                   (115.90275429200005, -28.57698532699993, 0.0),
+                   (115.90412631000004, -28.577577566999935, 0.0),
+                   (115.90157040700001, -28.58521105999995, 0.0),
+                   (115.89382838900008, -28.585473711999953, 0.0),
+                   (115.8929714190001, -28.577007674999948, 0.0)]
+    geom_3d = {'coordinates': [coordinates],
+               'type': 'Polygon'}
+    geom_2d = {'coordinates': [[(x, y) for x, y, z in coordinates]],
+               'type': 'Polygon'}
+
+    g_2d = geometry.Geometry(geom_2d)
+    g_3d = geometry.Geometry(geom_3d)
+
+    assert {2} == set(len(pt) for pt in g_3d.boundary.coords)  # All coordinates are 2D
+
+    assert g_2d == g_3d  # 3D geometry has been converted to a 2D by dropping the Z axis
