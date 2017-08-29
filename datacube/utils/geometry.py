@@ -220,11 +220,13 @@ class CRS(object):
         if isinstance(other, compat.string_types):
             other = CRS(other)
         gdal_thinks_issame = self._crs.IsSame(other._crs) == 1  # pylint: disable=protected-access
+        if gdal_thinks_issame:
+            return True
 
         def to_canonincal_proj4(crs):
             return set(crs.ExportToProj4().split() + ['+wktext'])
         proj4_repr_is_same = to_canonincal_proj4(self._crs) == to_canonincal_proj4(other._crs)  # pylint: disable=protected-access
-        return gdal_thinks_issame or proj4_repr_is_same
+        return proj4_repr_is_same
 
     def __ne__(self, other):
         if isinstance(other, compat.string_types):
