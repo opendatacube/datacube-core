@@ -254,7 +254,8 @@ def _make_multi(type_, maker, coords):
 def _make_linear(type_, coordinates):
     geom = ogr.Geometry(type_)
     for pt in coordinates:
-        geom.AddPoint_2D(*pt)
+        # Ignore the third dimension
+        geom.AddPoint_2D(*pt[0:2])
     return geom
 
 
@@ -325,7 +326,11 @@ def _wrap_binary_geom(method):
 
 class Geometry(object):
     """
-    Geometry with CRS
+    2D Geometry with CRS
+
+    Instantiate with a GeoJSON structure
+
+    If 3D coordinates are supplied, they are converted to 2D by dropping the Z points.
 
     :type _geom: ogr.Geometry
     :type crs: CRS
