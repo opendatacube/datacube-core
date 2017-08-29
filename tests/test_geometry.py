@@ -1,4 +1,3 @@
-
 from __future__ import absolute_import
 
 import osgeo
@@ -111,19 +110,19 @@ def test_unary_union():
 
     union1 = geometry.unary_union([box1, box4])
     assert union1.type == 'MultiPolygon'
-    assert union1.area == 2.0*box1.area
+    assert union1.area == 2.0 * box1.area
 
     union2 = geometry.unary_union([box1, box2])
     assert union2.type == 'Polygon'
-    assert union2.area == 1.5*box1.area
+    assert union2.area == 1.5 * box1.area
 
     union3 = geometry.unary_union([box1, box2, box3, box4])
     assert union3.type == 'Polygon'
-    assert union3.area == 2.5*box1.area
+    assert union3.area == 2.5 * box1.area
 
     union4 = geometry.unary_union([union1, box2, box3])
     assert union4.type == 'Polygon'
-    assert union4.area == 2.5*box1.area
+    assert union4.area == 2.5 * box1.area
 
 
 def test_unary_intersection():
@@ -194,7 +193,7 @@ def test_geobox():
         [(-148.2697, 35.20111), (-149.31254, 35.20111), (-149.31254, 36.331431), (-148.2697, 36.331431)],
         [(-148.2697, -35.20111), (-149.31254, -35.20111), (-149.31254, -36.331431), (-148.2697, -36.331431),
          (148.2697, -35.20111)],
-        ]
+    ]
     for points in points_list:
         polygon = geometry.polygon(points, crs=geometry.CRS('EPSG:3577'))
         resolution = (-25, 25)
@@ -263,3 +262,23 @@ UNIT["Meter",1]]""")
     wrapped = wrap.to_crs(geog_crs, wrapdateline=True)
     assert wrapped.type == 'MultiPolygon'
     assert not wrapped.intersects(geometry.line([(0, -90), (0, 90)], crs=geog_crs))
+
+
+def test_3d_geometry_converted_to_2d_geometry():
+    coordinates = [(115.8929714190001, -28.577007674999948, 0.0),
+                   (115.90275429200005, -28.57698532699993, 0.0),
+                   (115.90412631000004, -28.577577566999935, 0.0),
+                   (115.90157040700001, -28.58521105999995, 0.0),
+                   (115.89382838900008, -28.585473711999953, 0.0),
+                   (115.8929714190001, -28.577007674999948, 0.0)]
+    geom_3d = {'coordinates': [coordinates],
+               'type': 'Polygon'}
+    geom_2d = {'coordinates': [[(x, y) for x, y, z in coordinates]],
+               'type': 'Polygon'}
+
+    g_2d = geometry.Geometry(geom_2d)
+    g_3d = geometry.Geometry(geom_3d)
+
+    assert {2} == set(len(pt) for pt in g_3d.boundary.coords)  # All coordinates are 2D
+
+    assert g_2d == g_3d  # 3D geometry has been converted to a 2D by dropping the Z axis

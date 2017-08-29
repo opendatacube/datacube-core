@@ -5,6 +5,10 @@
 What's New
 ==========
 
+
+ - Allow creation of :class:`Geometry` objects from 3d representations. The Z axis is simply thrown away.
+
+
 v1.5.1 Purpler Unicorn (13 July 2017)
 -------------------------------------
 
