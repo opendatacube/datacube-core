@@ -72,15 +72,19 @@ def find_diff(input_type, output_type, driver_manager, time_size, **query):
     return new_tasks
 
 
-def morph_dataset_type(source_type, config, driver_format):
-    output_type = DatasetType(source_type.metadata_type, deepcopy(source_type.definition))
+def morph_dataset_type(source_type, config, driver_manager):
+    output_metadata_type = source_type.metadata_type
+    if 'metadata_type' in config:
+        output_metadata_type = driver_manager.index.metadata_types.get_by_name(config['metadata_type'])
+
+    output_type = DatasetType(output_metadata_type, deepcopy(source_type.definition))
     output_type.definition['name'] = config['output_type']
     output_type.definition['managed'] = True
     output_type.definition['description'] = config['description']
     output_type.definition['storage'] = config['storage']
     output_type.definition['storage'] = {k: v for (k, v) in config['storage'].items()
                                          if k in ('crs', 'driver', 'tile_size', 'resolution', 'origin')}
-    output_type.metadata_doc['format'] = {'name': driver_format}
+    output_type.metadata_doc['format'] = {'name': driver_manager.driver.format}
 
     def merge_measurement(measurement, spec):
         measurement.update({k: spec.get(k, measurement[k]) for k in ('name', 'nodata', 'dtype')})
@@ -158,7 +162,7 @@ def make_output_type(driver_manager, config):
         click.echo("Source DatasetType %s does not exist" % config['source_type'])
         click.get_current_context().exit(1)
 
-    output_type = morph_dataset_type(source_type, config, driver_manager.driver.format)
+    output_type = morph_dataset_type(source_type, config, driver_manager)
     _LOG.info('Created DatasetType %s', output_type.name)
 
     existing = index.products.get_by_name(output_type.name)
