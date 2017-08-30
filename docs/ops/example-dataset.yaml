@@ -558,38 +558,6 @@ lineage:
                         access_dt: 2016-05-18 18:30:03
                         modification_dt: 2014-11-26 13:03:33
                         checksum_sha1: 1743fad95ac392239f92d9cb85fd30f3228f680c
-                        label: Middle Infrared 2
-                        number: '7'
-                        cell_size: 25.0
-            lineage:
-                algorithm:
-                    name: LPGS
-                    version: 12.7.0
-                    parameters: {}
-                machine:
-                    hostname: r2200
-                    runtime_id: d052fcb0-1ccb-11e6-b546-a0000100fe80
-                    software_versions:
-                        eodatasets:
-                            repo_url: https://github.com/GeoscienceAustralia/eo-datasets.git
-                            version: '0.4'
-                        galpgs:
-                            repo_url: https://github.com/GeoscienceAustralia/galpgs.git
-                            version: 1.1.1
-                        gqa:
-                            repo_url: https://github.com/GeoscienceAustralia/gqa.git
-                            version: '0.6'
-                        pinkmatter: 4.1.4084
-                    uname: 'Linux r2200 2.6.32-573.22.1.el6.x86_64 #1 SMP Wed Mar
-                        23 03:35:39 UTC 2016 x86_64'
-                ancillary_quality: DEFINITIVE
-                ancillary:
-                    cpf:
-                        name: L5CPF20111001_20111231.08
-                        uri: /g/data/v10/eoancillarydata/sensor-specific/LANDSAT5/CalibrationParameterFile/L5CPF20111001_20111231.08
-                        access_dt: 2016-05-18 18:30:03
-                        modification_dt: 2014-11-26 13:03:33
-                        checksum_sha1: 1743fad95ac392239f92d9cb85fd30f3228f680c
                     ephemeris:
                         name: L52011318DEFEPH.S00
                         uri: /g/data/v10/eoancillarydata/sensor-specific/LANDSAT5/DefinitiveEphemeris/LS5_YEAR/2011/L52011318DEFEPH.S00

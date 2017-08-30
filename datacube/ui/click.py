@@ -13,6 +13,7 @@ import sys
 import click
 
 from datacube import config, __version__
+from datacube.api.core import Datacube
 
 from datacube.executor import get_executor, mk_celery_executor
 
@@ -190,26 +191,75 @@ def pass_config(f):
 def pass_driver_manager(app_name=None, expect_initialised=True):
     """Get a driver manager as the first argument.
 
-    A short name name of the application can be specified for logging purposes.
+    :param str app_name:
+        A short name of the application for logging purposes.
+    :param bool expect_initialised:
+        Whether to connect immediately on startup. Useful to catch connection config issues immediately,
+        but if you're planning to fork before any usage (such as in the case of some web servers),
+        you may not want this. For more information on thread/process usage, see datacube.index._api.Index
     """
 
     def decorate(f):
         def with_driver_manager(*args, **kwargs):
             ctx = click.get_current_context()
             try:
-                driver_manager = DriverManager(index=None,
-                                               local_config=ctx.obj['config_file'],
-                                               application_name=app_name or ctx.command_path,
-                                               validate_connection=expect_initialised)
-                driver_manager.set_current_driver(ctx.obj['driver'])
-                ctx.obj['index'] = driver_manager.index
-                _LOG.debug("Driver manager ready. Connected to index: %s",
-                           driver_manager.index)
-                return f(driver_manager, *args, **kwargs)
+                with DriverManager(index=None,
+                                   local_config=ctx.obj['config_file'],
+                                   application_name=app_name or ctx.command_path,
+                                   validate_connection=expect_initialised) as driver_manager:
+                    driver_manager.set_current_driver(ctx.obj['driver'])
+                    ctx.obj['index'] = driver_manager.index
+                    _LOG.debug("Driver manager ready. Connected to index: %s",
+                               driver_manager.index)
+                    return f(driver_manager, *args, **kwargs)
             except (OperationalError, ProgrammingError) as e:
                 handle_exception('Error Connecting to database: %s', e)
 
         return functools.update_wrapper(with_driver_manager, f)
+
+    return decorate
+
+
+def pass_index(app_name=None, expect_initialised=True):
+    """
+    Get an index from the current or default local settings.
+
+    :param str app_name:
+        A short name of the application for logging purposes.
+    :param bool expect_initialised:
+        Whether to connect immediately on startup. Useful to catch connection config issues immediately,
+        but if you're planning to fork before any usage (such as in the case of some web servers),
+        you may not want this. For More information on thread/process usage, see datacube.index._api.Index
+    """
+
+    def decorate(f):
+        @pass_driver_manager(app_name=app_name, expect_initialised=expect_initialised)
+        def with_index(driver_manager, *args, **kwargs):
+            return f(driver_manager.index, *args, **kwargs)
+
+        return functools.update_wrapper(with_index, f)
+
+    return decorate
+
+
+def pass_datacube(app_name=None, expect_initialised=True):
+    """
+    Get a DataCube from the current or default local settings.
+
+    :param str app_name:
+        A short name of the application for logging purposes.
+    :param bool expect_initialised:
+        Whether to connect immediately on startup. Useful to catch connection config issues immediately,
+        but if you're planning to fork before any usage (such as in the case of some web servers),
+        you may not want this. For More information on thread/process usage, see datacube.index._api.Index
+    """
+
+    def decorate(f):
+        @pass_driver_manager(app_name=app_name, expect_initialised=expect_initialised)
+        def with_index(driver_manager, *args, **kwargs):
+            return f(Datacube(driver_manager=driver_manager), *args, **kwargs)
+
+        return functools.update_wrapper(with_index, f)
 
     return decorate
 

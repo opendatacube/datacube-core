@@ -6,6 +6,8 @@ import click
 import cachetools
 import itertools
 
+from datacube.drivers.manager import DriverManager
+
 try:
     import cPickle as pickle
 except ImportError:
@@ -152,6 +154,8 @@ def get_namemap(config):
 
 
 def make_output_type(driver_manager, config):
+    # type: (DriverManager, dict) -> (DatasetType, DatasetType)
+
     index = driver_manager.index
     source_type = index.products.get_by_name(config['source_type'])
     if not source_type:
@@ -161,32 +165,9 @@ def make_output_type(driver_manager, config):
     output_type = morph_dataset_type(source_type, config, driver_manager)
     _LOG.info('Created DatasetType %s', output_type.name)
 
-    # Some storage fields should not be in the product definition, and should be removed.
-    # To handle backwards compatibility for now, ignore them with custom rules,
-    # rather than using the default checks done by index.products.add
     existing = index.products.get_by_name(output_type.name)
-    backwards_compatible_fields = True
-    if existing and backwards_compatible_fields:
-        updates_allowed = {
-            ('description',): changes.allow_any,
-            ('metadata_type',): changes.allow_any,
-            ('storage', 'chunking'): changes.allow_any,
-            ('storage', 'driver'): changes.allow_any,
-            ('storage', 'dimension_order'): changes.allow_any,
-            ('metadata',): changes.allow_truncation
-        }
-
-        doc_changes = changes.get_doc_changes(output_type.definition,
-                                              datacube.utils.jsonify_document(existing.definition))
-        good_changes, bad_changes = changes.classify_changes(doc_changes, updates_allowed)
-        if bad_changes:
-            raise ValueError(
-                '{} differs from stored ({})'.format(
-                    output_type.name,
-                    ', '.join(['{}: {!r}!={!r}'.format('.'.join(offset), v1, v2) for offset, v1, v2 in bad_changes])
-                )
-            )
-        output_type = index.products.update(output_type, allow_unsafe_updates=True)
+    if existing:
+        output_type = index.products.update(output_type)
     else:
         output_type = index.products.add(output_type)
 
@@ -298,9 +279,6 @@ def _index_datasets(driver_manager, results):
 
 
 def process_tasks(driver_manager, config, source_type, output_type, tasks, queue_size, executor):
-    index = driver_manager.index
-
-    # driver_manager_dump = dumps(driver_manager)
 
     def submit_task(task):
         _LOG.info('Submitting task: %s', task['tile_index'])
@@ -397,5 +375,5 @@ def ingest_cmd(driver_manager, config_file, year, queue_size, save_tasks, load_t
 
     successful, failed = process_tasks(driver_manager, config, source_type, output_type, tasks, queue_size, executor)
     click.echo('%d successful, %d failed' % (successful, failed))
-    driver_manager.close()
+
     return 0

@@ -356,7 +356,12 @@ class ProductResource(object):
             # You can safely make the match rules looser but not tighter.
             # Tightening them could exclude datasets already matched to the product.
             # (which would make search results wrong)
-            ('metadata',): changes.allow_truncation
+            ('metadata',): changes.allow_truncation,
+
+            # Some old storage fields should not be in the product definition any more: allow removal.
+            ('storage', 'chunking'): changes.allow_removal,
+            ('storage', 'driver'): changes.allow_removal,
+            ('storage', 'dimension_order'): changes.allow_removal,
         }
 
         doc_changes = get_doc_changes(existing.definition, jsonify_document(product.definition))
@@ -387,17 +392,22 @@ class ProductResource(object):
             _LOG.info("No changes detected for product %s", product.name)
             return self.get_by_name(product.name)
 
+        for offset, old_val, new_val in safe_changes:
+            _LOG.info("Safe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
+
+        for offset, old_val, new_val in unsafe_changes:
+            _LOG.info("Unsafe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
+
         if not can_update:
-            full_message = "Unsafe changes at " + ", ".join(".".join(offset) for offset, _, _ in unsafe_changes)
+            full_message = "Unsafe changes at " + (
+                ", ".join(
+                    _readable_offset(offset)
+                    for offset, _, _ in unsafe_changes
+                )
+            )
             raise ValueError(full_message)
 
         _LOG.info("Updating product %s", product.name)
-
-        for offset, old_val, new_val in safe_changes:
-            _LOG.info("Safe change from %r to %r", old_val, new_val)
-
-        for offset, old_val, new_val in unsafe_changes:
-            _LOG.info("Unsafe change from %r to %r", old_val, new_val)
 
         existing = self.get_by_name(product.name)
         changing_metadata_type = product.metadata_type.name != existing.metadata_type.name
@@ -595,6 +605,10 @@ class ProductResource(object):
             metadata_type=self.metadata_type_resource.get(query_row['metadata_type_ref']),
             id_=query_row['id'],
         )
+
+
+def _readable_offset(offset):
+    return '.'.join(map(str, offset))
 
 
 class DatasetResource(object):

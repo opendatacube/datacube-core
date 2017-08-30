@@ -5,13 +5,18 @@ Module
 from __future__ import absolute_import
 
 import copy
+import json
 
 import pytest
+import yaml
+from click.testing import CliRunner
 
+from datacube.index._api import Index
 from datacube.index.postgres._fields import NumericRangeDocField, PgField
-from datacube.model import MetadataType
+from datacube.model import MetadataType, DatasetType
 from datacube.model import Range, Dataset
 from datacube.utils import changes
+import datacube.scripts.cli_app
 
 _DATASET_METADATA = {
     'id': 'f7018d80-8807-11e5-aeaa-1040f381a756',
@@ -326,6 +331,89 @@ def test_update_dataset_type(index, ls5_telem_type, ls5_telem_doc, ga_metadata_t
     index.products.update_document(different_telemetry_type, allow_unsafe_updates=True)
     updated_type = index.products.get_by_name(ls5_telem_type.name)
     assert updated_type.definition['metadata']['ga_label'] == 'something'
+
+
+def test_product_update_cli(index,
+                            global_integration_cli_args,
+                            ls5_telem_type,
+                            ls5_telem_doc,
+                            ga_metadata_type,
+                            tmpdir):
+    # type: (Index, list, DatasetType, dict, MetadataType) -> None
+    """
+    Test updating products via cli
+    """
+
+    def run_update_product(file_path, allow_unsafe=False):
+        opts = list(global_integration_cli_args)
+        opts.extend(
+            [
+                '-v', 'product', 'update', str(file_path)
+            ]
+        )
+
+        if allow_unsafe:
+            opts.append('--allow-unsafe')
+
+        runner = CliRunner()
+        result = runner.invoke(
+            datacube.scripts.cli_app.cli,
+            opts,
+            catch_exceptions=False
+        )
+        return result
+
+    def get_current(index, product_doc):
+        return index.products.get_by_name(product_doc['name']).definition
+
+    # Update an unchanged file, should be unchanged.
+    file_path = tmpdir.join('unmodified-product.yaml')
+    file_path.write(_to_yaml(ls5_telem_doc))
+    result = run_update_product(file_path)
+    assert str('Updated "ls5_telem_test"') in result.output
+    assert get_current(index, ls5_telem_doc) == ls5_telem_doc
+    assert result.exit_code == 0
+
+    # Try to add an unknown property: this should be forbidden by validation of dataset-type-schema.yaml
+    modified_doc = copy.deepcopy(ls5_telem_doc)
+    modified_doc['newly_added_property'] = {}
+    file_path = tmpdir.join('invalid-product.yaml')
+    file_path.write(_to_yaml(modified_doc))
+    result = run_update_product(file_path)
+
+    # The error message differs between jsonschema versions, but should always mention the invalid property name.
+    assert "newly_added_property" in result.output
+    # Return error code for failure!
+    assert result.exit_code == 1
+    assert get_current(index, ls5_telem_doc) == ls5_telem_doc
+
+    # Use of a numeric key in the document
+    # (This has thrown errors in the past. all dict keys are strings after json conversion, but some old docs use
+    # numbers as keys in yaml)
+    modified_doc = copy.deepcopy(ls5_telem_doc)
+    modified_doc['metadata'][42] = 'hello'
+    file_path = tmpdir.join('unsafe-change-to-product.yaml')
+    file_path.write(_to_yaml(modified_doc))
+    result = run_update_product(file_path)
+    assert "Unsafe change in metadata.42 from missing to 'hello'" in result.output
+    # Return error code for failure!
+    assert result.exit_code == 1
+    # Unchanged
+    assert get_current(index, ls5_telem_doc) == ls5_telem_doc
+
+    # But if we set allow-unsafe==True, this one will work.
+    result = run_update_product(file_path, allow_unsafe=True)
+    assert "Unsafe change in metadata.42 from missing to 'hello'" in result.output
+    assert result.exit_code == 0
+    # Has changed, and our key is now a string (json only allows string keys)
+    modified_doc = copy.deepcopy(ls5_telem_doc)
+    modified_doc['metadata']['42'] = 'hello'
+    assert get_current(index, ls5_telem_doc) == modified_doc
+
+
+def _to_yaml(ls5_telem_doc):
+    # Need to explicitly allow unicode in Py2
+    return yaml.safe_dump(ls5_telem_doc, allow_unicode=True)
 
 
 def test_update_metadata_type(index, default_metadata_type_docs, default_metadata_type):

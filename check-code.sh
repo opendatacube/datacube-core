@@ -12,3 +12,12 @@ pylint -j 2 --reports no datacube datacube_apps
 # Users can specify extra folders as arguments.
 pytest -r sx --cov datacube --doctest-ignore-import-errors --durations=5 datacube tests datacube_apps $@
 
+set +x
+
+# Optinally validate example yaml docs.
+if which yamllint;
+then
+    set -x
+    yamllint $(find . \( -iname '*.yaml' -o -iname '*.yml' \) )
+    set +x
+fi

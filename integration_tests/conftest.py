@@ -41,7 +41,6 @@ if os.name == 'nt' or not hasattr(os, 'symlink'):
 else:
     symlink = os.symlink
 
-
 _SINGLE_RUN_CONFIG_TEMPLATE = """
 [locations]
 testdata: {test_tile_folder}
@@ -136,28 +135,29 @@ def local_config(integration_config_paths):
 @pytest.fixture(params=["US/Pacific", "UTC", ])
 def driver_manager(local_config, request):
     timezone = request.param
-    driver_manager = DriverManager(index=None, local_config=local_config,
-                                   application_name='test-run', validate_connection=False)
-    db = driver_manager.index._db
+    with DriverManager(index=None,
+                       local_config=local_config,
+                       application_name='test-run',
+                       validate_connection=False) as driver_manager:
+        db = driver_manager.index._db
 
-    # Drop and recreate tables so our tests have a clean db.
-    with db.connect() as connection:
-        _core.drop_db(connection._connection)
-    remove_dynamic_indexes()
+        # Drop and recreate tables so our tests have a clean db.
+        with db.connect() as connection:
+            _core.drop_db(connection._connection)
+        remove_dynamic_indexes()
 
-    # Disable informational messages since we're doing this on every test run.
-    with _increase_logging(_core._LOG) as _:
-        _core.ensure_db(db._engine, with_s3_tables=True)
+        # Disable informational messages since we're doing this on every test run.
+        with _increase_logging(_core._LOG) as _:
+            _core.ensure_db(db._engine, with_s3_tables=True)
 
-    c = db._engine.connect()
-    c.execute('alter database %s set timezone = %r' % (local_config.db_database, str(timezone)))
-    c.close()
+        c = db._engine.connect()
+        c.execute('alter database %s set timezone = %r' % (local_config.db_database, str(timezone)))
+        c.close()
 
-    # We don't need informational create/drop messages for every config change.
-    _dynamic._LOG.setLevel(logging.WARN)
+        # We don't need informational create/drop messages for every config change.
+        _dynamic._LOG.setLevel(logging.WARN)
 
-    yield driver_manager
-    driver_manager.close()
+        yield driver_manager
 
 
 @pytest.fixture
@@ -343,8 +343,8 @@ def _make_geotiffs(tiffs_dir, day_offset):
         with rasterio.open(path, 'w', **metadata) as dst:
             # Write data in "corners" (rounded down by 100, for a size of 100x100)
             data = np.zeros((GEOTIFF['shape']['y'], GEOTIFF['shape']['x']), dtype=np.int16)
-            data[:] = np.arange(GEOTIFF['shape']['y']*GEOTIFF['shape']['x']) \
-                        .reshape((GEOTIFF['shape']['y'], GEOTIFF['shape']['x'])) + 10*band + day_offset
+            data[:] = np.arange(GEOTIFF['shape']['y'] * GEOTIFF['shape']['x']) \
+                        .reshape((GEOTIFF['shape']['y'], GEOTIFF['shape']['x'])) + 10 * band + day_offset
             '''
             lr = (100 * int(GEOTIFF['shape']['y'] / 100.0),
                   100 * int(GEOTIFF['shape']['x'] / 100.0))

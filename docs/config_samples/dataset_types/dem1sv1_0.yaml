@@ -30,4 +30,3 @@ measurements:
         dtype: float32
         nodata: -3.4028235e+38
         units: 'metre'
-

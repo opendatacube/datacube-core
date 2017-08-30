@@ -1,0 +1,34 @@
+extends: default
+
+rules:
+    # We could enable these if we find a decent yaml autoformatter.
+    # (yamlfmt in pip is too buggy at the moment for our files)
+    #
+    # The effort of fixing them by hand, especially auto-generated yamls, is not
+    # currently worth it.
+
+    # Many tools (eg. generated secure keys) don't output wrapped lines.
+    line-length: disable
+
+    # Pedantry & existing docs don't have it.
+    document-start: disable
+
+    # Warning that truthy values are not quoted.
+    # Many documents currently use "True" without quotes, so this would be a
+    # larger change across almost every doc.
+    truthy: disable
+
+    # Whitespace issues: hundreds in existing docs.
+    indentation: disable
+    trailing-spaces: disable
+    commas: disable
+    new-line-at-end-of-file: disable
+    brackets: disable
+    hyphens: disable
+    colons: disable
+    comments: disable
+    comments-indentation: disable
+
+
+
+
