@@ -237,7 +237,6 @@ def main(driver_manager, config, tasks, executor, queue_size, **kwargs):
     task_func = partial(do_stack_task, config)
     process_func = partial(process_result, index) if config['index_datasets'] else None
     task_app.run_tasks(tasks, executor, task_func, process_func, queue_size)
-    driver_manager.close()
 
 
 if __name__ == '__main__':

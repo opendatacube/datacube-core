@@ -23,7 +23,7 @@ class DriverManager(object):
     retrieve the actual data.
 
     A 'current' driver can be set in the manager and which can be used
-    to handle datasets which don't specifiy a storage driver in their
+    to handle datasets which don't specify a storage driver in their
     metadata.
     """
 
@@ -204,6 +204,8 @@ class DriverManager(object):
     @property
     def index(self):
         """Generic index.
+
+        :rtype: Index
         """
         return self.__index
 
@@ -287,3 +289,9 @@ class DriverManager(object):
           data.
         """
         return self.get_driver_by_scheme(dataset.uris).index.add_specifics(dataset)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type_, value, traceback):
+        self.close()
