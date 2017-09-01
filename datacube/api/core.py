@@ -81,7 +81,7 @@ class Datacube(object):
           driver manager for testing purposes.
         :type index: :py:class:`datacube.index._api.Index` or None.
 
-        :param LocalConfig config: A config object or a path to a config file that defines the connection.
+        :param Union[LocalConfig|str] config: A config object or a path to a config file that defines the connection.
 
             If an index is supplied, config is ignored.
         :param str app: A short, alphanumeric name to identify this application.
@@ -98,19 +98,16 @@ class Datacube(object):
 
         """
         self._to_close = None
-        if index:
-            self.driver_manager = DriverManager(index=index)
-            self._to_close = self.driver_manager
-        elif driver_manager:
-            self.driver_manager = driver_manager
-        else:
-            if config is not None:
-                if isinstance(config, string_types):
-                    config = LocalConfig.find([config])
-                self.driver_manager = DriverManager(local_config=config, application_name=app)
-            else:
-                self.driver_manager = DriverManager(application_name=app)
-            self._to_close = self.driver_manager
+
+        # Backwards compatibility: users previously may have passed an index alone.
+        if not driver_manager:
+            if isinstance(config, string_types):
+                config = LocalConfig.find([config])
+
+            driver_manager = DriverManager(index=index, local_config=config, application_name=app)
+            self._to_close = driver_manager
+
+        self.driver_manager = driver_manager
         self.index = self.driver_manager.index
 
     def __del__(self):
