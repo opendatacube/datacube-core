@@ -24,12 +24,14 @@ DEFAULT_CONF_PATHS = (
 
 # Default configuration options.
 _DEFAULT_CONF = u"""
-[datacube]
+[DEFAULT]
 # Blank implies localhost
 db_hostname:
 db_database: datacube
 # If a connection is unused for this length of time, expect it to be invalidated.
 db_connection_timeout: 60
+# Which driver to activate by default in this environment (eg. "NetCDF CF", 's3')
+default_driver: 'NetCDF CF'
 """
 
 DATACUBE_SECTION = 'datacube'
@@ -43,26 +45,48 @@ class LocalConfig(object):
     current user.
     """
 
-    def __init__(self, config, files_loaded=None):
+    def __init__(self, config, environment='datacube', files_loaded=None):
         self._config = config
         self.files_loaded = []
         if files_loaded:
             self.files_loaded = files_loaded
 
+        self.environment = environment
+
     @classmethod
-    def find(cls, paths=DEFAULT_CONF_PATHS):
+    def find(cls, paths=DEFAULT_CONF_PATHS, env=None):
         """
         Find config from possible filesystem locations.
+
+        'env' is which environment to use from the config: it corresponds to the name of a config section
+
         :type paths: list[str]
+        :type env: str
         :rtype: LocalConfig
         """
-        config = compat.read_config(_DEFAULT_CONF)
-        files_loaded = config.read([p for p in paths if p])
-        return LocalConfig(config, files_loaded)
 
-    def _prop(self, key, section=DATACUBE_SECTION):
+        config = compat.read_config(_DEFAULT_CONF)
+        files_loaded = config.read(p for p in paths if p)
+
+        env = env or os.environ.get('DATACUBE_ENVIRONMENT')
+        # If no environment was specfied anywhere.
+        if env is None:
+            # For backwards compatibility:
+            # Use section 'datacube' when none is specified: but it doesn't need to match any config files.
+            env = 'datacube'
+        else:
+            if not config.has_section(env):
+                raise ValueError('No environment configuration found for %s' % (env))
+
+        return LocalConfig(
+            config,
+            environment=env,
+            files_loaded=files_loaded
+        )
+
+    def _prop(self, key):
         try:
-            return self._config.get(section, key)
+            return self._config.get(self.environment, key)
         except compat.NoOptionError:
             return None
 
@@ -90,6 +114,10 @@ class LocalConfig(object):
         return self._prop('db_username') or default_username
 
     @property
+    def default_driver(self):
+        return self._prop('default_driver')
+
+    @property
     def db_password(self):
         return self._prop('db_password')
 
@@ -98,9 +126,10 @@ class LocalConfig(object):
         return self._prop('db_port') or '5432'
 
     def __str__(self):
-        return "LocalConfig<loaded_from={}, config={})".format(
+        return "LocalConfig<loaded_from={}, config={}, environment={})".format(
             self.files_loaded or 'defaults',
-            dict(self._config[DATACUBE_SECTION])
+            dict(self._config[DATACUBE_SECTION]),
+            self.environment
         )
 
     def __repr__(self):

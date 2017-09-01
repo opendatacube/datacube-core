@@ -69,7 +69,7 @@ class Datacube(object):
     :type index: datacube.index._api.Index
     """
 
-    def __init__(self, index=None, config=None, app=None, driver_manager=None):
+    def __init__(self, index=None, config=None, app=None, env=None, driver_manager=None):
         """
         Create the interface for the query and storage access.
 
@@ -89,6 +89,13 @@ class Datacube(object):
             The application name is used to track down problems with database queries, so it is strongly
             advised that be used.  Required if an index is not supplied, otherwise ignored.
 
+        :param str env: Name of the datacube environment to use.
+            ie. the section name in any config files. Defaults to 'datacube' for backwards
+            compatibility with old config files.
+
+            Allows you to have multiple datacube instances in one configuration, specified on load,
+            eg. 'dev', 'test' or 'landsat', 'modis' etc.
+
         :param DriverManager driver_manager: The driver manager to
           use. If not specified, an new manager will be created using
           the index if specified, or the default configuration
@@ -99,10 +106,9 @@ class Datacube(object):
         """
         self._to_close = None
 
-        # Backwards compatibility: users previously may have passed an index alone.
         if not driver_manager:
             if isinstance(config, string_types):
-                config = LocalConfig.find([config])
+                config = LocalConfig.find([config], env=env)
 
             driver_manager = DriverManager(index=index, local_config=config, application_name=app)
             self._to_close = driver_manager
