@@ -122,23 +122,23 @@ def _set_config(ctx, param, value):
             raise ValueError('No specified config paths exist: {}' % value)
 
         paths = value
-    else:
-        paths = config.DEFAULT_CONF_PATHS
-
-    parsed_config = config.LocalConfig.find(paths=paths)
-
-    _LOG.debug("Loaded datacube config files: %s", parsed_config.files_loaded)
 
     if not ctx.obj:
         ctx.obj = {}
 
-    ctx.obj['config_file'] = parsed_config
+    ctx.obj['config_files'] = paths
 
 
 def _set_driver(ctx, param, value):
     if not ctx.obj:
         ctx.obj = {}
     ctx.obj['driver'] = value
+
+
+def _set_environment(ctx, param, value):
+    if not ctx.obj:
+        ctx.obj = {}
+    ctx.obj['config_environment'] = value
 
 
 #: pylint: disable=invalid-name
@@ -153,8 +153,14 @@ logfile_option = click.option('--log-file', multiple=True, callback=_add_logfile
 #: pylint: disable=invalid-name
 config_option = click.option('--config_file', '-C', multiple=True, default='', callback=_set_config,
                              expose_value=False)
+
 #: pylint: disable=invalid-name
-driver_option = click.option('--driver', '-D', default='NetCDF CF', callback=_set_driver,
+environment_option = click.option('--env', '-E', callback=_set_environment,
+                                  expose_value=False)
+
+#: pylint: disable=invalid-name
+DEFAULT_DRIVER = 'NetCDF CF'
+driver_option = click.option('--driver', '-D', default=DEFAULT_DRIVER, callback=_set_driver,
                              expose_value=False)
 #: pylint: disable=invalid-name
 log_queries_option = click.option('--log-queries', is_flag=True, callback=_log_queries,
@@ -167,6 +173,7 @@ global_cli_options = compose(
     verbose_option,
     logfile_option,
     driver_option,
+    environment_option,
     config_option,
     log_queries_option
 )
@@ -182,8 +189,14 @@ def pass_config(f):
     """Get a datacube config as the first argument. """
 
     def new_func(*args, **kwargs):
-        config_ = click.get_current_context().obj['config_file']
-        return f(config_, *args, **kwargs)
+        obj = click.get_current_context().obj
+
+        paths = obj.get('config_files') or config.DEFAULT_CONF_PATHS
+        environment = obj.get('config_environment')
+
+        parsed_config = config.LocalConfig.find(paths=paths, env=environment)
+        _LOG.debug("Loaded datacube config: %r", parsed_config)
+        return f(parsed_config, *args, **kwargs)
 
     return functools.update_wrapper(new_func, f)
 
@@ -200,14 +213,15 @@ def pass_driver_manager(app_name=None, expect_initialised=True):
     """
 
     def decorate(f):
-        def with_driver_manager(*args, **kwargs):
+        @pass_config
+        def with_driver_manager(local_config, *args, **kwargs):
             ctx = click.get_current_context()
             try:
                 with DriverManager(index=None,
-                                   local_config=ctx.obj['config_file'],
+                                   local_config=local_config,
                                    application_name=app_name or ctx.command_path,
                                    validate_connection=expect_initialised) as driver_manager:
-                    driver_manager.set_current_driver(ctx.obj['driver'])
+                    driver_manager.set_current_driver(ctx.obj.get('driver') or DEFAULT_DRIVER)
                     ctx.obj['index'] = driver_manager.index
                     _LOG.debug("Driver manager ready. Connected to index: %s",
                                driver_manager.index)
