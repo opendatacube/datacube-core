@@ -31,10 +31,15 @@ db_database: datacube
 # If a connection is unused for this length of time, expect it to be invalidated.
 db_connection_timeout: 60
 # Which driver to activate by default in this environment (eg. "NetCDF CF", 's3')
-default_driver: 'NetCDF CF'
-"""
+default_driver: NetCDF CF
 
-DATACUBE_SECTION = 'datacube'
+
+[user]
+# This was the section name before we had environments, so it's backwards compatible with old configs.
+default_environment: datacube
+
+[datacube]
+"""
 
 
 class LocalConfig(object):
@@ -45,7 +50,7 @@ class LocalConfig(object):
     current user.
     """
 
-    def __init__(self, config, environment='datacube', files_loaded=None):
+    def __init__(self, config, environment=None, files_loaded=None):
         self._config = config
         self.files_loaded = []
         if files_loaded:
@@ -68,15 +73,9 @@ class LocalConfig(object):
         config = compat.read_config(_DEFAULT_CONF)
         files_loaded = config.read(p for p in paths if p)
 
-        env = env or os.environ.get('DATACUBE_ENVIRONMENT')
-        # If no environment was specfied anywhere.
-        if env is None:
-            # For backwards compatibility:
-            # Use section 'datacube' when none is specified: but it doesn't need to match any config files.
-            env = 'datacube'
-        else:
-            if not config.has_section(env):
-                raise ValueError('No environment configuration found for %s' % (env))
+        env = env or os.environ.get('DATACUBE_ENVIRONMENT') or config.get('user', 'default_environment')
+        if not config.has_section(env):
+            raise ValueError('No config section found for environment %r' % (env,))
 
         return LocalConfig(
             config,
@@ -128,7 +127,7 @@ class LocalConfig(object):
     def __str__(self):
         return "LocalConfig<loaded_from={}, config={}, environment={})".format(
             self.files_loaded or 'defaults',
-            dict(self._config[DATACUBE_SECTION]),
+            dict(self._config[self.environment]),
             self.environment
         )
 
