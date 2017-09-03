@@ -121,12 +121,10 @@ def _set_config(ctx, param, value):
         if not any(os.path.exists(p) for p in value):
             raise ValueError('No specified config paths exist: {}' % value)
 
+        if not ctx.obj:
+            ctx.obj = {}
         paths = value
-
-    if not ctx.obj:
-        ctx.obj = {}
-
-    ctx.obj['config_files'] = paths
+        ctx.obj['config_files'] = paths
 
 
 def _set_driver(ctx, param, value):
