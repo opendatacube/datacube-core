@@ -1,0 +1,472 @@
+name: ls8_level1_usgs
+description: Landsat 8 USGS Level 1 Collection-1 OLI-TIRS
+metadata_type: eo
+
+metadata:
+    platform:
+        code: LANDSAT_8
+    instrument:
+        name: OLI_TIRS
+    product_type: L1TP
+    format:
+        name: GeoTiff
+
+measurements:
+    - name: 'coastal_aerosol'
+      aliases: [band_1, coastal_aerosol]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'blue'
+      aliases: [band_2, blue]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'green'
+      aliases: [band_3, green]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'red'
+      aliases: [band_4, red]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'nir'
+      aliases: [band_5, nir]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'swir1'
+      aliases: [band_6, swir1]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'swir2'
+      aliases: [band_7, swir2]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'panchromatic'
+      aliases: [band_8, panchromatic]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'cirrus'
+      aliases: [band_9, cirrus]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'lwir1'
+      aliases: [band_10, lwir1]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'lwir2'
+      aliases: [band_11, lwir2]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'quality'
+      aliases: [QUALITY, quality]
+      dtype: int16
+      nodata: 0
+      units: '1'
+      flags_definition:
+        designated_fill:
+          bits: [0]
+          description: Used to identify fill values
+          values: {0: false, 1: true}
+        terrain_occlusion:
+          bits: [1]
+          description: Terrain Occlusion
+          values: {0: false, 1: true}
+        radiometric_saturation:
+          bits: [2,3]
+          description: Radiometric saturation bits, represents how many bands contains saturation
+          values:
+            0: none
+            1: 1-2
+            2: 3-4
+            3: <=5
+        cloud:
+          bits: [4]
+          description: Cloud
+          values: {0: false, 1: true}
+        cloud_confidence:
+          bits: [5,6]
+          description: Cloud Confidence with low =(0-33)%, medium =(34-66)% and high =(67-100)%
+          values:
+            0: Not Determined
+            1: Low
+            2: Medium
+            3: High
+        cloud_shadow_conf:
+          bits: [7,8]
+          description: Cloud Shadow Confidence with low =(0-33)%, medium =(34-66)% and high =(67-100)%
+          values:
+            0: Not Determined
+            1: Low
+            2: Medium
+            3: High
+        snow_ice_conf:
+          bits: [9,10]
+          description: Snow/Ice Confidence with low =(0-33)%, medium =(34-66)% and high =(67-100)%
+          values:
+            0: Not Determined
+            1: Low
+            2: Medium
+            3: High
+        cirrus_confidence:
+          bits: [11,12]
+          description: Cirrus Confidence with low =(0-33)%, medium =(34-66)% and high =(67-100)%
+          values:
+            0: Not Determined
+            1: Low
+            2: Medium
+            3: High
+
+---
+
+name: ls7_level1_usgs
+description: Landsat 7 USGS Level 1 Collection-1 OLI-TIRS
+metadata_type: eo
+
+metadata:
+    platform:
+        code: LANDSAT_7
+    instrument:
+        name: ETM
+    product_type: L1TP
+    format:
+        name: GeoTiff
+
+measurements:
+    - name: 'blue'
+      aliases: [band_1, blue]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'green'
+      aliases: [band_2, green]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'red'
+      aliases: [band_3, red]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'nir'
+      aliases: [band_4, nir]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'swir1'
+      aliases: [band_5, swir1]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'swir2'
+      aliases: [band_7, swir2]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'quality'
+      aliases: [QUALITY, quality]
+      dtype: int16
+      nodata: 0
+      units: '1'
+      flags_definition:
+        designated_fill:
+          bits: [0]
+          description: Used to identify fill values
+          values: {0: false, 1: true}
+        dropped_pixel:
+          bits: [1]
+          description: Dropped Pixel
+          values: {0: false, 1: true}
+        radiometric_saturation:
+          bits: [2,3]
+          description: Radiometric saturation bits, represents how many bands contains saturation
+          values:
+            0: none
+            1: 1-2
+            2: 3-4
+            3: <=5
+        cloud:
+          bits: [4]
+          description: Cloud
+          values: {0: false, 1: true}
+        cloud_confidence:
+          bits: [5,6]
+          description: Cloud Confidence with low =(0-33)%, medium =(34-66)% and high =(67-100)%
+          values:
+            0: Not Determined
+            1: Low
+            2: Medium
+            3: High
+        cloud_shadow_conf:
+          bits: [7,8]
+          description: Cloud Shadow Confidence with low =(0-33)%, medium =(34-66)% and high =(67-100)%
+          values:
+            0: Not Determined
+            1: Low
+            2: Medium
+            3: High
+        snow_ice_conf:
+          bits: [9,10]
+          description: Snow/Ice Confidence with low =(0-33)%, medium =(34-66)% and high =(67-100)%
+          values:
+            0: Not Determined
+            1: Low
+            2: Medium
+            3: High
+
+---
+
+name: ls5_level1_usgs
+description: Landsat 5 USGS Level 1 Collection-1 OLI-TIRS
+metadata_type: eo
+
+metadata:
+    platform:
+        code: LANDSAT_5
+    instrument:
+        name: TM
+    product_type: L1TP
+    format:
+        name: GeoTiff
+
+measurements:
+    - name: 'blue'
+      aliases: [band_1, blue]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'green'
+      aliases: [band_2, green]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'red'
+      aliases: [band_3, red]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'nir'
+      aliases: [band_4, nir]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'swir1'
+      aliases: [band_5, swir1]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'swir2'
+      aliases: [band_7, swir2]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'quality'
+      aliases: [QUALITY, quality]
+      dtype: int16
+      nodata: 0
+      units: '1'
+      flags_definition:
+        designated_fill:
+          bits: [0]
+          description: Used to identify fill values
+          values: {0: false, 1: true}
+        dropped_pixel:
+          bits: [1]
+          description: Dropped Pixel
+          values: {0: false, 1: true}
+        radiometric_saturation:
+          bits: [2,3]
+          description: Radiometric saturation bits, represents how many bands contains saturation
+          values:
+            0: none
+            1: 1-2
+            2: 3-4
+            3: <=5
+        cloud:
+          bits: [4]
+          description: Cloud
+          values: {0: false, 1: true}
+        cloud_confidence:
+          bits: [5,6]
+          description: Cloud Confidence with low =(0-33)%, medium =(34-66)% and high =(67-100)%
+          values:
+            0: Not Determined
+            1: Low
+            2: Medium
+            3: High
+        cloud_shadow_conf:
+          bits: [7,8]
+          description: Cloud Shadow Confidence with low =(0-33)%, medium =(34-66)% and high =(67-100)%
+          values:
+            0: Not Determined
+            1: Low
+            2: Medium
+            3: High
+        snow_ice_conf:
+          bits: [9,10]
+          description: Snow/Ice Confidence with low =(0-33)%, medium =(34-66)% and high =(67-100)%
+          values:
+            0: Not Determined
+            1: Low
+            2: Medium
+            3: High
+
+---
+name: ls8_l1_pc_usgs
+description: Landsat 8 USGS Level 1 Pre-Collection OLI-TIRS
+metadata_type: eo
+
+metadata:
+    platform:
+        code: LANDSAT_8
+    instrument:
+        name: OLI_TIRS
+    product_type: L1T
+    format:
+        name: GeoTiff
+
+measurements:
+    - name: 'coastal_aerosol'
+      aliases: [band_1, coastal_aerosol]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'blue'
+      aliases: [band_2, blue]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'green'
+      aliases: [band_3, green]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'red'
+      aliases: [band_4, red]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'nir'
+      aliases: [band_5, nir]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'swir1'
+      aliases: [band_6, swir1]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'swir2'
+      aliases: [band_7, swir2]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'panchromatic'
+      aliases: [band_8, panchromatic]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'cirrus'
+      aliases: [band_9, cirrus]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'lwir1'
+      aliases: [band_10, lwir1]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'lwir2'
+      aliases: [band_11, lwir2]
+      dtype: int16
+      nodata: -9999
+      units: '1'
+
+    - name: 'quality'
+      aliases: [QUALITY, quality]
+      dtype: int16
+      nodata: 0
+      units: '1'
+      flags_definition:
+        designated_fill:
+          bits: [0]
+          description: Used to identify fill values
+          values: {0: false, 1: true}
+        dropped_frame:
+          bits: [1]
+          description: Dropped Frame
+          values: {0: false, 1: true}
+        terrain_occlusion:
+          bits: [2]
+          description: Terrain Occlusion
+          values: {0: false, 1: true}
+        water:
+          bits: [4,5]
+          description: water condition 0 - not exist, 2 -condition exist
+          values:
+            0: No
+            2: Yes
+        snow_ice_conf:
+          bits: [10,11]
+          description: Snow/Ice Confidence with 0- condition doesn't exist, 3 - condition exist
+          values:
+            0: No
+            3: Yes
+        cirrus_confidence:
+          bits: [12,13]
+          description: Cirrus Confidence with low =(0-33)%, medium =(34-66)% and high =(67-100)%
+          values:
+            0: Not Determined
+            1: Low
+            2: Medium
+            3: High
+        cloud_confidence:
+          bits: [14,15]
+          description: Cloud Confidence with low =(0-33)%, medium =(34-66)% and high =(67-100)%
+          values:
+            0: Not Determined
+            1: Low
+            2: Medium
+            3: High
