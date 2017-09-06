@@ -5,6 +5,10 @@ def test_create_gridworkflow_with_logging(index):
     from logging import getLogger, StreamHandler
 
     logger = getLogger(__name__)
-    logger.addHandler(StreamHandler())
+    handler = StreamHandler()
+    logger.addHandler(handler)
 
-    gw = GridWorkflow(index)
+    try:
+        gw = GridWorkflow(index)
+    finally:
+        logger.removeHandler(handler)
