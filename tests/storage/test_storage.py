@@ -11,8 +11,9 @@ import xarray
 from affine import Affine, identity
 
 import datacube
+from datacube.drivers.datasource import DataSource
 from datacube.model import Dataset, DatasetType, MetadataType
-from datacube.storage.storage import OverrideBandDataSource, RasterFileDataSource
+from datacube.storage.storage import OverrideBandDataSource, RasterFileDataSource, BandDataSource
 from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse, read_from_source, Resampling, \
     RasterDatasetSource
 from datacube.utils import geometry
@@ -103,12 +104,12 @@ def test_write_dataset_to_netcdf(tmpnetcdf_filename):
 
 
 def test_first_source_is_priority_in_reproject_and_fuse():
-    crs = mock.MagicMock()
+    crs = geometry.CRS('EPSG:4326')
     shape = (2, 2)
     no_data = -1
 
-    source1 = _mock_datasetsource([[1, 1], [1, 1]], crs=crs, shape=shape)
-    source2 = _mock_datasetsource([[2, 2], [2, 2]], crs=crs, shape=shape)
+    source1 = FakeDatasetSource([[1, 1], [1, 1]], crs=crs, shape=shape)
+    source2 = FakeDatasetSource([[2, 2], [2, 2]], crs=crs, shape=shape)
     sources = [source1, source2]
 
     output_data = np.full(shape, fill_value=no_data, dtype='int16')
@@ -118,12 +119,12 @@ def test_first_source_is_priority_in_reproject_and_fuse():
 
 
 def test_second_source_used_when_first_is_empty():
-    crs = mock.MagicMock()
+    crs = geometry.CRS('EPSG:4326')
     shape = (2, 2)
     no_data = -1
 
-    source1 = _mock_datasetsource([[-1, -1], [-1, -1]], crs=crs, shape=shape)
-    source2 = _mock_datasetsource([[2, 2], [2, 2]], crs=crs, shape=shape)
+    source1 = FakeDatasetSource([[-1, -1], [-1, -1]], crs=crs, shape=shape)
+    source2 = FakeDatasetSource([[2, 2], [2, 2]], crs=crs, shape=shape)
     sources = [source1, source2]
 
     output_data = np.full(shape, fill_value=no_data, dtype='int16')
@@ -133,12 +134,12 @@ def test_second_source_used_when_first_is_empty():
 
 
 def test_mixed_result_when_first_source_partially_empty():
-    crs = mock.MagicMock()
+    crs = geometry.CRS('EPSG:4326')
     shape = (2, 2)
     no_data = -1
 
-    source1 = _mock_datasetsource([[1, 1], [no_data, no_data]], crs=crs, shape=shape)
-    source2 = _mock_datasetsource([[2, 2], [2, 2]], crs=crs, shape=shape)
+    source1 = FakeDatasetSource([[1, 1], [no_data, no_data]], crs=crs)
+    source2 = FakeDatasetSource([[2, 2], [2, 2]], crs=crs)
     sources = [source1, source2]
 
     output_data = np.full(shape, fill_value=no_data, dtype='int16')
@@ -147,33 +148,68 @@ def test_mixed_result_when_first_source_partially_empty():
     assert (output_data == [[1, 1], [2, 2]]).all()
 
 
-def _mock_datasetsource(value, crs=None, shape=(2, 2)):
-    crs = crs or mock.MagicMock()
-    dataset_source = mock.MagicMock()
-    rio_reader = dataset_source.open.return_value.__enter__.return_value
-    rio_reader.crs = crs
-    rio_reader.transform = identity
-    rio_reader.shape = shape
-    rio_reader.read.return_value = np.array(value)
+class FakeBandDataSource(object):
+    def __init__(self, value, *args, **kwargs):
+        self.value = value
 
-    # Use the following if a reproject were to be required
-    # def fill_array(dest, *args, **kwargs):
-    #     dest[:] = value
-    # rio_reader.reproject.side_effect = fill_array
-    return dataset_source
+        self.crs = geometry.CRS('EPSG:4326')
+        self.transform = Affine.identity()
+        self.dtype = np.dtype('int16')
+        self.shape = (2, 2)
+        self.nodata = -999
+
+    def read(self, window=None, out_shape=None):
+        """Read data in the native format, returning a numpy array
+        """
+        return np.array(self.value)
+
+    def reproject(self, dest, dst_transform, dst_crs, dst_nodata, resampling, **kwargs):
+        return np.array(self.value)
+
+
+class FakeDatasetSource(DataSource):
+    def __init__(self, value, bandnumber=1, nodata=None, shape=(2, 2), crs=None, transform=None,
+                 band_source_class=FakeBandDataSource):
+        super(FakeDatasetSource, self).__init__()
+        self.value = value
+        self.bandnumber = bandnumber
+        self.crs = crs
+        self.transform = transform
+        self.band_source_class = band_source_class
+        self.shape = shape
+
+    def get_bandnumber(self, src):
+        return self.bandnumber
+
+    def get_transform(self, shape):
+        if self.transform is None:
+            raise RuntimeError('No transform in the data and no fallback')
+        return self.transform
+
+    def get_crs(self):
+        if self.crs is None:
+            raise RuntimeError('No CRS in the data and no fallback')
+        return self.crs
+
+    @contextmanager
+    def open(self):
+        """Context manager which returns a :class:`BandDataSource`"""
+        yield self.band_source_class(value=self.value, shape=self.shape)
+
+
+class BrokenBandDataSource(FakeBandDataSource):
+    def read(self, window=None, out_shape=None):
+        raise OSError('Read or write failed')
 
 
 def test_read_from_broken_source():
-    crs = mock.MagicMock()
+    crs = geometry.CRS('EPSG:4326')
     shape = (2, 2)
     no_data = -1
 
-    source1 = _mock_datasetsource([[1, 1], [no_data, no_data]], crs=crs, shape=shape)
-    source2 = _mock_datasetsource([[2, 2], [2, 2]], crs=crs, shape=shape)
+    source1 = FakeDatasetSource(value=[[1, 1], [no_data, no_data]], crs=crs, band_source_class=BrokenBandDataSource)
+    source2 = FakeDatasetSource(value=[[2, 2], [2, 2]], crs=crs)
     sources = [source1, source2]
-
-    rio_reader = source1.open.return_value.__enter__.return_value
-    rio_reader.read.side_effect = OSError('Read or write failed')
 
     output_data = np.full(shape, fill_value=no_data, dtype='int16')
 
