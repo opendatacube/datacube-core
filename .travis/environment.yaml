@@ -9,6 +9,7 @@ dependencies:
 - python-dateutil
 - jsonschema
 - cachetools
+- cloudpickle >= 0.4.0 # pickle logger objects
 - coveralls
 - numpy
 - numexpr # For AE/EE
