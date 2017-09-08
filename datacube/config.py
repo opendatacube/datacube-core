@@ -52,56 +52,68 @@ class LocalConfig(object):
     current user.
     """
 
-    def __init__(self, config, environment=None, files_loaded=None):
-        self._config = config
+    def __init__(self, config, files_loaded=None, env=None, driver=None):
+        self._config = config  # type: compat.configparser.ConfigParser
         self.files_loaded = []
         if files_loaded:
-            self.files_loaded = files_loaded
+            self.files_loaded = files_loaded  # type: list[str]
 
-        self.environment = environment
+        # The user may specify these when running, otherwise they are loaded from config.
+        self._specified_environment = env  # type: str
+        self._specified_driver = driver  # type: str
+
+        if not config.has_section(self.environment):
+            raise ValueError('No config section found for environment %r' % (env,))
 
     @classmethod
-    def find(cls, paths=DEFAULT_CONF_PATHS, env=None):
+    def find(cls, paths=DEFAULT_CONF_PATHS, env=None, driver=None):
         """
         Find config from possible filesystem locations.
 
         'env' is which environment to use from the config: it corresponds to the name of a config section
 
+        `driver` is a specific driver to use rather than the defaults.
+
         :type paths: list[str]
         :type env: str
+        :type driver: str
         :rtype: LocalConfig
         """
 
         config = compat.read_config(_DEFAULT_CONF)
         files_loaded = config.read(p for p in paths if p)
 
-        env = env or os.environ.get('DATACUBE_ENVIRONMENT') or config.get('user', 'default_environment')
-        if not config.has_section(env):
-            raise ValueError('No config section found for environment %r' % (env,))
-
         return LocalConfig(
             config,
-            environment=env,
-            files_loaded=files_loaded
+            files_loaded=files_loaded,
+            env=env,
+            driver=driver
         )
 
-    def _prop(self, key):
+    def _environment_prop(self, key):
+        # Get the property for the current instance.
         try:
             return self._config.get(self.environment, key)
         except compat.NoOptionError:
             return None
 
     @property
+    def environment(self):
+        return self._specified_environment or \
+               os.environ.get('DATACUBE_ENVIRONMENT') or \
+               self._config.get('user', 'default_environment')
+
+    @property
     def db_hostname(self):
-        return self._prop('db_hostname')
+        return self._environment_prop('db_hostname')
 
     @property
     def db_database(self):
-        return self._prop('db_database')
+        return self._environment_prop('db_database')
 
     @property
     def db_connection_timeout(self):
-        return int(self._prop('db_connection_timeout'))
+        return int(self._environment_prop('db_connection_timeout'))
 
     @property
     def db_username(self):
@@ -112,19 +124,24 @@ class LocalConfig(object):
             # No default on Windows
             default_username = None
 
-        return self._prop('db_username') or default_username
+        return self._environment_prop('db_username') or default_username
 
     @property
     def default_driver(self):
-        return self._prop('default_driver')
+        return (
+            self._specified_driver or
+            os.environ.get('DATACUBE_DEFAULT_DRIVER') or
+            # The default driver for the current environment
+            self._environment_prop('default_driver')
+        )
 
     @property
     def db_password(self):
-        return self._prop('db_password')
+        return self._environment_prop('db_password')
 
     @property
     def db_port(self):
-        return self._prop('db_port') or '5432'
+        return self._environment_prop('db_port') or '5432'
 
     def __str__(self):
         return "LocalConfig<loaded_from={}, config={}, environment={})".format(
