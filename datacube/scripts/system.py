@@ -76,19 +76,24 @@ def check(
     """
     Verify & view current configuration
     """
-    echo('Version:\t' + style(str(datacube.__version__), bold=True))
-    echo('Config files:\t' + style(','.join(local_config.files_loaded), bold=True))
-    echo('Host:\t\t' +
-         style('{}:{}'.format(local_config.db_hostname or 'localhost',
-                              local_config.db_port or '5432'), bold=True))
-    echo('Database:\t' + style('{}'.format(local_config.db_database), bold=True))
-    echo('User:\t\t' + style('{}'.format(local_config.db_username), bold=True))
-    echo('Environment:\t' + style('{}'.format(local_config.environment), bold=True))
+
+    def echo_field(name, value):
+        echo('{:<15}'.format(name + ':') + style(str(value), bold=True))
+
+    echo_field('Version', datacube.__version__)
+    echo_field('Config files', ','.join(local_config.files_loaded))
+    echo_field('Host',
+               '{}:{}'.format(local_config.db_hostname or 'localhost', local_config.db_port or '5432'))
+
+    echo_field('Database', local_config.db_database)
+    echo_field('User', local_config.db_username)
+    echo_field('Environment', local_config.environment)
 
     echo()
     echo('Valid connection:\t', nl=False)
     try:
-        with DriverManager(default_driver_name=local_config.default_driver, local_config=local_config) as driver_manager:
+        with DriverManager(default_driver_name=local_config.default_driver,
+                           local_config=local_config) as driver_manager:
             index = driver_manager.index
             echo(style('YES', bold=True))
             for role, user, description in index.users.list_users():
