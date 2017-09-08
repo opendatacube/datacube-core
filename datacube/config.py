@@ -35,10 +35,12 @@ default_driver: NetCDF CF
 
 
 [user]
-# This was the section name before we had environments, so it's backwards compatible with old configs.
+# Which environment to use when none is specified explicitly.
+# 'datacube' was the config section name before we had environments; it's used here to be backwards compatible.
 default_environment: datacube
 
 [datacube]
+# Inherit all defaults.
 """
 
 
