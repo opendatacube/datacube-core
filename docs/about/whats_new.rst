@@ -4,12 +4,6 @@
 
 What's New
 ==========
-(03 Aug 2017)utils/ls_usgs_prepare.py
--------------------------------------
--New file added under utils for USGS prepare script for Collection 1 data.
--Dataset path is given as a folder in directory after downloading data.
--Take cares bands of Landsat5/Landsat7/Landsat8 in one file
-
 
 
 v1.6.0 ??????? (?? ??????? 2017)
@@ -19,6 +13,8 @@ v1.6.0 ??????? (?? ??????? 2017)
    or a _GDAL_ based comparison. (Closed #243)
 
  - Allow creation of :class:`Geometry` objects from 3d representations. The Z axis is simply thrown away.
+
+ - Added example prepare script for Collection 1 USGS data; improved band handling and downloads.
 
 
 v1.5.2 Purpler Unicorn with Stars (28 August 2017)
