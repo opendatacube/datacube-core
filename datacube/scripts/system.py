@@ -83,6 +83,7 @@ def check(
                               local_config.db_port or '5432'), bold=True))
     echo('Database:\t' + style('{}'.format(local_config.db_database), bold=True))
     echo('User:\t\t' + style('{}'.format(local_config.db_username), bold=True))
+    echo('Environment:\t' + style('{}'.format(local_config.environment), bold=True))
 
     echo()
     echo('Valid connection:\t', nl=False)
