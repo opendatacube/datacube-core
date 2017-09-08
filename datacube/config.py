@@ -144,10 +144,11 @@ class LocalConfig(object):
         return self._environment_prop('db_port') or '5432'
 
     def __str__(self):
-        return "LocalConfig<loaded_from={}, config={}, environment={})".format(
+        return "LocalConfig<loaded_from={}, environment={!r}, driver={!r}, config={}>".format(
             self.files_loaded or 'defaults',
+            self.environment,
+            self.default_driver,
             dict(self._config[self.environment]),
-            self.environment
         )
 
     def __repr__(self):
