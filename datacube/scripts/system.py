@@ -7,6 +7,7 @@ from click import echo, style
 from sqlalchemy.exc import OperationalError
 
 import datacube
+from datacube.config import LocalConfig
 from datacube.drivers.manager import DriverManager
 from datacube.index.postgres._connections import IndexSetupError
 from datacube.ui import click as ui
@@ -69,27 +70,29 @@ def database_init(index, default_types, init_users, recreate_views, rebuild, loc
 
 @system.command('check', help='Check and display current configuration')
 @ui.pass_config
-def check(config_file):
+def check(
+        local_config  # type: LocalConfig
+):
     """
     Verify & view current configuration
     """
     echo('Version:\t' + style(str(datacube.__version__), bold=True))
-    echo('Config files:\t' + style(','.join(config_file.files_loaded), bold=True))
+    echo('Config files:\t' + style(','.join(local_config.files_loaded), bold=True))
     echo('Host:\t\t' +
-         style('{}:{}'.format(config_file.db_hostname or 'localhost',
-                              config_file.db_port or '5432'), bold=True))
-    echo('Database:\t' + style('{}'.format(config_file.db_database), bold=True))
-    echo('User:\t\t' + style('{}'.format(config_file.db_username), bold=True))
+         style('{}:{}'.format(local_config.db_hostname or 'localhost',
+                              local_config.db_port or '5432'), bold=True))
+    echo('Database:\t' + style('{}'.format(local_config.db_database), bold=True))
+    echo('User:\t\t' + style('{}'.format(local_config.db_username), bold=True))
 
     echo()
     echo('Valid connection:\t', nl=False)
     try:
-        # Initialise driver manager singleton
-        index = DriverManager(default_driver_name=None, index=None, local_config=config_file).index
-        echo(style('YES', bold=True))
-        for role, user, description in index.users.list_users():
-            if user == config_file.db_username:
-                echo('You have %s privileges.' % style(role.upper(), bold=True))
+        with DriverManager(default_driver_name=local_config.default_driver, local_config=local_config) as driver_manager:
+            index = driver_manager.index
+            echo(style('YES', bold=True))
+            for role, user, description in index.users.list_users():
+                if user == local_config.db_username:
+                    echo('You have %s privileges.' % style(role.upper(), bold=True))
     except OperationalError as e:
         handle_exception('Error Connecting to Database: %s', e)
     except IndexSetupError as e:

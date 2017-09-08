@@ -14,6 +14,7 @@ import click
 
 from datacube import config, __version__
 from datacube.api.core import Datacube
+from datacube.config import LocalConfig
 
 from datacube.executor import get_executor, mk_celery_executor
 
@@ -157,8 +158,7 @@ environment_option = click.option('--env', '-E', callback=_set_environment,
                                   expose_value=False)
 
 #: pylint: disable=invalid-name
-DEFAULT_DRIVER = 'NetCDF CF'
-driver_option = click.option('--driver', '-D', default=DEFAULT_DRIVER, callback=_set_driver,
+driver_option = click.option('--driver', '-D', default=None, callback=_set_driver,
                              expose_value=False)
 #: pylint: disable=invalid-name
 log_queries_option = click.option('--log-queries', is_flag=True, callback=_log_queries,
@@ -190,9 +190,11 @@ def pass_config(f):
         obj = click.get_current_context().obj
 
         paths = obj.get('config_files') or config.DEFAULT_CONF_PATHS
-        environment = obj.get('config_environment')
+        # If the user is overriding the defaults
+        specific_environment = obj.get('config_environment')
+        specific_driver = obj.get('driver')
 
-        parsed_config = config.LocalConfig.find(paths=paths, env=environment)
+        parsed_config = config.LocalConfig.find(paths=paths, env=specific_environment, driver=specific_driver)
         _LOG.debug("Loaded datacube config: %r", parsed_config)
         return f(parsed_config, *args, **kwargs)
 
@@ -212,14 +214,16 @@ def pass_driver_manager(app_name=None, expect_initialised=True):
 
     def decorate(f):
         @pass_config
-        def with_driver_manager(local_config, *args, **kwargs):
+        def with_driver_manager(local_config,  # type: LocalConfig
+                                *args,
+                                **kwargs):
             ctx = click.get_current_context()
             try:
                 with DriverManager(index=None,
+                                   default_driver_name=local_config.default_driver,
                                    local_config=local_config,
                                    application_name=app_name or ctx.command_path,
                                    validate_connection=expect_initialised) as driver_manager:
-                    driver_manager.set_current_driver(ctx.obj.get('driver') or DEFAULT_DRIVER)
                     ctx.obj['index'] = driver_manager.index
                     _LOG.debug("Driver manager ready. Connected to index: %s",
                                driver_manager.index)
