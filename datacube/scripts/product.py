@@ -90,14 +90,10 @@ def update_dataset_types(index, allow_unsafe, allow_exclusive_lock, dry_run, fil
                 echo('Failed to update "%s": %s' % (type_.name, e))
                 failures += 1
         else:
-            can_update, safe_changes, unsafe_changes = index.products.can_update(type_,
-                                                                                 allow_unsafe_updates=allow_unsafe)
-
-            for offset, old_val, new_val in safe_changes:
-                echo('Safe change in %r %s from %r to %r' % (type_.name, _readable_offset(offset), old_val, new_val))
-
-            for offset, old_val, new_val in unsafe_changes:
-                echo('Unsafe change in %r %s from %r to %r' % (type_.name, _readable_offset(offset), old_val, new_val))
+            can_update, safe_changes, unsafe_changes = index.products.can_update(
+                type_,
+                allow_unsafe_updates=allow_unsafe
+            )
 
             if can_update:
                 echo('Can update "%s": %s unsafe changes, %s safe changes' % (type_.name,
@@ -108,10 +104,6 @@ def update_dataset_types(index, allow_unsafe, allow_exclusive_lock, dry_run, fil
                                                                                  len(unsafe_changes),
                                                                                  len(safe_changes)))
     sys.exit(failures)
-
-
-def _readable_offset(offset):
-    return '.'.join(map(str, offset))
 
 
 @product.command('list')

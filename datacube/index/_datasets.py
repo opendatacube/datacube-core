@@ -102,6 +102,12 @@ class MetadataTypeResource(object):
         doc_changes = get_doc_changes(existing.definition, jsonify_document(metadata_type.definition))
         good_changes, bad_changes = changes.classify_changes(doc_changes, updates_allowed)
 
+        for offset, old_val, new_val in good_changes:
+            _LOG.info("Safe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
+
+        for offset, old_val, new_val in bad_changes:
+            _LOG.info("Unsafe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
+
         return allow_unsafe_updates or not bad_changes, good_changes, bad_changes
 
     def update(self, metadata_type, allow_unsafe_updates=False, allow_table_lock=False):
@@ -132,11 +138,6 @@ class MetadataTypeResource(object):
 
         _LOG.info("Updating metadata type %s", metadata_type.name)
 
-        for offset, old_val, new_val in safe_changes:
-            _LOG.info("Safe change from %r to %r", old_val, new_val)
-
-        for offset, old_val, new_val in unsafe_changes:
-            _LOG.info("Unsafe change from %r to %r", old_val, new_val)
 
         with self._db.connect() as connection:
             connection.update_metadata_type(
@@ -367,6 +368,12 @@ class ProductResource(object):
         doc_changes = get_doc_changes(existing.definition, jsonify_document(product.definition))
         good_changes, bad_changes = changes.classify_changes(doc_changes, updates_allowed)
 
+        for offset, old_val, new_val in good_changes:
+            _LOG.info("Safe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
+
+        for offset, old_val, new_val in bad_changes:
+            _LOG.info("Unsafe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
+
         return allow_unsafe_updates or not bad_changes, good_changes, bad_changes
 
     def update(self, product, allow_unsafe_updates=False, allow_table_lock=False):
@@ -391,12 +398,6 @@ class ProductResource(object):
         if not safe_changes and not unsafe_changes:
             _LOG.info("No changes detected for product %s", product.name)
             return self.get_by_name(product.name)
-
-        for offset, old_val, new_val in safe_changes:
-            _LOG.info("Safe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
-
-        for offset, old_val, new_val in unsafe_changes:
-            _LOG.info("Unsafe change in %s from %r to %r", _readable_offset(offset), old_val, new_val)
 
         if not can_update:
             full_message = "Unsafe changes at " + (

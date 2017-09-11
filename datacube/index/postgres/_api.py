@@ -509,6 +509,15 @@ class PostgresDbAPI(object):
         :rtype: list[((datetime.datetime, datetime.datetime), int)]
         """
 
+        results = self._connection.execute(
+            self.count_datasets_through_time_query(start, end, period, time_field, expressions)
+        )
+
+        for time_period, dataset_count in results:
+            # if not time_period.upper_inf:
+            yield Range(time_period.lower, time_period.upper), dataset_count
+
+    def count_datasets_through_time_query(self, start, end, period, time_field, expressions):
         raw_expressions = self._alchemify_expressions(expressions)
 
         start_times = select((
@@ -547,14 +556,7 @@ class PostgresDbAPI(object):
             )
         )
 
-        results = self._connection.execute(select((
-            time_ranges.c.time_period,
-            count_query.label('dataset_count')
-        )))
-
-        for time_period, dataset_count in results:
-            # if not time_period.upper_inf:
-            yield Range(time_period.lower, time_period.upper), dataset_count
+        return select((time_ranges.c.time_period, count_query.label('dataset_count')))
 
     @staticmethod
     def _from_expression(source_table, expressions=None, fields=None):
@@ -771,7 +773,7 @@ class PostgresDbAPI(object):
                     DATASET_LOCATION.c.added.desc()
                 )
             ).fetchall()
-            ]
+        ]
 
     def get_archived_locations(self, dataset_id):
         """
@@ -788,7 +790,7 @@ class PostgresDbAPI(object):
                     DATASET_LOCATION.c.added.desc()
                 )
             ).fetchall()
-            ]
+        ]
 
     def remove_location(self, dataset_id, uri):
         """
