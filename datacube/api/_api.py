@@ -1,4 +1,3 @@
-#    Copyright 2015 Geoscience Australia
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -20,6 +19,7 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from itertools import chain, groupby
+import warnings
 
 import numpy
 
@@ -114,8 +114,8 @@ class API(object):
             return str(ds.local_path)
 
         datasets.sort(key=dataset_path)
-        for path, datasets in groupby(datasets, key=dataset_path):
-            datasets = list(datasets)
+        for path, dataset_group in groupby(datasets, key=dataset_path):
+            datasets = list(dataset_group)
             su = {}
             times = [dataset.center_time for dataset in datasets]
             xs = [x for dataset in datasets for x in (dataset.bounds.left, dataset.bounds.right)]

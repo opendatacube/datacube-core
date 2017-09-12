@@ -9,6 +9,8 @@
 """
 Persistence API implementation for postgres.
 """
+from __future__ import absolute_import
+
 import logging
 
 from sqlalchemy import cast
@@ -499,6 +501,15 @@ class PostgresDbAPI(object):
         :rtype: list[((datetime.datetime, datetime.datetime), int)]
         """
 
+        results = self._connection.execute(
+            self.count_datasets_through_time_query(start, end, period, time_field, expressions)
+        )
+
+        for time_period, dataset_count in results:
+            # if not time_period.upper_inf:
+            yield Range(time_period.lower, time_period.upper), dataset_count
+
+    def count_datasets_through_time_query(self, start, end, period, time_field, expressions):
         raw_expressions = self._alchemify_expressions(expressions)
 
         start_times = select((
@@ -537,14 +548,7 @@ class PostgresDbAPI(object):
             )
         )
 
-        results = self._connection.execute(select((
-            time_ranges.c.time_period,
-            count_query.label('dataset_count')
-        )))
-
-        for time_period, dataset_count in results:
-            # if not time_period.upper_inf:
-            yield Range(time_period.lower, time_period.upper), dataset_count
+        return select((time_ranges.c.time_period, count_query.label('dataset_count')))
 
     @staticmethod
     def _from_expression(source_table, expressions=None, fields=None):
@@ -761,21 +765,24 @@ class PostgresDbAPI(object):
                     DATASET_LOCATION.c.added.desc()
                 )
             ).fetchall()
-            ]
+        ]
 
     def get_archived_locations(self, dataset_id):
+        """
+        Return a list of uris and archived_times for a dataset
+        """
         return [
-            record[0]
-            for record in self._connection.execute(
+            (location_uri, archived_time)
+            for location_uri, archived_time in self._connection.execute(
                 select([
-                    _dataset_uri_field(DATASET_LOCATION)
+                    _dataset_uri_field(DATASET_LOCATION), DATASET_LOCATION.c.archived
                 ]).where(
                     and_(DATASET_LOCATION.c.dataset_ref == dataset_id, DATASET_LOCATION.c.archived != None)
                 ).order_by(
                     DATASET_LOCATION.c.added.desc()
                 )
             ).fetchall()
-            ]
+        ]
 
     def remove_location(self, dataset_id, uri):
         """

@@ -76,44 +76,20 @@ MISSING = MissingSentinel()
 
 def get_doc_changes(original, new, base_prefix=()):
     """
-    Return a list of changed fields between two dict structures.
+    Return a list of `changed fields` between two dict structures.
+
+    A `changed field` is represented by a 3-tuple made up of:
+
+    1. `offset` to the change - a tuple of `item` accessors on the document.
+    2. What is in `original` - Either a single value, a dict or list, or :data:`MISSING`.
+    3. What is in `new`
+
+    If the documents are identical, an empty list is returned.
 
     :type original: Union[dict, list, int]
     :rtype: list[(tuple, object, object)]
 
 
-    >>> get_doc_changes(1, 1)
-    []
-    >>> get_doc_changes({}, {})
-    []
-    >>> get_doc_changes({'a': 1}, {'a': 1})
-    []
-    >>> get_doc_changes({'a': {'b': 1}}, {'a': {'b': 1}})
-    []
-    >>> get_doc_changes([1, 2, 3], [1, 2, 3])
-    []
-    >>> get_doc_changes([1, 2, [3, 4, 5]], [1, 2, [3, 4, 5]])
-    []
-    >>> get_doc_changes(1, 2)
-    [((), 1, 2)]
-    >>> get_doc_changes([1, 2, 3], [2, 1, 3])
-    [((0,), 1, 2), ((1,), 2, 1)]
-    >>> get_doc_changes([1, 2, [3, 4, 5]], [1, 2, [3, 6, 7]])
-    [((2, 1), 4, 6), ((2, 2), 5, 7)]
-    >>> get_doc_changes({'a': 1}, {'a': 2})
-    [(('a',), 1, 2)]
-    >>> get_doc_changes({'a': 1}, {'a': 2})
-    [(('a',), 1, 2)]
-    >>> get_doc_changes({'a': 1}, {'b': 1})
-    [(('a',), 1, missing), (('b',), missing, 1)]
-    >>> get_doc_changes({'a': {'b': 1}}, {'a': {'b': 2}})
-    [(('a', 'b'), 1, 2)]
-    >>> get_doc_changes({}, {'b': 1})
-    [(('b',), missing, 1)]
-    >>> get_doc_changes({'a': {'c': 1}}, {'a': {'b': 1}})
-    [(('a', 'b'), missing, 1), (('a', 'c'), 1, missing)]
-    >>> get_doc_changes({}, None, base_prefix=('a',))
-    [(('a',), {}, None)]
     """
     changed_fields = []
     if original == new:
@@ -140,31 +116,19 @@ class DocumentMismatchError(Exception):
 
 def check_doc_unchanged(original, new, doc_name):
     """
-    Complain if any fields have been modified on a document.
+    Raise an error if any fields have been modified on a document.
 
-    :param original:
-    :param new:
-    :param doc_name:
-    :return:
-
-
-    >>> check_doc_unchanged({'a': 1}, {'a': 1}, 'Letters')
-    >>> check_doc_unchanged({'a': 1}, {'a': 2}, 'Letters')
-    Traceback (most recent call last):
-    ...
-    ValueError: Letters differs from stored (a: 1!=2)
-    >>> check_doc_unchanged({'a': {'b': 1}}, {'a': {'b': 2}}, 'Letters')
-    Traceback (most recent call last):
-    ...
-    ValueError: Letters differs from stored (a.b: 1!=2)
+    :param original: original document
+    :param new: new document to compare against the original
+    :param doc_name: Label used to name the document
     """
     changes = get_doc_changes(original, new)
 
     if changes:
-        raise ValueError(
+        raise DocumentMismatchError(
             '{} differs from stored ({})'.format(
                 doc_name,
-                ', '.join(['{}: {!r}!={!r}'.format('.'.join(offset), v1, v2) for offset, v1, v2 in changes])
+                ', '.join(['{}: {!r}!={!r}'.format('.'.join(map(str, offset)), v1, v2) for offset, v1, v2 in changes])
             )
         )
 

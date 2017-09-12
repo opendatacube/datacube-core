@@ -5,8 +5,6 @@
 # Author:     Peter Wang
 #
 # Created:    14 July 2015
-# Copyright:  2015 Commonwealth Scientific and Industrial Research Organisation
-#             (CSIRO)
 # License:    This software is open source under the Apache v2.0 License
 #             as provided in the accompanying LICENSE file or available from
 #             https://github.com/data-cube/agdc-v2/blob/master/LICENSE
@@ -31,6 +29,7 @@ from pprint import pprint
 import numpy as np
 import numexpr as ne
 
+from datacube.compat import string_types
 from datacube.api import API
 
 LOG = logging.getLogger(__name__)
@@ -91,14 +90,9 @@ class AnalyticsEngine(object):
     def create_array(self, storage_type, variables, dimensions, name):
         """Creates an array descriptor with metadata about what the data will look like"""
 
-        try:
-            basestring
-        except NameError:
-            basestring = str
-
         # construct query descriptor
         query_parameters = {}
-        if isinstance(storage_type, basestring):
+        if isinstance(storage_type, string_types):
             query_parameters['storage_type'] = storage_type
         else:
             query_parameters['platform'] = storage_type[0]
@@ -127,7 +121,7 @@ class AnalyticsEngine(object):
 
             array_result = {}
             # storage_type_key
-            if isinstance(storage_type, basestring):
+            if isinstance(storage_type, string_types):
                 array_result['storage_type'] = storage_type
             else:
                 array_result['platform'] = storage_type[0]
@@ -360,35 +354,35 @@ class AnalyticsEngine(object):
             task['operation_type'] = OperationType.Reduction
 
             return self.add_to_plan(name, task)
-        else:
-            variable = next(iter(arrays.keys()))
-            orig_function = function
-            function = function.replace('array1', variable)
 
-            task = {}
+        variable = next(iter(arrays.keys()))
+        orig_function = function
+        function = function.replace('array1', variable)
 
-            task['array_input'] = []
-            task['array_input'].append(variable)
-            task['orig_function'] = orig_function
-            task['function'] = function
-            task['expression'] = 'none'
-            task['dimension'] = copy.deepcopy(dimensions)
+        task = {}
 
-            task['array_output'] = copy.deepcopy(next(iter(arrays.values()))['array_output'])
-            task['array_output']['variable'] = name
-            task['array_output']['dimensions_order'] = \
-                self.diff_list(next(iter(arrays.values()))['array_output']['dimensions_order'], dimensions)
+        task['array_input'] = []
+        task['array_input'].append(variable)
+        task['orig_function'] = orig_function
+        task['function'] = function
+        task['expression'] = 'none'
+        task['dimension'] = copy.deepcopy(dimensions)
 
-            result = ()
-            for value in task['array_output']['dimensions_order']:
-                input_task = self.task(task['array_input'][0])
-                index = next(iter(input_task.values()))['array_output']['dimensions_order'].index(value)
-                value = next(iter(input_task.values()))['array_output']['shape'][index]
-                result += (value,)
-            task['array_output']['shape'] = result
-            task['operation_type'] = OperationType.Reduction
+        task['array_output'] = copy.deepcopy(next(iter(arrays.values()))['array_output'])
+        task['array_output']['variable'] = name
+        task['array_output']['dimensions_order'] = \
+            self.diff_list(next(iter(arrays.values()))['array_output']['dimensions_order'], dimensions)
 
-            return self.add_to_plan(name, task)
+        result = ()
+        for value in task['array_output']['dimensions_order']:
+            input_task = self.task(task['array_input'][0])
+            index = next(iter(input_task.values()))['array_output']['dimensions_order'].index(value)
+            value = next(iter(input_task.values()))['array_output']['shape'][index]
+            result += (value,)
+        task['array_output']['shape'] = result
+        task['operation_type'] = OperationType.Reduction
+
+        return self.add_to_plan(name, task)
 
     def diff_list(self, list1, list2):
         """find items in list1 that are not in list2"""
@@ -408,7 +402,7 @@ class AnalyticsEngine(object):
     def list_searchables(self):
         """List searchable parameters for use in get_descriptor and get_data"""
         items = {}
-        if len(self.api_descriptors) == 0:
+        if not self.api_descriptors:
             self.api_descriptors = self.api.get_descriptor()
         for storage_type in self.api_descriptors.keys():
             item = {}
@@ -419,7 +413,7 @@ class AnalyticsEngine(object):
             item['storage_type'] = str(storage_type)
             items[str(storage_type)] = item
 
-        if len(self.api_products) == 0:
+        if self.api_products:
             self.api_products = self.api.list_products()
         for product in self.api_products:
             storage_type = str(product['name'])

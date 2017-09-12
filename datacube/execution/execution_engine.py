@@ -5,8 +5,6 @@
 # Author:     Peter Wang
 #
 # Created:    14 July 2015
-# Copyright:  2015 Commonwealth Scientific and Industrial Research Organisation
-#             (CSIRO)
 # License:    This software is open source under the Apache v2.0 License
 #             as provided in the accompanying LICENSE file or available from
 #             https://github.com/data-cube/agdc-v2/blob/master/LICENSE
@@ -83,8 +81,7 @@ class ExecutionEngine(object):
                 self.execute_expression(task)
             elif op_type == OperationType.Cloud_Mask:
                 self.execute_cloud_mask(task)
-            elif op_type == OperationType.Reduction and \
-                    len([s for s in self.REDUCTION_FNS.keys() if s in function]) > 0:
+            elif op_type == OperationType.Reduction and [s for s in self.REDUCTION_FNS if s in function]:
                 self.execute_reduction(task)
             elif op_type == OperationType.Bandmath:
                 self.execute_bandmath(task)

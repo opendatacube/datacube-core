@@ -9,7 +9,6 @@ from collections import namedtuple
 from datetime import datetime, date
 from decimal import Decimal
 
-
 from dateutil import tz
 from psycopg2.extras import NumericRange, DateTimeTZRange
 from sqlalchemy import cast, func, and_
@@ -226,8 +225,8 @@ class IntDocField(SimpleDocField):
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
 
-    def parse_value(self, s):
-        return int(s)
+    def parse_value(self, value):
+        return int(value)
 
 
 class NumericDocField(SimpleDocField):
@@ -237,8 +236,8 @@ class NumericDocField(SimpleDocField):
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
 
-    def parse_value(self, s):
-        return Decimal(s)
+    def parse_value(self, value):
+        return Decimal(value)
 
 
 class DoubleDocField(SimpleDocField):
@@ -248,8 +247,8 @@ class DoubleDocField(SimpleDocField):
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
 
-    def parse_value(self, s):
-        return float(s)
+    def parse_value(self, value):
+        return float(value)
 
 
 class DateDocField(SimpleDocField):
@@ -269,8 +268,8 @@ class DateDocField(SimpleDocField):
     def between(self, low, high):
         return ValueBetweenExpression(self, low, high)
 
-    def parse_value(self, s):
-        return utils.parse_time(s)
+    def parse_value(self, value):
+        return utils.parse_time(value)
 
     @property
     def day(self):
@@ -409,12 +408,36 @@ class DateRangeDocField(RangeDocField):
         """
         :rtype: Expression
         """
-        return RangeBetweenExpression(
-            self,
-            _default_utc(low),
-            _default_utc(high),
-            _range_class=DateTimeTZRange
-        )
+        low = _number_implies_year(low)
+        high = _number_implies_year(high)
+
+        if isinstance(low, datetime) and isinstance(high, datetime):
+            return RangeBetweenExpression(
+                self,
+                _default_utc(low),
+                _default_utc(high),
+                _range_class=DateTimeTZRange
+            )
+        else:
+            raise ValueError("Unknown comparison type for date range: "
+                             "expecting datetimes, got: (%r, %r)" % (low, high))
+
+
+def _number_implies_year(v):
+    # type: (Union[int, datetime]) -> datetime
+    """
+    >>> _number_implies_year(1994)
+    datetime.datetime(1994, 1, 1, 0, 0)
+    >>> _number_implies_year(datetime(1994, 4, 4))
+    datetime.datetime(1994, 4, 4, 0, 0)
+    """
+    if isinstance(v, compat.integer_types):
+        return datetime(v, 1, 1)
+    # The expression module parses all number ranges as floats.
+    if isinstance(v, float):
+        return datetime(int(v), 1, 1)
+
+    return v
 
 
 class PgExpression(Expression):

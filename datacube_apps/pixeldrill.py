@@ -5,7 +5,7 @@ Interactive Pixel Drill for AGDCv2.
 """
 # pylint: disable=import-error, wrong-import-position
 # Unavoidable with TK class hierarchy.
-# pylint: disable=too-many-ancestors
+# pylint: disable=too-many-ancestors, redefined-builtin
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import argparse
@@ -70,7 +70,7 @@ class Toolbar(NavigationToolbar2TkAgg):
         self._init_toolbar()
         self.configure(background='black')
 
-    def _Button(self, text, file_, command, extension='.gif'):
+    def _Button(self, text, file, command, extension='.gif'):
         b = tk.Button(master=self, text=text, padx=2, pady=2, command=command,
                       relief=tk.FLAT, font=FONT, justify=tk.CENTER)
         b.pack(side=tk.LEFT)
@@ -88,7 +88,7 @@ class Toolbar(NavigationToolbar2TkAgg):
             if text is None:
                 pass
             else:
-                button = self._Button(text=text, file_=image_file,
+                button = self._Button(text=text, file=image_file,
                                       command=getattr(self, callback))
                 if tooltip_text is not None:
                     ToolTip.createToolTip(button, tooltip_text)
@@ -173,7 +173,7 @@ class DrillToolbar(NavigationToolbar2TkAgg):
         self._init_toolbar()
         self.configure(background='black')
 
-    def _Button(self, text, file_, command, extension='.gif'):
+    def _Button(self, text, file, command, extension='.gif'):
         b = tk.Button(master=self, text=text, padx=2, pady=2, command=command,
                       relief=tk.FLAT, font=FONT)
         b.pack(side=tk.LEFT)
@@ -192,7 +192,7 @@ class DrillToolbar(NavigationToolbar2TkAgg):
                 # spacer, unhandled in Tk
                 pass
             else:
-                button = self._Button(text=text, file_=image_file,
+                button = self._Button(text=text, file=image_file,
                                       command=getattr(self, callback))
                 if tooltip_text is not None:
                     ToolTip.createToolTip(button, tooltip_text)

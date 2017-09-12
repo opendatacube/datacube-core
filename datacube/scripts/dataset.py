@@ -12,6 +12,7 @@ import click
 import yaml
 import yaml.resolver
 from click import echo
+import json
 from yaml import Node
 
 from datacube.index._api import Index
@@ -44,7 +45,7 @@ def find_matching_product(rules, doc):
     """:rtype: datacube.model.DatasetType"""
     matched = [rule for rule in rules if changes.contains(doc, rule['metadata'])]
     if not matched:
-        raise BadMatch('No matching Product found for %s' % doc.get('id', 'unidentified'))
+        raise BadMatch('No matching Product found for %s' % json.dumps(doc, indent=4))
     if len(matched) > 1:
         raise BadMatch('Too many matching Products found for %s. Matched %s.' % (
             doc.get('id', 'unidentified'), matched))
@@ -236,12 +237,6 @@ def update_dry_run(index, updates, dataset):
         echo('Cannot update %s: %s' % (dataset.id, e))
         return False
 
-    for offset, old_val, new_val in safe_changes:
-        echo('Safe change in %s:%s from %r to %r' % (dataset.id, '.'.join(offset), old_val, new_val))
-
-    for offset, old_val, new_val in unsafe_changes:
-        echo('Unsafe change in %s:%s from %r to %r' % (dataset.id, '.'.join(offset), old_val, new_val))
-
     if can_update:
         echo('Can update %s: %s unsafe changes, %s safe changes' % (dataset.id,
                                                                     len(unsafe_changes),
@@ -294,7 +289,7 @@ def _write_csv(infos):
         row['location'] = locations_[0] if locations_ else None
         return row
 
-    writer.writerows(map(add_first_location, infos))
+    writer.writerows(add_first_location(row) for row in infos)
 
 
 def _write_yaml(infos):

@@ -15,7 +15,7 @@ from dask import array as da
 from ..config import LocalConfig
 from ..compat import string_types
 from ..index import index_connect
-from ..storage.storage import DatasetSource, reproject_and_fuse
+from ..storage.storage import RasterDatasetSource, reproject_and_fuse
 from ..utils import geometry, intersects, data_resolution_and_offset
 from .query import Query, query_group_by, query_geopolygon
 
@@ -480,12 +480,16 @@ class Datacube(object):
             def data_func(measurement):
                 data = numpy.full(sources.shape + geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
                 for index, datasets in numpy.ndenumerate(sources.values):
-                    _fuse_measurement(data[index], datasets, geobox, measurement, fuse_func=fuse_func,
-                                      skip_broken_datasets=skip_broken_datasets)
+                    _fuse_measurement(data[index], datasets, geobox, measurement,
+                                      skip_broken_datasets=skip_broken_datasets,
+                                      fuse_func=fuse_func)
                 return data
         else:
             def data_func(measurement):
-                return _make_dask_array(sources, geobox, measurement, fuse_func, dask_chunks)
+                return _make_dask_array(sources, geobox, measurement,
+                                        skip_broken_datasets=skip_broken_datasets,
+                                        fuse_func=fuse_func,
+                                        dask_chunks=dask_chunks)
 
         return Datacube.create_storage(OrderedDict((dim, sources.coords[dim]) for dim in sources.dims),
                                        geobox, measurements, data_func)
@@ -532,15 +536,17 @@ class Datacube(object):
         self.close()
 
 
-def fuse_lazy(datasets, geobox, measurement, fuse_func=None, prepend_dims=0):
+def fuse_lazy(datasets, geobox, measurement, skip_broken_datasets=False, fuse_func=None, prepend_dims=0):
     prepend_shape = (1,) * prepend_dims
     data = numpy.full(geobox.shape, measurement['nodata'], dtype=measurement['dtype'])
-    _fuse_measurement(data, datasets, geobox, measurement, fuse_func)
+    _fuse_measurement(data, datasets, geobox, measurement,
+                      skip_broken_datasets=skip_broken_datasets,
+                      fuse_func=fuse_func)
     return data.reshape(prepend_shape + geobox.shape)
 
 
 def _fuse_measurement(dest, datasets, geobox, measurement, skip_broken_datasets=False, fuse_func=None):
-    reproject_and_fuse([DatasetSource(dataset, measurement['name']) for dataset in datasets],
+    reproject_and_fuse([RasterDatasetSource(dataset, measurement['name']) for dataset in datasets],
                        dest,
                        geobox.affine,
                        geobox.crs,
@@ -617,7 +623,8 @@ def _calculate_chunk_sizes(sources, geobox, dask_chunks):
     return irr_chunks, grid_chunks
 
 
-def _make_dask_array(sources, geobox, measurement, fuse_func=None, dask_chunks=None):
+def _make_dask_array(sources, geobox, measurement, skip_broken_datasets=False, fuse_func=None, dask_chunks=None):
+    #: pylint: disable=too-many-locals
     dsk_name = 'datacube_' + measurement['name']
 
     irr_chunks, grid_chunks = _calculate_chunk_sizes(sources, geobox, dask_chunks)
@@ -629,7 +636,9 @@ def _make_dask_array(sources, geobox, measurement, fuse_func=None, dask_chunks=N
     for irr_index, datasets in numpy.ndenumerate(sources.values):
         for grid_index, subset_geobox in geobox_subsets.items():
             dsk[(dsk_name,) + irr_index + grid_index] = (fuse_lazy,
-                                                         datasets, subset_geobox, measurement, fuse_func, sources.ndim)
+                                                         datasets, subset_geobox, measurement,
+                                                         skip_broken_datasets, fuse_func,
+                                                         sources.ndim)
 
     data = da.Array(dsk, dsk_name,
                     chunks=(sliced_irr_chunks + grid_chunks),

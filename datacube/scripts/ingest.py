@@ -41,8 +41,12 @@ def find_diff(input_type, output_type, index, **query):
     return tasks
 
 
-def morph_dataset_type(source_type, config):
-    output_type = DatasetType(source_type.metadata_type, deepcopy(source_type.definition))
+def morph_dataset_type(source_type, config, index):
+    output_metadata_type = source_type.metadata_type
+    if 'metadata_type' in config:
+        output_metadata_type = index.metadata_types.get_by_name(config['metadata_type'])
+
+    output_type = DatasetType(output_metadata_type, deepcopy(source_type.definition))
     output_type.definition['name'] = config['output_type']
     output_type.definition['managed'] = True
     output_type.definition['description'] = config['description']
@@ -116,41 +120,30 @@ def get_namemap(config):
     return {spec['src_varname']: spec['name'] for spec in config['measurements']}
 
 
-def make_output_type(index, config):
+def ensure_output_type(index, config, allow_product_changes=False):
+    # type: (Index, dict, bool) -> (DatasetType, DatasetType)
+    """
+    Create the output product for the given ingest config if it doesn't already exist.
+
+    It will throw a ValueError if the config already exists but differs from the existing.
+    Set allow_product_changes=True to allow changes.
+    """
     source_type = index.products.get_by_name(config['source_type'])
     if not source_type:
         click.echo("Source DatasetType %s does not exist" % config['source_type'])
         click.get_current_context().exit(1)
 
-    output_type = morph_dataset_type(source_type, config)
+    output_type = morph_dataset_type(source_type, config, index)
     _LOG.info('Created DatasetType %s', output_type.name)
 
-    # Some storage fields should not be in the product definition, and should be removed.
-    # To handle backwards compatibility for now, ignore them with custom rules,
-    # rather than using the default checks done by index.products.add
     existing = index.products.get_by_name(output_type.name)
-    backwards_compatible_fields = True
-    if existing and backwards_compatible_fields:
-        updates_allowed = {
-            ('description',): changes.allow_any,
-            ('metadata_type',): changes.allow_any,
-            ('storage', 'chunking'): changes.allow_any,
-            ('storage', 'driver'): changes.allow_any,
-            ('storage', 'dimension_order'): changes.allow_any,
-            ('metadata',): changes.allow_truncation
-        }
-
-        doc_changes = changes.get_doc_changes(output_type.definition,
-                                              datacube.utils.jsonify_document(existing.definition))
-        good_changes, bad_changes = changes.classify_changes(doc_changes, updates_allowed)
-        if bad_changes:
-            raise ValueError(
-                '{} differs from stored ({})'.format(
-                    output_type.name,
-                    ', '.join(['{}: {!r}!={!r}'.format('.'.join(offset), v1, v2) for offset, v1, v2 in bad_changes])
-                )
-            )
-        output_type = index.products.update(output_type, allow_unsafe_updates=True)
+    if existing:
+        can_update, safe_changes, unsafe_changes = index.products.can_update(output_type)
+        if safe_changes or unsafe_changes:
+            if not allow_product_changes:
+                raise ValueError("Ingest config differs from the existing output product, "
+                                 "but allow_product_changes=False")
+            output_type = index.products.update(output_type)
     else:
         output_type = index.products.add(output_type)
 
@@ -238,7 +231,7 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
     return datasets
 
 
-def _index_datasets(index, results, skip_sources):
+def _index_datasets(index, results):
     n = 0
     for datasets in results:
         for dataset in datasets.values:
@@ -283,7 +276,7 @@ def process_tasks(index, config, source_type, output_type, tasks, queue_size, ex
             # TODO: ideally we wouldn't block here indefinitely
             # maybe limit gather to 50-100 results and put the rest into a index backlog
             # this will also keep the queue full
-            n_successful += _index_datasets(index, executor.results(completed), skip_sources=True)
+            n_successful += _index_datasets(index, executor.results(completed))
         except Exception:  # pylint: disable=broad-except
             _LOG.exception('Gather failed')
             pending += completed
@@ -315,17 +308,27 @@ def _validate_year(ctx, param, value):
 @click.option('--load-tasks', help='Load tasks from the specified file',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
 @click.option('--dry-run', '-d', is_flag=True, default=False, help='Check if everything is ok')
+@click.option('--allow-product-changes', is_flag=True, default=False,
+              help='Allow the output product definition to be updated if it differs.')
 @ui.executor_cli_options
 @ui.pass_index(app_name='agdc-ingest')
-def ingest_cmd(index, config_file, year, queue_size, save_tasks, load_tasks, dry_run, executor):
+def ingest_cmd(index,
+               config_file,
+               year,
+               queue_size,
+               save_tasks,
+               load_tasks,
+               dry_run,
+               executor,
+               allow_product_changes):
     if config_file:
         config = load_config_from_file(index, config_file)
-        source_type, output_type = make_output_type(index, config)
+        source_type, output_type = ensure_output_type(index, config, allow_product_changes=allow_product_changes)
 
         tasks = create_task_list(index, output_type, year, source_type, config)
     elif load_tasks:
         config, tasks = load_tasks_(load_tasks)
-        source_type, output_type = make_output_type(index, config)
+        source_type, output_type = ensure_output_type(index, config, allow_product_changes=allow_product_changes)
     else:
         click.echo('Must specify exactly one of --config-file, --load-tasks')
         return 1

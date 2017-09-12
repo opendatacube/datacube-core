@@ -1,0 +1,42 @@
+name: agdc
+channels:
+- conda-forge
+- defaults
+- nodefaults
+dependencies:
+- pyyaml
+- sqlalchemy
+- python-dateutil
+- jsonschema
+- cachetools
+- coveralls
+- numpy
+- numexpr # For AE/EE
+- rasterio
+- singledispatch
+- netcdf4
+- gdal
+- psycopg2
+- dask
+- xarray
+- redis-py # redis client lib, used by celery
+- redis # redis server
+- pylint # testing
+- pep8 # testing
+- fiona # movie generator app
+- mock # testing
+- hypothesis # testing
+- matplotlib # pixel drill app
+- pathlib
+- compliance-checker = 3.0.3
+- cython # used by netcdf4 at compile only, but needed for compliance checker to load plugins
+- pygeoif = 0.6 # compliance-checker 3.0.3 fails with 0.7
+- paramiko # for simple-replicas
+- sshtunnel # for simple-replicas
+- tqdm # for simple-replicas
+- pip:
+  - celery >= 4
+  - pypeg2
+  - pytest-cov # testing
+  - pytest-logging
+  - pytest-faulthandler

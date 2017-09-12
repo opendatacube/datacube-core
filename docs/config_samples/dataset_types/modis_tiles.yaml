@@ -166,43 +166,123 @@ measurements:
             0: best
             1: good
             255: fill
-    - name: 'BRDF_Albedo_Parameters_Band1'
+    - name: 'BRDF_Albedo_Parameters_Band1_iso'
       dtype: int16
       units: '1'
       nodata: 32767
-    - name: 'BRDF_Albedo_Parameters_Band2'
+    - name: 'BRDF_Albedo_Parameters_Band1_vol'
+      dtype: int16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_Band1_geo'
+      dtype: int16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_Band2_iso'
       dtype: uint16
       units: '1'
       nodata: 32767
-    - name: 'BRDF_Albedo_Parameters_Band3'
+    - name: 'BRDF_Albedo_Parameters_Band2_vol'
       dtype: uint16
       units: '1'
       nodata: 32767
-    - name: 'BRDF_Albedo_Parameters_Band4'
+    - name: 'BRDF_Albedo_Parameters_Band2_geo'
       dtype: uint16
       units: '1'
       nodata: 32767
-    - name: 'BRDF_Albedo_Parameters_Band5'
+    - name: 'BRDF_Albedo_Parameters_Band3_iso'
       dtype: uint16
       units: '1'
       nodata: 32767
-    - name: 'BRDF_Albedo_Parameters_Band6'
+    - name: 'BRDF_Albedo_Parameters_Band3_vol'
       dtype: uint16
       units: '1'
       nodata: 32767
-    - name: 'BRDF_Albedo_Parameters_Band7'
+    - name: 'BRDF_Albedo_Parameters_Band3_geo'
       dtype: uint16
       units: '1'
       nodata: 32767
-    - name: 'BRDF_Albedo_Parameters_nir'
+    - name: 'BRDF_Albedo_Parameters_Band4_iso'
       dtype: uint16
       units: '1'
       nodata: 32767
-    - name: 'BRDF_Albedo_Parameters_shortwave'
+    - name: 'BRDF_Albedo_Parameters_Band4_vol'
       dtype: uint16
       units: '1'
       nodata: 32767
-    - name: 'BRDF_Albedo_Parameters_vis'
+    - name: 'BRDF_Albedo_Parameters_Band4_geo'
+      dtype: uint16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_Band5_iso'
+      dtype: uint16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_Band5_vol'
+      dtype: uint16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_Band5_geo'
+      dtype: uint16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_Band6_iso'
+      dtype: uint16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_Band6_vol'
+      dtype: uint16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_Band6_geo'
+      dtype: uint16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_Band7_iso'
+      dtype: uint16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_Band7_vol'
+      dtype: uint16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_Band7_geo'
+      dtype: uint16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_nir_iso'
+      dtype: uint16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_nir_vol'
+      dtype: uint16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_nir_geo'
+      dtype: uint16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_shortwave_iso'
+      dtype: uint16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_shortwave_vol'
+      dtype: uint16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_shortwave_geo'
+      dtype: uint16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_vis_iso'
+      dtype: uint16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_vis_vol'
+      dtype: uint16
+      units: '1'
+      nodata: 32767
+    - name: 'BRDF_Albedo_Parameters_vis_geo'
       dtype: uint16
       units: '1'
       nodata: 32767

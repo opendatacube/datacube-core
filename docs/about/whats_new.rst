@@ -5,6 +5,74 @@
 What's New
 ==========
 
+v1.5.2 Purpler Unicorn with Stars (28 August 2017)
+--------------------------------------------------
+
+ - Fix bug when reading data in native projection, but outside `source` area. Often hit when running `datacube-stats`
+
+ - Fix error loading and fusing data using `dask`. (Fixes #276)
+
+ - When reading data, implement `skip_broken_datasets` for the `dask` case too
+
+
+v1.5.1 Purpler Unicorn (13 July 2017)
+-------------------------------------
+
+ - Fix bug #261. Unable to load Australian Rainfall Grid Data. This was as a
+   result of the CRS/Transformation override functionality being broken when
+   using the latest `rasterio` version `1.0a9`
+
+
+v1.5.0 Purple Unicorn (9 July 2017)
+-----------------------------------
+
+Usability Improvements
+~~~~~~~~~~~~~~~~~~~~~~
+
+ - When `datacube dataset add` is unable to add a Dataset to the index, print
+   out the entire Dataset to make it easier to debug the problem.
+
+ - Give `datacube system check` prettier and more readable output.
+
+ - Make `celery` and `redis` optional when installing.
+
+ - Significantly reduced disk space usage for integration tests
+
+ - `Dataset` objects now have an `is_active` field to mirror `is_archived`.
+
+ - Added `index.datasets.get_archived_location_times()` to see when each
+   location was archived.
+
+v1.4.1 (25 May 2017)
+--------------------
+
+ - Support for reading multiband HDF datasets, such as MODIS collection 6
+
+ - Workaround for rasterio issue when reprojecting stacked data
+
+ - Bug fixes for command line arg handling
+
+v1.4.0 (17 May 2017)
+--------------------
+
+- Adds more convenient year/date range search expressions (see `#226`_)
+
+- Adds a :ref:`simple replication utility <replication>` (see `#223`_)
+
+- Fixed issue reading products without embedded CRS info, such as `bom_rainfall_grid` (see `#224`_)
+
+- Fixed issues with stacking and ncml creation for NetCDF files
+
+- Various documentation and bug fixes
+
+- Added CircleCI as a continuous build system, for previewing generated documenation on pull
+
+- Require ``xarray`` >= 0.9. Solves common problems caused by losing embedded ``flag_def`` and ``crs`` attributes.
+
+.. _#226: https://github.com/opendatacube/datacube-core/pull/226
+.. _#223: https://github.com/opendatacube/datacube-core/pull/223
+.. _#224: https://github.com/opendatacube/datacube-core/issues/224
+
 v1.3.1 (20 April 2017)
 ----------------------
 

@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-from datetime import datetime
 import logging
 import os
 import time
@@ -8,7 +7,10 @@ import click
 import cachetools
 import functools
 import itertools
+import re
 from pathlib import Path
+
+import pandas as pd
 
 try:
     import cPickle as pickle
@@ -108,6 +110,30 @@ task_app_options = dc_ui.compose(
 )
 
 
+def _cell_list_from_file(filename):
+    cell_matcher = re.compile(r'(\-?\d+)(?:\s*(?:,|_|\s)\s*)(\-?\d+)')
+    with open(filename) as cell_file:
+        for line in cell_file:
+            match = cell_matcher.match(line)
+            if match:
+                yield tuple(int(i) for i in match.groups())
+
+
+def cell_list_to_file(filename, cell_list):
+    with open(filename, 'w') as cell_file:
+        for cell in cell_list:
+            cell_file.write('{0},{1}\n'.format(*cell))
+
+
+def validate_cell_list(ctx, param, value):
+    try:
+        if value is None:
+            return None
+        return list(_cell_list_from_file(value))
+    except ValueError:
+        raise click.BadParameter('cell_index_list must be a file with lines in the form "14,-11"')
+
+
 def validate_cell_index(ctx, param, value):
     try:
         if value is None:
@@ -121,11 +147,50 @@ def validate_year(ctx, param, value):
     try:
         if value is None:
             return None
-        years = [int(y) for y in value.split('-', 2)]
-        return datetime(year=years[0], month=1, day=1), datetime(year=years[-1] + 1, month=1, day=1)
+        years = [pd.Period(y) for y in value.split('-', 2)]
+        return years[0].start_time.to_pydatetime(warn=False), years[-1].end_time.to_pydatetime(warn=False)
     except ValueError:
         raise click.BadParameter('year must be specified as a single year (eg 1996) '
                                  'or as an inclusive range (eg 1996-2001)')
+
+
+def break_query_into_years(time_query, **kwargs):
+    if time_query is None:
+        return [kwargs]
+    return [dict(time=time_range, **kwargs) for time_range in year_splitter(*time_query)]
+
+
+def year_splitter(start, end):
+    """
+    Produces a list of time ranges based that represent each year in the range.
+
+    `year_splitter('1992', '1993')` returns:
+
+    ::
+        [('1992-01-01 00:00:00', '1992-12-31 23:59:59.9999999'),
+         ('1993-01-01 00:00:00', '1993-12-31 23:59:59.9999999')]
+
+    :param str start: start year
+    :param str end: end year
+    :return Generator[tuple(str, str)]: strings representing the ranges
+    """
+    start_ts = pd.Timestamp(start)
+    end_ts = pd.Timestamp(end)
+    for p in pd.period_range(start=start_ts, end=end_ts, freq='A'):
+        yield str(p.start_time), str(p.end_time)
+
+
+#: pylint: disable=invalid-name
+cell_index_option = click.option('--cell-index', 'cell_index',
+                                 help='Limit the process to a particular cell (e.g. 14,-11)',
+                                 callback=validate_cell_index, default=None)
+#: pylint: disable=invalid-name
+cell_index_list_option = click.option('--cell-index-list', 'cell_index_list',
+                                      help='Limit the process to a file of cells indexes (e.g. 14,-11)',
+                                      callback=validate_cell_list, default=None)
+#: pylint: disable=invalid-name
+year_option = click.option('--year', 'time', help='Limit the process to a particular year',
+                           callback=validate_year)
 
 
 def task_app(make_config, make_tasks):
@@ -140,7 +205,7 @@ def task_app(make_config, make_tasks):
     def decorate(app_func):
         def with_app_args(index, app_config=None, input_tasks_file=None, output_tasks_file=None, *args, **kwargs):
             if (app_config is None) == (input_tasks_file is None):
-                click.echo('Must specify exactly one of --config, --load-tasks')
+                click.echo('Must specify exactly one of --app-config, --load-tasks')
                 click.get_current_context().exit(1)
 
             if app_config is not None:
@@ -196,6 +261,20 @@ def add_dataset_to_db(index, datasets):
 
 def do_nothing(result):
     pass
+
+
+def _wrap_impl(f, args, kwargs, task):
+    """
+    Helper method, needs to be at the top level
+    """
+    return f(task, *args, **kwargs)
+
+
+def wrap_task(f, *args, **kwargs):
+    """
+    Turn function `f(task, *args, **kwargs)` into `g(task)` in pickle-able fashion
+    """
+    return functools.partial(_wrap_impl, f, args, kwargs)
 
 
 def run_tasks(tasks, executor, run_task, process_result=None, queue_size=50):

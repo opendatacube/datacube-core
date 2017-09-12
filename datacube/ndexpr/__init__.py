@@ -5,8 +5,6 @@
 # Author:     Peter Wang
 #
 # Created:    7 October 2015
-# Copyright:  2015 Commonwealth Scientific and Industrial Research Organisation
-#             (CSIRO)
 #             Code based on PyParsing fourFn example by Paul McGuire
 #             Used with his with permission
 #             (http://pyparsing.wikispaces.com/file/view/fourFn.py)
@@ -26,7 +24,7 @@
 
 # pylint: disable=too-many-statements, too-many-branches, expression-not-assigned, too-many-locals,
 # pylint: disable=too-many-return-statements, protected-access, undefined-variable, too-many-public-methods
-# pylint: disable=consider-using-enumerate, deprecated-method
+# pylint: disable=consider-using-enumerate, deprecated-method, invalid-unary-operand-type
 
 from __future__ import absolute_import
 from __future__ import print_function
@@ -318,7 +316,7 @@ class NDexpr(object):
     def evaluate_stack(self, s):
         op = s.pop()
         if op == 'unary -':
-            return -self.evaluate_stack(s)
+            return -self.evaluate_stack(s)  # FIXME: Don't crash pylint
         elif op == 'unary ~':
             return ~self.evaluate_stack(s)
         elif op == 'unary !':
@@ -421,7 +419,7 @@ class NDexpr(object):
                 val = self.evaluate_stack(s)
                 if not isinstance(val, slice):
                     val = int(val)
-                ops += val,
+                ops += (val,)
                 i = i+1
             ops = ops[::-1]
             return op1[ops]

@@ -11,6 +11,8 @@ extras_require = {
     'distributed': ['distributed', 'dask[distributed]'],
     'analytics': ['scipy', 'pyparsing', 'numexpr'],
     'doc': ['Sphinx', 'setuptools'],
+    'replicas': ['paramiko', 'sshtunnel', 'tqdm'],
+    'celery': ['celery>=4', 'redis'],
     'test': tests_require,
 }
 # An 'all' option, following ipython naming conventions.
@@ -56,6 +58,7 @@ setup(
         '': ['*.yaml', '*/*.yaml'],
     },
     scripts=[
+        'datacube_apps/scripts/pbs_helpers.sh'
     ],
     setup_requires=[
         'pytest-runner'
@@ -65,7 +68,6 @@ setup(
         'cachetools',
         'click>=5.0',
         'dask[array]',
-        'gdal>=1.9',
         'jsonschema',
         'netcdf4',
         'numpy',
@@ -77,7 +79,7 @@ setup(
         'rasterio>=0.34',
         'singledispatch',
         'sqlalchemy',
-        'xarray',
+        'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
     ],
     extras_require=extras_require,
     tests_require=tests_require,
@@ -87,8 +89,12 @@ setup(
             'datacube-search = datacube.scripts.search_tool:cli',
             'datacube = datacube.scripts.cli_app:cli',
             'datacube-stacker = datacube_apps.stacker:main',
+            'datacube-worker = datacube_apps.worker:main',
+            'datacube-fixer = datacube_apps.stacker:fixer_main',
+            'datacube-ncml = datacube_apps.ncml:ncml_app',
             'pixeldrill = datacube_apps.pixeldrill:main [interactive]',
-            'movie_generator = datacube_apps.movie_generator:main'
+            'movie_generator = datacube_apps.movie_generator:main',
+            'datacube-simple-replica = datacube_apps.simple_replica:replicate'
         ]
     },
 )

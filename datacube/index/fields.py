@@ -77,8 +77,7 @@ def as_expression(field, value):
                 datetime.combine(value, time.max.replace(tzinfo=tz.tzutc()))
             )
         )
-    else:
-        return field == value
+    return field == value
 
 
 def _to_expression(get_field, name, value):

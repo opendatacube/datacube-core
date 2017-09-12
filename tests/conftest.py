@@ -11,17 +11,23 @@ import pytest
 
 
 @pytest.fixture
-def example_gdal_path(request):
+def example_gdal_path(data_folder):
     """Return the pathname of a sample geotiff file
 
     Use this fixture by specifiying an argument named 'example_gdal_path' in your
     test method.
     """
-    return str(request.fspath.dirpath('data/sample_tile_151_-29.tif'))
+    return str(os.path.join(data_folder, 'sample_tile_151_-29.tif'))
 
 
 @pytest.fixture
-def data_folder(request):
+def no_crs_gdal_path(data_folder):
+    """Return the pathname of a GDAL file that doesn't contain a valid CRS."""
+    return str(os.path.join(data_folder, 'no_crs_ds.tif'))
+
+
+@pytest.fixture
+def data_folder():
     return os.path.join(os.path.split(os.path.realpath(__file__))[0], 'data')
 
 

@@ -36,16 +36,16 @@ Follow the steps below to install and configure a new Data Cube instance.
 
     RunPrepScript -> IndexData [style=dashed];
 
-    InstallPackage [href="install.html", target="_top", label="Install Data Cube Package and
+    InstallPackage [href="../ops/install.html", target="_top", label="Install Data Cube Package and
      Dependencies"];
-    CreateDB [href="db_setup.html", target="_top", label="Create a Database to hold the
+    CreateDB [href="../ops/db_setup.html", target="_top", label="Create a Database to hold the
     Index"];
-    InitialiseDatabase [href="db_setup.html#initialise-the-database-schema", target="_top", label="Initialise Database"];
-    IndexData [href="indexing.html", target="_top", label="Index Datasets"];
-    WriteIngest [href="ingest.html#ingestion-configuration", target="_top", label="Write
+    InitialiseDatabase [href="../ops/db_setup.html#initialise-the-database-schema", target="_top", label="Initialise Database"];
+    IndexData [href="../ops/indexing.html", target="_top", label="Index Datasets"];
+    WriteIngest [href="../ops/ingest.html#ingestion-configuration", target="_top", label="Write
      ingest config"];
-    RunIngest [href="ingest.html#ingest-some-data", target="_top", label="Run ingestion"];
+    RunIngest [href="../ops/ingest.html#ingest-some-data", target="_top", label="Run ingestion"];
     Finished [label="Finished\nReady to analyse data"];
-    LoadProductTypes [href="indexing.html#product-definitions", target="_top", label="Define Product Types"];
-    WritePrepScript [href="prepare_scripts.html", target="_top", label="Write Prepare Script"];
-    RunPrepScript [href="prepare_scripts.html", target="_top", label="Run Prepare Script"];
+    LoadProductTypes [href="../ops/indexing.html#product-definitions", target="_top", label="Define Product Types"];
+    WritePrepScript [href="../ops/prepare_scripts.html", target="_top", label="Write Prepare Script"];
+    RunPrepScript [href="../ops/prepare_scripts.html", target="_top", label="Run Prepare Script"];

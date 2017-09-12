@@ -13,7 +13,7 @@ import sys
 import click
 
 from datacube import config, __version__
-from datacube.executor import get_executor
+from datacube.executor import get_executor, mk_celery_executor
 from datacube.index import index_connect
 from pathlib import Path
 
@@ -31,7 +31,7 @@ def _print_version(ctx, param, value):
 
     click.echo(
         '{prog}, version {version}'.format(
-            prog='Data Cube',
+            prog='Open Data Cube core',
             version=__version__
         )
     )
@@ -185,9 +185,10 @@ def pass_index(app_name=None, expect_initialised=True):
         def with_index(*args, **kwargs):
             ctx = click.get_current_context()
             try:
-                index = index_connect(ctx.obj['config_file'],
+                index = index_connect(ctx.obj.get('config_file') if ctx.obj else None,
                                       application_name=app_name or ctx.command_path,
                                       validate_connection=expect_initialised)
+                ctx.obj['index'] = index
                 _LOG.debug("Connected to datacube index: %s", index)
                 return f(index, *args, **kwargs)
             except (OperationalError, ProgrammingError) as e:
@@ -198,6 +199,18 @@ def pass_index(app_name=None, expect_initialised=True):
     return decorate
 
 
+def connect_to_index(app_name=None, expect_initialised=True):
+    ctx = click.get_current_context()
+    try:
+        index = index_connect(ctx.obj['config_file'],
+                              application_name=app_name or ctx.command_path,
+                              validate_connection=expect_initialised)
+        _LOG.debug("Connected to datacube index: %s", index)
+        return index
+    except (OperationalError, ProgrammingError) as e:
+        handle_exception('Error Connecting to database: %s', e)
+
+
 def parse_endpoint(value):
     ip, port = tuple(value.split(':'))
     return ip, int(port)
@@ -206,8 +219,11 @@ def parse_endpoint(value):
 EXECUTOR_TYPES = {
     'serial': lambda _: get_executor(None, None),
     'multiproc': lambda workers: get_executor(None, int(workers)),
-    'distributed': lambda addr: get_executor(parse_endpoint(addr), True)
+    'distributed': lambda addr: get_executor(parse_endpoint(addr), True),
+    'celery': lambda addr: mk_celery_executor(*parse_endpoint(addr))
 }
+
+EXECUTOR_TYPES['dask'] = EXECUTOR_TYPES['distributed']  # Add alias "dask" for distributed
 
 
 def _setup_executor(ctx, param, value):
