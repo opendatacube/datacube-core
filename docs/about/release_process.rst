@@ -59,6 +59,6 @@ stable version.
 
 .. _Jira: https://gaautobots.atlassian.net/projects/ACDD?selectedItem=com.atlassian.jira.jira-projects-plugin%3Arelease-page&status=unreleased
 
-.. _Datacube Environment: https://github.com/GeoscienceAustralia/ga-datacube-env#building-a-release
+.. _Datacube Environment: https://github.com/GeoscienceAustralia/digitalearthau/tree/develop/modules
 
 .. _Datcube Feedstock: https://github.com/conda-forge/datacube-feedstock#updating-datacube-feedstock
