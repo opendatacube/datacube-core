@@ -47,14 +47,15 @@ stable version.
 #. Update conda-forge recipe
     Follow the instrucions under **Updating datacube-feedstock** in the `Datcube Feedstock`_ repository.
     
-    It should involve modifying the version number in the `recipe <https://github.com/conda-forge/datacube-feedstock/blob/master/recipe/meta.yaml>`_ and updating the SHA hash.    
+    It should involve modifying the version number in the
+    `recipe <https://github.com/conda-forge/datacube-feedstock/blob/master/recipe/meta.yaml>`_ and updating the SHA hash.    
     The hash should be generated from the ``.tar.gz`` mentioned in the ``source`` of the recipe.
     
-    .. code-block::bash
-        
-        openssl sha256 <downloaded-datacube-source.tar.gz>
+    .. code-block:: bash
     
-
+        openssl sha256 <downloaded-datacube-source.tar.gz>
+        
+    
 #. Update the default version on `raijin`
     Follow the instructions under **Update default version** in the `Datacube Environment`_ repository.
 
@@ -74,4 +75,3 @@ stable version.
 .. _Datacube Environment: https://github.com/GeoscienceAustralia/digitalearthau/tree/develop/modules
 
 .. _Datcube Feedstock: https://github.com/conda-forge/datacube-feedstock#updating-datacube-feedstock
-
