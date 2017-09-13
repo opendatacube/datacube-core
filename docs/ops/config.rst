@@ -331,19 +331,29 @@ measurements
 Runtime Config
 --------------
 
-Runtime Config document specifies database connection configuration options:
+The runtime config specifies configuration options for the current user, such as
+available datacube instances and which to use by default.
 
 This is loaded from the following locations in order, if they exist, with properties from latter files
 overriding those in earlier ones:
 
- * /etc/datacube.conf
- * $DATACUBE_CONFIG_PATH
- * ~/.datacube.conf
- * datacube.conf
+ * ``/etc/datacube.conf``
+ * ``$DATACUBE_CONFIG_PATH``
+ * ``~/.datacube.conf``
+ * ``datacube.conf``
+
+Example:
 
 .. code-block:: text
+    [user]
+    # This should correspond to a section name in your config.
+    default_environment: dev
 
-    [datacube]
+    ## Development environment ##
+
+    [dev]
+    # These fields are all the defaults, so they could be omitted, but are here for reference
+
     db_database: datacube
 
     # A blank host will use a local socket. Specify a hostname (such as localhost) to use TCP.
@@ -354,4 +364,23 @@ overriding those in earlier ones:
     # db_username:
     # A blank password will fall back to default postgres driver authentication, such as reading your ~/.pgpass file.
     # db_password:
+
+    ## Staging environment ##
+
+    [staging]
+    db_hostname: staging.dea.ga.gov.au
+
+Note that the staging environment only specifies the hostname, all other fields will use default values (dbname
+datacube, current username, password loaded from ``~/.pgpass``)
+
+When using the datacube, it will use your default environment unless you specify one explicitly
+
+eg.
+
+    with Datacube(env='staging') as dc:
+        ...
+
+or for cli commmands ``-E <name>``:
+
+    datacube -E staging system check
 
