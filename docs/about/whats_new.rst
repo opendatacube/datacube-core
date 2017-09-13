@@ -16,6 +16,10 @@ v1.6.0 ??????? (?? ??????? 2017)
 
  - Added example prepare script for Collection 1 USGS data; improved band handling and downloads.
 
+ - Multiple environments can now be specified in one datacube config. See `#298`_ and the `config docs`_
+
+.. _#298: https://github.com/opendatacube/datacube-core/pull/298
+.. _config docs: https://datacube-core.readthedocs.io/en/latest/ops/config.html#runtime-config-doc
 
 v1.5.2 Purpler Unicorn with Stars (28 August 2017)
 --------------------------------------------------
