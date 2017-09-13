@@ -107,8 +107,11 @@ class Datacube(object):
         self._to_close = None
 
         if not driver_manager:
-            if isinstance(config, string_types):
-                config = LocalConfig.find([config], env=env)
+            if not config:
+                config = LocalConfig.find(env=env)
+            # The 'config' parameter could be a string path
+            elif isinstance(config, string_types):
+                config = LocalConfig.find(paths=[config], env=env)
 
             driver_manager = DriverManager(index=index, local_config=config, application_name=app)
             self._to_close = driver_manager
