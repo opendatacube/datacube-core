@@ -32,7 +32,7 @@ Once/if a built version has been tested on Raijin, found to be stable, and the t
 stable version.
 
 #. Merge changes leading up to the release into the `stable` branch
-    This will also update the `stable` docs
+    This will also update the `stable` docs.
 
 #. Upload the build to PyPi
     You might need a PyPI_ account with appropriate authorization.
@@ -41,11 +41,19 @@ stable version.
 
         python setup.py sdist bdist_wheel
         twine upload dist/*
+        
+    This should upload the project to https://pypi.python.org/pypi/datacube/.
 
 #. Update conda-forge recipe
     Follow the instrucions under **Updating datacube-feedstock** in the `Datcube Feedstock`_ repository.
-    It should involve modifying the version number in the `recipe <https://github.com/conda-forge/datacube-feedstock/blob/master/recipe/meta.yaml>`_ and updating the SHA hash.
+    
+    It should involve modifying the version number in the `recipe <https://github.com/conda-forge/datacube-feedstock/blob/master/recipe/meta.yaml>`_ and updating the SHA hash.    
     The hash should be generated from the ``.tar.gz`` mentioned in the ``source`` of the recipe.
+    
+    .. code-block::bash
+        
+        openssl sha256 <downloaded-datacube-source.tar.gz>
+    
 
 #. Update the default version on `raijin`
     Follow the instructions under **Update default version** in the `Datacube Environment`_ repository.
