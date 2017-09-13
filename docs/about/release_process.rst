@@ -60,7 +60,12 @@ stable version.
     Follow the instructions under **Update default version** in the `Datacube Environment`_ repository.
 
 #. Notify the community of the release using the Datacube Central mailing list
-    Ask Simon Oliver for the MailChimp details.
+    The notifications are sent out using MailChimp_. You might need an invitation from the Geoscience
+    Australia account.
+    
+    Create a campaign (possibly by replicating one of the existing ones) and change the notes.
+    You could send out a test mail to selected accounts before sending it out to the entire DEA
+    Beta Users list.
 
 .. _PyPI: https://pypi.python.org/pypi
 
@@ -75,3 +80,5 @@ stable version.
 .. _Datacube Environment: https://github.com/GeoscienceAustralia/digitalearthau/tree/develop/modules
 
 .. _Datcube Feedstock: https://github.com/conda-forge/datacube-feedstock#updating-datacube-feedstock
+
+.. _MailChimp: https://www.mailchimp.com
