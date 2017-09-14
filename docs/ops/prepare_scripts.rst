@@ -12,22 +12,73 @@ these description documents. Before loading them will need to generate them,
 using a tool which understands the format the dataset is in. Several of these
 tools are provided in  ``utils/`` in the source repository.
 
-A specific example is the :download:`USGS Landsat Prepare Script
-<../../utils/usgslsprepare.py>`
+The two examples below shows USGS landsat data for ingestion into the Data cube.
 
+#. A specific example for USGS collection 1 MTL format is :download:`USGS Landsat Prepare Script
+<../../utils/ls_usgs_prepare.py>`
+
+
+Preparing USGS Landsat Collection 1 - LEVEL1
+---------------------------------------------------
+
+Download the USGS Collection 1 landsat scenes from any of the link below:
+
+* `Earth-Explorer <https://earthexplorer.usgs.gov>`
+* `GloVis <https://glovis.usgs.gov>`
+* `ESPA ordering <https://espa.cr.usgs.gov>`
+
+The prepare script for collection 1 - level 1 data is provided in ``utils/ls_usgs_prepare.py``
+
+::
+
+    $ python utils/ls_usgs_prepare.py --help
+    Usage: ls_usgs_prepare.py [OPTIONS] [DATASETS]...
+
+        Prepare USGS Landsat Collection 1 data for ingestion into the Data Cube.
+        This prepare script supports only for MTL.txt metadata file
+        To Set the Path for referring the datasets -
+        Download the  Landsat scene data from Earth Explorer or GloVis into
+        'some_space_available_folder' and unpack the file.
+        For example: yourscript.py --output [Yaml- which writes datasets into this file for indexing]
+        [Path for dataset as : /home/some_space_available_folder/]
+
+    Options:
+        --output PATH  Write datasets into this file
+        --help         Show this message and exit.
+
+    $ python utils/ls_usgs_prepare.py --output ls8_usgs_lv1 ~/earth_explorer/Collection1/LANDSAT8
+
+*ls8_usgs_lv1* is the output for required dataset for landsat 8 scene.
+
+To add the product definitions:
+
+For Landsat collection 1 level 1 product:
+
+::
+
+    $ datacube product add docs/config_samples/dataset_types/ls_usgs.yaml
+    Added "ls8_level1_usgs"
+    Added "ls7_level1_usgs"
+    Added "ls5_level1_usgs"
+    Added "ls8_l1_pc_usgs"
+
+
+
+#. An another example for USGS landsat surface reflectance :download:`USGS Landsat LEDAPS
+<../../utils/USGS_precollection_oldscripts/ls_usgs_prepare.py>`
 
 Preparing USGS Landsat Surface Reflectance - LEDAPS
 ---------------------------------------------------
 
 To prepare downloaded USGS LEDAPS Landsat scenes for use with the Data Cube,
-use the script provided in ``utils/usgslsprepare.py``.
+use the script provided in ``utils/USGS_precollection_oldscripts/usgslsprepare.py``.
 
 The following example generates the required Dataset Metadata files, named
 `agdc-metadata.yaml` for three landsat scenes.
 
 ::
 
-    $ python utils/usgslsprepare.py --help
+    $ python utils/USGS_precollection_oldscripts/usgslsprepare.py --help
     Usage: usgslsprepare.py [OPTIONS] [DATASETS]...
 
       Prepare USGS LS dataset for ingestion into the Data Cube.
@@ -47,7 +98,9 @@ The following example generates the required Dataset Metadata files, named
 The scenes are now ready to be :ref:`indexed <indexing>` and accessed using
 the Data Cube.
 
-First add the product definitions::
+For Landsat Surface reflectance LEDAPS add:
+
+::
 
     $ datacube product add docs/config_samples/dataset_types/*
     ...
