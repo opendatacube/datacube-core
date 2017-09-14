@@ -13,6 +13,8 @@ import pytest
 from click.testing import CliRunner
 
 import datacube.scripts.cli_app
+from datacube import Datacube
+from datacube.config import LocalConfig
 from datacube.index.postgres import _dynamic
 from datacube.index.postgres.tables._core import drop_db, has_schema, SCHEMA_NAME
 
@@ -227,6 +229,46 @@ def example_user(global_integration_cli_args, db, request):
         users = (user_name for role_name, user_name, desc in connection.list_users())
         if username in users:
             connection.drop_users([username])
+
+
+def test_multiple_environment_config(tmpdir):
+    config_path = tmpdir.join('second.conf')
+
+    config_path.write("""
+    [user]
+    default_environment: test_default
+    
+    [test_default]
+    db_hostname: test.fake.opendatacube.org
+    
+    [test_alt]
+    db_hostname: alt-test.fake.opendatacube.org
+    """)
+
+    config = LocalConfig.find([config_path])
+    assert config.db_hostname == 'test.fake.opendatacube.org'
+    config = LocalConfig.find([config_path], env='test_alt')
+    assert config.db_hostname == 'alt-test.fake.opendatacube.org'
+
+    # Lazily connect: they shouldn't try to connect during this test
+    args = dict(validate_connection=False)
+
+    # Make sure the correct config is passed through the API
+    # Parsed config:
+    with Datacube(config=config, **args) as dc:
+        assert dc.index.url == 'test.fake.opendatacube.org'
+
+    # When none specified, default environment is loaded
+    with Datacube(config=config_path, **args) as dc:
+        assert dc.index.url == 'test.fake.opendatacube.org'
+    # When specific environment is loaded
+    with Datacube(config=config_path, env='test_alt', **args) as dc:
+        assert dc.index.url == 'alt-test.fake.opendatacube.org'
+
+    # An environment that isn't in any config files
+    with pytest.raises(ValueError):
+        with Datacube(config=config_path, env='undefined-env', **args) as dc:
+            pass
 
 
 def test_user_creation(global_integration_cli_args, example_user):

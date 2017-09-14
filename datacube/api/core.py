@@ -69,7 +69,13 @@ class Datacube(object):
     :type index: datacube.index._api.Index
     """
 
-    def __init__(self, index=None, config=None, app=None, env=None, driver_manager=None):
+    def __init__(self,
+                 index=None,
+                 config=None,
+                 app=None,
+                 env=None,
+                 driver_manager=None,
+                 validate_connection=None):
         """
         Create the interface for the query and storage access.
 
@@ -113,7 +119,10 @@ class Datacube(object):
             elif isinstance(config, string_types):
                 config = LocalConfig.find(paths=[config], env=env)
 
-            driver_manager = DriverManager(index=index, local_config=config, application_name=app)
+            driver_manager = DriverManager(index=index,
+                                           local_config=config,
+                                           application_name=app,
+                                           validate_connection=validate_connection)
             self._to_close = driver_manager
 
         self.driver_manager = driver_manager
