@@ -247,7 +247,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    ('index', 'ODC.tex', u'Open Data Cube Documentation')
+    ('index', 'ODC.tex', u'Open Data Cube Documentation', 'Open Data Cube', 'manual')
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
