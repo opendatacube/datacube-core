@@ -1,6 +1,7 @@
 name: agdc
 channels:
 - conda-forge
+- conda-forge/label/dev
 - defaults
 - nodefaults
 dependencies:
