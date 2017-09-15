@@ -23,9 +23,9 @@ Preparing USGS Landsat Collection 1 - LEVEL1
 
 Download the USGS Collection 1 landsat scenes from any of the link below:
 
-* `Earth-Explorer <https://earthexplorer.usgs.gov>`
-* `GloVis <https://glovis.usgs.gov>`
-* `ESPA ordering <https://espa.cr.usgs.gov>`
+* `Earth-Explorer <https://earthexplorer.usgs.gov>`_
+* `GloVis <https://glovis.usgs.gov>`_
+* `ESPA ordering <https://espa.cr.usgs.gov>`_
 
 The prepare script for collection 1 - level 1 data is provided in ``utils/ls_usgs_prepare.py``
 
