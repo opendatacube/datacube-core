@@ -8,6 +8,7 @@ import warnings
 from collections import namedtuple, OrderedDict
 from itertools import groupby, repeat
 from math import ceil
+from pathlib import PurePath
 
 import numpy
 import pandas
@@ -116,7 +117,7 @@ class Datacube(object):
             if not config:
                 config = LocalConfig.find(env=env)
             # The 'config' parameter could be a string path
-            elif isinstance(config, string_types):
+            elif isinstance(config, (string_types, PurePath)):
                 config = LocalConfig.find(paths=[config], env=env)
 
             driver_manager = DriverManager(index=index,

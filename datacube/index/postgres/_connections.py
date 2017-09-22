@@ -62,6 +62,7 @@ class PostgresDb(object):
 
     @property
     def url(self):
+        # type: () -> URL
         return self._engine.url
 
     @staticmethod

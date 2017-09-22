@@ -81,7 +81,7 @@ class LocalConfig(object):
         """
 
         config = compat.read_config(_DEFAULT_CONF)
-        files_loaded = config.read(p for p in paths if p)
+        files_loaded = config.read(str(p) for p in paths if p)
 
         return LocalConfig(
             config,

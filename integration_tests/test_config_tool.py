@@ -237,33 +237,38 @@ def test_multiple_environment_config(tmpdir):
     config_path.write("""
     [user]
     default_environment: test_default
-    
+
     [test_default]
-    db_hostname: test.fake.opendatacube.org
-    
+    db_hostname: db.opendatacube.test
+
     [test_alt]
-    db_hostname: alt-test.fake.opendatacube.org
+    db_hostname: alt-db.opendatacube.test
     """)
 
-    config = LocalConfig.find([config_path])
-    assert config.db_hostname == 'test.fake.opendatacube.org'
-    config = LocalConfig.find([config_path], env='test_alt')
-    assert config.db_hostname == 'alt-test.fake.opendatacube.org'
+    config_path = str(config_path)
 
-    # Lazily connect: they shouldn't try to connect during this test
+    config = LocalConfig.find([config_path])
+    assert config.db_hostname == 'db.opendatacube.test'
+    alt_config = LocalConfig.find([config_path], env='test_alt')
+    assert alt_config.db_hostname == 'alt-db.opendatacube.test'
+
+    # Lazily connect: they shouldn't try to connect during this test as we're not using the API
     args = dict(validate_connection=False)
 
     # Make sure the correct config is passed through the API
     # Parsed config:
+    db_url = 'postgresql://{user}@db.opendatacube.test:5432/datacube'.format(user=config.db_username)
+    alt_db_url = 'postgresql://{user}@alt-db.opendatacube.test:5432/datacube'.format(user=config.db_username)
+
     with Datacube(config=config, **args) as dc:
-        assert dc.index.url == 'test.fake.opendatacube.org'
+        assert str(dc.index.url) == db_url
 
     # When none specified, default environment is loaded
-    with Datacube(config=config_path, **args) as dc:
-        assert dc.index.url == 'test.fake.opendatacube.org'
+    with Datacube(config=str(config_path), **args) as dc:
+        assert str(dc.index.url) == db_url
     # When specific environment is loaded
     with Datacube(config=config_path, env='test_alt', **args) as dc:
-        assert dc.index.url == 'alt-test.fake.opendatacube.org'
+        assert str(dc.index.url) == alt_db_url
 
     # An environment that isn't in any config files
     with pytest.raises(ValueError):
