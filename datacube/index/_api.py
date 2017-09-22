@@ -7,8 +7,9 @@ from __future__ import absolute_import
 import logging
 from pathlib import Path
 
+from sqlalchemy.engine.url import URL
+
 import datacube.utils
-from datacube.config import LocalConfig
 from ._datasets import DatasetResource, ProductResource, MetadataTypeResource
 from .postgres import PostgresDb
 
@@ -48,6 +49,7 @@ class Index(object):
 
     @property
     def url(self):
+        # type: () -> URL
         return self._db.url
 
     def init_db(self, with_default_types=True, with_permissions=True, with_s3_tables=False):

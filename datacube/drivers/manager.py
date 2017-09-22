@@ -169,9 +169,13 @@ class DriverManager(object):
                 driver_cls = getattr(driver_module, spec[1])
                 if issubclass(driver_cls, Driver):
                     driver = driver_cls(weakref.ref(self)(), spec[0], index, *index_args, **index_kargs)
-                    if not driver.requirements_satisfied():
+
+                    validate_connection = index_kargs['validate_connection'] \
+                        if 'validate_connection' in index_kargs else True
+                    if validate_connection and not driver.requirements_satisfied():
                         self.logger.info('Driver plugin "%s" failed requirements check, skipping.', spec[1])
                         continue
+
                     self.__drivers[driver.name] = driver
                 else:
                     self.logger.info('Driver plugin "%s" is not a subclass of the abstract Driver class.',
