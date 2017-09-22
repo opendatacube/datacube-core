@@ -17,7 +17,7 @@ dependencies:
 - singledispatch
 - netcdf4
 - psycopg2
-- gdal
+- gdal = 2.1.*  # fiona requires 2.1 libgdal, doesn't trigger gdal 2.1
 - dask
 - xarray
 - redis-py # redis client lib, used by celery
