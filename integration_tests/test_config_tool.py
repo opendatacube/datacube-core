@@ -235,14 +235,14 @@ def test_multiple_environment_config(tmpdir):
     config_path = tmpdir.join('second.conf')
 
     config_path.write("""
-    [user]
-    default_environment: test_default
+[user]
+default_environment: test_default
 
-    [test_default]
-    db_hostname: db.opendatacube.test
+[test_default]
+db_hostname: db.opendatacube.test
 
-    [test_alt]
-    db_hostname: alt-db.opendatacube.test
+[test_alt]
+db_hostname: alt-db.opendatacube.test
     """)
 
     config_path = str(config_path)
