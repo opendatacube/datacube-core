@@ -17,7 +17,8 @@ dependencies:
 - singledispatch
 - netcdf4
 - psycopg2
-- gdal = 2.1.*  # fiona requires 2.1 libgdal, doesn't trigger gdal 2.1
+- gdal = 2.1.*        # [py27]
+- gdal                # [not py27]
 - dask
 - xarray
 - redis-py # redis client lib, used by celery
@@ -41,3 +42,6 @@ dependencies:
   - pytest-cov # testing
   - pytest-logging
   - pytest-faulthandler
+
+# [py27] is a preprocessing-selector
+# https://conda.io/docs/user-guide/tasks/build-packages/define-metadata.html#preprocessing-selectors
