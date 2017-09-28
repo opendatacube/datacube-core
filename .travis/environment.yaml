@@ -16,8 +16,8 @@ dependencies:
 - rasterio >= 0.9 # to handle weird 1.0a ordering...
 - singledispatch
 - netcdf4
-- gdal
 - psycopg2
+- gdal = 2.1.*  # fiona requires 2.1 libgdal, doesn't trigger gdal 2.1
 - dask
 - xarray
 - redis-py # redis client lib, used by celery
