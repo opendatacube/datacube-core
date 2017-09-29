@@ -153,6 +153,20 @@ class Dataset(object):
         except AttributeError:
             return None
 
+    @cached_property
+    def key_time(self):
+        """
+        :rtype: datetime.datetime
+        """
+        if 'key_time' in self.metadata.fields:
+            return self.metadata.key_time
+
+        # Existing datasets are already using the computed "center_time" for their storage index key
+        # if 'center_time' in self.metadata.fields:
+        #     return self.metadata.center_time
+
+        return self.center_time
+
     @property
     def bounds(self) -> Optional[geometry.BoundingBox]:
         """ :returns: bounding box of the dataset in the native crs
