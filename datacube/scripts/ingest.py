@@ -55,6 +55,9 @@ def morph_dataset_type(source_type, config, index):
     output_type.definition['storage'] = {k: v for (k, v) in config['storage'].items()
                                          if k in ('crs', 'tile_size', 'resolution', 'origin')}
 
+    if 'metadata_type' in config:
+        output_type.definition['metadata_type'] = config['metadata_type']
+
     def merge_measurement(measurement, spec):
         measurement.update({k: spec.get(k, measurement[k]) for k in ('name', 'nodata', 'dtype')})
         return measurement
