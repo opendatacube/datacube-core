@@ -86,6 +86,9 @@ def morph_dataset_type(source_type, config, driver_manager):
                                          if k in ('crs', 'driver', 'tile_size', 'resolution', 'origin')}
     output_type.metadata_doc['format'] = {'name': driver_manager.driver.format}
 
+    if 'metadata_type' in config:
+        output_type.definition['metadata_type'] = config['metadata_type']
+
     def merge_measurement(measurement, spec):
         measurement.update({k: spec.get(k, measurement[k]) for k in ('name', 'nodata', 'dtype')})
         return measurement
