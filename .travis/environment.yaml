@@ -1,5 +1,6 @@
 name: agdc
 channels:
+- conda-forge/label/dev
 - conda-forge
 - defaults
 - nodefaults
@@ -12,11 +13,12 @@ dependencies:
 - coveralls
 - numpy
 - numexpr # For AE/EE
-- rasterio
+- rasterio >= 0.9 # to handle weird 1.0a ordering...
 - singledispatch
 - netcdf4
-- gdal
 - psycopg2
+- gdal = 2.1.*        # [py27]
+- gdal                # [not py27]
 - dask
 - xarray
 - redis-py # redis client lib, used by celery
@@ -40,3 +42,6 @@ dependencies:
   - pytest-cov # testing
   - pytest-logging
   - pytest-faulthandler
+
+# [py27] is a preprocessing-selector
+# https://conda.io/docs/user-guide/tasks/build-packages/define-metadata.html#preprocessing-selectors
