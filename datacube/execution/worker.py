@@ -50,7 +50,6 @@ def main(executor, nprocs):
     launchers = dict(celery=launch_celery_worker,
                      dask=launch_distributed_worker,
                      distributed=launch_distributed_worker)
-
     ex_type, host, port = executor
     return launchers[ex_type](host, port, nprocs)
 
