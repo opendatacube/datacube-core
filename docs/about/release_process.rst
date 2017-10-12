@@ -18,12 +18,6 @@ Build a version
 #. Draft a new release on the Datacube_ GitHub repository
     Include the items added to the release notes in step 2.
 
-#. Mark the version as released in Jira_
-    Move any open issues to the next version.
-
-#. Install the datacube module on `raijin`
-    Follow the instructions on installing the **Data Cube** module on the `Datacube Environment`_ repository,
-    but do not yet make it the default module version.
 
 Marking it stable
 =================
