@@ -61,7 +61,7 @@ def launch_worker(host, port=6379, password=None, nprocs=None):
 
     set_address(host, port, password=password)
 
-    argv = ['worker', '-A', 'datacube._celery_runner']
+    argv = ['worker', '-A', 'datacube._celery_runner', '-E', '-l', 'INFO']
     if nprocs is not None:
         argv.extend(['-c', str(nprocs)])
 
