@@ -12,6 +12,12 @@ Build a version
 #. Check that Travis_ and readthedocs_ are passing for the latest commit
     Make sure that the tests have finished running!
 
+#. Tag the branch
+    Use the format of ``datacube-major.minor.bugfix``.
+
+#. Draft a new release on the Datacube_ GitHub repository
+    Include the items added to the release notes in step 2.
+
 
 Marking it stable
 =================
