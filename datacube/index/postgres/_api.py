@@ -415,16 +415,17 @@ class PostgresDbAPI(object):
         where_expr = and_(DATASET.c.archived == None, *raw_expressions)
 
         if not source_exprs:
-            return select(
-                       select_columns
-                   ).select_from(
-                       from_expression
-                   ).where(
-                       where_expr
-                   ).limit(
-                       limit
-                   )
-
+            return (
+                select(
+                    select_columns
+                ).select_from(
+                    from_expression
+                ).where(
+                    where_expr
+                ).limit(
+                    limit
+                )
+            )
         base_query = (
             select(
                 select_columns + (DATASET_SOURCE.c.source_dataset_ref,
@@ -450,17 +451,19 @@ class PostgresDbAPI(object):
             )
         )
 
-        return select(
-                   [distinct(recursive_query.c.id)] +
-                   [col for col in recursive_query.columns
-                    if col.name not in ['id', 'source_dataset_ref', 'distance', 'path']]
-               ).select_from(
-                   recursive_query.join(DATASET, DATASET.c.id == recursive_query.c.source_dataset_ref)
-               ).where(
-                   and_(DATASET.c.archived == None, *PostgresDbAPI._alchemify_expressions(source_exprs))
-               ).limit(
-                   limit
-               )
+        return (
+            select(
+                [distinct(recursive_query.c.id)] +
+                [col for col in recursive_query.columns
+                 if col.name not in ['id', 'source_dataset_ref', 'distance', 'path']]
+            ).select_from(
+                recursive_query.join(DATASET, DATASET.c.id == recursive_query.c.source_dataset_ref)
+            ).where(
+                and_(DATASET.c.archived == None, *PostgresDbAPI._alchemify_expressions(source_exprs))
+            ).limit(
+                limit
+            )
+        )
 
     def search_datasets(self, expressions,
                         source_exprs=None, select_fields=None,
