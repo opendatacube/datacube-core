@@ -1,17 +1,30 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
+import cloudpickle
 from celery import Celery
 from time import sleep
 import redis
 import os
+import kombu.serialization
+
+from celery.backends import base as celery_base
 
 # This can be changed via environment variable `REDIS`
 REDIS_URL = 'redis://localhost:6379/0'
 
+kombu.serialization.registry.register(
+    'cloudpickle',
+    cloudpickle.dumps, cloudpickle.loads,
+    content_type='application/x-python-cloudpickle',
+    content_encoding='binary'
+)
+
+# Tell celery that it's ok to serialise exceptions using cloudpickle.
+celery_base.EXCEPTION_ABLE_CODECS = celery_base.EXCEPTION_ABLE_CODECS.union({'cloudpickle'})
+
 
 def mk_celery_app(addr=None):
-
     if addr is None:
         url = os.environ.get('REDIS', REDIS_URL)
     else:
@@ -20,9 +33,11 @@ def mk_celery_app(addr=None):
     _app = Celery('datacube_task', broker=url, backend=url)
 
     _app.conf.update(
-        task_serializer='pickle',
-        result_serializer='pickle',
-        accept_content=['pickle'])
+        task_serializer='cloudpickle',
+        result_serializer='cloudpickle',
+        event_serializer='cloudpickle',
+        accept_content=['cloudpickle', 'json', 'pickle']
+    )
 
     return _app
 
@@ -43,16 +58,8 @@ def set_address(host, port=6379, db=0, password=None):
 
 
 @app.task()
-def run_cloud_pickled_function(f_data, *args, **kwargs):
-    from cloudpickle import loads
-    func = loads(f_data)
+def run_function(func, *args, **kwargs):
     return func(*args, **kwargs)
-
-
-def submit_cloud_pickled_function(f, *args, **kwargs):
-    from cloudpickle import dumps
-    f_data = dumps(f)
-    return run_cloud_pickled_function.delay(f_data, *args, **kwargs)
 
 
 def launch_worker(host, port=6379, password=None, nprocs=None):
@@ -116,7 +123,7 @@ class CeleryExecutor(object):
         return 'CeleryRunner'
 
     def submit(self, func, *args, **kwargs):
-        return submit_cloud_pickled_function(func, *args, **kwargs)
+        return run_function.delay(func, *args, **kwargs)
 
     def map(self, func, iterable):
         return [self.submit(func, data) for data in iterable]
@@ -201,7 +208,7 @@ def launch_redis(port=6379, password=None, **kwargs):
 
     def stringify(v):
         if isinstance(v, str):
-            return '"'+v+'"' if v.find(' ') >= 0 else v
+            return '"' + v + '"' if v.find(' ') >= 0 else v
 
         if isinstance(v, bool):
             return {True: 'yes', False: 'no'}[v]
