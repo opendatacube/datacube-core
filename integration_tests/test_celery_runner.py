@@ -28,6 +28,9 @@ skip_if_no_redis = pytest.mark.skipif(not have_redis, reason="Needs redis-server
 
 @skip_if_no_redis
 def test_launch_redis_no_password():
+    is_running = cr.check_redis(port=PORT)
+    assert is_running is False, "Redis should not be running at the start of the test"
+
     redis_stop = cr.launch_redis(PORT, password=None, loglevel='verbose')
     assert redis_stop is not None
 
@@ -43,6 +46,9 @@ def test_launch_redis_no_password():
 
 @skip_if_no_redis
 def test_launch_redis_with_config_password():
+    is_running = cr.check_redis(port=PORT)
+    assert is_running is False, "Redis should not be running at the start of the test"
+
     redis_stop = cr.launch_redis(PORT, password='', loglevel='verbose')
     assert redis_stop is not None
 
@@ -58,6 +64,8 @@ def test_launch_redis_with_config_password():
 
 @skip_if_no_redis
 def test_launch_redis_with_custom_password():
+    is_running = cr.check_redis(port=PORT)
+    assert is_running is False, "Redis should not be running at the start of the test"
 
     redis_stop = cr.launch_redis(PORT, password=PASS, loglevel='verbose')
     assert redis_stop is not None
@@ -136,3 +144,7 @@ def test_celery_with_worker():
             runner.result(ff)
 
     del runner
+
+    # Redis shouldn't be running now.
+    is_running = cr.check_redis(port=PORT)
+    assert is_running is False
