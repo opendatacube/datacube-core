@@ -382,15 +382,17 @@ def info_cmd(index, show_sources, show_derived, f, max_depth, ids):
 
 
 @dataset_cmd.command('search')
+@click.option('--limit', help='Limit the number of results',
+              type=int, default=None)
 @click.option('-f', help='Output format',
               type=click.Choice(_OUTPUT_WRITERS.keys()), default='yaml', show_default=True)
 @ui.parsed_search_expressions
 @ui.pass_index()
-def search_cmd(index, f, expressions):
+def search_cmd(index, limit, f, expressions):
     """
     Search available Datasets
     """
-    datasets = index.datasets.search(**expressions)
+    datasets = index.datasets.search(**expressions, limit=limit)
     _OUTPUT_WRITERS[f](
         build_dataset_info(index, dataset)
         for dataset in datasets

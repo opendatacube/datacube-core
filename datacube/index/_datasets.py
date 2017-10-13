@@ -138,7 +138,6 @@ class MetadataTypeResource(object):
 
         _LOG.info("Updating metadata type %s", metadata_type.name)
 
-
         with self._db.connect() as connection:
             connection.update_metadata_type(
                 name=metadata_type.name,
@@ -1041,15 +1040,18 @@ class DatasetResource(object):
             for dataset in self._make_many(connection.search_datasets_by_metadata(metadata)):
                 yield dataset
 
-    def search(self, **query):
+    def search(self, limit=None, **query):
         """
         Perform a search, returning results as Dataset objects.
 
         :param dict[str,str|float|Range] query:
+        :param int limit:
         :rtype: __generator[Dataset]
         """
         source_filter = query.pop('source_filter', None)
-        for _, datasets in self._do_search_by_product(query, source_filter=source_filter):
+        for _, datasets in self._do_search_by_product(query,
+                                                      source_filter=source_filter,
+                                                      limit=limit):
             for dataset in self._make_many(datasets):
                 yield dataset
 
@@ -1178,7 +1180,9 @@ class DatasetResource(object):
             yield q, product
 
     def _do_search_by_product(self, query, return_fields=False, select_field_names=None,
-                              with_source_ids=False, source_filter=None):
+                              with_source_ids=False, source_filter=None,
+                              limit=None):
+
         if source_filter:
             product_queries = list(self._get_product_queries(source_filter))
             if not product_queries:
@@ -1213,6 +1217,7 @@ class DatasetResource(object):
                            query_exprs,
                            source_exprs,
                            select_fields=select_fields,
+                           limit=limit,
                            with_source_ids=with_source_ids
                        ))
 
