@@ -3,9 +3,10 @@ Tests for datacube._celery_runner
 """
 
 from time import sleep
-import os
 import subprocess
 import pytest
+import sys
+
 from datacube import _celery_runner as cr
 
 PORT = 29374
@@ -27,6 +28,9 @@ skip_if_no_redis = pytest.mark.skipif(not have_redis, reason="Needs redis-server
 
 @skip_if_no_redis
 def test_launch_redis_no_password():
+    is_running = cr.check_redis(port=PORT)
+    assert is_running is False, "Redis should not be running at the start of the test"
+
     redis_stop = cr.launch_redis(PORT, password=None, loglevel='verbose')
     assert redis_stop is not None
 
@@ -42,6 +46,9 @@ def test_launch_redis_no_password():
 
 @skip_if_no_redis
 def test_launch_redis_with_config_password():
+    is_running = cr.check_redis(port=PORT)
+    assert is_running is False, "Redis should not be running at the start of the test"
+
     redis_stop = cr.launch_redis(PORT, password='', loglevel='verbose')
     assert redis_stop is not None
 
@@ -57,6 +64,8 @@ def test_launch_redis_with_config_password():
 
 @skip_if_no_redis
 def test_launch_redis_with_custom_password():
+    is_running = cr.check_redis(port=PORT)
+    assert is_running is False, "Redis should not be running at the start of the test"
 
     redis_stop = cr.launch_redis(PORT, password=PASS, loglevel='verbose')
     assert redis_stop is not None
@@ -74,7 +83,8 @@ def test_launch_redis_with_custom_password():
     assert is_running is False
 
 
-@pytest.mark.skip(reason="This test can hang if machine it runs on isn't setup appropriately")
+@pytest.mark.skipif(sys.platform == 'win32',
+                    reason="does not run on Windows")
 @skip_if_no_redis
 def test_celery_with_worker():
     DATA = [1, 2, 3, 4]
@@ -86,7 +96,7 @@ def test_celery_with_worker():
 
     def launch_worker():
         args = ['bash', '-c',
-                'nohup datacube-worker --executor celery localhost:{} --nprocs 1 &'.format(PORT)]
+                'nohup python -m datacube.execution.worker --executor celery localhost:{} --nprocs 1 &'.format(PORT)]
         try:
             subprocess.check_call(args)
         except subprocess.CalledProcessError:
@@ -94,15 +104,12 @@ def test_celery_with_worker():
 
         return True
 
-    if os.name == 'nt':
-        return
-
-    assert cr.check_redis('localhost', port=PORT, password='') is False
+    assert cr.check_redis(port=PORT, password='') is False, "Redis should not be running at the start of the test"
 
     runner = cr.CeleryExecutor(host='localhost', port=PORT, password='')
     sleep(REDIS_WAIT)
 
-    assert cr.check_redis('localhost', port=PORT, password='')
+    assert cr.check_redis(port=PORT, password='')
 
     # no workers yet
     future = runner.submit(_echo, 0)
@@ -137,3 +144,7 @@ def test_celery_with_worker():
             runner.result(ff)
 
     del runner
+
+    # Redis shouldn't be running now.
+    is_running = cr.check_redis(port=PORT)
+    assert is_running is False
