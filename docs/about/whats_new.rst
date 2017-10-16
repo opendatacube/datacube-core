@@ -5,6 +5,24 @@
 What's New
 ==========
 
+v1.5.3 Purpler Unicorn with Starlight (16 October 2017)
+-----------------------------
+
+ - Use `cloudpickle` as the `celery` serialiser
+
+ - Allow `celery` tests to run without installing it
+
+ - Move `datacube-worker` inside the main datacube package
+
+ - Write `metadata_type` from the ingest configuration if available
+
+ - Support config parsing limitations of Python 2
+
+ - Fix #303: resolve GDAL build dependencies on Travis
+
+ - Upgrade `rasterio` to newer version
+
+
 v1.5.2 Purpler Unicorn with Stars (28 August 2017)
 --------------------------------------------------
 
