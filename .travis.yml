@@ -41,8 +41,8 @@ install:
   - conda config --show-sources
   - conda config --show
 
-  - conda config --prepend channels conda-forge/label/dev
   - conda config --prepend channels conda-forge
+  - conda config --prepend channels conda-forge/label/dev
   - conda update --all
 
   # Useful for debugging any issues with conda

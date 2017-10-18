@@ -1,5 +1,6 @@
 name: agdc
 channels:
+- conda-forge/label/dev
 - conda-forge
 - defaults
 - nodefaults
@@ -13,7 +14,7 @@ dependencies:
 - coveralls
 - numpy
 - numexpr # For AE/EE
-- rasterio
+- rasterio >= 0.9 # to handle weird 1.0a ordering...
 - singledispatch
 - netcdf4
 - psycopg2
