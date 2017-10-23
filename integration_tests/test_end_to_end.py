@@ -156,11 +156,6 @@ def check_open_with_dc(driver_manager):
     from datacube.api.core import Datacube
     dc = Datacube(driver_manager=driver_manager)
 
-    datasets = dc.find_datasets(product='ls5_nbar_albers')
-    assert len(datasets) == 1
-    datasets = dc.find_datasets(product='ls5_nbar_albers', limit=0)
-    assert len(datasets) == 0
-
     data_array = dc.load(product='ls5_nbar_albers', measurements=['blue'], stack='variable')
     assert data_array.shape
     assert (data_array != -999).any()
