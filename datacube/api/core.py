@@ -429,13 +429,13 @@ class Datacube(object):
                                               **query.search_terms)
 
         polygon = query.geopolygon
-        if polygon:
-            for dataset in datasets:
+        for dataset in datasets:
+            if polygon:
                 # Check against the bounding box of the original scene, can throw away some portions
                 if intersects(polygon.to_crs(dataset.crs), dataset.extent):
                     yield dataset
-        else:
-            yield from datasets
+            else:
+                yield dataset
 
     @staticmethod
     def product_sources(datasets, group_by):
