@@ -345,6 +345,7 @@ overriding those in earlier ones:
 Example:
 
 .. code-block:: text
+
     [user]
     # This should correspond to a section name in your config.
     default_environment: dev
@@ -376,6 +377,8 @@ datacube, current username, password loaded from ``~/.pgpass``)
 When using the datacube, it will use your default environment unless you specify one explicitly
 
 eg.
+
+.. code-block:: python
 
     with Datacube(env='staging') as dc:
         ...

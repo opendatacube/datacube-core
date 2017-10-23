@@ -1179,6 +1179,7 @@ class DatasetResource(object):
             q['dataset_type_id'] = product.id
             yield q, product
 
+    # pylint: disable=too-many-locals
     def _do_search_by_product(self, query, return_fields=False, select_field_names=None,
                               with_source_ids=False, source_filter=None,
                               limit=None):
