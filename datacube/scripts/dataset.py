@@ -393,7 +393,7 @@ def search_cmd(index, limit, f, expressions):
     """
     Search available Datasets
     """
-    datasets = index.datasets.search(**expressions, limit=limit)
+    datasets = index.datasets.search(limit=limit, **expressions)
     _OUTPUT_WRITERS[f](
         build_dataset_info(index, dataset)
         for dataset in datasets

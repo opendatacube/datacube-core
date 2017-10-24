@@ -160,7 +160,7 @@ class Datacube(object):
             If not provided, all measurements for the product will be returned.
             ::
 
-                measurements=['red', 'nir', swir2']
+                measurements=['red', 'nir', 'swir2']
 
         **Dimensions**
             Spatial dimensions can specified using the ``longitude``/``latitude`` and ``x``/``y`` fields.
@@ -217,9 +217,10 @@ class Datacube(object):
         :param str product: the product to be included.
 
         :param measurements:
-            measurements name or list of names to be included, as listed in :meth:`list_measurements`.
-                If a list is specified, the measurements will be returned in the order requested.
-                By default all available measurements are included.
+            Measurements name or list of names to be included, as listed in :meth:`list_measurements`.
+
+            If a list is specified, the measurements will be returned in the order requested.
+            By default all available measurements are included.
 
         :type measurements: list(str), optional
 
@@ -279,6 +280,10 @@ class Datacube(object):
         :param datasets:
             Optional. If this is a non-empty list of :class:`datacube.model.Dataset` objects, these will be loaded
             instead of performing a database lookup.
+
+        :param int limit:
+            Optional. If provided, limit the maximum number of datasets
+            returned. Useful for testing and debugging.
 
         :return: Requested data in a :class:`xarray.Dataset`.
             As a :class:`xarray.DataArray` if the ``stack`` variable is supplied.
@@ -340,19 +345,36 @@ class Datacube(object):
         :return: list of datasets
         :rtype: list[:class:`datacube.model.Dataset`]
 
-        .. seealso:: :meth:`group_datasets` :meth:`load_data`
+        .. seealso:: :meth:`group_datasets` :meth:`load_data` :meth:`find_datasets_lazy`
+        """
+        return list(self.find_datasets_lazy(**kwargs))
+
+    def find_datasets_lazy(self, limit=None, **kwargs):
+        """
+        Find datasets matching query.
+
+        :param kwargs: see :class:`datacube.api.query.Query`
+        :param limit: if provided, limit the maximum number of datasets returned
+        :return: iterator of datasets
+        :rtype: __generator[:class:`datacube.model.Dataset`]
+
+        .. seealso:: :meth:`group_datasets` :meth:`load_data` :meth:`find_datasets`
         """
         query = Query(self.index, **kwargs)
         if not query.product:
-            raise RuntimeError('must specify a product')
+            raise ValueError("must specify a product")
 
-        datasets = self.index.datasets.search_eager(**query.search_terms)
-        if query.geopolygon:
-            datasets = [dataset for dataset in datasets
-                        if intersects(query.geopolygon.to_crs(dataset.crs), dataset.extent)]
-            # Check against the bounding box of the original scene, can throw away some portions
+        datasets = self.index.datasets.search(limit=limit,
+                                              **query.search_terms)
 
-        return datasets
+        polygon = query.geopolygon
+        for dataset in datasets:
+            if polygon:
+                # Check against the bounding box of the original scene, can throw away some portions
+                if intersects(polygon.to_crs(dataset.crs), dataset.extent):
+                    yield dataset
+            else:
+                yield dataset
 
     @staticmethod
     def product_sources(datasets, group_by):
