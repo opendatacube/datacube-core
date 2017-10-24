@@ -370,8 +370,16 @@ class PostgresDbAPI(object):
         return [raw_expr(expression) for expression in expressions]
 
     @staticmethod
-    def search_datasets_query(expressions, source_exprs=None, select_fields=None, with_source_ids=False):
-        # type: (Tuple[Expression], Tuple[Expression], Iterable[PgField], bool) -> sqlalchemy.Expression
+    def search_datasets_query(expressions, source_exprs=None,
+                              select_fields=None, with_source_ids=False, limit=None):
+        """
+        :type expressions: Tuple[Expression]
+        :type source_exprs: Tuple[Expression]
+        :type select_fields: Iterable[PgField]
+        :type with_source_ids: bool
+        :type limit: int
+        :rtype: sqlalchemy.Expression
+        """
         if select_fields:
             select_columns = tuple(
                 f.alchemy_expression.label(f.name)
@@ -406,9 +414,10 @@ class PostgresDbAPI(object):
                     from_expression
                 ).where(
                     where_expr
+                ).limit(
+                    limit
                 )
             )
-
         base_query = (
             select(
                 select_columns + (DATASET_SOURCE.c.source_dataset_ref,
@@ -443,16 +452,21 @@ class PostgresDbAPI(object):
                 recursive_query.join(DATASET, DATASET.c.id == recursive_query.c.source_dataset_ref)
             ).where(
                 and_(DATASET.c.archived == None, *PostgresDbAPI._alchemify_expressions(source_exprs))
+            ).limit(
+                limit
             )
         )
 
-    def search_datasets(self, expressions, source_exprs=None, select_fields=None, with_source_ids=False):
+    def search_datasets(self, expressions,
+                        source_exprs=None, select_fields=None,
+                        with_source_ids=False, limit=None):
         """
         :type with_source_ids: bool
         :type select_fields: tuple[datacube.index.postgres._fields.PgField]
         :type expressions: tuple[datacube.index.postgres._fields.PgExpression]
         """
-        select_query = self.search_datasets_query(expressions, source_exprs, select_fields, with_source_ids)
+        select_query = self.search_datasets_query(expressions, source_exprs,
+                                                  select_fields, with_source_ids, limit)
         return self._connection.execute(select_query)
 
     def get_duplicates(self, match_fields, expressions):
