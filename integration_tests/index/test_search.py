@@ -413,6 +413,17 @@ def test_search_by_product(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_l
     assert next(datasets).id == pseudo_ls8_dataset.id
 
 
+def test_search_limit(index, pseudo_ls8_dataset, pseudo_ls8_dataset2):
+    datasets = list(index.datasets.search())
+    assert len(datasets) == 2
+    datasets = list(index.datasets.search(limit=1))
+    assert len(datasets) == 1
+    datasets = list(index.datasets.search(limit=0))
+    assert len(datasets) == 0
+    datasets = list(index.datasets.search(limit=5))
+    assert len(datasets) == 2
+
+
 def test_search_or_expressions(index,
                                pseudo_ls8_type, pseudo_ls8_dataset,
                                ls5_dataset_nbar_type, ls5_dataset_w_children,
