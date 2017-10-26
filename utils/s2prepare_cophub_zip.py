@@ -14,7 +14,6 @@ import click
 import yaml
 from osgeo import osr
 
-os.environ["CPL_ZIP_ENCODING"] = "UTF-8"
 # image boundary imports
 import rasterio
 from rasterio.errors import RasterioIOError
@@ -28,6 +27,7 @@ import hashlib
 from datetime import datetime
 
 
+os.environ["CPL_ZIP_ENCODING"] = "UTF-8"
 # IMAGE BOUNDARY CODE
 
 
