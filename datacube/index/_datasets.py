@@ -1197,19 +1197,19 @@ class DatasetResource(object):
             source_exprs = None
 
         product_queries = list(self._get_product_queries(query))
-        with self._db.connect() as connection:
-            for q, product in product_queries:
-                dataset_fields = product.metadata_type.dataset_fields
-                query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
-                select_fields = None
-                if return_fields:
-                    # if no fields specified, select all
-                    if select_field_names is None:
-                        select_fields = tuple(field for name, field in dataset_fields.items()
-                                              if not field.affects_row_selection)
-                    else:
-                        select_fields = tuple(dataset_fields[field_name]
-                                              for field_name in select_field_names)
+        for q, product in product_queries:
+            dataset_fields = product.metadata_type.dataset_fields
+            query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
+            select_fields = None
+            if return_fields:
+                # if no fields specified, select all
+                if select_field_names is None:
+                    select_fields = tuple(field for name, field in dataset_fields.items()
+                                          if not field.affects_row_selection)
+                else:
+                    select_fields = tuple(dataset_fields[field_name]
+                                          for field_name in select_field_names)
+            with self._db.connect() as connection:
                 yield (product,
                        connection.search_datasets(
                            query_exprs,
@@ -1221,13 +1221,14 @@ class DatasetResource(object):
 
     def _do_count_by_product(self, query):
         product_queries = self._get_product_queries(query)
-        with self._db.connect() as connection:
-            for q, product in product_queries:
-                dataset_fields = product.metadata_type.dataset_fields
-                query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
+
+        for q, product in product_queries:
+            dataset_fields = product.metadata_type.dataset_fields
+            query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
+            with self._db.connect() as connection:
                 count = connection.count_datasets(query_exprs)
-                if count > 0:
-                    yield product, count
+            if count > 0:
+                yield product, count
 
     def _do_time_count(self, period, query, ensure_single=False):
         if 'time' not in query:
@@ -1246,10 +1247,10 @@ class DatasetResource(object):
                 raise ValueError('Multiple products match single query search: %r' %
                                  ([dt.name for q, dt in product_queries],))
 
-        with self._db.connect() as connection:
-            for q, product in product_queries:
-                dataset_fields = product.metadata_type.dataset_fields
-                query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
+        for q, product in product_queries:
+            dataset_fields = product.metadata_type.dataset_fields
+            query_exprs = tuple(fields.to_expressions(dataset_fields.get, **q))
+            with self._db.connect() as connection:
                 yield product, list(connection.count_datasets_through_time(
                     start,
                     end,

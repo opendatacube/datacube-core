@@ -180,6 +180,16 @@ class PostgresDb(object):
     def connect(self):
         """
         Borrow a connection from the pool.
+
+        The name connect() is misleading: it will not create a new connection if one is already available in the pool.
+
+        Callers should minimise the amount of time they hold onto their connections. If they're doing anything between
+        calls to the DB (such as opening files, or waiting on user input), it's better to return the connection
+        to the pool beforehand.
+
+        The connection can raise errors if not following this advice ("server closed the connection unexpectedly"),
+        as some servers will aggressively close idle connections (eg. DEA's NCI servers). It also prevents the
+        connection from being reused while borrowed.
         """
         return _PostgresDbConnection(self._engine)
 
