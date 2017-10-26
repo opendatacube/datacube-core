@@ -467,7 +467,7 @@ class ProductResource(object):
 
     def add_document(self, definition):
         """
-        Add a Product using its difinition
+        Add a Product using its definition
 
         :param dict definition: product definition document
         :rtype: DatasetType
