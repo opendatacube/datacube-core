@@ -30,7 +30,7 @@ class DriverManager(object):
     #: Default 'current' driver, assuming its code is present.
     _DEFAULT_DRIVER = 'NetCDF CF'
 
-    #: Attribue name where driver information is stored in `__init__.py`.
+    #: Attribute name where driver information is stored in `__init__.py`.
     _DRIVER_SPEC = 'DRIVER_SPEC'
 
     def __init__(self, index=None, default_driver_name=None, *index_args, **index_kargs):
