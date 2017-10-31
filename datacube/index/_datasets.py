@@ -182,6 +182,8 @@ class MetadataTypeResource(object):
         except KeyError:
             return None
 
+    # This is memoized in the constructor
+    # pylint: disable=method-hidden
     def get_unsafe(self, id_):
         with self._db.connect() as connection:
             record = connection.get_metadata_type(id_)
@@ -189,6 +191,8 @@ class MetadataTypeResource(object):
             raise KeyError('%s is not a valid MetadataType id')
         return self._make_from_query_row(record)
 
+    # This is memoized in the constructor
+    # pylint: disable=method-hidden
     def get_by_name_unsafe(self, name):
         with self._db.connect() as connection:
             record = connection.get_metadata_type_by_name(name)
@@ -503,6 +507,8 @@ class ProductResource(object):
         except KeyError:
             return None
 
+    # This is memoized in the constructor
+    # pylint: disable=method-hidden
     def get_unsafe(self, id_):
         with self._db.connect() as connection:
             result = connection.get_dataset_type(id_)
@@ -510,6 +516,8 @@ class ProductResource(object):
             raise KeyError('"%s" is not a valid Product id' % id_)
         return self._make(result)
 
+    # This is memoized in the constructor
+    # pylint: disable=method-hidden
     def get_by_name_unsafe(self, name):
         with self._db.connect() as connection:
             result = connection.get_dataset_type_by_name(name)
