@@ -94,7 +94,6 @@ def test_crs_parse(indexed_ls5_scene_dataset_types):
     assert d.crs is None
 
 
-@pytest.mark.xfail(reason="Not yet implemented")
 def test_single_dm_instance(driver_manager, db):
     """
     Our driver manager should only be linked to one PostgresDb instance in memory.

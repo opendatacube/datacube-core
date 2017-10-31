@@ -38,6 +38,9 @@ class MetadataTypeResource(object):
         """
         self._db = db
 
+        self.get_unsafe = lru_cache()(self.get_unsafe)
+        self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)
+
     def from_doc(self, definition):
         """
         :param dict definition:
@@ -179,7 +182,6 @@ class MetadataTypeResource(object):
         except KeyError:
             return None
 
-    @lru_cache()
     def get_unsafe(self, id_):
         with self._db.connect() as connection:
             record = connection.get_metadata_type(id_)
@@ -187,7 +189,6 @@ class MetadataTypeResource(object):
             raise KeyError('%s is not a valid MetadataType id')
         return self._make_from_query_row(record)
 
-    @lru_cache()
     def get_by_name_unsafe(self, name):
         with self._db.connect() as connection:
             record = connection.get_metadata_type_by_name(name)
@@ -266,6 +267,9 @@ class ProductResource(object):
         """
         self._db = db
         self.metadata_type_resource = metadata_type_resource
+
+        self.get_unsafe = lru_cache()(self.get_unsafe)
+        self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)
 
     def from_doc(self, definition):
         """
@@ -499,7 +503,6 @@ class ProductResource(object):
         except KeyError:
             return None
 
-    @lru_cache()
     def get_unsafe(self, id_):
         with self._db.connect() as connection:
             result = connection.get_dataset_type(id_)
@@ -507,7 +510,6 @@ class ProductResource(object):
             raise KeyError('"%s" is not a valid Product id' % id_)
         return self._make(result)
 
-    @lru_cache()
     def get_by_name_unsafe(self, name):
         with self._db.connect() as connection:
             result = connection.get_dataset_type_by_name(name)
