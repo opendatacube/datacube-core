@@ -42,6 +42,7 @@ dependencies:
 - tqdm # for simple-replicas
 - pip:
   - celery >= 4
+  - objgraph
   - pypeg2
   - pylint == 1.7.2 # testing
   - pytest-cov # testing
