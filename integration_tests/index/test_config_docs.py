@@ -364,6 +364,10 @@ def test_product_update_cli(index,
         return result
 
     def get_current(index, product_doc):
+        # It's calling out to a separate instance to update the product (through the cli),
+        # so we need to clear our local index object's cache to get the updated one.
+        index.products.get_by_name_unsafe.cache_clear()
+
         return index.products.get_by_name(product_doc['name']).definition
 
     # Update an unchanged file, should be unchanged.
