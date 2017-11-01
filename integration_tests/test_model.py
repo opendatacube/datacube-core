@@ -109,10 +109,14 @@ def test_single_dm_instance(driver_manager, db):
     # how many are connected to our instance of DriverManager
     references = 0
     for pg_instance in objgraph.by_type('PostgresDb'):
-        chain = objgraph.find_backref_chain(pg_instance, predicate=lambda o: isinstance(o, DriverManager))
+        chain = objgraph.find_backref_chain(
+            pg_instance,
+            max_depth=10,
+            predicate=lambda o: isinstance(o, DriverManager)
+        )
         # If the referenced DriverManager is ours
         if chain[0] is driver_manager:
-            pprint(chain)
+            print("Length {}: {}".format(len(chain), ' -> '.join(c.__class__.__name__ for c in chain)))
             references += 1
 
     assert references == 1, "Our DriverManager should only reference one PG instance"
