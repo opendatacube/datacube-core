@@ -188,7 +188,8 @@ class Datacube(object):
 
     #: pylint: disable=too-many-arguments, too-many-locals
     def load(self, product=None, measurements=None, output_crs=None, resolution=None, resampling=None, stack=False,
-             dask_chunks=None, like=None, fuse_func=None, align=None, datasets=None, use_threads=False, **query):
+             dask_chunks=None, like=None, geobox=None, fuse_func=None, align=None, datasets=None, 
+             use_threads=False, **query):
         """
         Load data as an ``xarray`` object.  Each measurement will be a data variable in the :class:`xarray.Dataset`.
 
@@ -323,6 +324,9 @@ class Datacube(object):
 
                 pq = dc.load(product='ls5_pq_albers', like=nbar_dataset)
 
+        :param datacube.utils.geometry.GeoBox geobox:
+            Alternative format for specifying the spatial parameters for the query.
+
         :param str group_by:
             When specified, perform basic combining/reducing of the data.
 
@@ -350,6 +354,12 @@ class Datacube(object):
 
         :rtype: :class:`xarray.Dataset` or :class:`xarray.DataArray`
         """
+        if geobox:
+            assert (like is None) and ('geopolygon' not in query.keys()) \
+                and ({output_crs, resolution, align} == {None}), \
+                "'geobox' is not compatible with 'like', 'geopolygon', 'output_crs', 'resolution' or 'align'"
+            query['geopolygon'] = geobox.extent
+
         observations = datasets or self.find_datasets(product=product, like=like, **query)
         if not observations:
             return None if stack else xarray.Dataset()
@@ -359,7 +369,7 @@ class Datacube(object):
             assert resolution is None, "'like' and 'resolution' are not supported together"
             assert align is None, "'like' and 'align' are not supported together"
             geobox = like.geobox
-        else:
+        elif not geobox:
             if output_crs:
                 if not resolution:
                     raise RuntimeError("Must specify 'resolution' when specifying 'output_crs'")
