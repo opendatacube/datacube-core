@@ -41,6 +41,18 @@ class MetadataTypeResource(object):
         self.get_unsafe = lru_cache()(self.get_unsafe)
         self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)
 
+    def __getstate__(self):
+        """
+        We define getstate/setstate to avoid pickling the caches
+        """
+        return self._db,
+
+    def __setstate__(self, state):
+        """
+        We define getstate/setstate to avoid pickling the caches
+        """
+        self.__init__(*state)
+
     def from_doc(self, definition):
         """
         :param dict definition:
@@ -274,6 +286,18 @@ class ProductResource(object):
 
         self.get_unsafe = lru_cache()(self.get_unsafe)
         self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)
+
+    def __getstate__(self):
+        """
+        We define getstate/setstate to avoid pickling the caches
+        """
+        return self._db, self.metadata_type_resource
+
+    def __setstate__(self, state):
+        """
+        We define getstate/setstate to avoid pickling the caches
+        """
+        self.__init__(*state)
 
     def from_doc(self, definition):
         """
