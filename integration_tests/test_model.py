@@ -3,6 +3,7 @@ from pprint import pprint
 import gc
 
 import pytest
+import sys
 
 from datacube.drivers.manager import DriverManager
 from datacube.model import Dataset
@@ -94,6 +95,10 @@ def test_crs_parse(indexed_ls5_scene_dataset_types):
     assert d.crs is None
 
 
+@pytest.mark.skip(
+    sys.version_info < (3, 4),
+    reason="objgraph search is too slow on older python"
+)
 def test_single_dm_instance(driver_manager, db):
     """
     Our driver manager should only be linked to one PostgresDb instance in memory.
