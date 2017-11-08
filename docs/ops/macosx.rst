@@ -5,6 +5,8 @@ Mac OS X
 .. note::
 
     This section was typed up from memory. Verification and input would be appreciated.
+    
+    See also `Mac and Homebrew <https://github.com/opendatacube/documentation/blob/master/Build%20install%20instructions/Mac%20and%20Homebrew.md>`_ install instructions.
 
 Required software
 -----------------
