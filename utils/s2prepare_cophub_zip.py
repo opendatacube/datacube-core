@@ -28,6 +28,9 @@ import shapely.ops
 import zipfile
 import hashlib
 from datetime import datetime
+from click_datetime import Datetime
+#from dateutil import parser
+
 os.environ["CPL_ZIP_ENCODING"] = "UTF-8"
 
 def safe_valid_region(images, mask_value=None):
@@ -341,42 +344,49 @@ def absolutify_paths(doc, path):
 @click.argument('datasets',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
+@click.option('--date', type=Datetime(format='%d/%m/%Y'), default=datetime.now(), help="Enter file creation start date for data preparation")
 @click.option('--checksum/--no-checksum', help="Checksum the input dataset to confirm match", default=False)
 
-def main(output, datasets, checksum):
+def main(output, datasets, checksum, date):
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
+    
     for dataset in datasets:
-        path = Path(dataset)
-        if path.is_dir():
-            path = Path(path.joinpath(path.stem.replace('PRD_MSIL1C', 'MTD_SAFL1C') + '.xml'))
-        if path.suffix not in ['.xml', '.zip']:#!= '.xml':
-            raise RuntimeError('want xml or zipped archive')
-        logging.info("Processing %s", path)
-        output_path = Path(output)
-        yaml_path = output_path.joinpath(path.name+'.yaml')
-        logging.info("Output %s", yaml_path)
-        if os.path.exists(yaml_path):
-            logging.info("Output already exists %s", yaml_path)
-            with open(yaml_path) as f:
-                if checksum:
-                    logging.info("Running checksum comparison")
-                    datamap = yaml.load_all(f)
-                    for data in datamap:
-                        yaml_sha1 = data['checksum_sha1']
-                        checksum_sha1 = hashlib.sha1(open(path, 'rb').read()).hexdigest()          
-                    if checksum_sha1 == yaml_sha1:
-                        logging.info("Dataset preparation already done...SKIPPING")    
-                        continue
-                else:
-                    logging.info("Dataset preparation already done...SKIPPING")       
-                    continue
-        documents = prepare_dataset(path)
-        if documents:
-            logging.info("Writing %s dataset(s) into %s", len(documents), yaml_path)
-            with open(yaml_path, 'w') as stream:
-                yaml.dump_all(documents, stream)
+        (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(dataset)
+        create_date = datetime.utcfromtimestamp(ctime) 
+        if create_date <= date:
+            logging.info("Dataset creation time ", create_date, " is older than start date ", date, "...SKIPPING")    
         else:
-            logging.info("No datasets discovered. Bye!")
+            path = Path(dataset)
+            if path.is_dir():
+                path = Path(path.joinpath(path.stem.replace('PRD_MSIL1C', 'MTD_SAFL1C') + '.xml'))
+            if path.suffix not in ['.xml', '.zip']:
+                raise RuntimeError('want xml or zipped archive')
+            logging.info("Processing %s", path)
+            output_path = Path(output)
+            yaml_path = output_path.joinpath(path.name+'.yaml')
+            logging.info("Output %s", yaml_path)
+            if os.path.exists(yaml_path):
+                logging.info("Output already exists %s", yaml_path)
+                with open(yaml_path) as f:
+                    if checksum:
+                        logging.info("Running checksum comparison")
+                        datamap = yaml.load_all(f)
+                        for data in datamap:
+                            yaml_sha1 = data['checksum_sha1']
+                            checksum_sha1 = hashlib.sha1(open(path, 'rb').read()).hexdigest()          
+                        if checksum_sha1 == yaml_sha1:
+                            logging.info("Dataset preparation already done...SKIPPING")    
+                            continue
+                    else:
+                        logging.info("Dataset preparation already done...SKIPPING")       
+                        continue
+            documents = prepare_dataset(path)
+            if documents:
+                logging.info("Writing %s dataset(s) into %s", len(documents), yaml_path)
+                with open(yaml_path, 'w') as stream:
+                    yaml.dump_all(documents, stream)
+            else:
+                logging.info("No datasets discovered. Bye!")
 
 if __name__ == "__main__":
     main()
