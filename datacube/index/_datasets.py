@@ -38,6 +38,21 @@ class MetadataTypeResource(object):
         """
         self._db = db
 
+        self.get_unsafe = lru_cache()(self.get_unsafe)
+        self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)
+
+    def __getstate__(self):
+        """
+        We define getstate/setstate to avoid pickling the caches
+        """
+        return self._db,
+
+    def __setstate__(self, state):
+        """
+        We define getstate/setstate to avoid pickling the caches
+        """
+        self.__init__(*state)
+
     def from_doc(self, definition):
         """
         :param dict definition:
@@ -179,7 +194,8 @@ class MetadataTypeResource(object):
         except KeyError:
             return None
 
-    @lru_cache()
+    # This is memoized in the constructor
+    # pylint: disable=method-hidden
     def get_unsafe(self, id_):
         with self._db.connect() as connection:
             record = connection.get_metadata_type(id_)
@@ -187,7 +203,8 @@ class MetadataTypeResource(object):
             raise KeyError('%s is not a valid MetadataType id')
         return self._make_from_query_row(record)
 
-    @lru_cache()
+    # This is memoized in the constructor
+    # pylint: disable=method-hidden
     def get_by_name_unsafe(self, name):
         with self._db.connect() as connection:
             record = connection.get_metadata_type_by_name(name)
@@ -266,6 +283,21 @@ class ProductResource(object):
         """
         self._db = db
         self.metadata_type_resource = metadata_type_resource
+
+        self.get_unsafe = lru_cache()(self.get_unsafe)
+        self.get_by_name_unsafe = lru_cache()(self.get_by_name_unsafe)
+
+    def __getstate__(self):
+        """
+        We define getstate/setstate to avoid pickling the caches
+        """
+        return self._db, self.metadata_type_resource
+
+    def __setstate__(self, state):
+        """
+        We define getstate/setstate to avoid pickling the caches
+        """
+        self.__init__(*state)
 
     def from_doc(self, definition):
         """
@@ -467,7 +499,7 @@ class ProductResource(object):
 
     def add_document(self, definition):
         """
-        Add a Product using its difinition
+        Add a Product using its definition
 
         :param dict definition: product definition document
         :rtype: DatasetType
@@ -499,7 +531,8 @@ class ProductResource(object):
         except KeyError:
             return None
 
-    @lru_cache()
+    # This is memoized in the constructor
+    # pylint: disable=method-hidden
     def get_unsafe(self, id_):
         with self._db.connect() as connection:
             result = connection.get_dataset_type(id_)
@@ -507,7 +540,8 @@ class ProductResource(object):
             raise KeyError('"%s" is not a valid Product id' % id_)
         return self._make(result)
 
-    @lru_cache()
+    # This is memoized in the constructor
+    # pylint: disable=method-hidden
     def get_by_name_unsafe(self, name):
         with self._db.connect() as connection:
             result = connection.get_dataset_type_by_name(name)

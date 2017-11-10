@@ -3,7 +3,9 @@
 import versioneer
 from setuptools import setup, find_packages
 
-tests_require = ['pytest', 'pytest-cov', 'mock', 'pep8', 'pylint==1.6.4', 'hypothesis', 'compliance-checker']
+tests_require = [
+    'pytest', 'pytest-cov', 'mock', 'pep8', 'pylint', 'hypothesis', 'compliance-checker', 'objgraph'
+]
 
 extras_require = {
     'performance': ['ciso8601', 'bottleneck'],

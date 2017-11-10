@@ -30,7 +30,7 @@ class DriverManager(object):
     #: Default 'current' driver, assuming its code is present.
     _DEFAULT_DRIVER = 'NetCDF CF'
 
-    #: Attribue name where driver information is stored in `__init__.py`.
+    #: Attribute name where driver information is stored in `__init__.py`.
     _DRIVER_SPEC = 'DRIVER_SPEC'
 
     def __init__(self, index=None, default_driver_name=None, *index_args, **index_kargs):
@@ -74,7 +74,7 @@ class DriverManager(object):
         # Initialise the generic index
         # pylint: disable=protected-access
         self.set_index(index, *index_args, **index_kargs)
-        self.reload_drivers(index, *index_args, **index_kargs)
+        self.reload_drivers(*index_args, **index_kargs)
         self.set_current_driver(default_driver_name or self._DEFAULT_DRIVER)
         self.logger.debug('Ready. %s', self)
 
@@ -131,7 +131,7 @@ class DriverManager(object):
         self.__index = Index(weakref.ref(self)(), index, *index_args, **index_kargs)
         self.logger.debug('Generic index set to %s', self.__index)
 
-    def reload_drivers(self, index=None, *index_args, **index_kargs):
+    def reload_drivers(self, *index_args, **index_kargs):
         """Load and initialise all available drivers and their indexes.
 
 
@@ -168,7 +168,7 @@ class DriverManager(object):
                     continue
                 driver_cls = getattr(driver_module, spec[1])
                 if issubclass(driver_cls, Driver):
-                    driver = driver_cls(weakref.ref(self)(), spec[0], index, *index_args, **index_kargs)
+                    driver = driver_cls(weakref.ref(self)(), spec[0], self.__index, *index_args, **index_kargs)
 
                     validate_connection = index_kargs['validate_connection'] \
                         if 'validate_connection' in index_kargs else True
