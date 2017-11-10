@@ -5,10 +5,9 @@ Australian Copernicus Data Hub - http://www.copernicus.gov.au/ - for direct (zip
 by datacube.
 
 example usage:
-    s2prepare_cophub_zip.py 
-    S2A_OPER_PRD_MSIL1C_PDMC_20161017T123606_R018_V20161016T034742_20161016T034739.zip 
+    s2prepare_cophub_zip.py
+    S2A_OPER_PRD_MSIL1C_PDMC_20161017T123606_R018_V20161016T034742_20161016T034739.zip
     --output /s2_testing/ --no-checksum
-    
 """
 from __future__ import absolute_import
 
