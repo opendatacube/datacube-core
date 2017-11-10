@@ -11,27 +11,31 @@ example usage:
     
 """
 from __future__ import absolute_import
-import uuid
+
+import hashlib
 import logging
-from xml.etree import ElementTree
-from pathlib import Path
-import yaml
-import click
-from osgeo import osr
 import os
+import uuid
+import zipfile
+from datetime import datetime
+from pathlib import Path
+from xml.etree import ElementTree
+
+import click
 import rasterio
-from rasterio.errors import RasterioIOError
 import rasterio.features
 import shapely.affinity
 import shapely.geometry
 import shapely.ops
-import zipfile
-import hashlib
-from datetime import datetime
+import yaml
 from click_datetime import Datetime
-#from dateutil import parser
+from osgeo import osr
+from rasterio.errors import RasterioIOError
+
+# from dateutil import parser
 
 os.environ["CPL_ZIP_ENCODING"] = "UTF-8"
+
 
 def safe_valid_region(images, mask_value=None):
     """
@@ -41,6 +45,7 @@ def safe_valid_region(images, mask_value=None):
         return valid_region(images, mask_value)
     except (OSError, RasterioIOError):
         return None
+
 
 def valid_region(images, mask_value=None):
     """
@@ -77,6 +82,7 @@ def valid_region(images, mask_value=None):
                                                     transform.e, transform.xoff, transform.yoff))
     return geom
 
+
 def _to_lists(x):
     """
     Returns lists of lists when given tuples of tuples
@@ -84,6 +90,7 @@ def _to_lists(x):
     if isinstance(x, tuple):
         return [_to_lists(el) for el in x]
     return x
+
 
 def get_geo_ref_points(root):
     """
@@ -102,16 +109,20 @@ def get_geo_ref_points(root):
         'lr': {'x': ulx + ncols * abs(xdim), 'y': uly - nrows * abs(ydim)},
     }
 
+
 def get_coords(geo_ref_points, spatial_ref):
     """
     Returns transformed coordinates in latitude and longitude from input
     reference points and spatial reference
     """
     t = osr.CoordinateTransformation(spatial_ref, spatial_ref.CloneGeogCS())
+
     def transform(p):
         lon, lat, z = t.TransformPoint(p['x'], p['y'])
         return {'lon': lon, 'lat': lat}
+
     return {key: transform(p) for key, p in geo_ref_points.items()}
+
 
 def prepare_dataset(path):
     """
@@ -130,7 +141,7 @@ def prepare_dataset(path):
             pattern = str(path.name)
             pattern = pattern.replace('PRD_MSIL1C', 'MTD_SAFL1C')
             pattern = pattern.replace('.zip', '.xml')
-            xmlzipfiles = [s for s in z.namelist() if pattern in s]     
+            xmlzipfiles = [s for s in z.namelist() if pattern in s]
         mtd_xml = z.read(xmlzipfiles[0])
         root = ElementTree.XML(mtd_xml)
         checksum_sha1 = hashlib.sha1(open(path, 'rb').read()).hexdigest()
@@ -172,11 +183,13 @@ def prepare_dataset(path):
     degraded_anc_data_percentage = root.findall('./*/Technical_Quality_Assessment/DEGRADED_ANC_DATA_PERCENTAGE')[0].text
     degraded_msi_data_percentage = root.findall('./*/Technical_Quality_Assessment/DEGRADED_MSI_DATA_PERCENTAGE')[0].text
     sensor_quality_flag = root.findall('./*/Quality_Control_Checks/Quality_Inspections/SENSOR_QUALITY_FLAG')[0].text
-    geometric_quality_flag = root.findall('./*/Quality_Control_Checks/Quality_Inspections/GEOMETRIC_QUALITY_FLAG')[0].text
+    geometric_quality_flag = root.findall('./*/Quality_Control_Checks/Quality_Inspections/GEOMETRIC_QUALITY_FLAG')[
+        0].text
     general_quality_flag = root.findall('./*/Quality_Control_Checks/Quality_Inspections/GENERAL_QUALITY_FLAG')[0].text
     format_quality_flag = root.findall('./*/Quality_Control_Checks/Quality_Inspections/FORMAT_CORRECTNESS_FLAG')[0].text
-    radiometric_quality_flag = root.findall('./*/Quality_Control_Checks/Quality_Inspections/RADIOMETRIC_QUALITY_FLAG')[0].text
-    #Assume multiple granules
+    radiometric_quality_flag = root.findall('./*/Quality_Control_Checks/Quality_Inspections/RADIOMETRIC_QUALITY_FLAG')[
+        0].text
+    # Assume multiple granules
     single_granule_archive = False
     granules = {granule.get('granuleIdentifier'): [imid.text for imid in granule.findall('IMAGE_ID')]
                 for granule in root.findall('./*/Product_Info/Product_Organisation/Granule_List/Granules')}
@@ -196,23 +209,23 @@ def prepare_dataset(path):
         images_twenty_list = []
         images_sixty_list = []
         # Not required for Zip method - uses granule metadata
-        img_data_path = str(path.parent.joinpath('GRANULE', granule_id, 'IMG_DATA'))    
+        img_data_path = str(path.parent.joinpath('GRANULE', granule_id, 'IMG_DATA'))
         if not path.suffix == '.zip':
             gran_path = str(path.parent.joinpath('GRANULE', granule_id, granule_id[:-7].replace('MSI', 'MTD') + '.xml'))
-            root = ElementTree.parse(gran_path).getroot()   
+            root = ElementTree.parse(gran_path).getroot()
         else:
             xmlzipfiles = [s for s in z.namelist() if 'MTD_TL.xml' in s]
             if xmlzipfiles == []:
                 pattern = granule_id.replace('MSI', 'MTD')
-                pattern = pattern.replace('_N'+processing_baseline, '.xml')
+                pattern = pattern.replace('_N' + processing_baseline, '.xml')
                 xmlzipfiles = [s for s in z.namelist() if pattern in s]
             mtd_xml = z.read(xmlzipfiles[0])
             root = ElementTree.XML(mtd_xml)
-            img_data_path = str(path)+'!'
-            img_data_path = 'zip:'+img_data_path+str(z.namelist()[0])     
-            #for earlier versions of zip archive - use GRANULES
+            img_data_path = str(path) + '!'
+            img_data_path = 'zip:' + img_data_path + str(z.namelist()[0])
+            # for earlier versions of zip archive - use GRANULES
             if single_granule_archive is False:
-                img_data_path = img_data_path+str(Path('GRANULE').joinpath(granule_id, 'IMG_DATA'))               
+                img_data_path = img_data_path + str(Path('GRANULE').joinpath(granule_id, 'IMG_DATA'))
         sensing_time = root.findall('./*/SENSING_TIME')[0].text
         # Add the QA band
         qi_band = root.findall('./*/PVI_FILENAME')[0].text
@@ -230,14 +243,14 @@ def prepare_dataset(path):
                     images_twenty_list.append(os.path.join(img_data_path, image + ".jp2"))
             for item in sixty_list:
                 if item in image:
-                    images_sixty_list.append(os.path.join(img_data_path, image + ".jp2"))                            
+                    images_sixty_list.append(os.path.join(img_data_path, image + ".jp2"))
         tile_id = root.findall('./*/TILE_ID')[0].text
         mgrs_reference = tile_id.split('_')[9]
         datastrip_id = root.findall('./*/DATASTRIP_ID')[0].text
         downlink_priority = root.findall('./*/DOWNLINK_PRIORITY')[0].text
         sensing_time = root.findall('./*/SENSING_TIME')[0].text
         station = root.findall('./*/Archiving_Info/ARCHIVING_CENTRE')[0].text
-        archiving_time = root.findall('./*/Archiving_Info/ARCHIVING_TIME')[0].text      
+        archiving_time = root.findall('./*/Archiving_Info/ARCHIVING_TIME')[0].text
         sun_zenith_angle = root.findall('./*/Tile_Angles/Mean_Sun_Angle/ZENITH_ANGLE')[0].text
         sun_azimuth_angle = root.findall('./*/Tile_Angles/Mean_Sun_Angle/AZIMUTH_ANGLE')[0].text
         viewing_zenith_azimuth_angle = []
@@ -245,7 +258,8 @@ def prepare_dataset(path):
             view_incidence = viewing_incidence.attrib
             zenith_value = viewing_incidence.find('ZENITH_ANGLE').text
             azimuth_value = viewing_incidence.find('AZIMUTH_ANGLE').text
-            view_incidence.update({'unit': 'degree', 'measurement':{'zenith': {'value': zenith_value}, 'azimith': {'value': azimuth_value}}})
+            view_incidence.update({'unit': 'degree', 'measurement': {'zenith': {'value': zenith_value},
+                                                                     'azimith': {'value': azimuth_value}}})
             viewing_zenith_azimuth_angle.append(view_incidence)
         cs_code = root.findall('./*/Tile_Geocoding/HORIZONTAL_CS_CODE')[0].text
         spatial_ref = osr.SpatialReference()
@@ -253,22 +267,23 @@ def prepare_dataset(path):
         geo_ref_points = get_geo_ref_points(root)
         img_dict = {}
         for image in images:
-            if image[-3:] in ['B01', 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B09', 'B10', 'B11', 'B12', 'TCI']:
+            if image[-3:] in ['B01', 'B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B09', 'B10', 'B11', 'B12',
+                              'TCI']:
                 img_path = os.path.join(img_data_path, image + ".jp2")
                 band_label = image[-3:]
             else:
                 img_path = os.path.join(img_data_path, image + ".jp2")
                 img_path = img_path.replace('IMG_DATA', 'QI_DATA')
                 band_label = 'PVI'
-            img_dict[band_label] = {'path': img_path, 'layer': 1}    
+            img_dict[band_label] = {'path': img_path, 'layer': 1}
         documents.append({
             'id': str(uuid.uuid4()),
-            'processing_level': level, 
+            'processing_level': level,
             'product_type': product_type,
             'processing_baseline': processing_baseline,
             'datatake_id': datatake_id,
             'datatake_type': datatake_type,
-            'datatake_sensing_start' : datatake_sensing_start,
+            'datatake_sensing_start': datatake_sensing_start,
             'orbit': orbit,
             'orbit_direction': orbit_direction,
             'creation_dt': ct_time,
@@ -330,6 +345,7 @@ def prepare_dataset(path):
         })
     return documents
 
+
 def absolutify_paths(doc, path):
     """
     Return absolute paths from input doc and path
@@ -338,23 +354,24 @@ def absolutify_paths(doc, path):
         band['path'] = str(path / band['path'])
     return doc
 
+
 @click.command(help=__doc__)
 @click.option('--output', help="Write datasets into this directory",
               type=click.Path(exists=False, writable=True, dir_okay=True))
 @click.argument('datasets',
                 type=click.Path(exists=True, readable=True, writable=False),
                 nargs=-1)
-@click.option('--date', type=Datetime(format='%d/%m/%Y'), default=datetime.now(), help="Enter file creation start date for data preparation")
+@click.option('--date', type=Datetime(format='%d/%m/%Y'), default=datetime.now(),
+              help="Enter file creation start date for data preparation")
 @click.option('--checksum/--no-checksum', help="Checksum the input dataset to confirm match", default=False)
-
 def main(output, datasets, checksum, date):
     logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
-    
+
     for dataset in datasets:
         (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(dataset)
-        create_date = datetime.utcfromtimestamp(ctime) 
+        create_date = datetime.utcfromtimestamp(ctime)
         if create_date <= date:
-            logging.info("Dataset creation time ", create_date, " is older than start date ", date, "...SKIPPING")    
+            logging.info("Dataset creation time ", create_date, " is older than start date ", date, "...SKIPPING")
         else:
             path = Path(dataset)
             if path.is_dir():
@@ -363,7 +380,7 @@ def main(output, datasets, checksum, date):
                 raise RuntimeError('want xml or zipped archive')
             logging.info("Processing %s", path)
             output_path = Path(output)
-            yaml_path = output_path.joinpath(path.name+'.yaml')
+            yaml_path = output_path.joinpath(path.name + '.yaml')
             logging.info("Output %s", yaml_path)
             if os.path.exists(yaml_path):
                 logging.info("Output already exists %s", yaml_path)
@@ -373,12 +390,12 @@ def main(output, datasets, checksum, date):
                         datamap = yaml.load_all(f)
                         for data in datamap:
                             yaml_sha1 = data['checksum_sha1']
-                            checksum_sha1 = hashlib.sha1(open(path, 'rb').read()).hexdigest()          
+                            checksum_sha1 = hashlib.sha1(open(path, 'rb').read()).hexdigest()
                         if checksum_sha1 == yaml_sha1:
-                            logging.info("Dataset preparation already done...SKIPPING")    
+                            logging.info("Dataset preparation already done...SKIPPING")
                             continue
                     else:
-                        logging.info("Dataset preparation already done...SKIPPING")       
+                        logging.info("Dataset preparation already done...SKIPPING")
                         continue
             documents = prepare_dataset(path)
             if documents:
@@ -387,6 +404,7 @@ def main(output, datasets, checksum, date):
                     yaml.dump_all(documents, stream)
             else:
                 logging.info("No datasets discovered. Bye!")
+
 
 if __name__ == "__main__":
     main()
