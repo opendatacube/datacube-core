@@ -26,6 +26,7 @@ import numpy
 import xarray
 import yaml
 from dateutil.tz import tzutc
+from decimal import Decimal
 
 try:
     from yaml import CSafeLoader as SafeLoader
@@ -443,7 +444,7 @@ def jsonify_document(doc):
     >>> sorted(jsonify_document({'a': (1.0, 2.0, 3.0), 'b': float("inf"), 'c': datetime(2016, 3, 11)}).items())
     [('a', (1.0, 2.0, 3.0)), ('b', 'Infinity'), ('c', '2016-03-11T00:00:00')]
     >>> # Converts keys to strings:
-    >>> sorted(jsonify_document({1: 'a', '2': 'b'}).items())
+    >>> sorted(jsonify_document({1: 'a', '2': Decimal('2')}).items())
     [('1', 'a'), ('2', 'b')]
     >>> jsonify_document({'k': UUID("1f231570-e777-11e6-820f-185e0f80a5c0")})
     {'k': '1f231570-e777-11e6-820f-185e0f80a5c0'}
@@ -463,6 +464,8 @@ def jsonify_document(doc):
         if isinstance(v, numpy.dtype):
             return v.name
         if isinstance(v, UUID):
+            return str(v)
+        if isinstance(v, Decimal):
             return str(v)
         return v
 
