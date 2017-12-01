@@ -33,6 +33,7 @@ def mk_celery_app(addr=None):
     _app = Celery('datacube_task', broker=url, backend=url)
 
     _app.conf.update(
+        worker_prefetch_multiplier=1,
         task_serializer='cloudpickle',
         result_serializer='cloudpickle',
         event_serializer='cloudpickle',
