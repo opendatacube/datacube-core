@@ -8,8 +8,8 @@ from __future__ import absolute_import
 
 import logging
 
-from datacube.config import LocalConfig
 import datacube.index._api as base_index
+from datacube.config import LocalConfig
 from datacube.index.postgres import PostgresDb
 
 
@@ -57,4 +57,3 @@ class Index(base_index.Index):
         else:
             db = index._db  # pylint: disable=protected-access
         super(Index, self).__init__(db)
-
