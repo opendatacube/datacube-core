@@ -1,4 +1,5 @@
 from datacube.index._api import Index
+from datacube.index.postgres.tables import _pg_exists
 
 
 class S3BlockIndex(Index):
@@ -17,5 +18,6 @@ class S3BlockIndex(Index):
         except AttributeError:
             self.logger.warning('Should only be here for tests.')
             return True
+
     def _make(self):
         pass
