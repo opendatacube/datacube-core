@@ -5,13 +5,6 @@ import logging
 import click
 import cachetools
 import itertools
-
-from datacube.drivers.manager import DriverManager
-
-try:
-    import cPickle as pickle
-except ImportError:
-    import pickle
 from copy import deepcopy
 from pathlib import Path
 from pandas import to_datetime
@@ -21,8 +14,9 @@ import datacube
 from datacube.api.core import Datacube
 from datacube.model import DatasetType, Range, GeoPolygon
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
+from datacube.storage.storage import write_dataset_to_netcdf
 from datacube.ui import click as ui
-from datacube.utils import read_documents, changes
+from datacube.utils import read_documents
 from datacube.ui.task_app import check_existing_files, load_tasks as load_tasks_, save_tasks as save_tasks_
 
 from datacube.ui.click import cli
@@ -42,21 +36,21 @@ def remove_duplicates(cells_in, cells_out):
         return
 
     # Compute signatures of cells_out
-    sigs_out = {(extent, timestamp) \
-                for extent, cell in cells_out.items() \
+    sigs_out = {(extent, timestamp)
+                for extent, cell in cells_out.items()
                 for timestamp in cell.sources.coords['time'].values}
     # Index cells_in accordingly
     for extent, cell in cells_in.items():
         tiles = cell.sources
-        to_add = [timestamp \
-                  for timestamp in tiles.coords['time'].values \
+        to_add = [timestamp
+                  for timestamp in tiles.coords['time'].values
                   if not (extent, timestamp) in sigs_out]
         cell.sources = tiles.loc[to_add]
 
 
-def find_diff(input_type, output_type, driver_manager, time_size, **query):
+def find_diff(input_type, output_type, index, time_size, **query):
     from datacube.api.grid_workflow import GridWorkflow
-    workflow = GridWorkflow(None, output_type.grid_spec, driver_manager=driver_manager)
+    workflow = GridWorkflow(index, output_type.grid_spec)
 
     cells_in = workflow.list_cells(product=input_type.name, **query)
     cells_out = workflow.list_cells(product=output_type.name, **query)
@@ -72,10 +66,10 @@ def find_diff(input_type, output_type, driver_manager, time_size, **query):
     return new_tasks
 
 
-def morph_dataset_type(source_type, config, driver_manager):
+def morph_dataset_type(source_type, config, index):
     output_metadata_type = source_type.metadata_type
     if 'metadata_type' in config:
-        output_metadata_type = driver_manager.index.metadata_types.get_by_name(config['metadata_type'])
+        output_metadata_type = index.metadata_types.get_by_name(config['metadata_type'])
 
     output_type = DatasetType(output_metadata_type, deepcopy(source_type.definition))
     output_type.definition['name'] = config['output_type']
@@ -84,7 +78,7 @@ def morph_dataset_type(source_type, config, driver_manager):
     output_type.definition['storage'] = config['storage']
     output_type.definition['storage'] = {k: v for (k, v) in config['storage'].items()
                                          if k in ('crs', 'driver', 'tile_size', 'resolution', 'origin')}
-    output_type.metadata_doc['format'] = {'name': driver_manager.driver.format}
+    output_type.metadata_doc['format'] = {'name': 'NetCDF'}  # TODO: write plugin dependent parameter,
 
     if 'metadata_type' in config:
         output_type.definition['metadata_type'] = config['metadata_type']
@@ -156,22 +150,20 @@ def get_namemap(config):
     return {spec['src_varname']: spec['name'] for spec in config['measurements']}
 
 
-def ensure_output_type(driver_manager, config, allow_product_changes=False):
-    # type: (DriverManager, dict, bool) -> (DatasetType, DatasetType)
+def ensure_output_type(index, config, allow_product_changes=False):
+    # type: (Index, dict, bool) -> (DatasetType, DatasetType)
     """
     Create the output product for the given ingest config if it doesn't already exist.
 
     It will throw a ValueError if the config already exists but differs from the existing.
     Set allow_product_changes=True to allow changes.
     """
-
-    index = driver_manager.index
     source_type = index.products.get_by_name(config['source_type'])
     if not source_type:
         click.echo("Source DatasetType %s does not exist" % config['source_type'])
         click.get_current_context().exit(1)
 
-    output_type = morph_dataset_type(source_type, config, driver_manager)
+    output_type = morph_dataset_type(source_type, config, index)
     _LOG.info('Created DatasetType %s', output_type.name)
 
     existing = index.products.get_by_name(output_type.name)
@@ -201,7 +193,7 @@ def load_config_from_file(index, config):
     return config
 
 
-def create_task_list(driver_manager, output_type, year, source_type, config):
+def create_task_list(index, output_type, year, source_type, config):
     config['taskfile_version'] = int(time.time())
 
     query = {}
@@ -216,7 +208,7 @@ def create_task_list(driver_manager, output_type, year, source_type, config):
     if 'time' in config['storage']['tile_size']:
         time_size = config['storage']['tile_size']['time']
 
-    tasks = find_diff(source_type, output_type, driver_manager, time_size, **query)
+    tasks = find_diff(source_type, output_type, index, time_size, **query)
     _LOG.info('%s tasks discovered', len(tasks))
 
     def check_valid(tile, tile_index):
@@ -230,7 +222,7 @@ def create_task_list(driver_manager, output_type, year, source_type, config):
         return not require_fusing
 
     def update_sources(sources):
-        return tuple(get_full_lineage(driver_manager.index, dataset.id) for dataset in sources)
+        return tuple(get_full_lineage(index, dataset.id) for dataset in sources)
 
     def update_task(task):
         tile = task['tile']
@@ -242,7 +234,7 @@ def create_task_list(driver_manager, output_type, year, source_type, config):
     return tasks
 
 
-def ingest_work(driver_manager, config, source_type, output_type, tile, tile_index):
+def ingest_work(config, source_type, output_type, tile, tile_index):
     _LOG.info('Starting task %s', tile_index)
 
     namemap = get_namemap(config)
@@ -252,8 +244,7 @@ def ingest_work(driver_manager, config, source_type, output_type, tile, tile_ind
 
     with datacube.set_options(reproject_threads=1):
         fuse_func = {'copy': None}[config.get(FUSER_KEY, 'copy')]
-        data = Datacube.load_data(tile.sources, tile.geobox, measurements,
-                                  fuse_func=fuse_func, driver_manager=driver_manager)
+        data = Datacube.load_data(tile.sources, tile.geobox, measurements, fuse_func=fuse_func)
     nudata = data.rename(namemap)
     file_path = get_filename(config, tile_index, tile.sources)
 
@@ -269,34 +260,26 @@ def ingest_work(driver_manager, config, source_type, output_type, tile, tile_ind
     datasets = xr_apply(tile.sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
     nudata['dataset'] = datasets_to_doc(datasets)
 
-    # Until ingest becomes a class and DriverManager an instance
-    # variable, we call the constructor each time. DriverManager being
-    # a singleton, there is little overhead, though.
-    datasets.attrs['storage_output'] = driver_manager.write_dataset_to_storage(nudata,
-                                                                               file_path,
-                                                                               global_attributes,
-                                                                               variable_params)
+    # TODO: IO plugin hook point
+    write_dataset_to_netcdf(nudata, file_path, global_attributes, variable_params)
     _LOG.info('Finished task %s', tile_index)
-
-    # When using multiproc executor, Driver Manager is a clone.
-    if driver_manager.is_clone:
-        driver_manager.close()
 
     return datasets
 
 
-def _index_datasets(driver_manager, results):
+def _index_datasets(index, results):
     n = 0
     for datasets in results:
-        n += driver_manager.index_datasets(datasets, sources_policy='verify')
+        for dataset in datasets.values:
+            index.datasets.add(dataset, sources_policy='skip')
+            n += 1
     return n
 
 
-def process_tasks(driver_manager, config, source_type, output_type, tasks, queue_size, executor):
+def process_tasks(index, config, source_type, output_type, tasks, queue_size, executor):
     def submit_task(task):
         _LOG.info('Submitting task: %s', task['tile_index'])
         return executor.submit(ingest_work,
-                               driver_manager=driver_manager,
                                config=config,
                                source_type=source_type,
                                output_type=output_type,
@@ -329,7 +312,7 @@ def process_tasks(driver_manager, config, source_type, output_type, tasks, queue
             # TODO: ideally we wouldn't block here indefinitely
             # maybe limit gather to 50-100 results and put the rest into a index backlog
             # this will also keep the queue full
-            n_successful += _index_datasets(driver_manager, executor.results(completed))
+            n_successful += _index_datasets(index, executor.results(completed))
         except Exception:  # pylint: disable=broad-except
             _LOG.exception('Gather failed')
             pending += completed
@@ -364,8 +347,8 @@ def _validate_year(ctx, param, value):
 @click.option('--allow-product-changes', is_flag=True, default=False,
               help='Allow the output product definition to be updated if it differs.')
 @ui.executor_cli_options
-@ui.pass_driver_manager(app_name='agdc-ingest')
-def ingest_cmd(driver_manager,
+@ui.pass_index(app_name='agdc-ingest')
+def ingest_cmd(index,
                config_file,
                year,
                queue_size,
@@ -374,17 +357,14 @@ def ingest_cmd(driver_manager,
                dry_run,
                executor,
                allow_product_changes):
-    index = driver_manager.index
     if config_file:
         config = load_config_from_file(index, config_file)
-        source_type, output_type = ensure_output_type(driver_manager, config,
-                                                      allow_product_changes=allow_product_changes)
+        source_type, output_type = ensure_output_type(index, config, allow_product_changes=allow_product_changes)
 
-        tasks = create_task_list(driver_manager, output_type, year, source_type, config)
+        tasks = create_task_list(index, output_type, year, source_type, config)
     elif load_tasks:
         config, tasks = load_tasks_(load_tasks)
-        source_type, output_type = ensure_output_type(driver_manager, config,
-                                                      allow_product_changes=allow_product_changes)
+        source_type, output_type = ensure_output_type(index, config, allow_product_changes=allow_product_changes)
     else:
         click.echo('Must specify exactly one of --config-file, --load-tasks')
         return 1
@@ -397,7 +377,7 @@ def ingest_cmd(driver_manager,
         save_tasks_(config, tasks, save_tasks)
         return 0
 
-    successful, failed = process_tasks(driver_manager, config, source_type, output_type, tasks, queue_size, executor)
+    successful, failed = process_tasks(index, config, source_type, output_type, tasks, queue_size, executor)
     click.echo('%d successful, %d failed' % (successful, failed))
 
     return 0

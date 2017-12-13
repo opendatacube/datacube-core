@@ -45,7 +45,7 @@ class Index(base_index.Index, IndexExtension):
     driver-specific sub-classes of this index.
     """
 
-    def __init__(self, driver_manager, index=None, *args, **kargs):
+    def __init__(self, index=None, *args, **kargs):
         """Initialise the generic index.
 
         :param index: An index object behaving like
@@ -76,7 +76,7 @@ class Index(base_index.Index, IndexExtension):
                                         validate_connection=validate_connection)
         else:
             db = index._db  # pylint: disable=protected-access
-        super(Index, self).__init__(driver_manager, db)
+        super(Index, self).__init__(db)
 
     def add_specifics(self, dataset):
         """This method does not make sense for the generic driver.

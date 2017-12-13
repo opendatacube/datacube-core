@@ -5,6 +5,7 @@ Common methods for index integration tests.
 from __future__ import absolute_import
 
 import itertools
+from collections import namedtuple
 import logging
 import os
 import shutil
@@ -27,12 +28,13 @@ try:
 except ImportError:
     from yaml import SafeLoader
 
-from datacube.drivers.manager import DriverManager
 from datacube.api import API
 from datacube.config import LocalConfig
 from datacube.index._api import Index, _DEFAULT_METADATA_TYPES_PATH
 from datacube.index.postgres import PostgresDb
 from datacube.index.postgres.tables import _core
+
+Driver = namedtuple('Driver', ['name', 'uri_scheme', 'as_uri'])
 
 # On Windows, symlinks are not supported in Python 2 and require
 # specific privileges otherwise, so we copy instead of linking
@@ -133,36 +135,29 @@ def local_config(integration_config_paths):
 
 
 @pytest.fixture(params=["US/Pacific", "UTC", ])
-def driver_manager(local_config, request):
+def db(local_config, request):
     timezone = request.param
-    with DriverManager(index=None,
-                       local_config=local_config,
-                       application_name='test-run',
-                       validate_connection=False) as driver_manager:
-        db = driver_manager.index._db
 
-        # Drop and recreate tables so our tests have a clean db.
-        with db.connect() as connection:
-            _core.drop_db(connection._connection)
-        remove_dynamic_indexes()
+    db = PostgresDb.from_config(local_config, application_name='test-run', validate_connection=False)
 
-        # Disable informational messages since we're doing this on every test run.
-        with _increase_logging(_core._LOG) as _:
-            _core.ensure_db(db._engine, with_s3_tables=True)
+    # Drop and recreate tables so our tests have a clean db.
+    with db.connect() as connection:
+        _core.drop_db(connection._connection)
+    remove_dynamic_indexes()
 
-        c = db._engine.connect()
-        c.execute('alter database %s set timezone = %r' % (local_config.db_database, str(timezone)))
-        c.close()
+    # Disable informational messages since we're doing this on every test run.
+    with _increase_logging(_core._LOG) as _:
+        _core.ensure_db(db._engine)
 
-        # We don't need informational create/drop messages for every config change.
-        _dynamic._LOG.setLevel(logging.WARN)
+    c = db._engine.connect()
+    c.execute('alter database %s set timezone = %r' % (local_config.db_database, str(timezone)))
+    c.close()
 
-        yield driver_manager
+    # We don't need informational create/drop messages for every config change.
+    _dynamic._LOG.setLevel(logging.WARN)
 
-
-@pytest.fixture
-def db(driver_manager):
-    yield driver_manager.index._db
+    yield db
+    db.close()
 
 
 @contextmanager
@@ -183,17 +178,19 @@ def remove_dynamic_indexes():
 
 
 @pytest.fixture(params=['NetCDF CF', 's3-test'])
-def driver(driver_manager, request):
+def driver(request):
+    # TODO: s3-driver support
     driver_name = request.param
-    if driver_name not in driver_manager.drivers:
+    if driver_name not in ['NetCDF CF']:
         pytest.skip(driver_name + " driver not able to be loaded in this environment")
-    driver_manager.set_current_driver(driver_name)
-    return driver_manager.driver
+
+    driver = Driver(name=driver_name, uri_scheme='file', as_uri=(lambda p: 'file://'+str(p)))
+    return driver
 
 
 @pytest.fixture
-def index(driver):
-    return driver.index
+def index(db):
+    return Index(db)
 
 
 @pytest.fixture
@@ -512,7 +509,6 @@ def alter_dataset_type_for_testing(type_, metadata_type=None):
     if 'measurements' in type_:
         type_ = limit_num_measurements(type_)
     if 'storage' in type_:
-        storage = type_['storage']
         type_ = shrink_storage_type(type_,
                                     GEOGRAPHIC_VARS if is_geogaphic(type_) else PROJECTED_VARS,
                                     TEST_STORAGE_SHRINK_FACTORS)

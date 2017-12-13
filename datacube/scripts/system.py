@@ -7,8 +7,7 @@ from click import echo, style
 from sqlalchemy.exc import OperationalError
 
 import datacube
-from datacube.config import LocalConfig
-from datacube.drivers.manager import DriverManager
+from datacube.index import index_connect
 from datacube.index.postgres._connections import IndexSetupError
 from datacube.ui import click as ui
 from datacube.ui.click import cli, handle_exception
@@ -92,13 +91,11 @@ def check(
     echo()
     echo('Valid connection:\t', nl=False)
     try:
-        with DriverManager(default_driver_name=local_config.default_driver,
-                           local_config=local_config) as driver_manager:
-            index = driver_manager.index
-            echo(style('YES', bold=True))
-            for role, user, description in index.users.list_users():
-                if user == local_config.db_username:
-                    echo('You have %s privileges.' % style(role.upper(), bold=True))
+        index = index_connect(local_config=local_config)
+        echo(style('YES', bold=True))
+        for role, user, description in index.users.list_users():
+            if user == local_config.db_username:
+                echo('You have %s privileges.' % style(role.upper(), bold=True))
     except OperationalError as e:
         handle_exception('Error Connecting to Database: %s', e)
     except IndexSetupError as e:

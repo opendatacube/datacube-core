@@ -252,7 +252,6 @@ db_hostname: alt-db.opendatacube.test
     alt_config = LocalConfig.find([config_path], env='test_alt')
     assert alt_config.db_hostname == 'alt-db.opendatacube.test'
 
-    # Lazily connect: they shouldn't try to connect during this test as we're not using the API
     args = dict(validate_connection=False)
 
     # Make sure the correct config is passed through the API

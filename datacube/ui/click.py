@@ -14,12 +14,10 @@ import click
 
 from datacube import config, __version__
 from datacube.api.core import Datacube
-from datacube.config import LocalConfig
 
 from datacube.executor import get_executor, mk_celery_executor
-
+from datacube.index import index_connect
 from pathlib import Path
-from datacube.drivers.manager import DriverManager
 
 from datacube.ui.expression import parse_expressions
 from sqlalchemy.exc import OperationalError, ProgrammingError
@@ -201,8 +199,8 @@ def pass_config(f):
     return functools.update_wrapper(new_func, f)
 
 
-def pass_driver_manager(app_name=None, expect_initialised=True):
-    """Get a driver manager as the first argument.
+def pass_index(app_name=None, expect_initialised=True):
+    """Get a connection to the index as the first argument.
 
     :param str app_name:
         A short name of the application for logging purposes.
@@ -214,44 +212,19 @@ def pass_driver_manager(app_name=None, expect_initialised=True):
 
     def decorate(f):
         @pass_config
-        def with_driver_manager(local_config,  # type: LocalConfig
-                                *args,
-                                **kwargs):
+        def with_index(local_config,  # type: LocalConfig
+                       *args,
+                       **kwargs):
             ctx = click.get_current_context()
             try:
-                with DriverManager(index=None,
-                                   default_driver_name=local_config.default_driver,
-                                   local_config=local_config,
-                                   application_name=app_name or ctx.command_path,
-                                   validate_connection=expect_initialised) as driver_manager:
-                    ctx.obj['index'] = driver_manager.index
-                    _LOG.debug("Driver manager ready. Connected to index: %s",
-                               driver_manager.index)
-                    return f(driver_manager, *args, **kwargs)
+                index = index_connect(local_config,
+                                      application_name=app_name or ctx.command_path,
+                                      validate_connection=expect_initialised)
+                ctx.obj['index'] = index
+                _LOG.debug("Connected to datacube index: %s", index)
+                return f(index, *args, **kwargs)
             except (OperationalError, ProgrammingError) as e:
                 handle_exception('Error Connecting to database: %s', e)
-
-        return functools.update_wrapper(with_driver_manager, f)
-
-    return decorate
-
-
-def pass_index(app_name=None, expect_initialised=True):
-    """
-    Get an index from the current or default local settings.
-
-    :param str app_name:
-        A short name of the application for logging purposes.
-    :param bool expect_initialised:
-        Whether to connect immediately on startup. Useful to catch connection config issues immediately,
-        but if you're planning to fork before any usage (such as in the case of some web servers),
-        you may not want this. For More information on thread/process usage, see datacube.index._api.Index
-    """
-
-    def decorate(f):
-        @pass_driver_manager(app_name=app_name, expect_initialised=expect_initialised)
-        def with_index(driver_manager, *args, **kwargs):
-            return f(driver_manager.index, *args, **kwargs)
 
         return functools.update_wrapper(with_index, f)
 
@@ -271,11 +244,11 @@ def pass_datacube(app_name=None, expect_initialised=True):
     """
 
     def decorate(f):
-        @pass_driver_manager(app_name=app_name, expect_initialised=expect_initialised)
-        def with_index(driver_manager, *args, **kwargs):
-            return f(Datacube(driver_manager=driver_manager), *args, **kwargs)
+        @pass_index(app_name=app_name, expect_initialised=expect_initialised)
+        def with_datacube(index, *args, **kwargs):
+            return f(Datacube(index=index), *args, **kwargs)
 
-        return functools.update_wrapper(with_index, f)
+        return functools.update_wrapper(with_datacube, f)
 
     return decorate
 
