@@ -19,8 +19,6 @@ from __future__ import absolute_import, division, print_function
 
 import logging
 from itertools import chain, groupby
-import warnings
-
 import numpy
 
 from ..utils import geometry
@@ -34,36 +32,25 @@ class API(object):
     """
     Interface for use by the ``AnalyticsEngine`` and ``ExecutionEngine`` modules.
     """
-    def __init__(self, index=None, app=None, datacube=None, driver_manager=None):
+    def __init__(self, index=None, app=None, datacube=None):
         """
         Creates the interface for query and storage access.
 
         If no datacube or index is given, the default configuration is used for database connection, etc.
 
-        :param Index index: The database index to use. This feature
-          will become deprecated, so `driver_manager` should be used
-          instead, unless a specific index DB needs to be set in the
-          driver manager for testing purposes.
+        :param index: The database index to use, from :py:class:`datacube.index.index_connect`
+        :type index: :py:class:`datacube.index._api.Index` or None
         :param app: A short, alphanumeric name to identify this application.
             The application name is used to track down problems with database queries, so it is strongly
             advised that be used.  If an index is supplied, application name is ignored.
         :type app: string, required if no index is given
         :param datacube:
         :type datacube: :class:`datacube.Datacube`
-        :param DriverManager driver_manager: The driver manager to
-          use. If not specified, an new manager will be created using
-          the index if specified, or the default configuration
-          otherwise.
         """
-
-        self.driver_manager = driver_manager
-
         if datacube is not None:
             self.datacube = datacube
         elif index is not None:
-            self.datacube = Datacube(index, driver_manager=driver_manager)
-        elif driver_manager is not None:
-            self.datacube = Datacube(driver_manager=driver_manager)
+            self.datacube = Datacube(index)
         else:
             app = app or 'Datacube-API'
             self.datacube = Datacube(app=app)
@@ -415,8 +402,7 @@ class API(object):
             if measurements is None or measurement_name in measurements:
                 dt_data['arrays'][measurement_name] = self.datacube.measurement_data(
                     sources, geobox, measurement,
-                    dask_chunks=dask_chunks,
-                    driver_manager=self.driver_manager)
+                    dask_chunks=dask_chunks)
         return dt_data
 
     def list_products(self):

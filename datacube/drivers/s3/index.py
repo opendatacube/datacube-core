@@ -21,9 +21,9 @@ class Index(base_index.Index, base_index.IndexExtension):
 
     def __init__(self, uri_scheme, driver_manager, index=None, *args, **kargs):
         """Initialise the index and its dataset resource."""
-        super(Index, self).__init__(driver_manager, index, *args, **kargs)
+        super(Index, self).__init__(index, *args, **kargs)
         self.uri_scheme = uri_scheme
-        self.datasets = DatasetResource(driver_manager, self._db, self.products, self.uri_scheme)
+        self.datasets = DatasetResource(self._db, self.products, self.uri_scheme)
 
     def add_specifics(self, dataset):
         """Extend the dataset doc with driver specific index data.
@@ -73,9 +73,9 @@ class DatasetResource(base_dataset.DatasetResource):
     additional s3 information to specific tables.
     """
 
-    def __init__(self, driver_manager, db, dataset_type_resource, uri_scheme='s3'):
+    def __init__(self, db, dataset_type_resource, uri_scheme='s3'):
         """Initialise the data resource."""
-        super(DatasetResource, self).__init__(driver_manager, db, dataset_type_resource)
+        super(DatasetResource, self).__init__(db, dataset_type_resource)
         self.logger = logging.getLogger(self.__class__.__name__)
         self.uri_scheme = uri_scheme
 

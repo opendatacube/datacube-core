@@ -16,7 +16,6 @@ from pathlib import Path
 
 import datacube
 from datacube.ui import task_app
-from datacube.ui.click import to_pathlib
 
 _LOG = logging.getLogger(__name__)
 
@@ -31,14 +30,14 @@ def get_filename(config, cell_index, year=None):
     return file_path_template.format(tile_index=cell_index, start_time=year)
 
 
-def make_ncml_tasks(driver_manager, config, cell_index=None, year=None, cell_index_list=None, **kwargs):
+def make_ncml_tasks(index, config, cell_index=None, year=None, cell_index_list=None, **kwargs):
     product = config['product']
 
     query = {}
     if year is not None:
         query['time'] = datetime(year=year, month=1, day=1), datetime(year=year + 1, month=1, day=1)
 
-    gw = datacube.api.GridWorkflow(index=None, product=product.name, driver_manager=driver_manager)
+    gw = datacube.api.GridWorkflow(index=index, product=product.name)
 
     if cell_index_list is None:
         if cell_index is not None:
@@ -55,8 +54,8 @@ def make_ncml_tasks(driver_manager, config, cell_index=None, year=None, cell_ind
                        output_filename=output_filename)
 
 
-def make_ncml_config(driver_manager, config, export_path=None, nested_years=None, **query):
-    config['product'] = driver_manager.index.products.get_by_name(config['output_type'])
+def make_ncml_config(index, config, export_path=None, nested_years=None, **query):
+    config['product'] = index.products.get_by_name(config['output_type'])
 
     config['nested_years'] = nested_years if nested_years is not None else []
 
@@ -77,8 +76,7 @@ def get_history_attribute(config, task):
         args=', '.join([config['app_config_file'],
                         str(config['version']),
                         task['output_filename'],
-                        str(task['cell_index'])
-                       ]),
+                        str(task['cell_index'])]),
         comment='Created NCML file to aggregate multiple NetCDF files along the time dimension'
     )
 
@@ -154,7 +152,7 @@ def ncml_app():
 #: pylint: disable=invalid-name
 command_options = datacube.ui.click.compose(
     datacube.ui.click.config_option,
-    datacube.ui.click.pass_driver_manager(app_name=APP_NAME),
+    datacube.ui.click.pass_index(app_name=APP_NAME),
     datacube.ui.click.logfile_option,
     task_app.cell_index_option,
     task_app.cell_index_list_option,
@@ -173,12 +171,11 @@ command_options = datacube.ui.click.compose(
 @command_options
 @click.argument('app_config')
 @task_app.task_app(make_config=make_ncml_config, make_tasks=make_ncml_tasks)
-def full(driver_manager, config, tasks, executor, queue_size, **kwargs):
+def full(index, config, tasks, executor, queue_size, **kwargs):
     """Create ncml files for the full time depth of the product
 
     e.g. datacube-ncml full <app_config_yaml>
     """
-    index = driver_manager.index
     click.echo('Starting datacube ncml utility...')
 
     task_func = partial(do_ncml_task, config)
@@ -190,7 +187,7 @@ def full(driver_manager, config, tasks, executor, queue_size, **kwargs):
 @click.argument('app_config')
 @click.argument('nested_years', nargs=-1, type=click.INT)
 @task_app.task_app(make_config=make_ncml_config, make_tasks=make_ncml_tasks)
-def nest(driver_manager, config, tasks, executor, queue_size, **kwargs):
+def nest(index, config, tasks, executor, queue_size, **kwargs):
     """Create ncml files for the full time, with nested ncml files covering the given years
 
     e.g. datacube-ncml nest <app_config_yaml> 2016 2017
@@ -198,7 +195,6 @@ def nest(driver_manager, config, tasks, executor, queue_size, **kwargs):
     This will refer to the actual files (hopefully stacked), and make ncml files for the given (ie unstacked) years.
     Use the `update` command when new data is added to a year, without having to rerun for the entire time depth.
     """
-    index = driver_manager.index
     click.echo('Starting datacube ncml utility...')
 
     task_func = partial(do_ncml_task, config)
@@ -210,14 +206,13 @@ def nest(driver_manager, config, tasks, executor, queue_size, **kwargs):
 @click.argument('app_config')
 @click.argument('year', type=click.INT)
 @task_app.task_app(make_config=make_ncml_config, make_tasks=make_ncml_tasks)
-def update(driver_manager, config, tasks, executor, queue_size, **kwargs):
+def update(index, config, tasks, executor, queue_size, **kwargs):
     """Update a single year ncml file
 
     e.g datacube-ncml <app_config_yaml> 1996
 
     This can be used to update an existing ncml file created with `nest` when new data is added.
     """
-    index = driver_manager.index
     click.echo('Starting datacube ncml utility...')
 
     task_func = partial(do_ncml_task, config)

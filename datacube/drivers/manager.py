@@ -128,7 +128,7 @@ class DriverManager(object):
         """
         if self.__index:
             self.__index.close()
-        self.__index = Index(weakref.ref(self)(), index, *index_args, **index_kargs)
+        self.__index = Index(index, *index_args, **index_kargs)
         self.logger.debug('Generic index set to %s', self.__index)
 
     def reload_drivers(self, *index_args, **index_kargs):

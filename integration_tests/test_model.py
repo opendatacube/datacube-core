@@ -1,15 +1,4 @@
-from pprint import pprint
-
-import gc
-
-import pytest
-import sys
-
-from datacube.drivers.manager import DriverManager
 from datacube.model import Dataset
-from datacube.model import MetadataType
-
-import objgraph
 
 
 def test_crs_parse(indexed_ls5_scene_dataset_types):
@@ -93,35 +82,3 @@ def test_crs_parse(indexed_ls5_scene_dataset_types):
     # Prints warning: Can't figure out projection: possibly invalid zone (-60) for datum ('GDA94')."
     # We still return None, rather than error, as they didn't specify a CRS explicitly
     assert d.crs is None
-
-
-@pytest.mark.skip(
-    sys.version_info < (3, 4),
-    reason="objgraph search is too slow on older python"
-)
-def test_single_dm_instance(driver_manager, db):
-    """
-    Our driver manager should only be linked to one PostgresDb instance in memory.
-
-    Subsequent drivers should share the same instance to avoid extra connections (and cache duplication)
-    """
-
-    # There's a circular reference in DriverManager structure, so old test instances aren't cleaned up by
-    # the reference counter.
-    gc.collect()
-
-    # For all PostgresDb instances in memory (there may be others due to other pytests), count
-    # how many are connected to our instance of DriverManager
-    references = 0
-    for pg_instance in objgraph.by_type('PostgresDb'):
-        chain = objgraph.find_backref_chain(
-            pg_instance,
-            max_depth=10,
-            predicate=lambda o: isinstance(o, DriverManager)
-        )
-        # If the referenced DriverManager is ours
-        if chain[0] is driver_manager:
-            print("Length {}: {}".format(len(chain), ' -> '.join(c.__class__.__name__ for c in chain)))
-            references += 1
-
-    assert references == 1, "Our DriverManager should only reference one PG instance"
