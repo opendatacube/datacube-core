@@ -5,6 +5,24 @@
 What's New
 ==========
 
+v1.5.4 Dingley Dahu (13th December 2017)
+------------------------------------
+ - Minor features backported from 2.0:
+
+    - Support for `limit` in searches
+
+    - Alternative lazy search method `find_lazy`
+
+ - Fixes:
+
+    - Improve native field descriptions
+
+    - Connection should not be held open between multi-product searches
+
+    - Disable prefetch for celery workers
+
+    - Support jsonify-ing decimals
+
 v1.5.3 Purpler Unicorn with Starlight (16 October 2017)
 -----------------------------
 
