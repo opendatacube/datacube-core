@@ -3,14 +3,14 @@ from __future__ import absolute_import
 
 import logging
 from pathlib import Path
+
 import numpy as np
-from datacube.utils import DatacubeException
+
 from datacube.drivers.driver import Driver
+from datacube.drivers.s3.datasource import S3DataSource
 from datacube.drivers.s3.storage.s3aio.s3lio import S3LIO
 from datacube.drivers.utils import DriverUtils
-from datacube.drivers.s3.index import Index
-from datacube.drivers.s3.datasource import S3DataSource
-from datacube.index.postgres.tables import _pg_exists
+from datacube.utils import DatacubeException
 
 
 class S3Driver(Driver):
@@ -26,22 +26,6 @@ class S3Driver(Driver):
     def uri_scheme(self):
         """URI scheme used by this driver."""
         return 's3'
-
-    def requirements_satisfied(self):
-        """Check requirements are satisfied.
-
-        :return: True if requirements is satisfied, otherwise returns False
-        """
-        # check database
-        # pylint: disable=protected-access
-        try:
-            with self.index._db.connect() as connection:
-                return (_pg_exists(connection._connection, "agdc.s3_dataset") and
-                        _pg_exists(connection._connection, "agdc.s3_dataset_chunk") and
-                        _pg_exists(connection._connection, "agdc.s3_dataset_mapping"))
-        except AttributeError:
-            self.logger.warning('Should only be here for tests.')
-            return True
 
     def _get_chunksizes(self, chunksizes):
         """Return the chunk sizes as an int tuple, if valid.
@@ -141,7 +125,7 @@ class S3Driver(Driver):
           information. This is required for indexing in particular.
         """
         if len(args) < 3:
-            raise DatacubeException('Missing configuration paramters, cannot write to storage.')
+            raise DatacubeException('Missing configuration parameters, cannot write to storage.')
         filename = Path(args[0])
         global_attributes = args[1] or {}
         variable_params = args[2] or {}
@@ -187,13 +171,6 @@ class S3Driver(Driver):
                              output['bucket'], output['base_name'])
             outputs[band] = output
         return outputs
-
-    def _init_index(self, driver_manager, index, *args, **kargs):
-        """See :meth:`datacube.drivers.driver.init_index`"""
-        return Index(self.uri_scheme, driver_manager, index, *args, **kargs)
-
-    def get_index_specifics(self, dataset):
-        return self.index.get_specifics(dataset)
 
     def get_datasource(self, dataset, measurement_id):
         """See :meth:`datacube.drivers.driver.get_datasource`"""

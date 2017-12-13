@@ -3,18 +3,21 @@ from __future__ import absolute_import
 
 import logging
 from uuid import uuid4
-import numpy as np
 
+import numpy as np
 from sqlalchemy import select, and_
 
+import datacube.utils
 import datacube.drivers.index as base_index
 import datacube.index._datasets as base_dataset
 from datacube.index.postgres.tables import (
     S3_DATASET_MAPPING, S3_DATASET, S3_DATASET_CHUNK
 )
 
+_LOG = logging.getLogger(__name__)
 
-class Index(base_index.Index, base_index.IndexExtension):
+
+class Index(base_index.Index):
     """The s3 indexer extends the existing postgres indexer functionality
     by writing additional s3 information to specific tables.
     """
@@ -25,15 +28,15 @@ class Index(base_index.Index, base_index.IndexExtension):
         self.uri_scheme = uri_scheme
         self.datasets = DatasetResource(self._db, self.products, self.uri_scheme)
 
-    def add_specifics(self, dataset):
-        """Extend the dataset doc with driver specific index data.
+    def init_db(self, with_default_types=True, with_permissions=True, with_s3_tables=False):
+        is_new = self._db.init(with_permissions=with_permissions, with_s3_tables=with_s3_tables)
 
-        The dataset is modified in place.
+        if is_new and with_default_types:
+            _LOG.info('Adding default metadata types.')
+            for _, doc in datacube.utils.read_documents(_DEFAULT_METADATA_TYPES_PATH):
+                self.metadata_types.add(self.metadata_types.from_doc(doc), allow_table_lock=True)
 
-        :param :cls:`datacube.model.Dataset` dataset: The dataset to
-          add s3-specific indexing data to.
-        """
-        self.datasets.add_specifics(dataset)
+        return is_new
 
     def add_datasets(self, datasets, sources_policy='verify'):
         """Index several datasets using the current driver.
@@ -197,11 +200,23 @@ class DatasetResource(base_dataset.DatasetResource):
                 # Add mappings
                 self._add_s3_dataset_mappings(transaction, s3_dataset_id, band, dataset_refs)
 
+    def _make(self, dataset_res, full_info=False):
+        """
+        :rtype Dataset
+
+        :param bool full_info: Include all available fields
+        """
+        dataset = super(DatasetResource, self)._make(dataset_res, full_info)
+        self._driver_manager.add_specifics(dataset)
+        return dataset
+
     def add_specifics(self, dataset):
         """Extend the dataset doc with driver specific index data.
 
         This methods extends the dataset document with a `s3_metadata`
         variable containing the s3 indexing metadata.
+
+        The dataset is modified in place.
 
         :param :cls:`datacube.model.Dataset` dataset: The dataset to
           add NetCDF-specific indexing data to.
@@ -268,7 +283,6 @@ class DatasetResource(base_dataset.DatasetResource):
 
         return res.inserted_primary_key[0]
 
-
     def get_s3_dataset(self, _connection, dataset_ref, band):
         """:type dataset_ref: uuid.UUID
         :type band: str"""
@@ -297,7 +311,6 @@ class DatasetResource(base_dataset.DatasetResource):
             )
         ).fetchall()
 
-
     def put_s3_dataset_chunk(self, _connection, s3_dataset_id, s3_key,
                              chunk_id, compression_scheme,
                              micro_shape, index_min, index_max):
@@ -321,7 +334,6 @@ class DatasetResource(base_dataset.DatasetResource):
             )
         )
         return res.inserted_primary_key[0]
-
 
     def get_s3_dataset_chunk(self, _connection, s3_dataset_id):
         """:type s3_dataset_id: uuid.UUID"""

@@ -9,8 +9,11 @@ from pathlib import Path
 
 import datacube.utils
 from datacube.config import LocalConfig
-from ._datasets import DatasetResource, ProductResource, MetadataTypeResource
+from ._datasets import DatasetResource
+from .metadata_types import MetadataTypeResource
 from .postgres import PostgresDb
+from .products import ProductResource
+from .users import UserResource
 
 _LOG = logging.getLogger(__name__)
 
@@ -52,11 +55,12 @@ class Index(object):
     :class:`datacube.model.MetadataType`
     :ivar UserResource users: user management
 
-    :type users: UserResource
+    :type users: datacube.index.users.UserResource
     :type datasets: datacube.index._datasets.DatasetResource
     :type products: datacube.index._datasets.DatasetTypeResource
     :type metadata_types: datacube.index._datasets.MetadataTypeResource
     """
+
     def __init__(self, db):
         # type: (PostgresDb) -> None
         self._db = db
@@ -100,39 +104,3 @@ class Index(object):
 
     def __repr__(self):
         return "Index<db={!r}>".format(self._db)
-
-
-class UserResource(object):
-    def __init__(self, db):
-        # type: (PostgresDb) -> None
-        self._db = db
-
-    def grant_role(self, role, *usernames):
-        """
-        Grant a role to users
-        """
-        with self._db.connect() as connection:
-            connection.grant_role(role, usernames)
-
-    def create_user(self, username, password, role, description=None):
-        """
-        Create a new user.
-        """
-        with self._db.connect() as connection:
-            connection.create_user(username, password, role, description=description)
-
-    def delete_user(self, *usernames):
-        """
-        Delete a user
-        """
-        with self._db.connect() as connection:
-            connection.drop_users(usernames)
-
-    def list_users(self):
-        """
-        :return: list of (role, user, description)
-        :rtype: list[(str, str, str)]
-        """
-        with self._db.connect() as connection:
-            for role, user, description in connection.list_users():
-                yield role, user, description

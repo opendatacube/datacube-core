@@ -8,32 +8,12 @@ from __future__ import absolute_import
 
 import logging
 
-from abc import ABCMeta, abstractmethod
-from six import add_metaclass
-
 from datacube.config import LocalConfig
 import datacube.index._api as base_index
 from datacube.index.postgres import PostgresDb
 
 
-@add_metaclass(ABCMeta)
-class IndexExtension(object):
-    """Abstract base class for index extensions specific to a driver.
-    """
-
-    @abstractmethod
-    def add_specifics(self, dataset):
-        """Extend the dataset doc with driver specific index data.
-
-        The dataset is modified in place.
-
-        :param :cls:`datacube.model.Dataset` dataset: The dataset to
-          add driver-specific indexing data to.
-        """
-        pass
-
-
-class Index(base_index.Index, IndexExtension):
+class Index(base_index.Index):
     """Generic driver.
 
     This driver uses the legacy index to pull basic dataset data from
@@ -78,10 +58,3 @@ class Index(base_index.Index, IndexExtension):
             db = index._db  # pylint: disable=protected-access
         super(Index, self).__init__(db)
 
-    def add_specifics(self, dataset):
-        """This method does not make sense for the generic driver.
-
-        This index should not be used when storing data. Instead, use
-          driver-specific sub-classes of this index.
-        """
-        raise NotImplementedError('This generic driver can only be used to retrieve basic data')
