@@ -3,19 +3,16 @@ from __future__ import absolute_import, division, print_function
 from datacube.api import API
 from datacube.drivers.manager import DriverManager
 
-from mock import MagicMock, Mock
+from mock import MagicMock
 
 
 class PickableMock(MagicMock):
     def __reduce__(self):
-        return (MagicMock, ())
+        return MagicMock, ()
 
 
 def test_get_descriptor_no_data():
-    from mock import MagicMock, Mock
-
     mock_index = PickableMock()
-    DriverManager(index=mock_index)
 
     api = API(index=mock_index)
 
