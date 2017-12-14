@@ -18,4 +18,54 @@ Drivers are automatically loaded provided they:
 indexed by their `name` as defined in `DRIVER_SPEC`. These are
 instantiated on the first call to that method and cached until the
 loader object is deleted.
+
+TODO: update docs post DriverManager
 """
+from __future__ import absolute_import
+
+
+def choose_datasource(dataset):
+    """Returns appropriate `DataSource` class (or a constructor method) for loading
+    given `dataset`.
+
+    An appropriate `DataSource` implementation is chosen based on:
+
+    - Dataset URI (protocol part)
+    - Dataset format
+    - Current system settings
+    - Available IO plugins
+
+    NOTE: we assume that all bands can be loaded with the same implementation.
+
+    """
+    # TODO: implement run-time DataSource selection. For now we just default to `RasterDatasetSource`
+
+    from ..storage.storage import RasterDatasetSource
+    return RasterDatasetSource
+
+
+def new_datasource(dataset, band_name=None):
+    """Returns a newly constructed data source to read dataset band data.
+
+    An appropriate `DataSource` implementation is chosen based on:
+
+    - Dataset URI (protocol part)
+    - Dataset format
+    - Current system settings
+    - Available IO plugins
+
+    This function will return None if no `DataSource` can be found that
+    supports that type of `dataset`.
+
+
+    :param dataset: The dataset to read.
+    :param str band_name: the name of the band to read.
+
+    """
+
+    source_type = choose_datasource(dataset)
+
+    if source_type is None:
+        return None
+
+    return source_type(dataset, band_name)

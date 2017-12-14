@@ -189,6 +189,7 @@ def test_update_dataset(index, ls5_telem_doc, example_ls5_nbar_metadata_doc, dri
                       sources={})
     dataset = index.datasets.add(dataset)
     assert dataset
+    assert dataset.uri_scheme == driver.uri_scheme
 
     # update with the same doc should do nothing
     index.datasets.update(dataset)
