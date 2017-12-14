@@ -111,5 +111,3 @@ DATASET_SOURCE = Table(
     PrimaryKeyConstraint('dataset_ref', 'classifier'),
     UniqueConstraint('source_dataset_ref', 'dataset_ref'),
 )
-
-
