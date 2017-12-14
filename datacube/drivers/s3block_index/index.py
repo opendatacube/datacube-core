@@ -55,7 +55,7 @@ class S3BlockIndex(Index):
         is_new = super(S3BlockIndex, self).init_db(with_default_types, with_permissions)
 
         if is_new:
-            with self._db._engine.connect() as c:
+            with self._db.connect() as c:
                 try:
                     c.execute('begin')
                     _LOG.info('Creating s3 block tables.')

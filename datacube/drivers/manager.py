@@ -10,7 +10,6 @@ from cloudpickle import loads, dumps
 
 from ..compat import load_module
 from .driver import Driver
-from .index import Index
 
 
 class DriverManager(object):
@@ -87,50 +86,6 @@ class DriverManager(object):
         self.set_current_driver(state['current_driver'])
         self.is_clone = True
 
-    def __del__(self):
-        try:
-            self.close()
-        # pylint: disable=bare-except
-        except:
-            if hasattr(self, 'logger'):
-                self.logger.debug('Connections already closed')
-
-    def close(self):
-        """Close all drivers' index connections."""
-        if self.__drivers:
-            for driver in self.__drivers.values():
-                # pylint: disable=protected-access
-                if driver.index._db != self.__index._db:
-                    driver.index.close()
-        if self.__index:
-            self.__index.close()
-
-        if hasattr(self, 'logger'):
-            self.logger.debug('Closed index connections')
-
-    def set_index(self, index=None, *index_args, **index_kargs):
-        """Initialise the generic index.
-
-        :param index: An index object behaving like
-          :class:`datacube.index._api.Index` and used for testing
-          purposes only. In the current implementation, only the
-          `index._db` variable is used, and is passed to the index
-          initialisation method, that should basically replace the
-          existing DB connection with that variable.
-        :param args: Optional positional arguments to be passed to the
-          index on initialisation. Caution: In the current
-          implementation all parameters get passed to all available
-          indexes.
-        :param args: Optional keyword arguments to be passed to the
-          index on initialisation. Caution: In the current
-          implementation all parameters get passed to all available
-          indexes.
-        """
-        if self.__index:
-            self.__index.close()
-        self.__index = Index(index, *index_args, **index_kargs)
-        self.logger.debug('Generic index set to %s', self.__index)
-
     def reload_drivers(self, *index_args, **index_kargs):
         """Load and initialise all available drivers and their indexes.
 
@@ -150,11 +105,6 @@ class DriverManager(object):
           implementation all parameters get passed to all available
           indexes.
         """
-        if self.__drivers:
-            for driver in self.__drivers.values():
-                # pylint: disable=protected-access
-                if driver.index._db != self.__index._db:
-                    driver.index.close()
         self.__drivers = {}
         for init_path in Path(__file__).parent.glob('*/__init__.py'):
             init = load_module(str(init_path.parent.stem), str(init_path))
@@ -204,14 +154,6 @@ class DriverManager(object):
         """Current driver.
         """
         return self.__driver
-
-    @property
-    def index(self):
-        """Generic index.
-
-        :rtype: Index
-        """
-        return self.__index
 
     @property
     def drivers(self):
