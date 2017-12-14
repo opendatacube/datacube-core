@@ -99,7 +99,7 @@ class Datacube(object):
             Allows you to have multiple datacube instances in one configuration, specified on load,
             eg. 'dev', 'test' or 'landsat', 'modis' etc.
 
-        :param Bool validate_connection: Validate database connection and schema immediately
+        :param bool validate_connection: Should we check that the database connection is available and valid
 
         :return: Datacube object
 

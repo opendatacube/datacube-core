@@ -41,17 +41,13 @@ def system():
     '--lock-table/--no-lock-table', is_flag=True, default=False,
     help="Allow table to be locked (eg. while creating missing indexes)"
 )
-@click.option(
-    '--create-s3-tables', '-s3', is_flag=True, default=False,
-    help="Create S3 datables."
-)
 @ui.pass_index(expect_initialised=False)
-def database_init(index, default_types, init_users, recreate_views, rebuild, lock_table, create_s3_tables):
+# TODO: Need to be able to specify the type of index. In our current case, whether to create s3block specific tables
+def database_init(index, default_types, init_users, recreate_views, rebuild, lock_table):
     echo('Initialising database...')
 
     was_created = index.init_db(with_default_types=default_types,
-                                with_permissions=init_users,
-                                with_s3_tables=create_s3_tables)
+                                with_permissions=init_users)
 
     if was_created:
         echo(style('Created.', bold=True))
