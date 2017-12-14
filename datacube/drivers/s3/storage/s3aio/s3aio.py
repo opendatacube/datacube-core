@@ -195,7 +195,7 @@ class S3AIO(object):
         blocks = list(zip(outer_cells, repeat(array_slice[start:])))
         offset = [s.start for s in array_slice]
 
-        array_name = '_'.join(['S3AIO', str(uuid.uuid4()), str(os.getpid())])
+        array_name = 'file://' + '_'.join(['S3AIO', str(uuid.uuid4()), str(os.getpid())])
         sa.create(array_name, shape=[s.stop - s.start for s in array_slice], dtype=dtype)
         shared_array = sa.attach(array_name)
 

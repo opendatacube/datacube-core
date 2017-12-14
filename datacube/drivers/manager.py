@@ -72,9 +72,7 @@ class DriverManager(object):
         self.is_clone = False
         # Initialise the generic index
         # pylint: disable=protected-access
-        self.set_index(index, *index_args, **index_kargs)
         self.reload_drivers(*index_args, **index_kargs)
-        self.set_current_driver(default_driver_name or self._DEFAULT_DRIVER)
         self.logger.debug('Ready. %s', self)
 
     def __getstate__(self):
@@ -133,21 +131,6 @@ class DriverManager(object):
         if len(self.__drivers) < 1:
             raise RuntimeError('No plugin driver found, Datacube cannot operate.')
         self.logger.debug('Reloaded %d drivers.', len(self.__drivers))
-
-    def set_current_driver(self, driver_name):
-        """Set the current driver.
-
-        If driver_name is None, then the driver currently in use
-        remains active, or a default driver is used as last resort.
-
-        :param str driver_name: The name of the driver to set as
-          current driver.
-        """
-        if driver_name not in self.__drivers:
-            raise ValueError('Default driver "%s" is not available in %s' % (
-                driver_name, ', '.join(self.__drivers.keys())))
-        self.__driver = self.__drivers[driver_name]
-        self.logger.debug('Using default driver: %s', driver_name)
 
     @property
     def driver(self):

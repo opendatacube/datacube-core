@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import sys
 
 sa = pytest.importorskip('SharedArray')
 
@@ -323,6 +324,8 @@ class TestS3IO(object):
         l = s.list_objects('arrayio')
         assert '1234test' not in l
 
+    @pytest.mark.skipif(sys.platform != 'linux',
+                        reason='delete_created_arrays() only works on linux')
     def test_put_bytes_mpu_mp_shm(self, tmpdir):
         import datacube.drivers.s3.storage.s3aio as s3aio
 
