@@ -28,10 +28,11 @@ from six.moves import zip
 
 from ..config import LocalConfig
 from ..compat import string_types
-from ..storage.storage import RasterDatasetSource, reproject_and_fuse
+from ..storage.storage import reproject_and_fuse
 from ..utils import geometry, intersects, data_resolution_and_offset
 from .query import Query, query_group_by, query_geopolygon
 from ..index import index_connect
+from ..drivers import new_datasource
 
 _LOG = logging.getLogger(__name__)
 
@@ -649,8 +650,7 @@ def fuse_lazy(datasets, geobox, measurement, skip_broken_datasets=False, fuse_fu
 def _fuse_measurement(dest, datasets, geobox, measurement,
                       skip_broken_datasets=False,
                       fuse_func=None):
-    # TODO: IO driver selection here
-    reproject_and_fuse([RasterDatasetSource(dataset, measurement['name']) for dataset in datasets],
+    reproject_and_fuse([new_datasource(dataset, measurement['name']) for dataset in datasets],
                        dest,
                        geobox.affine,
                        geobox.crs,
