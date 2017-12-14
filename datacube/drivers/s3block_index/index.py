@@ -30,7 +30,7 @@ class S3BlockIndex(Index):
 
     def __init__(self, index=None, uri_scheme='s3+block', *args, **kargs):
         """Initialise the index and its dataset resource."""
-        super(Index, self).__init__(index, *args, **kargs)
+        super(S3BlockIndex, self).__init__(index, *args, **kargs)
         if not self.connected_to_s3_database():
             raise S3DatabaseException('Not connected to an S3 Database')
         self.datasets = DatasetResource(self._db, self.products, uri_scheme)
@@ -43,7 +43,7 @@ class S3BlockIndex(Index):
         # check database
         # pylint: disable=protected-access
         try:
-            with self.index._db.connect() as connection:
+            with self._db.connect() as connection:
                 return (_pg_exists(connection._connection, "agdc.s3_dataset") and
                         _pg_exists(connection._connection, "agdc.s3_dataset_chunk") and
                         _pg_exists(connection._connection, "agdc.s3_dataset_mapping"))
@@ -52,10 +52,10 @@ class S3BlockIndex(Index):
             return True
 
     def init_db(self, with_default_types=True, with_permissions=True):
-        is_new = super(Index, self).init_db(with_default_types, with_permissions)
+        is_new = super(S3BlockIndex, self).init_db(with_default_types, with_permissions)
 
         if is_new:
-            with self._engine.connect() as c:
+            with self._db._engine.connect() as c:
                 try:
                     c.execute('begin')
                     _LOG.info('Creating s3 block tables.')
