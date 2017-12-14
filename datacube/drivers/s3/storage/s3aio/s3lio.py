@@ -7,6 +7,7 @@ Labeled Array access, backed by multiple S3 objects.
 from __future__ import absolute_import, division
 
 import os
+import random
 import sys
 import uuid
 import hashlib
@@ -162,7 +163,7 @@ class S3LIO(object):
 
             self.s3aio.s3io.put_bytes(s3_bucket, s3_key, data)
 
-        array_name = '_'.join(['SA3IO', str(uuid.uuid4()), str(os.getpid())])
+        array_name = 'file://' + '_'.join(['SA3IO', str(uuid.uuid4()), str(os.getpid())])
         sa.create(array_name, shape=array.shape, dtype=array.dtype)
         shared_array = sa.attach(array_name)
         shared_array[:] = array
@@ -352,7 +353,7 @@ class S3LIO(object):
             keys = [hashlib.md5(k.encode('utf-8')).hexdigest()[0:6] + '_' + k for k in keys]
 
         # create shared array
-        array_name = '_'.join(['S3LIO', str(uuid.uuid4()), str(os.getpid())])
+        array_name = 'file://' + '_'.join(['S3LIO', str(uuid.uuid4()), str(os.getpid())])
         sa.create(array_name, shape=[s.stop - s.start for s in array_slice], dtype=dtype)
         data = sa.attach(array_name)
 

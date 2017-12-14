@@ -44,7 +44,7 @@ def test_get_descriptor_some_data():
     su.storage_type.name
     su.variables.values.return_value = ['t', 'x', 'y']
     mock_index = PickableMock()
-    DriverManager(index=mock_index)
+    DriverManager()
 
     # mock_index.datasets.get_fields.return_value = dict(product=None)
     mock_index.storage.search.return_value = [su]
