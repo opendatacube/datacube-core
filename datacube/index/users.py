@@ -1,3 +1,5 @@
+# coding=utf-8
+
 class UserResource(object):
     def __init__(self, db):
         # type: (PostgresDb) -> None

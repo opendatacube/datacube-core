@@ -1,3 +1,4 @@
+# coding=utf-8
 from __future__ import absolute_import
 
 import logging
@@ -87,7 +88,8 @@ class MetadataTypeResource(object):
 
         existing = self.get_by_name(metadata_type.name)
         if not existing:
-            raise ValueError('Unknown metadata type %s, cannot update – did you intend to add it?' % metadata_type.name)
+            raise ValueError('Unknown metadata type %s, cannot update – '
+                             'did you intend to add it?' % metadata_type.name)
 
         updates_allowed = {
             ('description',): changes.allow_any,
