@@ -75,8 +75,8 @@ class Index(object):
         # type: () -> URL
         return self._db.url
 
-    def init_db(self, with_default_types=True, with_permissions=True, with_s3_tables=False):
-        is_new = self._db.init(with_permissions=with_permissions, with_s3_tables=with_s3_tables)
+    def init_db(self, with_default_types=True, with_permissions=True):
+        is_new = self._db.init(with_permissions=with_permissions)
 
         if is_new and with_default_types:
             _LOG.info('Adding default metadata types.')

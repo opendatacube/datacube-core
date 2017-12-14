@@ -28,8 +28,7 @@ from . import _dynamic as dynamic
 from . import tables
 from ._fields import parse_fields, NativeField, Expression, PgField
 from .tables import (
-    DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE,
-    S3_DATASET_MAPPING, S3_DATASET, S3_DATASET_CHUNK
+    DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
 )
 
 import uuid
