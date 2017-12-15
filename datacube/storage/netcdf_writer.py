@@ -153,6 +153,7 @@ def _write_transverse_mercator_params(crs_var, crs):
     crs_var.longitude_of_central_meridian = crs.proj.central_meridian
     crs_var.latitude_of_projection_origin = crs.proj.latitude_of_origin
 
+
 def _write_lcc2_params(crs_var, crs):
     # e.g. http://spatialreference.org/ref/sr-org/mexico-inegi-lambert-conformal-conic/
     crs_var.grid_mapping_name = 'lambert_conformal_conic_2sp'
@@ -164,6 +165,7 @@ def _write_lcc2_params(crs_var, crs):
     crs_var.false_northing = crs.proj.false_northing
     crs_var.semi_major_axis = crs.semi_major_axis
     crs_var.semi_minor_axis = crs.semi_minor_axis
+
 
 CRS_PARAM_WRITERS = {
     'albers_conic_equal_area': _write_albers_params,
