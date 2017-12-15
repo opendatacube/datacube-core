@@ -579,6 +579,17 @@ class RasterDatasetSource(RasterioDataSource):
         return self._dataset.crs
 
 
+def measurement_paths(dataset):
+    '''Returns a dictionary mapping from band name to url pointing to band storage
+    resource.
+
+    :return: {str: str} Band Name => URL
+    '''
+    base = _choose_location(dataset)
+    return dict((k, _resolve_url(base, m.get('path', '')))
+                for k, m in dataset.measurements.items())
+
+
 def create_netcdf_storage_unit(filename,
                                crs, coordinates, variables, variable_params, global_attributes=None,
                                netcdfparams=None):
