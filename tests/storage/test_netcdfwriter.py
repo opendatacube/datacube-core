@@ -126,6 +126,7 @@ def test_create_albers_projection_netcdf(tmpnetcdf_filename):
         _ensure_gdal(nco['crs'])
         _ensure_geospatial(nco)
 
+
 def test_create_lambert_conformal_conic_projection_netcdf(tmpnetcdf_filename):
     nco = create_netcdf(tmpnetcdf_filename)
     create_coordinate(nco, 'x', numpy.array([1., 2., 3.]), 'm')
@@ -144,6 +145,7 @@ def test_create_lambert_conformal_conic_projection_netcdf(tmpnetcdf_filename):
         _ensure_spheroid(nco['crs'])
         _ensure_gdal(nco['crs'])
         _ensure_geospatial(nco)
+
 
 def test_create_epsg4326_netcdf(tmpnetcdf_filename):
     nco = create_netcdf(tmpnetcdf_filename)
