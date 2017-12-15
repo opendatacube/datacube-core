@@ -1,8 +1,12 @@
 # coding=utf-8
 
+from __future__ import absolute_import
+
 import numpy
+from .utils import mk_sample_dataset
 from datacube.model import GridSpec
 from datacube.utils import geometry
+from datacube.storage.storage import measurement_paths
 
 
 def test_gridspec():
@@ -32,3 +36,20 @@ def test_gridspec_upperleft():
     cells = {index: geobox for index, geobox in list(gs.tiles(bbox))}
     assert set(cells.keys()) == {(30, 15)}  # WELD grid spec has 21 vertical cells -- 21 - 6 = 15
     assert cells[(30, 15)].extent.boundingbox == tile_bbox
+
+
+def test_dataset_measurement_paths():
+    format = 'GeoTiff'
+
+    ds = mk_sample_dataset([dict(name=n,
+                                 path=n+'.tiff')
+                            for n in 'a b c'.split(' ')],
+                           uri='file:///tmp/datataset.yml',
+                           format=format)
+
+    assert ds.uri_scheme == 'file'
+    assert ds.format == format
+    paths = measurement_paths(ds)
+
+    for k, v in paths.items():
+        assert v == 'file:///tmp/' + k + '.tiff'
