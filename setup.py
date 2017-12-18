@@ -100,6 +100,9 @@ setup(
             'pixeldrill = datacube_apps.pixeldrill:main [interactive]',
             'movie_generator = datacube_apps.movie_generator:main',
             'datacube-simple-replica = datacube_apps.simple_replica:replicate'
+        ],
+        'datacube.plugins.io.read': [
+            's3block = datacube.drivers.s3.driver:rdr_driver_init'
         ]
     },
 )
