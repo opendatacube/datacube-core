@@ -12,6 +12,9 @@ from datacube.drivers.s3.storage.s3aio.s3lio import S3LIO
 from datacube.drivers.utils import DriverUtils
 from datacube.utils import DatacubeException
 
+PROTOCOL = 's3+block'
+FORMAT = 's3block'
+
 
 class S3Driver(Driver):
     """S3 storage driver."""
@@ -25,7 +28,7 @@ class S3Driver(Driver):
     @property
     def uri_scheme(self):
         """URI scheme used by this driver."""
-        return 's3'
+        return PROTOCOL
 
     def _get_chunksizes(self, chunksizes):
         """Return the chunk sizes as an int tuple, if valid.
@@ -175,3 +178,24 @@ class S3Driver(Driver):
     def get_datasource(self, dataset, measurement_id):
         """See :meth:`datacube.drivers.driver.get_datasource`"""
         return S3DataSource(dataset, measurement_id, self.storage)
+
+
+class S3ReaderDriver(object):
+
+    def __init__(self):
+        self.name = 's3block'
+        self.formats = [FORMAT]
+        self.protocols = [PROTOCOL]
+
+        self._storage = S3LIO()
+
+    def supports(self, protocol, fmt):
+        return (protocol == PROTOCOL and
+                fmt == FORMAT)
+
+    def new_datasource(self, dataset, band_name):
+        return S3DataSource(dataset, band_name, self._storage)
+
+
+def rdr_driver_init():
+    return S3ReaderDriver()
