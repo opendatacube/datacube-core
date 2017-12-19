@@ -3,11 +3,6 @@ from __future__ import print_function, absolute_import
 import pytest
 
 
-def test_can_import_drivermanager():
-    from datacube.drivers.manager import DriverManager
-    assert DriverManager is not None
-
-
 def test_can_import_s3_driver():
     pytest.importorskip('SharedArray')
     from datacube.drivers.s3.driver import S3Driver
