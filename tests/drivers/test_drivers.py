@@ -8,11 +8,6 @@ def test_can_import_drivermanager():
     assert DriverManager is not None
 
 
-def test_can_import_netcdfdriver():
-    from datacube.drivers.netcdf.driver import NetCDFDriver
-    assert NetCDFDriver is not None
-
-
 def test_can_import_s3_driver():
     pytest.importorskip('SharedArray')
     from datacube.drivers.s3.driver import S3Driver
