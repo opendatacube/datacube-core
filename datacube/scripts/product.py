@@ -30,7 +30,7 @@ def product():
                 nargs=-1)
 @ui.pass_index()
 def add_dataset_types(index, allow_exclusive_lock, files):
-    # type: (DriverManager, bool, list) -> None
+    # type: (Index, bool, list) -> None
     """
     Add or update products in the generic index.
     """

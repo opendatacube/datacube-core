@@ -1,10 +1,7 @@
 from datacube.api.grid_workflow import GridWorkflow
 
 
-# The preliminary implementation of `datacube.drivers.manager.DriverManager`
-# had a member logger instance that prevented it from being pickled.
-# Creating a `GridWorkflow` instance also failed in that case, breaking
-# the `datacube-stats` application, among other things.
+# TODO: do we still need this now that driver manager is gone?
 def test_create_gridworkflow_with_logging(index):
     from logging import getLogger, StreamHandler
 
