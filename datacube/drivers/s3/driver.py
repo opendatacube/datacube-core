@@ -9,7 +9,7 @@ import numpy as np
 from datacube.drivers.driver import Driver
 from datacube.drivers.s3.datasource import S3DataSource
 from datacube.drivers.s3.storage.s3aio.s3lio import S3LIO
-from datacube.drivers.utils import DriverUtils
+from .utils import DriverUtils
 from datacube.utils import DatacubeException
 
 PROTOCOL = 's3+block'

@@ -12,7 +12,7 @@ from numpy import dtype
 from datacube.drivers.datasource import DataSource
 from datacube.storage.storage import OverrideBandDataSource
 from datacube.utils import datetime_to_seconds_since_1970
-from datacube.drivers.utils import DriverUtils
+from .utils import DriverUtils
 
 
 class S3Source(object):
