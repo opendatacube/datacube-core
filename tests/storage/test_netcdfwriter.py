@@ -127,7 +127,7 @@ def test_create_albers_projection_netcdf(tmpnetcdf_filename):
         _ensure_geospatial(nco)
 
 
-def test_create_lambert_conformal_conic_projection_netcdf(tmpnetcdf_filename):
+def test_create_lambert_conformal_conic_2sp_projection_netcdf(tmpnetcdf_filename):
     nco = create_netcdf(tmpnetcdf_filename)
     create_coordinate(nco, 'x', numpy.array([1., 2., 3.]), 'm')
     create_coordinate(nco, 'y', numpy.array([1., 2., 3.]), 'm')
@@ -136,7 +136,7 @@ def test_create_lambert_conformal_conic_projection_netcdf(tmpnetcdf_filename):
 
     with netCDF4.Dataset(tmpnetcdf_filename) as nco:
         assert 'crs' in nco.variables
-        assert nco['crs'].grid_mapping_name == 'lambert_conformal_conic_2sp'
+        assert nco['crs'].grid_mapping_name == 'lambert_conformal_conic'
         assert 'standard_parallel' in nco['crs'].ncattrs()
         assert 'longitude_of_central_meridian' in nco['crs'].ncattrs()
         assert 'latitude_of_projection_origin' in nco['crs'].ncattrs()
