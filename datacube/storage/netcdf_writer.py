@@ -156,7 +156,7 @@ def _write_transverse_mercator_params(crs_var, crs):
 
 def _write_lcc2_params(crs_var, crs):
     # e.g. http://spatialreference.org/ref/sr-org/mexico-inegi-lambert-conformal-conic/
-    crs_var.grid_mapping_name = 'lambert_conformal_conic_2sp'
+    crs_var.grid_mapping_name = 'lambert_conformal_conic'
     crs_var.standard_parallel = (crs.proj.standard_parallel_1,
                                  crs.proj.standard_parallel_2)
     crs_var.latitude_of_projection_origin = crs.proj.latitude_of_origin
