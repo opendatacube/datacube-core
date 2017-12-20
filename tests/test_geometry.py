@@ -32,11 +32,12 @@ def test_geobox_simple():
                              -29.001375, -29.001625, -29.001875, -29.002125, -29.002375])
     expect_resolution = np.asarray([-0.00025, 0.00025])
 
-    assert (np.abs(np.r_[t.resolution] - expect_resolution) < 1e-6).all()
     assert t.coordinates['latitude'].values.shape == (4000,)
     assert t.coordinates['longitude'].values.shape == (4000,)
-    assert (np.abs(t.coords['latitude'].values[:10] - expect_lat) < 1e-6).all()
-    assert (np.abs(t.coords['longitude'].values[:10] - expect_lon) < 1e-6).all()
+
+    np.testing.assert_almost_equal(t.resolution, expect_resolution)
+    np.testing.assert_almost_equal(t.coords['latitude'].values[:10], expect_lat)
+    np.testing.assert_almost_equal(t.coords['longitude'].values[:10], expect_lon)
 
 
 def test_props():
