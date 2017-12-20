@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from collections import namedtuple
-from .utils import mk_sample_dataset
+from .util import mk_sample_dataset
 from datacube.drivers import new_datasource
 from datacube.drivers.s3 import driver as s3_driver
 from datacube.drivers.s3.datasource import S3DataSource
