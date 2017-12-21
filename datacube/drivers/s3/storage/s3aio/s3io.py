@@ -80,7 +80,7 @@ class S3IO(object):
         :return: Returns a reference to the S3 resource.
         """
         if not self.enable_s3:
-            return
+            return None
         if new_session is True:
             s3 = boto3.session.Session().resource('s3')
         else:
@@ -97,7 +97,7 @@ class S3IO(object):
         :return: Returns a reference to the S3 bucket.
         """
         if not self.enable_s3:
-            return
+            return None
         s3 = self.s3_resource(new_session)
         return s3.Bucket(s3_bucket)
 
@@ -112,7 +112,7 @@ class S3IO(object):
         :return: Returns a reference to the S3 object.
         """
         if not self.enable_s3:
-            return
+            return None
         s3 = self.s3_resource(new_session)
         return s3.Bucket(s3_bucket).Object(s3_key)
 
@@ -191,6 +191,7 @@ class S3IO(object):
                     os.remove(directory+"/"+k)
                     response.append(k)
             return response
+        return []
 
     def bucket_exists(self, s3_bucket, new_session=False):
         """Check if bucket exists.
@@ -459,12 +460,14 @@ class S3IO(object):
         else:
             directory = self.file_path+"/"+str(s3_bucket)
             if not os.path.exists(directory):
-                return
+                return None
             f = open(directory+"/"+str(s3_key), "rb")
             f.seek(0, 0)
             d = f.read()
             f.close()
             return d
+
+        return None  #TODO: fix logic above, inserting this just to fix warnings
 
     def get_byte_range(self, s3_bucket, s3_key, s3_start, s3_end, new_session=False):
         """Gets bytes from a S3 object within a range.
@@ -493,13 +496,15 @@ class S3IO(object):
         else:
             directory = self.file_path+"/"+str(s3_bucket)
             if not os.path.exists(directory):
-                return
+                return None
             f = open(directory+"/"+str(s3_key), "rb")
             f.seek(s3_start, 0)
             d = f.read(s3_end-s3_start)
             d = np.frombuffer(d, dtype=np.uint8, count=-1, offset=0)
             f.close()
             return d
+
+        return None  #TODO: fix logic above, inserting this just to fix warnings
 
     def get_byte_range_mp(self, s3_bucket, s3_key, s3_start, s3_end, block_size, new_session=False):
         """Gets bytes from a S3 object within a range in parallel.
