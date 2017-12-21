@@ -24,11 +24,6 @@ from os.path import expanduser
 from itertools import repeat
 from pathos.multiprocessing import ProcessingPool
 
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
-
 # pylint: disable=too-many-locals, too-many-public-methods
 
 
@@ -264,8 +259,10 @@ class S3IO(object):
             s3.meta.client.put_object(Bucket=s3_bucket, Key=s3_key, Body=io.BytesIO(data))
         else:
             directory = self.file_path+"/"+str(s3_bucket)
-            if not os.path.exists(directory):
+            try:
                 os.makedirs(directory)
+            except OSError:
+                pass
             f = open(directory+"/"+str(s3_key), "wb")
             f.write(data)
             f.close()
