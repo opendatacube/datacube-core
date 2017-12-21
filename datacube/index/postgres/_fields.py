@@ -471,6 +471,8 @@ class ValueBetweenExpression(PgExpression):
         if self.high_value is not None:
             return self.field.alchemy_expression < self.high_value
 
+        raise ValueError('Expect at least one of [low,high] to be set')
+
 
 class RangeBetweenExpression(PgExpression):
     def __init__(self, field, low_value, high_value, _range_class):
@@ -583,6 +585,7 @@ def parse_fields(doc, table_column):
 def _coalesce(*values):
     """
     Return first non-none value.
+    Return None if all values are None, or there are no values passed in.
 
     >>> _coalesce(1, 2)
     1
@@ -594,6 +597,7 @@ def _coalesce(*values):
     for v in values:
         if v is not None:
             return v
+    return None
 
 
 def _default_utc(d):

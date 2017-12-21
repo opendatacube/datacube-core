@@ -154,6 +154,8 @@ class CRS(object):
         if self.geographic:
             return int(self._crs.GetAuthorityCode('GEOGCS'))
 
+        return None
+
     @property
     def proj(self):
         return CRSProjProxy(self._crs)
@@ -197,6 +199,8 @@ class CRS(object):
         if self.projected:
             return 'y', 'x'
 
+        raise ValueError('Neither projected nor geographic')
+
     @property
     def units(self):
         """
@@ -209,6 +213,8 @@ class CRS(object):
 
         if self.projected:
             return self['UNIT'], self['UNIT']
+
+        raise ValueError('Neither projected nor geographic')
 
     def __str__(self):
         return self.crs_str

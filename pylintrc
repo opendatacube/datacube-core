@@ -1,6 +1,7 @@
 [MASTER]
 # ndexpr is crashing pylint. Hopefully remove this ignore when https://github.com/PyCQA/pylint/issues/1563 is fixed
 ignore=ndexpr
+extension-pkg-whitelist=SharedArray,zstd
 
 [MESSAGES CONTROL]
 enable=python3
@@ -23,6 +24,7 @@ disable=no-self-use,
     len-as-condition,
     no-else-return,
     import-error,
+    keyword-arg-before-vararg, # TODO: investigate differences between python versions for this
     round-builtin, # py2.7
     map-builtin-not-iterating, # py2.7
     range-builtin-not-iterating, # py2.7
