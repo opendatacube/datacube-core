@@ -747,7 +747,7 @@ def _calculate_chunk_sizes(sources, geobox, dask_chunks):
     valid_keys = sources.dims + geobox.dimensions
     bad_keys = set(dask_chunks) - set(valid_keys)
     if bad_keys:
-        raise KeyError('Unknown dask_chunk dimension {}. Valid dimensions are: {}', bad_keys, valid_keys)
+        raise KeyError('Unknown dask_chunk dimension {}. Valid dimensions are: {}'.format(bad_keys, valid_keys))
 
     # If chunk size is not specified, the entire dimension length is used, as in xarray
     chunks = {dim: size for dim, size in zip(sources.dims, sources.shape)}

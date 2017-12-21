@@ -1204,7 +1204,7 @@ class DatasetResource(object):
             # Otherwise search any metadata type that has all the given search fields.
             types = self.types.get_with_fields(tuple(q.keys()))
             if not types:
-                raise ValueError('No type of dataset has fields: %r', tuple(q.keys()))
+                raise ValueError('No type of dataset has fields: {}'.format(q.keys()))
 
         return types
 

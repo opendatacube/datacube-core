@@ -114,7 +114,7 @@ def valid_data_mask(data):
             return True
         return data != data.nodata
 
-    raise TypeError('valid_data_mask not supported for type %s', type(data))
+    raise TypeError('valid_data_mask not supported for type {}'.format(type(data)))
 
 
 def mask_valid_data(data, keep_attrs=True):
@@ -148,7 +148,7 @@ def mask_invalid_data(data, keep_attrs=True):
             out_data_array.attrs = data.attrs
         return out_data_array
 
-    raise TypeError('mask_invalid_data not supported for type %s', type(data))
+    raise TypeError('mask_invalid_data not supported for type {}'.format(type(data)))
 
 
 def create_mask_value(bits_def, **flags):
