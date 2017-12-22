@@ -56,6 +56,11 @@ class ReaderDriverCache(object):
         driver = self._find_driver(uri_scheme, fmt)
         return fallback if driver is None else driver.new_datasource
 
+    def drivers(self):
+        ''' Returns list of driver names
+        '''
+        return list(self._drivers.keys())
+
 
 def rdr_cache():
     """ Singleton for ReaderDriverCache
@@ -109,3 +114,9 @@ def new_datasource(dataset, band_name=None):
         return None
 
     return source_type(dataset, band_name)
+
+
+def reader_drivers():
+    ''' Returns list driver names
+    '''
+    return rdr_cache().drivers()
