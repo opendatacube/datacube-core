@@ -27,9 +27,31 @@ from pkg_resources import iter_entry_points
 
 class ReaderDriverCache(object):
     def __init__(self, group):
-        drivers = [(ep.name, ep.resolve()) for ep in iter_entry_points(group=group, name=None)]
+        def resolve_all():
+            def safe_load(ep):
+                try:
+                    driver_init = ep.resolve()
+                except:
+                    print('WARNING: failed to resolve {}'.format(ep.name))  # TODO: use proper logger
+                    return None
 
-        self._drivers = dict((name, init()) for name, init in drivers)
+                try:
+                    driver = driver_init()
+                except:
+                    print('WARNING: exception during driver init')  # TODO: use proper logger
+                    return None
+
+                if driver is None:
+                    print('WARNING: driver init returned None')  # TODO: use proper logger
+
+                return driver
+
+            for ep in iter_entry_points(group=group, name=None):
+                driver = safe_load(ep)
+                if driver is not None:
+                    yield (ep.name, driver)
+
+        self._drivers = dict((name, driver) for name, driver in resolve_all())
 
         lookup = {}
         for driver in self._drivers.values():
