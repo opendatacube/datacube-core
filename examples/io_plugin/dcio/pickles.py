@@ -1,5 +1,8 @@
+""" Example reader plugin
+"""
 from contextlib import contextmanager
 import pickle
+import rasterio.warp
 
 from datacube.storage.storage import measurement_paths
 
@@ -16,7 +19,6 @@ class PickleDataSource(object):
         def __init__(self, da):
             self._da = da
             self.nodata = da.nodata
-            pass
 
         @property
         def crs(self):
@@ -47,7 +49,17 @@ class PickleDataSource(object):
             raise NotImplementedError('Decimated reading not supported for this data source')
 
         def reproject(self, dest, dst_transform, dst_crs, dst_nodata, resampling, **kwargs):
-            pass
+            source = self.read()
+            return rasterio.warp.reproject(source,
+                                           dest,
+                                           src_transform=self.transform,
+                                           src_crs=str(self.crs),
+                                           src_nodata=self.nodata,
+                                           dst_transform=dst_transform,
+                                           dst_crs=str(dst_crs),
+                                           dst_nodata=dst_nodata,
+                                           resampling=resampling,
+                                           **kwargs)
 
     def __init__(self, dataset, band_name):
         self._band_name = band_name
@@ -71,9 +83,9 @@ class PickleReaderDriver(object):
         self.protocols = ['file', 'pickle']
         self.formats = ['pickle']
 
-    def supports(self, protocol, format):
+    def supports(self, protocol, fmt):
         return (protocol in self.protocols and
-                format in self.formats)
+                fmt in self.formats)
 
     def new_datasource(self, dataset, band_name):
         return PickleDataSource(dataset, band_name)
