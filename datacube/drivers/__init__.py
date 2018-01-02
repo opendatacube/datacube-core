@@ -21,7 +21,7 @@ loader object is deleted.
 
 TODO: update docs post DriverManager
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 from pkg_resources import iter_entry_points
 
 
@@ -29,6 +29,7 @@ class ReaderDriverCache(object):
     def __init__(self, group):
         def resolve_all():
             def safe_load(ep):
+                # pylint: disable=bare-except
                 try:
                     driver_init = ep.resolve()
                 except:
