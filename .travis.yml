@@ -56,6 +56,7 @@ install:
 
   - source activate agdc
   - pip install . --no-deps --upgrade
+  - pip install ./tests/drivers/fail_drivers --no-deps --upgrade  # used to test exception paths in driver loader
 
   - pip freeze
   - df -h

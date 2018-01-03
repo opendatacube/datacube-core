@@ -39,11 +39,11 @@ class ReaderDriverCache(object):
                 try:
                     driver = driver_init()
                 except:
-                    print('WARNING: exception during driver init')  # TODO: use proper logger
+                    print('WARNING: exception during driver init, {}'.format(ep.name))  # TODO: use proper logger
                     return None
 
                 if driver is None:
-                    print('WARNING: driver init returned None')  # TODO: use proper logger
+                    print('WARNING: driver init returned None, {}'.format(ep.name))  # TODO: use proper logger
 
                 return driver
 
