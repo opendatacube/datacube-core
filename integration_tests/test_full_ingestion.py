@@ -50,8 +50,6 @@ def test_full_ingestion(global_integration_cli_args, index, driver,
         opts.extend(
             [
                 '-v',
-                '--driver',
-                driver.name,
                 'dataset',
                 'add',
                 '--auto-match',
@@ -76,8 +74,6 @@ def test_full_ingestion(global_integration_cli_args, index, driver,
     opts.extend(
         [
             '-v',
-            '--driver',
-            driver.name,
             'ingest',
             '--config-file',
             str(config_path)
