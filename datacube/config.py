@@ -30,9 +30,6 @@ db_hostname:
 db_database: datacube
 # If a connection is unused for this length of time, expect it to be invalidated.
 db_connection_timeout: 60
-# Which driver to activate by default in this environment (eg. "NetCDF CF", 's3')
-default_driver: NetCDF CF
-
 
 [user]
 # Which environment to use when none is specified explicitly.
@@ -52,7 +49,7 @@ class LocalConfig(object):
     current user.
     """
 
-    def __init__(self, config, files_loaded=None, env=None, driver=None):
+    def __init__(self, config, files_loaded=None, env=None):
         self._config = config  # type: compat.configparser.ConfigParser
         self.files_loaded = []
         if files_loaded:
@@ -60,23 +57,19 @@ class LocalConfig(object):
 
         # The user may specify these when running, otherwise they are loaded from config.
         self._specified_environment = env  # type: str
-        self._specified_driver = driver  # type: str
 
         if not config.has_section(self.environment):
             raise ValueError('No config section found for environment %r' % (env,))
 
     @classmethod
-    def find(cls, paths=DEFAULT_CONF_PATHS, env=None, driver=None):
+    def find(cls, paths=DEFAULT_CONF_PATHS, env=None):
         """
         Find config from possible filesystem locations.
 
         'env' is which environment to use from the config: it corresponds to the name of a config section
 
-        `driver` is a specific driver to use rather than the defaults.
-
         :type paths: list[str]
         :type env: str
-        :type driver: str
         :rtype: LocalConfig
         """
 
@@ -87,7 +80,6 @@ class LocalConfig(object):
             config,
             files_loaded=files_loaded,
             env=env,
-            driver=driver
         )
 
     def _environment_prop(self, key):
@@ -127,15 +119,6 @@ class LocalConfig(object):
         return self._environment_prop('db_username') or default_username
 
     @property
-    def default_driver(self):
-        return (
-            self._specified_driver or
-            os.environ.get('DATACUBE_DEFAULT_DRIVER') or
-            # The default driver for the current environment
-            self._environment_prop('default_driver')
-        )
-
-    @property
     def db_password(self):
         return self._environment_prop('db_password')
 
@@ -144,10 +127,9 @@ class LocalConfig(object):
         return self._environment_prop('db_port') or '5432'
 
     def __str__(self):
-        return "LocalConfig<loaded_from={}, environment={!r}, driver={!r}, config={}>".format(
+        return "LocalConfig<loaded_from={}, environment={!r}, config={}>".format(
             self.files_loaded or 'defaults',
             self.environment,
-            self.default_driver,
             dict(self._config[self.environment]),
         )
 

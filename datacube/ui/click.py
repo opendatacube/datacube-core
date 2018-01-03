@@ -126,12 +126,6 @@ def _set_config(ctx, param, value):
         ctx.obj['config_files'] = paths
 
 
-def _set_driver(ctx, param, value):
-    if not ctx.obj:
-        ctx.obj = {}
-    ctx.obj['driver'] = value
-
-
 def _set_environment(ctx, param, value):
     if not ctx.obj:
         ctx.obj = {}
@@ -156,9 +150,6 @@ environment_option = click.option('--env', '-E', callback=_set_environment,
                                   expose_value=False)
 
 #: pylint: disable=invalid-name
-driver_option = click.option('--driver', '-D', default=None, callback=_set_driver,
-                             expose_value=False)
-#: pylint: disable=invalid-name
 log_queries_option = click.option('--log-queries', is_flag=True, callback=_log_queries,
                                   expose_value=False, help="Print database queries.")
 
@@ -168,7 +159,6 @@ global_cli_options = compose(
     version_option,
     verbose_option,
     logfile_option,
-    driver_option,
     environment_option,
     config_option,
     log_queries_option
@@ -190,9 +180,8 @@ def pass_config(f):
         paths = obj.get('config_files') or config.DEFAULT_CONF_PATHS
         # If the user is overriding the defaults
         specific_environment = obj.get('config_environment')
-        specific_driver = obj.get('driver')
 
-        parsed_config = config.LocalConfig.find(paths=paths, env=specific_environment, driver=specific_driver)
+        parsed_config = config.LocalConfig.find(paths=paths, env=specific_environment)
         _LOG.debug("Loaded datacube config: %r", parsed_config)
         return f(parsed_config, *args, **kwargs)
 
