@@ -5,7 +5,7 @@ setup(
     version="1.0",
     description="Test IO plugins for datacube",
     author='AGDC Collaboration',
-    packages=find_packages('dcio'),
+    packages=find_packages(),
 
     entry_points={
         'datacube.plugins.io.read': [
