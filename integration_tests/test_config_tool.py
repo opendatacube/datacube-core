@@ -15,8 +15,8 @@ from click.testing import CliRunner
 import datacube.scripts.cli_app
 from datacube import Datacube
 from datacube.config import LocalConfig
-from datacube.index.postgres import _dynamic
-from datacube.index.postgres.tables._core import drop_db, has_schema, SCHEMA_NAME
+from datacube.drivers.postgres import _dynamic
+from datacube.drivers.postgres._core import drop_db, has_schema, SCHEMA_NAME
 
 _LOG = logging.getLogger(__name__)
 
@@ -235,10 +235,10 @@ def test_multiple_environment_config(tmpdir):
     config_path = tmpdir.join('second.conf')
 
     config_path.write("""
-[user]
-default_environment: test_default
+[DEFAULT]
+db_username: test_user
 
-[test_default]
+[default]
 db_hostname: db.opendatacube.test
 
 [test_alt]
@@ -248,14 +248,14 @@ db_hostname: alt-db.opendatacube.test
     config_path = str(config_path)
 
     config = LocalConfig.find([config_path])
-    assert config.db_hostname == 'db.opendatacube.test'
+    assert config['db_hostname'] == 'db.opendatacube.test'
     alt_config = LocalConfig.find([config_path], env='test_alt')
-    assert alt_config.db_hostname == 'alt-db.opendatacube.test'
+    assert alt_config['db_hostname'] == 'alt-db.opendatacube.test'
 
     # Make sure the correct config is passed through the API
     # Parsed config:
-    db_url = 'postgresql://{user}@db.opendatacube.test:5432/datacube'.format(user=config.db_username)
-    alt_db_url = 'postgresql://{user}@alt-db.opendatacube.test:5432/datacube'.format(user=config.db_username)
+    db_url = 'postgresql://{user}@db.opendatacube.test:5432/datacube'.format(user=config['db_username'])
+    alt_db_url = 'postgresql://{user}@alt-db.opendatacube.test:5432/datacube'.format(user=config['db_username'])
 
     with Datacube(config=config, validate_connection=False) as dc:
         assert str(dc.index.url) == db_url

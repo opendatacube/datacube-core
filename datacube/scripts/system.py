@@ -8,7 +8,7 @@ from sqlalchemy.exc import OperationalError
 
 import datacube
 from datacube.index import index_connect
-from datacube.index.postgres._connections import IndexSetupError
+from datacube.drivers.postgres._connections import IndexSetupError
 from datacube.ui import click as ui
 from datacube.ui.click import cli, handle_exception
 
@@ -78,11 +78,11 @@ def check(
     echo_field('Version', datacube.__version__)
     echo_field('Config files', ','.join(local_config.files_loaded))
     echo_field('Host',
-               '{}:{}'.format(local_config.db_hostname or 'localhost', local_config.db_port or '5432'))
+               '{}:{}'.format(local_config['db_hostname'] or 'localhost', local_config['db_port'] or '5432'))
 
-    echo_field('Database', local_config.db_database)
-    echo_field('User', local_config.db_username)
-    echo_field('Environment', local_config.environment)
+    echo_field('Database', local_config['db_database'])
+    echo_field('User', local_config['db_username'])
+    echo_field('Environment', local_config.env)
 
     echo()
     echo('Valid connection:\t', nl=False)
@@ -90,7 +90,7 @@ def check(
         index = index_connect(local_config=local_config)
         echo(style('YES', bold=True))
         for role, user, description in index.users.list_users():
-            if user == local_config.db_username:
+            if user == local_config['db_username']:
                 echo('You have %s privileges.' % style(role.upper(), bold=True))
     except OperationalError as e:
         handle_exception('Error Connecting to Database: %s', e)

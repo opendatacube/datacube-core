@@ -5,7 +5,7 @@ import click
 
 from datacube.utils import gen_password
 from datacube.config import LocalConfig
-from datacube.index._api import Index
+from datacube.index.index import Index
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 

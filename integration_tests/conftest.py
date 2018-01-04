@@ -20,7 +20,7 @@ import rasterio
 import yaml
 
 import datacube.utils
-from datacube.index.postgres import _dynamic
+from datacube.drivers.postgres import _core
 from integration_tests.utils import alter_log_level
 
 try:
@@ -30,9 +30,8 @@ except ImportError:
 
 from datacube.api import API
 from datacube.config import LocalConfig
-from datacube.index._api import Index, _DEFAULT_METADATA_TYPES_PATH
-from datacube.index.postgres import PostgresDb
-from datacube.index.postgres.tables import _core
+from datacube.index.index import Index
+from datacube.drivers.postgres import PostgresDb
 
 # On Windows, symlinks are not supported in Python 2 and require
 # specific privileges otherwise, so we copy instead of linking
@@ -42,9 +41,7 @@ else:
     symlink = os.symlink
 
 _SINGLE_RUN_CONFIG_TEMPLATE = """
-[locations]
-testdata: {test_tile_folder}
-eotiles: {eotiles_tile_folder}
+
 """
 
 GEOTIFF = {
@@ -192,7 +189,7 @@ def index(db):
 @pytest.fixture
 def dict_api(index):
     """
-    :type index: datacube.index._api.Index
+    Provide a :class:`datacube.api.API` configured with an index, and used for the deprecated dictionary style access.
     """
     return API(index=index)
 
