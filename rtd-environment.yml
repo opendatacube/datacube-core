@@ -5,6 +5,7 @@ channels:
 - defaults
 - nodefaults
 dependencies:
+- python >= 3.6
 - pyyaml
 - sqlalchemy
 - python-dateutil
