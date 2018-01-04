@@ -144,26 +144,33 @@ def local_config(integration_config_paths):
 
 
 @pytest.fixture(params=["US/Pacific", "UTC", ])
-def db(local_config, request):
+def postgres_db(local_config, request):
+    """
+    Return a connection to an PostgreSQL database, initialised with the default schema
+    and tables.
+    """
     timezone = request.param
 
-    db = PostgresDb.from_config(local_config, application_name='test-run', validate_connection=False)
-
-    # Drop and recreate tables so our tests have a clean db.
-    with db.connect() as connection:
-        _core.drop_db(connection._connection)
-    remove_dynamic_indexes()
-
     # Disable informational messages since we're doing this on every test run.
-    with _increase_logging(_core._LOG) as _:
+    with alter_log_level(_core._LOG):
+        db = PostgresDb.from_config(local_config,
+                                    application_name='test-run',
+                                    validate_connection=False)
+
+        # Drop the schema
+        with db.connect() as connection:
+            _core.drop_db(connection._connection)
+        remove_dynamic_indexes()
+
+        # Recreate tables so our tests have a clean db.
         _core.ensure_db(db._engine)
+
+        with db.connect() as c:
+            c.execute('alter database %s set timezone = %r' % (local_config.db_database, str(timezone)))
 
     c = db._engine.connect()
     c.execute('alter database %s set timezone = %r' % (local_config.db_database, str(timezone)))
     c.close()
-
-    # We don't need informational create/drop messages for every config change.
-    _dynamic._LOG.setLevel(logging.WARN)
 
     yield db
     db.close()
@@ -179,11 +186,11 @@ def remove_dynamic_indexes():
 
 
 @pytest.fixture
-def index(db):
+def index(postgres_db):
     """
-    :type db: datacube.index.postgres._api.PostgresDb
+    :type postgres_db: datacube.index.postgres._api.PostgresDb
     """
-    return Index(db)
+    return Index(postgres_db)
 
 
 @pytest.fixture
