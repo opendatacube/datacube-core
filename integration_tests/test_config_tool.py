@@ -51,16 +51,16 @@ def _dataset_type_count(db):
         return len(list(connection.get_all_dataset_types()))
 
 
-def test_add_example_dataset_types(global_integration_cli_args, db, default_metadata_type):
+def test_add_example_dataset_types(global_integration_cli_args, postgres_db, default_metadata_type):
     """
     Add example mapping docs, to ensure they're valid and up-to-date.
 
     We add them all to a single database to check for things like duplicate ids.
 
     :type global_integration_cli_args: tuple[str]
-    :type db: datacube.index.postgres._api.PostgresDb
+    :type postgres_db: datacube.index.postgres._api.PostgresDb
     """
-    existing_mappings = _dataset_type_count(db)
+    existing_mappings = _dataset_type_count(postgres_db)
 
     print('{} mappings'.format(existing_mappings))
     for mapping_path in EXAMPLE_DATASET_TYPE_DOCS:
@@ -74,17 +74,17 @@ def test_add_example_dataset_types(global_integration_cli_args, db, default_meta
             ]
         )
         assert result.exit_code == 0, "Error for %r. output: %r" % (str(mapping_path), result.output)
-        mappings_count = _dataset_type_count(db)
+        mappings_count = _dataset_type_count(postgres_db)
         assert mappings_count > existing_mappings, "Mapping document was not added: " + str(mapping_path)
         existing_mappings = mappings_count
 
 
-def test_error_returned_on_invalid(global_integration_cli_args, db):
+def test_error_returned_on_invalid(global_integration_cli_args, postgres_db):
     """
     :type global_integration_cli_args: tuple[str]
-    :type db: datacube.index.postgres._api.PostgresDb
+    :type postgres_db: datacube.index.postgres._api.PostgresDb
     """
-    assert _dataset_type_count(db) == 0
+    assert _dataset_type_count(postgres_db) == 0
 
     for mapping_path in INVALID_MAPPING_DOCS:
         result = _run_cli(
@@ -99,7 +99,7 @@ def test_error_returned_on_invalid(global_integration_cli_args, db):
             expect_success=False
         )
         assert result.exit_code != 0, "Success return code for invalid document."
-        assert _dataset_type_count(db) == 0, "Invalid document was added to DB"
+        assert _dataset_type_count(postgres_db) == 0, "Invalid document was added to DB"
 
 
 def test_config_check(global_integration_cli_args, local_config):
@@ -185,11 +185,11 @@ def test_db_init_rebuild(global_integration_cli_args, local_config, ls5_telem_ty
     ) in result.output
 
 
-def test_db_init(global_integration_cli_args, db, local_config):
-    with db.connect() as connection:
+def test_db_init(global_integration_cli_args, postgres_db, local_config):
+    with postgres_db.connect() as connection:
         drop_db(connection._connection)
 
-        assert not has_schema(db._engine, connection._connection)
+        assert not has_schema(postgres_db._engine, connection._connection)
 
     # Run on an empty database.
     cli_method = datacube.scripts.cli_app.cli
@@ -199,8 +199,8 @@ def test_db_init(global_integration_cli_args, db, local_config):
     assert result.exit_code == 0
     assert 'Created.' in result.output
 
-    with db.connect() as connection:
-        assert has_schema(db._engine, connection._connection)
+    with postgres_db.connect() as connection:
+        assert has_schema(postgres_db._engine, connection._connection)
 
 
 @pytest.fixture(params=[
@@ -209,13 +209,13 @@ def test_db_init(global_integration_cli_args, db, local_config):
     # Test that names are escaped
     ('test_user_"invalid+_chars_{n}', None),
     ('test_user_invalid_desc_{n}', 'Invalid "\' chars in description')])
-def example_user(global_integration_cli_args, db, request):
+def example_user(global_integration_cli_args, postgres_db, request):
     username, description = request.param
 
     username = username.format(n=random.randint(111111, 999999))
 
     # test_roles = (user_name for role_name, user_name, desc in roles if user_name.startswith('test_'))
-    with db.connect() as connection:
+    with postgres_db.connect() as connection:
         users = (user_name for role_name, user_name, desc in connection.list_users())
         if username in users:
             connection.drop_users([username])
@@ -225,7 +225,7 @@ def example_user(global_integration_cli_args, db, request):
 
     yield username, description
 
-    with db.connect() as connection:
+    with postgres_db.connect() as connection:
         users = (user_name for role_name, user_name, desc in connection.list_users())
         if username in users:
             connection.drop_users([username])
