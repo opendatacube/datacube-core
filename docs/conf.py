@@ -40,6 +40,12 @@ os.chdir(current_dir)
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
+# -- RTD Debugging
+import subprocess
+subprocess.call('which java', shell=True)
+subprocess.call('java --version', shell=True)
+subprocess.call('plantuml -v', shell=True)
+
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
