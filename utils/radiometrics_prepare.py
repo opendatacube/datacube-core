@@ -27,7 +27,6 @@ def prepare_layers(images):
 
 
 def prepare_dataset(image, datasets):
-
     image = netCDF4.Dataset(image)
 
     projection = str(image.geospatial_bounds_crs)
@@ -77,5 +76,7 @@ def prepare_dataset(image, datasets):
 def main(datasets, output):
     with open(output, 'w') as stream:
         yaml.dump((prepare_dataset(datasets[0], datasets)), stream)
+
+
 if __name__ == "__main__":
     main()
