@@ -103,6 +103,10 @@ setup(
         ],
         'datacube.plugins.io.read': [
             's3block = datacube.drivers.s3.driver:rdr_driver_init'
+        ],
+        'datacube.plugins.io.write': [
+            's3block = datacube.drivers.s3.driver:writer_driver_init',
+            's3block_test = datacube.drivers.s3.driver:writer_test_driver_init',
         ]
     },
 )

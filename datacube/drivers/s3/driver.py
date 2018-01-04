@@ -6,7 +6,6 @@ from pathlib import Path
 
 import numpy as np
 
-from datacube.drivers.driver import Driver
 from datacube.drivers.s3.datasource import S3DataSource
 from datacube.drivers.s3.storage.s3aio.s3lio import S3LIO
 from .utils import DriverUtils
@@ -16,14 +15,13 @@ PROTOCOL = 's3+block'
 FORMAT = 's3block'
 
 
-class S3Driver(Driver):
+class S3WriterDriver(object):
     """S3 storage driver."""
 
-    def __init__(self, driver_manager, name, index=None, *index_args, **index_kargs):
+    def __init__(self, **kwargs):
         """Initialise the s3 storage."""
-        super(S3Driver, self).__init__(driver_manager, name, index, *index_args, **index_kargs)
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.storage = S3LIO()
+        self.storage = S3LIO(**kwargs)
 
     @property
     def uri_scheme(self):
@@ -175,9 +173,13 @@ class S3Driver(Driver):
             outputs[band] = output
         return outputs
 
-    def get_datasource(self, dataset, measurement_id):
-        """See :meth:`datacube.drivers.driver.get_datasource`"""
-        return S3DataSource(dataset, measurement_id, self.storage)
+
+def writer_driver_init():
+    return S3WriterDriver()
+
+
+def writer_test_driver_init():
+    return S3WriterDriver(enable_s3=False)
 
 
 class S3ReaderDriver(object):
