@@ -5,18 +5,14 @@ import logging
 from uuid import uuid4
 
 import numpy as np
-from sqlalchemy import MetaData
 from sqlalchemy import select, and_
 
-import datacube.index._datasets as base_dataset
-from datacube.index._api import Index
-from datacube.drivers.s3block_index._schema import S3_DATASET, S3_DATASET_CHUNK, S3_DATASET_MAPPING
-from datacube.index.postgres.tables import _pg_exists
-from datacube.index.postgres.tables._core import SQL_NAMING_CONVENTIONS, SCHEMA_NAME
+from datacube.index._datasets import DatasetResource as BaseDatasetResource
+from datacube.index.index import Index
+from datacube.drivers.s3block_index.schema import S3_DATASET, S3_DATASET_CHUNK, S3_DATASET_MAPPING, S3_METADATA
+from datacube.drivers.postgres._core import pg_exists
 
 _LOG = logging.getLogger(__name__)
-
-S3_METADATA = MetaData(naming_convention=SQL_NAMING_CONVENTIONS, schema=SCHEMA_NAME)
 
 
 class S3DatabaseException(Exception):
@@ -28,25 +24,24 @@ class S3BlockIndex(Index):
     by writing additional s3 information to specific tables.
     """
 
-    def __init__(self, index=None, uri_scheme='s3+block', *args, **kargs):
+    def __init__(self, db, uri_scheme='s3+block'):
         """Initialise the index and its dataset resource."""
-        super(S3BlockIndex, self).__init__(index, *args, **kargs)
-        if not self.connected_to_s3_database():
-            raise S3DatabaseException('Not connected to an S3 Database')
-        self.datasets = DatasetResource(self._db, self.products, uri_scheme)
+        super(S3BlockIndex, self).__init__(db)
+        # if not self.connected_to_s3_database():
+        #     raise S3DatabaseException('Not connected to an S3 Database')
+
+        self.datasets = DatasetResource(db, self.products, uri_scheme)
 
     def connected_to_s3_database(self):
-        """Check requirements are satisfied.
+        """Check we are connected to an appropriately initialised database.
 
         :return: True if requirements is satisfied, otherwise returns False
         """
-        # check database
-        # pylint: disable=protected-access
         try:
-            with self._db.connect() as connection:
-                return (_pg_exists(connection._connection, "agdc.s3_dataset") and
-                        _pg_exists(connection._connection, "agdc.s3_dataset_chunk") and
-                        _pg_exists(connection._connection, "agdc.s3_dataset_mapping"))
+            with self._db.give_me_a_flippin_connection() as connection:
+                return (pg_exists(connection, "agdc.s3_dataset") and
+                        pg_exists(connection, "agdc.s3_dataset_chunk") and
+                        pg_exists(connection, "agdc.s3_dataset_mapping"))
         except AttributeError:
             _LOG.warning('Should only be here for tests.')
             return True
@@ -55,21 +50,21 @@ class S3BlockIndex(Index):
         is_new = super(S3BlockIndex, self).init_db(with_default_types, with_permissions)
 
         if is_new:
-            with self._db.connect() as c:
+            with self._db.give_me_a_flippin_connection() as connection:
                 try:
-                    c.execute('begin')
+                    connection.execute('begin')
                     _LOG.info('Creating s3 block tables.')
 
-                    S3_METADATA.create_all(c)
-                    c.execute('commit')
-                except:
-                    c.execute('rollback')
+                    S3_METADATA.create_all(connection)
+                    connection.execute('commit')
+                except Exception:
+                    connection.execute('rollback')
                     raise
 
         return is_new
 
     def add_datasets(self, datasets, sources_policy='verify'):
-        """Index several datasets using the current driver.
+        """Index several datasets.
 
         Perform the normal indexing, followed by the s3 specific
         indexing. If the normal indexing fails for any dataset, then
@@ -101,7 +96,7 @@ class S3BlockIndex(Index):
         return "S3Index<db={!r}>".format(self._db)
 
 
-class DatasetResource(base_dataset.DatasetResource):
+class DatasetResource(BaseDatasetResource):
     """The s3 dataset resource extends the postgres one by writing
     additional s3 information to specific tables.
     """
@@ -265,7 +260,7 @@ class DatasetResource(base_dataset.DatasetResource):
                             # 's3_chunks': transaction.get_s3_dataset_chunk(s3_dataset.id)
                         }
 
-    # S3 specific functions
+    ### S3 specific functions
     # See .tables for description of each column
     def put_s3_mapping(self, _connection, dataset_ref, band, s3_dataset_id):
         """:type dataset_ref: uuid.UUID
@@ -347,7 +342,7 @@ class DatasetResource(base_dataset.DatasetResource):
                              chunk_id, compression_scheme,
                              micro_shape, index_min, index_max):
         """:type s3_dataset_id: uuid.UUID
-        :type key: str
+        :type s3_key: str
         :type chunk_id: str
         :type compression_scheme: str
         :type micro_shape: array[int]

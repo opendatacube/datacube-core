@@ -64,8 +64,8 @@ def choose_datasource(dataset):
     NOTE: we assume that all bands can be loaded with the same implementation.
 
     """
-    from ..storage.storage import RasterDatasetSource
-    return rdr_cache()(dataset.uri_scheme, dataset.format, fallback=RasterDatasetSource)
+    from ..storage.storage import RasterDatasetDataSource
+    return rdr_cache()(dataset.uri_scheme, dataset.format, fallback=RasterDatasetDataSource)
 
 
 def new_datasource(dataset, band_name=None):

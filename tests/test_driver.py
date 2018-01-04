@@ -4,7 +4,7 @@ from .util import mk_sample_dataset
 from datacube.drivers import new_datasource, reader_drivers
 from datacube.drivers.s3 import driver as s3_driver
 from datacube.drivers.s3.datasource import S3DataSource
-from datacube.storage.storage import RasterDatasetSource
+from datacube.storage.storage import RasterDatasetDataSource
 
 S3_dataset = namedtuple('S3_dataset', ['macro_shape'])
 
@@ -33,7 +33,7 @@ def test_new_datasource_fallback():
 
     rdr = new_datasource(dataset, 'green')
     assert rdr is not None
-    assert isinstance(rdr, RasterDatasetSource)
+    assert isinstance(rdr, RasterDatasetDataSource)
 
 
 def test_reader_drivers():

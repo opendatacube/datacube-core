@@ -68,7 +68,7 @@ class Datacube(object):
     """
     Interface to search, read and write a datacube.
 
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.index.Index
     """
 
     def __init__(self,
