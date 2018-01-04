@@ -24,13 +24,8 @@ import sys
 import copy
 import inspect
 import logging
-from pprint import pprint
-import numpy as np
 import numexpr as ne
-import gdal
-import osr
 import xarray as xr
-from xarray import ufuncs
 
 from datacube.api import API
 from datacube.analytics.analytics_engine import OperationType

@@ -84,5 +84,6 @@ def main():
     masked_ndvi = nd.evaluate('ndvi{(pq == 32767) | (pq == 16383) | (pq == 2457)}')
     print(masked_ndvi.values)
 
+
 if __name__ == '__main__':
     main()
