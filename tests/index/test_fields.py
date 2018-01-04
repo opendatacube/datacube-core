@@ -4,9 +4,9 @@ Module
 """
 from __future__ import absolute_import
 
-from datacube.index.postgres._fields import SimpleDocField, NumericRangeDocField, parse_fields, RangeDocField, \
+from datacube.drivers.postgres._fields import SimpleDocField, NumericRangeDocField, parse_fields, RangeDocField, \
     IntDocField
-from datacube.index.postgres.tables import DATASET
+from datacube.drivers.postgres._schema import DATASET
 from datacube.model import Range
 
 

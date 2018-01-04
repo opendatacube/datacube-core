@@ -442,6 +442,60 @@ class RasterFileDataSource(RasterioDataSource):
         return self.crs
 
 
+class RasterDatasetDataSource(RasterioDataSource):
+    """Data source for reading from a Data Cube Dataset"""
+
+    def __init__(self, dataset, measurement_id):
+        """
+        Initialise for reading from a Data Cube Dataset.
+
+        :param Dataset dataset: dataset to read from
+        :param str measurement_id: measurement to read. a single 'band' or 'slice'
+        """
+        self._dataset = dataset
+        self._measurement = dataset.measurements[measurement_id]
+        url = _resolve_url(_choose_location(dataset), self._measurement['path'])
+        filename = _url2rasterio(url, dataset.format, self._measurement.get('layer'))
+        nodata = dataset.type.measurements[measurement_id].get('nodata')
+        super(RasterDatasetDataSource, self).__init__(filename, nodata=nodata)
+
+    def get_bandnumber(self, src):
+
+        # If `band` property is set to an integer it overrides any other logic
+        band = self._measurement.get('band')
+        if band is not None:
+            if isinstance(band, integer_types):
+                return band
+            else:
+                _LOG.warning('Expected "band" property to be of integer type')
+
+        if 'netcdf' not in self._dataset.format.lower():
+            layer_id = self._measurement.get('layer', 1)
+            return layer_id if isinstance(layer_id, integer_types) else 1
+
+        tag_name = GDAL_NETCDF_DIM + 'time'
+        if tag_name not in src.tags(1):  # TODO: support time-less datasets properly
+            return 1
+
+        time = self._dataset.center_time
+        sec_since_1970 = datetime_to_seconds_since_1970(time)
+
+        idx = 0
+        dist = float('+inf')
+        for i in range(1, src.count + 1):
+            v = float(src.tags(i)[tag_name])
+            if abs(sec_since_1970 - v) < dist:
+                idx = i
+                dist = abs(sec_since_1970 - v)
+        return idx
+
+    def get_transform(self, shape):
+        return self._dataset.transform * Affine.scale(1 / shape[1], 1 / shape[0])
+
+    def get_crs(self):
+        return self._dataset.crs
+
+
 def register_scheme(*schemes):
     """
     Register additional uri schemes as supporting relative offsets (etc), so that band/measurement paths can be
@@ -526,60 +580,6 @@ def _choose_location(dataset):
     # Newest location first, use it.
     # We may want more nuanced selection in the future.
     return uris[0]
-
-
-class RasterDatasetSource(RasterioDataSource):
-    """Data source for reading from a Data Cube Dataset"""
-
-    def __init__(self, dataset, measurement_id):
-        """
-        Initialise for reading from a Data Cube Dataset.
-
-        :param Dataset dataset: dataset to read from
-        :param str measurement_id: measurement to read. a single 'band' or 'slice'
-        """
-        self._dataset = dataset
-        self._measurement = dataset.measurements[measurement_id]
-        url = _resolve_url(_choose_location(dataset), self._measurement['path'])
-        filename = _url2rasterio(url, dataset.format, self._measurement.get('layer'))
-        nodata = dataset.type.measurements[measurement_id].get('nodata')
-        super(RasterDatasetSource, self).__init__(filename, nodata=nodata)
-
-    def get_bandnumber(self, src):
-
-        # If `band` property is set to an integer it overrides any other logic
-        band = self._measurement.get('band')
-        if band is not None:
-            if isinstance(band, integer_types):
-                return band
-            else:
-                _LOG.warning('Expected "band" property to be of integer type')
-
-        if 'netcdf' not in self._dataset.format.lower():
-            layer_id = self._measurement.get('layer', 1)
-            return layer_id if isinstance(layer_id, integer_types) else 1
-
-        tag_name = GDAL_NETCDF_DIM + 'time'
-        if tag_name not in src.tags(1):  # TODO: support time-less datasets properly
-            return 1
-
-        time = self._dataset.center_time
-        sec_since_1970 = datetime_to_seconds_since_1970(time)
-
-        idx = 0
-        dist = float('+inf')
-        for i in range(1, src.count + 1):
-            v = float(src.tags(i)[tag_name])
-            if abs(sec_since_1970 - v) < dist:
-                idx = i
-                dist = abs(sec_since_1970 - v)
-        return idx
-
-    def get_transform(self, shape):
-        return self._dataset.transform * Affine.scale(1/shape[1], 1/shape[0])
-
-    def get_crs(self):
-        return self._dataset.crs
 
 
 def measurement_paths(dataset):
