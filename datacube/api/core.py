@@ -26,10 +26,10 @@ except ImportError:
     pass
 from six.moves import zip
 
-from ..config import LocalConfig
-from ..compat import string_types
-from ..storage.storage import reproject_and_fuse
-from ..utils import geometry, intersects, data_resolution_and_offset
+from datacube.config import LocalConfig
+from datacube.compat import string_types
+from datacube.storage.storage import reproject_and_fuse
+from datacube.utils import geometry, intersects, data_resolution_and_offset
 from .query import Query, query_group_by, query_geopolygon
 from ..index import index_connect
 from ..drivers import new_datasource

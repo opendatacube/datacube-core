@@ -46,7 +46,7 @@ class Query(object):
     def __init__(self, index=None, product=None, geopolygon=None, like=None, **kwargs):
         """Parses a kwarg dict for query parameters
 
-        :param datacube.index._api.Index index: An optional `index` object, if checking of field names is desired.
+        :param datacube.index.index.Index index: An optional `index` object, if checking of field names is desired.
         :param str product: name of product
         :param Union[datacube.utils.Geometry|None] geopolygon: spatial bounds of the search
         :param xarray.Dataset like: spatio-temporal bounds of `like` are used for the search

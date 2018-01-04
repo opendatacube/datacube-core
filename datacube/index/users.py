@@ -1,8 +1,11 @@
 # coding=utf-8
 
+
 class UserResource(object):
     def __init__(self, db):
-        # type: (PostgresDb) -> None
+        """
+        :type db: datacube.index.postgres._connections.PostgresDb
+        """
         self._db = db
 
     def grant_role(self, role, *usernames):

@@ -7,9 +7,8 @@ from cachetools.func import lru_cache
 
 from datacube import compat
 from datacube.index import fields
-from datacube.index.common import _readable_offset
 from datacube.model import DatasetType
-from datacube.utils import InvalidDocException, jsonify_document, changes
+from datacube.utils import InvalidDocException, jsonify_document, changes, _readable_offset
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 
 _LOG = logging.getLogger(__name__)
