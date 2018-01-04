@@ -5,14 +5,14 @@ Module
 from __future__ import absolute_import
 
 import copy
-import json
 
 import pytest
 import yaml
 from click.testing import CliRunner
 
-from datacube.index._api import Index
-from datacube.index.postgres._fields import NumericRangeDocField, PgField
+from datacube.index.index import Index
+from datacube.drivers.postgres._fields import NumericRangeDocField, PgField
+from datacube.index.metadata_types import default_metadata_type_docs
 from datacube.model import MetadataType, DatasetType
 from datacube.model import Range, Dataset
 from datacube.utils import changes
@@ -394,12 +394,12 @@ def _to_yaml(ls5_telem_doc):
     return yaml.safe_dump(ls5_telem_doc, allow_unicode=True)
 
 
-def test_update_metadata_type(index, default_metadata_type_docs, default_metadata_type):
+def test_update_metadata_type(index, default_metadata_type):
     """
     :type default_metadata_type_docs: list[dict]
     :type index: datacube.index._api.Index
     """
-    mt_doc = [d for d in default_metadata_type_docs if d['name'] == default_metadata_type.name][0]
+    mt_doc = [d for d in default_metadata_type_docs() if d['name'] == default_metadata_type.name][0]
 
     assert index.metadata_types.get_by_name(mt_doc['name']) is not None
 

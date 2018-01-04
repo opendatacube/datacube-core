@@ -15,9 +15,9 @@ from uuid import UUID
 import pytest
 from dateutil import tz
 
-from datacube.index._api import Index
+from datacube.index.index import Index
 from datacube.index.exceptions import DuplicateRecordError, MissingRecordError
-from datacube.index.postgres import PostgresDb
+from datacube.drivers.postgres import PostgresDb
 from datacube.utils.changes import DocumentMismatchError
 from datacube.model import Dataset
 
@@ -193,7 +193,7 @@ def test_get_missing_things(index):
     """
     The get(id) methods should return None if the object doesn't exist.
 
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.index.Index
     """
     uuid_ = UUID('18474b58-c8a6-11e6-a4b3-185e0f80a5c0')
     missing_thing = index.datasets.get(uuid_, include_sources=False)
@@ -243,7 +243,7 @@ def test_index_dataset_with_sources(index, default_metadata_type):
 
 def test_index_dataset_with_location(index, default_metadata_type):
     """
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.index.Index
     :type default_metadata_type: datacube.model.MetadataType
     """
     first_file = Path('/tmp/first/something.yaml').absolute()

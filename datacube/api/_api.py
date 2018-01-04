@@ -39,7 +39,7 @@ class API(object):
         If no datacube or index is given, the default configuration is used for database connection, etc.
 
         :param index: The database index to use, from :py:class:`datacube.index.index_connect`
-        :type index: :py:class:`datacube.index._api.Index` or None
+        :type index: :py:class:`datacube.index.index.Index` or None
         :param app: A short, alphanumeric name to identify this application.
             The application name is used to track down problems with database queries, so it is strongly
             advised that be used.  If an index is supplied, application name is ignored.

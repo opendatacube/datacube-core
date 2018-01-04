@@ -12,6 +12,7 @@ from datetime import datetime
 
 import datacube
 from datacube.api.core import Datacube
+from datacube.index.index import Index
 from datacube.model import DatasetType, Range, GeoPolygon
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
 from datacube.storage.storage import write_dataset_to_netcdf

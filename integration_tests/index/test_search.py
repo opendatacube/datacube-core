@@ -21,8 +21,8 @@ from psycopg2._range import NumericRange
 
 import datacube.scripts.cli_app
 import datacube.scripts.search_tool
-from datacube.index._api import Index
-from datacube.index.postgres import PostgresDb
+from datacube.index.index import Index
+from datacube.drivers.postgres import PostgresDb
 from datacube.model import Dataset
 from datacube.model import DatasetType
 from datacube.model import MetadataType
