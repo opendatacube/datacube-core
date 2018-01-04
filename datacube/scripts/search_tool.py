@@ -18,7 +18,6 @@ from singledispatch import singledispatch
 
 from datacube.ui import click as ui
 from datacube.ui.click import CLICK_SETTINGS
-from datacube.ui.expression import parse_expressions
 
 PASS_INDEX = ui.pass_index('datacube-search')
 
