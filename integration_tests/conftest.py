@@ -8,19 +8,20 @@ import itertools
 import logging
 import os
 import shutil
-from datetime import datetime, timedelta
-from contextlib import contextmanager
-from pathlib import Path
+from collections import namedtuple
 from copy import copy, deepcopy
+from datetime import datetime, timedelta
+from pathlib import Path
 from uuid import UUID, uuid4
 
-import pytest
 import numpy as np
+import pytest
 import rasterio
 import yaml
 
 import datacube.utils
 from datacube.index.postgres import _dynamic
+from integration_tests.utils import alter_log_level
 
 try:
     from yaml import CSafeLoader as SafeLoader
@@ -62,15 +63,16 @@ GEOTIFF = {
         'y': 6276000.0  # Coords must match crs
     }
 }
+INTEGRATION_TESTS_DIR = Path(__file__).parent
+INTEGRATION_DEFAULT_CONFIG_PATH = INTEGRATION_TESTS_DIR / 'agdcintegration.conf'
 
-INTEGRATION_DEFAULT_CONFIG_PATH = Path(__file__).parent.joinpath('agdcintegration.conf')
+_EXAMPLE_LS5_NBAR_DATASET_FILE = INTEGRATION_TESTS_DIR / 'example-ls5-nbar.yaml'
 
-_EXAMPLE_LS5_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('example-ls5-nbar.yaml')
+#: Number of time slices to create in sample data
 _TIME_SLICES = 3
-'''Number of time slices to create in the sample data.'''
 
+#: Number of bands to place in generated GeoTIFFs
 _BANDS = 3
-'''Number of bands to generate geotiffs for.'''
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs' / 'config_samples'
@@ -102,6 +104,13 @@ class MockIndex(object):
 
 @pytest.fixture
 def integration_config_paths(tmpdir):
+    """
+    Provides a list of ODC config files for integration testing.
+
+     - :file:`integration_tests/agdcintegration.conf`
+     - :file:`{tmpdir}/test-run.conf` expanded with points to temporary test data directories
+     - :file:`~/.datacube_integration.conf`
+    """
     test_tile_folder = str(tmpdir.mkdir('testdata'))
     test_tile_folder = Path(test_tile_folder).as_uri()
     eotiles_tile_folder = str(tmpdir.mkdir('eotiles'))
@@ -128,6 +137,12 @@ def global_integration_cli_args(integration_config_paths):
 
 @pytest.fixture
 def local_config(integration_config_paths):
+    """Provides a :class:`LocalConfig` configured with suitable config file paths.
+
+    .. seealso::
+
+        The :func:`integration_config_paths` fixture sets up the config files.
+    """
     return LocalConfig.find(integration_config_paths)
 
 
@@ -155,14 +170,6 @@ def db(local_config, request):
 
     yield db
     db.close()
-
-
-@contextmanager
-def _increase_logging(log, level=logging.WARN):
-    previous_level = log.getEffectiveLevel()
-    log.setLevel(level)
-    yield
-    log.setLevel(previous_level)
 
 
 def remove_dynamic_indexes():
@@ -412,18 +419,13 @@ def create_empty_geotiff(path):
 
 
 @pytest.fixture
-def default_metadata_type_docs():
-    return [doc for (path, doc) in datacube.utils.read_documents(_DEFAULT_METADATA_TYPES_PATH)]
+def default_metadata_type_doc():
+    return [doc for doc in default_metadata_type_docs() if doc['name'] == 'eo'][0]
 
 
 @pytest.fixture
-def default_metadata_type_doc(default_metadata_type_docs):
-    return [doc for doc in default_metadata_type_docs if doc['name'] == 'eo'][0]
-
-
-@pytest.fixture
-def telemetry_metadata_type_doc(default_metadata_type_docs):
-    return [doc for doc in default_metadata_type_docs if doc['name'] == 'telemetry'][0]
+def telemetry_metadata_type_doc():
+    return [doc for doc in default_metadata_type_docs() if doc['name'] == 'telemetry'][0]
 
 
 @pytest.fixture
@@ -434,9 +436,9 @@ def ga_metadata_type_doc():
 
 
 @pytest.fixture
-def default_metadata_types(index, default_metadata_type_docs):
+def default_metadata_types(index):
     # type: (Index, list) -> list
-    for d in default_metadata_type_docs:
+    for d in default_metadata_type_docs():
         index.metadata_types.add(index.metadata_types.from_doc(d))
     return index.metadata_types.get_all()
 
@@ -458,11 +460,6 @@ def telemetry_metadata_type(index, default_metadata_types):
 
 @pytest.fixture
 def indexed_ls5_scene_dataset_types(index, ga_metadata_type):
-    """
-    :type index: datacube.index._api.Index
-    :rtype: datacube.model.StorageType
-    """
-
     dataset_types = load_test_dataset_types(
         DATASET_TYPES / 'ls5_scenes.yaml',
         # Use our larger metadata type with a more diverse set of field types.
@@ -482,8 +479,8 @@ def example_ls5_nbar_metadata_doc():
 
 
 def load_test_dataset_types(filename, metadata_type=None):
-    types = load_yaml_file(filename)
-    return [alter_dataset_type_for_testing(type_, metadata_type=metadata_type) for type_ in types]
+    dataset_types = load_yaml_file(filename)
+    return [alter_dataset_type_for_testing(dataset_type, metadata_type=metadata_type) for dataset_type in dataset_types]
 
 
 def load_yaml_file(filename):
@@ -491,16 +488,16 @@ def load_yaml_file(filename):
         return list(yaml.load_all(f, Loader=SafeLoader))
 
 
-def alter_dataset_type_for_testing(type_, metadata_type=None):
-    if 'measurements' in type_:
-        type_ = limit_num_measurements(type_)
-    if 'storage' in type_:
-        type_ = shrink_storage_type(type_,
-                                    GEOGRAPHIC_VARS if is_geogaphic(type_) else PROJECTED_VARS,
-                                    TEST_STORAGE_SHRINK_FACTORS)
+def alter_dataset_type_for_testing(dataset_type, metadata_type=None):
+    if 'measurements' in dataset_type:
+        dataset_type = limit_num_measurements(dataset_type)
+    if 'storage' in dataset_type:
+        dataset_type = shrink_storage_type(dataset_type,
+                                           GEOGRAPHIC_VARS if is_geogaphic(dataset_type) else PROJECTED_VARS,
+                                           TEST_STORAGE_SHRINK_FACTORS)
     if metadata_type:
-        type_['metadata_type'] = metadata_type.name
-    return type_
+        dataset_type['metadata_type'] = metadata_type.name
+    return dataset_type
 
 
 def limit_num_measurements(storage_type):

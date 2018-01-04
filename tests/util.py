@@ -10,7 +10,9 @@ import shutil
 import tempfile
 
 import pathlib
-import gdal
+
+from osgeo import gdal
+
 from datacube import compat
 from datacube.model import Dataset, DatasetType, MetadataType
 
