@@ -1,58 +1,14 @@
 """This module implements a simple plugin manager for storage drivers.
 
-Drivers are automatically loaded provided they:
-  - Store all code in a direct subdirectory, e.g. `s3/`
-  - Include a `DRIVER_SPEC` attribute in the `__init__.py`. This
-    attribute must be a tuple indicating `(<name>, <class_name>,
-    <filepath>)` where the `<name>` is the driver's name as specified
-    by the end user, e.g. `NetCDF CF` or `s3`; `<class_name>` is the
-    python class name for that driver, e.g. `S3Driver`; and
-    `<filepath>` is the filepath to the python module containing that
-    class, e.g. `./driver.py`. The reason for specifying this
-    information is to optimise the search for the driver, without
-    loading all modules in the subdirectory.
-  - Extend the `driver.Driver` abstract class,
-    e.g. `S3Driver(Driver)`.
-
-`drivers.loader.drivers` returns a dictionary of drivers instances,
-indexed by their `name` as defined in `DRIVER_SPEC`. These are
-instantiated on the first call to that method and cached until the
-loader object is deleted.
-
 TODO: update docs post DriverManager
 """
-from __future__ import absolute_import, print_function
-from pkg_resources import iter_entry_points
+from __future__ import absolute_import
+from .driver_cache import load_drivers
 
 
 class ReaderDriverCache(object):
     def __init__(self, group):
-        def resolve_all():
-            def safe_load(ep):
-                # pylint: disable=bare-except
-                try:
-                    driver_init = ep.resolve()
-                except:
-                    print('WARNING: failed to resolve {}'.format(ep.name))  # TODO: use proper logger
-                    return None
-
-                try:
-                    driver = driver_init()
-                except:
-                    print('WARNING: exception during driver init, {}'.format(ep.name))  # TODO: use proper logger
-                    return None
-
-                if driver is None:
-                    print('WARNING: driver init returned None, {}'.format(ep.name))  # TODO: use proper logger
-
-                return driver
-
-            for ep in iter_entry_points(group=group, name=None):
-                driver = safe_load(ep)
-                if driver is not None:
-                    yield (ep.name, driver)
-
-        self._drivers = dict((name, driver) for name, driver in resolve_all())
+        self._drivers = load_drivers(group)
 
         lookup = {}
         for driver in self._drivers.values():
