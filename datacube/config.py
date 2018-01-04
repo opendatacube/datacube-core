@@ -8,6 +8,7 @@ import os
 
 from . import compat
 
+ENVIRONMENT_VARNAME = 'DATACUBE_CONFIG_PATH'
 #: Config locations in order. Properties found in latter locations override
 #: earlier ones.
 #:
@@ -17,7 +18,7 @@ from . import compat
 #: - `datacube.conf`
 DEFAULT_CONF_PATHS = (
     '/etc/datacube.conf',
-    os.environ.get('DATACUBE_CONFIG_PATH'),
+    os.environ.get(ENVIRONMENT_VARNAME),
     os.path.expanduser("~/.datacube.conf"),
     'datacube.conf'
 )
@@ -38,6 +39,10 @@ db_connection_timeout: 60
 # 'datacube' was the config section name before we had environments; it's used here to be backwards compatible.
 default_environment: datacube
 """
+
+#: Used in place of None as a default, when None is a valid but not default parameter to a function
+_UNSET = object()
+
 
 class LocalConfig(object):
     """
