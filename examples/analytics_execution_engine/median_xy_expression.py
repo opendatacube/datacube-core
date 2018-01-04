@@ -51,5 +51,6 @@ def main():
 
     plot(e.cache['medianXY'])
 
+
 if __name__ == '__main__':
     main()

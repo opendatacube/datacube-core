@@ -21,13 +21,8 @@ from __future__ import print_function
 
 # pylint: disable=redefined-builtin
 
-import sys
 import copy
 import logging
-from pprint import pprint
-
-import numpy as np
-import numexpr as ne
 
 from datacube.compat import string_types
 from datacube.api import API
