@@ -194,7 +194,7 @@ def prepare_dataset(path):
                         'path': str(Path('GRANULE', granule_id, 'IMG_DATA', image + '.jp2')),
                         'layer': 1,
                     } for image in images
-                    }
+                }
             },
 
             'lineage': {'source_datasets': {}},
