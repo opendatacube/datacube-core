@@ -12,6 +12,7 @@ Persistence API implementation for postgres.
 from __future__ import absolute_import
 
 import logging
+import uuid
 
 from sqlalchemy import cast
 from sqlalchemy import delete
@@ -22,16 +23,14 @@ from sqlalchemy.exc import IntegrityError
 
 from datacube.index.exceptions import DuplicateRecordError, MissingRecordError
 from datacube.index.fields import OrExpression
-from datacube.index.postgres._fields import PgExpression
 from datacube.model import Range
+from . import _core
 from . import _dynamic as dynamic
-from . import tables
-from ._fields import parse_fields, NativeField, Expression, PgField
-from .tables import (
+from ._fields import parse_fields, NativeField, Expression, PgField, PgExpression
+from .sql import escape_pg_identifier
+from ._schema import (
     DATASET, DATASET_SOURCE, METADATA_TYPE, DATASET_LOCATION, DATASET_TYPE
 )
-
-import uuid
 
 try:
     from typing import Iterable
@@ -860,36 +859,46 @@ class PostgresDbAPI(object):
 
     def list_users(self):
         result = self._connection.execute("""
-            select
-                group_role.rolname as role_name,
-                user_role.rolname as user_name,
-                pg_catalog.shobj_description(user_role.oid, 'pg_authid') as description
-            from pg_roles group_role
-            inner join pg_auth_members am on am.roleid = group_role.oid
-            inner join pg_roles user_role on am.member = user_role.oid
-            where (group_role.rolname like 'agdc_%%') and not (user_role.rolname like 'agdc_%%')
-            order by group_role.oid asc, user_role.oid asc;
+            SELECT
+                group_role.rolname AS role_name,
+                user_role.rolname AS user_name,
+                pg_catalog.shobj_description(user_role.oid, 'pg_authid') AS description
+            FROM pg_roles group_role
+            INNER JOIN pg_auth_members am ON am.roleid = group_role.oid
+            INNER JOIN pg_roles user_role ON am.member = user_role.oid
+            WHERE (group_role.rolname LIKE 'agdc_%%') AND NOT (user_role.rolname LIKE 'agdc_%%')
+            ORDER BY group_role.oid ASC, user_role.oid ASC;
         """)
         for row in result:
-            yield tables.from_pg_role(row['role_name']), row['user_name'], row['description']
+            yield _core.from_pg_role(row['role_name']), row['user_name'], row['description']
 
     def create_user(self, username, password, role, description=None):
-        pg_role = tables.to_pg_role(role)
-        tables.create_user(self._connection, username, password, pg_role, description=description)
+        pg_role = _core.to_pg_role(role)
+        username = escape_pg_identifier(self._connection, username)
+        self._connection.execute(
+            'create user {username} password %s in role {role}'.format(username=username, role=pg_role),
+            password
+        )
+        if description:
+            self._connection.execute(
+                'comment on role {username} is %s'.format(username=username), description
+            )
 
     def drop_users(self, users):
         # type: (Iterable[str]) -> None
-        tables.drop_user(self._connection, *users)
+        for username in users:
+            self._connection.execute('drop role {username}'.format(
+                username=escape_pg_identifier(self._connection, username)))
 
     def grant_role(self, role, users):
         # type: (str, Iterable[str]) -> None
         """
         Grant a role to a user.
         """
-        pg_role = tables.to_pg_role(role)
+        pg_role = _core.to_pg_role(role)
 
         for user in users:
-            if not tables.has_role(self._connection, user):
+            if not _core.has_role(self._connection, user):
                 raise ValueError('Unknown user %r' % user)
 
-        tables.grant_role(self._connection, pg_role, users)
+        _core.grant_role(self._connection, pg_role, users)

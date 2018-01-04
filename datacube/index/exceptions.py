@@ -8,7 +8,3 @@ class DuplicateRecordError(Exception):
 
 class MissingRecordError(Exception):
     pass
-
-
-class UnknownFieldError(Exception):
-    pass

@@ -10,7 +10,6 @@ from collections import namedtuple
 from uuid import UUID
 
 from datacube import compat
-from datacube.index.fields import Field
 from datacube.model import Dataset, DatasetType
 from datacube.utils import jsonify_document, changes
 from datacube.utils.changes import get_doc_changes, check_doc_unchanged
@@ -148,7 +147,7 @@ class DatasetResource(object):
         return dataset
 
     def search_product_duplicates(self, product, *group_fields):
-        # type: (DatasetType, Iterable[Union[str, Field]]) -> Iterable[tuple, Set[UUID]]
+        # type: (DatasetType, Iterable[Union[str, field.Field]]) -> Iterable[tuple, Set[UUID]]
         """
         Find dataset ids who have duplicates of the given set of field names.
 
@@ -158,10 +157,10 @@ class DatasetResource(object):
         """
 
         def load_field(f):
-            # type: (Union[str, Field]) -> Field
+            # type: (Union[str, fields.Field]) -> fields.Field
             if isinstance(f, compat.string_types):
                 return product.metadata_type.dataset_fields[f]
-            assert isinstance(f, Field), "Not a field: %r" % (f,)
+            assert isinstance(f, fields.Field), "Not a field: %r" % (f,)
             return f
 
         group_fields = [load_field(f) for f in group_fields]

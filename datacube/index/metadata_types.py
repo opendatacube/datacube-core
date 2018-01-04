@@ -3,15 +3,22 @@ from __future__ import absolute_import
 
 import logging
 import warnings
+from pathlib import Path
 
 from cachetools.func import lru_cache
 
-from datacube.index.common import _readable_offset
 from datacube.model import MetadataType
-from datacube.utils import jsonify_document, changes
+from datacube.utils import jsonify_document, changes, _readable_offset, read_documents
 from datacube.utils.changes import check_doc_unchanged, get_doc_changes
 
 _LOG = logging.getLogger(__name__)
+
+_DEFAULT_METADATA_TYPES_PATH = Path(__file__).parent.joinpath('default-metadata-types.yaml')
+
+
+def default_metadata_type_docs():
+    """A list of the bare dictionary format of default :class:`datacube.model.MetadataType`"""
+    return [doc for (path, doc) in read_documents(_DEFAULT_METADATA_TYPES_PATH)]
 
 
 class MetadataTypeResource(object):
