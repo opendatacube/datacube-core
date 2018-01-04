@@ -13,7 +13,7 @@ from affine import Affine, identity
 import datacube
 from datacube.drivers.datasource import DataSource
 from datacube.model import Dataset, DatasetType, MetadataType
-from datacube.storage.storage import OverrideBandDataSource, RasterFileDataSource, BandDataSource
+from datacube.storage.storage import OverrideBandDataSource, RasterFileDataSource
 from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse, read_from_source, Resampling, \
     RasterDatasetSource
 from datacube.utils import geometry
