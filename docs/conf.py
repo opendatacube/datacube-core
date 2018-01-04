@@ -43,7 +43,7 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 # -- RTD Debugging
 import subprocess
 subprocess.call('which java', shell=True)
-subprocess.call('java --version', shell=True)
+subprocess.call('java -version', shell=True)
 subprocess.call('plantuml -v', shell=True)
 
 # -- General configuration ------------------------------------------------
@@ -131,7 +131,7 @@ autosummary_generate = True
 
 extlinks = {'issue': ('https://github.com/opendatacube/datacube-core/issues/%s', 'GH')}
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3.5/', None),
+    'python': ('https://docs.python.org/3.6/', None),
     'pandas': ('http://pandas.pydata.org/pandas-docs/stable/', None),
     'numpy': ('https://docs.scipy.org/doc/numpy/', None),
     'xarray': ('http://xarray.pydata.org/en/stable/', None),

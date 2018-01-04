@@ -22,3 +22,5 @@ dependencies:
 - xarray
 - matplotlib # pixel drill app
 - pathlib
+- pip:
+    - sphinx-plantuml
