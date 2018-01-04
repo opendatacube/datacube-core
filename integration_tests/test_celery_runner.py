@@ -18,7 +18,7 @@ REDIS_WAIT = 0.5
 def check_redis_binary():
     try:
         return subprocess.check_call(['redis-server', '--version']) == 0
-    except:
+    except Exception:
         return False
 
 
