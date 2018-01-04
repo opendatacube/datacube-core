@@ -252,8 +252,8 @@ class TestS3IO(object):
 
         bs = s.list_buckets()
         assert 'arrayio' in bs
-        l = s.list_objects('arrayio')
-        assert '1234test' in l
+        listobjs = s.list_objects('arrayio')
+        assert '1234test' in listobjs
 
         b = s.get_bytes('arrayio', '1234test')
         assert bytes(data.data) == bytes(b)
@@ -265,8 +265,8 @@ class TestS3IO(object):
         s.delete_objects('arrayio', ['1234test'])
         assert not s.object_exists('arrayio', '1234test')
 
-        l = s.list_objects('arrayio')
-        assert '1234test' not in l
+        listobjs = s.list_objects('arrayio')
+        assert '1234test' not in listobjs
 
     def test_put_bytes_mpu(self, tmpdir):
         import datacube.drivers.s3.storage.s3aio as s3aio
@@ -280,8 +280,8 @@ class TestS3IO(object):
 
         bs = s.list_buckets()
         assert 'arrayio' in bs
-        l = s.list_objects('arrayio')
-        assert '1234test' in l
+        listobjs = s.list_objects('arrayio')
+        assert '1234test' in listobjs
 
         b = s.get_bytes('arrayio', '1234test')
         assert bytes(data.data) == bytes(b)
@@ -293,8 +293,8 @@ class TestS3IO(object):
         s.delete_objects('arrayio', ['1234test'])
         assert not s.object_exists('arrayio', '1234test')
 
-        l = s.list_objects('arrayio')
-        assert '1234test' not in l
+        listobjs = s.list_objects('arrayio')
+        assert '1234test' not in listobjs
 
     def test_put_bytes_mpu_mp(self, tmpdir):
         import datacube.drivers.s3.storage.s3aio as s3aio
@@ -308,8 +308,8 @@ class TestS3IO(object):
 
         bs = s.list_buckets()
         assert 'arrayio' in bs
-        l = s.list_objects('arrayio')
-        assert '1234test' in l
+        listobjs = s.list_objects('arrayio')
+        assert '1234test' in listobjs
 
         b = s.get_bytes('arrayio', '1234test')
         assert bytes(data.data) == bytes(b)
@@ -321,8 +321,8 @@ class TestS3IO(object):
         s.delete_objects('arrayio', ['1234test'])
         assert not s.object_exists('arrayio', '1234test')
 
-        l = s.list_objects('arrayio')
-        assert '1234test' not in l
+        listobjs = s.list_objects('arrayio')
+        assert '1234test' not in listobjs
 
     @pytest.mark.skipif(sys.platform != 'linux',
                         reason='delete_created_arrays() only works on linux')
@@ -346,8 +346,8 @@ class TestS3IO(object):
 
         bs = s.list_buckets()
         assert 'arrayio' in bs
-        l = s.list_objects('arrayio')
-        assert '1234test' in l
+        listobjs = s.list_objects('arrayio')
+        assert '1234test' in listobjs
 
         b = s.get_bytes('arrayio', '1234test')
         assert bytes(data.data) == bytes(b)
@@ -359,5 +359,5 @@ class TestS3IO(object):
         s.delete_objects('arrayio', ['1234test'])
         assert not s.object_exists('arrayio', '1234test')
 
-        l = s.list_objects('arrayio')
-        assert '1234test' not in l
+        listobjs = s.list_objects('arrayio')
+        assert '1234test' not in listobjs

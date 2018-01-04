@@ -1,7 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
-from datacube.api import API
 from mock import MagicMock
+
+from datacube.api import API
 
 
 class PickableMock(MagicMock):

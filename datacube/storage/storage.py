@@ -14,14 +14,12 @@ import logging
 import math
 from contextlib import contextmanager
 from pathlib import Path
-from abc import ABCMeta, abstractmethod
-from six import add_metaclass
 
 from datacube.compat import urlparse, urljoin, url_parse_module
 from datacube.config import OPTIONS
+from datacube.drivers.datasource import DataSource
 from datacube.model import Dataset
 from datacube.storage import netcdf_writer
-from datacube.drivers.datasource import DataSource
 from datacube.utils import clamp, datetime_to_seconds_since_1970, DatacubeException, ignore_exceptions_if
 from datacube.utils import geometry
 from datacube.utils import is_url, uri_to_local_path
@@ -81,32 +79,33 @@ else:
 
 
 def _calc_offsets_impl(off, scale, src_size, dst_size):
-    assert scale >= 1-1e-5
+    assert scale >= 1 - 1e-5
 
     if off >= 0:
         write_off = 0
     else:
-        write_off = math.ceil((-off-0.5)/scale)
-    read_off = round((write_off+0.5)*scale-0.5+off) - round(0.5*(scale-1.0))  # assuming read_size/write_size ~= scale
+        write_off = math.ceil((-off - 0.5) / scale)
+    read_off = round((write_off + 0.5) * scale - 0.5 + off) - round(
+        0.5 * (scale - 1.0))  # assuming read_size/write_size ~= scale
     if read_off >= src_size:
         return 0, 0, 0, 0
 
     write_end = dst_size
-    write_size = write_end-write_off
-    read_end = read_off+round(write_size*scale)
+    write_size = write_end - write_off
+    read_end = read_off + round(write_size * scale)
     if read_end > src_size:
         # +0.5 below is a fudge that will return last row in more situations, but will change the scale more
-        write_end = math.floor((src_size-off+0.5)/scale)
-        write_size = write_end-write_off
-        read_end = clamp(read_off+round(write_size*scale), read_off, src_size)
-    read_size = read_end-read_off
+        write_end = math.floor((src_size - off + 0.5) / scale)
+        write_size = write_end - write_off
+        read_end = clamp(read_off + round(write_size * scale), read_off, src_size)
+    read_size = read_end - read_off
 
     return int(read_off), int(write_off), int(read_size), int(write_size)
 
 
 def _calc_offsets2(off, scale, src_size, dst_size):
     if scale < 0:
-        r_off, write_off, read_size, write_size = _calc_offsets_impl(off + dst_size*scale, -scale, src_size, dst_size)
+        r_off, write_off, read_size, write_size = _calc_offsets_impl(off + dst_size * scale, -scale, src_size, dst_size)
         return r_off, dst_size - write_size - write_off, read_size, write_size
     else:
         return _calc_offsets_impl(off, scale, src_size, dst_size)
@@ -119,8 +118,8 @@ def _read_decimated(array_transform, src, dest_shape):
     if all(write_shape):
         window = ((read[0], read[0] + read_shape[0]), (read[1], read[1] + read_shape[1]))
         tmp = src.read(window=window, out_shape=write_shape)
-        scale = (read_shape[0]/write_shape[0] if sy_sx[0] > 0 else -read_shape[0]/write_shape[0],
-                 read_shape[1]/write_shape[1] if sy_sx[1] > 0 else -read_shape[1]/write_shape[1])
+        scale = (read_shape[0] / write_shape[0] if sy_sx[0] > 0 else -read_shape[0] / write_shape[0],
+                 read_shape[1] / write_shape[1] if sy_sx[1] > 0 else -read_shape[1] / write_shape[1])
         offset = (read[0] + (0 if sy_sx[0] > 0 else read_shape[0]),
                   read[1] + (0 if sy_sx[1] > 0 else read_shape[1]))
         transform = Affine(scale[1], 0, offset[1], 0, scale[0], offset[0])
@@ -166,12 +165,12 @@ def read_from_source(source, dest, dst_transform, dst_nodata, dst_projection, re
                           NUM_THREADS=OPTIONS['reproject_threads'])
 
 
-def reproject_and_fuse(sources, destination, dst_transform, dst_projection, dst_nodata,
+def reproject_and_fuse(datasources, destination, dst_transform, dst_projection, dst_nodata,
                        resampling='nearest', fuse_func=None, skip_broken_datasets=False):
     """
     Reproject and fuse `sources` into a 2D numpy array `destination`.
 
-    :param List[RasterioDataSource] sources: Data sources to open and read from
+    :param List[DataSource] datasources: Data sources to open and read from
     :param numpy.ndarray destination: ndarray of appropriate size to read data into
     :type resampling: str
     :type fuse_func: callable or None
@@ -191,16 +190,16 @@ def reproject_and_fuse(sources, destination, dst_transform, dst_projection, dst_
     fuse_func = fuse_func or copyto_fuser
 
     destination.fill(dst_nodata)
-    if len(sources) == 0:
+    if len(datasources) == 0:
         return destination
-    elif len(sources) == 1:
+    elif len(datasources) == 1:
         with ignore_exceptions_if(skip_broken_datasets):
-            read_from_source(sources[0], destination, dst_transform, dst_nodata, dst_projection, resampling)
+            read_from_source(datasources[0], destination, dst_transform, dst_nodata, dst_projection, resampling)
         return destination
     else:
-        # Muitiple sources, we need to fuse them together into a single array
+        # Multiple sources, we need to fuse them together into a single array
         buffer_ = numpy.empty(destination.shape, dtype=destination.dtype)
-        for source in sources:
+        for source in datasources:
             with ignore_exceptions_if(skip_broken_datasets):
                 read_from_source(source, buffer_, dst_transform, dst_nodata, dst_projection, resampling)
                 fuse_func(destination, buffer_)
@@ -214,6 +213,7 @@ class BandDataSource(object):
 
     :type source: rasterio.Band
     """
+
     def __init__(self, source, nodata=None):
         self.source = source
         if nodata is None:
@@ -320,13 +320,14 @@ class BandDataSource(object):
 
 
 class OverrideBandDataSource(object):
-    """Wrapper for a rasterio.Band object that overrides nodata, crs and transform
+    """Wrapper for a rasterio.Band object that overrides nodata, CRS and transform
 
     This is useful for files with malformed or missing properties.
 
 
     :type source: rasterio.Band
     """
+
     def __init__(self, source, nodata, crs, transform):
         self.source = source
         self.nodata = nodata
@@ -365,6 +366,7 @@ class RasterioDataSource(DataSource):
     Abstract class used by fuse_sources and :func:`read_from_source`
 
     """
+
     def __init__(self, filename, nodata):
         self.filename = filename
         self.nodata = nodata
@@ -448,6 +450,7 @@ def register_scheme(*schemes):
     url_parse_module.uses_netloc.extend(schemes)
     url_parse_module.uses_relative.extend(schemes)
     url_parse_module.uses_params.extend(schemes)
+
 
 # Not recognised by python by default. Doctests below will fail without it.
 register_scheme('s3')
@@ -582,7 +585,6 @@ class RasterDatasetSource(RasterioDataSource):
 def measurement_paths(dataset):
     '''Returns a dictionary mapping from band name to url pointing to band storage
     resource.
-
     :return: {str: str} Band Name => URL
     '''
     base = _choose_location(dataset)
