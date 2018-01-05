@@ -18,7 +18,9 @@ import numpy as np
 import pytest
 import rasterio
 import yaml
+from click.testing import CliRunner
 
+import datacube.scripts.cli_app
 import datacube.utils
 from datacube.drivers.postgres import _core
 from datacube.index.metadata_types import default_metadata_type_docs
@@ -342,7 +344,7 @@ def _make_geotiffs(tiffs_dir, day_offset):
             # Write data in "corners" (rounded down by 100, for a size of 100x100)
             data = np.zeros((GEOTIFF['shape']['y'], GEOTIFF['shape']['x']), dtype=np.int16)
             data[:] = np.arange(GEOTIFF['shape']['y'] * GEOTIFF['shape']['x']) \
-                        .reshape((GEOTIFF['shape']['y'], GEOTIFF['shape']['x'])) + 10 * band + day_offset
+                          .reshape((GEOTIFF['shape']['y'], GEOTIFF['shape']['x'])) + 10 * band + day_offset
             '''
             lr = (100 * int(GEOTIFF['shape']['y'] / 100.0),
                   100 * int(GEOTIFF['shape']['x'] / 100.0))
@@ -527,3 +529,22 @@ def shrink_storage_type(storage_type, variables, shrink_factors):
         storage['resolution'][var] = storage['resolution'][var] * shrink_factors[0]
         storage['chunking'][var] = storage['chunking'][var] / shrink_factors[1]
     return storage_type
+
+
+@pytest.fixture
+def clirunner(global_integration_cli_args, cli_method=datacube.scripts.cli_app.cli):
+    def _run_cli(opts, catch_exceptions=False, expect_success=True):
+        exe_opts = list(global_integration_cli_args)
+        exe_opts.extend(opts)
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli_method,
+            exe_opts,
+            catch_exceptions=catch_exceptions
+        )
+        if expect_success:
+            assert result.exit_code == 0, "Error for %r. output: %r" % (opts, result.output)
+        return result
+
+    return _run_cli

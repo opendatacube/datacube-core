@@ -512,5 +512,5 @@ def test_update_metadata_type_doc(postgres_db, index, ls5_telem_type):
     index.metadata_types.update_document(type_doc)
 
     assert ls5_telem_type.name == 'ls5_telem_test'
-    assert _object_exists(db, "dix_ls5_telem_test_test_indexed")
-    assert not _object_exists(db, "dix_ls5_telem_test_test_not_indexed")
+    assert _object_exists(postgres_db, "dix_ls5_telem_test_test_indexed")
+    assert not _object_exists(postgres_db, "dix_ls5_telem_test_test_not_indexed")
