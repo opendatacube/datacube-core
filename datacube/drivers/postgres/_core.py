@@ -207,6 +207,7 @@ def has_schema(engine, connection):
 
 
 def drop_db(connection):
+    METADATA.drop_all(connection)
     connection.execute('drop schema if exists %s cascade;' % SCHEMA_NAME)
 
 
