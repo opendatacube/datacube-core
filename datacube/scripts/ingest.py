@@ -26,44 +26,15 @@ _LOG = logging.getLogger('agdc-ingest')
 FUSER_KEY = 'fuse_data'
 
 
-def remove_duplicates(cells_in, cells_out):
-    """Remove tiles in `cells_in` which belong to `cells_out`.
-
-    Tiles are compared based on their signature: `(extent,
-    timestamp)`.
-    """
-    if not cells_out:
-        return
-
-    # Compute signatures of cells_out
-    sigs_out = {(extent, timestamp)
-                for extent, cell in cells_out.items()
-                for timestamp in cell.sources.coords['time'].values}
-    # Index cells_in accordingly
-    for extent, cell in cells_in.items():
-        tiles = cell.sources
-        to_add = [timestamp
-                  for timestamp in tiles.coords['time'].values
-                  if not (extent, timestamp) in sigs_out]
-        cell.sources = tiles.loc[to_add]
-
-
-def find_diff(input_type, output_type, index, time_size, **query):
+def find_diff(input_type, output_type, index, **query):
     from datacube.api.grid_workflow import GridWorkflow
     workflow = GridWorkflow(index, output_type.grid_spec)
 
-    cells_in = workflow.list_cells(product=input_type.name, **query)
-    cells_out = workflow.list_cells(product=output_type.name, **query)
+    tiles_in = workflow.list_tiles(product=input_type.name, **query)
+    tiles_out = workflow.list_tiles(product=output_type.name, **query)
 
-    remove_duplicates(cells_in, cells_out)
-    tasks = [{'tile': cell, 'tile_index': extent} for extent, cell in cells_in.items()]
-    new_tasks = []
-    for task in tasks:
-        tiles = task['tile'].split('time', time_size)
-        for t in tiles:
-            new_tasks.append({'tile': t[1], 'tile_index': task['tile_index']})
-
-    return new_tasks
+    tasks = [{'tile': tile, 'tile_index': key} for key, tile in tiles_in.items() if key not in tiles_out]
+    return tasks
 
 
 def morph_dataset_type(source_type, config, index):
@@ -75,9 +46,9 @@ def morph_dataset_type(source_type, config, index):
     output_type.definition['name'] = config['output_type']
     output_type.definition['managed'] = True
     output_type.definition['description'] = config['description']
-    output_type.definition['storage'] = config['storage']
     output_type.definition['storage'] = {k: v for (k, v) in config['storage'].items()
                                          if k in ('crs', 'driver', 'tile_size', 'resolution', 'origin')}
+
     output_type.metadata_doc['format'] = {'name': 'NetCDF'}  # TODO: write plugin dependent parameter,
 
     if 'metadata_type' in config:
@@ -106,8 +77,6 @@ def get_variable_params(config):
                                                                               'contiguous',
                                                                               'attrs'}}
         variable_params[varname]['chunksizes'] = chunking
-        if 'container' in config:
-            variable_params[varname]['container'] = config['container']
 
     return variable_params
 
@@ -204,11 +173,7 @@ def create_task_list(index, output_type, year, source_type, config):
         query['x'] = Range(bounds['left'], bounds['right'])
         query['y'] = Range(bounds['bottom'], bounds['top'])
 
-    time_size = 1
-    if 'time' in config['storage']['tile_size']:
-        time_size = config['storage']['tile_size']['time']
-
-    tasks = find_diff(source_type, output_type, index, time_size, **query)
+    tasks = find_diff(source_type, output_type, index, **query)
     _LOG.info('%s tasks discovered', len(tasks))
 
     def check_valid(tile, tile_index):
