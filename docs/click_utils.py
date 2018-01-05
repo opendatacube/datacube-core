@@ -1,7 +1,7 @@
 import pkg_resources
 from docutils.nodes import literal_block, section, title, make_id
 from sphinx.domains import Domain
-from sphinx.util.compat import Directive
+from docutils.parsers.rst import Directive
 import importlib
 
 import click
