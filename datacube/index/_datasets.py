@@ -1008,6 +1008,7 @@ class DatasetResource(object):
     def archive_location(self, id_, uri):
         """
         Archive a location of the dataset if it exists.
+
         :param typing.Union[UUID, str] id_: dataset id
         :param str uri: fully qualified uri
         :return bool: location was able to be archived
@@ -1023,6 +1024,7 @@ class DatasetResource(object):
     def restore_location(self, id_, uri):
         """
         Un-archive a location of the dataset if it exists.
+
         :param typing.Union[UUID, str] id_: dataset id
         :param str uri: fully qualified uri
         :return bool: location was able to be restored

@@ -65,7 +65,7 @@ For Landsat collection 1 level 1 product:
 
 
 #. An another example for USGS landsat surface reflectance :download:`USGS Landsat LEDAPS
-<../../utils/USGS_precollection_oldscripts/ls_usgs_prepare.py>`
+<../../utils/USGS_precollection_oldscripts/lsusgsprepare.py>`
 
 Preparing USGS Landsat Surface Reflectance - LEDAPS
 ---------------------------------------------------
