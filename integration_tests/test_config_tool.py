@@ -6,8 +6,8 @@ from __future__ import absolute_import, print_function
 
 import logging
 import random
-from pathlib import Path
 import re
+from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
@@ -51,7 +51,7 @@ def _dataset_type_count(db):
         return len(list(connection.get_all_dataset_types()))
 
 
-def test_add_example_dataset_types(global_integration_cli_args, postgres_db, default_metadata_type):
+def test_add_example_dataset_types(clirunner, postgres_db, default_metadata_type):
     """
     Add example mapping docs, to ensure they're valid and up-to-date.
 
@@ -65,14 +65,9 @@ def test_add_example_dataset_types(global_integration_cli_args, postgres_db, def
     print('{} mappings'.format(existing_mappings))
     for mapping_path in EXAMPLE_DATASET_TYPE_DOCS:
         print('Adding mapping {}'.format(mapping_path))
-        result = _run_cli(
-            global_integration_cli_args,
-            datacube.scripts.cli_app.cli,
-            [
-                '-v', 'product', 'add',
-                str(mapping_path)
-            ]
-        )
+
+        result = clirunner(['-v', 'product', 'add', str(mapping_path)])
+
         assert result.exit_code == 0, "Error for %r. output: %r" % (str(mapping_path), result.output)
         mappings_count = _dataset_type_count(postgres_db)
         assert mappings_count > existing_mappings, "Mapping document was not added: " + str(mapping_path)
@@ -102,7 +97,7 @@ def test_error_returned_on_invalid(global_integration_cli_args, postgres_db):
         assert _dataset_type_count(postgres_db) == 0, "Invalid document was added to DB"
 
 
-def test_config_check(global_integration_cli_args, local_config):
+def test_config_check(clirunner, local_config):
     """
     :type global_integration_cli_args: tuple[str]
     :type local_config: datacube.config.LocalConfig
@@ -110,24 +105,22 @@ def test_config_check(global_integration_cli_args, local_config):
 
     # This is not a very thorough check, we just check to see that
     # it prints something vaguely related and does not error-out.
-    result = _run_cli(
-        global_integration_cli_args,
-        datacube.scripts.cli_app.cli,
+    result = clirunner(
         [
             '-v', 'system', 'check'
         ]
     )
     assert result.exit_code == 0
 
-    host_regex = re.compile('.*Host:\s+{}.*'.format(local_config.db_hostname),
+    host_regex = re.compile('.*Host:\s+{}.*'.format(local_config['db_hostname']),
                             flags=re.DOTALL)  # Match across newlines
-    user_regex = re.compile('.*User:\s+{}.*'.format(local_config.db_username),
+    user_regex = re.compile('.*User:\s+{}.*'.format(local_config['db_username']),
                             flags=re.DOTALL)
     assert host_regex.match(result.output)
     assert user_regex.match(result.output)
 
 
-def test_list_users_does_not_fail(global_integration_cli_args, local_config):
+def test_list_users_does_not_fail(clirunner, local_config):
     """
     :type global_integration_cli_args: tuple[str]
     :type local_config: datacube.config.LocalConfig
@@ -135,9 +128,7 @@ def test_list_users_does_not_fail(global_integration_cli_args, local_config):
     # We don't want to make assumptions about available users during test runs.
     # (They are host-global, not specific to the database)
     # So we're just checking that it doesn't fail (and the SQL etc is well formed)
-    result = _run_cli(
-        global_integration_cli_args,
-        datacube.scripts.cli_app.cli,
+    result = clirunner(
         [
             '-v', 'user', 'list'
         ]
@@ -145,11 +136,9 @@ def test_list_users_does_not_fail(global_integration_cli_args, local_config):
     assert result.exit_code == 0
 
 
-def test_db_init_noop(global_integration_cli_args, local_config, ls5_telem_type):
+def test_db_init_noop(clirunner, local_config, ls5_telem_type):
     # Run on an existing database.
-    result = _run_cli(
-        global_integration_cli_args,
-        datacube.scripts.cli_app.cli,
+    result = clirunner(
         [
             '-vv', 'system', 'init'
         ]
@@ -160,14 +149,12 @@ def test_db_init_noop(global_integration_cli_args, local_config, ls5_telem_type)
     assert 'Dropping index: dix_{}'.format(ls5_telem_type.name) not in result.output
 
 
-def test_db_init_rebuild(global_integration_cli_args, local_config, ls5_telem_type):
+def test_db_init_rebuild(clirunner, local_config, ls5_telem_type):
     # We set the field creation logging to debug, as we assert its logging output below.
     _dynamic._LOG.setLevel(logging.DEBUG)
 
     # Run on an existing database.
-    result = _run_cli(
-        global_integration_cli_args,
-        datacube.scripts.cli_app.cli,
+    result = clirunner(
         [
             '-vv', 'system', 'init', '--rebuild'
         ]
@@ -185,15 +172,14 @@ def test_db_init_rebuild(global_integration_cli_args, local_config, ls5_telem_ty
     ) in result.output
 
 
-def test_db_init(global_integration_cli_args, postgres_db, local_config):
+def test_db_init(clirunner, postgres_db, local_config):
     with postgres_db.connect() as connection:
         drop_db(connection._connection)
 
         assert not has_schema(postgres_db._engine, connection._connection)
 
     # Run on an empty database.
-    cli_method = datacube.scripts.cli_app.cli
-    result = _run_cli(global_integration_cli_args, cli_method, [
+    result = clirunner([
         '-v', 'system', 'init'
     ])
     assert result.exit_code == 0
@@ -209,7 +195,7 @@ def test_db_init(global_integration_cli_args, postgres_db, local_config):
     # Test that names are escaped
     ('test_user_"invalid+_chars_{n}', None),
     ('test_user_invalid_desc_{n}', 'Invalid "\' chars in description')])
-def example_user(global_integration_cli_args, postgres_db, request):
+def example_user(clirunner, postgres_db, request):
     username, description = request.param
 
     username = username.format(n=random.randint(111111, 999999))
@@ -221,7 +207,7 @@ def example_user(global_integration_cli_args, postgres_db, request):
             connection.drop_users([username])
 
     # No user exists.
-    assert_no_user(global_integration_cli_args, username)
+    assert_no_user(clirunner, username)
 
     yield username, description
 
@@ -237,6 +223,7 @@ def test_multiple_environment_config(tmpdir):
     config_path.write("""
 [DEFAULT]
 db_username: test_user
+index_driver: default
 
 [default]
 db_hostname: db.opendatacube.test
@@ -273,7 +260,7 @@ db_hostname: alt-db.opendatacube.test
             pass
 
 
-def test_user_creation(global_integration_cli_args, example_user):
+def test_user_creation(clirunner, example_user):
     """
     Add a user, grant them, delete them.
 
@@ -288,38 +275,30 @@ def test_user_creation(global_integration_cli_args, example_user):
     args = ['-v', 'user', 'create', 'ingest', username]
     if user_description:
         args.extend(['--description', user_description])
-    _run_cli(
-        global_integration_cli_args,
-        datacube.scripts.cli_app.cli,
+    clirunner(
         args
     )
-    assert_user_with_role(global_integration_cli_args, 'ingest', username)
+    assert_user_with_role(clirunner, 'ingest', username)
 
     # Grant them 'manage' permission
-    _run_cli(
-        global_integration_cli_args,
-        datacube.scripts.cli_app.cli,
+    clirunner(
         [
             '-v', 'user', 'grant', 'manage', username
         ]
     )
-    assert_user_with_role(global_integration_cli_args, 'manage', username)
+    assert_user_with_role(clirunner, 'manage', username)
 
     # Delete them
-    _run_cli(
-        global_integration_cli_args,
-        datacube.scripts.cli_app.cli,
+    clirunner(
         [
             '-v', 'user', 'delete', username
         ]
     )
-    assert_no_user(global_integration_cli_args, username)
+    assert_no_user(clirunner, username)
 
 
-def assert_user_with_role(global_integration_cli_args, role, user_name):
-    result = _run_cli(
-        global_integration_cli_args,
-        datacube.scripts.cli_app.cli,
+def assert_user_with_role(clirunner, role, user_name):
+    result = clirunner(
         [
             '-v', 'user', 'list'
         ]
@@ -327,10 +306,8 @@ def assert_user_with_role(global_integration_cli_args, role, user_name):
     assert '{}\t{}'.format(role, user_name) in result.output
 
 
-def assert_no_user(global_integration_cli_args, username):
-    result = _run_cli(
-        global_integration_cli_args,
-        datacube.scripts.cli_app.cli,
+def assert_no_user(clirunner, username):
+    result = clirunner(
         [
             '-v', 'user', 'list'
         ]

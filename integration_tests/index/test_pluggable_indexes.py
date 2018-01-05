@@ -59,16 +59,14 @@ def create_sample_config():
     parser.set('test_env', 'index_driver', 'S3BlockIndex')
 
 
-def test_system_init(uninitialised_postgres_db):
-    runner = CliRunner()
-
-    from datacube.scripts.system import cli as system_cli
-
-    result = runner.invoke(system_cli, ['init'])
+def test_system_init(uninitialised_postgres_db, clirunner):
+    result = clirunner(['system', 'init'], catch_exceptions=False)
 
     # Question: Should the Index be able to be specified on the command line, or should it come from the config file?
 
-    assert result.exit_code == 0
+    if result.exit_code != 0:
+        print(result.output)
+        assert False
 
 
 def connect_to_specified_index(uninitialised_postgres_db, tmpdir):

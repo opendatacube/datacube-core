@@ -57,8 +57,8 @@ def create_user(config, index, role, user, description):
     index.users.create_user(user, password, role, description=description)
 
     click.echo('{host}:{port}:*:{username}:{password}'.format(
-        host=config.db_hostname or 'localhost',
-        port=config.db_port,
+        host=config.get('db_hostname', None) or 'localhost',
+        port=config.get('db_port', None),
         username=user,
         password=password
     ))
