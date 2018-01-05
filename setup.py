@@ -4,7 +4,7 @@ import versioneer
 from setuptools import setup, find_packages
 
 tests_require = [
-    'pytest', 'pytest-cov', 'mock', 'pep8', 'pylint', 'hypothesis', 'compliance-checker', 'objgraph'
+    'pytest', 'pytest-cov', 'mock', 'pep8', 'pylint', 'hypothesis', 'compliance-checker', 'objgraph', 'pytest-timeout'
 ]
 
 extras_require = {

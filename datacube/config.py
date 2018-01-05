@@ -70,7 +70,7 @@ class LocalConfig(object):
                 raise ValueError('No config section found for environment %r' % (env,))
         else:
             # If an env hasn't been specifically selected, we can fall back to an env var or a default
-            fallbacks = [os.environ.get(ENVIRONMENT_VARNAME), DEFAULT_ENV, 'datacube']
+            fallbacks = [os.environ.get('DATACUBE_ENVIRONMENT'), DEFAULT_ENV, 'datacube']
             for fallback_env in fallbacks:
                 if config.has_section(fallback_env):
                     self._env = fallback_env

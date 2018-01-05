@@ -64,13 +64,6 @@ class PostgresDb(object):
         # Use static methods PostgresDb.create() or PostgresDb.from_config()
         self._engine = engine
 
-    def __getstate__(self):
-        _LOG.warning("Serializing PostgresDb engine %s", self.url)
-        return {'url': self.url}
-
-    def __setstate__(self, state):
-        self.__init__(self._create_engine(state['url']))
-
     @classmethod
     def from_config(cls, config, application_name=None, validate_connection=True):
         app_name = cls._expand_app_name(application_name)
@@ -83,7 +76,7 @@ class PostgresDb(object):
             config.get('db_port', DEFAULT_DB_PORT),
             application_name=app_name,
             validate=validate_connection,
-            pool_timeout=config.get('db_connection_timeout', None)
+            pool_timeout=int(config.get('db_connection_timeout', 60))
         )
 
     @classmethod

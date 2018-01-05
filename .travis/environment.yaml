@@ -48,6 +48,7 @@ dependencies:
   - pytest-cov # testing
   - pytest-logging
   - pytest-faulthandler
+  - pytest-timeout
   - SharedArray
   - yamllint # testing
 
