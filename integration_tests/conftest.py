@@ -21,6 +21,7 @@ import yaml
 
 import datacube.utils
 from datacube.drivers.postgres import _core
+from datacube.index.metadata_types import default_metadata_type_docs
 from integration_tests.utils import alter_log_level
 
 try:
@@ -159,17 +160,17 @@ def postgres_db(local_config, request):
 
         # Drop the schema
         with db.connect() as connection:
-            _core.drop_db(connection._connection)
+            _core.drop_db(connection)
         remove_dynamic_indexes()
 
         # Recreate tables so our tests have a clean db.
         _core.ensure_db(db._engine)
 
         with db.connect() as c:
-            c.execute('alter database %s set timezone = %r' % (local_config.db_database, str(timezone)))
+            c.execute('alter database %s set timezone = %r' % (local_config['db_database'], str(timezone)))
 
     c = db._engine.connect()
-    c.execute('alter database %s set timezone = %r' % (local_config.db_database, str(timezone)))
+    c.execute('alter database %s set timezone = %r' % (local_config['db_database'], str(timezone)))
     c.close()
 
     yield db
