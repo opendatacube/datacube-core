@@ -117,34 +117,43 @@ class S3WriterDriver(object):
             idx = lambda x: x.stop - 1
         return [coords[dim].values[idx(chunk_dim)] for dim, chunk_dim in zip(dims, chunk)]
 
-    def write_dataset_to_storage(self, dataset, *args, **kargs):
+    def write_dataset_to_storage(self, dataset, filename,
+                                 global_attributes=None,
+                                 variable_params=None,
+                                 **kwargs):
         """See :meth:`datacube.drivers.driver.write_dataset_to_storage`
 
-        :param args: At least 3 arguments are required: filename,
-          global_attributes and variable_params.
-        :return: Dictionary of metadata consigning the s3 storage
-          information. This is required for indexing in particular.
+        :param `xarray.Dataset` dataset:
+        :param filename: Output filename
+        :param global_attributes: Global file attributes. dict of attr_name: attr_value
+        :param variable_params: dict of variable_name: {param_name: param_value, [...]}
+
+        :return: Dictionary of metadata consigning the s3 storage information.
+        This is required for indexing in particular.
+
         """
-        if len(args) < 3:
+        # TODO: handle missing variable params
+        if variable_params is None:
             raise DatacubeException('Missing configuration parameters, cannot write to storage.')
-        filename = Path(args[0])
-        global_attributes = args[1] or {}
-        variable_params = args[2] or {}
+        filename = Path(filename)
         if not dataset.data_vars.keys():
             raise DatacubeException('Cannot save empty dataset to storage.')
 
         if not hasattr(dataset, 'crs'):
             raise DatacubeException('Dataset does not contain CRS, cannot write to storage.')
 
+        # TODO: Should write all data variables to disk, not just configured variables
         outputs = {}
         for band, param in variable_params.items():
             output = {}
+            # TODO: Should not assume presence of any kind of parameter
             if 'chunksizes' not in param:
                 raise DatacubeException('Missing `chunksizes` parameter, cannot write to storage.')
             output['chunk_size'] = self._get_chunksizes(param['chunksizes'])
             if 'container' not in param:
                 raise DatacubeException('Missing `container` parameter, cannot write to storage.')
-            output['bucket'] = param['container']
+            # TODO: Should not assume presence of any kind of parameter
+            output['bucket'] = param['container'] # TODO: replace with global config of some sort
             self.storage.filepath = output['bucket']  # For the s3_test driver only
             output['base_name'] = '%s_%s' % (filename.stem, band)
             key_maps = self.storage.put_array_in_s3(dataset[band].values,
