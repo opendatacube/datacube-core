@@ -1,0 +1,111 @@
+@startuml
+'left to right direction
+
+interface rasterio.Band
+
+package datacube.drivers {
+    abstract DataSource #PaleGreen {
+        Responsible for reading data for a single measurement for a single Dataset
+        @contextmanager open()
+        get_transform()
+        get_bandnumber()
+    }
+    abstract Driver #BlanchedAlmond {
+        name
+        format
+        uri_scheme
+        index **Needs to be removed**
+        requirements_satisfied()
+        write_dataset_to_storage()
+        as_uri()
+        _init_index()
+        get_datasource()
+    }
+}
+
+package datacube.drivers.s3 {
+    class S3Source {
+        Similar API to rasterio.Band
+
+        read(indexes, window, write_shape)
+    }
+    class S3DS {
+        __init__(parent)
+        read(indexes, window, out_shape)
+
+    }
+    class S3DataSource #PaleGreen {
+        __init__(dataset, band_name, storage)
+        @contextmanager open() : OverrideBandDataSource
+
+    }
+    class S3Driver #BlanchedAlmond {
+        get_datasource(dataset, measurement_id) : S3DataSource
+
+    }
+}
+
+rasterio.Band <|.. S3Source 
+
+package datacube.drivers.netcdf {
+    class NetCDFDriver #BlanchedAlmond {
+
+    }
+    Driver <|-- NetCDFDriver
+}
+
+package datacube.storage.storage {
+
+    class BandDataSource #Cyan {
+        Reads data from somewhere implementing the
+        rasterio.Band Interface
+        ..
+        source : [rasterio.Band | S3Source]
+
+        read()
+        reproject()
+    }
+    class OverrideBandDataSource #Cyan {
+        Allows reading data for a band, but uses the 
+        CRS/Transform/NoData values stored in the
+        Dataset and retrieved from the index
+        ..
+        source : [rasterio.Band | S3Source]
+
+        read(window, out_shape)
+        reproject()
+
+    }
+
+    abstract RasterioDataSource #PaleGreen {
+        Uses the rasterio library to read, and read/reproject
+        data
+
+    }
+    DataSource <|-- RasterioDataSource
+    class RasterFileDataSource #PaleGreen {
+        Only used for testing!
+        ..
+        __init__(filename, bandnumber, ...)
+
+    }
+    RasterioDataSource <|-- RasterFileDataSource
+    class RasterDatasetDataSource #PaleGreen {
+        __init__(dataset, measurement_id)
+        @contextmanager open() : BandDataSource
+
+    }
+    RasterioDataSource <|-- RasterDatasetDataSource
+}
+S3Source *-- S3DS
+DataSource <|-- S3DataSource
+S3DataSource *-- S3Source
+Driver <|-- S3Driver
+
+OverrideBandDataSource --o S3DataSource
+OverrideBandDataSource --o "0..1" RasterioDataSource
+BandDataSource --o "0..1" RasterioDataSource
+
+RasterDatasetDataSource --o NetCDFDriver
+S3DataSource --o S3Driver
+@enduml
