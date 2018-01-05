@@ -23,4 +23,4 @@ dependencies:
 - matplotlib # pixel drill app
 - pathlib
 - pip:
-    - sphinx-plantuml
+    - sphinxcontrib-plantuml
