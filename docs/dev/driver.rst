@@ -67,8 +67,6 @@ S3 Array IO
    :toctree: generate/
 
     S3AIO.__init__
-    S3AIO.bytes_to_array
-    S3AIO.copy_bytes_to_shared_array
     S3AIO.to_1d
     S3AIO.to_nd
     S3AIO.get_point
