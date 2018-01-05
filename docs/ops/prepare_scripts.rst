@@ -1,6 +1,6 @@
-.. _prepare-scripts:
-
 .. highlight:: bash
+
+.. _prepare-scripts:
 
 Dataset Preparation Scripts
 ===========================

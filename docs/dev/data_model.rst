@@ -33,21 +33,18 @@ Product
 Reading Data
 ------------
 
-.. figure:: /diagrams/current_data_read_process.svg
-
-   Current Data Read Process
+.. uml:: /diagrams/current_data_read_process.plantuml
+   :caption: Current Data Read Process
 
 
 Data Load Classes
 -----------------
 
-.. figure:: /diagrams/storage_drivers_old.svg
-
-   Classes currently implementing the DataCube Data Read Functionality
+.. uml:: /diagrams/storage_drivers_old.plantuml
+   :caption: Classes currently implementing the DataCube Data Read Functionality
 
 How the Index Works
 -------------------
 
-.. figure:: /diagrams/index_sequence.svg
-
-   Sequence of steps when creating an index
+.. uml:: /diagrams/index_sequence.plantuml
+   :caption: Sequence of steps when creating an index
