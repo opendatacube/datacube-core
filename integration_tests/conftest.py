@@ -24,7 +24,6 @@ import datacube.scripts.cli_app
 import datacube.utils
 from datacube.drivers.postgres import _core
 from datacube.index.metadata_types import default_metadata_type_docs
-from integration_tests.utils import alter_log_level
 
 try:
     from yaml import CSafeLoader as SafeLoader
@@ -35,6 +34,9 @@ from datacube.api import API
 from datacube.config import LocalConfig
 from datacube.index.index import Index
 from datacube.drivers.postgres import PostgresDb
+import logging
+
+LOG = logging.getLogger(__name__)
 
 # On Windows, symlinks are not supported in Python 2 and require
 # specific privileges otherwise, so we copy instead of linking
@@ -147,36 +149,48 @@ def local_config(integration_config_paths):
 
 
 @pytest.fixture(params=["US/Pacific", "UTC", ])
-def postgres_db(local_config, request):
+def uninitialised_postgres_db(local_config, request):
+    """
+    Return a connection to an empty PostgreSQL database
+    """
+    timezone = request.param
+
+    db = PostgresDb.from_config(local_config,
+                                application_name='test-run',
+                                validate_connection=False)
+
+    # Drop tables so our tests have a clean db.
+    # with db.begin() as c:  # Creates a new PostgresDbAPI, by passing a new connection to it
+    _core.drop_db(db._engine)
+    db._engine.execute('alter database %s set timezone = %r' % (local_config['db_database'], timezone))
+
+    # We need to run this as well, I think because SQLAlchemy grabs them into it's MetaData,
+    # and attempts to recreate them. WTF TODO FIX
+    remove_dynamic_indexes()
+
+    yield db
+    # with db.begin() as c:  # Drop SCHEMA
+    _core.drop_db(db._engine)
+    db.close()
+
+
+@pytest.fixture
+def postgres_db(uninitialised_postgres_db):
     """
     Return a connection to an PostgreSQL database, initialised with the default schema
     and tables.
     """
-    timezone = request.param
+    # Recreate tables so our tests have a clean db.
+    LOG.info('_core.ensure_db')
+    try:
+        _core.ensure_db(uninitialised_postgres_db._engine)
+    except Exception as e:
+        print(e)
+        raise
 
-    # Disable informational messages since we're doing this on every test run.
-    with alter_log_level(_core._LOG):
-        db = PostgresDb.from_config(local_config,
-                                    application_name='test-run',
-                                    validate_connection=False)
+    yield uninitialised_postgres_db
 
-        # Drop the schema
-        with db.connect() as connection:
-            _core.drop_db(connection)
-        remove_dynamic_indexes()
-
-        # Recreate tables so our tests have a clean db.
-        _core.ensure_db(db._engine)
-
-        with db.connect() as c:
-            c.execute('alter database %s set timezone = %r' % (local_config['db_database'], str(timezone)))
-
-    c = db._engine.connect()
-    c.execute('alter database %s set timezone = %r' % (local_config['db_database'], str(timezone)))
-    c.close()
-
-    yield db
-    db.close()
+    uninitialised_postgres_db.close()
 
 
 def remove_dynamic_indexes():

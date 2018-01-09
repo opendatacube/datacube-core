@@ -221,8 +221,6 @@ def test_index_dataset_with_sources(index, default_metadata_type):
     child = Dataset(type_, child_doc, local_uri=None, sources={'source': parent})
 
     with pytest.raises(MissingRecordError):
-        # This seems odd. The sources_policy doesn't actually cause the sources to be skipped!
-        # The aren't added individually at the start of the `add`. But are _try_added later on.
         index.datasets.add(child, sources_policy='skip')
 
     index.datasets.add(child, sources_policy='ensure')
