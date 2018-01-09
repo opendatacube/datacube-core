@@ -1,5 +1,8 @@
 from __future__ import absolute_import, print_function
 from pkg_resources import iter_entry_points
+import logging
+
+_LOG = logging.getLogger(__name__)
 
 
 def load_drivers(group):
@@ -15,17 +18,17 @@ def load_drivers(group):
         try:
             driver_init = ep.resolve()
         except:
-            print('WARNING: failed to resolve {}'.format(ep.name))  # TODO: use proper logger
+            _LOG.warning('Failed to resolve driver %s::%s', group, ep.name)
             return None
 
         try:
             driver = driver_init()
         except:
-            print('WARNING: exception during driver init, {}'.format(ep.name))  # TODO: use proper logger
+            _LOG.warning('Exception during driver init, driver name: %s::%s', group, ep.name)
             return None
 
         if driver is None:
-            print('WARNING: driver init returned None, {}'.format(ep.name))  # TODO: use proper logger
+            _LOG.warning('Driver init returned None, driver name: %s::%s', group, ep.name)
 
         return driver
 
