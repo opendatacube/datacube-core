@@ -24,6 +24,7 @@ SQL_NAMING_CONVENTIONS = {
     # tix: test-index, created by hand for testing, particularly in dev.
 }
 SCHEMA_NAME = 'agdc'
+
 METADATA = MetaData(naming_convention=SQL_NAMING_CONVENTIONS, schema=SCHEMA_NAME)
 
 _LOG = logging.getLogger(__name__)
@@ -207,7 +208,6 @@ def has_schema(engine, connection):
 
 
 def drop_db(connection):
-    METADATA.drop_all(connection)
     connection.execute('drop schema if exists %s cascade;' % SCHEMA_NAME)
 
 

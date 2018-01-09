@@ -97,7 +97,7 @@ def test_error_returned_on_invalid(global_integration_cli_args, postgres_db):
         assert _dataset_type_count(postgres_db) == 0, "Invalid document was added to DB"
 
 
-def test_config_check(clirunner, local_config):
+def test_config_check(clirunner, postgres_db, local_config):
     """
     :type global_integration_cli_args: tuple[str]
     :type local_config: datacube.config.LocalConfig
@@ -120,7 +120,7 @@ def test_config_check(clirunner, local_config):
     assert user_regex.match(result.output)
 
 
-def test_list_users_does_not_fail(clirunner, local_config):
+def test_list_users_does_not_fail(clirunner, local_config, postgres_db):
     """
     :type global_integration_cli_args: tuple[str]
     :type local_config: datacube.config.LocalConfig

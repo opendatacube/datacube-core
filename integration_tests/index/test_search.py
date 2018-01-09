@@ -1025,7 +1025,7 @@ def assume_utc(d):
         return d.astimezone(tz.tzutc())
 
 
-def test_cli_missing_info(global_integration_cli_args):
+def test_cli_missing_info(global_integration_cli_args, postgres_db):
     opts = list(global_integration_cli_args)
     id_ = str(uuid.uuid4())
     opts.extend(

@@ -232,7 +232,8 @@ class PostgresDb(object):
             except Exception:  # pylint: disable=broad-except
                 connection.execute(text('ROLLBACK'))
                 raise
-            connection.close()
+            finally:
+                connection.close()
 
     def give_me_a_flippin_connection(self):
         return self._engine.connect()
