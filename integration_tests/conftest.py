@@ -5,10 +5,8 @@ Common methods for index integration tests.
 from __future__ import absolute_import
 
 import itertools
-import logging
 import os
 import shutil
-from collections import namedtuple
 from copy import copy, deepcopy
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -338,12 +336,14 @@ def _make_tiffs_and_yamls(tiffs_dir, config, day_offset):
 def _make_geotiffs(tiffs_dir, day_offset):
     """Generate custom geotiff files, one per band."""
     tiffs = {}
+    width = GEOTIFF['shape']['x']
+    height = GEOTIFF['shape']['y']
     metadata = {'count': 1,
                 'crs': GEOTIFF['crs'],
                 'driver': 'GTiff',
                 'dtype': 'int16',
-                'width': GEOTIFF['shape']['x'],
-                'height': GEOTIFF['shape']['y'],
+                'width': width,
+                'height': height,
                 'nodata': -999.0,
                 'transform': [GEOTIFF['pixel_size']['x'],
                               0.0,
@@ -356,9 +356,8 @@ def _make_geotiffs(tiffs_dir, day_offset):
         path = str(tiffs_dir.join('band%02d_time%02d.tif' % ((band + 1), day_offset)))
         with rasterio.open(path, 'w', **metadata) as dst:
             # Write data in "corners" (rounded down by 100, for a size of 100x100)
-            data = np.zeros((GEOTIFF['shape']['y'], GEOTIFF['shape']['x']), dtype=np.int16)
-            data[:] = np.arange(GEOTIFF['shape']['y'] * GEOTIFF['shape']['x']) \
-                          .reshape((GEOTIFF['shape']['y'], GEOTIFF['shape']['x'])) + 10 * band + day_offset
+            data = np.zeros((height, width), dtype=np.int16)
+            data[:] = np.arange(height * width).reshape((height, width)) + 10 * band + day_offset
             '''
             lr = (100 * int(GEOTIFF['shape']['y'] / 100.0),
                   100 * int(GEOTIFF['shape']['x'] / 100.0))
