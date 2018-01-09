@@ -104,7 +104,11 @@ class LocalConfig(object):
         if fallback == _UNSET:
             return self._config.get(self._env, item)
         else:
-            return self._config.get(self._env, item, fallback=fallback)
+            if self._config.has_option(self._env, item):
+                # TODO: simplify when dropping python 2 support
+                return self._config.get(self._env, item)
+            else:
+                return fallback
 
     def __getitem__(self, item):
         return self._config.get(self._env, item, fallback=None)

@@ -82,7 +82,7 @@ def test_using_configparser(tmpdir):
 
     import configparser
     config = configparser.ConfigParser()
-    config.read(sample_config)
+    config.read(str(sample_config))
 
 
 def test_empty_configfile(tmpdir):
