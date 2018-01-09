@@ -111,13 +111,13 @@ class LocalConfig(object):
                 return fallback
 
     def __getitem__(self, item):
-        return self._config.get(self._env, item, fallback=None)
+        return self.get(item, fallback=None)
 
     def __str__(self):
         return "LocalConfig<loaded_from={}, environment={!r}, config={}>".format(
             self.files_loaded or 'defaults',
             self._env,
-            dict(self._config[self.env]),
+            dict(self._config[self._env]),
         )
 
     def __repr__(self):
