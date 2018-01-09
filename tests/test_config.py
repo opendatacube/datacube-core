@@ -4,9 +4,9 @@ Module
 """
 from __future__ import absolute_import
 
+import configparser
 from textwrap import dedent
 
-from datacube import compat
 from datacube.config import LocalConfig
 from tests import util
 
@@ -80,7 +80,6 @@ def test_using_configparser(tmpdir):
     sample_config = tmpdir.join('datacube.conf')
     sample_config.write(config_sample)
 
-    import configparser
     config = configparser.ConfigParser()
     config.read(str(sample_config))
 
@@ -88,5 +87,6 @@ def test_using_configparser(tmpdir):
 def test_empty_configfile(tmpdir):
     default_only = """[default]"""
     sample_file = tmpdir.join('datacube.conf')
-    sample_file.write(config_sample)
-    config = compat.read_config(default_only)
+    sample_file.write(default_only)
+    config = configparser.ConfigParser()
+    config.read(str(sample_file))
