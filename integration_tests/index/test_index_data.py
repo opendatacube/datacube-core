@@ -9,7 +9,6 @@ from __future__ import absolute_import
 import copy
 import datetime
 import sys
-import re
 from pathlib import Path
 from uuid import UUID
 
@@ -242,28 +241,24 @@ def test_index_dataset_with_sources(index, default_metadata_type):
         index.datasets.add(child, sources_policy='verify')
 
 
-def test_index_dataset_with_location(index, default_metadata_type, driver):
+def test_index_dataset_with_location(index, default_metadata_type):
     """
     :type index: datacube.index._api.Index
     :type default_metadata_type: datacube.model.MetadataType
     """
     first_file = Path('/tmp/first/something.yaml').absolute()
     second_file = Path('/tmp/second/something.yaml').absolute()
-    first_uri = driver.as_uri(first_file)
-    second_uri = driver.as_uri(second_file)
 
     type_ = index.products.add_document(_pseudo_telemetry_dataset_type)
-    dataset = Dataset(type_, _telemetry_dataset, uris=[first_uri], sources={})
+    dataset = Dataset(type_, _telemetry_dataset, uris=[first_file.as_uri()], sources={})
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
+
     assert stored.id == _telemetry_uuid
     # TODO: Dataset types?
     assert stored.type.id == type_.id
     assert stored.metadata_type.id == default_metadata_type.id
-    if driver.uri_scheme == 'file':
-        assert stored.local_path == Path(first_file)
-    else:
-        assert stored.local_path is None
+    assert stored.local_path == Path(first_file)
 
     # Ingesting again should have no effect.
     index.datasets.add(dataset)
@@ -271,16 +266,16 @@ def test_index_dataset_with_location(index, default_metadata_type, driver):
     locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 1
     # Remove the location
-    was_removed = index.datasets.remove_location(dataset.id, first_uri)
+    was_removed = index.datasets.remove_location(dataset.id, first_file.as_uri())
     assert was_removed
-    was_removed = index.datasets.remove_location(dataset.id, first_uri)
+    was_removed = index.datasets.remove_location(dataset.id, first_file.as_uri())
     assert not was_removed
     locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 0
     # Re-add the location
-    was_added = index.datasets.add_location(dataset.id, first_uri)
+    was_added = index.datasets.add_location(dataset.id, first_file.as_uri())
     assert was_added
-    was_added = index.datasets.add_location(dataset.id, first_uri)
+    was_added = index.datasets.add_location(dataset.id, first_file.as_uri())
     assert not was_added
     locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 1
@@ -289,60 +284,55 @@ def test_index_dataset_with_location(index, default_metadata_type, driver):
     # (any UTC conversion errors will be off by much more than this for PST/AEST)
     before_archival_dt = utc_now() - datetime.timedelta(hours=1, minutes=1)
 
-    was_archived = index.datasets.archive_location(dataset.id, first_uri)
+    was_archived = index.datasets.archive_location(dataset.id, first_file.as_uri())
     assert was_archived
     locations = index.datasets.get_locations(dataset.id)
     assert locations == []
     locations = index.datasets.get_archived_locations(dataset.id)
-
-    assert len(locations) == 1
-    assert locations == [first_uri]
+    assert locations == [first_file.as_uri()]
 
     # It should return the time archived.
     location_times = index.datasets.get_archived_location_times(dataset.id)
     assert len(location_times) == 1
     location, archived_time = location_times[0]
-    assert location == re.sub("^file", driver.uri_scheme, first_file.as_uri())
+    assert location == first_file.as_uri()
     assert utc_now() > archived_time > before_archival_dt
 
-    was_restored = index.datasets.restore_location(dataset.id, first_uri)
+    was_restored = index.datasets.restore_location(dataset.id, first_file.as_uri())
     assert was_restored
     locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 1
 
     # Ingesting with a new path should add the second one too.
-    dataset.uris = [second_uri]
+    dataset.uris = [second_file.as_uri()]
     index.datasets.add(dataset)
     stored = index.datasets.get(dataset.id)
     locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 2
     # Newest to oldest.
-    assert locations == [second_uri, first_uri]
+    assert locations == [second_file.as_uri(), first_file.as_uri()]
     # And the second one is newer, so it should be returned as the default local path:
-    if driver.uri_scheme == 'file':
-        assert stored.local_path == Path(second_file)
-    else:
-        assert stored.local_path is None
+    assert stored.local_path == Path(second_file)
 
     # Can archive and restore the first file, and location order is preserved
-    was_archived = index.datasets.archive_location(dataset.id, first_uri)
+    was_archived = index.datasets.archive_location(dataset.id, first_file.as_uri())
     assert was_archived
     locations = index.datasets.get_locations(dataset.id)
-    assert locations == [second_uri]
-    was_restored = index.datasets.restore_location(dataset.id, first_uri)
+    assert locations == [second_file.as_uri()]
+    was_restored = index.datasets.restore_location(dataset.id, first_file.as_uri())
     assert was_restored
     locations = index.datasets.get_locations(dataset.id)
-    assert locations == [second_uri, first_uri]
+    assert locations == [second_file.as_uri(), first_file.as_uri()]
 
     # Can archive and restore the second file, and location order is preserved
-    was_archived = index.datasets.archive_location(dataset.id, second_uri)
+    was_archived = index.datasets.archive_location(dataset.id, second_file.as_uri())
     assert was_archived
     locations = index.datasets.get_locations(dataset.id)
-    assert locations == [first_uri]
-    was_restored = index.datasets.restore_location(dataset.id, second_uri)
+    assert locations == [first_file.as_uri()]
+    was_restored = index.datasets.restore_location(dataset.id, second_file.as_uri())
     assert was_restored
     locations = index.datasets.get_locations(dataset.id)
-    assert locations == [second_uri, first_uri]
+    assert locations == [second_file.as_uri(), first_file.as_uri()]
 
     # Ingestion again without location should have no effect.
     dataset.uri = None
@@ -351,19 +341,16 @@ def test_index_dataset_with_location(index, default_metadata_type, driver):
     locations = index.datasets.get_locations(dataset.id)
     assert len(locations) == 2
     # Newest to oldest.
-    assert locations == [second_uri, first_uri]
+    assert locations == [second_file.as_uri(), first_file.as_uri()]
     # And the second one is newer, so it should be returned as the default local path:
-    if driver.uri_scheme == 'file':
-        assert stored.local_path == Path(second_file)
-    else:
-        assert stored.local_path is None
+    assert stored.local_path == Path(second_file)
 
     # Ability to get datasets for a location
     # Add a second dataset with a different location (to catch lack of joins, filtering etc)
     second_ds_doc = copy.deepcopy(_telemetry_dataset)
     second_ds_doc['id'] = '366f32d8-e1f8-11e6-94b4-185e0f80a5c0'
-    index.datasets.add(Dataset(type_, second_ds_doc, uris=[second_uri], sources={}))
-    dataset_ids = [d.id for d in index.datasets.get_datasets_for_location(first_uri)]
+    index.datasets.add(Dataset(type_, second_ds_doc, uris=[second_file.as_uri()], sources={}))
+    dataset_ids = [d.id for d in index.datasets.get_datasets_for_location(first_file.as_uri())]
     assert dataset_ids == [dataset.id]
 
 

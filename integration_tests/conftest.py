@@ -5,7 +5,6 @@ Common methods for index integration tests.
 from __future__ import absolute_import
 
 import itertools
-from collections import namedtuple
 import logging
 import os
 import shutil
@@ -33,8 +32,6 @@ from datacube.config import LocalConfig
 from datacube.index._api import Index, _DEFAULT_METADATA_TYPES_PATH
 from datacube.index.postgres import PostgresDb
 from datacube.index.postgres.tables import _core
-
-Driver = namedtuple('Driver', ['name', 'uri_scheme', 'as_uri'])
 
 # On Windows, symlinks are not supported in Python 2 and require
 # specific privileges otherwise, so we copy instead of linking
@@ -177,19 +174,11 @@ def remove_dynamic_indexes():
         table.indexes.intersection_update([i for i in table.indexes if not i.name.startswith('dix_')])
 
 
-@pytest.fixture(params=['NetCDF CF', 's3-test'])
-def driver(request):
-    # TODO: s3-driver support
-    driver_name = request.param
-    if driver_name not in ['NetCDF CF']:
-        pytest.skip(driver_name + " driver not able to be loaded in this environment")
-
-    driver = Driver(name=driver_name, uri_scheme='file', as_uri=(lambda p: 'file://'+str(p)))
-    return driver
-
-
 @pytest.fixture
 def index(db):
+    """
+    :type db: datacube.index.postgres._api.PostgresDb
+    """
     return Index(db)
 
 
@@ -394,7 +383,7 @@ def example_ls5_dataset_paths(tmpdir, geotiffs):
 
 
 @pytest.fixture
-def ls5_nbar_ingest_config(tmpdir, driver):
+def ls5_nbar_ingest_config(tmpdir):
     dataset_dir = tmpdir.mkdir('ls5_nbar_ingest_test')
     config = load_yaml_file(LS5_NBAR_INGEST_CONFIG)[0]
     config = alter_dataset_type_for_testing(config)
@@ -402,9 +391,6 @@ def ls5_nbar_ingest_config(tmpdir, driver):
     config['storage']['chunking']['time'] = 1
     # config['storage']['tile_size']['time'] = 2
     config['location'] = str(dataset_dir)
-    if driver.name in ('s3', 's3-test'):
-        config['container'] = str(dataset_dir)
-
     config_path = dataset_dir.join('ls5_nbar_ingest_config.yaml')
     with open(str(config_path), 'w') as stream:
         yaml.dump(config, stream)

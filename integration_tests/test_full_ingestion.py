@@ -40,7 +40,7 @@ COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
 
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_dataset_types')
-def test_full_ingestion(global_integration_cli_args, index, driver,
+def test_full_ingestion(global_integration_cli_args, index,
                         example_ls5_dataset_paths, ls5_nbar_ingest_config):
     config_path, config = ls5_nbar_ingest_config
     valid_uuids = []
@@ -96,18 +96,17 @@ def test_full_ingestion(global_integration_cli_args, index, driver,
     check_data_with_api(index, len(valid_uuids))
 
     # NetCDF specific checks, based on the saved NetCDF file
-    if driver.name == 'NetCDF CF':
-        ds_path = str(datasets[0].local_path)
-        with netCDF4.Dataset(ds_path) as nco:
-            check_data_shape(nco)
-            check_grid_mapping(nco)
-            check_cf_compliance(nco)
-            check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset_paths)
-            check_attributes(nco, config['global_attributes'])
+    ds_path = str(datasets[0].local_path)
+    with netCDF4.Dataset(ds_path) as nco:
+        check_data_shape(nco)
+        check_grid_mapping(nco)
+        check_cf_compliance(nco)
+        check_dataset_metadata_in_storage_unit(nco, example_ls5_dataset_paths)
+        check_attributes(nco, config['global_attributes'])
 
-            name = config['measurements'][0]['name']
-            check_attributes(nco[name], config['measurements'][0]['attrs'])
-        check_open_with_xarray(ds_path)
+        name = config['measurements'][0]['name']
+        check_attributes(nco[name], config['measurements'][0]['attrs'])
+    check_open_with_xarray(ds_path)
 
 
 def ensure_datasets_are_indexed(index, valid_uuids):
