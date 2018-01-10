@@ -105,15 +105,19 @@ class Datacube(object):
         :return: Datacube object
 
         """
+        def normalise_config(config):
+            if config is None:
+                return LocalConfig.find(env=env)
+            if isinstance(config, string_types):
+                return LocalConfig.find([config], env=env)
+            return config
+
         if index is None:
-            if config is not None:
-                if isinstance(config, string_types):
-                    config = LocalConfig.find([config], env=env)
-                self.index = index_connect(config, application_name=app, validate_connection=validate_connection)
-            else:
-                self.index = index_connect(application_name=app, validate_connection=validate_connection)
-        else:
-            self.index = index
+            index = index_connect(normalise_config(config),
+                                  application_name=app,
+                                  validate_connection=validate_connection)
+
+        self.index = index
 
     def list_products(self, show_archived=False, with_pandas=True):
         """
