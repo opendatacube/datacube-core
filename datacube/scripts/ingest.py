@@ -19,6 +19,7 @@ from datacube.storage.storage import write_dataset_to_netcdf
 from datacube.ui import click as ui
 from datacube.utils import read_documents
 from datacube.ui.task_app import check_existing_files, load_tasks as load_tasks_, save_tasks as save_tasks_
+from datacube.drivers import storage_writer_by_name
 
 from datacube.ui.click import cli
 
@@ -200,7 +201,7 @@ def create_task_list(index, output_type, year, source_type, config):
     return tasks
 
 
-def ingest_work(config, source_type, output_type, tile, tile_index):
+def ingest_work(config, driver, source_type, output_type, tile, tile_index):
     _LOG.info('Starting task %s', tile_index)
 
     namemap = get_namemap(config)
@@ -226,8 +227,11 @@ def ingest_work(config, source_type, output_type, tile, tile_index):
     datasets = xr_apply(tile.sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
     nudata['dataset'] = datasets_to_doc(datasets)
 
-    # TODO: IO plugin hook point
-    write_dataset_to_netcdf(nudata, file_path, global_attributes, variable_params)
+    driver.write_dataset_to_storage(nudata, file_path,
+                                    global_attributes=global_attributes,
+                                    variable_params=variable_params,
+                                    storage_config=config['storage'])
+
     _LOG.info('Finished task %s', tile_index)
 
     return datasets
@@ -242,11 +246,12 @@ def _index_datasets(index, results):
     return n
 
 
-def process_tasks(index, config, source_type, output_type, tasks, queue_size, executor):
+def process_tasks(index, config, driver, source_type, output_type, tasks, queue_size, executor):
     def submit_task(task):
         _LOG.info('Submitting task: %s', task['tile_index'])
         return executor.submit(ingest_work,
                                config=config,
+                               driver=driver,
                                source_type=source_type,
                                output_type=output_type,
                                **task)
@@ -299,6 +304,15 @@ def _validate_year(ctx, param, value):
                                  'or as an inclusive range (eg 1996-2001)')
 
 
+def _parse_storage_driver(ctx, param, value):
+    if value is None:
+        return None
+    driver = storage_writer_by_name(value)
+    if driver is None:
+        click.BadParameter('Failed to find driver: ' + value)
+    return driver
+
+
 @cli.command('ingest', help="Ingest datasets")
 @click.option('--config-file', '-c',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
@@ -310,6 +324,8 @@ def _validate_year(ctx, param, value):
 @click.option('--load-tasks', help='Load tasks from the specified file',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
 @click.option('--dry-run', '-d', is_flag=True, default=False, help='Check if everything is ok')
+@click.option('--driver', callback=_parse_storage_driver,
+              help='Specify storage driver by name, defaults to netcdf')
 @click.option('--allow-product-changes', is_flag=True, default=False,
               help='Allow the output product definition to be updated if it differs.')
 @ui.executor_cli_options
@@ -320,9 +336,18 @@ def ingest_cmd(index,
                queue_size,
                save_tasks,
                load_tasks,
+               driver,
                dry_run,
                executor,
                allow_product_changes):
+
+    if driver is None:
+        driver = storage_writer_by_name('netcdf')
+        if driver is None:
+            click.echo('Bad system state: default storage driver not found')
+            return 2
+
+    print('Driver', driver)
     if config_file:
         config = load_config_from_file(index, config_file)
         source_type, output_type = ensure_output_type(index, config, allow_product_changes=allow_product_changes)
@@ -343,7 +368,7 @@ def ingest_cmd(index,
         save_tasks_(config, tasks, save_tasks)
         return 0
 
-    successful, failed = process_tasks(index, config, source_type, output_type, tasks, queue_size, executor)
+    successful, failed = process_tasks(index, config, driver, source_type, output_type, tasks, queue_size, executor)
     click.echo('%d successful, %d failed' % (successful, failed))
 
     return 0
