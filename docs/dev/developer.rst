@@ -1,3 +1,5 @@
+.. _developers-guid
+
 Developers Guide
 ================
 
@@ -7,14 +9,19 @@ This documentation applies to version: |version|
 .. toctree::
    :maxdepth: 1
 
+   environments
    index
    api
    data_model
    model
    driver
    analytics_engine
-   external
    s3block
+
+.. toctree::
+   :hidden:
+
+   external
 
 Developer Setup
 ---------------
