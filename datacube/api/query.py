@@ -50,11 +50,11 @@ class Query(object):
 
         >>> query = Query(product='ls5_nbar_albers', time=('2001-01-01', '2002-01-01'))
 
-        Use by accessing :attr:`search_terms`.
+        Use by accessing :attr:`search_terms`::
 
-        >>> query.search_terms  # doctest: +NORMALIZE_WHITESPACE
-        {'time': Range(begin=datetime.datetime(2001, 1, 1, 0, 0, tzinfo=<UTC>), \
-        end=datetime.datetime(2002, 1, 1, 0, 0, tzinfo=<UTC>)), 'product': 'ls5_nbar_albers'}
+        >>> query.search_terms['time']  # doctest: +NORMALIZE_WHITESPACE
+            Range(begin=datetime.datetime(2001, 1, 1, 0, 0, tzinfo=<UTC>), \
+            end=datetime.datetime(2002, 1, 1, 0, 0, tzinfo=<UTC>))
 
         By passing in an ``index``, the search parameters will be validated as existing on the ``product``.
 
