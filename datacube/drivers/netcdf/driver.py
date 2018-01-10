@@ -5,6 +5,10 @@ class NetcdfWriterDriver(object):
     def __init__(self):
         pass
 
+    @property
+    def format(self):
+        return 'NetCDF'
+
     def write_dataset_to_storage(self, dataset, filename,
                                  global_attributes=None,
                                  variable_params=None,

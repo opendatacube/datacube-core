@@ -24,6 +24,10 @@ class S3WriterDriver(object):
         self.storage = S3LIO(**kwargs)
 
     @property
+    def format(self):
+        return FORMAT
+
+    @property
     def uri_scheme(self):
         """URI scheme used by this driver."""
         return PROTOCOL

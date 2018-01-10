@@ -39,7 +39,7 @@ def find_diff(input_type, output_type, index, **query):
     return tasks
 
 
-def morph_dataset_type(source_type, config, index):
+def morph_dataset_type(source_type, config, index, storage_format):
     output_metadata_type = source_type.metadata_type
     if 'metadata_type' in config:
         output_metadata_type = index.metadata_types.get_by_name(config['metadata_type'])
@@ -51,7 +51,7 @@ def morph_dataset_type(source_type, config, index):
     output_type.definition['storage'] = {k: v for (k, v) in config['storage'].items()
                                          if k in ('crs', 'driver', 'tile_size', 'resolution', 'origin')}
 
-    output_type.metadata_doc['format'] = {'name': 'NetCDF'}  # TODO: write plugin dependent parameter,
+    output_type.metadata_doc['format'] = {'name': storage_format}
 
     if 'metadata_type' in config:
         output_type.definition['metadata_type'] = config['metadata_type']
@@ -121,7 +121,7 @@ def get_namemap(config):
     return {spec['src_varname']: spec['name'] for spec in config['measurements']}
 
 
-def ensure_output_type(index, config, allow_product_changes=False):
+def ensure_output_type(index, config, storage_format, allow_product_changes=False):
     # type: (Index, dict, bool) -> (DatasetType, DatasetType)
     """
     Create the output product for the given ingest config if it doesn't already exist.
@@ -134,7 +134,7 @@ def ensure_output_type(index, config, allow_product_changes=False):
         click.echo("Source DatasetType %s does not exist" % config['source_type'])
         click.get_current_context().exit(1)
 
-    output_type = morph_dataset_type(source_type, config, index)
+    output_type = morph_dataset_type(source_type, config, index, storage_format)
     _LOG.info('Created DatasetType %s', output_type.name)
 
     existing = index.products.get_by_name(output_type.name)
@@ -202,6 +202,7 @@ def create_task_list(index, output_type, year, source_type, config):
 
 
 def ingest_work(config, driver, source_type, output_type, tile, tile_index):
+    #pylint: disable=too-many-locals
     _LOG.info('Starting task %s', tile_index)
 
     namemap = get_namemap(config)
@@ -227,10 +228,13 @@ def ingest_work(config, driver, source_type, output_type, tile, tile_index):
     datasets = xr_apply(tile.sources, _make_dataset, dtype='O')  # Store in Dataarray to associate Time -> Dataset
     nudata['dataset'] = datasets_to_doc(datasets)
 
-    driver.write_dataset_to_storage(nudata, file_path,
-                                    global_attributes=global_attributes,
-                                    variable_params=variable_params,
-                                    storage_config=config['storage'])
+    storage_metadata = driver.write_dataset_to_storage(nudata, file_path,
+                                                       global_attributes=global_attributes,
+                                                       variable_params=variable_params,
+                                                       storage_config=config['storage'])
+
+    if (storage_metadata is not None) and len(storage_metadata) > 0:
+        datasets.attrs['storage_metadata'] = storage_metadata
 
     _LOG.info('Finished task %s', tile_index)
 
@@ -349,12 +353,14 @@ def ingest_cmd(index,
 
     if config_file:
         config = load_config_from_file(index, config_file)
-        source_type, output_type = ensure_output_type(index, config, allow_product_changes=allow_product_changes)
+        source_type, output_type = ensure_output_type(index, config, driver.format,
+                                                      allow_product_changes=allow_product_changes)
 
         tasks = create_task_list(index, output_type, year, source_type, config)
     elif load_tasks:
         config, tasks = load_tasks_(load_tasks)
-        source_type, output_type = ensure_output_type(index, config, allow_product_changes=allow_product_changes)
+        source_type, output_type = ensure_output_type(index, config, driver.format,
+                                                      allow_product_changes=allow_product_changes)
     else:
         click.echo('Must specify exactly one of --config-file, --load-tasks')
         return 1
