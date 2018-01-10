@@ -26,6 +26,8 @@ Writing Large Scale Workflows
 
 See :ref:`grid-workflow-class` for more details
 
+.. _bit-masking:
+
 Masking with Bit-Flag Measurements
 ----------------------------------
 

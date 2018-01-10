@@ -21,6 +21,8 @@ Next release
  - The :option:`--config_file` option to :program:`datacube` has been renamed to :option:`--config`, which is
    shorter and more consistent with the other options. The old name can still be used for now.
 
+ - Added documentation about :ref:`bit-masking`.
+
 .. _#298: https://github.com/opendatacube/datacube-core/pull/298
 .. _config docs: https://datacube-core.readthedocs.io/en/latest/ops/config.html#runtime-config-doc
 
