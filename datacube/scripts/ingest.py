@@ -313,7 +313,7 @@ def _parse_storage_driver(ctx, param, value):
         return None
     driver = storage_writer_by_name(value)
     if driver is None:
-        click.BadParameter('Failed to find driver: ' + value)
+        raise click.BadParameter('Failed to find driver: ' + value)
     return driver
 
 
