@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from collections import namedtuple
 from .util import mk_sample_dataset
-from datacube.drivers import new_datasource, reader_drivers
+from datacube.drivers import new_datasource, reader_drivers, writer_drivers
 from datacube.drivers.s3 import driver as s3_driver
 from datacube.drivers.s3.datasource import S3DataSource
 from datacube.storage.storage import RasterDatasetDataSource
@@ -40,4 +40,15 @@ def test_reader_drivers():
     available_drivers = reader_drivers()
     assert isinstance(available_drivers, list)
     assert 's3block' in available_drivers
-    print(available_drivers)
+
+
+def test_writer_drivers():
+    available_drivers = writer_drivers()
+    assert 'netcdf' in available_drivers
+
+
+def test_netcdf_driver_import():
+    try:
+        import datacube.drivers.netcdf.driver
+    except ImportError:
+        assert False and 'Failed to load netcdf writer driver'
