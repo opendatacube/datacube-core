@@ -373,6 +373,9 @@ class GridWorkflow(object):
 
             Defaults to ``'nearest'``.
 
+        :param bool skip_broken_datasets: If True, ignore broken datasets and continue processing with the data
+             that can be loaded. If False, an exception will be raised on a broken dataset. Defaults to False.
+
         :param DriverManager driver_manager: The driver manager to
           use. If not specified, an new manager will be created using
           the index if specified, or the default configuration
