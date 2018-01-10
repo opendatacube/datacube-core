@@ -1,7 +1,7 @@
 .. _dev-index:
 
-Database and Indexing
-=====================
+Searching and Indexing Datasets
+===============================
 
 Public Method
 -------------
@@ -12,7 +12,7 @@ Public Method
 Private Indexing Modules
 ------------------------
 
-.. automodule:: datacube.index._api
+.. automodule:: datacube.index.index
    :members: Index
 
 

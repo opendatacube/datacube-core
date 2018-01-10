@@ -23,27 +23,12 @@ and  related data from multiple satellite and other acquisition systems.
    :caption: Operations Guide
 
    ops/overview
-   ops/install
-   ops/db_setup
-   ops/indexing
-   ops/ingest
-   ops/config
-   ops/prepare_scripts
-   ops/tools
-   ops/replication
 
 .. toctree::
    :maxdepth: 2
    :caption: Developer Guide
 
    dev/developer
-   dev/data_model
-   dev/api
-   dev/model
-   dev/driver
-   dev/index
-   dev/analytics_engine
-   dev/external
 
 .. toctree::
    :maxdepth: 2

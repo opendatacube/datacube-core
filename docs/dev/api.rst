@@ -1,5 +1,5 @@
-Data Access API
-===============
+Loading Data from a Cube
+========================
 
 For examples on how to use the API, check out the `example Jupyter notebooks
 <http://nbviewer.jupyter.org/github/opendatacube/datacube-core/blob/develop/examples/notebooks/Datacube_Summary.ipynb>`_
