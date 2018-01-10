@@ -31,6 +31,7 @@ _DEFAULT_CONF = u"""
 # Blank implies localhost
 db_hostname:
 db_database: datacube
+index_driver: default
 # If a connection is unused for this length of time, expect it to be invalidated.
 db_connection_timeout: 60
 
