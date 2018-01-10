@@ -5,6 +5,18 @@ The Open Data Cube provides an integrated gridded data
 analysis environment for decades of analysis ready earth observation satellite
 and  related data from multiple satellite and other acquisition systems.
 
+..
+    The ReadTheDocs theme has a problem where it's seemingly impossible to have
+    both nice sidebar navigation, and a nice breadcrumb trail at the top of the
+    page.
+
+    The breadcrumbs depend on having multi-level toctree, where documents that
+    are included in this top level, contain their own sub-trees of documents.
+
+    However, I can't find any way to have these subtrees displayed globally in
+    the sidebar navigation. The subtrees are only displayed when you navigate to
+    their parent page.
+
 .. toctree::
    :maxdepth: 3
    :caption: Overview

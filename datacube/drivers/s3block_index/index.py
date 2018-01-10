@@ -63,35 +63,6 @@ class S3BlockIndex(Index):
 
         return is_new
 
-    def add_datasets(self, datasets, sources_policy='verify'):
-        """Index several datasets.
-
-        Perform the normal indexing, followed by the s3 specific
-        indexing. If the normal indexing fails for any dataset, then
-        no s3 indexing takes place and a `ValueError` is raised.
-
-        :param datasets: The datasets to be indexed. It must contain
-          an attribute named `storage_output` otherwise a ValueError
-          is raised.
-        :param str sources_policy: The sources policy.
-        :return: The number of datasets indexed.
-        :rtype: int
-
-        """
-        if 'storage_output' not in datasets.attrs:
-            raise ValueError('s3 storage output not received, indexing aborted.')
-        dataset_refs = []
-        n = 0
-        for dataset in datasets.values:
-            self.datasets.add(dataset, sources_policy=sources_policy)
-            dataset_refs.append(dataset.id)
-            n += 1
-        if n == len(datasets):
-            self.datasets.add_s3_tables(dataset_refs, datasets.attrs['storage_output'])
-        else:
-            raise ValueError('Some datasets could not be indexed, hence no s3 indexing will happen.')
-        return n
-
     def __repr__(self):
         return "S3Index<db={!r}>".format(self._db)
 
@@ -114,6 +85,35 @@ class DatasetResource(BaseDatasetResource):
         else:
             dataset.uris = []
         return super(DatasetResource, self).add(dataset, sources_policy, **kwargs)
+
+    def add_multiple(self, datasets, sources_policy='verify'):
+        """Index several datasets.
+
+        Perform the normal indexing, followed by the s3 specific
+        indexing. If the normal indexing fails for any dataset, then
+        no s3 indexing takes place and a `ValueError` is raised.
+
+        :param datasets: The datasets to be indexed. It must contain
+          an attribute named `storage_output` otherwise a ValueError
+          is raised.
+        :param str sources_policy: The sources policy.
+        :return: The number of datasets indexed.
+        :rtype: int
+
+        """
+        if 'storage_output' not in datasets.attrs:
+            raise ValueError('s3 storage output not received, indexing aborted.')
+        dataset_refs = []
+        n = 0
+        for dataset in datasets.values:
+            self.add(dataset, sources_policy=sources_policy)
+            dataset_refs.append(dataset.id)
+            n += 1
+        if n == len(datasets):
+            self.add_datasets_to_s3_tables(dataset_refs, datasets.attrs['storage_output'])
+        else:
+            raise ValueError('Some datasets could not be indexed, hence no s3 indexing will happen.')
+        return n
 
     def _add_s3_dataset(self, transaction, s3_dataset_id, band, output):
         """Add the new s3 dataset to DB.
@@ -145,18 +145,18 @@ class DatasetResource(BaseDatasetResource):
                    output['numpy_type'], output['dimensions'],
                    output['regular_dims'], regular_indices,
                    irregular_indices)
-        self.put_s3_dataset(transaction,
-                            s3_dataset_id,
-                            output['base_name'],
-                            band,
-                            output['bucket'],
-                            output['macro_shape'],
-                            output['chunk_size'],
-                            output['numpy_type'],
-                            output['dimensions'],
-                            output['regular_dims'],
-                            regular_indices,
-                            irregular_indices)
+        self._put_s3_dataset(transaction,
+                             s3_dataset_id,
+                             output['base_name'],
+                             band,
+                             output['bucket'],
+                             output['macro_shape'],
+                             output['chunk_size'],
+                             output['numpy_type'],
+                             output['dimensions'],
+                             output['regular_dims'],
+                             regular_indices,
+                             irregular_indices)
 
     def _add_s3_dataset_chunks(self, transaction, s3_dataset_id, band, output):
         """Add details of chunks composing this s3 dataset to DB.
@@ -177,14 +177,14 @@ class DatasetResource(BaseDatasetResource):
                        s3_dataset_id, key_map['s3_key'],
                        key_map['chunk_id'], key_map['compression'], micro_shape,
                        index_min, index_max)
-            self.put_s3_dataset_chunk(transaction,
-                                      s3_dataset_id,
-                                      key_map['s3_key'],
-                                      key_map['chunk_id'],
-                                      key_map['compression'],
-                                      micro_shape,
-                                      index_min,
-                                      index_max)
+            self._put_s3_dataset_chunk(transaction,
+                                       s3_dataset_id,
+                                       key_map['s3_key'],
+                                       key_map['chunk_id'],
+                                       key_map['compression'],
+                                       micro_shape,
+                                       index_min,
+                                       index_max)
 
     def _add_s3_dataset_mappings(self, transaction, s3_dataset_id, band, dataset_refs):
         """Add mappings between postgres datsets and s3 datasets to DB.
@@ -198,13 +198,13 @@ class DatasetResource(BaseDatasetResource):
         """
         for dataset_ref in dataset_refs:
             _LOG.debug('put_s3_mapping(%s, %s, %s)', dataset_ref, band, s3_dataset_id)
-            self.put_s3_mapping(transaction,
-                                dataset_ref,
-                                band,
-                                s3_dataset_id)
+            self._put_s3_mapping(transaction,
+                                 dataset_ref,
+                                 band,
+                                 s3_dataset_id)
 
-    def add_s3_tables(self, dataset_refs, storage_output):
-        """Add index data to s3 tables.
+    def add_datasets_to_s3_tables(self, dataset_refs, storage_output):
+        """Add extra dataset metadata to s3 tables.
 
         :param list dataset_refs: The list of dataset references
           (uuids) that all point to the s3 dataset entry being
@@ -234,10 +234,10 @@ class DatasetResource(BaseDatasetResource):
         :param bool full_info: Include all available fields
         """
         dataset = super(DatasetResource, self)._make(dataset_res, full_info)
-        self.add_specifics(dataset)
+        self._extend_dataset_with_s3_metadata(dataset)
         return dataset
 
-    def add_specifics(self, dataset):
+    def _extend_dataset_with_s3_metadata(self, dataset):
         """Extend the dataset doc with driver specific index data.
 
         This methods extends the dataset document with a `s3_metadata`
@@ -252,7 +252,7 @@ class DatasetResource(BaseDatasetResource):
         if dataset.measurements:
             with self._db.begin() as transaction:
                 for band in dataset.measurements.keys():
-                    s3_datasets = self.get_s3_dataset(transaction, dataset.id, band)
+                    s3_datasets = self._get_s3_dataset(transaction, dataset.id, band)
                     for s3_dataset in s3_datasets:
                         dataset.s3_metadata[band] = {
                             's3_dataset': s3_dataset,
@@ -262,7 +262,7 @@ class DatasetResource(BaseDatasetResource):
 
     ### S3 specific functions
     # See .tables for description of each column
-    def put_s3_mapping(self, _connection, dataset_ref, band, s3_dataset_id):
+    def _put_s3_mapping(self, _connection, dataset_ref, band, s3_dataset_id):
         """:type dataset_ref: uuid.UUID
         :type band: str
         :type s3_dataset_id: uuid.UUID"""
@@ -277,10 +277,10 @@ class DatasetResource(BaseDatasetResource):
         return res.inserted_primary_key[0]
 
     # pylint: disable=too-many-arguments
-    def put_s3_dataset(self, _connection, s3_dataset_id, base_name, band, bucket,
-                       macro_shape, chunk_size, numpy_type,
-                       dimensions, regular_dims, regular_index,
-                       irregular_index):
+    def _put_s3_dataset(self, _connection, s3_dataset_id, base_name, band, bucket,
+                        macro_shape, chunk_size, numpy_type,
+                        dimensions, regular_dims, regular_index,
+                        irregular_index):
         """:type s3_dataset_id: uuid.UUID
         :type base_name: str
         :type band: str
@@ -310,7 +310,7 @@ class DatasetResource(BaseDatasetResource):
 
         return res.inserted_primary_key[0]
 
-    def get_s3_dataset(self, _connection, dataset_ref, band):
+    def _get_s3_dataset(self, _connection, dataset_ref, band):
         """:type dataset_ref: uuid.UUID
         :type band: str"""
         return _connection.execute(
@@ -338,9 +338,9 @@ class DatasetResource(BaseDatasetResource):
             )
         ).fetchall()
 
-    def put_s3_dataset_chunk(self, _connection, s3_dataset_id, s3_key,
-                             chunk_id, compression_scheme,
-                             micro_shape, index_min, index_max):
+    def _put_s3_dataset_chunk(self, _connection, s3_dataset_id, s3_key,
+                              chunk_id, compression_scheme,
+                              micro_shape, index_min, index_max):
         """:type s3_dataset_id: uuid.UUID
         :type s3_key: str
         :type chunk_id: str
@@ -362,7 +362,7 @@ class DatasetResource(BaseDatasetResource):
         )
         return res.inserted_primary_key[0]
 
-    def get_s3_dataset_chunk(self, _connection, s3_dataset_id):
+    def _get_s3_dataset_chunk(self, _connection, s3_dataset_id):
         """:type s3_dataset_id: uuid.UUID"""
         return _connection.execute(
             select(
