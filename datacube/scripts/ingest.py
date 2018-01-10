@@ -347,7 +347,6 @@ def ingest_cmd(index,
             click.echo('Bad system state: default storage driver not found')
             return 2
 
-    print('Driver', driver)
     if config_file:
         config = load_config_from_file(index, config_file)
         source_type, output_type = ensure_output_type(index, config, allow_product_changes=allow_product_changes)
