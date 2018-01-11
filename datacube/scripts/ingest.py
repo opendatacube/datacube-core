@@ -333,6 +333,7 @@ def ingest_cmd(index,
                dry_run,
                executor,
                allow_product_changes):
+    # pylint: disable=too-many-locals
 
     def get_driver_from_config(config):
         driver_name = config['storage']['driver']
