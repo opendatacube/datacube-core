@@ -37,7 +37,7 @@ def index_connect(local_config=None, application_name=None, validate_connection=
     if local_config is None:
         local_config = LocalConfig.find()
 
-    index_driver = INDEX_TYPES[local_config['index_driver']]
+    index_driver = INDEX_TYPES[local_config.get('index_driver', 'default')]
 
     return index_driver(
         PostgresDb.from_config(local_config, application_name=application_name,
