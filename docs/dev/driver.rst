@@ -1,4 +1,3 @@
-
 .. _extending-datacube:
 
 Extending Datacube
@@ -15,6 +14,18 @@ indexing.
 Data Read Drivers
 -----------------
 
+Drivers are defined in ``setup.py -> entry_points``::
+
+    entry_points={
+        'datacube.plugins.io.read': [
+            's3block = datacube.drivers.s3.driver:rdr_driver_init'
+        ],
+        'datacube.plugins.io.write': [
+            'netcdf = datacube.drivers.netcdf.driver:writer_driver_init',
+            's3block = datacube.drivers.s3.driver:writer_driver_init',
+            's3block_test = datacube.drivers.s3.driver:writer_test_driver_init',
+        ]
+    }
 
 
 Storage and Indexing Drivers

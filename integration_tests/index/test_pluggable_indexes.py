@@ -1,7 +1,5 @@
-from configparser import ConfigParser
+from __future__ import absolute_import
 
-from datacube.drivers.s3block_index.index import S3BlockIndex
-from datacube.index.index import Index
 from configparser import ConfigParser
 
 from datacube.drivers.s3block_index.index import S3BlockIndex

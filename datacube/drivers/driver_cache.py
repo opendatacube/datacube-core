@@ -1,6 +1,8 @@
 from __future__ import absolute_import, print_function
-from pkg_resources import iter_entry_points
+
 import logging
+
+from pkg_resources import iter_entry_points
 
 _LOG = logging.getLogger(__name__)
 
@@ -9,10 +11,19 @@ def load_drivers(group):
     """
     Load available drivers for a given group name.
 
+    Gracefully handles:
+
+     - Driver module not able to be imported
+     - Driver init function throwing an exception or returning None
+
+     By having driver entry_points pointing to a function, we defer loading the driver
+     module or running any code until required.
+
     :param str group: Name of the entry point group e.g. "datacube.plugins.io.read"
 
     :returns: Dictionary String -> Driver Object
     """
+
     def safe_load(ep):
         # pylint: disable=bare-except
         try:
