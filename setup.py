@@ -108,6 +108,10 @@ setup(
             'netcdf = datacube.drivers.netcdf.driver:writer_driver_init',
             's3block = datacube.drivers.s3.driver:writer_driver_init',
             's3block_test = datacube.drivers.s3.driver:writer_test_driver_init',
-        ]
+        ],
+        'datacube.plugins.index': [
+            'default = datacube.index.index.Index',
+            's3block_index = datacube.drivers.s3block_index.index.S3BlockIndex',
+        ],
     },
 )

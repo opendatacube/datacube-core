@@ -7,16 +7,10 @@ from __future__ import absolute_import
 import logging
 
 from datacube.config import LocalConfig
+from datacube.drivers import index_driver_by_name
 from datacube.drivers.postgres import PostgresDb
-from datacube.drivers.s3block_index.index import S3BlockIndex
-from datacube.index.index import Index as PGIndex
 
 _LOG = logging.getLogger(__name__)
-
-INDEX_TYPES = {
-    'default': PGIndex,
-    's3block': S3BlockIndex
-}
 
 
 def index_connect(local_config=None, application_name=None, validate_connection=True):
@@ -37,7 +31,7 @@ def index_connect(local_config=None, application_name=None, validate_connection=
     if local_config is None:
         local_config = LocalConfig.find()
 
-    index_driver = INDEX_TYPES[local_config.get('index_driver', 'default')]
+    index_driver = index_driver_by_name(local_config.get('index_driver', 'default'))
 
     return index_driver(
         PostgresDb.from_config(local_config, application_name=application_name,

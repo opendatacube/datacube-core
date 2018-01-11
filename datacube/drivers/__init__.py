@@ -11,7 +11,6 @@ TODO: update docs post DriverManager
 """
 from __future__ import absolute_import
 
-from .driver_cache import load_drivers
-from .readers import choose_datasource, reader_drivers
+from .indexes import index_driver_by_name, index_drivers
+from .readers import new_datasource, reader_drivers
 from .writers import storage_writer_by_name, writer_drivers
-

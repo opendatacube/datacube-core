@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from datacube.drivers import load_drivers
+from .driver_cache import load_drivers
 
 
 class WriterDriverCache(object):
