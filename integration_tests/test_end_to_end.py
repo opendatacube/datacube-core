@@ -1,18 +1,16 @@
 from __future__ import absolute_import
 
+import imp
 import shutil
+from pathlib import Path
 
 import numpy
-import rasterio
-
 import pytest
-from click.testing import CliRunner
-from pathlib import Path
+import rasterio
 
 import datacube.scripts.cli_app
 from datacube.compat import string_types
-
-import imp
+from integration_tests.utils import assert_click_command
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
@@ -83,27 +81,27 @@ def test_end_to_end(global_integration_cli_args, index, testdata_dir):
     ls5_pq_albers_ingest_config = testdata_dir / LS5_PQ_ALBERS
 
     # Run galsprepare.py on the NBAR and PQ scenes
-    run_click_command(galsprepare.main, [str(lbg_nbar)])
+    assert_click_command(galsprepare.main, [str(lbg_nbar)])
 
     # Add the LS5 Dataset Types
-    run_click_command(datacube.scripts.cli_app.cli,
-                      global_integration_cli_args + ['-v', 'product', 'add', str(LS5_DATASET_TYPES)])
+    assert_click_command(datacube.scripts.cli_app.cli,
+                         global_integration_cli_args + ['-v', 'product', 'add', str(LS5_DATASET_TYPES)])
 
     # Index the Datasets
-    run_click_command(datacube.scripts.cli_app.cli,
-                      global_integration_cli_args +
-                      ['-v', 'dataset', 'add', '--auto-match',
-                       str(lbg_nbar), str(lbg_pq)])
+    assert_click_command(datacube.scripts.cli_app.cli,
+                         global_integration_cli_args +
+                         ['-v', 'dataset', 'add', '--auto-match',
+                          str(lbg_nbar), str(lbg_pq)])
 
     # Ingest NBAR
-    run_click_command(datacube.scripts.cli_app.cli,
-                      global_integration_cli_args +
-                      ['-v', 'ingest', '-c', str(ls5_nbar_albers_ingest_config)])
+    assert_click_command(datacube.scripts.cli_app.cli,
+                         global_integration_cli_args +
+                         ['-v', 'ingest', '-c', str(ls5_nbar_albers_ingest_config)])
 
     # Ingest PQ
-    run_click_command(datacube.scripts.cli_app.cli,
-                      global_integration_cli_args +
-                      ['-v', 'ingest', '-c', str(ls5_pq_albers_ingest_config)])
+    assert_click_command(datacube.scripts.cli_app.cli,
+                         global_integration_cli_args +
+                         ['-v', 'ingest', '-c', str(ls5_pq_albers_ingest_config)])
 
     check_open_with_api(index)
     check_open_with_dc(index)
@@ -118,17 +116,6 @@ def test_end_to_end(global_integration_cli_args, index, testdata_dir):
     check_analytics_ndvi_mask_median_expression(index)
     check_analytics_ndvi_mask_median_expression_storage_type(index)
     check_analytics_pixel_drill(index)
-
-
-def run_click_command(command, args):
-    result = CliRunner().invoke(
-        command,
-        args=args,
-        catch_exceptions=False
-    )
-    print(result.output)
-    assert not result.exception
-    assert result.exit_code == 0
 
 
 def check_open_with_api(index):

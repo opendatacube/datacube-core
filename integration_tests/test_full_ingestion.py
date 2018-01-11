@@ -1,21 +1,19 @@
 from __future__ import absolute_import
 
+import hashlib
 import warnings
 from pathlib import Path
 from uuid import UUID
 
 import netCDF4
 import pytest
-import hashlib
-
 import yaml
-from click.testing import CliRunner
 from affine import Affine
-from datacube.api.query import query_group_by
 
 import datacube.scripts.cli_app
+from datacube.api.query import query_group_by
 from datacube.utils import geometry, read_documents, netcdf_extract_string
-
+from integration_tests.utils import assert_click_command
 from .conftest import GEOTIFF
 
 PROJECT_ROOT = Path(__file__).parents[1]
@@ -56,14 +54,7 @@ def test_full_ingestion(global_integration_cli_args, index,
                 str(example_ls5_dataset_path)
             ]
         )
-        result = CliRunner().invoke(
-            datacube.scripts.cli_app.cli,
-            opts,
-            catch_exceptions=False
-        )
-        print(result.output)
-        assert not result.exception
-        assert result.exit_code == 0
+        assert_click_command(datacube.scripts.cli_app.cli, opts)
 
     ensure_datasets_are_indexed(index, valid_uuids)
 
@@ -79,14 +70,7 @@ def test_full_ingestion(global_integration_cli_args, index,
             str(config_path)
         ]
     )
-    result = CliRunner().invoke(
-        datacube.scripts.cli_app.cli,
-        opts,
-        catch_exceptions=False
-    )
-    # print(result.output)
-    assert not result.exception
-    assert result.exit_code == 0
+    assert_click_command(datacube.scripts.cli_app.cli, opts)
 
     datasets = index.datasets.search_eager(product='ls5_nbar_albers')
     assert len(datasets) > 0
