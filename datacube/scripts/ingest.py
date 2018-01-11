@@ -5,6 +5,7 @@ import logging
 import click
 import cachetools
 import itertools
+import sys
 from copy import deepcopy
 from pathlib import Path
 from pandas import to_datetime
@@ -202,7 +203,7 @@ def create_task_list(index, output_type, year, source_type, config):
 
 
 def ingest_work(config, driver, source_type, output_type, tile, tile_index):
-    #pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals
     _LOG.info('Starting task %s', tile_index)
 
     namemap = get_namemap(config)
@@ -308,15 +309,6 @@ def _validate_year(ctx, param, value):
                                  'or as an inclusive range (eg 1996-2001)')
 
 
-def _parse_storage_driver(ctx, param, value):
-    if value is None:
-        return None
-    driver = storage_writer_by_name(value)
-    if driver is None:
-        raise click.BadParameter('Failed to find driver: ' + value)
-    return driver
-
-
 @cli.command('ingest', help="Ingest datasets")
 @click.option('--config-file', '-c',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False),
@@ -328,8 +320,6 @@ def _parse_storage_driver(ctx, param, value):
 @click.option('--load-tasks', help='Load tasks from the specified file',
               type=click.Path(exists=True, readable=True, writable=False, dir_okay=False))
 @click.option('--dry-run', '-d', is_flag=True, default=False, help='Check if everything is ok')
-@click.option('--driver', callback=_parse_storage_driver,
-              help='Specify storage driver by name, defaults to netcdf')
 @click.option('--allow-product-changes', is_flag=True, default=False,
               help='Allow the output product definition to be updated if it differs.')
 @ui.executor_cli_options
@@ -340,25 +330,28 @@ def ingest_cmd(index,
                queue_size,
                save_tasks,
                load_tasks,
-               driver,
                dry_run,
                executor,
                allow_product_changes):
 
-    if driver is None:
-        driver = storage_writer_by_name('netcdf')
+    def get_driver_from_config(config):
+        driver_name = config['storage']['driver']
+        driver = storage_writer_by_name(driver_name)
         if driver is None:
-            click.echo('Bad system state: default storage driver not found')
-            return 2
+            click.echo('Failed to load requested storage driver: ' + driver_name)
+            sys.exit(2)
+        return driver
 
     if config_file:
         config = load_config_from_file(index, config_file)
+        driver = get_driver_from_config(config)
         source_type, output_type = ensure_output_type(index, config, driver.format,
                                                       allow_product_changes=allow_product_changes)
 
         tasks = create_task_list(index, output_type, year, source_type, config)
     elif load_tasks:
         config, tasks = load_tasks_(load_tasks)
+        driver = get_driver_from_config(config)
         source_type, output_type = ensure_output_type(index, config, driver.format,
                                                       allow_product_changes=allow_product_changes)
     else:
