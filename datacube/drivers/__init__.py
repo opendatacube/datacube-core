@@ -10,6 +10,11 @@ class WriterDriverCache(object):
     def __init__(self, group):
         self._drivers = load_drivers(group)
 
+        for driver in list(self._drivers.values()):
+            if hasattr(driver, 'aliases'):
+                for alias in driver.aliases:
+                    self._drivers[alias] = driver
+
     def __call__(self, name):
         '''
         :returns: None if driver with a given name is not found

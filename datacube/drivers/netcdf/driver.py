@@ -7,6 +7,10 @@ class NetcdfWriterDriver(object):
         pass
 
     @property
+    def aliases(self):
+        return ['NetCDF CF']
+
+    @property
     def format(self):
         return 'NetCDF'
 

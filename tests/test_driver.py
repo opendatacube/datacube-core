@@ -45,6 +45,7 @@ def test_reader_drivers():
 def test_writer_drivers():
     available_drivers = writer_drivers()
     assert 'netcdf' in available_drivers
+    assert 'NetCDF CF' in available_drivers
 
 
 def test_netcdf_driver_import():
