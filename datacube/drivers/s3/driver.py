@@ -124,6 +124,7 @@ class S3WriterDriver(object):
     def write_dataset_to_storage(self, dataset, filename,
                                  global_attributes=None,
                                  variable_params=None,
+                                 storage_config=None,
                                  **kwargs):
         """See :meth:`datacube.drivers.driver.write_dataset_to_storage`
 
@@ -136,6 +137,9 @@ class S3WriterDriver(object):
         This is required for indexing in particular.
 
         """
+        if storage_config is None:
+            storage_config = {}
+
         # TODO: handle missing variable params
         if variable_params is None:
             raise DatacubeException('Missing configuration parameters, cannot write to storage.')
@@ -146,6 +150,11 @@ class S3WriterDriver(object):
         if not hasattr(dataset, 'crs'):
             raise DatacubeException('Dataset does not contain CRS, cannot write to storage.')
 
+        if 'bucket' not in storage_config:
+            raise DatacubeException('Expect `bucket` to be set in the storage config')
+
+        bucket = storage_config['bucket']
+
         # TODO: Should write all data variables to disk, not just configured variables
         outputs = {}
         for band, param in variable_params.items():
@@ -154,11 +163,8 @@ class S3WriterDriver(object):
             if 'chunksizes' not in param:
                 raise DatacubeException('Missing `chunksizes` parameter, cannot write to storage.')
             output['chunk_size'] = self._get_chunksizes(param['chunksizes'])
-            if 'container' not in param:
-                raise DatacubeException('Missing `container` parameter, cannot write to storage.')
-            # TODO: Should not assume presence of any kind of parameter
-            output['bucket'] = param['container'] # TODO: replace with global config of some sort
-            self.storage.filepath = output['bucket']  # For the s3_test driver only
+            output['bucket'] = bucket
+            self.storage.filepath = bucket  # For the s3_test driver only TODO: is this still needed?
             output['base_name'] = '%s_%s' % (filename.stem, band)
             key_maps = self.storage.put_array_in_s3(dataset[band].values,
                                                     output['chunk_size'],
@@ -192,7 +198,7 @@ def writer_driver_init():
 
 
 def writer_test_driver_init():
-    return S3WriterDriver(enable_s3=False)
+    return S3WriterDriver(enable_s3=False, file_path='/')
 
 
 class S3ReaderDriver(object):

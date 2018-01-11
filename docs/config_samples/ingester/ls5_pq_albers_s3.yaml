@@ -87,9 +87,9 @@ global_attributes:
     - Zhu, Z. and Woodcock, C. E. (2012) Object-based cloud and cloud shadow detection in Landsat imagery. Remote Sensing of Environment 118, 83-94.
     - http://dx.doi.org/10.4225/25/55EF55788BAC1
 
-container: 'lsbucket1'
 storage:
-  driver: s3
+  driver: s3block
+  bucket: 'lsbucket1'
 
   crs: EPSG:3577
   tile_size:

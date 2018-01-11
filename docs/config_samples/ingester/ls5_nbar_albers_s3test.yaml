@@ -102,9 +102,9 @@ global_attributes:
     - http://dx.doi.org/10.4225/25/5487CC0D4F40B
     - http://dx.doi.org/10.1109/JSTARS.2010.2042281
 
-container: '/home/ubuntu/data/output'
 storage:
-  driver: s3-test
+  driver: s3block_test
+  bucket: '/home/ubuntu/data/output'
 
   crs: EPSG:3577
   tile_size:

@@ -36,7 +36,7 @@ class S3LIO(object):
         :param bool enable_s3: Flag to store objects in s3 or disk.
             True: store in S3
             False: store on disk (for testing purposes)
-        :param str file_path: The root directory for the emulated s3 buckets when enable_se is set to False.
+        :param str file_path: The root directory for the emulated s3 buckets when enable_s3 is set to False.
         :param int num_workers: The number of workers for parallel IO.
         """
         self.s3aio = S3AIO(enable_compression, enable_s3, file_path, num_workers)

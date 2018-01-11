@@ -102,9 +102,9 @@ global_attributes:
     - http://dx.doi.org/10.4225/25/5487CC0D4F40B
     - http://dx.doi.org/10.1109/JSTARS.2010.2042281
 
-container: 'lsbucket1'
 storage:
-  driver: s3
+  driver: s3block
+  bucket: 'lsbucket1'
 
   crs: EPSG:3577
   tile_size:
