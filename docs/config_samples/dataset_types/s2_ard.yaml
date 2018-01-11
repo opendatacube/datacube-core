@@ -26,7 +26,6 @@ measurements:
         3: snow
         4: cloud
 - name: 'contiguity'
-  units: '1'
   dtype: uint8
   nodata: 255
   units: '1'
@@ -140,7 +139,6 @@ measurements:
   units: '1'
   dtype: uint8
   nodata: 255
-  units: '1'
   flags_definition: 
     cfmask:
       bits: [0,1,2,3,4,5,6,7]
@@ -279,7 +277,6 @@ measurements:
   units: '1'
   dtype: uint8
   nodata: 255
-  units: '1'
   flags_definition: 
     cfmask:
       bits: [0,1,2,3,4,5,6,7]
@@ -390,7 +387,6 @@ measurements:
   units: '1'
   dtype: uint8
   nodata: 255
-  units: '1'
   flags_definition: 
     cfmask:
       bits: [0,1,2,3,4,5,6,7]
