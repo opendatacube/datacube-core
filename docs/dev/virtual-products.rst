@@ -1,0 +1,55 @@
+===============================
+Datacube Virtual Product Design
+===============================
+
+Background
+----------
+Many common use cases of Datacube (DC) involve combining temporally and spatially similar sets of data to produce output data. An example is using Product Quality (PQ) products with other products to perform cloud masking. Issues have been encountered with dataset merging previously in Datacube stats (see https://gist.github.com/Kirill888/a4b52d0077fa4e36b351c22827782492) and in Datacube WMS there are times where only TIRS sensor datasets are available, causing unexpected results. As such the creation of Virtual Products (VPs) has been considered as a way to provide users a way to easily define common patterns used in Datacube work and to solve issues seen in software which uses Datacube surrounding the merging and transformation of data without having to create bespoke code each time.
+
+
+Products in Datacube
+--------------------
+In the current version of DC (1.5.4), products are unique strings which associate that string (the product name) with metadata about Datasets. This metadata includes information such as the measurements that the product contains, the grid specification and the mapping of raw fields in the dataset to computed fields (e.g. from_dt and to_dt which product a time measurement). In DC the products are represented by a `DatasetType` which has a `MetadataType`. Each `Dataset` has a `DatasetType` and the `DatasetType` and `MetadataType` are typically loaded from JSON documents stored in a database. See also (http://damien-agdc.readthedocs.io/en/extradocs/dev/data_model.html)
+
+Virtual Products
+----------------
+Requirements (in progress)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Metadata as bands, e.g. data about what LandSat data came from may be encoded as metadata which will be preserved as a band
+- Timestamps must be retained
+- Must support DC GridWorkflow for datasets which will not fit into memory
+- For all queries against a virtual product the database should be accessed to retrieve the locations of datasets, and then database should not be accessed again. The locations of the datasets may need to be serialized to a storage device and loaded later.
+
+Class Thoughts
+~~~~~~~~~~~~~~
+A class implementing Virtual Products (VPs) will represent a tree which represents the hierarchy of virtual products. Leaf nodes will be Virtual Products which are unmodified products.
+
+Combinators
+    Combinators are functions that will accept 1 or more Virtual Products, perform an operation and then return a new Virtual Product. The following combinators will be available:
+
+    Collate: `List A -> A`
+        For example: Combining the sensor readings for LS5 on 05/07/95, LS6 on 06/11/95, LS8 on 07/11/95 into one dataset.
+
+    Juxtapose: `A -> B -> A x B`
+        Similar to a `JOIN` in SQL, could be outer or inner. This could be used for apply PQ for cloud masking in combination with Drop or Transform.
+
+    Drop: `A -> A`
+        Given some predicate function, this will remove all entries in a dataset that do not meet that predicate.
+
+    Transform: `A -> B`
+        Synonymous with the `map` function of the `mapreduce` paradigm.
+
+With the tree constructed, a VP can be asked to retrieve the datasets from ODC. After this retrieval, the VP module should not access the database.
+
+After the datasets are retrieved the tree can be used to calculate each VP in turn up the tree until the dataset for the final VP is created and returned.
+
+Potential Approaches
+--------------------
+Virtual Product Module
+~~~~~~~~~~~~~~~~~~~~~~
+This approach would not modify any opendatacube-core code. Instead a new module would be created that defined `VirtualProduct`. This module would make use of the `datacube` module and API.
+
+The module would query the properties of the `DatasetTypes` (a.k.a. products) used in the definition of the `VirtualProduct` and conduct type and sanity checking on combinators. After passing the checks the storage location of datasets for the given query (e.g. geoboxed or time bounded), the database would be queried using `datacube`. Advanced versions could intelligently walk the product tree to determine how to construct a SQL query for the various products and / or cache query results.
+
+The module would then load the datasets from their location (e.g. disk, aws s3, etc.). Once the datasets are loaded, combinators are applied to the datasets and the results until the final result is created and returned. Again intelligent caching of result could be applied in this stage.
