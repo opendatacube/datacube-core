@@ -46,17 +46,20 @@ Combinators
 
 Methods & Workflow (High Level API)
 
+    `construct`
+        Constructing a Virtual Product will set it's child Virtual Products as well as any functions it requires to operate. The construction will not access the database.
+
     `validate`
         The validation function will check the measurement types of the inputs and outputs and ensure that they are compatible. In most cases this will be checking that they match, however with a `Transform` there may be a change.
 
     `query`
-        The query function will retreieve datasets which match a query, product, and in case of `Drop` products, predicate. The product matched may be virtual. Access to the database will cease after this stage.
+        The query function will retreieve datasets which match a query, product, and in case of `Drop` products, metadata predicate. The product being queried may be virtual. Access to the database will cease after this stage.
 
     `serialize`
         Optional(?) The serialize function will use the results of the `query` function (i.e. datasets that match the query) and serialize them for use on machines or nodes that cannot or should not query the database but can fetch data.
 
     `fetch`
-        The fetch function will use the results of the `query`, direct or deserialized, and load the datasets. At this stage combinators working on data can execute; for example `Filter` can execute. Once completed, the output for the top level Virtual Product will be the desired Virtual Dataset.
+        The fetch function will use the results of the `query`, direct or deserialized, and load the datasets. At this stage combinators working on data can apply their functions or predicates; for example `Filter` can execute. Once completed, the output for the top level Virtual Product will be the desired Virtual Dataset.
 
 Potential Approaches
 --------------------
