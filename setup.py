@@ -110,8 +110,8 @@ setup(
             's3block_test = datacube.drivers.s3.driver:writer_test_driver_init',
         ],
         'datacube.plugins.index': [
-            'default = datacube.index.index.Index',
-            's3block_index = datacube.drivers.s3block_index.index.S3BlockIndex',
+            'default = datacube.index.index:index_driver_init',
+            's3block_index = datacube.drivers.s3block_index:index_driver_init',
         ],
     },
 )

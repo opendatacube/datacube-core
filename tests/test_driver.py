@@ -1,10 +1,12 @@
 from __future__ import absolute_import
+
 from collections import namedtuple
-from .util import mk_sample_dataset
-from datacube.drivers import new_datasource, reader_drivers, writer_drivers
+
+from datacube.drivers import new_datasource, reader_drivers, writer_drivers, index_drivers
 from datacube.drivers.s3 import driver as s3_driver
 from datacube.drivers.s3.datasource import S3DataSource
 from datacube.storage.storage import RasterDatasetDataSource
+from .util import mk_sample_dataset
 
 S3_dataset = namedtuple('S3_dataset', ['macro_shape'])
 
@@ -46,6 +48,12 @@ def test_writer_drivers():
     available_drivers = writer_drivers()
     assert 'netcdf' in available_drivers
     assert 'NetCDF CF' in available_drivers
+
+
+def test_index_drivers():
+    available_drivers = index_drivers()
+    assert 'default' in available_drivers
+    assert 's3block_index' in available_drivers
 
 
 def test_netcdf_driver_import():

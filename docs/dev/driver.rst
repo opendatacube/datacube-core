@@ -27,6 +27,9 @@ Drivers are defined in ``setup.py -> entry_points``::
         ]
     }
 
+This assigns the name of a 
+A ``WriterDriver`` 
+
 
 Storage and Indexing Drivers
 ============================

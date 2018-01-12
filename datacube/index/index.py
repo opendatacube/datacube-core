@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+
 import logging
 
 from datacube.drivers.postgres import PostgresDb
@@ -80,3 +81,7 @@ class Index(object):
 
     def __repr__(self):
         return "Index<db={!r}>".format(self._db)
+
+
+def index_driver_init():
+    return Index
