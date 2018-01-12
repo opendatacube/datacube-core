@@ -20,25 +20,34 @@ Requirements (in progress)
 - Timestamps must be retained
 - Must support DC GridWorkflow for datasets which will not fit into memory
 - For all queries against a virtual product the database should be accessed to retrieve the locations of datasets, and then database should not be accessed again. The locations of the datasets may need to be serialized to a storage device and loaded later.
+- Support querying multiple databases.
 
 Class Thoughts
 ~~~~~~~~~~~~~~
 A class implementing Virtual Products (VPs) will represent a tree which represents the hierarchy of virtual products. Leaf nodes will be Virtual Products which are unmodified products.
 
 Combinators
-    Combinators are functions that will accept 1 or more Virtual Products, perform an operation and then return a new Virtual Product. The following combinators will be available:
+    Combinators are Virtual Products that will accept 1 or more Virtual Products, and perform an operation. The following combinators will be available:
 
     Collate: `List A -> A`
         For example: Combining the sensor readings for LS5 on 05/07/95, LS6 on 06/11/95, LS8 on 07/11/95 into one dataset.
 
     Juxtapose: `A -> B -> A x B`
-        Similar to a `JOIN` in SQL, could be outer or inner. This could be used for apply PQ for cloud masking in combination with Drop or Transform.
+        Similar to a `JOIN` in SQL, could be outer or inner. This could be used for apply PQ for cloud masking in combination with Filter or Transform.
 
     Drop: `A -> A`
-        Given some predicate function, this will remove all entries in a dataset that do not meet that predicate.
+        Given some predicate function, this will remove all datasets with metadata that do not meet the given predicate. Performed at query time.
+
+    Filter: `A -> A`
+        Given some predicate function, this will remove all datapoints in a dataset that do not meet the given predicate. Performed at fetch time.
 
     Transform: `A -> B`
-        Synonymous with the `map` function of the `mapreduce` paradigm.
+        Synonymous with the `map` function of the `mapreduce` paradigm. Will require some transformation function f which accepts a dataset and returns a dataset. This combinator may also modify the type of the dataset.
+
+Methods (High Level)
+    
+    `validate`
+        The validation stage 
 
 With the tree constructed, a VP can be asked to retrieve the datasets from ODC. After this retrieval, the VP module should not access the database.
 
