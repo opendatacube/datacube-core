@@ -27,31 +27,36 @@ Class Thoughts
 A class implementing Virtual Products (VPs) will represent a tree which represents the hierarchy of virtual products. Leaf nodes will be Virtual Products which are unmodified products.
 
 Combinators
-    Combinators are Virtual Products that will accept 1 or more Virtual Products, and perform an operation. The following combinators will be available:
+    Combinators are functions which accept 1 or more Virtual Products and return a Virtual Product. The following combinators will be available:
 
-    Collate: `List A -> A`
+    `Collate`: `List A -> A`
         For example: Combining the sensor readings for LS5 on 05/07/95, LS6 on 06/11/95, LS8 on 07/11/95 into one dataset.
 
-    Juxtapose: `A -> B -> A x B`
+    `Juxtapose`: `A -> B -> A x B`
         Similar to a `JOIN` in SQL, could be outer or inner. This could be used for apply PQ for cloud masking in combination with Filter or Transform.
 
-    Drop: `A -> A`
+    `Drop`: `A -> A`
         Given some predicate function, this will remove all datasets with metadata that do not meet the given predicate. Performed at query time.
 
-    Filter: `A -> A`
-        Given some predicate function, this will remove all datapoints in a dataset that do not meet the given predicate. Performed at fetch time.
+    `Filter`: `A -> A`
+        Given some predicate function, this will remove all points in a dataset that do not meet the given predicate. Performed at fetch time.
 
-    Transform: `A -> B`
+    `Transform`: `A -> B`
         Synonymous with the `map` function of the `mapreduce` paradigm. Will require some transformation function f which accepts a dataset and returns a dataset. This combinator may also modify the type of the dataset.
 
-Methods (High Level)
-    
+Methods & Workflow (High Level API)
+
     `validate`
-        The validation stage 
+        The validation function will check the measurement types of the inputs and outputs and ensure that they are compatible. In most cases this will be checking that they match, however with a `Transform` there may be a change.
 
-With the tree constructed, a VP can be asked to retrieve the datasets from ODC. After this retrieval, the VP module should not access the database.
+    `query`
+        The query function will retreieve datasets which match a query, product, and in case of `Drop` products, predicate. The product matched may be virtual. Access to the database will cease after this stage.
 
-After the datasets are retrieved the tree can be used to calculate each VP in turn up the tree until the dataset for the final VP is created and returned.
+    `serialize`
+        Optional(?) The serialize function will use the results of the `query` function (i.e. datasets that match the query) and serialize them for use on machines or nodes that cannot or should not query the database but can fetch data.
+
+    `fetch`
+        The fetch function will use the results of the `query`, direct or deserialized, and load the datasets. At this stage combinators working on data can execute; for example `Filter` can execute. Once completed, the output for the top level Virtual Product will be the desired Virtual Dataset.
 
 Potential Approaches
 --------------------
