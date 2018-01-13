@@ -22,7 +22,7 @@ class VirtualProduct(ABC):
         raise NotImplementedError
 
     def find_datasets(self, index, **query):
-        """ Iterator of datasets that match the query. """
+        """ Collection of datasets that match the query. """
         raise NotImplementedError
 
     def fetch_data(self, datasets, **query):
@@ -40,7 +40,18 @@ class VirtualProduct(ABC):
 
 def product_measurements(index, product_name):
     """ The measurement metadata for an existing product. """
-    return index.products.get_by_name(product_name).measurements
+    measurement_docs = index.products.get_by_name(product_name).measurements
+    return {key: Measurement(value)
+            for key, value in measurement_docs.items()}
+
+
+class DatasetList(object):
+    def __init__(self, dataset_list):
+        # so that it can be serialized
+        self.dataset_list = list(dataset_list)
+
+    def __iter__(self):
+        return iter(self.dataset_list)
 
 
 class ExistingProduct(VirtualProduct):
@@ -80,11 +91,18 @@ class ExistingProduct(VirtualProduct):
                     raise VirtualProductConstructionException()
 
     def find_datasets(self, index, **query):
-        return datacube.Datacube().find_datasets(product=self.product_name, **query)
+        dc = datacube.Datacube(index=index)
+        return DatasetList(dc.find_datasets(product=self.product_name,
+                                                 **query))
 
     def fetch_data(self, datasets, **query):
-        return datacube.Datacube().load(product=self.product_name, measurements=self.measurement_names,
-                                        datasets=list(datasets), **query)
+        assert isinstance(datasets, DatasetList)
+
+        # this will need to be replaced since it requires a db connection
+        dc = datacube.Datacube()
+
+        return dc.load(product=self.product_name, measurements=self.measurement_names,
+                       datasets=datasets.dataset_list, **query)
 
 
 class Drop(VirtualProduct):
@@ -99,9 +117,13 @@ class Drop(VirtualProduct):
         self.child.validate_construction(index)
 
     def find_datasets(self, index, **query):
-        for ds in self.child.find_datasets(index, **query):
-            if self.predicate(ds):
-                yield ds
+        # this won't work for datasets with more complicated structure
+        def result():
+            for ds in self.child.find_datasets(index, **query):
+                if self.predicate(ds):
+                    yield ds
+
+        return DatasetList(result())
 
     def fetch_data(self, datasets, **query):
         return self.child.fetch_data(datasets, **query)
