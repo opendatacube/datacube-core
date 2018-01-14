@@ -35,6 +35,7 @@ from ..utils import geometry, intersects, data_resolution_and_offset
 from .query import Query, query_group_by, query_geopolygon
 
 _LOG = logging.getLogger(__name__)
+THREADING_REQS_AVAILABLE = ('SharedArray' in sys.modules and 'pathos.threading' in sys.modules)
 
 Group = namedtuple('Group', ['key', 'datasets'])
 
@@ -104,7 +105,7 @@ class Datacube(object):
             eg. 'dev', 'test' or 'landsat', 'modis' etc.
 
         :param DriverManager driver_manager: The driver manager to
-          use. If not specified, an new manager will be created using
+          use. If not specified, a new manager will be created using
           the index if specified, or the default configuration
           otherwise.
 
@@ -204,8 +205,8 @@ class Datacube(object):
 
             See :meth:`list_products` for the list of products with their names and properties.
 
-            A product can also be selected by searched using fields, but must only match one product.
-            ::
+            A product can also be selected by searching using fields, but must only match one product.
+            For example::
 
                 platform='LANDSAT_5',
                 product_type='ndvi'
@@ -243,17 +244,9 @@ class Datacube(object):
 
             For data that has different values for the scene overlap the requires more complex rules for combining data,
             such as GA's Pixel Quality dataset, a function can be provided to the merging into a single time slice.
-            ::
 
-                def pq_fuser(dest, src):
-                    valid_bit = 8
-                    valid_val = (1 << valid_bit)
+            See :func:`datacube.helpers.ga_pq_fuser` for an example implementation.
 
-                    no_data_dest_mask = ~(dest & valid_val).astype(bool)
-                    np.copyto(dest, src, where=no_data_dest_mask)
-
-                    both_data_mask = (valid_val & dest & src).astype(bool)
-                    np.copyto(dest, src & dest, where=both_data_mask)
 
         **Output**
             If the `stack` argument is supplied, the returned data is stacked in a single ``DataArray``.
@@ -345,8 +338,8 @@ class Datacube(object):
             Optional. If provided, limit the maximum number of datasets
             returned. Useful for testing and debugging.
 
-        :return: Requested data in a :class:`xarray.Dataset`.
-            As a :class:`xarray.DataArray` if the ``stack`` variable is supplied.
+        :return: Requested data in a :class:`xarray.Dataset`, or
+            as a :class:`xarray.DataArray` if the ``stack`` variable is supplied.
 
         :rtype: :class:`xarray.Dataset` or :class:`xarray.DataArray`
         """
@@ -398,17 +391,17 @@ class Datacube(object):
                       DeprecationWarning)
         return self.find_datasets(**kwargs)
 
-    def find_datasets(self, **kwargs):
+    def find_datasets(self, **search_terms):
         """
-        Find datasets for a product.
+        Search the index and return all datasets for a product matching the search terms.
 
-        :param kwargs: see :class:`datacube.api.query.Query`
+        :param search_terms: see :class:`datacube.api.query.Query`
         :return: list of datasets
         :rtype: list[:class:`datacube.model.Dataset`]
 
         .. seealso:: :meth:`group_datasets` :meth:`load_data` :meth:`find_datasets_lazy`
         """
-        return list(self.find_datasets_lazy(**kwargs))
+        return list(self.find_datasets_lazy(**search_terms))
 
     def find_datasets_lazy(self, limit=None, **kwargs):
         """
@@ -489,7 +482,8 @@ class Datacube(object):
 
         :param data_func:
             function to fill the storage with data. It is called once for each measurement, with the measurement
-            as an argument. It should return an appropriately shaped numpy array.
+            as an argument. It should return an appropriately shaped numpy array. If not provided, an empty
+            :class:`xarray.Dataset` is returned.
 
         :param bool use_threads:
             Optional. If this is set to True, IO will be multi-thread.
@@ -517,8 +511,7 @@ class Datacube(object):
         def work_measurements(measurement, data_func):
             return data_func(measurement)
 
-        if use_threads and ('SharedArray' not in sys.modules or 'pathos.threading' not in sys.modules):
-            use_threads = False
+        use_threads = use_threads and THREADING_REQS_AVAILABLE
 
         if use_threads:
             pool = ThreadPool(32)
@@ -593,8 +586,7 @@ class Datacube(object):
         if driver_manager is None:
             driver_manager = DriverManager()
 
-        if use_threads and ('SharedArray' not in sys.modules or 'pathos.threading' not in sys.modules):
-            use_threads = False
+        use_threads = use_threads and THREADING_REQS_AVAILABLE
 
         if dask_chunks is None:
             def data_func(measurement):
@@ -634,6 +626,14 @@ class Datacube(object):
         """
         Retrieve a single measurement variable as a :class:`xarray.DataArray`.
 
+        .. note:
+
+             This method appears to only be used by the deprecated `get_data()/get_descriptor()`
+              :class:`~datacube.api.API`, so is a prime candidate for future removal.
+
+        .. seealso:: :meth:`load_data`
+
+
         :param xarray.DataArray sources: DataArray holding a list of :class:`datacube.model.Dataset` objects
         :param GeoBox geobox: A GeoBox defining the output spatial projection and resolution
         :param measurement: measurement definition with keys: {'name', 'dtype', 'nodata', 'units'}
@@ -647,8 +647,6 @@ class Datacube(object):
           the index if specified, or the default configuration
           otherwise.
         :rtype: :class:`xarray.DataArray`
-
-        .. seealso:: :meth:`load_data`
         """
         dataset = Datacube.load_data(sources, geobox, [measurement], fuse_func=fuse_func,
                                      dask_chunks=dask_chunks, driver_manager=driver_manager)

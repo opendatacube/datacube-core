@@ -2,8 +2,6 @@
 Windows Developer Setup
 =======================
 
-**Under construction**
-
 Base OS: Windows 10
 
 This guide will setup an ODC core development environment and includes:
@@ -20,9 +18,6 @@ Required software
 Postgres:
 
     Download and install from `here <https://www.enterprisedb.com/downloads/postgres-postgresql-downloads#windows>`_.
-
-    
-Optional packages (useful utilities, docs):
 
     
 

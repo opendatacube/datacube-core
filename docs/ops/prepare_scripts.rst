@@ -1,3 +1,5 @@
+.. highlight:: bash
+
 .. _prepare-scripts:
 
 Dataset Preparation Scripts
@@ -10,7 +12,7 @@ immediately.
 In many other cases the data you want to load into your Data Cube will not have
 these description documents. Before loading them will need to generate them,
 using a tool which understands the format the dataset is in. Several of these
-tools are provided in  ``utils/`` in the source repository.
+tools are provided in  :file:`utils/` in the source repository.
 
 The two examples below shows USGS landsat data for ingestion into the Data cube.
 
@@ -27,7 +29,7 @@ Download the USGS Collection 1 landsat scenes from any of the link below:
 * `GloVis <https://glovis.usgs.gov>`_
 * `ESPA ordering <https://espa.cr.usgs.gov>`_
 
-The prepare script for collection 1 - level 1 data is provided in ``utils/ls_usgs_prepare.py``
+The prepare script for collection 1 - level 1 data is provided in :file:`utils/ls_usgs_prepare.py`
 
 ::
 
@@ -65,13 +67,13 @@ For Landsat collection 1 level 1 product:
 
 
 #. An another example for USGS landsat surface reflectance :download:`USGS Landsat LEDAPS
-<../../utils/USGS_precollection_oldscripts/ls_usgs_prepare.py>`
+<../../utils/USGS_precollection_oldscripts/ls_usgs_ard_prepare.py>`
 
 Preparing USGS Landsat Surface Reflectance - LEDAPS
 ---------------------------------------------------
 
 To prepare downloaded USGS LEDAPS Landsat scenes for use with the Data Cube,
-use the script provided in ``utils/USGS_precollection_oldscripts/usgslsprepare.py``.
+use the script provided in :file:`utils/USGS_precollection_oldscripts/ls_usgs_ard_prepare.py`.
 
 The following example generates the required Dataset Metadata files, named
 `agdc-metadata.yaml` for three landsat scenes.
