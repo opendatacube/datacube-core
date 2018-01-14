@@ -25,9 +25,9 @@ class VirtualProduct(ABC):
         """ Collection of datasets that match the query. """
         raise NotImplementedError
 
-    def fetch_data(self, datasets, **query):
+    def build_raster(self, datasets, **query):
         """
-        Data (represented as an `xarray.Dataset` from datasets.
+        Data (represented as an `xarray.Dataset`) from datasets.
         :param datasets: the datasets to fetch data from
         :param query: to specify a geobox
         """
@@ -35,7 +35,7 @@ class VirtualProduct(ABC):
 
     def load(self, index, **query):
         """ Mimic `datacube.Datacube.load`. """
-        return self.fetch_data(self.find_datasets(index, **query), **query)
+        return self.build_raster(self.find_datasets(index, **query), **query)
 
 
 def product_measurements(index, product_name):
@@ -45,7 +45,7 @@ def product_measurements(index, product_name):
             for key, value in measurement_docs.items()}
 
 
-class DatasetList(object):
+class ExistingDatasets(object):
     def __init__(self, dataset_list):
         # so that it can be serialized
         self.dataset_list = list(dataset_list)
@@ -92,11 +92,11 @@ class ExistingProduct(VirtualProduct):
 
     def find_datasets(self, index, **query):
         dc = datacube.Datacube(index=index)
-        return DatasetList(dc.find_datasets(product=self.product_name,
+        return ExistingDatasets(dc.find_datasets(product=self.product_name,
                                                  **query))
 
-    def fetch_data(self, datasets, **query):
-        assert isinstance(datasets, DatasetList)
+    def build_raster(self, datasets, **query):
+        assert isinstance(datasets, ExistingDatasets)
 
         # this will need to be replaced since it requires a db connection
         dc = datacube.Datacube()
@@ -123,10 +123,10 @@ class Drop(VirtualProduct):
                 if self.predicate(ds):
                     yield ds
 
-        return DatasetList(result())
+        return ExistingDatasets(result())
 
-    def fetch_data(self, datasets, **query):
-        return self.child.fetch_data(datasets, **query)
+    def build_raster(self, datasets, **query):
+        return self.child.build_raster(datasets, **query)
 
 
 class Transform(VirtualProduct):
@@ -149,5 +149,5 @@ class Transform(VirtualProduct):
     def find_datasets(self, index, **query):
         return self.child.find_datasets(index, **query)
 
-    def fetch_data(self, datasets, **query):
-        return self.transform(self.child.fetch_data(datasets, **query))
+    def build_raster(self, datasets, **query):
+        return self.transform(self.child.build_raster(datasets, **query))
