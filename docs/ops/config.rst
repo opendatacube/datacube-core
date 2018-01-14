@@ -326,7 +326,7 @@ measurements
     nodata (optional)
         No data value
 
-.. _runtime-config-doc:
+.. _ops-runtime-config-doc:
 
 Runtime Config
 --------------

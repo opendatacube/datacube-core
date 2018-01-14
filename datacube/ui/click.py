@@ -150,7 +150,7 @@ verbose_option = click.option('--verbose', '-v', count=True, callback=_init_logg
 logfile_option = click.option('--log-file', multiple=True, callback=_add_logfile,
                               is_eager=True, expose_value=False, help="Specify log file")
 #: pylint: disable=invalid-name
-config_option = click.option('--config_file', '-C', multiple=True, default='', callback=_set_config,
+config_option = click.option('--config', '--config_file', '-C', multiple=True, default='', callback=_set_config,
                              expose_value=False)
 
 #: pylint: disable=invalid-name

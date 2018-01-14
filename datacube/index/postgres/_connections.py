@@ -110,7 +110,9 @@ class PostgresDb(object):
         return PostgresDb(engine)
 
     @classmethod
-    def from_config(cls, config=LocalConfig.find(), application_name=None, validate_connection=True):
+    def from_config(cls, config=None, application_name=None, validate_connection=True):
+        config = LocalConfig.find() if config is None else config
+
         app_name = cls._expand_app_name(application_name)
 
         return PostgresDb.create(
