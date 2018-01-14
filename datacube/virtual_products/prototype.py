@@ -4,8 +4,11 @@ from abc import ABC, abstractmethod
 
 import xarray
 
-import datacube
+from datacube import Datacube
 from datacube.model import Measurement
+from datacube.api.query import query_group_by, query_geopolygon
+from datacube.utils import geometry
+
 
 class VirtualProductConstructionException(Exception):
     pass
@@ -49,12 +52,11 @@ def product_measurements(index, product_name):
 
 
 class ExistingDatasets(object):
-    def __init__(self, dataset_list):
+    def __init__(self, dataset_list, geobox, output_measurements):
         # so that it can be serialized
-        self.dataset_list = list(dataset_list)
-
-    def __iter__(self):
-        return iter(self.dataset_list)
+        self.dataset_list = dataset_list
+        self.geobox = geobox
+        self.output_measurements = output_measurements
 
 
 class ExistingProduct(VirtualProduct):
@@ -94,18 +96,34 @@ class ExistingProduct(VirtualProduct):
                     raise VirtualProductConstructionException()
 
     def find_datasets(self, index, **query):
-        dc = datacube.Datacube(index=index)
-        return ExistingDatasets(dc.find_datasets(product=self.product_name,
-                                                 **query))
+        # find the datasets
+        dc = Datacube(index=index)
+        datasets = dc.find_datasets(product=self.product_name, **query)
+
+        # group by time
+        group_by = query_group_by(**query)
+        grouped = Datacube.group_datasets(datasets, group_by)
+
+        # geobox
+        grid_spec = index.products.get_by_name(self.product_name).grid_spec
+        assert grid_spec is not None and grid_spec.crs is not None
+        geobox = geometry.GeoBox.from_geopolygon(query_geopolygon(**query),
+                                                 grid_spec.resolution,
+                                                 grid_spec.crs,
+                                                 grid_spec.alignment)
+
+        # information needed for Datacube.load_data
+        return ExistingDatasets(grouped, geobox, self.output_measurements(index))
 
     def build_raster(self, datasets, **query):
         assert isinstance(datasets, ExistingDatasets)
 
-        # this will need to be replaced since it requires a db connection
-        dc = datacube.Datacube()
+        # convert Measurements back to dicts?
+        measurements = [dict(name=m.name, dtype=m.dtype, nodata=m.nodata, units=m.units)
+                        for m in datasets.output_measurements.values()]
 
-        return dc.load(product=self.product_name, measurements=self.measurement_names,
-                       datasets=datasets.dataset_list, **query)
+        return Datacube.load_data(datasets.dataset_list, datasets.geobox,
+                                  measurements)
 
 
 class Drop(VirtualProduct):
@@ -159,9 +177,6 @@ class Transform(VirtualProduct):
 class CollatedDatasets(object):
     def __init__(self, *datasets):
         self.dataset_tuple = tuple(datasets)
-
-    def __iter__(self):
-        return iter(self.dataset_tuple)
 
 
 class Collate(VirtualProduct):
