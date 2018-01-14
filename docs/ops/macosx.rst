@@ -7,32 +7,7 @@ Miniconda
 
 2. Open Terminal to execute the following commands.
 
-3. Add the conda-forge channel
-    .. code::
-
-        conda config --add channels conda-forge
-
-    The conda-forge channel provides multitude of community maintained packages.
-    Find out more about it here https://conda-forge.github.io
-
-4. Create a virtual environment in conda
-    .. code::
-
-        conda create --name cubeenv python=3.5 datacube
-
-5. Activate the virtual environment
-    .. code::
-
-        source activate cubeenv
-
-    Find out more about managing virtual environments here https://conda.io/docs/using/envs.html
-
-6. Install other packages
-    .. code::
-
-        conda install jupyter matplotlib scipy
-
-    Find out more about managing packages here https://conda.io/docs/using/pkgs.html
+.. include:: conda_base.rst 
 
 Datacube is now installed and can be used in Terminal by activating the `cubeenv` environment.
 
