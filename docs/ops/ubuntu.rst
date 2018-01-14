@@ -6,14 +6,14 @@ Miniconda
 ~~~~~~~~~
 1.  Download and install Miniconda using the following instructions https://conda.io/docs/user-guide/install/linux.html
 
-2.  Open your favourite terminal to execute the following commands.
+2. Open your favourite terminal to execute the following commands.
 
-3.  Add the conda-forge channel
+3. Add the conda-forge channel
     .. code::
 
         conda config --add channels conda-forge
 
-    conda-forge channel provides multitude of community maintained packages.
+    The conda-forge channel provides multitude of community maintained packages.
     Find out more about it here https://conda-forge.github.io
 
 4. Create a virtual environment in conda
