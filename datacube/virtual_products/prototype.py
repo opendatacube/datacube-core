@@ -2,6 +2,8 @@
 
 from abc import ABC, abstractmethod
 
+import xarray
+
 import datacube
 from datacube.model import Measurement
 
@@ -23,6 +25,7 @@ class VirtualProduct(ABC):
 
     def find_datasets(self, index, **query):
         """ Collection of datasets that match the query. """
+        # next step: group data by time here
         raise NotImplementedError
 
     def build_raster(self, datasets, **query):
@@ -151,3 +154,51 @@ class Transform(VirtualProduct):
 
     def build_raster(self, datasets, **query):
         return self.transform(self.child.build_raster(datasets, **query))
+
+
+class CollatedDatasets(object):
+    def __init__(self, *datasets):
+        self.dataset_tuple = tuple(datasets)
+
+    def __iter__(self):
+        return iter(self.dataset_tuple)
+
+
+class Collate(VirtualProduct):
+    def __init__(self, *children):
+        self.children = children
+
+    def validate_construction(self, index):
+        for child in self.children:
+            child.validate_construction(index)
+
+        input_measurements = [child.output_measurements(index)
+                              for child in self.children]
+
+        first = input_measurements[0]
+        rest = input_measurements[1:]
+
+        for child in rest:
+            if set(child) != set(first):
+                raise VirtualProductConstructionException()
+
+    def output_measurements(self, index):
+        return self.children[0].output_measurements()
+
+    def find_datasets(self, index, **query):
+        result = [child.find_datasets(index, **query)
+                  for child in self.children]
+
+        return CollatedDatasets(*result)
+
+    def build_raster(self, datasets, **query):
+        assert isinstance(datasets, CollatedDatasets)
+        assert len(datasets.dataset_tuple) == len(self.children)
+
+        paired_up = zip(self.children, datasets.dataset_tuple)
+
+        rasters = [product.build_raster(datasets, **query)
+                   for product, datasets in paired_up]
+
+        # in reality this should be time sorted
+        return xarray.concat(rasters, dim='time')
