@@ -235,7 +235,7 @@ class PostgresDb(object):
             finally:
                 connection.close()
 
-    def give_me_a_flippin_connection(self):
+    def give_me_a_connection(self):
         return self._engine.connect()
 
     def get_dataset_fields(self, search_fields_definition):

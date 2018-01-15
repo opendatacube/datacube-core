@@ -7,10 +7,10 @@ from uuid import uuid4
 import numpy as np
 from sqlalchemy import select, and_
 
+from datacube.drivers.postgres._core import pg_exists
+from datacube.drivers.s3block_index.schema import S3_DATASET, S3_DATASET_CHUNK, S3_DATASET_MAPPING, S3_METADATA
 from datacube.index._datasets import DatasetResource as BaseDatasetResource
 from datacube.index.index import Index
-from datacube.drivers.s3block_index.schema import S3_DATASET, S3_DATASET_CHUNK, S3_DATASET_MAPPING, S3_METADATA
-from datacube.drivers.postgres._core import pg_exists
 
 _LOG = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ class S3BlockIndex(Index):
         :return: True if requirements is satisfied, otherwise returns False
         """
         try:
-            with self._db.give_me_a_flippin_connection() as connection:
+            with self._db.give_me_a_connection() as connection:
                 return (pg_exists(connection, "agdc.s3_dataset") and
                         pg_exists(connection, "agdc.s3_dataset_chunk") and
                         pg_exists(connection, "agdc.s3_dataset_mapping"))
@@ -50,7 +50,7 @@ class S3BlockIndex(Index):
         is_new = super(S3BlockIndex, self).init_db(with_default_types, with_permissions)
 
         if is_new:
-            with self._db.give_me_a_flippin_connection() as connection:
+            with self._db.give_me_a_connection() as connection:
                 try:
                     connection.execute('begin')
                     _LOG.info('Creating s3 block tables.')

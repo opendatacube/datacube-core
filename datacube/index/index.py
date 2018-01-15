@@ -83,5 +83,10 @@ class Index(object):
         return "Index<db={!r}>".format(self._db)
 
 
+class DefaultIndexDriver(object):
+    def connect_to_index(self, config, application_name=None, validate_connection=True):
+        return Index.from_config(config, application_name, validate_connection)
+
+
 def index_driver_init():
-    return Index
+    return DefaultIndexDriver()

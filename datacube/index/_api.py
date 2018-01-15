@@ -8,7 +8,6 @@ import logging
 
 from datacube.config import LocalConfig
 from datacube.drivers import index_driver_by_name
-from datacube.drivers.postgres import PostgresDb
 
 _LOG = logging.getLogger(__name__)
 
@@ -33,7 +32,6 @@ def index_connect(local_config=None, application_name=None, validate_connection=
 
     index_driver = index_driver_by_name(local_config.get('index_driver', 'default'))
 
-    return index_driver(
-        PostgresDb.from_config(local_config, application_name=application_name,
-                               validate_connection=validate_connection)
-    )
+    return index_driver.connect_to_index(local_config,
+                                         application_name=application_name,
+                                         validate_connection=validate_connection)
