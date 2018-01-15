@@ -218,5 +218,5 @@ class S3ReaderDriver(object):
         return S3DataSource(dataset, band_name, self._storage)
 
 
-def rdr_driver_init():
+def reader_driver_init():
     return S3ReaderDriver()
