@@ -81,9 +81,8 @@ def new_datasource(dataset, band_name=None):
     - Current system settings
     - Available IO plugins
 
-    This function will return None if no `DataSource` can be found that
-    supports that type of `dataset`.
-
+    This function will return the default :class:`RasterDatasetDataSource` if no more specific
+    ``DataSource`` can be found.
 
     :param dataset: The dataset to read.
     :param str band_name: the name of the band to read.
