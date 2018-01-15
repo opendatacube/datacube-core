@@ -6,6 +6,8 @@ import rasterio.warp
 
 from datacube.storage.storage import measurement_paths
 
+FORMAT = 'pickle'
+
 
 def uri_split(uri):
     loc = uri.find('://')
@@ -81,7 +83,7 @@ class PickleReaderDriver(object):
     def __init__(self):
         self.name = 'PickleReader'
         self.protocols = ['file', 'pickle']
-        self.formats = ['pickle']
+        self.formats = [FORMAT]
 
     def supports(self, protocol, fmt):
         return (protocol in self.protocols and
@@ -91,5 +93,31 @@ class PickleReaderDriver(object):
         return PickleDataSource(dataset, band_name)
 
 
-def init_driver():
+def rdr_driver_init():
     return PickleReaderDriver()
+
+
+class PickleWriterDriver(object):
+    def __init__(self):
+        pass
+
+    @property
+    def aliases(self):
+        return ['pickles']
+
+    @property
+    def format(self):
+        return FORMAT
+
+    def write_dataset_to_storage(self, dataset, filename,
+                                 global_attributes=None,
+                                 variable_params=None,
+                                 storage_config=None,
+                                 **kwargs):
+        with open(filename, 'wb') as f:
+            pickle.dump(dataset, f)
+        return {}
+
+
+def writer_driver_init():
+    return PickleWriterDriver()

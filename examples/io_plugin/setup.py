@@ -9,8 +9,12 @@ setup(
 
     entry_points={
         'datacube.plugins.io.read': [
-            'pickle=dcio_example.pickles:init_driver',
+            'pickle=dcio_example.pickles:rdr_driver_init',
             'zeros=dcio_example.zeros:init_driver'
+        ],
+        'datacube.plugins.io.write': [
+            'pickle=dcio_example.pickles:writer_driver_init',
         ]
+
     }
 )
