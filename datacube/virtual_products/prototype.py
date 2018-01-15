@@ -7,122 +7,174 @@ import xarray
 from datacube import Datacube
 from datacube.model import Measurement
 from datacube.api.query import query_group_by, query_geopolygon
-from datacube.utils import geometry
+from datacube.utils import geometry, intersects
 
 
 class VirtualProductConstructionException(Exception):
+    """ Raised if the construction of the virtual product cannot be validated. """
     pass
 
 
-class VirtualProduct(ABC):
-    def output_measurements(self, index):
-        """ A dictionary mapping names to measurement metadata. """
-        raise NotImplementedError
+class VirtualDatasets(ABC):
+    """ Result of `VirtualProduct.find_datasets`. """
 
+    @abstractmethod
+    def drop(self, predicate):
+        """ Drop datasets that do not satisfy `predicate`. """
+
+
+class VirtualRaster(ABC):
+    """ Result of `VirtualProduct.build_raster`. """
+    # our replacement for grid_workflow.Tile basically
+
+
+class VirtualProduct(ABC):
+    """ Abstract class defining the common interface of virtual products. """
+
+    @abstractmethod
+    def output_measurements(self, index):
+        # type: (Index) -> Dict[str, Measurement]
+        """ A dictionary mapping names to measurement metadata. """
+
+    @abstractmethod
     def validate_construction(self, index):
+        # type: (Index) -> None
         """
         Validate that the virtual product is well-formed.
-        :raises: VirtualProductConstructionException if not well-formed.
+        :raises: `VirtualProductConstructionException` if not well-formed.
         """
-        raise NotImplementedError
 
+    @abstractmethod
     def find_datasets(self, index, **query):
+        # type: (Index, Dict[str, Any]) -> VirtualDatasets
         """ Collection of datasets that match the query. """
-        # next step: group data by time here
-        raise NotImplementedError
 
+    # no database access below this line
+
+    @abstractmethod
     def build_raster(self, datasets, **query):
+        # type: (VirtualDatasets, Dict[str, Any]) -> VirtualRaster
         """
-        Data (represented as an `xarray.Dataset`) from datasets.
+        Datasets grouped by their timestamp.
         :param datasets: the datasets to fetch data from
-        :param query: to specify a geobox
+        :param query: to specify a spatial sub-region
         """
-        raise NotImplementedError
+
+    @abstractmethod
+    def fetch_data(self, raster):
+        # type: (VirtualRaster) -> xarray.Dataset
+        """ Convert virtual raster to `xarray.Dataset`. """
 
     def load(self, index, **query):
+        # type: (Index, Dict[str, Any]) -> xarray.Dataset
         """ Mimic `datacube.Datacube.load`. """
-        return self.build_raster(self.find_datasets(index, **query), **query)
+        datasets = self.find_datasets(index, **query)
+        raster = self.build_raster(datasets, **query)
+        data = self.fetch_data(raster)
+        return data
 
 
-def product_measurements(index, product_name):
-    """ The measurement metadata for an existing product. """
-    measurement_docs = index.products.get_by_name(product_name).measurements
-    return {key: Measurement(value)
-            for key, value in measurement_docs.items()}
-
-
-class ExistingDatasets(object):
-    def __init__(self, dataset_list, geobox, output_measurements):
-        # so that it can be serialized
+class BasicDatasets(VirtualDatasets):
+    def __init__(self, dataset_list, grid_spec, output_measurements):
         self.dataset_list = dataset_list
+        self.grid_spec = grid_spec
+        self.output_measurements = output_measurements
+
+    def drop(self, predicate):
+        # type: Callable[[datacube.Dataset], bool] -> BasicDatasets
+
+        def result():
+            for dataset in self.dataset_list:
+                if predicate is None or predicate(dataset):
+                    yield dataset
+
+        return BasicDatasets(list(result()), self.grid_spec, self.output_measurements)
+
+
+class BasicRaster(VirtualRaster):
+    def __init__(self, grouped_datasets, geobox, output_measurements):
+        self.grouped_datasets = grouped_datasets
         self.geobox = geobox
         self.output_measurements = output_measurements
 
 
-class ExistingProduct(VirtualProduct):
+class BasicProduct(VirtualProduct):
     """ A product already in the datacube. """
     def __init__(self, product_name, measurement_names=None):
         """
         :param product_name: name of the product
-        :param  measurement_names: list of names of measurements to include
+        :param  measurement_names: list of names of measurements to include (None if all)
         """
         self.product_name = product_name
-
-        if measurement_names is not None:
-            if len(measurement_names) == 0:
-                raise VirtualProductConstructionException()
-
         self.measurement_names = measurement_names
 
     def output_measurements(self, index):
-        """
-        Output measurements metadata.
-        """
-        measurements = product_measurements(index, self.product_name)
-
-        return {name: measurement
-                for name, measurement in measurements.items()
-                if name in self.measurement_names}
-
-    def validate_construction(self, index):
-        measurements = product_measurements(index, self.product_name)
-        measurement_names = list(measurements.keys())
+        """ Output measurements metadata.  """
+        measurement_docs = index.products.get_by_name(self.product_name).measurements
+        measurements = {key: Measurement(value)
+                        for key, value in measurement_docs.items()}
 
         if self.measurement_names is None:
-            self.measurement_names = measurement_names
-        else:
-            for m in self.measurement_names:
-                if m not in measurement_names:
-                    raise VirtualProductConstructionException()
+            return measurements
+
+        return {name: measurements[name]
+                for name in self.measurement_names}
+
+    def validate_construction(self, index):
+        if self.measurement_names is not None:
+            if not self.measurement_names:
+                raise VirtualProductConstructionException("Product selects no measurements")
+
+        try:
+            _ = self.output_measurements(index)
+        except KeyError as ke:
+            raise VirtualProductConstructionException("Missing measurements: {}".format(ke.args))
 
     def find_datasets(self, index, **query):
         # find the datasets
         dc = Datacube(index=index)
         datasets = dc.find_datasets(product=self.product_name, **query)
+        output_measurements = self.output_measurements(index)
+        grid_spec = index.products.get_by_name(self.product_name).grid_spec
+        return BasicDatasets(datasets, grid_spec, output_measurements)
 
-        # group by time
+    def build_raster(self, datasets, **query):
+        assert isinstance(datasets, BasicDatasets)
+
+        # select only those inside the ROI and group by time
+        polygon = query_geopolygon(**query)
         group_by = query_group_by(**query)
-        grouped = Datacube.group_datasets(datasets, group_by)
+
+        def inside_ROI():
+            for dataset in datasets.dataset_list:
+                if polygon is None:
+                    yield dataset
+                else:
+                    if intersects(polygon.to_crs(dataset.crs), dataset.extent):
+                        yield dataset
+
+        grouped = Datacube.group_datasets(list(inside_ROI()), group_by)
 
         # geobox
-        grid_spec = index.products.get_by_name(self.product_name).grid_spec
+        grid_spec = datasets.grid_spec
         assert grid_spec is not None and grid_spec.crs is not None
-        geobox = geometry.GeoBox.from_geopolygon(query_geopolygon(**query),
+        geobox = geometry.GeoBox.from_geopolygon(polygon,
                                                  grid_spec.resolution,
                                                  grid_spec.crs,
                                                  grid_spec.alignment)
 
         # information needed for Datacube.load_data
-        return ExistingDatasets(grouped, geobox, self.output_measurements(index))
+        return BasicRaster(grouped, geobox, datasets.output_measurements)
 
-    def build_raster(self, datasets, **query):
-        assert isinstance(datasets, ExistingDatasets)
+    def fetch_data(self, raster):
+        assert isinstance(raster, BasicRaster)
 
         # convert Measurements back to dicts?
         measurements = [dict(name=m.name, dtype=m.dtype, nodata=m.nodata, units=m.units)
-                        for m in datasets.output_measurements.values()]
+                        for m in raster.output_measurements.values()]
 
-        return Datacube.load_data(datasets.dataset_list, datasets.geobox,
+        # grid workflow does one more thing: set_resampling_method
+        return Datacube.load_data(raster.grouped_datasets, raster.geobox,
                                   measurements)
 
 
@@ -138,16 +190,14 @@ class Drop(VirtualProduct):
         self.child.validate_construction(index)
 
     def find_datasets(self, index, **query):
-        # this won't work for datasets with more complicated structure
-        def result():
-            for ds in self.child.find_datasets(index, **query):
-                if self.predicate(ds):
-                    yield ds
-
-        return ExistingDatasets(result())
+        datasets = self.child.find_datasets(index, **query)
+        return datasets.drop(self.predicate)
 
     def build_raster(self, datasets, **query):
         return self.child.build_raster(datasets, **query)
+
+    def fetch_data(self, raster):
+        return self.child.fetch_data(raster)
 
 
 class Transform(VirtualProduct):
@@ -158,6 +208,9 @@ class Transform(VirtualProduct):
                                       when provided with input measurement metadata
         """
         self.child = child
+
+        # maybe transform should be a class with methods to compute and
+        # to report output measurements
         self.transform = transform
         self.transform_measurement = transform_measurement
 
@@ -165,13 +218,16 @@ class Transform(VirtualProduct):
         return self.transform_measurement(self.child.output_measurements)
 
     def validate_construction(self, index):
-        return self.child.validate_construction(index)
+        self.child.validate_construction(index)
 
     def find_datasets(self, index, **query):
         return self.child.find_datasets(index, **query)
 
     def build_raster(self, datasets, **query):
-        return self.transform(self.child.build_raster(datasets, **query))
+        return self.child.build_raster(datasets, **query)
+
+    def fetch_data(self, raster):
+        return self.transform(self.child.fetch_data(raster))
 
 
 class CollatedDatasets(object):
@@ -217,3 +273,6 @@ class Collate(VirtualProduct):
 
         # in reality this should be time sorted
         return xarray.concat(rasters, dim='time')
+
+    def fetch_data(self, raster):
+        raise NotImplementedError
