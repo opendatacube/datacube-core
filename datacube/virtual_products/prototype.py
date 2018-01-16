@@ -6,11 +6,12 @@ import xarray
 
 from datacube import Datacube
 from datacube.model import Measurement
-from datacube.api.query import query_group_by, query_geopolygon
+from datacube.api.query import Query, query_group_by, query_geopolygon
+from datacube.api.core import get_bounds
 from datacube.utils import geometry, intersects
 
 
-class VirtualProductConstructionException(Exception):
+class VirtualProductException(Exception):
     """ Raised if the construction of the virtual product cannot be validated. """
     pass
 
@@ -46,7 +47,7 @@ class VirtualProduct(ABC):
         # type: (Index) -> None
         """
         Validate that the virtual product is well-formed.
-        :raises: `VirtualProductConstructionException` if not well-formed.
+        :raises: `VirtualProductException` if not well-formed.
         """
 
     @abstractmethod
@@ -113,6 +114,37 @@ def select_datasets_inside_polygon(datasets, polygon):
             if intersects(polygon.to_crs(dataset.crs), dataset.extent):
                 yield dataset
 
+def construct_geobox(datasets, grid_spec,
+                     like=None, output_crs=None, resolution=None, align=None,
+                     **query):
+    # this is a copy of the logic in `datacube.Datacube.load`
+    # TODO: hopefully that method can make use of this function in the future
+
+    if like is not None:
+        assert output_crs is None, "'like' and 'output_crs' are not supported together"
+        assert resolution is None, "'like' and 'resolution' are not supported together"
+        assert align is None, "'like' and 'align' are not supported together"
+        return like.geobox
+
+    if output_crs is not None:
+        # user provided specifications
+        if resolution is None:
+            raise ValueError("Must specify 'resolution' when specifying 'output_crs'")
+        crs = geometry.CRS(output_crs)
+    else:
+        # specification from grid_spec
+        if grid_spec is None or grid_spec.crs is None:
+            raise ValueError("Product has no default CRS. Must specify 'output_crs' and 'resolution'")
+        crs = grid_spec.crs
+        if not resolution:
+            if not grid_spec.resolution:
+                raise ValueError("Product has no default resolution. Must specify 'resolution'")
+            resolution = grid_spec.resolution
+            align = align or grid_spec.alignment  # is the indentation wrong here?
+
+    return geometry.GeoBox.from_geopolygon(query_geopolygon(**query) or get_bounds(datasets, crs),
+                                           resolution, crs, align)
+
 
 class BasicProduct(VirtualProduct):
     """ A product already in the datacube. """
@@ -123,7 +155,7 @@ class BasicProduct(VirtualProduct):
         """
         self.product_name = product_name
         self.measurement_names = measurement_names
-        self.fuse_func = fuse_func  # (?)
+        self.fuse_func = fuse_func  # is this a good place for it?
 
     def output_measurements(self, index):
         """ Output measurements metadata.  """
@@ -139,20 +171,29 @@ class BasicProduct(VirtualProduct):
     def validate_construction(self, index):
         if self.measurement_names is not None:
             if not self.measurement_names:
-                raise VirtualProductConstructionException("Product selects no measurements")
+                raise VirtualProductException("Product selects no measurements")
 
         try:
             _ = self.output_measurements(index)
         except KeyError as ke:
-            raise VirtualProductConstructionException("Could not find measurement: {}".format(ke.args))
+            raise VirtualProductException("Could not find measurement: {}".format(ke.args))
 
     def find_datasets(self, index, **query):
+        # this is basically a copy of `datacube.Datacube.find_datasets_lazy`
+        # ideally that method would look like this too in the future
+
         # `like` is implicitly supported here, not sure if we should
         # `platform` and `product_type` based queries are possibly ruled out
+        # other possible query entries include `geopolygon` and contents of `SPATIAL_KEYS` and `CRS_KEYS`
+        # query should not include contents of `OTHER_KEYS` except `geopolygon`
+        # uncertain about `source_filter`, do not know what it does
 
         # find the datasets
-        dc = Datacube(index=index)
-        datasets = dc.find_datasets(product=self.product_name, **query)
+        query = Query(index, product=self.product_name, measurements=self.measurement_names, **query)
+        assert query.product == self.product_name
+
+        datasets = select_datasets_inside_polygon(index.datasets.search(**query.search_terms),
+                                                  query.geopolygon)
 
         # gather information from the index before it disappears from sight
         output_measurements = self.output_measurements(index)
@@ -163,9 +204,8 @@ class BasicProduct(VirtualProduct):
     def build_raster(self, datasets, **query):
         assert isinstance(datasets, BasicDatasets)
 
-        # TODO: support things `datacube.Datacube.load` supports
-        # `like`, `output_crs`, `resolution`, `align`
-        # should `resampling` be set here? it would be stored in the measurements
+        # possible query entries are contents of `SPATIAL_KEYS`, `CRS_KEYS`, and `OTHER_KEYS`
+        # query should not include `product`, `measurements`, and `resampling`
 
         # select only those inside the ROI and group by time
         polygon = query_geopolygon(**query)
@@ -175,24 +215,25 @@ class BasicProduct(VirtualProduct):
         grouped = Datacube.group_datasets(selected, group_by)
 
         # geobox
-        grid_spec = datasets.grid_spec
-        assert grid_spec is not None and grid_spec.crs is not None
-        geobox = geometry.GeoBox.from_geopolygon(polygon,  # or get_bounds(datasets, crs)?
-                                                 grid_spec.resolution,
-                                                 grid_spec.crs,
-                                                 grid_spec.alignment)
+        # grid_spec = datasets.grid_spec
+        # assert grid_spec is not None and grid_spec.crs is not None
+        geobox = construct_geobox(datasets.dataset_list, datasets.grid_spec, **query)
 
         # information needed for Datacube.load_data
         return BasicRaster(grouped, geobox, datasets.output_measurements)
 
-    def fetch_data(self, raster):
+    def fetch_data(self, raster, resampling=None):
         assert isinstance(raster, BasicRaster)
 
         # convert Measurements back to dicts?
-        measurements = [dict(name=m.name, dtype=m.dtype, nodata=m.nodata, units=m.units)
+        # this is essentailly `datacube.api.core.set_resampling_method`
+        measurements = [dict(**m.__dict__)
                         for m in raster.output_measurements.values()]
 
-        # grid workflow does one more thing: set_resampling_method
+        if resampling is not None:
+            measurements = [dict(resampling_method=resampling, **m)
+                            for m in measurements]
+
         return Datacube.load_data(raster.grouped_datasets, raster.geobox,
                                   measurements, fuse_func=self.fuse_func)
 
@@ -209,8 +250,7 @@ class Drop(VirtualProduct):
         self.child.validate_construction(index)
 
     def find_datasets(self, index, **query):
-        datasets = self.child.find_datasets(index, **query)
-        return datasets.drop(self.predicate)
+        return self.child.find_datasets(index, **query).drop(self.predicate)
 
     def build_raster(self, datasets, **query):
         return self.child.build_raster(datasets, **query)
@@ -246,6 +286,8 @@ class Transform(VirtualProduct):
         return self.child.build_raster(datasets, **query)
 
     def fetch_data(self, raster):
+        # is this the right level?
+        # or should the transform be applied to every time slice individually?
         return self.transform(self.child.fetch_data(raster))
 
 
@@ -270,6 +312,9 @@ class Collate(VirtualProduct):
         self.children = children
 
     def validate_construction(self, index):
+        if len(self.children) == 0:
+            raise VirtualProductException("No children for collate node")
+
         for child in self.children:
             child.validate_construction(index)
 
@@ -282,7 +327,7 @@ class Collate(VirtualProduct):
         for child in rest:
             if set(child) != set(first):
                 msg = "Child datasets do not all have the same set of measurements"
-                raise VirtualProductConstructionException(msg)
+                raise VirtualProductException(msg)
 
     def output_measurements(self, index):
         return self.children[0].output_measurements()
