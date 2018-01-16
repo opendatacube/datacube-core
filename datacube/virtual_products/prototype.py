@@ -22,10 +22,15 @@ class VirtualDatasets(ABC):
     def drop(self, predicate):
         """ Drop datasets that do not satisfy `predicate`. """
 
+    @abstractmethod
+    def is_empty(self):
+        """ Whether no data can be loaded from the collection. """
+
 
 class VirtualRaster(ABC):
     """ Result of `VirtualProduct.build_raster`. """
     # our replacement for grid_workflow.Tile basically
+    # TODO: copy the Tile API
 
 
 class VirtualProduct(ABC):
@@ -55,7 +60,7 @@ class VirtualProduct(ABC):
     def build_raster(self, datasets, **query):
         # type: (VirtualDatasets, Dict[str, Any]) -> VirtualRaster
         """
-        Datasets grouped by their timestamp.
+        Datasets grouped by their timestamps.
         :param datasets: the datasets to fetch data from
         :param query: to specify a spatial sub-region
         """
@@ -76,19 +81,19 @@ class VirtualProduct(ABC):
 
 class BasicDatasets(VirtualDatasets):
     def __init__(self, dataset_list, grid_spec, output_measurements):
-        self.dataset_list = dataset_list
+        self.dataset_list = list(dataset_list)
         self.grid_spec = grid_spec
         self.output_measurements = output_measurements
 
     def drop(self, predicate):
         # type: Callable[[datacube.Dataset], bool] -> BasicDatasets
+        return BasicDatasets([dataset
+                              for dataset in self.dataset_list
+                              if predicate is None or predicate(dataset)],
+                             self.grid_spec, self.output_measurements)
 
-        def result():
-            for dataset in self.dataset_list:
-                if predicate is None or predicate(dataset):
-                    yield dataset
-
-        return BasicDatasets(list(result()), self.grid_spec, self.output_measurements)
+    def is_empty(self):
+        return len(self.dataset_list) == 0
 
 
 class BasicRaster(VirtualRaster):
@@ -98,15 +103,27 @@ class BasicRaster(VirtualRaster):
         self.output_measurements = output_measurements
 
 
+def select_datasets_inside_polygon(datasets, polygon):
+    # essentially copied from Datacube.find_datasets
+    # TODO: place it somewhere so that Datacube.find_datasets can access and use it
+    for dataset in datasets:
+        if polygon is None:
+            yield dataset
+        else:
+            if intersects(polygon.to_crs(dataset.crs), dataset.extent):
+                yield dataset
+
+
 class BasicProduct(VirtualProduct):
     """ A product already in the datacube. """
-    def __init__(self, product_name, measurement_names=None):
+    def __init__(self, product_name, measurement_names=None, fuse_func=None):
         """
         :param product_name: name of the product
         :param  measurement_names: list of names of measurements to include (None if all)
         """
         self.product_name = product_name
         self.measurement_names = measurement_names
+        self.fuse_func = fuse_func  # (?)
 
     def output_measurements(self, index):
         """ Output measurements metadata.  """
@@ -117,8 +134,7 @@ class BasicProduct(VirtualProduct):
         if self.measurement_names is None:
             return measurements
 
-        return {name: measurements[name]
-                for name in self.measurement_names}
+        return {name: measurements[name] for name in self.measurement_names}
 
     def validate_construction(self, index):
         if self.measurement_names is not None:
@@ -128,37 +144,40 @@ class BasicProduct(VirtualProduct):
         try:
             _ = self.output_measurements(index)
         except KeyError as ke:
-            raise VirtualProductConstructionException("Missing measurements: {}".format(ke.args))
+            raise VirtualProductConstructionException("Could not find measurement: {}".format(ke.args))
 
     def find_datasets(self, index, **query):
+        # `like` is implicitly supported here, not sure if we should
+        # `platform` and `product_type` based queries are possibly ruled out
+
         # find the datasets
         dc = Datacube(index=index)
         datasets = dc.find_datasets(product=self.product_name, **query)
+
+        # gather information from the index before it disappears from sight
         output_measurements = self.output_measurements(index)
         grid_spec = index.products.get_by_name(self.product_name).grid_spec
+
         return BasicDatasets(datasets, grid_spec, output_measurements)
 
     def build_raster(self, datasets, **query):
         assert isinstance(datasets, BasicDatasets)
 
+        # TODO: support things `datacube.Datacube.load` supports
+        # `like`, `output_crs`, `resolution`, `align`
+        # should `resampling` be set here? it would be stored in the measurements
+
         # select only those inside the ROI and group by time
         polygon = query_geopolygon(**query)
         group_by = query_group_by(**query)
+        selected = list(select_datasets_inside_polygon(datasets.dataset_list, polygon))
 
-        def inside_ROI():
-            for dataset in datasets.dataset_list:
-                if polygon is None:
-                    yield dataset
-                else:
-                    if intersects(polygon.to_crs(dataset.crs), dataset.extent):
-                        yield dataset
-
-        grouped = Datacube.group_datasets(list(inside_ROI()), group_by)
+        grouped = Datacube.group_datasets(selected, group_by)
 
         # geobox
         grid_spec = datasets.grid_spec
         assert grid_spec is not None and grid_spec.crs is not None
-        geobox = geometry.GeoBox.from_geopolygon(polygon,
+        geobox = geometry.GeoBox.from_geopolygon(polygon,  # or get_bounds(datasets, crs)?
                                                  grid_spec.resolution,
                                                  grid_spec.crs,
                                                  grid_spec.alignment)
@@ -175,7 +194,7 @@ class BasicProduct(VirtualProduct):
 
         # grid workflow does one more thing: set_resampling_method
         return Datacube.load_data(raster.grouped_datasets, raster.geobox,
-                                  measurements)
+                                  measurements, fuse_func=self.fuse_func)
 
 
 class Drop(VirtualProduct):
@@ -231,8 +250,19 @@ class Transform(VirtualProduct):
 
 
 class CollatedDatasets(object):
-    def __init__(self, *datasets):
-        self.dataset_tuple = tuple(datasets)
+    def __init__(self, *dataset_tuple):
+        self.dataset_tuple = tuple(dataset_tuple)
+
+    def drop(self, predicate):
+        assert isinstance(predicate, tuple)
+        assert len(self.dataset_tuple) == len(predicate)
+
+        result = [datasets.drop(pred)
+                  for pred, datasets in zip(predicate, self.dataset_tuple)]
+        return CollatedDatasets(*result)
+
+    def is_empty(self):
+        return all(datasets.is_empty() for datasets in self.dataset_tuple)
 
 
 class Collate(VirtualProduct):
@@ -251,7 +281,8 @@ class Collate(VirtualProduct):
 
         for child in rest:
             if set(child) != set(first):
-                raise VirtualProductConstructionException()
+                msg = "Child datasets do not all have the same set of measurements"
+                raise VirtualProductConstructionException(msg)
 
     def output_measurements(self, index):
         return self.children[0].output_measurements()
@@ -271,6 +302,7 @@ class Collate(VirtualProduct):
         rasters = [product.build_raster(datasets, **query)
                    for product, datasets in paired_up]
 
+        # TODO: YOU ARE HERE ..
         # in reality this should be time sorted
         return xarray.concat(rasters, dim='time')
 
