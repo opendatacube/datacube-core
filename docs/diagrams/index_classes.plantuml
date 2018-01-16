@@ -1,0 +1,69 @@
+@startuml
+
+class PostgresDB {
+  - _engine
+  - _connection
+  @classmethod from_config()
+  @classmethod create()
+  @staticmethod _create_engine()
+  close()
+  init()
+  connect()
+  begin()
+  get_dataset_fields()
+}
+
+class PostgresDbAPI {
+  - _connection: 
+  rollback()
+  execute()
+  insert_dataset()
+  ... Lots of dataset functions()
+
+}
+
+class PostgresDbConnection {
+  - engine
+  - connection
+  __enter__()
+  __exit__()
+}
+class PostgresDbInTransaction {
+  - engine
+  - connection
+  __enter__()
+  __exit__()
+}
+
+class Index {
+  - _db: PostgresDB
+  users
+  metadata_types
+  products
+  datasets
+  uri
+  init_db()
+  close()
+  __enter__()
+  __exit__()
+
+}
+
+class Engine {
+  Part of SQLAlchemy
+  connect()
+  execute()
+}
+
+Index *- PostgresDB
+
+PostgresDB o- PostgresDbConnection
+PostgresDB o-- PostgresDbInTransaction
+
+PostgresDbConnection o- PostgresDbAPI
+PostgresDbInTransaction o-- PostgresDbAPI
+
+
+'PostgresDbConnection -[hidden]> PostgresDbInTransaction
+
+@enduml

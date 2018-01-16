@@ -16,6 +16,7 @@ and  related data from multiple satellite and other acquisition systems.
    :caption: User Guide
 
    user/guide
+   user/config
 
 .. toctree::
    :maxdepth: 2

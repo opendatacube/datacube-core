@@ -21,11 +21,13 @@ Next release
  - The :option:`--config_file` option to :program:`datacube` has been renamed to :option:`--config`, which is
    shorter and more consistent with the other options. The old name can still be used for now.
 
+ - Added documentation about :ref:`bit-masking`.
+
 .. _#298: https://github.com/opendatacube/datacube-core/pull/298
 .. _config docs: https://datacube-core.readthedocs.io/en/latest/ops/config.html#runtime-config-doc
 
 v1.5.4 Dingley Dahu (13th December 2017)
-------------------------------------
+----------------------------------------
  - Minor features backported from 2.0:
 
     - Support for `limit` in searches
@@ -43,7 +45,7 @@ v1.5.4 Dingley Dahu (13th December 2017)
     - Support jsonify-ing decimals
 
 v1.5.3 Purpler Unicorn with Starlight (16 October 2017)
------------------------------
+-------------------------------------------------------
 
  - Use `cloudpickle` as the `celery` serialiser
 
