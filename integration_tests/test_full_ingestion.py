@@ -13,6 +13,7 @@ from affine import Affine
 import datacube.scripts.cli_app
 from datacube.api.query import query_group_by
 from datacube.utils import geometry, read_documents, netcdf_extract_string
+from integration_tests.conftest import load_yaml_file, alter_product_for_testing
 from integration_tests.utils import assert_click_command
 from .conftest import GEOTIFF
 
@@ -35,42 +36,49 @@ JSON_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
 COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
 
+LS5_NBAR_INGEST_CONFIG = CONFIG_SAMPLES / 'ingester' / 'ls5_nbar_albers.yaml'
+
+
+@pytest.fixture
+def ls5_nbar_ingest_config(tmpdir):
+    dataset_dir = tmpdir.mkdir('ls5_nbar_ingest_test')
+    config = load_yaml_file(LS5_NBAR_INGEST_CONFIG)[0]
+    config = alter_product_for_testing(config)
+    config['storage']['crs'] = 'EPSG:28355'
+    config['storage']['chunking']['time'] = 1
+    # config['storage']['tile_size']['time'] = 2
+    config['location'] = str(dataset_dir)
+    config_path = dataset_dir.join('ls5_nbar_ingest_config.yaml')
+    with open(str(config_path), 'w') as stream:
+        yaml.dump(config, stream)
+    return config_path, config
+
 
 @pytest.mark.usefixtures('default_metadata_type',
-                         'indexed_ls5_scene_dataset_types')
-def test_full_ingestion(global_integration_cli_args, index,
+                         'indexed_ls5_scene_products')
+def test_full_ingestion(clirunner, index,
                         example_ls5_dataset_paths, ls5_nbar_ingest_config):
     config_path, config = ls5_nbar_ingest_config
     valid_uuids = []
     for uuid, example_ls5_dataset_path in example_ls5_dataset_paths.items():
         valid_uuids.append(uuid)
-        opts = list(global_integration_cli_args)
-        opts.extend(
-            [
-                '-v',
+        clirunner([
                 'dataset',
                 'add',
                 '--auto-match',
                 str(example_ls5_dataset_path)
-            ]
-        )
-        assert_click_command(datacube.scripts.cli_app.cli, opts)
+            ])
 
     ensure_datasets_are_indexed(index, valid_uuids)
 
     # TODO(csiro) Set time dimension when testing
     # config['storage']['tile_size']['time'] = 2
 
-    opts = list(global_integration_cli_args)
-    opts.extend(
-        [
-            '-v',
+    clirunner([
             'ingest',
             '--config-file',
             str(config_path)
-        ]
-    )
-    assert_click_command(datacube.scripts.cli_app.cli, opts)
+        ])
 
     datasets = index.datasets.search_eager(product='ls5_nbar_albers')
     assert len(datasets) > 0
@@ -207,3 +215,4 @@ def check_data_with_api(index, time_slices):
     assert hashlib.md5(data.blue.data).hexdigest() == 'b58204f1e10dd678b292df188c242c7e'
     for time_slice in range(time_slices):
         assert data.blue.values[time_slice][-1, -1] == -999
+

@@ -8,7 +8,6 @@ import numpy
 import pytest
 import rasterio
 
-import datacube.scripts.cli_app
 from datacube.compat import string_types
 from integration_tests.utils import assert_click_command
 
@@ -64,7 +63,9 @@ ignore_me = pytest.mark.xfail(True, reason="get_data/get_description still to be
 
 
 @pytest.mark.usefixtures('default_metadata_type')
-def test_end_to_end(global_integration_cli_args, index, testdata_dir):
+@pytest.mark.test_odc_writers([{'index': 'default', 'writer': 'netcdf'},
+                               {'index': 's3block', 'writer': 's3block_test'}])
+def test_end_to_end(clirunner, index, testdata_dir):
     """
     Loads two dataset configurations, then ingests a sample Landsat 5 scene
 
@@ -84,24 +85,17 @@ def test_end_to_end(global_integration_cli_args, index, testdata_dir):
     assert_click_command(galsprepare.main, [str(lbg_nbar)])
 
     # Add the LS5 Dataset Types
-    assert_click_command(datacube.scripts.cli_app.cli,
-                         global_integration_cli_args + ['-v', 'product', 'add', str(LS5_DATASET_TYPES)])
+    clirunner(['-v', 'product', 'add', str(LS5_DATASET_TYPES)])
 
     # Index the Datasets
-    assert_click_command(datacube.scripts.cli_app.cli,
-                         global_integration_cli_args +
-                         ['-v', 'dataset', 'add', '--auto-match',
-                          str(lbg_nbar), str(lbg_pq)])
+    clirunner(['-v', 'dataset', 'add', '--auto-match',
+               str(lbg_nbar), str(lbg_pq)])
 
     # Ingest NBAR
-    assert_click_command(datacube.scripts.cli_app.cli,
-                         global_integration_cli_args +
-                         ['-v', 'ingest', '-c', str(ls5_nbar_albers_ingest_config)])
+    clirunner(['-v', 'ingest', '-c', str(ls5_nbar_albers_ingest_config)])
 
     # Ingest PQ
-    assert_click_command(datacube.scripts.cli_app.cli,
-                         global_integration_cli_args +
-                         ['-v', 'ingest', '-c', str(ls5_pq_albers_ingest_config)])
+    clirunner(['-v', 'ingest', '-c', str(ls5_pq_albers_ingest_config)])
 
     check_open_with_api(index)
     check_open_with_dc(index)
@@ -278,9 +272,9 @@ def check_analytics_list_searchables(index):
     for storage_type in result:
         assert len(result[storage_type]['bands']) > 0
         assert len(list(result[storage_type]['dimensions'])) > 0
-#        assert result[storage_type]['instrument']
-#        assert result[storage_type]['platform']
-#        assert result[storage_type]['product_type']
+        #        assert result[storage_type]['instrument']
+        #        assert result[storage_type]['platform']
+        #        assert result[storage_type]['product_type']
         assert result[storage_type]['storage_type']
 
 
@@ -330,10 +324,10 @@ def check_get_descriptor(index):
     assert isinstance(list(d.values())[0]['result_shape'], tuple)
 
     assert len(list(d.values())[0]['dimensions']) == \
-        len(list(d.values())[0]['dimensions']) == \
-        len(list(d.values())[0]['result_shape']) == \
-        len(list(d.values())[0]['result_max']) == \
-        len(list(d.values())[0]['result_min'])
+           len(list(d.values())[0]['dimensions']) == \
+           len(list(d.values())[0]['result_shape']) == \
+           len(list(d.values())[0]['result_max']) == \
+           len(list(d.values())[0]['result_min'])
 
     for key in list(d.values())[0]['irregular_indices'].keys():
         assert key in list(d.values())[0]['dimensions']
@@ -406,10 +400,10 @@ def check_get_data(index):
     assert isinstance(d['size'], tuple)
 
     assert len(list(d['dimensions'])) == \
-        len(list(d['coordinate_reference_systems'])) == \
-        len(list(d['element_sizes'])) == \
-        len(list(d['indices'])) == \
-        len(list(d['size']))
+           len(list(d['coordinate_reference_systems'])) == \
+           len(list(d['element_sizes'])) == \
+           len(list(d['indices'])) == \
+           len(list(d['size']))
 
     for key in list(d['indices'].keys()):
         assert key in list(d['dimensions'])
@@ -511,9 +505,9 @@ def check_get_descriptor_data(index):
     d2 = g.get_data(data_request_descriptor)
 
     assert list(d1.values())[0]['result_shape'] == \
-        d2['size'] == \
-        d2['arrays'][var1].shape == \
-        d2['arrays'][var2].shape
+           d2['size'] == \
+           d2['arrays'][var1].shape == \
+           d2['arrays'][var2].shape
 
     assert d2['arrays'][var1].shape[0] > 0
     assert d2['arrays'][var1].shape[1] > 0
@@ -554,9 +548,9 @@ def check_get_descriptor_data_storage_type(index):
     d2 = g.get_data(data_request_descriptor)
 
     assert list(d1.values())[0]['result_shape'] == \
-        d2['size'] == \
-        d2['arrays'][var1].shape == \
-        d2['arrays'][var2].shape
+           d2['size'] == \
+           d2['arrays'][var1].shape == \
+           d2['arrays'][var2].shape
 
     assert d2['arrays'][var1].shape[0] > 0
     assert d2['arrays'][var1].shape[1] > 0
@@ -581,8 +575,8 @@ def check_analytics_create_array(index):
     var2 = 'nir'
 
     # Lake Burley Griffin
-    dimensions = {'x':    {'range': (149.07, 149.18)},
-                  'y':    {'range': (-35.32, -35.28)},
+    dimensions = {'x': {'range': (149.07, 149.18)},
+                  'y': {'range': (-35.32, -35.28)},
                   'time': {'range': (datetime(1992, 1, 1), datetime(1992, 12, 31))}}
 
     arrays = a.create_array((platform, product), [var1, var2], dimensions, 'get_data')
@@ -608,8 +602,8 @@ def check_analytics_ndvi_mask_median_expression(index):
     pq_var = 'pixelquality'
 
     # Lake Burley Griffin
-    dimensions = {'x':    {'range': (149.07, 149.18)},
-                  'y':    {'range': (-35.32, -35.28)},
+    dimensions = {'x': {'range': (149.07, 149.18)},
+                  'y': {'range': (-35.32, -35.28)},
                   'time': {'range': (datetime(1992, 1, 1), datetime(1992, 12, 31))}}
 
     b40 = a.create_array((platform, product), [var1], dimensions, 'b40')
@@ -649,8 +643,8 @@ def check_analytics_ndvi_mask_median_expression_storage_type(index):
     pq_var = 'pixelquality'
 
     # Lake Burley Griffin
-    dimensions = {'x':    {'range': (149.07, 149.18)},
-                  'y':    {'range': (-35.32, -35.28)},
+    dimensions = {'x': {'range': (149.07, 149.18)},
+                  'y': {'range': (-35.32, -35.28)},
                   'time': {'range': (datetime(1992, 1, 1), datetime(1992, 12, 31))}}
 
     b40 = a.create_array(nbar_storage_type, [var1], dimensions, 'b40')
@@ -690,8 +684,8 @@ def check_analytics_pixel_drill(index):
     pq_var = 'pixelquality'
 
     # Lake Burley Griffin
-    dimensions = {'x':    {'range': (149.12)},
-                  'y':    {'range': (-35.30)},
+    dimensions = {'x': {'range': (149.12)},
+                  'y': {'range': (-35.30)},
                   'time': {'range': (datetime(1992, 1, 1), datetime(1992, 12, 31))}}
 
     b40 = a.create_array(nbar_storage_type, [var1], dimensions, 'b40')

@@ -216,7 +216,7 @@ def pseudo_ls8_dataset4(index, postgres_db, pseudo_ls8_type, pseudo_ls8_dataset2
 
 
 @pytest.fixture
-def ls5_dataset_w_children(index, example_ls5_dataset_path, indexed_ls5_scene_dataset_types):
+def ls5_dataset_w_children(index, example_ls5_dataset_path, indexed_ls5_scene_products):
     # type: (Driver, Path, DatasetType) -> Dataset
     # TODO: We need a higher-level API for indexing paths, rather than reaching inside the cli script
     datasets = list(
@@ -231,9 +231,9 @@ def ls5_dataset_w_children(index, example_ls5_dataset_path, indexed_ls5_scene_da
 
 
 @pytest.fixture
-def ls5_dataset_nbar_type(ls5_dataset_w_children, indexed_ls5_scene_dataset_types):
+def ls5_dataset_nbar_type(ls5_dataset_w_children, indexed_ls5_scene_products):
     # type: (Dataset, List[DatasetType]) -> DatasetType
-    for dataset_type in indexed_ls5_scene_dataset_types:
+    for dataset_type in indexed_ls5_scene_products:
         if dataset_type.name == ls5_dataset_w_children.type.name:
             return dataset_type
     else:
@@ -397,7 +397,7 @@ def test_search_globally(index, pseudo_ls8_dataset):
     assert results[0].sources is None
 
 
-def test_search_by_product(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls5_scene_dataset_types,
+def test_search_by_product(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls5_scene_products,
                            ls5_dataset_w_children):
     """
     :type index: datacube.index._api.Index
@@ -488,7 +488,7 @@ def test_search_or_expressions(index,
     assert datasets[0].id == pseudo_ls8_dataset.id
 
 
-def test_search_returning(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls5_scene_dataset_types):
+def test_search_returning(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls5_scene_products):
     # type: (Index, DatasetType, Dataset, list) -> None
     """
     :type index: datacube.index._api.Index
@@ -520,7 +520,7 @@ def test_search_returning(index, pseudo_ls8_type, pseudo_ls8_dataset, indexed_ls
 
 def test_search_returning_rows(index, pseudo_ls8_type,
                                pseudo_ls8_dataset, pseudo_ls8_dataset2,
-                               indexed_ls5_scene_dataset_types):
+                               indexed_ls5_scene_products):
     dataset = pseudo_ls8_dataset
 
     # If returning a field like uri, there will be one result per location.
@@ -845,8 +845,8 @@ def test_count_time_groups(index, pseudo_ls8_type, pseudo_ls8_dataset):
 
 
 @pytest.mark.usefixtures('ga_metadata_type',
-                         'indexed_ls5_scene_dataset_types')
-def test_source_filter(global_integration_cli_args, index, example_ls5_dataset_path, ls5_nbar_ingest_config):
+                         'indexed_ls5_scene_products')
+def test_source_filter(global_integration_cli_args, index, example_ls5_dataset_path):
     opts = list(global_integration_cli_args)
     opts.extend(
         [

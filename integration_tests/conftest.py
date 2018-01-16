@@ -28,7 +28,6 @@ try:
 except ImportError:
     from yaml import SafeLoader
 
-from datacube.api import API
 from datacube.config import LocalConfig
 from datacube.index.index import Index
 from datacube.drivers.postgres import PostgresDb
@@ -78,7 +77,6 @@ PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs' / 'config_samples'
 DATASET_TYPES = CONFIG_SAMPLES / 'dataset_types'
 LS5_SAMPLES = CONFIG_SAMPLES / 'storage_types' / 'ga_landsat_5'
-LS5_NBAR_INGEST_CONFIG = CONFIG_SAMPLES / 'ingester' / 'ls5_nbar_albers.yaml'
 LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_geographic.yaml'
 LS5_NBAR_NAME = 'ls5_nbar'
 LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_albers.yaml'
@@ -93,37 +91,15 @@ PROJECTED_VARS = ('x', 'y')
 EXAMPLE_LS5_DATASET_ID = UUID('bbf3e21c-82b0-11e5-9ba1-a0000100fe80')
 
 
-class MockIndex(object):
-    def __init__(self, db):
-        self._db = db
-
-    @property
-    def url(self):
-        return self._db.url
-
-
 @pytest.fixture
-def integration_config_paths(tmpdir):
+def integration_config_paths():
     """
     Provides a list of ODC config files for integration testing.
 
      - :file:`integration_tests/agdcintegration.conf`
-     - :file:`{tmpdir}/test-run.conf` expanded with points to temporary test data directories
      - :file:`~/.datacube_integration.conf`
     """
-    test_tile_folder = str(tmpdir.mkdir('testdata'))
-    test_tile_folder = Path(test_tile_folder).as_uri()
-    eotiles_tile_folder = str(tmpdir.mkdir('eotiles'))
-    eotiles_tile_folder = Path(eotiles_tile_folder).as_uri()
-    run_config_file = tmpdir.mkdir('config').join('test-run.conf')
-    run_config_file.write(
-        _SINGLE_RUN_CONFIG_TEMPLATE.format(test_tile_folder=test_tile_folder, eotiles_tile_folder=eotiles_tile_folder)
-    )
-    return (
-        str(INTEGRATION_DEFAULT_CONFIG_PATH),
-        str(run_config_file),
-        os.path.expanduser('~/.datacube_integration.conf')
-    )
+    return [str(INTEGRATION_DEFAULT_CONFIG_PATH), os.path.expanduser('~/.datacube_integration.conf')]
 
 
 @pytest.fixture
@@ -172,12 +148,14 @@ def uninitialised_postgres_db(local_config, request):
     db.close()
 
 
-@pytest.fixture
-def postgres_db(uninitialised_postgres_db):
+@pytest.fixture(params=['default'])
+def postgres_db(uninitialised_postgres_db, request):
     """
     Return a connection to an PostgreSQL database, initialised with the default schema
     and tables.
     """
+    index_driver = request.param  # We could custom select here
+    # Or we could customise the configuration file up higher
     # Recreate tables so our tests have a clean db.
     LOG.info('_core.ensure_db')
     try:
@@ -206,14 +184,6 @@ def index(postgres_db):
     :type postgres_db: datacube.index.postgres._api.PostgresDb
     """
     return Index(postgres_db)
-
-
-@pytest.fixture
-def dict_api(index):
-    """
-    Provide a :class:`datacube.api.API` configured with an index, and used for the deprecated dictionary style access.
-    """
-    return API(index=index)
 
 
 @pytest.fixture
@@ -409,22 +379,8 @@ def example_ls5_dataset_paths(tmpdir, geotiffs):
     return dataset_dirs
 
 
-@pytest.fixture
-def ls5_nbar_ingest_config(tmpdir):
-    dataset_dir = tmpdir.mkdir('ls5_nbar_ingest_test')
-    config = load_yaml_file(LS5_NBAR_INGEST_CONFIG)[0]
-    config = alter_dataset_type_for_testing(config)
-    config['storage']['crs'] = 'EPSG:28355'
-    config['storage']['chunking']['time'] = 1
-    # config['storage']['tile_size']['time'] = 2
-    config['location'] = str(dataset_dir)
-    config_path = dataset_dir.join('ls5_nbar_ingest_config.yaml')
-    with open(str(config_path), 'w') as stream:
-        yaml.dump(config, stream)
-    return config_path, config
-
-
 def create_empty_geotiff(path):
+    # Example method, not used
     metadata = {'count': 1,
                 'crs': 'EPSG:28355',
                 'driver': 'GTiff',
@@ -457,6 +413,7 @@ def ga_metadata_type_doc():
 
 @pytest.fixture
 def default_metadata_types(index):
+    """Inserts the default metadata types into the Index"""
     # type: (Index, list) -> list
     for d in default_metadata_type_docs():
         index.metadata_types.add(index.metadata_types.from_doc(d))
@@ -479,16 +436,17 @@ def telemetry_metadata_type(index, default_metadata_types):
 
 
 @pytest.fixture
-def indexed_ls5_scene_dataset_types(index, ga_metadata_type):
-    dataset_types = load_test_dataset_types(
+def indexed_ls5_scene_products(index, ga_metadata_type):
+    """Add Landsat 5 scene Products into the Index"""
+    products = load_test_products(
         DATASET_TYPES / 'ls5_scenes.yaml',
         # Use our larger metadata type with a more diverse set of field types.
         metadata_type=ga_metadata_type
     )
 
     types = []
-    for dataset_type in dataset_types:
-        types.append(index.products.add_document(dataset_type))
+    for product in products:
+        types.append(index.products.add_document(product))
 
     return types
 
@@ -498,9 +456,9 @@ def example_ls5_nbar_metadata_doc():
     return load_yaml_file(_EXAMPLE_LS5_NBAR_DATASET_FILE)[0]
 
 
-def load_test_dataset_types(filename, metadata_type=None):
+def load_test_products(filename, metadata_type=None):
     dataset_types = load_yaml_file(filename)
-    return [alter_dataset_type_for_testing(dataset_type, metadata_type=metadata_type) for dataset_type in dataset_types]
+    return [alter_product_for_testing(dataset_type, metadata_type=metadata_type) for dataset_type in dataset_types]
 
 
 def load_yaml_file(filename):
@@ -508,28 +466,24 @@ def load_yaml_file(filename):
         return list(yaml.load_all(f, Loader=SafeLoader))
 
 
-def alter_dataset_type_for_testing(dataset_type, metadata_type=None):
-    if 'measurements' in dataset_type:
-        dataset_type = limit_num_measurements(dataset_type)
-    if 'storage' in dataset_type:
-        dataset_type = shrink_storage_type(dataset_type,
-                                           GEOGRAPHIC_VARS if is_geogaphic(dataset_type) else PROJECTED_VARS,
-                                           TEST_STORAGE_SHRINK_FACTORS)
+def alter_product_for_testing(product, metadata_type=None):
+    limit_num_measurements(product)
+    if 'storage' in product:
+        product = shrink_storage_type(product,
+                                      GEOGRAPHIC_VARS if is_geogaphic(product) else PROJECTED_VARS,
+                                      TEST_STORAGE_SHRINK_FACTORS)
     if metadata_type:
-        dataset_type['metadata_type'] = metadata_type.name
-    return dataset_type
+        product['metadata_type'] = metadata_type.name
+    return product
 
 
-def limit_num_measurements(storage_type):
-    measurements = storage_type['measurements']
+def limit_num_measurements(dataset_type):
+    if 'measurements' not in dataset_type:
+        return
+    measurements = dataset_type['measurements']
     if len(measurements) > TEST_STORAGE_NUM_MEASUREMENTS:
-        storage_type['measurements'] = measurements[:TEST_STORAGE_NUM_MEASUREMENTS]
-    return storage_type
-
-
-def use_test_storage(storage_type):
-    storage_type['location_name'] = 'testdata'
-    return storage_type
+        dataset_type['measurements'] = measurements[:TEST_STORAGE_NUM_MEASUREMENTS]
+    return dataset_type
 
 
 def is_geogaphic(storage_type):
@@ -548,6 +502,7 @@ def shrink_storage_type(storage_type, variables, shrink_factors):
 def clirunner(global_integration_cli_args, cli_method=datacube.scripts.cli_app.cli):
     def _run_cli(opts, catch_exceptions=False, expect_success=True):
         exe_opts = list(global_integration_cli_args)
+        exe_opts.append('-v')
         exe_opts.extend(opts)
 
         runner = CliRunner()
