@@ -76,7 +76,7 @@ setup(
         'jsonschema',
         'netcdf4',
         'numpy',
-        'pathlib',
+        'pathlib;python_version<"3"',
         'psycopg2',
         'pypeg2',
         'python-dateutil',
