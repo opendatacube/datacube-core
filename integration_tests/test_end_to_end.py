@@ -323,11 +323,11 @@ def check_get_descriptor(index):
     assert isinstance(list(d.values())[0]['variables'], dict)
     assert isinstance(list(d.values())[0]['result_shape'], tuple)
 
-    assert len(list(d.values())[0]['dimensions']) == \
-           len(list(d.values())[0]['dimensions']) == \
-           len(list(d.values())[0]['result_shape']) == \
-           len(list(d.values())[0]['result_max']) == \
-           len(list(d.values())[0]['result_min'])
+    assert (len(list(d.values())[0]['dimensions']) ==
+            len(list(d.values())[0]['dimensions']) ==
+            len(list(d.values())[0]['result_shape']) ==
+            len(list(d.values())[0]['result_max']) ==
+            len(list(d.values())[0]['result_min']))
 
     for key in list(d.values())[0]['irregular_indices'].keys():
         assert key in list(d.values())[0]['dimensions']
@@ -399,11 +399,11 @@ def check_get_data(index):
     assert isinstance(d['coordinate_reference_systems'], list)
     assert isinstance(d['size'], tuple)
 
-    assert len(list(d['dimensions'])) == \
-           len(list(d['coordinate_reference_systems'])) == \
-           len(list(d['element_sizes'])) == \
-           len(list(d['indices'])) == \
-           len(list(d['size']))
+    assert (len(list(d['dimensions'])) ==
+            len(list(d['coordinate_reference_systems'])) ==
+            len(list(d['element_sizes'])) ==
+            len(list(d['indices'])) ==
+            len(list(d['size'])))
 
     for key in list(d['indices'].keys()):
         assert key in list(d['dimensions'])
@@ -504,10 +504,10 @@ def check_get_descriptor_data(index):
     d1 = g.get_descriptor(data_request_descriptor)
     d2 = g.get_data(data_request_descriptor)
 
-    assert list(d1.values())[0]['result_shape'] == \
-           d2['size'] == \
-           d2['arrays'][var1].shape == \
-           d2['arrays'][var2].shape
+    assert (list(d1.values())[0]['result_shape'] ==
+            d2['size'] ==
+            d2['arrays'][var1].shape ==
+            d2['arrays'][var2].shape)
 
     assert d2['arrays'][var1].shape[0] > 0
     assert d2['arrays'][var1].shape[1] > 0
@@ -547,10 +547,10 @@ def check_get_descriptor_data_storage_type(index):
     d1 = g.get_descriptor(data_request_descriptor)
     d2 = g.get_data(data_request_descriptor)
 
-    assert list(d1.values())[0]['result_shape'] == \
-           d2['size'] == \
-           d2['arrays'][var1].shape == \
-           d2['arrays'][var2].shape
+    assert (list(d1.values())[0]['result_shape'] ==
+            d2['size'] ==
+            d2['arrays'][var1].shape ==
+            d2['arrays'][var2].shape)
 
     assert d2['arrays'][var1].shape[0] > 0
     assert d2['arrays'][var1].shape[1] > 0

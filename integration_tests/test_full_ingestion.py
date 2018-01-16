@@ -215,4 +215,3 @@ def check_data_with_api(index, time_slices):
     assert hashlib.md5(data.blue.data).hexdigest() == 'b58204f1e10dd678b292df188c242c7e'
     for time_slice in range(time_slices):
         assert data.blue.values[time_slice][-1, -1] == -999
-
