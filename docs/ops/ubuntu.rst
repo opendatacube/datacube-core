@@ -2,6 +2,21 @@
 Ubuntu
 ======
 
+Miniconda
+~~~~~~~~~
+1.  Download and install Miniconda using the following instructions https://conda.io/docs/user-guide/install/linux.html
+
+2. Open your favourite terminal to execute the following commands.
+
+.. include:: conda_base.rst 
+
+Datacube is now installed and can be used in a terminal by activating the `cubeenv` environment.
+
+Manual Installation (Fallback)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Only follow these steps if the Miniconda installation does not suit your needs.
+
+
 Required software
 -----------------
 
