@@ -8,15 +8,13 @@ import copy
 
 import pytest
 import yaml
-from click.testing import CliRunner
 
-from datacube.index.index import Index
 from datacube.drivers.postgres._fields import NumericRangeDocField, PgField
+from datacube.index.index import Index
 from datacube.index.metadata_types import default_metadata_type_docs
 from datacube.model import MetadataType, DatasetType
 from datacube.model import Range, Dataset
 from datacube.utils import changes
-import datacube.scripts.cli_app
 
 _DATASET_METADATA = {
     'id': 'f7018d80-8807-11e5-aeaa-1040f381a756',
@@ -308,34 +306,28 @@ def test_update_dataset_type(index, ls5_telem_type, ls5_telem_doc, ga_metadata_t
 
 
 def test_product_update_cli(index,
-                            global_integration_cli_args,
+                            clirunner,
                             ls5_telem_type,
                             ls5_telem_doc,
                             ga_metadata_type,
                             tmpdir):
-    # type: (Index, list, DatasetType, dict, MetadataType) -> None
+    # type: (Index, callable, DatasetType, dict, MetadataType) -> None
     """
     Test updating products via cli
     """
 
     def run_update_product(file_path, allow_unsafe=False):
-        opts = list(global_integration_cli_args)
-        opts.extend(
-            [
-                '-v', 'product', 'update', str(file_path)
-            ]
-        )
-
         if allow_unsafe:
-            opts.append('--allow-unsafe')
+            allow_unsafe = ['--allow-unsafe']
+        else:
+            allow_unsafe = []
 
-        runner = CliRunner()
-        result = runner.invoke(
-            datacube.scripts.cli_app.cli,
-            opts,
-            catch_exceptions=False
+        return clirunner(
+            [
+                'product', 'update', str(file_path)
+            ] + allow_unsafe, catch_exceptions=False,
+            expect_success=False
         )
-        return result
 
     def get_current(index, product_doc):
         # It's calling out to a separate instance to update the product (through the cli),

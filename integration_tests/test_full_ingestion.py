@@ -10,11 +10,9 @@ import pytest
 import yaml
 from affine import Affine
 
-import datacube.scripts.cli_app
 from datacube.api.query import query_group_by
 from datacube.utils import geometry, read_documents, netcdf_extract_string
 from integration_tests.conftest import load_yaml_file, alter_product_for_testing
-from integration_tests.utils import assert_click_command
 from .conftest import GEOTIFF
 
 PROJECT_ROOT = Path(__file__).parents[1]
@@ -63,11 +61,11 @@ def test_full_ingestion(clirunner, index,
     for uuid, example_ls5_dataset_path in example_ls5_dataset_paths.items():
         valid_uuids.append(uuid)
         clirunner([
-                'dataset',
-                'add',
-                '--auto-match',
-                str(example_ls5_dataset_path)
-            ])
+            'dataset',
+            'add',
+            '--auto-match',
+            str(example_ls5_dataset_path)
+        ])
 
     ensure_datasets_are_indexed(index, valid_uuids)
 
@@ -75,10 +73,10 @@ def test_full_ingestion(clirunner, index,
     # config['storage']['tile_size']['time'] = 2
 
     clirunner([
-            'ingest',
-            '--config-file',
-            str(config_path)
-        ])
+        'ingest',
+        '--config-file',
+        str(config_path)
+    ])
 
     datasets = index.datasets.search_eager(product='ls5_nbar_albers')
     assert len(datasets) > 0
@@ -99,6 +97,11 @@ def test_full_ingestion(clirunner, index,
         name = config['measurements'][0]['name']
         check_attributes(nco[name], config['measurements'][0]['attrs'])
     check_open_with_xarray(ds_path)
+
+
+@pytest.mark.parametrize('index', ['s3block'], indirect=['index'])
+def test_s3_full_ingestion(index):
+    pass
 
 
 def ensure_datasets_are_indexed(index, valid_uuids):

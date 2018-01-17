@@ -71,7 +71,6 @@ def test_error_returned_on_invalid(clirunner, postgres_db):
 
 def test_config_check(clirunner, postgres_db, local_config):
     """
-    :type global_integration_cli_args: tuple[str]
     :type local_config: datacube.config.LocalConfig
     """
 
@@ -93,7 +92,6 @@ def test_config_check(clirunner, postgres_db, local_config):
 
 def test_list_users_does_not_fail(clirunner, local_config, postgres_db):
     """
-    :type global_integration_cli_args: tuple[str]
     :type local_config: datacube.config.LocalConfig
     """
     # We don't want to make assumptions about available users during test runs.
@@ -188,7 +186,6 @@ def test_user_creation(clirunner, example_user):
 
     This test requires role creation privileges on the PostgreSQL instance used for testing...
 
-    :type global_integration_cli_args: tuple[str]
     :type db: datacube.index.postgres._api.PostgresDb
     """
     username, user_description = example_user

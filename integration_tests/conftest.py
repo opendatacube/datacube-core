@@ -63,24 +63,21 @@ GEOTIFF = {
     }
 }
 INTEGRATION_TESTS_DIR = Path(__file__).parent
-INTEGRATION_DEFAULT_CONFIG_PATH = INTEGRATION_TESTS_DIR / 'agdcintegration.conf'
 
 _EXAMPLE_LS5_NBAR_DATASET_FILE = INTEGRATION_TESTS_DIR / 'example-ls5-nbar.yaml'
 
 #: Number of time slices to create in sample data
-_TIME_SLICES = 3
+NUM_TIME_SLICES = 3
 
 #: Number of bands to place in generated GeoTIFFs
-_BANDS = 3
+NUM_BANDS = 3
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs' / 'config_samples'
-DATASET_TYPES = CONFIG_SAMPLES / 'dataset_types'
+
 LS5_SAMPLES = CONFIG_SAMPLES / 'storage_types' / 'ga_landsat_5'
 LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_geographic.yaml'
-LS5_NBAR_NAME = 'ls5_nbar'
 LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_albers.yaml'
-LS5_NBAR_ALBERS_NAME = 'ls5_nbar_albers'
 
 # Resolution and chunking shrink factors
 TEST_STORAGE_SHRINK_FACTORS = (100, 100)
@@ -90,36 +87,40 @@ PROJECTED_VARS = ('x', 'y')
 
 EXAMPLE_LS5_DATASET_ID = UUID('bbf3e21c-82b0-11e5-9ba1-a0000100fe80')
 
+# def pytest_generate_tests(metafunc):
+#     if "fixture_param" in metafunc.fixturenames:
+#         metafunc.parametrize("fixture_param", ["foo"], scope="module")
+#     idlist = []
+#     argvalues = []
+#     for scenario in metafunc.cls.scenarios:
+#         idlist.append(scenario[0])
+#         items = scenario[1].items()
+#         argnames = [x[0] for x in items]
+#         argvalues.append(([x[1] for x in items]))
+#     metafunc.parametrize(argnames, argvalues, ids=idlist, scope="class")
+
+CONFIG_FILE_PATHS = [str(INTEGRATION_TESTS_DIR / 'agdcintegration.conf'),
+                     os.path.expanduser('~/.datacube_integration.conf')]
+
 
 @pytest.fixture
-def integration_config_paths():
-    """
-    Provides a list of ODC config files for integration testing.
-
-     - :file:`integration_tests/agdcintegration.conf`
-     - :file:`~/.datacube_integration.conf`
-    """
-    return [str(INTEGRATION_DEFAULT_CONFIG_PATH), os.path.expanduser('~/.datacube_integration.conf')]
-
-
-@pytest.fixture
-def global_integration_cli_args(integration_config_paths):
+def global_integration_cli_args():
     """
     The first arguments to pass to a cli command for integration test configuration.
     """
     # List of a config files in order.
-    return list(itertools.chain(*(('--config', f) for f in integration_config_paths)))
+    return list(itertools.chain(*(('--config', f) for f in CONFIG_FILE_PATHS)))
 
 
 @pytest.fixture
-def local_config(integration_config_paths):
+def local_config():
     """Provides a :class:`LocalConfig` configured with suitable config file paths.
 
     .. seealso::
 
         The :func:`integration_config_paths` fixture sets up the config files.
     """
-    return LocalConfig.find(integration_config_paths)
+    return LocalConfig.find(CONFIG_FILE_PATHS)
 
 
 @pytest.fixture(params=["US/Pacific", "UTC", ])
@@ -148,15 +149,12 @@ def uninitialised_postgres_db(local_config, request):
     db.close()
 
 
-@pytest.fixture(params=['default'])
-def postgres_db(uninitialised_postgres_db, request):
+@pytest.fixture
+def postgres_db(uninitialised_postgres_db):
     """
     Return a connection to an PostgreSQL database, initialised with the default schema
     and tables.
     """
-    index_driver = request.param  # We could custom select here
-    # Or we could customise the configuration file up higher
-    # Recreate tables so our tests have a clean db.
     LOG.info('_core.ensure_db')
     try:
         _core.ensure_db(uninitialised_postgres_db._engine)
@@ -254,7 +252,7 @@ def geotiffs(tmpdir_factory):
     }
     # Generate the custom geotiff yamls
     return [_make_tiffs_and_yamls(tiffs_dir, config, day_offset)
-            for day_offset in range(_TIME_SLICES)]
+            for day_offset in range(NUM_TIME_SLICES)]
 
 
 def _make_tiffs_and_yamls(tiffs_dir, config, day_offset):
@@ -322,7 +320,7 @@ def _make_geotiffs(tiffs_dir, day_offset):
                               GEOTIFF['pixel_size']['y'],
                               GEOTIFF['ul']['y']]}
 
-    for band in range(_BANDS):
+    for band in range(NUM_BANDS):
         path = str(tiffs_dir.join('band%02d_time%02d.tif' % ((band + 1), day_offset)))
         with rasterio.open(path, 'w', **metadata) as dst:
             # Write data in "corners" (rounded down by 100, for a size of 100x100)
@@ -372,7 +370,7 @@ def example_ls5_dataset_paths(tmpdir, geotiffs):
         scene_dir = obs_dir.mkdir('scene01')
         scene_dir.join('report.txt').write('Example')
         geotiff_name = '%s_B{}0.tif' % obs_name
-        for band in range(_BANDS):
+        for band in range(NUM_BANDS):
             path = scene_dir.join(geotiff_name.format(band + 1))
             symlink(str(geotiff['tiffs'][band]), str(path))
         dataset_dirs[geotiff['uuid']] = Path(str(obs_dir))
@@ -439,7 +437,7 @@ def telemetry_metadata_type(index, default_metadata_types):
 def indexed_ls5_scene_products(index, ga_metadata_type):
     """Add Landsat 5 scene Products into the Index"""
     products = load_test_products(
-        DATASET_TYPES / 'ls5_scenes.yaml',
+        CONFIG_SAMPLES / 'dataset_types' / 'ls5_scenes.yaml',
         # Use our larger metadata type with a more diverse set of field types.
         metadata_type=ga_metadata_type
     )
@@ -499,10 +497,13 @@ def shrink_storage_type(storage_type, variables, shrink_factors):
 
 
 @pytest.fixture
-def clirunner(global_integration_cli_args, cli_method=datacube.scripts.cli_app.cli):
-    def _run_cli(opts, catch_exceptions=False, expect_success=True):
+def clirunner(global_integration_cli_args):
+    def _run_cli(opts, catch_exceptions=False,
+                 expect_success=True, cli_method=datacube.scripts.cli_app.cli,
+                 verbose_flag='-v'):
         exe_opts = list(global_integration_cli_args)
-        exe_opts.append('-v')
+        if verbose_flag:
+            exe_opts.append(verbose_flag)
         exe_opts.extend(opts)
 
         runner = CliRunner()
