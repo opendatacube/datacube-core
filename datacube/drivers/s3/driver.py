@@ -206,13 +206,13 @@ class S3ReaderDriver(object):
     def __init__(self):
         self.name = 's3block'
         self.formats = [FORMAT]
-        self.protocols = [PROTOCOL]
+        self.protocols = [PROTOCOL, 'file']
 
         self._storage = S3LIO()
 
     def supports(self, protocol, fmt):
-        return (protocol == PROTOCOL and
-                fmt == FORMAT)
+        return (protocol in self.protocols and
+                fmt in self.formats)
 
     def new_datasource(self, dataset, band_name):
         return S3DataSource(dataset, band_name, self._storage)

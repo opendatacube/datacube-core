@@ -78,13 +78,12 @@ class DatasetResource(BaseDatasetResource):
         self.uri_scheme = uri_scheme
 
     def add(self, dataset, sources_policy='verify', **kwargs):
-        # Set uri scheme to s3
-        if dataset.uris:
-            dataset.uris = ['%s:%s' % (self.uri_scheme, uri.split(':', 1)[1])
-                            for uri in dataset.uris]
-        else:
-            dataset.uris = []
-        return super(DatasetResource, self).add(dataset, sources_policy, **kwargs)
+        saved_dataset = super(DatasetResource, self).add(dataset, sources_policy, **kwargs)
+
+        if dataset.format == 's3block':
+            storage_metadata = dataset.attrs['storage_metadata']
+            self.add_datasets_to_s3_tables([dataset.id], storage_metadata)
+        return saved_dataset
 
     def add_multiple(self, datasets, sources_policy='verify'):
         """Index several datasets.
@@ -94,26 +93,29 @@ class DatasetResource(BaseDatasetResource):
         no s3 indexing takes place and a `ValueError` is raised.
 
         :param datasets: The datasets to be indexed. It must contain
-          an attribute named `storage_output` otherwise a ValueError
+          an attribute named `storage_metadata` otherwise a ValueError
           is raised.
         :param str sources_policy: The sources policy.
         :return: The number of datasets indexed.
         :rtype: int
 
         """
-        if 'storage_output' not in datasets.attrs:
-            raise ValueError('s3 storage output not received, indexing aborted.')
-        dataset_refs = []
-        n = 0
-        for dataset in datasets.values:
-            self.add(dataset, sources_policy=sources_policy)
-            dataset_refs.append(dataset.id)
-            n += 1
-        if n == len(datasets):
-            self.add_datasets_to_s3_tables(dataset_refs, datasets.attrs['storage_output'])
-        else:
-            raise ValueError('Some datasets could not be indexed, hence no s3 indexing will happen.')
-        return n
+        raise SystemError("I don't think this is called or used, it will need to be fixed when "
+                          " storage chunks across multiple datasets are used")
+
+        # if 'storage_metadata' not in datasets.attrs:
+        #     raise ValueError('s3 storage output not received, indexing aborted.')
+        # dataset_refs = []
+        # n = 0
+        # for dataset in datasets.values:
+        #     self.add(dataset, sources_policy=sources_policy)
+        #     dataset_refs.append(dataset.id)
+        #     n += 1
+        # if n == len(datasets):
+        #     self.add_datasets_to_s3_tables(dataset_refs, datasets.attrs['storage_metadata'])
+        # else:
+        #     raise ValueError('Some datasets could not be indexed, hence no s3 indexing will happen.')
+        # return n
 
     def _add_s3_dataset(self, transaction, s3_dataset_id, band, output):
         """Add the new s3 dataset to DB.
@@ -203,18 +205,18 @@ class DatasetResource(BaseDatasetResource):
                                  band,
                                  s3_dataset_id)
 
-    def add_datasets_to_s3_tables(self, dataset_refs, storage_output):
+    def add_datasets_to_s3_tables(self, dataset_refs, storage_metadata):
         """Add extra dataset metadata to s3 tables.
 
         :param list dataset_refs: The list of dataset references
           (uuids) that all point to the s3 dataset entry being
           created.
-        :param dict storage_output: Dictionary of metadata consigning
+        :param dict storage_metadata: Dictionary of metadata consigning
           the s3 storage information.
         """
         # Roll back if any exception arise
         with self._db.begin() as transaction:
-            for band, output in storage_output.items():
+            for band, output in storage_metadata.items():
                 # Create a random UUID for this s3 dataset/band pair
                 s3_dataset_id = uuid4()
 

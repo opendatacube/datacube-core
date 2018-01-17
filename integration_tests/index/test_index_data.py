@@ -241,6 +241,8 @@ def test_index_dataset_with_sources(index, default_metadata_type):
         index.datasets.add(child, sources_policy='verify')
 
 
+# Make sure that both normal and s3block index can handle normal data locations correctly
+@pytest.mark.parametrize('datacube_env_name', ('datacube', 's3block_env',), indirect=True)
 def test_index_dataset_with_location(index, default_metadata_type):
     """
     :type index: datacube.index.index.Index

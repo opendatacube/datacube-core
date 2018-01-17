@@ -137,8 +137,8 @@ class DatasetResource(object):
                 # reinsert attempt? try updating the location
                 if dataset.uris:
                     try:
-                        with self._db.connect() as connection:
-                            connection.ensure_dataset_locations(dataset.id, dataset.uris)
+                        with self._db.begin() as transaction:
+                            transaction.ensure_dataset_locations(dataset.id, dataset.uris)
                     except DuplicateRecordError as e:
                         _LOG.warning(str(e))
         finally:

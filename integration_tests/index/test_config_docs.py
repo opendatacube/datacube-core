@@ -81,7 +81,8 @@ def test_dataset_indexes_views_exist(initialised_postgres_db, ls5_telem_type):
     assert _object_exists(initialised_postgres_db, 'dv_ls5_telem_test_dataset')
 
     # Ensure view was created (following naming conventions)
-    assert not _object_exists(initialised_postgres_db, 'dix_ls5_telem_test_gsi'), "indexed=false field gsi shouldn't have an index"
+    assert not _object_exists(initialised_postgres_db,
+                              'dix_ls5_telem_test_gsi'), "indexed=false field gsi shouldn't have an index"
 
 
 def test_dataset_composite_indexes_exist(initialised_postgres_db, ls5_telem_type):

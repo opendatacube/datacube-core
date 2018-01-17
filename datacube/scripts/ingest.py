@@ -214,6 +214,7 @@ def ingest_work(config, driver, source_type, output_type, tile, tile_index):
     with datacube.set_options(reproject_threads=1):
         fuse_func = {'copy': None}[config.get(FUSER_KEY, 'copy')]
         data = Datacube.load_data(tile.sources, tile.geobox, measurements, fuse_func=fuse_func)
+
     nudata = data.rename(namemap)
     file_path = get_filename(config, tile_index, tile.sources)
 
@@ -245,6 +246,7 @@ def ingest_work(config, driver, source_type, output_type, tile, tile_index):
 def _index_datasets(index, results):
     n = 0
     for datasets in results:
+        # datasets is an xarray.DataArray
         for dataset in datasets.values:
             index.datasets.add(dataset, sources_policy='skip')
             n += 1
@@ -288,8 +290,9 @@ def process_tasks(index, config, driver, source_type, output_type, tasks, queue_
             # TODO: ideally we wouldn't block here indefinitely
             # maybe limit gather to 50-100 results and put the rest into a index backlog
             # this will also keep the queue full
-            n_successful += _index_datasets(index, executor.results(completed))
-        except Exception:  # pylint: disable=broad-except
+            results = executor.results(completed)
+            n_successful += _index_datasets(index, results)
+        except Exception as e:  # pylint: disable=broad-except
             _LOG.exception('Gather failed')
             pending += completed
 
@@ -370,4 +373,4 @@ def ingest_cmd(index,
     successful, failed = process_tasks(index, config, driver, source_type, output_type, tasks, queue_size, executor)
     click.echo('%d successful, %d failed' % (successful, failed))
 
-    return 0
+    sys.exit(failed)

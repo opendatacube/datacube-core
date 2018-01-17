@@ -37,16 +37,20 @@ COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
 LS5_NBAR_INGEST_CONFIG = CONFIG_SAMPLES / 'ingester' / 'ls5_nbar_albers.yaml'
 
 
-@pytest.fixture
-def ls5_nbar_ingest_config(tmpdir):
-    dataset_dir = tmpdir.mkdir('ls5_nbar_ingest_test')
-    config = load_yaml_file(LS5_NBAR_INGEST_CONFIG)[0]
+def prepare_test_ingestion_configuration(tmpdir, filename):
+    filename = Path(filename)
+    dataset_dir = tmpdir.mkdir(filename.stem)
+    config = load_yaml_file(filename)[0]
     config = alter_product_for_testing(config)
     config['storage']['crs'] = 'EPSG:28355'
     config['storage']['chunking']['time'] = 1
-    # config['storage']['tile_size']['time'] = 2
     config['location'] = str(dataset_dir)
-    config_path = dataset_dir.join('ls5_nbar_ingest_config.yaml')
+
+    # If ingesting with the s3test driver
+    if 'bucket' in config['storage']:
+        config['storage']['bucket'] = str(dataset_dir)
+
+    config_path = dataset_dir.join(filename.name)
     with open(str(config_path), 'w') as stream:
         yaml.dump(config, stream)
     return config_path, config
@@ -54,9 +58,8 @@ def ls5_nbar_ingest_config(tmpdir):
 
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
-def test_full_ingestion(clirunner, index,
-                        example_ls5_dataset_paths, ls5_nbar_ingest_config):
-    config_path, config = ls5_nbar_ingest_config
+def test_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths):
+    config_path, config = prepare_test_ingestion_configuration(tmpdir, LS5_NBAR_INGEST_CONFIG)
     valid_uuids = []
     for uuid, example_ls5_dataset_path in example_ls5_dataset_paths.items():
         valid_uuids.append(uuid)
@@ -99,9 +102,41 @@ def test_full_ingestion(clirunner, index,
     check_open_with_xarray(ds_path)
 
 
-@pytest.mark.parametrize('index', ['s3block'], indirect=['index'])
-def test_s3_full_ingestion(index):
-    pass
+@pytest.mark.parametrize('datacube_env_name', ('s3block_env',), indirect=True)
+@pytest.mark.usefixtures('default_metadata_type',
+                         'indexed_ls5_scene_products')
+def test_s3_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths):
+    config_path, config = prepare_test_ingestion_configuration(tmpdir, CONFIG_SAMPLES /
+                                                               'ingester' / 'ls5_nbar_albers_s3test.yaml')
+    valid_uuids = []
+    for uuid, example_ls5_dataset_path in example_ls5_dataset_paths.items():
+        valid_uuids.append(uuid)
+        clirunner([
+            'dataset',
+            'add',
+            '--auto-match',
+            str(example_ls5_dataset_path)
+        ])
+
+    ensure_datasets_are_indexed(index, valid_uuids)
+
+    # TODO(csiro) Set time dimension when testing
+    # config['storage']['tile_size']['time'] = 2
+
+    result = clirunner([
+        'ingest',
+        '--config-file',
+        str(config_path)
+    ])
+
+    print(result.output)
+
+    datasets = index.datasets.search_eager(product='ls5_nbar_albers')
+    assert len(datasets) > 0
+    assert datasets[0].managed
+
+    check_open_with_api(index, len(valid_uuids))
+    check_data_with_api(index, len(valid_uuids))
 
 
 def ensure_datasets_are_indexed(index, valid_uuids):

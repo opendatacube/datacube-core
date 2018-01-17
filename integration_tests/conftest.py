@@ -516,7 +516,7 @@ def clirunner(global_integration_cli_args, datacube_env_name):
             catch_exceptions=catch_exceptions
         )
         if expect_success:
-            assert result.exit_code == 0, "Error for %r. output: %r" % (opts, result.output)
+            assert 0 == result.exit_code, "Error for %r. output: %r" % (opts, result.output)
         return result
 
     return _run_cli
