@@ -45,3 +45,12 @@ db_hostname: alt-db.opendatacube.test
     with pytest.raises(ValueError):
         with Datacube(config=config_path, env='undefined-env', validate_connection=False) as dc:
             pass
+
+
+@pytest.mark.parametrize('datacube_env_name', ('s3block_env',), indirect=True)
+def test_connecting_to_s3_environment(index, clirunner):
+    assert index is not None
+    assert index.connected_to_s3_database()
+
+    result = clirunner(['system', 'check'])
+    assert 'Index Driver:  s3block_index' in result.output

@@ -83,6 +83,7 @@ def check(
     echo_field('Database', local_config['db_database'])
     echo_field('User', local_config['db_username'])
     echo_field('Environment', local_config['env'])
+    echo_field('Index Driver', local_config['index_driver'])
 
     echo()
     echo('Valid connection:\t', nl=False)

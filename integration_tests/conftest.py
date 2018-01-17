@@ -21,6 +21,7 @@ from click.testing import CliRunner
 import datacube.scripts.cli_app
 import datacube.utils
 from datacube.drivers.postgres import _core
+from datacube.index import index_connect
 from datacube.index.metadata_types import default_metadata_type_docs
 
 try:
@@ -113,14 +114,22 @@ def global_integration_cli_args():
 
 
 @pytest.fixture
-def local_config():
+def datacube_env_name(request):
+    if hasattr(request, 'param'):
+        return request.param
+    else:
+        return 'datacube'
+
+
+@pytest.fixture
+def local_config(datacube_env_name):
     """Provides a :class:`LocalConfig` configured with suitable config file paths.
 
     .. seealso::
 
         The :func:`integration_config_paths` fixture sets up the config files.
     """
-    return LocalConfig.find(CONFIG_FILE_PATHS)
+    return LocalConfig.find(CONFIG_FILE_PATHS, env=datacube_env_name)
 
 
 @pytest.fixture(params=["US/Pacific", "UTC", ])
@@ -150,21 +159,22 @@ def uninitialised_postgres_db(local_config, request):
 
 
 @pytest.fixture
-def postgres_db(uninitialised_postgres_db):
+def index(local_config, uninitialised_postgres_db):
+    """
+    :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
+    """
+    index = index_connect(local_config, validate_connection=False)
+    index.init_db()
+    return index
+
+
+@pytest.fixture
+def initialised_postgres_db(index):
     """
     Return a connection to an PostgreSQL database, initialised with the default schema
     and tables.
     """
-    LOG.info('_core.ensure_db')
-    try:
-        _core.ensure_db(uninitialised_postgres_db._engine)
-    except Exception as e:
-        print(e)
-        raise
-
-    yield uninitialised_postgres_db
-
-    uninitialised_postgres_db.close()
+    return index._db
 
 
 def remove_dynamic_indexes():
@@ -174,14 +184,6 @@ def remove_dynamic_indexes():
     # Our normal indexes start with "ix_", dynamic indexes with "dix_"
     for table in _core.METADATA.tables.values():
         table.indexes.intersection_update([i for i in table.indexes if not i.name.startswith('dix_')])
-
-
-@pytest.fixture
-def index(postgres_db):
-    """
-    :type postgres_db: datacube.index.postgres._api.PostgresDb
-    """
-    return Index(postgres_db)
 
 
 @pytest.fixture
@@ -497,11 +499,12 @@ def shrink_storage_type(storage_type, variables, shrink_factors):
 
 
 @pytest.fixture
-def clirunner(global_integration_cli_args):
+def clirunner(global_integration_cli_args, datacube_env_name):
     def _run_cli(opts, catch_exceptions=False,
                  expect_success=True, cli_method=datacube.scripts.cli_app.cli,
                  verbose_flag='-v'):
-        exe_opts = list(global_integration_cli_args)
+        exe_opts = list(itertools.chain(*(('--config', f) for f in CONFIG_FILE_PATHS)))
+        exe_opts += ['--env', datacube_env_name]
         if verbose_flag:
             exe_opts.append(verbose_flag)
         exe_opts.extend(opts)
