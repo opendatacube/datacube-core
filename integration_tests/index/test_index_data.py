@@ -72,9 +72,9 @@ _pseudo_telemetry_dataset_type = {
 _EXAMPLE_LS7_NBAR_DATASET_FILE = Path(__file__).parent.joinpath('ls7-nbar-example.yaml')
 
 
-def test_archive_datasets(index, postgres_db, local_config, default_metadata_type):
+def test_archive_datasets(index, initialised_postgres_db, local_config, default_metadata_type):
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
-    with postgres_db.begin() as transaction:
+    with initialised_postgres_db.begin() as transaction:
         was_inserted = transaction.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,
@@ -108,12 +108,12 @@ def test_archive_datasets(index, postgres_db, local_config, default_metadata_typ
 
 
 @pytest.fixture
-def telemetry_dataset(index, postgres_db, default_metadata_type):
+def telemetry_dataset(index, initialised_postgres_db, default_metadata_type):
     # type: (Index, PostgresDb) -> Dataset
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
     assert not index.datasets.has(_telemetry_uuid)
 
-    with postgres_db.begin() as transaction:
+    with initialised_postgres_db.begin() as transaction:
         was_inserted = transaction.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,
@@ -124,15 +124,15 @@ def telemetry_dataset(index, postgres_db, default_metadata_type):
     return index.datasets.get(_telemetry_uuid)
 
 
-def test_index_duplicate_dataset(index, postgres_db, local_config, default_metadata_type):
+def test_index_duplicate_dataset(index, initialised_postgres_db, local_config, default_metadata_type):
     """
     :type index: datacube.index.index.Index
-    :type postgres_db: datacube.index.postgres._connections.PostgresDb
+    :type initialised_postgres_db: datacube.index.postgres._connections.PostgresDb
     """
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
     assert not index.datasets.has(_telemetry_uuid)
 
-    with postgres_db.begin() as transaction:
+    with initialised_postgres_db.begin() as transaction:
         was_inserted = transaction.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,
@@ -144,7 +144,7 @@ def test_index_duplicate_dataset(index, postgres_db, local_config, default_metad
 
     # Insert again.
     with pytest.raises(DuplicateRecordError):
-        with postgres_db.connect() as connection:
+        with initialised_postgres_db.connect() as connection:
             was_inserted = connection.insert_dataset(
                 _telemetry_dataset,
                 _telemetry_uuid,
@@ -164,15 +164,15 @@ def test_has_dataset(index, telemetry_dataset):
     assert not index.datasets.has('f226a278-e422-11e6-b501-185e0f80a5c0')
 
 
-def test_transactions(index, postgres_db, local_config, default_metadata_type):
+def test_transactions(index, initialised_postgres_db, local_config, default_metadata_type):
     """
     :type index: datacube.index.index.Index
-    :type postgres_db: datacube.index.postgres._connections.PostgresDb
+    :type initialised_postgres_db: datacube.index.postgres._connections.PostgresDb
     """
     assert not index.datasets.has(_telemetry_uuid)
 
     dataset_type = index.products.add_document(_pseudo_telemetry_dataset_type)
-    with postgres_db.begin() as transaction:
+    with initialised_postgres_db.begin() as transaction:
         was_inserted = transaction.insert_dataset(
             _telemetry_dataset,
             _telemetry_uuid,

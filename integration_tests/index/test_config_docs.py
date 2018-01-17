@@ -51,48 +51,48 @@ _DATASET_METADATA = {
 }
 
 
-def test_metadata_indexes_views_exist(postgres_db, default_metadata_type):
+def test_metadata_indexes_views_exist(initialised_postgres_db, default_metadata_type):
     """
-    :type postgres_db: datacube.index.postgres._connections.PostgresDb
+    :type initialised_postgres_db: datacube.index.postgres._connections.PostgresDb
     :type default_metadata_type: datacube.model.MetadataType
     """
     # Metadata indexes should no longer exist.
-    assert not _object_exists(postgres_db, 'dix_eo_platform')
+    assert not _object_exists(initialised_postgres_db, 'dix_eo_platform')
 
     # Ensure view was created (following naming conventions)
-    assert _object_exists(postgres_db, 'dv_eo_dataset')
+    assert _object_exists(initialised_postgres_db, 'dv_eo_dataset')
 
 
-def test_dataset_indexes_views_exist(postgres_db, ls5_telem_type):
+def test_dataset_indexes_views_exist(initialised_postgres_db, ls5_telem_type):
     """
-    :type postgres_db: datacube.index.postgres._connections.PostgresDb
+    :type initialised_postgres_db: datacube.index.postgres._connections.PostgresDb
     :type ls5_telem_type: datacube.model.DatasetType
     """
     assert ls5_telem_type.name == 'ls5_telem_test'
 
     # Ensure field indexes were created for the dataset type (following the naming conventions):
-    assert _object_exists(postgres_db, "dix_ls5_telem_test_orbit")
+    assert _object_exists(initialised_postgres_db, "dix_ls5_telem_test_orbit")
 
     # Ensure it does not create a 'platform' index, because that's a fixed field
     # (ie. identical in every dataset of the type)
-    assert not _object_exists(postgres_db, "dix_ls5_telem_test_platform")
+    assert not _object_exists(initialised_postgres_db, "dix_ls5_telem_test_platform")
 
     # Ensure view was created (following naming conventions)
-    assert _object_exists(postgres_db, 'dv_ls5_telem_test_dataset')
+    assert _object_exists(initialised_postgres_db, 'dv_ls5_telem_test_dataset')
 
     # Ensure view was created (following naming conventions)
-    assert not _object_exists(postgres_db, 'dix_ls5_telem_test_gsi'), "indexed=false field gsi shouldn't have an index"
+    assert not _object_exists(initialised_postgres_db, 'dix_ls5_telem_test_gsi'), "indexed=false field gsi shouldn't have an index"
 
 
-def test_dataset_composite_indexes_exist(postgres_db, ls5_telem_type):
+def test_dataset_composite_indexes_exist(initialised_postgres_db, ls5_telem_type):
     # This type has fields named lat/lon/time, so composite indexes should now exist for them:
     # (following the naming conventions)
-    assert _object_exists(postgres_db, "dix_ls5_telem_test_sat_path_sat_row_time")
+    assert _object_exists(initialised_postgres_db, "dix_ls5_telem_test_sat_path_sat_row_time")
 
     # But no individual field indexes for these
-    assert not _object_exists(postgres_db, "dix_ls5_telem_test_sat_path")
-    assert not _object_exists(postgres_db, "dix_ls5_telem_test_sat_row")
-    assert not _object_exists(postgres_db, "dix_ls5_telem_test_time")
+    assert not _object_exists(initialised_postgres_db, "dix_ls5_telem_test_sat_path")
+    assert not _object_exists(initialised_postgres_db, "dix_ls5_telem_test_sat_row")
+    assert not _object_exists(initialised_postgres_db, "dix_ls5_telem_test_time")
 
 
 def test_field_expression_unchanged(default_metadata_type, telemetry_metadata_type):
@@ -489,7 +489,7 @@ def test_filter_types_by_search(index, ls5_telem_type):
     assert res == []
 
 
-def test_update_metadata_type_doc(postgres_db, index, ls5_telem_type):
+def test_update_metadata_type_doc(initialised_postgres_db, index, ls5_telem_type):
     type_doc = copy.deepcopy(ls5_telem_type.metadata_type.definition)
     type_doc['dataset']['search_fields']['test_indexed'] = {
         'description': 'indexed test field',
@@ -504,5 +504,5 @@ def test_update_metadata_type_doc(postgres_db, index, ls5_telem_type):
     index.metadata_types.update_document(type_doc)
 
     assert ls5_telem_type.name == 'ls5_telem_test'
-    assert _object_exists(postgres_db, "dix_ls5_telem_test_test_indexed")
-    assert not _object_exists(postgres_db, "dix_ls5_telem_test_test_not_indexed")
+    assert _object_exists(initialised_postgres_db, "dix_ls5_telem_test_test_indexed")
+    assert not _object_exists(initialised_postgres_db, "dix_ls5_telem_test_test_not_indexed")

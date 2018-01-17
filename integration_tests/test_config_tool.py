@@ -29,15 +29,15 @@ def _dataset_type_count(db):
         return len(list(connection.get_all_dataset_types()))
 
 
-def test_add_example_dataset_types(clirunner, postgres_db, default_metadata_type):
+def test_add_example_dataset_types(clirunner, initialised_postgres_db, default_metadata_type):
     """
     Add example mapping docs, to ensure they're valid and up-to-date.
 
     We add them all to a single database to check for things like duplicate ids.
 
-    :type postgres_db: datacube.index.postgres._api.PostgresDb
+    :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
     """
-    existing_mappings = _dataset_type_count(postgres_db)
+    existing_mappings = _dataset_type_count(initialised_postgres_db)
 
     print('{} mappings'.format(existing_mappings))
     for mapping_path in EXAMPLE_DATASET_TYPE_DOCS:
@@ -45,16 +45,16 @@ def test_add_example_dataset_types(clirunner, postgres_db, default_metadata_type
 
         result = clirunner(['-v', 'product', 'add', mapping_path])
 
-        mappings_count = _dataset_type_count(postgres_db)
+        mappings_count = _dataset_type_count(initialised_postgres_db)
         assert mappings_count > existing_mappings, "Mapping document was not added: " + str(mapping_path)
         existing_mappings = mappings_count
 
 
-def test_error_returned_on_invalid(clirunner, postgres_db):
+def test_error_returned_on_invalid(clirunner, initialised_postgres_db):
     """
-    :type postgres_db: datacube.index.postgres._api.PostgresDb
+    :type initialised_postgres_db: datacube.drivers.postgres._connections.PostgresDb
     """
-    assert _dataset_type_count(postgres_db) == 0
+    assert _dataset_type_count(initialised_postgres_db) == 0
 
     for mapping_path in INVALID_MAPPING_DOCS:
         result = clirunner(
@@ -66,10 +66,10 @@ def test_error_returned_on_invalid(clirunner, postgres_db):
             expect_success=False
         )
         assert result.exit_code != 0, "Success return code for invalid document."
-        assert _dataset_type_count(postgres_db) == 0, "Invalid document was added to DB"
+        assert _dataset_type_count(initialised_postgres_db) == 0, "Invalid document was added to DB"
 
 
-def test_config_check(clirunner, postgres_db, local_config):
+def test_config_check(clirunner, initialised_postgres_db, local_config):
     """
     :type local_config: datacube.config.LocalConfig
     """
@@ -90,7 +90,7 @@ def test_config_check(clirunner, postgres_db, local_config):
     assert user_regex.match(result.output)
 
 
-def test_list_users_does_not_fail(clirunner, local_config, postgres_db):
+def test_list_users_does_not_fail(clirunner, local_config, initialised_postgres_db):
     """
     :type local_config: datacube.config.LocalConfig
     """
@@ -138,18 +138,18 @@ def test_db_init_rebuild(clirunner, local_config, ls5_telem_type):
     ) in result.output
 
 
-def test_db_init(clirunner, postgres_db):
-    with postgres_db.connect() as connection:
+def test_db_init(clirunner, initialised_postgres_db):
+    with initialised_postgres_db.connect() as connection:
         drop_db(connection._connection)
 
-        assert not has_schema(postgres_db._engine, connection._connection)
+        assert not has_schema(initialised_postgres_db._engine, connection._connection)
 
     # Run on an empty database.
     result = clirunner(['system', 'init'])
     assert 'Created.' in result.output
 
-    with postgres_db.connect() as connection:
-        assert has_schema(postgres_db._engine, connection._connection)
+    with initialised_postgres_db.connect() as connection:
+        assert has_schema(initialised_postgres_db._engine, connection._connection)
 
 
 @pytest.fixture(params=[
@@ -158,13 +158,13 @@ def test_db_init(clirunner, postgres_db):
     # Test that names are escaped
     ('test_user_"invalid+_chars_{n}', None),
     ('test_user_invalid_desc_{n}', 'Invalid "\' chars in description')])
-def example_user(clirunner, postgres_db, request):
+def example_user(clirunner, initialised_postgres_db, request):
     username, description = request.param
 
     username = username.format(n=random.randint(111111, 999999))
 
     # test_roles = (user_name for role_name, user_name, desc in roles if user_name.startswith('test_'))
-    with postgres_db.connect() as connection:
+    with initialised_postgres_db.connect() as connection:
         users = (user_name for role_name, user_name, desc in connection.list_users())
         if username in users:
             connection.drop_users([username])
@@ -174,7 +174,7 @@ def example_user(clirunner, postgres_db, request):
 
     yield username, description
 
-    with postgres_db.connect() as connection:
+    with initialised_postgres_db.connect() as connection:
         users = (user_name for role_name, user_name, desc in connection.list_users())
         if username in users:
             connection.drop_users([username])
@@ -186,7 +186,7 @@ def test_user_creation(clirunner, example_user):
 
     This test requires role creation privileges on the PostgreSQL instance used for testing...
 
-    :type db: datacube.index.postgres._api.PostgresDb
+    :type db: datacube.drivers.postgres._connections.PostgresDb
     """
     username, user_description = example_user
 
