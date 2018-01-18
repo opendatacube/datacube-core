@@ -11,6 +11,8 @@ from datacube.api.query import Query, query_group_by, query_geopolygon
 from datacube.api.core import get_bounds
 from datacube.utils import geometry, intersects
 
+from datacube.virtual_products.utils import select_datasets_inside_polygon, output_geobox
+
 
 class VirtualProductException(Exception):
     """ Raised if the construction of the virtual product cannot be validated. """
@@ -25,10 +27,14 @@ class VirtualDatasets(ABC):
         """ Drop datasets that do not satisfy `predicate`. """
 
 
-class VirtualRaster(ABC):
+class RasterRecipe(object):
     """ Result of `VirtualProduct.build_raster`. """
     # our replacement for grid_workflow.Tile basically
     # TODO: copy the Tile API
+    def __init__(self, grouped_datasets, geobox, output_measurements):
+        self.grouped_datasets = grouped_datasets
+        self.geobox = geobox
+        self.output_measurements = output_measurements
 
 
 class VirtualProduct(ABC):
@@ -56,7 +62,7 @@ class VirtualProduct(ABC):
 
     @abstractmethod
     def build_raster(self, datasets, **query):
-        # type: (VirtualDatasets, Dict[str, Any]) -> VirtualRaster
+        # type: (VirtualDatasets, Dict[str, Any]) -> RasterRecipe
         """
         Datasets grouped by their timestamps.
         :param datasets: the datasets to fetch data from
@@ -65,7 +71,7 @@ class VirtualProduct(ABC):
 
     @abstractmethod
     def fetch_data(self, raster):
-        # type: (VirtualRaster) -> xarray.Dataset
+        # type: (RasterRecipe) -> xarray.Dataset
         """ Convert virtual raster to `xarray.Dataset`. """
 
     def load(self, index, **query):
@@ -89,56 +95,6 @@ class BasicDatasets(VirtualDatasets):
                               for dataset in self.dataset_list
                               if predicate is None or predicate(dataset)],
                              self.grid_spec, self.output_measurements)
-
-
-class BasicRaster(VirtualRaster):
-    def __init__(self, grouped_datasets, geobox, output_measurements):
-        self.grouped_datasets = grouped_datasets
-        self.geobox = geobox
-        self.output_measurements = output_measurements
-
-
-def select_datasets_inside_polygon(datasets, polygon):
-    # essentially copied from Datacube.find_datasets
-    # TODO: place it somewhere so that Datacube.find_datasets can access and use it
-    for dataset in datasets:
-        if polygon is None:
-            yield dataset
-        else:
-            if intersects(polygon.to_crs(dataset.crs), dataset.extent):
-                yield dataset
-
-
-def output_geobox(datasets, grid_spec,
-                  like=None, output_crs=None, resolution=None, align=None,
-                  **query):
-    # this is a copy of the logic in `datacube.Datacube.load`
-    # TODO: hopefully that method can make use of this function in the future
-
-    if like is not None:
-        assert output_crs is None, "'like' and 'output_crs' are not supported together"
-        assert resolution is None, "'like' and 'resolution' are not supported together"
-        assert align is None, "'like' and 'align' are not supported together"
-        return like.geobox
-
-    if output_crs is not None:
-        # user provided specifications
-        if resolution is None:
-            raise ValueError("Must specify 'resolution' when specifying 'output_crs'")
-        crs = geometry.CRS(output_crs)
-    else:
-        # specification from grid_spec
-        if grid_spec is None or grid_spec.crs is None:
-            raise ValueError("Product has no default CRS. Must specify 'output_crs' and 'resolution'")
-        crs = grid_spec.crs
-        if resolution is None:
-            if grid_spec.resolution is None:
-                raise ValueError("Product has no default resolution. Must specify 'resolution'")
-            resolution = grid_spec.resolution
-            align = align or grid_spec.alignment  # is the indentation wrong here?
-
-    return geometry.GeoBox.from_geopolygon(query_geopolygon(**query) or get_bounds(datasets, crs),
-                                           resolution, crs, align)
 
 
 class BasicProduct(VirtualProduct):
@@ -220,10 +176,10 @@ class BasicProduct(VirtualProduct):
         geobox = output_geobox(datasets.dataset_list, datasets.grid_spec, **query)
 
         # information needed for Datacube.load_data
-        return BasicRaster(grouped, geobox, datasets.output_measurements)
+        return RasterRecipe(grouped, geobox, datasets.output_measurements)
 
     def fetch_data(self, raster):
-        assert isinstance(raster, BasicRaster)
+        assert isinstance(raster, RasterRecipe)
 
         # this method is basically `GridWorkflow.load`
 
@@ -309,13 +265,6 @@ class CollatedDatasets(VirtualDatasets):
         return CollatedDatasets(result, self.grid_spec, self.output_measurements)
 
 
-class CollatedRaster(VirtualRaster):
-    def __init__(self, raster_tuple, geobox, output_measurements):
-        self.raster_tuple = raster_tuple
-        self.geobox = geobox
-        self.output_measurements = output_measurements
-
-
 class Collate(VirtualProduct):
     def __init__(self, *children, index_measurement_name=None):
         self.children = children
@@ -380,13 +329,13 @@ class Collate(VirtualProduct):
         first = rasters[0]
 
         # should possibly check all the geoboxes are the same
-        return CollatedRaster(rasters, first.geobox, first.output_measurements)
+        return RasterRecipe(rasters, first.geobox, first.output_measurements)
 
     def fetch_data(self, raster):
-        assert isinstance(raster, CollatedRaster)
+        assert isinstance(raster, RasterRecipe)
 
         arrays = [product.fetch_data(raster)
-                  for product, raster in zip(self.children, raster.raster_tuple)]
+                  for product, raster in zip(self.children, raster.grouped_datasets)]
 
         # TODO: insert index measurement
         result = xarray.concat(arrays, dim='time')
@@ -406,13 +355,6 @@ class JuxtaposedDatasets(VirtualDatasets):
         result = [datasets.drop(pred)
                   for pred, datasets in zip(predicate, self.dataset_tuple)]
         return JuxtaposedDatasets(result, self.grid_spec, self.output_measurements)
-
-
-class JuxtaposedRaster(VirtualRaster):
-    def __init__(self, raster_tuple, geobox, output_measurements):
-        self.raster_tuple = raster_tuple
-        self.geobox = geobox
-        self.output_measurements = output_measurements
 
 
 class Juxtapose(VirtualProduct):
@@ -467,13 +409,13 @@ class Juxtapose(VirtualProduct):
         # NOTE if we inject the tree structure into the xarray then who loads it?
 
         # should possibly check all the geoboxes are the same
-        return JuxtaposedRaster(rasters, first.geobox, datasets.output_measurements)
+        return RasterRecipe(rasters, first.geobox, datasets.output_measurements)
 
     def fetch_data(self, raster):
-        assert isinstance(raster, JuxtaposedRaster)
+        assert isinstance(raster, RasterRecipe)
 
         arrays = [product.fetch_data(raster)
-                  for product, raster in zip(self.children, raster.raster_tuple)]
+                  for product, raster in zip(self.children, raster.grouped_datasets)]
 
         result = xarray.merge(arrays)
         return result.isel(time=result.time.argsort())
