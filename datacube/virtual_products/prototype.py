@@ -168,7 +168,6 @@ class BasicProduct(VirtualProduct):
         selected = list(select_datasets_inside_polygon(datasets.dataset_list, polygon))
 
         grouped = Datacube.group_datasets(selected, group_by)
-        grouped = grouped.isel(time=grouped.time.argsort())
 
         # geobox
         # grid_spec = datasets.grid_spec
@@ -192,9 +191,8 @@ class BasicProduct(VirtualProduct):
             measurements = [dict(resampling_method=self.resampling_method, **measurement)
                             for measurement in measurements]
 
-        result = Datacube.load_data(raster.grouped_datasets, raster.geobox,
-                                    measurements, fuse_func=self.fuse_func)
-        return result.isel(time=result.time.argsort())
+        return Datacube.load_data(raster.grouped_datasets, raster.geobox,
+                                  measurements, fuse_func=self.fuse_func)
 
 
 class Drop(VirtualProduct):
@@ -338,8 +336,7 @@ class Collate(VirtualProduct):
                   for product, raster in zip(self.children, raster.grouped_datasets)]
 
         # TODO: insert index measurement
-        result = xarray.concat(arrays, dim='time')
-        return result.isel(time=result.time.argsort())
+        return xarray.concat(arrays, dim='time')
 
 
 class JuxtaposedDatasets(VirtualDatasets):
@@ -417,5 +414,4 @@ class Juxtapose(VirtualProduct):
         arrays = [product.fetch_data(raster)
                   for product, raster in zip(self.children, raster.grouped_datasets)]
 
-        result = xarray.merge(arrays)
-        return result.isel(time=result.time.argsort())
+        return xarray.merge(arrays)
