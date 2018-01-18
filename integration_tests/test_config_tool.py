@@ -15,8 +15,6 @@ import datacube.scripts.cli_app
 from datacube.drivers.postgres import _dynamic
 from datacube.drivers.postgres._core import drop_db, has_schema, SCHEMA_NAME
 
-_LOG = logging.getLogger(__name__)
-
 EXAMPLE_DATASET_TYPE_DOCS = map(str, Path(__file__).parent.parent.
                                 joinpath('docs', 'config_samples', 'dataset_types').glob('**/*.yaml'))
 

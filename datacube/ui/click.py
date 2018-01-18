@@ -84,17 +84,20 @@ class ClickHandler(logging.Handler):
 
 
 def _init_logging(ctx, param, value):
-    handler = ClickHandler()
-    handler.formatter = ColorFormatter(_LOG_FORMAT_STRING)
-    logging.root.addHandler(handler)
+    # When running in tests, we don't want to keep adding log handlers. It duplicates log messages up the wahoo.
+    if not logging.root.hasHandlers():
+        handler = ClickHandler()
+        handler.formatter = ColorFormatter(_LOG_FORMAT_STRING)
+        logging.root.addHandler(handler)
 
-    logging_level = logging.WARN - 10 * value
-    logging.root.setLevel(logging_level)
-    logging.getLogger('datacube').setLevel(logging_level)
+        logging_level = logging.WARN - 10 * value
+        logging.root.setLevel(logging_level)
+        logging.getLogger('datacube').setLevel(logging_level)
+
+        if logging_level <= logging.INFO:
+            logging.getLogger('rasterio').setLevel(logging.INFO)
 
     logging.getLogger('datacube').info('Running datacube command: %s', ' '.join(sys.argv))
-    if logging_level <= logging.INFO:
-        logging.getLogger('rasterio').setLevel(logging.INFO)
 
     if not ctx.obj:
         ctx.obj = {}

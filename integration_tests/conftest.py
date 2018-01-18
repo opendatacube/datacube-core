@@ -32,9 +32,6 @@ except ImportError:
 from datacube.config import LocalConfig
 from datacube.index.index import Index
 from datacube.drivers.postgres import PostgresDb
-import logging
-
-LOG = logging.getLogger(__name__)
 
 # On Windows, symlinks are not supported in Python 2 and require
 # specific privileges otherwise, so we copy instead of linking
