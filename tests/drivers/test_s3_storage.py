@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import sys
 
-sa = pytest.importorskip('SharedArray')
+pytest.importorskip('datacube.drivers.s3.driver.s3lio')
 
 
 class TestS3LIO(object):

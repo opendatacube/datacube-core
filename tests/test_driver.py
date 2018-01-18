@@ -1,10 +1,9 @@
 from __future__ import absolute_import
+import pytest
 
 from collections import namedtuple
 
 from datacube.drivers import new_datasource, reader_drivers, writer_drivers, index_drivers
-from datacube.drivers.s3 import driver as s3_driver
-from datacube.drivers.s3.datasource import S3DataSource
 from datacube.storage.storage import RasterDatasetDataSource
 from .util import mk_sample_dataset
 
@@ -12,6 +11,11 @@ S3_dataset = namedtuple('S3_dataset', ['macro_shape'])
 
 
 def test_new_datasource_s3():
+    pytest.importorskip('datacube.drivers.s3.driver.s3lio')
+
+    from datacube.drivers.s3 import driver as s3_driver
+    from datacube.drivers.s3.datasource import S3DataSource
+
     bands = [dict(name='green',
                   path='')]
     dataset = mk_sample_dataset(bands, 's3+block:///foo', format='s3block')
@@ -41,6 +45,8 @@ def test_new_datasource_fallback():
 def test_reader_drivers():
     available_drivers = reader_drivers()
     assert isinstance(available_drivers, list)
+
+    pytest.importorskip('datacube.drivers.s3.driver.s3lio')
     assert 's3block' in available_drivers
 
 
