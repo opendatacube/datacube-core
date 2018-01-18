@@ -6,6 +6,7 @@ from __future__ import absolute_import, division
 
 import logging
 from contextlib import contextmanager
+
 from affine import Affine
 from numpy import dtype
 
@@ -82,13 +83,13 @@ class S3Source(object):
         slices = (slice(indexes, indexes + 1),) + slices
 
         self.logger.debug('Retrieving data from s3 (%s, slices: %s)', s3_dataset.base_name, slices)
-        return self.storage.get_data_unlabeled_mp(s3_dataset.base_name,
-                                                  s3_dataset.macro_shape,
-                                                  s3_dataset.chunk_size,
-                                                  dtype(s3_dataset.numpy_type),
-                                                  slices,
-                                                  s3_dataset.bucket,
-                                                  True)[0]
+        return self.storage.get_data_unlabeled(s3_dataset.base_name,
+                                               s3_dataset.macro_shape,
+                                               s3_dataset.chunk_size,
+                                               dtype(s3_dataset.numpy_type),
+                                               slices,
+                                               s3_dataset.bucket,
+                                               True)[0]
 
 
 class S3DataSource(DataSource):

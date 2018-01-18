@@ -6,19 +6,19 @@ Labeled Array access, backed by multiple S3 objects.
 """
 from __future__ import absolute_import, division
 
+import SharedArray as sa
+import hashlib
 import os
-import random
 import sys
 import uuid
-import hashlib
 import zstd
+from itertools import repeat, product
+
 import numpy as np
-import SharedArray as sa
+from pathos.multiprocessing import ProcessingPool
 from six import integer_types
 from six.moves import map, zip
-from itertools import repeat, product
-from pathos.multiprocessing import ProcessingPool
-from pathos.multiprocessing import freeze_support, cpu_count
+
 try:
     from StringIO import StringIO
 except ImportError:
@@ -27,7 +27,6 @@ from .s3aio import S3AIO
 
 
 class S3LIO(object):
-
     DECIMAL_PLACES = 6
 
     def __init__(self, enable_compression=True, enable_s3=True, file_path=None, num_workers=30):
@@ -65,7 +64,7 @@ class S3LIO(object):
             bound_end = bound_slice.stop
             end = min(end, bound_end)
             for i in range(begin, end, step):
-                if i < bound_begin and i+step <= bound_begin:
+                if i < bound_begin and i + step <= bound_begin:
                     continue
                 if return_as_shape:
                     yield min(end, i + step) - max(i, bound_begin)
@@ -98,7 +97,7 @@ class S3LIO(object):
         """
         idx = list(self.chunk_indices_nd(array.shape, chunk_size))
         chunk_ids = [i for i in range(len(idx))]
-        keys = [base_name+'_'+str(i) for i in chunk_ids]
+        keys = [base_name + '_' + str(i) for i in chunk_ids]
         if spread:
             keys = [hashlib.md5(k.encode('utf-8')).hexdigest()[0:6] + '_' + k for k in keys]
         self.shard_array_to_s3(array, idx, bucket, keys)
@@ -115,7 +114,7 @@ class S3LIO(object):
         :return: Returns the a a dict of (keys, indices, chunk ids)
         """
         idx = list(self.chunk_indices_nd(array.shape, chunk_size))
-        keys = [base_name+'_'+str(i) for i in range(len(idx))]
+        keys = [base_name + '_' + str(i) for i in range(len(idx))]
         if spread:
             keys = [hashlib.md5(k.encode('utf-8')).hexdigest()[0:6] + '_' + k for k in keys]
         self.shard_array_to_s3_mp(array, idx, bucket, keys)
@@ -150,6 +149,7 @@ class S3LIO(object):
         :param str s3_bucket: S3 bucket to use
         :param list s3_keys: List of S3 keys corresponding to the indices.
         """
+
         def work_shard_array_to_s3(s3_key, index, array_name, s3_bucket):
             array = sa.attach(array_name)
             if sys.version_info >= (3, 5):
@@ -211,16 +211,16 @@ class S3LIO(object):
             length = np.around([dr[1] - dr[0] for dr in dimension_range], S3LIO.DECIMAL_PLACES)
             offset = [dr[0] for dr in dimension_range]
 
-        point = np.around([q-o for q, o in zip(query, offset)], S3LIO.DECIMAL_PLACES)
+        point = np.around([q - o for q, o in zip(query, offset)], S3LIO.DECIMAL_PLACES)
 
-        result = np.floor([(float(p)/float(l))*s for p, l, s in zip(point, length, shape)]).astype(int)
-        result = [min(r, s-1) for r, s in zip(result, shape)]
+        result = np.floor([(float(p) / float(l)) * s for p, l, s in zip(point, length, shape)]).astype(int)
+        result = [min(r, s - 1) for r, s in zip(result, shape)]
 
         # print(length, offset, point, result)
 
         if flatten:
             # return self.s3aio.to_1d(tuple(result), shape)
-            macro_shape = tuple([(int(np.ceil(float(a)/float(b)))) for a, b in zip(dimension_range, shape)])
+            macro_shape = tuple([(int(np.ceil(float(a) / float(b)))) for a, b in zip(dimension_range, shape)])
             return self.s3aio.to_1d(tuple(result), macro_shape)
         return result
 
@@ -277,8 +277,8 @@ class S3LIO(object):
         # chunk id's for each data slice
         slice_starts = [tuple([s.start for s in s]) for s in slices]
 
-        chunk_ids = [self.s3aio.to_1d(tuple(np.floor([(p/float(s)) for p, s, in zip(c, micro_shape)]).astype(int)),
-                                      tuple([(int(np.ceil(a/float(b)))) for a, b in zip(macro_shape, micro_shape)]))
+        chunk_ids = [self.s3aio.to_1d(tuple(np.floor([(p / float(s)) for p, s, in zip(c, micro_shape)]).astype(int)),
+                                      tuple([(int(np.ceil(a / float(b)))) for a, b in zip(macro_shape, micro_shape)]))
                      for c in slice_starts]
 
         # chunk_sizes for each chunk
@@ -295,11 +295,11 @@ class S3LIO(object):
         # calculate offsets
         offset = tuple([i.start for i in array_slice])
         # calculate data slices
-        data_slices = [tuple([slice(s.start-o, s.stop-o) for s, o in zip(s, offset)]) for s in slices]
+        data_slices = [tuple([slice(s.start - o, s.stop - o) for s, o in zip(s, offset)]) for s in slices]
         # calculate local slices
         origin = [[s.start % cs if s.start >= cs else s.start for s, cs in zip(s, micro_shape)] for s in slices]
-        size = [[s.stop-s.start for s in s] for s in data_slices]
-        local_slices = [[slice(o, o+s) for o, s in zip(o, s)] for o, s in zip(origin, size)]
+        size = [[s.stop - s.start for s in s] for s in data_slices]
+        local_slices = [[slice(o, o + s) for o, s in zip(o, s)] for o, s in zip(origin, size)]
 
         zipped = zip(keys, data_slices, local_slices, chunk_shapes, repeat(offset))
 
@@ -322,6 +322,7 @@ class S3LIO(object):
         :param bool use_hash: Whether to prefix the key with a deterministic hash.
         :return: The nd array.
         """
+
         # TODO(csiro):
         #     - use SharedArray for data
         #     - multiprocess the for loop depending on slice size.
@@ -339,8 +340,8 @@ class S3LIO(object):
         # chunk id's for each data slice
         slice_starts = [tuple([s.start for s in s]) for s in slices]
 
-        chunk_ids = [self.s3aio.to_1d(tuple(np.floor([(p/float(s)) for p, s, in zip(c, micro_shape)]).astype(int)),
-                                      tuple([(int(np.ceil(a/float(b)))) for a, b in zip(macro_shape, micro_shape)]))
+        chunk_ids = [self.s3aio.to_1d(tuple(np.floor([(p / float(s)) for p, s, in zip(c, micro_shape)]).astype(int)),
+                                      tuple([(int(np.ceil(a / float(b)))) for a, b in zip(macro_shape, micro_shape)]))
                      for c in slice_starts]
 
         # chunk_sizes for each chunk
@@ -361,11 +362,11 @@ class S3LIO(object):
         # calculate offsets
         offset = tuple([i.start for i in array_slice])
         # calculate data slices
-        data_slices = [tuple([slice(s.start-o, s.stop-o) for s, o in zip(s, offset)]) for s in slices]
+        data_slices = [tuple([slice(s.start - o, s.stop - o) for s, o in zip(s, offset)]) for s in slices]
         # calculate local slices
         origin = [[s.start % cs if s.start >= cs else s.start for s, cs in zip(s, micro_shape)] for s in slices]
-        size = [[s.stop-s.start for s in s] for s in data_slices]
-        local_slices = [[slice(o, o+s) for o, s in zip(o, s)] for o, s in zip(origin, size)]
+        size = [[s.stop - s.start for s in s] for s in data_slices]
+        local_slices = [[slice(o, o + s) for o, s in zip(o, s)] for o, s in zip(origin, size)]
 
         zipped = zip(keys, data_slices, local_slices, chunk_shapes, repeat(offset))
 
