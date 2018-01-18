@@ -353,6 +353,7 @@ class S3LIO(object):
             keys = [hashlib.md5(k.encode('utf-8')).hexdigest()[0:6] + '_' + k for k in keys]
 
         # create shared array
+        # Use a filename to be able to work on mac + windows as well as linux
         array_name = 'file://' + '_'.join(['S3LIO', str(uuid.uuid4()), str(os.getpid())])
         sa.create(array_name, shape=[s.stop - s.start for s in array_slice], dtype=dtype)
         data = sa.attach(array_name)

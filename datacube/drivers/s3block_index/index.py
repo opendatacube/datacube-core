@@ -81,7 +81,7 @@ class DatasetResource(BaseDatasetResource):
         saved_dataset = super(DatasetResource, self).add(dataset, sources_policy, **kwargs)
 
         if dataset.format == 's3block':
-            storage_metadata = dataset.attrs['storage_metadata']
+            storage_metadata = kwargs['storage_metadata'] # It's an error to not include this
             self.add_datasets_to_s3_tables([dataset.id], storage_metadata)
         return saved_dataset
 

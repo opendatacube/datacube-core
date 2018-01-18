@@ -246,14 +246,19 @@ def ingest_work(config, driver, source_type, output_type, tile, tile_index):
 def _index_datasets(index, results):
     n = 0
     for datasets in results:
+        extra_args = {}
         # datasets is an xarray.DataArray
+        if 'storage_metadata' in datasets.attrs:
+            extra_args['storage_metadata'] = datasets.attrs['storage_metadata']
+
         for dataset in datasets.values:
-            index.datasets.add(dataset, sources_policy='skip')
+            index.datasets.add(dataset, sources_policy='skip', **extra_args)
             n += 1
     return n
 
 
 def process_tasks(index, config, driver, source_type, output_type, tasks, queue_size, executor):
+    # pylint: disable=too-many-locals
     def submit_task(task):
         _LOG.info('Submitting task: %s', task['tile_index'])
         return executor.submit(ingest_work,
