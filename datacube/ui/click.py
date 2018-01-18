@@ -83,19 +83,25 @@ class ClickHandler(logging.Handler):
             self.handleError(record)
 
 
+def remove_handlers_of_type(logger, handler_type):
+    for handler in logger.handlers:
+        if isinstance(handler, handler_type):
+            logger.removeHandler(handler)
+
+
 def _init_logging(ctx, param, value):
-    # When running in tests, we don't want to keep adding log handlers. It duplicates log messages up the wahoo.
-    if not logging.root.hasHandlers():
-        handler = ClickHandler()
-        handler.formatter = ColorFormatter(_LOG_FORMAT_STRING)
-        logging.root.addHandler(handler)
+    # When running in tests, we don't want to keep adding log handlers. It creates duplicate log messages up the wahoo.
+    remove_handlers_of_type(logging.root, ClickHandler)
+    handler = ClickHandler()
+    handler.formatter = ColorFormatter(_LOG_FORMAT_STRING)
+    logging.root.addHandler(handler)
 
-        logging_level = logging.WARN - 10 * value
-        logging.root.setLevel(logging_level)
-        logging.getLogger('datacube').setLevel(logging_level)
+    logging_level = logging.WARN - 10 * value
+    logging.root.setLevel(logging_level)
+    logging.getLogger('datacube').setLevel(logging_level)
 
-        if logging_level <= logging.INFO:
-            logging.getLogger('rasterio').setLevel(logging.INFO)
+    if logging_level <= logging.INFO:
+        logging.getLogger('rasterio').setLevel(logging.INFO)
 
     logging.getLogger('datacube').info('Running datacube command: %s', ' '.join(sys.argv))
 
