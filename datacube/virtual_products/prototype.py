@@ -477,18 +477,38 @@ class Juxtapose(VirtualProduct):
                    for product, datasets in zip(self.children, datasets.dataset_tuple)]
 
         # should possibly check all the geoboxes are the same
-        first = rasters[0]
+        geobox = rasters[0].geobox
 
         aligned = xarray.align(*[raster.grouped_datasets for raster in rasters])
+        output_measurements = [raster.output_measurements for raster in rasters]
 
         def tuplify(indexes, value):
-            return JuxtaposedTimeslice(list( for raster in aligned))
-        return RasterRecipe(merged, first.geobox, datasets.output_measurements)
+            return JuxtaposedTimeslice([raster.sel(**indexes).item() for raster in aligned])
+
+        merged = xr_apply(aligned[0], tuplify, dtype='O')
+        return RasterRecipe(merged, geobox, output_measurements)
 
     def fetch_data(self, raster):
         assert isinstance(raster, RasterRecipe)
+        grouped_datasets = raster.grouped_datasets
+        geobox = raster.geobox
+        output_measurements = raster.output_measurements
 
-        arrays = [product.fetch_data(raster)
-                  for product, raster in zip(self.children, raster.grouped_datasets)]
+        assert isinstance(output_measurements, list)
 
-        return xarray.merge(arrays)
+        def select_child(source_index):
+            def result(indexes, value):
+                assert isinstance(value, JuxtaposedTimeslice)
+                return value.datasets[source_index]
+
+            return result
+
+        def fetch_child(source_index, child):
+            datasets = xr_apply(grouped_datasets, select_child(source_index), 'O')
+            recipe = RasterRecipe(datasets, geobox, output_measurements[source_index])
+            return child.fetch_data(recipe)
+
+        rasters = [fetch_child(source_index, child)
+                   for source_index, child in enumerate(self.children)]
+
+        return xarray.merge(rasters)
