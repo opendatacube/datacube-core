@@ -81,7 +81,7 @@ setup(
         'pypeg2',
         'python-dateutil',
         'pyyaml',
-        'rasterio>=0.9',  # required for zip reading, 0.9 gets around 1.0a ordering problems
+        'rasterio>=0.9a10',  # required for zip reading, 0.9 gets around 1.0a ordering problems
         'singledispatch',
         'sqlalchemy',
         'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
