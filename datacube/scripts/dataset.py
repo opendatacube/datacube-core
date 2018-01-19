@@ -347,7 +347,7 @@ _OUTPUT_WRITERS = {
 @click.option('--show-sources', help='Also show source datasets', is_flag=True, default=False)
 @click.option('--show-derived', help='Also show derived datasets', is_flag=True, default=False)
 @click.option('-f', help='Output format',
-              type=click.Choice(_OUTPUT_WRITERS.keys()), default='yaml', show_default=True)
+              type=click.Choice(list(_OUTPUT_WRITERS)), default='yaml', show_default=True)
 @click.option('--max-depth',
               help='Maximum sources/derived depth to travel',
               type=int,
@@ -385,7 +385,7 @@ def info_cmd(index, show_sources, show_derived, f, max_depth, ids):
 @click.option('--limit', help='Limit the number of results',
               type=int, default=None)
 @click.option('-f', help='Output format',
-              type=click.Choice(_OUTPUT_WRITERS.keys()), default='yaml', show_default=True)
+              type=click.Choice(list(_OUTPUT_WRITERS)), default='yaml', show_default=True)
 @ui.parsed_search_expressions
 @ui.pass_index()
 def search_cmd(index, limit, f, expressions):
