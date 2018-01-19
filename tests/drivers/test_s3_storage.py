@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 import sys
 
+sa = pytest.importorskip('SharedArray')
 s3aio = pytest.importorskip('datacube.drivers.s3.storage.s3aio')
 
 
