@@ -74,7 +74,7 @@ OUTPUT_FORMATS = {
 @click.group(help="Search the Data Cube", context_settings=CLICK_SETTINGS)
 @ui.global_cli_options
 @click.option('-f',
-              type=click.Choice(OUTPUT_FORMATS.keys()),
+              type=click.Choice(list(OUTPUT_FORMATS)),
               default='pretty', show_default=True,
               help='Output format')
 @click.pass_context
