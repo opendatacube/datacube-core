@@ -24,4 +24,4 @@ for prod in products:
     datasets.append(ds)
 
 combined = xarray.concat(datasets, dim='time')
-combined = combined.isel(time=combined.time.argsort())  # sort along time dim
+combined = combined.sortby('time')  # sort along time dim
