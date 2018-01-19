@@ -48,14 +48,6 @@ Drivers Plugin Management Module
 .. automodule:: datacube.drivers
     :members:
 
-
-
-Plugin Manager
-~~~~~~~~~~~~~~
-
-.. autoclass:: datacube.drivers.manager.DriverManager
-   :members:
-
 S3 Array IO
 -----------
 
