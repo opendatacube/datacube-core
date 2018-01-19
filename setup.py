@@ -4,7 +4,15 @@ import versioneer
 from setuptools import setup, find_packages
 
 tests_require = [
-    'pytest', 'pytest-cov', 'mock', 'pycodestyle', 'pylint', 'hypothesis', 'compliance-checker==3.0.3', 'objgraph', 'pytest-timeout'
+    'compliance-checker',
+    'hypothesis',
+    'mock',
+    'objgraph',
+    'pycodestyle',
+    'pylint',
+    'pytest',
+    'pytest-cov',
+    'pytest-timeout',
 ]
 
 extras_require = {
