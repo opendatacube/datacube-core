@@ -7,9 +7,8 @@ import xarray
 
 from datacube import Datacube
 from datacube.model import Measurement
+from datacube.model.utils import xr_apply
 from datacube.api.query import Query, query_group_by, query_geopolygon
-from datacube.api.core import get_bounds
-from datacube.utils import geometry, intersects
 
 from datacube.virtual_products.utils import select_datasets_inside_polygon, output_geobox
 
@@ -97,10 +96,15 @@ class BasicDatasets(VirtualDatasets):
                              self.grid_spec, self.output_measurements)
 
 
+class BasicTimeslice(object):
+    def __init__(self, datasets):
+        self.datasets = datasets
+
+
 class BasicProduct(VirtualProduct):
     """ A product already in the datacube. """
     def __init__(self, product_name, measurement_names=None,
-                 fuse_func=None, resampling_method=None):
+                 source_filter=None, fuse_func=None, resampling_method=None):
         """
         :param product_name: name of the product
         :param  measurement_names: list of names of measurements to include (None if all)
@@ -109,11 +113,12 @@ class BasicProduct(VirtualProduct):
         self.measurement_names = measurement_names
 
         # is this a good place for it?
+        self.source_filter = source_filter
         self.fuse_func = fuse_func
         self.resampling_method = resampling_method
 
     def output_measurements(self, index):
-        """ Output measurements metadata.  """
+        """ Output measurements metadata. """
         measurement_docs = index.products.get_by_name(self.product_name).measurements
         measurements = {key: Measurement(value)
                         for key, value in measurement_docs.items()}
@@ -141,10 +146,10 @@ class BasicProduct(VirtualProduct):
         # `platform` and `product_type` based queries are possibly ruled out
         # other possible query entries include `geopolygon` and contents of `SPATIAL_KEYS` and `CRS_KEYS`
         # query should not include contents of `OTHER_KEYS` except `geopolygon`
-        # uncertain about `source_filter`, do not know what it does
 
         # find the datasets
-        query = Query(index, product=self.product_name, measurements=self.measurement_names, **query)
+        query = Query(index, product=self.product_name, measurements=self.measurement_names,
+                      source_filter=self.source_filter, **query)
         assert query.product == self.product_name
 
         datasets = select_datasets_inside_polygon(index.datasets.search(**query.search_terms),
@@ -162,16 +167,21 @@ class BasicProduct(VirtualProduct):
         # possible query entries are contents of `SPATIAL_KEYS`, `CRS_KEYS`, and `OTHER_KEYS`
         # query should not include `product`, `measurements`, and `resampling`
 
-        # select only those inside the ROI and group by time
+        # select only those inside the ROI
+        # ROI could be smaller than the query for `find_datasets`
         polygon = query_geopolygon(**query)
-        group_by = query_group_by(**query)
         selected = list(select_datasets_inside_polygon(datasets.dataset_list, polygon))
 
+        # group by time
+        group_by = query_group_by(**query)
         grouped = Datacube.group_datasets(selected, group_by)
 
+        def wrap_timeslice(indexes, value):
+            return BasicTimeslice(value)
+
+        grouped = xr_apply(grouped, wrap_timeslice, 'O')
+
         # geobox
-        # grid_spec = datasets.grid_spec
-        # assert grid_spec is not None and grid_spec.crs is not None
         geobox = output_geobox(datasets.dataset_list, datasets.grid_spec, **query)
 
         # information needed for Datacube.load_data
@@ -191,7 +201,12 @@ class BasicProduct(VirtualProduct):
             measurements = [dict(resampling_method=self.resampling_method, **measurement)
                             for measurement in measurements]
 
-        return Datacube.load_data(raster.grouped_datasets, raster.geobox,
+        def unwrap_timeslice(indexes, value):
+            assert isinstance(value, BasicTimeslice)
+            return value.datasets
+
+        grouped = xr_apply(raster.grouped_datasets, unwrap_timeslice, 'O')
+        return Datacube.load_data(grouped, raster.geobox,
                                   measurements, fuse_func=self.fuse_func)
 
 
@@ -216,25 +231,46 @@ class Drop(VirtualProduct):
         return self.child.fetch_data(raster)
 
 
-class Transform(VirtualProduct):
-    def __init__(self, child, transform, transform_measurement):
+class TransformationFunction(ABC):
+    """ Describes a transformation of data from one virtual product to another.  """
+
+    @abstractmethod
+    def compute(self, data):
         """
-        :param transform: a function that transforms the loaded data
-        :param transform_measurement: a function that returns output measurement metadata
-                                      when provided with input measurement metadata
+        Computation to perform.
+        :param data: input `xarray.Dataset`
+        """
+
+    def validate_construction(self, input_measurements):
+        """
+        Whether the computation can be done on the input.
+        :param input_measurements: measurement information of the input
+        """
+        pass
+
+    @abstractmethod
+    def output_measurements(self, input_measurements):
+        """
+        Describe the output measurements.
+        :param input_measurements: measurement information of the input
+        """
+
+
+class Transform(VirtualProduct):
+    def __init__(self, child, transform):
+        """
+        :param transform: a `TransformationFunction`
         """
         self.child = child
-
-        # maybe transform should be a class with methods to compute and
-        # to report output measurements
         self.transform = transform
-        self.transform_measurement = transform_measurement
 
     def output_measurements(self, index):
-        return self.transform_measurement(self.child.output_measurements)
+        return self.transform.output_measurements(self.child.output_measurements(index))
 
     def validate_construction(self, index):
+        assert isinstance(self.transform, TransformationFunction)
         self.child.validate_construction(index)
+        self.transform.validate_construction(self.child.output_measurements(index))
 
     def find_datasets(self, index, **query):
         return self.child.find_datasets(index, **query)
@@ -243,9 +279,8 @@ class Transform(VirtualProduct):
         return self.child.build_raster(datasets, **query)
 
     def fetch_data(self, raster):
-        # is this the right level?
-        # or should the transform be applied to every time slice individually?
-        return self.transform(self.child.fetch_data(raster))
+        input_data = self.child.fetch_data(raster)
+        return self.transform.compute(input_data)
 
 
 class CollatedDatasets(VirtualDatasets):
@@ -261,6 +296,12 @@ class CollatedDatasets(VirtualDatasets):
         result = [datasets.drop(pred)
                   for pred, datasets in zip(predicate, self.dataset_tuple)]
         return CollatedDatasets(result, self.grid_spec, self.output_measurements)
+
+
+class CollatedTimeslice(object):
+    def __init__(self, source_index, datasets):
+        self.source_index = source_index
+        self.datasets = datasets
 
 
 class Collate(VirtualProduct):
@@ -321,22 +362,53 @@ class Collate(VirtualProduct):
         assert isinstance(datasets, CollatedDatasets)
         assert len(datasets.dataset_tuple) == len(self.children)
 
-        rasters = [product.build_raster(datasets, **query)
-                   for product, datasets in zip(self.children, datasets.dataset_tuple)]
+        def build(source_index, pair):
+            product, datasets = pair
+            raster = product.build_raster(datasets, **query)
 
-        first = rasters[0]
+            def tag(indexes, value):
+                return CollatedTimeslice(source_index, value)
+
+            return RasterRecipe(xr_apply(raster.grouped_datasets, tag, 'O'),
+                                raster.geobox, raster.output_measurements)
+
+        rasters = [build(*args)
+                   for args in enumerate(zip(self.children, datasets.dataset_tuple))]
 
         # should possibly check all the geoboxes are the same
-        return RasterRecipe(rasters, first.geobox, first.output_measurements)
+        first = rasters[0]
+
+        concatenated = xarray.concat([raster.grouped_datasets for raster in rasters], dim='time')
+        return RasterRecipe(concatenated,
+                            first.geobox, first.output_measurements)
 
     def fetch_data(self, raster):
         assert isinstance(raster, RasterRecipe)
+        grouped_datasets = raster.grouped_datasets
+        geobox = raster.geobox
+        output_measurements = raster.output_measurements
 
-        arrays = [product.fetch_data(raster)
-                  for product, raster in zip(self.children, raster.grouped_datasets)]
+        def mask_for_source(source_index):
+            def result(indexes, value):
+                assert isinstance(value, CollatedTimeslice)
+                return source_index == value.source_index
 
-        # TODO: insert index measurement
-        return xarray.concat(arrays, dim='time')
+            return result
+
+        def strip_source(indexes, value):
+            assert isinstance(value, CollatedTimeslice)
+            return value.datasets
+
+        def fetch_by_source(source_index, child):
+            mask = xr_apply(grouped_datasets, mask_for_source(source_index), 'bool')
+            relevant = xr_apply(grouped_datasets[mask], strip_source, 'O')
+            # TODO: insert index measurement
+            return child.fetch_data(RasterRecipe(relevant, geobox, output_measurements))
+
+        rasters = [fetch_by_source(source_index, child)
+                   for source_index, child in enumerate(self.children)]
+
+        return xarray.concat(rasters, dim='time')
 
 
 class JuxtaposedDatasets(VirtualDatasets):
@@ -352,6 +424,11 @@ class JuxtaposedDatasets(VirtualDatasets):
         result = [datasets.drop(pred)
                   for pred, datasets in zip(predicate, self.dataset_tuple)]
         return JuxtaposedDatasets(result, self.grid_spec, self.output_measurements)
+
+
+class JuxtaposedTimeslice(object):
+    def __init__(self, datasets):
+        self.datasets = datasets
 
 
 class Juxtapose(VirtualProduct):
@@ -399,14 +476,14 @@ class Juxtapose(VirtualProduct):
         rasters = [product.build_raster(datasets, **query)
                    for product, datasets in zip(self.children, datasets.dataset_tuple)]
 
+        # should possibly check all the geoboxes are the same
         first = rasters[0]
 
-        # TODO xarray.align
-        # NOTE cannot do, raster[0] is not an xarray because of collate
-        # NOTE if we inject the tree structure into the xarray then who loads it?
+        aligned = xarray.align(*[raster.grouped_datasets for raster in rasters])
 
-        # should possibly check all the geoboxes are the same
-        return RasterRecipe(rasters, first.geobox, datasets.output_measurements)
+        def tuplify(indexes, value):
+            return JuxtaposedTimeslice(list( for raster in aligned))
+        return RasterRecipe(merged, first.geobox, datasets.output_measurements)
 
     def fetch_data(self, raster):
         assert isinstance(raster, RasterRecipe)
