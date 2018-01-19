@@ -190,8 +190,7 @@ class SimpleDocField(PgDocField):
         self.offset = offset
         if selection not in SELECTION_TYPES:
             raise ValueError(
-                "Unknown field selection type %s. Expected one of: %r" % (
-                    selection, (SELECTION_TYPES.keys(),),)
+                "Unknown field selection type %s. Expected one of: %r" % (selection, (SELECTION_TYPES,),)
             )
         self.aggregation = SELECTION_TYPES[selection]
 

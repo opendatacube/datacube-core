@@ -76,12 +76,12 @@ setup(
         'jsonschema',
         'netcdf4',
         'numpy',
-        'pathlib',
+        'pathlib;python_version<"3"',
         'psycopg2',
         'pypeg2',
         'python-dateutil',
         'pyyaml',
-        'rasterio>=0.9',  # required for zip reading, 0.9 gets around 1.0a ordering problems
+        'rasterio>=0.9a10',  # required for zip reading, 0.9 gets around 1.0a ordering problems
         'singledispatch',
         'sqlalchemy',
         'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost
@@ -91,15 +91,15 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'datacube-search = datacube.scripts.search_tool:cli',
             'datacube = datacube.scripts.cli_app:cli',
+            'datacube-search = datacube.scripts.search_tool:cli',
             'datacube-stacker = datacube_apps.stacker:main',
             'datacube-worker = datacube.execution.worker:main',
             'datacube-fixer = datacube_apps.stacker:fixer_main',
             'datacube-ncml = datacube_apps.ncml:ncml_app',
             'pixeldrill = datacube_apps.pixeldrill:main [interactive]',
             'movie_generator = datacube_apps.movie_generator:main',
-            'datacube-simple-replica = datacube_apps.simple_replica:replicate'
+            'datacube-simple-replica = datacube_apps.simple_replica:replicate [replicas]'
         ],
         'datacube.plugins.io.read': [
             's3block = datacube.drivers.s3.driver:reader_driver_init'

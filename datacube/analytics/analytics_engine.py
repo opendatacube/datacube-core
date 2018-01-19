@@ -412,14 +412,14 @@ class AnalyticsEngine(object):
             self.api_products = self.api.list_products()
         for product in self.api_products:
             storage_type = str(product['name'])
-            if storage_type not in self.api_descriptors.keys():
+            if storage_type not in self.api_descriptors:
                 continue
             items[storage_type]['platform'] = str(product['platform'])
             items[storage_type]['product_type'] = str(product['product_type'])
             items[storage_type]['instrument'] = str(product['instrument'])
         for variable in self.api.list_variables():
             storage_type = str(variable['product'])
-            if storage_type not in self.api_descriptors.keys():
+            if storage_type not in self.api_descriptors:
                 continue
             if 'bands' not in items[storage_type]:
                 items[storage_type]['bands'] = []
