@@ -8,7 +8,6 @@ dependencies:
 - boto3 = 1.4.3
 - cachetools
 - cloudpickle >= 0.4.0 # pickle logger objects
-- compliance-checker
 - compliance-checker = 3.0.3
 - coveralls
 - cython # used by netcdf4 at compile only, but needed for compliance checker to load plugins
