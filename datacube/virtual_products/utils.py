@@ -1,6 +1,12 @@
 from datacube.api.query import query_geopolygon
 from datacube.api.core import get_bounds
 from datacube.utils import geometry, intersects
+from datacube.model.utils import xr_apply
+
+
+def xr_map(array, func, dtype='O'):
+    return xr_apply(array, func, dtype)
+
 
 def select_datasets_inside_polygon(datasets, polygon):
     # essentially copied from Datacube.find_datasets

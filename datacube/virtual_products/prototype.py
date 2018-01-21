@@ -7,10 +7,9 @@ import xarray
 
 from datacube import Datacube
 from datacube.model import Measurement
-from datacube.model.utils import xr_apply
 from datacube.api.query import Query, query_group_by, query_geopolygon
 
-from datacube.virtual_products.utils import select_datasets_inside_polygon, output_geobox
+from datacube.virtual_products.utils import select_datasets_inside_polygon, output_geobox, xr_map
 
 
 class VirtualProductException(Exception):
@@ -179,7 +178,7 @@ class BasicProduct(VirtualProduct):
         def wrap_timeslice(indexes, value):
             return BasicTimeslice(value)
 
-        grouped = xr_apply(grouped, wrap_timeslice, 'O')
+        grouped = xr_map(grouped, wrap_timeslice)
 
         # geobox
         geobox = output_geobox(datasets.dataset_list, datasets.grid_spec, **query)
@@ -205,9 +204,16 @@ class BasicProduct(VirtualProduct):
             assert isinstance(value, BasicTimeslice)
             return value.datasets
 
-        grouped = xr_apply(raster.grouped_datasets, unwrap_timeslice, 'O')
+        grouped = xr_map(raster.grouped_datasets, unwrap_timeslice)
         return Datacube.load_data(grouped, raster.geobox,
                                   measurements, fuse_func=self.fuse_func)
+
+
+def basic_product(product_name, measurement_names=None,
+                  source_filter=None, fuse_func=None, resampling_method=None):
+    return BasicProduct(product_name, measurement_names=measurement_names,
+                        source_filter=source_filter, fuse_func=fuse_func,
+                        resampling_method=resampling_method)
 
 
 class Drop(VirtualProduct):
@@ -229,6 +235,10 @@ class Drop(VirtualProduct):
 
     def fetch_data(self, raster):
         return self.child.fetch_data(raster)
+
+
+def drop(child, predicate):
+    return Drop(child, predicate)
 
 
 class TransformationFunction(ABC):
@@ -257,20 +267,20 @@ class TransformationFunction(ABC):
 
 
 class Transform(VirtualProduct):
-    def __init__(self, child, transform):
+    def __init__(self, child, transformation):
         """
         :param transform: a `TransformationFunction`
         """
         self.child = child
-        self.transform = transform
+        self.transformation = transformation
 
     def output_measurements(self, index):
-        return self.transform.output_measurements(self.child.output_measurements(index))
+        return self.transformation.output_measurements(self.child.output_measurements(index))
 
     def validate_construction(self, index):
-        assert isinstance(self.transform, TransformationFunction)
+        assert isinstance(self.transformation, TransformationFunction)
         self.child.validate_construction(index)
-        self.transform.validate_construction(self.child.output_measurements(index))
+        self.transformation.validate_construction(self.child.output_measurements(index))
 
     def find_datasets(self, index, **query):
         return self.child.find_datasets(index, **query)
@@ -280,7 +290,11 @@ class Transform(VirtualProduct):
 
     def fetch_data(self, raster):
         input_data = self.child.fetch_data(raster)
-        return self.transform.compute(input_data)
+        return self.transformation.compute(input_data)
+
+
+def transform(child, transformation_function):
+    return Transform(child, transformation_function)
 
 
 class CollatedDatasets(VirtualDatasets):
@@ -315,7 +329,7 @@ class Collate(VirtualProduct):
                     'name': index_measurement_name,
                     'dtype': 'int8',
                     'nodata': -1,
-                    'units': 1
+                    'units': '1'
                 })
             }
 
@@ -369,7 +383,7 @@ class Collate(VirtualProduct):
             def tag(indexes, value):
                 return CollatedTimeslice(source_index, value)
 
-            return RasterRecipe(xr_apply(raster.grouped_datasets, tag, 'O'),
+            return RasterRecipe(xr_map(raster.grouped_datasets, tag),
                                 raster.geobox, raster.output_measurements)
 
         rasters = [build(*args)
@@ -400,8 +414,8 @@ class Collate(VirtualProduct):
             return value.datasets
 
         def fetch_by_source(source_index, child):
-            mask = xr_apply(grouped_datasets, mask_for_source(source_index), 'bool')
-            relevant = xr_apply(grouped_datasets[mask], strip_source, 'O')
+            mask = xr_map(grouped_datasets, mask_for_source(source_index), 'bool')
+            relevant = xr_map(grouped_datasets[mask], strip_source)
             # TODO: insert index measurement
             return child.fetch_data(RasterRecipe(relevant, geobox, output_measurements))
 
@@ -409,6 +423,10 @@ class Collate(VirtualProduct):
                    for source_index, child in enumerate(self.children)]
 
         return xarray.concat(rasters, dim='time')
+
+
+def collate(*children, index_measurement_name=None):
+    return Collate(*children, index_measurement_name=index_measurement_name)
 
 
 class JuxtaposedDatasets(VirtualDatasets):
@@ -485,7 +503,7 @@ class Juxtapose(VirtualProduct):
         def tuplify(indexes, value):
             return JuxtaposedTimeslice([raster.sel(**indexes).item() for raster in aligned])
 
-        merged = xr_apply(aligned[0], tuplify, dtype='O')
+        merged = xr_map(aligned[0], tuplify)
         return RasterRecipe(merged, geobox, output_measurements)
 
     def fetch_data(self, raster):
@@ -504,7 +522,7 @@ class Juxtapose(VirtualProduct):
             return result
 
         def fetch_child(source_index, child):
-            datasets = xr_apply(grouped_datasets, select_child(source_index), 'O')
+            datasets = xr_map(grouped_datasets, select_child(source_index))
             recipe = RasterRecipe(datasets, geobox, output_measurements[source_index])
             return child.fetch_data(recipe)
 
@@ -512,3 +530,7 @@ class Juxtapose(VirtualProduct):
                    for source_index, child in enumerate(self.children)]
 
         return xarray.merge(rasters)
+
+
+def juxtapose(*children):
+    return Juxtapose(*children)
