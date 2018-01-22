@@ -4,7 +4,15 @@ import versioneer
 from setuptools import setup, find_packages
 
 tests_require = [
-    'pytest', 'pytest-cov', 'mock', 'pep8', 'pylint', 'hypothesis', 'compliance-checker', 'objgraph'
+    'compliance-checker',
+    'hypothesis',
+    'mock',
+    'objgraph',
+    'pep8',
+    'pycodestyle',
+    'pylint',
+    'pytest',
+    'pytest-cov',
 ]
 
 extras_require = {
@@ -100,6 +108,6 @@ setup(
             'pixeldrill = datacube_apps.pixeldrill:main [interactive]',
             'movie_generator = datacube_apps.movie_generator:main',
             'datacube-simple-replica = datacube_apps.simple_replica:replicate [replicas]'
-        ]
+        ],
     },
 )

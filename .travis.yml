@@ -30,6 +30,7 @@ addons:
       - gdal-bin
       - libgdal-dev
       - libgdal20
+      - libudunits2-0
 
 before_install:
 # Create a database for the integration tests.
