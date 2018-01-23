@@ -65,7 +65,6 @@ extensions = [
     'click_utils'
 ]
 
-
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -308,6 +307,8 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
 
+
+plantuml = r'"C:/Program Files (x86)/Java/jre6/bin/java.exe" -jar C:/Users/u42007/AppData/Local/plantuml/plantuml.jar -v'
 plantuml_output_format = 'svg'
 plantuml_latex_output_format = 'pdf'
 
@@ -341,6 +342,7 @@ NATIVE_MODULES = [
     'sshtunnel',
     'tqdm',
     'cloudpickle',
+    'zstd',
 ]
 
 from mock import Mock as MagicMock

@@ -18,6 +18,11 @@ here.
    tools
    replication
 
+.. toctree::
+   :hidden:
+
+   conda_base
+
 
 Overview
 --------
