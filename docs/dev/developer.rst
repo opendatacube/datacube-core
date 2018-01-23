@@ -16,12 +16,16 @@ This documentation applies to version: |version|
    driver
    plugins
    analytics_engine
-   s3aio
+   s3block
+   architecture/intro
 
 .. toctree::
    :hidden:
 
    external
+   common_install
+
+
 
 Developer Setup
 ---------------
