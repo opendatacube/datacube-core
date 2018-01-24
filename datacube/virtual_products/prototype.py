@@ -17,24 +17,6 @@ class VirtualProductException(Exception):
     pass
 
 
-class VirtualDatasets(ABC):
-    """ Result of `VirtualProduct.find_datasets`. """
-
-    @abstractmethod
-    def drop(self, predicate):
-        """ Drop datasets that do not satisfy `predicate`. """
-
-
-class RasterRecipe(object):
-    """ Result of `VirtualProduct.build_raster`. """
-    # our replacement for grid_workflow.Tile basically
-    # TODO: copy the Tile API
-    def __init__(self, grouped_datasets, geobox, output_measurements):
-        self.grouped_datasets = grouped_datasets
-        self.geobox = geobox
-        self.output_measurements = output_measurements
-
-
 class VirtualProduct(ABC):
     """ Abstract class defining the common interface of virtual products. """
 
@@ -44,23 +26,15 @@ class VirtualProduct(ABC):
         """ A dictionary mapping names to measurement metadata. """
 
     @abstractmethod
-    def validate_construction(self, index):
-        # type: (Index) -> None
-        """
-        Validate that the virtual product is well-formed.
-        :raises: `VirtualProductException` if not well-formed.
-        """
-
-    @abstractmethod
     def find_datasets(self, index, **query):
-        # type: (Index, Dict[str, Any]) -> VirtualDatasets
+        # type: (Index, Dict[str, Any]) -> VirtualDatasetPile
         """ Collection of datasets that match the query. """
 
     # no database access below this line
 
     @abstractmethod
     def build_raster(self, datasets, **query):
-        # type: (VirtualDatasets, Dict[str, Any]) -> RasterRecipe
+        # type: (VirtualDatasetPile, Dict[str, Any]) -> RasterRecipe
         """
         Datasets grouped by their timestamps.
         :param datasets: the datasets to fetch data from
@@ -81,18 +55,25 @@ class VirtualProduct(ABC):
         return data
 
 
-class BasicDatasets(VirtualDatasets):
+class VirtualDatasetPile(ABC):
+    """ Result of `VirtualProduct.find_datasets`. """
+
+
+class RasterRecipe(object):
+    """ Result of `VirtualProduct.build_raster`. """
+    # our replacement for grid_workflow.Tile basically
+    # TODO: copy the Tile API
+    def __init__(self, timestamped_dataset_pile, geobox, output_measurements):
+        self.timestamped_dataset_pile = timestamped_dataset_pile
+        self.geobox = geobox
+        self.output_measurements = output_measurements
+
+
+class BasicDatasets(VirtualDatasetPile):
     def __init__(self, dataset_list, grid_spec, output_measurements):
         self.dataset_list = list(dataset_list)
         self.grid_spec = grid_spec
         self.output_measurements = output_measurements
-
-    def drop(self, predicate):
-        # type: Callable[[datacube.Dataset], bool] -> BasicDatasets
-        return BasicDatasets([dataset
-                              for dataset in self.dataset_list
-                              if predicate is None or predicate(dataset)],
-                             self.grid_spec, self.output_measurements)
 
 
 class BasicTimeslice(object):
@@ -103,18 +84,26 @@ class BasicTimeslice(object):
 class BasicProduct(VirtualProduct):
     """ A product already in the datacube. """
     def __init__(self, product_name, measurement_names=None,
-                 source_filter=None, fuse_func=None, resampling_method=None):
+                 source_filter=None, fuse_func=None, resampling_method=None,
+                 dataset_filter=None):
         """
         :param product_name: name of the product
-        :param  measurement_names: list of names of measurements to include (None if all)
+        :param measurement_names: list of names of measurements to include (None if all)
+        :param dataset_filter: a predicate on `datacube.Dataset` objects
         """
         self.product_name = product_name
+
+        if measurement_names is not None and len(measurement_names) == 0:
+            raise VirtualProductException("Product selects no measurements")
+
         self.measurement_names = measurement_names
 
         # is this a good place for it?
         self.source_filter = source_filter
         self.fuse_func = fuse_func
         self.resampling_method = resampling_method
+
+        self.dataset_filter = dataset_filter
 
     def output_measurements(self, index):
         """ Output measurements metadata. """
@@ -125,15 +114,8 @@ class BasicProduct(VirtualProduct):
         if self.measurement_names is None:
             return measurements
 
-        return {name: measurements[name] for name in self.measurement_names}
-
-    def validate_construction(self, index):
-        if self.measurement_names is not None:
-            if not self.measurement_names:
-                raise VirtualProductException("Product selects no measurements")
-
         try:
-            _ = self.output_measurements(index)
+            return {name: measurements[name] for name in self.measurement_names}
         except KeyError as ke:
             raise VirtualProductException("Could not find measurement: {}".format(ke.args))
 
@@ -154,6 +136,9 @@ class BasicProduct(VirtualProduct):
         datasets = select_datasets_inside_polygon(index.datasets.search(**query.search_terms),
                                                   query.geopolygon)
 
+        if self.dataset_filter is not None:
+            datasets = [dataset for dataset in datasets if self.dataset_filter(dataset)]
+
         # gather information from the index before it disappears from sight
         output_measurements = self.output_measurements(index)
         grid_spec = index.products.get_by_name(self.product_name).grid_spec
@@ -162,6 +147,8 @@ class BasicProduct(VirtualProduct):
 
     def build_raster(self, datasets, **query):
         assert isinstance(datasets, BasicDatasets)
+        # we will support group_by='solar_day' elsewhere
+        assert 'group_by' not in query
 
         # possible query entries are contents of `SPATIAL_KEYS`, `CRS_KEYS`, and `OTHER_KEYS`
         # query should not include `product`, `measurements`, and `resampling`
@@ -172,8 +159,7 @@ class BasicProduct(VirtualProduct):
         selected = list(select_datasets_inside_polygon(datasets.dataset_list, polygon))
 
         # group by time
-        group_by = query_group_by(**query)
-        grouped = Datacube.group_datasets(selected, group_by)
+        grouped = Datacube.group_datasets(selected, query_group_by(group_by='time'))
 
         def wrap_timeslice(indexes, value):
             return BasicTimeslice(value)
@@ -204,7 +190,7 @@ class BasicProduct(VirtualProduct):
             assert isinstance(value, BasicTimeslice)
             return value.datasets
 
-        grouped = xr_map(raster.grouped_datasets, unwrap_timeslice)
+        grouped = xr_map(raster.timestamped_dataset_pile, unwrap_timeslice)
         return Datacube.load_data(grouped, raster.geobox,
                                   measurements, fuse_func=self.fuse_func)
 
@@ -216,31 +202,6 @@ def basic_product(product_name, measurement_names=None,
                         resampling_method=resampling_method)
 
 
-class Drop(VirtualProduct):
-    def __init__(self, child, predicate):
-        self.child = child
-        self.predicate = predicate
-
-    def output_measurements(self, index):
-        return self.child.output_measurements(index)
-
-    def validate_construction(self, index):
-        self.child.validate_construction(index)
-
-    def find_datasets(self, index, **query):
-        return self.child.find_datasets(index, **query).drop(self.predicate)
-
-    def build_raster(self, datasets, **query):
-        return self.child.build_raster(datasets, **query)
-
-    def fetch_data(self, raster):
-        return self.child.fetch_data(raster)
-
-
-def drop(child, predicate):
-    return Drop(child, predicate)
-
-
 class TransformationFunction(ABC):
     """ Describes a transformation of data from one virtual product to another.  """
 
@@ -250,13 +211,6 @@ class TransformationFunction(ABC):
         Computation to perform.
         :param data: input `xarray.Dataset`
         """
-
-    def validate_construction(self, input_measurements):
-        """
-        Whether the computation can be done on the input.
-        :param input_measurements: measurement information of the input
-        """
-        pass
 
     @abstractmethod
     def output_measurements(self, input_measurements):
@@ -277,11 +231,6 @@ class Transform(VirtualProduct):
     def output_measurements(self, index):
         return self.transformation.output_measurements(self.child.output_measurements(index))
 
-    def validate_construction(self, index):
-        assert isinstance(self.transformation, TransformationFunction)
-        self.child.validate_construction(index)
-        self.transformation.validate_construction(self.child.output_measurements(index))
-
     def find_datasets(self, index, **query):
         return self.child.find_datasets(index, **query)
 
@@ -297,19 +246,11 @@ def transform(child, transformation_function):
     return Transform(child, transformation_function)
 
 
-class CollatedDatasets(VirtualDatasets):
+class CollatedDatasets(VirtualDatasetPile):
     def __init__(self, dataset_tuple, grid_spec, output_measurements):
         self.dataset_tuple = tuple(dataset_tuple)
         self.grid_spec = grid_spec
         self.output_measurements = output_measurements
-
-    def drop(self, predicate):
-        assert isinstance(predicate, tuple)
-        assert len(self.dataset_tuple) == len(predicate)
-
-        result = [datasets.drop(pred)
-                  for pred, datasets in zip(predicate, self.dataset_tuple)]
-        return CollatedDatasets(result, self.grid_spec, self.output_measurements)
 
 
 class CollatedTimeslice(object):
@@ -320,6 +261,9 @@ class CollatedTimeslice(object):
 
 class Collate(VirtualProduct):
     def __init__(self, *children, index_measurement_name=None):
+        if len(children) == 0:
+            raise VirtualProductException("No children for collate node")
+
         self.children = children
         self.index_measurement_name = index_measurement_name
 
@@ -333,13 +277,7 @@ class Collate(VirtualProduct):
                 })
             }
 
-    def validate_construction(self, index):
-        if len(self.children) == 0:
-            raise VirtualProductException("No children for collate node")
-
-        for child in self.children:
-            child.validate_construction(index)
-
+    def output_measurements(self, index):
         input_measurements = [child.output_measurements(index)
                               for child in self.children]
 
@@ -351,18 +289,14 @@ class Collate(VirtualProduct):
                 msg = "Child datasets do not all have the same set of measurements"
                 raise VirtualProductException(msg)
 
-        if self.index_measurement_name is not None:
-            if self.index_measurement_name in first:
-                msg = "Source index measurement '{}' already present".format(self.index_measurement_name)
-                raise VirtualProductException(msg)
-
-    def output_measurements(self, index):
-        measurements = self.children[0].output_measurements(index)
-
         if self.index_measurement_name is None:
-            return measurements
+            return first
 
-        return {**measurements, **self.index_measurement}
+        if self.index_measurement_name in first:
+            msg = "Source index measurement '{}' already present".format(self.index_measurement_name)
+            raise VirtualProductException(msg)
+
+        return {**first, **self.index_measurement}
 
     def find_datasets(self, index, **query):
         result = [child.find_datasets(index, **query)
@@ -383,7 +317,7 @@ class Collate(VirtualProduct):
             def tag(indexes, value):
                 return CollatedTimeslice(source_index, value)
 
-            return RasterRecipe(xr_map(raster.grouped_datasets, tag),
+            return RasterRecipe(xr_map(raster.timestamped_dataset_pile, tag),
                                 raster.geobox, raster.output_measurements)
 
         rasters = [build(*args)
@@ -392,13 +326,13 @@ class Collate(VirtualProduct):
         # should possibly check all the geoboxes are the same
         first = rasters[0]
 
-        concatenated = xarray.concat([raster.grouped_datasets for raster in rasters], dim='time')
+        concatenated = xarray.concat([raster.timestamped_dataset_pile for raster in rasters], dim='time')
         return RasterRecipe(concatenated,
                             first.geobox, first.output_measurements)
 
     def fetch_data(self, raster):
         assert isinstance(raster, RasterRecipe)
-        grouped_datasets = raster.grouped_datasets
+        timestamped_dataset_pile = raster.timestamped_dataset_pile
         geobox = raster.geobox
         output_measurements = raster.output_measurements
 
@@ -414,8 +348,8 @@ class Collate(VirtualProduct):
             return value.datasets
 
         def fetch_by_source(source_index, child):
-            mask = xr_map(grouped_datasets, mask_for_source(source_index), 'bool')
-            relevant = xr_map(grouped_datasets[mask], strip_source)
+            mask = xr_map(timestamped_dataset_pile, mask_for_source(source_index), 'bool')
+            relevant = xr_map(timestamped_dataset_pile[mask], strip_source)
             # TODO: insert index measurement
             return child.fetch_data(RasterRecipe(relevant, geobox, output_measurements))
 
@@ -429,19 +363,11 @@ def collate(*children, index_measurement_name=None):
     return Collate(*children, index_measurement_name=index_measurement_name)
 
 
-class JuxtaposedDatasets(VirtualDatasets):
+class JuxtaposedDatasets(VirtualDatasetPile):
     def __init__(self, dataset_tuple, grid_spec, output_measurements):
         self.dataset_tuple = tuple(dataset_tuple)
         self.grid_spec = grid_spec
         self.output_measurements = output_measurements
-
-    def drop(self, predicate):
-        assert isinstance(predicate, tuple)
-        assert len(self.dataset_tuple) == len(predicate)
-
-        result = [datasets.drop(pred)
-                  for pred, datasets in zip(predicate, self.dataset_tuple)]
-        return JuxtaposedDatasets(result, self.grid_spec, self.output_measurements)
 
 
 class JuxtaposedTimeslice(object):
@@ -451,23 +377,10 @@ class JuxtaposedTimeslice(object):
 
 class Juxtapose(VirtualProduct):
     def __init__(self, *children):
-        self.children = children
-
-    def validate_construction(self, index):
-        if len(self.children) == 0:
+        if len(children) == 0:
             raise VirtualProductException("No children for juxtapose node")
 
-        for child in self.children:
-            child.validate_construction(index)
-
-        input_measurement_names = [list(child.output_measurements(index).keys())
-                                   for child in self.children]
-
-        for first, second in combinations(input_measurement_names, 2):
-            common = set(first) & set(second)
-            if common != set():
-                msg = "Common measurements {} between {} and {}".format(common, first, second)
-                raise VirtualProductException(msg)
+        self.children = children
 
     def output_measurements(self, index):
         input_measurements = [child.output_measurements(index)
@@ -475,6 +388,11 @@ class Juxtapose(VirtualProduct):
 
         result = {}
         for measurements in input_measurements:
+            common = set(result) & set(measurements)
+            if common != set():
+                msg = "Common measurements {} between children".format(common)
+                raise VirtualProductException(msg)
+
             result.update(measurements)
 
         return result
@@ -497,7 +415,7 @@ class Juxtapose(VirtualProduct):
         # should possibly check all the geoboxes are the same
         geobox = rasters[0].geobox
 
-        aligned = xarray.align(*[raster.grouped_datasets for raster in rasters])
+        aligned = xarray.align(*[raster.timestamped_dataset_pile for raster in rasters])
         output_measurements = [raster.output_measurements for raster in rasters]
 
         def tuplify(indexes, value):
@@ -508,7 +426,7 @@ class Juxtapose(VirtualProduct):
 
     def fetch_data(self, raster):
         assert isinstance(raster, RasterRecipe)
-        grouped_datasets = raster.grouped_datasets
+        timestamped_dataset_pile = raster.timestamped_dataset_pile
         geobox = raster.geobox
         output_measurements = raster.output_measurements
 
@@ -522,7 +440,7 @@ class Juxtapose(VirtualProduct):
             return result
 
         def fetch_child(source_index, child):
-            datasets = xr_map(grouped_datasets, select_child(source_index))
+            datasets = xr_map(timestamped_dataset_pile, select_child(source_index))
             recipe = RasterRecipe(datasets, geobox, output_measurements[source_index])
             return child.fetch_data(recipe)
 
