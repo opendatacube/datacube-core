@@ -1,0 +1,22 @@
+@startuml
+
+title Basic Data Model
+
+object Dataset
+
+object Scene
+Scene : Landsat Path/Row
+
+object Tile
+Tile : cell index
+
+object Band
+
+Dataset o-- "0..n" Dataset : derived from
+
+Dataset <|-- Scene
+Dataset <|-- Tile
+
+Dataset *-- "1..n" Band
+
+@enduml

@@ -6,6 +6,9 @@
 
 Architecture Introduction
 =========================
+The Open Data Cube community is based around the `datacube-core` library.
+This document describes the architecture of the library and the ecosystem of systems and applications it interacts with.
+
 Use Cases
 ---------
 Large-scale workflows on HPC
@@ -61,6 +64,7 @@ Load Data
 
 GridWorkflow
 ------------
+The GridWorkflow class allows for
 
 Index
 =====
