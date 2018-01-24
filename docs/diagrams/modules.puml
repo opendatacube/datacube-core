@@ -1,0 +1,64 @@
+@startuml
+
+package "VDI" {
+[Jupyter Notebook]
+[QGIS Plugin]
+}
+
+package "Web Services" {
+[datacube-wms]
+[Web Coverage Service]
+[CEOS Web UI]
+}
+
+package "Raijin Apps" {
+[Ingester]
+[Statistics]
+[Fractional Cover]
+}
+
+package "Datacube Core" {
+[GridWorkflow]
+[Index]
+[Storage]
+
+API --> [Core]
+[GridWorkflow] --> API
+[Core] --> [Index]
+[Core] --> [Storage]
+}
+
+[Ingester] --> [GridWorkflow]
+[Statistics] --> [GridWorkflow]
+[Fractional Cover] --> [GridWorkflow]
+
+[datacube-wms] --> API
+[Web Coverage Service] --> API
+[CEOS Web UI] -> API
+
+[Jupyter Notebook] --> API
+[QGIS Plugin] --> API
+
+
+package "NCI" {
+[GSKY]
+[THREDDS]
+
+folder "/g/data/" {
+  [NetCDF Files]
+}
+
+database "Database Server" {
+  [Postgres]
+}
+
+[THREDDS] --> [NetCDF Files]
+[GSKY] --> [NetCDF Files]
+[GSKY] --> [MAS]
+
+[Index] -d-> [Postgres]
+[Storage] -r-> [NetCDF Files]
+}
+
+
+@enduml
