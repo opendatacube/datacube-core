@@ -316,6 +316,12 @@ class Measurement(object):
         self.dtype = measurement_dict['dtype']
         self.nodata = measurement_dict['nodata']
         self.units = measurement_dict['units']
+        if 'aliases' in measurement_dict:
+            self.aliases = measurement_dict['aliases']
+        if 'spectral_definition' in measurement_dict:
+            self.spectral_definition = measurement_dict['spectral_definition']
+        if 'flags_definition' in measurement_dict:
+            self.flags_definition = measurement_dict['flags_definition']
 
 
 @schema_validated(SCHEMA_PATH / 'metadata-type-schema.yaml')
