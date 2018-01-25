@@ -296,7 +296,8 @@ class Collate(VirtualProduct):
             msg = "Source index measurement '{}' already present".format(self.index_measurement_name)
             raise VirtualProductException(msg)
 
-        return {**first, **self.index_measurement}
+        first.update(self.index_measurement)
+        return first
 
     def find_datasets(self, index, **query):
         result = [child.find_datasets(index, **query)
