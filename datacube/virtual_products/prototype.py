@@ -1,5 +1,7 @@
 # Warning: this is a WIP
 
+from __future__ import absolute_import
+
 from abc import ABC, abstractmethod
 from itertools import combinations
 
@@ -267,14 +269,10 @@ class Collate(VirtualProduct):
         self.children = children
         self.index_measurement_name = kwargs.get('index_measurement_name')
 
-        if self.index_measurement_name is not None:
+        name = self.index_measurement_name
+        if name is not None:
             self.index_measurement = {
-                index_measurement_name: Measurement({
-                    'name': index_measurement_name,
-                    'dtype': 'int8',
-                    'nodata': -1,
-                    'units': '1'
-                })
+                name: Measurement({'name': name, 'dtype': 'int8', 'nodata': -1, 'units': '1'})
             }
 
     def output_measurements(self, index):
@@ -360,8 +358,8 @@ class Collate(VirtualProduct):
         return xarray.concat(rasters, dim='time')
 
 
-def collate(*children, index_measurement_name=None):
-    return Collate(*children, index_measurement_name=index_measurement_name)
+def collate(*children, **kwargs):
+    return Collate(*children, **kwargs)
 
 
 class JuxtaposedDatasets(VirtualDatasetPile):
