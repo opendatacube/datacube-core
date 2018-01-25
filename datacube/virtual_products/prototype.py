@@ -272,7 +272,7 @@ class Collate(VirtualProduct):
         name = self.index_measurement_name
         if name is not None:
             self.index_measurement = {
-                name: Measurement({'name': name, 'dtype': 'int8', 'nodata': -1, 'units': '1' })
+                name: Measurement({'name': name, 'dtype': 'int8', 'nodata': -1, 'units': '1'})
             }
 
     def output_measurements(self, index):
