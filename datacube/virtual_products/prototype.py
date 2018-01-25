@@ -361,7 +361,7 @@ class Collate(VirtualProduct):
 
 
 def collate(*children, index_measurement_name=None):
-    return Collate(*children, index_measurement_name=index_measurement_name)
+    return Collate(*children, **(dict(index_measurement_name=index_measurement_name)))
 
 
 class JuxtaposedDatasets(VirtualDatasetPile):
