@@ -3,15 +3,15 @@
 from __future__ import absolute_import
 
 from abc import ABC, abstractmethod
-from itertools import combinations
 
 import xarray
 
 from datacube import Datacube
 from datacube.model import Measurement
+from datacube.model.utils import xr_apply
 from datacube.api.query import Query, query_group_by, query_geopolygon
 
-from datacube.virtual_products.utils import select_datasets_inside_polygon, output_geobox, xr_map
+from datacube.virtual_products.utils import select_datasets_inside_polygon, output_geobox
 
 
 class VirtualProductException(Exception):
@@ -70,17 +70,22 @@ class RasterRecipe(object):
         self.geobox = geobox
         self.output_measurements = output_measurements
 
+    def map(self, func, dtype='O'):
+        return RasterRecipe(xr_apply(self.grouped_dataset_pile, func, dtype=dtype),
+                            self.geobox, self.output_measurements)
 
-class BasicDatasets(VirtualDatasetPile):
+    def filter(self, predicate):
+        mask = self.map(predicate, dtype='bool')
+        return RasterRecipe(self.grouped_dataset_pile[mask.grouped_dataset_pile],
+                            self.geobox, self.output_measurements)
+
+
+
+class BasicDatasetPile(VirtualDatasetPile):
     def __init__(self, dataset_list, grid_spec, output_measurements):
         self.dataset_list = list(dataset_list)
         self.grid_spec = grid_spec
         self.output_measurements = output_measurements
-
-
-class BasicTimeslice(object):
-    def __init__(self, datasets):
-        self.datasets = datasets
 
 
 class BasicProduct(VirtualProduct):
@@ -145,10 +150,15 @@ class BasicProduct(VirtualProduct):
         output_measurements = self.output_measurements(index)
         grid_spec = index.products.get_by_name(self.product_name).grid_spec
 
-        return BasicDatasets(datasets, grid_spec, output_measurements)
+        return BasicDatasetPile(datasets, grid_spec, output_measurements)
+        # TODO: should we actually return (time-grouped) raster?
 
     def build_raster(self, datasets, **query):
-        assert isinstance(datasets, BasicDatasets)
+        assert isinstance(datasets, BasicDatasetPile)
+        dataset_list = datasets.dataset_list
+        grid_spec = datasets.grid_spec
+        output_measurements = datasets.output_measurements
+
         # we will support group_by='solar_day' elsewhere
         assert 'group_by' not in query
 
@@ -160,19 +170,17 @@ class BasicProduct(VirtualProduct):
         polygon = query_geopolygon(**query)
         selected = list(select_datasets_inside_polygon(datasets.dataset_list, polygon))
 
+        # geobox
+        geobox = output_geobox(dataset_list, grid_spec, **query)
+
         # group by time
         grouped = Datacube.group_datasets(selected, query_group_by(group_by='time'))
 
-        def wrap_timeslice(indexes, value):
-            return BasicTimeslice(value)
-
-        grouped = xr_map(grouped, wrap_timeslice)
-
-        # geobox
-        geobox = output_geobox(datasets.dataset_list, datasets.grid_spec, **query)
+        def wrap(indexes, value):
+            return BasicDatasetPile(value, grid_spec, output_measurements)
 
         # information needed for Datacube.load_data
-        return RasterRecipe(grouped, geobox, datasets.output_measurements)
+        return RasterRecipe(grouped, geobox, output_measurements).map(wrap)
 
     def fetch_data(self, raster):
         assert isinstance(raster, RasterRecipe)
@@ -188,13 +196,12 @@ class BasicProduct(VirtualProduct):
             measurements = [dict(resampling_method=self.resampling_method, **measurement)
                             for measurement in measurements]
 
-        def unwrap_timeslice(indexes, value):
-            assert isinstance(value, BasicTimeslice)
-            return value.datasets
+        def unwrap(indexes, value):
+            assert isinstance(value, BasicDatasetPile)
+            return value.dataset_list
 
-        grouped = xr_map(raster.grouped_dataset_pile, unwrap_timeslice)
-        return Datacube.load_data(grouped, raster.geobox,
-                                  measurements, fuse_func=self.fuse_func)
+        return Datacube.load_data(raster.map(unwrap).grouped_dataset_pile,
+                                  raster.geobox, measurements, fuse_func=self.fuse_func)
 
 
 def basic_product(product_name, measurement_names=None,
@@ -204,34 +211,27 @@ def basic_product(product_name, measurement_names=None,
                         resampling_method=resampling_method)
 
 
-class TransformationFunction(ABC):
-    """ Describes a transformation of data from one virtual product to another.  """
-
-    @abstractmethod
-    def compute(self, data):
-        """
-        Computation to perform.
-        :param data: input `xarray.Dataset`
-        """
-
-    @abstractmethod
-    def output_measurements(self, input_measurements):
-        """
-        Describe the output measurements.
-        :param input_measurements: measurement information of the input
-        """
-
-
 class Transform(VirtualProduct):
-    def __init__(self, child, transformation):
+    def __init__(self, child, data_transform=None, measurement_transform=None, raster_transform=None):
         """
         :param transform: a `TransformationFunction`
         """
         self.child = child
-        self.transformation = transformation
+
+        def identity(x):
+            return x
+
+        def guard(func):
+            if func is None:
+                return identity
+            return func
+
+        self.data_transform = guard(data_transform)
+        self.measurement_transform = guard(measurement_transform)
+        self.raster_transform = guard(raster_transform)
 
     def output_measurements(self, index):
-        return self.transformation.output_measurements(self.child.output_measurements(index))
+        return self.measurement_transform(self.child.output_measurements(index))
 
     def find_datasets(self, index, **query):
         return self.child.find_datasets(index, **query)
@@ -240,25 +240,19 @@ class Transform(VirtualProduct):
         return self.child.build_raster(datasets, **query)
 
     def fetch_data(self, raster):
-        input_data = self.child.fetch_data(raster)
-        return self.transformation.compute(input_data)
+        return self.data_transform(self.child.fetch_data(raster))
 
 
-def transform(child, transformation_function):
-    return Transform(child, transformation_function)
+def transform(child, data_transform=None, measurement_transform=None, raster_transform=None):
+    return Transform(child, data_transform=data_transform,
+                     measurement_transform=measurement_transform, raster_transform=raster_transform)
 
 
-class CollatedDatasets(VirtualDatasetPile):
+class CollatedDatasetPile(VirtualDatasetPile):
     def __init__(self, dataset_tuple, grid_spec, output_measurements):
         self.dataset_tuple = tuple(dataset_tuple)
         self.grid_spec = grid_spec
         self.output_measurements = output_measurements
-
-
-class CollatedTimeslice(object):
-    def __init__(self, source_index, datasets):
-        self.source_index = source_index
-        self.datasets = datasets
 
 
 class Collate(VirtualProduct):
@@ -303,31 +297,33 @@ class Collate(VirtualProduct):
 
         # should possibly check all the `grid_spec`s are the same
         # requires a `GridSpec.__eq__` method implementation
-        return CollatedDatasets(result, result[0].grid_spec, self.output_measurements(index))
+        return CollatedDatasetPile(result, result[0].grid_spec, self.output_measurements(index))
 
     def build_raster(self, datasets, **query):
-        assert isinstance(datasets, CollatedDatasets)
+        assert isinstance(datasets, CollatedDatasetPile)
         assert len(datasets.dataset_tuple) == len(self.children)
+        grid_spec = datasets.grid_spec
+        output_measurements = datasets.output_measurements
 
-        def build(source_index, pair):
-            product, datasets = pair
-            raster = product.build_raster(datasets, **query)
+        def build(source_index, product, dataset_pile):
+            raster = product.build_raster(dataset_pile, **query)
 
             def tag(indexes, value):
-                return CollatedTimeslice(source_index, value)
+                return CollatedDatasetPile([value if i == source_index else None
+                                            for i, _ in enumerate(self.children)],
+                                           grid_spec, output_measurements)
 
-            return RasterRecipe(xr_map(raster.grouped_dataset_pile, tag),
-                                raster.geobox, raster.output_measurements)
+            return raster.map(tag)
 
-        rasters = [build(*args)
-                   for args in enumerate(zip(self.children, datasets.dataset_tuple))]
+        rasters = [build(source_index, product, dataset_pile)
+                   for source_index, (product, dataset_pile)
+                   in enumerate(zip(self.children, datasets.dataset_tuple))]
 
         # should possibly check all the geoboxes are the same
         first = rasters[0]
 
         concatenated = xarray.concat([raster.grouped_dataset_pile for raster in rasters], dim='time')
-        return RasterRecipe(concatenated,
-                            first.geobox, first.output_measurements)
+        return RasterRecipe(concatenated, first.geobox, output_measurements)
 
     def fetch_data(self, raster):
         assert isinstance(raster, RasterRecipe)
@@ -335,25 +331,23 @@ class Collate(VirtualProduct):
         geobox = raster.geobox
         output_measurements = raster.output_measurements
 
-        def mask_for_source(source_index):
+        def is_from(source_index):
             def result(indexes, value):
-                assert isinstance(value, CollatedTimeslice)
-                return source_index == value.source_index
+                assert isinstance(value, CollatedDatasetPile)
+                return value.dataset_tuple[source_index] is not None
 
             return result
 
         def strip_source(indexes, value):
-            assert isinstance(value, CollatedTimeslice)
-            return value.datasets
+            assert isinstance(value, CollatedDatasetPile)
+            for data in value.dataset_tuple:
+                if data is not None:
+                    return data
 
-        def fetch_by_source(source_index, child):
-            mask = xr_map(grouped_dataset_pile, mask_for_source(source_index), 'bool')
-            relevant = xr_map(grouped_dataset_pile[mask], strip_source)
-            # TODO: insert index measurement
-            return child.fetch_data(RasterRecipe(relevant, geobox, output_measurements))
+            raise ValueError("Every child of CollatedDatasetPile object is None")
 
-        rasters = [fetch_by_source(source_index, child)
-                   for source_index, child in enumerate(self.children)]
+        rasters = [child.fetch_data(raster.filter(is_from(i)).map(strip_source))
+                   for i, child in enumerate(self.children)]
 
         return xarray.concat(rasters, dim='time')
 
@@ -362,16 +356,11 @@ def collate(*children, **kwargs):
     return Collate(*children, **kwargs)
 
 
-class JuxtaposedDatasets(VirtualDatasetPile):
+class JuxtaposedDatasetPile(VirtualDatasetPile):
     def __init__(self, dataset_tuple, grid_spec, output_measurements):
         self.dataset_tuple = tuple(dataset_tuple)
         self.grid_spec = grid_spec
         self.output_measurements = output_measurements
-
-
-class JuxtaposedTimeslice(object):
-    def __init__(self, datasets):
-        self.datasets = datasets
 
 
 class Juxtapose(VirtualProduct):
@@ -402,25 +391,33 @@ class Juxtapose(VirtualProduct):
 
         # should possibly check all the `grid_spec`s are the same
         # requires a `GridSpec.__eq__` method implementation
-        return JuxtaposedDatasets(result, result[0].grid_spec, self.output_measurements(index))
+        return JuxtaposedDatasetPile(result, result[0].grid_spec, self.output_measurements(index))
 
     def build_raster(self, datasets, **query):
-        assert isinstance(datasets, JuxtaposedDatasets)
+        assert isinstance(datasets, JuxtaposedDatasetPile)
         assert len(datasets.dataset_tuple) == len(self.children)
 
+        dataset_tuple = datasets.dataset_tuple
+        grid_spec = datasets.grid_spec
+        output_measurements = datasets.output_measurements
+
         rasters = [product.build_raster(datasets, **query)
-                   for product, datasets in zip(self.children, datasets.dataset_tuple)]
+                   for product, datasets in zip(self.children, dataset_tuple)]
 
         # should possibly check all the geoboxes are the same
         geobox = rasters[0].geobox
 
-        aligned = xarray.align(*[raster.grouped_dataset_pile for raster in rasters])
-        output_measurements = [raster.output_measurements for raster in rasters]
+        aligned_piles = xarray.align(*[raster.grouped_dataset_pile for raster in rasters])
+        child_rasters = [RasterRecipe(aligned_piles[i], raster.geobox, raster.output_measurements)
+                         for i, raster in enumerate(rasters)]
 
         def tuplify(indexes, value):
-            return JuxtaposedTimeslice([raster.sel(**indexes).item() for raster in aligned])
+            return JuxtaposedDatasetPile([raster.grouped_dataset_pile.sel(**indexes).item()
+                                          for raster in child_rasters],
+                                         grid_spec, output_measurements)
 
-        merged = xr_map(aligned[0], tuplify)
+        merged = child_rasters[0].map(tuplify).grouped_dataset_pile
+
         return RasterRecipe(merged, geobox, output_measurements)
 
     def fetch_data(self, raster):
@@ -429,21 +426,22 @@ class Juxtapose(VirtualProduct):
         geobox = raster.geobox
         output_measurements = raster.output_measurements
 
-        assert isinstance(output_measurements, list)
-
         def select_child(source_index):
             def result(indexes, value):
-                assert isinstance(value, JuxtaposedTimeslice)
-                return value.datasets[source_index]
+                assert isinstance(value, JuxtaposedDatasetPile)
+                return value.dataset_tuple[source_index]
 
             return result
 
-        def fetch_child(source_index, child):
-            datasets = xr_map(grouped_dataset_pile, select_child(source_index))
-            recipe = RasterRecipe(datasets, geobox, output_measurements[source_index])
-            return child.fetch_data(recipe)
+        def fetch_recipe(source_index):
+            child_raster = raster.map(select_child(source_index))
+            grouped = child_raster.grouped_dataset_pile
 
-        rasters = [fetch_child(source_index, child)
+            # bad assumption!
+            child_measurements = grouped.item(0).output_measurements
+            return RasterRecipe(grouped, geobox, child_measurements)
+
+        rasters = [child.fetch_data(fetch_recipe(source_index))
                    for source_index, child in enumerate(self.children)]
 
         return xarray.merge(rasters)
