@@ -260,12 +260,12 @@ class CollatedTimeslice(object):
 
 
 class Collate(VirtualProduct):
-    def __init__(self, *children, index_measurement_name=None):
+    def __init__(self, *children, **kwargs):
         if len(children) == 0:
             raise VirtualProductException("No children for collate node")
 
         self.children = children
-        self.index_measurement_name = index_measurement_name
+        self.index_measurement_name = kwargs.get('index_measurement_name')
 
         if self.index_measurement_name is not None:
             self.index_measurement = {

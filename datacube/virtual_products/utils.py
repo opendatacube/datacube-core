@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 from datacube.api.query import query_geopolygon
 from datacube.api.core import get_bounds
 from datacube.utils import geometry, intersects
