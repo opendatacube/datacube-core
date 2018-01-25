@@ -360,8 +360,8 @@ class Collate(VirtualProduct):
         return xarray.concat(rasters, dim='time')
 
 
-def collate(*children, index_measurement_name=None):
-    return Collate(*children, **(dict(index_measurement_name=index_measurement_name)))
+def collate(*children, **kwargs):
+    return Collate(*children, **kwargs)
 
 
 class JuxtaposedDatasets(VirtualDatasetPile):
