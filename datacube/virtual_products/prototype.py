@@ -11,7 +11,9 @@ from datacube.model import Measurement
 from datacube.model.utils import xr_apply
 from datacube.api.query import Query, query_group_by, query_geopolygon
 
-from datacube.virtual_products.utils import select_datasets_inside_polygon, output_geobox
+from datacube.virtual_products.utils import select_datasets_inside_polygon
+from datacube.virtual_products.utils import output_geobox
+from datacube.virtual_products.utils import product_definitions_from_index
 
 
 class VirtualProductException(Exception):
@@ -23,8 +25,8 @@ class VirtualProduct(ABC):
     """ Abstract class defining the common interface of virtual products. """
 
     @abstractmethod
-    def output_measurements(self, index):
-        # type: (Index) -> Dict[str, Measurement]
+    def output_measurements(self, product_definitions):
+        # type: (Dict[str, dict])-> Dict[str, Measurement]
         """ A dictionary mapping names to measurement metadata. """
 
     @abstractmethod
@@ -60,6 +62,7 @@ class VirtualProduct(ABC):
 class DatasetPile(object):
     """ Result of `VirtualProduct.find_datasets`. """
     def __init__(self, kind, pile, grid_spec, output_measurements):
+        assert kind in ['basic', 'collate', 'juxtapose']
         self.kind = kind
         self.pile = tuple(pile)
         self.grid_spec = grid_spec
@@ -109,11 +112,11 @@ class BasicProduct(VirtualProduct):
 
         self.dataset_filter = dataset_filter
 
-    def output_measurements(self, index):
+    def output_measurements(self, product_definitions):
         """ Output measurements metadata. """
-        measurement_docs = index.products.get_by_name(self.product_name).measurements
-        measurements = {key: Measurement(value)
-                        for key, value in measurement_docs.items()}
+        measurement_docs = product_definitions[self.product_name]['measurements']
+        measurements = {measurement['name']: Measurement(measurement)
+                        for measurement in measurement_docs}
 
         if self.measurement_names is None:
             return measurements
@@ -145,7 +148,8 @@ class BasicProduct(VirtualProduct):
             datasets = [dataset for dataset in datasets if self.dataset_filter(dataset)]
 
         # gather information from the index before it disappears from sight
-        output_measurements = self.output_measurements(index)
+        product_definitions = product_definitions_from_index(index)
+        output_measurements = self.output_measurements(product_definitions)
         grid_spec = index.products.get_by_name(self.product_name).grid_spec
 
         return DatasetPile('basic', datasets, grid_spec, output_measurements)
@@ -229,8 +233,8 @@ class Transform(VirtualProduct):
         self.measurement_transform = guard(measurement_transform)
         self.raster_transform = guard(raster_transform)
 
-    def output_measurements(self, index):
-        return self.measurement_transform(self.child.output_measurements(index))
+    def output_measurements(self, product_definitions):
+        return self.measurement_transform(self.child.output_measurements(product_definitions))
 
     def find_datasets(self, index, **query):
         return self.child.find_datasets(index, **query)
@@ -261,8 +265,8 @@ class Collate(VirtualProduct):
                 name: Measurement({'name': name, 'dtype': 'int8', 'nodata': -1, 'units': '1'})
             }
 
-    def output_measurements(self, index):
-        input_measurements = [child.output_measurements(index)
+    def output_measurements(self, product_definitions):
+        input_measurements = [child.output_measurements(product_definitions)
                               for child in self.children]
 
         first = input_measurements[0]
@@ -289,7 +293,8 @@ class Collate(VirtualProduct):
 
         # should possibly check all the `grid_spec`s are the same
         # requires a `GridSpec.__eq__` method implementation
-        return DatasetPile('collate', result, result[0].grid_spec, self.output_measurements(index))
+        product_definitions = product_definitions_from_index(index)
+        return DatasetPile('collate', result, result[0].grid_spec, self.output_measurements(product_definitions))
 
     def build_raster(self, datasets, **query):
         assert isinstance(datasets, DatasetPile) and datasets.kind == 'collate'
@@ -356,8 +361,8 @@ class Juxtapose(VirtualProduct):
 
         self.children = children
 
-    def output_measurements(self, index):
-        input_measurements = [child.output_measurements(index)
+    def output_measurements(self, product_definitions):
+        input_measurements = [child.output_measurements(product_definitions)
                               for child in self.children]
 
         result = {}
@@ -372,12 +377,14 @@ class Juxtapose(VirtualProduct):
         return result
 
     def find_datasets(self, index, **query):
+        product_definitions = product_definitions_from_index(index)
         result = [child.find_datasets(index, **query)
                   for child in self.children]
 
         # should possibly check all the `grid_spec`s are the same
         # requires a `GridSpec.__eq__` method implementation
-        return DatasetPile('juxtapose', result, result[0].grid_spec, self.output_measurements(index))
+        return DatasetPile('juxtapose', result, result[0].grid_spec,
+                           self.output_measurements(product_definitions))
 
     def build_raster(self, datasets, **query):
         assert isinstance(datasets, DatasetPile) and datasets.kind == 'juxtapose'

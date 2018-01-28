@@ -43,3 +43,8 @@ def output_geobox(datasets, grid_spec,
 
     return geometry.GeoBox.from_geopolygon(query_geopolygon(**query) or get_bounds(datasets, crs),
                                            resolution, crs, align)
+
+
+def product_definitions_from_index(index):
+    return dict((product.name, product.definition)
+                for product in index.products.get_all())
