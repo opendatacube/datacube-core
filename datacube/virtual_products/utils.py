@@ -3,11 +3,6 @@ from __future__ import absolute_import
 from datacube.api.query import query_geopolygon
 from datacube.api.core import get_bounds
 from datacube.utils import geometry, intersects
-from datacube.model.utils import xr_apply
-
-
-def xr_map(array, func, dtype='O'):
-    return xr_apply(array, func, dtype)
 
 
 def select_datasets_inside_polygon(datasets, polygon):
@@ -48,3 +43,8 @@ def output_geobox(datasets, grid_spec,
 
     return geometry.GeoBox.from_geopolygon(query_geopolygon(**query) or get_bounds(datasets, crs),
                                            resolution, crs, align)
+
+
+def product_definitions_from_index(index):
+    return dict((product.name, product.definition)
+                for product in index.products.get_all())
