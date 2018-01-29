@@ -3,7 +3,15 @@
 import versioneer
 from setuptools import setup, find_packages
 
-tests_require = ['pytest', 'pytest-cov', 'mock', 'pep8', 'pylint==1.6.4', 'hypothesis', 'compliance-checker']
+tests_require = [
+    'compliance-checker',
+    'hypothesis',
+    'mock',
+    'pep8',
+    'pylint',
+    'pytest',
+    'pytest-cov',
+]
 
 extras_require = {
     'performance': ['ciso8601', 'bottleneck'],
@@ -67,7 +75,10 @@ setup(
         'affine',
         'cachetools',
         'click>=5.0',
+        'cloudpickle>=0.4',
         'dask[array]',
+        'futures; python_version<"3"',
+        'gdal>=1.9',
         'jsonschema',
         'netcdf4',
         'numpy',
@@ -76,7 +87,7 @@ setup(
         'pypeg2',
         'python-dateutil',
         'pyyaml',
-        'rasterio>=0.9',  # required for zip reading, 0.9 gets around 1.0a ordering problems
+        'rasterio>=0.9a10',  # required for zip reading, 0.9 gets around 1.0a ordering problems
         'singledispatch',
         'sqlalchemy',
         'xarray>=0.9',  # >0.9 fixes most problems with `crs` attributes being lost

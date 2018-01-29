@@ -190,8 +190,7 @@ class SimpleDocField(PgDocField):
         self.offset = offset
         if selection not in SELECTION_TYPES:
             raise ValueError(
-                "Unknown field selection type %s. Expected one of: %r" % (
-                    selection, (SELECTION_TYPES.keys(),),)
+                "Unknown field selection type %s. Expected one of: %r" % (selection, (SELECTION_TYPES,),)
             )
         self.aggregation = SELECTION_TYPES[selection]
 
@@ -470,6 +469,7 @@ class ValueBetweenExpression(PgExpression):
             return self.field.alchemy_expression >= self.low_value
         if self.high_value is not None:
             return self.field.alchemy_expression < self.high_value
+        return None
 
 
 class RangeBetweenExpression(PgExpression):
@@ -594,6 +594,7 @@ def _coalesce(*values):
     for v in values:
         if v is not None:
             return v
+    return None
 
 
 def _default_utc(d):
