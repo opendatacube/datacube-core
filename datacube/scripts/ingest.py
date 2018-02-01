@@ -16,7 +16,6 @@ from datacube.api.core import Datacube
 from datacube.index.index import Index
 from datacube.model import DatasetType, Range, GeoPolygon
 from datacube.model.utils import make_dataset, xr_apply, datasets_to_doc
-from datacube.storage.storage import write_dataset_to_netcdf
 from datacube.ui import click as ui
 from datacube.utils import read_documents
 from datacube.ui.task_app import check_existing_files, load_tasks as load_tasks_, save_tasks as save_tasks_
