@@ -110,7 +110,7 @@ setup(
             'datacube-simple-replica = datacube_apps.simple_replica:replicate [replicas]'
         ],
         'datacube.plugins.io.read': [
-            's3block = datacube.drivers.s3.driver:reader_driver_init'
+            's3block = datacube.drivers.s3.driver:reader_driver_init',
             's3block_test = datacube.drivers.s3.driver:reader_test_driver_init'
         ],
         'datacube.plugins.io.write': [
