@@ -11,7 +11,7 @@ S3_dataset = namedtuple('S3_dataset', ['macro_shape'])
 
 
 def test_new_datasource_s3():
-    pytest.importorskip('datacube.drivers.s3.driver.s3lio')
+    pytest.importorskip('datacube.drivers.s3.storage.s3aio.s3lio')
 
     from datacube.drivers.s3 import driver as s3_driver
     from datacube.drivers.s3.datasource import S3DataSource
@@ -46,7 +46,7 @@ def test_reader_drivers():
     available_drivers = reader_drivers()
     assert isinstance(available_drivers, list)
 
-    pytest.importorskip('datacube.drivers.s3.driver.s3lio')
+    pytest.importorskip('datacube.drivers.s3.storage.s3aio.s3lio')
     assert 's3block' in available_drivers
 
 
