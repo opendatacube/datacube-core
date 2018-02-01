@@ -203,12 +203,12 @@ def writer_test_driver_init():
 
 class S3ReaderDriver(object):
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.name = 's3block'
         self.formats = [FORMAT]
         self.protocols = [PROTOCOL, 'file']
 
-        self._storage = S3LIO()
+        self._storage = S3LIO(**kwargs)
 
     def supports(self, protocol, fmt):
         return (protocol in self.protocols and
@@ -220,3 +220,7 @@ class S3ReaderDriver(object):
 
 def reader_driver_init():
     return S3ReaderDriver()
+
+
+def reader_test_driver_init():
+    return S3ReaderDriver(enable_s3=False, file_path='/')

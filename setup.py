@@ -111,6 +111,7 @@ setup(
         ],
         'datacube.plugins.io.read': [
             's3block = datacube.drivers.s3.driver:reader_driver_init'
+            's3block_test = datacube.drivers.s3.driver:reader_test_driver_init'
         ],
         'datacube.plugins.io.write': [
             'netcdf = datacube.drivers.netcdf.driver:writer_driver_init',
