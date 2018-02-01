@@ -23,9 +23,13 @@ class S3WriterDriver(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.storage = S3LIO(**kwargs)
 
+        self._format = FORMAT
+        if kwargs.get('enable_s3', True) is False:
+            self._format += '_test'
+
     @property
     def format(self):
-        return FORMAT
+        return self._format
 
     @property
     def uri_scheme(self):
@@ -205,9 +209,13 @@ class S3ReaderDriver(object):
 
     def __init__(self, **kwargs):
         self.name = 's3block'
-        self.formats = [FORMAT]
         self.protocols = [PROTOCOL, 'file']
 
+        self._format = FORMAT
+        if kwargs.get('enable_s3', True) is False:
+            self._format += '_test'
+
+        self.formats = [self._format]
         self._storage = S3LIO(**kwargs)
 
     def supports(self, protocol, fmt):
