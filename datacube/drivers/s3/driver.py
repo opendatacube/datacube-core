@@ -23,18 +23,16 @@ class S3WriterDriver(object):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.storage = S3LIO(**kwargs)
 
-        self._format = FORMAT
-        if kwargs.get('enable_s3', True) is False:
-            self._format += '_test'
+        self._protocol = PROTOCOL if kwargs.get('enable_s3', True) else 'file'
 
     @property
     def format(self):
-        return self._format
+        return FORMAT
 
     @property
     def uri_scheme(self):
         """URI scheme used by this driver."""
-        return PROTOCOL
+        return self._protocol
 
     def _get_chunksizes(self, chunksizes):
         """Return the chunk sizes as an int tuple, if valid.
@@ -209,13 +207,8 @@ class S3ReaderDriver(object):
 
     def __init__(self, **kwargs):
         self.name = 's3block'
-        self.protocols = [PROTOCOL, 'file']
-
-        self._format = FORMAT
-        if kwargs.get('enable_s3', True) is False:
-            self._format += '_test'
-
-        self.formats = [self._format]
+        self.formats = [FORMAT]
+        self.protocols = [PROTOCOL] if kwargs.get('enable_s3', True) else ['file']
         self._storage = S3LIO(**kwargs)
 
     def supports(self, protocol, fmt):

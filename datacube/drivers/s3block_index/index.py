@@ -80,8 +80,8 @@ class DatasetResource(BaseDatasetResource):
     def add(self, dataset, sources_policy='verify', **kwargs):
         saved_dataset = super(DatasetResource, self).add(dataset, sources_policy, **kwargs)
 
-        if dataset.format in ['s3block', 's3block_test']:
-            storage_metadata = kwargs['storage_metadata'] # It's an error to not include this
+        if dataset.format == 's3block':
+            storage_metadata = kwargs['storage_metadata']  # It's an error to not include this
             self.add_datasets_to_s3_tables([dataset.id], storage_metadata)
         return saved_dataset
 
