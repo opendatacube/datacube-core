@@ -311,7 +311,7 @@ class Dataset(object):
 
 
 class Measurement(object):
-    def __init__(self, measurement_dict):
+    def __init__(self, **measurement_dict):
         self.name = measurement_dict['name']
         self.dtype = measurement_dict['dtype']
         self.nodata = measurement_dict['nodata']

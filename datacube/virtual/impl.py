@@ -1,4 +1,11 @@
 # Warning: this is a WIP
+"""
+Implementation of virtual products.
+Provides an interface to the products in the database
+for querying and loading data, and combinators to
+combine multiple products into "virtual" products
+implementing the same interface.
+"""
 
 from __future__ import absolute_import
 
@@ -10,10 +17,11 @@ from datacube import Datacube
 from datacube.model import Measurement
 from datacube.model.utils import xr_apply
 from datacube.api.query import Query, query_group_by, query_geopolygon
+from datacube.api.grid_workflow import _fast_slice
 
-from datacube.virtual_products.utils import select_datasets_inside_polygon
-from datacube.virtual_products.utils import output_geobox
-from datacube.virtual_products.utils import product_definitions_from_index
+from .utils import select_datasets_inside_polygon
+from .utils import output_geobox
+from .utils import product_definitions_from_index
 
 
 class VirtualProductException(Exception):
@@ -78,6 +86,29 @@ class RasterRecipe(object):
         self.geobox = geobox
         self.output_measurements = output_measurements
 
+    @property
+    def dims(self):
+        """
+        Names of the dimensions, e.g., ``('time', 'y', 'x')``.
+        :return: tuple(str)
+        """
+        return self.grouped_dataset_pile.dims + self.geobox.dimensions
+
+    @property
+    def shape(self):
+        """
+        Lengths of each dimension, e.g., ``(285, 4000, 4000)``.
+        :return: tuple(int)
+        """
+        return self.grouped_dataset_pile.shape + self.geobox.shape
+
+    def __getitem__(self, chunk):
+        pile = self.grouped_dataset_pile
+
+        return RasterRecipe(_fast_slice(pile, chunk[:len(pile.shape)]),
+                            self.geobox[chunk[len(pile.shape):]],
+                            self.output_measurements)
+
     def map(self, func, dtype='O'):
         return RasterRecipe(xr_apply(self.grouped_dataset_pile, func, dtype=dtype),
                             self.geobox, self.output_measurements)
@@ -115,7 +146,7 @@ class BasicProduct(VirtualProduct):
     def output_measurements(self, product_definitions):
         """ Output measurements metadata. """
         measurement_docs = product_definitions[self.product_name]['measurements']
-        measurements = {measurement['name']: Measurement(measurement)
+        measurements = {measurement['name']: Measurement(**measurement)
                         for measurement in measurement_docs}
 
         if self.measurement_names is None:
@@ -262,7 +293,7 @@ class Collate(VirtualProduct):
         name = self.index_measurement_name
         if name is not None:
             self.index_measurement = {
-                name: Measurement({'name': name, 'dtype': 'int8', 'nodata': -1, 'units': '1'})
+                name: Measurement(name=name, dtype='int8', nodata=-1, units='1')
             }
 
     def output_measurements(self, product_definitions):
