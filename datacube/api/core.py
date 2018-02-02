@@ -137,7 +137,8 @@ class Datacube(object):
                 self._to_close.close()
             # pylint: disable=bare-except
             except:
-                self.logger.debug('Connections already closed')
+                if hasattr(self, 'logger'):
+                    self.logger.debug('Connections already closed')
 
     def list_products(self, show_archived=False, with_pandas=True):
         """
