@@ -63,7 +63,9 @@ class VirtualProduct(ABC):
         """ Mimic `datacube.Datacube.load`. """
         datasets = self.find_datasets(index, **query)
         raster = self.build_raster(datasets, **query)
-        data = self.fetch_data(raster)
+        observations = [self.fetch_data(observation)
+                        for _, observation in raster.split(dim='time')]
+        data = xarray.concat(observations, dim='time')
         return data
 
 
@@ -117,6 +119,15 @@ class RasterRecipe(object):
         mask = self.map(predicate, dtype='bool')
         return RasterRecipe(self.grouped_dataset_pile[mask.grouped_dataset_pile],
                             self.geobox, self.output_measurements)
+
+    def split(self, dim='time'):
+        # this is slightly different from Tile.split
+        pile = self.grouped_dataset_pile
+
+        (length,) = pile[dim].shape
+        for i in range(length):
+            yield i, RasterRecipe(pile.isel(**{dim: slice(i, i + 1)}),
+                                  self.geobox, self.output_measurements)
 
 
 class BasicProduct(VirtualProduct):
