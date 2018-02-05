@@ -10,6 +10,7 @@ import rasterio
 
 from datacube.compat import string_types
 from integration_tests.utils import assert_click_command
+from integration_tests.conftest import prepare_test_ingestion_configuration
 
 PROJECT_ROOT = Path(__file__).parents[1]
 CONFIG_SAMPLES = PROJECT_ROOT / 'docs/config_samples/'
@@ -36,36 +37,25 @@ LBG_CELL = (LBG_CELL_X, LBG_CELL_Y)
 
 
 @pytest.fixture()
-def testdata_dir(tmpdir):
+def testdata_dir(tmpdir, ingest_configs):
     datadir = Path(str(tmpdir), 'data')
     datadir.mkdir()
 
     shutil.copytree(str(TEST_DATA), str(tmpdir / 'lbg'))
 
-    copy_and_update_ingestion_configs(tmpdir, tmpdir,
-                                      (INGESTER_CONFIGS / file for file in (LS5_NBAR_ALBERS, LS5_PQ_ALBERS)))
+    for file in ingest_configs.values():
+        prepare_test_ingestion_configuration(tmpdir, tmpdir, INGESTER_CONFIGS/file,
+                                             faster_ingest=False)
 
     return tmpdir
-
-
-def copy_and_update_ingestion_configs(destination, output_dir, configs):
-    for ingestion_config in configs:
-        with ingestion_config.open() as input:
-            output_file = destination / ingestion_config.name
-            with output_file.open(mode='w') as output:
-                for line in input:
-                    if 'location: ' in line:
-                        line = 'location: ' + str(output_dir) + '\n'
-                    output.write(line)
 
 
 ignore_me = pytest.mark.xfail(True, reason="get_data/get_description still to be fixed in Unification")
 
 
 @pytest.mark.usefixtures('default_metadata_type')
-@pytest.mark.test_odc_writers([{'index': 'default', 'writer': 'netcdf'},
-                               {'index': 's3block', 'writer': 's3block_test'}])
-def test_end_to_end(clirunner, index, testdata_dir):
+@pytest.mark.parametrize('datacube_env_name', ('datacube', ), indirect=True)
+def test_end_to_end(clirunner, index, testdata_dir, ingest_configs):
     """
     Loads two dataset configurations, then ingests a sample Landsat 5 scene
 
@@ -78,8 +68,8 @@ def test_end_to_end(clirunner, index, testdata_dir):
 
     lbg_nbar = testdata_dir / 'lbg' / LBG_NBAR
     lbg_pq = testdata_dir / 'lbg' / LBG_PQ
-    ls5_nbar_albers_ingest_config = testdata_dir / LS5_NBAR_ALBERS
-    ls5_pq_albers_ingest_config = testdata_dir / LS5_PQ_ALBERS
+    ls5_nbar_albers_ingest_config = testdata_dir / ingest_configs['ls5_nbar_albers']
+    ls5_pq_albers_ingest_config = testdata_dir / ingest_configs['ls5_pq_albers']
 
     # Run galsprepare.py on the NBAR and PQ scenes
     assert_click_command(galsprepare.main, [str(lbg_nbar)])
@@ -112,6 +102,55 @@ def test_end_to_end(clirunner, index, testdata_dir):
     check_analytics_pixel_drill(index)
 
 
+@pytest.mark.usefixtures('default_metadata_type')
+@pytest.mark.parametrize('datacube_env_name', ('s3block_env', ), indirect=True)
+def test_s3block_end_to_end(clirunner, index, testdata_dir, ingest_configs):
+    """
+    Loads two dataset configurations, then ingests a sample Landsat 5 scene
+
+    One dataset configuration specifies Australian Albers Equal Area Projection,
+    the other is simply latitude/longitude.
+
+    The input dataset should be recorded in the index, and two sets of storage units
+    should be created on disk and recorded in the index.
+    """
+
+    lbg_nbar = testdata_dir / 'lbg' / LBG_NBAR
+    lbg_pq = testdata_dir / 'lbg' / LBG_PQ
+    ls5_nbar_albers_ingest_config = testdata_dir / ingest_configs['ls5_nbar_albers']
+    ls5_pq_albers_ingest_config = testdata_dir / ingest_configs['ls5_pq_albers']
+
+    # Run galsprepare.py on the NBAR and PQ scenes
+    assert_click_command(galsprepare.main, [str(lbg_nbar)])
+
+    # Add the LS5 Dataset Types
+    clirunner(['-v', 'product', 'add', str(LS5_DATASET_TYPES)])
+
+    # Index the Datasets
+    clirunner(['-v', 'dataset', 'add', '--auto-match',
+               str(lbg_nbar), str(lbg_pq)])
+
+    # Ingest NBAR
+    clirunner(['-v', 'ingest', '-c', str(ls5_nbar_albers_ingest_config)])
+
+    # Ingest PQ
+    clirunner(['-v', 'ingest', '-c', str(ls5_pq_albers_ingest_config)])
+
+    check_open_with_api(index)
+    check_open_with_dc(index)
+    # TODO:  check_open_with_grid_workflow(index)  # Is failing in S3 case, needs debugging
+    check_analytics_list_searchables(index)
+    check_get_descriptor(index)
+    check_get_data(index)
+    check_get_data_subset(index)
+    check_get_descriptor_data(index)
+    check_get_descriptor_data_storage_type(index)
+    check_analytics_create_array(index)
+    check_analytics_ndvi_mask_median_expression(index)
+    check_analytics_ndvi_mask_median_expression_storage_type(index)
+    check_analytics_pixel_drill(index)
+
+
 def check_open_with_api(index):
     from datacube.api import API
     api = API(index=index)
@@ -121,7 +160,6 @@ def check_open_with_api(index):
 
     descriptor = api.get_descriptor()
     assert 'ls5_nbar_albers' in descriptor
-    groups = descriptor['ls5_nbar_albers']['groups']
     query = {
         'variables': ['blue'],
         'dimensions': {

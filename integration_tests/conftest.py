@@ -129,6 +129,22 @@ def local_config(datacube_env_name):
     return LocalConfig.find(CONFIG_FILE_PATHS, env=datacube_env_name)
 
 
+@pytest.fixture
+def ingest_configs(datacube_env_name):
+    """ Provides dictionary product_name => config file name
+    """
+    if datacube_env_name == "s3block_env":
+        return {
+            'ls5_nbar_albers': 'ls5_nbar_albers_s3test.yaml',
+            'ls5_pq_albers': 'ls5_pq_albers_s3test.yaml',
+        }
+
+    return {
+        'ls5_nbar_albers': 'ls5_nbar_albers.yaml',
+        'ls5_pq_albers': 'ls5_pq_albers.yaml',
+    }
+
+
 @pytest.fixture(params=["US/Pacific", "UTC", ])
 def uninitialised_postgres_db(local_config, request):
     """
@@ -517,3 +533,29 @@ def clirunner(global_integration_cli_args, datacube_env_name):
         return result
 
     return _run_cli
+
+
+def prepare_test_ingestion_configuration(tmpdir,
+                                         output_dir,
+                                         filename,
+                                         faster_ingest=True):
+    filename = Path(filename)
+    if output_dir is None:
+        output_dir = tmpdir.mkdir(filename.stem)
+    config = load_yaml_file(filename)[0]
+
+    if faster_ingest:
+        config = alter_product_for_testing(config)
+        config['storage']['crs'] = 'EPSG:28355'
+        config['storage']['chunking']['time'] = 1
+
+    config['location'] = str(output_dir)
+
+    # If ingesting with the s3test driver
+    if 'bucket' in config['storage']:
+        config['storage']['bucket'] = str(output_dir)
+
+    config_path = tmpdir.join(filename.name)
+    with open(str(config_path), 'w') as stream:
+        yaml.dump(config, stream)
+    return config_path, config

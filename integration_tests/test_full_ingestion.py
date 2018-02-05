@@ -12,7 +12,7 @@ from affine import Affine
 
 from datacube.api.query import query_group_by
 from datacube.utils import geometry, read_documents, netcdf_extract_string
-from integration_tests.conftest import load_yaml_file, alter_product_for_testing
+from integration_tests.conftest import prepare_test_ingestion_configuration
 from .conftest import GEOTIFF
 
 PROJECT_ROOT = Path(__file__).parents[1]
@@ -37,29 +37,11 @@ COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
 LS5_NBAR_INGEST_CONFIG = CONFIG_SAMPLES / 'ingester' / 'ls5_nbar_albers.yaml'
 
 
-def prepare_test_ingestion_configuration(tmpdir, filename):
-    filename = Path(filename)
-    dataset_dir = tmpdir.mkdir(filename.stem)
-    config = load_yaml_file(filename)[0]
-    config = alter_product_for_testing(config)
-    config['storage']['crs'] = 'EPSG:28355'
-    config['storage']['chunking']['time'] = 1
-    config['location'] = str(dataset_dir)
-
-    # If ingesting with the s3test driver
-    if 'bucket' in config['storage']:
-        config['storage']['bucket'] = str(dataset_dir)
-
-    config_path = dataset_dir.join(filename.name)
-    with open(str(config_path), 'w') as stream:
-        yaml.dump(config, stream)
-    return config_path, config
-
-
+@pytest.mark.parametrize('datacube_env_name', ('datacube',), indirect=True)
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
 def test_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths):
-    config_path, config = prepare_test_ingestion_configuration(tmpdir, LS5_NBAR_INGEST_CONFIG)
+    config_path, config = prepare_test_ingestion_configuration(tmpdir, None, LS5_NBAR_INGEST_CONFIG)
     valid_uuids = []
     for uuid, example_ls5_dataset_path in example_ls5_dataset_paths.items():
         valid_uuids.append(uuid)
@@ -107,7 +89,7 @@ def test_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths):
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
 def test_s3_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths):
-    config_path, config = prepare_test_ingestion_configuration(tmpdir, CONFIG_SAMPLES /
+    config_path, config = prepare_test_ingestion_configuration(tmpdir, None, CONFIG_SAMPLES /
                                                                'ingester' / 'ls5_nbar_albers_s3test.yaml')
     valid_uuids = []
     for uuid, example_ls5_dataset_path in example_ls5_dataset_paths.items():
