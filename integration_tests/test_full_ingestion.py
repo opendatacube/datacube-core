@@ -22,6 +22,8 @@ LS5_MATCH_RULES = CONFIG_SAMPLES / 'match_rules' / 'ls5_scenes.yaml'
 LS5_NBAR_STORAGE_TYPE = LS5_SAMPLES / 'ls5_geographic.yaml'
 LS5_NBAR_ALBERS_STORAGE_TYPE = LS5_SAMPLES / 'ls5_albers.yaml'
 
+INGESTER_CONFIGS = CONFIG_SAMPLES / 'ingester'
+
 TEST_STORAGE_SHRINK_FACTOR = 100
 TEST_STORAGE_NUM_MEASUREMENTS = 2
 GEOGRAPHIC_VARS = ('latitude', 'longitude')
@@ -34,14 +36,13 @@ JSON_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
 COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
 
-LS5_NBAR_INGEST_CONFIG = CONFIG_SAMPLES / 'ingester' / 'ls5_nbar_albers.yaml'
-
 
 @pytest.mark.parametrize('datacube_env_name', ('datacube',), indirect=True)
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
-def test_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths):
-    config_path, config = prepare_test_ingestion_configuration(tmpdir, None, LS5_NBAR_INGEST_CONFIG)
+def test_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths, ingest_configs):
+    config = INGESTER_CONFIGS/ingest_configs['ls5_nbar_albers']
+    config_path, config = prepare_test_ingestion_configuration(tmpdir, None, config)
     valid_uuids = []
     for uuid, example_ls5_dataset_path in example_ls5_dataset_paths.items():
         valid_uuids.append(uuid)
@@ -88,9 +89,10 @@ def test_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths):
 @pytest.mark.parametrize('datacube_env_name', ('s3block_env',), indirect=True)
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
-def test_s3_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths):
-    config_path, config = prepare_test_ingestion_configuration(tmpdir, None, CONFIG_SAMPLES /
-                                                               'ingester' / 'ls5_nbar_albers_s3test.yaml')
+def test_s3_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths, ingest_configs):
+    config = INGESTER_CONFIGS/ingest_configs['ls5_nbar_albers']
+
+    config_path, config = prepare_test_ingestion_configuration(tmpdir, None, config)
     valid_uuids = []
     for uuid, example_ls5_dataset_path in example_ls5_dataset_paths.items():
         valid_uuids.append(uuid)
