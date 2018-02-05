@@ -138,7 +138,7 @@ def test_s3block_end_to_end(clirunner, index, testdata_dir, ingest_configs):
 
     check_open_with_api(index)
     check_open_with_dc(index)
-    # TODO:  check_open_with_grid_workflow(index)  # Is failing in S3 case, needs debugging
+    check_open_with_grid_workflow(index)
     check_analytics_list_searchables(index)
     check_get_descriptor(index)
     check_get_data(index)
