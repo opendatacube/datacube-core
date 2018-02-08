@@ -18,7 +18,7 @@ def test_new_datasource_s3():
 
     bands = [dict(name='green',
                   path='')]
-    dataset = mk_sample_dataset(bands, 's3+block:///foo', format='s3block')
+    dataset = mk_sample_dataset(bands, s3_driver.PROTOCOL + ':///foo', format=s3_driver.FORMAT)
     s3_dataset_fake = S3_dataset(macro_shape=(10, 12))
     dataset.s3_metadata = {'green': {'s3_dataset': s3_dataset_fake}}
 

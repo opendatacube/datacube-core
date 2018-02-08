@@ -13,6 +13,8 @@ from datacube.index._datasets import DatasetResource as BaseDatasetResource
 from datacube.index.index import Index
 
 _LOG = logging.getLogger(__name__)
+PROTOCOL = 's3'
+FORMAT = 'aio'
 
 
 class S3DatabaseException(Exception):
@@ -24,7 +26,7 @@ class S3BlockIndex(Index):
     by writing additional s3 information to specific tables.
     """
 
-    def __init__(self, db, uri_scheme='s3+block'):
+    def __init__(self, db, uri_scheme=PROTOCOL):
         """Initialise the index and its dataset resource."""
         super(S3BlockIndex, self).__init__(db)
         # if not self.connected_to_s3_database():
@@ -72,7 +74,7 @@ class DatasetResource(BaseDatasetResource):
     additional s3 information to specific tables.
     """
 
-    def __init__(self, db, dataset_type_resource, uri_scheme='s3+block'):
+    def __init__(self, db, dataset_type_resource, uri_scheme=PROTOCOL):
         """Initialise the data resource."""
         super(DatasetResource, self).__init__(db, dataset_type_resource)
         self.uri_scheme = uri_scheme
@@ -80,7 +82,7 @@ class DatasetResource(BaseDatasetResource):
     def add(self, dataset, sources_policy='verify', **kwargs):
         saved_dataset = super(DatasetResource, self).add(dataset, sources_policy, **kwargs)
 
-        if dataset.format == 's3block':
+        if dataset.format == FORMAT:
             storage_metadata = kwargs['storage_metadata']  # It's an error to not include this
             self.add_datasets_to_s3_tables([dataset.id], storage_metadata)
         return saved_dataset

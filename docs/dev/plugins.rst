@@ -103,7 +103,7 @@ and **formats**, both of which are fields available on existing
 A ReadDriver returns a ``DataSource`` implementation, which is chosen
 based on:
 
--  Dataset URI (protocol part, eg: ``s3+block://``)
+-  Dataset URI (protocol part, eg: ``s3://``)
 -  Dataset format. As stored in the Data Cube ``Dataset``.
 -  Current system settings
 -  Available IO plugins
@@ -136,7 +136,7 @@ Example code to implement a reader driver
 S3 Driver
 ^^^^^^^^^
 
-**URI Protocol:** ``s3+block://`` **Dataset Format:** ``s3block``
+**URI Protocol:** ``s3://`` **Dataset Format:** ``aio``
 **Implementation location:**
 ```datacube/drivers/s3/driver.py`` <https://github.com/opendatacube/datacube-core/blob/9c0ea8923fa5d29dc2a813141ad64daea74c4902/datacube/drivers/s3/driver.py>`__
 
@@ -193,7 +193,7 @@ Example code to implement a writer driver
 S3 Writer Driver
 ^^^^^^^^^^^^^^^^
 
-**Name:** ``s3block`` **Protocol:** ``s3+block`` **Format:** ``s3block``
+**Name:** ``s3block`` **Protocol:** ``s3`` **Format:** ``aio``
 **Implementation**:
 
 :py:class:`datacube.drivers.s3.driver.S3WriterDriver`
@@ -229,14 +229,6 @@ re-storing it in deep-time storage units.
 Being able to update storage blocks involves all sorts of thorny issues,
 and the simple implementation didn't address any of them, which could
 lead to confusion.
-
-Protocol name change from ``s3://``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-We have renamed the protocol used for the s3 driver to ``s3+block://``.
-
-We're starting to use files stored in s3, which is supported by many
-tools out of the box using the standard ``s3://`` protocol name.
 
 Changes when specifying the environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -11,8 +11,8 @@ from datacube.drivers.s3.storage.s3aio.s3lio import S3LIO
 from .utils import DriverUtils
 from datacube.utils import DatacubeException
 
-PROTOCOL = 's3+block'
-FORMAT = 's3block'
+PROTOCOL = 's3'
+FORMAT = 'aio'
 
 
 class S3WriterDriver(object):
