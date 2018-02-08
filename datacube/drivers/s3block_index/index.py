@@ -13,7 +13,6 @@ from datacube.index._datasets import DatasetResource as BaseDatasetResource
 from datacube.index.index import Index
 
 _LOG = logging.getLogger(__name__)
-PROTOCOL = 's3'
 FORMAT = 'aio'
 
 
@@ -26,13 +25,13 @@ class S3BlockIndex(Index):
     by writing additional s3 information to specific tables.
     """
 
-    def __init__(self, db, uri_scheme=PROTOCOL):
+    def __init__(self, db):
         """Initialise the index and its dataset resource."""
         super(S3BlockIndex, self).__init__(db)
         # if not self.connected_to_s3_database():
         #     raise S3DatabaseException('Not connected to an S3 Database')
 
-        self.datasets = DatasetResource(db, self.products, uri_scheme)
+        self.datasets = DatasetResource(db, self.products)
 
     def connected_to_s3_database(self):
         """Check we are connected to an appropriately initialised database.
@@ -73,11 +72,6 @@ class DatasetResource(BaseDatasetResource):
     """The s3 dataset resource extends the postgres one by writing
     additional s3 information to specific tables.
     """
-
-    def __init__(self, db, dataset_type_resource, uri_scheme=PROTOCOL):
-        """Initialise the data resource."""
-        super(DatasetResource, self).__init__(db, dataset_type_resource)
-        self.uri_scheme = uri_scheme
 
     def add(self, dataset, sources_policy='verify', **kwargs):
         saved_dataset = super(DatasetResource, self).add(dataset, sources_policy, **kwargs)
