@@ -201,9 +201,14 @@ def create_task_list(index, output_type, year, source_type, config):
     return tasks
 
 
-def ingest_work(config, driver, source_type, output_type, tile, tile_index):
+def ingest_work(config, source_type, output_type, tile, tile_index):
     # pylint: disable=too-many-locals
     _LOG.info('Starting task %s', tile_index)
+    driver = storage_writer_by_name(config['storage']['driver'])
+
+    if driver is None:
+        _LOG.error('Failed to load storage driver %s', config['storage']['driver'])
+        raise ValueError('Something went wrong: no longer can find driver pointed by storage.driver option')
 
     namemap = get_namemap(config)
     measurements = get_measurements(source_type, config)
@@ -256,13 +261,12 @@ def _index_datasets(index, results):
     return n
 
 
-def process_tasks(index, config, driver, source_type, output_type, tasks, queue_size, executor):
+def process_tasks(index, config, source_type, output_type, tasks, queue_size, executor):
     # pylint: disable=too-many-locals
     def submit_task(task):
         _LOG.info('Submitting task: %s', task['tile_index'])
         return executor.submit(ingest_work,
                                config=config,
-                               driver=driver,
                                source_type=source_type,
                                output_type=output_type,
                                **task)
@@ -374,7 +378,7 @@ def ingest_cmd(index,
         save_tasks_(config, tasks, save_tasks)
         return 0
 
-    successful, failed = process_tasks(index, config, driver, source_type, output_type, tasks, queue_size, executor)
+    successful, failed = process_tasks(index, config, source_type, output_type, tasks, queue_size, executor)
     click.echo('%d successful, %d failed' % (successful, failed))
 
     sys.exit(failed)
