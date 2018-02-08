@@ -8,9 +8,7 @@ from __future__ import absolute_import, division
 
 import SharedArray as sa
 import hashlib
-import os
 import sys
-import uuid
 import zstd
 from itertools import repeat, product
 
@@ -23,6 +21,7 @@ try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
+from .s3io import generate_array_name
 from .s3aio import S3AIO
 
 
@@ -163,7 +162,7 @@ class S3LIO(object):
 
             self.s3aio.s3io.put_bytes(s3_bucket, s3_key, data)
 
-        array_name = 'file://' + '_'.join(['SA3IO', str(uuid.uuid4()), str(os.getpid())])
+        array_name = generate_array_name('SA3IO')
         sa.create(array_name, shape=array.shape, dtype=array.dtype)
         shared_array = sa.attach(array_name)
         shared_array[:] = array
@@ -355,7 +354,7 @@ class S3LIO(object):
 
         # create shared array
         # Use a filename to be able to work on mac + windows as well as linux
-        array_name = 'file://' + '_'.join(['S3LIO', str(uuid.uuid4()), str(os.getpid())])
+        array_name = generate_array_name('S3LIO')
         sa.create(array_name, shape=[s.stop - s.start for s in array_slice], dtype=dtype)
         data = sa.attach(array_name)
 

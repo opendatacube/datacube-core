@@ -22,6 +22,7 @@ import boto3
 import boto3.session
 import botocore
 import numpy as np
+import sys
 from pathos.multiprocessing import ProcessingPool
 from six.moves import reduce, zip
 
@@ -544,7 +545,7 @@ class S3IO(object):
         s3_obj_size = s3_end - s3_start
         num_streams = int(np.ceil(s3_obj_size / block_size))
         blocks = range(num_streams)
-        array_name = '_'.join(['S3IO', s3_bucket, s3_key, str(uuid.uuid4()), str(os.getpid())])
+        array_name = generate_array_name('S3IO' + '_' + s3_bucket + '_' + s3_key)
         sa.create(array_name, shape=s3_obj_size, dtype=np.uint8)
         shared_array = sa.attach(array_name)
 
@@ -553,3 +554,12 @@ class S3IO(object):
 
         sa.delete(array_name)
         return shared_array
+
+
+def generate_array_name(basename):
+    array_name = '_'.join([basename, str(uuid.uuid4()), str(os.getpid())])
+
+    if sys.platform == 'darwin':
+        return 'file://' + array_name
+    else:
+        return array_name

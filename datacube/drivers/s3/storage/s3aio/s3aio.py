@@ -7,8 +7,6 @@ Array access to a single S3 object
 from __future__ import absolute_import
 
 import SharedArray as sa
-import os
-import uuid
 import zstd
 from itertools import repeat, product
 
@@ -20,7 +18,7 @@ try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
-from .s3io import S3IO
+from .s3io import S3IO, generate_array_name
 
 
 class S3AIO(object):
@@ -197,7 +195,7 @@ class S3AIO(object):
         blocks = list(zip(outer_cells, repeat(array_slice[start:])))
         offset = [s.start for s in array_slice]
 
-        array_name = 'file://' + '_'.join(['S3AIO', str(uuid.uuid4()), str(os.getpid())])
+        array_name = generate_array_name('S3AIO')
         sa.create(array_name, shape=[s.stop - s.start for s in array_slice], dtype=dtype)
         shared_array = sa.attach(array_name)
 
