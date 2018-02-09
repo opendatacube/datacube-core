@@ -36,12 +36,3 @@ def test_system_init(uninitialised_postgres_db, clirunner):
     if result.exit_code != 0:
         print(result.output)
         assert False
-
-
-def connect_to_specified_index(uninitialised_postgres_db, tmpdir):
-    write_config(index_driver='test_s3_index')
-    initialise_database()
-
-    dc = Datacube(env='test_s3_index', )
-
-    assert isinstance(dc.index, S3AIOIndex)
