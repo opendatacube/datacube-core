@@ -6,8 +6,8 @@ Glossary
 .. glossary::
 
    AGDC
-      The Australian Geoscience Data Cube, an Australian implementation of the
-      ODC.
+      The Australian Geoscience Data Cube, an Australian project that developed the
+      python library that became ODC.
 
    API
       The Data Cube Application Programming Interface gives programmers full
@@ -19,6 +19,16 @@ Glossary
       
    CSIRO
       Commonwealth Scientific and Industrial Research Organisation
+
+   DEA
+      Digital Earth Australia is :term:`GA`'s implementation of ODC, hosted at
+      the :term:`NCI`. See the user guide at http://geoscienceaustralia.github.io/digitalearthau/
+      for details on how to access the platform.
+
+   GA
+      Geoscience Australia is the primary public sector geoscience organisation in Australia.
+      It supports ODC through the development of Digital Earth Australia. For more
+      information see http://www.ga.gov.au/dea/.
 
    NCI
       The Australian National Computational Infrastructure is Australia's

@@ -1,7 +1,7 @@
 @ECHO OFF
 
 pushd %~dp0
-
+echo %cd%
 REM Command file for Sphinx documentation
 
 if "%SPHINXBUILD%" == "" (
@@ -12,6 +12,8 @@ set BUILDDIR=_build
 set SPHINXPROJ=FooBar
 
 if "%1" == "" goto help
+
+if "%1" == "livehtml" goto livehtml
 
 %SPHINXBUILD% >NUL 2>NUL
 if errorlevel 9009 (
@@ -27,6 +29,10 @@ if errorlevel 9009 (
 )
 
 %SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS%
+goto end
+
+:livehtml
+sphinx-autobuild -b html -p 8123 --ignore "*_tmp_*" --ignore "*_old_*" -z ../datacube --ignore "dev/generate/*" %SOURCEDIR% %BUILDDIR%\html
 goto end
 
 :help

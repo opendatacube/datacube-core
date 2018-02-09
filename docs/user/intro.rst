@@ -23,15 +23,11 @@ Check out the :ref:`installation` for instructions on configuring and setting up
 Australian Users
 ================
 
-If you have are lucky enough to have a login with the :term:`NCI`, check out the :ref:`nci_usage_guide`.
-Geoscience Australia have a Data Cube installation with the Australian Landsat archive,
-along with many other datasets, set up and ready to use.
+If you are using `Digital Earth Australia`_ at the :term:`NCI`, see the
+`Digital Earth Australia User Guide`_.
 
-
-.. toctree::
-
-   nci_usage
-
+.. _`Digital Earth Australia`: http://www.ga.gov.au/dea
+.. _`Digital Earth Australia User Guide`: http://geoscienceaustralia.github.io/digitalearthau/
 
 Types of Datasets
 =================

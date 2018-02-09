@@ -1,13 +1,13 @@
 .. _dev_arch:
 
-====================
- Architecture Guide
-====================
+Introduction
+============
 
-Architecture Introduction
-=========================
 The Open Data Cube community is based around the `datacube-core` library.
 This document describes the architecture of the library and the ecosystem of systems and applications it interacts with.
+
+`datacube-core` is an open source Python library, released under the `Apache 2.0
+<https://github.com/opendatacube/datacube-core/blob/develop/LICENSE>`_ license.
 
 Use Cases
 ---------
@@ -17,16 +17,16 @@ Continent or global-scale processing of data on a High Performance Computing sup
 
 Exploratory Data Analysis
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-
+Allows interactive analysis of data, such as through a Jupyter Notebook.
 
 Cloud-based Services
 ~~~~~~~~~~~~~~~~~~~~
-
+Using ODC to serve WMS (Web Map Service), WCS (Web Coverage Service), or custom tools (such as polygon drill time series
+analysis.
 
 Standalone Applications
 ~~~~~~~~~~~~~~~~~~~~~~~
-Running environmental analysis applications on a laptop, suitable for field work or outreach to a developing region.
-
+Running environmental analysis applications on a laptop, suitable for field work, or outreach to a developing region.
 
 Assumptions and Design Constraints
 ----------------------------------
@@ -37,79 +37,10 @@ from all of the compute nodes.
 The system must be able to support some particular mandated file and metadata formats on some platforms.
 E.g. NCI requires data be NetCDF-CF compliant.
 
-Data Model
-==========
-Datasets
---------
+3rd-party data can be accessed without being manipulated or reformatted.
 
-Products
---------
-
-Metadata Types
---------------
+Data of differing resolutions and projections can be used together.
+E.g. Landsat-MODIS blending.
 
 
-API
-===
-Datacube Load
--------------
-Find Datasets
-~~~~~~~~~~~~~
-
-Group Datasets
-~~~~~~~~~~~~~~
-
-Load Data
-~~~~~~~~~
-
-GridWorkflow
-------------
-The GridWorkflow class allows for
-
-Index
-=====
-Interface
----------
-
-
-Implimentations
----------------
-Postgres
-~~~~~~~~
-
-Future Possiblities
-~~~~~~~~~~~~~~~~~~~
-
-* Lightweight:
-
-  * SQLite
-  * File-based (eg YAML)
-
-* Remote:
-
-  * `NASA Common Metadata Repository`_
-
-.. _`NASA Common Metadata Repository`: https://earthdata.nasa.gov/about/science-system-description/eosdis-components/common-metadata-repository
-
-Storage
-=======
-
-Applications
-============
-
-
-Data Management
-===============
-
-Ingester
---------
-
-Stacker
--------
-
-Sync Tool
----------
-
-CubeDash
---------
 
