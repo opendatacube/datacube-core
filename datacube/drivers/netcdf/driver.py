@@ -19,7 +19,7 @@ class NetcdfReaderDriver(object):
         return RasterDatasetDataSource(dataset, band_name)
 
 
-def rdr_driver_init():
+def reader_driver_init():
     return NetcdfReaderDriver()
 
 
