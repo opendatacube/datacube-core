@@ -60,5 +60,20 @@ database "Database Server" {
 [Storage] -r-> [NetCDF Files]
 }
 
+package "Cloud" {
+
+folder "bucket" {
+  [Cloud Optimised GeoTIFFs]
+}
+
+database "Database Service" {
+  [Managed Postgres]
+}
+
+[Index] -d-> [Managed Postgres]
+[Storage] -r-> [Cloud Optimised GeoTIFFs]
+
+}
+
 
 @enduml

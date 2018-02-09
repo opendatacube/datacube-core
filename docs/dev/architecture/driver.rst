@@ -11,8 +11,24 @@ indexing.
  - Drivers for Writing Data
  - Alternative types of Index
 
-Data Read Drivers
------------------
+Drivers for Reading Data
+------------------------
+
+``ReaderDriver``
+
+Drivers for Writing Data
+------------------------
+
+``WriterDriver``
+
+
+Alternative types of Index
+--------------------------
+
+``IndexDriverCache``
+
+Drivers Plugin Management Module
+--------------------------------
 
 Drivers are defined in ``setup.py -> entry_points``::
 
@@ -27,15 +43,6 @@ Drivers are defined in ``setup.py -> entry_points``::
         ]
     }
 
-This assigns the name of a 
-A ``WriterDriver`` 
-
-
-Storage and Indexing Drivers
-============================
-
-Drivers Plugin Management Module
---------------------------------
 
 .. automodule:: datacube.drivers
     :members:
