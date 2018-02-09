@@ -75,7 +75,8 @@ class LocalConfig(object):
 
         if env is None:
             env = os.environ.get('DATACUBE_ENVIRONMENT',
-                                 config.get('user', 'default_environment', fallback=None))
+                                 (config.get('user', 'default_environment')
+                                  if config.has_option('user', 'default_environment') else None))
 
         # If the user specifies a particular env, we either want to use it or Fail
         if env:
