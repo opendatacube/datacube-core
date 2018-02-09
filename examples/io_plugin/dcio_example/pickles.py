@@ -109,6 +109,10 @@ class PickleWriterDriver(object):
     def format(self):
         return FORMAT
 
+    @property
+    def uri_scheme(self):
+        return 'file'
+
     def write_dataset_to_storage(self, dataset, filename,
                                  global_attributes=None,
                                  variable_params=None,
