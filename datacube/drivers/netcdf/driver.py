@@ -1,8 +1,26 @@
 from __future__ import absolute_import
-from datacube.storage.storage import write_dataset_to_netcdf
+from datacube.storage.storage import write_dataset_to_netcdf, RasterDatasetDataSource
 
 PROTOCOL = 'file'
 FORMAT = 'NetCDF'
+
+
+class NetcdfReaderDriver(object):
+    def __init__(self):
+        self.name = 'NetcdfReader'
+        self.protocols = [PROTOCOL]
+        self.formats = [FORMAT]
+
+    def supports(self, protocol, fmt):
+        return (protocol in self.protocols and
+                fmt in self.formats)
+
+    def new_datasource(self, dataset, band_name):
+        return RasterDatasetDataSource(dataset, band_name)
+
+
+def rdr_driver_init():
+    return NetcdfReaderDriver()
 
 
 class NetcdfWriterDriver(object):
