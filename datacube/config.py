@@ -37,8 +37,8 @@ db_connection_timeout: 60
 
 [user]
 # Which environment to use when none is specified explicitly.
-# 'datacube' was the config section name before we had environments; it's used here to be backwards compatible.
-default_environment: datacube
+#   note: will fail if default_environment points to non-existent section
+# default_environment: datacube
 """
 
 #: Used in place of None as a default, when None is a valid but not default parameter to a function
@@ -56,10 +56,26 @@ class LocalConfig(object):
     """
 
     def __init__(self, config, files_loaded=None, env=None):
+        '''
+
+
+        Datacube environment resolution precedence is:
+          1. Supplied as a function argument `env`
+          2. DATACUBE_ENVIRONMENT environment variable
+          3. user.default_environment option in the config
+          4. 'default' or 'datacube' whichever is present
+
+        If environment is supplied by any of the first 3 methods is not present
+        in the config, then throw an exception.
+        '''
         self._config = config  # type: configparser.ConfigParser
         self.files_loaded = []
         if files_loaded:
             self.files_loaded = files_loaded  # type: list[str]
+
+        if env is None:
+            env = os.environ.get('DATACUBE_ENVIRONMENT',
+                                 config.get('user', 'default_environment', fallback=None))
 
         # If the user specifies a particular env, we either want to use it or Fail
         if env:
@@ -70,8 +86,8 @@ class LocalConfig(object):
             else:
                 raise ValueError('No config section found for environment %r' % (env,))
         else:
-            # If an env hasn't been specifically selected, we can fall back to an env var or a default
-            fallbacks = [os.environ.get('DATACUBE_ENVIRONMENT'), DEFAULT_ENV, 'datacube']
+            # If an env hasn't been specifically selected, we can fall back defaults
+            fallbacks = [DEFAULT_ENV, 'datacube']
             for fallback_env in fallbacks:
                 if config.has_section(fallback_env):
                     self._env = fallback_env
