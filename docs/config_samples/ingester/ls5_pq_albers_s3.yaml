@@ -4,7 +4,7 @@ output_type: ls5_pq_albers
 description: Landsat 5 Pixel Quality 25 metre, 100km tile, Australian Albers Equal Area projection (EPSG:3577)
 
 location: '/home/ubuntu/data/output'
-file_path_template: 'LS5_TM_PQ/LS5_TM_PQ_3577_{tile_index[0]}_{tile_index[1]}_{start_time}.nc'
+file_path_template: 'LS5_TM_PQ/LS5_TM_PQ_3577_{tile_index[0]}_{tile_index[1]}_{start_time}'
 global_attributes: 
   title: Pixel Quality 25 v2
   summary: |
