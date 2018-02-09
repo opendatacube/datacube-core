@@ -41,6 +41,7 @@ def get_coords(geo_ref_points, spatial_ref):
     def transform(p):
         lon, lat, z = t.TransformPoint(p['x'], p['y'])
         return {'lon': lon, 'lat': lat}
+
     return {key: transform(p) for key, p in geo_ref_points.items()}
 
 

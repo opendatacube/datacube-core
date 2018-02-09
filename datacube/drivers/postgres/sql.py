@@ -78,3 +78,31 @@ class PGNAME(sqltypes.Text):
 @compiles(PGNAME)
 def visit_name(element, compiler, **kw):
     return "NAME"
+
+
+def pg_exists(conn, name):
+    """
+    Does a postgres object exist?
+    :rtype bool
+    """
+    return conn.execute("SELECT to_regclass(%s)", name).scalar() is not None
+
+
+def pg_column_exists(conn, table, column):
+    """
+    Does a postgres object exist?
+    :rtype bool
+    """
+    return conn.execute("""
+                        SELECT 1 FROM pg_attribute
+                        WHERE attrelid = to_regclass(%s)
+                        AND attname = %s
+                        AND NOT attisdropped
+                        """, table, column).scalar() is not None
+
+
+def escape_pg_identifier(engine, name):
+    # New (2.7+) versions of psycopg2 have function: extensions.quote_ident()
+    # But it's too bleeding edge right now. We'll ask the server to escape instead, as
+    # these are not performance sensitive.
+    return engine.execute("select quote_ident(%s)", name).scalar()

@@ -1,12 +1,11 @@
 from __future__ import absolute_import
 
-import os
 import logging
 import click
 
 from datacube.utils import gen_password
 from datacube.config import LocalConfig
-from datacube.index._api import Index
+from datacube.index.index import Index
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 
@@ -58,8 +57,8 @@ def create_user(config, index, role, user, description):
     index.users.create_user(user, password, role, description=description)
 
     click.echo('{host}:{port}:*:{username}:{password}'.format(
-        host=config.db_hostname or 'localhost',
-        port=config.db_port,
+        host=config.get('db_hostname', None) or 'localhost',
+        port=config.get('db_port', None),
         username=user,
         password=password
     ))

@@ -13,20 +13,31 @@ from __future__ import absolute_import
 
 import json
 import logging
+import os
 import re
+from contextlib import contextmanager
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine.url import URL as EngineUrl
 
 import datacube
 from datacube.compat import string_types
-from datacube.config import LocalConfig
 from datacube.utils import jsonify_document
-from . import tables, _api
+from . import _api
+from . import _core
 
 _LIB_ID = 'agdc-' + str(datacube.__version__)
 
 _LOG = logging.getLogger(__name__)
+
+try:
+    import pwd
+
+    DEFAULT_DB_USER = pwd.getpwuid(os.geteuid()).pw_name
+except ImportError:
+    # No default on Windows
+    DEFAULT_DB_USER = None
+DEFAULT_DB_PORT = 5432
 
 
 class IndexSetupError(Exception):
@@ -35,7 +46,7 @@ class IndexSetupError(Exception):
 
 class PostgresDb(object):
     """
-    A very thin database access api.
+    A thin database access api.
 
     It exists so that higher level modules are not tied to SQLAlchemy, connections or specifics of database-access.
 
@@ -53,17 +64,45 @@ class PostgresDb(object):
         # Use static methods PostgresDb.create() or PostgresDb.from_config()
         self._engine = engine
 
-    def __getstate__(self):
-        _LOG.warning("Serializing PostgresDb engine %s", self.url)
-        return {'url': self.url}
+    @classmethod
+    def from_config(cls, config, application_name=None, validate_connection=True):
+        app_name = cls._expand_app_name(application_name)
 
-    def __setstate__(self, state):
-        self.__init__(self._create_engine(state['url']))
+        return PostgresDb.create(
+            config['db_hostname'],
+            config['db_database'],
+            config.get('db_username', DEFAULT_DB_USER),
+            config.get('db_password', None),
+            config.get('db_port', DEFAULT_DB_PORT),
+            application_name=app_name,
+            validate=validate_connection,
+            pool_timeout=int(config.get('db_connection_timeout', 60))
+        )
 
-    @property
-    def url(self):
-        # type: () -> URL
-        return self._engine.url
+    @classmethod
+    def create(cls, hostname, database, username=None, password=None, port=None,
+               application_name=None, validate=True, pool_timeout=60):
+        engine = cls._create_engine(
+            EngineUrl(
+                'postgresql',
+                host=hostname, database=database, port=port,
+                username=username, password=password,
+            ),
+            application_name=application_name,
+            pool_timeout=pool_timeout)
+        if validate:
+            if not _core.database_exists(engine):
+                raise IndexSetupError('\n\nNo DB schema exists. Have you run init?\n\t{init_command}'.format(
+                    init_command='datacube system init'
+                ))
+
+            if not _core.schema_is_latest(engine):
+                raise IndexSetupError(
+                    '\n\nDB schema is out of date. '
+                    'An administrator must run init:\n\t{init_command}'.format(
+                        init_command='datacube -v system init'
+                    ))
+        return PostgresDb(engine)
 
     @staticmethod
     def _create_engine(url, application_name=None, pool_timeout=60):
@@ -84,47 +123,17 @@ class PostgresDb(object):
             connect_args={'application_name': application_name}
         )
 
-    @classmethod
-    def create(cls, hostname, database, username=None, password=None, port=None,
-               application_name=None, validate=True, pool_timeout=60):
-        engine = cls._create_engine(
-            EngineUrl(
-                'postgresql',
-                host=hostname, database=database, port=port,
-                username=username, password=password,
-            ),
-            application_name=application_name,
-            pool_timeout=pool_timeout)
-        if validate:
-            if not tables.database_exists(engine):
-                raise IndexSetupError('\n\nNo DB schema exists. Have you run init?\n\t{init_command}'.format(
-                    init_command='datacube system init'
-                ))
+    @property
+    def url(self):
+        # type: () -> URL
+        return self._engine.url
 
-            if not tables.schema_is_latest(engine):
-                raise IndexSetupError(
-                    '\n\nDB schema is out of date. '
-                    'An administrator must run init:\n\t{init_command}'.format(
-                        init_command='datacube -v system init'
-                    ))
-        return PostgresDb(engine)
-
-    @classmethod
-    def from_config(cls, config=None, application_name=None, validate_connection=True):
-        config = LocalConfig.find() if config is None else config
-
-        app_name = cls._expand_app_name(application_name)
-
-        return PostgresDb.create(
-            config.db_hostname,
-            config.db_database,
-            config.db_username,
-            config.db_password,
-            config.db_port,
-            application_name=app_name,
-            validate=validate_connection,
-            pool_timeout=config.db_connection_timeout
-        )
+    @staticmethod
+    def get_db_username(config):
+        try:
+            return config['db_username']
+        except KeyError:
+            return DEFAULT_DB_USER
 
     def close(self):
         """
@@ -168,18 +177,19 @@ class PostgresDb(object):
             _LOG.warning('Application name is too long: Truncating to %s chars', (64 - len(_LIB_ID) - 1))
         return full_name[-64:]
 
-    def init(self, with_permissions=True, with_s3_tables=False):
+    def init(self, with_permissions=True):
         """
         Init a new database (if not already set up).
 
         :return: If it was newly created.
         """
-        is_new = tables.ensure_db(self._engine, with_permissions=with_permissions, with_s3_tables=with_s3_tables)
+        is_new = _core.ensure_db(self._engine, with_permissions=with_permissions)
         if not is_new:
-            tables.update_schema(self._engine)
+            _core.update_schema(self._engine)
 
         return is_new
 
+    @contextmanager
     def connect(self):
         """
         Borrow a connection from the pool.
@@ -194,8 +204,11 @@ class PostgresDb(object):
         as some servers will aggressively close idle connections (eg. DEA's NCI servers). It also prevents the
         connection from being reused while borrowed.
         """
-        return _PostgresDbConnection(self._engine)
+        with self._engine.connect() as connection:
+            yield _api.PostgresDbAPI(connection)
+            connection.close()
 
+    @contextmanager
     def begin(self):
         """
         Start a transaction.
@@ -207,60 +220,29 @@ class PostgresDb(object):
             with db.begin() as trans:
                 trans.insert_dataset(...)
 
-        :rtype: _PostgresDbInTransaction
+        (Don't share an instance between threads)
+
+        :rtype: PostgresDBAPI
         """
-        return _PostgresDbInTransaction(self._engine)
+        with self._engine.connect() as connection:
+            connection.execute(text('BEGIN'))
+            try:
+                yield _api.PostgresDbAPI(connection)
+                connection.execute(text('COMMIT'))
+            except Exception:  # pylint: disable=broad-except
+                connection.execute(text('ROLLBACK'))
+                raise
+            finally:
+                connection.close()
+
+    def give_me_a_connection(self):
+        return self._engine.connect()
 
     def get_dataset_fields(self, search_fields_definition):
         return _api.get_dataset_fields(search_fields_definition)
 
     def __repr__(self):
         return "PostgresDb<engine={!r}>".format(self._engine)
-
-
-class _PostgresDbConnection(object):
-    def __init__(self, engine):
-        self._engine = engine
-        self._connection = None
-
-    def __enter__(self):
-        self._connection = self._engine.connect()
-        return _api.PostgresDbAPI(self._connection)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self._connection.close()
-        self._connection = None
-
-
-class _PostgresDbInTransaction(object):
-    """
-    Identical to PostgresDb class, but all operations
-    are run against a single connection in a transaction.
-
-    Call commit() or rollback() to complete the transaction or use a context manager:
-
-        with db.begin() as transaction:
-            transaction.insert_dataset(...)
-
-    (Don't share an instance between threads)
-    """
-
-    def __init__(self, engine):
-        self._engine = engine
-        self._connection = None
-
-    def __enter__(self):
-        self._connection = self._engine.connect()
-        self._connection.execute(text('BEGIN'))
-        return _api.PostgresDbAPI(self._connection)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type:
-            self._connection.execute(text('ROLLBACK'))
-        else:
-            self._connection.execute(text('COMMIT'))
-        self._connection.close()
-        self._connection = None
 
 
 def _to_json(o):

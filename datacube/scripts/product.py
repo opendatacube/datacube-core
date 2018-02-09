@@ -8,8 +8,7 @@ import click
 import sys
 from click import echo
 
-from datacube import Datacube
-from datacube.index._api import Index
+from datacube.index.index import Index
 from datacube.ui import click as ui
 from datacube.ui.click import cli
 from datacube.utils import read_documents, InvalidDocException
@@ -30,7 +29,7 @@ def product():
                 nargs=-1)
 @ui.pass_index()
 def add_dataset_types(index, allow_exclusive_lock, files):
-    # type: (DriverManager, bool, list) -> None
+    # type: (Index, bool, list) -> None
     """
     Add or update products in the generic index.
     """

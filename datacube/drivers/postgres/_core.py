@@ -9,7 +9,7 @@ import logging
 from sqlalchemy import MetaData
 from sqlalchemy.schema import CreateSchema
 
-from ._sql import TYPES_INIT_SQL
+from datacube.drivers.postgres.sql import TYPES_INIT_SQL, pg_exists, pg_column_exists, escape_pg_identifier
 
 USER_ROLES = ('agdc_user', 'agdc_ingest', 'agdc_manage', 'agdc_admin')
 
@@ -24,8 +24,8 @@ SQL_NAMING_CONVENTIONS = {
     # tix: test-index, created by hand for testing, particularly in dev.
 }
 SCHEMA_NAME = 'agdc'
+
 METADATA = MetaData(naming_convention=SQL_NAMING_CONVENTIONS, schema=SCHEMA_NAME)
-S3_METADATA = MetaData(naming_convention=SQL_NAMING_CONVENTIONS, schema=SCHEMA_NAME)
 
 _LOG = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ def _get_quoted_connection_info(connection):
     return db, user
 
 
-def ensure_db(engine, with_permissions=True, with_s3_tables=False):
+def ensure_db(engine, with_permissions=True):
     """
     Initialise the db if needed.
     """
@@ -75,8 +75,6 @@ def ensure_db(engine, with_permissions=True, with_s3_tables=False):
             _LOG.info('Creating tables.')
             c.execute(TYPES_INIT_SQL)
             METADATA.create_all(c)
-            if with_s3_tables:
-                S3_METADATA.create_all(c)
             c.execute('commit')
         except:
             c.execute('rollback')
@@ -109,27 +107,6 @@ def ensure_db(engine, with_permissions=True, with_s3_tables=False):
     return is_new
 
 
-def _pg_exists(conn, name):
-    """
-    Does a postgres object exist?
-    :rtype bool
-    """
-    return conn.execute("SELECT to_regclass(%s)", name).scalar() is not None
-
-
-def _pg_column_exists(conn, table, column):
-    """
-    Does a postgres object exist?
-    :rtype bool
-    """
-    return conn.execute("""
-                        select 1 from pg_attribute
-                        where attrelid = to_regclass(%s)
-                        and attname = %s
-                        and not attisdropped
-                        """, table, column).scalar() is not None
-
-
 def database_exists(engine):
     """
     Have they init'd this database?
@@ -146,19 +123,19 @@ def schema_is_latest(engine):
 
     location_first_index = 'ix_{schema}_dataset_location_dataset_ref'.format(schema=SCHEMA_NAME)
 
-    has_dataset_source_update = not _pg_exists(engine, schema_qualified('uq_dataset_source_dataset_ref'))
-    has_uri_searches = _pg_exists(engine, schema_qualified(location_first_index))
-    has_dataset_location = _pg_column_exists(engine, schema_qualified('dataset_location'), 'archived')
+    has_dataset_source_update = not pg_exists(engine, schema_qualified('uq_dataset_source_dataset_ref'))
+    has_uri_searches = pg_exists(engine, schema_qualified(location_first_index))
+    has_dataset_location = pg_column_exists(engine, schema_qualified('dataset_location'), 'archived')
     return has_dataset_source_update and has_uri_searches and has_dataset_location
 
 
 def update_schema(engine):
-    is_unification = _pg_exists(engine, schema_qualified('dataset_type'))
+    is_unification = pg_exists(engine, schema_qualified('dataset_type'))
     if not is_unification:
         raise ValueError('Pre-unification database cannot be updated.')
 
     # Removal of surrogate key from dataset_source: it makes the table larger for no benefit.
-    if _pg_exists(engine, schema_qualified('uq_dataset_source_dataset_ref')):
+    if pg_exists(engine, schema_qualified('uq_dataset_source_dataset_ref')):
         _LOG.info('Applying surrogate-key update')
         engine.execute("""
         begin;
@@ -174,7 +151,7 @@ def update_schema(engine):
     if not engine.execute("SELECT 1 FROM pg_type WHERE typname = 'float8range'").scalar():
         engine.execute(TYPES_INIT_SQL)
 
-    if not _pg_column_exists(engine, schema_qualified('dataset_location'), 'archived'):
+    if not pg_column_exists(engine, schema_qualified('dataset_location'), 'archived'):
         _LOG.info('Applying dataset_location.archived update')
         engine.execute("""
           alter table {schema}.dataset_location add column archived TIMESTAMP WITH TIME ZONE
@@ -182,7 +159,7 @@ def update_schema(engine):
         _LOG.info('Completed dataset_location.archived update')
 
     # Update uri indexes to allow dataset search-by-uri.
-    if not _pg_exists(engine, schema_qualified('ix_{schema}_dataset_location_dataset_ref'.format(schema=SCHEMA_NAME))):
+    if not pg_exists(engine, schema_qualified('ix_{schema}_dataset_location_dataset_ref'.format(schema=SCHEMA_NAME))):
         _LOG.info('Applying uri-search update')
         engine.execute("""
         begin;
@@ -212,44 +189,18 @@ def _ensure_role(engine, name, inherits_from=None, add_user=False, create_db=Fal
     engine.execute(' '.join(sql))
 
 
-def _escape_pg_identifier(engine, name):
-    # New (2.7+) versions of psycopg2 have function: extensions.quote_ident()
-    # But it's too bleeding edge right now. We'll ask the server to escape instead, as
-    # these are not performance sensitive.
-    return engine.execute("select quote_ident(%s)", name).scalar()
-
-
-def create_user(conn, username, key, role, description=None):
-    if role not in USER_ROLES:
-        raise ValueError('Unknown role %r. Expected one of %r' % (role, USER_ROLES))
-    username = _escape_pg_identifier(conn, username)
-    conn.execute(
-        'create user {username} password %s in role {role}'.format(username=username, role=role),
-        key
-    )
-    if description:
-        conn.execute(
-            'comment on role {username} is %s'.format(username=username), description
-        )
-
-
-def drop_user(engine, *usernames):
-    for username in usernames:
-        engine.execute('drop role {username}'.format(username=_escape_pg_identifier(engine, username)))
-
-
 def grant_role(engine, role, users):
     if role not in USER_ROLES:
         raise ValueError('Unknown role %r. Expected one of %r' % (role, USER_ROLES))
 
-    users = [_escape_pg_identifier(engine, user) for user in users]
+    users = [escape_pg_identifier(engine, user) for user in users]
     with engine.begin():
         engine.execute('revoke {roles} from {users}'.format(users=', '.join(users), roles=', '.join(USER_ROLES)))
         engine.execute('grant {role} to {users}'.format(users=', '.join(users), role=role))
 
 
 def has_role(conn, role_name):
-    return bool(conn.execute('select rolname from pg_roles where rolname=%s', role_name).fetchall())
+    return bool(conn.execute('SELECT rolname FROM pg_roles WHERE rolname=%s', role_name).fetchall())
 
 
 def has_schema(engine, connection):
@@ -262,6 +213,13 @@ def drop_db(connection):
 
 def to_pg_role(role):
     """
+    Convert a role name to a name for use in PostgreSQL
+
+    There is a short list of valid ODC role names, and they are given
+    a prefix inside of PostgreSQL.
+
+    Why are we even doing this? Can't we use the same names internally and externally?
+
     >>> to_pg_role('ingest')
     'agdc_ingest'
     >>> to_pg_role('fake')
@@ -280,6 +238,8 @@ def to_pg_role(role):
 
 def from_pg_role(pg_role):
     """
+    Convert a PostgreSQL role name back to an ODC name.
+
     >>> from_pg_role('agdc_admin')
     'admin'
     >>> from_pg_role('fake')

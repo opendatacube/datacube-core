@@ -1,7 +1,27 @@
+.. _developers-guide:
+
 Developers Guide
 ================
 
 This documentation applies to version: |version|
+
+
+.. toctree::
+   :maxdepth: 1
+
+   index
+   api
+   data_model
+   model
+   driver
+   plugins
+   analytics_engine
+   s3aio
+
+.. toctree::
+   :hidden:
+
+   external
 
 Developer Setup
 ---------------
@@ -60,18 +80,3 @@ Using Spectral Definitions
 
 Coming soon
 
-Search API
-----------
-
-See :doc:`index` for more details
-
-Data Access API
----------------
-
-See :doc:`api` for more details
-
-
-Datacube Storage Drivers
-------------------------
-
-See :doc:`driver` for more details

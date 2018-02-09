@@ -755,3 +755,7 @@ def ignore_exceptions_if(ignore_errors):
             _LOG.warning('Ignoring Exception: %s', e)
     else:
         yield
+
+
+def _readable_offset(offset):
+    return '.'.join(map(str, offset))

@@ -1,35 +1,59 @@
-"""NetCDF storage driver class
-"""
 from __future__ import absolute_import
+from datacube.storage.storage import write_dataset_to_netcdf, RasterDatasetDataSource
 
-from datacube.drivers.driver import Driver
-from datacube.storage.storage import write_dataset_to_netcdf, RasterDatasetSource
-from datacube.drivers.netcdf.index import Index
+PROTOCOL = 'file'
+FORMAT = 'NetCDF'
 
 
-class NetCDFDriver(Driver):
-    """NetCDF storage driver. A placeholder for now.
-    """
+class NetcdfReaderDriver(object):
+    def __init__(self):
+        self.name = 'NetcdfReader'
+        self.protocols = [PROTOCOL]
+        self.formats = [FORMAT]
+
+    def supports(self, protocol, fmt):
+        return (protocol in self.protocols and
+                fmt in self.formats)
+
+    def new_datasource(self, dataset, band_name):
+        return RasterDatasetDataSource(dataset, band_name)
+
+
+def reader_driver_init():
+    return NetcdfReaderDriver()
+
+
+class NetcdfWriterDriver(object):
+    def __init__(self):
+        pass
+
+    @property
+    def aliases(self):
+        return ['NetCDF CF']
 
     @property
     def format(self):
-        """Output format for this driver for use in metadata."""
-        return 'NetCDF'
+        return FORMAT
 
     @property
     def uri_scheme(self):
-        """URI scheme used by this driver."""
-        return 'file'
+        return PROTOCOL
 
-    def write_dataset_to_storage(self, dataset, *args, **kargs):
-        """See :meth:`datacube.drivers.driver.write_dataset_to_storage`
-        """
-        return write_dataset_to_netcdf(dataset, *args, **kargs)
+    def write_dataset_to_storage(self, dataset, filename,
+                                 global_attributes=None,
+                                 variable_params=None,
+                                 storage_config=None,
+                                 **kwargs):
+        # TODO: Currently ingestor copies chunking info from storage_config to
+        # variable_params, this logic should probably happen here.
 
-    def _init_index(self, driver_manager, index, *args, **kargs):
-        """See :meth:`datacube.drivers.driver.init_index`"""
-        return Index(driver_manager, index, *args, **kargs)
+        write_dataset_to_netcdf(dataset, filename,
+                                global_attributes=global_attributes,
+                                variable_params=variable_params,
+                                **kwargs)
 
-    def get_datasource(self, dataset, measurement_id):
-        """See :meth:`datacube.drivers.driver.get_datasource`"""
-        return RasterDatasetSource(dataset, measurement_id)
+        return {}
+
+
+def writer_driver_init():
+    return NetcdfWriterDriver()

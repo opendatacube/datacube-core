@@ -18,7 +18,6 @@ except ImportError:
     from urlparse import urlparse, urljoin
     from urllib2 import urlopen
 
-
 MTL_PAIRS_RE = re.compile(r'(\w+)\s=\s(.*)')
 
 
@@ -36,15 +35,15 @@ def _parse_group(lines):
     tree = {}
 
     for line in lines:
-            match = MTL_PAIRS_RE.findall(line.decode('utf-8'))
-            if match:
-                key, value = match[0]
-                if key == 'GROUP':
-                    tree[value] = _parse_group(lines)
-                elif key == 'END_GROUP':
-                    break
-                else:
-                    tree[key] = _parse_value(value)
+        match = MTL_PAIRS_RE.findall(line.decode('utf-8'))
+        if match:
+            key, value = match[0]
+            if key == 'GROUP':
+                tree[value] = _parse_group(lines)
+            elif key == 'END_GROUP':
+                break
+            else:
+                tree[key] = _parse_value(value)
     return tree
 
 
@@ -63,6 +62,7 @@ def get_coords(geo_ref_points, spatial_ref):
     def transform(p):
         lon, lat, z = t.TransformPoint(p['x'], p['y'])
         return {'lon': lon, 'lat': lat}
+
     return {key: transform(p) for key, p in geo_ref_points.items()}
 
 

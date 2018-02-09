@@ -15,7 +15,7 @@ from click import echo
 import json
 from yaml import Node
 
-from datacube.index._api import Index
+from datacube.index.index import Index
 from datacube.index.exceptions import MissingRecordError
 from datacube.model import Dataset
 from datacube.model import Range
@@ -447,7 +447,7 @@ def restore_cmd(index, restore_derived, derived_tolerance_seconds, dry_run, ids)
 
 def _restore_one(dry_run, id_, index, restore_derived, tolerance):
     """
-    :type index: datacube.index._api.Index
+    :type index: datacube.index.index.Index
     :type restore_derived: bool
     :type tolerance: datetime.timedelta
     :type dry_run:  bool

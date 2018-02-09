@@ -21,13 +21,8 @@ from __future__ import print_function
 
 # pylint: disable=redefined-builtin
 
-import sys
 import copy
 import logging
-from pprint import pprint
-
-import numpy as np
-import numexpr as ne
 
 from datacube.compat import string_types
 from datacube.api import API
@@ -64,12 +59,12 @@ class AnalyticsEngine(object):
             'median': 'median(array1)'
         }
 
-    def __init__(self, api=None, index=None, driver_manager=None):
+    def __init__(self, api=None, index=None):
         LOG.info('Initialise Analytics Module.')
         self.plan = []
         self.plan_dict = {}
 
-        self.api = api or API(index=index, driver_manager=driver_manager)
+        self.api = api or API(index=index)
         self.api_descriptors = {}
         self.api_products = []
 

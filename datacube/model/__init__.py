@@ -13,6 +13,7 @@ from uuid import UUID
 
 from affine import Affine
 
+from datacube.compat import urlparse
 from datacube.utils import geometry
 from datacube.utils import parse_time, cached_property, uri_to_local_path, intersects, schema_validated, DocReader
 from datacube.utils.geometry import (CRS as _CRS,
@@ -158,6 +159,13 @@ class Dataset(object):
     @property
     def format(self):
         return self.metadata.format
+
+    @property
+    def uri_scheme(self):
+        url = urlparse(self.uris[0])
+        if url.scheme == '':
+            return 'file'
+        return url.scheme
 
     @property
     def measurements(self):

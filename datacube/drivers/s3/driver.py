@@ -3,45 +3,36 @@ from __future__ import absolute_import
 
 import logging
 from pathlib import Path
+
 import numpy as np
-from datacube.utils import DatacubeException
-from datacube.drivers.driver import Driver
-from datacube.drivers.s3.storage.s3aio.s3lio import S3LIO
-from datacube.drivers.utils import DriverUtils
-from datacube.drivers.s3.index import Index
+
 from datacube.drivers.s3.datasource import S3DataSource
-from datacube.index.postgres.tables import _pg_exists
+from datacube.drivers.s3.storage.s3aio.s3lio import S3LIO
+from .utils import DriverUtils
+from datacube.utils import DatacubeException
+
+PROTOCOL = 's3'
+FORMAT = 'aio'
 
 
-class S3Driver(Driver):
+class S3WriterDriver(object):
     """S3 storage driver."""
 
-    def __init__(self, driver_manager, name, index=None, *index_args, **index_kargs):
+    def __init__(self, **kwargs):
         """Initialise the s3 storage."""
-        super(S3Driver, self).__init__(driver_manager, name, index, *index_args, **index_kargs)
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.storage = S3LIO()
+        self.storage = S3LIO(**kwargs)
+
+        self._protocol = PROTOCOL if kwargs.get('enable_s3', True) else 'file'
+
+    @property
+    def format(self):
+        return FORMAT
 
     @property
     def uri_scheme(self):
         """URI scheme used by this driver."""
-        return 's3'
-
-    def requirements_satisfied(self):
-        """Check requirements are satisfied.
-
-        :return: True if requirements is satisfied, otherwise returns False
-        """
-        # check database
-        # pylint: disable=protected-access
-        try:
-            with self.index._db.connect() as connection:
-                return (_pg_exists(connection._connection, "agdc.s3_dataset") and
-                        _pg_exists(connection._connection, "agdc.s3_dataset_chunk") and
-                        _pg_exists(connection._connection, "agdc.s3_dataset_mapping"))
-        except AttributeError:
-            self.logger.warning('Should only be here for tests.')
-            return True
+        return self._protocol
 
     def _get_chunksizes(self, chunksizes):
         """Return the chunk sizes as an int tuple, if valid.
@@ -132,35 +123,50 @@ class S3Driver(Driver):
             idx = lambda x: x.stop - 1
         return [coords[dim].values[idx(chunk_dim)] for dim, chunk_dim in zip(dims, chunk)]
 
-    def write_dataset_to_storage(self, dataset, *args, **kargs):
+    def write_dataset_to_storage(self, dataset, filename,
+                                 global_attributes=None,
+                                 variable_params=None,
+                                 storage_config=None,
+                                 **kwargs):
         """See :meth:`datacube.drivers.driver.write_dataset_to_storage`
 
-        :param args: At least 3 arguments are required: filename,
-          global_attributes and variable_params.
-        :return: Dictionary of metadata consigning the s3 storage
-          information. This is required for indexing in particular.
+        :param `xarray.Dataset` dataset:
+        :param filename: Output filename
+        :param global_attributes: Global file attributes. dict of attr_name: attr_value
+        :param variable_params: dict of variable_name: {param_name: param_value, [...]}
+
+        :return: Dictionary of metadata consigning the s3 storage information.
+        This is required for indexing in particular.
+
         """
-        if len(args) < 3:
-            raise DatacubeException('Missing configuration paramters, cannot write to storage.')
-        filename = Path(args[0])
-        global_attributes = args[1] or {}
-        variable_params = args[2] or {}
+        if storage_config is None:
+            storage_config = {}
+
+        # TODO: handle missing variable params
+        if variable_params is None:
+            raise DatacubeException('Missing configuration parameters, cannot write to storage.')
+        filename = Path(filename)
         if not dataset.data_vars.keys():
             raise DatacubeException('Cannot save empty dataset to storage.')
 
         if not hasattr(dataset, 'crs'):
             raise DatacubeException('Dataset does not contain CRS, cannot write to storage.')
 
+        if 'bucket' not in storage_config:
+            raise DatacubeException('Expect `bucket` to be set in the storage config')
+
+        bucket = storage_config['bucket']
+
+        # TODO: Should write all data variables to disk, not just configured variables
         outputs = {}
         for band, param in variable_params.items():
             output = {}
+            # TODO: Should not assume presence of any kind of parameter
             if 'chunksizes' not in param:
                 raise DatacubeException('Missing `chunksizes` parameter, cannot write to storage.')
             output['chunk_size'] = self._get_chunksizes(param['chunksizes'])
-            if 'container' not in param:
-                raise DatacubeException('Missing `container` parameter, cannot write to storage.')
-            output['bucket'] = param['container']
-            self.storage.filepath = output['bucket']  # For the s3_test driver only
+            output['bucket'] = bucket
+            self.storage.filepath = bucket  # For the s3_test driver only TODO: is this still needed?
             output['base_name'] = '%s_%s' % (filename.stem, band)
             key_maps = self.storage.put_array_in_s3(dataset[band].values,
                                                     output['chunk_size'],
@@ -188,13 +194,34 @@ class S3Driver(Driver):
             outputs[band] = output
         return outputs
 
-    def _init_index(self, driver_manager, index, *args, **kargs):
-        """See :meth:`datacube.drivers.driver.init_index`"""
-        return Index(self.uri_scheme, driver_manager, index, *args, **kargs)
 
-    def get_index_specifics(self, dataset):
-        return self.index.get_specifics(dataset)
+def writer_driver_init():
+    return S3WriterDriver()
 
-    def get_datasource(self, dataset, measurement_id):
-        """See :meth:`datacube.drivers.driver.get_datasource`"""
-        return S3DataSource(dataset, measurement_id, self.storage)
+
+def writer_test_driver_init():
+    return S3WriterDriver(enable_s3=False, file_path='/')
+
+
+class S3ReaderDriver(object):
+
+    def __init__(self, **kwargs):
+        self.name = 's3aio'
+        self.formats = [FORMAT]
+        self.protocols = [PROTOCOL] if kwargs.get('enable_s3', True) else ['file']
+        self._storage = S3LIO(**kwargs)
+
+    def supports(self, protocol, fmt):
+        return (protocol in self.protocols and
+                fmt in self.formats)
+
+    def new_datasource(self, dataset, band_name):
+        return S3DataSource(dataset, band_name, self._storage)
+
+
+def reader_driver_init():
+    return S3ReaderDriver()
+
+
+def reader_test_driver_init():
+    return S3ReaderDriver(enable_s3=False, file_path='/')

@@ -8,11 +8,11 @@ tests_require = [
     'hypothesis',
     'mock',
     'objgraph',
-    'pep8',
     'pycodestyle',
     'pylint',
     'pytest',
     'pytest-cov',
+    'pytest-timeout',
 ]
 
 extras_require = {
@@ -108,6 +108,20 @@ setup(
             'pixeldrill = datacube_apps.pixeldrill:main [interactive]',
             'movie_generator = datacube_apps.movie_generator:main',
             'datacube-simple-replica = datacube_apps.simple_replica:replicate [replicas]'
+        ],
+        'datacube.plugins.io.read': [
+            'netcdf = datacube.drivers.netcdf.driver:reader_driver_init',
+            's3aio = datacube.drivers.s3.driver:reader_driver_init',
+            's3aio_test = datacube.drivers.s3.driver:reader_test_driver_init'
+        ],
+        'datacube.plugins.io.write': [
+            'netcdf = datacube.drivers.netcdf.driver:writer_driver_init',
+            's3aio = datacube.drivers.s3.driver:writer_driver_init',
+            's3aio_test = datacube.drivers.s3.driver:writer_test_driver_init',
+        ],
+        'datacube.plugins.index': [
+            'default = datacube.index.index:index_driver_init',
+            's3aio_index = datacube.drivers.s3aio_index:index_driver_init',
         ],
     },
 )

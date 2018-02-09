@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 from datetime import datetime
-import sys
 
 import pytest
 from mock import MagicMock
@@ -263,5 +262,5 @@ def test_median_reduction_over_time_old_version(mock_api):
 def test_get_pqa_mask():
     from datacube.analytics.utils.analytics_utils import get_pqa_mask
     import numpy as np
-    x = np.arange(4*4*4, dtype=np.uint16).reshape((4, 4, 4))
+    x = np.arange(4 * 4 * 4, dtype=np.uint16).reshape((4, 4, 4))
     assert not get_pqa_mask(x).all()

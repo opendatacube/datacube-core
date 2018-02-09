@@ -6,10 +6,12 @@ from __future__ import absolute_import
 
 import logging
 
-from datacube.index.postgres import tables
-from datacube.index.postgres.tables import _pg_exists
 from sqlalchemy import Index
 from sqlalchemy import select
+
+from ._core import schema_qualified
+from ._schema import DATASET, DATASET_TYPE, METADATA_TYPE
+from .sql import pg_exists, CreateView
 
 _LOG = logging.getLogger(__name__)
 
@@ -34,8 +36,8 @@ def _ensure_view(conn, fields, name, replace_existing, where_expression):
     """
     # Create a view of search fields (for debugging convenience).
     # 'dv_' prefix: dynamic view. To distinguish from views that are created as part of the schema itself.
-    view_name = tables.schema_qualified('dv_{}_dataset'.format(name))
-    exists = _pg_exists(conn, view_name)
+    view_name = schema_qualified('dv_{}_dataset'.format(name))
+    exists = pg_exists(conn, view_name)
     # This currently leaves a window of time without the views: it's primarily intended for development.
     if exists and replace_existing:
         _LOG.debug('Dropping view: %s (replace=%r)', view_name, replace_existing)
@@ -44,20 +46,20 @@ def _ensure_view(conn, fields, name, replace_existing, where_expression):
     if not exists:
         _LOG.debug('Creating view: %s', view_name)
         conn.execute(
-            tables.CreateView(
+            CreateView(
                 view_name,
                 select(
                     [field.alchemy_expression.label(field.name) for field in fields.values()
                      if not field.affects_row_selection]
                 ).select_from(
-                    tables.DATASET.join(tables.DATASET_TYPE).join(tables.METADATA_TYPE)
+                    DATASET.join(DATASET_TYPE).join(METADATA_TYPE)
                 ).where(where_expression)
             )
         )
     else:
         _LOG.debug('View exists: %s (replace=%r)', view_name, replace_existing)
-    legacy_name = tables.schema_qualified('{}_dataset'.format(name))
-    if _pg_exists(conn, legacy_name):
+    legacy_name = schema_qualified('{}_dataset'.format(name))
+    if pg_exists(conn, legacy_name):
         _LOG.debug('Dropping legacy view: %s', legacy_name)
         conn.execute('drop view %s' % legacy_name)
 
@@ -140,8 +142,8 @@ def _check_field_index(conn, fields, name_prefix, filter_expression,
         # Don't lock the table (in the future we'll allow indexing new fields...)
         postgresql_concurrently=concurrently
     )
-    exists = _pg_exists(conn, tables.schema_qualified(index_name))
-    legacy_exists = _pg_exists(conn, tables.schema_qualified(legacy_name))
+    exists = pg_exists(conn, schema_qualified(index_name))
+    legacy_exists = pg_exists(conn, schema_qualified(legacy_name))
 
     # This currently leaves a window of time without indexes: it's primarily intended for development.
     if replace_existing or (not should_exist):

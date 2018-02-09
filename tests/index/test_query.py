@@ -10,7 +10,7 @@ from dateutil.tz.tz import tzutc
 from psycopg2.extras import NumericRange
 
 from datacube.index.fields import to_expressions
-from datacube.index.postgres._fields import SimpleDocField, RangeBetweenExpression, EqualsExpression, \
+from datacube.drivers.postgres._fields import SimpleDocField, RangeBetweenExpression, EqualsExpression, \
     NumericRangeDocField
 from datacube.model import Range
 from datacube.ui import parse_expressions

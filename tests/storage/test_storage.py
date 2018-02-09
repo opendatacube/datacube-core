@@ -13,9 +13,9 @@ from affine import Affine, identity
 import datacube
 from datacube.drivers.datasource import DataSource
 from datacube.model import Dataset, DatasetType, MetadataType
-from datacube.storage.storage import OverrideBandDataSource, RasterFileDataSource, BandDataSource
+from datacube.storage.storage import OverrideBandDataSource, RasterFileDataSource
 from datacube.storage.storage import write_dataset_to_netcdf, reproject_and_fuse, read_from_source, Resampling, \
-    RasterDatasetSource
+    RasterDatasetDataSource
 from datacube.utils import geometry
 
 GEO_PROJ = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],' \
@@ -526,17 +526,16 @@ _EXAMPLE_DATASET_TYPE = DatasetType(
 )
 
 
-def test_multiband_support_in_datasetsource():
+def test_multiband_support_in_datasetsource(example_gdal_path):
     defn = {
         "id": '12345678123456781234567812345678',
-        "format": {"name": "hdf"},
-        'measurements': {'green': {'nodata': -999}},
+        "format": {"name": "GeoTiff"},
         "image": {
             "bands": {
                 'green': {
                     'type': 'reflective',
                     'cell_size': 25.0,
-                    'path': 'product/LS8_OLITIRS_NBAR_P54_GALPGS01-002_112_079_20140126_B1.tif',
+                    'path': example_gdal_path,
                     'label': 'Coastal Aerosol',
                     'number': '1',
                 },
@@ -547,11 +546,15 @@ def test_multiband_support_in_datasetsource():
     # Without new band attribute, default to band number 1
     d = Dataset(_EXAMPLE_DATASET_TYPE, defn, uris=['file:///tmp'])
 
-    ds = RasterDatasetSource(d, measurement_id='green')
+    ds = RasterDatasetDataSource(d, measurement_id='green')
 
     bandnum = ds.get_bandnumber(None)
 
     assert bandnum == 1
+
+    with ds.open() as foo:
+        data = foo.read()
+        assert isinstance(data, np.ndarray)
 
     #############
     # With new 'image.bands.[band].band' attribute
@@ -559,6 +562,6 @@ def test_multiband_support_in_datasetsource():
     defn['image']['bands']['green']['band'] = band_num
     d = Dataset(_EXAMPLE_DATASET_TYPE, defn, uris=['file:///tmp'])
 
-    ds = RasterDatasetSource(d, measurement_id='green')
+    ds = RasterDatasetDataSource(d, measurement_id='green')
 
     assert ds.get_bandnumber(None) == band_num

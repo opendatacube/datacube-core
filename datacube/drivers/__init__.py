@@ -1,21 +1,16 @@
 """This module implements a simple plugin manager for storage drivers.
 
-Drivers are automatically loaded provided they:
-  - Store all code in a direct subdirectory, e.g. `s3/`
-  - Include a `DRIVER_SPEC` attribute in the `__init__.py`. This
-    attribute must be a tuple indicating `(<name>, <class_name>,
-    <filepath>)` where the `<name>` is the driver's name as specified
-    by the end user, e.g. `NetCDF CF` or `s3`; `<class_name>` is the
-    python class name for that driver, e.g. `S3Driver`; and
-    `<filepath>` is the filepath to the python module containing that
-    class, e.g. `./driver.py`. The reason for specifying this
-    information is to optimise the search for the driver, without
-    loading all modules in the subdirectory.
-  - Extend the `driver.Driver` abstract class,
-    e.g. `S3Driver(Driver)`.
+Public entry points:
 
-`drivers.loader.drivers` returns a dictionary of drivers instances,
-indexed by their `name` as defined in `DRIVER_SPEC`. These are
-instantiated on the first call to that method and cached until the
-loader object is deleted.
+ - new_datasource
+ - storage_writer_by_name
+ - reader_drivers
+ - writer_drivers
+
+TODO: update docs post DriverManager
 """
+from __future__ import absolute_import
+
+from .indexes import index_driver_by_name, index_drivers
+from .readers import new_datasource, reader_drivers
+from .writers import storage_writer_by_name, writer_drivers
