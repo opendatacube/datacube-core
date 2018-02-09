@@ -1,6 +1,9 @@
 from __future__ import absolute_import
 from datacube.storage.storage import write_dataset_to_netcdf
 
+PROTOCOL = 'file'
+FORMAT = 'NetCDF'
+
 
 class NetcdfWriterDriver(object):
     def __init__(self):
@@ -12,11 +15,11 @@ class NetcdfWriterDriver(object):
 
     @property
     def format(self):
-        return 'NetCDF'
+        return FORMAT
 
     @property
     def uri_scheme(self):
-        return 'file'
+        return PROTOCOL
 
     def write_dataset_to_storage(self, dataset, filename,
                                  global_attributes=None,

@@ -6,13 +6,14 @@ import rasterio.warp
 
 from datacube.storage.storage import measurement_paths
 
+PROTOCOL = 'file'
 FORMAT = 'pickle'
 
 
 def uri_split(uri):
     loc = uri.find('://')
     if loc < 0:
-        return uri, 'file'
+        return uri, PROTOCOL
     return uri[loc+3:], uri[:loc]
 
 
@@ -68,7 +69,7 @@ class PickleDataSource(object):
         uri = measurement_paths(dataset)[band_name]
         self._filename, protocol = uri_split(uri)
 
-        if protocol not in ['file', 'pickle']:
+        if protocol not in [PROTOCOL, 'pickle']:
             raise ValueError('Expected file:// or pickle:// url')
 
     @contextmanager
@@ -82,7 +83,7 @@ class PickleDataSource(object):
 class PickleReaderDriver(object):
     def __init__(self):
         self.name = 'PickleReader'
-        self.protocols = ['file', 'pickle']
+        self.protocols = [PROTOCOL, 'pickle']
         self.formats = [FORMAT]
 
     def supports(self, protocol, fmt):
@@ -111,7 +112,7 @@ class PickleWriterDriver(object):
 
     @property
     def uri_scheme(self):
-        return 'file'
+        return PROTOCOL
 
     def write_dataset_to_storage(self, dataset, filename,
                                  global_attributes=None,
