@@ -535,19 +535,42 @@ def clirunner(global_integration_cli_args, datacube_env_name):
     return _run_cli
 
 
+def edit_for_fast_ingest(config):
+    config = alter_product_for_testing(config)
+    config['storage']['crs'] = 'EPSG:28355'
+    config['storage']['chunking']['time'] = 1
+    return config
+
+
+def edit_for_end2end(config):
+    storage = config.get('storage', {})
+
+    storage['crs'] = 'EPSG:3577'
+    storage['tile_size']['x'] = 100000.0
+    storage['tile_size']['y'] = 100000.0
+
+    config['storage'] = storage
+    return config
+
+
 def prepare_test_ingestion_configuration(tmpdir,
                                          output_dir,
                                          filename,
-                                         faster_ingest=True):
+                                         mode=None):
+    customizers = {
+        'fast_ingest': edit_for_fast_ingest,
+        'end2end': edit_for_end2end,
+    }
+
     filename = Path(filename)
     if output_dir is None:
         output_dir = tmpdir.mkdir(filename.stem)
     config = load_yaml_file(filename)[0]
 
-    if faster_ingest:
-        config = alter_product_for_testing(config)
-        config['storage']['crs'] = 'EPSG:28355'
-        config['storage']['chunking']['time'] = 1
+    if mode is not None:
+        if mode not in customizers:
+            raise ValueError('Wrong mode: ' + mode)
+        config = customizers[mode](config)
 
     config['location'] = str(output_dir)
 

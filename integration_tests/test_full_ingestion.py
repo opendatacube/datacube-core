@@ -42,7 +42,7 @@ COMPLIANCE_CHECKER_NORMAL_LIMIT = 2
                          'indexed_ls5_scene_products')
 def test_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths, ingest_configs):
     config = INGESTER_CONFIGS/ingest_configs['ls5_nbar_albers']
-    config_path, config = prepare_test_ingestion_configuration(tmpdir, None, config)
+    config_path, config = prepare_test_ingestion_configuration(tmpdir, None, config, mode='fast_ingest')
     valid_uuids = []
     for uuid, example_ls5_dataset_path in example_ls5_dataset_paths.items():
         valid_uuids.append(uuid)
@@ -92,7 +92,7 @@ def test_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths, ing
 def test_s3_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths, ingest_configs):
     config = INGESTER_CONFIGS/ingest_configs['ls5_nbar_albers']
 
-    config_path, config = prepare_test_ingestion_configuration(tmpdir, None, config)
+    config_path, config = prepare_test_ingestion_configuration(tmpdir, None, config, mode='fast_ingest')
     valid_uuids = []
     for uuid, example_ls5_dataset_path in example_ls5_dataset_paths.items():
         valid_uuids.append(uuid)

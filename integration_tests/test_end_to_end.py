@@ -45,7 +45,7 @@ def testdata_dir(tmpdir, ingest_configs):
 
     for file in ingest_configs.values():
         prepare_test_ingestion_configuration(tmpdir, tmpdir, INGESTER_CONFIGS/file,
-                                             faster_ingest=False)
+                                             mode='end2end')
 
     return tmpdir
 
