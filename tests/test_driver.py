@@ -47,7 +47,7 @@ def test_reader_drivers():
     assert isinstance(available_drivers, list)
 
     pytest.importorskip('datacube.drivers.s3.storage.s3aio.s3lio')
-    assert 's3block' in available_drivers
+    assert 's3aio' in available_drivers
 
 
 def test_writer_drivers():
@@ -59,7 +59,7 @@ def test_writer_drivers():
 def test_index_drivers():
     available_drivers = index_drivers()
     assert 'default' in available_drivers
-    assert 's3block_index' in available_drivers
+    assert 's3aio_index' in available_drivers
 
 
 def test_netcdf_driver_import():

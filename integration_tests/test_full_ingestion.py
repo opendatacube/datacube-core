@@ -86,7 +86,7 @@ def test_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths, ing
 
 
 @pytest.mark.timeout(20)
-@pytest.mark.parametrize('datacube_env_name', ('s3block_env',), indirect=True)
+@pytest.mark.parametrize('datacube_env_name', ('s3aio_env',), indirect=True)
 @pytest.mark.usefixtures('default_metadata_type',
                          'indexed_ls5_scene_products')
 def test_s3_full_ingestion(clirunner, index, tmpdir, example_ls5_dataset_paths, ingest_configs):

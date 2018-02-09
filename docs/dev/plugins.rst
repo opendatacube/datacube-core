@@ -84,7 +84,7 @@ S3 Extensions
 ^^^^^^^^^^^^^
 
 
-The :py:class:`datacube.drivers.s3block_index.S3BlockIndex` driver subclasses the default PostgreSQL Index with
+The :py:class:`datacube.drivers.s3aio_index.S3AIOIndex` driver subclasses the default PostgreSQL Index with
 support for saving additional data about the size and shape of chunks
 stored in S3 objects. As such, it implements an identical interface,
 while overriding the ``dataset.add()`` method to save the additional
@@ -193,7 +193,7 @@ Example code to implement a writer driver
 S3 Writer Driver
 ^^^^^^^^^^^^^^^^
 
-**Name:** ``s3block`` **Protocol:** ``s3`` **Format:** ``aio``
+**Name:** ``s3aio`` **Protocol:** ``s3`` **Format:** ``aio``
 **Implementation**:
 
 :py:class:`datacube.drivers.s3.driver.S3WriterDriver`
@@ -249,7 +249,7 @@ include them here. eg:
     ...
     storage:
       ...
-      driver: s3block
+      driver: s3aio
       bucket: my_s3_bucket
     ...
 

@@ -2,12 +2,12 @@ from __future__ import absolute_import
 
 from configparser import ConfigParser
 
-from datacube.drivers.s3block_index import S3BlockIndex
+from datacube.drivers.s3aio_index import S3AIOIndex
 from datacube.index.index import Index
 
 
 def test_can_create_s3_index(uninitialised_postgres_db):
-    s3index = S3BlockIndex(uninitialised_postgres_db)
+    s3index = S3AIOIndex(uninitialised_postgres_db)
 
     assert not s3index.connected_to_s3_database()
 
@@ -25,7 +25,7 @@ def create_sample_config():
     parser = ConfigParser()
     parser.add_section('test_env')
     parser.set('test_env', 'index_driver', 'default')
-    parser.set('test_env', 'index_driver', 'S3BlockIndex')
+    parser.set('test_env', 'index_driver', 'S3AIOIndex')
 
 
 def test_system_init(uninitialised_postgres_db, clirunner):
@@ -44,4 +44,4 @@ def connect_to_specified_index(uninitialised_postgres_db, tmpdir):
 
     dc = Datacube(env='test_s3_index', )
 
-    assert isinstance(dc.index, S3BlockIndex)
+    assert isinstance(dc.index, S3AIOIndex)

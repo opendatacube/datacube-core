@@ -103,7 +103,7 @@ global_attributes:
     - http://dx.doi.org/10.1109/JSTARS.2010.2042281
 
 storage:
-  driver: s3block_test
+  driver: s3aio_test
   bucket: '/home/ubuntu/data/output'
 
   crs: EPSG:3577

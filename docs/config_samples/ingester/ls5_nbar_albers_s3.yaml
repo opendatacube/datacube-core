@@ -103,7 +103,7 @@ global_attributes:
     - http://dx.doi.org/10.1109/JSTARS.2010.2042281
 
 storage:
-  driver: s3block
+  driver: s3aio
   bucket: 'lsbucket1'
 
   crs: EPSG:3577

@@ -16,7 +16,7 @@ This documentation applies to version: |version|
    driver
    plugins
    analytics_engine
-   s3block
+   s3aio
 
 .. toctree::
    :hidden:

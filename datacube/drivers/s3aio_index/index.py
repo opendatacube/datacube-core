@@ -8,7 +8,7 @@ import numpy as np
 from sqlalchemy import select, and_
 
 from datacube.drivers.postgres._core import pg_exists
-from datacube.drivers.s3block_index.schema import S3_DATASET, S3_DATASET_CHUNK, S3_DATASET_MAPPING, S3_METADATA
+from datacube.drivers.s3aio_index.schema import S3_DATASET, S3_DATASET_CHUNK, S3_DATASET_MAPPING, S3_METADATA
 from datacube.index._datasets import DatasetResource as BaseDatasetResource
 from datacube.index.index import Index
 
@@ -20,14 +20,14 @@ class S3DatabaseException(Exception):
     """Raised on errors to do with the S3 block specific database"""
 
 
-class S3BlockIndex(Index):
+class S3AIOIndex(Index):
     """The s3 indexer extends the existing postgres indexer functionality
     by writing additional s3 information to specific tables.
     """
 
     def __init__(self, db):
         """Initialise the index and its dataset resource."""
-        super(S3BlockIndex, self).__init__(db)
+        super(S3AIOIndex, self).__init__(db)
         # if not self.connected_to_s3_database():
         #     raise S3DatabaseException('Not connected to an S3 Database')
 
@@ -48,7 +48,7 @@ class S3BlockIndex(Index):
             return True
 
     def init_db(self, with_default_types=True, with_permissions=True):
-        is_new = super(S3BlockIndex, self).init_db(with_default_types, with_permissions)
+        is_new = super(S3AIOIndex, self).init_db(with_default_types, with_permissions)
 
         if is_new:
             with self._db.give_me_a_connection() as connection:

@@ -88,7 +88,7 @@ global_attributes:
     - http://dx.doi.org/10.4225/25/55EF55788BAC1
 
 storage:
-  driver: s3block_test
+  driver: s3aio_test
   bucket: '/home/ubuntu/data/output'
 
   crs: EPSG:3577

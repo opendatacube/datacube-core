@@ -206,7 +206,7 @@ def writer_test_driver_init():
 class S3ReaderDriver(object):
 
     def __init__(self, **kwargs):
-        self.name = 's3block'
+        self.name = 's3aio'
         self.formats = [FORMAT]
         self.protocols = [PROTOCOL] if kwargs.get('enable_s3', True) else ['file']
         self._storage = S3LIO(**kwargs)

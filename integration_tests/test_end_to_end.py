@@ -54,7 +54,7 @@ ignore_me = pytest.mark.xfail(True, reason="get_data/get_description still to be
 
 
 @pytest.mark.usefixtures('default_metadata_type')
-@pytest.mark.parametrize('datacube_env_name', ('datacube', 's3block_env', ), indirect=True)
+@pytest.mark.parametrize('datacube_env_name', ('datacube', 's3aio_env', ), indirect=True)
 def test_end_to_end(clirunner, index, testdata_dir, ingest_configs):
     """
     Loads two dataset configurations, then ingests a sample Landsat 5 scene
