@@ -70,7 +70,6 @@ templates_path = ['_templates']
 
 # The suffix of source filenames.
 source_suffix = ['.rst', '.md']
-#source_suffix = '.rst'
 
 source_parsers = {
    '.md': 'recommonmark.parser.CommonMarkParser',
@@ -312,8 +311,6 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
 
-
-plantuml = r'"C:/Program Files (x86)/Java/jre6/bin/java.exe" -jar C:/Users/u42007/AppData/Local/plantuml/plantuml.jar -v'
 plantuml_output_format = 'svg'
 plantuml_latex_output_format = 'pdf'
 
