@@ -19,37 +19,16 @@ Prerequisites for Indexing Data
 
  * A working Data Cube setup
  * Some *Analysis Ready Data* *Different terminology* to load
+ *link to sample EO Data*
+
 
 Indexing Steps
 --------------
 
- * A Product definition added to your Data Cube for each type of dataset
- * Dataset metadata documents for each individual dataset
-
-
-Sample Earth Observation Data
------------------------------
-
-The U.S. Geological Survey provides many freely available, Analysis Ready,
-earth observation data products. The following are a good place to start
-looking.
-
-* Landsat
-    * `USGS Landsat Surface Reflectance - LEDAPS 30m`__
-* MODIS
-    * `MCD43A1 - BRDF-Albedo Model Parameters 16-Day L3 Global 500m`__
-    * `MCD43A2 - BRDF-Albedo Quality 16-Day L3 Global 500m`__
-    * `MCD43A3 - Albedo 16-Day L3 Global 500m`__
-    * `MCD43A4 - Nadir BRDF-Adjusted Reflectance 16-Day L3 Global 500m`__
-
-__ http://landsat.usgs.gov/CDR_LSR.php
-__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a1
-__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a2
-__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a3
-__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a4
-
-Once you have downloaded some data, it will need :ref:`metadata preparation
-<prepare-scripts>` before use in the Data Cube.
+ * Create a product definition document (yaml)
+ * Add new product to Datacube, using above yaml
+ * Create metadata documents for data which is to be indexed
+ * Index data in Datacube using above metadata documents
 
 
 .. _product-definitions:
@@ -121,5 +100,30 @@ datasets into our Cube by running::
 
     datacube dataset add --auto-match <path-to-dataset>
 
+
+
+Sample Earth Observation Data
+-----------------------------
+
+The U.S. Geological Survey provides many freely available, Analysis Ready,
+earth observation data products. The following are a good place to start
+looking.
+
+* Landsat
+    * `USGS Landsat Surface Reflectance - LEDAPS 30m`__
+* MODIS
+    * `MCD43A1 - BRDF-Albedo Model Parameters 16-Day L3 Global 500m`__
+    * `MCD43A2 - BRDF-Albedo Quality 16-Day L3 Global 500m`__
+    * `MCD43A3 - Albedo 16-Day L3 Global 500m`__
+    * `MCD43A4 - Nadir BRDF-Adjusted Reflectance 16-Day L3 Global 500m`__
+
+__ http://landsat.usgs.gov/CDR_LSR.php
+__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a1
+__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a2
+__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a3
+__ https://lpdaac.usgs.gov/dataset_discovery/modis/modis_products_table/mcd43a4
+
+Once you have downloaded some data, it will need :ref:`metadata preparation
+<prepare-scripts>` before use in the Data Cube.
 
 
