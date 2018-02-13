@@ -77,23 +77,6 @@ Low-Level Internal Functions
    GridWorkflow.tile_sources
 
 
-
-API for Analytics and Execution Engine
---------------------------------------
-
-.. currentmodule:: datacube.api
-
-.. autosummary::
-   :toctree: generate/
-
-    API.__init__
-    API.list_products
-    API.list_variables
-    API.get_descriptor
-    API.get_data
-
-
-
 .. _query-class:
 
 Query Class
