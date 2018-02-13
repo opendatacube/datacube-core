@@ -17,9 +17,10 @@ safe and fast process.
 Prerequisites for Indexing Data
 -------------------------------
 
- * A working Data Cube setup
- * Some *Analysis Ready Data* ** Different terminology ** to load
-    ( Freely available `Sample Earth Observation Data`__ )
+ * A working Data Cube instance
+ * Some data you wish to load 
+ 
+ ( Freely available `Sample Earth Observation Data`__ )
 
 
 Indexing Steps
