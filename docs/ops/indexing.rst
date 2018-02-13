@@ -19,7 +19,7 @@ Prerequisites for Indexing Data
 
  * A working Data Cube setup
  * Some *Analysis Ready Data* ** Different terminology ** to load
- ** link to sample EO Data **
+    ( Freely available `Sample Earth Observation Data`__ )
 
 
 Indexing Steps
