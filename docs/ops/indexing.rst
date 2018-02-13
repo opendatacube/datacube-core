@@ -51,6 +51,29 @@ what type of **units** the measurement is in, a **nodata** value, and even a way
 of specifying **bit level descriptions** or the **spectral response** in the
 case of reflectance data.
 
+.. code-block:: yaml
+
+    name: landsat
+    description: Landsat 8, band 2, 3, 4
+    metadata_type: eo
+
+    metadata:
+      product_type: landsat
+      format:
+        name: GeoTiff
+
+    measurements:
+      - name: band1
+        dtype: float32
+        nodata: 255 
+        units: '1'
+
+    storage:
+      crs: EPSG:4326
+      resolution:
+        latitude: -0.00025
+        longitude: 0.00025
+    
 A set of example Product definitions are supplied in ** add in link here **
 `docs/config_samples/dataset_types` to cover some common Geoscience Australia
 and other Earth Observation Data.
